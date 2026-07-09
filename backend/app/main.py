@@ -8,6 +8,7 @@ from app import models  # noqa: F401  — נדרש כדי לרשום את הטב
 from app.database import Base, SessionLocal, engine
 from app.deps import get_default_event
 from app.routers import (
+    auth,
     constraints,
     event,
     guests,
@@ -28,6 +29,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(guests.router)
 app.include_router(import_guests.router)
 app.include_router(seating.router)
@@ -44,6 +46,7 @@ _EXTRA_COLUMNS = {
     "events": {
         "table_positions": "JSON",
         "seats_per_table": "INTEGER DEFAULT 12",
+        "owner_id": "INTEGER",
     },
 }
 

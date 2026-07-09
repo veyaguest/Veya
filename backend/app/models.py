@@ -9,12 +9,32 @@ from sqlalchemy.types import JSON
 from app.database import Base
 
 
+class User(Base):
+    """משתמש רשום (בעל אירוע). מתחבר עם אימייל + סיסמה (שלב 8).
+
+    לכל משתמש יכולים להיות כמה אירועים (חתונות).
+    """
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String, unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String)
+    display_name: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    events: Mapped[list["Event"]] = relationship(back_populates="owner")
+
+
 class Event(Base):
-    """אירוע (חתונה). בשלב הנוכחי קיים אירוע ברירת-מחדל אחד בלבד."""
+    """אירוע (חתונה). שייך למשתמש דרך owner_id (שלב 8)."""
 
     __tablename__ = "events"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
     groom_name: Mapped[str] = mapped_column(String, default="")
     bride_name: Mapped[str] = mapped_column(String, default="")
     venue_name: Mapped[str] = mapped_column(String, default="")
@@ -23,6 +43,7 @@ class Event(Base):
     seats_per_table: Mapped[int] = mapped_column(Integer, default=12)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
+    owner: Mapped[Optional["User"]] = relationship(back_populates="events")
     guests: Mapped[list["Guest"]] = relationship(
         back_populates="event", cascade="all, delete-orphan"
     )

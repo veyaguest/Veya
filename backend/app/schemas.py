@@ -274,3 +274,71 @@ class HallTableSave(BaseModel):
 class SaveHallRequest(BaseModel):
     seats_per_table: Optional[int] = None
     tables: list[HallTableSave]
+
+
+# ---- משתמשים והתחברות (שלב 8) ----
+
+
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    display_name: str = ""
+
+    @field_validator("email")
+    @classmethod
+    def _email_valid(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("כתובת אימייל לא תקינה")
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def _password_valid(cls, v: str) -> str:
+        if len((v or "")) < 6:
+            raise ValueError("הסיסמה חייבת לכלול לפחות 6 תווים")
+        return v
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+    @field_validator("email")
+    @classmethod
+    def _email_lower(cls, v: str) -> str:
+        return (v or "").strip().lower()
+
+
+class UserRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+    display_name: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserRead
+
+
+# ---- ניהול אירועים (שלב 8) ----
+
+
+class EventCreate(BaseModel):
+    groom_name: str = ""
+    bride_name: str = ""
+    venue_name: str = ""
+
+
+class EventSummary(BaseModel):
+    """סיכום אירוע לרשימת האירועים של המשתמש."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    groom_name: str
+    bride_name: str
+    venue_name: str
