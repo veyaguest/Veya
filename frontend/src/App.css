@@ -920,6 +920,164 @@
   color: var(--muted);
 }
 
+/* ---- מפת אולם (שלב 7) ---- */
+.hall-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.hall-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+.hall-warnings {
+  background: rgba(193, 90, 78, 0.08);
+  border: 1px solid rgba(193, 90, 78, 0.3);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.hall-warnings p {
+  margin: 2px 0;
+  font-size: 13px;
+  color: var(--error);
+}
+.hall-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.hall-tray {
+  flex: 0 0 190px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 200px;
+}
+.hall-tray.droppable {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.2);
+  cursor: copy;
+}
+.tray-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--charcoal);
+}
+.tray-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--success);
+}
+
+.hall-canvas {
+  position: relative;
+  flex: 1;
+  background: var(--cream);
+  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 22px 22px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 460px;
+}
+.hall-empty {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 0 20px;
+}
+.hall-table {
+  position: absolute;
+  background: var(--cream);
+  border: 1px solid var(--gold);
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  user-select: none;
+}
+.hall-table.over {
+  border-color: var(--error);
+}
+.hall-table.droppable {
+  outline: 2px dashed var(--gold);
+  outline-offset: 2px;
+  cursor: copy;
+}
+.hall-table-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--black);
+  color: var(--gold-light);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: grab;
+}
+.hall-table-head:active {
+  cursor: grabbing;
+}
+.hall-table.over .hall-occ {
+  color: var(--error);
+  background: #fff;
+  border-radius: 6px;
+  padding: 0 5px;
+}
+.hall-table-body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 30px;
+}
+.guest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  color: var(--charcoal);
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.guest-chip:hover {
+  background: rgba(201, 162, 39, 0.1);
+}
+.guest-chip.selected {
+  background: var(--gold);
+  color: #201a06;
+  border-color: var(--gold-deep);
+  box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.35);
+}
+.guest-chip.side-groom {
+  border-inline-start: 3px solid var(--gold-deep);
+}
+.guest-chip.side-bride {
+  border-inline-start: 3px solid #b06b8f;
+}
+.chip-size {
+  font-size: 11px;
+  color: var(--muted);
+}
+.guest-chip.selected .chip-size {
+  color: #5a4a10;
+}
+
 @media (max-width: 760px) {
   .add-grid {
     grid-template-columns: 1fr;
@@ -938,5 +1096,14 @@
   }
   .event-fields {
     grid-template-columns: 1fr;
+  }
+  .hall-layout {
+    flex-direction: column;
+  }
+  .hall-tray {
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+    flex-basis: auto;
   }
 }

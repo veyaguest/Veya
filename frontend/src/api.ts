@@ -5,6 +5,8 @@ import type {
   EventDetails,
   Guest,
   GuestCreate,
+  HallState,
+  HallTableSave,
   ImportPreview,
   Message,
   RsvpSummary,
@@ -185,6 +187,27 @@ export async function updateEvent(
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- מפת אולם (שלב 7) ----
+
+export async function getHall(): Promise<HallState> {
+  const res = await fetch(`${API_URL}/hall`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function saveHall(
+  tables: HallTableSave[],
+  seatsPerTable?: number,
+): Promise<HallState> {
+  const res = await fetch(`${API_URL}/hall`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tables, seats_per_table: seatsPerTable }),
   })
   if (!res.ok) throw await toError(res)
   return res.json()

@@ -3,16 +3,18 @@ import './App.css'
 import { healthCheck } from './api'
 import { DashboardPage } from './components/DashboardPage'
 import { GuestsPage } from './components/GuestsPage'
+import { HallPage } from './components/HallPage'
 import { RsvpPage } from './components/RsvpPage'
 import { SeatingPage } from './components/SeatingPage'
 
-type Page = 'dashboard' | 'guests' | 'rsvp' | 'seating'
+type Page = 'dashboard' | 'guests' | 'rsvp' | 'seating' | 'hall'
 
 const PAGE_TITLES: Record<Page, string> = {
   dashboard: 'סקירה כללית',
   guests: 'ניהול מוזמנים',
   rsvp: 'אישורי הגעה',
   seating: 'שיבוץ הושבה',
+  hall: 'מפת אולם',
 }
 
 const NAV_ITEMS: { key: Page; label: string }[] = [
@@ -20,6 +22,7 @@ const NAV_ITEMS: { key: Page; label: string }[] = [
   { key: 'guests', label: 'מוזמנים' },
   { key: 'rsvp', label: 'אישורי הגעה' },
   { key: 'seating', label: 'שיבוץ הושבה' },
+  { key: 'hall', label: 'מפת אולם' },
 ]
 
 function App() {
@@ -78,6 +81,7 @@ function App() {
         {page === 'guests' && <GuestsPage />}
         {page === 'rsvp' && <RsvpPage />}
         {page === 'seating' && <SeatingPage />}
+        {page === 'hall' && <HallPage />}
       </main>
     </div>
   )

@@ -18,6 +18,9 @@ class Event(Base):
     groom_name: Mapped[str] = mapped_column(String, default="")
     bride_name: Mapped[str] = mapped_column(String, default="")
     venue_name: Mapped[str] = mapped_column(String, default="")
+    # מיקומי השולחנות במפת האולם (שלב 7): {"1": {"x": .., "y": ..}, ...}
+    table_positions: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    seats_per_table: Mapped[int] = mapped_column(Integer, default=12)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     guests: Mapped[list["Guest"]] = relationship(

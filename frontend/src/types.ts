@@ -187,3 +187,36 @@ export interface EventDetails {
   bride_name: string
   venue_name: string
 }
+
+// ---- מפת אולם (שלב 7) ----
+
+export interface HallGuest {
+  id: number
+  full_name: string
+  party_size: number
+  side: Side
+  group_type: GroupType
+  rsvp_status: RsvpStatus
+}
+
+export interface HallTable {
+  table_number: number
+  x: number
+  y: number
+  seats_used: number
+  guests: HallGuest[]
+}
+
+export interface HallState {
+  seats_per_table: number
+  tables: HallTable[]
+  unassigned: HallGuest[]
+  warnings: string[]
+}
+
+export interface HallTableSave {
+  table_number: number
+  x: number
+  y: number
+  guest_ids: number[]
+}

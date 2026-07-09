@@ -235,3 +235,42 @@ class EventUpdate(BaseModel):
     groom_name: Optional[str] = None
     bride_name: Optional[str] = None
     venue_name: Optional[str] = None
+
+
+# ---- מפת אולם (שלב 7) ----
+
+
+class HallGuest(BaseModel):
+    id: int
+    full_name: str
+    party_size: int
+    side: str
+    group_type: str
+    rsvp_status: str
+
+
+class HallTable(BaseModel):
+    table_number: int
+    x: float
+    y: float
+    seats_used: int
+    guests: list[HallGuest]
+
+
+class HallState(BaseModel):
+    seats_per_table: int
+    tables: list[HallTable]
+    unassigned: list[HallGuest]          # מוזמנים ללא שולחן
+    warnings: list[str]                  # חריגות (קיבולת/זוג אסור באותו שולחן)
+
+
+class HallTableSave(BaseModel):
+    table_number: int
+    x: float
+    y: float
+    guest_ids: list[int]
+
+
+class SaveHallRequest(BaseModel):
+    seats_per_table: Optional[int] = None
+    tables: list[HallTableSave]
