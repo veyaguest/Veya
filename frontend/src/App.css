@@ -1,0 +1,62 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f3ee; /* Ivory */
+  padding: 24px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e7ddcd;
+  border-radius: 16px;
+  padding: 48px 40px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(43, 43, 43, 0.06);
+  max-width: 420px;
+  width: 100%;
+}
+
+.brand {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 44px;
+  letter-spacing: 4px;
+  color: #4a5d4e; /* Deep Sage */
+  margin: 0 0 8px;
+}
+
+.subtitle {
+  color: #2b2b2b;
+  opacity: 0.7;
+  margin: 0 0 28px;
+  font-size: 15px;
+}
+
+.status {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+}
+
+.status.loading {
+  color: #4a5d4e;
+  background: #f0efe8;
+}
+
+.status.ok {
+  color: #4a5d4e;
+  background: #eaf0ea;
+}
+
+.status.error {
+  color: #c15a4e; /* softened error red */
+  background: #f7ebe9;
+}
+
+.status small {
+  font-weight: 400;
+  opacity: 0.8;
+}
