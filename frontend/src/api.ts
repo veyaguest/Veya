@@ -1,4 +1,6 @@
 import type {
+  AnalyzeResult,
+  Clarification,
   Guest,
   GuestCreate,
   ImportPreview,
@@ -86,6 +88,34 @@ export async function generateSeating(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
   })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function analyzeConstraints(): Promise<AnalyzeResult> {
+  const res = await fetch(`${API_URL}/constraints/analyze`, { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function listClarifications(): Promise<Clarification[]> {
+  const res = await fetch(`${API_URL}/constraints/clarifications`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function resolveClarification(
+  id: number,
+  chosenGuestId: number | null,
+): Promise<AnalyzeResult> {
+  const res = await fetch(
+    `${API_URL}/constraints/clarifications/${id}/resolve`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chosen_guest_id: chosenGuestId }),
+    },
+  )
   if (!res.ok) throw await toError(res)
   return res.json()
 }

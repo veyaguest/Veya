@@ -104,3 +104,28 @@ export interface SeatingRequest {
   only_confirmed?: boolean
   persist?: boolean
 }
+
+// ---- פרסור הערות + הבהרות (שלב 4) ----
+
+export interface ClarificationCandidate {
+  id: number
+  full_name: string
+}
+
+export interface Clarification {
+  id: number
+  source_guest_id: number
+  source_guest_name: string
+  relation_type: 'avoid' | 'together'
+  target_text: string
+  candidates: ClarificationCandidate[]
+}
+
+export interface AnalyzeResult {
+  guests_analyzed: number
+  relations_found: number
+  resolved: number
+  ambiguous: number
+  unresolved: number
+  pending_clarifications: number
+}

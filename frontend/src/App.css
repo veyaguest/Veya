@@ -503,8 +503,99 @@
   color: var(--muted);
 }
 
+/* ---- אילוצים מההערות (הבהרות) ---- */
+.clar-panel {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+.clar-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.clar-title {
+  margin: 0 0 4px;
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 19px;
+  color: var(--charcoal);
+}
+.clar-sub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 46ch;
+  line-height: 1.5;
+}
+.clar-head .btn-ghost {
+  white-space: nowrap;
+  padding: 8px 14px;
+  font-size: 14px;
+}
+.clar-summary {
+  margin: 14px 0 0;
+  padding: 8px 12px;
+  background: rgba(201, 162, 39, 0.08);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--gold-deep);
+  font-weight: 600;
+}
+.clar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.clar-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: var(--ivory);
+}
+.clar-q {
+  font-size: 14px;
+  color: var(--charcoal);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.clar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.clar-choice {
+  padding: 7px 14px;
+  font-size: 14px;
+}
+.btn-text {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: underline;
+  padding: 7px 6px;
+}
+.btn-text:hover {
+  color: var(--charcoal);
+}
+.clar-ok {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: var(--success);
+  font-weight: 600;
+}
+
 @media (max-width: 760px) {
   .add-grid {
     grid-template-columns: 1fr;
+  }
+  .clar-head {
+    flex-direction: column;
   }
 }

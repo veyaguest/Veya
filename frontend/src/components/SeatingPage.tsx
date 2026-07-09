@@ -1,13 +1,62 @@
-import { useState } from 'react'
-import { generateSeating } from '../api'
-import type { SeatingResult } from '../types'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  analyzeConstraints,
+  generateSeating,
+  listClarifications,
+  resolveClarification,
+} from '../api'
+import type { AnalyzeResult, Clarification, SeatingResult } from '../types'
 import { GROUP_LABELS, SIDE_LABELS } from '../types'
+
+const REL_TEXT: Record<Clarification['relation_type'], string> = {
+  avoid: 'לא לשבת עם',
+  together: 'לשבת עם',
+}
 
 export function SeatingPage() {
   const [seats, setSeats] = useState(12)
   const [result, setResult] = useState<SeatingResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const [clarifications, setClarifications] = useState<Clarification[]>([])
+  const [summary, setSummary] = useState<AnalyzeResult | null>(null)
+  const [analyzing, setAnalyzing] = useState(false)
+
+  const loadClarifications = useCallback(async () => {
+    try {
+      setClarifications(await listClarifications())
+    } catch {
+      /* שקט — לא חוסם את מסך השיבוץ */
+    }
+  }, [])
+
+  useEffect(() => {
+    loadClarifications()
+  }, [loadClarifications])
+
+  async function onAnalyze() {
+    setAnalyzing(true)
+    setError('')
+    try {
+      setSummary(await analyzeConstraints())
+      await loadClarifications()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה בניתוח ההערות')
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  async function onResolve(id: number, chosenGuestId: number | null) {
+    try {
+      const res = await resolveClarification(id, chosenGuestId)
+      setSummary(res)
+      await loadClarifications()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה בפתרון ההבהרה')
+    }
+  }
 
   async function onGenerate() {
     setLoading(true)
@@ -24,6 +73,63 @@ export function SeatingPage() {
 
   return (
     <div className="seating-page">
+      {/* ---- אילוצים מההערות ---- */}
+      <div className="clar-panel">
+        <div className="clar-head">
+          <div>
+            <h3 className="clar-title">אילוצים מההערות</h3>
+            <p className="clar-sub">
+              המערכת קוראת את ההערות החופשיות והופכת אותן לכללי הושבה ("לא
+              לשבת עם", "לשבת ליד").
+            </p>
+          </div>
+          <button className="btn-ghost" onClick={onAnalyze} disabled={analyzing}>
+            {analyzing ? 'מנתח…' : '↻ נתח הערות'}
+          </button>
+        </div>
+
+        {summary && (
+          <p className="clar-summary">
+            נותחו {summary.guests_analyzed} מוזמנים · {summary.resolved} אילוצים
+            זוהו · {summary.pending_clarifications} ממתינים להבהרה
+          </p>
+        )}
+
+        {clarifications.length > 0 ? (
+          <div className="clar-list">
+            {clarifications.map((c) => (
+              <div className="clar-card" key={c.id}>
+                <div className="clar-q">
+                  <strong>{c.source_guest_name}</strong> ביקש/ה{' '}
+                  {REL_TEXT[c.relation_type]} "<strong>{c.target_text}</strong>" —
+                  למי הכוונה?
+                </div>
+                <div className="clar-actions">
+                  {c.candidates.map((cand) => (
+                    <button
+                      key={cand.id}
+                      className="btn-ghost clar-choice"
+                      onClick={() => onResolve(c.id, cand.id)}
+                    >
+                      {cand.full_name}
+                    </button>
+                  ))}
+                  <button
+                    className="btn-text"
+                    onClick={() => onResolve(c.id, null)}
+                  >
+                    אף אחד מהם
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          summary && <p className="clar-ok">אין הבהרות ממתינות ✓</p>
+        )}
+      </div>
+
+      {/* ---- יצירת שיבוץ ---- */}
       <div className="toolbar">
         <label className="seats-field">
           כיסאות לשולחן
