@@ -148,3 +148,48 @@ class ClarificationRead(BaseModel):
 class ResolveClarification(BaseModel):
     # מזהה המוזמן שנבחר, או null אם "אף אחד מהם" (דחייה)
     chosen_guest_id: Optional[int] = None
+
+
+# ---- WhatsApp / RSVP (שלב 5) ----
+
+
+class SendInvitationsRequest(BaseModel):
+    # ברירת מחדל: לשלוח רק למי שעדיין לא ענה (pending). False => לכולם.
+    only_pending: bool = True
+    # לשלוח רק למוזמן בודד (אופציונלי). None => לכל הרשימה לפי only_pending.
+    guest_id: Optional[int] = None
+
+
+class SendInvitationsResult(BaseModel):
+    mode: str            # mock/live
+    sent: int
+    failed: int
+    skipped: int
+    detail: Optional[str] = None
+
+
+class SimulateReplyRequest(BaseModel):
+    guest_id: int
+    coming: bool         # True => "מגיע/ה", False => "לא מגיע/ה"
+
+
+class MessageRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    guest_id: Optional[int]
+    direction: str
+    kind: str
+    body: str
+    status: str
+    provider: str
+    created_at: datetime
+
+
+class RsvpSummary(BaseModel):
+    total_guests: int
+    confirmed: int
+    declined: int
+    pending: int
+    invitations_sent: int
+    mode: str

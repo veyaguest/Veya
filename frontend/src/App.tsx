@@ -2,9 +2,22 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import { healthCheck } from './api'
 import { GuestsPage } from './components/GuestsPage'
+import { RsvpPage } from './components/RsvpPage'
 import { SeatingPage } from './components/SeatingPage'
 
-type Page = 'guests' | 'seating'
+type Page = 'guests' | 'rsvp' | 'seating'
+
+const PAGE_TITLES: Record<Page, string> = {
+  guests: 'ניהול מוזמנים',
+  rsvp: 'אישורי הגעה',
+  seating: 'שיבוץ הושבה',
+}
+
+const NAV_ITEMS: { key: Page; label: string }[] = [
+  { key: 'guests', label: 'מוזמנים' },
+  { key: 'rsvp', label: 'אישורי הגעה' },
+  { key: 'seating', label: 'שיבוץ הושבה' },
+]
 
 function App() {
   const [online, setOnline] = useState<boolean | null>(null)
@@ -31,18 +44,15 @@ function App() {
           )}
         </div>
         <nav className="nav">
-          <span
-            className={`nav-item ${page === 'guests' ? 'active' : ''}`}
-            onClick={() => setPage('guests')}
-          >
-            מוזמנים
-          </span>
-          <span
-            className={`nav-item ${page === 'seating' ? 'active' : ''}`}
-            onClick={() => setPage('seating')}
-          >
-            שיבוץ הושבה
-          </span>
+          {NAV_ITEMS.map((item) => (
+            <span
+              key={item.key}
+              className={`nav-item ${page === item.key ? 'active' : ''}`}
+              onClick={() => setPage(item.key)}
+            >
+              {item.label}
+            </span>
+          ))}
         </nav>
         <div className="conn">
           {online === null && <span className="dot loading" />}
@@ -60,10 +70,10 @@ function App() {
       </header>
 
       <main className="content">
-        <h1 className="page-title">
-          {page === 'guests' ? 'ניהול מוזמנים' : 'שיבוץ הושבה'}
-        </h1>
-        {page === 'guests' ? <GuestsPage /> : <SeatingPage />}
+        <h1 className="page-title">{PAGE_TITLES[page]}</h1>
+        {page === 'guests' && <GuestsPage />}
+        {page === 'rsvp' && <RsvpPage />}
+        {page === 'seating' && <SeatingPage />}
       </main>
     </div>
   )

@@ -4,8 +4,11 @@ import type {
   Guest,
   GuestCreate,
   ImportPreview,
+  Message,
+  RsvpSummary,
   SeatingRequest,
   SeatingResult,
+  SendInvitationsResult,
 } from './types'
 
 const API_URL = 'http://localhost:8000'
@@ -116,6 +119,45 @@ export async function resolveClarification(
       body: JSON.stringify({ chosen_guest_id: chosenGuestId }),
     },
   )
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- WhatsApp / RSVP (שלב 5) ----
+
+export async function rsvpSummary(): Promise<RsvpSummary> {
+  const res = await fetch(`${API_URL}/messaging/summary`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function sendInvitations(
+  onlyPending: boolean,
+): Promise<SendInvitationsResult> {
+  const res = await fetch(`${API_URL}/messaging/invitations/send`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ only_pending: onlyPending }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function simulateReply(
+  guestId: number,
+  coming: boolean,
+): Promise<RsvpSummary> {
+  const res = await fetch(`${API_URL}/messaging/simulate-reply`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ guest_id: guestId, coming }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function messageLog(limit = 50): Promise<Message[]> {
+  const res = await fetch(`${API_URL}/messaging/log?limit=${limit}`)
   if (!res.ok) throw await toError(res)
   return res.json()
 }

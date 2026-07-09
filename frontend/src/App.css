@@ -591,11 +591,191 @@
   font-weight: 600;
 }
 
+/* ---- RSVP / WhatsApp (שלב 5) ---- */
+.rsvp-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  text-align: center;
+}
+.stat-card.ok {
+  border-color: rgba(74, 122, 82, 0.4);
+}
+.stat-card.err {
+  border-color: rgba(193, 90, 78, 0.4);
+}
+.stat-card.wait {
+  border-color: rgba(201, 162, 39, 0.4);
+}
+.stat-num {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.stat-card.ok .stat-num {
+  color: var(--success);
+}
+.stat-card.err .stat-num {
+  color: var(--error);
+}
+.stat-card.wait .stat-num {
+  color: var(--gold-deep);
+}
+.stat-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.rsvp-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.mode-badge {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.mode-badge.mock {
+  background: rgba(201, 162, 39, 0.08);
+  color: var(--gold-deep);
+  border-color: rgba(201, 162, 39, 0.35);
+}
+.mode-badge.live {
+  background: rgba(74, 122, 82, 0.1);
+  color: var(--success);
+  border-color: rgba(74, 122, 82, 0.35);
+}
+.rsvp-note {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  background: rgba(74, 122, 82, 0.08);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--success);
+  font-weight: 600;
+}
+
+.rsvp-guests {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+.rsvp-guests-head {
+  margin-bottom: 12px;
+}
+.rsvp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.rsvp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.rsvp-row:last-child {
+  border-bottom: none;
+}
+.rsvp-name {
+  font-weight: 600;
+  color: var(--charcoal);
+  min-width: 120px;
+}
+.rsvp-badge {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(201, 162, 39, 0.1);
+  color: var(--gold-deep);
+}
+.rsvp-badge.confirmed {
+  background: rgba(74, 122, 82, 0.12);
+  color: var(--success);
+}
+.rsvp-badge.declined {
+  background: rgba(193, 90, 78, 0.12);
+  color: var(--error);
+}
+.rsvp-sim {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rsvp-sim .clar-choice {
+  padding: 5px 12px;
+  font-size: 13px;
+}
+
+.rsvp-log {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.log-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.log-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--ivory);
+}
+.log-dir {
+  min-width: 64px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.log-row.inbound .log-dir {
+  color: var(--success);
+}
+.log-body {
+  color: var(--charcoal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 760px) {
   .add-grid {
     grid-template-columns: 1fr;
   }
   .clar-head {
     flex-direction: column;
+  }
+  .rsvp-stats {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

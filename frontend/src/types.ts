@@ -129,3 +129,33 @@ export interface AnalyzeResult {
   unresolved: number
   pending_clarifications: number
 }
+
+// ---- WhatsApp / RSVP (שלב 5) ----
+
+export interface RsvpSummary {
+  total_guests: number
+  confirmed: number
+  declined: number
+  pending: number
+  invitations_sent: number
+  mode: string
+}
+
+export interface SendInvitationsResult {
+  mode: string
+  sent: number
+  failed: number
+  skipped: number
+  detail: string | null
+}
+
+export interface Message {
+  id: number
+  guest_id: number | null
+  direction: 'outbound' | 'inbound'
+  kind: string
+  body: string
+  status: string
+  provider: string
+  created_at: string
+}

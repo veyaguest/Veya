@@ -64,3 +64,23 @@ class Clarification(Base):
     status: Mapped[str] = mapped_column(String, default="pending")  # pending/resolved/dismissed
     chosen_guest_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Message(Base):
+    """יומן הודעות WhatsApp (שלב 5).
+
+    כל שורה = הודעה יוצאת (הזמנה/אישור) או נכנסת (תשובת RSVP מהמוזמן).
+    במצב 'mock' לא נשלחת הודעה אמיתית — רק נרשמת כאן כדי לבדוק את הזרימה.
+    """
+
+    __tablename__ = "messages"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"))
+    guest_id: Mapped[Optional[int]] = mapped_column(ForeignKey("guests.id"), nullable=True)
+    direction: Mapped[str] = mapped_column(String)  # outbound/inbound
+    kind: Mapped[str] = mapped_column(String, default="invitation")  # invitation/reply/reminder
+    body: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String, default="sent")  # sent/delivered/failed/received
+    provider: Mapped[str] = mapped_column(String, default="mock")  # mock/meta
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
