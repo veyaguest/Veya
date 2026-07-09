@@ -45,3 +45,22 @@ class Guest(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     event: Mapped["Event"] = relationship(back_populates="guests")
+
+
+class Clarification(Base):
+    """הבהרה ממתינה — נוצרת כשפרסור ההערות מזהה שם עמום (PRD: לולאת הבהרות).
+
+    מוצגת למשתמש כשאלה סגורה עם כפתורים (בחירת המוזמן הנכון מבין המועמדים).
+    """
+
+    __tablename__ = "clarifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"))
+    source_guest_id: Mapped[int] = mapped_column(ForeignKey("guests.id"))
+    relation_type: Mapped[str] = mapped_column(String)  # avoid/together
+    target_text: Mapped[str] = mapped_column(String)    # השם העמום בהערה
+    candidate_ids: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String, default="pending")  # pending/resolved/dismissed
+    chosen_guest_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

@@ -117,3 +117,34 @@ class SeatingResponse(BaseModel):
     hard_ok: bool
     unseated: list[int]
     persisted: bool
+
+
+# ---- פרסור הערות + הבהרות (שלב 4) ----
+
+
+class AnalyzeResult(BaseModel):
+    guests_analyzed: int
+    relations_found: int
+    resolved: int
+    ambiguous: int
+    unresolved: int
+    pending_clarifications: int
+
+
+class ClarificationCandidate(BaseModel):
+    id: int
+    full_name: str
+
+
+class ClarificationRead(BaseModel):
+    id: int
+    source_guest_id: int
+    source_guest_name: str
+    relation_type: str  # avoid/together
+    target_text: str
+    candidates: list[ClarificationCandidate]
+
+
+class ResolveClarification(BaseModel):
+    # מזהה המוזמן שנבחר, או null אם "אף אחד מהם" (דחייה)
+    chosen_guest_id: Optional[int] = None
