@@ -9,6 +9,7 @@ type Page = 'guests' | 'seating'
 function App() {
   const [online, setOnline] = useState<boolean | null>(null)
   const [page, setPage] = useState<Page>('guests')
+  const [logoOk, setLogoOk] = useState(true)
 
   useEffect(() => {
     healthCheck().then(setOnline)
@@ -17,7 +18,18 @@ function App() {
   return (
     <div className="shell">
       <header className="topbar">
-        <div className="logo">VEYA</div>
+        <div className="logo">
+          {logoOk ? (
+            <img
+              src="/logo.png"
+              alt="VEYA"
+              className="logo-img"
+              onError={() => setLogoOk(false)}
+            />
+          ) : (
+            <span className="logo-text">VEYA</span>
+          )}
+        </div>
         <nav className="nav">
           <span
             className={`nav-item ${page === 'guests' ? 'active' : ''}`}
