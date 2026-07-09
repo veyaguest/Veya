@@ -5,7 +5,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import models  # noqa: F401  — נדרש כדי לרשום את הטבלאות
 from app.database import Base, SessionLocal, engine
 from app.deps import get_default_event
-from app.routers import constraints, guests, import_guests, messaging, seating
+from app.routers import (
+    constraints,
+    event,
+    guests,
+    import_guests,
+    messaging,
+    seating,
+    stats,
+)
 
 app = FastAPI(title="VEYA API", version="0.1.0")
 
@@ -22,6 +30,8 @@ app.include_router(import_guests.router)
 app.include_router(seating.router)
 app.include_router(constraints.router)
 app.include_router(messaging.router)
+app.include_router(stats.router)
+app.include_router(event.router)
 
 
 @app.on_event("startup")

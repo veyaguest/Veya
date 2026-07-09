@@ -1,6 +1,8 @@
 import type {
   AnalyzeResult,
   Clarification,
+  DashboardStats,
+  EventDetails,
   Guest,
   GuestCreate,
   ImportPreview,
@@ -158,6 +160,32 @@ export async function simulateReply(
 
 export async function messageLog(limit = 50): Promise<Message[]> {
   const res = await fetch(`${API_URL}/messaging/log?limit=${limit}`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- דשבורד + אירוע (שלב 6) ----
+
+export async function getStats(): Promise<DashboardStats> {
+  const res = await fetch(`${API_URL}/stats`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function getEvent(): Promise<EventDetails> {
+  const res = await fetch(`${API_URL}/event`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function updateEvent(
+  data: Partial<Pick<EventDetails, 'groom_name' | 'bride_name' | 'venue_name'>>,
+): Promise<EventDetails> {
+  const res = await fetch(`${API_URL}/event`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
   if (!res.ok) throw await toError(res)
   return res.json()
 }

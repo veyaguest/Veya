@@ -159,3 +159,31 @@ export interface Message {
   provider: string
   created_at: string
 }
+
+// ---- דשבורד + אירוע (שלב 6) ----
+
+export interface DashboardStats {
+  total_guests: number
+  total_people: number
+  confirmed_people: number
+  confirmed: number
+  declined: number
+  pending: number
+  response_rate: number
+  invitations_sent: number
+  by_side: Record<Side, number>
+  by_group: Record<GroupType, number>
+  tables_assigned: number
+  seated_guests: number
+  pending_clarifications: number
+  groom_name: string
+  bride_name: string
+  venue_name: string
+}
+
+export interface EventDetails {
+  id: number
+  groom_name: string
+  bride_name: string
+  venue_name: string
+}

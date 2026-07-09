@@ -193,3 +193,45 @@ class RsvpSummary(BaseModel):
     pending: int
     invitations_sent: int
     mode: str
+
+
+# ---- דשבורד (שלב 6) ----
+
+
+class DashboardStats(BaseModel):
+    # מוזמנים
+    total_guests: int
+    total_people: int          # סכום party_size (כולל בני/בנות זוג וילדים)
+    confirmed_people: int      # סכום party_size של מי שאישר
+    # RSVP
+    confirmed: int
+    declined: int
+    pending: int
+    response_rate: int         # אחוז מי שענה (אישר/ביטל) מכלל המוזמנים
+    invitations_sent: int
+    # פילוחים
+    by_side: dict              # {groom, bride, shared}
+    by_group: dict             # {close_family, ...}
+    # הושבה + אילוצים
+    tables_assigned: int       # כמה שולחנות שובצו (table_number ייחודי)
+    seated_guests: int         # כמה מוזמנים כבר משובצים
+    pending_clarifications: int
+    # פרטי אירוע
+    groom_name: str
+    bride_name: str
+    venue_name: str
+
+
+class EventRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    groom_name: str
+    bride_name: str
+    venue_name: str
+
+
+class EventUpdate(BaseModel):
+    groom_name: Optional[str] = None
+    bride_name: Optional[str] = None
+    venue_name: Optional[str] = None

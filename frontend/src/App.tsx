@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import { healthCheck } from './api'
+import { DashboardPage } from './components/DashboardPage'
 import { GuestsPage } from './components/GuestsPage'
 import { RsvpPage } from './components/RsvpPage'
 import { SeatingPage } from './components/SeatingPage'
 
-type Page = 'guests' | 'rsvp' | 'seating'
+type Page = 'dashboard' | 'guests' | 'rsvp' | 'seating'
 
 const PAGE_TITLES: Record<Page, string> = {
+  dashboard: 'סקירה כללית',
   guests: 'ניהול מוזמנים',
   rsvp: 'אישורי הגעה',
   seating: 'שיבוץ הושבה',
 }
 
 const NAV_ITEMS: { key: Page; label: string }[] = [
+  { key: 'dashboard', label: 'סקירה' },
   { key: 'guests', label: 'מוזמנים' },
   { key: 'rsvp', label: 'אישורי הגעה' },
   { key: 'seating', label: 'שיבוץ הושבה' },
@@ -21,7 +24,7 @@ const NAV_ITEMS: { key: Page; label: string }[] = [
 
 function App() {
   const [online, setOnline] = useState<boolean | null>(null)
-  const [page, setPage] = useState<Page>('guests')
+  const [page, setPage] = useState<Page>('dashboard')
   const [logoOk, setLogoOk] = useState(true)
 
   useEffect(() => {
@@ -71,6 +74,7 @@ function App() {
 
       <main className="content">
         <h1 className="page-title">{PAGE_TITLES[page]}</h1>
+        {page === 'dashboard' && <DashboardPage />}
         {page === 'guests' && <GuestsPage />}
         {page === 'rsvp' && <RsvpPage />}
         {page === 'seating' && <SeatingPage />}
