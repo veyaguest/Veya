@@ -269,6 +269,86 @@
   font-size: 15px;
 }
 
+/* ---- Import dialog ---- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 43, 43, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 50;
+}
+.dialog {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  width: 100%;
+  max-width: 760px;
+  max-height: 85vh;
+  overflow: auto;
+  box-shadow: 0 20px 60px rgba(43, 43, 43, 0.25);
+}
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dialog-head h2 {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  color: var(--sage);
+  margin: 0;
+  font-size: 22px;
+}
+.dialog .x {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #8a8375;
+}
+.file-name {
+  font-size: 14px;
+  color: #6b6357;
+  margin: 8px 0 4px;
+}
+.import-summary {
+  font-size: 15px;
+  margin: 12px 0;
+}
+.ok-text {
+  color: var(--sage);
+}
+.err-text {
+  color: var(--error);
+}
+.preview-wrap {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: auto;
+  max-height: 44vh;
+}
+.preview-wrap .guests-table th {
+  position: sticky;
+  top: 0;
+}
+.row-invalid td {
+  background: #fbf1ef;
+}
+
+/* ---- Toast ---- */
+.toast {
+  background: #eaf0ea;
+  color: var(--sage);
+  border: 1px solid #cfe0cf;
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 14px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
 @media (max-width: 760px) {
   .add-grid {
     grid-template-columns: 1fr;

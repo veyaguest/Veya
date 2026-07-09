@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { deleteGuest, listGuests } from '../api'
 import type { Guest } from '../types'
 import { GROUP_LABELS, RSVP_LABELS, SIDE_LABELS } from '../types'
 import { AddGuestForm } from './AddGuestForm'
+import { ImportDialog } from './ImportDialog'
 
 export function GuestsPage() {
   const [guests, setGuests] = useState<Guest[]>([])
@@ -10,6 +11,9 @@ export function GuestsPage() {
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [toast, setToast] = useState('')
+  const fileInput = useRef<HTMLInputElement>(null)
 
   const load = useCallback(async (q: string) => {
     setLoading(true)
@@ -50,13 +54,39 @@ export function GuestsPage() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder="חיפוש לפי שם או טלפון…"
         />
-        <button
-          className="btn-primary"
-          onClick={() => setShowForm((s) => !s)}
-        >
+        <button className="btn-ghost" onClick={() => fileInput.current?.click()}>
+          ⬆ ייבוא Excel/CSV
+        </button>
+        <button className="btn-primary" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'סגור טופס' : '+ הוסף מוזמן'}
         </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept=".xlsx,.xlsm,.csv"
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) setImportFile(f)
+            e.target.value = '' // מאפשר לבחור שוב את אותו קובץ
+          }}
+        />
       </div>
+
+      {toast && <div className="toast">{toast}</div>}
+
+      {importFile && (
+        <ImportDialog
+          file={importFile}
+          onClose={() => setImportFile(null)}
+          onImported={(created) => {
+            setImportFile(null)
+            setToast(`יובאו ${created} מוזמנים בהצלחה ✓`)
+            setTimeout(() => setToast(''), 4000)
+            load(search)
+          }}
+        />
+      )}
 
       {showForm && (
         <AddGuestForm

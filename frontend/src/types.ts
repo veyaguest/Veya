@@ -49,3 +49,23 @@ export const RSVP_LABELS: Record<RsvpStatus, string> = {
   confirmed: 'מגיע',
   declined: 'לא מגיע',
 }
+
+export interface ImportPreviewRow {
+  row_number: number
+  full_name: string
+  phone: string
+  side: Side
+  group_type: GroupType
+  party_size: number
+  notes_raw: string | null
+  valid: boolean
+  errors: string[]
+}
+
+export interface ImportPreview {
+  detected_columns: Record<string, string | null>
+  rows: ImportPreviewRow[]
+  total: number
+  valid_count: number
+  invalid_count: number
+}

@@ -1,4 +1,4 @@
-import type { Guest, GuestCreate } from './types'
+import type { Guest, GuestCreate, ImportPreview } from './types'
 
 const API_URL = 'http://localhost:8000'
 
@@ -47,4 +47,27 @@ export async function createGuest(data: GuestCreate): Promise<Guest> {
 export async function deleteGuest(id: number): Promise<void> {
   const res = await fetch(`${API_URL}/guests/${id}`, { method: 'DELETE' })
   if (!res.ok) throw await toError(res)
+}
+
+export async function previewImport(file: File): Promise<ImportPreview> {
+  const fd = new FormData()
+  fd.append('file', file)
+  const res = await fetch(`${API_URL}/guests/import/preview`, {
+    method: 'POST',
+    body: fd,
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function commitImport(
+  rows: GuestCreate[],
+): Promise<{ created: number }> {
+  const res = await fetch(`${API_URL}/guests/import/commit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rows }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
 }
