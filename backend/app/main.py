@@ -2,7 +2,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.database import Base, engine
+from app import models  # noqa: F401  — נדרש כדי לרשום את הטבלאות
+from app.database import Base, SessionLocal, engine
+from app.deps import get_default_event
+from app.routers import guests
 
 app = FastAPI(title="VEYA API", version="0.1.0")
 
@@ -14,11 +17,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(guests.router)
+
 
 @app.on_event("startup")
 def on_startup() -> None:
-    # יוצר את קובץ מסד הנתונים ואת הטבלאות הקיימות (עדיין אין — יתווספו בשלב 2).
+    # יוצר את קובץ מסד הנתונים ואת הטבלאות.
     Base.metadata.create_all(bind=engine)
+    # מוודא שקיים אירוע ברירת-מחדל אחד.
+    db = SessionLocal()
+    try:
+        get_default_event(db)
+    finally:
+        db.close()
 
 
 @app.get("/health")
