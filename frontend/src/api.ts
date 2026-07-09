@@ -1,4 +1,10 @@
-import type { Guest, GuestCreate, ImportPreview } from './types'
+import type {
+  Guest,
+  GuestCreate,
+  ImportPreview,
+  SeatingRequest,
+  SeatingResult,
+} from './types'
 
 const API_URL = 'http://localhost:8000'
 
@@ -67,6 +73,18 @@ export async function commitImport(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ rows }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function generateSeating(
+  req: SeatingRequest,
+): Promise<SeatingResult> {
+  const res = await fetch(`${API_URL}/seating/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
   })
   if (!res.ok) throw await toError(res)
   return res.json()

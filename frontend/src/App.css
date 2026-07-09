@@ -41,7 +41,11 @@
   font-size: 15px;
   color: var(--charcoal);
   opacity: 0.6;
-  cursor: default;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.nav-item:hover {
+  opacity: 0.85;
 }
 .nav-item.active {
   opacity: 1;
@@ -347,6 +351,110 @@
   margin-bottom: 14px;
   font-weight: 600;
   font-size: 14px;
+}
+
+/* ---- Seating ---- */
+.seats-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: var(--charcoal);
+}
+.seats-field input {
+  width: 80px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 15px;
+  background: #fff;
+}
+.seats-field input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.seating-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 15px;
+  margin: 4px 2px 18px;
+}
+.ok-badge {
+  background: #eaf0ea;
+  color: var(--sage);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.err-badge {
+  background: #f7ebe9;
+  color: var(--error);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.table-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+}
+.table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f2ece1;
+}
+.table-name {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 18px;
+  color: var(--sage);
+  font-weight: 700;
+}
+.table-occupancy {
+  font-size: 13px;
+  color: #8a8375;
+  font-variant-numeric: tabular-nums;
+}
+.party-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.party-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.party-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.party-size {
+  font-size: 13px;
+  color: var(--gold);
+  font-weight: 600;
+}
+.party-tags {
+  font-size: 12px;
+  color: #8a8375;
 }
 
 @media (max-width: 760px) {

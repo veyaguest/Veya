@@ -69,3 +69,38 @@ export interface ImportPreview {
   valid_count: number
   invalid_count: number
 }
+
+// ---- שיבוץ הושבה (שלב 3) ----
+
+export interface SeatingParty {
+  id: number
+  full_name: string
+  party_size: number
+  side: Side
+  group_type: GroupType
+}
+
+export interface SeatingTable {
+  table_number: number
+  seats_used: number
+  capacity: number
+  parties: SeatingParty[]
+}
+
+export interface SeatingResult {
+  tables: SeatingTable[]
+  total_people: number
+  num_tables: number
+  seats_per_table: number
+  score: number
+  hard_ok: boolean
+  unseated: number[]
+  persisted: boolean
+}
+
+export interface SeatingRequest {
+  seats_per_table: number
+  num_tables?: number
+  only_confirmed?: boolean
+  persist?: boolean
+}
