@@ -73,3 +73,47 @@ class GuestRead(BaseModel):
     rsvp_status: str
     table_number: Optional[int]
     created_at: datetime
+
+
+# ---- שיבוץ הושבה (שלב 3) ----
+
+
+class SeatingRequest(BaseModel):
+    seats_per_table: int = 12
+    num_tables: Optional[int] = None          # None => חישוב אוטומטי
+    only_confirmed: bool = False              # לשבץ רק מי שאישר הגעה
+    persist: bool = False                     # לשמור table_number חזרה על המוזמנים
+    forbidden_pairs: list[tuple[int, int]] = []  # זוגות "לא לשבת יחד" (שלב 4)
+
+    @field_validator("seats_per_table")
+    @classmethod
+    def _seats_positive(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("מספר הכיסאות לשולחן חייב להיות לפחות 1")
+        return v
+
+
+class SeatingPartyRead(BaseModel):
+    id: int
+    full_name: str
+    party_size: int
+    side: str
+    group_type: str
+
+
+class SeatingTableRead(BaseModel):
+    table_number: int
+    seats_used: int
+    capacity: int
+    parties: list[SeatingPartyRead]
+
+
+class SeatingResponse(BaseModel):
+    tables: list[SeatingTableRead]
+    total_people: int
+    num_tables: int
+    seats_per_table: int
+    score: int
+    hard_ok: bool
+    unseated: list[int]
+    persisted: bool
