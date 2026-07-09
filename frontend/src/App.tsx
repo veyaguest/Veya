@@ -1,49 +1,42 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-
-const API_URL = 'http://localhost:8000'
-
-type Health = { status: string; service: string }
+import { healthCheck } from './api'
+import { GuestsPage } from './components/GuestsPage'
 
 function App() {
-  const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading')
-  const [detail, setDetail] = useState<string>('')
+  const [online, setOnline] = useState<boolean | null>(null)
 
   useEffect(() => {
-    fetch(`${API_URL}/health`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json() as Promise<Health>
-      })
-      .then((data) => {
-        setStatus('ok')
-        setDetail(data.service)
-      })
-      .catch((err) => {
-        setStatus('error')
-        setDetail(String(err))
-      })
+    healthCheck().then(setOnline)
   }, [])
 
   return (
-    <main className="app">
-      <div className="card">
-        <h1 className="brand">VEYA</h1>
-        <p className="subtitle">מערכת ניהול מוזמנים, אישורי הגעה וסידורי הושבה</p>
+    <div className="shell">
+      <header className="topbar">
+        <div className="logo">VEYA</div>
+        <nav className="nav">
+          <span className="nav-item active">מוזמנים</span>
+        </nav>
+        <div className="conn">
+          {online === null && <span className="dot loading" />}
+          {online === true && (
+            <>
+              <span className="dot ok" /> מחובר
+            </>
+          )}
+          {online === false && (
+            <>
+              <span className="dot err" /> אין חיבור לשרת
+            </>
+          )}
+        </div>
+      </header>
 
-        {status === 'loading' && <p className="status loading">בודק חיבור לשרת…</p>}
-        {status === 'ok' && (
-          <p className="status ok">המערכת מחוברת ✓</p>
-        )}
-        {status === 'error' && (
-          <p className="status error">
-            אין חיבור לשרת ✗
-            <br />
-            <small>ודא שה-Backend רץ. פרטים: {detail}</small>
-          </p>
-        )}
-      </div>
-    </main>
+      <main className="content">
+        <h1 className="page-title">ניהול מוזמנים</h1>
+        <GuestsPage />
+      </main>
+    </div>
   )
 }
 
