@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import constraints as parser
 from app import models, schemas, seating
 from app.database import get_db
 
@@ -45,12 +46,21 @@ def generate(payload: schemas.SeatingRequest, db: Session = Depends(get_db)):
         for g in guests
     ]
 
+    # אילוצים שנגזרו מההערות (שלב 4) — זוגות אסורים (קשיח) + "לשבת יחד" (רך).
+    constraint_dicts = [
+        {"id": g.id, "constraints_parsed": g.constraints_parsed} for g in guests
+    ]
+    forbidden = set(parser.build_forbidden_pairs(constraint_dicts))
+    forbidden.update(tuple(p) for p in payload.forbidden_pairs)  # + מה שהמשתמש ביקש
+    together = parser.build_together_pairs(constraint_dicts)
+
     t0 = time.time()
     result = seating.generate_seating(
         guests=guest_dicts,
         seats_per_table=payload.seats_per_table,
         num_tables=payload.num_tables,
-        forbidden_pairs=[tuple(p) for p in payload.forbidden_pairs],
+        forbidden_pairs=list(forbidden),
+        together_pairs=together,
     )
     elapsed = time.time() - t0
 

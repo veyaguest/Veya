@@ -23,8 +23,9 @@ from dataclasses import dataclass
 from typing import Optional
 
 # ניקוד חוקים רכים: תגמול על זוג חבורות באותו שולחן.
-SAME_SIDE_BONUS = 3   # אותו צד (חתן/כלה)
-SAME_GROUP_BONUS = 2  # אותה קבוצה (משפחה קרובה/חברים/עבודה...)
+SAME_SIDE_BONUS = 3    # אותו צד (חתן/כלה)
+SAME_GROUP_BONUS = 2   # אותה קבוצה (משפחה קרובה/חברים/עבודה...)
+TOGETHER_BONUS = 15    # בקשת "לשבת עם" מפורשת (PRD 7.4)
 
 LOCAL_SEARCH_ITERATIONS = 4000
 
@@ -88,8 +89,9 @@ def _violates_hard(assignment: dict, capacity: int, forbidden: set) -> bool:
     return False
 
 
-def _score(assignment: dict) -> int:
-    """ניקוד חוקים רכים: תגמול לזוגות חבורות באותו שולחן לפי צד/קבוצה."""
+def _score(assignment: dict, together: set) -> int:
+    """ניקוד חוקים רכים: תגמול לזוגות חבורות באותו שולחן לפי צד/קבוצה,
+    ובונוס גדול לבקשת 'לשבת עם' מפורשת."""
     score = 0
     for members in assignment.values():
         for i in range(len(members)):
@@ -99,6 +101,8 @@ def _score(assignment: dict) -> int:
                     score += SAME_SIDE_BONUS
                 if a.group == b.group and a.group != "other":
                     score += SAME_GROUP_BONUS
+                if (min(a.id, b.id), max(a.id, b.id)) in together:
+                    score += TOGETHER_BONUS
     return score
 
 
@@ -118,9 +122,11 @@ def _greedy(parties: list[Party], n_tables: int, capacity: int, forbidden: set) 
     return assignment
 
 
-def _local_search(assignment: dict, capacity: int, forbidden: set, rng: random.Random) -> int:
+def _local_search(
+    assignment: dict, capacity: int, forbidden: set, together: set, rng: random.Random
+) -> int:
     """שיפור מקומי: חילופי חבורות בין שולחנות כל עוד לא נשבר חוק קשיח והניקוד לא יורד."""
-    best = _score(assignment)
+    best = _score(assignment, together)
     tables = list(assignment.keys())
     if len(tables) < 2:
         return best
@@ -140,7 +146,7 @@ def _local_search(assignment: dict, capacity: int, forbidden: set, rng: random.R
             assignment[t1][i1], assignment[t2][i2] = p1, p2  # ביטול
             continue
 
-        new = _score(assignment)
+        new = _score(assignment, together)
         if new >= best:
             best = new
         else:
@@ -153,6 +159,7 @@ def generate_seating(
     seats_per_table: int,
     num_tables: Optional[int] = None,
     forbidden_pairs: Optional[list[tuple[int, int]]] = None,
+    together_pairs: Optional[list[tuple[int, int]]] = None,
     seed: int = 42,
 ) -> SeatingResult:
     """מייצר שיבוץ הושבה דטרמיניסטי.
@@ -160,7 +167,8 @@ def generate_seating(
     guests: [{id, full_name, side, group_type, party_size}]
     seats_per_table: כיסאות לשולחן
     num_tables: מספר שולחנות (אם None — מחושב אוטומטית עם עודף קטן)
-    forbidden_pairs: זוגות מזהי-מוזמנים שאסור באותו שולחן (שלב 4 יזין את זה)
+    forbidden_pairs: זוגות מזהי-מוזמנים שאסור באותו שולחן (חוק קשיח)
+    together_pairs: זוגות שכדאי להושיב יחד (בונוס רך)
     """
     rng = random.Random(seed)  # דטרמיניסטי — אותה קלט נותן אותו פלט
 
@@ -179,6 +187,12 @@ def generate_seating(
     for a, b in (forbidden_pairs or []):
         forbidden.add((min(a, b), max(a, b)))
 
+    together: set = set()
+    for a, b in (together_pairs or []):
+        pair = (min(a, b), max(a, b))
+        if pair not in forbidden:  # חוק קשיח גובר על העדפה רכה
+            together.add(pair)
+
     total_people = sum(p.size for p in parties)
 
     if not parties:
@@ -191,7 +205,7 @@ def generate_seating(
         n_tables = min_tables  # התעלמות מקלט שאי אפשר להכיל בו את כולם
 
     assignment = _greedy(parties, n_tables, seats_per_table, forbidden)
-    score = _local_search(assignment, seats_per_table, forbidden, rng)
+    score = _local_search(assignment, seats_per_table, forbidden, together, rng)
 
     seated_ids = {p.id for members in assignment.values() for p in members}
     unseated = [p.id for p in parties if p.id not in seated_ids]
