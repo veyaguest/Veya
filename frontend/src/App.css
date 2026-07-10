@@ -75,7 +75,7 @@
   border-bottom: 1px solid var(--line);
 }
 .logo-img {
-  height: 42px;
+  height: 92px;
   width: auto;
   max-width: 100%;
   display: block;
@@ -285,7 +285,7 @@
     flex: 0 0 auto;
   }
   .logo-img {
-    height: 32px;
+    height: 46px;
   }
   .sidebar-picker {
     flex: 1 1 auto;
@@ -1768,13 +1768,25 @@
   border: 1px solid rgba(201, 162, 39, 0.2);
 }
 
-/* לוגו — מונוגרמה + wordmark */
+/* לוגו — תמונת המותג הרשמית (טבעות + יהלום) */
 .auth-logo-lockup {
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: center;
-  gap: 18px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.auth-logo-img {
+  height: 132px;
+  width: auto;
+  display: block;
+}
+.auth-logo-tag {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: var(--gold);
 }
 .auth-monogram {
   position: relative;
