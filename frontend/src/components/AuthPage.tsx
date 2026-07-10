@@ -3,18 +3,20 @@ import { login, register } from '../api'
 import { setToken } from '../authStore'
 import type { User } from '../types'
 
-/** מסך התחברות / הרשמה. בהצלחה שומר את הטוקן ומחזיר את המשתמש להורה. */
+/** מסך התחברות / הרשמה — פריסת split-screen: פאנל שיווקי + טופס כניסה. */
 export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [note, setNote] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setNote(null)
     setBusy(true)
     try {
       const res =
@@ -30,80 +32,192 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
     }
   }
 
+  function switchMode(next: 'login' | 'register') {
+    setMode(next)
+    setError(null)
+    setNote(null)
+  }
+
+  const isLogin = mode === 'login'
+
   return (
-    <div className="auth-wrap">
-      <div className="auth-card">
-        <div className="auth-logo">
-          <img src="/logo.svg" alt="VEYA" className="auth-logo-img" />
-        </div>
-        <p className="auth-tagline">מערכת חכמה לאירועים</p>
+    <div className="auth-split" dir="rtl">
+      {/* ===== פאנל שיווקי ===== */}
+      <aside className="auth-marketing">
+        <span className="auth-ring auth-ring-1" aria-hidden="true" />
+        <span className="auth-ring auth-ring-2" aria-hidden="true" />
 
-        <div className="auth-tabs">
-          <button
-            type="button"
-            className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
-            onClick={() => {
-              setMode('login')
-              setError(null)
-            }}
-          >
-            כניסה
-          </button>
-          <button
-            type="button"
-            className={`auth-tab ${mode === 'register' ? 'active' : ''}`}
-            onClick={() => {
-              setMode('register')
-              setError(null)
-            }}
-          >
-            הרשמה
-          </button>
+        <div className="auth-logo-lockup" dir="ltr">
+          <span className="auth-monogram">
+            <span className="auth-monogram-diamond" />
+            <span className="auth-monogram-v">V</span>
+          </span>
+          <span className="auth-logo-divider" />
+          <span className="auth-wordmark">
+            <span className="auth-wordmark-name">VEYA</span>
+            <span className="auth-wordmark-tag" dir="rtl">
+              מערכת חכמה לאירועים
+            </span>
+          </span>
         </div>
 
-        <form className="auth-form" onSubmit={submit}>
-          {mode === 'register' && (
-            <label className="auth-field">
-              <span>שם מלא</span>
+        <div className="auth-hero">
+          <div className="auth-hero-text">
+            <h1 className="auth-hero-title">החתונה שלכם, מאורגנת אחת ולתמיד</h1>
+            <p className="auth-hero-sub">
+              רשימת מוזמנים, אישורי הגעה וסידורי הושבה — במקום אחד נקי ופשוט,
+              בלי גיליונות אקסל ובלי בלגן.
+            </p>
+          </div>
+          <ul className="auth-features">
+            <li>
+              <span className="auth-bullet" />
+              רשימת מוזמנים חכמה שמתעדכנת בזמן אמת
+            </li>
+            <li>
+              <span className="auth-bullet" />
+              אישורי הגעה דיגיטליים שהאורחים באמת ממלאים
+            </li>
+            <li>
+              <span className="auth-bullet" />
+              סידורי הושבה בגרירה ושחרור, בלי כאב ראש
+            </li>
+          </ul>
+        </div>
+
+        <div className="auth-copyright">
+          © 2026 VEYA · מערכת לניהול חתונות ואירועים
+        </div>
+      </aside>
+
+      {/* ===== פאנל התחברות ===== */}
+      <section className="auth-panel">
+        <div className="auth-panel-inner">
+          <div className="auth-panel-head">
+            <h2 className="auth-panel-title">
+              {isLogin ? 'ברוכים השבים' : 'הרשמה כזוג'}
+            </h2>
+            <p className="auth-panel-sub">
+              {isLogin
+                ? 'התחברו כדי להמשיך לנהל את האירוע שלכם'
+                : 'פתחו חשבון חדש ותתחילו לנהל את האירוע שלכם'}
+            </p>
+          </div>
+
+          <form className="auth-form" onSubmit={submit}>
+            {!isLogin && (
+              <div className="auth-field">
+                <label htmlFor="auth-name">שם מלא</label>
+                <input
+                  id="auth-name"
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="דנה ויוסי"
+                  autoComplete="name"
+                />
+              </div>
+            )}
+
+            <div className="auth-field">
+              <label htmlFor="auth-email">אימייל</label>
               <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="ישראל ישראלי"
-                autoComplete="name"
+                id="auth-email"
+                type="email"
+                dir="ltr"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                required
               />
-            </label>
-          )}
-          <label className="auth-field">
-            <span>אימייל</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-              required
-            />
-          </label>
-          <label className="auth-field">
-            <span>סיסמה</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="לפחות 6 תווים"
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              required
-            />
-          </label>
+            </div>
 
-          {error && <div className="auth-error">{error}</div>}
+            <div className="auth-field">
+              <label htmlFor="auth-pass">סיסמה</label>
+              <input
+                id="auth-pass"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={isLogin ? '••••••••' : 'לפחות 6 תווים'}
+                autoComplete={isLogin ? 'current-password' : 'new-password'}
+                required
+              />
+            </div>
 
-          <button type="submit" className="btn-primary auth-submit" disabled={busy}>
-            {busy ? 'רגע…' : mode === 'login' ? 'כניסה' : 'יצירת חשבון'}
-          </button>
-        </form>
-      </div>
+            {isLogin && (
+              <div className="auth-row">
+                <label className="auth-remember">
+                  <input type="checkbox" defaultChecked />
+                  זכור אותי
+                </label>
+                <button
+                  type="button"
+                  className="auth-link-btn"
+                  onClick={() =>
+                    setNote('לאיפוס סיסמה פנו אלינו — האפשרות תיפתח בקרוב 🙂')
+                  }
+                >
+                  שכחתם סיסמה?
+                </button>
+              </div>
+            )}
+
+            {error && <div className="auth-error">{error}</div>}
+            {note && <div className="auth-note">{note}</div>}
+
+            <button type="submit" className="auth-submit" disabled={busy}>
+              {busy ? 'רגע…' : isLogin ? 'התחברות' : 'יצירת חשבון'}
+            </button>
+
+            {isLogin && (
+              <>
+                <div className="auth-divider">
+                  <span className="auth-divider-line" />
+                  <span className="auth-divider-word">או</span>
+                  <span className="auth-divider-line" />
+                </div>
+                <button
+                  type="button"
+                  className="auth-secondary"
+                  onClick={() =>
+                    setNote('כניסה עם קוד לנייד תיפתח בקרוב 🙂')
+                  }
+                >
+                  כניסה עם קוד חד-פעמי לנייד
+                </button>
+              </>
+            )}
+          </form>
+
+          <div className="auth-switch">
+            {isLogin ? (
+              <>
+                אין לכם חשבון עדיין?{' '}
+                <button
+                  type="button"
+                  className="auth-link-btn"
+                  onClick={() => switchMode('register')}
+                >
+                  הרשמה כזוג
+                </button>
+              </>
+            ) : (
+              <>
+                כבר יש לכם חשבון?{' '}
+                <button
+                  type="button"
+                  className="auth-link-btn"
+                  onClick={() => switchMode('login')}
+                >
+                  להתחברות
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
