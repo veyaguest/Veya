@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app import constraints as parser
 from app import models, schemas
 from app.database import get_db
-from app.deps import get_default_event
+from app.deps import get_current_event
 
 router = APIRouter(prefix="/constraints", tags=["constraints"])
 
@@ -29,13 +29,19 @@ def _guest_dicts(guests: list[models.Guest]) -> list[dict]:
 @router.post("/analyze", response_model=schemas.AnalyzeResult)
 def analyze(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_default_event),
+    event: models.Event = Depends(get_current_event),
 ):
-    guests = db.scalars(select(models.Guest)).all()
+    guests = db.scalars(
+        select(models.Guest).where(models.Guest.event_id == event.id)
+    ).all()
     guest_dicts = _guest_dicts(guests)
 
     # החלטות עבר של המשתמש (resolved/dismissed) — כדי לא לשכוח בחירות.
-    existing = db.scalars(select(models.Clarification)).all()
+    existing = db.scalars(
+        select(models.Clarification).where(
+            models.Clarification.event_id == event.id
+        )
+    ).all()
     decided = {
         (c.source_guest_id, c.relation_type, c.target_text): c
         for c in existing
@@ -93,9 +99,9 @@ def analyze(
 
     pending_total = len(
         db.scalars(
-            select(models.Clarification).where(
-                models.Clarification.status == "pending"
-            )
+            select(models.Clarification)
+            .where(models.Clarification.event_id == event.id)
+            .where(models.Clarification.status == "pending")
         ).all()
     )
 
@@ -110,9 +116,13 @@ def analyze(
 
 
 @router.get("/clarifications", response_model=list[schemas.ClarificationRead])
-def list_clarifications(db: Session = Depends(get_db)):
+def list_clarifications(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(get_current_event),
+):
     clars = db.scalars(
         select(models.Clarification)
+        .where(models.Clarification.event_id == event.id)
         .where(models.Clarification.status == "pending")
         .order_by(models.Clarification.created_at)
     ).all()
@@ -153,10 +163,10 @@ def resolve_clarification(
     clar_id: int,
     payload: schemas.ResolveClarification,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_default_event),
+    event: models.Event = Depends(get_current_event),
 ):
     clar = db.get(models.Clarification, clar_id)
-    if clar is None:
+    if clar is None or clar.event_id != event.id:
         raise HTTPException(status_code=404, detail="הבהרה לא נמצאה")
 
     chosen = payload.chosen_guest_id
@@ -187,9 +197,9 @@ def resolve_clarification(
 
     pending_total = len(
         db.scalars(
-            select(models.Clarification).where(
-                models.Clarification.status == "pending"
-            )
+            select(models.Clarification)
+            .where(models.Clarification.event_id == event.id)
+            .where(models.Clarification.status == "pending")
         ).all()
     )
     return schemas.AnalyzeResult(

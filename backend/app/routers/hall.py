@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app import constraints as parser
 from app import models, schemas
 from app.database import get_db
-from app.deps import get_default_event
+from app.deps import get_current_event
 
 router = APIRouter(prefix="/hall", tags=["hall"])
 
@@ -66,9 +66,11 @@ def _compute_warnings(
 @router.get("", response_model=schemas.HallState)
 def get_hall(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_default_event),
+    event: models.Event = Depends(get_current_event),
 ):
-    guests = db.scalars(select(models.Guest)).all()
+    guests = db.scalars(
+        select(models.Guest).where(models.Guest.event_id == event.id)
+    ).all()
     positions = event.table_positions or {}
     seats = event.seats_per_table or 12
 
@@ -108,9 +110,11 @@ def get_hall(
 def save_hall(
     payload: schemas.SaveHallRequest,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_default_event),
+    event: models.Event = Depends(get_current_event),
 ):
-    guests = db.scalars(select(models.Guest)).all()
+    guests = db.scalars(
+        select(models.Guest).where(models.Guest.event_id == event.id)
+    ).all()
     by_id = {g.id: g for g in guests}
 
     # אימות: כל מוזמן מופיע לכל היותר פעם אחת בשולחן אחד.

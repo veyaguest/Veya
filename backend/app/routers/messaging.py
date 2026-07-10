@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app import messaging, models, schemas
 from app.database import get_db
-from app.deps import get_default_event
+from app.deps import get_current_event
 
 router = APIRouter(prefix="/messaging", tags=["messaging"])
 
@@ -33,16 +33,24 @@ def _record_reply(db: Session, guest: models.Guest, status: str, provider: str) 
 
 
 @router.get("/summary", response_model=schemas.RsvpSummary)
-def summary(db: Session = Depends(get_db)):
+def summary(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(get_current_event),
+):
     """תמונת מצב RSVP: כמה אישרו/ביטלו/ממתינים + כמה הזמנות נשלחו."""
     def count(**where) -> int:
-        stmt = select(func.count()).select_from(models.Guest)
+        stmt = (
+            select(func.count())
+            .select_from(models.Guest)
+            .where(models.Guest.event_id == event.id)
+        )
         for k, v in where.items():
             stmt = stmt.where(getattr(models.Guest, k) == v)
         return db.scalar(stmt) or 0
 
     sent = db.scalar(
         select(func.count()).select_from(models.Message)
+        .where(models.Message.event_id == event.id)
         .where(models.Message.direction == "outbound")
         .where(models.Message.kind == "invitation")
         .where(models.Message.status == "sent")
@@ -62,9 +70,9 @@ def summary(db: Session = Depends(get_db)):
 def send_invitations(
     payload: schemas.SendInvitationsRequest,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_default_event),
+    event: models.Event = Depends(get_current_event),
 ):
-    stmt = select(models.Guest)
+    stmt = select(models.Guest).where(models.Guest.event_id == event.id)
     if payload.guest_id is not None:
         stmt = stmt.where(models.Guest.id == payload.guest_id)
     elif payload.only_pending:
@@ -110,22 +118,31 @@ def send_invitations(
 
 
 @router.post("/simulate-reply", response_model=schemas.RsvpSummary)
-def simulate_reply(payload: schemas.SimulateReplyRequest, db: Session = Depends(get_db)):
+def simulate_reply(
+    payload: schemas.SimulateReplyRequest,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(get_current_event),
+):
     """בדיקה במצב mock: מדמה לחיצת כפתור RSVP של מוזמן ומעדכן את הסטטוס."""
     guest = db.get(models.Guest, payload.guest_id)
-    if guest is None:
+    if guest is None or guest.event_id != event.id:
         raise HTTPException(status_code=404, detail="מוזמן לא נמצא")
     status = "confirmed" if payload.coming else "declined"
     _record_reply(db, guest, status, provider="mock")
     db.commit()
-    return summary(db)
+    return summary(db=db, event=event)
 
 
 @router.get("/log", response_model=list[schemas.MessageRead])
-def message_log(limit: int = 50, db: Session = Depends(get_db)):
-    """יומן ההודעות האחרונות (יוצאות ונכנסות)."""
+def message_log(
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(get_current_event),
+):
+    """יומן ההודעות האחרונות של האירוע (יוצאות ונכנסות)."""
     stmt = (
         select(models.Message)
+        .where(models.Message.event_id == event.id)
         .order_by(models.Message.created_at.desc())
         .limit(max(1, min(limit, 200)))
     )

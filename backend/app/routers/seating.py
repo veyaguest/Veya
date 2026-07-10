@@ -12,13 +12,18 @@ from sqlalchemy.orm import Session
 from app import constraints as parser
 from app import models, schemas, seating
 from app.database import get_db
+from app.deps import get_current_event
 
 router = APIRouter(prefix="/seating", tags=["seating"])
 
 
 @router.post("/generate", response_model=schemas.SeatingResponse)
-def generate(payload: schemas.SeatingRequest, db: Session = Depends(get_db)):
-    stmt = select(models.Guest)
+def generate(
+    payload: schemas.SeatingRequest,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(get_current_event),
+):
+    stmt = select(models.Guest).where(models.Guest.event_id == event.id)
     if payload.only_confirmed:
         stmt = stmt.where(models.Guest.rsvp_status == "confirmed")
     guests = db.scalars(stmt).all()

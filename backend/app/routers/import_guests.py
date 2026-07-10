@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
-from app.deps import get_default_event
+from app.deps import get_current_event
 from app.importer import build_preview, detect_columns, parse_file
 
 router = APIRouter(prefix="/guests/import", tags=["import"])
@@ -44,7 +44,7 @@ class ImportCommit(BaseModel):
 def commit_import(
     payload: ImportCommit,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_default_event),
+    event: models.Event = Depends(get_current_event),
 ):
     """שלב 2: מקבלים את השורות התקינות ושומרים אותן כמוזמנים."""
     created = 0

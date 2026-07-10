@@ -7,15 +7,19 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
-from app.deps import get_default_event
+from app.deps import get_current_event
 
 router = APIRouter(prefix="/guests", tags=["guests"])
 
 
 @router.get("", response_model=list[schemas.GuestRead])
-def list_guests(q: Optional[str] = None, db: Session = Depends(get_db)):
-    """רשימת מוזמנים, עם חיפוש חופשי לפי שם/טלפון (פרמטר q)."""
-    stmt = select(models.Guest)
+def list_guests(
+    q: Optional[str] = None,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(get_current_event),
+):
+    """רשימת מוזמנים של האירוע הפעיל, עם חיפוש חופשי לפי שם/טלפון (פרמטר q)."""
+    stmt = select(models.Guest).where(models.Guest.event_id == event.id)
     if q:
         like = f"%{q.strip()}%"
         stmt = stmt.where(
@@ -29,7 +33,7 @@ def list_guests(q: Optional[str] = None, db: Session = Depends(get_db)):
 def create_guest(
     payload: schemas.GuestCreate,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_default_event),
+    event: models.Event = Depends(get_current_event),
 ):
     guest = models.Guest(event_id=event.id, **payload.model_dump())
     db.add(guest)
@@ -40,10 +44,13 @@ def create_guest(
 
 @router.patch("/{guest_id}", response_model=schemas.GuestRead)
 def update_guest(
-    guest_id: int, payload: schemas.GuestUpdate, db: Session = Depends(get_db)
+    guest_id: int,
+    payload: schemas.GuestUpdate,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(get_current_event),
 ):
     guest = db.get(models.Guest, guest_id)
-    if guest is None:
+    if guest is None or guest.event_id != event.id:
         raise HTTPException(status_code=404, detail="מוזמן לא נמצא")
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(guest, key, value)
@@ -53,9 +60,13 @@ def update_guest(
 
 
 @router.delete("/{guest_id}", status_code=204)
-def delete_guest(guest_id: int, db: Session = Depends(get_db)):
+def delete_guest(
+    guest_id: int,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(get_current_event),
+):
     guest = db.get(models.Guest, guest_id)
-    if guest is None:
+    if guest is None or guest.event_id != event.id:
         raise HTTPException(status_code=404, detail="מוזמן לא נמצא")
     db.delete(guest)
     db.commit()

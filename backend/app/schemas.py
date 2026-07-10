@@ -316,6 +316,7 @@ class UserRead(BaseModel):
     id: int
     email: str
     display_name: str
+    is_admin: bool = False
 
 
 class TokenResponse(BaseModel):
@@ -342,3 +343,30 @@ class EventSummary(BaseModel):
     groom_name: str
     bride_name: str
     venue_name: str
+
+
+# ---- פאנל אדמין (הבעלים רואה הכל) ----
+
+
+class AdminUserRow(BaseModel):
+    """שורת משתמש בפאנל האדמין — כולל ספירת אירועים ומוזמנים."""
+
+    id: int
+    email: str
+    display_name: str
+    is_admin: bool
+    events_count: int
+    guests_count: int
+    created_at: datetime
+
+
+class AdminEventRow(BaseModel):
+    """שורת אירוע בפאנל האדמין — כולל בעלים וספירת מוזמנים."""
+
+    id: int
+    groom_name: str
+    bride_name: str
+    venue_name: str
+    owner_id: Optional[int]
+    owner_email: Optional[str]
+    guests_count: int

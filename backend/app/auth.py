@@ -24,6 +24,9 @@ JWT_SECRET = os.getenv("JWT_SECRET", "veya-dev-secret-change-me")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_DAYS = 30
 
+# אימייל שיקבל הרשאת אדמין אוטומטית בהרשמה (אופציונלי).
+ADMIN_EMAIL = (os.getenv("ADMIN_EMAIL", "") or "").strip().lower()
+
 _bearer = HTTPBearer(auto_error=False)
 
 
@@ -78,4 +81,16 @@ def get_current_user(
     user = db.get(models.User, user_id)
     if user is None:
         raise err
+    return user
+
+
+def get_current_admin(
+    user: models.User = Depends(get_current_user),
+) -> models.User:
+    """Dependency: מוודא שהמשתמש המחובר הוא אדמין (הבעלים), אחרת 403."""
+    if not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="נדרשת הרשאת מנהל",
+        )
     return user

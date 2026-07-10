@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
-from app.deps import get_default_event
+from app.deps import get_current_event
 
 router = APIRouter(prefix="/stats", tags=["stats"])
 
@@ -17,9 +17,11 @@ router = APIRouter(prefix="/stats", tags=["stats"])
 @router.get("", response_model=schemas.DashboardStats)
 def dashboard(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_default_event),
+    event: models.Event = Depends(get_current_event),
 ):
-    guests = db.scalars(select(models.Guest)).all()
+    guests = db.scalars(
+        select(models.Guest).where(models.Guest.event_id == event.id)
+    ).all()
 
     total_guests = len(guests)
     total_people = sum(g.party_size for g in guests)
@@ -45,6 +47,7 @@ def dashboard(
 
     invitations_sent = db.scalar(
         select(func.count()).select_from(models.Message)
+        .where(models.Message.event_id == event.id)
         .where(models.Message.direction == "outbound")
         .where(models.Message.kind == "invitation")
         .where(models.Message.status == "sent")
@@ -52,6 +55,7 @@ def dashboard(
 
     pending_clar = db.scalar(
         select(func.count()).select_from(models.Clarification)
+        .where(models.Clarification.event_id == event.id)
         .where(models.Clarification.status == "pending")
     ) or 0
 

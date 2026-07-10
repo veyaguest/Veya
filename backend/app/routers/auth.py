@@ -1,6 +1,6 @@
 """Router התחברות (שלב 8): הרשמה, כניסה, ופרטי המשתמש המחובר."""
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import auth, models, schemas
@@ -25,10 +25,17 @@ def register(payload: schemas.UserCreate, db: Session = Depends(get_db)):
             detail="כתובת האימייל כבר רשומה במערכת",
         )
 
+    # הבעלים = המשתמש הראשון שנרשם (או אימייל שהוגדר ב-ADMIN_EMAIL) → אדמין.
+    user_count = db.scalar(select(func.count()).select_from(models.User)) or 0
+    is_admin = user_count == 0 or (
+        auth.ADMIN_EMAIL != "" and payload.email == auth.ADMIN_EMAIL
+    )
+
     user = models.User(
         email=payload.email,
         password_hash=auth.hash_password(payload.password),
         display_name=payload.display_name.strip(),
+        is_admin=is_admin,
     )
     db.add(user)
     db.flush()  # מקבל id לפני שיוך אירועים
