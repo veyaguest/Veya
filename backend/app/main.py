@@ -10,6 +10,7 @@ from app.deps import get_default_event
 from app.routers import (
     admin,
     auth,
+    confirm,
     constraints,
     event,
     events,
@@ -42,6 +43,7 @@ app.include_router(messaging.router)
 app.include_router(stats.router)
 app.include_router(event.router)
 app.include_router(hall.router)
+app.include_router(confirm.router)
 
 
 # עמודות שנוספו אחרי היצירה הראשונית של הטבלה — הוספה עדינה כדי לא לאבד נתונים.
@@ -55,6 +57,11 @@ _EXTRA_COLUMNS = {
     },
     "users": {
         "is_admin": "BOOLEAN DEFAULT 0",
+    },
+    "guests": {
+        "guest_token": "TEXT",
+        "confirmed_count": "INTEGER",
+        "guest_note": "TEXT",
     },
 }
 
@@ -93,6 +100,23 @@ def _ensure_admin() -> None:
         db.close()
 
 
+def _ensure_guest_tokens() -> None:
+    """מייצר טוקן אישי למוזמנים קיימים שאין להם עדיין (אחרי מיגרציית העמודה)."""
+    from sqlalchemy import select
+
+    db = SessionLocal()
+    try:
+        missing = db.scalars(
+            select(models.Guest).where(models.Guest.guest_token.is_(None))
+        ).all()
+        for guest in missing:
+            guest.guest_token = models.generate_guest_token()
+        if missing:
+            db.commit()
+    finally:
+        db.close()
+
+
 @app.on_event("startup")
 def on_startup() -> None:
     # יוצר את קובץ מסד הנתונים ואת הטבלאות.
@@ -101,6 +125,8 @@ def on_startup() -> None:
     _ensure_columns()
     # מוודא שיש בעלים (אדמין) אחד לפחות.
     _ensure_admin()
+    # מוודא שלכל מוזמן קיים יש טוקן אישי לאישור הגעה.
+    _ensure_guest_tokens()
     # מוודא שקיים אירוע ברירת-מחדל אחד.
     db = SessionLocal()
     try:

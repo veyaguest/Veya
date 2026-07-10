@@ -17,7 +17,34 @@ export interface Guest {
   notes_raw: string | null
   rsvp_status: RsvpStatus
   table_number: number | null
+  guest_token: string | null
+  confirmed_count: number | null
+  guest_note: string | null
   created_at: string
+}
+
+// ---- דף אישור הגעה ציבורי (קישור אישי) ----
+
+export interface ConfirmEventInfo {
+  groom_name: string
+  bride_name: string
+  venue_name: string
+}
+
+export interface ConfirmGuestPublic {
+  full_name: string
+  party_size: number
+  rsvp_status: string
+  confirmed_count: number | null
+  guest_note: string | null
+  event: ConfirmEventInfo
+}
+
+export interface ConfirmSubmit {
+  coming: boolean
+  maybe?: boolean
+  count?: number | null
+  note?: string | null
 }
 
 export interface GuestCreate {

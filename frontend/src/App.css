@@ -2073,3 +2073,221 @@
   font-size: 20px;
   margin: 26px 0 12px;
 }
+
+/* ===== דף אישור הגעה ציבורי (קישור אישי) ===== */
+.confirm-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(201, 162, 39, 0.1), transparent 55%),
+    var(--black);
+}
+.confirm-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 36px 30px 30px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+.confirm-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--body);
+}
+.confirm-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.confirm-monogram {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 32px;
+  color: var(--gold-light);
+  line-height: 1;
+}
+.confirm-brand-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 18px;
+  letter-spacing: 6px;
+  color: var(--charcoal);
+}
+.confirm-hello {
+  color: var(--muted);
+  font-size: 15px;
+  margin: 0 0 4px;
+}
+.confirm-title {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 20px;
+  color: var(--body);
+  font-weight: 400;
+  margin: 0 0 6px;
+}
+.confirm-couple {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 34px;
+  color: var(--gold-light);
+  font-weight: 500;
+  line-height: 1.2;
+}
+.confirm-venue {
+  color: var(--muted);
+  font-size: 15px;
+  margin-top: 8px;
+}
+.confirm-question {
+  margin: 26px 0 14px;
+  font-size: 16px;
+  color: var(--charcoal);
+  font-weight: 600;
+}
+.confirm-choices {
+  display: flex;
+  gap: 10px;
+}
+.confirm-choice {
+  flex: 1;
+  padding: 14px 6px;
+  border-radius: 12px;
+  border: 1px solid var(--line-2);
+  background: var(--surface-hi);
+  color: var(--body);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.confirm-choice:hover {
+  border-color: var(--gold-deep);
+}
+.confirm-choice.yes.active {
+  border-color: var(--gold);
+  background: rgba(201, 162, 39, 0.16);
+  color: var(--gold-light);
+}
+.confirm-choice.maybe.active {
+  border-color: #b0925a;
+  background: rgba(176, 146, 90, 0.16);
+  color: #d8bd82;
+}
+.confirm-choice.no.active {
+  border-color: var(--error);
+  background: rgba(193, 90, 78, 0.14);
+  color: var(--error);
+}
+.confirm-count {
+  margin-top: 20px;
+  text-align: right;
+}
+.confirm-count > label,
+.confirm-note > label {
+  display: block;
+  font-size: 14px;
+  color: var(--body);
+  margin-bottom: 8px;
+}
+.confirm-count-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.confirm-num {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--surface-hi);
+  color: var(--body);
+  font-size: 16px;
+  cursor: pointer;
+}
+.confirm-num.active {
+  border-color: var(--gold);
+  background: rgba(201, 162, 39, 0.16);
+  color: var(--gold-light);
+  font-weight: 700;
+}
+.confirm-note {
+  margin-top: 20px;
+  text-align: right;
+}
+.confirm-note textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--black);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--charcoal);
+  font-size: 14px;
+  font-family: 'Assistant', sans-serif;
+  resize: vertical;
+}
+.confirm-note textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.confirm-error {
+  margin-top: 16px;
+  color: var(--error);
+  font-size: 14px;
+  background: rgba(193, 90, 78, 0.1);
+  border: 1px solid rgba(193, 90, 78, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.confirm-submit {
+  margin-top: 24px;
+  width: 100%;
+  height: 50px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(150deg, var(--gold-light), #b08d2a);
+  color: var(--cream);
+  font-weight: 700;
+  font-size: 16px;
+  font-family: 'Assistant', sans-serif;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.confirm-submit:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.confirm-submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.confirm-thankyou {
+  font-size: 17px;
+  color: var(--body);
+  line-height: 1.6;
+  margin: 8px 0 20px;
+}
+.confirm-change {
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: 14px;
+  cursor: pointer;
+}
+.confirm-change:hover {
+  color: var(--gold-light);
+}

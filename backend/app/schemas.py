@@ -72,6 +72,9 @@ class GuestRead(BaseModel):
     notes_raw: Optional[str]
     rsvp_status: str
     table_number: Optional[int]
+    guest_token: Optional[str] = None
+    confirmed_count: Optional[int] = None
+    guest_note: Optional[str] = None
     created_at: datetime
 
 
@@ -386,3 +389,34 @@ class AdminEventRow(BaseModel):
     owner_id: Optional[int]
     owner_email: Optional[str]
     guests_count: int
+
+
+# ---- דף אישור הגעה ציבורי (קישור אישי /confirm/{token}) ----
+
+
+class ConfirmEventInfo(BaseModel):
+    """פרטי האירוע שמוצגים למוזמן בדף האישור (מידע ציבורי בלבד)."""
+
+    groom_name: str
+    bride_name: str
+    venue_name: str
+
+
+class ConfirmGuestPublic(BaseModel):
+    """מה שמוזמן רואה בקישור האישי — רק הנתונים שלו, לא של אחרים."""
+
+    full_name: str
+    party_size: int
+    rsvp_status: str
+    confirmed_count: Optional[int]
+    guest_note: Optional[str]
+    event: ConfirmEventInfo
+
+
+class ConfirmSubmit(BaseModel):
+    """תשובת המוזמן בדף האישור."""
+
+    coming: bool                       # True => מגיע, False => לא מגיע
+    maybe: bool = False                # True => "אולי" (גובר על coming)
+    count: Optional[int] = None        # כמה אנשים מגיעים (אם מגיע)
+    note: Optional[str] = None         # הערה חופשית (נגישות/תינוק וכו')

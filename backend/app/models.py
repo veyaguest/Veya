@@ -1,4 +1,5 @@
 """מודלי מסד הנתונים (SQLAlchemy) — שלב 2: אירועים ומוזמנים."""
+import secrets
 from datetime import datetime
 from typing import Optional
 
@@ -7,6 +8,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
 
 from app.database import Base
+
+
+def generate_guest_token() -> str:
+    """טוקן אישי, אקראי ובלתי-ניתן-לניחוש, לקישור אישור ההגעה של מוזמן."""
+    return secrets.token_urlsafe(12)
 
 
 class User(Base):
@@ -69,8 +75,16 @@ class Guest(Base):
     notes_raw: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     # נגזר אוטומטית מ-notes_raw ע"י ה-AI בשלב 4 (כרגע ריק)
     constraints_parsed: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    rsvp_status: Mapped[str] = mapped_column(String, default="pending")  # pending/confirmed/declined
+    rsvp_status: Mapped[str] = mapped_column(String, default="pending")  # pending/confirmed/declined/maybe
     table_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # קישור אישי לאישור הגעה: טוקן ייחודי לכל מוזמן (שלב RSVP).
+    guest_token: Mapped[Optional[str]] = mapped_column(
+        String, unique=True, index=True, nullable=True, default=generate_guest_token
+    )
+    # כמה אנשים באמת מגיעים (נמסר ע"י המוזמן בדף האישור). None = טרם ענה.
+    confirmed_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # הערה חופשית שהמוזמן השאיר בדף האישור (נגישות, תינוק וכו').
+    guest_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     event: Mapped["Event"] = relationship(back_populates="guests")

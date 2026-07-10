@@ -3,6 +3,8 @@ import type {
   AdminUserRow,
   AnalyzeResult,
   Clarification,
+  ConfirmGuestPublic,
+  ConfirmSubmit,
   DashboardStats,
   EventDetails,
   EventSummary,
@@ -322,6 +324,29 @@ export async function saveHall(
       seats_per_table: seatsPerTable,
       elements,
     }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- דף אישור הגעה ציבורי (קישור אישי — ללא התחברות) ----
+
+/** מביא את פרטי המוזמן והאירוע לפי הטוקן האישי (נתיב ציבורי, בלי טוקן אימות). */
+export async function getConfirm(token: string): Promise<ConfirmGuestPublic> {
+  const res = await fetch(`${API_URL}/confirm/${encodeURIComponent(token)}`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** שולח את תשובת המוזמן (מגיע/לא/אולי + כמות + הערה). */
+export async function submitConfirm(
+  token: string,
+  payload: ConfirmSubmit,
+): Promise<ConfirmGuestPublic> {
+  const res = await fetch(`${API_URL}/confirm/${encodeURIComponent(token)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
   })
   if (!res.ok) throw await toError(res)
   return res.json()
