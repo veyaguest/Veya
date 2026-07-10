@@ -52,6 +52,8 @@ class Event(Base):
     # [{"id": .., "type": .., "x": .., "y": .., "width": .., "height": .., "label": ..}]
     hall_elements: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     seats_per_table: Mapped[int] = mapped_column(Integer, default=12)
+    # תבנית הודעת ההזמנה (שלב RSVP 2). None => משתמשים בתבנית ברירת המחדל.
+    message_template: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     owner: Mapped[Optional["User"]] = relationship(back_populates="events")

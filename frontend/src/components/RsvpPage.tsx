@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  getTemplate,
   listGuests,
   messageLog,
+  previewTemplate,
   rsvpSummary,
+  saveTemplate,
   sendInvitations,
   simulateReply,
 } from '../api'
-import type { Guest, Message, RsvpSummary } from '../types'
+import type { Guest, Message, RsvpSummary, TemplatePlaceholder } from '../types'
 import { RSVP_LABELS } from '../types'
 
 export function RsvpPage() {
@@ -17,16 +20,29 @@ export function RsvpPage() {
   const [error, setError] = useState('')
   const [note, setNote] = useState('')
 
+  // ---- תבנית הודעה ----
+  const [template, setTemplate] = useState('')
+  const [defaultTemplate, setDefaultTemplate] = useState('')
+  const [placeholders, setPlaceholders] = useState<TemplatePlaceholder[]>([])
+  const [preview, setPreview] = useState('')
+  const [tplNote, setTplNote] = useState('')
+  const [savingTpl, setSavingTpl] = useState(false)
+  const tplRef = useRef<HTMLTextAreaElement | null>(null)
+
   const refresh = useCallback(async () => {
     try {
-      const [s, g, l] = await Promise.all([
+      const [s, g, l, t] = await Promise.all([
         rsvpSummary(),
         listGuests(),
         messageLog(20),
+        getTemplate(),
       ])
       setSummary(s)
       setGuests(g)
       setLog(l)
+      setTemplate(t.template)
+      setDefaultTemplate(t.default_template)
+      setPlaceholders(t.placeholders)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בטעינת נתוני RSVP')
     }
@@ -35,6 +51,48 @@ export function RsvpPage() {
   useEffect(() => {
     refresh()
   }, [refresh])
+
+  // תצוגה מקדימה חיה (עם השהיה קלה כדי לא להציף את השרת)
+  useEffect(() => {
+    if (!template) return
+    const id = setTimeout(() => {
+      previewTemplate(template)
+        .then(setPreview)
+        .catch(() => setPreview(''))
+    }, 350)
+    return () => clearTimeout(id)
+  }, [template])
+
+  /** מוסיף משתנה במיקום הסמן בתוך תיבת התבנית. */
+  function insertPlaceholder(key: string) {
+    const ta = tplRef.current
+    if (!ta) {
+      setTemplate((t) => t + key)
+      return
+    }
+    const start = ta.selectionStart
+    const end = ta.selectionEnd
+    setTemplate((t) => t.slice(0, start) + key + t.slice(end))
+    requestAnimationFrame(() => {
+      ta.focus()
+      ta.selectionStart = ta.selectionEnd = start + key.length
+    })
+  }
+
+  async function onSaveTemplate() {
+    setSavingTpl(true)
+    setTplNote('')
+    setError('')
+    try {
+      const t = await saveTemplate(template)
+      setTemplate(t.template)
+      setTplNote('התבנית נשמרה ✓')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה בשמירת התבנית')
+    } finally {
+      setSavingTpl(false)
+    }
+  }
 
   async function onSend(onlyPending: boolean) {
     setBusy(true)
@@ -85,6 +143,63 @@ export function RsvpPage() {
         <div className="stat-card">
           <span className="stat-num">{summary?.invitations_sent ?? '—'}</span>
           <span className="stat-label">הזמנות שנשלחו</span>
+        </div>
+      </div>
+
+      {/* ---- תבנית הודעת הזמנה ---- */}
+      <div className="tpl-editor">
+        <div className="tpl-head">
+          <h3 className="clar-title">תבנית הודעת ההזמנה</h3>
+          <span className="clar-sub">
+            כתבו את נוסח ההודעה. הוסיפו משתנים והם יוחלפו אוטומטית לכל מוזמן.
+          </span>
+        </div>
+
+        <div className="tpl-placeholders">
+          {placeholders.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              className="tpl-chip"
+              title={p.desc}
+              onClick={() => insertPlaceholder(p.key)}
+            >
+              {p.key}
+            </button>
+          ))}
+        </div>
+
+        <div className="tpl-grid">
+          <textarea
+            ref={tplRef}
+            className="tpl-textarea"
+            value={template}
+            onChange={(e) => setTemplate(e.target.value)}
+            rows={6}
+            dir="rtl"
+          />
+          <div className="tpl-preview">
+            <span className="tpl-preview-label">תצוגה מקדימה</span>
+            <div className="tpl-preview-body">{preview || '—'}</div>
+          </div>
+        </div>
+
+        <div className="tpl-actions">
+          <button
+            className="btn-primary"
+            onClick={onSaveTemplate}
+            disabled={savingTpl}
+          >
+            {savingTpl ? 'שומר…' : 'שמירת תבנית'}
+          </button>
+          <button
+            className="btn-text"
+            onClick={() => setTemplate(defaultTemplate)}
+            disabled={savingTpl}
+          >
+            איפוס לברירת מחדל
+          </button>
+          {tplNote && <span className="tpl-saved">{tplNote}</span>}
         </div>
       </div>
 

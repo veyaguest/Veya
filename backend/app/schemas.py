@@ -176,6 +176,26 @@ class SimulateReplyRequest(BaseModel):
     coming: bool         # True => "מגיע/ה", False => "לא מגיע/ה"
 
 
+class TemplatePlaceholder(BaseModel):
+    key: str             # למשל "{name}"
+    desc: str            # הסבר קצר בעברית
+
+
+class MessageTemplateRead(BaseModel):
+    template: str
+    is_custom: bool
+    default_template: str
+    placeholders: list[TemplatePlaceholder]
+
+
+class MessageTemplateSave(BaseModel):
+    template: str = ""
+
+
+class TemplatePreview(BaseModel):
+    preview: str
+
+
 class MessageRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

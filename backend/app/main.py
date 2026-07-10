@@ -53,6 +53,7 @@ _EXTRA_COLUMNS = {
         "table_positions": "JSON",
         "hall_elements": "JSON",
         "seats_per_table": "INTEGER DEFAULT 12",
+        "message_template": "TEXT",
         "owner_id": "INTEGER",
     },
     "users": {

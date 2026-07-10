@@ -86,12 +86,18 @@ def send_invitations(
     sent = failed = skipped = 0
     last_detail = ""
 
+    template = event.message_template or messaging.DEFAULT_TEMPLATE
     for g in guests:
         if not g.phone:
             skipped += 1
             continue
-        text = messaging.build_invitation_text(
-            g.full_name, event.groom_name, event.bride_name, event.venue_name
+        text = messaging.render_template(
+            template,
+            guest_name=g.full_name,
+            groom=event.groom_name,
+            bride=event.bride_name,
+            venue=event.venue_name,
+            link=messaging.confirm_link(g.guest_token),
         )
         res = provider.send_invitation(g.phone, text)
         db.add(models.Message(
@@ -115,6 +121,57 @@ def send_invitations(
         sent=sent, failed=failed, skipped=skipped,
         detail=last_detail or None,
     )
+
+
+@router.get("/template", response_model=schemas.MessageTemplateRead)
+def get_template(event: models.Event = Depends(get_current_event)):
+    """מחזיר את תבנית ההודעה של האירוע (או ברירת המחדל) + רשימת המשתנים."""
+    return schemas.MessageTemplateRead(
+        template=event.message_template or messaging.DEFAULT_TEMPLATE,
+        is_custom=bool(event.message_template),
+        default_template=messaging.DEFAULT_TEMPLATE,
+        placeholders=[
+            schemas.TemplatePlaceholder(key=p["key"], desc=p["desc"])
+            for p in messaging.PLACEHOLDERS
+        ],
+    )
+
+
+@router.put("/template", response_model=schemas.MessageTemplateRead)
+def save_template(
+    payload: schemas.MessageTemplateSave,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(get_current_event),
+):
+    """שומר תבנית מותאמת אישית. ריק => חזרה לתבנית ברירת המחדל."""
+    text = (payload.template or "").strip()
+    event.message_template = text or None
+    db.commit()
+    db.refresh(event)
+    return get_template(event=event)
+
+
+@router.post("/template/preview", response_model=schemas.TemplatePreview)
+def preview_template(
+    payload: schemas.MessageTemplateSave,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(get_current_event),
+):
+    """תצוגה מקדימה של התבנית עם מוזמן אמיתי (הראשון) או ערכי דוגמה."""
+    sample = db.scalars(
+        select(models.Guest).where(models.Guest.event_id == event.id).limit(1)
+    ).first()
+    name = sample.full_name if sample else "ישראל ישראלי"
+    token = sample.guest_token if sample else "example"
+    text = messaging.render_template(
+        payload.template or messaging.DEFAULT_TEMPLATE,
+        guest_name=name,
+        groom=event.groom_name,
+        bride=event.bride_name,
+        venue=event.venue_name,
+        link=messaging.confirm_link(token),
+    )
+    return schemas.TemplatePreview(preview=text)
 
 
 @router.post("/simulate-reply", response_model=schemas.RsvpSummary)

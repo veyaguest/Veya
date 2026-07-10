@@ -15,6 +15,7 @@ import type {
   HallTableSave,
   ImportPreview,
   Message,
+  MessageTemplate,
   RsvpSummary,
   SeatingRequest,
   SeatingResult,
@@ -275,6 +276,33 @@ export async function messageLog(limit = 50): Promise<Message[]> {
   const res = await apiFetch(`/messaging/log?limit=${limit}`)
   if (!res.ok) throw await toError(res)
   return res.json()
+}
+
+export async function getTemplate(): Promise<MessageTemplate> {
+  const res = await apiFetch('/messaging/template')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function saveTemplate(template: string): Promise<MessageTemplate> {
+  const res = await apiFetch('/messaging/template', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ template }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function previewTemplate(template: string): Promise<string> {
+  const res = await apiFetch('/messaging/template/preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ template }),
+  })
+  if (!res.ok) throw await toError(res)
+  const data = await res.json()
+  return data.preview as string
 }
 
 // ---- דשבורד + אירוע (שלב 6) ----

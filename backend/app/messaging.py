@@ -41,6 +41,68 @@ def build_invitation_text(guest_name: str, groom: str, bride: str, venue: str) -
     )
 
 
+# ---- תבניות הודעה עם משתנים (שלב RSVP 2) ----
+
+# תבנית ברירת המחדל. הבעלים יכול לערוך אותה ולשמור אחת משלו.
+DEFAULT_TEMPLATE = (
+    "שלום {name}! 💍\n"
+    "{event_name} שמחים להזמין אתכם לחתונה{venue}.\n"
+    "נשמח לאישור הגעה בקישור האישי:\n"
+    "{personal_link}"
+)
+
+# המשתנים הנתמכים — כל אחד עם כמה כינויים (אנגלית + עברית) לנוחות.
+PLACEHOLDERS = [
+    {"key": "{name}", "aliases": ["{name}", "{שם}"], "desc": "שם המוזמן"},
+    {"key": "{event_name}", "aliases": ["{event_name}", "{שמות}"], "desc": "שמות בני הזוג"},
+    {"key": "{date}", "aliases": ["{date}", "{תאריך}"], "desc": "תאריך האירוע"},
+    {"key": "{venue}", "aliases": ["{venue}", "{מקום}"], "desc": "שם האולם"},
+    {"key": "{personal_link}", "aliases": ["{personal_link}", "{קישור_אישי}"], "desc": "הקישור האישי לאישור"},
+]
+
+
+def public_base_url() -> str:
+    """כתובת הבסיס של דף האישור הציבורי (ניתן לקבוע דרך משתנה סביבה)."""
+    return os.getenv("PUBLIC_BASE_URL", "http://localhost:5173").rstrip("/")
+
+
+def confirm_link(token: str | None) -> str:
+    """הקישור האישי המלא לדף אישור ההגעה של מוזמן."""
+    return f"{public_base_url()}/confirm/{token}" if token else ""
+
+
+def render_template(
+    template: str,
+    *,
+    guest_name: str,
+    groom: str,
+    bride: str,
+    venue: str,
+    link: str,
+    date: str = "",
+) -> str:
+    """ממלא את המשתנים בתבנית בערכים של מוזמן ואירוע ספציפיים.
+
+    תומך גם בכינויים בעברית ({שם}, {שמות}, {תאריך}, {מקום}, {קישור_אישי}).
+    """
+    couple = " ו".join([n for n in (groom, bride) if n]) or "בני הזוג"
+    where = f" ב{venue}" if venue else ""
+    values = {
+        "name": guest_name.split()[0] if guest_name else "שלום",
+        "event_name": couple,
+        "date": date or "",
+        "venue": where,
+        "personal_link": link,
+    }
+    text = template or DEFAULT_TEMPLATE
+    # מיפוי כל הכינויים לערך
+    for ph in PLACEHOLDERS:
+        canonical = ph["key"].strip("{}")
+        for alias in ph["aliases"]:
+            text = text.replace(alias, values.get(canonical, ""))
+    return text
+
+
 @dataclass
 class SendResult:
     ok: bool

@@ -5,7 +5,7 @@ export type GroupType =
   | 'friends'
   | 'work'
   | 'other'
-export type RsvpStatus = 'pending' | 'confirmed' | 'declined'
+export type RsvpStatus = 'pending' | 'confirmed' | 'declined' | 'maybe'
 
 export interface Guest {
   id: number
@@ -75,6 +75,21 @@ export const RSVP_LABELS: Record<RsvpStatus, string> = {
   pending: 'ממתין',
   confirmed: 'מגיע',
   declined: 'לא מגיע',
+  maybe: 'אולי',
+}
+
+// ---- תבנית הודעת הזמנה (שלב RSVP 2) ----
+
+export interface TemplatePlaceholder {
+  key: string
+  desc: string
+}
+
+export interface MessageTemplate {
+  template: string
+  is_custom: boolean
+  default_template: string
+  placeholders: TemplatePlaceholder[]
 }
 
 export interface ImportPreviewRow {
