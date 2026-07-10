@@ -46,6 +46,9 @@ class Event(Base):
     groom_name: Mapped[str] = mapped_column(String, default="")
     bride_name: Mapped[str] = mapped_column(String, default="")
     venue_name: Mapped[str] = mapped_column(String, default="")
+    # תאריך ושעת האירוע (טקסט חופשי/ISO) — מוצג בדף האישור ובתבנית ההודעה.
+    event_date: Mapped[str] = mapped_column(String, default="")   # YYYY-MM-DD
+    event_time: Mapped[str] = mapped_column(String, default="")   # HH:MM
     # מיקומי השולחנות במפת האולם (שלב 7): {"1": {"x": .., "y": ..}, ...}
     table_positions: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     # אלמנטים מיוחדים במפה (שולחן ראש, רחבת ריקודים, בר, במה...):
@@ -108,6 +111,28 @@ class Clarification(Base):
     candidate_ids: Mapped[list] = mapped_column(JSON, default=list)
     status: Mapped[str] = mapped_column(String, default="pending")  # pending/resolved/dismissed
     chosen_guest_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class AuditLog(Base):
+    """יומן אבטחה — מתעד פעולות רגישות (שליחת הודעות, עדכון אירוע, גישה לקישור).
+
+    מטרה (PRD אבטחה): לאפשר מעקב מי עשה מה ומתי, ולזהות ניסיונות גישה חריגים
+    לקישורים אישיים. אין כאן מידע רגיש — רק סוג הפעולה ותיאור קצר.
+    """
+
+    __tablename__ = "audit_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("events.id"), nullable=True, index=True
+    )
+    user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    action: Mapped[str] = mapped_column(String, index=True)  # send_invitations/update_event/...
+    detail: Mapped[str] = mapped_column(Text, default="")
+    ip: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

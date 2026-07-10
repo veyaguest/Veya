@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import models, schemas
+from app import audit, models, schemas
 from app.database import get_db
 
 router = APIRouter(prefix="/confirm", tags=["confirm"])
@@ -50,6 +50,8 @@ def _public(db: Session, guest: models.Guest) -> schemas.ConfirmGuestPublic:
             groom_name=event.groom_name if event else "",
             bride_name=event.bride_name if event else "",
             venue_name=event.venue_name if event else "",
+            event_date=event.event_date if event else "",
+            event_time=event.event_time if event else "",
         ),
     )
 
@@ -62,6 +64,8 @@ def get_confirm(token: str, request: Request, db: Session = Depends(get_db)):
     guest = db.scalar(select(models.Guest).where(models.Guest.guest_token == token))
     if guest is None:
         _record_fail(ip)
+        audit.record(db, "confirm_invalid_token", detail="ניסיון גישה לקישור לא תקין", ip=ip)
+        db.commit()
         raise HTTPException(status_code=404, detail="הקישור אינו תקין או שפג תוקפו.")
     return _public(db, guest)
 
@@ -79,6 +83,8 @@ def submit_confirm(
     guest = db.scalar(select(models.Guest).where(models.Guest.guest_token == token))
     if guest is None:
         _record_fail(ip)
+        audit.record(db, "confirm_invalid_token", detail="ניסיון שליחה לקישור לא תקין", ip=ip)
+        db.commit()
         raise HTTPException(status_code=404, detail="הקישור אינו תקין או שפג תוקפו.")
 
     if payload.maybe:
@@ -110,6 +116,12 @@ def submit_confirm(
         status="received",
         provider="web",
     ))
+    audit.record(
+        db, "confirm_submit",
+        event_id=guest.event_id,
+        detail=f"{guest.full_name}: {label}",
+        ip=ip,
+    )
     db.commit()
     db.refresh(guest)
     return _public(db, guest)

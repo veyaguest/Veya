@@ -1,25 +1,43 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getEvent, getStats, updateEvent } from '../api'
-import type { DashboardStats, EventDetails } from '../types'
+import { getEvent, getStats, readAudit, updateEvent } from '../api'
+import type { AuditLogRow, DashboardStats, EventDetails } from '../types'
 import { GROUP_LABELS, SIDE_LABELS } from '../types'
 import type { GroupType, Side } from '../types'
+
+const AUDIT_LABELS: Record<string, string> = {
+  send_invitations: 'שליחת הזמנות',
+  send_reminders: 'שליחת תזכורות',
+  update_event: 'עדכון פרטי אירוע',
+  confirm_submit: 'אישור הגעה מהקישור',
+  confirm_invalid_token: '⚠ ניסיון גישה לקישור לא תקין',
+}
 
 export function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [event, setEvent] = useState<EventDetails | null>(null)
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({ groom_name: '', bride_name: '', venue_name: '' })
+  const [form, setForm] = useState({
+    groom_name: '',
+    bride_name: '',
+    venue_name: '',
+    event_date: '',
+    event_time: '',
+  })
+  const [audit, setAudit] = useState<AuditLogRow[]>([])
   const [error, setError] = useState('')
 
   const refresh = useCallback(async () => {
     try {
-      const [s, e] = await Promise.all([getStats(), getEvent()])
+      const [s, e, a] = await Promise.all([getStats(), getEvent(), readAudit(15)])
       setStats(s)
       setEvent(e)
+      setAudit(a)
       setForm({
         groom_name: e.groom_name,
         bride_name: e.bride_name,
         venue_name: e.venue_name,
+        event_date: e.event_date,
+        event_time: e.event_time,
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בטעינת הדשבורד')
@@ -47,6 +65,10 @@ export function DashboardPage() {
       ? [event.groom_name, event.bride_name].filter(Boolean).join(' ו')
       : null
 
+  const when = event
+    ? formatWhen(event.event_date, event.event_time)
+    : ''
+
   return (
     <div className="dash-page">
       {/* ---- כותרת האירוע ---- */}
@@ -69,6 +91,18 @@ export function DashboardPage() {
                 value={form.venue_name}
                 onChange={(e) => setForm({ ...form, venue_name: e.target.value })}
               />
+              <input
+                type="date"
+                aria-label="תאריך האירוע"
+                value={form.event_date}
+                onChange={(e) => setForm({ ...form, event_date: e.target.value })}
+              />
+              <input
+                type="time"
+                aria-label="שעת האירוע"
+                value={form.event_time}
+                onChange={(e) => setForm({ ...form, event_time: e.target.value })}
+              />
             </div>
             <div className="event-edit-actions">
               <button className="btn-primary" onClick={onSaveEvent}>
@@ -86,6 +120,7 @@ export function DashboardPage() {
               <p className="event-venue">
                 {event?.venue_name || 'הוסיפו את שם האולם ופרטי בני הזוג'}
               </p>
+              {when && <p className="event-when">{when}</p>}
             </div>
             <button className="btn-ghost" onClick={() => setEditing(true)}>
               ✎ ערוך פרטים
@@ -183,8 +218,61 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ---- יומן אבטחה ---- */}
+      {audit.length > 0 && (
+        <div className="dash-panel audit-panel">
+          <h3 className="clar-title">יומן פעילות ואבטחה</h3>
+          <span className="clar-sub">
+            תיעוד הפעולות הרגישות האחרונות (שליחות, עדכונים, גישה לקישורים).
+          </span>
+          <ul className="audit-list">
+            {audit.map((a) => (
+              <li key={a.id} className="audit-row">
+                <span className="audit-action">
+                  {AUDIT_LABELS[a.action] ?? a.action}
+                </span>
+                <span className="audit-detail">{a.detail}</span>
+                <span className="audit-time">{formatTime(a.created_at)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   )
+}
+
+/** מרכיב מחרוזת "תאריך · שעה" קריאה בעברית, או ריק אם אין נתונים. */
+function formatWhen(date: string, time: string): string {
+  const parts: string[] = []
+  if (date) {
+    const d = new Date(date)
+    parts.push(
+      isNaN(d.getTime())
+        ? date
+        : d.toLocaleDateString('he-IL', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          }),
+    )
+  }
+  if (time) parts.push(time)
+  return parts.join(' · ')
+}
+
+/** תאריך+שעה קצרים לשורת יומן. */
+function formatTime(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return iso
+  return d.toLocaleString('he-IL', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 function BarRow({

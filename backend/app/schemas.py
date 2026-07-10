@@ -252,12 +252,16 @@ class EventRead(BaseModel):
     groom_name: str
     bride_name: str
     venue_name: str
+    event_date: str = ""
+    event_time: str = ""
 
 
 class EventUpdate(BaseModel):
     groom_name: Optional[str] = None
     bride_name: Optional[str] = None
     venue_name: Optional[str] = None
+    event_date: Optional[str] = None
+    event_time: Optional[str] = None
 
 
 # ---- מפת אולם (שלב 7) ----
@@ -420,6 +424,8 @@ class ConfirmEventInfo(BaseModel):
     groom_name: str
     bride_name: str
     venue_name: str
+    event_date: str = ""
+    event_time: str = ""
 
 
 class ConfirmGuestPublic(BaseModel):
@@ -440,3 +446,18 @@ class ConfirmSubmit(BaseModel):
     maybe: bool = False                # True => "אולי" (גובר על coming)
     count: Optional[int] = None        # כמה אנשים מגיעים (אם מגיע)
     note: Optional[str] = None         # הערה חופשית (נגישות/תינוק וכו')
+
+
+# ---- יומן אבטחה (audit log) ----
+
+
+class AuditLogRow(BaseModel):
+    """שורת יומן אבטחה לתצוגה בדשבורד המנהל."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    action: str
+    detail: str
+    ip: Optional[str] = None
+    created_at: datetime

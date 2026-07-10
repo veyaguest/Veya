@@ -10,11 +10,18 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import messaging, models, schemas
+from app import audit, messaging, models, schemas
+from app.auth import get_current_user
 from app.database import get_db
 from app.deps import get_current_event
 
 router = APIRouter(prefix="/messaging", tags=["messaging"])
+
+
+def _event_date_str(event: models.Event) -> str:
+    """מרכיב מחרוזת תאריך+שעה לתצוגה בתבנית ההודעה (ריק אם לא הוזן)."""
+    parts = [p for p in [(event.event_date or "").strip(), (event.event_time or "").strip()] if p]
+    return " בשעה ".join(parts) if len(parts) == 2 else (parts[0] if parts else "")
 
 
 def _record_reply(db: Session, guest: models.Guest, status: str, provider: str) -> None:
@@ -69,8 +76,10 @@ def summary(
 @router.post("/invitations/send", response_model=schemas.SendInvitationsResult)
 def send_invitations(
     payload: schemas.SendInvitationsRequest,
+    request: Request,
     db: Session = Depends(get_db),
     event: models.Event = Depends(get_current_event),
+    user: models.User = Depends(get_current_user),
 ):
     stmt = select(models.Guest).where(models.Guest.event_id == event.id)
     if payload.guest_id is not None:
@@ -87,6 +96,7 @@ def send_invitations(
     last_detail = ""
 
     template = event.message_template or messaging.DEFAULT_TEMPLATE
+    event_date = _event_date_str(event)
     for g in guests:
         if not g.phone:
             skipped += 1
@@ -98,6 +108,7 @@ def send_invitations(
             bride=event.bride_name,
             venue=event.venue_name,
             link=messaging.confirm_link(g.guest_token),
+            date=event_date,
         )
         res = provider.send_invitation(g.phone, text)
         db.add(models.Message(
@@ -115,6 +126,12 @@ def send_invitations(
             failed += 1
             last_detail = res.detail
 
+    audit.record(
+        db, "send_invitations",
+        event_id=event.id, user_id=user.id,
+        detail=f"נשלחו {sent}, נכשלו {failed}, דולגו {skipped}",
+        ip=request.client.host if request.client else None,
+    )
     db.commit()
     return schemas.SendInvitationsResult(
         mode=messaging.current_mode(),
@@ -125,8 +142,10 @@ def send_invitations(
 
 @router.post("/reminders/send", response_model=schemas.SendInvitationsResult)
 def send_reminders(
+    request: Request,
     db: Session = Depends(get_db),
     event: models.Event = Depends(get_current_event),
+    user: models.User = Depends(get_current_user),
 ):
     """שולח תזכורת עדינה רק למוזמנים שכבר קיבלו הזמנה אך עדיין לא ענו (pending).
 
@@ -168,6 +187,7 @@ def send_reminders(
     last_detail = ""
 
     template = event.message_template or messaging.DEFAULT_TEMPLATE
+    event_date = _event_date_str(event)
     for g in guests:
         if not g.phone:
             skipped += 1
@@ -179,6 +199,7 @@ def send_reminders(
             bride=event.bride_name,
             venue=event.venue_name,
             link=messaging.confirm_link(g.guest_token),
+            date=event_date,
         )
         text = f"{messaging.REMINDER_PREFIX}\n\n{base}"
         res = provider.send_invitation(g.phone, text)
@@ -197,6 +218,12 @@ def send_reminders(
             failed += 1
             last_detail = res.detail
 
+    audit.record(
+        db, "send_reminders",
+        event_id=event.id, user_id=user.id,
+        detail=f"תזכורות: נשלחו {sent}, נכשלו {failed}, דולגו {skipped}",
+        ip=request.client.host if request.client else None,
+    )
     db.commit()
     return schemas.SendInvitationsResult(
         mode=messaging.current_mode(),

@@ -2,6 +2,7 @@ import type {
   AdminEventRow,
   AdminUserRow,
   AnalyzeResult,
+  AuditLogRow,
   Clarification,
   ConfirmGuestPublic,
   ConfirmSubmit,
@@ -326,13 +327,24 @@ export async function getEvent(): Promise<EventDetails> {
 }
 
 export async function updateEvent(
-  data: Partial<Pick<EventDetails, 'groom_name' | 'bride_name' | 'venue_name'>>,
+  data: Partial<
+    Pick<
+      EventDetails,
+      'groom_name' | 'bride_name' | 'venue_name' | 'event_date' | 'event_time'
+    >
+  >,
 ): Promise<EventDetails> {
   const res = await apiFetch('/event', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function readAudit(limit = 30): Promise<AuditLogRow[]> {
+  const res = await apiFetch(`/event/audit?limit=${limit}`)
   if (!res.ok) throw await toError(res)
   return res.json()
 }

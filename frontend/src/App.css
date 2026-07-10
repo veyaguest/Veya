@@ -931,6 +931,12 @@
   font-size: 14px;
   color: #cfc6b4;
 }
+.event-when {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--gold-light);
+  letter-spacing: 0.2px;
+}
 .event-view .btn-ghost {
   color: var(--gold-light);
   border-color: var(--gold);
@@ -2153,6 +2159,12 @@
   font-size: 15px;
   margin-top: 8px;
 }
+.confirm-when {
+  color: var(--gold-deep);
+  font-size: 14px;
+  margin-top: 4px;
+  font-weight: 500;
+}
 .confirm-question {
   margin: 26px 0 14px;
   font-size: 16px;
@@ -2384,4 +2396,53 @@
 .rsvp-badge.maybe {
   background: rgba(176, 146, 90, 0.16);
   color: #d8bd82;
+}
+
+/* ---- יומן אבטחה בדשבורד ---- */
+.audit-panel {
+  grid-column: 1 / -1;
+}
+.audit-panel .clar-sub {
+  display: block;
+  margin: 2px 0 12px;
+}
+.audit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.audit-row {
+  display: grid;
+  grid-template-columns: 150px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-hi);
+  font-size: 13px;
+}
+.audit-action {
+  color: var(--gold-light);
+  font-weight: 500;
+}
+.audit-detail {
+  color: var(--body);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.audit-time {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+@media (max-width: 620px) {
+  .audit-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
 }

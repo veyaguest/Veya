@@ -4,6 +4,26 @@ import type { ConfirmGuestPublic } from '../types'
 
 type Choice = 'confirmed' | 'declined' | 'maybe'
 
+/** מרכיב מחרוזת תאריך+שעה קריאה בעברית להצגה למוזמן. */
+function whenText(date: string, time: string): string {
+  const parts: string[] = []
+  if (date) {
+    const d = new Date(date)
+    parts.push(
+      isNaN(d.getTime())
+        ? date
+        : d.toLocaleDateString('he-IL', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          }),
+    )
+  }
+  if (time) parts.push(`בשעה ${time}`)
+  return parts.join(' · ')
+}
+
 /** דף אישור הגעה ציבורי — נפתח דרך הקישור האישי /confirm/{token}, ללא התחברות. */
 export function ConfirmPage({ token }: { token: string }) {
   const [data, setData] = useState<ConfirmGuestPublic | null>(null)
@@ -112,6 +132,9 @@ export function ConfirmPage({ token }: { token: string }) {
         <h1 className="confirm-title">אתם מוזמנים לחתונה של</h1>
         <div className="confirm-couple">{couple}</div>
         {ev.venue_name && <div className="confirm-venue">{ev.venue_name}</div>}
+        {whenText(ev.event_date, ev.event_time) && (
+          <div className="confirm-when">{whenText(ev.event_date, ev.event_time)}</div>
+        )}
 
         <div className="confirm-question">האם תגיעו?</div>
 

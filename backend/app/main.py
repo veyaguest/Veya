@@ -54,6 +54,8 @@ _EXTRA_COLUMNS = {
         "hall_elements": "JSON",
         "seats_per_table": "INTEGER DEFAULT 12",
         "message_template": "TEXT",
+        "event_date": "TEXT DEFAULT ''",
+        "event_time": "TEXT DEFAULT ''",
         "owner_id": "INTEGER",
     },
     "users": {

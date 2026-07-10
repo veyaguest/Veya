@@ -29,6 +29,8 @@ export interface ConfirmEventInfo {
   groom_name: string
   bride_name: string
   venue_name: string
+  event_date: string
+  event_time: string
 }
 
 export interface ConfirmGuestPublic {
@@ -228,6 +230,16 @@ export interface EventDetails {
   groom_name: string
   bride_name: string
   venue_name: string
+  event_date: string
+  event_time: string
+}
+
+export interface AuditLogRow {
+  id: number
+  action: string
+  detail: string
+  ip: string | null
+  created_at: string
 }
 
 // ---- מפת אולם (שלב 7) ----
