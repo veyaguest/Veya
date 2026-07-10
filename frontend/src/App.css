@@ -1070,6 +1070,110 @@
   font-size: 12px;
   color: var(--muted);
 }
+
+/* ---- פלטת אלמנטים מיוחדים ---- */
+.hall-palette {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.palette-label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-inline-end: 4px;
+}
+.palette-btn {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--gold-light);
+  background: transparent;
+  border: 1px solid var(--gold-deep);
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.palette-btn:hover {
+  background: rgba(201, 162, 39, 0.12);
+  border-color: var(--gold);
+}
+
+/* ---- אלמנט מיוחד על הקנבס ---- */
+.hall-element {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  cursor: grab;
+  user-select: none;
+  border: 1px solid var(--gold-deep);
+  background: rgba(201, 162, 39, 0.06);
+  color: var(--gold-light);
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+.hall-element:active {
+  cursor: grabbing;
+}
+.element-label {
+  pointer-events: none;
+  padding: 0 6px;
+}
+.element-del {
+  position: absolute;
+  top: -9px;
+  inset-inline-start: -9px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  background: var(--black);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+}
+.hall-element:hover .element-del {
+  display: block;
+}
+.element-del:hover {
+  color: var(--error);
+  border-color: var(--error);
+}
+/* אלמנטים "גיבור" (זהב בולט) מול אלמנטי שירות (עדינים) */
+.el-dance_floor {
+  border-style: dashed;
+  border-color: var(--gold);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(201, 162, 39, 0.05) 0,
+      rgba(201, 162, 39, 0.05) 10px,
+      transparent 10px,
+      transparent 20px
+    );
+}
+.el-head_table {
+  border-color: var(--gold);
+  background: rgba(201, 162, 39, 0.12);
+  font-weight: 600;
+}
+.el-entrance,
+.el-dj {
+  color: var(--body);
+  border-color: var(--line-2);
+  background: rgba(255, 255, 255, 0.02);
+}
 .hall-warnings {
   background: rgba(193, 90, 78, 0.08);
   border: 1px solid rgba(193, 90, 78, 0.3);

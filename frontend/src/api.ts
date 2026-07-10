@@ -8,6 +8,7 @@ import type {
   EventSummary,
   Guest,
   GuestCreate,
+  HallElement,
   HallState,
   HallTableSave,
   ImportPreview,
@@ -311,11 +312,16 @@ export async function getHall(): Promise<HallState> {
 export async function saveHall(
   tables: HallTableSave[],
   seatsPerTable?: number,
+  elements?: HallElement[],
 ): Promise<HallState> {
   const res = await apiFetch('/hall', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tables, seats_per_table: seatsPerTable }),
+    body: JSON.stringify({
+      tables,
+      seats_per_table: seatsPerTable,
+      elements,
+    }),
   })
   if (!res.ok) throw await toError(res)
   return res.json()

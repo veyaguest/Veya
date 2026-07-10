@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { generateSeating, getHall, saveHall } from '../api'
-import type { HallGuest, HallState } from '../types'
+import type { HallElement, HallElementType, HallGuest, HallState } from '../types'
 import { SIDE_LABELS } from '../types'
 
 interface TableView {
@@ -12,9 +12,32 @@ interface TableView {
 
 const TABLE_W = 172
 
+// הגדרות ברירת-מחדל לכל סוג אלמנט מיוחד (תווית + גודל).
+const ELEMENT_DEFS: Record<
+  HallElementType,
+  { label: string; width: number; height: number }
+> = {
+  head_table: { label: 'שולחן ראש', width: 190, height: 74 },
+  dance_floor: { label: 'רחבת ריקודים', width: 230, height: 170 },
+  bar: { label: 'בר', width: 150, height: 60 },
+  stage: { label: 'במה', width: 200, height: 74 },
+  dj: { label: 'DJ', width: 96, height: 74 },
+  entrance: { label: 'כניסה', width: 100, height: 44 },
+}
+
+const ELEMENT_ORDER: HallElementType[] = [
+  'head_table',
+  'dance_floor',
+  'bar',
+  'stage',
+  'dj',
+  'entrance',
+]
+
 export function HallPage() {
   const [tables, setTables] = useState<TableView[]>([])
   const [unassigned, setUnassigned] = useState<HallGuest[]>([])
+  const [elements, setElements] = useState<HallElement[]>([])
   const [seats, setSeats] = useState(12)
   const [warnings, setWarnings] = useState<string[]>([])
   const [selected, setSelected] = useState<number | null>(null)
@@ -22,8 +45,13 @@ export function HallPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // גרירת שולחן (pointer)
-  const dragRef = useRef<{ tnum: number; dx: number; dy: number } | null>(null)
+  // גרירת פריט (שולחן או אלמנט) — pointer
+  const dragRef = useRef<{
+    kind: 'table' | 'element'
+    id: number | string
+    dx: number
+    dy: number
+  } | null>(null)
   const canvasRef = useRef<HTMLDivElement | null>(null)
 
   const applyState = useCallback((h: HallState) => {
@@ -36,6 +64,7 @@ export function HallPage() {
       })),
     )
     setUnassigned(h.unassigned)
+    setElements(h.elements ?? [])
     setSeats(h.seats_per_table)
     setWarnings(h.warnings)
     setDirty(false)
@@ -54,15 +83,29 @@ export function HallPage() {
     load()
   }, [load])
 
-  // ---- גרירת שולחן ----
+  // ---- גרירת שולחן / אלמנט ----
   function onTablePointerDown(e: React.PointerEvent, tnum: number) {
     const t = tables.find((x) => x.table_number === tnum)
     if (!t || !canvasRef.current) return
     const rect = canvasRef.current.getBoundingClientRect()
     dragRef.current = {
-      tnum,
+      kind: 'table',
+      id: tnum,
       dx: e.clientX - rect.left - t.x,
       dy: e.clientY - rect.top - t.y,
+    }
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  function onElementPointerDown(e: React.PointerEvent, id: string) {
+    const el = elements.find((x) => x.id === id)
+    if (!el || !canvasRef.current) return
+    const rect = canvasRef.current.getBoundingClientRect()
+    dragRef.current = {
+      kind: 'element',
+      id,
+      dx: e.clientX - rect.left - el.x,
+      dy: e.clientY - rect.top - el.y,
     }
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
   }
@@ -73,14 +116,40 @@ export function HallPage() {
     const rect = canvasRef.current.getBoundingClientRect()
     const x = Math.max(0, e.clientX - rect.left - drag.dx)
     const y = Math.max(0, e.clientY - rect.top - drag.dy)
-    setTables((prev) =>
-      prev.map((t) => (t.table_number === drag.tnum ? { ...t, x, y } : t)),
-    )
+    if (drag.kind === 'table') {
+      setTables((prev) =>
+        prev.map((t) => (t.table_number === drag.id ? { ...t, x, y } : t)),
+      )
+    } else {
+      setElements((prev) =>
+        prev.map((el) => (el.id === drag.id ? { ...el, x, y } : el)),
+      )
+    }
     setDirty(true)
   }
 
   function onCanvasPointerUp() {
     dragRef.current = null
+  }
+
+  function addElement(type: HallElementType) {
+    const def = ELEMENT_DEFS[type]
+    const el: HallElement = {
+      id: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      type,
+      x: 80,
+      y: 80,
+      width: def.width,
+      height: def.height,
+      label: def.label,
+    }
+    setElements((prev) => [...prev, el])
+    setDirty(true)
+  }
+
+  function removeElement(id: string) {
+    setElements((prev) => prev.filter((el) => el.id !== id))
+    setDirty(true)
   }
 
   // ---- העברת מוזמן ----
@@ -131,7 +200,7 @@ export function HallPage() {
         y: t.y,
         guest_ids: t.guests.map((g) => g.id),
       }))
-      applyState(await saveHall(payload, seats))
+      applyState(await saveHall(payload, seats, elements))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בשמירת המפה')
     } finally {
@@ -183,6 +252,20 @@ export function HallPage() {
         </span>
       </div>
 
+      <div className="hall-palette">
+        <span className="palette-label">הוסף למפה:</span>
+        {ELEMENT_ORDER.map((type) => (
+          <button
+            key={type}
+            type="button"
+            className="palette-btn"
+            onClick={() => addElement(type)}
+          >
+            + {ELEMENT_DEFS[type].label}
+          </button>
+        ))}
+      </div>
+
       {error && <p className="form-error">{error}</p>}
 
       {warnings.length > 0 && (
@@ -220,11 +303,33 @@ export function HallPage() {
           onPointerUp={onCanvasPointerUp}
           onPointerLeave={onCanvasPointerUp}
         >
-          {tables.length === 0 && (
+          {tables.length === 0 && elements.length === 0 && (
             <p className="hall-empty">
               אין עדיין שולחנות. לחצו "שיבוץ אוטומטי מחדש" כדי לחלק את המוזמנים.
             </p>
           )}
+          {elements.map((el) => (
+            <div
+              key={el.id}
+              className={`hall-element el-${el.type}`}
+              style={{ left: el.x, top: el.y, width: el.width, height: el.height }}
+              onPointerDown={(e) => onElementPointerDown(e, el.id)}
+            >
+              <span className="element-label">{el.label}</span>
+              <button
+                type="button"
+                className="element-del"
+                title="הסר"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  removeElement(el.id)
+                }}
+              >
+                ×
+              </button>
+            </div>
+          ))}
           {tables.map((t) => {
             const used = t.guests.reduce((s, g) => s + g.party_size, 0)
             const over = used > seats

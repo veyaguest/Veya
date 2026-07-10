@@ -207,10 +207,29 @@ export interface HallTable {
   guests: HallGuest[]
 }
 
+export type HallElementType =
+  | 'head_table'
+  | 'dance_floor'
+  | 'bar'
+  | 'stage'
+  | 'entrance'
+  | 'dj'
+
+export interface HallElement {
+  id: string
+  type: HallElementType
+  x: number
+  y: number
+  width: number
+  height: number
+  label: string
+}
+
 export interface HallState {
   seats_per_table: number
   tables: HallTable[]
   unassigned: HallGuest[]
+  elements: HallElement[]
   warnings: string[]
 }
 
