@@ -139,36 +139,48 @@ export function DashboardPage() {
         </div>
         <div className="stat-card">
           <span className="stat-num">{stats?.total_people ?? '—'}</span>
-          <span className="stat-label">סה"כ אנשים</span>
+          <span className="stat-label">סך האורחים</span>
         </div>
         <div className="stat-card ok">
           <span className="stat-num">{stats?.confirmed_people ?? '—'}</span>
-          <span className="stat-label">אנשים שאישרו</span>
+          <span className="stat-label">אישרו הגעה</span>
         </div>
         <div className="stat-card wait">
           <span className="stat-num">
             {stats ? `${stats.response_rate}%` : '—'}
           </span>
-          <span className="stat-label">אחוז מענה</span>
+          <span className="stat-label">שיעור מענה</span>
         </div>
       </div>
 
       {/* ---- התראת הבהרות ---- */}
       {stats && stats.pending_clarifications > 0 && (
         <p className="dash-alert">
-          ⚠ {stats.pending_clarifications} הבהרות ממתינות — עברו למסך "שיבוץ הושבה"
-          כדי לפתור אותן.
+          ⚠ {stats.pending_clarifications} הבהרות ממתינות לפתרון — היכנסו למסך
+          "שיבוץ הושבה".
         </p>
       )}
 
       {/* ---- פילוחים ---- */}
       <div className="dash-panels">
-        <div className="dash-panel">
-          <h3 className="clar-title">אישורי הגעה</h3>
-          <div className="bar-rows">
-            <BarRow label="אישרו" value={stats?.confirmed ?? 0} total={stats?.total_guests ?? 0} tone="ok" />
-            <BarRow label="לא מגיעים" value={stats?.declined ?? 0} total={stats?.total_guests ?? 0} tone="err" />
-            <BarRow label="ממתינים" value={stats?.pending ?? 0} total={stats?.total_guests ?? 0} tone="wait" />
+        {/* תרשים עוגה — תמונת מצב מיידית של אישורי ההגעה */}
+        <div className="dash-panel donut-panel">
+          <h3 className="clar-title">תמונת מצב — מי הגיב</h3>
+          <div className="donut-wrap">
+            <Donut
+              segments={[
+                { label: 'אישרו', value: stats?.confirmed ?? 0, color: 'var(--gold)' },
+                { label: 'לא מגיעים', value: stats?.declined ?? 0, color: 'var(--error)' },
+                { label: 'ממתינים', value: stats?.pending ?? 0, color: 'var(--faint)' },
+              ]}
+              centerNum={stats ? `${stats.response_rate}%` : '—'}
+              centerLabel="כבר הגיבו"
+            />
+            <ul className="donut-legend">
+              <LegendRow color="var(--gold)" label="אישרו הגעה" value={stats?.confirmed ?? 0} />
+              <LegendRow color="var(--error)" label="לא מגיעים" value={stats?.declined ?? 0} />
+              <LegendRow color="var(--faint)" label="טרם הגיבו" value={stats?.pending ?? 0} />
+            </ul>
           </div>
         </div>
 
@@ -273,6 +285,72 @@ function formatTime(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+/** תרשים עוגה (donut) טהור ב-SVG — בלי ספריות חיצוניות, קל ומהיר. */
+function Donut({
+  segments,
+  centerNum,
+  centerLabel,
+}: {
+  segments: { label: string; value: number; color: string }[]
+  centerNum: string
+  centerLabel: string
+}) {
+  const total = segments.reduce((s, x) => s + x.value, 0)
+  const R = 52
+  const C = 2 * Math.PI * R
+  let acc = 0
+  return (
+    <svg viewBox="0 0 140 140" className="donut" role="img" aria-label={centerLabel}>
+      <circle className="donut-bg" cx="70" cy="70" r={R} fill="none" strokeWidth="18" />
+      {total > 0 &&
+        segments.map((seg, i) => {
+          const len = (seg.value / total) * C
+          const dash = (
+            <circle
+              key={i}
+              cx="70"
+              cy="70"
+              r={R}
+              fill="none"
+              stroke={seg.color}
+              strokeWidth="18"
+              strokeDasharray={`${len} ${C - len}`}
+              strokeDashoffset={-acc}
+              transform="rotate(-90 70 70)"
+            />
+          )
+          acc += len
+          return dash
+        })}
+      <text className="donut-num" x="70" y="66" textAnchor="middle">
+        {centerNum}
+      </text>
+      <text className="donut-lbl" x="70" y="88" textAnchor="middle">
+        {centerLabel}
+      </text>
+    </svg>
+  )
+}
+
+/** שורת מקרא לצד תרשים העוגה. */
+function LegendRow({
+  color,
+  label,
+  value,
+}: {
+  color: string
+  label: string
+  value: number
+}) {
+  return (
+    <li className="legend-row">
+      <span className="legend-dot" style={{ background: color }} />
+      <span className="legend-label">{label}</span>
+      <b className="legend-val">{value}</b>
+    </li>
+  )
 }
 
 function BarRow({
