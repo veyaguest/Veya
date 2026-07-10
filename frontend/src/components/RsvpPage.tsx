@@ -7,6 +7,7 @@ import {
   rsvpSummary,
   saveTemplate,
   sendInvitations,
+  sendReminders,
   simulateReply,
 } from '../api'
 import type { Guest, Message, RsvpSummary, TemplatePlaceholder } from '../types'
@@ -114,6 +115,26 @@ export function RsvpPage() {
     }
   }
 
+  async function onReminders() {
+    setBusy(true)
+    setError('')
+    setNote('')
+    try {
+      const res = await sendReminders()
+      setNote(
+        `נשלחו ${res.sent} תזכורות לממתינים` +
+          (res.failed ? ` · ${res.failed} נכשלו` : '') +
+          (res.skipped ? ` · ${res.skipped} דולגו (ללא טלפון)` : '') +
+          (res.mode === 'mock' ? ' · מצב בדיקה (לא נשלח בפועל)' : ''),
+      )
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה בשליחת התזכורות')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function onReply(guestId: number, coming: boolean) {
     setError('')
     try {
@@ -214,6 +235,9 @@ export function RsvpPage() {
         </button>
         <button className="btn-ghost" onClick={() => onSend(false)} disabled={busy}>
           שלח לכולם מחדש
+        </button>
+        <button className="btn-ghost" onClick={onReminders} disabled={busy}>
+          {busy ? 'שולח…' : 'שלח תזכורת לממתינים'}
         </button>
         {summary && (
           <span className={`mode-badge ${summary.mode}`}>

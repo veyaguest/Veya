@@ -259,6 +259,12 @@ export async function sendInvitations(
   return res.json()
 }
 
+export async function sendReminders(): Promise<SendInvitationsResult> {
+  const res = await apiFetch('/messaging/reminders/send', { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
 export async function simulateReply(
   guestId: number,
   coming: boolean,

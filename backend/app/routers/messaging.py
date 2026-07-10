@@ -123,6 +123,88 @@ def send_invitations(
     )
 
 
+@router.post("/reminders/send", response_model=schemas.SendInvitationsResult)
+def send_reminders(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(get_current_event),
+):
+    """שולח תזכורת עדינה רק למוזמנים שכבר קיבלו הזמנה אך עדיין לא ענו (pending).
+
+    זו פעולה ידנית שהבעלים מפעיל בלחיצה — אין worker רקע בשלב הזה.
+    תזמון אוטומטי (X ימים אחרי ההזמנה / יום לפני האירוע) יתווסף בעתיד.
+    """
+    # מזהי מוזמנים שכבר נשלחה אליהם הזמנה
+    invited_ids = set(db.scalars(
+        select(models.Message.guest_id)
+        .where(models.Message.event_id == event.id)
+        .where(models.Message.direction == "outbound")
+        .where(models.Message.kind == "invitation")
+        .where(models.Message.status == "sent")
+        .where(models.Message.guest_id.is_not(None))
+    ).all())
+
+    if not invited_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="עדיין לא נשלחו הזמנות — שלחו הזמנות לפני תזכורת",
+        )
+
+    # רק ממתינים מתוך אלה שכבר קיבלו הזמנה
+    guests = db.scalars(
+        select(models.Guest)
+        .where(models.Guest.event_id == event.id)
+        .where(models.Guest.rsvp_status == "pending")
+        .where(models.Guest.id.in_(invited_ids))
+    ).all()
+
+    if not guests:
+        raise HTTPException(
+            status_code=400,
+            detail="אין ממתינים לתזכורת — כולם כבר ענו 🎉",
+        )
+
+    provider = messaging.get_provider()
+    sent = failed = skipped = 0
+    last_detail = ""
+
+    template = event.message_template or messaging.DEFAULT_TEMPLATE
+    for g in guests:
+        if not g.phone:
+            skipped += 1
+            continue
+        base = messaging.render_template(
+            template,
+            guest_name=g.full_name,
+            groom=event.groom_name,
+            bride=event.bride_name,
+            venue=event.venue_name,
+            link=messaging.confirm_link(g.guest_token),
+        )
+        text = f"{messaging.REMINDER_PREFIX}\n\n{base}"
+        res = provider.send_invitation(g.phone, text)
+        db.add(models.Message(
+            event_id=event.id,
+            guest_id=g.id,
+            direction="outbound",
+            kind="reminder",
+            body=text,
+            status=res.status,
+            provider=res.provider,
+        ))
+        if res.ok:
+            sent += 1
+        else:
+            failed += 1
+            last_detail = res.detail
+
+    db.commit()
+    return schemas.SendInvitationsResult(
+        mode=messaging.current_mode(),
+        sent=sent, failed=failed, skipped=skipped,
+        detail=last_detail or None,
+    )
+
+
 @router.get("/template", response_model=schemas.MessageTemplateRead)
 def get_template(event: models.Event = Depends(get_current_event)):
     """מחזיר את תבנית ההודעה של האירוע (או ברירת המחדל) + רשימת המשתנים."""
