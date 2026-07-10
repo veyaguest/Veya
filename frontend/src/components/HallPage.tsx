@@ -41,6 +41,7 @@ export function HallPage() {
   const [seats, setSeats] = useState(12)
   const [warnings, setWarnings] = useState<string[]>([])
   const [selected, setSelected] = useState<number | null>(null)
+  const [dragOver, setDragOver] = useState<number | 'tray' | null>(null)
   const [dirty, setDirty] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -190,6 +191,20 @@ export function HallPage() {
     if (selected !== null) moveGuestToTable(selected, null)
   }
 
+  // ---- גרירת מוזמן אמיתית (HTML5 drag & drop) ----
+  function onGuestDragStart(e: React.DragEvent, guestId: number) {
+    e.dataTransfer.setData('text/plain', String(guestId))
+    e.dataTransfer.effectAllowed = 'move'
+    setSelected(null)
+  }
+
+  function onDropTo(e: React.DragEvent, target: number | null) {
+    e.preventDefault()
+    const gid = Number(e.dataTransfer.getData('text/plain'))
+    if (!Number.isNaN(gid)) moveGuestToTable(gid, target)
+    setDragOver(null)
+  }
+
   async function onSave() {
     setLoading(true)
     setError('')
@@ -248,7 +263,7 @@ export function HallPage() {
           {loading ? 'שומר…' : dirty ? 'שמור מפה' : 'נשמר ✓'}
         </button>
         <span className="hall-hint">
-          גררו שולחן להזזה · לחצו על מוזמן ואז על שולחן כדי להעביר אותו
+          גררו שולחן להזזה · גררו מוזמן לשולחן (או לחצו מוזמן ואז שולחן)
         </span>
       </div>
 
@@ -279,8 +294,16 @@ export function HallPage() {
       <div className="hall-layout">
         {/* מגש מוזמנים ללא שולחן */}
         <div
-          className={`hall-tray ${selected !== null ? 'droppable' : ''}`}
+          className={`hall-tray ${selected !== null ? 'droppable' : ''} ${
+            dragOver === 'tray' ? 'drag-over' : ''
+          }`}
           onClick={onTrayClick}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOver('tray')
+          }}
+          onDragLeave={() => setDragOver((c) => (c === 'tray' ? null : c))}
+          onDrop={(e) => onDropTo(e, null)}
         >
           <h4 className="tray-title">ללא שולחן ({unassigned.length})</h4>
           {unassigned.length === 0 && <p className="tray-empty">כולם משובצים ✓</p>}
@@ -290,6 +313,7 @@ export function HallPage() {
               g={g}
               selected={selected === g.id}
               onClick={(e) => onGuestClick(e, g.id)}
+              onDragStart={(e) => onGuestDragStart(e, g.id)}
             />
           ))}
         </div>
@@ -333,14 +357,23 @@ export function HallPage() {
           {tables.map((t) => {
             const used = t.guests.reduce((s, g) => s + g.party_size, 0)
             const over = used > seats
+            const free = seats - used
             return (
               <div
                 key={t.table_number}
                 className={`hall-table ${over ? 'over' : ''} ${
                   selected !== null ? 'droppable' : ''
-                }`}
+                } ${dragOver === t.table_number ? 'drag-over' : ''}`}
                 style={{ left: t.x, top: t.y, width: TABLE_W }}
                 onClick={() => onTableClick(t.table_number)}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  setDragOver(t.table_number)
+                }}
+                onDragLeave={() =>
+                  setDragOver((c) => (c === t.table_number ? null : c))
+                }
+                onDrop={(e) => onDropTo(e, t.table_number)}
               >
                 <div
                   className="table-disc"
@@ -354,6 +387,11 @@ export function HallPage() {
                     </span>
                   </span>
                 </div>
+                {dragOver === t.table_number && (
+                  <span className={`free-badge ${free <= 0 ? 'full' : ''}`}>
+                    {free > 0 ? `${free} כיסאות פנויים` : 'השולחן מלא'}
+                  </span>
+                )}
                 <div className="hall-table-body">
                   {t.guests.map((g) => (
                     <GuestChip
@@ -361,6 +399,7 @@ export function HallPage() {
                       g={g}
                       selected={selected === g.id}
                       onClick={(e) => onGuestClick(e, g.id)}
+                      onDragStart={(e) => onGuestDragStart(e, g.id)}
                     />
                   ))}
                   {t.guests.length === 0 && (
@@ -410,16 +449,20 @@ function GuestChip({
   g,
   selected,
   onClick,
+  onDragStart,
 }: {
   g: HallGuest
   selected: boolean
   onClick: (e: React.MouseEvent) => void
+  onDragStart?: (e: React.DragEvent) => void
 }) {
   return (
     <span
       className={`guest-chip side-${g.side} ${selected ? 'selected' : ''}`}
+      draggable={!!onDragStart}
+      onDragStart={onDragStart}
       onClick={onClick}
-      title={SIDE_LABELS[g.side]}
+      title={`${SIDE_LABELS[g.side]} · גררו לשולחן או לחצו לבחירה`}
     >
       {g.full_name}
       {g.party_size > 1 && <span className="chip-size">×{g.party_size}</span>}

@@ -1258,6 +1258,36 @@
   outline-offset: 4px;
   cursor: copy;
 }
+/* חיווי יעד גרירה פעיל (drag & drop של מוזמן) */
+.hall-table.drag-over .table-disc {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+  box-shadow: 0 0 0 6px rgba(201, 162, 39, 0.18);
+}
+.free-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  z-index: 5;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(201, 162, 39, 0.16);
+  border: 1px solid var(--gold-deep);
+  color: var(--gold-light);
+  pointer-events: none;
+}
+.free-badge.full {
+  background: rgba(192, 138, 138, 0.16);
+  border-color: var(--error);
+  color: var(--error);
+}
+.hall-tray.drag-over {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.22);
+}
 
 /* ---- דיסקת השולחן העגולה + טבעת כיסאות ---- */
 .table-disc {
@@ -1359,6 +1389,12 @@
   color: var(--charcoal);
   cursor: pointer;
   transition: background 0.15s, box-shadow 0.15s;
+}
+.guest-chip[draggable='true'] {
+  cursor: grab;
+}
+.guest-chip[draggable='true']:active {
+  cursor: grabbing;
 }
 .guest-chip:hover {
   background: rgba(201, 162, 39, 0.1);
