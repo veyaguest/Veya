@@ -1126,3 +1126,274 @@
     flex-basis: auto;
   }
 }
+
+/* ================= התחברות ומשתמשים (שלב 8) ================= */
+
+.boot-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--ivory);
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* ---- מסך התחברות / יצירת אירוע ראשון ---- */
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(1200px 500px at 50% -10%, rgba(201, 162, 39, 0.12), transparent),
+    var(--ivory);
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 32px 28px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.auth-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.auth-logo-img {
+  height: 56px;
+  width: auto;
+}
+.auth-tagline {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 22px;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 22px;
+}
+.auth-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  padding: 8px 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.auth-tab.active {
+  color: #201a06;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.auth-field span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.auth-field input {
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 11px 13px;
+  color: var(--charcoal);
+  font-size: 15px;
+}
+.auth-field input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.auth-error {
+  color: var(--error);
+  font-size: 14px;
+  background: rgba(224, 133, 122, 0.1);
+  border: 1px solid rgba(224, 133, 122, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.auth-submit {
+  margin-top: 6px;
+  width: 100%;
+  padding: 12px;
+}
+
+.first-event-title {
+  text-align: center;
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  color: var(--gold-light);
+  font-size: 26px;
+  margin: 0 0 4px;
+}
+
+/* ---- סרגל עליון: בורר אירוע + יציאה ---- */
+.topbar-end {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.event-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.event-select {
+  background: var(--surface-hi);
+  color: var(--charcoal);
+  border: 1px solid var(--gold-deep);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  max-width: 190px;
+}
+.event-select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.event-add-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  background: transparent;
+  color: var(--gold-light);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.event-add-btn:hover {
+  background: rgba(201, 162, 39, 0.12);
+}
+
+.event-popover {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  z-index: 20;
+  width: 320px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
+}
+.event-popover-title {
+  color: var(--gold-light);
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.event-new-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.event-new-grid input {
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--charcoal);
+  font-size: 14px;
+}
+.event-new-grid input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.event-new-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.logout-btn {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.logout-btn:hover {
+  color: var(--charcoal);
+  border-color: var(--gold-deep);
+}
+
+/* ================= פאנל אדמין ================= */
+.admin-page {
+  max-width: 1000px;
+}
+.admin-loading,
+.admin-error {
+  padding: 24px 0;
+  color: var(--muted);
+}
+.admin-error {
+  color: var(--error);
+}
+.admin-cards {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.admin-stat {
+  flex: 1;
+  min-width: 140px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.admin-stat-num {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--gold-light);
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+}
+.admin-stat-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+.admin-section-title {
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  color: var(--charcoal);
+  font-size: 20px;
+  margin: 26px 0 12px;
+}

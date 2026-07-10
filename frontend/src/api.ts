@@ -1,8 +1,11 @@
 import type {
+  AdminEventRow,
+  AdminUserRow,
   AnalyzeResult,
   Clarification,
   DashboardStats,
   EventDetails,
+  EventSummary,
   Guest,
   GuestCreate,
   HallState,
@@ -13,9 +16,40 @@ import type {
   SeatingRequest,
   SeatingResult,
   SendInvitationsResult,
+  TokenResponse,
+  User,
 } from './types'
+import {
+  clearAuth,
+  getEventId,
+  getToken,
+  notifyUnauthorized,
+} from './authStore'
 
 const API_URL = 'http://localhost:8000'
+
+/** מרכיב כותרות בקשה כולל טוקן ההתחברות והאירוע הפעיל. */
+function authHeaders(extra?: HeadersInit): Record<string, string> {
+  const h: Record<string, string> = { ...(extra as Record<string, string>) }
+  const token = getToken()
+  if (token) h['Authorization'] = `Bearer ${token}`
+  const eventId = getEventId()
+  if (eventId != null) h['X-Event-Id'] = String(eventId)
+  return h
+}
+
+/** fetch עוטף שמזריק כותרות אימות ומטפל ב-401 (טוקן פג/לא תקין). */
+async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  const res = await fetch(`${API_URL}${path}`, {
+    ...init,
+    headers: authHeaders(init?.headers),
+  })
+  if (res.status === 401) {
+    clearAuth()
+    notifyUnauthorized()
+  }
+  return res
+}
 
 /** מחלץ הודעת שגיאה קריאה מתשובת FastAPI (כולל שגיאות ולידציה 422). */
 async function toError(res: Response): Promise<Error> {
@@ -41,16 +75,93 @@ export async function healthCheck(): Promise<boolean> {
   }
 }
 
+// ---- התחברות + משתמשים (שלב 8) ----
+
+export async function register(
+  email: string,
+  password: string,
+  displayName: string,
+): Promise<TokenResponse> {
+  const res = await fetch(`${API_URL}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, display_name: displayName }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function login(
+  email: string,
+  password: string,
+): Promise<TokenResponse> {
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function getMe(): Promise<User> {
+  const res = await apiFetch('/auth/me')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- ניהול אירועים של המשתמש (שלב 8) ----
+
+export async function listMyEvents(): Promise<EventSummary[]> {
+  const res = await apiFetch('/events')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function createMyEvent(data: {
+  groom_name: string
+  bride_name: string
+  venue_name: string
+}): Promise<EventSummary> {
+  const res = await apiFetch('/events', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function deleteMyEvent(id: number): Promise<void> {
+  const res = await apiFetch(`/events/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw await toError(res)
+}
+
+// ---- פאנל אדמין ----
+
+export async function adminListUsers(): Promise<AdminUserRow[]> {
+  const res = await apiFetch('/admin/users')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function adminListEvents(): Promise<AdminEventRow[]> {
+  const res = await apiFetch('/admin/events')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- מוזמנים ----
+
 export async function listGuests(q?: string): Promise<Guest[]> {
-  const url = new URL(`${API_URL}/guests`)
-  if (q) url.searchParams.set('q', q)
-  const res = await fetch(url)
+  const path = q ? `/guests?q=${encodeURIComponent(q)}` : '/guests'
+  const res = await apiFetch(path)
   if (!res.ok) throw await toError(res)
   return res.json()
 }
 
 export async function createGuest(data: GuestCreate): Promise<Guest> {
-  const res = await fetch(`${API_URL}/guests`, {
+  const res = await apiFetch('/guests', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -60,14 +171,14 @@ export async function createGuest(data: GuestCreate): Promise<Guest> {
 }
 
 export async function deleteGuest(id: number): Promise<void> {
-  const res = await fetch(`${API_URL}/guests/${id}`, { method: 'DELETE' })
+  const res = await apiFetch(`/guests/${id}`, { method: 'DELETE' })
   if (!res.ok) throw await toError(res)
 }
 
 export async function previewImport(file: File): Promise<ImportPreview> {
   const fd = new FormData()
   fd.append('file', file)
-  const res = await fetch(`${API_URL}/guests/import/preview`, {
+  const res = await apiFetch('/guests/import/preview', {
     method: 'POST',
     body: fd,
   })
@@ -78,7 +189,7 @@ export async function previewImport(file: File): Promise<ImportPreview> {
 export async function commitImport(
   rows: GuestCreate[],
 ): Promise<{ created: number }> {
-  const res = await fetch(`${API_URL}/guests/import/commit`, {
+  const res = await apiFetch('/guests/import/commit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ rows }),
@@ -90,7 +201,7 @@ export async function commitImport(
 export async function generateSeating(
   req: SeatingRequest,
 ): Promise<SeatingResult> {
-  const res = await fetch(`${API_URL}/seating/generate`, {
+  const res = await apiFetch('/seating/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
@@ -100,13 +211,13 @@ export async function generateSeating(
 }
 
 export async function analyzeConstraints(): Promise<AnalyzeResult> {
-  const res = await fetch(`${API_URL}/constraints/analyze`, { method: 'POST' })
+  const res = await apiFetch('/constraints/analyze', { method: 'POST' })
   if (!res.ok) throw await toError(res)
   return res.json()
 }
 
 export async function listClarifications(): Promise<Clarification[]> {
-  const res = await fetch(`${API_URL}/constraints/clarifications`)
+  const res = await apiFetch('/constraints/clarifications')
   if (!res.ok) throw await toError(res)
   return res.json()
 }
@@ -115,14 +226,11 @@ export async function resolveClarification(
   id: number,
   chosenGuestId: number | null,
 ): Promise<AnalyzeResult> {
-  const res = await fetch(
-    `${API_URL}/constraints/clarifications/${id}/resolve`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chosen_guest_id: chosenGuestId }),
-    },
-  )
+  const res = await apiFetch(`/constraints/clarifications/${id}/resolve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chosen_guest_id: chosenGuestId }),
+  })
   if (!res.ok) throw await toError(res)
   return res.json()
 }
@@ -130,7 +238,7 @@ export async function resolveClarification(
 // ---- WhatsApp / RSVP (שלב 5) ----
 
 export async function rsvpSummary(): Promise<RsvpSummary> {
-  const res = await fetch(`${API_URL}/messaging/summary`)
+  const res = await apiFetch('/messaging/summary')
   if (!res.ok) throw await toError(res)
   return res.json()
 }
@@ -138,7 +246,7 @@ export async function rsvpSummary(): Promise<RsvpSummary> {
 export async function sendInvitations(
   onlyPending: boolean,
 ): Promise<SendInvitationsResult> {
-  const res = await fetch(`${API_URL}/messaging/invitations/send`, {
+  const res = await apiFetch('/messaging/invitations/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ only_pending: onlyPending }),
@@ -151,7 +259,7 @@ export async function simulateReply(
   guestId: number,
   coming: boolean,
 ): Promise<RsvpSummary> {
-  const res = await fetch(`${API_URL}/messaging/simulate-reply`, {
+  const res = await apiFetch('/messaging/simulate-reply', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ guest_id: guestId, coming }),
@@ -161,7 +269,7 @@ export async function simulateReply(
 }
 
 export async function messageLog(limit = 50): Promise<Message[]> {
-  const res = await fetch(`${API_URL}/messaging/log?limit=${limit}`)
+  const res = await apiFetch(`/messaging/log?limit=${limit}`)
   if (!res.ok) throw await toError(res)
   return res.json()
 }
@@ -169,13 +277,13 @@ export async function messageLog(limit = 50): Promise<Message[]> {
 // ---- דשבורד + אירוע (שלב 6) ----
 
 export async function getStats(): Promise<DashboardStats> {
-  const res = await fetch(`${API_URL}/stats`)
+  const res = await apiFetch('/stats')
   if (!res.ok) throw await toError(res)
   return res.json()
 }
 
 export async function getEvent(): Promise<EventDetails> {
-  const res = await fetch(`${API_URL}/event`)
+  const res = await apiFetch('/event')
   if (!res.ok) throw await toError(res)
   return res.json()
 }
@@ -183,7 +291,7 @@ export async function getEvent(): Promise<EventDetails> {
 export async function updateEvent(
   data: Partial<Pick<EventDetails, 'groom_name' | 'bride_name' | 'venue_name'>>,
 ): Promise<EventDetails> {
-  const res = await fetch(`${API_URL}/event`, {
+  const res = await apiFetch('/event', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -195,7 +303,7 @@ export async function updateEvent(
 // ---- מפת אולם (שלב 7) ----
 
 export async function getHall(): Promise<HallState> {
-  const res = await fetch(`${API_URL}/hall`)
+  const res = await apiFetch('/hall')
   if (!res.ok) throw await toError(res)
   return res.json()
 }
@@ -204,7 +312,7 @@ export async function saveHall(
   tables: HallTableSave[],
   seatsPerTable?: number,
 ): Promise<HallState> {
-  const res = await fetch(`${API_URL}/hall`, {
+  const res = await apiFetch('/hall', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tables, seats_per_table: seatsPerTable }),

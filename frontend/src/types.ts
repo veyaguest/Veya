@@ -220,3 +220,47 @@ export interface HallTableSave {
   y: number
   guest_ids: number[]
 }
+
+// ---- משתמשים והתחברות (שלב 8) ----
+
+export interface User {
+  id: number
+  email: string
+  display_name: string
+  is_admin: boolean
+}
+
+export interface TokenResponse {
+  access_token: string
+  token_type: string
+  user: User
+}
+
+export interface EventSummary {
+  id: number
+  groom_name: string
+  bride_name: string
+  venue_name: string
+}
+
+// ---- פאנל אדמין ----
+
+export interface AdminUserRow {
+  id: number
+  email: string
+  display_name: string
+  is_admin: boolean
+  events_count: number
+  guests_count: number
+  created_at: string
+}
+
+export interface AdminEventRow {
+  id: number
+  groom_name: string
+  bride_name: string
+  venue_name: string
+  owner_id: number | null
+  owner_email: string | null
+  guests_count: number
+}
