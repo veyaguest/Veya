@@ -1143,47 +1143,105 @@
 }
 .hall-table {
   position: absolute;
-  background: var(--cream);
-  border: 1px solid var(--gold);
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
-  overflow: hidden;
-  user-select: none;
-}
-.hall-table.over {
-  border-color: var(--error);
-}
-.hall-table.droppable {
-  outline: 2px dashed var(--gold);
-  outline-offset: 2px;
-  cursor: copy;
-}
-.hall-table-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  background: var(--black);
-  color: var(--gold-light);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: grab;
-}
-.hall-table-head:active {
-  cursor: grabbing;
-}
-.hall-table.over .hall-occ {
-  color: var(--error);
-  background: var(--black-soft);
-  border-radius: 6px;
-  padding: 0 5px;
-}
-.hall-table-body {
-  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-height: 30px;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+.hall-table.droppable .table-disc {
+  outline: 2px dashed var(--gold);
+  outline-offset: 4px;
+  cursor: copy;
+}
+
+/* ---- דיסקת השולחן העגולה + טבעת כיסאות ---- */
+.table-disc {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(201, 162, 39, 0.14), transparent 60%),
+    var(--surface-hi);
+  border: 1.5px solid var(--gold);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.table-disc:active {
+  cursor: grabbing;
+}
+.hall-table.over .table-disc {
+  border-color: var(--error);
+}
+.table-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+  pointer-events: none;
+}
+.table-num {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--gold-light);
+}
+.table-occ {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.hall-table.over .table-occ {
+  color: var(--error);
+}
+
+/* טבעת הכיסאות: כל pip ממוקם סביב המרכז דרך transform */
+.seat-ring {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.seat-pip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--faint);
+}
+.seat-pip.seat-groom {
+  background: var(--gold);
+  border-color: var(--gold-deep);
+}
+.seat-pip.seat-bride {
+  background: #b06b8f;
+  border-color: #8f5273;
+}
+.seat-pip.seat-extra {
+  border-color: var(--error);
+  background: var(--error);
+}
+
+/* רשימת השמות מתחת לדיסקה — נשארת קריאה */
+.hall-table-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  min-height: 20px;
+}
+.table-empty-hint {
+  font-size: 11px;
+  color: var(--faint);
 }
 .guest-chip {
   display: inline-flex;

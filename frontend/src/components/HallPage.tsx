@@ -226,7 +226,8 @@ export function HallPage() {
             </p>
           )}
           {tables.map((t) => {
-            const over = t.guests.reduce((s, g) => s + g.party_size, 0) > seats
+            const used = t.guests.reduce((s, g) => s + g.party_size, 0)
+            const over = used > seats
             return (
               <div
                 key={t.table_number}
@@ -237,12 +238,15 @@ export function HallPage() {
                 onClick={() => onTableClick(t.table_number)}
               >
                 <div
-                  className="hall-table-head"
+                  className="table-disc"
                   onPointerDown={(e) => onTablePointerDown(e, t.table_number)}
                 >
-                  <span>שולחן {t.table_number}</span>
-                  <span className="hall-occ">
-                    {t.guests.reduce((s, g) => s + g.party_size, 0)}/{seats}
+                  <SeatRing seats={seats} guests={t.guests} />
+                  <span className="table-center">
+                    <span className="table-num">{t.table_number}</span>
+                    <span className="table-occ">
+                      {used}/{seats}
+                    </span>
                   </span>
                 </div>
                 <div className="hall-table-body">
@@ -254,6 +258,9 @@ export function HallPage() {
                       onClick={(e) => onGuestClick(e, g.id)}
                     />
                   ))}
+                  {t.guests.length === 0 && (
+                    <span className="table-empty-hint">ריק</span>
+                  )}
                 </div>
               </div>
             )
@@ -261,6 +268,36 @@ export function HallPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// טבעת כיסאות מסביב לדיסקת השולחן: תפוס נצבע לפי צד, פנוי נשאר חלול.
+function SeatRing({ seats, guests }: { seats: number; guests: HallGuest[] }) {
+  // הרחבת החבורות לכיסאות בודדים (לפי party_size), לצביעה לפי צד.
+  const occupied: string[] = []
+  for (const g of guests) {
+    for (let i = 0; i < g.party_size; i++) occupied.push(g.side)
+  }
+  const count = Math.max(seats, occupied.length, 1)
+  const radius = 44
+  return (
+    <span className="seat-ring" aria-hidden="true">
+      {Array.from({ length: count }).map((_, i) => {
+        const side = occupied[i]
+        const angle = (i / count) * 360
+        return (
+          <span
+            key={i}
+            className={`seat-pip ${side ? `seat-${side}` : 'seat-free'} ${
+              i >= seats ? 'seat-extra' : ''
+            }`}
+            style={{
+              transform: `rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`,
+            }}
+          />
+        )
+      })}
+    </span>
   )
 }
 
