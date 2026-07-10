@@ -1174,6 +1174,109 @@
   border-color: var(--line-2);
   background: rgba(255, 255, 255, 0.02);
 }
+
+/* ---- עריכת אובייקטים: בחירה, נעילה, ידיות, סרגל צף ---- */
+.hall-element.selected {
+  border-color: var(--gold-light);
+  box-shadow:
+    0 0 0 1px var(--gold-light),
+    0 6px 20px rgba(0, 0, 0, 0.5),
+    0 0 18px rgba(201, 162, 39, 0.25);
+  z-index: 6;
+}
+.hall-element.locked {
+  cursor: default;
+  opacity: 0.85;
+}
+.hall-element.locked:active {
+  cursor: default;
+}
+.element-lock-badge {
+  position: absolute;
+  top: -9px;
+  inset-inline-end: -9px;
+  font-size: 12px;
+  line-height: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+/* סרגל עריכה צף מעל האובייקט */
+.element-toolbar {
+  position: absolute;
+  top: -38px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  z-index: 8;
+}
+.element-toolbar button {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--body);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.element-toolbar button:hover {
+  background: rgba(201, 162, 39, 0.14);
+  border-color: var(--gold-deep);
+  color: var(--gold-light);
+}
+.element-toolbar button[title='מחק']:hover {
+  background: rgba(193, 90, 78, 0.14);
+  border-color: var(--error);
+  color: var(--error);
+}
+/* ידיות שינוי גודל / סיבוב */
+.handle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--black);
+  border: 1.5px solid var(--gold-light);
+  z-index: 8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+.handle-resize {
+  bottom: -8px;
+  inset-inline-end: -8px;
+  cursor: nwse-resize;
+  border-radius: 3px;
+}
+.handle-rotate {
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: grab;
+}
+.handle-rotate:active {
+  cursor: grabbing;
+}
+/* קו מחבר את ידית הסיבוב לאובייקט */
+.handle-rotate::after {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  width: 1px;
+  height: 14px;
+  background: var(--gold-deep);
+  transform: translateX(-50%);
+}
 .hall-warnings {
   background: rgba(193, 90, 78, 0.08);
   border: 1px solid rgba(193, 90, 78, 0.3);

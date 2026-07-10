@@ -222,6 +222,8 @@ export interface HallElement {
   y: number
   width: number
   height: number
+  rotation: number
+  locked: boolean
   label: string
 }
 

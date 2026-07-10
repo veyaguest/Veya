@@ -266,6 +266,8 @@ class HallElement(BaseModel):
     y: float
     width: float
     height: float
+    rotation: float = 0
+    locked: bool = False
     label: str = ""
 
 

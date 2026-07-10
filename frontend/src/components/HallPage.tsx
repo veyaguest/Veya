@@ -41,18 +41,26 @@ export function HallPage() {
   const [seats, setSeats] = useState(12)
   const [warnings, setWarnings] = useState<string[]>([])
   const [selected, setSelected] = useState<number | null>(null)
+  const [selectedEl, setSelectedEl] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState<number | 'tray' | null>(null)
   const [dirty, setDirty] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // גרירת פריט (שולחן או אלמנט) — pointer
-  const dragRef = useRef<{
-    kind: 'table' | 'element'
-    id: number | string
-    dx: number
-    dy: number
-  } | null>(null)
+  // גרירת פריט (שולחן/אלמנט) או עריכת אלמנט (שינוי גודל/סיבוב) — pointer
+  type DragState =
+    | { kind: 'table'; id: number; dx: number; dy: number }
+    | { kind: 'element'; id: string; dx: number; dy: number }
+    | {
+        kind: 'resize'
+        id: string
+        startX: number
+        startY: number
+        startW: number
+        startH: number
+      }
+    | { kind: 'rotate'; id: string; cx: number; cy: number; startRot: number }
+  const dragRef = useRef<DragState | null>(null)
   const canvasRef = useRef<HTMLDivElement | null>(null)
 
   const applyState = useCallback((h: HallState) => {
@@ -101,6 +109,8 @@ export function HallPage() {
   function onElementPointerDown(e: React.PointerEvent, id: string) {
     const el = elements.find((x) => x.id === id)
     if (!el || !canvasRef.current) return
+    setSelectedEl(id)
+    if (el.locked) return // נעול — לא זז
     const rect = canvasRef.current.getBoundingClientRect()
     dragRef.current = {
       kind: 'element',
@@ -111,19 +121,69 @@ export function HallPage() {
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
   }
 
+  function onResizePointerDown(e: React.PointerEvent, id: string) {
+    e.stopPropagation()
+    const el = elements.find((x) => x.id === id)
+    if (!el) return
+    dragRef.current = {
+      kind: 'resize',
+      id,
+      startX: e.clientX,
+      startY: e.clientY,
+      startW: el.width,
+      startH: el.height,
+    }
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  function onRotatePointerDown(e: React.PointerEvent, id: string) {
+    e.stopPropagation()
+    const el = elements.find((x) => x.id === id)
+    if (!el || !canvasRef.current) return
+    const rect = canvasRef.current.getBoundingClientRect()
+    dragRef.current = {
+      kind: 'rotate',
+      id,
+      cx: rect.left + el.x + el.width / 2,
+      cy: rect.top + el.y + el.height / 2,
+      startRot: el.rotation,
+    }
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
   function onCanvasPointerMove(e: React.PointerEvent) {
     const drag = dragRef.current
     if (!drag || !canvasRef.current) return
     const rect = canvasRef.current.getBoundingClientRect()
-    const x = Math.max(0, e.clientX - rect.left - drag.dx)
-    const y = Math.max(0, e.clientY - rect.top - drag.dy)
+
     if (drag.kind === 'table') {
+      const x = Math.max(0, e.clientX - rect.left - drag.dx)
+      const y = Math.max(0, e.clientY - rect.top - drag.dy)
       setTables((prev) =>
         prev.map((t) => (t.table_number === drag.id ? { ...t, x, y } : t)),
       )
-    } else {
+    } else if (drag.kind === 'element') {
+      const x = Math.max(0, e.clientX - rect.left - drag.dx)
+      const y = Math.max(0, e.clientY - rect.top - drag.dy)
       setElements((prev) =>
         prev.map((el) => (el.id === drag.id ? { ...el, x, y } : el)),
+      )
+    } else if (drag.kind === 'resize') {
+      const w = Math.max(40, drag.startW + (e.clientX - drag.startX))
+      const h = Math.max(30, drag.startH + (e.clientY - drag.startY))
+      setElements((prev) =>
+        prev.map((el) =>
+          el.id === drag.id ? { ...el, width: w, height: h } : el,
+        ),
+      )
+    } else if (drag.kind === 'rotate') {
+      const deg =
+        (Math.atan2(e.clientY - drag.cy, e.clientX - drag.cx) * 180) / Math.PI +
+        90
+      setElements((prev) =>
+        prev.map((el) =>
+          el.id === drag.id ? { ...el, rotation: Math.round(deg) } : el,
+        ),
       )
     }
     setDirty(true)
@@ -142,14 +202,42 @@ export function HallPage() {
       y: 80,
       width: def.width,
       height: def.height,
+      rotation: 0,
+      locked: false,
       label: def.label,
     }
     setElements((prev) => [...prev, el])
+    setSelectedEl(el.id)
     setDirty(true)
   }
 
   function removeElement(id: string) {
     setElements((prev) => prev.filter((el) => el.id !== id))
+    if (selectedEl === id) setSelectedEl(null)
+    setDirty(true)
+  }
+
+  function toggleLock(id: string) {
+    setElements((prev) =>
+      prev.map((el) => (el.id === id ? { ...el, locked: !el.locked } : el)),
+    )
+    setDirty(true)
+  }
+
+  function duplicateElement(id: string) {
+    setElements((prev) => {
+      const src = prev.find((el) => el.id === id)
+      if (!src) return prev
+      const copy: HallElement = {
+        ...src,
+        id: `${src.type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        x: src.x + 24,
+        y: src.y + 24,
+        locked: false,
+      }
+      setSelectedEl(copy.id)
+      return [...prev, copy]
+    })
     setDirty(true)
   }
 
@@ -326,34 +414,99 @@ export function HallPage() {
           onPointerMove={onCanvasPointerMove}
           onPointerUp={onCanvasPointerUp}
           onPointerLeave={onCanvasPointerUp}
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setSelectedEl(null)
+          }}
         >
           {tables.length === 0 && elements.length === 0 && (
             <p className="hall-empty">
               אין עדיין שולחנות. לחצו "שיבוץ אוטומטי מחדש" כדי לחלק את המוזמנים.
             </p>
           )}
-          {elements.map((el) => (
-            <div
-              key={el.id}
-              className={`hall-element el-${el.type}`}
-              style={{ left: el.x, top: el.y, width: el.width, height: el.height }}
-              onPointerDown={(e) => onElementPointerDown(e, el.id)}
-            >
-              <span className="element-label">{el.label}</span>
-              <button
-                type="button"
-                className="element-del"
-                title="הסר"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  removeElement(el.id)
+          {elements.map((el) => {
+            const isSel = selectedEl === el.id
+            return (
+              <div
+                key={el.id}
+                className={`hall-element el-${el.type} ${
+                  isSel ? 'selected' : ''
+                } ${el.locked ? 'locked' : ''}`}
+                style={{
+                  left: el.x,
+                  top: el.y,
+                  width: el.width,
+                  height: el.height,
+                  transform: `rotate(${el.rotation}deg)`,
                 }}
+                onPointerDown={(e) => onElementPointerDown(e, el.id)}
               >
-                ×
-              </button>
-            </div>
-          ))}
+                <span className="element-label">{el.label}</span>
+                {el.locked && (
+                  <span className="element-lock-badge" title="נעול">
+                    🔒
+                  </span>
+                )}
+
+                {isSel && (
+                  <>
+                    {/* סרגל עריכה צף */}
+                    <div
+                      className="element-toolbar"
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        title={el.locked ? 'שחרר נעילה' : 'נעל'}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleLock(el.id)
+                        }}
+                      >
+                        {el.locked ? '🔓' : '🔒'}
+                      </button>
+                      <button
+                        type="button"
+                        title="שכפל"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          duplicateElement(el.id)
+                        }}
+                      >
+                        ⧉
+                      </button>
+                      <button
+                        type="button"
+                        title="מחק"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeElement(el.id)
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    {!el.locked && (
+                      <>
+                        {/* ידית סיבוב */}
+                        <span
+                          className="handle handle-rotate"
+                          title="סובב"
+                          onPointerDown={(e) => onRotatePointerDown(e, el.id)}
+                        />
+                        {/* ידית שינוי גודל */}
+                        <span
+                          className="handle handle-resize"
+                          title="שנה גודל"
+                          onPointerDown={(e) => onResizePointerDown(e, el.id)}
+                        />
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            )
+          })}
           {tables.map((t) => {
             const used = t.guests.reduce((s, g) => s + g.party_size, 0)
             const over = used > seats
