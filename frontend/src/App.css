@@ -36,7 +36,7 @@
   align-items: center;
 }
 .logo-img {
-  height: 60px;
+  height: 46px;
   width: auto;
   display: block;
 }
@@ -280,9 +280,10 @@
   text-align: right;
   padding: 12px 14px;
   background: var(--surface-hi);
-  border-bottom: 2px solid var(--gold);
+  border-bottom: 1px solid var(--gold-deep);
   font-weight: 600;
-  color: var(--gold-light);
+  color: #cfc8b8;
+  letter-spacing: 0.3px;
   white-space: nowrap;
 }
 .guests-table td {

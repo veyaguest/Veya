@@ -40,7 +40,7 @@ function App() {
         <div className="logo">
           {logoOk ? (
             <img
-              src="/logo.png"
+              src="/logo.svg"
               alt="VEYA"
               className="logo-img"
               onError={() => setLogoOk(false)}

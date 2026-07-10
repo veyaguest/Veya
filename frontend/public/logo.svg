@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 208 64" fill="none" role="img" aria-label="VEYA">
+  <!-- מונוגרמה: עיגול זהב + V (לפי המיתוג) -->
+  <circle cx="30" cy="32" r="26" stroke="#C9A227" stroke-width="1.75"/>
+  <text x="30" y="45" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif"
+        font-size="38" font-weight="600" fill="#E4C96B" text-anchor="middle">V</text>
+  <!-- מילת המותג -->
+  <text x="72" y="43" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif"
+        font-size="34" font-weight="600" letter-spacing="8" fill="#F5EFE2">VEYA</text>
+</svg>
