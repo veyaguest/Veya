@@ -47,13 +47,18 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
         <span className="auth-ring auth-ring-1" aria-hidden="true" />
         <span className="auth-ring auth-ring-2" aria-hidden="true" />
 
-        <div className="auth-logo-lockup">
-          <img
-            src="/logo.png"
-            alt="VEYA"
-            className="auth-logo-img"
-          />
-          <span className="auth-logo-tag">מערכת חכמה לאירועים</span>
+        <div className="auth-logo-lockup" dir="ltr">
+          <span className="auth-monogram">
+            <span className="auth-monogram-diamond" />
+            <span className="auth-monogram-v">V</span>
+          </span>
+          <span className="auth-logo-divider" />
+          <span className="auth-wordmark">
+            <span className="auth-wordmark-name">VEYA</span>
+            <span className="auth-wordmark-tag" dir="rtl">
+              מערכת חכמה לאירועים
+            </span>
+          </span>
         </div>
 
         <div className="auth-hero">

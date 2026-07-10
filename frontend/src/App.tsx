@@ -146,8 +146,8 @@ function App() {
         <div className="sidebar-logo">
           {logoOk ? (
             <img
-              src="/logo.png"
-              alt="VEYA — מערכת חכמה לאירועים"
+              src="/logo.svg"
+              alt="VEYA"
               className="logo-img"
               onError={() => setLogoOk(false)}
             />

@@ -1773,9 +1773,8 @@
   position: relative;
   z-index: 1;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  gap: 18px;
 }
 .auth-logo-img {
   height: 132px;
