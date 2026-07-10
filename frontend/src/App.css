@@ -1,22 +1,44 @@
 :root {
-  /* מיתוג VEYA — לפי ה-design handoff הרשמי (יוקרה מאופקת, זהב במינון נמוך) */
-  --black: #0b0a0c;        /* שחור עמוק — רקע ראשי + סרגל צד */
+  /* מיתוג VEYA — ערכת נושא בהירה (יוקרה מאופקת, זהב במינון נמוך).
+     הרקע בהיר וברור למשתמש; סרגל הצד וכמה משטחים נשארים כהים
+     (ראה בלוק ".sidebar, .auth-marketing, .hall-canvas" בהמשך). */
+  --black: #0b0a0c;        /* שחור עמוק — סרגל צד + משטחים כהים */
   --black-soft: #14120e;   /* חום-פחם רך */
-  --ivory: #0b0a0c;        /* רקע העמוד (זהה לשחור העמוק) */
-  --cream: #14120e;        /* משטח פאנלים/כרטיסים (חום-פחם חמים) */
-  --surface-hi: #1c1a14;   /* משטח מוגבה עדין (שדות, כותרות טבלה) */
-  --line: #2a2620;         /* קו שיער (hairline) */
-  --line-2: #3a3426;       /* מסגרת משנית */
+  --ivory: #f5efe3;        /* רקע העמוד — שנהב בהיר וחמים */
+  --cream: #ffffff;        /* משטח פאנלים/כרטיסים — לבן נקי */
+  --surface-hi: #f0e9d9;   /* משטח מוגבה עדין (שדות, כותרות טבלה) */
+  --line: #e6dcc6;         /* קו שיער (hairline) */
+  --line-2: #d8cbac;       /* מסגרת משנית */
   --gold: #c9a227;         /* זהב ראשי */
-  --gold-light: #e4c96b;   /* זהב בהיר — הדגשה/hover */
-  --gold-deep: #9a7b2e;    /* זהב מעומעם — מסגרות/טקסט משני */
-  --charcoal: #f5efe2;     /* שנהב — כותרות על כהה */
-  --body: #cfc8b8;         /* טקסט גוף משני על כהה */
-  --muted: #8b8578;        /* תווית מעומעמת */
-  --faint: #6b6355;        /* טקסט חלש מאוד */
+  --gold-light: #e4c96b;   /* זהב בהיר — הדגשה/hover (על כהה) */
+  --gold-deep: #9a7b2e;    /* זהב מעומעם — מסגרות/טקסט זהב על בהיר */
+  --charcoal: #241f17;     /* חום-פחם כהה — כותרות על בהיר */
+  --body: #4c4636;         /* טקסט גוף על בהיר */
+  --muted: #837a67;        /* תווית מעומעמת */
+  --faint: #a99f88;        /* טקסט חלש מאוד */
   --ivory-light: #faf7f0;  /* משטח בהיר (מסמכים/הדפסה) */
-  --error: #c08a8a;        /* אדום מאופק (ביטול/שגיאה) */
-  --success: #e4c96b;      /* אישור — זהב לפי המיתוג */
+  --error: #b0463c;        /* אדום מאופק (ביטול/שגיאה) */
+  --success: #9a7b2e;      /* אישור — זהב מעומעם, קריא על בהיר */
+}
+
+/* ---- הקשרים כהים: הטוקנים הבהירים מוחלפים חזרה לערכים כהים ----
+   הרקע של המשטחים האלה נשאר כהה (var(--black)), ולכן הטקסט/הקווים
+   בתוכם חייבים להיות בגרסה הכהה כדי לשמור על ניגודיות. */
+.sidebar,
+.auth-marketing,
+.auth-panel,
+.hall-canvas,
+.dash-event,
+.confirm-card {
+  --cream: #14120e;
+  --surface-hi: #1c1a14;
+  --line: #2a2620;
+  --line-2: #3a3426;
+  --charcoal: #f5efe2;
+  --body: #cfc8b8;
+  --muted: #8b8578;
+  --faint: #6b6355;
+  --gold-deep: #e4c96b;    /* על כהה — זהב בהיר קריא יותר */
 }
 
 .shell {
@@ -237,6 +259,78 @@
   background: linear-gradient(90deg, var(--gold), var(--gold-light));
 }
 
+/* ---- מובייל: הסרגל הופך לפס עליון, הניווט אופקי ---- */
+@media (max-width: 820px) {
+  .shell {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 12px 16px;
+    border-inline: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .sidebar-logo {
+    border-bottom: none;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+  .logo-img {
+    height: 32px;
+  }
+  .sidebar-picker {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+  }
+  .side-nav {
+    order: 3;
+    flex: 1 1 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+  .nav-item {
+    width: auto;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  .sidebar-foot {
+    order: 2;
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding-top: 0;
+    border-top: none;
+  }
+  .user-chip {
+    display: none;
+  }
+  .sidebar-foot-row {
+    gap: 12px;
+  }
+  .page-header {
+    padding: 18px 18px 0;
+  }
+  .content {
+    padding: 16px 18px 32px;
+  }
+  .page-title {
+    font-size: 24px;
+  }
+}
+
 /* ---- Toolbar ---- */
 .toolbar {
   display: flex;
@@ -396,7 +490,7 @@
   background: var(--surface-hi);
   border-bottom: 1px solid var(--gold-deep);
   font-weight: 600;
-  color: #cfc8b8;
+  color: var(--body);
   letter-spacing: 0.3px;
   white-space: nowrap;
 }
@@ -430,17 +524,17 @@
 /* ערכות סטטוס לפי ה-handoff: אישור=זהב, ממתין=אפור, ביטול=אדום מאופק */
 .badge.confirmed {
   background: rgba(201, 162, 39, 0.14);
-  color: #e4c96b;
+  color: #8a6d1f;
   border-color: rgba(201, 162, 39, 0.4);
 }
 .badge.pending {
   background: rgba(139, 133, 120, 0.12);
-  color: #8b8578;
+  color: #6b655a;
   border-color: rgba(139, 133, 120, 0.35);
 }
 .badge.declined {
   background: rgba(120, 60, 60, 0.14);
-  color: #c08a8a;
+  color: #a5453b;
   border-color: rgba(160, 90, 90, 0.35);
 }
 
@@ -523,7 +617,7 @@
 /* ---- Toast ---- */
 .toast {
   background: rgba(201, 162, 39, 0.12);
-  color: var(--gold-light);
+  color: var(--gold-deep);
   border: 1px solid rgba(201, 162, 39, 0.35);
   border-radius: 10px;
   padding: 10px 16px;
@@ -1097,7 +1191,7 @@
 .palette-btn {
   font-family: inherit;
   font-size: 13px;
-  color: var(--gold-light);
+  color: var(--gold-deep);
   background: transparent;
   border: 1px solid var(--gold-deep);
   border-radius: 999px;
@@ -2066,7 +2160,7 @@
 .admin-stat-num {
   font-size: 30px;
   font-weight: 800;
-  color: var(--gold-light);
+  color: var(--gold-deep);
   font-family: 'Frank Ruhl Libre', Georgia, serif;
 }
 .admin-stat-label {
