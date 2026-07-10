@@ -1,18 +1,22 @@
 :root {
-  /* מיתוג VEYA — כהה + זהב יוקרתי (לפי מסמך המיתוג הרשמי) */
-  --black: #0b0a0c;        /* שחור עמוק — רקע הכותרת וכרטיס האירוע */
-  --black-soft: #14120e;   /* שחור-חם מעט בהיר יותר */
-  --ivory: #111013;        /* רקע העמוד (בסיס כהה) */
-  --cream: #1a1712;        /* משטח כרטיסים/טבלאות (חום כהה) */
-  --surface-hi: #211d16;   /* משטח מוגבה (כותרות טבלה, שדות) */
+  /* מיתוג VEYA — לפי ה-design handoff הרשמי (יוקרה מאופקת, זהב במינון נמוך) */
+  --black: #0b0a0c;        /* שחור עמוק — רקע ראשי + סרגל צד */
+  --black-soft: #14120e;   /* חום-פחם רך */
+  --ivory: #0b0a0c;        /* רקע העמוד (זהה לשחור העמוק) */
+  --cream: #14120e;        /* משטח פאנלים/כרטיסים (חום-פחם חמים) */
+  --surface-hi: #1c1a14;   /* משטח מוגבה עדין (שדות, כותרות טבלה) */
+  --line: #2a2620;         /* קו שיער (hairline) */
+  --line-2: #3a3426;       /* מסגרת משנית */
   --gold: #c9a227;         /* זהב ראשי */
-  --gold-light: #e4c96b;   /* זהב בהיר — הדגשות וברק */
-  --gold-deep: #b08d2a;    /* זהב-ברונזה — מסגרות וטקסט משני */
-  --charcoal: #f5efe2;     /* טקסט גוף (שמנת בהירה על כהה) */
-  --muted: #8b8578;        /* טקסט משני (אפור חם) */
-  --error: #e0857a;        /* אדום מבהיק לקריאות על רקע כהה */
-  --success: #7fb58a;      /* ירוק מבהיק ל"מגיע" על רקע כהה */
-  --line: #2a2620;         /* מסגרות (פחם חם) */
+  --gold-light: #e4c96b;   /* זהב בהיר — הדגשה/hover */
+  --gold-deep: #9a7b2e;    /* זהב מעומעם — מסגרות/טקסט משני */
+  --charcoal: #f5efe2;     /* שנהב — כותרות על כהה */
+  --body: #cfc8b8;         /* טקסט גוף משני על כהה */
+  --muted: #8b8578;        /* תווית מעומעמת */
+  --faint: #6b6355;        /* טקסט חלש מאוד */
+  --ivory-light: #faf7f0;  /* משטח בהיר (מסמכים/הדפסה) */
+  --error: #c08a8a;        /* אדום מאופק (ביטול/שגיאה) */
+  --success: #e4c96b;      /* אישור — זהב לפי המיתוג */
 }
 
 .shell {
@@ -307,22 +311,27 @@
 
 .badge {
   display: inline-block;
-  padding: 3px 10px;
+  padding: 3px 11px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
+  border: 1px solid transparent;
+}
+/* ערכות סטטוס לפי ה-handoff: אישור=זהב, ממתין=אפור, ביטול=אדום מאופק */
+.badge.confirmed {
+  background: rgba(201, 162, 39, 0.14);
+  color: #e4c96b;
+  border-color: rgba(201, 162, 39, 0.4);
 }
 .badge.pending {
-  background: rgba(201, 162, 39, 0.15);
-  color: var(--gold-light);
-}
-.badge.confirmed {
-  background: rgba(127, 181, 138, 0.15);
-  color: var(--success);
+  background: rgba(139, 133, 120, 0.12);
+  color: #8b8578;
+  border-color: rgba(139, 133, 120, 0.35);
 }
 .badge.declined {
-  background: rgba(224, 133, 122, 0.15);
-  color: var(--error);
+  background: rgba(120, 60, 60, 0.14);
+  color: #c08a8a;
+  border-color: rgba(160, 90, 90, 0.35);
 }
 
 .empty {
