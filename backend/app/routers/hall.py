@@ -98,10 +98,15 @@ def get_hall(
             )
         )
 
+    elements = [
+        schemas.HallElement(**el) for el in (event.hall_elements or [])
+    ]
+
     return schemas.HallState(
         seats_per_table=seats,
         tables=out_tables,
         unassigned=[_guest_out(g) for g in unassigned],
+        elements=elements,
         warnings=warnings,
     )
 
@@ -135,6 +140,8 @@ def save_hall(
         g.table_number = assigned.get(g.id)
 
     event.table_positions = positions
+    if payload.elements is not None:
+        event.hall_elements = [el.model_dump() for el in payload.elements]
     if payload.seats_per_table:
         event.seats_per_table = payload.seats_per_table
     db.commit()

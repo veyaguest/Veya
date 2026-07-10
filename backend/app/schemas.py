@@ -257,10 +257,23 @@ class HallTable(BaseModel):
     guests: list[HallGuest]
 
 
+class HallElement(BaseModel):
+    """אלמנט מיוחד במפה: שולחן ראש, רחבת ריקודים, בר, במה, כניסה וכו'."""
+
+    id: str
+    type: str
+    x: float
+    y: float
+    width: float
+    height: float
+    label: str = ""
+
+
 class HallState(BaseModel):
     seats_per_table: int
     tables: list[HallTable]
     unassigned: list[HallGuest]          # מוזמנים ללא שולחן
+    elements: list[HallElement]          # אלמנטים מיוחדים במפה
     warnings: list[str]                  # חריגות (קיבולת/זוג אסור באותו שולחן)
 
 
@@ -274,6 +287,7 @@ class HallTableSave(BaseModel):
 class SaveHallRequest(BaseModel):
     seats_per_table: Optional[int] = None
     tables: list[HallTableSave]
+    elements: Optional[list[HallElement]] = None
 
 
 # ---- משתמשים והתחברות (שלב 8) ----

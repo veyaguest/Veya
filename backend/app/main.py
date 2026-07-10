@@ -49,6 +49,7 @@ app.include_router(hall.router)
 _EXTRA_COLUMNS = {
     "events": {
         "table_positions": "JSON",
+        "hall_elements": "JSON",
         "seats_per_table": "INTEGER DEFAULT 12",
         "owner_id": "INTEGER",
     },
