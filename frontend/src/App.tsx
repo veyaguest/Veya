@@ -134,10 +134,16 @@ function App() {
     ? [...NAV_ITEMS, { key: 'admin', label: 'ניהול' }]
     : NAV_ITEMS
 
+  const activeEvent = events.find((e) => e.id === activeEventId) ?? null
+  const eventLabel = activeEvent
+    ? `${activeEvent.groom_name} & ${activeEvent.bride_name}`
+    : '—'
+  const userInitial = (user.display_name || user.email || '?').trim().charAt(0).toUpperCase()
+
   return (
     <div className="shell">
-      <header className="topbar">
-        <div className="logo">
+      <aside className="sidebar">
+        <div className="sidebar-logo">
           {logoOk ? (
             <img
               src="/logo.svg"
@@ -149,46 +155,69 @@ function App() {
             <span className="logo-text">VEYA</span>
           )}
         </div>
-        <nav className="nav">
-          {navItems.map((item) => (
-            <span
-              key={item.key}
-              className={`nav-item ${page === item.key ? 'active' : ''}`}
-              onClick={() => setPage(item.key)}
-            >
-              {item.label}
-            </span>
-          ))}
-        </nav>
-        <div className="topbar-end">
-          {page !== 'admin' && (
+
+        {page !== 'admin' && (
+          <div className="sidebar-picker">
             <EventPicker
               events={events}
               activeEventId={activeEventId}
               onSwitch={handleSwitchEvent}
               onCreated={handleEventCreated}
             />
-          )}
-          <div className="conn">
-            {online === null && <span className="dot loading" />}
-            {online === true && <span className="dot ok" />}
-            {online === false && <span className="dot err" />}
           </div>
-          <button type="button" className="logout-btn" onClick={handleLogout}>
-            יציאה
-          </button>
-        </div>
-      </header>
+        )}
 
-      <main className="content" key={`${page}-${activeEventId}`}>
-        <h1 className="page-title">{PAGE_TITLES[page]}</h1>
-        {page === 'dashboard' && <DashboardPage />}
-        {page === 'guests' && <GuestsPage />}
-        {page === 'rsvp' && <RsvpPage />}
-        {page === 'seating' && <SeatingPage />}
-        {page === 'hall' && <HallPage />}
-        {page === 'admin' && <AdminPage />}
-      </main>
+        <nav className="side-nav">
+          {navItems.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`nav-item ${page === item.key ? 'active' : ''}`}
+              onClick={() => setPage(item.key)}
+            >
+              <span className="nav-bullet" aria-hidden="true" />
+              <span className="nav-label">{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-foot">
+          <div className="user-chip">
+            <span className="user-avatar">{userInitial}</span>
+            <span className="user-meta">
+              <span className="user-name">{user.display_name || 'משתמש'}</span>
+              <span className="user-event">{eventLabel}</span>
+            </span>
+          </div>
+          <div className="sidebar-foot-row">
+            <span className="conn">
+              {online === null && <span className="dot loading" />}
+              {online === true && <span className="dot ok" />}
+              {online === false && <span className="dot err" />}
+              <span className="conn-text">
+                {online === false ? 'לא מחובר' : 'מחובר'}
+              </span>
+            </span>
+            <button type="button" className="logout-btn" onClick={handleLogout}>
+              יציאה
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div className="main-area">
+        <header className="page-header">
+          <h1 className="page-title">{PAGE_TITLES[page]}</h1>
+        </header>
+        <main className="content" key={`${page}-${activeEventId}`}>
+          {page === 'dashboard' && <DashboardPage />}
+          {page === 'guests' && <GuestsPage />}
+          {page === 'rsvp' && <RsvpPage />}
+          {page === 'seating' && <SeatingPage />}
+          {page === 'hall' && <HallPage />}
+          {page === 'admin' && <AdminPage />}
+        </main>
+      </div>
     </div>
   )
 }
