@@ -1149,9 +1149,9 @@
   gap: 4px;
 }
 .mini-num {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
-  font-size: 26px;
-  font-weight: 700;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 32px;
+  font-weight: 600;
   color: var(--gold-deep);
 }
 .mini-label {
@@ -1159,16 +1159,34 @@
   color: var(--muted);
 }
 
-/* ---- תרשים עוגה (donut) של אישורי הגעה ---- */
-.donut-panel {
-  grid-column: 1 / -1;
-}
-.donut-wrap {
+/* ---- כרטיס תמונת מצב ראשי (donut + סטטוסים) ---- */
+.dash-hero {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 36px;
-  flex-wrap: wrap;
+  gap: 40px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 26px 30px;
+  margin-bottom: 18px;
+}
+.dash-hero-chart {
+  flex-shrink: 0;
+}
+.dash-hero-body {
+  flex: 1;
+  min-width: 0;
+}
+.dash-hero-title {
+  margin: 0 0 4px;
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-size: 20px;
+  color: var(--charcoal);
+}
+.dash-hero-sub {
+  margin: 0 0 18px;
+  font-size: 14px;
+  color: var(--muted);
 }
 .donut {
   width: 176px;
@@ -1179,9 +1197,9 @@
   stroke: var(--surface-hi);
 }
 .donut-num {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
-  font-size: 30px;
-  font-weight: 700;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 40px;
+  font-weight: 600;
   fill: var(--charcoal);
 }
 .donut-lbl {
@@ -1215,8 +1233,9 @@
   flex: 1;
 }
 .legend-val {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
-  font-size: 19px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 24px;
+  font-weight: 600;
   color: var(--charcoal);
 }
 
