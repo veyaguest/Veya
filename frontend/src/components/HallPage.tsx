@@ -400,7 +400,7 @@ export function HallPage() {
             </p>
           </div>
           <button className="btn-ghost" onClick={onAnalyze} disabled={analyzing}>
-            {analyzing ? 'מנתח…' : '↻ נתח הערות'}
+            {analyzing ? 'מנתח…' : '↻ ניתוח הערות'}
           </button>
         </div>
 
@@ -460,7 +460,7 @@ export function HallPage() {
           ↻ שיבוץ אוטומטי מחדש
         </button>
         <button className="btn-primary" onClick={onSave} disabled={loading || !dirty}>
-          {loading ? 'שומר…' : dirty ? 'שמור מפה' : 'נשמר ✓'}
+          {loading ? 'שומר…' : dirty ? 'שמירת המפה' : 'נשמר ✓'}
         </button>
         <span className="hall-hint">
           גררו שולחן להזזה · גררו מוזמן לשולחן (או לחצו מוזמן ואז שולחן)
@@ -468,7 +468,7 @@ export function HallPage() {
       </div>
 
       <div className="hall-palette">
-        <span className="palette-label">הוסף למפה:</span>
+        <span className="palette-label">הוספה למפה:</span>
         {ELEMENT_ORDER.map((type) => (
           <button
             key={type}

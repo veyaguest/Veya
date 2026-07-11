@@ -123,7 +123,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
               >
                 {committing
                   ? 'מייבא…'
-                  : `ייבא ${preview.valid_count} מוזמנים`}
+                  : `ייבוא ${preview.valid_count} מוזמנים`}
               </button>
               <button className="btn-ghost" onClick={onClose}>
                 ביטול

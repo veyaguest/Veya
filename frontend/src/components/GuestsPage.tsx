@@ -58,7 +58,7 @@ export function GuestsPage() {
           ⬆ ייבוא Excel/CSV
         </button>
         <button className="btn-primary" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'סגור טופס' : '+ הוסף מוזמן'}
+          {showForm ? 'סגירת הטופס' : '+ הוספת מוזמן'}
         </button>
         <input
           ref={fileInput}
@@ -138,7 +138,7 @@ export function GuestsPage() {
                 <td className="notes">{g.notes_raw ?? ''}</td>
                 <td>
                   <button className="btn-delete" onClick={() => onDelete(g)}>
-                    מחק
+                    מחיקה
                   </button>
                 </td>
               </tr>

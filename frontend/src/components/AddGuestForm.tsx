@@ -139,7 +139,7 @@ export function AddGuestForm({ onAdded, onCancel }: Props) {
 
       <div className="add-actions">
         <button type="submit" className="btn-primary" disabled={saving}>
-          {saving ? 'שומר…' : 'הוסף מוזמן'}
+          {saving ? 'שומר…' : 'הוספת מוזמן'}
         </button>
         <button type="button" className="btn-ghost" onClick={onCancel}>
           ביטול

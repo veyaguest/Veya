@@ -159,7 +159,7 @@ export function DashboardPage() {
 
             <div className="event-edit-actions">
               <button className="btn-primary" onClick={onSaveEvent}>
-                שמור
+                שמירה
               </button>
               <button className="btn-text" onClick={() => setEditing(false)}>
                 ביטול
@@ -184,7 +184,7 @@ export function DashboardPage() {
               {when && <p className="event-when">{when}</p>}
             </div>
             <button className="btn-ghost" onClick={() => setEditing(true)}>
-              ✎ ערוך פרטים
+              ✎ עריכת פרטים
             </button>
           </div>
         )}

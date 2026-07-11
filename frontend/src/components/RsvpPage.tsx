@@ -248,18 +248,18 @@ export function RsvpPage() {
           onClick={() => onSend(true)}
           disabled={busy}
         >
-          {busy ? 'שולח…' : 'שלח הזמנות לממתינים'}
+          {busy ? 'שולח…' : 'שליחת הזמנות לממתינים'}
         </button>
         <button className="btn-ghost" onClick={() => onSend(false)} disabled={busy}>
-          שלח לכולם מחדש
+          שליחה לכולם מחדש
         </button>
         <button className="btn-ghost" onClick={onReminders} disabled={busy}>
-          {busy ? 'שולח…' : 'שלח תזכורת לממתינים'}
+          {busy ? 'שולח…' : 'שליחת תזכורת לממתינים'}
         </button>
         {summary && (
           <span className={`mode-badge ${summary.mode}`}>
             {summary.mode === 'mock'
-              ? 'מצב בדיקה — לא נשלח וואטסאפ אמיתי'
+              ? 'מצב בדיקה — לא נשלח WhatsApp אמיתי'
               : 'מצב חי — WhatsApp מחובר'}
           </span>
         )}
