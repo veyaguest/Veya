@@ -8,6 +8,7 @@ import { DashboardPage } from './components/DashboardPage'
 import { EventPicker, FirstEventScreen } from './components/EventControls'
 import { GuestsPage } from './components/GuestsPage'
 import { HallPage } from './components/HallPage'
+import { ProfileDialog } from './components/ProfileDialog'
 import { RsvpPage } from './components/RsvpPage'
 import type { EventSummary, User } from './types'
 
@@ -33,6 +34,7 @@ function App() {
   const [page, setPage] = useState<Page>('dashboard')
 
   const [user, setUser] = useState<User | null>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
   const [events, setEvents] = useState<EventSummary[]>([])
   const [activeEventId, setActiveEventId] = useState<number | null>(getEventId())
@@ -173,13 +175,18 @@ function App() {
         </nav>
 
         <div className="sidebar-foot">
-          <div className="user-chip">
+          <button
+            type="button"
+            className="user-chip"
+            onClick={() => setProfileOpen(true)}
+            title="החשבון שלי"
+          >
             <span className="user-avatar">{userInitial}</span>
             <span className="user-meta">
               <span className="user-name">{user.display_name || 'משתמש'}</span>
               <span className="user-event">{eventLabel}</span>
             </span>
-          </div>
+          </button>
           <div className="sidebar-foot-row">
             <span className="conn">
               {online === null && <span className="dot loading" />}
@@ -208,6 +215,18 @@ function App() {
           {page === 'admin' && <AdminPage />}
         </main>
       </div>
+
+      {profileOpen && (
+        <ProfileDialog
+          user={user}
+          onClose={() => setProfileOpen(false)}
+          onUpdated={(u) => setUser(u)}
+          onLogout={() => {
+            setProfileOpen(false)
+            handleLogout()
+          }}
+        />
+      )}
     </div>
   )
 }

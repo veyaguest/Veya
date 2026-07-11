@@ -117,6 +117,40 @@ export async function getMe(): Promise<User> {
   return res.json()
 }
 
+/** עדכון שם התצוגה של המשתמש המחובר. */
+export async function updateProfile(displayName: string): Promise<User> {
+  const res = await apiFetch('/auth/me', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ display_name: displayName }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** שינוי סיסמה: מחזיר טוקן חדש (המכשיר הנוכחי נשאר מחובר). */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<TokenResponse> {
+  const res = await apiFetch('/auth/change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** יציאה מכל המכשירים: פוסל את כל הטוקנים הקיימים בשרת. */
+export async function logoutAll(): Promise<void> {
+  const res = await apiFetch('/auth/logout-all', { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+}
+
 // ---- ניהול אירועים של המשתמש (שלב 8) ----
 
 export async function listMyEvents(): Promise<EventSummary[]> {
