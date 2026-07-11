@@ -132,32 +132,32 @@ export function DashboardPage() {
 
       {error && <p className="form-error">{error}</p>}
 
-      {/* ---- תמונת מצב ראשית — אישורי הגעה (הכרטיס הבולט) ---- */}
+      {/* ---- תמונת מצב ראשית — אישורי הגעה (העוגה הגדולה, החלק החשוב) ---- */}
       <div className="dash-hero">
+        <h3 className="dash-hero-title">תמונת מצב — אישורי הגעה</h3>
+        <p className="dash-hero-sub">
+          {stats
+            ? `${stats.confirmed_people} אורחים אישרו הגעה מתוך ${stats.total_people}`
+            : 'טוען נתונים…'}
+        </p>
         <div className="dash-hero-chart">
           <Donut
             segments={[
-              { label: 'אישרו', value: stats?.confirmed ?? 0, color: 'var(--gold)' },
+              { label: 'אישרו הגעה', value: stats?.confirmed ?? 0, color: 'var(--green)' },
+              { label: 'לא החליטו', value: stats?.maybe ?? 0, color: 'var(--gold)' },
               { label: 'לא מגיעים', value: stats?.declined ?? 0, color: 'var(--error)' },
-              { label: 'ממתינים', value: stats?.pending ?? 0, color: 'var(--faint)' },
+              { label: 'טרם הגיבו', value: stats?.pending ?? 0, color: 'var(--faint)' },
             ]}
-            centerNum={stats ? `${stats.response_rate}%` : '—'}
-            centerLabel="כבר הגיבו"
+            centerNum={stats ? `${stats.confirmed_people}` : '—'}
+            centerLabel="אורחים אישרו"
           />
         </div>
-        <div className="dash-hero-body">
-          <h3 className="dash-hero-title">תמונת מצב — מי הגיב</h3>
-          <p className="dash-hero-sub">
-            {stats
-              ? `${stats.confirmed_people} אורחים אישרו הגעה מתוך ${stats.total_people}`
-              : 'טוען נתונים…'}
-          </p>
-          <ul className="donut-legend">
-            <LegendRow color="var(--gold)" label="אישרו הגעה" value={stats?.confirmed ?? 0} />
-            <LegendRow color="var(--error)" label="לא מגיעים" value={stats?.declined ?? 0} />
-            <LegendRow color="var(--faint)" label="טרם הגיבו" value={stats?.pending ?? 0} />
-          </ul>
-        </div>
+        <ul className="donut-legend">
+          <LegendRow color="var(--green)" label="אישרו הגעה" value={stats?.confirmed ?? 0} />
+          <LegendRow color="var(--gold)" label="לא החליטו (אולי)" value={stats?.maybe ?? 0} />
+          <LegendRow color="var(--error)" label="לא מגיעים" value={stats?.declined ?? 0} />
+          <LegendRow color="var(--faint)" label="טרם הגיבו" value={stats?.pending ?? 0} />
+        </ul>
       </div>
 
       {/* ---- מדדים ראשיים ---- */}
@@ -279,8 +279,8 @@ function formatWhen(date: string, time: string): string {
           }),
     )
   }
-  if (time) parts.push(time)
-  return parts.join(' · ')
+  if (time) parts.push(`בשעה ${time}`)
+  return parts.join(', ')
 }
 
 /** תאריך+שעה קצרים לשורת יומן. */

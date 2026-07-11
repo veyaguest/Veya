@@ -212,6 +212,7 @@ export interface DashboardStats {
   confirmed_people: number
   confirmed: number
   declined: number
+  maybe: number
   pending: number
   response_rate: number
   invitations_sent: number

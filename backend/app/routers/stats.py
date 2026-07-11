@@ -27,6 +27,7 @@ def dashboard(
     total_people = sum(g.party_size for g in guests)
     confirmed = sum(1 for g in guests if g.rsvp_status == "confirmed")
     declined = sum(1 for g in guests if g.rsvp_status == "declined")
+    maybe = sum(1 for g in guests if g.rsvp_status == "maybe")
     pending = sum(1 for g in guests if g.rsvp_status == "pending")
     confirmed_people = sum(
         g.party_size for g in guests if g.rsvp_status == "confirmed"
@@ -65,6 +66,7 @@ def dashboard(
         confirmed_people=confirmed_people,
         confirmed=confirmed,
         declined=declined,
+        maybe=maybe,
         pending=pending,
         response_rate=response_rate,
         invitations_sent=invitations_sent,

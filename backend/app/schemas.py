@@ -229,6 +229,7 @@ class DashboardStats(BaseModel):
     # RSVP
     confirmed: int
     declined: int
+    maybe: int                 # סימנו "עדיין לא בטוחים"
     pending: int
     response_rate: int         # אחוז מי שענה (אישר/ביטל) מכלל המוזמנים
     invitations_sent: int

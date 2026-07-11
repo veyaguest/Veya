@@ -19,6 +19,7 @@
   --ivory-light: #fbf6ee;  /* משטח מקונן בהיר */
   --error: #a6605a;        /* "לא מגיעים"/שגיאה — ורוד-אדמדם מאופק */
   --success: #9a7b2e;      /* "מגיעים" — זהב מעומעם, קריא על בהיר */
+  --green: #4f8a5b;        /* "אישרו הגעה" — ירוק מאופק, קריא על בהיר */
 }
 
 /* ---- הקשרים כהים: הטוקנים הבהירים מוחלפים חזרה לערכים כהים ----
@@ -855,7 +856,7 @@
   color: var(--charcoal);
 }
 .stat-card.ok .stat-num {
-  color: var(--success);
+  color: var(--green);
 }
 .stat-card.err .stat-num {
   color: var(--error);
@@ -1159,35 +1160,35 @@
 /* ---- כרטיס תמונת מצב ראשי (donut + סטטוסים) ---- */
 .dash-hero {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 40px;
+  text-align: center;
+  gap: 8px;
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: 16px;
-  padding: 26px 30px;
+  padding: 34px 30px 30px;
   margin-bottom: 18px;
 }
 .dash-hero-chart {
   flex-shrink: 0;
-}
-.dash-hero-body {
-  flex: 1;
-  min-width: 0;
+  margin: 10px 0 4px;
 }
 .dash-hero-title {
-  margin: 0 0 4px;
+  margin: 0;
   font-family: 'Frank Ruhl Libre', Georgia, serif;
-  font-size: 20px;
+  font-size: 24px;
   color: var(--charcoal);
 }
 .dash-hero-sub {
-  margin: 0 0 18px;
-  font-size: 14px;
+  margin: 0;
+  font-size: 15px;
   color: var(--muted);
 }
 .donut {
-  width: 176px;
-  height: 176px;
+  width: 340px;
+  height: 340px;
+  max-width: 80vw;
   flex-shrink: 0;
 }
 .donut-bg {
@@ -1206,17 +1207,17 @@
 }
 .donut-legend {
   list-style: none;
-  margin: 0;
+  margin: 6px 0 0;
   padding: 0;
   display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 190px;
+  flex-flow: row wrap;
+  justify-content: center;
+  gap: 14px 28px;
 }
 .legend-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   font-size: 15px;
   color: var(--body);
 }
@@ -1710,18 +1711,15 @@
   .rsvp-stats {
     grid-template-columns: repeat(2, 1fr);
   }
-  .dash-hero {
-    flex-direction: column;
-    gap: 22px;
-    text-align: center;
-  }
-  .dash-hero-body {
-    width: 100%;
+  .donut {
+    width: 260px;
+    height: 260px;
   }
   .donut-legend {
-    display: inline-flex;
     flex-direction: column;
+    align-items: flex-start;
     text-align: right;
+    gap: 12px;
   }
   .dash-grid {
     grid-template-columns: repeat(2, 1fr);
