@@ -435,6 +435,7 @@ class ConfirmEventInfo(BaseModel):
     venue_name: str
     event_date: str = ""
     event_time: str = ""
+    invite_image: Optional[str] = None  # תמונת ההזמנה שהזוג העלה (data URL / כתובת)
 
 
 class ConfirmGuestPublic(BaseModel):

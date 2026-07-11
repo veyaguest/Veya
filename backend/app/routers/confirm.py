@@ -52,6 +52,7 @@ def _public(db: Session, guest: models.Guest) -> schemas.ConfirmGuestPublic:
             venue_name=event.venue_name if event else "",
             event_date=event.event_date if event else "",
             event_time=event.event_time if event else "",
+            invite_image=event.invite_image if event else None,
         ),
     )
 
@@ -92,9 +93,10 @@ def submit_confirm(
         guest.confirmed_count = None
         label = "סימן/ה 'אולי'"
     elif payload.coming:
-        # כמות: ברירת מחדל = כמה שהוזמנו; מוגבל לטווח 1..party_size.
+        # כמות: ברירת מחדל = כמה שהוזמנו. המוזמן יכול להוסיף כמות בפועל,
+        # גם מעבר למה שהוזמן (למשל משפחה שגדלה), עד תקרה סבירה נגד שימוש לרעה.
         count = payload.count if payload.count is not None else guest.party_size
-        count = max(1, min(count, guest.party_size))
+        count = max(1, min(count, 30))
         guest.rsvp_status = "confirmed"
         guest.confirmed_count = count
         label = f"אישר/ה הגעה ({count})"

@@ -138,6 +138,14 @@ export function ConfirmPage({ token }: { token: string }) {
           <div className="confirm-when">{whenText(ev.event_date, ev.event_time)}</div>
         )}
 
+        {ev.invite_image && (
+          <img
+            className="confirm-invite-img"
+            src={ev.invite_image}
+            alt="הזמנה לחתונה"
+          />
+        )}
+
         <div className="confirm-question">האם תגיעו?</div>
 
         <div className="confirm-choices">
@@ -164,20 +172,29 @@ export function ConfirmPage({ token }: { token: string }) {
           </button>
         </div>
 
-        {choice === 'confirmed' && data!.party_size > 1 && (
+        {choice === 'confirmed' && (
           <div className="confirm-count">
             <label>כמה אנשים תגיעו?</label>
-            <div className="confirm-count-btns">
-              {Array.from({ length: data!.party_size }, (_, i) => i + 1).map((n) => (
-                <button
-                  type="button"
-                  key={n}
-                  className={`confirm-num ${count === n ? 'active' : ''}`}
-                  onClick={() => setCount(n)}
-                >
-                  {n}
-                </button>
-              ))}
+            <div className="confirm-stepper">
+              <button
+                type="button"
+                className="confirm-step"
+                aria-label="הפחתת אורח"
+                disabled={count <= 1}
+                onClick={() => setCount((c) => Math.max(1, c - 1))}
+              >
+                −
+              </button>
+              <span className="confirm-step-num">{count}</span>
+              <button
+                type="button"
+                className="confirm-step"
+                aria-label="הוספת אורח"
+                disabled={count >= 30}
+                onClick={() => setCount((c) => Math.min(30, c + 1))}
+              >
+                +
+              </button>
             </div>
           </div>
         )}

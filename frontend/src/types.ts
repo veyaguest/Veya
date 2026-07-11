@@ -33,6 +33,7 @@ export interface ConfirmEventInfo {
   venue_name: string
   event_date: string
   event_time: string
+  invite_image: string | null
 }
 
 export interface ConfirmGuestPublic {

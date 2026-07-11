@@ -78,7 +78,7 @@
   border-bottom: 1px solid var(--line);
 }
 .logo-text {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 26px;
   letter-spacing: 8px;
   color: var(--charcoal);
@@ -1921,7 +1921,7 @@
   border-radius: 50%;
 }
 .auth-monogram-v {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 34px;
   font-weight: 500;
   color: var(--gold-light);
@@ -1949,7 +1949,7 @@
   gap: 3px;
 }
 .auth-wordmark-name {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 27px;
   letter-spacing: 8px;
   color: var(--charcoal);
@@ -2400,13 +2400,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 32px;
   color: var(--gold-light);
   line-height: 1;
 }
 .confirm-brand-name {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 18px;
   letter-spacing: 6px;
   color: var(--charcoal);
@@ -2492,26 +2492,53 @@
   color: var(--body);
   margin-bottom: 8px;
 }
-.confirm-count-btns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.confirm-num {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+.confirm-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--line-2);
   background: var(--surface-hi);
-  color: var(--body);
-  font-size: 16px;
-  cursor: pointer;
+  border-radius: 12px;
+  padding: 4px;
 }
-.confirm-num.active {
-  border-color: var(--gold);
-  background: rgba(201, 162, 39, 0.16);
+.confirm-step {
+  width: 44px;
+  height: 44px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
   color: var(--gold-light);
+  font-size: 24px;
   font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.confirm-step:hover:not(:disabled) {
+  background: rgba(201, 162, 39, 0.16);
+}
+.confirm-step:disabled {
+  color: var(--line-2);
+  cursor: default;
+}
+.confirm-step-num {
+  min-width: 40px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--charcoal);
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.confirm-invite-img {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 14px;
+  margin: 18px 0 4px;
+  border: 1px solid var(--line);
+  background: var(--surface-hi);
 }
 .confirm-note {
   margin-top: 20px;
