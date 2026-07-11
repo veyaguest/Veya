@@ -29,6 +29,10 @@ class User(Base):
     display_name: Mapped[str] = mapped_column(String, default="")
     # אדמין = הבעלים של המערכת, רואה ומנהל את כל המשתמשים והאירועים.
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    # סוג החשבון: couple (זוג, ברירת מחדל) / planner (מפיק) / venue (אולם).
+    # ציר נפרד מ-is_admin — is_admin הוא "אדמין-על", account_type הוא "מי המשתמש".
+    # שלב 1 בלבד: השדה קיים אך אינו נקרא בשום מקום עדיין (אין שינוי התנהגות).
+    account_type: Mapped[str] = mapped_column(String, default="couple")
     # גרסת הטוקן: כל טוקן JWT נושא את הגרסה שהייתה בזמן ההנפקה. העלאת המספר
     # (יציאה מכל המכשירים / שינוי סיסמה / איפוס) פוסלת מיד את כל הטוקנים הישנים.
     token_version: Mapped[int] = mapped_column(Integer, default=1)
@@ -116,6 +120,31 @@ class Guest(Base):
         if self.rsvp_status == "confirmed" and self.confirmed_count is not None:
             return self.confirmed_count
         return self.party_size
+
+
+class EventMember(Base):
+    """שיתוף גישה לאירוע — מפיק/אולם שקיבלו הרשאה לאירוע של זוג מסוים.
+
+    הבעלים (``Event.owner_id``) תמיד עם גישה מלאה ואינו מיוצג כאן. שורה בטבלה
+    הזו מייצגת גישה *חלקית* שניתנה במפורש למשתמש אחר, לפי רשימת ``permissions``.
+
+    שלב 1 בלבד: הטבלה קיימת אך אין עדיין שום קוד שיוצר/קורא ממנה — לא נוגעת
+    בהתנהגות הקיימת.
+    """
+
+    __tablename__ = "event_members"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    role: Mapped[str] = mapped_column(String)  # planner/venue
+    # רשימת מחרוזות הרשאה, למשל ["view_guests", "manage_seating"].
+    permissions: Mapped[list] = mapped_column(JSON, default=list)
+    invited_by_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String, default="active")  # active/pending
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
 class Clarification(Base):

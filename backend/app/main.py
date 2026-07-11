@@ -75,6 +75,7 @@ _EXTRA_COLUMNS = {
     "users": {
         "is_admin": "BOOLEAN DEFAULT 0",
         "token_version": "INTEGER DEFAULT 1",
+        "account_type": "TEXT DEFAULT 'couple'",
     },
     "guests": {
         "guest_token": "TEXT",
