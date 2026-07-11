@@ -3,6 +3,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from sqlalchemy import inspect, text
 
@@ -51,6 +52,12 @@ app.include_router(stats.router)
 app.include_router(event.router)
 app.include_router(hall.router)
 app.include_router(confirm.router)
+
+# הגשת קבצי תמונות שהועלו (הזמנה/סקיצת אולם) מתוך backend/uploads.
+from app.media import UPLOADS_DIR  # noqa: E402
+
+UPLOADS_DIR.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 
 # עמודות שנוספו אחרי היצירה הראשונית של הטבלה — הוספה עדינה כדי לא לאבד נתונים.
@@ -112,6 +119,34 @@ def _ensure_indexes() -> None:
             )
 
 
+def _migrate_images() -> None:
+    """מיגרציה חד-פעמית: מוציא תמונות base64 קיימות מה-DB לקבצים.
+
+    ערכים ישנים של ``invite_image``/``hall_sketch`` שנשמרו כ-``data:...``
+    נכתבים לקובץ תחת uploads, ובמסד נשמר הנתיב הקצר במקומם. רץ בבטחה שוב ושוב
+    (ערכים שכבר הומרו מתחילים ב-/uploads ולא ייגעו).
+    """
+    from sqlalchemy import select
+
+    from app import media
+
+    db = SessionLocal()
+    try:
+        events = db.scalars(select(models.Event)).all()
+        changed = False
+        for ev in events:
+            if ev.invite_image and ev.invite_image.startswith("data:"):
+                ev.invite_image = media._write_data_url(ev.invite_image, f"invite-{ev.id}")
+                changed = True
+            if ev.hall_sketch and ev.hall_sketch.startswith("data:"):
+                ev.hall_sketch = media._write_data_url(ev.hall_sketch, f"sketch-{ev.id}")
+                changed = True
+        if changed:
+            db.commit()
+    finally:
+        db.close()
+
+
 def _ensure_admin() -> None:
     """מוודא שיש לפחות אדמין אחד — מקדם את המשתמש הראשון (הבעלים) אם אין.
 
@@ -163,6 +198,8 @@ def on_startup() -> None:
     _ensure_columns()
     # מוסיף אינדקסים על מפתחות זרים (לביצועים) אם עדיין אין.
     _ensure_indexes()
+    # מוציא תמונות base64 ישנות מה-DB לקבצים (חד-פעמי, בטוח לחזרה).
+    _migrate_images()
     # מוודא שיש בעלים (אדמין) אחד לפחות.
     _ensure_admin()
     # מוודא שלכל מוזמן קיים יש טוקן אישי לאישור הגעה.

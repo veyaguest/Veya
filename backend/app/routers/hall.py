@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import constraints as parser
-from app import models, schemas
+from app import media, models, schemas
 from app.database import get_db
 from app.deps import get_current_event
 
@@ -111,7 +111,7 @@ def get_hall(
         unassigned=[_guest_out(g) for g in unassigned],
         elements=elements,
         warnings=warnings,
-        sketch=event.hall_sketch,
+        sketch=media.to_url(event.hall_sketch),
     )
 
 
@@ -153,9 +153,12 @@ def save_hall(
         event.hall_elements = [el.model_dump() for el in payload.elements]
     if payload.seats_per_table:
         event.seats_per_table = payload.seats_per_table
-    # סקיצת האולם: None => לא נגענו; "" => מחיקה; אחרת => עדכון.
+    # סקיצת האולם: None => לא נגענו; "" => מחיקה; data URL => קובץ חדש;
+    # URL קיים => ללא שינוי. הטיפול מרוכז ב-media.resolve_incoming.
     if payload.sketch is not None:
-        event.hall_sketch = payload.sketch or None
+        event.hall_sketch = media.resolve_incoming(
+            payload.sketch, event.hall_sketch, prefix=f"sketch-{event.id}"
+        )
     db.commit()
 
     return get_hall(db=db, event=event)

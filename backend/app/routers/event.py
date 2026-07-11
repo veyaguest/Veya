@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import audit, models, schemas
+from app import audit, media, models, schemas
 from app.auth import get_current_user
 from app.database import get_db
 from app.deps import get_current_event
@@ -15,9 +15,22 @@ from app.deps import get_current_event
 router = APIRouter(prefix="/event", tags=["event"])
 
 
+def _event_read(event: models.Event) -> schemas.EventRead:
+    """בונה תשובה עם URL מלא לתמונת ההזמנה (במקום הנתיב הגולמי שב-DB)."""
+    return schemas.EventRead(
+        id=event.id,
+        groom_name=event.groom_name,
+        bride_name=event.bride_name,
+        venue_name=event.venue_name,
+        event_date=event.event_date or "",
+        event_time=event.event_time or "",
+        invite_image=media.to_url(event.invite_image),
+    )
+
+
 @router.get("", response_model=schemas.EventRead)
 def read_event(event: models.Event = Depends(get_current_event)):
-    return event
+    return _event_read(event)
 
 
 @router.patch("", response_model=schemas.EventRead)
@@ -30,7 +43,13 @@ def update_event(
 ):
     changed = payload.model_dump(exclude_unset=True)
     for key, value in changed.items():
-        setattr(event, key, (value or "").strip())
+        if key == "invite_image":
+            # תמונה: data URL → קובץ; ריק → מחיקה; URL קיים → ללא שינוי.
+            event.invite_image = media.resolve_incoming(
+                value, event.invite_image, prefix=f"invite-{event.id}"
+            )
+        else:
+            setattr(event, key, (value or "").strip())
     audit.record(
         db, "update_event",
         event_id=event.id, user_id=user.id,
@@ -39,7 +58,7 @@ def update_event(
     )
     db.commit()
     db.refresh(event)
-    return event
+    return _event_read(event)
 
 
 @router.get("/audit", response_model=list[schemas.AuditLogRow])

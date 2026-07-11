@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import audit, models, schemas
+from app import audit, media, models, schemas
 from app.database import get_db
 
 router = APIRouter(prefix="/confirm", tags=["confirm"])
@@ -52,7 +52,7 @@ def _public(db: Session, guest: models.Guest) -> schemas.ConfirmGuestPublic:
             venue_name=event.venue_name if event else "",
             event_date=event.event_date if event else "",
             event_time=event.event_time if event else "",
-            invite_image=event.invite_image if event else None,
+            invite_image=media.to_url(event.invite_image) if event else None,
         ),
     )
 
