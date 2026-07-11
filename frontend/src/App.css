@@ -858,6 +858,15 @@
   line-height: 1;
   color: var(--charcoal);
 }
+/* מספרים תמיד משמאל-לימין, כדי שלא ייראו הפוכים בהקשר עברי (למשל "75%") */
+.stat-num,
+.donut-num,
+.mini-num,
+.legend-val,
+.bar-value {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
 .stat-card.ok .stat-num {
   color: var(--green);
 }
