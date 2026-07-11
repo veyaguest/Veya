@@ -99,6 +99,17 @@ class GuestRead(BaseModel):
     created_at: datetime
 
 
+class GuestListPage(BaseModel):
+    """עמוד מתוך רשימת המוזמנים + סכומים לכל הרשימה המסוננת (לא רק לעמוד)."""
+
+    items: list[GuestRead]
+    total: int              # סך המוזמנים התואמים לסינון
+    total_people: int       # סכום כמות ההזמנה של כל התואמים
+    confirmed_people: int   # סכום המקומות בפועל של מי שאישר
+    limit: int
+    offset: int
+
+
 # ---- שיבוץ הושבה (שלב 3) ----
 
 

@@ -194,9 +194,25 @@ export async function adminListEvents(): Promise<AdminEventRow[]> {
 
 // ---- מוזמנים ----
 
-export async function listGuests(q?: string): Promise<Guest[]> {
-  const path = q ? `/guests?q=${encodeURIComponent(q)}` : '/guests'
-  const res = await apiFetch(path)
+export interface GuestListPage {
+  items: Guest[]
+  total: number
+  total_people: number
+  confirmed_people: number
+  limit: number
+  offset: number
+}
+
+export async function listGuests(
+  q?: string,
+  limit = 50,
+  offset = 0,
+): Promise<GuestListPage> {
+  const params = new URLSearchParams()
+  if (q) params.set('q', q)
+  params.set('limit', String(limit))
+  params.set('offset', String(offset))
+  const res = await apiFetch(`/guests?${params.toString()}`)
   if (!res.ok) throw await toError(res)
   return res.json()
 }

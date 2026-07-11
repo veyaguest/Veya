@@ -42,14 +42,14 @@ export function RsvpPage() {
     try {
       const [s, g, l, t, ev] = await Promise.all([
         rsvpSummary(),
-        listGuests(),
+        listGuests('', 200, 0),
         messageLog(20),
         getTemplate(),
         getEvent(),
       ])
       setSummary(s)
       setEvent(ev)
-      setGuests(g)
+      setGuests(g.items)
       setLog(l)
       setTemplate(t.template)
       setDefaultTemplate(t.default_template)

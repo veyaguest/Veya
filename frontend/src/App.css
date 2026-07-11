@@ -627,6 +627,12 @@
   background: rgba(224, 133, 122, 0.1);
 }
 
+.load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 18px 0 4px;
+}
+
 /* ---- Toast ---- */
 .toast {
   background: rgba(201, 162, 39, 0.12);

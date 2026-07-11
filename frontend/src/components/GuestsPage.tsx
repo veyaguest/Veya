@@ -1,31 +1,56 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { deleteGuest, listGuests } from '../api'
 import type { Guest } from '../types'
-import { effectiveSeats, groupLabel, RSVP_LABELS, SIDE_LABELS } from '../types'
+import { groupLabel, RSVP_LABELS, SIDE_LABELS } from '../types'
 import { AddGuestForm } from './AddGuestForm'
 import { ImportDialog } from './ImportDialog'
 
+const PAGE_SIZE = 50
+
 export function GuestsPage() {
   const [guests, setGuests] = useState<Guest[]>([])
+  const [total, setTotal] = useState(0)
+  const [totalPeople, setTotalPeople] = useState(0)
+  const [confirmedPeople, setConfirmedPeople] = useState(0)
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
   const [importFile, setImportFile] = useState<File | null>(null)
   const [toast, setToast] = useState('')
   const fileInput = useRef<HTMLInputElement>(null)
 
+  // טעינת העמוד הראשון (וגם רענון אחרי שינוי/חיפוש).
   const load = useCallback(async (q: string) => {
     setLoading(true)
     setError('')
     try {
-      setGuests(await listGuests(q))
+      const page = await listGuests(q, PAGE_SIZE, 0)
+      setGuests(page.items)
+      setTotal(page.total)
+      setTotalPeople(page.total_people)
+      setConfirmedPeople(page.confirmed_people)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בטעינה')
     } finally {
       setLoading(false)
     }
   }, [])
+
+  // טעינת עוד עמוד (מוסיף לרשימה הקיימת).
+  async function loadMore() {
+    setLoadingMore(true)
+    try {
+      const page = await listGuests(search, PAGE_SIZE, guests.length)
+      setGuests((prev) => [...prev, ...page.items])
+      setTotal(page.total)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה בטעינה')
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   // טעינה ראשונית + חיפוש עם השהיה קלה (debounce)
   useEffect(() => {
@@ -43,12 +68,7 @@ export function GuestsPage() {
     }
   }
 
-  const totalPeople = guests.reduce((sum, g) => sum + g.party_size, 0)
-  // כמה אנשים אישרו הגעה בפועל (לפי הכמות שהמוזמן הזין)
-  const confirmedPeople = guests.reduce(
-    (sum, g) => (g.rsvp_status === 'confirmed' ? sum + effectiveSeats(g) : sum),
-    0,
-  )
+  const hasMore = guests.length < total
 
   return (
     <div className="guests-page">
@@ -108,7 +128,7 @@ export function GuestsPage() {
       )}
 
       <div className="summary">
-        {guests.length} מוזמנים · {totalPeople} אנשים הוזמנו ·{' '}
+        {total} מוזמנים · {totalPeople} אנשים הוזמנו ·{' '}
         {confirmedPeople} אישרו הגעה
       </div>
 
@@ -165,6 +185,20 @@ export function GuestsPage() {
         )}
         {loading && <div className="empty">טוען…</div>}
       </div>
+
+      {!loading && hasMore && (
+        <div className="load-more-wrap">
+          <button
+            className="btn-ghost"
+            onClick={loadMore}
+            disabled={loadingMore}
+          >
+            {loadingMore
+              ? 'טוען…'
+              : `טעינת עוד (${guests.length} מתוך ${total})`}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
