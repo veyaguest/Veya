@@ -34,7 +34,6 @@ const NAV_ITEMS: { key: Page; label: string }[] = [
 function App() {
   const [online, setOnline] = useState<boolean | null>(null)
   const [page, setPage] = useState<Page>('dashboard')
-  const [logoOk, setLogoOk] = useState(true)
 
   const [user, setUser] = useState<User | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
@@ -143,17 +142,12 @@ function App() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="sidebar-logo">
-          {logoOk ? (
-            <img
-              src="/logo.png"
-              alt="VEYA — מערכת חכמה לאירועים"
-              className="logo-img"
-              onError={() => setLogoOk(false)}
-            />
-          ) : (
-            <span className="logo-text">VEYA</span>
-          )}
+        <div className="sidebar-logo" dir="ltr">
+          <span className="auth-monogram">
+            <span className="auth-monogram-diamond" />
+            <span className="auth-monogram-v">V</span>
+          </span>
+          <span className="logo-text">VEYA</span>
         </div>
 
         {page !== 'admin' && (
