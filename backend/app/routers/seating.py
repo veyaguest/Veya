@@ -32,7 +32,8 @@ def generate(
         raise HTTPException(status_code=400, detail="אין מוזמנים לשיבוץ")
 
     # חבורה בודדת גדולה מקיבולת שולחן — לא ניתן לשבץ.
-    too_big = [g for g in guests if g.party_size > payload.seats_per_table]
+    # סופרים לפי הכמות שאושרה בפועל (effective_seats), לא לפי מה שהוזמן.
+    too_big = [g for g in guests if g.effective_seats > payload.seats_per_table]
     if too_big:
         names = ", ".join(g.full_name for g in too_big[:3])
         raise HTTPException(
@@ -46,7 +47,8 @@ def generate(
             "full_name": g.full_name,
             "side": g.side,
             "group_type": g.group_type,
-            "party_size": g.party_size,
+            # המנוע משבץ לפי הכמות שאושרה בפועל (מי שביטל תופס 0 מקומות).
+            "party_size": g.effective_seats,
         }
         for g in guests
     ]

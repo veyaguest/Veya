@@ -24,6 +24,7 @@ def _guest_out(g: models.Guest) -> schemas.HallGuest:
         id=g.id,
         full_name=g.full_name,
         party_size=g.party_size,
+        seats=g.effective_seats,
         side=g.side,
         group_type=g.group_type,
         rsvp_status=g.rsvp_status,
@@ -48,7 +49,7 @@ def _compute_warnings(
     )
     name_by_id = {g.id: g.full_name for g in all_guests}
     for tnum, members in tables.items():
-        used = sum(g.party_size for g in members)
+        used = sum(g.effective_seats for g in members)
         if used > seats_per_table:
             warnings.append(f"שולחן {tnum}: {used} אנשים מתוך {seats_per_table} — חריגה מהקיבולת")
         ids = [g.id for g in members]
@@ -93,7 +94,7 @@ def get_hall(
                 table_number=tnum,
                 x=float(pos["x"]),
                 y=float(pos["y"]),
-                seats_used=sum(g.party_size for g in members),
+                seats_used=sum(g.effective_seats for g in members),
                 guests=[_guest_out(g) for g in members],
                 shape=str(pos.get("shape", "round")),
                 rotation=float(pos.get("rotation", 0)),

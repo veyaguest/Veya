@@ -732,7 +732,7 @@ export function HallPage() {
             )
           })}
           {tables.map((t) => {
-            const used = t.guests.reduce((s, g) => s + g.party_size, 0)
+            const used = t.guests.reduce((s, g) => s + g.seats, 0)
             const over = used > seats
             const free = seats - used
             const isSelT = selectedTable === t.table_number
@@ -833,10 +833,10 @@ export function HallPage() {
 
 // טבעת כיסאות מסביב לדיסקת השולחן: תפוס נצבע לפי צד, פנוי נשאר חלול.
 function SeatRing({ seats, guests }: { seats: number; guests: HallGuest[] }) {
-  // הרחבת החבורות לכיסאות בודדים (לפי party_size), לצביעה לפי צד.
+  // הרחבת החבורות לכיסאות בודדים (לפי הכמות שאושרה בפועל), לצביעה לפי צד.
   const occupied: string[] = []
   for (const g of guests) {
-    for (let i = 0; i < g.party_size; i++) occupied.push(g.side)
+    for (let i = 0; i < g.seats; i++) occupied.push(g.side)
   }
   const count = Math.max(seats, occupied.length, 1)
   const radius = 44
@@ -865,7 +865,7 @@ function SeatRing({ seats, guests }: { seats: number; guests: HallGuest[] }) {
 function LongSeats({ seats, guests }: { seats: number; guests: HallGuest[] }) {
   const occupied: string[] = []
   for (const g of guests) {
-    for (let i = 0; i < g.party_size; i++) occupied.push(g.side)
+    for (let i = 0; i < g.seats; i++) occupied.push(g.side)
   }
   const count = Math.max(seats, occupied.length, 2)
   const top = Math.ceil(count / 2)
@@ -914,7 +914,7 @@ function GuestChip({
       title={`${SIDE_LABELS[g.side]} · גררו לשולחן או לחצו לבחירה`}
     >
       {g.full_name}
-      {g.party_size > 1 && <span className="chip-size">×{g.party_size}</span>}
+      {g.seats > 1 && <span className="chip-size">×{g.seats}</span>}
     </span>
   )
 }

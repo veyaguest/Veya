@@ -279,7 +279,8 @@ class EventUpdate(BaseModel):
 class HallGuest(BaseModel):
     id: int
     full_name: str
-    party_size: int
+    party_size: int          # כמה הוזמנו (מספר ההזמנה המקורי)
+    seats: int               # כמה תופסים בפועל אחרי אישור (0 אם ביטלו)
     side: str
     group_type: str
     rsvp_status: str

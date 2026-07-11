@@ -98,6 +98,22 @@ class Guest(Base):
 
     event: Mapped["Event"] = relationship(back_populates="guests")
 
+    @property
+    def effective_seats(self) -> int:
+        """כמות המקומות שהמוזמן הזה באמת תופס — הבסיס לכל ספירת אנשים במערכת.
+
+        אחרי שהמוזמן ענה, סופרים לפי מה שאישר (``confirmed_count``) ולא לפי כמה
+        שהוזמן (``party_size``):
+        - ביטל הגעה → 0 (לא תופס מקום).
+        - אישר → הכמות שהזין (ואם משום מה חסרה — נופלים ל-``party_size``).
+        - עדיין לא ענה / "אולי" → ``party_size`` (מתכננים לפי ההזמנה).
+        """
+        if self.rsvp_status == "declined":
+            return 0
+        if self.rsvp_status == "confirmed" and self.confirmed_count is not None:
+            return self.confirmed_count
+        return self.party_size
+
 
 class Clarification(Base):
     """הבהרה ממתינה — נוצרת כשפרסור ההערות מזהה שם עמום (PRD: לולאת הבהרות).

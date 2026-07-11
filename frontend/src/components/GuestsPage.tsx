@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { deleteGuest, listGuests } from '../api'
 import type { Guest } from '../types'
-import { groupLabel, RSVP_LABELS, SIDE_LABELS } from '../types'
+import { effectiveSeats, groupLabel, RSVP_LABELS, SIDE_LABELS } from '../types'
 import { AddGuestForm } from './AddGuestForm'
 import { ImportDialog } from './ImportDialog'
 
@@ -44,6 +44,11 @@ export function GuestsPage() {
   }
 
   const totalPeople = guests.reduce((sum, g) => sum + g.party_size, 0)
+  // כמה אנשים אישרו הגעה בפועל (לפי הכמות שהמוזמן הזין)
+  const confirmedPeople = guests.reduce(
+    (sum, g) => (g.rsvp_status === 'confirmed' ? sum + effectiveSeats(g) : sum),
+    0,
+  )
 
   return (
     <div className="guests-page">
@@ -99,7 +104,8 @@ export function GuestsPage() {
       )}
 
       <div className="summary">
-        {guests.length} מוזמנים · {totalPeople} אנשים בסך הכל
+        {guests.length} מוזמנים · {totalPeople} אנשים הוזמנו ·{' '}
+        {confirmedPeople} אישרו הגעה
       </div>
 
       {error && <p className="form-error">{error}</p>}

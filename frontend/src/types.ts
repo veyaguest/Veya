@@ -25,6 +25,21 @@ export interface Guest {
   created_at: string
 }
 
+/**
+ * כמה מקומות המוזמן באמת תופס — הבסיס לספירת אנשים בכל המערכת.
+ * ביטל → 0, אישר → הכמות שהזין, אחרת (ממתין/אולי) → כמה שהוזמנו.
+ */
+export function effectiveSeats(g: {
+  rsvp_status: RsvpStatus
+  party_size: number
+  confirmed_count: number | null
+}): number {
+  if (g.rsvp_status === 'declined') return 0
+  if (g.rsvp_status === 'confirmed' && g.confirmed_count != null)
+    return g.confirmed_count
+  return g.party_size
+}
+
 // ---- דף אישור הגעה ציבורי (קישור אישי) ----
 
 export interface ConfirmEventInfo {
@@ -257,7 +272,8 @@ export interface AuditLogRow {
 export interface HallGuest {
   id: number
   full_name: string
-  party_size: number
+  party_size: number // כמה הוזמנו
+  seats: number // כמה תופסים בפועל אחרי אישור (0 אם ביטלו)
   side: Side
   group_type: GroupType
   rsvp_status: RsvpStatus
