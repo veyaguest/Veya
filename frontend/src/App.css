@@ -452,6 +452,9 @@
   outline: none;
   border-color: var(--gold);
 }
+.custom-group-input {
+  margin-top: 6px;
+}
 .add-actions {
   display: flex;
   gap: 10px;

@@ -6,7 +6,7 @@ import {
   resolveClarification,
 } from '../api'
 import type { AnalyzeResult, Clarification, SeatingResult } from '../types'
-import { GROUP_LABELS, SIDE_LABELS } from '../types'
+import { groupLabel, SIDE_LABELS } from '../types'
 
 const REL_TEXT: Record<Clarification['relation_type'], string> = {
   avoid: 'לא לשבת עם',
@@ -178,7 +178,7 @@ export function SeatingPage() {
                         <span className="party-size">×{p.party_size}</span>
                       )}
                       <span className="party-tags">
-                        {SIDE_LABELS[p.side]} · {GROUP_LABELS[p.group_type]}
+                        {SIDE_LABELS[p.side]} · {groupLabel(p.group_type)}
                       </span>
                     </li>
                   ))}

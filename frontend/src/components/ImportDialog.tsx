@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { commitImport, previewImport } from '../api'
 import type { GuestCreate, ImportPreview } from '../types'
-import { GROUP_LABELS, SIDE_LABELS } from '../types'
+import { groupLabel, SIDE_LABELS } from '../types'
 
 interface Props {
   file: File
@@ -100,7 +100,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
                         {r.phone}
                       </td>
                       <td>{SIDE_LABELS[r.side]}</td>
-                      <td>{GROUP_LABELS[r.group_type]}</td>
+                      <td>{groupLabel(r.group_type)}</td>
                       <td className="center">{r.party_size}</td>
                       <td>
                         {r.valid ? (

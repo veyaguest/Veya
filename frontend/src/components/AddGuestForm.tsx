@@ -17,8 +17,11 @@ const EMPTY: GuestCreate = {
   notes_raw: '',
 }
 
+const CUSTOM = '__custom__' // ערך דמה בבורר: "קבוצה חדשה…"
+
 export function AddGuestForm({ onAdded, onCancel }: Props) {
   const [form, setForm] = useState<GuestCreate>(EMPTY)
+  const [customGroup, setCustomGroup] = useState(false)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -26,13 +29,29 @@ export function AddGuestForm({ onAdded, onCancel }: Props) {
     setForm((f) => ({ ...f, [key]: value }))
   }
 
+  function onGroupSelect(value: string) {
+    if (value === CUSTOM) {
+      setCustomGroup(true)
+      update('group_type', '')
+    } else {
+      setCustomGroup(false)
+      update('group_type', value as GroupType)
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
     setSaving(true)
     try {
-      await createGuest({ ...form, notes_raw: form.notes_raw || undefined })
+      const group = (form.group_type || '').trim() || 'other'
+      await createGuest({
+        ...form,
+        group_type: group,
+        notes_raw: form.notes_raw || undefined,
+      })
       setForm(EMPTY)
+      setCustomGroup(false)
       onAdded()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בשמירה')
@@ -77,15 +96,25 @@ export function AddGuestForm({ onAdded, onCancel }: Props) {
         <label>
           קבוצה
           <select
-            value={form.group_type}
-            onChange={(e) => update('group_type', e.target.value as GroupType)}
+            value={customGroup ? CUSTOM : form.group_type}
+            onChange={(e) => onGroupSelect(e.target.value)}
           >
             {Object.entries(GROUP_LABELS).map(([v, l]) => (
               <option key={v} value={v}>
                 {l}
               </option>
             ))}
+            <option value={CUSTOM}>➕ קבוצה חדשה…</option>
           </select>
+          {customGroup && (
+            <input
+              className="custom-group-input"
+              value={form.group_type}
+              onChange={(e) => update('group_type', e.target.value)}
+              placeholder="שם הקבוצה, למשל: חברים מהצבא"
+              autoFocus
+            />
+          )}
         </label>
         <label>
           כמות אנשים

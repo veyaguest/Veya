@@ -1,10 +1,12 @@
 export type Side = 'groom' | 'bride' | 'shared'
-export type GroupType =
+// קבוצה יכולה להיות אחת מהמוכרות, או קבוצה מותאמת אישית (טקסט חופשי בעברית)
+export type KnownGroupType =
   | 'close_family'
   | 'extended_family'
   | 'friends'
   | 'work'
   | 'other'
+export type GroupType = KnownGroupType | (string & {})
 export type RsvpStatus = 'pending' | 'confirmed' | 'declined' | 'maybe'
 
 export interface Guest {
@@ -65,12 +67,17 @@ export const SIDE_LABELS: Record<Side, string> = {
   shared: 'משותף',
 }
 
-export const GROUP_LABELS: Record<GroupType, string> = {
+export const GROUP_LABELS: Record<KnownGroupType, string> = {
   close_family: 'משפחה קרובה',
   extended_family: 'משפחה רחוקה',
   friends: 'חברים',
   work: 'עבודה',
   other: 'אחר',
+}
+
+// תווית לתצוגה: קבוצה מוכרת → שם בעברית; קבוצה מותאמת → הטקסט עצמו.
+export function groupLabel(group: string): string {
+  return (GROUP_LABELS as Record<string, string>)[group] ?? group
 }
 
 export const RSVP_LABELS: Record<RsvpStatus, string> = {

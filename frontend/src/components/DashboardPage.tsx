@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { getEvent, getStats, readAudit, updateEvent } from '../api'
 import type { AuditLogRow, DashboardStats, EventDetails } from '../types'
 import { GROUP_LABELS, SIDE_LABELS } from '../types'
-import type { GroupType, Side } from '../types'
+import type { KnownGroupType, Side } from '../types'
 
 const AUDIT_LABELS: Record<string, string> = {
   send_invitations: 'שליחת הזמנות',
@@ -209,7 +209,7 @@ export function DashboardPage() {
         <div className="dash-panel">
           <h3 className="clar-title">לפי קבוצה</h3>
           <div className="bar-rows">
-            {(Object.keys(GROUP_LABELS) as GroupType[]).map((g) => (
+            {(Object.keys(GROUP_LABELS) as KnownGroupType[]).map((g) => (
               <BarRow
                 key={g}
                 label={GROUP_LABELS[g]}

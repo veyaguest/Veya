@@ -9,7 +9,8 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from app.validators import normalize_israeli_phone
 
 Side = Literal["groom", "bride", "shared"]
-GroupType = Literal["close_family", "extended_family", "friends", "work", "other"]
+# קבוצה: אחת מהמוכרות, או קבוצה מותאמת אישית (טקסט חופשי) — לכן str ולא Literal
+GroupType = str
 RsvpStatus = Literal["pending", "confirmed", "declined"]
 
 
@@ -40,6 +41,11 @@ class GuestCreate(BaseModel):
         if v < 1:
             raise ValueError("כמות אנשים חייבת להיות לפחות 1")
         return v
+
+    @field_validator("group_type")
+    @classmethod
+    def _group_default(cls, v: str) -> str:
+        return (v or "").strip() or "other"
 
 
 class GuestUpdate(BaseModel):
