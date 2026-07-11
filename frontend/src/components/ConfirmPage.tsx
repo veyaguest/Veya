@@ -100,9 +100,11 @@ export function ConfirmPage({ token }: { token: string }) {
 
   // מסך תודה אחרי שליחה
   if (done) {
+    const guests =
+      done.confirmed_count === 1 ? 'אורח אחד' : `${done.confirmed_count} אורחים`
     const msg =
       done.rsvp_status === 'confirmed'
-        ? `נהדר! נתראה באירוע 🎉 (${done.confirmed_count} אורחים)`
+        ? `נהדר! נתראה באירוע 🎉 (${guests})`
         : done.rsvp_status === 'maybe'
           ? 'תודה! סימנו "אולי" — נשמח לעדכון סופי בהמשך.'
           : 'תודה שעדכנתם. חבל שלא תגיעו — נחגוג לחיים!'
