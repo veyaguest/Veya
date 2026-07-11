@@ -9,17 +9,15 @@ import { EventPicker, FirstEventScreen } from './components/EventControls'
 import { GuestsPage } from './components/GuestsPage'
 import { HallPage } from './components/HallPage'
 import { RsvpPage } from './components/RsvpPage'
-import { SeatingPage } from './components/SeatingPage'
 import type { EventSummary, User } from './types'
 
-type Page = 'dashboard' | 'guests' | 'rsvp' | 'seating' | 'hall' | 'admin'
+type Page = 'dashboard' | 'guests' | 'rsvp' | 'hall' | 'admin'
 
 const PAGE_TITLES: Record<Page, string> = {
   dashboard: 'סקירה כללית',
   guests: 'ניהול מוזמנים',
   rsvp: 'אישורי הגעה',
-  seating: 'שיבוץ הושבה',
-  hall: 'מפת אולם',
+  hall: 'מפת אולם ושיבוץ',
   admin: 'ניהול המערכת',
 }
 
@@ -27,8 +25,7 @@ const NAV_ITEMS: { key: Page; label: string }[] = [
   { key: 'dashboard', label: 'סקירה' },
   { key: 'guests', label: 'מוזמנים' },
   { key: 'rsvp', label: 'אישורי הגעה' },
-  { key: 'seating', label: 'שיבוץ הושבה' },
-  { key: 'hall', label: 'מפת אולם' },
+  { key: 'hall', label: 'מפת אולם ושיבוץ' },
 ]
 
 function App() {
@@ -207,7 +204,6 @@ function App() {
           {page === 'dashboard' && <DashboardPage />}
           {page === 'guests' && <GuestsPage />}
           {page === 'rsvp' && <RsvpPage />}
-          {page === 'seating' && <SeatingPage />}
           {page === 'hall' && <HallPage />}
           {page === 'admin' && <AdminPage />}
         </main>

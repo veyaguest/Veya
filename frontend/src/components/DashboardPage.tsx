@@ -246,7 +246,7 @@ export function DashboardPage() {
       {stats && stats.pending_clarifications > 0 && (
         <p className="dash-alert">
           ⚠ {stats.pending_clarifications} הבהרות ממתינות לפתרון — היכנסו למסך
-          "שיבוץ הושבה".
+          "מפת אולם ושיבוץ".
         </p>
       )}
 

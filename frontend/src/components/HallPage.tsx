@@ -1,6 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { generateSeating, getHall, saveHall } from '../api'
-import type { HallElement, HallElementType, HallGuest, HallState } from '../types'
+import {
+  analyzeConstraints,
+  generateSeating,
+  getHall,
+  listClarifications,
+  resolveClarification,
+  saveHall,
+} from '../api'
+import type {
+  AnalyzeResult,
+  Clarification,
+  HallElement,
+  HallElementType,
+  HallGuest,
+  HallState,
+} from '../types'
 import { SIDE_LABELS } from '../types'
 
 interface TableView {
@@ -11,6 +25,11 @@ interface TableView {
 }
 
 const TABLE_W = 172
+
+const REL_TEXT: Record<Clarification['relation_type'], string> = {
+  avoid: 'לא לשבת עם',
+  together: 'לשבת עם',
+}
 
 // הגדרות ברירת-מחדל לכל סוג אלמנט מיוחד (תווית + גודל).
 const ELEMENT_DEFS: Record<
@@ -46,6 +65,11 @@ export function HallPage() {
   const [dirty, setDirty] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // ---- אילוצים מההערות (לולאת הבהרות) ----
+  const [clarifications, setClarifications] = useState<Clarification[]>([])
+  const [analyzeSummary, setAnalyzeSummary] = useState<AnalyzeResult | null>(null)
+  const [analyzing, setAnalyzing] = useState(false)
 
   // גרירת פריט (שולחן/אלמנט) או עריכת אלמנט (שינוי גודל/סיבוב) — pointer
   type DragState =
@@ -88,9 +112,40 @@ export function HallPage() {
     }
   }, [applyState])
 
+  const loadClarifications = useCallback(async () => {
+    try {
+      setClarifications(await listClarifications())
+    } catch {
+      /* שקט — לא חוסם את מפת האולם */
+    }
+  }, [])
+
   useEffect(() => {
     load()
-  }, [load])
+    loadClarifications()
+  }, [load, loadClarifications])
+
+  async function onAnalyze() {
+    setAnalyzing(true)
+    setError('')
+    try {
+      setAnalyzeSummary(await analyzeConstraints())
+      await loadClarifications()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה בניתוח ההערות')
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  async function onResolve(id: number, chosenGuestId: number | null) {
+    try {
+      setAnalyzeSummary(await resolveClarification(id, chosenGuestId))
+      await loadClarifications()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה בפתרון ההבהרה')
+    }
+  }
 
   // ---- גרירת שולחן / אלמנט ----
   function onTablePointerDown(e: React.PointerEvent, tnum: number) {
@@ -334,6 +389,63 @@ export function HallPage() {
 
   return (
     <div className="hall-page">
+      {/* ---- אילוצים מההערות (לפני השיבוץ) ---- */}
+      <div className="clar-panel">
+        <div className="clar-head">
+          <div>
+            <h3 className="clar-title">אילוצים מההערות</h3>
+            <p className="clar-sub">
+              המערכת קוראת את ההערות החופשיות והופכת אותן לכללי הושבה ("לא
+              לשבת עם", "לשבת ליד") לפני יצירת השיבוץ.
+            </p>
+          </div>
+          <button className="btn-ghost" onClick={onAnalyze} disabled={analyzing}>
+            {analyzing ? 'מנתח…' : '↻ נתח הערות'}
+          </button>
+        </div>
+
+        {analyzeSummary && (
+          <p className="clar-summary">
+            נותחו {analyzeSummary.guests_analyzed} מוזמנים ·{' '}
+            {analyzeSummary.resolved} אילוצים זוהו ·{' '}
+            {analyzeSummary.pending_clarifications} ממתינים להבהרה
+          </p>
+        )}
+
+        {clarifications.length > 0 ? (
+          <div className="clar-list">
+            {clarifications.map((c) => (
+              <div className="clar-card" key={c.id}>
+                <div className="clar-q">
+                  <strong>{c.source_guest_name}</strong> ביקש/ה{' '}
+                  {REL_TEXT[c.relation_type]} "<strong>{c.target_text}</strong>" —
+                  למי הכוונה?
+                </div>
+                <div className="clar-actions">
+                  {c.candidates.map((cand) => (
+                    <button
+                      key={cand.id}
+                      className="btn-ghost clar-choice"
+                      onClick={() => onResolve(c.id, cand.id)}
+                    >
+                      {cand.full_name}
+                    </button>
+                  ))}
+                  <button
+                    className="btn-text"
+                    onClick={() => onResolve(c.id, null)}
+                  >
+                    אף אחד מהם
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          analyzeSummary && <p className="clar-ok">אין הבהרות ממתינות ✓</p>
+        )}
+      </div>
+
       <div className="hall-toolbar">
         <label className="seats-field">
           כיסאות לשולחן
