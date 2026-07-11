@@ -4,11 +4,13 @@
 במערכת, כולל ספירת מוזמנים לכל אחד. מוגן ב-``get_current_admin`` — משתמש רגיל
 יקבל 403.
 """
-from fastapi import APIRouter, Depends
+import secrets
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import models, schemas
+from app import audit, auth, models, schemas
 from app.auth import get_current_admin
 from app.database import get_db
 
@@ -79,3 +81,40 @@ def list_all_events(
         )
         for e in events
     ]
+
+
+@router.post(
+    "/users/{user_id}/reset-password",
+    response_model=schemas.AdminPasswordResetResult,
+)
+def reset_user_password(
+    user_id: int,
+    payload: schemas.AdminPasswordReset,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """איפוס סיסמה ע"י אדמין (פתרון ביניים עד שיהיה ערוץ מייל ל"שכחתי סיסמה").
+
+    האדמין מגדיר סיסמה זמנית (או שהמערכת מייצרת אחת), והמשתמש מתחבר איתה ואז
+    משנה אותה בעצמו. האיפוס פוסל את כל הטוקנים הישנים של אותו משתמש.
+    """
+    target = db.get(models.User, user_id)
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש לא נמצא")
+
+    temp_password = payload.new_password or secrets.token_urlsafe(9)
+    target.password_hash = auth.hash_password(temp_password)
+    target.token_version = (target.token_version or 1) + 1
+    audit.record(
+        db, "admin_reset_password",
+        user_id=admin.id,
+        detail=f"איפוס סיסמה למשתמש {target.email} (#{target.id})",
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+    return schemas.AdminPasswordResetResult(
+        user_id=target.id,
+        email=target.email,
+        temporary_password=temp_password,
+    )

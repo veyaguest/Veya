@@ -447,6 +447,29 @@ class AdminUserRow(BaseModel):
     created_at: datetime
 
 
+class AdminPasswordReset(BaseModel):
+    """בקשת איפוס סיסמה ע"י אדמין. סיסמה מפורשת אופציונלית — אחרת נוצרת זמנית."""
+
+    new_password: Optional[str] = None
+
+    @field_validator("new_password")
+    @classmethod
+    def _min_len(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        if len(v) < 6:
+            raise ValueError("הסיסמה חייבת לכלול לפחות 6 תווים")
+        return v
+
+
+class AdminPasswordResetResult(BaseModel):
+    """תשובת האיפוס — הסיסמה הזמנית שהאדמין ימסור למשתמש."""
+
+    user_id: int
+    email: str
+    temporary_password: str
+
+
 class AdminEventRow(BaseModel):
     """שורת אירוע בפאנל האדמין — כולל בעלים וספירת מוזמנים."""
 
