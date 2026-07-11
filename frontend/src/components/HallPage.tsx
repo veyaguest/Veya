@@ -14,6 +14,7 @@ import type {
   HallElementType,
   HallGuest,
   HallState,
+  TableShape,
 } from '../types'
 import { SIDE_LABELS } from '../types'
 
@@ -22,6 +23,8 @@ interface TableView {
   x: number
   y: number
   guests: HallGuest[]
+  shape: TableShape
+  rotation: number
 }
 
 const TABLE_W = 172
@@ -36,12 +39,14 @@ const ELEMENT_DEFS: Record<
   HallElementType,
   { label: string; width: number; height: number }
 > = {
-  head_table: { label: 'שולחן ראש', width: 190, height: 74 },
-  dance_floor: { label: 'רחבת ריקודים', width: 230, height: 170 },
-  bar: { label: 'בר', width: 150, height: 60 },
+  head_table: { label: 'שולחן מחותנים', width: 220, height: 56 },
+  dance_floor: { label: 'רחבת ריקודים', width: 230, height: 200 },
+  bar: { label: 'בר', width: 130, height: 90 },
   stage: { label: 'במה', width: 200, height: 74 },
-  dj: { label: 'DJ', width: 96, height: 74 },
-  entrance: { label: 'כניסה', width: 100, height: 44 },
+  dj: { label: 'עמדת DJ', width: 110, height: 70 },
+  entrance: { label: 'כניסה', width: 110, height: 40 },
+  gift_table: { label: 'שולחן מתנות', width: 120, height: 46 },
+  restroom: { label: 'שירותים', width: 90, height: 46 },
 }
 
 const ELEMENT_ORDER: HallElementType[] = [
@@ -50,6 +55,8 @@ const ELEMENT_ORDER: HallElementType[] = [
   'bar',
   'stage',
   'dj',
+  'gift_table',
+  'restroom',
   'entrance',
 ]
 
@@ -61,10 +68,15 @@ export function HallPage() {
   const [warnings, setWarnings] = useState<string[]>([])
   const [selected, setSelected] = useState<number | null>(null)
   const [selectedEl, setSelectedEl] = useState<string | null>(null)
+  const [selectedTable, setSelectedTable] = useState<number | null>(null)
   const [dragOver, setDragOver] = useState<number | 'tray' | null>(null)
   const [dirty, setDirty] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // סקיצת האולם (data URL) — רקע עדין מתחת לשולחנות.
+  const [sketch, setSketch] = useState<string | null>(null)
+  const sketchInputRef = useRef<HTMLInputElement | null>(null)
 
   // ---- אילוצים מההערות (לולאת הבהרות) ----
   const [clarifications, setClarifications] = useState<Clarification[]>([])
@@ -74,6 +86,7 @@ export function HallPage() {
   // גרירת פריט (שולחן/אלמנט) או עריכת אלמנט (שינוי גודל/סיבוב) — pointer
   type DragState =
     | { kind: 'table'; id: number; dx: number; dy: number }
+    | { kind: 'table-rotate'; id: number; cx: number; cy: number }
     | { kind: 'element'; id: string; dx: number; dy: number }
     | {
         kind: 'resize'
@@ -94,12 +107,15 @@ export function HallPage() {
         x: t.x,
         y: t.y,
         guests: t.guests,
+        shape: t.shape ?? 'round',
+        rotation: t.rotation ?? 0,
       })),
     )
     setUnassigned(h.unassigned)
     setElements(h.elements ?? [])
     setSeats(h.seats_per_table)
     setWarnings(h.warnings)
+    setSketch(h.sketch ?? null)
     setDirty(false)
   }, [])
 
@@ -161,6 +177,31 @@ export function HallPage() {
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
   }
 
+  function onTableRotatePointerDown(e: React.PointerEvent, tnum: number) {
+    e.stopPropagation()
+    const graphic = (e.currentTarget as HTMLElement).parentElement
+    if (!graphic) return
+    const r = graphic.getBoundingClientRect()
+    dragRef.current = {
+      kind: 'table-rotate',
+      id: tnum,
+      cx: r.left + r.width / 2,
+      cy: r.top + r.height / 2,
+    }
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  function setTableShape(tnum: number, shape: TableShape) {
+    setTables((prev) =>
+      prev.map((t) =>
+        t.table_number === tnum
+          ? { ...t, shape, rotation: shape === 'round' ? 0 : t.rotation }
+          : t,
+      ),
+    )
+    setDirty(true)
+  }
+
   function onElementPointerDown(e: React.PointerEvent, id: string) {
     const el = elements.find((x) => x.id === id)
     if (!el || !canvasRef.current) return
@@ -216,6 +257,15 @@ export function HallPage() {
       const y = Math.max(0, e.clientY - rect.top - drag.dy)
       setTables((prev) =>
         prev.map((t) => (t.table_number === drag.id ? { ...t, x, y } : t)),
+      )
+    } else if (drag.kind === 'table-rotate') {
+      const deg =
+        (Math.atan2(e.clientY - drag.cy, e.clientX - drag.cx) * 180) / Math.PI +
+        90
+      setTables((prev) =>
+        prev.map((t) =>
+          t.table_number === drag.id ? { ...t, rotation: Math.round(deg) } : t,
+        ),
       )
     } else if (drag.kind === 'element') {
       const x = Math.max(0, e.clientX - rect.left - drag.dx)
@@ -327,7 +377,12 @@ export function HallPage() {
   }
 
   function onTableClick(tnum: number) {
-    if (selected !== null) moveGuestToTable(selected, tnum)
+    if (selected !== null) {
+      moveGuestToTable(selected, tnum)
+      return
+    }
+    setSelectedEl(null)
+    setSelectedTable((cur) => (cur === tnum ? null : tnum))
   }
 
   function onTrayClick() {
@@ -348,6 +403,32 @@ export function HallPage() {
     setDragOver(null)
   }
 
+  // ---- סקיצת האולם ----
+  function onPickSketch(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // מאפשר לבחור שוב את אותו קובץ
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setError('יש לבחור קובץ תמונה (JPG/PNG).')
+      return
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      setError('התמונה גדולה מדי (עד 4MB). נסו תמונה קטנה יותר.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setSketch(typeof reader.result === 'string' ? reader.result : null)
+      setDirty(true)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function removeSketch() {
+    setSketch(null)
+    setDirty(true)
+  }
+
   async function onSave() {
     setLoading(true)
     setError('')
@@ -357,8 +438,10 @@ export function HallPage() {
         x: t.x,
         y: t.y,
         guest_ids: t.guests.map((g) => g.id),
+        shape: t.shape,
+        rotation: t.rotation,
       }))
-      applyState(await saveHall(payload, seats, elements))
+      applyState(await saveHall(payload, seats, elements, sketch ?? ''))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בשמירת המפה')
     } finally {
@@ -462,8 +545,27 @@ export function HallPage() {
         <button className="btn-primary" onClick={onSave} disabled={loading || !dirty}>
           {loading ? 'שומר…' : dirty ? 'שמירת המפה' : 'נשמר ✓'}
         </button>
+        <input
+          ref={sketchInputRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={onPickSketch}
+        />
+        <button
+          className="btn-ghost"
+          onClick={() => sketchInputRef.current?.click()}
+        >
+          {sketch ? '🖼 החלפת סקיצה' : '🖼 העלאת סקיצת אולם'}
+        </button>
+        {sketch && (
+          <button className="btn-text" onClick={removeSketch}>
+            הסרת סקיצה
+          </button>
+        )}
         <span className="hall-hint">
-          גררו שולחן להזזה · גררו מוזמן לשולחן (או לחצו מוזמן ואז שולחן)
+          גררו שולחן להזזה · לחצו שולחן לבחירה (עגול/ארוך + סיבוב) · גררו מוזמן
+          לשולחן
         </span>
       </div>
 
@@ -527,9 +629,19 @@ export function HallPage() {
           onPointerUp={onCanvasPointerUp}
           onPointerLeave={onCanvasPointerUp}
           onPointerDown={(e) => {
-            if (e.target === e.currentTarget) setSelectedEl(null)
+            if (e.target === e.currentTarget) {
+              setSelectedEl(null)
+              setSelectedTable(null)
+            }
           }}
         >
+          {sketch && (
+            <div
+              className="hall-sketch-bg"
+              style={{ backgroundImage: `url(${sketch})` }}
+              aria-hidden="true"
+            />
+          )}
           {tables.length === 0 && elements.length === 0 && (
             <p className="hall-empty">
               אין עדיין שולחנות. לחצו "שיבוץ אוטומטי מחדש" כדי לחלק את המוזמנים.
@@ -623,12 +735,15 @@ export function HallPage() {
             const used = t.guests.reduce((s, g) => s + g.party_size, 0)
             const over = used > seats
             const free = seats - used
+            const isSelT = selectedTable === t.table_number
             return (
               <div
                 key={t.table_number}
-                className={`hall-table ${over ? 'over' : ''} ${
+                className={`hall-table shape-${t.shape} ${over ? 'over' : ''} ${
                   selected !== null ? 'droppable' : ''
-                } ${dragOver === t.table_number ? 'drag-over' : ''}`}
+                } ${isSelT ? 'selected' : ''} ${
+                  dragOver === t.table_number ? 'drag-over' : ''
+                }`}
                 style={{ left: t.x, top: t.y, width: TABLE_W }}
                 onClick={() => onTableClick(t.table_number)}
                 onDragOver={(e) => {
@@ -641,17 +756,53 @@ export function HallPage() {
                 onDrop={(e) => onDropTo(e, t.table_number)}
               >
                 <div
-                  className="table-disc"
+                  className={`table-graphic table-${t.shape}`}
+                  style={{ transform: `rotate(${t.rotation}deg)` }}
                   onPointerDown={(e) => onTablePointerDown(e, t.table_number)}
                 >
-                  <SeatRing seats={seats} guests={t.guests} />
+                  {t.shape === 'round' ? (
+                    <SeatRing seats={seats} guests={t.guests} />
+                  ) : (
+                    <LongSeats seats={seats} guests={t.guests} />
+                  )}
                   <span className="table-center">
                     <span className="table-num">{t.table_number}</span>
                     <span className="table-occ">
                       {used}/{seats}
                     </span>
                   </span>
+                  {isSelT && t.shape === 'long' && (
+                    <span
+                      className="handle handle-rotate table-rot"
+                      title="סובב שולחן"
+                      onPointerDown={(e) => onTableRotatePointerDown(e, t.table_number)}
+                    />
+                  )}
                 </div>
+
+                {isSelT && (
+                  <div
+                    className="table-toolbar"
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      className={t.shape === 'round' ? 'active' : ''}
+                      onClick={() => setTableShape(t.table_number, 'round')}
+                    >
+                      ● עגול
+                    </button>
+                    <button
+                      type="button"
+                      className={t.shape === 'long' ? 'active' : ''}
+                      onClick={() => setTableShape(t.table_number, 'long')}
+                    >
+                      ▬ ארוך
+                    </button>
+                  </div>
+                )}
+
                 {dragOver === t.table_number && (
                   <span className={`free-badge ${free <= 0 ? 'full' : ''}`}>
                     {free > 0 ? `${free} כיסאות פנויים` : 'השולחן מלא'}
@@ -706,6 +857,39 @@ function SeatRing({ seats, guests }: { seats: number; guests: HallGuest[] }) {
           />
         )
       })}
+    </span>
+  )
+}
+
+// שולחן ארוך: כיסאות בשתי שורות (מעל ומתחת), צבועים לפי צד.
+function LongSeats({ seats, guests }: { seats: number; guests: HallGuest[] }) {
+  const occupied: string[] = []
+  for (const g of guests) {
+    for (let i = 0; i < g.party_size; i++) occupied.push(g.side)
+  }
+  const count = Math.max(seats, occupied.length, 2)
+  const top = Math.ceil(count / 2)
+  const rows: number[][] = [
+    Array.from({ length: top }, (_, i) => i),
+    Array.from({ length: count - top }, (_, i) => top + i),
+  ]
+  return (
+    <span className="long-seats" aria-hidden="true">
+      {rows.map((row, r) => (
+        <span key={r} className={`long-row ${r === 0 ? 'row-top' : 'row-bottom'}`}>
+          {row.map((gi) => {
+            const side = occupied[gi]
+            return (
+              <span
+                key={gi}
+                className={`seat-pip ${side ? `seat-${side}` : 'seat-free'} ${
+                  gi >= seats ? 'seat-extra' : ''
+                }`}
+              />
+            )
+          })}
+        </span>
+      ))}
     </span>
   )
 }

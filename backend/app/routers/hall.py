@@ -95,6 +95,8 @@ def get_hall(
                 y=float(pos["y"]),
                 seats_used=sum(g.party_size for g in members),
                 guests=[_guest_out(g) for g in members],
+                shape=str(pos.get("shape", "round")),
+                rotation=float(pos.get("rotation", 0)),
             )
         )
 
@@ -108,6 +110,7 @@ def get_hall(
         unassigned=[_guest_out(g) for g in unassigned],
         elements=elements,
         warnings=warnings,
+        sketch=event.hall_sketch,
     )
 
 
@@ -127,7 +130,12 @@ def save_hall(
     positions: dict[str, dict] = {}
     assigned: dict[int, int] = {}  # guest_id -> table_number
     for t in payload.tables:
-        positions[str(t.table_number)] = {"x": t.x, "y": t.y}
+        positions[str(t.table_number)] = {
+            "x": t.x,
+            "y": t.y,
+            "shape": t.shape,
+            "rotation": t.rotation,
+        }
         for gid in t.guest_ids:
             if gid in seen:
                 raise HTTPException(status_code=400, detail=f"מוזמן {gid} משובץ פעמיים")
@@ -144,6 +152,9 @@ def save_hall(
         event.hall_elements = [el.model_dump() for el in payload.elements]
     if payload.seats_per_table:
         event.seats_per_table = payload.seats_per_table
+    # סקיצת האולם: None => לא נגענו; "" => מחיקה; אחרת => עדכון.
+    if payload.sketch is not None:
+        event.hall_sketch = payload.sketch or None
     db.commit()
 
     return get_hall(db=db, event=event)

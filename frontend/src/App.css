@@ -1424,11 +1424,31 @@
   background: rgba(201, 162, 39, 0.12);
   font-weight: 600;
 }
+/* בר ובמה — אלמנטי "גיבור" עדינים (זהב בינוני) */
+.el-bar,
+.el-stage {
+  border-color: var(--gold-deep);
+  background: rgba(201, 162, 39, 0.08);
+}
+/* אלמנטי שירות — עדינים (אפור) */
 .el-entrance,
-.el-dj {
+.el-dj,
+.el-gift_table,
+.el-restroom {
   color: var(--body);
   border-color: var(--line-2);
   background: rgba(255, 255, 255, 0.02);
+}
+/* כניסה — קו זהב דק במקום תיבה */
+.el-entrance {
+  border: none;
+  border-top: 2px solid var(--gold-deep);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--gold-light);
+  font-size: 12px;
+  letter-spacing: 2px;
 }
 
 /* ---- עריכת אובייקטים: בחירה, נעילה, ידיות, סרגל צף ---- */
@@ -1593,6 +1613,18 @@
   min-height: 460px;
   box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.55);
 }
+/* סקיצת האולם שהזוג העלה — רקע עדין מתחת לשולחנות */
+.hall-sketch-bg {
+  position: absolute;
+  inset: 0;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.32;
+  filter: grayscale(0.15);
+  pointer-events: none;
+  z-index: 0;
+}
 .hall-empty {
   position: absolute;
   top: 50%;
@@ -1612,16 +1644,27 @@
   gap: 8px;
   user-select: none;
 }
-.hall-table.droppable .table-disc {
+.hall-table.droppable .table-graphic {
   outline: 2px dashed var(--gold);
   outline-offset: 4px;
   cursor: copy;
 }
 /* חיווי יעד גרירה פעיל (drag & drop של מוזמן) */
-.hall-table.drag-over .table-disc {
+.hall-table.drag-over .table-graphic {
   outline: 2px solid var(--gold);
   outline-offset: 4px;
   box-shadow: 0 0 0 6px rgba(201, 162, 39, 0.18);
+}
+/* שולחן נבחר — הדגשת זהב עדינה */
+.hall-table.selected {
+  z-index: 7;
+}
+.hall-table.selected .table-graphic {
+  border-color: var(--gold-light);
+  box-shadow:
+    0 0 0 1px var(--gold-light),
+    0 6px 20px rgba(0, 0, 0, 0.5),
+    0 0 18px rgba(201, 162, 39, 0.25);
 }
 .free-badge {
   position: absolute;
@@ -1648,13 +1691,10 @@
   box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.22);
 }
 
-/* ---- דיסקת השולחן העגולה + טבעת כיסאות ---- */
-.table-disc {
+/* ---- גרפיקת השולחן (עגול / ארוך) + כיסאות ---- */
+.table-graphic {
   position: relative;
-  width: 108px;
-  height: 108px;
   flex-shrink: 0;
-  border-radius: 50%;
   background:
     radial-gradient(circle at 50% 38%, rgba(201, 162, 39, 0.14), transparent 60%),
     var(--surface-hi);
@@ -1665,10 +1705,22 @@
   align-items: center;
   justify-content: center;
 }
-.table-disc:active {
+.table-graphic:active {
   cursor: grabbing;
 }
-.hall-table.over .table-disc {
+/* שולחן עגול */
+.table-round {
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+}
+/* שולחן ארוך (מלבני) */
+.table-long {
+  width: 150px;
+  height: 78px;
+  border-radius: 12px;
+}
+.hall-table.over .table-graphic {
   border-color: var(--error);
 }
 .table-center {
@@ -1721,6 +1773,62 @@
 .seat-pip.seat-extra {
   border-color: var(--error);
   background: var(--error);
+}
+
+/* ---- כיסאות שולחן ארוך: שתי שורות (מעל ומתחת) ---- */
+.long-seats {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 10px;
+  pointer-events: none;
+}
+.long-row {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+}
+.long-row .seat-pip {
+  position: static;
+  margin: 0;
+}
+
+/* ---- ידית סיבוב לשולחן ארוך ---- */
+.table-rot {
+  z-index: 8;
+}
+
+/* ---- סרגל בחירת צורת שולחן (עגול/ארוך) ---- */
+.table-toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+}
+.table-toolbar button {
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--body);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 3px 11px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.table-toolbar button:hover {
+  background: rgba(201, 162, 39, 0.14);
+  color: var(--gold-light);
+}
+.table-toolbar button.active {
+  background: var(--gold);
+  color: #201a06;
+  border-color: var(--gold-deep);
 }
 
 /* רשימת השמות מתחת לדיסקה — נשארת קריאה */

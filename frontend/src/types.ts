@@ -263,12 +263,16 @@ export interface HallGuest {
   rsvp_status: RsvpStatus
 }
 
+export type TableShape = 'round' | 'long'
+
 export interface HallTable {
   table_number: number
   x: number
   y: number
   seats_used: number
   guests: HallGuest[]
+  shape: TableShape
+  rotation: number
 }
 
 export type HallElementType =
@@ -278,6 +282,8 @@ export type HallElementType =
   | 'stage'
   | 'entrance'
   | 'dj'
+  | 'gift_table'
+  | 'restroom'
 
 export interface HallElement {
   id: string
@@ -297,6 +303,7 @@ export interface HallState {
   unassigned: HallGuest[]
   elements: HallElement[]
   warnings: string[]
+  sketch: string | null
 }
 
 export interface HallTableSave {
@@ -304,6 +311,8 @@ export interface HallTableSave {
   x: number
   y: number
   guest_ids: number[]
+  shape: TableShape
+  rotation: number
 }
 
 // ---- משתמשים והתחברות (שלב 8) ----

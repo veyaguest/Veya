@@ -291,6 +291,8 @@ class HallTable(BaseModel):
     y: float
     seats_used: int
     guests: list[HallGuest]
+    shape: str = "round"      # "round" | "long"
+    rotation: float = 0       # זווית סיבוב במעלות (בעיקר לשולחנות ארוכים)
 
 
 class HallElement(BaseModel):
@@ -313,6 +315,7 @@ class HallState(BaseModel):
     unassigned: list[HallGuest]          # מוזמנים ללא שולחן
     elements: list[HallElement]          # אלמנטים מיוחדים במפה
     warnings: list[str]                  # חריגות (קיבולת/זוג אסור באותו שולחן)
+    sketch: Optional[str] = None         # סקיצת האולם (data URL) — רקע עדין
 
 
 class HallTableSave(BaseModel):
@@ -320,12 +323,15 @@ class HallTableSave(BaseModel):
     x: float
     y: float
     guest_ids: list[int]
+    shape: str = "round"      # "round" | "long"
+    rotation: float = 0
 
 
 class SaveHallRequest(BaseModel):
     seats_per_table: Optional[int] = None
     tables: list[HallTableSave]
     elements: Optional[list[HallElement]] = None
+    sketch: Optional[str] = None         # None => לא לשנות; מחרוזת ריקה => למחוק
 
 
 # ---- משתמשים והתחברות (שלב 8) ----

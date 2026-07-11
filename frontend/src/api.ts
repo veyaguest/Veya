@@ -366,6 +366,7 @@ export async function saveHall(
   tables: HallTableSave[],
   seatsPerTable?: number,
   elements?: HallElement[],
+  sketch?: string | null,
 ): Promise<HallState> {
   const res = await apiFetch('/hall', {
     method: 'PUT',
@@ -374,6 +375,7 @@ export async function saveHall(
       tables,
       seats_per_table: seatsPerTable,
       elements,
+      sketch,
     }),
   })
   if (!res.ok) throw await toError(res)
