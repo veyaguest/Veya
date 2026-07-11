@@ -1,6 +1,8 @@
 """Router לניהול אירועים של המשתמש (שלב 8): רשימה, יצירה, מחיקה.
 
-כל משתמש רואה ומנהל רק את האירועים שבבעלותו.
+כל משתמש רואה את האירועים שבבעלותו, ובנוסף (שלב multi-tenant) אירועים
+שבהם הוא חבר-אירוע פעיל (מפיק/אולם שהוזמנו). ניהול (יצירה/מחיקה) עדיין
+מוגבל לבעלים בלבד.
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -18,10 +20,26 @@ def list_events(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """כל האירועים של המשתמש המחובר, מהחדש לישן."""
+    """אירועים בבעלות המשתמש + אירועים ששותפו איתו כחבר-אירוע פעיל, מהחדש לישן."""
+    owned = set(
+        db.scalars(
+            select(models.Event.id).where(models.Event.owner_id == user.id)
+        ).all()
+    )
+    shared = set(
+        db.scalars(
+            select(models.EventMember.event_id).where(
+                models.EventMember.user_id == user.id,
+                models.EventMember.status == "active",
+            )
+        ).all()
+    )
+    event_ids = owned | shared
+    if not event_ids:
+        return []
     return db.scalars(
         select(models.Event)
-        .where(models.Event.owner_id == user.id)
+        .where(models.Event.id.in_(event_ids))
         .order_by(models.Event.id.desc())
     ).all()
 

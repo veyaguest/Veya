@@ -16,6 +16,7 @@ from app.routers import (
     confirm,
     constraints,
     event,
+    event_members,
     events,
     guests,
     hall,
@@ -43,6 +44,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(events.router)
+app.include_router(event_members.router)
 app.include_router(guests.router)
 app.include_router(import_guests.router)
 app.include_router(seating.router)
