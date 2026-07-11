@@ -29,8 +29,12 @@ def dashboard(
     declined = sum(1 for g in guests if g.rsvp_status == "declined")
     maybe = sum(1 for g in guests if g.rsvp_status == "maybe")
     pending = sum(1 for g in guests if g.rsvp_status == "pending")
+    # כמות האורחים שאישרו בפועל: לפי הכמות שהמוזמן הזין (confirmed_count),
+    # ולא לפי כמה שהוזמנו (party_size). אם משום מה אין ערך — נופלים ל-party_size.
     confirmed_people = sum(
-        g.party_size for g in guests if g.rsvp_status == "confirmed"
+        (g.confirmed_count if g.confirmed_count is not None else g.party_size)
+        for g in guests
+        if g.rsvp_status == "confirmed"
     )
     responded = confirmed + declined
     response_rate = round(responded / total_guests * 100) if total_guests else 0

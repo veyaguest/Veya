@@ -381,35 +381,36 @@ function Donut({
   const C = 2 * Math.PI * R
   let acc = 0
   return (
-    <svg viewBox="0 0 140 140" className="donut" role="img" aria-label={centerLabel}>
-      <circle className="donut-bg" cx="70" cy="70" r={R} fill="none" strokeWidth="18" />
-      {total > 0 &&
-        segments.map((seg, i) => {
-          const len = (seg.value / total) * C
-          const dash = (
-            <circle
-              key={i}
-              cx="70"
-              cy="70"
-              r={R}
-              fill="none"
-              stroke={seg.color}
-              strokeWidth="18"
-              strokeDasharray={`${len} ${C - len}`}
-              strokeDashoffset={-acc}
-              transform="rotate(-90 70 70)"
-            />
-          )
-          acc += len
-          return dash
-        })}
-      <text className="donut-num" x="70" y="66" textAnchor="middle">
-        {centerNum}
-      </text>
-      <text className="donut-lbl" x="70" y="88" textAnchor="middle">
-        {centerLabel}
-      </text>
-    </svg>
+    <div className="donut-wrap">
+      <svg viewBox="0 0 140 140" className="donut" role="img" aria-label={centerLabel}>
+        <circle className="donut-bg" cx="70" cy="70" r={R} fill="none" strokeWidth="18" />
+        {total > 0 &&
+          segments.map((seg, i) => {
+            const len = (seg.value / total) * C
+            const dash = (
+              <circle
+                key={i}
+                cx="70"
+                cy="70"
+                r={R}
+                fill="none"
+                stroke={seg.color}
+                strokeWidth="18"
+                strokeDasharray={`${len} ${C - len}`}
+                strokeDashoffset={-acc}
+                transform="rotate(-90 70 70)"
+              />
+            )
+            acc += len
+            return dash
+          })}
+      </svg>
+      {/* מרכז העוגה כ-HTML (ולא SVG) — כדי שהעברית תוצג נכון בכל דפדפן */}
+      <div className="donut-center" aria-hidden="true">
+        <span className="donut-num">{centerNum}</span>
+        <span className="donut-lbl">{centerLabel}</span>
+      </div>
+    </div>
   )
 }
 
