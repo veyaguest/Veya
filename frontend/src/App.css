@@ -1071,6 +1071,69 @@
 .event-edit-actions .btn-text {
   color: #cfc6b4;
 }
+.event-view-text {
+  flex: 1;
+  min-width: 0;
+}
+.event-invite-img {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--gold-deep);
+  flex-shrink: 0;
+}
+/* עריכת תמונת ההזמנה */
+.event-image-edit {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.event-image-label {
+  font-size: 13px;
+  color: #cfc6b4;
+}
+.event-image-has {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.event-image-thumb {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--gold-deep);
+}
+.event-image-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px;
+  border: 1px dashed var(--gold-deep);
+  border-radius: 10px;
+  color: var(--gold-light);
+  cursor: pointer;
+  text-align: center;
+}
+.event-image-drop small {
+  color: #8a8172;
+  font-size: 12px;
+}
+.event-image-drop:hover {
+  border-color: var(--gold);
+}
+/* תמונת ההזמנה בתצוגה המקדימה של ההודעה */
+.tpl-preview-img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--cream);
+}
 
 .dash-grid {
   display: grid;

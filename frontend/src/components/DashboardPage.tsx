@@ -22,6 +22,7 @@ export function DashboardPage() {
     venue_name: '',
     event_date: '',
     event_time: '',
+    invite_image: '' as string | null,
   })
   const [audit, setAudit] = useState<AuditLogRow[]>([])
   const [error, setError] = useState('')
@@ -38,6 +39,7 @@ export function DashboardPage() {
         venue_name: e.venue_name,
         event_date: e.event_date,
         event_time: e.event_time,
+        invite_image: e.invite_image ?? '',
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בטעינת הדשבורד')
@@ -58,6 +60,25 @@ export function DashboardPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בשמירת פרטי האירוע')
     }
+  }
+
+  function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // מאפשר לבחור שוב את אותו קובץ
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setError('אפשר להעלות קובץ תמונה בלבד')
+      return
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setError('התמונה גדולה מדי — עד 3MB')
+      return
+    }
+    setError('')
+    const reader = new FileReader()
+    reader.onload = () =>
+      setForm((f) => ({ ...f, invite_image: String(reader.result) }))
+    reader.readAsDataURL(file)
   }
 
   const couple =
@@ -104,6 +125,38 @@ export function DashboardPage() {
                 onChange={(e) => setForm({ ...form, event_time: e.target.value })}
               />
             </div>
+
+            <div className="event-image-edit">
+              <span className="event-image-label">תמונת ההזמנה</span>
+              {form.invite_image ? (
+                <div className="event-image-has">
+                  <img
+                    className="event-image-thumb"
+                    src={form.invite_image}
+                    alt="תצוגה מקדימה של ההזמנה"
+                  />
+                  <button
+                    type="button"
+                    className="btn-text"
+                    onClick={() => setForm({ ...form, invite_image: '' })}
+                  >
+                    הסרת התמונה
+                  </button>
+                </div>
+              ) : (
+                <label className="event-image-drop">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={onPickImage}
+                    style={{ display: 'none' }}
+                  />
+                  <span>⬆ העלאת תמונת הזמנה</span>
+                  <small>זו התמונה שתישלח למוזמנים בהזמנה</small>
+                </label>
+              )}
+            </div>
+
             <div className="event-edit-actions">
               <button className="btn-primary" onClick={onSaveEvent}>
                 שמור
@@ -115,7 +168,14 @@ export function DashboardPage() {
           </div>
         ) : (
           <div className="event-view">
-            <div>
+            {event?.invite_image && (
+              <img
+                className="event-invite-img"
+                src={event.invite_image}
+                alt="הזמנה לחתונה"
+              />
+            )}
+            <div className="event-view-text">
               <h2 className="event-couple">{couple ?? 'החתונה שלנו'}</h2>
               <p className="event-venue">
                 {event?.venue_name ||

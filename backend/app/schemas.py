@@ -261,6 +261,7 @@ class EventRead(BaseModel):
     venue_name: str
     event_date: str = ""
     event_time: str = ""
+    invite_image: Optional[str] = None
 
 
 class EventUpdate(BaseModel):
@@ -269,6 +270,7 @@ class EventUpdate(BaseModel):
     venue_name: Optional[str] = None
     event_date: Optional[str] = None
     event_time: Optional[str] = None
+    invite_image: Optional[str] = None
 
 
 # ---- מפת אולם (שלב 7) ----

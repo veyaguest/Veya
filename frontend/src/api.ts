@@ -330,7 +330,12 @@ export async function updateEvent(
   data: Partial<
     Pick<
       EventDetails,
-      'groom_name' | 'bride_name' | 'venue_name' | 'event_date' | 'event_time'
+      | 'groom_name'
+      | 'bride_name'
+      | 'venue_name'
+      | 'event_date'
+      | 'event_time'
+      | 'invite_image'
     >
   >,
 ): Promise<EventDetails> {

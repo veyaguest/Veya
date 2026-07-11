@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  getEvent,
   getTemplate,
   listGuests,
   messageLog,
@@ -10,11 +11,18 @@ import {
   sendReminders,
   simulateReply,
 } from '../api'
-import type { Guest, Message, RsvpSummary, TemplatePlaceholder } from '../types'
+import type {
+  EventDetails,
+  Guest,
+  Message,
+  RsvpSummary,
+  TemplatePlaceholder,
+} from '../types'
 import { RSVP_LABELS } from '../types'
 
 export function RsvpPage() {
   const [summary, setSummary] = useState<RsvpSummary | null>(null)
+  const [event, setEvent] = useState<EventDetails | null>(null)
   const [guests, setGuests] = useState<Guest[]>([])
   const [log, setLog] = useState<Message[]>([])
   const [busy, setBusy] = useState(false)
@@ -32,13 +40,15 @@ export function RsvpPage() {
 
   const refresh = useCallback(async () => {
     try {
-      const [s, g, l, t] = await Promise.all([
+      const [s, g, l, t, ev] = await Promise.all([
         rsvpSummary(),
         listGuests(),
         messageLog(20),
         getTemplate(),
+        getEvent(),
       ])
       setSummary(s)
+      setEvent(ev)
       setGuests(g)
       setLog(l)
       setTemplate(t.template)
@@ -201,6 +211,13 @@ export function RsvpPage() {
           />
           <div className="tpl-preview">
             <span className="tpl-preview-label">תצוגה מקדימה</span>
+            {event?.invite_image && (
+              <img
+                className="tpl-preview-img"
+                src={event.invite_image}
+                alt="הזמנה לחתונה"
+              />
+            )}
             <div className="tpl-preview-body">{preview || '—'}</div>
           </div>
         </div>
