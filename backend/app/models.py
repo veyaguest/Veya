@@ -29,6 +29,9 @@ class User(Base):
     display_name: Mapped[str] = mapped_column(String, default="")
     # אדמין = הבעלים של המערכת, רואה ומנהל את כל המשתמשים והאירועים.
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    # גרסת הטוקן: כל טוקן JWT נושא את הגרסה שהייתה בזמן ההנפקה. העלאת המספר
+    # (יציאה מכל המכשירים / שינוי סיסמה / איפוס) פוסלת מיד את כל הטוקנים הישנים.
+    token_version: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     events: Mapped[list["Event"]] = relationship(back_populates="owner")

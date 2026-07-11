@@ -53,7 +53,7 @@ def register(payload: schemas.UserCreate, request: Request, db: Session = Depend
 
     db.commit()
     db.refresh(user)
-    token = auth.create_access_token(user.id)
+    token = auth.create_access_token(user)
     return schemas.TokenResponse(access_token=token, user=user)
 
 
@@ -71,7 +71,7 @@ def login(payload: schemas.LoginRequest, request: Request, db: Session = Depends
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="אימייל או סיסמה שגויים",
         )
-    token = auth.create_access_token(user.id)
+    token = auth.create_access_token(user)
     return schemas.TokenResponse(access_token=token, user=user)
 
 
@@ -79,3 +79,16 @@ def login(payload: schemas.LoginRequest, request: Request, db: Session = Depends
 def me(user: models.User = Depends(auth.get_current_user)):
     """מחזיר את פרטי המשתמש המחובר (בדיקת תקינות טוקן)."""
     return user
+
+
+@router.post("/logout-all", status_code=204)
+def logout_all(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(auth.get_current_user),
+):
+    """יציאה מכל המכשירים: מעלה את גרסת הטוקן ובכך פוסל את כל הטוקנים הקיימים.
+
+    אחרי הקריאה גם הטוקן הנוכחי בטל — הצד-לקוח יימחק אותו ויחזיר למסך הכניסה.
+    """
+    user.token_version = (user.token_version or 1) + 1
+    db.commit()

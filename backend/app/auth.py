@@ -53,22 +53,23 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def create_access_token(user_id: int) -> str:
-    """יוצר טוקן JWT חתום עבור המשתמש."""
+def create_access_token(user: "models.User") -> str:
+    """יוצר טוקן JWT חתום עבור המשתמש, כולל גרסת הטוקן הנוכחית (``tv``)."""
     now = datetime.now(timezone.utc)
     payload = {
-        "sub": str(user_id),
+        "sub": str(user.id),
+        "tv": user.token_version,
         "iat": now,
         "exp": now + timedelta(days=JWT_EXPIRE_DAYS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def _decode_token(token: str) -> Optional[int]:
+def _decode_token(token: str) -> Optional[dict]:
+    """מפענח טוקן ומחזיר את תוכנו (sub + tv), או None אם לא תקין."""
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        return int(payload["sub"])
-    except (jwt.PyJWTError, KeyError, ValueError):
+        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.PyJWTError:
         return None
 
 
@@ -84,11 +85,18 @@ def get_current_user(
     )
     if creds is None or not creds.credentials:
         raise err
-    user_id = _decode_token(creds.credentials)
-    if user_id is None:
+    payload = _decode_token(creds.credentials)
+    if payload is None:
+        raise err
+    try:
+        user_id = int(payload["sub"])
+    except (KeyError, ValueError, TypeError):
         raise err
     user = db.get(models.User, user_id)
     if user is None:
+        raise err
+    # בדיקת גרסת הטוקן: אם המשתמש העלה גרסה (יציאה/שינוי סיסמה), טוקן ישן נפסל.
+    if payload.get("tv") != user.token_version:
         raise err
     return user
 
