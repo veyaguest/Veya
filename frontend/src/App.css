@@ -163,7 +163,7 @@
   background: rgba(201, 162, 39, 0.14);
   border: 1px solid var(--gold-deep);
   color: var(--gold-light);
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 17px;
   font-weight: 600;
 }
@@ -240,7 +240,7 @@
 
 .page-title {
   position: relative;
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 30px;
   color: var(--charcoal);
   margin: 0;
@@ -574,7 +574,7 @@
   justify-content: space-between;
 }
 .dialog-head h2 {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   color: var(--charcoal);
   margin: 0;
   font-size: 22px;
@@ -698,7 +698,7 @@
   border-bottom: 1px solid var(--line);
 }
 .table-name {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 18px;
   color: var(--gold-deep);
   font-weight: 700;
@@ -752,7 +752,7 @@
 }
 .clar-title {
   margin: 0 0 4px;
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 19px;
   color: var(--charcoal);
 }
@@ -852,7 +852,7 @@
   border-color: rgba(201, 162, 39, 0.4);
 }
 .stat-num {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
   font-size: 38px;
   font-weight: 600;
   line-height: 1;
@@ -1027,7 +1027,7 @@
 }
 .event-couple {
   margin: 0 0 4px;
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 26px;
   color: var(--gold-light);
 }
@@ -1256,7 +1256,7 @@
   gap: 4px;
 }
 .mini-num {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
   font-size: 32px;
   font-weight: 600;
   color: var(--gold-deep);
@@ -1285,7 +1285,7 @@
 }
 .dash-hero-title {
   margin: 0;
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 24px;
   color: var(--charcoal);
 }
@@ -1322,7 +1322,7 @@
   direction: rtl;
 }
 .donut-num {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
   font-size: 52px;
   font-weight: 600;
   line-height: 1;
@@ -1359,7 +1359,7 @@
   flex: 1;
 }
 .legend-val {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
   font-size: 24px;
   font-weight: 600;
   color: var(--charcoal);
@@ -1782,7 +1782,7 @@
   pointer-events: none;
 }
 .table-num {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
   font-size: 30px;
   font-weight: 600;
   color: var(--gold-light);
@@ -2051,7 +2051,7 @@
   display: block;
 }
 .auth-logo-tag {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 14px;
   letter-spacing: 3px;
   color: var(--gold);
@@ -2116,7 +2116,7 @@
   line-height: 1;
 }
 .auth-wordmark-tag {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 12px;
   letter-spacing: 2px;
   color: var(--gold);
@@ -2137,7 +2137,7 @@
   gap: 16px;
 }
 .auth-hero-title {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 46px;
   line-height: 1.25;
   color: var(--charcoal);
@@ -2201,7 +2201,7 @@
   margin-bottom: 40px;
 }
 .auth-panel-title {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 28px;
   color: var(--charcoal);
   font-weight: 600;
@@ -2363,7 +2363,7 @@
 
 .first-event-title {
   text-align: center;
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   color: var(--gold-light);
   font-size: 26px;
   margin: 0 0 4px;
@@ -2502,14 +2502,14 @@
   font-size: 30px;
   font-weight: 800;
   color: var(--gold-deep);
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
 }
 .admin-stat-label {
   font-size: 13px;
   color: var(--muted);
 }
 .admin-section-title {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   color: var(--charcoal);
   font-size: 20px;
   margin: 26px 0 12px;
@@ -2571,14 +2571,14 @@
   margin: 0 0 4px;
 }
 .confirm-title {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 20px;
   color: var(--body);
   font-weight: 400;
   margin: 0 0 6px;
 }
 .confirm-couple {
-  font-family: 'Heebo', 'Assistant', sans-serif;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 34px;
   color: var(--gold-light);
   font-weight: 500;
