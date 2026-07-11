@@ -1,4 +1,6 @@
 """נקודת הכניסה ל-Backend של VEYA (FastAPI)."""
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -24,10 +26,15 @@ from app.routers import (
 
 app = FastAPI(title="VEYA API", version="0.1.0")
 
-# מאפשר ל-Frontend (Vite, פורט 5173) לפנות ל-API בזמן פיתוח.
+# מקורות ה-CORS ניתנים להגדרה ממשתנה סביבה (מופרד בפסיקים), כדי שבייצור
+# אפשר יהיה להתיר את הדומיין האמיתי. ברירת מחדל: כתובות הפיתוח המקומיות.
+_DEFAULT_CORS = "http://localhost:5173,http://127.0.0.1:5173"
+_cors_origins = [
+    o.strip() for o in os.getenv("CORS_ORIGINS", _DEFAULT_CORS).split(",") if o.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=_cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -18,11 +18,20 @@ from sqlalchemy.orm import Session
 from app import models
 from app.database import get_db
 
-# מפתח חתימת הטוקנים. בפרודקשן חובה להגדיר JWT_SECRET במשתני הסביבה;
+# מפתח חתימת הטוקנים. בפרודקשן חובה להגדיר JWT_SECRET אמיתי במשתני הסביבה;
 # בפיתוח יש ברירת-מחדל כדי שהמערכת תרוץ מיד.
-JWT_SECRET = os.getenv("JWT_SECRET", "veya-dev-secret-change-me")
+_DEV_JWT_SECRET = "veya-dev-secret-change-me"
+JWT_SECRET = os.getenv("JWT_SECRET", _DEV_JWT_SECRET)
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_DAYS = 30
+
+# בסביבת ייצור (VEYA_ENV=production) אסור לרוץ עם מפתח ברירת המחדל — כל מי
+# שיודע אותו יכול לזייף התחברות. במקרה כזה מפילים את עליית השרת במפורש.
+if os.getenv("VEYA_ENV", "").strip().lower() == "production" and JWT_SECRET == _DEV_JWT_SECRET:
+    raise RuntimeError(
+        "JWT_SECRET חייב להיות מוגדר (ולא ברירת המחדל) כאשר VEYA_ENV=production. "
+        "הגדירו משתנה סביבה JWT_SECRET עם מחרוזת אקראית וסודית."
+    )
 
 # אימייל שיקבל הרשאת אדמין אוטומטית בהרשמה (אופציונלי).
 ADMIN_EMAIL = (os.getenv("ADMIN_EMAIL", "") or "").strip().lower()

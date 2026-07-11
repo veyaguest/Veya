@@ -31,7 +31,9 @@ import {
   notifyUnauthorized,
 } from './authStore'
 
-const API_URL = 'http://localhost:8000'
+// כתובת ה-API ניתנת להגדרה בזמן build דרך משתנה סביבה של Vite (VITE_API_URL),
+// כדי שבייצור אפשר להצביע על השרת האמיתי. ברירת מחדל: שרת הפיתוח המקומי.
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
 /** מרכיב כותרות בקשה כולל טוקן ההתחברות והאירוע הפעיל. */
 function authHeaders(extra?: HeadersInit): Record<string, string> {
