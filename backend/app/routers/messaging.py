@@ -6,6 +6,11 @@
 2. המוזמן לוחץ כפתור "מגיע/ה"/"לא מגיע/ה" → מגיע webhook מ-Meta, וה-RSVP
    מתעדכן אוטומטית. במצב mock אפשר "לדמות" את הלחיצה דרך המסך.
 """
+import hashlib
+import hmac
+import os
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -328,10 +333,34 @@ def verify_webhook(request: Request):
     raise HTTPException(status_code=403, detail="אימות webhook נכשל")
 
 
+def _verify_signature(body: bytes, signature_header: Optional[str]) -> bool:
+    """מאמת שהבקשה נחתמה ע"י Meta עם ה-App Secret (HMAC-SHA256 על גוף הבקשה).
+
+    אם ``WHATSAPP_APP_SECRET`` לא מוגדר (פיתוח/mock) — מדלגים על האימות כדי
+    שהזרימה המקומית תמשיך לעבוד. בייצור חובה להגדיר את הסוד כדי לחסום בקשות
+    מזויפות שמתחזות ל-Meta.
+    """
+    app_secret = os.getenv("WHATSAPP_APP_SECRET", "").strip()
+    if not app_secret:
+        return True  # אין סוד מוגדר → מצב פיתוח, לא אוכפים.
+    if not signature_header or not signature_header.startswith("sha256="):
+        return False
+    expected = hmac.new(
+        app_secret.encode("utf-8"), body, hashlib.sha256
+    ).hexdigest()
+    provided = signature_header.split("=", 1)[1]
+    return hmac.compare_digest(expected, provided)
+
+
 @router.post("/webhook")
 async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     """קבלת תשובות RSVP מ-Meta. מזהה את המוזמן לפי מספר הטלפון ומעדכן סטטוס."""
-    data = await request.json()
+    # קוראים את הגוף הגולמי (bytes) לפני הפענוח — נדרש לאימות החתימה בדיוק.
+    raw_body = await request.body()
+    if not _verify_signature(raw_body, request.headers.get("X-Hub-Signature-256")):
+        raise HTTPException(status_code=403, detail="חתימת webhook לא תקינה")
+    import json
+    data = json.loads(raw_body or b"{}")
     try:
         for entry in data.get("entry", []):
             for change in entry.get("changes", []):
@@ -356,7 +385,13 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
 
 
 def _match_guest_by_phone(db: Session, from_phone: str):
-    """מתאים מספר שהגיע מ-Meta (972...) למוזמן לפי הספרות האחרונות."""
+    """מתאים מספר שהגיע מ-Meta (972...) למוזמן לפי הספרות האחרונות.
+
+    מגבלה ידועה (לטיפול עתידי): הסריקה היא על *כל* המוזמנים בכל האירועים,
+    ומחזירה את ההתאמה הראשונה. אם אותו מספר טלפון מופיע בשני אירועים שונים,
+    תשובת ה-RSVP עלולה להירשם לאירוע הלא-נכון. פתרון עתידי: לשייך את הודעת
+    ה-WhatsApp הנכנסת למספר העסקי/אירוע שאליו נשלחה, ולסנן לפי event_id.
+    """
     digits = "".join(ch for ch in from_phone if ch.isdigit())
     tail = digits[-9:]
     if not tail:
