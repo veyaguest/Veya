@@ -369,6 +369,34 @@ class LoginRequest(BaseModel):
         return (v or "").strip().lower()
 
 
+class ProfileUpdate(BaseModel):
+    """עדכון פרטי הפרופיל של המשתמש המחובר (כרגע: שם תצוגה)."""
+
+    display_name: str
+
+    @field_validator("display_name")
+    @classmethod
+    def _name_not_empty(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("שם התצוגה לא יכול להיות ריק")
+        return v
+
+
+class PasswordChange(BaseModel):
+    """שינוי סיסמה למשתמש מחובר: הסיסמה הנוכחית + החדשה."""
+
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def _new_password_valid(cls, v: str) -> str:
+        if len((v or "")) < 6:
+            raise ValueError("הסיסמה החדשה חייבת לכלול לפחות 6 תווים")
+        return v
+
+
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

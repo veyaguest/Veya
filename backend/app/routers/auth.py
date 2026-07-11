@@ -92,3 +92,40 @@ def logout_all(
     """
     user.token_version = (user.token_version or 1) + 1
     db.commit()
+
+
+@router.patch("/me", response_model=schemas.UserRead)
+def update_profile(
+    payload: schemas.ProfileUpdate,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(auth.get_current_user),
+):
+    """עדכון פרטי הפרופיל של המשתמש המחובר (שם תצוגה)."""
+    user.display_name = payload.display_name.strip()
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.post("/change-password", response_model=schemas.TokenResponse)
+def change_password(
+    payload: schemas.PasswordChange,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(auth.get_current_user),
+):
+    """שינוי סיסמה: מאמת את הנוכחית, מחליף, ופוסל את כל הטוקנים הישנים.
+
+    מחזיר טוקן חדש כדי שהמכשיר הנוכחי יישאר מחובר, בעוד שאר המכשירים נדרשים
+    להתחבר מחדש עם הסיסמה החדשה.
+    """
+    if not auth.verify_password(payload.current_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="הסיסמה הנוכחית שגויה",
+        )
+    user.password_hash = auth.hash_password(payload.new_password)
+    user.token_version = (user.token_version or 1) + 1
+    db.commit()
+    db.refresh(user)
+    token = auth.create_access_token(user)
+    return schemas.TokenResponse(access_token=token, user=user)
