@@ -78,7 +78,7 @@
   border-bottom: 1px solid var(--line);
 }
 .logo-text {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 26px;
   letter-spacing: 8px;
   color: var(--charcoal);
@@ -163,7 +163,7 @@
   background: rgba(201, 162, 39, 0.14);
   border: 1px solid var(--gold-deep);
   color: var(--gold-light);
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 17px;
   font-weight: 600;
 }
@@ -240,7 +240,7 @@
 
 .page-title {
   position: relative;
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 30px;
   color: var(--charcoal);
   margin: 0;
@@ -574,7 +574,7 @@
   justify-content: space-between;
 }
 .dialog-head h2 {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   color: var(--charcoal);
   margin: 0;
   font-size: 22px;
@@ -698,7 +698,7 @@
   border-bottom: 1px solid var(--line);
 }
 .table-name {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 18px;
   color: var(--gold-deep);
   font-weight: 700;
@@ -752,7 +752,7 @@
 }
 .clar-title {
   margin: 0 0 4px;
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 19px;
   color: var(--charcoal);
 }
@@ -852,7 +852,7 @@
   border-color: rgba(201, 162, 39, 0.4);
 }
 .stat-num {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 38px;
   font-weight: 600;
   line-height: 1;
@@ -1027,7 +1027,7 @@
 }
 .event-couple {
   margin: 0 0 4px;
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 26px;
   color: var(--gold-light);
 }
@@ -1222,7 +1222,7 @@
   gap: 4px;
 }
 .mini-num {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 32px;
   font-weight: 600;
   color: var(--gold-deep);
@@ -1251,7 +1251,7 @@
 }
 .dash-hero-title {
   margin: 0;
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 24px;
   color: var(--charcoal);
 }
@@ -1270,7 +1270,7 @@
   stroke: var(--surface-hi);
 }
 .donut-num {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 40px;
   font-weight: 600;
   fill: var(--charcoal);
@@ -1279,6 +1279,8 @@
   font-size: 12px;
   fill: var(--muted);
   letter-spacing: 0.5px;
+  direction: rtl;
+  unicode-bidi: plaintext;
 }
 .donut-legend {
   list-style: none;
@@ -1306,7 +1308,7 @@
   flex: 1;
 }
 .legend-val {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 24px;
   font-weight: 600;
   color: var(--charcoal);
@@ -1677,7 +1679,7 @@
   pointer-events: none;
 }
 .table-num {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 30px;
   font-weight: 600;
   color: var(--gold-light);
@@ -1890,7 +1892,7 @@
   display: block;
 }
 .auth-logo-tag {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 14px;
   letter-spacing: 3px;
   color: var(--gold);
@@ -1919,7 +1921,7 @@
   border-radius: 50%;
 }
 .auth-monogram-v {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 34px;
   font-weight: 500;
   color: var(--gold-light);
@@ -1947,7 +1949,7 @@
   gap: 3px;
 }
 .auth-wordmark-name {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 27px;
   letter-spacing: 8px;
   color: var(--charcoal);
@@ -1955,7 +1957,7 @@
   line-height: 1;
 }
 .auth-wordmark-tag {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 12px;
   letter-spacing: 2px;
   color: var(--gold);
@@ -1976,7 +1978,7 @@
   gap: 16px;
 }
 .auth-hero-title {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 46px;
   line-height: 1.25;
   color: var(--charcoal);
@@ -2040,7 +2042,7 @@
   margin-bottom: 40px;
 }
 .auth-panel-title {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 28px;
   color: var(--charcoal);
   font-weight: 600;
@@ -2202,7 +2204,7 @@
 
 .first-event-title {
   text-align: center;
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   color: var(--gold-light);
   font-size: 26px;
   margin: 0 0 4px;
@@ -2341,14 +2343,14 @@
   font-size: 30px;
   font-weight: 800;
   color: var(--gold-deep);
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
 }
 .admin-stat-label {
   font-size: 13px;
   color: var(--muted);
 }
 .admin-section-title {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   color: var(--charcoal);
   font-size: 20px;
   margin: 26px 0 12px;
@@ -2398,13 +2400,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 32px;
   color: var(--gold-light);
   line-height: 1;
 }
 .confirm-brand-name {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 18px;
   letter-spacing: 6px;
   color: var(--charcoal);
@@ -2415,14 +2417,14 @@
   margin: 0 0 4px;
 }
 .confirm-title {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 20px;
   color: var(--body);
   font-weight: 400;
   margin: 0 0 6px;
 }
 .confirm-couple {
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: 'Heebo', 'Assistant', sans-serif;
   font-size: 34px;
   color: var(--gold-light);
   font-weight: 500;
