@@ -455,7 +455,7 @@ export function HallPage() {
     try {
       const res = await generateSeating({ seats_per_table: seats, persist: true })
       if (!res.hard_ok) {
-        setError('השיבוץ האוטומטי לא הצליח לשמור על כל החוקים — נסה יותר כיסאות לשולחן.')
+        setError('השיבוץ האוטומטי לא הצליח לשמור על כל החוקים — כדאי לנסות עם יותר כיסאות לשולחן.')
       }
       applyState(await getHall())
     } catch (err) {

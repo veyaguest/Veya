@@ -19,7 +19,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
     let cancelled = false
     previewImport(file)
       .then((p) => !cancelled && setPreview(p))
-      .catch((err) => !cancelled && setError(err instanceof Error ? err.message : 'שגיאה'))
+      .catch((err) => !cancelled && setError(err instanceof Error ? err.message : 'לא הצלחנו לקרוא את הקובץ. ודאו שזה קובץ Excel/CSV תקין.'))
       .finally(() => !cancelled && setLoading(false))
     return () => {
       cancelled = true

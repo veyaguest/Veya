@@ -30,7 +30,7 @@ function NewEventFields({
       })
       onCreated(ev)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה')
+      setError(err instanceof Error ? err.message : 'לא הצלחנו ליצור את האירוע, נסו שוב')
     } finally {
       setBusy(false)
     }

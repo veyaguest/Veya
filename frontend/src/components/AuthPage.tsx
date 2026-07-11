@@ -26,7 +26,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
       setToken(res.access_token)
       onAuth(res.user)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה')
+      setError(err instanceof Error ? err.message : 'לא הצלחנו להתחבר. בדקו את הפרטים ונסו שוב.')
     } finally {
       setBusy(false)
     }
@@ -156,7 +156,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                   type="button"
                   className="auth-link-btn"
                   onClick={() =>
-                    setNote('לאיפוס סיסמה פנו אלינו — האפשרות תיפתח בקרוב 🙂')
+                    setNote('איפוס סיסמה עצמאי בדרך — בינתיים כתבו לנו ונעזור.')
                   }
                 >
                   שכחתם סיסמה?
@@ -182,7 +182,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                   type="button"
                   className="auth-secondary"
                   onClick={() =>
-                    setNote('כניסה עם קוד לנייד תיפתח בקרוב 🙂')
+                    setNote('כניסה עם קוד לנייד תגיע בקרוב.')
                   }
                 >
                   כניסה עם קוד חד-פעמי לנייד

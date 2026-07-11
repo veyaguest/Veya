@@ -59,7 +59,7 @@ export function ConfirmPage({ token }: { token: string }) {
         setCount(d.confirmed_count && d.confirmed_count > 0 ? d.confirmed_count : d.party_size)
         setNote(d.guest_note || '')
       })
-      .catch((e) => alive && setError(e instanceof Error ? e.message : 'שגיאה'))
+      .catch((e) => alive && setError(e instanceof Error ? e.message : 'לא הצלחנו לטעון את ההזמנה. נסו לרענן את הדף.'))
       .finally(() => alive && setLoading(false))
     return () => {
       alive = false
@@ -79,7 +79,7 @@ export function ConfirmPage({ token }: { token: string }) {
       })
       setDone(res)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'שגיאה')
+      setError(e instanceof Error ? e.message : 'לא הצלחנו לשלוח את התשובה. נסו שוב.')
     } finally {
       setBusy(false)
     }
@@ -140,7 +140,7 @@ export function ConfirmPage({ token }: { token: string }) {
           <div className="confirm-brand-name">VEYA</div>
         </div>
 
-        <p className="confirm-hello">שלום {data!.full_name},</p>
+        <p className="confirm-hello">היי {data!.full_name}, שמחים שהגעתם 💛</p>
 
         {ev.invite_image ? (
           <>
@@ -163,7 +163,7 @@ export function ConfirmPage({ token }: { token: string }) {
           </>
         ) : (
           <>
-            <h1 className="confirm-title">אתם מוזמנים לחתונה של</h1>
+            <h1 className="confirm-title">בשמחה רבה מזמינים אתכם לחגוג איתנו</h1>
             <div className="confirm-couple">{couple}</div>
             {ev.venue_name && <div className="confirm-venue">{ev.venue_name}</div>}
             {whenText(ev.event_date, ev.event_time) && (
@@ -174,7 +174,7 @@ export function ConfirmPage({ token }: { token: string }) {
           </>
         )}
 
-        <div className="confirm-question">האם תגיעו?</div>
+        <div className="confirm-question">נשמח לדעת — תגיעו לחגוג איתנו?</div>
 
         <div className="confirm-choices">
           <button
@@ -202,7 +202,7 @@ export function ConfirmPage({ token }: { token: string }) {
 
         {choice === 'confirmed' && (
           <div className="confirm-count">
-            <label>כמה אנשים תגיעו?</label>
+            <label>כמה מכם מגיעים?</label>
             <div className="confirm-stepper">
               <button
                 type="button"

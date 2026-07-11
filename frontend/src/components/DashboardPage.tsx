@@ -190,7 +190,7 @@ export function DashboardPage() {
               <h2 className="event-couple">{couple ?? 'החתונה שלנו'}</h2>
               <p className="event-venue">
                 {event?.venue_name ||
-                  'הזינו את שמות בני הזוג, האולם והתאריך כדי להשלים את פרטי האירוע'}
+                  'עוד לא הזנתם את פרטי האירוע — בואו נשלים את שמות בני הזוג, האולם והתאריך'}
               </p>
               {when && <p className="event-when">{when}</p>}
             </div>

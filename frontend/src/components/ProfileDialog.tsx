@@ -35,7 +35,7 @@ export function ProfileDialog({
       onUpdated(updated)
       setNote('השם עודכן בהצלחה')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה')
+      setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור את השינוי, נסו שוב')
     } finally {
       setBusy(false)
     }
@@ -54,7 +54,7 @@ export function ProfileDialog({
       setNewPassword('')
       setNote('הסיסמה עודכנה. מכשירים אחרים נותקו.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה')
+      setError(err instanceof Error ? err.message : 'לא הצלחנו לעדכן את הסיסמה, נסו שוב')
     } finally {
       setBusy(false)
     }
@@ -72,7 +72,7 @@ export function ProfileDialog({
       await logoutAll()
       onLogout()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה')
+      setError(err instanceof Error ? err.message : 'לא הצלחנו להוציא אתכם מכל המכשירים, נסו שוב')
       setBusy(false)
     }
   }
