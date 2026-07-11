@@ -153,6 +153,10 @@ def _ensure_guest_tokens() -> None:
 
 @app.on_event("startup")
 def on_startup() -> None:
+    # גיבוי מתוארך של ה-DB לפני כל שינוי (רק אם הקובץ כבר קיים).
+    from app import backup
+
+    backup.create_backup()
     # יוצר את קובץ מסד הנתונים ואת הטבלאות.
     Base.metadata.create_all(bind=engine)
     # מוסיף עמודות חדשות לטבלאות קיימות (מיגרציה קלה).
