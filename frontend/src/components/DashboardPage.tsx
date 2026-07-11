@@ -112,18 +112,29 @@ export function DashboardPage() {
                 value={form.venue_name}
                 onChange={(e) => setForm({ ...form, venue_name: e.target.value })}
               />
-              <input
-                type="date"
-                aria-label="תאריך האירוע"
-                value={form.event_date}
-                onChange={(e) => setForm({ ...form, event_date: e.target.value })}
-              />
-              <input
-                type="time"
-                aria-label="שעת האירוע"
-                value={form.event_time}
-                onChange={(e) => setForm({ ...form, event_time: e.target.value })}
-              />
+            </div>
+
+            <div className="event-datetime">
+              <label className="field-group">
+                <span className="field-label">תאריך האירוע</span>
+                <input
+                  type="date"
+                  value={form.event_date}
+                  onChange={(e) =>
+                    setForm({ ...form, event_date: e.target.value })
+                  }
+                />
+              </label>
+              <label className="field-group">
+                <span className="field-label">שעת האירוע</span>
+                <input
+                  type="time"
+                  value={form.event_time}
+                  onChange={(e) =>
+                    setForm({ ...form, event_time: e.target.value })
+                  }
+                />
+              </label>
             </div>
 
             <div className="event-image-edit">

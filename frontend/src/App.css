@@ -1063,6 +1063,40 @@
 .event-fields input::placeholder {
   color: #8a8172;
 }
+/* תאריך + שעה: שדות עם תווית ברורה בעברית וקלים לשימוש */
+.event-datetime {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1 1 160px;
+  min-width: 150px;
+}
+.field-label {
+  font-size: 13px;
+  color: var(--gold-light);
+  letter-spacing: 0.2px;
+}
+.event-datetime input {
+  padding: 10px 12px;
+  border: 1px solid var(--gold-deep);
+  border-radius: 8px;
+  background: var(--black-soft);
+  color: var(--charcoal);
+  font-size: 15px;
+  font-family: inherit;
+  /* צובע את אייקוני היומן/שעון של הדפדפן בהיר כדי שייראו על רקע כהה */
+  color-scheme: dark;
+}
+.event-datetime input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
 .event-edit-actions {
   display: flex;
   align-items: center;
