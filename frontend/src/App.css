@@ -2486,6 +2486,14 @@
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
   text-align: center;
 }
+/* כשיש תמונת הזמנה — הכרטיס רחב יותר כדי לתת לתמונה במה */
+.confirm-card.has-invite {
+  max-width: 480px;
+}
+/* מרווח קטן יותר מעל תמונת ההזמנה כדי שתהיה קרובה לראש הכרטיס */
+.confirm-card.has-invite .confirm-hello {
+  margin-bottom: 2px;
+}
 .confirm-center {
   display: flex;
   flex-direction: column;
@@ -2499,19 +2507,6 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 20px;
-}
-.confirm-monogram {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  border: 1.5px solid var(--gold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 32px;
-  color: var(--gold-light);
-  line-height: 1;
 }
 .confirm-brand-name {
   font-family: 'Cormorant Garamond', Georgia, serif;
@@ -2638,15 +2633,28 @@
   direction: ltr;
   unicode-bidi: isolate;
 }
+/* תמונת ההזמנה — הכוכבת של הדף: גדולה ובולטת */
 .confirm-invite-img {
   display: block;
   width: 100%;
-  max-height: 320px;
+  max-height: 68vh;
   object-fit: contain;
-  border-radius: 14px;
-  margin: 18px 0 4px;
-  border: 1px solid var(--line);
+  border-radius: 16px;
+  margin: 18px 0 12px;
+  border: 1px solid var(--gold-deep);
   background: var(--surface-hi);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4);
+}
+/* כיתוב קצר מתחת לתמונה (אולם + תאריך) — התמונה מכילה את שאר הפרטים */
+.confirm-caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.confirm-caption .confirm-venue,
+.confirm-caption .confirm-when {
+  margin-top: 0;
 }
 .confirm-note {
   margin-top: 20px;

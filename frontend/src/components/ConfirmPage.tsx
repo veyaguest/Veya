@@ -4,6 +4,16 @@ import type { ConfirmGuestPublic } from '../types'
 
 type Choice = 'confirmed' | 'declined' | 'maybe'
 
+/** לוגו VEYA הרשמי (מונוגרמה עם יהלום + טבעת כפולה) — זהה למערכת. */
+function Monogram() {
+  return (
+    <span className="auth-monogram">
+      <span className="auth-monogram-diamond" />
+      <span className="auth-monogram-v">V</span>
+    </span>
+  )
+}
+
 /** מרכיב מחרוזת תאריך+שעה קריאה בעברית להצגה למוזמן. */
 function whenText(date: string, time: string): string {
   const parts: string[] = []
@@ -87,7 +97,7 @@ export function ConfirmPage({ token }: { token: string }) {
     return (
       <div className="confirm-wrap" dir="rtl">
         <div className="confirm-card confirm-center">
-          <div className="confirm-monogram">V</div>
+          <Monogram />
           <h1 className="confirm-title">הקישור אינו תקין</h1>
           <p className="confirm-sub">{error}</p>
         </div>
@@ -111,7 +121,7 @@ export function ConfirmPage({ token }: { token: string }) {
     return (
       <div className="confirm-wrap" dir="rtl">
         <div className="confirm-card confirm-center">
-          <div className="confirm-monogram">V</div>
+          <Monogram />
           <h1 className="confirm-title">{couple}</h1>
           <p className="confirm-thankyou">{msg}</p>
           <button className="confirm-change" onClick={() => setDone(null)}>
@@ -124,26 +134,44 @@ export function ConfirmPage({ token }: { token: string }) {
 
   return (
     <div className="confirm-wrap" dir="rtl">
-      <div className="confirm-card">
+      <div className={`confirm-card ${ev.invite_image ? 'has-invite' : ''}`}>
         <div className="confirm-brand">
-          <div className="confirm-monogram">V</div>
+          <Monogram />
           <div className="confirm-brand-name">VEYA</div>
         </div>
 
         <p className="confirm-hello">שלום {data!.full_name},</p>
-        <h1 className="confirm-title">אתם מוזמנים לחתונה של</h1>
-        <div className="confirm-couple">{couple}</div>
-        {ev.venue_name && <div className="confirm-venue">{ev.venue_name}</div>}
-        {whenText(ev.event_date, ev.event_time) && (
-          <div className="confirm-when">{whenText(ev.event_date, ev.event_time)}</div>
-        )}
 
-        {ev.invite_image && (
-          <img
-            className="confirm-invite-img"
-            src={ev.invite_image}
-            alt="הזמנה לחתונה"
-          />
+        {ev.invite_image ? (
+          <>
+            {/* תמונת ההזמנה היא הכוכבת — היא מכילה את שמות בני הזוג והפרטים */}
+            <img
+              className="confirm-invite-img"
+              src={ev.invite_image}
+              alt={`הזמנה לחתונה של ${couple}`}
+            />
+            <div className="confirm-caption">
+              {ev.venue_name && (
+                <span className="confirm-venue">{ev.venue_name}</span>
+              )}
+              {whenText(ev.event_date, ev.event_time) && (
+                <span className="confirm-when">
+                  {whenText(ev.event_date, ev.event_time)}
+                </span>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <h1 className="confirm-title">אתם מוזמנים לחתונה של</h1>
+            <div className="confirm-couple">{couple}</div>
+            {ev.venue_name && <div className="confirm-venue">{ev.venue_name}</div>}
+            {whenText(ev.event_date, ev.event_time) && (
+              <div className="confirm-when">
+                {whenText(ev.event_date, ev.event_time)}
+              </div>
+            )}
+          </>
         )}
 
         <div className="confirm-question">האם תגיעו?</div>
