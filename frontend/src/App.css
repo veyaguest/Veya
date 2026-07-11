@@ -474,7 +474,7 @@
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: 14px;
-  overflow: hidden;
+  overflow-x: auto;
 }
 .guests-table {
   width: 100%;
@@ -1709,6 +1709,19 @@
   }
   .rsvp-stats {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .dash-hero {
+    flex-direction: column;
+    gap: 22px;
+    text-align: center;
+  }
+  .dash-hero-body {
+    width: 100%;
+  }
+  .donut-legend {
+    display: inline-flex;
+    flex-direction: column;
+    text-align: right;
   }
   .dash-grid {
     grid-template-columns: repeat(2, 1fr);
