@@ -55,7 +55,7 @@ def delete_event(
     event = db.get(models.Event, event_id)
     if event is None or event.owner_id != user.id:
         raise HTTPException(status_code=404, detail="האירוע לא נמצא")
-    # ניקוי רשומות תלויות שאין להן cascade אוטומטי (הודעות והבהרות).
+    # ניקוי רשומות תלויות שאין להן cascade אוטומטי (הודעות, הבהרות, יומן אבטחה).
     for msg in db.scalars(
         select(models.Message).where(models.Message.event_id == event_id)
     ).all():
@@ -64,5 +64,9 @@ def delete_event(
         select(models.Clarification).where(models.Clarification.event_id == event_id)
     ).all():
         db.delete(clar)
+    for log in db.scalars(
+        select(models.AuditLog).where(models.AuditLog.event_id == event_id)
+    ).all():
+        db.delete(log)
     db.delete(event)  # guests נמחקים ב-cascade
     db.commit()

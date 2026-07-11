@@ -88,6 +88,30 @@ def _ensure_columns() -> None:
                     conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
 
 
+# אינדקסים על מפתחות זרים לביצועים. create_all לא מוסיף אותם לטבלאות שכבר
+# קיימות, לכן מוסיפים ידנית (בטוח: IF NOT EXISTS). שמות תואמים לקונבנציית
+# SQLAlchemy (ix_<table>_<column>) כדי למנוע כפילות.
+_EXTRA_INDEXES = {
+    "ix_events_owner_id": ("events", "owner_id"),
+    "ix_guests_event_id": ("guests", "event_id"),
+    "ix_guests_table_number": ("guests", "table_number"),
+    "ix_messages_event_id": ("messages", "event_id"),
+    "ix_messages_guest_id": ("messages", "guest_id"),
+    "ix_clarifications_event_id": ("clarifications", "event_id"),
+}
+
+
+def _ensure_indexes() -> None:
+    inspector = inspect(engine)
+    with engine.begin() as conn:
+        for name, (table, column) in _EXTRA_INDEXES.items():
+            if not inspector.has_table(table):
+                continue
+            conn.execute(
+                text(f"CREATE INDEX IF NOT EXISTS {name} ON {table} ({column})")
+            )
+
+
 def _ensure_admin() -> None:
     """מוודא שיש לפחות אדמין אחד — מקדם את המשתמש הראשון (הבעלים) אם אין.
 
@@ -133,6 +157,8 @@ def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
     # מוסיף עמודות חדשות לטבלאות קיימות (מיגרציה קלה).
     _ensure_columns()
+    # מוסיף אינדקסים על מפתחות זרים (לביצועים) אם עדיין אין.
+    _ensure_indexes()
     # מוודא שיש בעלים (אדמין) אחד לפחות.
     _ensure_admin()
     # מוודא שלכל מוזמן קיים יש טוקן אישי לאישור הגעה.

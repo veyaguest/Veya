@@ -41,7 +41,7 @@ class Event(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     owner_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("users.id"), nullable=True
+        ForeignKey("users.id"), nullable=True, index=True
     )
     groom_name: Mapped[str] = mapped_column(String, default="")
     bride_name: Mapped[str] = mapped_column(String, default="")
@@ -75,7 +75,7 @@ class Guest(Base):
     __tablename__ = "guests"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"))
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
     full_name: Mapped[str] = mapped_column(String)
     phone: Mapped[str] = mapped_column(String)
     side: Mapped[str] = mapped_column(String, default="shared")  # groom/bride/shared
@@ -85,7 +85,7 @@ class Guest(Base):
     # נגזר אוטומטית מ-notes_raw ע"י ה-AI בשלב 4 (כרגע ריק)
     constraints_parsed: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     rsvp_status: Mapped[str] = mapped_column(String, default="pending")  # pending/confirmed/declined/maybe
-    table_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    table_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
     # קישור אישי לאישור הגעה: טוקן ייחודי לכל מוזמן (שלב RSVP).
     guest_token: Mapped[Optional[str]] = mapped_column(
         String, unique=True, index=True, nullable=True, default=generate_guest_token
@@ -124,7 +124,7 @@ class Clarification(Base):
     __tablename__ = "clarifications"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"))
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
     source_guest_id: Mapped[int] = mapped_column(ForeignKey("guests.id"))
     relation_type: Mapped[str] = mapped_column(String)  # avoid/together
     target_text: Mapped[str] = mapped_column(String)    # השם העמום בהערה
@@ -166,8 +166,10 @@ class Message(Base):
     __tablename__ = "messages"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"))
-    guest_id: Mapped[Optional[int]] = mapped_column(ForeignKey("guests.id"), nullable=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
+    guest_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("guests.id"), nullable=True, index=True
+    )
     direction: Mapped[str] = mapped_column(String)  # outbound/inbound
     kind: Mapped[str] = mapped_column(String, default="invitation")  # invitation/reply/reminder
     body: Mapped[str] = mapped_column(Text, default="")
