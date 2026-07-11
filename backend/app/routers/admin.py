@@ -118,3 +118,49 @@ def reset_user_password(
         email=target.email,
         temporary_password=temp_password,
     )
+
+
+@router.post("/accounts", response_model=schemas.AdminAccountCreateResult, status_code=201)
+def create_account(
+    payload: schemas.AdminAccountCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """יצירת חשבון מפיק/אולם ע"י אדמין.
+
+    למפיקים ואולמות אין הרשמה עצמאית — רק האדמין יוצר עבורם חשבון, עם סיסמה
+    זמנית (מפורשת או מיוצרת). המשתמש מתחבר איתה ומחליף אותה בעצמו.
+    """
+    existing = db.scalars(
+        select(models.User).where(models.User.email == payload.email)
+    ).first()
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="כבר קיים משתמש עם האימייל הזה",
+        )
+
+    temp_password = payload.new_password or secrets.token_urlsafe(9)
+    user = models.User(
+        email=payload.email,
+        display_name=payload.display_name,
+        password_hash=auth.hash_password(temp_password),
+        account_type=payload.account_type,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    audit.record(
+        db, "admin_create_account",
+        user_id=admin.id,
+        detail=f"יצירת חשבון {payload.account_type} עבור {user.email} (#{user.id})",
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+    return schemas.AdminAccountCreateResult(
+        user_id=user.id,
+        email=user.email,
+        account_type=user.account_type,
+        temporary_password=temp_password,
+    )

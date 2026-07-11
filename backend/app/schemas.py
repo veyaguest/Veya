@@ -426,6 +426,8 @@ class UserRead(BaseModel):
     email: str
     display_name: str
     is_admin: bool = False
+    # couple (זוג) / planner (מפיק) / venue (אולם) — ציר נפרד מ-is_admin.
+    account_type: str = "couple"
 
 
 class TokenResponse(BaseModel):
@@ -500,6 +502,89 @@ class AdminEventRow(BaseModel):
     owner_id: Optional[int]
     owner_email: Optional[str]
     guests_count: int
+
+
+class AdminAccountCreate(BaseModel):
+    """יצירת חשבון מפיק/אולם ע"י אדמין — לתפקידים אלו אין הרשמה עצמאית,
+
+    האדמין הוא שיוצר את החשבון (עם סיסמה זמנית), בדיוק כמו איפוס סיסמה.
+    """
+
+    email: str
+    display_name: str
+    account_type: Literal["planner", "venue"]
+    new_password: Optional[str] = None
+
+    @field_validator("email")
+    @classmethod
+    def _email_valid(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        if "@" not in v or len(v) < 5:
+            raise ValueError("כתובת אימייל לא תקינה")
+        return v
+
+    @field_validator("display_name")
+    @classmethod
+    def _name_required(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("שם תצוגה הוא שדה חובה")
+        return v
+
+    @field_validator("new_password")
+    @classmethod
+    def _min_len(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        return validate_password_strength(v)
+
+
+class AdminAccountCreateResult(BaseModel):
+    """תשובת יצירת החשבון — הסיסמה הזמנית שהאדמין ימסור למשתמש."""
+
+    user_id: int
+    email: str
+    account_type: str
+    temporary_password: str
+
+
+# ---- שיתוף גישה לאירוע (מפיק/אולם) ----
+
+# הרשאות אפשריות לפי תפקיד — משמש גם לוולידציה בצד השרת וגם לתצוגה בפרונט.
+PLANNER_PERMISSIONS = ["view_guests", "edit_guests", "manage_seating", "send_messages", "view_reports"]
+VENUE_PERMISSIONS = ["view_event", "view_seating", "edit_seating", "manage_venue_data"]
+
+
+class EventMemberCreate(BaseModel):
+    """הוספת חבר-אירוע (מפיק/אולם) ע"י בעל האירוע — לפי אימייל מדויק."""
+
+    email: str
+    permissions: list[str] = []
+
+    @field_validator("email")
+    @classmethod
+    def _email_valid(cls, v: str) -> str:
+        return (v or "").strip().lower()
+
+
+class EventMemberUpdate(BaseModel):
+    """עדכון רשימת ההרשאות של חבר-אירוע קיים."""
+
+    permissions: list[str]
+
+
+class EventMemberRead(BaseModel):
+    """שורת חבר-אירוע לתצוגה בעמוד ניהול הגישה של בעל האירוע."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    email: str
+    display_name: str
+    role: str
+    permissions: list[str]
+    status: str
 
 
 # ---- דף אישור הגעה ציבורי (קישור אישי /confirm/{token}) ----
