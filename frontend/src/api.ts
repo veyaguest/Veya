@@ -229,7 +229,7 @@ export async function previewImport(file: File): Promise<ImportPreview> {
 
 export async function commitImport(
   rows: GuestCreate[],
-): Promise<{ created: number }> {
+): Promise<{ created: number; skipped_duplicates: number }> {
   const res = await apiFetch('/guests/import/commit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -140,7 +140,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={isLogin ? '••••••••' : 'לפחות 6 תווים'}
+                placeholder={isLogin ? '••••••••' : 'לפחות 8 תווים, אות וספרה'}
                 autoComplete={isLogin ? 'current-password' : 'new-password'}
                 required
               />

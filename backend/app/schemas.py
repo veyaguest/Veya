@@ -1,4 +1,5 @@
 """סכימות Pydantic — ולידציה של קלט/פלט ל-API של המוזמנים."""
+import re
 from datetime import datetime
 from typing import Optional
 
@@ -11,7 +12,21 @@ from app.validators import normalize_israeli_phone
 Side = Literal["groom", "bride", "shared"]
 # קבוצה: אחת מהמוכרות, או קבוצה מותאמת אישית (טקסט חופשי) — לכן str ולא Literal
 GroupType = str
-RsvpStatus = Literal["pending", "confirmed", "declined"]
+# "maybe" = המוזמן סימן "אולי" בדף האישור (עקבי עם ערכי ה-DB האפשריים).
+RsvpStatus = Literal["pending", "confirmed", "declined", "maybe"]
+
+
+def validate_password_strength(v: str) -> str:
+    """כלל סיסמה אחיד לכל המערכת: לפחות 8 תווים + אות אחת וספרה אחת.
+
+    מקבל אותיות עבריות או לטיניות. משמש בהרשמה, בשינוי סיסמה ובאיפוס.
+    """
+    v = v or ""
+    if len(v) < 8:
+        raise ValueError("הסיסמה חייבת לכלול לפחות 8 תווים")
+    if not re.search(r"[A-Za-zא-ת]", v) or not re.search(r"\d", v):
+        raise ValueError("הסיסמה חייבת לכלול לפחות אות אחת וספרה אחת")
+    return v
 
 
 class GuestCreate(BaseModel):
@@ -354,9 +369,7 @@ class UserCreate(BaseModel):
     @field_validator("password")
     @classmethod
     def _password_valid(cls, v: str) -> str:
-        if len((v or "")) < 6:
-            raise ValueError("הסיסמה חייבת לכלול לפחות 6 תווים")
-        return v
+        return validate_password_strength(v)
 
 
 class LoginRequest(BaseModel):
@@ -392,9 +405,7 @@ class PasswordChange(BaseModel):
     @field_validator("new_password")
     @classmethod
     def _new_password_valid(cls, v: str) -> str:
-        if len((v or "")) < 6:
-            raise ValueError("הסיסמה החדשה חייבת לכלול לפחות 6 תווים")
-        return v
+        return validate_password_strength(v)
 
 
 class UserRead(BaseModel):
@@ -457,9 +468,7 @@ class AdminPasswordReset(BaseModel):
     def _min_len(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
-        if len(v) < 6:
-            raise ValueError("הסיסמה חייבת לכלול לפחות 6 תווים")
-        return v
+        return validate_password_strength(v)
 
 
 class AdminPasswordResetResult(BaseModel):

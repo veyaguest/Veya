@@ -142,7 +142,7 @@ export function ProfileDialog({
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="לפחות 6 תווים"
+              placeholder="לפחות 8 תווים, אות וספרה"
               autoComplete="new-password"
               required
             />

@@ -6,7 +6,7 @@ import { groupLabel, SIDE_LABELS } from '../types'
 interface Props {
   file: File
   onClose: () => void
-  onImported: (created: number) => void
+  onImported: (created: number, skippedDuplicates: number) => void
 }
 
 export function ImportDialog({ file, onClose, onImported }: Props) {
@@ -41,7 +41,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
     setCommitting(true)
     try {
       const res = await commitImport(validRows)
-      onImported(res.created)
+      onImported(res.created, res.skipped_duplicates)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בייבוא')
       setCommitting(false)

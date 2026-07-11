@@ -84,9 +84,13 @@ export function GuestsPage() {
         <ImportDialog
           file={importFile}
           onClose={() => setImportFile(null)}
-          onImported={(created) => {
+          onImported={(created, skippedDuplicates) => {
             setImportFile(null)
-            setToast(`יובאו ${created} מוזמנים בהצלחה ✓`)
+            const dup =
+              skippedDuplicates > 0
+                ? ` (${skippedDuplicates} כפולים דולגו)`
+                : ''
+            setToast(`יובאו ${created} מוזמנים בהצלחה ✓${dup}`)
             setTimeout(() => setToast(''), 4000)
             load(search)
           }}
