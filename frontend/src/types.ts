@@ -22,6 +22,7 @@ export interface Guest {
   guest_token: string | null
   confirmed_count: number | null
   guest_note: string | null
+  is_child: boolean
   created_at: string
 }
 
@@ -74,6 +75,7 @@ export interface GuestCreate {
   group_type: GroupType
   party_size: number
   notes_raw?: string
+  is_child?: boolean
 }
 
 // תוויות בעברית לתצוגה
@@ -277,6 +279,7 @@ export interface HallGuest {
   side: Side
   group_type: GroupType
   rsvp_status: RsvpStatus
+  is_child: boolean
 }
 
 // סוג שולחן: עגול | מרובע | מלבני | "אבירים" (שולחן ארוך, 24 מקומות כולל קצוות)
@@ -333,6 +336,10 @@ export interface HallState {
   elements: HallElement[]
   warnings: string[]
   sketch: string | null
+  // זוגות אילוצים שכבר מחושבים היום מהערות חופשיות — לשימוש עוזר ההושבה
+  // החכם בצד הלקוח (בדיקות מיידיות כולל בזמן גרירה, בלי קריאת רשת נוספת).
+  forbidden_pairs: [number, number][]
+  together_pairs: [number, number][]
 }
 
 export interface HallTableSave {

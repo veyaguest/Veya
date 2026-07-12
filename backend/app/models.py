@@ -101,6 +101,9 @@ class Guest(Base):
     confirmed_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     # הערה חופשית שהמוזמן השאיר בדף האישור (נגישות, תינוק וכו').
     guest_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # מסומן במפורש כ"ילד/ה" ע"י הבעלים (לא ניחוש) — לשימוש עוזר ההושבה החכם
+    # (בדיקת "ילד יושב בלי אף מבוגר מהמשפחה").
+    is_child: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     event: Mapped["Event"] = relationship(back_populates="guests")

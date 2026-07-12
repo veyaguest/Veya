@@ -36,6 +36,7 @@ class GuestCreate(BaseModel):
     group_type: GroupType = "other"
     party_size: int = 1
     notes_raw: Optional[str] = None
+    is_child: bool = False
 
     @field_validator("full_name")
     @classmethod
@@ -72,6 +73,7 @@ class GuestUpdate(BaseModel):
     notes_raw: Optional[str] = None
     rsvp_status: Optional[RsvpStatus] = None
     table_number: Optional[int] = None
+    is_child: Optional[bool] = None
 
     @field_validator("phone")
     @classmethod
@@ -96,6 +98,7 @@ class GuestRead(BaseModel):
     guest_token: Optional[str] = None
     confirmed_count: Optional[int] = None
     guest_note: Optional[str] = None
+    is_child: bool = False
     created_at: datetime
 
 
@@ -310,6 +313,7 @@ class HallGuest(BaseModel):
     side: str
     group_type: str
     rsvp_status: str
+    is_child: bool = False
 
 
 class HallTable(BaseModel):
@@ -351,6 +355,11 @@ class HallState(BaseModel):
     elements: list[HallElement]          # אלמנטים מיוחדים במפה
     warnings: list[str]                  # חריגות (קיבולת/זוג אסור באותו שולחן)
     sketch: Optional[str] = None         # סקיצת האולם (data URL) — רקע עדין
+    # זוגות אילוצים שכבר מחושבים היום מהערות חופשיות (constraints.py) — נחשפים
+    # כאן כדי שעוזר ההושבה החכם בצד הלקוח יוכל לבדוק אותם מיידית (כולל בזמן
+    # גרירה) בלי קריאת רשת נוספת. אין כאן לוגיקה חדשה, רק חשיפה.
+    forbidden_pairs: list[tuple[int, int]] = []  # זוגות "לא לשבת יחד"
+    together_pairs: list[tuple[int, int]] = []   # זוגות "לשבת יחד"
 
 
 class HallTableSave(BaseModel):

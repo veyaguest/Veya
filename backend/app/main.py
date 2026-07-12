@@ -83,6 +83,7 @@ _EXTRA_COLUMNS = {
         "guest_token": "TEXT",
         "confirmed_count": "INTEGER",
         "guest_note": "TEXT",
+        "is_child": "BOOLEAN DEFAULT 0",
     },
 }
 

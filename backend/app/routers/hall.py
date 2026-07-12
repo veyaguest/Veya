@@ -28,6 +28,7 @@ def _guest_out(g: models.Guest) -> schemas.HallGuest:
         side=g.side,
         group_type=g.group_type,
         rsvp_status=g.rsvp_status,
+        is_child=g.is_child,
     )
 
 
@@ -129,6 +130,15 @@ def get_hall(
         schemas.HallElement(**el) for el in (event.hall_elements or [])
     ]
 
+    # זוגות אילוצים שכבר מחושבים היום מהערות חופשיות — נחשפים כאן כדי
+    # שעוזר ההושבה החכם בצד הלקוח יוכל לבדוק אותם מיידית (כולל בזמן גרירה)
+    # בלי קריאת רשת נוספת. אותו דפוס בדיוק כמו ב-routers/seating.py.
+    constraint_dicts = [
+        {"id": g.id, "constraints_parsed": g.constraints_parsed} for g in guests
+    ]
+    forbidden_pairs = parser.build_forbidden_pairs(constraint_dicts)
+    together_pairs = parser.build_together_pairs(constraint_dicts)
+
     return schemas.HallState(
         seats_per_table=seats,
         tables=out_tables,
@@ -136,6 +146,8 @@ def get_hall(
         elements=elements,
         warnings=warnings,
         sketch=media.to_url(event.hall_sketch),
+        forbidden_pairs=forbidden_pairs,
+        together_pairs=together_pairs,
     )
 
 
