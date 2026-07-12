@@ -38,8 +38,22 @@ def _auto_position(index: int) -> dict:
     return {"x": 60 + col * 190.0, "y": 60 + row * 190.0}
 
 
+# מיגרציה שקטה: נתונים ישנים נשמרו עם "shape": "round"|"long" בלבד.
+# מ-Long (מלבני-ארוך פשוט) יש להבדיל מ"אבירים" (אותו הדבר ויזואלית כרגע —
+# הבחירה בין ריבוע/מלבן/אבירים היא רק מספר המקומות וסידור הכיסאות).
+_LEGACY_SHAPE_TO_TYPE = {"round": "round", "long": "knights"}
+
+
+def _table_type_from_pos(pos: dict) -> str:
+    if pos.get("table_type"):
+        return str(pos["table_type"])
+    return _LEGACY_SHAPE_TO_TYPE.get(str(pos.get("shape", "round")), "round")
+
+
 def _compute_warnings(
-    tables: dict[int, list[models.Guest]], seats_per_table: int, all_guests: list[models.Guest]
+    tables: dict[int, list[models.Guest]],
+    capacities: dict[int, int],
+    all_guests: list[models.Guest],
 ) -> list[str]:
     warnings: list[str] = []
     forbidden = set(
@@ -50,8 +64,9 @@ def _compute_warnings(
     name_by_id = {g.id: g.full_name for g in all_guests}
     for tnum, members in tables.items():
         used = sum(g.effective_seats for g in members)
-        if used > seats_per_table:
-            warnings.append(f"שולחן {tnum}: {used} אנשים מתוך {seats_per_table} — חריגה מהקיבולת")
+        cap = capacities.get(tnum, 12)
+        if used > cap:
+            warnings.append(f"שולחן {tnum}: {used} אנשים מתוך {cap} — חריגה מהקיבולת")
         ids = [g.id for g in members]
         for i in range(len(ids)):
             for j in range(i + 1, len(ids)):
@@ -83,7 +98,11 @@ def get_hall(
         else:
             tables.setdefault(g.table_number, []).append(g)
 
-    warnings = _compute_warnings(tables, seats, guests)
+    capacities = {
+        tnum: int((positions.get(str(tnum)) or {}).get("capacity") or seats)
+        for tnum in tables
+    }
+    warnings = _compute_warnings(tables, capacities, guests)
 
     out_tables: list[schemas.HallTable] = []
     for idx, tnum in enumerate(sorted(tables.keys())):
@@ -96,8 +115,13 @@ def get_hall(
                 y=float(pos["y"]),
                 seats_used=sum(g.effective_seats for g in members),
                 guests=[_guest_out(g) for g in members],
-                shape=str(pos.get("shape", "round")),
+                table_type=_table_type_from_pos(pos),
+                capacity=capacities[tnum],
                 rotation=float(pos.get("rotation", 0)),
+                name=str(pos.get("name", "")),
+                color=str(pos.get("color", "")),
+                notes=str(pos.get("notes", "")),
+                locked=bool(pos.get("locked", False)),
             )
         )
 
@@ -134,8 +158,13 @@ def save_hall(
         positions[str(t.table_number)] = {
             "x": t.x,
             "y": t.y,
-            "shape": t.shape,
+            "table_type": t.table_type,
+            "capacity": t.capacity,
             "rotation": t.rotation,
+            "name": t.name,
+            "color": t.color,
+            "notes": t.notes,
+            "locked": t.locked,
         }
         for gid in t.guest_ids:
             if gid in seen:

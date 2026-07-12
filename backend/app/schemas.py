@@ -5,7 +5,7 @@ from typing import Optional
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.validators import normalize_israeli_phone
 
@@ -318,12 +318,18 @@ class HallTable(BaseModel):
     y: float
     seats_used: int
     guests: list[HallGuest]
-    shape: str = "round"      # "round" | "long"
-    rotation: float = 0       # זווית סיבוב במעלות (בעיקר לשולחנות ארוכים)
+    # "round" | "square" | "rectangle" | "knights" (שולחן אבירים — ארוך, מקומות גם בקצוות)
+    table_type: str = "round"
+    capacity: int = 12        # מספר מקומות בשולחן הזה — עצמאי לכל שולחן
+    rotation: float = 0       # זווית סיבוב במעלות
+    name: str = ""            # שם אופציונלי לשולחן (למשל "משפחת כהן")
+    color: str = ""           # צבע מותאם (hex); ריק = ברירת מחדל לפי סוג
+    notes: str = ""
+    locked: bool = False
 
 
 class HallElement(BaseModel):
-    """אלמנט מיוחד במפה: שולחן ראש, רחבת ריקודים, בר, במה, כניסה וכו'."""
+    """אלמנט מיוחד במפה: רחבת ריקודים, בר, עמדת DJ, כניסה וכו'."""
 
     id: str
     type: str
@@ -334,6 +340,8 @@ class HallElement(BaseModel):
     rotation: float = 0
     locked: bool = False
     label: str = ""
+    shape: str = "rectangle"  # "rectangle" | "square" | "circle" | "ellipse"
+    color: str = ""           # צבע מותאם (hex); ריק = ברירת מחדל לפי סוג
 
 
 class HallState(BaseModel):
@@ -350,8 +358,13 @@ class HallTableSave(BaseModel):
     x: float
     y: float
     guest_ids: list[int]
-    shape: str = "round"      # "round" | "long"
+    table_type: str = "round"
+    capacity: int = Field(default=12, ge=1, le=60)
     rotation: float = 0
+    name: str = Field(default="", max_length=60)
+    color: str = Field(default="", max_length=20)
+    notes: str = Field(default="", max_length=400)
+    locked: bool = False
 
 
 class SaveHallRequest(BaseModel):
