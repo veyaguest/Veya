@@ -15,6 +15,7 @@ const EMPTY: GuestCreate = {
   group_type: 'other',
   party_size: 1,
   notes_raw: '',
+  is_child: false,
 }
 
 const CUSTOM = '__custom__' // ערך דמה בבורר: "קבוצה חדשה…"
@@ -124,6 +125,14 @@ export function AddGuestForm({ onAdded, onCancel }: Props) {
             value={form.party_size}
             onChange={(e) => update('party_size', Number(e.target.value))}
           />
+        </label>
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            checked={form.is_child ?? false}
+            onChange={(e) => update('is_child', e.target.checked)}
+          />
+          ילד/ה
         </label>
         <label className="wide">
           הערות (מגבלות ישיבה וכו')

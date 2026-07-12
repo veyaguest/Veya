@@ -469,6 +469,19 @@
 .custom-group-input {
   margin-top: 6px;
 }
+.add-grid label.checkbox-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  justify-content: flex-start;
+}
+.add-grid label.checkbox-field input[type='checkbox'] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
 .add-actions {
   display: flex;
   gap: 10px;
