@@ -1784,6 +1784,25 @@
   font-size: 12px;
   color: var(--muted);
 }
+.assistant-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-2);
+}
+.assistant-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.assistant-legend-item .table-status-dot {
+  position: static;
+  border-width: 0;
+}
 .assistant-section {
   border-top: 1px solid var(--line-2);
   padding-top: 10px;
@@ -2066,6 +2085,42 @@
   background: rgba(166, 96, 90, 0.12);
   border-color: var(--error);
   color: var(--error);
+}
+/* בדיקה חיה בזמן גרירה — עד 2 שורות מידע נוספות בתוך אותו badge, מוצג
+   רק כשמזהים בעיה/המלצה; לא חוסם את ה-drop בשום צורה, מידע בלבד. */
+.free-badge-live {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.free-badge-live.yellow {
+  color: var(--gold-deep);
+}
+.free-badge-live.red {
+  color: var(--error);
+}
+/* נקודת-סטטוס צבעונית קבועה על כל שולחן — ירוק=תקין, צהוב=יש המלצה,
+   אדום=בעיה קשה. מידע ויזואלי בלבד, לא אימוג'י. */
+.table-status-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--paper, #fff);
+  z-index: 6;
+  pointer-events: none;
+}
+.table-status-dot.status-green {
+  background: #4a9a6a;
+}
+.table-status-dot.status-yellow {
+  background: var(--gold-deep);
+}
+.table-status-dot.status-red {
+  background: var(--error);
 }
 .hall-tray.drag-over {
   border-color: var(--gold);

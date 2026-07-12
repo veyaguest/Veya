@@ -64,6 +64,19 @@ export function SmartAssistantPanel({
         ניתוח, אזהרות והצעות — כל הצעה מוצגת לאישור לפני שמשהו זז בפועל.
       </p>
 
+      {/* ---- מקרא נקודות הסטטוס שמופיעות על כל שולחן במפה ---- */}
+      <div className="assistant-legend">
+        <span className="assistant-legend-item">
+          <span className="table-status-dot status-green" /> תקין
+        </span>
+        <span className="assistant-legend-item">
+          <span className="table-status-dot status-yellow" /> יש המלצה
+        </span>
+        <span className="assistant-legend-item">
+          <span className="table-status-dot status-red" /> בעיה
+        </span>
+      </div>
+
       {/* ---- ניתוח כללי ---- */}
       <div className="assistant-section">
         <h4>ניתוח</h4>

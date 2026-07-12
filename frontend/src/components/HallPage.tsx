@@ -27,6 +27,7 @@ import {
   detectChildrenWithoutFamily,
   detectFamilyGroups,
   detectSplitGroups,
+  liveDragValidation,
   smartSearch,
   type PairList,
   type SmartMove,
@@ -183,6 +184,9 @@ export function HallPage() {
   const [selectedEl, setSelectedEl] = useState<string | null>(null)
   const [selectedTables, setSelectedTables] = useState<Set<number>>(new Set())
   const [dragOver, setDragOver] = useState<number | 'tray' | null>(null)
+  // מוזמן שנמצא כרגע בגרירה בפועל (HTML5 DnD) — לשימוש בבדיקה חיה
+  // (liveDragValidation) שמוצגת בזמן ריחוף מעל שולחן, לפני drop בפועל.
+  const [draggingGuestId, setDraggingGuestId] = useState<number | null>(null)
   const [dirty, setDirty] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -867,6 +871,11 @@ export function HallPage() {
     e.dataTransfer.setData('text/plain', String(guestId))
     e.dataTransfer.effectAllowed = 'move'
     setSelected(null)
+    setDraggingGuestId(guestId)
+  }
+
+  function onGuestDragEnd() {
+    setDraggingGuestId(null)
   }
 
   function onDropTo(e: React.DragEvent, target: number | null) {
@@ -874,6 +883,7 @@ export function HallPage() {
     const gid = Number(e.dataTransfer.getData('text/plain'))
     if (!Number.isNaN(gid)) moveGuestToTable(gid, target)
     setDragOver(null)
+    setDraggingGuestId(null)
   }
 
   // ---- סקיצת האולם ----
@@ -994,6 +1004,32 @@ export function HallPage() {
       soleSelected ? computeTableInsight(soleSelected, familyGroups, forbiddenPairs, childWarnings) : null,
     [soleSelected, familyGroups, forbiddenPairs, childWarnings],
   )
+
+  // נקודת-סטטוס צבעונית לכל שולחן (ירוק/צהוב/אדום) — מידע בלבד, לא חוסמת
+  // כלום. אדום = בעיה קשה (חריגת קיבולת/זוג אסור/ילד בלי מבוגר מהמשפחה),
+  // צהוב = יש המלצה/אזהרה רכה (משפחה או קבוצה מפוצלת וכו'), ירוק = תקין.
+  const redFromSmart = new Set(
+    smartWarnings.filter((w) => w.severity === 'red').flatMap((w) => w.tableNumbers),
+  )
+  const yellowFromSmart = new Set(
+    smartWarnings.filter((w) => w.severity === 'yellow').flatMap((w) => w.tableNumbers),
+  )
+  const tableStatus = new Map<number, 'red' | 'yellow' | 'green'>()
+  for (const t of tables) {
+    const used = t.guests.reduce((s, g) => s + g.seats, 0)
+    const isRed = used > t.capacity || warnTables.has(t.table_number) || redFromSmart.has(t.table_number)
+    const isYellow = !isRed && yellowFromSmart.has(t.table_number)
+    tableStatus.set(t.table_number, isRed ? 'red' : isYellow ? 'yellow' : 'green')
+  }
+
+  // האורח שבפועל נגרר כרגע (אם יש) — לשימוש בבדיקה החיה בזמן ריחוף מעל שולחן.
+  const draggedGuestForLive = useMemo(() => {
+    if (draggingGuestId == null) return undefined
+    return (
+      tables.flatMap((t) => t.guests).find((g) => g.id === draggingGuestId) ??
+      unassigned.find((g) => g.id === draggingGuestId)
+    )
+  }, [draggingGuestId, tables, unassigned])
 
   // הצעה נכנסת ל"המתנה לאישור" בלבד — לא מזיזה אף אורח עד לחיצה מפורשת על
   // "אשר". "בטל" רק מנקה את ה-state, אפס שינוי בפועל.
@@ -1254,6 +1290,7 @@ export function HallPage() {
                 selected={selected === g.id}
                 onClick={(e) => onGuestClick(e, g.id)}
                 onDragStart={(e) => onGuestDragStart(e, g.id)}
+                onDragEnd={onGuestDragEnd}
               />
             ))}
           </div>
@@ -1427,6 +1464,11 @@ export function HallPage() {
                     idx += Math.max(1, g.seats)
                   }
                 }
+                const status = tableStatus.get(t.table_number) ?? 'green'
+                const liveCheck =
+                  dragOver === t.table_number && draggedGuestForLive
+                    ? liveDragValidation(draggedGuestForLive, t, forbiddenPairs, familyGroups)
+                    : null
                 return (
                   <div
                     key={t.table_number}
@@ -1444,6 +1486,16 @@ export function HallPage() {
                     onDragLeave={() => setDragOver((c) => (c === t.table_number ? null : c))}
                     onDrop={(e) => onDropTo(e, t.table_number)}
                   >
+                    <span
+                      className={`table-status-dot status-${status}`}
+                      title={
+                        status === 'red'
+                          ? 'בעיה בשולחן — ראו אזהרות'
+                          : status === 'yellow'
+                            ? 'יש המלצה/אזהרה קלה לשולחן הזה'
+                            : 'תקין'
+                      }
+                    />
                     <div
                       className={`table-graphic type-${t.table_type}`}
                       style={{
@@ -1479,6 +1531,7 @@ export function HallPage() {
                             selected={selected === g.id}
                             onClick={(e) => onGuestClick(e, g.id)}
                             onDragStart={(e) => onGuestDragStart(e, g.id)}
+                            onDragEnd={onGuestDragEnd}
                           />
                         ))}
                       </span>
@@ -1506,6 +1559,13 @@ export function HallPage() {
                     {dragOver === t.table_number && (
                       <span className={`free-badge ${free <= 0 ? 'full' : ''}`}>
                         {free > 0 ? `${free} כיסאות פנויים` : 'השולחן מלא'}
+                        {liveCheck && liveCheck.lines.length > 0 && (
+                          <span className={`free-badge-live ${liveCheck.level}`}>
+                            {liveCheck.lines.map((line, i) => (
+                              <span key={i}>{line}</span>
+                            ))}
+                          </span>
+                        )}
                       </span>
                     )}
                   </div>
@@ -1786,17 +1846,20 @@ function GuestChip({
   selected,
   onClick,
   onDragStart,
+  onDragEnd,
 }: {
   g: HallGuest
   selected: boolean
   onClick: (e: React.MouseEvent) => void
   onDragStart?: (e: React.DragEvent) => void
+  onDragEnd?: () => void
 }) {
   return (
     <span
       className={`guest-chip side-${g.side} ${selected ? 'selected' : ''}`}
       draggable={!!onDragStart}
       onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
       onClick={onClick}
       title={`${SIDE_LABELS[g.side]} · גררו לשולחן או לחצו לבחירה`}
     >
@@ -1825,6 +1888,7 @@ function GuestSeatChip({
   selected,
   onClick,
   onDragStart,
+  onDragEnd,
 }: {
   g: HallGuest
   point: SeatPoint
@@ -1832,6 +1896,7 @@ function GuestSeatChip({
   selected: boolean
   onClick: (e: React.MouseEvent) => void
   onDragStart: (e: React.DragEvent) => void
+  onDragEnd?: () => void
 }) {
   return (
     <span
@@ -1839,6 +1904,7 @@ function GuestSeatChip({
       style={{ left: point.left, top: point.top }}
       draggable
       onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
       onClick={onClick}
       title={`${g.full_name} · ${SIDE_LABELS[g.side]}${
         g.seats > 1 ? ` · ${g.seats} מקומות` : ''

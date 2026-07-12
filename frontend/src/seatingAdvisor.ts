@@ -707,3 +707,52 @@ export function computeSmartFill(
     unplacedCount: unassigned.length - placedCount,
   }
 }
+
+// ---- שלב 10: בדיקה חיה בזמן גרירה ---------------------------------------
+//
+// לא חוסמת את הגרירה או ה-Drop בשום צורה — רק מידע קצר (עד 2 שורות) שמוצג
+// בזמן ריחוף מעל שולחן, לפני שהמוזמן בכלל שוחרר. אותה לוגיקה בדיוק (קיבולת,
+// זוג אסור, ילד בלי מבוגר מהמשפחה) שכבר קיימת ב-computeTableInsight/
+// computeSmartWarnings, רק ממוקדת למוזמן הספציפי שנגרר.
+
+export interface LiveDragCheck {
+  level: 'green' | 'yellow' | 'red'
+  lines: string[] // עד 2 שורות קצרות
+}
+
+export function liveDragValidation(
+  draggedGuest: HallGuest,
+  targetTable: SeatingTable,
+  forbiddenPairs: PairList | undefined,
+  familyGroups: FamilyGroup[],
+): LiveDragCheck {
+  const lines: string[] = []
+  let level: LiveDragCheck['level'] = 'green'
+
+  const free = tableFreeCapacity(targetTable)
+  if (draggedGuest.seats > free) {
+    level = 'red'
+    lines.push(`חריגה מקיבולת — חסרים ${draggedGuest.seats - free} מקומות`)
+  }
+
+  const forbiddenSet = pairSetFrom(forbiddenPairs)
+  const forbiddenHit = targetTable.guests.find((g) => forbiddenSet.has(pairKey(draggedGuest.id, g.id)))
+  if (forbiddenHit) {
+    level = 'red'
+    lines.push(`מסומן/ת "לא לשבת יחד" עם ${forbiddenHit.full_name}`)
+  }
+
+  if (level !== 'red' && draggedGuest.is_child) {
+    const fam = familyGroups.find((f) => f.guestIds.includes(draggedGuest.id))
+    if (fam) {
+      const relatives = new Set(fam.guestIds.filter((id) => id !== draggedGuest.id))
+      const hasAdultHere = targetTable.guests.some((g) => relatives.has(g.id) && !g.is_child)
+      if (!hasAdultHere) {
+        level = 'yellow'
+        lines.push('אין כאן מבוגר מהמשפחה')
+      }
+    }
+  }
+
+  return { level, lines: lines.slice(0, 2) }
+}
