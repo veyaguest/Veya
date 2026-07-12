@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   analyzeConstraints,
   generateSeating,
@@ -18,6 +18,20 @@ import type {
   TableType,
 } from '../types'
 import { SIDE_LABELS } from '../types'
+import {
+  computeSmartWarnings,
+  computeStats,
+  computeSuggestions,
+  computeTableInsight,
+  detectChildrenWithoutFamily,
+  detectFamilyGroups,
+  detectSplitGroups,
+  smartSearch,
+  type PairList,
+  type SmartMove,
+  type SmartSuggestion,
+} from '../seatingAdvisor'
+import { SmartAssistantPanel } from './SmartAssistantPanel'
 
 interface TableView {
   table_number: number
@@ -187,6 +201,23 @@ export function HallPage() {
   const [sketch, setSketch] = useState<string | null>(null)
   const sketchInputRef = useRef<HTMLInputElement | null>(null)
 
+  // ---- עוזר הושבה חכם (Dock) ----
+  // זוגות אילוצים שכבר מחושבים בשרת מהערות חופשיות — נשמרים כאן כדי
+  // שהעוזר יוכל לבדוק אותם מיידית בצד לקוח בלי קריאת רשת נוספת.
+  const [forbiddenPairs, setForbiddenPairs] = useState<PairList>([])
+  const [togetherPairs, setTogetherPairs] = useState<PairList>([])
+  const [smartPanelOpen, setSmartPanelOpen] = useState(false)
+  const [smartSearchQuery, setSmartSearchQuery] = useState('')
+  // הצעה/מהלכים "בהמתנה לאישור" — אף פעם לא מוחלת לבד. רק לחיצה מפורשת על
+  // "אשר" מיישמת את כל המהלכים בבת אחת (בדיוק כמו גרירה ידנית, אותה
+  // סמנטיקה: מקומי בלבד, dirty=true); המשתמש עדיין צריך ללחוץ "שמירת
+  // המפה" כדי לשמור בשרת. diff הוא רק לתצוגה קריאה (שם + מאיפה לאיפה).
+  const [pendingProposal, setPendingProposal] = useState<{
+    text: string
+    moves: SmartMove[]
+    diff: { guestId: number; guestName: string; fromTable: number | null; toTable: number }[]
+  } | null>(null)
+
   // ---- אילוצים מההערות (לולאת הבהרות) ----
   const [clarifications, setClarifications] = useState<Clarification[]>([])
   const [analyzeSummary, setAnalyzeSummary] = useState<AnalyzeResult | null>(null)
@@ -245,6 +276,8 @@ export function HallPage() {
     setSeats(snapCapacity(h.seats_per_table))
     setWarnings(h.warnings)
     setSketch(h.sketch ?? null)
+    setForbiddenPairs(h.forbidden_pairs ?? [])
+    setTogetherPairs(h.together_pairs ?? [])
     setDirty(false)
   }, [])
 
@@ -732,6 +765,39 @@ export function HallPage() {
     setDirty(true)
   }
 
+  // מיישם כמה מהלכי-הזזה בבת אחת (הצעה מהעוזר החכם, למשל "איחוד משפחת כהן").
+  // בנוי בנפרד מ-moveGuestToTable ולא כלולאה שקוראת לו: קריאה בלולאה הייתה
+  // קוראת בכל איטרציה את אותו tables/unassigned "מיושן" מסגירת ה-render
+  // הנוכחית (React מקבץ עדכוני state), כך שרק המהלך האחרון היה בפועל נשמר.
+  // כאן בונים את המצב הבא פעם אחת, על סמך כל המהלכים יחד — עדיין ללא קריאת
+  // רשת, אותה סמנטיקה בדיוק (dirty=true, שמירה בפועל רק ב"שמירת המפה").
+  function applyMoves(moves: SmartMove[]) {
+    if (moves.length === 0) return
+    let nextTables = tables.map((t) => ({ ...t, guests: [...t.guests] }))
+    let nextUnassigned = [...unassigned]
+    for (const { guestId, toTable } of moves) {
+      let moving: HallGuest | undefined
+      nextUnassigned = nextUnassigned.filter((g) => {
+        if (g.id === guestId) {
+          moving = g
+          return false
+        }
+        return true
+      })
+      nextTables = nextTables.map((t) => {
+        const found = t.guests.find((g) => g.id === guestId)
+        if (found) moving = found
+        return { ...t, guests: t.guests.filter((g) => g.id !== guestId) }
+      })
+      if (!moving) continue
+      const idx = nextTables.findIndex((t) => t.table_number === toTable)
+      if (idx >= 0) nextTables[idx] = { ...nextTables[idx], guests: [...nextTables[idx].guests, moving] }
+    }
+    setTables(nextTables)
+    setUnassigned(nextUnassigned)
+    setDirty(true)
+  }
+
   function onGuestClick(e: React.MouseEvent, guestId: number) {
     e.stopPropagation()
     setSelected((cur) => (cur === guestId ? null : guestId))
@@ -861,6 +927,70 @@ export function HallPage() {
     .filter((g) => !traySearchNorm || g.full_name.includes(traySearchNorm))
     .sort((a, b) => a.full_name.localeCompare(b.full_name, 'he'))
 
+  // ---- עוזר הושבה חכם: חישובים נגזרים (טהורים, בלי קריאת רשת) ----
+  // כל הפונקציות מ-seatingAdvisor.ts הן O(n) — מחושבות מחדש רק כשמשהו
+  // רלוונטי משתנה (useMemo), לא בכל רינדור/כל פיקסל גרירה.
+  const allGuestsForFamily = useMemo(
+    () => [...tables.flatMap((t) => t.guests), ...unassigned],
+    [tables, unassigned],
+  )
+  const familyGroups = useMemo(() => detectFamilyGroups(allGuestsForFamily), [allGuestsForFamily])
+  const splitGroups = useMemo(() => detectSplitGroups(tables), [tables])
+  const childWarnings = useMemo(
+    () => detectChildrenWithoutFamily(tables, familyGroups),
+    [tables, familyGroups],
+  )
+  const smartStats = useMemo(() => computeStats(tables, unassigned, seats), [tables, unassigned, seats])
+  const smartWarnings = useMemo(
+    () => computeSmartWarnings(tables, familyGroups, splitGroups, childWarnings, togetherPairs),
+    [tables, familyGroups, splitGroups, childWarnings, togetherPairs],
+  )
+  const smartSuggestions = useMemo(
+    () => computeSuggestions(tables, familyGroups, splitGroups, childWarnings, togetherPairs),
+    [tables, familyGroups, splitGroups, childWarnings, togetherPairs],
+  )
+  const smartSearchResults = useMemo(
+    () => (smartSearchQuery.trim() ? smartSearch(smartSearchQuery, tables, unassigned) : []),
+    [smartSearchQuery, tables, unassigned],
+  )
+  const soleSelectedInsight = useMemo(
+    () =>
+      soleSelected ? computeTableInsight(soleSelected, familyGroups, forbiddenPairs, childWarnings) : null,
+    [soleSelected, familyGroups, forbiddenPairs, childWarnings],
+  )
+
+  // הצעה נכנסת ל"המתנה לאישור" בלבד — לא מזיזה אף אורח עד לחיצה מפורשת על
+  // "אשר". "בטל" רק מנקה את ה-state, אפס שינוי בפועל.
+  function onProposeSuggestion(s: SmartSuggestion) {
+    const guestName = new Map<number, string>()
+    const guestFromTable = new Map<number, number | null>()
+    for (const t of tables) {
+      for (const g of t.guests) {
+        guestName.set(g.id, g.full_name)
+        guestFromTable.set(g.id, t.table_number)
+      }
+    }
+    for (const g of unassigned) {
+      guestName.set(g.id, g.full_name)
+      guestFromTable.set(g.id, null)
+    }
+    const diff = s.moves.map((m) => ({
+      guestId: m.guestId,
+      guestName: guestName.get(m.guestId) ?? `מוזמן #${m.guestId}`,
+      fromTable: guestFromTable.get(m.guestId) ?? null,
+      toTable: m.toTable,
+    }))
+    setPendingProposal({ text: s.text, moves: s.moves, diff })
+  }
+  function onConfirmProposal() {
+    if (!pendingProposal) return
+    applyMoves(pendingProposal.moves)
+    setPendingProposal(null)
+  }
+  function onCancelProposal() {
+    setPendingProposal(null)
+  }
+
   return (
     <div className="hall-page">
       {/* ---- אילוצים מההערות (לפני השיבוץ) ---- */}
@@ -946,6 +1076,12 @@ export function HallPage() {
             הסרת סקיצה
           </button>
         )}
+        <button
+          className={`btn-ghost ${smartPanelOpen ? 'active' : ''}`}
+          onClick={() => setSmartPanelOpen((v) => !v)}
+        >
+          ✨ עוזר הושבה חכם
+        </button>
       </div>
 
       <div className="hall-canvas-tools">
@@ -1448,6 +1584,28 @@ export function HallPage() {
                   🗑 מחיקה
                 </button>
               </div>
+
+              {/* תובנת שולחן מהעוזר החכם — לא פאנל נפרד, כדי למנוע כפילות ממשק */}
+              {soleSelectedInsight && (
+                <div className={`table-insight ${soleSelectedInsight.hasProblem ? 'has-problem' : ''}`}>
+                  <h5>תובנת שולחן</h5>
+                  <p>
+                    {soleSelectedInsight.occupied}/{soleSelectedInsight.capacity} תפוסים ·{' '}
+                    {soleSelectedInsight.free} פנויים
+                  </p>
+                  {soleSelectedInsight.families.length > 0 && (
+                    <p className="table-insight-line">
+                      משפחות: {soleSelectedInsight.families.join(', ')}
+                    </p>
+                  )}
+                  {soleSelectedInsight.groups.length > 0 && (
+                    <p className="table-insight-line">קבוצות: {soleSelectedInsight.groups.join(', ')}</p>
+                  )}
+                  {soleSelectedInsight.hasProblem && (
+                    <p className="table-insight-warn">⚠ יש בעיה בשולחן הזה — ראו אזהרות למעלה</p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1523,6 +1681,23 @@ export function HallPage() {
             </div>
           )}
         </div>
+
+        {/* עוזר הושבה חכם — פאנל צד קבוע (Dock), לא חלון צף שמכסה את המפה. */}
+        {smartPanelOpen && (
+          <SmartAssistantPanel
+            stats={smartStats}
+            warnings={smartWarnings}
+            suggestions={smartSuggestions}
+            searchQuery={smartSearchQuery}
+            onSearchQueryChange={setSmartSearchQuery}
+            searchResults={smartSearchResults}
+            pendingProposal={pendingProposal}
+            onProposeSuggestion={onProposeSuggestion}
+            onConfirmProposal={onConfirmProposal}
+            onCancelProposal={onCancelProposal}
+            onClose={() => setSmartPanelOpen(false)}
+          />
+        )}
       </div>
     </div>
   )

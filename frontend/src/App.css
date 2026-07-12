@@ -1739,6 +1739,210 @@
   padding-inline-end: 2px;
 }
 
+/* ---- עוזר הושבה חכם: פאנל צד קבוע (Dock), טור שלישי ב-.hall-layout ----
+   אותו דפוס בדיוק כמו .hall-tray (sticky + הגבלת גובה + גלילה פנימית),
+   כדי שיתנהג עקבי איתו ולא יכסה/יתנגש עם הקנבס או עם .hall-props-panel
+   הצף (שממוקם absolute בתוך .hall-canvas-wrap ולא משפיע על ה-flex הזה). */
+.hall-assistant-panel {
+  flex: 0 0 280px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+.assistant-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.assistant-head h3 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--charcoal);
+}
+.assistant-head .x {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.assistant-head .x:hover {
+  color: var(--error);
+}
+.assistant-sub {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.assistant-section {
+  border-top: 1px solid var(--line-2);
+  padding-top: 10px;
+  margin-top: 8px;
+}
+.assistant-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+.assistant-section h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--charcoal);
+}
+.assistant-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.assistant-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.assistant-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 4px;
+}
+.assistant-stat-num {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold-deep);
+}
+.assistant-stat-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+.assistant-search {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--surface-hi);
+  color: var(--charcoal);
+}
+.assistant-search:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.assistant-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.assistant-search-result {
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.assistant-search-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+.assistant-search-side {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 11px;
+}
+.assistant-search-meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.assistant-warning-list,
+.assistant-suggestion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.assistant-warning {
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-hi);
+  color: var(--charcoal);
+}
+.assistant-warning.red {
+  border-color: var(--error);
+  background: rgba(166, 96, 90, 0.1);
+}
+.assistant-warning.yellow {
+  border-color: var(--gold);
+  background: rgba(201, 162, 39, 0.1);
+}
+.assistant-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.assistant-suggestion .btn-ghost {
+  align-self: flex-start;
+  font-size: 11px;
+  padding: 4px 10px;
+}
+.assistant-proposal {
+  border-top: 1px solid var(--line-2);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.assistant-proposal h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--charcoal);
+}
+.assistant-proposal p {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--body);
+}
+.assistant-proposal-diff {
+  margin: 0 0 10px;
+  padding-inline-start: 18px;
+  font-size: 12px;
+  color: var(--charcoal);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.assistant-proposal-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.assistant-proposal-note {
+  font-size: 11px !important;
+  color: var(--muted) !important;
+}
+
 /* ---- קנבס: Viewport (חלון קבוע, overflow hidden) + World (נגרר/מוגדל) ---- */
 .hall-canvas-wrap {
   position: relative;
@@ -2294,6 +2498,36 @@
   margin-bottom: 10px;
 }
 
+/* תובנת שולחן מהעוזר החכם — קטע קטן בתוך פאנל מאפייני שולחן קיים,
+   לא פאנל נפרד (נמנע מכפילות ממשק). */
+.table-insight {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-2);
+}
+.table-insight h5 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--charcoal);
+}
+.table-insight p {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--body);
+}
+.table-insight-line {
+  color: var(--muted) !important;
+}
+.table-insight-warn {
+  color: var(--error) !important;
+  font-weight: 600;
+}
+.table-insight.has-problem {
+  background: rgba(166, 96, 90, 0.06);
+  border-radius: 8px;
+  padding: 8px;
+}
+
 @media (max-width: 760px) {
   .add-grid {
     grid-template-columns: 1fr;
@@ -2354,6 +2588,12 @@
   }
   .hall-props-panel {
     width: calc(100% - 32px);
+  }
+  .hall-assistant-panel {
+    width: 100%;
+    flex-basis: auto;
+    position: static;
+    max-height: none;
   }
 }
 
