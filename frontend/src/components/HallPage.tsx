@@ -1553,13 +1553,14 @@ function GuestChip({
   )
 }
 
-// ראשי-תיבות לשם (שני תווים) — מוצג בתוך העיגול הקטן סביב השולחן; השם
-// המלא מופיע ב-title (hover) וגם בתווית הצפה שנחשפת ב-hover דרך CSS.
-function initials(fullName: string): string {
+// שם פרטי מקוצר — מוצג בתוך התגית הקטנה סביב השולחן; שני ראשי-תיבות
+// (למשל "דכ" עבור "דני כהן") לא היו קריאים, לכן מציגים את השם הפרטי
+// עצמו (ה-CSS חותך עם "…" אם ארוך מדי). השם המלא תמיד זמין ב-title
+// (hover) וגם בתווית הצפה שנחשפת ב-hover דרך CSS.
+function shortLabel(fullName: string): string {
   const parts = fullName.trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return '?'
-  if (parts.length === 1) return parts[0].slice(0, 2)
-  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`
+  return parts[0]
 }
 
 // עיגול מוזמן קטן, ממוקם בנקודת כיסא ספציפית סביב היקף השולחן (לא בעמודה
@@ -1590,7 +1591,7 @@ function GuestSeatChip({
         g.seats > 1 ? ` · ${g.seats} מקומות` : ''
       } · גררו לשולחן אחר או לחצו לבחירה`}
     >
-      <span className="seat-guest-initials">{initials(g.full_name)}</span>
+      <span className="seat-guest-initials">{shortLabel(g.full_name)}</span>
       {g.seats > 1 && <span className="seat-guest-badge">×{g.seats}</span>}
       <span className="seat-guest-name">{g.full_name}</span>
     </span>

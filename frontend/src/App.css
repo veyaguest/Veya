@@ -1984,13 +1984,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  min-width: 24px;
+  max-width: 52px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
   background: var(--ivory);
   border: 1.5px solid var(--line);
   color: var(--charcoal);
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 700;
   cursor: grab;
   pointer-events: auto;
@@ -2026,6 +2028,9 @@
 }
 .seat-guest-initials {
   pointer-events: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .seat-guest-badge {
   position: absolute;
