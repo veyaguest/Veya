@@ -11,6 +11,7 @@ interface PendingProposal {
   text: string
   moves: SmartMove[]
   diff: { guestId: number; guestName: string; fromTable: number | null; toTable: number }[]
+  newTables?: { table_number: number; capacity: number }[]
 }
 
 /**
@@ -33,6 +34,8 @@ export function SmartAssistantPanel({
   onProposeSuggestion,
   onConfirmProposal,
   onCancelProposal,
+  onSmartFill,
+  unassignedCount,
   onClose,
 }: {
   stats: SeatingStats
@@ -45,6 +48,8 @@ export function SmartAssistantPanel({
   onProposeSuggestion: (s: SmartSuggestion) => void
   onConfirmProposal: () => void
   onCancelProposal: () => void
+  onSmartFill: () => void
+  unassignedCount: number
   onClose: () => void
 }) {
   return (
@@ -88,6 +93,14 @@ export function SmartAssistantPanel({
             <span className="assistant-stat-label">כמעט ריקים</span>
           </div>
         </div>
+        <button
+          className="btn-primary assistant-fill-btn"
+          onClick={onSmartFill}
+          disabled={unassignedCount === 0}
+          title={unassignedCount === 0 ? 'אין מוזמנים ללא שולחן' : undefined}
+        >
+          מלא שולחנות ({unassignedCount} ללא שולחן)
+        </button>
       </div>
 
       {/* ---- חיפוש חכם ---- */}

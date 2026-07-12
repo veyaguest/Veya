@@ -1829,6 +1829,10 @@
   color: var(--muted);
   text-align: center;
 }
+.assistant-fill-btn {
+  width: 100%;
+  margin-top: 10px;
+}
 .assistant-search {
   width: 100%;
   padding: 7px 10px;

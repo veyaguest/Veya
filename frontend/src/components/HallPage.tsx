@@ -19,6 +19,7 @@ import type {
 } from '../types'
 import { SIDE_LABELS } from '../types'
 import {
+  computeSmartFill,
   computeSmartWarnings,
   computeStats,
   computeSuggestions,
@@ -216,6 +217,9 @@ export function HallPage() {
     text: string
     moves: SmartMove[]
     diff: { guestId: number; guestName: string; fromTable: number | null; toTable: number }[]
+    // שולחנות חדשים שצריך ליצור לפני שמפעילים את ה-moves (רק "מלא שולחנות"
+    // עשוי להשתמש בזה — הצעות רגילות אף פעם לא פותחות שולחן חדש).
+    newTables?: { table_number: number; capacity: number }[]
   } | null>(null)
 
   // ---- אילוצים מההערות (לולאת הבהרות) ----
@@ -765,15 +769,47 @@ export function HallPage() {
     setDirty(true)
   }
 
-  // מיישם כמה מהלכי-הזזה בבת אחת (הצעה מהעוזר החכם, למשל "איחוד משפחת כהן").
-  // בנוי בנפרד מ-moveGuestToTable ולא כלולאה שקוראת לו: קריאה בלולאה הייתה
-  // קוראת בכל איטרציה את אותו tables/unassigned "מיושן" מסגירת ה-render
-  // הנוכחית (React מקבץ עדכוני state), כך שרק המהלך האחרון היה בפועל נשמר.
-  // כאן בונים את המצב הבא פעם אחת, על סמך כל המהלכים יחד — עדיין ללא קריאת
-  // רשת, אותה סמנטיקה בדיוק (dirty=true, שמירה בפועל רק ב"שמירת המפה").
-  function applyMoves(moves: SmartMove[]) {
-    if (moves.length === 0) return
+  // מיישם כמה מהלכי-הזזה בבת אחת (הצעה מהעוזר החכם, למשל "איחוד משפחת כהן"
+  // או "מלא שולחנות"). בנוי בנפרד מ-moveGuestToTable ולא כלולאה שקוראת לו:
+  // קריאה בלולאה הייתה קוראת בכל איטרציה את אותו tables/unassigned "מיושן"
+  // מסגירת ה-render הנוכחית (React מקבץ עדכוני state), כך שרק המהלך האחרון
+  // היה בפועל נשמר. כאן בונים את המצב הבא פעם אחת, על סמך כל המהלכים יחד —
+  // עדיין ללא קריאת רשת, אותה סמנטיקה בדיוק (dirty=true, שמירה בפועל רק
+  // ב"שמירת המפה"). newTables אופציונלי — נוצרים לפני שהמהלכים מיושמים,
+  // כדי ש"מלא שולחנות" יוכל לפתוח שולחן חדש בתוך אותה תצוגה מקדימה/אישור.
+  function applyMoves(moves: SmartMove[], newTables?: { table_number: number; capacity: number }[]) {
+    if (moves.length === 0 && (!newTables || newTables.length === 0)) return
     let nextTables = tables.map((t) => ({ ...t, guests: [...t.guests] }))
+
+    if (newTables && newTables.length > 0) {
+      const rect = viewportRef.current?.getBoundingClientRect()
+      const center = toWorld(
+        (rect?.left ?? 0) + (rect?.width ?? 400) / 2,
+        (rect?.top ?? 0) + (rect?.height ?? 300) / 2,
+      )
+      newTables.forEach((nt) => {
+        const { w, h } = tableSize('round', nt.capacity)
+        const off = nextPlaceOffset()
+        nextTables.push({
+          table_number: nt.table_number,
+          x: Math.max(0, Math.round(center.x - w / 2 + off)),
+          y: Math.max(0, Math.round(center.y - h / 2 + off)),
+          guests: [],
+          table_type: 'round',
+          capacity: nt.capacity,
+          rotation: 0,
+          name: '',
+          color: '',
+          notes: '',
+          locked: false,
+        })
+      })
+      nextTableNumRef.current = Math.max(
+        nextTableNumRef.current,
+        ...newTables.map((nt) => nt.table_number + 1),
+      )
+    }
+
     let nextUnassigned = [...unassigned]
     for (const { guestId, toTable } of moves) {
       let moving: HallGuest | undefined
@@ -961,7 +997,11 @@ export function HallPage() {
 
   // הצעה נכנסת ל"המתנה לאישור" בלבד — לא מזיזה אף אורח עד לחיצה מפורשת על
   // "אשר". "בטל" רק מנקה את ה-state, אפס שינוי בפועל.
-  function onProposeSuggestion(s: SmartSuggestion) {
+  // בונה "diff" קריא (שם מוזמן + מאיפה לאיפה) לתצוגה מקדימה, משותף לכל
+  // סוגי ההצעות (הצעה בודדת מ-computeSuggestions או "מלא שולחנות").
+  function buildProposalDiff(
+    moves: SmartMove[],
+  ): { guestId: number; guestName: string; fromTable: number | null; toTable: number }[] {
     const guestName = new Map<number, string>()
     const guestFromTable = new Map<number, number | null>()
     for (const t of tables) {
@@ -974,17 +1014,53 @@ export function HallPage() {
       guestName.set(g.id, g.full_name)
       guestFromTable.set(g.id, null)
     }
-    const diff = s.moves.map((m) => ({
+    return moves.map((m) => ({
       guestId: m.guestId,
       guestName: guestName.get(m.guestId) ?? `מוזמן #${m.guestId}`,
       fromTable: guestFromTable.get(m.guestId) ?? null,
       toTable: m.toTable,
     }))
-    setPendingProposal({ text: s.text, moves: s.moves, diff })
   }
+
+  function onProposeSuggestion(s: SmartSuggestion) {
+    setPendingProposal({ text: s.text, moves: s.moves, diff: buildProposalDiff(s.moves) })
+  }
+
+  // "מלא שולחנות" — Best-Fit Decreasing עצמאי (seatingAdvisor.ts), רק על
+  // מי שב"ללא שולחן"; לא מזיז אף מוזמן שכבר משובץ. גם זה רק ממלא
+  // pendingProposal — שום הזזה בפועל עד "אשר" (אותו מנגנון preview).
+  function onSmartFill() {
+    if (unassigned.length === 0) return
+    const result = computeSmartFill(
+      tables,
+      unassigned,
+      forbiddenPairs,
+      togetherPairs,
+      seats,
+      nextTableNumRef.current,
+    )
+    if (result.moves.length === 0) {
+      setError('לא נמצא מקום להושבה אוטומטית — נסו קיבולת גדולה יותר לשולחן.')
+      return
+    }
+    const tableWord = result.newTables.length === 1 ? 'שולחן חדש אחד' : `${result.newTables.length} שולחנות חדשים`
+    const text =
+      result.newTables.length > 0
+        ? `מילוי שולחנות: הושבת ${result.placedCount} מוזמנים, כולל פתיחת ${tableWord}` +
+          (result.unplacedCount > 0 ? ` (${result.unplacedCount} נשארו ללא שולחן — חבורה גדולה מדי)` : '')
+        : `מילוי שולחנות: הושבת ${result.placedCount} מוזמנים בשולחנות הקיימים` +
+          (result.unplacedCount > 0 ? ` (${result.unplacedCount} נשארו ללא שולחן — חבורה גדולה מדי)` : '')
+    setPendingProposal({
+      text,
+      moves: result.moves,
+      diff: buildProposalDiff(result.moves),
+      newTables: result.newTables,
+    })
+  }
+
   function onConfirmProposal() {
     if (!pendingProposal) return
-    applyMoves(pendingProposal.moves)
+    applyMoves(pendingProposal.moves, pendingProposal.newTables)
     setPendingProposal(null)
   }
   function onCancelProposal() {
@@ -1695,6 +1771,8 @@ export function HallPage() {
             onProposeSuggestion={onProposeSuggestion}
             onConfirmProposal={onConfirmProposal}
             onCancelProposal={onCancelProposal}
+            onSmartFill={onSmartFill}
+            unassignedCount={unassigned.length}
             onClose={() => setSmartPanelOpen(false)}
           />
         )}

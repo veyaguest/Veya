@@ -566,3 +566,144 @@ export function smartSearch(
 
   return results.sort((a, b) => a.fullName.localeCompare(b.fullName, 'he'))
 }
+
+// ---- שלב 9: מילוי שולחנות (Smart Fill) ----------------------------------
+//
+// היוריסטיקה **עצמאית וקטנה** (Best-Fit Decreasing), לא קשורה בשום צורה
+// למנוע הנעול app/seating.py ולא מייבאת ממנו — רק ממומשת מחדש בהשראת
+// עקרונות דומים (זוגות אסורים = חוק קשיח, אותו צד/קבוצה/together = בונוס
+// רך). לא מזיזה אף מוזמן שכבר משובץ — רק ממקמת מי שברשימת "ללא שולחן".
+// פותחת שולחן חדש רק אם אין מקום בשום שולחן קיים.
+
+export interface SmartFillNewTable {
+  table_number: number
+  capacity: number
+}
+
+export interface SmartFillResult {
+  moves: SmartMove[]
+  newTables: SmartFillNewTable[]
+  placedCount: number
+  unplacedCount: number
+}
+
+/** שולחן-עבודה פנימי לאלגוריתם — רק המידע הדרוש לניקוד/קיבולת. */
+interface FillWorkingTable {
+  table_number: number
+  capacity: number
+  freeCapacity: number
+  guestIds: Set<number>
+  sides: Map<Side, number>
+  groups: Map<string, number>
+  isNew: boolean
+}
+
+export function computeSmartFill(
+  tables: SeatingTable[],
+  unassigned: HallGuest[],
+  forbiddenPairs: PairList | undefined,
+  togetherPairs: PairList | undefined,
+  defaultCapacity: number,
+  nextTableNumber: number,
+): SmartFillResult {
+  const forbiddenSet = pairSetFrom(forbiddenPairs)
+  const togetherSet = pairSetFrom(togetherPairs)
+
+  const working: FillWorkingTable[] = tables.map((t) => {
+    const sides = new Map<Side, number>()
+    const groups = new Map<string, number>()
+    for (const g of t.guests) {
+      sides.set(g.side, (sides.get(g.side) ?? 0) + 1)
+      if (g.group_type && g.group_type !== 'other') {
+        groups.set(g.group_type, (groups.get(g.group_type) ?? 0) + 1)
+      }
+    }
+    return {
+      table_number: t.table_number,
+      capacity: t.capacity,
+      freeCapacity: tableFreeCapacity(t),
+      guestIds: new Set(t.guests.map((g) => g.id)),
+      sides,
+      groups,
+      isNew: false,
+    }
+  })
+
+  // חבורות גדולות קודם (Best-Fit Decreasing) — קל יותר למקם חבורה גדולה
+  // מוקדם, לפני שהמקום הפנוי מתפזר לפירורים בין שולחנות.
+  const ordered = [...unassigned].sort((a, b) => b.seats - a.seats)
+
+  const moves: SmartMove[] = []
+  const newTables: SmartFillNewTable[] = []
+  let nextNum = nextTableNumber
+  let placedCount = 0
+
+  for (const g of ordered) {
+    // חוק קשיח: לא לשבץ לצד מישהו שברשימת "לא לשבת יחד" איתו.
+    const fitsHard = (t: FillWorkingTable) => {
+      if (t.freeCapacity < g.seats) return false
+      for (const otherId of t.guestIds) {
+        if (forbiddenSet.has(pairKey(g.id, otherId))) return false
+      }
+      return true
+    }
+
+    let best: FillWorkingTable | null = null
+    let bestScore = -Infinity
+    for (const t of working) {
+      if (!fitsHard(t)) continue
+      let score = 0
+      for (const otherId of t.guestIds) {
+        if (togetherSet.has(pairKey(g.id, otherId))) score += 10
+      }
+      if (g.group_type && g.group_type !== 'other') {
+        score += (t.groups.get(g.group_type) ?? 0) * 3
+      }
+      score += (t.sides.get(g.side) ?? 0) * 1
+      // Best-Fit: בין שולחנות עם אותו ניקוי, מעדיפים את זה עם פחות מקום
+      // פנוי שנשאר אחרי ההושבה (ממלאים שולחנות עד הסוף, לא מפזרים).
+      const leftoverAfter = t.freeCapacity - g.seats
+      const tieBreak = -leftoverAfter * 0.01
+      const total = score + tieBreak
+      if (total > bestScore) {
+        bestScore = total
+        best = t
+      }
+    }
+
+    if (!best) {
+      // חבורה גדולה מקיבולת שולחן בודד (ברירת המחדל) — לא ניתן למקם
+      // אוטומטית בלי לחרוג מקיבולת; משאירים "ללא שולחן" במקום להפר חוק קשיח.
+      if (g.seats > defaultCapacity) continue
+      // אין מקום בשום שולחן קיים — פותחים שולחן חדש בקיבולת ברירת המחדל.
+      best = {
+        table_number: nextNum,
+        capacity: defaultCapacity,
+        freeCapacity: defaultCapacity,
+        guestIds: new Set(),
+        sides: new Map(),
+        groups: new Map(),
+        isNew: true,
+      }
+      working.push(best)
+      newTables.push({ table_number: nextNum, capacity: defaultCapacity })
+      nextNum += 1
+    }
+
+    best.freeCapacity -= g.seats
+    best.guestIds.add(g.id)
+    best.sides.set(g.side, (best.sides.get(g.side) ?? 0) + 1)
+    if (g.group_type && g.group_type !== 'other') {
+      best.groups.set(g.group_type, (best.groups.get(g.group_type) ?? 0) + 1)
+    }
+    moves.push({ guestId: g.id, toTable: best.table_number })
+    placedCount++
+  }
+
+  return {
+    moves,
+    newTables,
+    placedCount,
+    unplacedCount: unassigned.length - placedCount,
+  }
+}
