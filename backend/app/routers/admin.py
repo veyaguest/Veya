@@ -46,6 +46,7 @@ def list_users(
             email=u.email,
             display_name=u.display_name,
             is_admin=u.is_admin,
+            account_type=u.account_type,
             events_count=events_by_owner.get(u.id, 0),
             guests_count=guests_by_owner.get(u.id, 0),
             created_at=u.created_at,

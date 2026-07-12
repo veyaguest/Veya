@@ -338,6 +338,8 @@ export interface User {
   email: string
   display_name: string
   is_admin: boolean
+  // couple (זוג) / planner (מפיק) / venue (אולם) — ציר נפרד מ-is_admin.
+  account_type: string
 }
 
 export interface TokenResponse {
@@ -360,6 +362,7 @@ export interface AdminUserRow {
   email: string
   display_name: string
   is_admin: boolean
+  account_type: string
   events_count: number
   guests_count: number
   created_at: string
@@ -373,4 +376,50 @@ export interface AdminEventRow {
   owner_id: number | null
   owner_email: string | null
   guests_count: number
+}
+
+export interface AdminAccountCreateResult {
+  user_id: number
+  email: string
+  account_type: string
+  temporary_password: string
+}
+
+// ---- שיתוף גישה לאירוע (מפיק/אולם) ----
+
+export const PLANNER_PERMISSIONS = [
+  'view_guests',
+  'edit_guests',
+  'manage_seating',
+  'send_messages',
+  'view_reports',
+] as const
+
+export const VENUE_PERMISSIONS = [
+  'view_event',
+  'view_seating',
+  'edit_seating',
+  'manage_venue_data',
+] as const
+
+export const PERMISSION_LABELS: Record<string, string> = {
+  view_guests: 'צפייה במוזמנים',
+  edit_guests: 'עריכת מוזמנים',
+  manage_seating: 'ניהול שיבוץ',
+  send_messages: 'שליחת הודעות',
+  view_reports: 'צפייה בדוחות',
+  view_event: 'צפייה באירוע',
+  view_seating: 'צפייה בשיבוץ',
+  edit_seating: 'עריכת שיבוץ',
+  manage_venue_data: 'ניהול נתוני אולם',
+}
+
+export interface EventMemberRead {
+  id: number
+  user_id: number
+  email: string
+  display_name: string
+  role: string
+  permissions: string[]
+  status: string
 }

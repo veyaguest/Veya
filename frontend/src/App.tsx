@@ -6,6 +6,7 @@ import { AdminPage } from './components/AdminPage'
 import { AuthPage } from './components/AuthPage'
 import { DashboardPage } from './components/DashboardPage'
 import { EventPicker, FirstEventScreen } from './components/EventControls'
+import { EventMembersDialog } from './components/EventMembersDialog'
 import { GuestsPage } from './components/GuestsPage'
 import { HallPage } from './components/HallPage'
 import { ProfileDialog } from './components/ProfileDialog'
@@ -35,6 +36,7 @@ function App() {
 
   const [user, setUser] = useState<User | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [membersOpen, setMembersOpen] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
   const [events, setEvents] = useState<EventSummary[]>([])
   const [activeEventId, setActiveEventId] = useState<number | null>(getEventId())
@@ -123,8 +125,22 @@ function App() {
     return <AuthPage onAuth={handleAuth} />
   }
 
-  // מחובר אבל אין עדיין אירוע → מסך יצירת אירוע ראשון.
+  // מחובר אבל אין עדיין אירוע.
   if (events.length === 0) {
+    // מפיק/אולם לא יוצרים אירוע בעצמם — הם מחכים שבעל אירוע יזמין אותם.
+    if (user.account_type === 'planner' || user.account_type === 'venue') {
+      return (
+        <div className="auth-wrap">
+          <div className="auth-card">
+            <h1 className="first-event-title">ברוכים הבאים ל-VEYA</h1>
+            <p className="auth-tagline">
+              עדיין לא שותפה איתכם גישה לאף אירוע. בקשו מבעל האירוע להוסיף
+              אתכם דרך האימייל שאיתו נרשמתם: <strong dir="ltr">{user.email}</strong>
+            </p>
+          </div>
+        </div>
+      )
+    }
     return <FirstEventScreen onCreated={handleEventCreated} />
   }
 
@@ -158,6 +174,18 @@ function App() {
               onCreated={handleEventCreated}
             />
           </div>
+        )}
+
+        {page !== 'admin' && user.account_type === 'couple' && activeEventId != null && (
+          <button
+            type="button"
+            className="nav-item"
+            onClick={() => setMembersOpen(true)}
+            style={{ margin: '0 8px 6px' }}
+          >
+            <span className="nav-bullet" aria-hidden="true" />
+            <span className="nav-label">ניהול גישה</span>
+          </button>
         )}
 
         <nav className="side-nav">
@@ -226,6 +254,10 @@ function App() {
             handleLogout()
           }}
         />
+      )}
+
+      {membersOpen && activeEventId != null && (
+        <EventMembersDialog eventId={activeEventId} onClose={() => setMembersOpen(false)} />
       )}
     </div>
   )

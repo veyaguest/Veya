@@ -466,6 +466,7 @@ class AdminUserRow(BaseModel):
     email: str
     display_name: str
     is_admin: bool
+    account_type: str = "couple"
     events_count: int
     guests_count: int
     created_at: datetime

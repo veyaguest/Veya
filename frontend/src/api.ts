@@ -1,4 +1,5 @@
 import type {
+  AdminAccountCreateResult,
   AdminEventRow,
   AdminUserRow,
   AnalyzeResult,
@@ -8,6 +9,7 @@ import type {
   ConfirmSubmit,
   DashboardStats,
   EventDetails,
+  EventMemberRead,
   EventSummary,
   Guest,
   GuestCreate,
@@ -190,6 +192,62 @@ export async function adminListEvents(): Promise<AdminEventRow[]> {
   const res = await apiFetch('/admin/events')
   if (!res.ok) throw await toError(res)
   return res.json()
+}
+
+/** יצירת חשבון מפיק/אולם ע"י אדמין (אין הרשמה עצמאית לתפקידים אלו). */
+export async function adminCreateAccount(data: {
+  email: string
+  display_name: string
+  account_type: 'planner' | 'venue'
+}): Promise<AdminAccountCreateResult> {
+  const res = await apiFetch('/admin/accounts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- שיתוף גישה לאירוע (מפיק/אולם) ----
+
+export async function listEventMembers(eventId: number): Promise<EventMemberRead[]> {
+  const res = await apiFetch(`/events/${eventId}/members`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function addEventMember(
+  eventId: number,
+  email: string,
+  permissions: string[],
+): Promise<EventMemberRead> {
+  const res = await apiFetch(`/events/${eventId}/members`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, permissions }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function updateEventMember(
+  eventId: number,
+  memberId: number,
+  permissions: string[],
+): Promise<EventMemberRead> {
+  const res = await apiFetch(`/events/${eventId}/members/${memberId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ permissions }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function removeEventMember(eventId: number, memberId: number): Promise<void> {
+  const res = await apiFetch(`/events/${eventId}/members/${memberId}`, { method: 'DELETE' })
+  if (!res.ok) throw await toError(res)
 }
 
 // ---- מוזמנים ----
