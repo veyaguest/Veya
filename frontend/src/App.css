@@ -367,7 +367,8 @@
 .search,
 .add-grid input,
 .add-grid select,
-.seats-field input {
+.seats-field input,
+.seats-field select {
   color: var(--charcoal);
 }
 .search::placeholder,
@@ -654,15 +655,18 @@
   font-size: 15px;
   color: var(--charcoal);
 }
-.seats-field input {
+.seats-field input,
+.seats-field select {
   width: 80px;
   padding: 9px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   font-size: 15px;
   background: var(--cream);
+  cursor: pointer;
 }
-.seats-field input:focus {
+.seats-field input:focus,
+.seats-field select:focus {
   outline: none;
   border-color: var(--gold);
 }
@@ -1664,7 +1668,7 @@
   align-items: flex-start;
 }
 .hall-tray {
-  flex: 0 0 190px;
+  flex: 0 0 220px;
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -1673,6 +1677,11 @@
   flex-direction: column;
   gap: 8px;
   min-height: 200px;
+  /* צמוד לתצוגה תוך גלילת העמוד, עם גובה מוגבל ורשימה פנימית גוללת —
+     כדי שרשימת מוזמנים ארוכה (100+) תישאר תמיד נגישה ולא "תיבלע" בדף. */
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
 }
 .hall-tray.droppable {
   border-color: var(--gold);
@@ -1683,11 +1692,38 @@
   margin: 0 0 4px;
   font-size: 14px;
   color: var(--charcoal);
+  flex-shrink: 0;
+}
+.tray-search {
+  flex-shrink: 0;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--surface-hi);
+  color: var(--charcoal);
+}
+.tray-search:focus {
+  outline: none;
+  border-color: var(--gold);
 }
 .tray-empty {
   margin: 0;
   font-size: 13px;
   color: var(--success);
+  flex-shrink: 0;
+}
+.tray-empty.tray-no-match {
+  color: var(--muted);
+}
+.tray-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-inline-end: 2px;
 }
 
 /* ---- קנבס: Viewport (חלון קבוע, overflow hidden) + World (נגרר/מוגדל) ---- */
@@ -1910,24 +1946,114 @@
   border-color: var(--error);
   background: var(--error);
 }
+/* נקודת "מלווה" (seats>1) — תפוסה ע"י אותו מוזמן שכבר מוצג כעיגול במקום
+   אחר סביב השולחן; מסומנת כמלאה אבל בלי עיגול/ראשי-תיבות כפולים. */
+.seat-pip.seat-companion {
+  background: var(--faint);
+  border-color: var(--muted);
+}
 
 /* ---- ידית סיבוב לשולחן ---- */
 .table-rot {
   z-index: 8;
 }
 
-/* רשימת השמות מתחת לדיסקה — נשארת קריאה */
-.hall-table-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  width: 100%;
-  min-height: 20px;
+/* שכבת עיגולי המוזמנים סביב היקף השולחן — כל מוזמן במקום הכיסא שלו,
+   ולא בעמודה ארוכה מתחת לשולחן (כדי לראות מיד מי יושב איפה). */
+.seat-guests-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
-.table-empty-hint {
+.seat-guest {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ivory);
+  border: 1.5px solid var(--line);
+  color: var(--charcoal);
+  font-size: 9.5px;
+  font-weight: 700;
+  cursor: grab;
+  pointer-events: auto;
+  z-index: 4;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.seat-guest:active {
+  cursor: grabbing;
+}
+.seat-guest:hover {
+  transform: translate(-50%, -50%) scale(1.18);
+  z-index: 6;
+  box-shadow: 0 2px 8px rgba(20, 18, 14, 0.22);
+}
+.seat-guest.selected {
+  background: var(--gold);
+  color: #201a06;
+  border-color: var(--gold-deep);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.35);
+  z-index: 6;
+}
+.seat-guest.side-groom {
+  background: rgba(201, 162, 39, 0.22);
+  border-color: var(--gold-deep);
+}
+.seat-guest.side-bride {
+  background: rgba(176, 107, 143, 0.2);
+  border-color: #8f5273;
+}
+.seat-guest.seat-extra {
+  border-color: var(--error);
+  box-shadow: 0 0 0 2px rgba(166, 96, 90, 0.3);
+}
+.seat-guest-initials {
+  pointer-events: none;
+}
+.seat-guest-badge {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  min-width: 13px;
+  height: 13px;
+  padding: 0 2px;
+  border-radius: 999px;
+  background: var(--charcoal);
+  color: var(--cream);
+  font-size: 8px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+/* תווית שם צפה — מופיעה רק ב-hover/focus, כדי לא לעמוס את השולחן ויזואלית
+   כברירת מחדל (רואים רק ראשי-תיבות), אבל השם המלא זמין תמיד בלחיצה קלה. */
+.seat-guest-name {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  white-space: nowrap;
+  background: var(--charcoal);
+  color: var(--cream);
   font-size: 11px;
-  color: var(--faint);
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s, transform 0.12s;
+  z-index: 9;
+}
+.seat-guest:hover .seat-guest-name,
+.seat-guest:focus-visible .seat-guest-name {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 .guest-chip {
   display: inline-flex;
@@ -2107,9 +2233,11 @@
   border-color: var(--gold-deep);
   color: var(--gold-deep);
 }
-.stepper input {
-  width: 48px;
+.stepper input,
+.stepper select {
+  width: 56px;
   text-align: center;
+  cursor: pointer;
 }
 .hall-props-panel .color-row {
   flex-wrap: wrap;
@@ -2185,6 +2313,15 @@
     flex-wrap: wrap;
     width: 100%;
     flex-basis: auto;
+    /* במסך צר המגש עובר לשורה אופקית רגילה בראש הדף — sticky/הגבלת-גובה
+       מתאימים רק לעמודה הצדדית ברוחב מלא, לא כאן. */
+    position: static;
+    max-height: none;
+  }
+  .tray-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow: visible;
   }
   /* בפריסת עמודה (מסך צר), align-items: flex-start על .hall-layout גורם
      ל-.hall-canvas-wrap "להתכווץ" לפי התוכן שלו במקום למלא את הרוחב —

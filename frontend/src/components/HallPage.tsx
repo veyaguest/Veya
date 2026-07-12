@@ -90,6 +90,20 @@ const GRID_SIZE = 20
 const WORLD_W = 3200
 const WORLD_H = 2200
 
+// מספרי מקומות אפשריים לשולחן — סט סגור בלבד (לא כל מספר), לפי בקשת הבעלים.
+// שולחן אבירים (מלבני ארוך) מיועד לחבורה גדולה ולכן ברירת המחדל שלו גבוהה
+// יותר (24) מכל שאר סוגי השולחנות (12).
+const SEAT_OPTIONS = [10, 12, 14, 16, 18, 20, 22, 24]
+function defaultCapacityForType(t: TableType): number {
+  return t === 'knights' ? 24 : 12
+}
+// נתונים ישנים (שנשמרו לפני שהוגבל מספר המקומות לסט קבוע) עלולים להכיל ערך
+// שלא ברשימה — מעגלים לערך הקרוב ביותר מהסט, כדי שהתפריט הנפתח תמיד יציג
+// ערך תקין.
+function snapCapacity(n: number): number {
+  return SEAT_OPTIONS.reduce((best, v) => (Math.abs(v - n) < Math.abs(best - n) ? v : best), SEAT_OPTIONS[0])
+}
+
 function clamp(v: number, min: number, max: number) {
   return Math.min(max, Math.max(min, v))
 }
@@ -105,8 +119,8 @@ function tableSize(type: TableType, capacity: number): { w: number; h: number } 
   const hasEnds = type === 'knights'
   const rowSeats = hasEnds && capacity >= 6 ? capacity - 2 : capacity
   const topCount = Math.max(1, Math.ceil(rowSeats / 2))
-  const w = Math.round(clamp(topCount * 34, 110, 640))
-  return { w, h: 62 }
+  const w = Math.round(clamp(topCount * 28, 100, 420))
+  return { w, h: 56 }
 }
 
 interface SeatPoint {
@@ -158,6 +172,9 @@ export function HallPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // ---- מגש "ללא שולחן" (צד ימין): חיפוש כדי למצוא מוזמן ברשימה ארוכה ----
+  const [traySearch, setTraySearch] = useState('')
+
   // ---- מנוע קנבס: זום / פאן / גריד / סנאפ / מסך מלא ----
   const [view, setView] = useState({ x: 0, y: 0, scale: 1 })
   const [showGrid, setShowGrid] = useState(true)
@@ -206,7 +223,7 @@ export function HallPage() {
         y: t.y,
         guests: t.guests,
         table_type: t.table_type ?? 'round',
-        capacity: t.capacity ?? h.seats_per_table,
+        capacity: snapCapacity(t.capacity ?? h.seats_per_table),
         rotation: t.rotation ?? 0,
         name: t.name ?? '',
         color: t.color ?? '',
@@ -225,7 +242,7 @@ export function HallPage() {
         color: el.color ?? '',
       })),
     )
-    setSeats(h.seats_per_table)
+    setSeats(snapCapacity(h.seats_per_table))
     setWarnings(h.warnings)
     setSketch(h.sketch ?? null)
     setDirty(false)
@@ -557,7 +574,7 @@ export function HallPage() {
     const nextNum = nextTableNumRef.current
     nextTableNumRef.current += 1
     const off = nextPlaceOffset()
-    const capacity = seats || 8
+    const capacity = defaultCapacityForType('round')
     const { w, h } = tableSize('round', capacity)
     const t: TableView = {
       table_number: nextNum,
@@ -624,7 +641,10 @@ export function HallPage() {
   function bumpCapacity(tnum: number, delta: number) {
     const t = tables.find((x) => x.table_number === tnum)
     if (!t) return
-    updateTable(tnum, { capacity: clamp(t.capacity + delta, 1, 60) })
+    // דילוג בתוך סט המספרים הקבוע (10,12,...,24) ולא בכל מספר בודד.
+    const curIdx = SEAT_OPTIONS.indexOf(t.capacity)
+    const nextIdx = clamp((curIdx === -1 ? 0 : curIdx) + delta, 0, SEAT_OPTIONS.length - 1)
+    updateTable(tnum, { capacity: SEAT_OPTIONS[nextIdx] })
   }
 
   // ---- אלמנטים (רחבת ריקודים / בר / DJ / כניסה) ----
@@ -834,6 +854,13 @@ export function HallPage() {
       .map(Number),
   )
 
+  // רשימת "ללא שולחן" ממוינת לפי שם (קל יותר לסרוק) ומסוננת לפי חיפוש —
+  // כדי שברשימות ארוכות (100+ מוזמנים) אפשר יהיה למצוא מישהו מיד.
+  const traySearchNorm = traySearch.trim()
+  const visibleUnassigned = [...unassigned]
+    .filter((g) => !traySearchNorm || g.full_name.includes(traySearchNorm))
+    .sort((a, b) => a.full_name.localeCompare(b.full_name, 'he'))
+
   return (
     <div className="hall-page">
       {/* ---- אילוצים מההערות (לפני השיבוץ) ---- */}
@@ -896,12 +923,13 @@ export function HallPage() {
         </button>
         <label className="seats-field" title="מספר מקומות ברירת מחדל לשולחן חדש ולשיבוץ האוטומטי">
           מקומות ברירת מחדל
-          <input
-            type="number"
-            min={1}
-            value={seats}
-            onChange={(e) => setSeats(Math.max(1, Number(e.target.value) || 1))}
-          />
+          <select value={seats} onChange={(e) => setSeats(Number(e.target.value))}>
+            {SEAT_OPTIONS.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
         </label>
         <button className="btn-ghost" onClick={onRegenerate} disabled={loading}>
           ↻ שיבוץ אוטומטי מחדש
@@ -992,16 +1020,31 @@ export function HallPage() {
           onDrop={(e) => onDropTo(e, null)}
         >
           <h4 className="tray-title">ללא שולחן ({unassigned.length})</h4>
-          {unassigned.length === 0 && <p className="tray-empty">כולם משובצים ✓</p>}
-          {unassigned.map((g) => (
-            <GuestChip
-              key={g.id}
-              g={g}
-              selected={selected === g.id}
-              onClick={(e) => onGuestClick(e, g.id)}
-              onDragStart={(e) => onGuestDragStart(e, g.id)}
+          {unassigned.length > 5 && (
+            <input
+              type="text"
+              className="tray-search"
+              placeholder="חיפוש מוזמן…"
+              value={traySearch}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setTraySearch(e.target.value)}
             />
-          ))}
+          )}
+          {unassigned.length === 0 && <p className="tray-empty">כולם משובצים ✓</p>}
+          {unassigned.length > 0 && visibleUnassigned.length === 0 && (
+            <p className="tray-empty tray-no-match">לא נמצאה התאמה ל"{traySearch}"</p>
+          )}
+          <div className="tray-list">
+            {visibleUnassigned.map((g) => (
+              <GuestChip
+                key={g.id}
+                g={g}
+                selected={selected === g.id}
+                onClick={(e) => onGuestClick(e, g.id)}
+                onDragStart={(e) => onGuestDragStart(e, g.id)}
+              />
+            ))}
+          </div>
         </div>
 
         {/* קנבס מפת האולם: Viewport (חלון קבוע) + World (נגרר/מוגדל בפנים) */}
@@ -1160,6 +1203,18 @@ export function HallPage() {
                 for (const g of t.guests) for (let i = 0; i < g.seats; i++) occupied.push(g.side)
                 const seatCount = Math.max(t.capacity, occupied.length, 1)
                 const pts = seatPositions(t.table_type, seatCount, w, h)
+                // כל מוזמן "תופס" נקודת כיסא ראשית (שבה יוצג עיגול-המוזמן) ואולי
+                // עוד נקודות-לוואי (מלווים/seats>1) שמסומנות כתפוסות בלי עיגול נפרד.
+                const guestAtPoint = new Map<number, HallGuest>()
+                const companionPoints = new Set<number>()
+                {
+                  let idx = 0
+                  for (const g of t.guests) {
+                    guestAtPoint.set(idx, g)
+                    for (let k = 1; k < g.seats; k++) companionPoints.add(idx + k)
+                    idx += Math.max(1, g.seats)
+                  }
+                }
                 return (
                   <div
                     key={t.table_number}
@@ -1190,17 +1245,30 @@ export function HallPage() {
                     >
                       <span className="seat-layer" aria-hidden="true">
                         {pts.map((p, i) => {
-                          const side = occupied[i]
+                          if (guestAtPoint.has(i)) return null // מוצג בשכבת המוזמנים למטה
                           return (
                             <span
                               key={i}
-                              className={`seat-pip ${side ? `seat-${side}` : 'seat-free'} ${
+                              className={`seat-pip ${companionPoints.has(i) ? 'seat-companion' : ''} ${
                                 i >= t.capacity ? 'seat-extra' : ''
                               }`}
                               style={{ left: p.left, top: p.top }}
                             />
                           )
                         })}
+                      </span>
+                      <span className="seat-guests-layer">
+                        {[...guestAtPoint.entries()].map(([idx, g]) => (
+                          <GuestSeatChip
+                            key={g.id}
+                            g={g}
+                            point={pts[idx] ?? { left: w / 2, top: h / 2 }}
+                            extra={idx >= t.capacity}
+                            selected={selected === g.id}
+                            onClick={(e) => onGuestClick(e, g.id)}
+                            onDragStart={(e) => onGuestDragStart(e, g.id)}
+                          />
+                        ))}
                       </span>
                       <span className="table-center">
                         <span className="table-num">{t.table_number}</span>
@@ -1228,18 +1296,6 @@ export function HallPage() {
                         {free > 0 ? `${free} כיסאות פנויים` : 'השולחן מלא'}
                       </span>
                     )}
-                    <div className="hall-table-body">
-                      {t.guests.map((g) => (
-                        <GuestChip
-                          key={g.id}
-                          g={g}
-                          selected={selected === g.id}
-                          onClick={(e) => onGuestClick(e, g.id)}
-                          onDragStart={(e) => onGuestDragStart(e, g.id)}
-                        />
-                      ))}
-                      {t.guests.length === 0 && <span className="table-empty-hint">ריק</span>}
-                    </div>
                   </div>
                 )
               })}
@@ -1309,7 +1365,14 @@ export function HallPage() {
                       key={tt}
                       type="button"
                       className={soleSelected.table_type === tt ? 'active' : ''}
-                      onClick={() => updateTable(soleSelected.table_number, { table_type: tt })}
+                      onClick={() =>
+                        updateTable(soleSelected.table_number, {
+                          table_type: tt,
+                          // שולחן אבירים תמיד מתחיל ב-24 מקומות, כל שאר הסוגים ב-12 —
+                          // כי מעבר בין סוגים משנה גם את הגודל הטבעי של השולחן.
+                          capacity: defaultCapacityForType(tt),
+                        })
+                      }
                     >
                       {TABLE_TYPE_LABELS[tt]}
                     </button>
@@ -1323,17 +1386,18 @@ export function HallPage() {
                   <button type="button" onClick={() => bumpCapacity(soleSelected.table_number, -1)}>
                     −
                   </button>
-                  <input
-                    type="number"
-                    min={1}
-                    max={60}
+                  <select
                     value={soleSelected.capacity}
                     onChange={(e) =>
-                      updateTable(soleSelected.table_number, {
-                        capacity: clamp(Number(e.target.value) || 1, 1, 60),
-                      })
+                      updateTable(soleSelected.table_number, { capacity: Number(e.target.value) })
                     }
-                  />
+                  >
+                    {SEAT_OPTIONS.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
                   <button type="button" onClick={() => bumpCapacity(soleSelected.table_number, 1)}>
                     +
                   </button>
@@ -1485,6 +1549,50 @@ function GuestChip({
     >
       {g.full_name}
       {g.seats > 1 && <span className="chip-size">×{g.seats}</span>}
+    </span>
+  )
+}
+
+// ראשי-תיבות לשם (שני תווים) — מוצג בתוך העיגול הקטן סביב השולחן; השם
+// המלא מופיע ב-title (hover) וגם בתווית הצפה שנחשפת ב-hover דרך CSS.
+function initials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2)
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`
+}
+
+// עיגול מוזמן קטן, ממוקם בנקודת כיסא ספציפית סביב היקף השולחן (לא בעמודה
+// מתחת) — כך רואים בבירור מי יושב איפה, בדומה לתרשים הושבה אמיתי.
+function GuestSeatChip({
+  g,
+  point,
+  extra,
+  selected,
+  onClick,
+  onDragStart,
+}: {
+  g: HallGuest
+  point: SeatPoint
+  extra: boolean
+  selected: boolean
+  onClick: (e: React.MouseEvent) => void
+  onDragStart: (e: React.DragEvent) => void
+}) {
+  return (
+    <span
+      className={`seat-guest side-${g.side} ${selected ? 'selected' : ''} ${extra ? 'seat-extra' : ''}`}
+      style={{ left: point.left, top: point.top }}
+      draggable
+      onDragStart={onDragStart}
+      onClick={onClick}
+      title={`${g.full_name} · ${SIDE_LABELS[g.side]}${
+        g.seats > 1 ? ` · ${g.seats} מקומות` : ''
+      } · גררו לשולחן אחר או לחצו לבחירה`}
+    >
+      <span className="seat-guest-initials">{initials(g.full_name)}</span>
+      {g.seats > 1 && <span className="seat-guest-badge">×{g.seats}</span>}
+      <span className="seat-guest-name">{g.full_name}</span>
     </span>
   )
 }
