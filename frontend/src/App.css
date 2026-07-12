@@ -1492,9 +1492,9 @@
   cursor: grab;
   user-select: none;
   border: 1.5px solid var(--gold-deep);
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 600;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   text-align: center;
   box-shadow: 0 3px 10px rgba(20, 18, 14, 0.1);
   transition: box-shadow 0.15s;
@@ -1504,7 +1504,7 @@
 }
 .element-label {
   pointer-events: none;
-  padding: 0 8px;
+  padding: 0 6px;
 }
 
 /* ---- עריכת אובייקטים: בחירה, נעילה, ידיות, סרגל צף ---- */
@@ -1861,12 +1861,12 @@
 }
 .table-num {
   font-family: 'Cormorant Garamond', 'Assistant', serif;
-  font-size: 26px;
+  font-size: 19px;
   font-weight: 700;
   color: var(--charcoal);
 }
 .table-name {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--body);
   max-width: 100%;
   overflow: hidden;
@@ -1874,9 +1874,9 @@
   white-space: nowrap;
 }
 .table-occ {
-  font-size: 12px;
+  font-size: 10.5px;
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 .hall-table.over .table-occ {
   color: var(--error);
@@ -1891,8 +1891,8 @@
 }
 .seat-pip {
   position: absolute;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: var(--cream);
@@ -2034,6 +2034,35 @@
   outline: none;
   border-color: var(--gold-deep);
 }
+/* שורת שדות מספריים (רוחב/גובה/סיבוב) בפאנל עריכת אלמנט — עריכה מדויקת
+   כתחליף/השלמה לגרירת הידיות. */
+.props-dim-row {
+  display: flex;
+  flex-direction: row !important;
+  gap: 8px;
+}
+.props-dim-row label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.props-dim-row input[type='number'] {
+  width: 100%;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 7px;
+}
+.props-dim-row input:focus {
+  outline: none;
+  border-color: var(--gold-deep);
+}
 .type-chip-row {
   display: flex;
   flex-wrap: wrap;
@@ -2156,6 +2185,13 @@
     flex-wrap: wrap;
     width: 100%;
     flex-basis: auto;
+  }
+  /* בפריסת עמודה (מסך צר), align-items: flex-start על .hall-layout גורם
+     ל-.hall-canvas-wrap "להתכווץ" לפי התוכן שלו במקום למלא את הרוחב —
+     ובגלל ש-.hall-world הפנימי הוא 3200px רוחב טבעי (גם אם מוצג ממוזער
+     ע"י transform: scale), זה "מפוצץ" את כל הדף לרוחב אופקי ענק. */
+  .hall-canvas-wrap {
+    width: 100%;
   }
   .hall-viewport {
     height: 60vh;

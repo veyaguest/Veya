@@ -56,20 +56,22 @@ const TABLE_COLORS = ['#c9a227', '#4a7fc9', '#5fa66c', '#c96b6b', '#8a6bc9', '#3
 const ELEMENT_COLORS = ['#7fb3e0', '#e4c96b', '#8fd0a8', '#e08f8f', '#b79ae0', '#9a7b2e']
 
 // הגדרות ברירת-מחדל לכל סוג אלמנט מיוחד (תווית, גודל, צורה, צבע).
+// הגדלים כאן קטנים יחסית לגודל המפה (WORLD_W/H) — כדי שגם ברמת זום 100%
+// האלמנטים ייראו פרופורציונליים לחלל האולם, לא ענקיים.
 // חלק מהסוגים (head_table/gift_table/restroom/stage) מוסתרים כרגע מהסרגל
 // (VISIBLE_ELEMENTS) — הקוד שלהם נשאר שלם כדי שאפשר יהיה להחזיר אותם בעתיד.
 const ELEMENT_DEFS: Record<
   HallElementType,
   { label: string; width: number; height: number; shape: ElementShape; color: string }
 > = {
-  head_table: { label: 'שולחן מחותנים', width: 220, height: 56, shape: 'rectangle', color: '#c9a227' },
-  dance_floor: { label: 'רחבת ריקודים', width: 230, height: 200, shape: 'rectangle', color: '#7fb3e0' },
-  bar: { label: 'בר', width: 130, height: 90, shape: 'rectangle', color: '#8fd0a8' },
-  stage: { label: 'במה', width: 200, height: 74, shape: 'rectangle', color: '#b79ae0' },
-  dj: { label: 'עמדת DJ', width: 110, height: 70, shape: 'rectangle', color: '#e08f8f' },
-  entrance: { label: 'כניסה', width: 110, height: 40, shape: 'rectangle', color: '#9a7b2e' },
-  gift_table: { label: 'שולחן מתנות', width: 120, height: 46, shape: 'rectangle', color: '#c9a227' },
-  restroom: { label: 'שירותים', width: 90, height: 46, shape: 'rectangle', color: '#8c8375' },
+  head_table: { label: 'שולחן מחותנים', width: 160, height: 42, shape: 'rectangle', color: '#c9a227' },
+  dance_floor: { label: 'רחבת ריקודים', width: 170, height: 148, shape: 'rectangle', color: '#7fb3e0' },
+  bar: { label: 'בר', width: 96, height: 66, shape: 'rectangle', color: '#8fd0a8' },
+  stage: { label: 'במה', width: 148, height: 54, shape: 'rectangle', color: '#b79ae0' },
+  dj: { label: 'עמדת DJ', width: 82, height: 52, shape: 'rectangle', color: '#e08f8f' },
+  entrance: { label: 'כניסה', width: 82, height: 30, shape: 'rectangle', color: '#9a7b2e' },
+  gift_table: { label: 'שולחן מתנות', width: 90, height: 34, shape: 'rectangle', color: '#c9a227' },
+  restroom: { label: 'שירותים', width: 68, height: 34, shape: 'rectangle', color: '#8c8375' },
 }
 
 // רק אלה מוצגים בסרגל ה"הוספה למפה" (לפי בקשת הבעלים — רוב המידע הזה
@@ -97,14 +99,14 @@ function clamp(v: number, min: number, max: number) {
 // משתנה, הכיסאות מתעדכנים אוטומטית להתאמת צורת השולחן").
 function tableSize(type: TableType, capacity: number): { w: number; h: number } {
   if (type === 'round' || type === 'square') {
-    const d = Math.round(clamp(64 + capacity * 8, 90, 260))
+    const d = Math.round(clamp(46 + capacity * 6, 68, 190))
     return { w: d, h: d }
   }
   const hasEnds = type === 'knights'
   const rowSeats = hasEnds && capacity >= 6 ? capacity - 2 : capacity
   const topCount = Math.max(1, Math.ceil(rowSeats / 2))
-  const w = Math.round(clamp(topCount * 46, 140, 900))
-  return { w, h: 84 }
+  const w = Math.round(clamp(topCount * 34, 110, 640))
+  return { w, h: 62 }
 }
 
 interface SeatPoint {
@@ -114,7 +116,7 @@ interface SeatPoint {
 
 // מיקום כל כיסא סביב גוף השולחן, יחסית לקופסת השולחן (0,0 עד w,h).
 function seatPositions(type: TableType, capacity: number, w: number, h: number): SeatPoint[] {
-  const gap = 15
+  const gap = 12
   if (type === 'round' || type === 'square') {
     const radius = Math.max(w, h) / 2 + gap
     const cx = w / 2
@@ -182,6 +184,19 @@ export function HallPage() {
     | { kind: 'rotate'; id: string; cx: number; cy: number }
   const dragRef = useRef<DragState | null>(null)
   const movedRef = useRef(false)
+  // מונה קטן להוספות רצופות (שולחן/אלמנט) — כדי שכשלוחצים "הוסף" כמה פעמים
+  // ברצף הפריטים ייפלו במדרגה קלה זה מזה, ולא יתערמו זה על גבי זה במרכז.
+  const placeSeqRef = useRef(0)
+  function nextPlaceOffset() {
+    const seq = placeSeqRef.current % 8
+    placeSeqRef.current += 1
+    return seq * 22
+  }
+
+  // מספר השולחן הבא — ref ולא חישוב מ-tables.map בזמן הלחיצה, כי לחיצות
+  // כפולות/מהירות על "הוסף שולחן" יכולות לקרוא ל-addTable פעמיים לפני
+  // שהרינדור התעדכן, ואז שני השולחנות "יחשבו" שאותו המספר פנוי.
+  const nextTableNumRef = useRef(1)
 
   const applyState = useCallback((h: HallState) => {
     setTables(
@@ -199,6 +214,9 @@ export function HallPage() {
         locked: t.locked ?? false,
       })),
     )
+    nextTableNumRef.current = h.tables.length
+      ? Math.max(...h.tables.map((t) => t.table_number)) + 1
+      : 1
     setUnassigned(h.unassigned)
     setElements(
       (h.elements ?? []).map((el) => ({
@@ -324,6 +342,44 @@ export function HallPage() {
   function resetView() {
     setView({ x: 0, y: 0, scale: 1 })
   }
+
+  // ---- "התאמה לתצוגה": מזום/ממרכז כך שכל השולחנות והאלמנטים ייכנסו לחלון
+  // בבת אחת. פותר את "האלמנטים גדולים מדי" כשמדובר בעצם בזום 100% שמראה
+  // רק חלק קטן מהמפה — הפתרון האמיתי הוא להראות את כל האולם בפעם אחת. ----
+  function fitToView() {
+    const rect = viewportRef.current?.getBoundingClientRect()
+    if (!rect || rect.width < 10 || rect.height < 10) return
+    const boxes: { x1: number; y1: number; x2: number; y2: number }[] = []
+    tables.forEach((t) => {
+      const { w, h } = tableSize(t.table_type, t.capacity)
+      boxes.push({ x1: t.x, y1: t.y, x2: t.x + w, y2: t.y + h })
+    })
+    elements.forEach((el) => {
+      boxes.push({ x1: el.x, y1: el.y, x2: el.x + el.width, y2: el.y + el.height })
+    })
+    if (boxes.length === 0) return
+    const minX = Math.min(...boxes.map((b) => b.x1))
+    const minY = Math.min(...boxes.map((b) => b.y1))
+    const maxX = Math.max(...boxes.map((b) => b.x2))
+    const maxY = Math.max(...boxes.map((b) => b.y2))
+    const pad = 90
+    const bw = Math.max(1, maxX - minX + pad * 2)
+    const bh = Math.max(1, maxY - minY + pad * 2)
+    const scale = clamp(Math.min(rect.width / bw, rect.height / bh), MIN_SCALE, 1)
+    const cx = (minX + maxX) / 2
+    const cy = (minY + maxY) / 2
+    setView({ x: rect.width / 2 - cx * scale, y: rect.height / 2 - cy * scale, scale })
+  }
+
+  // מתאים את התצוגה פעם אחת בלבד, ברגע שהמפה נטענת לראשונה (לא בכל שינוי).
+  const didInitialFitRef = useRef(false)
+  useEffect(() => {
+    if (!didInitialFitRef.current && (tables.length > 0 || elements.length > 0)) {
+      didInitialFitRef.current = true
+      requestAnimationFrame(() => fitToView())
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tables, elements])
 
   function onWheel(e: React.WheelEvent) {
     e.preventDefault()
@@ -498,14 +554,18 @@ export function HallPage() {
       (rect?.left ?? 0) + (rect?.width ?? 400) / 2,
       (rect?.top ?? 0) + (rect?.height ?? 300) / 2,
     )
-    const nextNum = tables.length ? Math.max(...tables.map((t) => t.table_number)) + 1 : 1
+    const nextNum = nextTableNumRef.current
+    nextTableNumRef.current += 1
+    const off = nextPlaceOffset()
+    const capacity = seats || 8
+    const { w, h } = tableSize('round', capacity)
     const t: TableView = {
       table_number: nextNum,
-      x: Math.max(0, Math.round(center.x - 60)),
-      y: Math.max(0, Math.round(center.y - 60)),
+      x: Math.max(0, Math.round(center.x - w / 2 + off)),
+      y: Math.max(0, Math.round(center.y - h / 2 + off)),
       guests: [],
       table_type: 'round',
-      capacity: seats || 8,
+      capacity,
       rotation: 0,
       name: '',
       color: '',
@@ -521,7 +581,8 @@ export function HallPage() {
   function duplicateTable(tnum: number) {
     const src = tables.find((t) => t.table_number === tnum)
     if (!src) return
-    const nextNum = Math.max(...tables.map((t) => t.table_number)) + 1
+    const nextNum = nextTableNumRef.current
+    nextTableNumRef.current += 1
     const copy: TableView = { ...src, table_number: nextNum, x: src.x + 30, y: src.y + 30, guests: [], locked: false }
     setTables((prev) => [...prev, copy])
     setUnassigned((prev) => [...prev, ...src.guests])
@@ -556,6 +617,7 @@ export function HallPage() {
     setError('')
     setTables((prev) => prev.map((t) => (t.table_number === oldNum ? { ...t, table_number: newNum } : t)))
     setSelectedTables(new Set([newNum]))
+    nextTableNumRef.current = Math.max(nextTableNumRef.current, newNum + 1)
     setDirty(true)
   }
 
@@ -573,11 +635,12 @@ export function HallPage() {
       (rect?.left ?? 0) + (rect?.width ?? 400) / 2,
       (rect?.top ?? 0) + (rect?.height ?? 300) / 2,
     )
+    const off = nextPlaceOffset()
     const el: HallElement = {
       id: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       type,
-      x: Math.max(0, Math.round(center.x - def.width / 2)),
-      y: Math.max(0, Math.round(center.y - def.height / 2)),
+      x: Math.max(0, Math.round(center.x - def.width / 2 + off)),
+      y: Math.max(0, Math.round(center.y - def.height / 2 + off)),
       width: def.width,
       height: def.height,
       rotation: 0,
@@ -869,6 +932,9 @@ export function HallPage() {
             +
           </button>
         </div>
+        <button className="canvas-tool" title="התאמת כל המפה לתצוגה" onClick={fitToView}>
+          ⛶ התאמה למסך
+        </button>
         <button
           className={`canvas-tool ${showGrid ? 'active' : ''}`}
           title="הצג/הסתר רשת"
@@ -1339,7 +1405,57 @@ export function HallPage() {
                   onChange={(e) => updateElement(soleSelectedEl.id, { label: e.target.value })}
                 />
               </label>
-              <p className="file-name">גררו לתזוזה · גררו את הידיות לסיבוב/שינוי גודל.</p>
+
+              <div className="props-field props-dim-row">
+                <label>
+                  רוחב
+                  <input
+                    type="number"
+                    min={30}
+                    max={1000}
+                    value={Math.round(soleSelectedEl.width)}
+                    onChange={(e) =>
+                      updateElement(soleSelectedEl.id, { width: clamp(Number(e.target.value) || 30, 30, 1000) })
+                    }
+                  />
+                </label>
+                <label>
+                  גובה
+                  <input
+                    type="number"
+                    min={20}
+                    max={1000}
+                    value={Math.round(soleSelectedEl.height)}
+                    onChange={(e) =>
+                      updateElement(soleSelectedEl.id, { height: clamp(Number(e.target.value) || 20, 20, 1000) })
+                    }
+                  />
+                </label>
+                <label>
+                  סיבוב°
+                  <input
+                    type="number"
+                    min={-180}
+                    max={180}
+                    value={Math.round(soleSelectedEl.rotation)}
+                    onChange={(e) =>
+                      updateElement(soleSelectedEl.id, { rotation: clamp(Number(e.target.value) || 0, -180, 180) })
+                    }
+                  />
+                </label>
+              </div>
+
+              <div className="props-actions">
+                <button onClick={() => duplicateElement(soleSelectedEl.id)}>⧉ שכפול</button>
+                <button onClick={() => toggleElementLock(soleSelectedEl.id)}>
+                  {soleSelectedEl.locked ? '🔓 שחרור' : '🔒 נעילה'}
+                </button>
+                <button className="danger" onClick={() => removeElement(soleSelectedEl.id)}>
+                  🗑 מחיקה
+                </button>
+              </div>
+
+              <p className="file-name">גררו לתזוזה · גררו את הידיות לסיבוב/שינוי גודל, או הזינו ערכים מדויקים למעלה.</p>
             </div>
           )}
         </div>
