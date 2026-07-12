@@ -1,7 +1,9 @@
 :root {
   /* מיתוג VEYA — ערכת נושא בהירה (יוקרה מאופקת, זהב במינון נמוך).
      הרקע בהיר וברור למשתמש; סרגל הצד וכמה משטחים נשארים כהים
-     (ראה בלוק ".sidebar, .auth-marketing, .hall-canvas" בהמשך). */
+     (ראה בלוק ".sidebar, .auth-marketing, .dash-event" בהמשך).
+     מפת האולם (.hall-canvas/.hall-viewport) בהירה בכוונה — עורך מסוג
+     Figma/Miro, לא משטח כהה. */
   --black: #0b0a0c;        /* שחור עמוק — סרגל צד + משטחים כהים */
   --black-soft: #14120e;   /* חום-פחם רך */
   --ivory: #fbf6ee;        /* רקע העמוד — שנהב חמים (spec: #FBF6EE) */
@@ -28,7 +30,6 @@
 .sidebar,
 .auth-marketing,
 .auth-panel,
-.hall-canvas,
 .dash-event,
 .confirm-card {
   --cream: #14120e;
@@ -1383,17 +1384,69 @@
   color: var(--charcoal);
 }
 
-/* ---- מפת אולם (שלב 7) ---- */
+/* ---- מפת אולם (שלב 7) — עורך בסגנון Figma/Miro: בהיר, נקי, מקצועי ---- */
 .hall-toolbar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
+}
+.btn-add-table {
+  font-weight: 700;
+  padding: 10px 18px;
 }
 .hall-hint {
   font-size: 12px;
   color: var(--muted);
+}
+
+/* ---- סרגל כלי קנבס: זום / רשת / הצמדה / מסך מלא ---- */
+.hall-canvas-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.canvas-tool-group {
+  display: flex;
+  align-items: center;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.canvas-tool {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--body);
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.canvas-tool-group .canvas-tool {
+  border: none;
+  border-radius: 0;
+}
+.canvas-tool-group .canvas-tool-pct {
+  min-width: 52px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  border-inline: 1px solid var(--line);
+}
+.canvas-tool:hover {
+  background: var(--ivory-light);
+  border-color: var(--gold-deep);
+}
+.canvas-tool.active {
+  background: rgba(201, 162, 39, 0.14);
+  border-color: var(--gold-deep);
+  color: var(--gold-deep);
 }
 
 /* ---- פלטת אלמנטים מיוחדים ---- */
@@ -1429,109 +1482,41 @@
   border-color: var(--gold);
 }
 
-/* ---- אלמנט מיוחד על הקנבס ---- */
+/* ---- אלמנט מיוחד על הקנבס (רחבת ריקודים/בר/DJ/כניסה) ----
+   הצבע/הצורה נקבעים inline (per-element), ה-CSS רק מגדיר את המבנה. */
 .hall-element {
   position: absolute;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
   cursor: grab;
   user-select: none;
-  border: 1px solid var(--gold-deep);
-  background: rgba(201, 162, 39, 0.06);
-  color: var(--gold-light);
+  border: 1.5px solid var(--gold-deep);
   font-size: 13px;
-  letter-spacing: 1px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
   text-align: center;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 3px 10px rgba(20, 18, 14, 0.1);
+  transition: box-shadow 0.15s;
 }
 .hall-element:active {
   cursor: grabbing;
 }
 .element-label {
   pointer-events: none;
-  padding: 0 6px;
-}
-.element-del {
-  position: absolute;
-  top: -9px;
-  inset-inline-start: -9px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 1px solid var(--line-2);
-  background: var(--black);
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-  display: none;
-}
-.hall-element:hover .element-del {
-  display: block;
-}
-.element-del:hover {
-  color: var(--error);
-  border-color: var(--error);
-}
-/* אלמנטים "גיבור" (זהב בולט) מול אלמנטי שירות (עדינים) */
-.el-dance_floor {
-  border-style: dashed;
-  border-color: var(--gold);
-  background:
-    repeating-linear-gradient(
-      45deg,
-      rgba(201, 162, 39, 0.05) 0,
-      rgba(201, 162, 39, 0.05) 10px,
-      transparent 10px,
-      transparent 20px
-    );
-}
-.el-head_table {
-  border-color: var(--gold);
-  background: rgba(201, 162, 39, 0.12);
-  font-weight: 600;
-}
-/* בר ובמה — אלמנטי "גיבור" עדינים (זהב בינוני) */
-.el-bar,
-.el-stage {
-  border-color: var(--gold-deep);
-  background: rgba(201, 162, 39, 0.08);
-}
-/* אלמנטי שירות — עדינים (אפור) */
-.el-entrance,
-.el-dj,
-.el-gift_table,
-.el-restroom {
-  color: var(--body);
-  border-color: var(--line-2);
-  background: rgba(255, 255, 255, 0.02);
-}
-/* כניסה — קו זהב דק במקום תיבה */
-.el-entrance {
-  border: none;
-  border-top: 2px solid var(--gold-deep);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  color: var(--gold-light);
-  font-size: 12px;
-  letter-spacing: 2px;
+  padding: 0 8px;
 }
 
 /* ---- עריכת אובייקטים: בחירה, נעילה, ידיות, סרגל צף ---- */
 .hall-element.selected {
-  border-color: var(--gold-light);
   box-shadow:
-    0 0 0 1px var(--gold-light),
-    0 6px 20px rgba(0, 0, 0, 0.5),
-    0 0 18px rgba(201, 162, 39, 0.25);
+    0 0 0 2px var(--gold-light),
+    0 8px 22px rgba(20, 18, 14, 0.16);
   z-index: 6;
 }
 .hall-element.locked {
   cursor: default;
-  opacity: 0.85;
+  opacity: 0.75;
 }
 .hall-element.locked:active {
   cursor: default;
@@ -1543,31 +1528,47 @@
   font-size: 12px;
   line-height: 1;
   pointer-events: none;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+  filter: drop-shadow(0 1px 2px rgba(20, 18, 14, 0.25));
 }
-/* סרגל עריכה צף מעל האובייקט */
+/* סרגל עריכה צף מעל האובייקט: צורה + צבע + נעילה/שכפול/מחיקה */
 .element-toolbar {
   position: absolute;
-  top: -38px;
+  top: -46px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 8px;
-  background: var(--surface-hi);
-  border: 1px solid var(--line-2);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border-radius: 10px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 18px rgba(20, 18, 14, 0.18);
   z-index: 8;
+  white-space: nowrap;
+}
+.shape-row,
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.element-toolbar .shape-row {
+  border-inline-end: 1px solid var(--line-2);
+  padding-inline-end: 6px;
+}
+.element-toolbar .color-row {
+  border-inline-end: 1px solid var(--line-2);
+  padding-inline-end: 6px;
 }
 .element-toolbar button {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 6px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--body);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -1576,34 +1577,57 @@
   padding: 0;
 }
 .element-toolbar button:hover {
-  background: rgba(201, 162, 39, 0.14);
+  background: var(--ivory-light);
   border-color: var(--gold-deep);
-  color: var(--gold-light);
+  color: var(--gold-deep);
+}
+.element-toolbar button.active {
+  background: rgba(201, 162, 39, 0.18);
+  border-color: var(--gold-deep);
+  color: var(--gold-deep);
 }
 .element-toolbar button[title='מחק']:hover {
-  background: rgba(193, 90, 78, 0.14);
+  background: rgba(166, 96, 90, 0.12);
   border-color: var(--error);
   color: var(--error);
+}
+.color-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  cursor: pointer;
+  padding: 0;
+}
+.color-swatch:hover,
+.color-swatch.active {
+  box-shadow: 0 0 0 2px var(--gold-light);
+}
+.color-swatch.none {
+  background: var(--cream);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 16px;
 }
 /* ידיות שינוי גודל / סיבוב */
 .handle {
   position: absolute;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: var(--black);
-  border: 1.5px solid var(--gold-light);
+  background: var(--cream);
+  border: 1.5px solid var(--gold-deep);
   z-index: 8;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 1px 4px rgba(20, 18, 14, 0.3);
 }
 .handle-resize {
-  bottom: -8px;
-  inset-inline-end: -8px;
+  bottom: -7px;
+  inset-inline-end: -7px;
   cursor: nwse-resize;
   border-radius: 3px;
 }
 .handle-rotate {
-  top: -30px;
+  top: -28px;
   left: 50%;
   transform: translateX(-50%);
   cursor: grab;
@@ -1615,10 +1639,10 @@
 .handle-rotate::after {
   content: '';
   position: absolute;
-  top: 15px;
+  top: 13px;
   left: 50%;
   width: 1px;
-  height: 14px;
+  height: 13px;
   background: var(--gold-deep);
   transform: translateX(-50%);
 }
@@ -1666,40 +1690,69 @@
   color: var(--success);
 }
 
-.hall-canvas {
+/* ---- קנבס: Viewport (חלון קבוע, overflow hidden) + World (נגרר/מוגדל) ---- */
+.hall-canvas-wrap {
   position: relative;
   flex: 1;
-  background-color: var(--black);
-  /* שרטוט (blueprint): רשת זהב עדינה 40px + הבהרה רכה מהמרכז */
-  background-image:
-    radial-gradient(1000px 460px at 50% 0%, rgba(201, 162, 39, 0.06), transparent),
-    linear-gradient(rgba(201, 162, 39, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201, 162, 39, 0.05) 1px, transparent 1px);
-  background-size: 100% 100%, 40px 40px, 40px 40px;
-  border: 1px solid var(--line-2);
+  min-width: 0;
+}
+.hall-canvas-wrap:fullscreen {
+  background: var(--ivory);
+  padding: 18px;
+  box-sizing: border-box;
+}
+.hall-viewport {
+  position: relative;
+  height: 70vh;
+  min-height: 480px;
+  max-height: 820px;
+  background: #fdfbf4;
+  border: 1px solid var(--line);
   border-radius: 14px;
   overflow: hidden;
-  min-height: 460px;
-  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 2px 12px rgba(20, 18, 14, 0.06);
+  touch-action: none;
+  /* הקנבס עובד בקואורדינטות LTR פנימיות (left/top פיזי, כמו Figma) —
+     בלי זה, ה-RTL של האפליקציה דוחף את .hall-world (רחב מהמאגר) אל
+     מחוץ לתצוגה שמאלה. תוכן הטקסט בתוך השולחנות נשאר עברי כרגיל. */
+  direction: ltr;
+}
+.hall-canvas-wrap:fullscreen .hall-viewport {
+  height: 100%;
+  max-height: none;
+}
+.hall-world {
+  position: relative;
+  transform-origin: 0 0;
+  cursor: grab;
+}
+.hall-world:active {
+  cursor: grabbing;
+}
+.hall-world.grid-on {
+  background-image:
+    linear-gradient(var(--line-2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-2) 1px, transparent 1px);
 }
 /* סקיצת האולם שהזוג העלה — רקע עדין מתחת לשולחנות */
 .hall-sketch-bg {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 1400px;
+  height: 900px;
   background-size: contain;
-  background-position: center;
+  background-position: top right;
   background-repeat: no-repeat;
-  opacity: 0.32;
-  filter: grayscale(0.15);
+  opacity: 0.4;
   pointer-events: none;
   z-index: 0;
 }
 .hall-empty {
   position: absolute;
-  top: 50%;
+  top: 120px;
   left: 0;
   right: 0;
-  transform: translateY(-50%);
   text-align: center;
   color: var(--muted);
   font-size: 14px;
@@ -1729,11 +1782,13 @@
   z-index: 7;
 }
 .hall-table.selected .table-graphic {
-  border-color: var(--gold-light);
   box-shadow:
-    0 0 0 1px var(--gold-light),
-    0 6px 20px rgba(0, 0, 0, 0.5),
-    0 0 18px rgba(201, 162, 39, 0.25);
+    0 0 0 2px var(--gold-light),
+    0 8px 22px rgba(20, 18, 14, 0.16);
+}
+.hall-table.locked .table-graphic {
+  cursor: default;
+  opacity: 0.85;
 }
 .free-badge {
   position: absolute;
@@ -1745,13 +1800,13 @@
   font-size: 11px;
   padding: 3px 9px;
   border-radius: 999px;
-  background: rgba(201, 162, 39, 0.16);
+  background: rgba(201, 162, 39, 0.14);
   border: 1px solid var(--gold-deep);
-  color: var(--gold-light);
+  color: var(--gold-deep);
   pointer-events: none;
 }
 .free-badge.full {
-  background: rgba(192, 138, 138, 0.16);
+  background: rgba(166, 96, 90, 0.12);
   border-color: var(--error);
   color: var(--error);
 }
@@ -1760,50 +1815,63 @@
   box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.22);
 }
 
-/* ---- גרפיקת השולחן (עגול / ארוך) + כיסאות ---- */
+/* ---- גרפיקת השולחן (עגול/מרובע/מלבני/אבירים) + כיסאות ----
+   הצבע נקבע inline (per-table); ה-CSS מגדיר רק צורה ומבנה. */
 .table-graphic {
   position: relative;
   flex-shrink: 0;
-  background:
-    radial-gradient(circle at 50% 38%, rgba(201, 162, 39, 0.14), transparent 60%),
-    var(--surface-hi);
   border: 1.5px solid var(--gold);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 12px rgba(20, 18, 14, 0.1);
   cursor: grab;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: box-shadow 0.15s;
 }
 .table-graphic:active {
   cursor: grabbing;
 }
-/* שולחן עגול */
-.table-round {
-  width: 108px;
-  height: 108px;
+.type-round {
   border-radius: 50%;
 }
-/* שולחן ארוך (מלבני) */
-.table-long {
-  width: 150px;
-  height: 78px;
-  border-radius: 12px;
+.type-square {
+  border-radius: 18px;
+}
+.type-rectangle {
+  border-radius: 14px;
+}
+.type-knights {
+  border-radius: 22px;
 }
 .hall-table.over .table-graphic {
   border-color: var(--error);
+}
+/* אזהרה שאינה חריגת קיבולת (למשל זוג "לא לשבת יחד" באותו שולחן) */
+.hall-table.warn .table-graphic {
+  border-color: #c98a27;
+  box-shadow: 0 0 0 3px rgba(201, 138, 39, 0.18);
 }
 .table-center {
   display: flex;
   flex-direction: column;
   align-items: center;
-  line-height: 1.1;
+  line-height: 1.15;
   pointer-events: none;
+  max-width: 80%;
 }
 .table-num {
   font-family: 'Cormorant Garamond', 'Assistant', serif;
-  font-size: 30px;
-  font-weight: 600;
-  color: var(--gold-light);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.table-name {
+  font-size: 11px;
+  color: var(--body);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .table-occ {
   font-size: 12px;
@@ -1814,22 +1882,21 @@
   color: var(--error);
 }
 
-/* טבעת הכיסאות: כל pip ממוקם סביב המרכז דרך transform */
-.seat-ring {
+/* מיקום הכיסאות סביב גוף השולחן — כל pip ממוקם ב-left/top inline
+   (מחושב לפי סוג/מספר מקומות ב-seatPositions) */
+.seat-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 .seat-pip {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 9px;
-  height: 9px;
-  margin: -4.5px 0 0 -4.5px;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: transparent;
-  border: 1px solid var(--faint);
+  background: var(--cream);
+  border: 1.5px solid var(--faint);
 }
 .seat-pip.seat-groom {
   background: var(--gold);
@@ -1844,60 +1911,9 @@
   background: var(--error);
 }
 
-/* ---- כיסאות שולחן ארוך: שתי שורות (מעל ומתחת) ---- */
-.long-seats {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 6px 10px;
-  pointer-events: none;
-}
-.long-row {
-  display: flex;
-  justify-content: center;
-  gap: 7px;
-}
-.long-row .seat-pip {
-  position: static;
-  margin: 0;
-}
-
-/* ---- ידית סיבוב לשולחן ארוך ---- */
+/* ---- ידית סיבוב לשולחן ---- */
 .table-rot {
   z-index: 8;
-}
-
-/* ---- סרגל בחירת צורת שולחן (עגול/ארוך) ---- */
-.table-toolbar {
-  display: flex;
-  gap: 4px;
-  padding: 3px;
-  border-radius: 999px;
-  background: var(--surface-hi);
-  border: 1px solid var(--line-2);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
-}
-.table-toolbar button {
-  font-family: inherit;
-  font-size: 12px;
-  color: var(--body);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  padding: 3px 11px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-.table-toolbar button:hover {
-  background: rgba(201, 162, 39, 0.14);
-  color: var(--gold-light);
-}
-.table-toolbar button.active {
-  background: var(--gold);
-  color: #201a06;
-  border-color: var(--gold-deep);
 }
 
 /* רשימת השמות מתחת לדיסקה — נשארת קריאה */
@@ -1955,6 +1971,154 @@
   color: #5a4a10;
 }
 
+/* ---- פאנל תכונות צף: עריכת שולחן בודד / בחירה מרובה / אלמנט ---- */
+.hall-props-panel {
+  position: absolute;
+  top: 16px;
+  inset-inline-start: 16px;
+  width: 250px;
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(20, 18, 14, 0.16);
+  padding: 14px;
+  z-index: 20;
+}
+.props-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.props-head h4 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--charcoal);
+}
+.props-head .x {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.props-head .x:hover {
+  color: var(--error);
+}
+.props-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.props-field input[type='text'],
+.props-field input[type='number'],
+.props-field textarea {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 9px;
+  resize: vertical;
+}
+.props-field input:focus,
+.props-field textarea:focus {
+  outline: none;
+  border-color: var(--gold-deep);
+}
+.type-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.type-chip-row button {
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--body);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 11px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.type-chip-row button:hover {
+  border-color: var(--gold-deep);
+}
+.type-chip-row button.active {
+  background: var(--gold);
+  color: #201a06;
+  border-color: var(--gold-deep);
+}
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stepper button {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface-hi);
+  color: var(--body);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.stepper button:hover {
+  border-color: var(--gold-deep);
+  color: var(--gold-deep);
+}
+.stepper input {
+  width: 48px;
+  text-align: center;
+}
+.hall-props-panel .color-row {
+  flex-wrap: wrap;
+}
+.hall-props-panel .color-swatch {
+  width: 22px;
+  height: 22px;
+}
+.props-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.props-actions button {
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--body);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.props-actions button:hover {
+  border-color: var(--gold-deep);
+  color: var(--gold-deep);
+}
+.props-actions button.danger:hover {
+  border-color: var(--error);
+  color: var(--error);
+  background: rgba(166, 96, 90, 0.08);
+}
+.hall-props-panel.multi .file-name {
+  margin-bottom: 10px;
+}
+
 @media (max-width: 760px) {
   .add-grid {
     grid-template-columns: 1fr;
@@ -1992,6 +2156,13 @@
     flex-wrap: wrap;
     width: 100%;
     flex-basis: auto;
+  }
+  .hall-viewport {
+    height: 60vh;
+    min-height: 380px;
+  }
+  .hall-props-panel {
+    width: calc(100% - 32px);
   }
 }
 

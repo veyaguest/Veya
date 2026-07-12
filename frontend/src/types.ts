@@ -279,7 +279,8 @@ export interface HallGuest {
   rsvp_status: RsvpStatus
 }
 
-export type TableShape = 'round' | 'long'
+// סוג שולחן: עגול | מרובע | מלבני | "אבירים" (שולחן ארוך, 24 מקומות כולל קצוות)
+export type TableType = 'round' | 'square' | 'rectangle' | 'knights'
 
 export interface HallTable {
   table_number: number
@@ -287,10 +288,17 @@ export interface HallTable {
   y: number
   seats_used: number
   guests: HallGuest[]
-  shape: TableShape
+  table_type: TableType
+  capacity: number
   rotation: number
+  name: string
+  color: string
+  notes: string
+  locked: boolean
 }
 
+// רק האלמנטים הגלויים בסרגל הכלים כרגע. שאר הסוגים (head_table, gift_table,
+// restroom, stage) עדיין נתמכים בקוד לתאימות לאחור — רק הוסתרו מהממשק.
 export type HallElementType =
   | 'head_table'
   | 'dance_floor'
@@ -300,6 +308,9 @@ export type HallElementType =
   | 'dj'
   | 'gift_table'
   | 'restroom'
+
+// צורה גאומטרית של אלמנט (רלוונטי לרחבת ריקודים / בר / DJ)
+export type ElementShape = 'rectangle' | 'square' | 'circle' | 'ellipse'
 
 export interface HallElement {
   id: string
@@ -311,6 +322,8 @@ export interface HallElement {
   rotation: number
   locked: boolean
   label: string
+  shape: ElementShape
+  color: string
 }
 
 export interface HallState {
@@ -327,8 +340,13 @@ export interface HallTableSave {
   x: number
   y: number
   guest_ids: number[]
-  shape: TableShape
+  table_type: TableType
+  capacity: number
   rotation: number
+  name: string
+  color: string
+  notes: string
+  locked: boolean
 }
 
 // ---- משתמשים והתחברות (שלב 8) ----
