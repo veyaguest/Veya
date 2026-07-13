@@ -80,14 +80,14 @@ const ELEMENT_DEFS: Record<
   HallElementType,
   { label: string; width: number; height: number; shape: ElementShape; color: string }
 > = {
-  head_table: { label: 'שולחן מחותנים', width: 160, height: 42, shape: 'rectangle', color: '#c9a227' },
-  dance_floor: { label: 'רחבת ריקודים', width: 170, height: 148, shape: 'rectangle', color: '#7fb3e0' },
-  bar: { label: 'בר', width: 96, height: 66, shape: 'rectangle', color: '#8fd0a8' },
-  stage: { label: 'במה', width: 148, height: 54, shape: 'rectangle', color: '#b79ae0' },
-  dj: { label: 'עמדת DJ', width: 82, height: 52, shape: 'rectangle', color: '#e08f8f' },
-  entrance: { label: 'כניסה', width: 82, height: 30, shape: 'rectangle', color: '#9a7b2e' },
-  gift_table: { label: 'שולחן מתנות', width: 90, height: 34, shape: 'rectangle', color: '#c9a227' },
-  restroom: { label: 'שירותים', width: 68, height: 34, shape: 'rectangle', color: '#8c8375' },
+  head_table: { label: '💍 שולחן מחותנים', width: 160, height: 42, shape: 'rectangle', color: '#c9a227' },
+  dance_floor: { label: '💃 רחבת ריקודים', width: 170, height: 148, shape: 'circle', color: '#c9a227' },
+  bar: { label: '🥂 בר', width: 96, height: 66, shape: 'rectangle', color: '#8fd0a8' },
+  stage: { label: '🎤 במה', width: 148, height: 54, shape: 'rectangle', color: '#b79ae0' },
+  dj: { label: '🎧 עמדת DJ', width: 82, height: 52, shape: 'rectangle', color: '#e08f8f' },
+  entrance: { label: '🚪 כניסה', width: 82, height: 30, shape: 'rectangle', color: '#9a7b2e' },
+  gift_table: { label: '🎁 שולחן מתנות', width: 90, height: 34, shape: 'rectangle', color: '#c9a227' },
+  restroom: { label: '🚻 שירותים', width: 68, height: 34, shape: 'rectangle', color: '#8c8375' },
 }
 
 // רק אלה מוצגים בסרגל ה"הוספה למפה" (לפי בקשת הבעלים — רוב המידע הזה

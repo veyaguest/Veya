@@ -1547,6 +1547,16 @@
   pointer-events: none;
   filter: drop-shadow(0 1px 2px rgba(20, 18, 14, 0.25));
 }
+/* רחבת ריקודים — מסגרת מנוקדת (בהשראת לוח ההשראה), רק סגנון-קו:
+   הצבע/רקע עצמם עדיין נגזרים inline מהצבע שהמשתמש בחר (בלי לשבור
+   את יכולת ההתאמה האישית הקיימת). */
+.hall-element.el-dance_floor {
+  border-style: dashed;
+  border-width: 2px;
+}
+.hall-element.el-dance_floor .element-label {
+  font-weight: 700;
+}
 /* סרגל עריכה צף מעל האובייקט: צורה + צבע + נעילה/שכפול/מחיקה */
 .element-toolbar {
   position: absolute;
@@ -1984,7 +1994,7 @@
   max-height: 820px;
   background: #fdfbf4;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 2px 12px rgba(20, 18, 14, 0.06);
   touch-action: none;
@@ -2128,12 +2138,17 @@
 }
 
 /* ---- גרפיקת השולחן (עגול/מרובע/מלבני/אבירים) + כיסאות ----
-   הצבע נקבע inline (per-table); ה-CSS מגדיר רק צורה ומבנה. */
+   הצבע נקבע inline (per-table); ה-CSS מגדיר רק צורה ומבנה.
+   טבעת לבנה דקה (via box-shadow, לא border — כך שצבע/מסגרת הפונקציונליים
+   שנקבעים inline לא נפגעים) נותנת מראה "צלחת צפה" מהודר יותר, בהשראת
+   לוח ההשראה. */
 .table-graphic {
   position: relative;
   flex-shrink: 0;
   border: 1.5px solid var(--gold);
-  box-shadow: 0 4px 12px rgba(20, 18, 14, 0.1);
+  box-shadow:
+    0 0 0 2px var(--cream),
+    0 4px 12px rgba(20, 18, 14, 0.12);
   cursor: grab;
   display: flex;
   align-items: center;
@@ -2145,6 +2160,20 @@
 }
 .type-round {
   border-radius: 50%;
+}
+/* עיטור עדין מאחורי שולחנות עגולים — "פרחי" קרינה חוזרת, בהשראת
+   לוח ההשראה; דקורטיבי בלבד, לא משפיע על גודל/מיקום השולחן. */
+.type-round::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    rgba(244, 238, 224, 0.85) 0deg 24deg,
+    transparent 24deg 30deg
+  );
+  z-index: -1;
+  pointer-events: none;
 }
 .type-square {
   border-radius: 18px;
@@ -2203,10 +2232,10 @@
 }
 .seat-pip {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 10px;
   transform: translate(-50%, -50%);
-  border-radius: 50%;
+  border-radius: 3px;
   background: var(--cream);
   border: 1.5px solid var(--faint);
 }
