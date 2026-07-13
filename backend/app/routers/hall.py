@@ -99,15 +99,20 @@ def get_hall(
         else:
             tables.setdefault(g.table_number, []).append(g)
 
+    # שולחן יכול להישאר בלי אף מוזמן (כל האורחים הועברו הלאה) ועדיין להיות
+    # קיים במפה — יש לכלול גם אותו, לא רק שולחנות שיש בהם כרגע מישהו,
+    # אחרת הוא "נעלם" מהמפה אחרי שמירה (למרות שהמיקום שלו נשמר ב-DB).
+    all_table_numbers = set(tables.keys()) | {int(k) for k in positions.keys()}
+
     capacities = {
         tnum: int((positions.get(str(tnum)) or {}).get("capacity") or seats)
-        for tnum in tables
+        for tnum in all_table_numbers
     }
     warnings = _compute_warnings(tables, capacities, guests)
 
     out_tables: list[schemas.HallTable] = []
-    for idx, tnum in enumerate(sorted(tables.keys())):
-        members = tables[tnum]
+    for idx, tnum in enumerate(sorted(all_table_numbers)):
+        members = tables.get(tnum, [])
         pos = positions.get(str(tnum)) or _auto_position(idx)
         out_tables.append(
             schemas.HallTable(
