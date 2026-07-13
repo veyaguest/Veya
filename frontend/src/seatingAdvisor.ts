@@ -289,6 +289,35 @@ export function computeSmartWarnings(
     }
   }
 
+  // שולחן כמעט-ריק לצד שולחן כמעט-מלא — הזדמנות ניצול מקום (לפנות שולחן
+  // שלם ולחסוך). "כמעט ריק" = תפוסה מתחת ל-30% (יש לפחות מוזמן אחד),
+  // "כמעט מלא" = תפוסה 90%-100% אבל לא מלא לגמרי (עדיין יש מקום לספוג).
+  const nearEmptyForOpportunity = tables.filter((t) => {
+    const used = t.guests.reduce((sum, g) => sum + g.seats, 0)
+    const ratio = t.capacity > 0 ? used / t.capacity : 0
+    return used > 0 && ratio < 0.3
+  })
+  const nearFullForOpportunity = tables.filter((t) => {
+    const used = t.guests.reduce((sum, g) => sum + g.seats, 0)
+    const ratio = t.capacity > 0 ? used / t.capacity : 0
+    return ratio >= 0.9 && ratio < 1
+  })
+  for (const empty of nearEmptyForOpportunity) {
+    const emptyUsed = empty.guests.reduce((sum, g) => sum + g.seats, 0)
+    // מחפשים שולחן כמעט-מלא שיכול לספוג את כל האורחים משולחן כמעט-הריק
+    const target = nearFullForOpportunity.find((t) => {
+      const used = t.guests.reduce((sum, g) => sum + g.seats, 0)
+      return t.capacity - used >= emptyUsed
+    })
+    if (target) {
+      warnings.push({
+        severity: 'yellow',
+        tableNumbers: [empty.table_number, target.table_number].sort((a, b) => a - b),
+        text: `שולחן ${empty.table_number} כמעט ריק (${emptyUsed}/${empty.capacity}) ושולחן ${target.table_number} כמעט מלא — אפשר לאחד ולפנות שולחן שלם`,
+      })
+    }
+  }
+
   return warnings
 }
 
