@@ -100,24 +100,11 @@ const ELEMENT_SHAPES: { key: ElementShape; label: string }[] = [
   { key: 'ellipse', label: '⬭' },
 ]
 
-// גודל לוח האולם (עולם פנימי בקואורדינטות LTR, כמו Figma). הלוח מוצג דרך
-// "מצלמה" (zoom + pan על גבי CSS transform) — כך רואים את כל האולם בכניסה
-// בלי גלילה, אפשר להתקרב/להתרחק, ושום דבר לא "בורח" מהמסך.
+// גודל לוח האולם (עולם פנימי בקואורדינטות LTR, כמו Figma). אין זום/מצלמה —
+// הלוח מוצג תמיד בגודל אמיתי (100%), והמאגר (viewport) נגלל סביבו באופן
+// טבעי (overflow: auto) כשהאולם גדול מהמסך. כך התצוגה תמיד ברורה וקריאה.
 const WORLD_W = 2000
 const WORLD_H = 1400
-
-// גבולות הזום של המצלמה. MIN קטן כדי שאולם ענק ייכנס למסך; MAX מוגבל כדי
-// שלא נתקרב יתר על המידה. בהתאם-למסך לא מתקרבים מעבר ל-100% (FIT_MAX).
-const MIN_ZOOM = 0.15
-const MAX_ZOOM = 2.5
-const FIT_MAX = 1
-const FIT_MARGIN = 48 // שוליים (px) סביב האולם כשמתאימים למסך
-
-// מיני-מפה בפינה: תצוגה מוקטנת של כל האולם + מלבן שמראה מה נראה כרגע.
-const MINIMAP_W = 150
-const MINIMAP_H = Math.round((MINIMAP_W * WORLD_H) / WORLD_W) // שומר על יחס האולם
-const MINI_SX = MINIMAP_W / WORLD_W
-const MINI_SY = MINIMAP_H / WORLD_H
 
 // מספרי מקומות אפשריים לשולחן — סט סגור בלבד (לא כל מספר), לפי בקשת הבעלים.
 // שולחן אבירים (מלבני ארוך) מיועד לחבורה גדולה ולכן ברירת המחדל שלו גבוהה
@@ -148,8 +135,11 @@ function tableSize(type: TableType, capacity: number): { w: number; h: number } 
   const hasEnds = type === 'knights'
   const rowSeats = hasEnds && capacity >= 6 ? capacity - 2 : capacity
   const topCount = Math.max(1, Math.ceil(rowSeats / 2))
-  const w = Math.round(clamp(topCount * 28, 100, 420))
-  return { w, h: 56 }
+  // רוחב שולחן האבירים מוגבל לטווח קרוב לשולחנות העגולים/מרובעים (68–190),
+  // כך שגם בקיבולת המרבית (24) הוא לא "בולע" את הלוח — בלי לגעת במספר
+  // המקומות עצמו.
+  const w = Math.round(clamp(topCount * 17, 76, 200))
+  return { w, h: 52 }
 }
 
 interface SeatPoint {
@@ -207,137 +197,21 @@ export function HallPage() {
   // ---- מגש "ללא שולחן" (צד ימין): חיפוש כדי למצוא מוזמן ברשימה ארוכה ----
   const [traySearch, setTraySearch] = useState('')
 
-  // ---- לוח האולם: מצלמה (zoom + pan) על גבי CSS transform ----
+  // ---- לוח האולם: בלי זום — תמיד בגודל אמיתי (100%), נגלל באופן טבעי ----
   const viewportRef = useRef<HTMLDivElement | null>(null)
   const worldRef = useRef<HTMLDivElement | null>(null)
-  // מקור-האמת של המצלמה נשמר ב-ref (לא ב-state) — כך פאן/זום מעדכנים ישירות
-  // את ה-transform של הלוח בלי לרנדר מחדש את כל השולחנות (חשוב לביצועים).
-  const cameraRef = useRef({ zoom: 1, x: 0, y: 0 })
-  const didFitRef = useRef(false)
-  // מונה שמזמן "התאם למסך" מחדש כשמוסיפים שולחן/אלמנט — כך שום דבר לא
-  // "בורח" מהמסך, והבמה מתרחבת אוטומטית להכיל את התוכן החדש (Auto Fit).
-  const [fitNonce, setFitNonce] = useState(0)
-  // תווית אחוז-הזום ומלבן-הצפייה במיני-מפה מתעדכנים ישירות ב-DOM (בלי
-  // re-render) מתוך applyCamera — כך פאן/זום נשארים חלקים גם עם המיני-מפה.
-  const zoomLabelRef = useRef<HTMLSpanElement | null>(null)
-  const miniRectRef = useRef<HTMLDivElement | null>(null)
 
-  // מוסיף את מצב המצלמה לרכיב הלוח — פעולה זולה (רק transform).
-  const applyCamera = useCallback(() => {
-    const el = worldRef.current
-    if (!el) return
-    const c = cameraRef.current
-    el.style.transform = `translate(${c.x}px, ${c.y}px) scale(${c.zoom})`
-    // עדכון תווית אחוז הזום.
-    if (zoomLabelRef.current) {
-      zoomLabelRef.current.textContent = `${Math.round(c.zoom * 100)}%`
-    }
-    // עדכון מלבן-הצפייה במיני-מפה: היכן העולם נראה כרגע במסך.
-    const vp = viewportRef.current
-    const mr = miniRectRef.current
-    if (vp && mr) {
-      const viewLeft = -c.x / c.zoom
-      const viewTop = -c.y / c.zoom
-      const viewW = vp.clientWidth / c.zoom
-      const viewH = vp.clientHeight / c.zoom
-      mr.style.left = `${viewLeft * MINI_SX}px`
-      mr.style.top = `${viewTop * MINI_SY}px`
-      mr.style.width = `${viewW * MINI_SX}px`
-      mr.style.height = `${viewH * MINI_SY}px`
-    }
-  }, [])
-
-  // מיפוי נקודת-מסך → קואורדינטת-לוח, לפי מצב המצלמה הנוכחי.
+  // מיפוי נקודת-מסך → קואורדינטת-לוח: מרחק מפינת המאגר בתוספת מיקום הגלילה
+  // הנוכחי (אין זום, אז אין צורך לחלק בגורם קנה-מידה).
   const toWorld = useCallback((clientX: number, clientY: number) => {
     const vp = viewportRef.current
-    const c = cameraRef.current
     if (!vp) return { x: 0, y: 0 }
     const rect = vp.getBoundingClientRect()
     return {
-      x: (clientX - rect.left - c.x) / c.zoom,
-      y: (clientY - rect.top - c.y) / c.zoom,
+      x: clientX - rect.left + vp.scrollLeft,
+      y: clientY - rect.top + vp.scrollTop,
     }
   }, [])
-
-  // זום סביב נקודה נתונה (סמן/מרכז) — הנקודה נשארת "מתחת לאצבע".
-  const zoomAt = useCallback(
-    (clientX: number, clientY: number, factor: number) => {
-      const vp = viewportRef.current
-      if (!vp) return
-      const c = cameraRef.current
-      const newZoom = clamp(c.zoom * factor, MIN_ZOOM, MAX_ZOOM)
-      if (newZoom === c.zoom) return
-      const rect = vp.getBoundingClientRect()
-      const wx = (clientX - rect.left - c.x) / c.zoom
-      const wy = (clientY - rect.top - c.y) / c.zoom
-      c.zoom = newZoom
-      c.x = clientX - rect.left - wx * newZoom
-      c.y = clientY - rect.top - wy * newZoom
-      applyCamera()
-    },
-    [applyCamera],
-  )
-
-  // מרכז את כל התוכן (שולחנות + אלמנטים) בתוך המסך — "התאם למסך".
-  const fitToScreen = useCallback(() => {
-    const vp = viewportRef.current
-    if (!vp) return
-    let minX = Infinity
-    let minY = Infinity
-    let maxX = -Infinity
-    let maxY = -Infinity
-    for (const t of tables) {
-      const { w, h } = tableSize(t.table_type, t.capacity)
-      minX = Math.min(minX, t.x)
-      minY = Math.min(minY, t.y)
-      maxX = Math.max(maxX, t.x + w)
-      maxY = Math.max(maxY, t.y + h)
-    }
-    for (const el of elements) {
-      minX = Math.min(minX, el.x)
-      minY = Math.min(minY, el.y)
-      maxX = Math.max(maxX, el.x + el.width)
-      maxY = Math.max(maxY, el.y + el.height)
-    }
-    // אין תוכן עדיין — מציגים פינה נוחה של הלוח בזום 100%.
-    if (!isFinite(minX)) {
-      minX = 0
-      minY = 0
-      maxX = Math.min(WORLD_W, 1100)
-      maxY = Math.min(WORLD_H, 760)
-    }
-    const bw = Math.max(1, maxX - minX)
-    const bh = Math.max(1, maxY - minY)
-    const vpW = vp.clientWidth
-    const vpH = vp.clientHeight
-    const zoom = clamp(
-      Math.min((vpW - FIT_MARGIN * 2) / bw, (vpH - FIT_MARGIN * 2) / bh),
-      MIN_ZOOM,
-      FIT_MAX,
-    )
-    const c = cameraRef.current
-    c.zoom = zoom
-    c.x = (vpW - bw * zoom) / 2 - minX * zoom
-    c.y = (vpH - bh * zoom) / 2 - minY * zoom
-    applyCamera()
-  }, [tables, elements, applyCamera])
-
-  // זום סביב מרכז המסך — משמש את כפתורי ה-+/− בבקרות הזום.
-  const zoomAtCenter = useCallback(
-    (factor: number) => {
-      const vp = viewportRef.current
-      if (!vp) return
-      const rect = vp.getBoundingClientRect()
-      zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, factor)
-    },
-    [zoomAt],
-  )
-
-  // חזרה לזום 100% (גודל אמיתי) סביב מרכז המסך.
-  const setZoom100 = useCallback(() => {
-    const c = cameraRef.current
-    zoomAtCenter(1 / c.zoom)
-  }, [zoomAtCenter])
 
   // סקיצת האולם (data URL) — רקע עדין מתחת לשולחנות.
 
@@ -376,7 +250,6 @@ export function HallPage() {
     | { kind: 'element'; id: string; dx: number; dy: number }
     | { kind: 'resize'; id: string; startX: number; startY: number; startW: number; startH: number; lockSquare: boolean }
     | { kind: 'rotate'; id: string; cx: number; cy: number }
-    | { kind: 'pan'; startClientX: number; startClientY: number; startPanX: number; startPanY: number }
   const dragRef = useRef<DragState | null>(null)
   // ביצועים בגרירת שולחנות: במקום לעדכן state בכל תזוזה (שמרנדר מחדש את כל
   // השולחנות), מזיזים את צמתי ה-DOM ישירות דרך transform בתוך requestAnimationFrame,
@@ -457,117 +330,8 @@ export function HallPage() {
     loadClarifications()
   }, [load, loadClarifications])
 
-  // ---- זום בגלגלת העכבר, סביב מיקום הסמן ----
-  // מאזין נייטיב (לא React onWheel) עם passive:false, כדי שנוכל למנוע את
-  // גלילת הדף ולהפוך את הגלגלת לזום על הלוח בלבד.
-  useEffect(() => {
-    const vp = viewportRef.current
-    if (!vp) return
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault()
-      // deltaY שלילי = גלגול למעלה = התקרבות. צעד עדין.
-      const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12
-      zoomAt(e.clientX, e.clientY, factor)
-    }
-    vp.addEventListener('wheel', onWheel, { passive: false })
-    return () => vp.removeEventListener('wheel', onWheel)
-  }, [zoomAt])
-
-  // ---- מחוות מגע (מובייל): צביטה לזום + שתי אצבעות להזזת הלוח ----
-  // אצבע אחת כבר עובדת דרך אירועי ה-pointer (גרירת שולחן/פאן של הרקע). כאן
-  // מטפלים רק במקרה של שתי אצבעות: המרחק בין האצבעות שולט בזום, ונקודת-האמצע
-  // ביניהן גוררת את הלוח. מאזין נייטיב עם passive:false כדי למנוע את זום-הדפדפן.
-  useEffect(() => {
-    const vp = viewportRef.current
-    if (!vp) return
-    const pinch = { active: false, lastDist: 0, lastMidX: 0, lastMidY: 0 }
-    const dist = (t: TouchList) =>
-      Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
-    const mid = (t: TouchList) => ({
-      x: (t[0].clientX + t[1].clientX) / 2,
-      y: (t[0].clientY + t[1].clientY) / 2,
-    })
-    // כשאצבע שנייה נוחתת באמצע גרירה של שולחן — מבטלים אותה בלי לשמור,
-    // ומנקים את ה-transform הזמני (בדיוק כמו סיום גרירה, אבל בלי commit).
-    const abortDrag = () => {
-      const drag = dragRef.current
-      if (drag && drag.kind === 'table-group') {
-        if (dragRafRef.current != null) {
-          cancelAnimationFrame(dragRafRef.current)
-          dragRafRef.current = null
-        }
-        for (const node of dragNodesRef.current.values()) node.style.transform = ''
-        dragNodesRef.current.clear()
-        dragPendingRef.current = null
-      }
-      dragRef.current = null
-      movedRef.current = false
-    }
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 2) {
-        e.preventDefault()
-        abortDrag()
-        pinch.active = true
-        pinch.lastDist = dist(e.touches)
-        const m = mid(e.touches)
-        pinch.lastMidX = m.x
-        pinch.lastMidY = m.y
-      }
-    }
-    const onTouchMove = (e: TouchEvent) => {
-      if (!pinch.active || e.touches.length !== 2) return
-      e.preventDefault()
-      const nd = dist(e.touches)
-      const m = mid(e.touches)
-      if (pinch.lastDist > 0) zoomAt(m.x, m.y, nd / pinch.lastDist)
-      // הזזת הלוח בעקבות תנועת נקודת-האמצע של שתי האצבעות.
-      const c = cameraRef.current
-      c.x += m.x - pinch.lastMidX
-      c.y += m.y - pinch.lastMidY
-      applyCamera()
-      pinch.lastDist = nd
-      pinch.lastMidX = m.x
-      pinch.lastMidY = m.y
-    }
-    const onTouchEnd = (e: TouchEvent) => {
-      if (e.touches.length < 2) pinch.active = false
-    }
-    vp.addEventListener('touchstart', onTouchStart, { passive: false })
-    vp.addEventListener('touchmove', onTouchMove, { passive: false })
-    vp.addEventListener('touchend', onTouchEnd)
-    vp.addEventListener('touchcancel', onTouchEnd)
-    return () => {
-      vp.removeEventListener('touchstart', onTouchStart)
-      vp.removeEventListener('touchmove', onTouchMove)
-      vp.removeEventListener('touchend', onTouchEnd)
-      vp.removeEventListener('touchcancel', onTouchEnd)
-    }
-  }, [zoomAt, applyCamera])
-
-  // ---- התאם-למסך אוטומטי בכניסה (פעם אחת, כשיש כבר תוכן) ----
-  // כך רואים את כל האולם מיד בלי לגלול. אחרי זה הזום נשלט ידנית.
-  useEffect(() => {
-    if (didFitRef.current) return
-    if (tables.length === 0 && elements.length === 0) return
-    const id = requestAnimationFrame(() => {
-      fitToScreen()
-      didFitRef.current = true
-    })
-    return () => cancelAnimationFrame(id)
-  }, [tables, elements, fitToScreen])
-
-  // ---- אתחול תווית הזום + מלבן המיני-מפה בעליית הרכיב (גם כשהלוח ריק) ----
-  useEffect(() => {
-    applyCamera()
-  }, [applyCamera])
-
-  // ---- Auto Fit: "התאם למסך" מחדש אחרי הוספת שולחן/אלמנט ----
-  // רץ אחרי שה-state התעדכן, כך שגבולות התוכן החדש כבר ידועים.
-  useEffect(() => {
-    if (fitNonce === 0) return
-    const id = requestAnimationFrame(() => fitToScreen())
-    return () => cancelAnimationFrame(id)
-  }, [fitNonce, fitToScreen])
+  // אין יותר זום — הלוח נגלל באופן טבעי (גלגלת/מגע רגילים דרך overflow:
+  // auto של המאגר), בלי מאזינים מותאמים-אישית.
 
   // ---- קיצורי מקלדת: Delete למחיקה, Esc לביטול בחירה, Ctrl/Cmd+D לשכפול ----
   useEffect(() => {
@@ -623,20 +387,11 @@ export function HallPage() {
     return Math.round(v)
   }
 
-  // ---- לחיצה על רקע הלוח: ביטול בחירה + התחלת "פאן" (גרירת הלוח) ----
+  // ---- לחיצה על רקע הלוח: ביטול בחירה בלבד (הגלילה טבעית של הדפדפן) ----
   function onWorldPointerDown(e: React.PointerEvent) {
     if (e.target !== e.currentTarget) return // קליק על ילד (שולחן/אלמנט) — מטופל בנפרד
     setSelectedTables(new Set())
     setSelectedEl(null)
-    const c = cameraRef.current
-    dragRef.current = {
-      kind: 'pan',
-      startClientX: e.clientX,
-      startClientY: e.clientY,
-      startPanX: c.x,
-      startPanY: c.y,
-    }
-    ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
   }
 
   // ---- גרירת שולחן (בודד או קבוצה נבחרת) ----
@@ -710,13 +465,12 @@ export function HallPage() {
     const vp = viewportRef.current
     if (!vp) return
     const rect = vp.getBoundingClientRect()
-    const c = cameraRef.current
-    // מרכז האלמנט בקואורדינטות-מסך = מוצא-הלוח על המסך + מיקום*זום.
+    // מרכז האלמנט בקואורדינטות-מסך = מוצא-הלוח על המסך (בניכוי גלילה) + מיקום.
     dragRef.current = {
       kind: 'rotate',
       id,
-      cx: rect.left + c.x + (el.x + el.width / 2) * c.zoom,
-      cy: rect.top + c.y + (el.y + el.height / 2) * c.zoom,
+      cx: rect.left - vp.scrollLeft + el.x + el.width / 2,
+      cy: rect.top - vp.scrollTop + el.y + el.height / 2,
     }
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
   }
@@ -725,15 +479,6 @@ export function HallPage() {
     const drag = dragRef.current
     if (!drag) return
     movedRef.current = true
-
-    // פאן (גרירת הלוח) — מעדכן רק את המצלמה, בלי לגעת בנתונים או ב-state.
-    if (drag.kind === 'pan') {
-      const c = cameraRef.current
-      c.x = drag.startPanX + (e.clientX - drag.startClientX)
-      c.y = drag.startPanY + (e.clientY - drag.startClientY)
-      applyCamera()
-      return // לא מסמנים "שינוי לא שמור" — פאן הוא תצוגה בלבד
-    }
 
     if (drag.kind === 'table-group') {
       // גרירה מהירה: מזיזים את צמתי ה-DOM ישירות (transform) בתוך rAF, בלי
@@ -766,10 +511,9 @@ export function HallPage() {
       const y = snapVal(Math.max(0, w.y - drag.dy))
       setElements((prev) => prev.map((el) => (el.id === drag.id ? { ...el, x, y } : el)))
     } else if (drag.kind === 'resize') {
-      // תזוזת-מסך מומרת לתזוזת-לוח לפי הזום (אחרת שינוי גודל "קופץ" בזום).
-      const z = cameraRef.current.zoom
-      const dx = (e.clientX - drag.startX) / z
-      const dy = (e.clientY - drag.startY) / z
+      // אין זום — תזוזת-מסך שווה ישירות לתזוזת-לוח.
+      const dx = e.clientX - drag.startX
+      const dy = e.clientY - drag.startY
       let w = Math.max(40, drag.startW + dx)
       let h = Math.max(30, drag.startH + dy)
       if (drag.lockSquare) {
@@ -846,7 +590,6 @@ export function HallPage() {
     setSelectedTables(new Set([nextNum]))
     setSelectedEl(null)
     setDirty(true)
-    setFitNonce((n) => n + 1) // Auto Fit — שהשולחן החדש ייכנס למסך
   }
 
   function duplicateTable(tnum: number) {
@@ -929,7 +672,6 @@ export function HallPage() {
     setSelectedEl(el.id)
     setSelectedTables(new Set())
     setDirty(true)
-    setFitNonce((n) => n + 1) // Auto Fit — שהאלמנט החדש ייכנס למסך
   }
 
   function removeElement(id: string) {
@@ -1490,7 +1232,7 @@ export function HallPage() {
           </div>
         </div>
 
-        {/* לוח מפת האולם: מאגר-מצלמה (Viewport) + הלוח שזז/מתקרב בפנים (World) */}
+        {/* לוח מפת האולם: מאגר נגלל (Viewport) המכיל את הלוח בגודל אמיתי (World) */}
         <div className="hall-canvas-wrap">
           <div
             className="hall-viewport"
@@ -1782,70 +1524,6 @@ export function HallPage() {
                 )
               })}
             </div>
-          </div>
-
-          {/* בקרות זום (פינה תחתונה) — הרחקה / אחוז / התקרבות / 100% / התאם */}
-          <div className="hall-zoom-controls" onPointerDown={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="zoom-btn"
-              onClick={() => zoomAtCenter(1 / 1.2)}
-              title="הרחקה"
-              aria-label="הרחקה"
-            >
-              −
-            </button>
-            <span className="zoom-label" ref={zoomLabelRef}>
-              100%
-            </span>
-            <button
-              type="button"
-              className="zoom-btn"
-              onClick={() => zoomAtCenter(1.2)}
-              title="התקרבות"
-              aria-label="התקרבות"
-            >
-              +
-            </button>
-            <span className="zoom-sep" aria-hidden="true" />
-            <button type="button" className="zoom-btn zoom-text" onClick={setZoom100} title="גודל אמיתי (100%)">
-              100%
-            </button>
-            <button type="button" className="zoom-btn zoom-text" onClick={fitToScreen} title="התאם את כל האולם למסך">
-              התאם למסך
-            </button>
-          </div>
-
-          {/* מיני-מפה (פינה תחתונה) — תצוגת-על של כל האולם + מלבן הצפייה */}
-          <div className="hall-minimap" aria-hidden="true">
-            {elements.map((el) => (
-              <div
-                key={el.id}
-                className="mini-el"
-                style={{
-                  left: el.x * MINI_SX,
-                  top: el.y * MINI_SY,
-                  width: Math.max(2, el.width * MINI_SX),
-                  height: Math.max(2, el.height * MINI_SY),
-                }}
-              />
-            ))}
-            {tables.map((t) => {
-              const { w, h } = tableSize(t.table_type, t.capacity)
-              return (
-                <div
-                  key={t.table_number}
-                  className="mini-table"
-                  style={{
-                    left: t.x * MINI_SX,
-                    top: t.y * MINI_SY,
-                    width: Math.max(2, w * MINI_SX),
-                    height: Math.max(2, h * MINI_SY),
-                  }}
-                />
-              )
-            })}
-            <div className="mini-viewport" ref={miniRectRef} />
           </div>
 
           {/* פאנל בחירה מרובה */}

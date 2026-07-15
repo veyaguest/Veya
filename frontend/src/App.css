@@ -2578,7 +2578,9 @@
   color: var(--muted) !important;
 }
 
-/* ---- קנבס: לוח שנהב גדול ונגלל בעיצוב VEYA Seating (בלי זום/רשת) ---- */
+/* ---- קנבס: לוח שנהב גדול ונגלל בעיצוב VEYA Seating (בלי זום/רשת) ----
+   אין מצלמה/זום — הלוח תמיד בגודל אמיתי (100%), נוח לעיניים; המאגר נגלל
+   סביבו באופן טבעי (overflow: auto) עם גלגלת/מגע רגילים של הדפדפן. */
 .hall-canvas-wrap {
   position: relative;
   flex: 1;
@@ -2586,7 +2588,6 @@
 }
 .hall-viewport {
   position: relative;
-  /* משטח-מצלמה: הלוח זז ומתקרב בפנים (transform), אין גלילה. */
   height: 74vh;
   min-height: 520px;
   max-height: 900px;
@@ -2595,115 +2596,16 @@
   border-radius: 20px;
   padding: 0;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: auto;
   box-shadow: 0 2px 14px rgba(20, 18, 14, 0.06);
-  /* מחוות מגע/גלגלת מטופלות בקוד (pan/zoom) — מבטלים גלילה/זום של הדפדפן. */
-  touch-action: none;
-  cursor: grab;
+  /* גלילה טבעית של הדפדפן (גלגלת/מגע) — אין עוד טיפול-זום בקוד. */
+  touch-action: auto;
   /* הקנבס עובד בקואורדינטות LTR פנימיות (left/top פיזי, כמו Figma) —
      בלי זה, ה-RTL של האפליקציה דוחף את .hall-world אל מחוץ לתצוגה. */
   direction: ltr;
 }
-.hall-viewport:active {
-  cursor: grabbing;
-}
 .hall-world {
   position: relative;
-  /* המצלמה מוחלת דרך transform ישירות ב-JS (translate+scale) מהפינה 0,0. */
-  transform-origin: 0 0;
-  will-change: transform;
-}
-
-/* ---- בקרות זום (פינה תחתונה-ימנית של הלוח) ---- */
-.hall-zoom-controls {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  direction: ltr;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 5px 7px;
-  background: rgba(255, 255, 255, 0.92);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  border: 1px solid #e5dec9;
-  border-radius: 12px;
-  box-shadow: 0 3px 12px rgba(20, 18, 14, 0.12);
-  z-index: 20;
-}
-.zoom-btn {
-  min-width: 32px;
-  height: 32px;
-  padding: 0 9px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: #3a352b;
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-.zoom-btn:hover {
-  background: #f0eadb;
-}
-.zoom-btn:active {
-  background: #e6dfca;
-}
-.zoom-btn.zoom-text {
-  font-size: 13px;
-}
-.zoom-label {
-  min-width: 46px;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 600;
-  color: #6b6455;
-  font-variant-numeric: tabular-nums;
-}
-.zoom-sep {
-  width: 1px;
-  height: 20px;
-  background: #e5dec9;
-  margin: 0 3px;
-}
-
-/* ---- מיני-מפה (פינה תחתונה-שמאלית של הלוח) ---- */
-.hall-minimap {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  direction: ltr;
-  width: 150px; /* == MINIMAP_W ב-HallPage.tsx */
-  height: 105px; /* == MINIMAP_H (יחס האולם) */
-  background: rgba(251, 246, 238, 0.94);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  border: 1px solid #e5dec9;
-  border-radius: 10px;
-  box-shadow: 0 3px 12px rgba(20, 18, 14, 0.12);
-  overflow: hidden;
-  z-index: 20;
-  pointer-events: none;
-}
-.mini-table {
-  position: absolute;
-  background: #c9a24b;
-  border-radius: 2px;
-}
-.mini-el {
-  position: absolute;
-  background: rgba(127, 179, 224, 0.55);
-  border-radius: 1px;
-}
-.mini-viewport {
-  position: absolute;
-  border: 1.5px solid #b0894f;
-  background: rgba(201, 162, 75, 0.12);
-  border-radius: 2px;
-  box-sizing: border-box;
 }
 /* סקיצת האולם שהזוג העלה — רקע עדין מתחת לשולחנות */
 .hall-sketch-bg {
@@ -3483,24 +3385,6 @@
   .hall-viewport {
     height: 60vh;
     min-height: 380px;
-  }
-  /* מטרות מגע גדולות יותר בבקרות הזום (מינימום 44px לאצבע). */
-  .hall-zoom-controls {
-    bottom: 12px;
-    right: 12px;
-    gap: 4px;
-  }
-  .zoom-btn {
-    min-width: 44px;
-    height: 44px;
-    font-size: 19px;
-  }
-  .zoom-btn.zoom-text {
-    font-size: 14px;
-  }
-  .zoom-label {
-    min-width: 52px;
-    font-size: 14px;
   }
   .hall-props-panel {
     width: calc(100% - 32px);
