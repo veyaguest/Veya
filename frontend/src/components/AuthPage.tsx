@@ -9,6 +9,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
+  const [phone, setPhone] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -22,7 +23,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
       const res =
         mode === 'login'
           ? await login(email, password)
-          : await register(email, password, displayName)
+          : await register(email, password, displayName, phone)
       setToken(res.access_token)
       onAuth(res.user)
     } catch (err) {
@@ -124,6 +125,22 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="דנה ויוסי"
                   autoComplete="name"
+                />
+              </div>
+            )}
+
+            {!isLogin && (
+              <div className="auth-field">
+                <label htmlFor="auth-phone">טלפון</label>
+                <input
+                  id="auth-phone"
+                  type="tel"
+                  dir="ltr"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="050-123-4567"
+                  autoComplete="tel"
+                  required
                 />
               </div>
             )}

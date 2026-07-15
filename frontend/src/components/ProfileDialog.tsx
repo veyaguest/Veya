@@ -21,6 +21,7 @@ export function ProfileDialog({
   onManageAccess?: () => void
 }) {
   const [displayName, setDisplayName] = useState(user.display_name || '')
+  const [phone, setPhone] = useState(user.phone || '')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -33,9 +34,9 @@ export function ProfileDialog({
     setNote(null)
     setBusy(true)
     try {
-      const updated = await updateProfile(displayName)
+      const updated = await updateProfile(displayName, phone)
       onUpdated(updated)
-      setNote('השם עודכן בהצלחה')
+      setNote('הפרטים עודכנו בהצלחה')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור את השינוי, נסו שוב')
     } finally {
@@ -101,7 +102,7 @@ export function ProfileDialog({
         {error && <div className="auth-error">{error}</div>}
         {note && <div className="auth-note">{note}</div>}
 
-        {/* עריכת שם תצוגה */}
+        {/* עריכת שם תצוגה + טלפון */}
         <form className="auth-form" onSubmit={saveName} style={{ marginTop: 12 }}>
           <div className="auth-field">
             <label htmlFor="profile-name">שם תצוגה</label>
@@ -113,8 +114,20 @@ export function ProfileDialog({
               autoComplete="name"
             />
           </div>
+          <div className="auth-field">
+            <label htmlFor="profile-phone">טלפון</label>
+            <input
+              id="profile-phone"
+              type="tel"
+              dir="ltr"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="050-123-4567"
+              autoComplete="tel"
+            />
+          </div>
           <button type="submit" className="auth-submit" disabled={busy}>
-            שמירת שם
+            שמירת פרטים
           </button>
         </form>
 

@@ -404,6 +404,7 @@ class UserCreate(BaseModel):
     email: str
     password: str
     display_name: str = ""
+    phone: str = ""
 
     @field_validator("email")
     @classmethod
@@ -418,6 +419,11 @@ class UserCreate(BaseModel):
     def _password_valid(cls, v: str) -> str:
         return validate_password_strength(v)
 
+    @field_validator("phone")
+    @classmethod
+    def _phone_valid(cls, v: str) -> str:
+        return normalize_israeli_phone(v)
+
 
 class LoginRequest(BaseModel):
     email: str
@@ -430,9 +436,10 @@ class LoginRequest(BaseModel):
 
 
 class ProfileUpdate(BaseModel):
-    """עדכון פרטי הפרופיל של המשתמש המחובר (כרגע: שם תצוגה)."""
+    """עדכון פרטי הפרופיל של המשתמש המחובר (שם תצוגה + טלפון)."""
 
     display_name: str
+    phone: Optional[str] = None
 
     @field_validator("display_name")
     @classmethod
@@ -441,6 +448,13 @@ class ProfileUpdate(BaseModel):
         if not v:
             raise ValueError("שם התצוגה לא יכול להיות ריק")
         return v
+
+    @field_validator("phone")
+    @classmethod
+    def _phone_valid(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        return normalize_israeli_phone(v)
 
 
 class PasswordChange(BaseModel):
@@ -461,6 +475,7 @@ class UserRead(BaseModel):
     id: int
     email: str
     display_name: str
+    phone: str = ""
     is_admin: bool = False
     # couple (זוג) / planner (מפיק) / venue (אולם) — ציר נפרד מ-is_admin.
     account_type: str = "couple"

@@ -39,6 +39,7 @@ def register(payload: schemas.UserCreate, request: Request, db: Session = Depend
         email=payload.email,
         password_hash=auth.hash_password(payload.password),
         display_name=payload.display_name.strip(),
+        phone=payload.phone,
         is_admin=is_admin,
     )
     db.add(user)
@@ -100,8 +101,10 @@ def update_profile(
     db: Session = Depends(get_db),
     user: models.User = Depends(auth.get_current_user),
 ):
-    """עדכון פרטי הפרופיל של המשתמש המחובר (שם תצוגה)."""
+    """עדכון פרטי הפרופיל של המשתמש המחובר (שם תצוגה + טלפון)."""
     user.display_name = payload.display_name.strip()
+    if payload.phone is not None:
+        user.phone = payload.phone
     db.commit()
     db.refresh(user)
     return user

@@ -110,11 +110,12 @@ export async function register(
   email: string,
   password: string,
   displayName: string,
+  phone: string,
 ): Promise<TokenResponse> {
   const res = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, display_name: displayName }),
+    body: JSON.stringify({ email, password, display_name: displayName, phone }),
   })
   if (!res.ok) throw await toError(res)
   return res.json()
@@ -139,12 +140,14 @@ export async function getMe(): Promise<User> {
   return res.json()
 }
 
-/** עדכון שם התצוגה של המשתמש המחובר. */
-export async function updateProfile(displayName: string): Promise<User> {
+/** עדכון שם התצוגה (וברירת מחדל גם הטלפון) של המשתמש המחובר. */
+export async function updateProfile(displayName: string, phone?: string): Promise<User> {
+  const body: Record<string, string> = { display_name: displayName }
+  if (phone !== undefined) body.phone = phone
   const res = await apiFetch('/auth/me', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ display_name: displayName }),
+    body: JSON.stringify(body),
   })
   if (!res.ok) throw await toError(res)
   return res.json()
