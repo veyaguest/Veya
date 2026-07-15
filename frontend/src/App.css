@@ -1547,11 +1547,12 @@
 
 /* ---- דשבורד (שלב 6) ---- */
 .dash-event {
-  background: var(--black);
-  border: 1px solid var(--gold);
+  background: var(--cream);
+  border: 1px solid var(--line);
   border-radius: 14px;
   padding: 22px 24px;
   margin-bottom: 20px;
+  box-shadow: var(--shadow-card);
 }
 .event-view {
   display: flex;
@@ -1563,22 +1564,18 @@
   margin: 0 0 4px;
   font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 26px;
-  color: var(--gold-light);
+  color: var(--charcoal);
 }
 .event-venue {
   margin: 0;
   font-size: 14px;
-  color: #cfc6b4;
+  color: var(--muted);
 }
 .event-when {
   margin: 4px 0 0;
   font-size: 13px;
-  color: var(--gold-light);
+  color: var(--gold-deep);
   letter-spacing: 0.2px;
-}
-.event-view .btn-ghost {
-  color: var(--gold-light);
-  border-color: var(--gold);
 }
 .event-fields {
   display: grid;
@@ -1588,14 +1585,14 @@
 }
 .event-fields input {
   padding: 9px 12px;
-  border: 1px solid var(--gold-deep);
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--black-soft);
+  background: var(--cream);
   color: var(--charcoal);
   font-size: 14px;
 }
 .event-fields input::placeholder {
-  color: #8a8172;
+  color: var(--muted);
 }
 /* השלמה אוטומטית של אולם מהמאגר המשותף */
 .venue-ac {
@@ -1614,10 +1611,10 @@
   margin: 0;
   padding: 4px;
   list-style: none;
-  background: var(--black-soft);
-  border: 1px solid var(--gold-deep);
+  background: var(--cream);
+  border: 1px solid var(--line);
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--shadow-card);
   max-height: 260px;
   overflow-y: auto;
 }
@@ -1658,19 +1655,19 @@
 }
 .field-label {
   font-size: 13px;
-  color: var(--gold-light);
+  color: var(--gold-deep);
   letter-spacing: 0.2px;
 }
 .event-datetime input {
   padding: 10px 12px;
-  border: 1px solid var(--gold-deep);
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--black-soft);
+  background: var(--cream);
   color: var(--charcoal);
   font-size: 15px;
   font-family: inherit;
-  /* צובע את אייקוני היומן/שעון של הדפדפן בהיר כדי שייראו על רקע כהה */
-  color-scheme: dark;
+  /* אייקוני היומן/שעון של הדפדפן בכהה כדי שייראו טוב על רקע בהיר */
+  color-scheme: light;
 }
 .event-datetime input:focus {
   outline: none;
@@ -1682,7 +1679,7 @@
   gap: 10px;
 }
 .event-edit-actions .btn-text {
-  color: #cfc6b4;
+  color: var(--muted);
 }
 .event-view-text {
   flex: 1;
@@ -1693,7 +1690,7 @@
   height: 84px;
   object-fit: cover;
   border-radius: 10px;
-  border: 1px solid var(--gold-deep);
+  border: 1px solid var(--line);
   flex-shrink: 0;
 }
 /* עריכת תמונת ההזמנה */
@@ -1705,7 +1702,7 @@
 }
 .event-image-label {
   font-size: 13px;
-  color: #cfc6b4;
+  color: var(--muted);
 }
 .event-image-has {
   display: flex;
@@ -1717,7 +1714,7 @@
   height: 120px;
   object-fit: cover;
   border-radius: 10px;
-  border: 1px solid var(--gold-deep);
+  border: 1px solid var(--line);
 }
 .event-image-drop {
   display: flex;
@@ -1725,14 +1722,14 @@
   align-items: center;
   gap: 4px;
   padding: 18px;
-  border: 1px dashed var(--gold-deep);
+  border: 1px dashed var(--line);
   border-radius: 10px;
-  color: var(--gold-light);
+  color: var(--gold-deep);
   cursor: pointer;
   text-align: center;
 }
 .event-image-drop small {
-  color: #8a8172;
+  color: var(--muted);
   font-size: 12px;
 }
 .event-image-drop:hover {
