@@ -5,7 +5,6 @@ import { clearAuth, getEventId, getToken, setEventId } from './authStore'
 import { AdminPage } from './components/AdminPage'
 import { AuthPage } from './components/AuthPage'
 import { DashboardPage } from './components/DashboardPage'
-import { EventPicker } from './components/EventControls'
 import { EventMembersDialog } from './components/EventMembersDialog'
 import { GuestsPage } from './components/GuestsPage'
 import { HallPage } from './components/HallPage'
@@ -150,12 +149,6 @@ function App() {
     await loadEvents()
   }
 
-  function handleSwitchEvent(id: number) {
-    setActiveEventId(id)
-    setEventId(id)
-    setPage('dashboard')
-  }
-
   async function handleEventCreated(ev: EventSummary) {
     setEvents((prev) => [ev, ...prev.filter((e) => e.id !== ev.id)])
     setActiveEventId(ev.id)
@@ -224,17 +217,6 @@ function App() {
           </span>
           <span className="logo-text">VEYA</span>
         </div>
-
-        {page !== 'admin' && (
-          <div className="sidebar-picker">
-            <EventPicker
-              events={events}
-              activeEventId={activeEventId}
-              onSwitch={handleSwitchEvent}
-              onCreated={handleEventCreated}
-            />
-          </div>
-        )}
 
         <nav className="side-nav">
           {navItems.map((item) => (

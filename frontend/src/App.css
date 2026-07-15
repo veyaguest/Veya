@@ -88,11 +88,6 @@
   line-height: 1;
 }
 
-.sidebar-picker {
-  display: flex;
-  justify-content: center;
-}
-
 /* ---- Nav ---- */
 .side-nav {
   flex: 1;
@@ -316,10 +311,6 @@
   }
   .logo-img {
     height: 46px;
-  }
-  .sidebar-picker {
-    flex: 1 1 auto;
-    justify-content: flex-start;
   }
   /* ניווט תחתון קבוע (bottom nav) — כמו באפליקציה: פס קבוע בתחתית המסך
      עם אייקון + תווית קצרה לכל מסך, במקום שורת צ'יפים בראש הסרגל העליון. */
@@ -3814,66 +3805,11 @@
   margin: 0 0 4px;
 }
 
-/* ---- סרגל עליון: בורר אירוע + יציאה ---- */
+/* ---- סרגל עליון: יציאה ---- */
 .topbar-end {
   display: flex;
   align-items: center;
   gap: 14px;
-}
-
-.event-picker {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.event-select {
-  background: var(--surface-hi);
-  color: var(--charcoal);
-  border: 1px solid var(--gold-deep);
-  border-radius: 999px;
-  padding: 7px 14px;
-  font-size: 14px;
-  cursor: pointer;
-  max-width: 190px;
-}
-.event-select:focus {
-  outline: none;
-  border-color: var(--gold);
-}
-.event-add-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 1px solid var(--gold);
-  background: transparent;
-  color: var(--gold-light);
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.event-add-btn:hover {
-  background: rgba(201, 162, 39, 0.12);
-}
-
-.event-popover {
-  position: absolute;
-  top: 44px;
-  left: 0;
-  z-index: 20;
-  width: 320px;
-  background: var(--cream);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px;
-  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
-}
-.event-popover-title {
-  color: var(--gold-light);
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 12px;
 }
 
 .event-new-grid {
