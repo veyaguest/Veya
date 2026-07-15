@@ -1,0 +1,5851 @@
+:root {
+  /* מיתוג VEYA — ערכת נושא בהירה (יוקרה מאופקת, זהב במינון נמוך).
+     הרקע בהיר וברור למשתמש; סרגל הצד וכמה משטחים נשארים כהים
+     (ראה בלוק ".sidebar, .auth-marketing, .dash-event" בהמשך).
+     מפת האולם (.hall-canvas/.hall-viewport) בהירה בכוונה — עורך מסוג
+     Figma/Miro, לא משטח כהה. */
+  --black: #0b0a0c;        /* שחור עמוק — סרגל צד + משטחים כהים */
+  --black-soft: #14120e;   /* חום-פחם רך */
+  --ivory: #fbf6ee;        /* רקע העמוד — שנהב חמים (spec: #FBF6EE) */
+  --cream: #ffffff;        /* משטח פאנלים/כרטיסים — לבן נקי */
+  --surface-hi: #fbf6ee;   /* משטח מקונן/שדות — שנהב עדין */
+  --line: #e5dec9;         /* מסגרת כרטיס/סקשן (spec: #E5DEC9) */
+  --line-2: #ede4d3;       /* מפריד שורות (spec: #EDE4D3) */
+  --gold: #c9a227;         /* זהב ראשי */
+  --gold-light: #e4c96b;   /* זהב בהיר — הדגשה/hover */
+  --gold-deep: #9a7b2e;    /* זהב מעומעם — טקסט/מסגרות זהב על בהיר */
+  --charcoal: #2b2620;     /* טקסט ראשי/כותרות (spec: #2B2620) */
+  --body: #4a4438;         /* טקסט משני — תאי טבלה/מספרים (spec: #4A4438) */
+  --muted: #8c8375;        /* תווית מעומעמת (spec: #8C8375) */
+  --faint: #b8ad97;        /* טקסט/קו חלש (spec: #B8AD97) */
+  --ivory-light: #fbf6ee;  /* משטח מקונן בהיר */
+  --error: #a6605a;        /* "לא מגיעים"/שגיאה — ורוד-אדמדם מאופק */
+  --success: #9a7b2e;      /* "מגיעים" — זהב מעומעם, קריא על בהיר */
+  --green: #2f9e5f;        /* "אישרו הגעה" — ירוק ברור וקריא על בהיר */
+  /* צל רך אחיד לכרטיסים — תחושת עומק עדינה, Premium (לא כבד). */
+  --shadow-card: 0 1px 2px rgba(43, 38, 32, 0.04), 0 12px 32px -20px rgba(43, 38, 32, 0.22);
+}
+
+/* ---- הקשרים כהים: הטוקנים הבהירים מוחלפים חזרה לערכים כהים ----
+   הרקע של המשטחים האלה נשאר כהה (var(--black)), ולכן הטקסט/הקווים
+   בתוכם חייבים להיות בגרסה הכהה כדי לשמור על ניגודיות.
+   סרגל הצד הוצא מכאן — הוא בהיר (שנהב חם) בעיצוב ה-Premium החדש. */
+.auth-marketing,
+.auth-panel,
+.confirm-card {
+  --cream: #14120e;
+  --surface-hi: #1c1a14;
+  --line: #2a2620;
+  --line-2: #3a3426;
+  --charcoal: #f5efe2;
+  --body: #cfc8b8;
+  --muted: #8b8578;
+  --faint: #6b6355;
+  --gold-deep: #e4c96b;    /* על כהה — זהב בהיר קריא יותר */
+}
+
+.shell {
+  min-height: 100vh;
+  background: var(--ivory);
+  color: var(--charcoal);
+  display: flex;
+  align-items: stretch;
+}
+
+/* ---- Sidebar (240px, RTL → נצמד לימין) ---- */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 16px;
+  background: #f3efe7;
+  border-inline-start: 1px solid var(--line-2);
+  box-shadow: 1px 0 0 var(--line) inset, -18px 0 40px -30px rgba(43, 38, 32, 0.25);
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+}
+
+.sidebar-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 4px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.logo-text {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 26px;
+  letter-spacing: 8px;
+  color: var(--charcoal);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.sidebar-picker {
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- Nav ---- */
+.side-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  text-align: start;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--body);
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.nav-bullet {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  transform: rotate(45deg);
+  background: var(--faint);
+  transition: background 0.2s ease;
+}
+.nav-item:hover {
+  color: var(--charcoal);
+  background: rgba(201, 162, 39, 0.07);
+}
+.nav-item:hover .nav-bullet {
+  background: var(--gold-deep);
+}
+.nav-item.active {
+  color: var(--gold-deep);
+  font-weight: 600;
+  background: rgba(201, 162, 39, 0.09);
+}
+.nav-item.active .nav-bullet {
+  background: var(--gold);
+}
+/* פס זהב דק בקצה הפריט הפעיל — חתימה עדינה של המותג. */
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 22px;
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+}
+/* אייקון + תווית קצרה משמשים רק בניווט התחתון בטלפון — מוסתרים בדסקטופ. */
+.nav-icon,
+.nav-label-short {
+  display: none;
+}
+
+/* ---- Sidebar footer: user chip + status + logout ---- */
+.sidebar-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 4px;
+  margin: -4px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: inherit;
+  transition: background 0.15s ease;
+}
+.user-chip:hover {
+  background: rgba(201, 162, 39, 0.1);
+}
+.user-avatar {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(201, 162, 39, 0.12);
+  border: 1px solid var(--gold-deep);
+  color: var(--gold-deep);
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 17px;
+  font-weight: 600;
+}
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.user-name {
+  font-size: 14px;
+  color: var(--charcoal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-event {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-foot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.conn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.conn-text {
+  color: var(--muted);
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.dot.ok {
+  background: var(--gold);
+}
+.dot.err {
+  background: var(--error);
+}
+.dot.loading {
+  background: var(--gold-light);
+}
+
+/* ---- Main area ---- */
+.main-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.page-header {
+  padding: 24px 32px 0;
+}
+
+/* ---- Content ---- */
+.content {
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px 32px 40px;
+}
+
+.page-title {
+  position: relative;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 30px;
+  color: var(--charcoal);
+  margin: 0;
+  padding-bottom: 12px;
+}
+.page-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 64px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+}
+
+/* ---- מובייל: הסרגל הופך לפס עליון, הניווט אופקי ---- */
+@media (max-width: 820px) {
+  .shell {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 12px 16px;
+    border-inline: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .sidebar-logo {
+    border-bottom: none;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+  .logo-img {
+    height: 46px;
+  }
+  .sidebar-picker {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+  }
+  /* ניווט תחתון קבוע (bottom nav) — כמו באפליקציה: פס קבוע בתחתית המסך
+     עם אייקון + תווית קצרה לכל מסך, במקום שורת צ'יפים בראש הסרגל העליון. */
+  .side-nav {
+    position: fixed;
+    bottom: 0;
+    inset-inline: 0;
+    z-index: 60;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-around;
+    align-items: stretch;
+    gap: 2px;
+    padding: 6px 4px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    background: #f3efe7;
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -4px 20px -6px rgba(43, 38, 32, 0.18);
+  }
+  /* פריטי הניווט התחתון בלבד — לא נוגע בכפתור 'ניהול גישה' שבסרגל העליון. */
+  .side-nav .nav-item {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px 2px;
+    border-radius: 12px;
+    font-size: 11px;
+  }
+  .side-nav .nav-item .nav-bullet {
+    display: none;
+  }
+  .side-nav .nav-item .nav-label {
+    display: none;
+  }
+  .side-nav .nav-item .nav-icon {
+    display: block;
+    color: var(--body);
+    transition: color 0.15s;
+  }
+  .side-nav .nav-item .nav-label-short {
+    display: block;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--muted);
+    transition: color 0.15s;
+  }
+  .side-nav .nav-item.active {
+    background: rgba(201, 162, 39, 0.1);
+  }
+  /* בניווט התחתון אין פס צד — הפריט הפעיל מסומן בזהב מלא. */
+  .side-nav .nav-item.active::before {
+    display: none;
+  }
+  .side-nav .nav-item.active .nav-icon,
+  .side-nav .nav-item.active .nav-label-short {
+    color: var(--gold-deep);
+  }
+  /* כפתור 'ניהול גישה' נשאר צ'יפ אופקי בסרגל העליון (לא חלק מהניווט התחתון). */
+  .sidebar > .nav-item {
+    width: auto;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  .sidebar-foot {
+    order: 2;
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding-top: 0;
+    border-top: none;
+  }
+  .user-chip {
+    display: none;
+  }
+  .sidebar-foot-row {
+    gap: 12px;
+  }
+  .page-header {
+    padding: 18px 18px 0;
+  }
+  /* מרווח תחתון כדי שהניווט הקבוע לא יכסה את סוף התוכן. */
+  .content {
+    padding: 16px 18px calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+  .page-title {
+    font-size: 24px;
+  }
+}
+
+/* ---- Toolbar ---- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.search {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 15px;
+  background: var(--cream);
+}
+.search:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+/* פקדי טופס — טקסט בהיר על רקע כהה (עיצוב כהה) */
+.search,
+.add-grid input,
+.add-grid select,
+.seats-field input,
+.seats-field select {
+  color: var(--charcoal);
+}
+.search::placeholder,
+.add-grid input::placeholder,
+.seats-field input::placeholder {
+  color: var(--muted);
+}
+/* התפריט הנפתח של select נפתח ברקע לבן (מערכת) — טקסט כהה לקריאות */
+.add-grid select option {
+  color: #1a1712;
+}
+
+/* ---- Buttons ---- */
+.btn-primary {
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+  color: #201a06;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(201, 162, 39, 0.28);
+  transition: filter 0.2s, box-shadow 0.2s;
+}
+.btn-primary:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 3px 14px rgba(201, 162, 39, 0.38);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+  box-shadow: none;
+}
+
+.btn-ghost {
+  background: var(--cream);
+  color: var(--charcoal);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.btn-ghost:hover {
+  background: rgba(201, 162, 39, 0.08);
+  border-color: var(--gold);
+}
+
+.btn-delete {
+  background: transparent;
+  color: var(--error);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+.btn-delete:hover {
+  text-decoration: underline;
+}
+
+/* ---- Add form ---- */
+.add-form {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-card);
+}
+.add-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.add-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--charcoal);
+  opacity: 0.85;
+}
+.add-grid label.wide {
+  grid-column: 1 / -1;
+}
+.add-grid input,
+.add-grid select {
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 15px;
+  background: var(--cream);
+}
+.add-grid input:focus,
+.add-grid select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.custom-group-input {
+  margin-top: 6px;
+}
+.add-grid label.checkbox-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  justify-content: flex-start;
+}
+.add-grid label.checkbox-field input[type='checkbox'] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+.add-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.form-error {
+  color: var(--error);
+  font-size: 14px;
+  margin: 10px 0 0;
+}
+
+/* ---- Summary ---- */
+.summary {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 8px 2px 12px;
+}
+
+/* ---- Table ---- */
+.table-wrap {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow-x: auto;
+}
+.guests-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.guests-table th {
+  text-align: right;
+  padding: 12px 14px;
+  background: var(--surface-hi);
+  border-bottom: 1px solid var(--gold-deep);
+  font-weight: 600;
+  color: var(--body);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.guests-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.guests-table tr:last-child td {
+  border-bottom: none;
+}
+.guests-table .center {
+  text-align: center;
+}
+.guests-table .phone {
+  font-variant-numeric: tabular-nums;
+}
+.guests-table .notes {
+  max-width: 220px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+/* ערכות סטטוס לפי ה-handoff: אישור=זהב, ממתין=אפור, ביטול=אדום מאופק */
+.badge.confirmed {
+  background: rgba(201, 162, 39, 0.14);
+  color: #8a6d1f;
+  border-color: rgba(201, 162, 39, 0.4);
+}
+.badge.pending {
+  background: rgba(139, 133, 120, 0.12);
+  color: #6b655a;
+  border-color: rgba(139, 133, 120, 0.35);
+}
+.badge.declined {
+  background: rgba(120, 60, 60, 0.14);
+  color: #a5453b;
+  border-color: rgba(160, 90, 90, 0.35);
+}
+
+.empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* ---- Import dialog ---- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(14, 14, 16, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 50;
+}
+.dialog {
+  background: var(--cream);
+  border-radius: 14px;
+  padding: 24px;
+  width: 100%;
+  max-width: 760px;
+  max-height: 85vh;
+  overflow: auto;
+  box-shadow: 0 20px 60px rgba(14, 14, 16, 0.4);
+  border-top: 3px solid var(--gold);
+}
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dialog-head h2 {
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  color: var(--charcoal);
+  margin: 0;
+  font-size: 22px;
+}
+.dialog .x {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--muted);
+}
+.file-name {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 8px 0 4px;
+}
+.import-summary {
+  font-size: 15px;
+  margin: 12px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.select-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--gold-deep);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.btn-link:hover:not(:disabled) {
+  background: var(--cream);
+}
+.btn-link:disabled {
+  color: var(--line);
+  cursor: default;
+}
+.ok-text {
+  color: var(--success);
+}
+.err-text {
+  color: var(--error);
+}
+.preview-wrap {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: auto;
+  max-height: 44vh;
+}
+.preview-wrap .guests-table th {
+  position: sticky;
+  top: 0;
+}
+.row-invalid td {
+  background: rgba(224, 133, 122, 0.1);
+}
+
+/* ---- Paste import dialog ---- */
+.paste-dialog {
+  max-width: 860px;
+}
+.paste-hint {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 10px 0 14px;
+}
+.paste-area {
+  width: 100%;
+  min-height: 200px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--cream);
+  font-size: 15px;
+  line-height: 1.7;
+  resize: vertical;
+  font-family: inherit;
+  color: var(--charcoal);
+}
+.paste-area:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.paste-table td {
+  vertical-align: middle;
+}
+.cell-input {
+  width: 100%;
+  min-width: 90px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--cream);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--charcoal);
+}
+.cell-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.count-input {
+  width: 60px;
+  min-width: 60px;
+  text-align: center;
+}
+.row-excluded td {
+  opacity: 0.5;
+}
+.warn-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  margin: 2px 3px 2px 0;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(201, 162, 39, 0.12);
+  color: var(--gold-deep);
+  border: 1px solid rgba(201, 162, 39, 0.32);
+  white-space: nowrap;
+}
+.warn-badge.warn-block {
+  background: rgba(120, 60, 60, 0.12);
+  color: #a5453b;
+  border-color: rgba(160, 90, 90, 0.35);
+}
+
+.load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 18px 0 4px;
+}
+
+/* ---- הצעות קבוצה חכמות ---- */
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px 0 16px;
+}
+.suggestion-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: linear-gradient(
+    100deg,
+    rgba(201, 162, 39, 0.1),
+    rgba(228, 201, 107, 0.06)
+  );
+  border: 1px solid rgba(201, 162, 39, 0.32);
+}
+.suggestion-text {
+  color: var(--charcoal);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.suggestion-text strong {
+  color: var(--gold-deep);
+}
+.suggestion-icon {
+  margin-inline-end: 6px;
+}
+.suggestion-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+/* ---- העדפות קבוצה ---- */
+.notes-dialog {
+  max-width: 560px;
+}
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 8px 0 4px;
+  max-height: 52vh;
+  overflow-y: auto;
+}
+.note-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--cream);
+}
+.note-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+.note-group-name {
+  font-weight: 600;
+  color: var(--charcoal);
+}
+.note-group-count {
+  font-size: 12px;
+  color: var(--gold-deep);
+}
+.note-input-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.note-input-wrap .cell-input {
+  flex: 1;
+}
+.note-saved {
+  font-size: 12px;
+  font-weight: 600;
+  color: #3f8f5b;
+  white-space: nowrap;
+}
+
+/* ---- מסך פתיחה (Onboarding) ---- */
+.onboarding-dialog {
+  max-width: 540px;
+  text-align: center;
+}
+.onboarding-head h2 {
+  margin: 6px 0 10px;
+  font-size: 24px;
+  line-height: 1.3;
+  color: var(--charcoal);
+}
+.onboarding-sub {
+  color: var(--charcoal);
+  opacity: 0.78;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 auto 18px;
+  max-width: 440px;
+}
+.onboarding-points {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 4px 0 20px;
+  text-align: start;
+}
+.onboarding-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--cream);
+}
+.onboarding-icon {
+  font-size: 26px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.onboarding-point-title {
+  font-weight: 700;
+  color: var(--charcoal);
+  margin-bottom: 3px;
+}
+.onboarding-point-text {
+  font-size: 14px;
+  color: var(--charcoal);
+  opacity: 0.75;
+  line-height: 1.5;
+}
+.onboarding-actions {
+  justify-content: center;
+}
+
+/* ---- מדד מוכנות + אשף הכנה ---- */
+.prep-block {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 2fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+@media (max-width: 720px) {
+  .prep-block {
+    grid-template-columns: 1fr;
+  }
+}
+.readiness-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(
+    135deg,
+    rgba(201, 162, 39, 0.1),
+    rgba(228, 201, 107, 0.05)
+  );
+}
+.readiness-ring {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+.ring-svg {
+  width: 80px;
+  height: 80px;
+}
+.ring-bg {
+  stroke: var(--line);
+}
+.ring-fill {
+  stroke: var(--gold);
+  transition: stroke-dasharray 0.5s ease;
+}
+.ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ring-num {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--gold-deep);
+}
+.readiness-body {
+  min-width: 0;
+}
+.readiness-title {
+  margin: 0 0 4px;
+  font-size: 17px;
+  color: var(--charcoal);
+}
+.readiness-msg {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--charcoal);
+  opacity: 0.75;
+  line-height: 1.5;
+}
+.readiness-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.readiness-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.readiness-dot.done {
+  background: var(--gold);
+}
+.readiness-count {
+  margin-inline-start: 6px;
+  font-size: 12px;
+  color: var(--charcoal);
+  opacity: 0.7;
+}
+
+.wizard-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--cream);
+}
+.wizard-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.wizard-title {
+  margin: 0;
+  font-size: 16px;
+  color: var(--charcoal);
+}
+.wizard-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wizard-step-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  text-align: start;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.wizard-step-btn:hover {
+  background: rgba(201, 162, 39, 0.07);
+}
+.wizard-step.current .wizard-step-btn {
+  border-color: rgba(201, 162, 39, 0.4);
+  background: rgba(201, 162, 39, 0.08);
+}
+.wizard-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--line);
+  color: var(--charcoal);
+}
+.wizard-step.done .wizard-num {
+  background: var(--gold);
+  color: #fff;
+}
+.wizard-step.current .wizard-num {
+  background: var(--gold-deep);
+  color: #fff;
+}
+.wizard-step-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.wizard-step-label {
+  font-weight: 600;
+  color: var(--charcoal);
+  font-size: 14px;
+}
+.wizard-step.done .wizard-step-label {
+  opacity: 0.7;
+}
+.wizard-step-desc {
+  font-size: 12px;
+  color: var(--charcoal);
+  opacity: 0.62;
+}
+
+/* ---- Toast ---- */
+.toast {
+  background: rgba(201, 162, 39, 0.12);
+  color: var(--gold-deep);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 14px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* ---- Seating ---- */
+.seats-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: var(--charcoal);
+}
+.seats-field input,
+.seats-field select {
+  width: 80px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 15px;
+  background: var(--cream);
+  cursor: pointer;
+}
+.seats-field input:focus,
+.seats-field select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.seating-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 15px;
+  margin: 4px 2px 18px;
+}
+.ok-badge {
+  background: rgba(127, 181, 138, 0.15);
+  color: var(--success);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.err-badge {
+  background: rgba(224, 133, 122, 0.15);
+  color: var(--error);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.table-card {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.table-card:hover {
+  border-color: var(--gold);
+  box-shadow: 0 4px 16px rgba(201, 162, 39, 0.14);
+}
+.table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.table-name {
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 18px;
+  color: var(--gold-deep);
+  font-weight: 700;
+}
+.table-occupancy {
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.party-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.party-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.party-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.party-size {
+  font-size: 13px;
+  color: var(--gold-deep);
+  font-weight: 600;
+}
+.party-tags {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---- אילוצים מההערות (הבהרות) ---- */
+.clar-panel {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+.clar-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.clar-title {
+  margin: 0 0 4px;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 19px;
+  color: var(--charcoal);
+}
+.clar-sub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 46ch;
+  line-height: 1.5;
+}
+.clar-head .btn-ghost {
+  white-space: nowrap;
+  padding: 8px 14px;
+  font-size: 14px;
+}
+.clar-summary {
+  margin: 14px 0 0;
+  padding: 8px 12px;
+  background: rgba(201, 162, 39, 0.08);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--gold-deep);
+  font-weight: 600;
+}
+.clar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.clar-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: var(--ivory);
+}
+.clar-q {
+  font-size: 14px;
+  color: var(--charcoal);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.clar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.clar-choice {
+  padding: 7px 14px;
+  font-size: 14px;
+}
+.btn-text {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: underline;
+  padding: 7px 6px;
+}
+.btn-text:hover {
+  color: var(--charcoal);
+}
+.clar-ok {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: var(--success);
+  font-weight: 600;
+}
+
+/* ---- RSVP / WhatsApp (שלב 5) ---- */
+.rsvp-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  text-align: center;
+  box-shadow: var(--shadow-card);
+}
+.stat-card.ok {
+  border-color: rgba(47, 158, 95, 0.45);
+}
+.stat-card.err {
+  border-color: rgba(193, 90, 78, 0.4);
+}
+.stat-card.wait {
+  border-color: rgba(201, 162, 39, 0.4);
+}
+.stat-num {
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  font-size: 38px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--charcoal);
+}
+/* מספרים תמיד משמאל-לימין, כדי שלא ייראו הפוכים בהקשר עברי (למשל "75%") */
+.stat-num,
+.donut-num,
+.mini-num,
+.legend-val,
+.bar-value {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.stat-card.ok .stat-num {
+  color: var(--green);
+}
+.stat-card.err .stat-num {
+  color: var(--error);
+}
+.stat-card.wait .stat-num {
+  color: var(--gold-deep);
+}
+.stat-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.rsvp-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.mode-badge {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.mode-badge.mock {
+  background: rgba(201, 162, 39, 0.08);
+  color: var(--gold-deep);
+  border-color: rgba(201, 162, 39, 0.35);
+}
+.mode-badge.live {
+  background: rgba(74, 122, 82, 0.1);
+  color: var(--success);
+  border-color: rgba(74, 122, 82, 0.35);
+}
+.rsvp-note {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  background: rgba(74, 122, 82, 0.08);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--success);
+  font-weight: 600;
+}
+
+.rsvp-guests {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+.rsvp-guests-head {
+  margin-bottom: 12px;
+}
+.rsvp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.rsvp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.rsvp-row:last-child {
+  border-bottom: none;
+}
+.rsvp-name {
+  font-weight: 600;
+  color: var(--charcoal);
+  min-width: 120px;
+}
+.rsvp-badge {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(201, 162, 39, 0.1);
+  color: var(--gold-deep);
+}
+.rsvp-badge.confirmed {
+  background: rgba(74, 122, 82, 0.12);
+  color: var(--success);
+}
+.rsvp-badge.declined {
+  background: rgba(193, 90, 78, 0.12);
+  color: var(--error);
+}
+.rsvp-sim {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rsvp-sim .clar-choice {
+  padding: 5px 12px;
+  font-size: 13px;
+}
+
+.rsvp-log {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+.log-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.log-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--ivory);
+}
+.log-dir {
+  min-width: 64px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.log-row.inbound .log-dir {
+  color: var(--success);
+}
+.log-body {
+  color: var(--charcoal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- דשבורד (שלב 6) ---- */
+.dash-event {
+  background: var(--black);
+  border: 1px solid var(--gold);
+  border-radius: 14px;
+  padding: 22px 24px;
+  margin-bottom: 20px;
+}
+.event-view {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.event-couple {
+  margin: 0 0 4px;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 26px;
+  color: var(--gold-light);
+}
+.event-venue {
+  margin: 0;
+  font-size: 14px;
+  color: #cfc6b4;
+}
+.event-when {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--gold-light);
+  letter-spacing: 0.2px;
+}
+.event-view .btn-ghost {
+  color: var(--gold-light);
+  border-color: var(--gold);
+}
+.event-fields {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.event-fields input {
+  padding: 9px 12px;
+  border: 1px solid var(--gold-deep);
+  border-radius: 8px;
+  background: var(--black-soft);
+  color: var(--charcoal);
+  font-size: 14px;
+}
+.event-fields input::placeholder {
+  color: #8a8172;
+}
+/* השלמה אוטומטית של אולם מהמאגר המשותף */
+.venue-ac {
+  position: relative;
+}
+.venue-ac input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.venue-ac-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 40;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--black-soft);
+  border: 1px solid var(--gold-deep);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  max-height: 260px;
+  overflow-y: auto;
+}
+.venue-ac-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.venue-ac-item.active,
+.venue-ac-item:hover {
+  background: rgba(200, 162, 92, 0.16);
+}
+.venue-ac-name {
+  color: var(--charcoal);
+  font-size: 14px;
+  font-weight: 600;
+}
+.venue-ac-addr {
+  color: var(--muted);
+  font-size: 12px;
+}
+/* תאריך + שעה: שדות עם תווית ברורה בעברית וקלים לשימוש */
+.event-datetime {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1 1 160px;
+  min-width: 150px;
+}
+.field-label {
+  font-size: 13px;
+  color: var(--gold-light);
+  letter-spacing: 0.2px;
+}
+.event-datetime input {
+  padding: 10px 12px;
+  border: 1px solid var(--gold-deep);
+  border-radius: 8px;
+  background: var(--black-soft);
+  color: var(--charcoal);
+  font-size: 15px;
+  font-family: inherit;
+  /* צובע את אייקוני היומן/שעון של הדפדפן בהיר כדי שייראו על רקע כהה */
+  color-scheme: dark;
+}
+.event-datetime input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.event-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.event-edit-actions .btn-text {
+  color: #cfc6b4;
+}
+.event-view-text {
+  flex: 1;
+  min-width: 0;
+}
+.event-invite-img {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--gold-deep);
+  flex-shrink: 0;
+}
+/* עריכת תמונת ההזמנה */
+.event-image-edit {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.event-image-label {
+  font-size: 13px;
+  color: #cfc6b4;
+}
+.event-image-has {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.event-image-thumb {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--gold-deep);
+}
+.event-image-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px;
+  border: 1px dashed var(--gold-deep);
+  border-radius: 10px;
+  color: var(--gold-light);
+  cursor: pointer;
+  text-align: center;
+}
+.event-image-drop small {
+  color: #8a8172;
+  font-size: 12px;
+}
+.event-image-drop:hover {
+  border-color: var(--gold);
+}
+/* תמונת ההזמנה בתצוגה המקדימה של ההודעה */
+.tpl-preview-img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--cream);
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.dash-alert {
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  background: rgba(201, 162, 39, 0.1);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--gold-deep);
+  font-weight: 600;
+}
+.dash-panels {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+.dash-panel {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+.dash-panel .clar-title {
+  margin-bottom: 14px;
+}
+.bar-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bar-label {
+  min-width: 92px;
+  font-size: 13px;
+  color: var(--charcoal);
+}
+.bar-track {
+  flex: 1;
+  height: 10px;
+  background: var(--ivory);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  transition: width 0.3s;
+}
+.bar-fill.ok {
+  background: var(--success);
+}
+.bar-fill.err {
+  background: var(--error);
+}
+.bar-fill.wait {
+  background: linear-gradient(90deg, var(--gold-deep), var(--gold));
+}
+.bar-value {
+  min-width: 24px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.dash-mini {
+  display: flex;
+  justify-content: space-around;
+  gap: 12px;
+  text-align: center;
+}
+.dash-mini > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mini-num {
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--gold-deep);
+}
+.mini-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---- כרטיס תמונת מצב ראשי (donut + סטטוסים) ---- */
+.dash-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 34px 30px 30px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-card);
+}
+.dash-hero-chart {
+  flex-shrink: 0;
+  margin: 10px 0 4px;
+}
+.dash-hero-title {
+  margin: 0;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 24px;
+  color: var(--charcoal);
+}
+.dash-hero-sub {
+  margin: 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+.donut-wrap {
+  position: relative;
+  width: 340px;
+  height: 340px;
+  max-width: 80vw;
+  flex-shrink: 0;
+}
+.donut {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.donut-bg {
+  stroke: var(--surface-hi);
+}
+/* מרכז העוגה — שכבת HTML מעל ה-SVG (עברית תקינה בכל דפדפן) */
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+  direction: rtl;
+}
+.donut-num {
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  font-size: 52px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--charcoal);
+}
+.donut-lbl {
+  font-size: 15px;
+  color: var(--muted);
+  letter-spacing: 0.3px;
+}
+.donut-legend {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+  gap: 14px 28px;
+}
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: var(--body);
+}
+.legend-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.legend-label {
+  flex: 1;
+}
+.legend-val {
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+/* ---- מפת אולם (שלב 7) — עורך בסגנון Figma/Miro: בהיר, נקי, מקצועי ---- */
+.hall-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.btn-add-table {
+  font-weight: 700;
+  padding: 10px 18px;
+}
+.hall-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---- פלטת אלמנטים מיוחדים ---- */
+.hall-palette {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.palette-label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-inline-end: 4px;
+}
+.palette-btn {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--gold-deep);
+  background: transparent;
+  border: 1px solid var(--gold-deep);
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.palette-btn:hover {
+  background: rgba(201, 162, 39, 0.12);
+  border-color: var(--gold);
+}
+
+/* ---- אלמנט מיוחד על הקנבס (רחבת ריקודים/בר/DJ/כניסה) ----
+   הצבע/הצורה נקבעים inline (per-element), ה-CSS רק מגדיר את המבנה. */
+.hall-element {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+  border: 1.5px solid var(--gold-deep);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-align: center;
+  box-shadow: 0 3px 10px rgba(20, 18, 14, 0.1);
+  transition: box-shadow 0.15s;
+}
+.hall-element:active {
+  cursor: grabbing;
+}
+.element-label {
+  pointer-events: none;
+  padding: 0 6px;
+}
+
+/* ---- עריכת אובייקטים: בחירה, נעילה, ידיות, סרגל צף ---- */
+.hall-element.selected {
+  box-shadow:
+    0 0 0 2px var(--gold-light),
+    0 8px 22px rgba(20, 18, 14, 0.16);
+  z-index: 6;
+}
+.hall-element.locked {
+  cursor: default;
+  opacity: 0.75;
+}
+.hall-element.locked:active {
+  cursor: default;
+}
+.element-lock-badge {
+  position: absolute;
+  top: -9px;
+  inset-inline-end: -9px;
+  font-size: 12px;
+  line-height: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(20, 18, 14, 0.25));
+}
+/* רחבת ריקודים — מסגרת מנוקדת (בהשראת לוח ההשראה), רק סגנון-קו:
+   הצבע/רקע עצמם עדיין נגזרים inline מהצבע שהמשתמש בחר (בלי לשבור
+   את יכולת ההתאמה האישית הקיימת). */
+.hall-element.el-dance_floor {
+  border-style: dashed;
+  border-width: 2px;
+}
+.hall-element.el-dance_floor .element-label {
+  font-weight: 700;
+}
+
+/* ---- מראה "כמו העיצוב" לאובייקטים ללא צבע מותאם (themed) ----
+   כשהמשתמש לא בחר צבע ידני, האובייקטים מקבלים את הסגנון המדויק
+   מלוח ההשראה. ברגע שנבחר צבע מותאם — ה-inline style גובר וזה נעלם. */
+.hall-element.themed.el-dance_floor {
+  background: radial-gradient(ellipse, rgba(201, 162, 39, 0.1), transparent 70%);
+  border: 2px dashed #c9a227;
+  box-shadow: none;
+}
+.hall-element.themed.el-dance_floor .element-label {
+  color: #9a7b2e;
+  font-weight: 700;
+}
+.hall-element.themed.el-bar {
+  background: linear-gradient(160deg, #f4eee0, #e7dcc4);
+  border: 1.5px solid #c9a227;
+  box-shadow: 0 3px 10px rgba(43, 38, 32, 0.08);
+}
+.hall-element.themed.el-bar .element-label {
+  color: #9a7b2e;
+  font-weight: 700;
+}
+.hall-element.themed.el-dj {
+  background: #ffffff;
+  border: 1.5px solid #e5dec9;
+  box-shadow: 0 3px 10px rgba(43, 38, 32, 0.08);
+}
+.hall-element.themed.el-dj .element-label {
+  color: #6b6355;
+  font-weight: 700;
+}
+.hall-element.themed.el-entrance {
+  background: transparent;
+  border: none;
+  border-bottom: 4px solid #c9a227;
+  border-radius: 0 !important;
+  box-shadow: none;
+}
+.hall-element.themed.el-entrance .element-label {
+  color: #9a7b2e;
+  font-weight: 700;
+}
+.hall-element.themed.el-stage {
+  background: rgba(183, 154, 224, 0.12);
+  border: 1.5px solid #b79ae0;
+  box-shadow: 0 3px 10px rgba(43, 38, 32, 0.08);
+}
+.hall-element.themed.el-stage .element-label {
+  color: #7a5ea8;
+  font-weight: 700;
+}
+.hall-element.themed.el-head_table {
+  background: linear-gradient(160deg, #f4eee0, #e7dcc4);
+  border: 1.5px solid #c9a227;
+  box-shadow: 0 3px 10px rgba(43, 38, 32, 0.08);
+}
+.hall-element.themed.el-head_table .element-label {
+  color: #9a7b2e;
+  font-weight: 700;
+}
+/* סרגל עריכה צף מעל האובייקט: צורה + צבע + נעילה/שכפול/מחיקה */
+.element-toolbar {
+  position: absolute;
+  top: -46px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border-radius: 10px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 18px rgba(20, 18, 14, 0.18);
+  z-index: 8;
+  white-space: nowrap;
+}
+.shape-row,
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.element-toolbar .shape-row {
+  border-inline-end: 1px solid var(--line-2);
+  padding-inline-end: 6px;
+}
+.element-toolbar .color-row {
+  border-inline-end: 1px solid var(--line-2);
+  padding-inline-end: 6px;
+}
+.element-toolbar button {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--body);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.element-toolbar button:hover {
+  background: var(--ivory-light);
+  border-color: var(--gold-deep);
+  color: var(--gold-deep);
+}
+.element-toolbar button.active {
+  background: rgba(201, 162, 39, 0.18);
+  border-color: var(--gold-deep);
+  color: var(--gold-deep);
+}
+.element-toolbar button[title='מחק']:hover {
+  background: rgba(166, 96, 90, 0.12);
+  border-color: var(--error);
+  color: var(--error);
+}
+.color-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  cursor: pointer;
+  padding: 0;
+}
+.color-swatch:hover,
+.color-swatch.active {
+  box-shadow: 0 0 0 2px var(--gold-light);
+}
+.color-swatch.none {
+  background: var(--cream);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+/* ידיות שינוי גודל / סיבוב */
+.handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--cream);
+  border: 1.5px solid var(--gold-deep);
+  z-index: 8;
+  box-shadow: 0 1px 4px rgba(20, 18, 14, 0.3);
+}
+.handle-resize {
+  bottom: -7px;
+  inset-inline-end: -7px;
+  cursor: nwse-resize;
+  border-radius: 3px;
+}
+.handle-rotate {
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: grab;
+}
+.handle-rotate:active {
+  cursor: grabbing;
+}
+/* קו מחבר את ידית הסיבוב לאובייקט */
+.handle-rotate::after {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: 50%;
+  width: 1px;
+  height: 13px;
+  background: var(--gold-deep);
+  transform: translateX(-50%);
+}
+.hall-warnings {
+  background: rgba(193, 90, 78, 0.08);
+  border: 1px solid rgba(193, 90, 78, 0.3);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.hall-warnings p {
+  margin: 2px 0;
+  font-size: 13px;
+  color: var(--error);
+}
+.hall-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.hall-tray {
+  flex: 0 0 220px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 200px;
+  /* צמוד לתצוגה תוך גלילת העמוד, עם גובה מוגבל ורשימה פנימית גוללת —
+     כדי שרשימת מוזמנים ארוכה (100+) תישאר תמיד נגישה ולא "תיבלע" בדף. */
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+}
+.hall-tray.droppable {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.2);
+  cursor: copy;
+}
+.tray-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--charcoal);
+  flex-shrink: 0;
+}
+.tray-search {
+  flex-shrink: 0;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--surface-hi);
+  color: var(--charcoal);
+}
+.tray-search:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.tray-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--success);
+  flex-shrink: 0;
+}
+.tray-empty.tray-no-match {
+  color: var(--muted);
+}
+.tray-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-inline-end: 2px;
+}
+
+/* ---- עוזר הושבה חכם: פאנל צד קבוע (Dock), טור שלישי ב-.hall-layout ----
+   אותו דפוס בדיוק כמו .hall-tray (sticky + הגבלת גובה + גלילה פנימית),
+   כדי שיתנהג עקבי איתו ולא יכסה/יתנגש עם הקנבס או עם .hall-props-panel
+   הצף (שממוקם absolute בתוך .hall-canvas-wrap ולא משפיע על ה-flex הזה). */
+.hall-assistant-panel {
+  flex: 0 0 280px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+.assistant-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.assistant-head h3 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--charcoal);
+}
+.assistant-head .x {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.assistant-head .x:hover {
+  color: var(--error);
+}
+.assistant-sub {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.assistant-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-2);
+}
+.assistant-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.assistant-legend-item .table-status-dot {
+  position: static;
+  border-width: 0;
+}
+.assistant-section {
+  border-top: 1px solid var(--line-2);
+  padding-top: 10px;
+  margin-top: 8px;
+}
+.assistant-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+.assistant-section h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--charcoal);
+}
+.assistant-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.assistant-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.assistant-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 4px;
+}
+.assistant-stat-num {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold-deep);
+}
+.assistant-stat-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+.assistant-fill-btn {
+  width: 100%;
+  margin-top: 10px;
+}
+.assistant-search {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--surface-hi);
+  color: var(--charcoal);
+}
+.assistant-search:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.assistant-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.assistant-search-result {
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.assistant-search-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+.assistant-search-side {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 11px;
+}
+.assistant-search-meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.assistant-warning-list,
+.assistant-suggestion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.assistant-warning {
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-hi);
+  color: var(--charcoal);
+}
+.assistant-warning.red {
+  border-color: var(--error);
+  background: rgba(166, 96, 90, 0.1);
+}
+.assistant-warning.yellow {
+  border-color: var(--gold);
+  background: rgba(201, 162, 39, 0.1);
+}
+.assistant-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.assistant-suggestion .btn-ghost {
+  align-self: flex-start;
+  font-size: 11px;
+  padding: 4px 10px;
+}
+.assistant-proposal {
+  border-top: 1px solid var(--line-2);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.assistant-proposal h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--charcoal);
+}
+.assistant-proposal p {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--body);
+}
+.assistant-proposal-diff {
+  margin: 0 0 10px;
+  padding-inline-start: 18px;
+  font-size: 12px;
+  color: var(--charcoal);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.assistant-proposal-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.assistant-proposal-note {
+  font-size: 11px !important;
+  color: var(--muted) !important;
+}
+
+/* ---- קנבס: לוח שנהב גדול ונגלל בעיצוב VEYA Seating (בלי זום/רשת) ---- */
+.hall-canvas-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.hall-viewport {
+  position: relative;
+  /* משטח-מצלמה: הלוח זז ומתקרב בפנים (transform), אין גלילה. */
+  height: 74vh;
+  min-height: 520px;
+  max-height: 900px;
+  background: #fbf6ee;
+  border: 1px solid #e5dec9;
+  border-radius: 20px;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  box-shadow: 0 2px 14px rgba(20, 18, 14, 0.06);
+  /* מחוות מגע/גלגלת מטופלות בקוד (pan/zoom) — מבטלים גלילה/זום של הדפדפן. */
+  touch-action: none;
+  cursor: grab;
+  /* הקנבס עובד בקואורדינטות LTR פנימיות (left/top פיזי, כמו Figma) —
+     בלי זה, ה-RTL של האפליקציה דוחף את .hall-world אל מחוץ לתצוגה. */
+  direction: ltr;
+}
+.hall-viewport:active {
+  cursor: grabbing;
+}
+.hall-world {
+  position: relative;
+  /* המצלמה מוחלת דרך transform ישירות ב-JS (translate+scale) מהפינה 0,0. */
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* ---- בקרות זום (פינה תחתונה-ימנית של הלוח) ---- */
+.hall-zoom-controls {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  direction: ltr;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 7px;
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border: 1px solid #e5dec9;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(20, 18, 14, 0.12);
+  z-index: 20;
+}
+.zoom-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 9px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #3a352b;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.zoom-btn:hover {
+  background: #f0eadb;
+}
+.zoom-btn:active {
+  background: #e6dfca;
+}
+.zoom-btn.zoom-text {
+  font-size: 13px;
+}
+.zoom-label {
+  min-width: 46px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b6455;
+  font-variant-numeric: tabular-nums;
+}
+.zoom-sep {
+  width: 1px;
+  height: 20px;
+  background: #e5dec9;
+  margin: 0 3px;
+}
+
+/* ---- מיני-מפה (פינה תחתונה-שמאלית של הלוח) ---- */
+.hall-minimap {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  direction: ltr;
+  width: 150px; /* == MINIMAP_W ב-HallPage.tsx */
+  height: 105px; /* == MINIMAP_H (יחס האולם) */
+  background: rgba(251, 246, 238, 0.94);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border: 1px solid #e5dec9;
+  border-radius: 10px;
+  box-shadow: 0 3px 12px rgba(20, 18, 14, 0.12);
+  overflow: hidden;
+  z-index: 20;
+  pointer-events: none;
+}
+.mini-table {
+  position: absolute;
+  background: #c9a24b;
+  border-radius: 2px;
+}
+.mini-el {
+  position: absolute;
+  background: rgba(127, 179, 224, 0.55);
+  border-radius: 1px;
+}
+.mini-viewport {
+  position: absolute;
+  border: 1.5px solid #b0894f;
+  background: rgba(201, 162, 75, 0.12);
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+/* סקיצת האולם שהזוג העלה — רקע עדין מתחת לשולחנות */
+.hall-sketch-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1400px;
+  height: 900px;
+  background-size: contain;
+  background-position: top right;
+  background-repeat: no-repeat;
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+}
+.hall-empty {
+  position: absolute;
+  top: 120px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 0 20px;
+}
+.hall-table {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+.hall-table.droppable .table-graphic {
+  outline: 2px dashed var(--gold);
+  outline-offset: 4px;
+  cursor: copy;
+}
+/* חיווי יעד גרירה פעיל (drag & drop של מוזמן) */
+.hall-table.drag-over .table-graphic {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+  box-shadow: 0 0 0 6px rgba(201, 162, 39, 0.18);
+}
+/* שולחן נבחר — הדגשת זהב עדינה */
+.hall-table.selected {
+  z-index: 7;
+}
+.hall-table.selected .table-graphic {
+  box-shadow:
+    0 0 0 2px var(--gold-light),
+    0 8px 22px rgba(20, 18, 14, 0.16);
+}
+.hall-table.locked .table-graphic {
+  cursor: default;
+  opacity: 0.85;
+}
+.free-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  z-index: 5;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(201, 162, 39, 0.14);
+  border: 1px solid var(--gold-deep);
+  color: var(--gold-deep);
+  pointer-events: none;
+}
+.free-badge.full {
+  background: rgba(166, 96, 90, 0.12);
+  border-color: var(--error);
+  color: var(--error);
+}
+/* בדיקה חיה בזמן גרירה — עד 2 שורות מידע נוספות בתוך אותו badge, מוצג
+   רק כשמזהים בעיה/המלצה; לא חוסם את ה-drop בשום צורה, מידע בלבד. */
+.free-badge-live {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.free-badge-live.yellow {
+  color: var(--gold-deep);
+}
+.free-badge-live.red {
+  color: var(--error);
+}
+/* נקודת-סטטוס צבעונית קבועה על כל שולחן — ירוק=תקין, צהוב=יש המלצה,
+   אדום=בעיה קשה. מידע ויזואלי בלבד, לא אימוג'י. */
+.table-status-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--paper, #fff);
+  z-index: 6;
+  pointer-events: none;
+}
+.table-status-dot.status-green {
+  background: #4a9a6a;
+}
+.table-status-dot.status-yellow {
+  background: var(--gold-deep);
+}
+.table-status-dot.status-red {
+  background: var(--error);
+}
+.hall-tray.drag-over {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.22);
+}
+
+/* ---- גרפיקת השולחן (עגול/מרובע/מלבני/אבירים) + כיסאות ----
+   הצבע נקבע inline (per-table); ה-CSS מגדיר רק צורה ומבנה.
+   טבעת לבנה דקה (via box-shadow, לא border — כך שצבע/מסגרת הפונקציונליים
+   שנקבעים inline לא נפגעים) נותנת מראה "צלחת צפה" מהודר יותר, בהשראת
+   לוח ההשראה. */
+.table-graphic {
+  position: relative;
+  flex-shrink: 0;
+  border: 2px solid #ffffff;
+  box-shadow: 0 3px 10px rgba(43, 38, 32, 0.1);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow 0.15s;
+}
+/* ריחוף — צל זהב רך בדיוק כמו בעיצוב VEYA Seating (בלי לדרוס הדגשת בחירה) */
+.hall-table:not(.selected):hover .table-graphic {
+  box-shadow: 0 8px 18px rgba(201, 162, 39, 0.22);
+}
+.table-graphic:active {
+  cursor: grabbing;
+}
+.type-round {
+  border-radius: 50%;
+}
+/* מקומות ישיבה סביב השולחן העגול — טבעת "מפיות" קורנת בדיוק כמו בעיצוב
+   VEYA Seating: 12 מקטעי שנהב מלאים סביב הגוף. דקורטיבי בלבד, לא משפיע
+   על גודל/מיקום השולחן. */
+.type-round::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(#f4eee0 0deg 24deg, transparent 24deg 30deg);
+  z-index: -1;
+  pointer-events: none;
+}
+.type-square {
+  border-radius: 18px;
+}
+.type-rectangle {
+  border-radius: 14px;
+}
+.type-knights {
+  border-radius: 22px;
+}
+.hall-table.over .table-graphic {
+  border-color: var(--error);
+}
+/* אזהרה שאינה חריגת קיבולת (למשל זוג "לא לשבת יחד" באותו שולחן) */
+.hall-table.warn .table-graphic {
+  border-color: #c98a27;
+  box-shadow: 0 0 0 3px rgba(201, 138, 39, 0.18);
+}
+.table-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+  pointer-events: none;
+  max-width: 80%;
+}
+.table-num {
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #2b2620;
+  line-height: 1;
+}
+.table-name {
+  font-size: 10px;
+  color: var(--body);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.table-occ {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8c8375;
+  margin-top: 2px;
+}
+.hall-table.over .table-occ {
+  color: var(--error);
+}
+
+/* מצב תפוסה לפי המקרא (עיצוב VEYA Seating): טבעת עדינה סביב השולחן + צבע
+   מונה תואם. משתמש ב-box-shadow (לא ב-border, שנקבע inline לפי צבע הצד/סוג),
+   כדי לא לפגוע בצביעת הצד הקיימת. מוצג רק כשאין בעיה/אזהרה. */
+/* גוף השולחן כבר צבוע לפי תפוסה (inline) — כאן רק צל עדין וניטרלי סביבו,
+   בהשראת מוקאפ VEYA Seating (מסגרת לבנה + צל רך, בלי טבעת צבע רועשת). */
+.hall-table.fill-near .table-graphic {
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 3px 10px rgba(43, 38, 32, 0.1);
+}
+.hall-table.fill-full .table-graphic {
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 4px 14px rgba(201, 162, 39, 0.22);
+}
+.hall-table.fill-near .table-occ {
+  color: #5a8f6e;
+  font-weight: 600;
+}
+.hall-table.fill-full .table-occ {
+  color: var(--gold-deep);
+  font-weight: 700;
+}
+
+/* מקרא צבעים מעל מפת האולם */
+.hall-legend {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 2px 0 0;
+}
+.hall-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.hall-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.hall-legend-swatch.open {
+  background: #f3ecdf;
+  border-color: var(--line);
+}
+.hall-legend-swatch.near {
+  background: rgba(90, 150, 110, 0.16);
+  border-color: rgba(90, 150, 110, 0.45);
+}
+.hall-legend-swatch.full {
+  background: rgba(201, 162, 39, 0.22);
+  border-color: var(--gold);
+}
+
+/* מיקום הכיסאות סביב גוף השולחן — כל pip ממוקם ב-left/top inline
+   (מחושב לפי סוג/מספר מקומות ב-seatPositions) */
+.seat-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* כיסא נקי בסגנון VEYA Seating: מלבן קטן מעוגל בגוון שנהב. פנוי = בהיר,
+   תפוס = זהב עדין. בלי שמות על השולחן — רק אינדיקציה כמה מקומות תפוסים. */
+.seat-pip {
+  position: absolute;
+  width: 11px;
+  height: 15px;
+  transform: translate(-50%, -50%);
+  border-radius: 4px;
+  background: #f4eee0;
+  border: 1px solid #e5dec9;
+}
+.seat-pip.seat-taken {
+  background: linear-gradient(160deg, #e9dcb3, #c9a227);
+  border-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(201, 162, 39, 0.3);
+}
+.seat-pip.seat-extra {
+  border-color: var(--error);
+  background: var(--error);
+}
+/* שולחן עגול: הכיסאות מיוצגים ע"י טבעת ה-conic מאחורי הגוף (.type-round::before),
+   לכן לא מציגים pips בודדים — לוח נקי בדיוק כמו העיצוב. */
+.type-round .seat-pip {
+  display: none;
+}
+
+/* ---- ידית סיבוב לשולחן ---- */
+.table-rot {
+  z-index: 8;
+}
+
+/* שכבת עיגולי המוזמנים סביב היקף השולחן — כל מוזמן במקום הכיסא שלו,
+   ולא בעמודה ארוכה מתחת לשולחן (כדי לראות מיד מי יושב איפה). */
+.seat-guests-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.seat-guest {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  max-width: 52px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: var(--ivory);
+  border: 1.5px solid var(--line);
+  color: var(--charcoal);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: grab;
+  pointer-events: auto;
+  z-index: 4;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.seat-guest:active {
+  cursor: grabbing;
+}
+.seat-guest:hover {
+  transform: translate(-50%, -50%) scale(1.18);
+  z-index: 6;
+  box-shadow: 0 2px 8px rgba(20, 18, 14, 0.22);
+}
+.seat-guest.selected {
+  background: var(--gold);
+  color: #201a06;
+  border-color: var(--gold-deep);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.35);
+  z-index: 6;
+}
+.seat-guest.side-groom {
+  background: rgba(201, 162, 39, 0.22);
+  border-color: var(--gold-deep);
+}
+.seat-guest.side-bride {
+  background: rgba(176, 107, 143, 0.2);
+  border-color: #8f5273;
+}
+.seat-guest.seat-extra {
+  border-color: var(--error);
+  box-shadow: 0 0 0 2px rgba(166, 96, 90, 0.3);
+}
+.seat-guest-initials {
+  pointer-events: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.seat-guest-badge {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  min-width: 13px;
+  height: 13px;
+  padding: 0 2px;
+  border-radius: 999px;
+  background: var(--charcoal);
+  color: var(--cream);
+  font-size: 8px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+/* תווית שם צפה — מופיעה רק ב-hover/focus, כדי לא לעמוס את השולחן ויזואלית
+   כברירת מחדל (רואים רק ראשי-תיבות), אבל השם המלא זמין תמיד בלחיצה קלה. */
+.seat-guest-name {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  white-space: nowrap;
+  background: var(--charcoal);
+  color: var(--cream);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s, transform 0.12s;
+  z-index: 9;
+}
+.seat-guest:hover .seat-guest-name,
+.seat-guest:focus-visible .seat-guest-name {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.guest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  color: var(--charcoal);
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.guest-chip[draggable='true'] {
+  cursor: grab;
+}
+.guest-chip[draggable='true']:active {
+  cursor: grabbing;
+}
+.guest-chip:hover {
+  background: rgba(201, 162, 39, 0.1);
+}
+.guest-chip.selected {
+  background: var(--gold);
+  color: #201a06;
+  border-color: var(--gold-deep);
+  box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.35);
+}
+.guest-chip.side-groom {
+  border-inline-start: 3px solid var(--gold-deep);
+}
+.guest-chip.side-bride {
+  border-inline-start: 3px solid #b06b8f;
+}
+.chip-size {
+  font-size: 11px;
+  color: var(--muted);
+}
+.guest-chip.selected .chip-size {
+  color: #5a4a10;
+}
+
+/* ---- פאנל תכונות צף: עריכת שולחן בודד / בחירה מרובה / אלמנט ---- */
+.hall-props-panel {
+  position: absolute;
+  top: 16px;
+  inset-inline-start: 16px;
+  width: 250px;
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(20, 18, 14, 0.16);
+  padding: 14px;
+  z-index: 20;
+}
+.props-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.props-head h4 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--charcoal);
+}
+.props-head .x {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.props-head .x:hover {
+  color: var(--error);
+}
+.props-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.props-field input[type='text'],
+.props-field input[type='number'],
+.props-field textarea {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 9px;
+  resize: vertical;
+}
+.props-field input:focus,
+.props-field textarea:focus {
+  outline: none;
+  border-color: var(--gold-deep);
+}
+/* רשימת המוזמנים שיושבים בשולחן — מוצגת בפאנל הצד (במקום שמות על השולחן
+   עצמו), כך שהמפה נשארת נקייה כמו העיצוב. אפשר לגרור לשולחן אחר או להסיר. */
+.seated-empty {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 2px 0 0;
+  line-height: 1.5;
+}
+.seated-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.seated-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  border-inline-start: 3px solid var(--line);
+}
+.seated-row.side-groom {
+  border-inline-start-color: var(--gold);
+}
+.seated-row.side-bride {
+  border-inline-start-color: #b06b8f;
+}
+.seated-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--charcoal);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.seated-name:active {
+  cursor: grabbing;
+}
+.seated-remove {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.seated-remove:hover {
+  background: rgba(198, 60, 60, 0.1);
+  border-color: var(--error);
+  color: var(--error);
+}
+
+/* שורת שדות מספריים (רוחב/גובה/סיבוב) בפאנל עריכת אלמנט — עריכה מדויקת
+   כתחליף/השלמה לגרירת הידיות. */
+.props-dim-row {
+  display: flex;
+  flex-direction: row !important;
+  gap: 8px;
+}
+.props-dim-row label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.props-dim-row input[type='number'] {
+  width: 100%;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 7px;
+}
+.props-dim-row input:focus {
+  outline: none;
+  border-color: var(--gold-deep);
+}
+.type-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.type-chip-row button {
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--body);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 11px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.type-chip-row button:hover {
+  border-color: var(--gold-deep);
+}
+.type-chip-row button.active {
+  background: var(--gold);
+  color: #201a06;
+  border-color: var(--gold-deep);
+}
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stepper button {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface-hi);
+  color: var(--body);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.stepper button:hover {
+  border-color: var(--gold-deep);
+  color: var(--gold-deep);
+}
+.stepper input,
+.stepper select {
+  width: 56px;
+  text-align: center;
+  cursor: pointer;
+}
+.hall-props-panel .color-row {
+  flex-wrap: wrap;
+}
+.hall-props-panel .color-swatch {
+  width: 22px;
+  height: 22px;
+}
+.props-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.props-actions button {
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--body);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.props-actions button:hover {
+  border-color: var(--gold-deep);
+  color: var(--gold-deep);
+}
+.props-actions button.danger:hover {
+  border-color: var(--error);
+  color: var(--error);
+  background: rgba(166, 96, 90, 0.08);
+}
+.hall-props-panel.multi .file-name {
+  margin-bottom: 10px;
+}
+
+/* תובנת שולחן מהעוזר החכם — קטע קטן בתוך פאנל מאפייני שולחן קיים,
+   לא פאנל נפרד (נמנע מכפילות ממשק). */
+.table-insight {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-2);
+}
+.table-insight h5 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--charcoal);
+}
+.table-insight p {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--body);
+}
+.table-insight-line {
+  color: var(--muted) !important;
+}
+.table-insight-warn {
+  color: var(--error) !important;
+  font-weight: 600;
+}
+.table-insight.has-problem {
+  background: rgba(166, 96, 90, 0.06);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+@media (max-width: 760px) {
+  .add-grid {
+    grid-template-columns: 1fr;
+  }
+  .clar-head {
+    flex-direction: column;
+  }
+  .rsvp-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .donut-wrap {
+    width: 260px;
+    height: 260px;
+  }
+  .donut-legend {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: right;
+    gap: 12px;
+  }
+  .dash-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dash-panels {
+    grid-template-columns: 1fr;
+  }
+  .event-fields {
+    grid-template-columns: 1fr;
+  }
+  .hall-layout {
+    flex-direction: column;
+  }
+  .hall-tray {
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+    flex-basis: auto;
+    /* במסך צר המגש עובר לשורה אופקית רגילה בראש הדף — sticky/הגבלת-גובה
+       מתאימים רק לעמודה הצדדית ברוחב מלא, לא כאן. */
+    position: static;
+    max-height: none;
+  }
+  .tray-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+  /* בפריסת עמודה (מסך צר), align-items: flex-start על .hall-layout גורם
+     ל-.hall-canvas-wrap "להתכווץ" לפי התוכן שלו במקום למלא את הרוחב —
+     ובגלל ש-.hall-world הפנימי רחב מהמאגר, זה "מפוצץ" את כל הדף לרוחב
+     אופקי ענק. לכן מקבעים רוחב מלא; הלוח עצמו נגלל בפנים. */
+  .hall-canvas-wrap {
+    width: 100%;
+  }
+  .hall-viewport {
+    height: 60vh;
+    min-height: 380px;
+  }
+  /* מטרות מגע גדולות יותר בבקרות הזום (מינימום 44px לאצבע). */
+  .hall-zoom-controls {
+    bottom: 12px;
+    right: 12px;
+    gap: 4px;
+  }
+  .zoom-btn {
+    min-width: 44px;
+    height: 44px;
+    font-size: 19px;
+  }
+  .zoom-btn.zoom-text {
+    font-size: 14px;
+  }
+  .zoom-label {
+    min-width: 52px;
+    font-size: 14px;
+  }
+  .hall-props-panel {
+    width: calc(100% - 32px);
+  }
+  .hall-assistant-panel {
+    width: 100%;
+    flex-basis: auto;
+    position: static;
+    max-height: none;
+  }
+}
+
+/* ================= התחברות ומשתמשים (שלב 8) ================= */
+
+.boot-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--ivory);
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* ---- מסך התחברות / יצירת אירוע ראשון ---- */
+/* ===== מסך התחברות split-screen ===== */
+.auth-split {
+  display: flex;
+  min-height: 100vh;
+  background: var(--black);
+}
+
+/* ---- פאנל שיווקי ---- */
+.auth-marketing {
+  position: relative;
+  flex: 1.35;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 56px 72px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(201, 162, 39, 0.08), transparent 55%),
+    var(--black);
+}
+.auth-ring {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.auth-ring-1 {
+  left: -180px;
+  bottom: -180px;
+  width: 520px;
+  height: 520px;
+  border: 1px solid rgba(201, 162, 39, 0.14);
+}
+.auth-ring-2 {
+  left: -80px;
+  bottom: -80px;
+  width: 320px;
+  height: 320px;
+  border: 1px solid rgba(201, 162, 39, 0.2);
+}
+
+/* לוגו — תמונת המותג הרשמית (טבעות + יהלום) */
+.auth-logo-lockup {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.auth-logo-png {
+  width: 208px;
+  height: auto;
+  display: block;
+}
+.auth-logo-img {
+  height: 132px;
+  width: auto;
+  display: block;
+}
+.auth-logo-tag {
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: var(--gold);
+}
+.auth-monogram {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.auth-monogram::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid var(--gold);
+  border-radius: 50%;
+}
+.auth-monogram::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 0.5px solid rgba(201, 162, 39, 0.45);
+  border-radius: 50%;
+}
+.auth-monogram-v {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 34px;
+  font-weight: 500;
+  color: var(--gold-light);
+  line-height: 1;
+  margin-top: -3px;
+}
+.auth-monogram-diamond {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 7px;
+  height: 7px;
+  background: var(--black);
+  border: 1.5px solid var(--gold);
+}
+.auth-logo-divider {
+  width: 1px;
+  height: 44px;
+  background: linear-gradient(180deg, transparent, var(--gold), transparent);
+}
+.auth-wordmark {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.auth-wordmark-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 27px;
+  letter-spacing: 8px;
+  color: var(--charcoal);
+  font-weight: 600;
+  line-height: 1;
+}
+.auth-wordmark-tag {
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--gold);
+}
+
+/* בלוק כותרת + פיצ'רים */
+.auth-hero {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 520px;
+}
+.auth-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.auth-hero-title {
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 46px;
+  line-height: 1.25;
+  color: var(--charcoal);
+  font-weight: 500;
+  margin: 0;
+}
+.auth-hero-sub {
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin: 0;
+}
+.auth-features {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.auth-features li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  color: var(--body);
+}
+.auth-bullet {
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  background: var(--gold);
+  flex-shrink: 0;
+}
+.auth-copyright {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  color: var(--faint);
+}
+
+/* ---- פאנל התחברות ---- */
+.auth-panel {
+  width: 480px;
+  flex-shrink: 0;
+  background: var(--cream);
+  border-inline-start: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 56px;
+  box-sizing: border-box;
+}
+.auth-panel-inner {
+  width: 100%;
+}
+.auth-panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 40px;
+}
+.auth-panel-title {
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 28px;
+  color: var(--charcoal);
+  font-weight: 600;
+  margin: 0;
+}
+.auth-panel-sub {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.auth-field label {
+  font-size: 13px;
+  color: var(--body);
+}
+.auth-field input {
+  height: 48px;
+  background: var(--black);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  padding: 0 16px;
+  color: var(--charcoal);
+  font-size: 15px;
+  font-family: 'Assistant', sans-serif;
+  box-sizing: border-box;
+}
+.auth-field input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.auth-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.auth-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.auth-remember input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--gold);
+}
+.auth-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  color: var(--gold);
+  cursor: pointer;
+  font-family: inherit;
+}
+.auth-link-btn:hover {
+  color: var(--gold-light);
+}
+
+.auth-error {
+  color: var(--error);
+  font-size: 14px;
+  background: rgba(224, 133, 122, 0.1);
+  border: 1px solid rgba(224, 133, 122, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.auth-note {
+  color: var(--gold-light);
+  font-size: 13px;
+  background: rgba(201, 162, 39, 0.08);
+  border: 1px solid rgba(201, 162, 39, 0.25);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.auth-submit {
+  height: 50px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(150deg, var(--gold-light), #b08d2a);
+  color: var(--cream);
+  font-weight: 700;
+  font-size: 16px;
+  font-family: 'Assistant', sans-serif;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: filter 0.15s;
+}
+.auth-submit:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 6px 0;
+}
+.auth-divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.auth-divider-word {
+  font-size: 12px;
+  color: var(--faint);
+}
+.auth-secondary {
+  height: 48px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--body);
+  font-size: 14px;
+  font-family: 'Assistant', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.auth-secondary:hover {
+  border-color: var(--gold);
+  color: var(--gold-light);
+}
+
+.auth-switch {
+  margin-top: 32px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* לוגו VEYA בתוך פאנל הטופס — מוסתר במסך רחב (שם הפאנל השיווקי כבר מציג לוגו),
+   ומוצג רק בטלפון כדי שהמותג יופיע גם כשהפאנל השיווקי נעלם. */
+.auth-panel-logo {
+  display: none;
+}
+.auth-panel-logo-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 26px;
+  letter-spacing: 7px;
+  color: var(--charcoal);
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* מסך קטן: פאנל שיווקי מוסתר, טופס מלא רוחב */
+@media (max-width: 860px) {
+  .auth-marketing {
+    display: none;
+  }
+  .auth-panel {
+    width: 100%;
+    border-inline-start: none;
+  }
+  .auth-panel-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 30px;
+  }
+  /* על רקע הקרם הבהיר של הטופס — האות V בזהב מלא לניגודיות טובה */
+  .auth-panel-logo .auth-monogram-v {
+    color: var(--gold);
+  }
+}
+
+.first-event-title {
+  text-align: center;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  color: var(--gold-light);
+  font-size: 26px;
+  margin: 0 0 4px;
+}
+
+/* ---- סרגל עליון: בורר אירוע + יציאה ---- */
+.topbar-end {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.event-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.event-select {
+  background: var(--surface-hi);
+  color: var(--charcoal);
+  border: 1px solid var(--gold-deep);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  max-width: 190px;
+}
+.event-select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.event-add-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  background: transparent;
+  color: var(--gold-light);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.event-add-btn:hover {
+  background: rgba(201, 162, 39, 0.12);
+}
+
+.event-popover {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  z-index: 20;
+  width: 320px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
+}
+.event-popover-title {
+  color: var(--gold-light);
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.event-new-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.event-new-grid input {
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--charcoal);
+  font-size: 14px;
+}
+.event-new-grid input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.event-new-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.logout-btn {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.logout-btn:hover {
+  color: var(--charcoal);
+  border-color: var(--gold-deep);
+}
+
+/* ================= פאנל אדמין ================= */
+.admin-page {
+  max-width: 1000px;
+}
+.admin-loading,
+.admin-error {
+  padding: 24px 0;
+  color: var(--muted);
+}
+.admin-error {
+  color: var(--error);
+}
+.admin-cards {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.admin-stat {
+  flex: 1;
+  min-width: 140px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.admin-stat-num {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--gold-deep);
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
+}
+.admin-stat-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+.admin-section-title {
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  color: var(--charcoal);
+  font-size: 20px;
+  margin: 26px 0 12px;
+}
+
+/* ===== ניהול ברירות המחדל של VEYA (מסך אדמין) ===== */
+.veya-defaults {
+  margin-top: 8px;
+}
+.btn-sm {
+  font-size: 13px;
+  padding: 6px 14px;
+}
+.btn-ghost.danger {
+  color: var(--error);
+  border-color: rgba(166, 96, 90, 0.4);
+}
+.btn-ghost.danger:hover {
+  background: rgba(166, 96, 90, 0.1);
+}
+
+/* --- שלבי המסלול הקבוע --- */
+.veya-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.veya-step-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+.veya-step-card.inactive {
+  opacity: 0.6;
+}
+.veya-step-order {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(201, 162, 39, 0.14);
+  color: var(--gold-deep);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.veya-step-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 180px;
+}
+.veya-step-name {
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: #fff;
+  color: var(--charcoal);
+}
+.veya-step-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.veya-step-offset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--body);
+}
+.veya-step-offset input {
+  width: 58px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  text-align: center;
+  background: #fff;
+}
+.veya-step-error {
+  flex-basis: 100%;
+}
+
+/* --- ספריית התבניות --- */
+.veya-tpl-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.veya-tpl-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.veya-tpl-card.inactive {
+  opacity: 0.6;
+}
+.veya-tpl-head {
+  display: flex;
+  gap: 8px;
+}
+.veya-tpl-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  color: var(--charcoal);
+}
+.veya-tpl-head select {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  color: var(--charcoal);
+  font-size: 13px;
+}
+.veya-tpl-body {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  color: var(--charcoal);
+  font-size: 13.5px;
+  line-height: 1.6;
+  resize: vertical;
+  font-family: inherit;
+}
+.veya-tpl-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.veya-chk {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--body);
+  cursor: pointer;
+}
+.veya-tpl-actions {
+  margin-inline-start: auto;
+  display: flex;
+  gap: 8px;
+}
+.veya-add-btn {
+  align-self: flex-start;
+}
+.veya-add-form {
+  border-style: dashed;
+}
+
+/* ===== דף אישור הגעה ציבורי (קישור אישי) ===== */
+.confirm-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(201, 162, 39, 0.1), transparent 55%),
+    var(--black);
+}
+.confirm-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 36px 30px 30px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+/* כשיש תמונת הזמנה — הכרטיס רחב יותר כדי לתת לתמונה במה */
+.confirm-card.has-invite {
+  max-width: 480px;
+}
+/* מרווח קטן יותר מעל תמונת ההזמנה כדי שתהיה קרובה לראש הכרטיס */
+.confirm-card.has-invite .confirm-hello {
+  margin-bottom: 2px;
+}
+.confirm-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--body);
+}
+.confirm-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.confirm-brand-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 18px;
+  letter-spacing: 6px;
+  color: var(--charcoal);
+}
+.confirm-hello {
+  color: var(--muted);
+  font-size: 15px;
+  margin: 0 0 4px;
+}
+.confirm-title {
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 20px;
+  color: var(--body);
+  font-weight: 400;
+  margin: 0 0 6px;
+}
+.confirm-couple {
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 34px;
+  color: var(--gold-light);
+  font-weight: 500;
+  line-height: 1.2;
+}
+.confirm-venue {
+  color: var(--muted);
+  font-size: 15px;
+  margin-top: 8px;
+}
+.confirm-when {
+  color: var(--gold-deep);
+  font-size: 14px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+.confirm-question {
+  margin: 26px 0 14px;
+  font-size: 16px;
+  color: var(--charcoal);
+  font-weight: 600;
+}
+.confirm-choices {
+  display: flex;
+  gap: 10px;
+}
+.confirm-choice {
+  flex: 1;
+  padding: 14px 6px;
+  border-radius: 14px;
+  border: 1px solid var(--line-2);
+  background: var(--surface-hi);
+  color: var(--body);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.confirm-choice:hover {
+  border-color: var(--gold-deep);
+}
+.confirm-choice.yes.active {
+  border-color: var(--gold);
+  background: rgba(201, 162, 39, 0.16);
+  color: var(--gold-light);
+}
+.confirm-choice.maybe.active {
+  border-color: #b0925a;
+  background: rgba(176, 146, 90, 0.16);
+  color: #d8bd82;
+}
+.confirm-choice.no.active {
+  border-color: var(--error);
+  background: rgba(193, 90, 78, 0.14);
+  color: var(--error);
+}
+.confirm-count {
+  margin-top: 20px;
+  text-align: right;
+}
+.confirm-count > label,
+.confirm-note > label {
+  display: block;
+  font-size: 14px;
+  color: var(--body);
+  margin-bottom: 8px;
+}
+.confirm-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line-2);
+  background: var(--surface-hi);
+  border-radius: 12px;
+  padding: 4px;
+}
+.confirm-step {
+  width: 44px;
+  height: 44px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--gold-light);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.confirm-step:hover:not(:disabled) {
+  background: rgba(201, 162, 39, 0.16);
+}
+.confirm-step:disabled {
+  color: var(--line-2);
+  cursor: default;
+}
+.confirm-step-num {
+  min-width: 40px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--charcoal);
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+/* תמונת ההזמנה — הכוכבת של הדף: גדולה ובולטת */
+.confirm-invite-img {
+  display: block;
+  width: 100%;
+  max-height: 68vh;
+  object-fit: contain;
+  border-radius: 16px;
+  margin: 18px 0 12px;
+  border: 1px solid var(--gold-deep);
+  background: var(--surface-hi);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4);
+}
+/* כיתוב קצר מתחת לתמונה (אולם + תאריך) — התמונה מכילה את שאר הפרטים */
+.confirm-caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.confirm-caption .confirm-venue,
+.confirm-caption .confirm-when {
+  margin-top: 0;
+}
+.confirm-address {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
+.confirm-caption .confirm-address {
+  margin-top: 0;
+}
+.confirm-nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+.confirm-nav-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 8px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--line-2);
+  transition: filter 0.15s ease, transform 0.05s ease;
+}
+.confirm-nav-btn:active {
+  transform: scale(0.98);
+}
+.confirm-nav-btn.waze {
+  background: #33ccff;
+  color: #06344a;
+  border-color: #33ccff;
+}
+.confirm-nav-btn.maps {
+  background: var(--surface-hi);
+  color: var(--charcoal);
+}
+.confirm-nav-btn:hover {
+  filter: brightness(0.97);
+}
+.confirm-note {
+  margin-top: 20px;
+  text-align: right;
+}
+.confirm-note textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--black);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--charcoal);
+  font-size: 14px;
+  font-family: 'Assistant', sans-serif;
+  resize: vertical;
+}
+.confirm-note textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.confirm-error {
+  margin-top: 16px;
+  color: var(--error);
+  font-size: 14px;
+  background: rgba(193, 90, 78, 0.1);
+  border: 1px solid rgba(193, 90, 78, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.confirm-submit {
+  margin-top: 24px;
+  width: 100%;
+  height: 50px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(150deg, var(--gold-light), #b08d2a);
+  color: var(--cream);
+  font-weight: 700;
+  font-size: 16px;
+  font-family: 'Assistant', sans-serif;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.confirm-submit:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.confirm-submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.confirm-thankyou {
+  font-size: 17px;
+  color: var(--body);
+  line-height: 1.6;
+  margin: 8px 0 20px;
+}
+.confirm-change {
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: 14px;
+  cursor: pointer;
+}
+.confirm-change:hover {
+  color: var(--gold-light);
+}
+
+/* ===== עורך תבנית הודעה (RSVP שלב 2) ===== */
+.tpl-editor {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+.tpl-head {
+  margin-bottom: 12px;
+}
+.tpl-placeholders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.tpl-chip {
+  border: 1px solid var(--gold-deep);
+  background: rgba(201, 162, 39, 0.08);
+  color: var(--gold-light);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'Assistant', sans-serif;
+  transition: background 0.15s;
+}
+.tpl-chip:hover {
+  background: rgba(201, 162, 39, 0.18);
+}
+.tpl-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.tpl-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--charcoal);
+  font-size: 14px;
+  line-height: 1.6;
+  font-family: 'Assistant', sans-serif;
+  resize: vertical;
+}
+.tpl-textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.tpl-preview {
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tpl-preview-label {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+.tpl-preview-body {
+  white-space: pre-wrap;
+  color: var(--charcoal);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.tpl-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+}
+.tpl-saved {
+  color: var(--green);
+  font-size: 13px;
+}
+@media (max-width: 760px) {
+  .tpl-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* badge "אולי" */
+.rsvp-badge.maybe {
+  background: rgba(176, 146, 90, 0.16);
+  color: #d8bd82;
+}
+
+/* ---- יומן אבטחה בדשבורד ---- */
+.audit-panel {
+  grid-column: 1 / -1;
+}
+.audit-panel .clar-sub {
+  display: block;
+  margin: 2px 0 12px;
+}
+.audit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.audit-row {
+  display: grid;
+  grid-template-columns: 150px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-hi);
+  font-size: 13px;
+}
+.audit-action {
+  color: var(--gold-light);
+  font-weight: 500;
+}
+.audit-detail {
+  color: var(--body);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.audit-time {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+@media (max-width: 620px) {
+  .audit-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+/* ---- ניהול חשבונות מפיק/אולם + שיתוף גישה לאירוע ---- */
+.admin-create-account {
+  margin: 28px 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.member-row {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  margin: 10px 0;
+}
+.member-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.member-perms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 10px;
+}
+.member-perm-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--body);
+  cursor: pointer;
+}
+
+/* ============================================================
+   מנוע אוטומציות אישורי הגעה (RSVP Automation)
+   ============================================================ */
+
+/* ---- לשוניות ---- */
+.auto-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+.auto-tab {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'Assistant', sans-serif;
+  font-size: 15px;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.auto-tab:hover {
+  color: var(--charcoal);
+}
+.auto-tab.active {
+  color: var(--gold-deep);
+  border-bottom-color: var(--gold);
+  font-weight: 600;
+}
+
+/* ---- שדות טופס על רקע בהיר (משותף לכל לשוניות האוטומציה) ---- */
+.auto-editor .field-label,
+.auto-rule-form .field-label,
+.auto-field-row .field-label {
+  color: var(--muted);
+  font-size: 13px;
+}
+.auto-editor input,
+.auto-editor select,
+.auto-rule-form input,
+.auto-rule-form select,
+.auto-field-row input,
+.auto-field-row select {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--cream);
+  color: var(--charcoal);
+  font-size: 15px;
+  font-family: inherit;
+}
+.auto-editor input:focus,
+.auto-editor select:focus,
+.auto-rule-form input:focus,
+.auto-rule-form select:focus,
+.auto-field-row input:focus,
+.auto-field-row select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.auto-field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.auto-grow {
+  flex: 1 1 200px;
+}
+.auto-delay {
+  flex: 0 0 120px;
+  min-width: 100px;
+}
+.auto-hint {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 6px 0 0;
+}
+.auto-hint.auto-warn {
+  color: var(--gold-deep);
+}
+.auto-empty {
+  color: var(--muted);
+  font-size: 14px;
+  padding: 18px 4px;
+}
+
+/* ---- כרטיסי מצב בדשבורד ---- */
+.auto-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (max-width: 900px) {
+  .auto-stat-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .auto-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.auto-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.auto-chip {
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--cream);
+  color: var(--body);
+}
+.auto-chip-btn {
+  cursor: pointer;
+  border-color: var(--gold-deep);
+  color: var(--gold-deep);
+  background: rgba(201, 162, 39, 0.08);
+  font-family: 'Assistant', sans-serif;
+  transition: background 0.15s;
+}
+.auto-chip-btn:hover {
+  background: rgba(201, 162, 39, 0.18);
+}
+
+/* ---- המלצות מעקב חכם ---- */
+.auto-recs {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+}
+.auto-rec-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.auto-rec {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+}
+.auto-rec-icon {
+  flex: 0 0 auto;
+  font-size: 15px;
+}
+.auto-rec.warn {
+  border-color: rgba(201, 162, 39, 0.45);
+  background: rgba(201, 162, 39, 0.08);
+}
+.auto-rec.warn .auto-rec-icon {
+  color: var(--gold-deep);
+}
+.auto-rec.info .auto-rec-icon {
+  color: var(--muted);
+}
+
+.auto-timeline-btn {
+  margin-inline-start: auto;
+}
+
+/* ---- דו-טור: רשימה + עורך (תבניות) ---- */
+.auto-two-col {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .auto-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+.auto-side-list {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+}
+.auto-side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.auto-new-btn {
+  font-size: 13px;
+  padding: 6px 10px;
+}
+.auto-tpl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.auto-tpl-item {
+  width: 100%;
+  text-align: start;
+  border: 1px solid var(--line);
+  background: var(--surface-hi);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: 'Assistant', sans-serif;
+  transition: border-color 0.15s, background 0.15s;
+}
+.auto-tpl-item:hover {
+  border-color: var(--gold-deep);
+}
+.auto-tpl-item.active {
+  border-color: var(--gold);
+  background: rgba(201, 162, 39, 0.08);
+}
+.auto-tpl-name {
+  font-size: 14px;
+  color: var(--charcoal);
+  font-weight: 600;
+}
+.auto-tpl-kind {
+  font-size: 12px;
+  color: var(--muted);
+}
+.auto-editor {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---- חוקי אוטומציה ---- */
+.auto-rules-head {
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.auto-rule-form {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.auto-rule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.auto-rule-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.auto-rule-card.off {
+  opacity: 0.62;
+}
+.auto-rule-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.auto-rule-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+.auto-rule-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+.auto-rule-side {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+.auto-toggle {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'Assistant', sans-serif;
+}
+.auto-toggle.on {
+  background: rgba(47, 158, 95, 0.12);
+  border-color: rgba(47, 158, 95, 0.45);
+  color: var(--green);
+}
+.auto-toggle.off {
+  background: var(--surface-hi);
+  color: var(--muted);
+}
+.auto-del {
+  color: var(--error);
+}
+
+/* ---- תור לשליחה ---- */
+.auto-queue-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+.auto-queue-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.auto-queue-group {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.auto-queue-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.auto-queue-group-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+.auto-queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.auto-queue-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--surface-hi);
+}
+.auto-queue-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.auto-queue-guest {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+.auto-queue-trigger {
+  font-size: 12px;
+  color: var(--muted);
+}
+.auto-queue-preview {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--body);
+  white-space: pre-wrap;
+}
+
+/* ---- חלון ציר-זמן ---- */
+.auto-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 10, 12, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.auto-modal {
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 22px 24px;
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+.auto-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.auto-modal-status {
+  font-size: 14px;
+  color: var(--body);
+  margin-bottom: 14px;
+}
+.auto-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.auto-timeline-row {
+  display: flex;
+  gap: 12px;
+  padding: 4px 0;
+}
+.auto-timeline-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 5px;
+  background: var(--gold);
+  position: relative;
+}
+.auto-timeline-row.inbound .auto-timeline-dot {
+  background: var(--green);
+}
+.auto-timeline-row:not(:last-child) .auto-timeline-dot::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: 4px;
+  width: 1px;
+  height: calc(100% + 6px);
+  background: var(--line);
+}
+.auto-timeline-body {
+  flex: 1 1 auto;
+  padding-bottom: 10px;
+  min-width: 0;
+}
+.auto-timeline-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.auto-timeline-kind {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+.auto-timeline-date {
+  font-size: 12px;
+  color: var(--muted);
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.auto-timeline-text {
+  font-size: 13px;
+  color: var(--body);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============ מסך הזוג — מסלול אישורי הגעה + עורך הודעות ============ */
+
+.couple-rsvp {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* --- כרטיס הפעלה (המסלול עוד לא פעיל) --- */
+.track-hero {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--gold);
+  border-radius: 16px;
+  padding: 28px;
+  text-align: center;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+}
+
+.track-hero-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--gold-deep);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 14px;
+  margin-bottom: 12px;
+}
+.track-hero-badge.ok {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+.track-hero-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--charcoal);
+  margin: 0 0 10px;
+}
+
+.track-hero-sub {
+  color: var(--body);
+  line-height: 1.7;
+  max-width: 560px;
+  margin: 0 auto 20px;
+}
+
+.track-flow {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto 24px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.track-flow li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: right;
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.track-flow-num {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+}
+
+.track-activate-btn {
+  font-size: 16px;
+  padding: 12px 28px;
+}
+
+.track-hero-note {
+  display: block;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* --- כרטיס סטטוס (המסלול פעיל) --- */
+.track-status {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.track-status-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.track-status-head .track-hero-title {
+  font-size: 20px;
+  margin: 6px 0 0;
+}
+
+.track-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.track-progress-bar {
+  height: 12px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.track-progress-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), #48c07c);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+.track-progress-label {
+  font-size: 13px;
+  color: var(--body);
+}
+
+.track-phone {
+  border-top: 1px solid var(--line-2);
+  padding-top: 16px;
+}
+.track-phone-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.track-phone-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+}
+.track-phone-num {
+  color: var(--gold-deep);
+  font-weight: 600;
+  text-decoration: none;
+  direction: ltr;
+}
+.track-phone-num:hover {
+  text-decoration: underline;
+}
+
+/* ============ עורך ההודעות הידידותי (MessageBuilder) ============ */
+
+.mb-wrap {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+}
+.mb-head {
+  margin-bottom: 16px;
+}
+.mb-empty {
+  color: var(--muted);
+  padding: 12px 0;
+}
+
+.mb-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
+}
+@media (max-width: 720px) {
+  .mb-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mb-list-item {
+  text-align: right;
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.mb-list-item:hover {
+  border-color: var(--gold);
+}
+.mb-list-item.active {
+  border-color: var(--gold);
+  background: #fff;
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+.mb-list-kind {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold-deep);
+}
+.mb-list-name {
+  font-size: 14px;
+  color: var(--charcoal);
+}
+
+.mb-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mb-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mb-token-chip {
+  font-size: 13px;
+  color: var(--gold-deep);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.mb-token-chip:hover {
+  background: #fff;
+  border-color: var(--gold);
+}
+.mb-textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  resize: vertical;
+  font-family: inherit;
+}
+.mb-textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: #fff;
+}
+.mb-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* --- תצוגת WhatsApp --- */
+.mb-preview {
+  margin-top: 4px;
+}
+.mb-preview-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.wa-screen {
+  background:
+    linear-gradient(rgba(229, 221, 213, 0.55), rgba(229, 221, 213, 0.55)),
+    repeating-linear-gradient(45deg, #ece5dd 0 12px, #e7dfd4 12px 24px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 14px;
+  display: flex;
+  justify-content: flex-start;
+}
+.wa-bubble {
+  position: relative;
+  max-width: 80%;
+  background: #dcf8c6;
+  border-radius: 10px 10px 10px 2px;
+  padding: 8px 10px 6px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
+}
+.wa-image {
+  width: 100%;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  display: block;
+}
+.wa-text {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: #1f2c1a;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.wa-line {
+  min-height: 1.2em;
+}
+.wa-empty {
+  color: #7a8a6f;
+  font-style: italic;
+}
+.wa-meta {
+  display: block;
+  text-align: left;
+  font-size: 11px;
+  color: #5b7052;
+  margin-top: 2px;
+}
+
+/* ============ יום ההתחייבות לאולם (בורר בדשבורד) ============ */
+.commit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  padding: 16px;
+}
+.commit-explain {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--body);
+}
+.commit-select {
+  align-self: flex-start;
+  min-width: 220px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--cream);
+  color: var(--charcoal);
+  font-size: 15px;
+}
+.commit-warn {
+  font-size: 12.5px;
+  color: var(--gold-deep);
+  font-weight: 600;
+}
+.commit-locked {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.commit-locked-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.commit-locked-note {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* ============ יומן המשימות של אישורי-ההגעה (Timeline) ============ */
+.tl-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* מצב ריק — עדיין לא הוגדר יום התחייבות */
+.tl-empty {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--gold);
+  border-radius: 16px;
+  padding: 28px;
+  text-align: center;
+}
+.tl-empty-icon {
+  font-size: 34px;
+  display: block;
+  margin-bottom: 8px;
+}
+.tl-empty-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--charcoal);
+  margin: 0 0 8px;
+}
+.tl-empty-sub {
+  color: var(--body);
+  line-height: 1.7;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* כותרת + מדדים */
+.tl-header {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--gold);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+}
+.tl-header-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--charcoal);
+  margin: 10px 0 8px;
+}
+.tl-header-sub {
+  color: var(--body);
+  line-height: 1.7;
+  margin: 0 0 18px;
+}
+.tl-header-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.tl-stat {
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+}
+.tl-stat-num {
+  display: block;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--charcoal);
+  line-height: 1.1;
+}
+.tl-stat.ok .tl-stat-num {
+  color: var(--green);
+}
+.tl-stat.wait .tl-stat-num {
+  color: var(--gold-deep);
+}
+.tl-stat-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.tl-compressed {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  background: var(--surface-hi);
+  border: 1px solid var(--gold-light);
+  border-radius: 10px;
+  color: var(--gold-deep);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+/* היום / מחר */
+.tl-now {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.tl-now-card {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+.tl-now-card.today {
+  border-right: 4px solid var(--gold);
+}
+.tl-now-card.tomorrow {
+  border-right: 4px solid var(--line-2);
+}
+.tl-now-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--gold-deep);
+  margin-bottom: 6px;
+}
+.tl-now-text {
+  margin: 0;
+  color: var(--charcoal);
+  line-height: 1.6;
+  font-size: 14.5px;
+}
+
+/* ציר הימים */
+.tl-scale {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 22px 24px;
+}
+.tl-days {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+}
+.tl-day {
+  display: flex;
+  gap: 14px;
+  position: relative;
+}
+.tl-day-marker {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 16px;
+}
+.tl-day-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--faint);
+  margin-top: 4px;
+  z-index: 1;
+}
+.tl-day:not(:last-child) .tl-day-marker::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: -8px;
+  width: 2px;
+  background: var(--line-2);
+}
+.tl-day.is-today .tl-day-dot {
+  background: var(--gold);
+  box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.18);
+}
+.tl-day.is-commitment .tl-day-dot {
+  background: var(--green);
+  box-shadow: 0 0 0 4px rgba(47, 158, 95, 0.16);
+}
+.tl-day.is-past {
+  opacity: 0.6;
+}
+.tl-day-body {
+  flex: 1;
+  padding-bottom: 18px;
+  min-width: 0;
+}
+.tl-day-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.tl-day-date {
+  font-weight: 700;
+  color: var(--charcoal);
+  font-size: 14px;
+}
+.tl-tag {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+.tl-tag.now {
+  color: var(--gold-deep);
+  background: var(--surface-hi);
+  border: 1px solid var(--gold-light);
+}
+.tl-tag.soon {
+  color: var(--muted);
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+}
+.tl-tag.commit {
+  color: var(--green);
+  background: rgba(47, 158, 95, 0.1);
+  border: 1px solid var(--green);
+}
+.tl-day-empty {
+  margin: 0;
+  color: var(--faint);
+  font-size: 13px;
+}
+.tl-actions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tl-action {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.tl-action-icon {
+  font-size: 18px;
+  line-height: 1.3;
+}
+.tl-action-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.tl-action-label {
+  font-weight: 600;
+  color: var(--charcoal);
+  font-size: 14px;
+}
+.tl-action-meta {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.tl-moved {
+  color: var(--gold-deep);
+}
+
+@media (max-width: 640px) {
+  .tl-header-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .tl-now {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────
+   התאמות מובייל — סרגל הפעולות של המוזמנים נדחף מעבר לרוחב המסך
+   בטלפון (חיפוש + 4 כפתורים בשורה אחת). כאן אנחנו מאפשרים גלישה
+   לשורה חדשה, ותיבת החיפוש תופסת שורה מלאה משלה מעל הכפתורים.
+   ─────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+  .toolbar .search {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .toolbar > button {
+    flex: 1 1 auto;
+  }
+}

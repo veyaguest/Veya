@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+backend/venv/
+backend/.env
+*.db
+*.sqlite3
+backend/backups/
+backend/uploads/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.env
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+frontend/.claude/
+
+# Local design/branding drafts — לא לעלות ל-GitHub
+VEYA Branding - standalone.html
+VEYA Branding.dc.html
+VEYA Seating.dc.html
+עותק של README.md
+
+# Production env examples are tracked; real .env files are not
+backend/.env.production
+frontend/.env.production.local

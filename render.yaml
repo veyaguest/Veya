@@ -1,0 +1,38 @@
+# Render Blueprint — פריסת שרת ה-Backend של VEYA (FastAPI).
+# ב-Render בוחרים "New +" → "Blueprint" ומצביעים על המאגר הזה; Render קורא
+# את הקובץ הזה ומקים את השירות אוטומטית. את המשתנים המסומנים sync:false
+# ממלאים ידנית במסך של Render אחרי שיודעים את הכתובות (של Render ושל Vercel).
+services:
+  - type: web
+    name: veya-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      # גרסת פייתון יציבה. משאירים כפי שהוא.
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      # מסמן לשרת שהוא בייצור — מחייב JWT_SECRET אמיתי (לא ברירת המחדל של פיתוח).
+      - key: VEYA_ENV
+        value: production
+      # מפתח חתימה סודי ל-JWT — Render מייצר אותו אוטומטית ובאופן מאובטח.
+      - key: JWT_SECRET
+        generateValue: true
+      # WhatsApp במצב הדגמה בלבד (לא נשלחות הודעות אמיתיות). משאירים mock.
+      - key: WHATSAPP_MODE
+        value: mock
+      # כתובת ה-Frontend בוורסל — מתירה לו לפנות לשרת (CORS).
+      # ממלאים אחרי שיודעים את כתובת ה-Vercel, למשל: https://veya.vercel.app
+      - key: CORS_ORIGINS
+        sync: false
+      # כתובת השרת עצמו ב-Render (לבניית קישורים לתמונות שהועלו).
+      # למשל: https://veya-backend.onrender.com
+      - key: API_PUBLIC_URL
+        sync: false
+      # כתובת ה-Frontend בוורסל (לבניית קישורי אישור הגעה /confirm).
+      # למשל: https://veya.vercel.app
+      - key: PUBLIC_BASE_URL
+        sync: false

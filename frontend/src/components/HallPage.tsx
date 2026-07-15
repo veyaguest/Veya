@@ -1,0 +1,2178 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  analyzeConstraints,
+  generateSeating,
+  getHall,
+  listClarifications,
+  resolveClarification,
+  saveHall,
+} from '../api'
+import type {
+  AnalyzeResult,
+  Clarification,
+  ElementShape,
+  HallElement,
+  HallElementType,
+  HallGuest,
+  HallState,
+  TableType,
+} from '../types'
+import { SIDE_LABELS } from '../types'
+import {
+  computeSmartFill,
+  computeSmartWarnings,
+  computeStats,
+  computeSuggestions,
+  computeTableInsight,
+  detectChildrenWithoutFamily,
+  detectFamilyGroups,
+  detectSplitGroups,
+  liveDragValidation,
+  smartSearch,
+  type PairList,
+  type SmartMove,
+  type SmartSuggestion,
+} from '../seatingAdvisor'
+import { SmartAssistantPanel } from './SmartAssistantPanel'
+
+interface TableView {
+  table_number: number
+  x: number
+  y: number
+  guests: HallGuest[]
+  table_type: TableType
+  capacity: number
+  rotation: number
+  name: string
+  color: string
+  notes: string
+  locked: boolean
+}
+
+const REL_TEXT: Record<Clarification['relation_type'], string> = {
+  avoid: 'לא לשבת עם',
+  together: 'לשבת עם',
+}
+
+const TABLE_TYPE_LABELS: Record<TableType, string> = {
+  round: '⬤ עגול',
+  square: '◼ מרובע',
+  rectangle: '▭ מלבני',
+  knights: '▬ אבירים',
+}
+
+const TABLE_TYPE_DEFAULT_COLOR: Record<TableType, string> = {
+  round: '#c9a227',
+  square: '#4a7fc9',
+  rectangle: '#5fa66c',
+  knights: '#8a6bc9',
+}
+
+const TABLE_COLORS = ['#c9a227', '#4a7fc9', '#5fa66c', '#c96b6b', '#8a6bc9', '#3f4756']
+const ELEMENT_COLORS = ['#7fb3e0', '#e4c96b', '#8fd0a8', '#e08f8f', '#b79ae0', '#9a7b2e']
+
+// הגדרות ברירת-מחדל לכל סוג אלמנט מיוחד (תווית, גודל, צורה, צבע).
+// הגדלים כאן קטנים יחסית לגודל המפה (WORLD_W/H) — כדי שגם ברמת זום 100%
+// האלמנטים ייראו פרופורציונליים לחלל האולם, לא ענקיים.
+// חלק מהסוגים (head_table/gift_table/restroom/stage) מוסתרים כרגע מהסרגל
+// (VISIBLE_ELEMENTS) — הקוד שלהם נשאר שלם כדי שאפשר יהיה להחזיר אותם בעתיד.
+const ELEMENT_DEFS: Record<
+  HallElementType,
+  { label: string; width: number; height: number; shape: ElementShape; color: string }
+> = {
+  head_table: { label: '💍 שולחן מחותנים', width: 160, height: 42, shape: 'rectangle', color: '#c9a227' },
+  dance_floor: { label: '💃 רחבת ריקודים', width: 210, height: 120, shape: 'circle', color: '#c9a227' },
+  bar: { label: '🥂 בר', width: 190, height: 58, shape: 'rectangle', color: '#c9a227' },
+  stage: { label: '🎤 במה', width: 148, height: 54, shape: 'rectangle', color: '#b79ae0' },
+  dj: { label: '🎧 עמדת DJ', width: 150, height: 58, shape: 'rectangle', color: '#6b6355' },
+  entrance: { label: '🚪 כניסה', width: 150, height: 46, shape: 'rectangle', color: '#9a7b2e' },
+  gift_table: { label: '🎁 שולחן מתנות', width: 90, height: 34, shape: 'rectangle', color: '#c9a227' },
+  restroom: { label: '🚻 שירותים', width: 68, height: 34, shape: 'rectangle', color: '#8c8375' },
+}
+
+// רק אלה מוצגים בסרגל ה"הוספה למפה" (לפי בקשת הבעלים — רוב המידע הזה
+// כבר מופיע בסקיצת האולם שמעלים כרקע).
+const VISIBLE_ELEMENTS: HallElementType[] = ['dance_floor', 'bar', 'dj', 'entrance']
+const ELEMENT_SHAPES: { key: ElementShape; label: string }[] = [
+  { key: 'rectangle', label: '▭' },
+  { key: 'square', label: '◼' },
+  { key: 'circle', label: '⬤' },
+  { key: 'ellipse', label: '⬭' },
+]
+
+// גודל לוח האולם (עולם פנימי בקואורדינטות LTR, כמו Figma). הלוח מוצג דרך
+// "מצלמה" (zoom + pan על גבי CSS transform) — כך רואים את כל האולם בכניסה
+// בלי גלילה, אפשר להתקרב/להתרחק, ושום דבר לא "בורח" מהמסך.
+const WORLD_W = 2000
+const WORLD_H = 1400
+
+// גבולות הזום של המצלמה. MIN קטן כדי שאולם ענק ייכנס למסך; MAX מוגבל כדי
+// שלא נתקרב יתר על המידה. בהתאם-למסך לא מתקרבים מעבר ל-100% (FIT_MAX).
+const MIN_ZOOM = 0.15
+const MAX_ZOOM = 2.5
+const FIT_MAX = 1
+const FIT_MARGIN = 48 // שוליים (px) סביב האולם כשמתאימים למסך
+
+// מיני-מפה בפינה: תצוגה מוקטנת של כל האולם + מלבן שמראה מה נראה כרגע.
+const MINIMAP_W = 150
+const MINIMAP_H = Math.round((MINIMAP_W * WORLD_H) / WORLD_W) // שומר על יחס האולם
+const MINI_SX = MINIMAP_W / WORLD_W
+const MINI_SY = MINIMAP_H / WORLD_H
+
+// מספרי מקומות אפשריים לשולחן — סט סגור בלבד (לא כל מספר), לפי בקשת הבעלים.
+// שולחן אבירים (מלבני ארוך) מיועד לחבורה גדולה ולכן ברירת המחדל שלו גבוהה
+// יותר (24) מכל שאר סוגי השולחנות (12).
+const SEAT_OPTIONS = [10, 12, 14, 16, 18, 20, 22, 24]
+function defaultCapacityForType(t: TableType): number {
+  return t === 'knights' ? 24 : 12
+}
+// נתונים ישנים (שנשמרו לפני שהוגבל מספר המקומות לסט קבוע) עלולים להכיל ערך
+// שלא ברשימה — מעגלים לערך הקרוב ביותר מהסט, כדי שהתפריט הנפתח תמיד יציג
+// ערך תקין.
+function snapCapacity(n: number): number {
+  return SEAT_OPTIONS.reduce((best, v) => (Math.abs(v - n) < Math.abs(best - n) ? v : best), SEAT_OPTIONS[0])
+}
+
+function clamp(v: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, v))
+}
+
+// גודל חזותי של השולחן (בפיקסלים) — נגזר ממספר המקומות, כך ש"שינוי גודל"
+// קורה אוטומטית עם שינוי כמות הכיסאות (בהתאם לדרישה: "כשמספר המקומות
+// משתנה, הכיסאות מתעדכנים אוטומטית להתאמת צורת השולחן").
+function tableSize(type: TableType, capacity: number): { w: number; h: number } {
+  if (type === 'round' || type === 'square') {
+    const d = Math.round(clamp(46 + capacity * 6, 68, 190))
+    return { w: d, h: d }
+  }
+  const hasEnds = type === 'knights'
+  const rowSeats = hasEnds && capacity >= 6 ? capacity - 2 : capacity
+  const topCount = Math.max(1, Math.ceil(rowSeats / 2))
+  const w = Math.round(clamp(topCount * 28, 100, 420))
+  return { w, h: 56 }
+}
+
+interface SeatPoint {
+  left: number
+  top: number
+}
+
+// מיקום כל כיסא סביב גוף השולחן, יחסית לקופסת השולחן (0,0 עד w,h).
+function seatPositions(type: TableType, capacity: number, w: number, h: number): SeatPoint[] {
+  const gap = 12
+  if (type === 'round' || type === 'square') {
+    const radius = Math.max(w, h) / 2 + gap
+    const cx = w / 2
+    const cy = h / 2
+    return Array.from({ length: capacity }, (_, i) => {
+      const angle = (i / capacity) * Math.PI * 2 - Math.PI / 2
+      return { left: cx + radius * Math.cos(angle), top: cy + radius * Math.sin(angle) }
+    })
+  }
+  // מלבני / אבירים: שתי שורות; אבירים גם עם כיסא בכל קצה.
+  const hasEnds = type === 'knights'
+  const ends = hasEnds && capacity >= 6 ? 2 : 0
+  const rowSeats = capacity - ends
+  const topCount = Math.ceil(rowSeats / 2)
+  const bottomCount = rowSeats - topCount
+  const pts: SeatPoint[] = []
+  for (let i = 0; i < topCount; i++) {
+    pts.push({ left: topCount === 1 ? w / 2 : (w * (i + 0.5)) / topCount, top: -gap })
+  }
+  for (let i = 0; i < bottomCount; i++) {
+    pts.push({ left: bottomCount === 1 ? w / 2 : (w * (i + 0.5)) / bottomCount, top: h + gap })
+  }
+  if (ends >= 1) pts.push({ left: -gap, top: h / 2 })
+  if (ends >= 2) pts.push({ left: w + gap, top: h / 2 })
+  return pts
+}
+
+export function HallPage() {
+  const [tables, setTables] = useState<TableView[]>([])
+  const [unassigned, setUnassigned] = useState<HallGuest[]>([])
+  const [elements, setElements] = useState<HallElement[]>([])
+  const [seats, setSeats] = useState(12)
+  const [warnings, setWarnings] = useState<string[]>([])
+  const [selected, setSelected] = useState<number | null>(null) // מוזמן שנבחר להעברה
+  const [selectedEl, setSelectedEl] = useState<string | null>(null)
+  const [selectedTables, setSelectedTables] = useState<Set<number>>(new Set())
+  const [dragOver, setDragOver] = useState<number | 'tray' | null>(null)
+  // מוזמן שנמצא כרגע בגרירה בפועל (HTML5 DnD) — לשימוש בבדיקה חיה
+  // (liveDragValidation) שמוצגת בזמן ריחוף מעל שולחן, לפני drop בפועל.
+  const [draggingGuestId, setDraggingGuestId] = useState<number | null>(null)
+  const [dirty, setDirty] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  // ---- מגש "ללא שולחן" (צד ימין): חיפוש כדי למצוא מוזמן ברשימה ארוכה ----
+  const [traySearch, setTraySearch] = useState('')
+
+  // ---- לוח האולם: מצלמה (zoom + pan) על גבי CSS transform ----
+  const viewportRef = useRef<HTMLDivElement | null>(null)
+  const worldRef = useRef<HTMLDivElement | null>(null)
+  // מקור-האמת של המצלמה נשמר ב-ref (לא ב-state) — כך פאן/זום מעדכנים ישירות
+  // את ה-transform של הלוח בלי לרנדר מחדש את כל השולחנות (חשוב לביצועים).
+  const cameraRef = useRef({ zoom: 1, x: 0, y: 0 })
+  const didFitRef = useRef(false)
+  // מונה שמזמן "התאם למסך" מחדש כשמוסיפים שולחן/אלמנט — כך שום דבר לא
+  // "בורח" מהמסך, והבמה מתרחבת אוטומטית להכיל את התוכן החדש (Auto Fit).
+  const [fitNonce, setFitNonce] = useState(0)
+  // תווית אחוז-הזום ומלבן-הצפייה במיני-מפה מתעדכנים ישירות ב-DOM (בלי
+  // re-render) מתוך applyCamera — כך פאן/זום נשארים חלקים גם עם המיני-מפה.
+  const zoomLabelRef = useRef<HTMLSpanElement | null>(null)
+  const miniRectRef = useRef<HTMLDivElement | null>(null)
+
+  // מוסיף את מצב המצלמה לרכיב הלוח — פעולה זולה (רק transform).
+  const applyCamera = useCallback(() => {
+    const el = worldRef.current
+    if (!el) return
+    const c = cameraRef.current
+    el.style.transform = `translate(${c.x}px, ${c.y}px) scale(${c.zoom})`
+    // עדכון תווית אחוז הזום.
+    if (zoomLabelRef.current) {
+      zoomLabelRef.current.textContent = `${Math.round(c.zoom * 100)}%`
+    }
+    // עדכון מלבן-הצפייה במיני-מפה: היכן העולם נראה כרגע במסך.
+    const vp = viewportRef.current
+    const mr = miniRectRef.current
+    if (vp && mr) {
+      const viewLeft = -c.x / c.zoom
+      const viewTop = -c.y / c.zoom
+      const viewW = vp.clientWidth / c.zoom
+      const viewH = vp.clientHeight / c.zoom
+      mr.style.left = `${viewLeft * MINI_SX}px`
+      mr.style.top = `${viewTop * MINI_SY}px`
+      mr.style.width = `${viewW * MINI_SX}px`
+      mr.style.height = `${viewH * MINI_SY}px`
+    }
+  }, [])
+
+  // מיפוי נקודת-מסך → קואורדינטת-לוח, לפי מצב המצלמה הנוכחי.
+  const toWorld = useCallback((clientX: number, clientY: number) => {
+    const vp = viewportRef.current
+    const c = cameraRef.current
+    if (!vp) return { x: 0, y: 0 }
+    const rect = vp.getBoundingClientRect()
+    return {
+      x: (clientX - rect.left - c.x) / c.zoom,
+      y: (clientY - rect.top - c.y) / c.zoom,
+    }
+  }, [])
+
+  // זום סביב נקודה נתונה (סמן/מרכז) — הנקודה נשארת "מתחת לאצבע".
+  const zoomAt = useCallback(
+    (clientX: number, clientY: number, factor: number) => {
+      const vp = viewportRef.current
+      if (!vp) return
+      const c = cameraRef.current
+      const newZoom = clamp(c.zoom * factor, MIN_ZOOM, MAX_ZOOM)
+      if (newZoom === c.zoom) return
+      const rect = vp.getBoundingClientRect()
+      const wx = (clientX - rect.left - c.x) / c.zoom
+      const wy = (clientY - rect.top - c.y) / c.zoom
+      c.zoom = newZoom
+      c.x = clientX - rect.left - wx * newZoom
+      c.y = clientY - rect.top - wy * newZoom
+      applyCamera()
+    },
+    [applyCamera],
+  )
+
+  // מרכז את כל התוכן (שולחנות + אלמנטים) בתוך המסך — "התאם למסך".
+  const fitToScreen = useCallback(() => {
+    const vp = viewportRef.current
+    if (!vp) return
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    for (const t of tables) {
+      const { w, h } = tableSize(t.table_type, t.capacity)
+      minX = Math.min(minX, t.x)
+      minY = Math.min(minY, t.y)
+      maxX = Math.max(maxX, t.x + w)
+      maxY = Math.max(maxY, t.y + h)
+    }
+    for (const el of elements) {
+      minX = Math.min(minX, el.x)
+      minY = Math.min(minY, el.y)
+      maxX = Math.max(maxX, el.x + el.width)
+      maxY = Math.max(maxY, el.y + el.height)
+    }
+    // אין תוכן עדיין — מציגים פינה נוחה של הלוח בזום 100%.
+    if (!isFinite(minX)) {
+      minX = 0
+      minY = 0
+      maxX = Math.min(WORLD_W, 1100)
+      maxY = Math.min(WORLD_H, 760)
+    }
+    const bw = Math.max(1, maxX - minX)
+    const bh = Math.max(1, maxY - minY)
+    const vpW = vp.clientWidth
+    const vpH = vp.clientHeight
+    const zoom = clamp(
+      Math.min((vpW - FIT_MARGIN * 2) / bw, (vpH - FIT_MARGIN * 2) / bh),
+      MIN_ZOOM,
+      FIT_MAX,
+    )
+    const c = cameraRef.current
+    c.zoom = zoom
+    c.x = (vpW - bw * zoom) / 2 - minX * zoom
+    c.y = (vpH - bh * zoom) / 2 - minY * zoom
+    applyCamera()
+  }, [tables, elements, applyCamera])
+
+  // זום סביב מרכז המסך — משמש את כפתורי ה-+/− בבקרות הזום.
+  const zoomAtCenter = useCallback(
+    (factor: number) => {
+      const vp = viewportRef.current
+      if (!vp) return
+      const rect = vp.getBoundingClientRect()
+      zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, factor)
+    },
+    [zoomAt],
+  )
+
+  // חזרה לזום 100% (גודל אמיתי) סביב מרכז המסך.
+  const setZoom100 = useCallback(() => {
+    const c = cameraRef.current
+    zoomAtCenter(1 / c.zoom)
+  }, [zoomAtCenter])
+
+  // סקיצת האולם (data URL) — רקע עדין מתחת לשולחנות.
+
+  // סקיצת האולם (data URL) — רקע עדין מתחת לשולחנות.
+  const [sketch, setSketch] = useState<string | null>(null)
+  const sketchInputRef = useRef<HTMLInputElement | null>(null)
+
+  // ---- עוזר הושבה חכם (Dock) ----
+  // זוגות אילוצים שכבר מחושבים בשרת מהערות חופשיות — נשמרים כאן כדי
+  // שהעוזר יוכל לבדוק אותם מיידית בצד לקוח בלי קריאת רשת נוספת.
+  const [forbiddenPairs, setForbiddenPairs] = useState<PairList>([])
+  const [togetherPairs, setTogetherPairs] = useState<PairList>([])
+  const [smartPanelOpen, setSmartPanelOpen] = useState(false)
+  const [smartSearchQuery, setSmartSearchQuery] = useState('')
+  // הצעה/מהלכים "בהמתנה לאישור" — אף פעם לא מוחלת לבד. רק לחיצה מפורשת על
+  // "אשר" מיישמת את כל המהלכים בבת אחת (בדיוק כמו גרירה ידנית, אותה
+  // סמנטיקה: מקומי בלבד, dirty=true); המשתמש עדיין צריך ללחוץ "שמירת
+  // המפה" כדי לשמור בשרת. diff הוא רק לתצוגה קריאה (שם + מאיפה לאיפה).
+  const [pendingProposal, setPendingProposal] = useState<{
+    text: string
+    moves: SmartMove[]
+    diff: { guestId: number; guestName: string; fromTable: number | null; toTable: number }[]
+    // שולחנות חדשים שצריך ליצור לפני שמפעילים את ה-moves (רק "מלא שולחנות"
+    // עשוי להשתמש בזה — הצעות רגילות אף פעם לא פותחות שולחן חדש).
+    newTables?: { table_number: number; capacity: number }[]
+  } | null>(null)
+
+  // ---- אילוצים מההערות (לולאת הבהרות) ----
+  const [clarifications, setClarifications] = useState<Clarification[]>([])
+  const [analyzeSummary, setAnalyzeSummary] = useState<AnalyzeResult | null>(null)
+  const [analyzing, setAnalyzing] = useState(false)
+
+  type DragState =
+    | { kind: 'table-group'; items: { id: number; startX: number; startY: number }[]; startWorldX: number; startWorldY: number }
+    | { kind: 'table-rotate'; id: number; cx: number; cy: number }
+    | { kind: 'element'; id: string; dx: number; dy: number }
+    | { kind: 'resize'; id: string; startX: number; startY: number; startW: number; startH: number; lockSquare: boolean }
+    | { kind: 'rotate'; id: string; cx: number; cy: number }
+    | { kind: 'pan'; startClientX: number; startClientY: number; startPanX: number; startPanY: number }
+  const dragRef = useRef<DragState | null>(null)
+  // ביצועים בגרירת שולחנות: במקום לעדכן state בכל תזוזה (שמרנדר מחדש את כל
+  // השולחנות), מזיזים את צמתי ה-DOM ישירות דרך transform בתוך requestAnimationFrame,
+  // ומעדכנים את ה-state פעם אחת בסיום הגרירה (pointerup). כך גרירה חלקה גם עם
+  // 100+ שולחנות.
+  const dragRafRef = useRef<number | null>(null)
+  const dragPendingRef = useRef<{ dx: number; dy: number } | null>(null)
+  const dragNodesRef = useRef<Map<number, HTMLElement>>(new Map())
+  const movedRef = useRef(false)
+  // מונה קטן להוספות רצופות (שולחן/אלמנט) — כדי שכשלוחצים "הוסף" כמה פעמים
+  // ברצף הפריטים ייפלו במדרגה קלה זה מזה, ולא יתערמו זה על גבי זה במרכז.
+  const placeSeqRef = useRef(0)
+  function nextPlaceOffset() {
+    const seq = placeSeqRef.current % 8
+    placeSeqRef.current += 1
+    return seq * 22
+  }
+
+  // מספר השולחן הבא — ref ולא חישוב מ-tables.map בזמן הלחיצה, כי לחיצות
+  // כפולות/מהירות על "הוסף שולחן" יכולות לקרוא ל-addTable פעמיים לפני
+  // שהרינדור התעדכן, ואז שני השולחנות "יחשבו" שאותו המספר פנוי.
+  const nextTableNumRef = useRef(1)
+
+  const applyState = useCallback((h: HallState) => {
+    setTables(
+      h.tables.map((t) => ({
+        table_number: t.table_number,
+        x: t.x,
+        y: t.y,
+        guests: t.guests,
+        table_type: t.table_type ?? 'round',
+        capacity: snapCapacity(t.capacity ?? h.seats_per_table),
+        rotation: t.rotation ?? 0,
+        name: t.name ?? '',
+        color: t.color ?? '',
+        notes: t.notes ?? '',
+        locked: t.locked ?? false,
+      })),
+    )
+    nextTableNumRef.current = h.tables.length
+      ? Math.max(...h.tables.map((t) => t.table_number)) + 1
+      : 1
+    setUnassigned(h.unassigned)
+    setElements(
+      (h.elements ?? []).map((el) => ({
+        ...el,
+        shape: el.shape ?? ELEMENT_DEFS[el.type]?.shape ?? 'rectangle',
+        color: el.color ?? '',
+      })),
+    )
+    setSeats(snapCapacity(h.seats_per_table))
+    setWarnings(h.warnings)
+    setSketch(h.sketch ?? null)
+    setForbiddenPairs(h.forbidden_pairs ?? [])
+    setTogetherPairs(h.together_pairs ?? [])
+    setDirty(false)
+  }, [])
+
+  const load = useCallback(async () => {
+    setError('')
+    try {
+      applyState(await getHall())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון את מפת האולם, ננסה שוב')
+    }
+  }, [applyState])
+
+  const loadClarifications = useCallback(async () => {
+    try {
+      setClarifications(await listClarifications())
+    } catch {
+      /* שקט — לא חוסם את מפת האולם */
+    }
+  }, [])
+
+  useEffect(() => {
+    load()
+    loadClarifications()
+  }, [load, loadClarifications])
+
+  // ---- זום בגלגלת העכבר, סביב מיקום הסמן ----
+  // מאזין נייטיב (לא React onWheel) עם passive:false, כדי שנוכל למנוע את
+  // גלילת הדף ולהפוך את הגלגלת לזום על הלוח בלבד.
+  useEffect(() => {
+    const vp = viewportRef.current
+    if (!vp) return
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      // deltaY שלילי = גלגול למעלה = התקרבות. צעד עדין.
+      const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12
+      zoomAt(e.clientX, e.clientY, factor)
+    }
+    vp.addEventListener('wheel', onWheel, { passive: false })
+    return () => vp.removeEventListener('wheel', onWheel)
+  }, [zoomAt])
+
+  // ---- מחוות מגע (מובייל): צביטה לזום + שתי אצבעות להזזת הלוח ----
+  // אצבע אחת כבר עובדת דרך אירועי ה-pointer (גרירת שולחן/פאן של הרקע). כאן
+  // מטפלים רק במקרה של שתי אצבעות: המרחק בין האצבעות שולט בזום, ונקודת-האמצע
+  // ביניהן גוררת את הלוח. מאזין נייטיב עם passive:false כדי למנוע את זום-הדפדפן.
+  useEffect(() => {
+    const vp = viewportRef.current
+    if (!vp) return
+    const pinch = { active: false, lastDist: 0, lastMidX: 0, lastMidY: 0 }
+    const dist = (t: TouchList) =>
+      Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+    const mid = (t: TouchList) => ({
+      x: (t[0].clientX + t[1].clientX) / 2,
+      y: (t[0].clientY + t[1].clientY) / 2,
+    })
+    // כשאצבע שנייה נוחתת באמצע גרירה של שולחן — מבטלים אותה בלי לשמור,
+    // ומנקים את ה-transform הזמני (בדיוק כמו סיום גרירה, אבל בלי commit).
+    const abortDrag = () => {
+      const drag = dragRef.current
+      if (drag && drag.kind === 'table-group') {
+        if (dragRafRef.current != null) {
+          cancelAnimationFrame(dragRafRef.current)
+          dragRafRef.current = null
+        }
+        for (const node of dragNodesRef.current.values()) node.style.transform = ''
+        dragNodesRef.current.clear()
+        dragPendingRef.current = null
+      }
+      dragRef.current = null
+      movedRef.current = false
+    }
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault()
+        abortDrag()
+        pinch.active = true
+        pinch.lastDist = dist(e.touches)
+        const m = mid(e.touches)
+        pinch.lastMidX = m.x
+        pinch.lastMidY = m.y
+      }
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (!pinch.active || e.touches.length !== 2) return
+      e.preventDefault()
+      const nd = dist(e.touches)
+      const m = mid(e.touches)
+      if (pinch.lastDist > 0) zoomAt(m.x, m.y, nd / pinch.lastDist)
+      // הזזת הלוח בעקבות תנועת נקודת-האמצע של שתי האצבעות.
+      const c = cameraRef.current
+      c.x += m.x - pinch.lastMidX
+      c.y += m.y - pinch.lastMidY
+      applyCamera()
+      pinch.lastDist = nd
+      pinch.lastMidX = m.x
+      pinch.lastMidY = m.y
+    }
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinch.active = false
+    }
+    vp.addEventListener('touchstart', onTouchStart, { passive: false })
+    vp.addEventListener('touchmove', onTouchMove, { passive: false })
+    vp.addEventListener('touchend', onTouchEnd)
+    vp.addEventListener('touchcancel', onTouchEnd)
+    return () => {
+      vp.removeEventListener('touchstart', onTouchStart)
+      vp.removeEventListener('touchmove', onTouchMove)
+      vp.removeEventListener('touchend', onTouchEnd)
+      vp.removeEventListener('touchcancel', onTouchEnd)
+    }
+  }, [zoomAt, applyCamera])
+
+  // ---- התאם-למסך אוטומטי בכניסה (פעם אחת, כשיש כבר תוכן) ----
+  // כך רואים את כל האולם מיד בלי לגלול. אחרי זה הזום נשלט ידנית.
+  useEffect(() => {
+    if (didFitRef.current) return
+    if (tables.length === 0 && elements.length === 0) return
+    const id = requestAnimationFrame(() => {
+      fitToScreen()
+      didFitRef.current = true
+    })
+    return () => cancelAnimationFrame(id)
+  }, [tables, elements, fitToScreen])
+
+  // ---- אתחול תווית הזום + מלבן המיני-מפה בעליית הרכיב (גם כשהלוח ריק) ----
+  useEffect(() => {
+    applyCamera()
+  }, [applyCamera])
+
+  // ---- Auto Fit: "התאם למסך" מחדש אחרי הוספת שולחן/אלמנט ----
+  // רץ אחרי שה-state התעדכן, כך שגבולות התוכן החדש כבר ידועים.
+  useEffect(() => {
+    if (fitNonce === 0) return
+    const id = requestAnimationFrame(() => fitToScreen())
+    return () => cancelAnimationFrame(id)
+  }, [fitNonce, fitToScreen])
+
+  // ---- קיצורי מקלדת: Delete למחיקה, Esc לביטול בחירה, Ctrl/Cmd+D לשכפול ----
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (document.activeElement?.tagName || '').toLowerCase()
+      if (tag === 'input' || tag === 'textarea') return
+      if (e.key === 'Escape') {
+        setSelectedTables(new Set())
+        setSelectedEl(null)
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedTables.size > 0) {
+          selectedTables.forEach((n) => deleteTable(n))
+        } else if (selectedEl) {
+          removeElement(selectedEl)
+        }
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
+        if (selectedEl || selectedTables.size === 1) {
+          e.preventDefault()
+          if (selectedEl) duplicateElement(selectedEl)
+          else duplicateTable([...selectedTables][0])
+        }
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTables, selectedEl, tables, elements])
+
+  async function onAnalyze() {
+    setAnalyzing(true)
+    setError('')
+    try {
+      setAnalyzeSummary(await analyzeConstraints())
+      await loadClarifications()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'לא הצלחנו לקרוא את ההערות, ננסה שוב')
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  async function onResolve(id: number, chosenGuestId: number | null) {
+    try {
+      setAnalyzeSummary(await resolveClarification(id, chosenGuestId))
+      await loadClarifications()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור את הבחירה, נסו שוב')
+    }
+  }
+
+  // אין יותר הצמדה לרשת — מיקום חופשי (מעוגל לפיקסל שלם).
+  function snapVal(v: number) {
+    return Math.round(v)
+  }
+
+  // ---- לחיצה על רקע הלוח: ביטול בחירה + התחלת "פאן" (גרירת הלוח) ----
+  function onWorldPointerDown(e: React.PointerEvent) {
+    if (e.target !== e.currentTarget) return // קליק על ילד (שולחן/אלמנט) — מטופל בנפרד
+    setSelectedTables(new Set())
+    setSelectedEl(null)
+    const c = cameraRef.current
+    dragRef.current = {
+      kind: 'pan',
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startPanX: c.x,
+      startPanY: c.y,
+    }
+    ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  // ---- גרירת שולחן (בודד או קבוצה נבחרת) ----
+  function onTablePointerDown(e: React.PointerEvent, tnum: number) {
+    e.stopPropagation()
+    const t = tables.find((x) => x.table_number === tnum)
+    if (!t) return
+    const activeSet = selectedTables.has(tnum) && selectedTables.size > 1 ? selectedTables : new Set([tnum])
+    const movable = tables.filter((x) => activeSet.has(x.table_number) && !x.locked)
+    if (movable.length === 0) return
+    const w = toWorld(e.clientX, e.clientY)
+    dragRef.current = {
+      kind: 'table-group',
+      items: movable.map((x) => ({ id: x.table_number, startX: x.x, startY: x.y })),
+      startWorldX: w.x,
+      startWorldY: w.y,
+    }
+    // ממפים את צמתי ה-DOM של השולחנות הנגררים כדי להזיז אותם ישירות (בלי re-render).
+    const nodes = new Map<number, HTMLElement>()
+    const world = worldRef.current
+    movable.forEach((x) => {
+      const node = world?.querySelector(`[data-tnum="${x.table_number}"]`)
+      if (node) nodes.set(x.table_number, node as HTMLElement)
+    })
+    dragNodesRef.current = nodes
+    dragPendingRef.current = null
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  function onTableRotatePointerDown(e: React.PointerEvent, tnum: number) {
+    e.stopPropagation()
+    const graphic = (e.currentTarget as HTMLElement).parentElement
+    if (!graphic) return
+    const r = graphic.getBoundingClientRect()
+    dragRef.current = { kind: 'table-rotate', id: tnum, cx: r.left + r.width / 2, cy: r.top + r.height / 2 }
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  function onElementPointerDown(e: React.PointerEvent, id: string) {
+    e.stopPropagation()
+    const el = elements.find((x) => x.id === id)
+    if (!el) return
+    setSelectedEl(id)
+    setSelectedTables(new Set())
+    if (el.locked) return
+    const w = toWorld(e.clientX, e.clientY)
+    dragRef.current = { kind: 'element', id, dx: w.x - el.x, dy: w.y - el.y }
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  function onResizePointerDown(e: React.PointerEvent, id: string) {
+    e.stopPropagation()
+    const el = elements.find((x) => x.id === id)
+    if (!el) return
+    dragRef.current = {
+      kind: 'resize',
+      id,
+      startX: e.clientX,
+      startY: e.clientY,
+      startW: el.width,
+      startH: el.height,
+      lockSquare: el.shape === 'square' || el.shape === 'circle',
+    }
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  function onRotatePointerDown(e: React.PointerEvent, id: string) {
+    e.stopPropagation()
+    const el = elements.find((x) => x.id === id)
+    if (!el) return
+    const vp = viewportRef.current
+    if (!vp) return
+    const rect = vp.getBoundingClientRect()
+    const c = cameraRef.current
+    // מרכז האלמנט בקואורדינטות-מסך = מוצא-הלוח על המסך + מיקום*זום.
+    dragRef.current = {
+      kind: 'rotate',
+      id,
+      cx: rect.left + c.x + (el.x + el.width / 2) * c.zoom,
+      cy: rect.top + c.y + (el.y + el.height / 2) * c.zoom,
+    }
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  function onCanvasPointerMove(e: React.PointerEvent) {
+    const drag = dragRef.current
+    if (!drag) return
+    movedRef.current = true
+
+    // פאן (גרירת הלוח) — מעדכן רק את המצלמה, בלי לגעת בנתונים או ב-state.
+    if (drag.kind === 'pan') {
+      const c = cameraRef.current
+      c.x = drag.startPanX + (e.clientX - drag.startClientX)
+      c.y = drag.startPanY + (e.clientY - drag.startClientY)
+      applyCamera()
+      return // לא מסמנים "שינוי לא שמור" — פאן הוא תצוגה בלבד
+    }
+
+    if (drag.kind === 'table-group') {
+      // גרירה מהירה: מזיזים את צמתי ה-DOM ישירות (transform) בתוך rAF, בלי
+      // לגעת ב-state. המיקום הסופי נשמר ל-state רק ב-pointerup.
+      const w = toWorld(e.clientX, e.clientY)
+      dragPendingRef.current = { dx: w.x - drag.startWorldX, dy: w.y - drag.startWorldY }
+      if (dragRafRef.current == null) {
+        dragRafRef.current = requestAnimationFrame(() => {
+          dragRafRef.current = null
+          const p = dragPendingRef.current
+          if (!p) return
+          for (const item of drag.items) {
+            const node = dragNodesRef.current.get(item.id)
+            if (!node) continue
+            const ox = snapVal(Math.max(0, item.startX + p.dx)) - item.startX
+            const oy = snapVal(Math.max(0, item.startY + p.dy)) - item.startY
+            node.style.transform = `translate(${ox}px, ${oy}px)`
+          }
+        })
+      }
+      return // בלי setState / setDirty בזמן הגרירה — זה קורה פעם אחת ב-pointerup
+    } else if (drag.kind === 'table-rotate') {
+      const deg = (Math.atan2(e.clientY - drag.cy, e.clientX - drag.cx) * 180) / Math.PI + 90
+      setTables((prev) =>
+        prev.map((t) => (t.table_number === drag.id ? { ...t, rotation: Math.round(deg) } : t)),
+      )
+    } else if (drag.kind === 'element') {
+      const w = toWorld(e.clientX, e.clientY)
+      const x = snapVal(Math.max(0, w.x - drag.dx))
+      const y = snapVal(Math.max(0, w.y - drag.dy))
+      setElements((prev) => prev.map((el) => (el.id === drag.id ? { ...el, x, y } : el)))
+    } else if (drag.kind === 'resize') {
+      // תזוזת-מסך מומרת לתזוזת-לוח לפי הזום (אחרת שינוי גודל "קופץ" בזום).
+      const z = cameraRef.current.zoom
+      const dx = (e.clientX - drag.startX) / z
+      const dy = (e.clientY - drag.startY) / z
+      let w = Math.max(40, drag.startW + dx)
+      let h = Math.max(30, drag.startH + dy)
+      if (drag.lockSquare) {
+        const s = Math.max(w, h)
+        w = s
+        h = s
+      }
+      setElements((prev) => prev.map((el) => (el.id === drag.id ? { ...el, width: w, height: h } : el)))
+    } else if (drag.kind === 'rotate') {
+      const deg = (Math.atan2(e.clientY - drag.cy, e.clientX - drag.cx) * 180) / Math.PI + 90
+      setElements((prev) => prev.map((el) => (el.id === drag.id ? { ...el, rotation: Math.round(deg) } : el)))
+    }
+    setDirty(true)
+  }
+
+  function onCanvasPointerUp() {
+    const drag = dragRef.current
+    // סיום גרירת שולחנות: משקפים את המיקום הסופי ל-state (פעם אחת) ומנקים
+    // את ה-transform הזמני. React מעדכן left/top באותו tick — בלי ריצוד.
+    if (drag && drag.kind === 'table-group') {
+      if (dragRafRef.current != null) {
+        cancelAnimationFrame(dragRafRef.current)
+        dragRafRef.current = null
+      }
+      const p = dragPendingRef.current
+      if (p && (p.dx !== 0 || p.dy !== 0)) {
+        setTables((prev) =>
+          prev.map((t) => {
+            const item = drag.items.find((i) => i.id === t.table_number)
+            if (!item) return t
+            return {
+              ...t,
+              x: snapVal(Math.max(0, item.startX + p.dx)),
+              y: snapVal(Math.max(0, item.startY + p.dy)),
+            }
+          }),
+        )
+        setDirty(true)
+      }
+      for (const node of dragNodesRef.current.values()) node.style.transform = ''
+      dragNodesRef.current.clear()
+      dragPendingRef.current = null
+    }
+    dragRef.current = null
+    movedRef.current = false
+  }
+
+  // ---- שולחנות: הוספה / שכפול / מחיקה / עדכון שדה ----
+  function addTable() {
+    const rect = viewportRef.current?.getBoundingClientRect()
+    const center = toWorld(
+      (rect?.left ?? 0) + (rect?.width ?? 400) / 2,
+      (rect?.top ?? 0) + (rect?.height ?? 300) / 2,
+    )
+    const nextNum = nextTableNumRef.current
+    nextTableNumRef.current += 1
+    const off = nextPlaceOffset()
+    const capacity = defaultCapacityForType('round')
+    const { w, h } = tableSize('round', capacity)
+    const t: TableView = {
+      table_number: nextNum,
+      x: Math.max(0, Math.round(center.x - w / 2 + off)),
+      y: Math.max(0, Math.round(center.y - h / 2 + off)),
+      guests: [],
+      table_type: 'round',
+      capacity,
+      rotation: 0,
+      name: '',
+      color: '',
+      notes: '',
+      locked: false,
+    }
+    setTables((prev) => [...prev, t])
+    setSelectedTables(new Set([nextNum]))
+    setSelectedEl(null)
+    setDirty(true)
+    setFitNonce((n) => n + 1) // Auto Fit — שהשולחן החדש ייכנס למסך
+  }
+
+  function duplicateTable(tnum: number) {
+    const src = tables.find((t) => t.table_number === tnum)
+    if (!src) return
+    const nextNum = nextTableNumRef.current
+    nextTableNumRef.current += 1
+    const copy: TableView = { ...src, table_number: nextNum, x: src.x + 30, y: src.y + 30, guests: [], locked: false }
+    setTables((prev) => [...prev, copy])
+    setUnassigned((prev) => [...prev, ...src.guests])
+    setSelectedTables(new Set([nextNum]))
+    setDirty(true)
+  }
+
+  function deleteTable(tnum: number) {
+    const src = tables.find((t) => t.table_number === tnum)
+    setTables((prev) => prev.filter((t) => t.table_number !== tnum))
+    if (src && src.guests.length) setUnassigned((prev) => [...prev, ...src.guests])
+    setSelectedTables((prev) => {
+      const next = new Set(prev)
+      next.delete(tnum)
+      return next
+    })
+    setDirty(true)
+  }
+
+  function updateTable(tnum: number, patch: Partial<TableView>) {
+    setTables((prev) => prev.map((t) => (t.table_number === tnum ? { ...t, ...patch } : t)))
+    setDirty(true)
+  }
+
+  function renumberTable(oldNum: number, raw: string) {
+    const newNum = Math.max(1, Math.round(Number(raw)) || oldNum)
+    if (newNum === oldNum) return
+    if (tables.some((t) => t.table_number === newNum)) {
+      setError(`מספר שולחן ${newNum} כבר תפוס — בחרו מספר אחר`)
+      return
+    }
+    setError('')
+    setTables((prev) => prev.map((t) => (t.table_number === oldNum ? { ...t, table_number: newNum } : t)))
+    setSelectedTables(new Set([newNum]))
+    nextTableNumRef.current = Math.max(nextTableNumRef.current, newNum + 1)
+    setDirty(true)
+  }
+
+  function bumpCapacity(tnum: number, delta: number) {
+    const t = tables.find((x) => x.table_number === tnum)
+    if (!t) return
+    // דילוג בתוך סט המספרים הקבוע (10,12,...,24) ולא בכל מספר בודד.
+    const curIdx = SEAT_OPTIONS.indexOf(t.capacity)
+    const nextIdx = clamp((curIdx === -1 ? 0 : curIdx) + delta, 0, SEAT_OPTIONS.length - 1)
+    updateTable(tnum, { capacity: SEAT_OPTIONS[nextIdx] })
+  }
+
+  // ---- אלמנטים (רחבת ריקודים / בר / DJ / כניסה) ----
+  function addElement(type: HallElementType) {
+    const def = ELEMENT_DEFS[type]
+    const rect = viewportRef.current?.getBoundingClientRect()
+    const center = toWorld(
+      (rect?.left ?? 0) + (rect?.width ?? 400) / 2,
+      (rect?.top ?? 0) + (rect?.height ?? 300) / 2,
+    )
+    const off = nextPlaceOffset()
+    const el: HallElement = {
+      id: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      type,
+      x: Math.max(0, Math.round(center.x - def.width / 2 + off)),
+      y: Math.max(0, Math.round(center.y - def.height / 2 + off)),
+      width: def.width,
+      height: def.height,
+      rotation: 0,
+      locked: false,
+      label: def.label,
+      shape: def.shape,
+      // ללא צבע מותאם כברירת מחדל — כך האלמנט מקבל את המראה המעוצב מלוח
+      // ההשראה (themed). הצבע נקבע רק כשהזוג בוחר גוון ידני בסרגל.
+      color: '',
+    }
+    setElements((prev) => [...prev, el])
+    setSelectedEl(el.id)
+    setSelectedTables(new Set())
+    setDirty(true)
+    setFitNonce((n) => n + 1) // Auto Fit — שהאלמנט החדש ייכנס למסך
+  }
+
+  function removeElement(id: string) {
+    setElements((prev) => prev.filter((el) => el.id !== id))
+    if (selectedEl === id) setSelectedEl(null)
+    setDirty(true)
+  }
+
+  function toggleElementLock(id: string) {
+    setElements((prev) => prev.map((el) => (el.id === id ? { ...el, locked: !el.locked } : el)))
+    setDirty(true)
+  }
+
+  function duplicateElement(id: string) {
+    setElements((prev) => {
+      const src = prev.find((el) => el.id === id)
+      if (!src) return prev
+      const copy: HallElement = {
+        ...src,
+        id: `${src.type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        x: src.x + 24,
+        y: src.y + 24,
+        locked: false,
+      }
+      setSelectedEl(copy.id)
+      return [...prev, copy]
+    })
+    setDirty(true)
+  }
+
+  function updateElement(id: string, patch: Partial<HallElement>) {
+    setElements((prev) => prev.map((el) => (el.id === id ? { ...el, ...patch } : el)))
+    setDirty(true)
+  }
+
+  // ---- העברת מוזמן ----
+  function moveGuestToTable(guestId: number, targetTable: number | null) {
+    let moving: HallGuest | undefined
+    const nextTables = tables.map((t) => {
+      const found = t.guests.find((g) => g.id === guestId)
+      if (found) moving = found
+      return { ...t, guests: t.guests.filter((g) => g.id !== guestId) }
+    })
+    let nextUnassigned = unassigned.filter((g) => g.id !== guestId)
+    if (!moving) moving = unassigned.find((g) => g.id === guestId)
+    if (!moving) return
+
+    if (targetTable === null) {
+      nextUnassigned = [...nextUnassigned, moving]
+    } else {
+      const idx = nextTables.findIndex((t) => t.table_number === targetTable)
+      if (idx >= 0) nextTables[idx] = { ...nextTables[idx], guests: [...nextTables[idx].guests, moving] }
+    }
+    setTables(nextTables)
+    setUnassigned(nextUnassigned)
+    setSelected(null)
+    setDirty(true)
+  }
+
+  // מיישם כמה מהלכי-הזזה בבת אחת (הצעה מהעוזר החכם, למשל "איחוד משפחת כהן"
+  // או "מלא שולחנות"). בנוי בנפרד מ-moveGuestToTable ולא כלולאה שקוראת לו:
+  // קריאה בלולאה הייתה קוראת בכל איטרציה את אותו tables/unassigned "מיושן"
+  // מסגירת ה-render הנוכחית (React מקבץ עדכוני state), כך שרק המהלך האחרון
+  // היה בפועל נשמר. כאן בונים את המצב הבא פעם אחת, על סמך כל המהלכים יחד —
+  // עדיין ללא קריאת רשת, אותה סמנטיקה בדיוק (dirty=true, שמירה בפועל רק
+  // ב"שמירת המפה"). newTables אופציונלי — נוצרים לפני שהמהלכים מיושמים,
+  // כדי ש"מלא שולחנות" יוכל לפתוח שולחן חדש בתוך אותה תצוגה מקדימה/אישור.
+  function applyMoves(moves: SmartMove[], newTables?: { table_number: number; capacity: number }[]) {
+    if (moves.length === 0 && (!newTables || newTables.length === 0)) return
+    let nextTables = tables.map((t) => ({ ...t, guests: [...t.guests] }))
+
+    if (newTables && newTables.length > 0) {
+      const rect = viewportRef.current?.getBoundingClientRect()
+      const center = toWorld(
+        (rect?.left ?? 0) + (rect?.width ?? 400) / 2,
+        (rect?.top ?? 0) + (rect?.height ?? 300) / 2,
+      )
+      newTables.forEach((nt) => {
+        const { w, h } = tableSize('round', nt.capacity)
+        const off = nextPlaceOffset()
+        nextTables.push({
+          table_number: nt.table_number,
+          x: Math.max(0, Math.round(center.x - w / 2 + off)),
+          y: Math.max(0, Math.round(center.y - h / 2 + off)),
+          guests: [],
+          table_type: 'round',
+          capacity: nt.capacity,
+          rotation: 0,
+          name: '',
+          color: '',
+          notes: '',
+          locked: false,
+        })
+      })
+      nextTableNumRef.current = Math.max(
+        nextTableNumRef.current,
+        ...newTables.map((nt) => nt.table_number + 1),
+      )
+    }
+
+    let nextUnassigned = [...unassigned]
+    for (const { guestId, toTable } of moves) {
+      let moving: HallGuest | undefined
+      nextUnassigned = nextUnassigned.filter((g) => {
+        if (g.id === guestId) {
+          moving = g
+          return false
+        }
+        return true
+      })
+      nextTables = nextTables.map((t) => {
+        const found = t.guests.find((g) => g.id === guestId)
+        if (found) moving = found
+        return { ...t, guests: t.guests.filter((g) => g.id !== guestId) }
+      })
+      if (!moving) continue
+      const idx = nextTables.findIndex((t) => t.table_number === toTable)
+      if (idx >= 0) nextTables[idx] = { ...nextTables[idx], guests: [...nextTables[idx].guests, moving] }
+    }
+    setTables(nextTables)
+    setUnassigned(nextUnassigned)
+    setDirty(true)
+  }
+
+  function onGuestClick(e: React.MouseEvent, guestId: number) {
+    e.stopPropagation()
+    setSelected((cur) => (cur === guestId ? null : guestId))
+  }
+
+  function onTableClick(e: React.MouseEvent, tnum: number) {
+    e.stopPropagation()
+    if (movedRef.current) return // זו הייתה גרירה, לא קליק לבחירה
+    if (selected !== null) {
+      moveGuestToTable(selected, tnum)
+      return
+    }
+    setSelectedEl(null)
+    setSelectedTables((prev) => {
+      if (e.shiftKey) {
+        const next = new Set(prev)
+        if (next.has(tnum)) next.delete(tnum)
+        else next.add(tnum)
+        return next
+      }
+      return prev.size === 1 && prev.has(tnum) ? new Set() : new Set([tnum])
+    })
+  }
+
+  function onTrayClick() {
+    if (selected !== null) moveGuestToTable(selected, null)
+  }
+
+  // ---- גרירת מוזמן אמיתית (HTML5 drag & drop) ----
+  function onGuestDragStart(e: React.DragEvent, guestId: number) {
+    e.dataTransfer.setData('text/plain', String(guestId))
+    e.dataTransfer.effectAllowed = 'move'
+    setSelected(null)
+    setDraggingGuestId(guestId)
+  }
+
+  function onGuestDragEnd() {
+    setDraggingGuestId(null)
+  }
+
+  function onDropTo(e: React.DragEvent, target: number | null) {
+    e.preventDefault()
+    const gid = Number(e.dataTransfer.getData('text/plain'))
+    if (!Number.isNaN(gid)) moveGuestToTable(gid, target)
+    setDragOver(null)
+    setDraggingGuestId(null)
+  }
+
+  // ---- סקיצת האולם ----
+  function onPickSketch(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setError('יש לבחור קובץ תמונה (JPG/PNG).')
+      return
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      setError('התמונה גדולה מדי (עד 4MB). נסו תמונה קטנה יותר.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setSketch(typeof reader.result === 'string' ? reader.result : null)
+      setDirty(true)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function removeSketch() {
+    setSketch(null)
+    setDirty(true)
+  }
+
+  async function onSave() {
+    setLoading(true)
+    setError('')
+    try {
+      const payload = tables.map((t) => ({
+        table_number: t.table_number,
+        x: t.x,
+        y: t.y,
+        guest_ids: t.guests.map((g) => g.id),
+        table_type: t.table_type,
+        capacity: t.capacity,
+        rotation: t.rotation,
+        name: t.name,
+        color: t.color,
+        notes: t.notes,
+        locked: t.locked,
+      }))
+      applyState(await saveHall(payload, seats, elements, sketch ?? ''))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור את המפה, נסו שוב')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function onRegenerate() {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await generateSeating({ seats_per_table: seats, persist: true })
+      if (!res.hard_ok) {
+        setError('לא הצלחנו לסדר את כולם בלי להתנגש בהעדפות — כדאי להוסיף מקומות לשולחן.')
+      }
+      applyState(await getHall())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'לא הצלחנו לסדר כרגע, ננסה שוב')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const soleSelectedNum = selectedTables.size === 1 ? [...selectedTables][0] : null
+  const soleSelected = soleSelectedNum != null ? tables.find((t) => t.table_number === soleSelectedNum) ?? null : null
+  const soleSelectedEl = selectedEl ? elements.find((el) => el.id === selectedEl) ?? null : null
+
+  // מספרי שולחנות המוזכרים באזהרות (למשל זוג "לא לשבת יחד") — לסימון חזותי
+  // ישירות על השולחן, לא רק ברשימת האזהרות הכללית.
+  const warnTables = new Set(
+    warnings
+      .map((w) => w.match(/^שולחן (\d+):/)?.[1])
+      .filter((n): n is string => !!n)
+      .map(Number),
+  )
+
+  // רשימת "ללא שולחן" ממוינת לפי שם (קל יותר לסרוק) ומסוננת לפי חיפוש —
+  // כדי שברשימות ארוכות (100+ מוזמנים) אפשר יהיה למצוא מישהו מיד.
+  const traySearchNorm = traySearch.trim()
+  const visibleUnassigned = [...unassigned]
+    .filter((g) => !traySearchNorm || g.full_name.includes(traySearchNorm))
+    .sort((a, b) => a.full_name.localeCompare(b.full_name, 'he'))
+
+  // ---- עוזר הושבה חכם: חישובים נגזרים (טהורים, בלי קריאת רשת) ----
+  // כל הפונקציות מ-seatingAdvisor.ts הן O(n) — מחושבות מחדש רק כשמשהו
+  // רלוונטי משתנה (useMemo), לא בכל רינדור/כל פיקסל גרירה.
+  const allGuestsForFamily = useMemo(
+    () => [...tables.flatMap((t) => t.guests), ...unassigned],
+    [tables, unassigned],
+  )
+  const familyGroups = useMemo(() => detectFamilyGroups(allGuestsForFamily), [allGuestsForFamily])
+  const splitGroups = useMemo(() => detectSplitGroups(tables), [tables])
+  const childWarnings = useMemo(
+    () => detectChildrenWithoutFamily(tables, familyGroups),
+    [tables, familyGroups],
+  )
+  const smartStats = useMemo(() => computeStats(tables, unassigned, seats), [tables, unassigned, seats])
+  const smartWarnings = useMemo(
+    () => computeSmartWarnings(tables, familyGroups, splitGroups, childWarnings, togetherPairs),
+    [tables, familyGroups, splitGroups, childWarnings, togetherPairs],
+  )
+  const smartSuggestions = useMemo(
+    () => computeSuggestions(tables, familyGroups, splitGroups, childWarnings, togetherPairs),
+    [tables, familyGroups, splitGroups, childWarnings, togetherPairs],
+  )
+  const smartSearchResults = useMemo(
+    () => (smartSearchQuery.trim() ? smartSearch(smartSearchQuery, tables, unassigned) : []),
+    [smartSearchQuery, tables, unassigned],
+  )
+  const soleSelectedInsight = useMemo(
+    () =>
+      soleSelected ? computeTableInsight(soleSelected, familyGroups, forbiddenPairs, childWarnings) : null,
+    [soleSelected, familyGroups, forbiddenPairs, childWarnings],
+  )
+
+  // נקודת-סטטוס צבעונית לכל שולחן (ירוק/צהוב/אדום) — מידע בלבד, לא חוסמת
+  // כלום. אדום = בעיה קשה (חריגת קיבולת/זוג אסור/ילד בלי מבוגר מהמשפחה),
+  // צהוב = יש המלצה/אזהרה רכה (משפחה או קבוצה מפוצלת וכו'), ירוק = תקין.
+  const redFromSmart = new Set(
+    smartWarnings.filter((w) => w.severity === 'red').flatMap((w) => w.tableNumbers),
+  )
+  const yellowFromSmart = new Set(
+    smartWarnings.filter((w) => w.severity === 'yellow').flatMap((w) => w.tableNumbers),
+  )
+  const tableStatus = new Map<number, 'red' | 'yellow' | 'green'>()
+  for (const t of tables) {
+    const used = t.guests.reduce((s, g) => s + g.seats, 0)
+    const isRed = used > t.capacity || warnTables.has(t.table_number) || redFromSmart.has(t.table_number)
+    const isYellow = !isRed && yellowFromSmart.has(t.table_number)
+    tableStatus.set(t.table_number, isRed ? 'red' : isYellow ? 'yellow' : 'green')
+  }
+
+  // האורח שבפועל נגרר כרגע (אם יש) — לשימוש בבדיקה החיה בזמן ריחוף מעל שולחן.
+  const draggedGuestForLive = useMemo(() => {
+    if (draggingGuestId == null) return undefined
+    return (
+      tables.flatMap((t) => t.guests).find((g) => g.id === draggingGuestId) ??
+      unassigned.find((g) => g.id === draggingGuestId)
+    )
+  }, [draggingGuestId, tables, unassigned])
+
+  // הצעה נכנסת ל"המתנה לאישור" בלבד — לא מזיזה אף אורח עד לחיצה מפורשת על
+  // "אשר". "בטל" רק מנקה את ה-state, אפס שינוי בפועל.
+  // בונה "diff" קריא (שם מוזמן + מאיפה לאיפה) לתצוגה מקדימה, משותף לכל
+  // סוגי ההצעות (הצעה בודדת מ-computeSuggestions או "מלא שולחנות").
+  function buildProposalDiff(
+    moves: SmartMove[],
+  ): { guestId: number; guestName: string; fromTable: number | null; toTable: number }[] {
+    const guestName = new Map<number, string>()
+    const guestFromTable = new Map<number, number | null>()
+    for (const t of tables) {
+      for (const g of t.guests) {
+        guestName.set(g.id, g.full_name)
+        guestFromTable.set(g.id, t.table_number)
+      }
+    }
+    for (const g of unassigned) {
+      guestName.set(g.id, g.full_name)
+      guestFromTable.set(g.id, null)
+    }
+    return moves.map((m) => ({
+      guestId: m.guestId,
+      guestName: guestName.get(m.guestId) ?? `מוזמן #${m.guestId}`,
+      fromTable: guestFromTable.get(m.guestId) ?? null,
+      toTable: m.toTable,
+    }))
+  }
+
+  function onProposeSuggestion(s: SmartSuggestion) {
+    setPendingProposal({ text: s.text, moves: s.moves, diff: buildProposalDiff(s.moves) })
+  }
+
+  // "מלא שולחנות" — Best-Fit Decreasing עצמאי (seatingAdvisor.ts), רק על
+  // מי שב"ללא שולחן"; לא מזיז אף מוזמן שכבר משובץ. גם זה רק ממלא
+  // pendingProposal — שום הזזה בפועל עד "אשר" (אותו מנגנון preview).
+  function onSmartFill() {
+    if (unassigned.length === 0) return
+    const result = computeSmartFill(
+      tables,
+      unassigned,
+      forbiddenPairs,
+      togetherPairs,
+      seats,
+      nextTableNumRef.current,
+    )
+    if (result.moves.length === 0) {
+      setError('לא נמצא מקום להושבה אוטומטית — נסו קיבולת גדולה יותר לשולחן.')
+      return
+    }
+    const tableWord = result.newTables.length === 1 ? 'שולחן חדש אחד' : `${result.newTables.length} שולחנות חדשים`
+    const text =
+      result.newTables.length > 0
+        ? `מילוי שולחנות: הושבת ${result.placedCount} מוזמנים, כולל פתיחת ${tableWord}` +
+          (result.unplacedCount > 0 ? ` (${result.unplacedCount} נשארו ללא שולחן — חבורה גדולה מדי)` : '')
+        : `מילוי שולחנות: הושבת ${result.placedCount} מוזמנים בשולחנות הקיימים` +
+          (result.unplacedCount > 0 ? ` (${result.unplacedCount} נשארו ללא שולחן — חבורה גדולה מדי)` : '')
+    setPendingProposal({
+      text,
+      moves: result.moves,
+      diff: buildProposalDiff(result.moves),
+      newTables: result.newTables,
+    })
+  }
+
+  function onConfirmProposal() {
+    if (!pendingProposal) return
+    applyMoves(pendingProposal.moves, pendingProposal.newTables)
+    setPendingProposal(null)
+  }
+  function onCancelProposal() {
+    setPendingProposal(null)
+  }
+
+  return (
+    <div className="hall-page">
+      {/* ---- אילוצים מההערות (לפני השיבוץ) ---- */}
+      <div className="clar-panel">
+        <div className="clar-head">
+          <div>
+            <h3 className="clar-title">העדפות הישיבה שלכם</h3>
+            <p className="clar-sub">
+              אנחנו קוראים את ההערות וממירים אותן להעדפות ישיבה — מי לשבת עם
+              מי, וממי להרחיק — לפני שנסדר את ההושבה.
+            </p>
+          </div>
+          <button className="btn-ghost" onClick={onAnalyze} disabled={analyzing}>
+            {analyzing ? 'בודקים…' : '↻ בדיקת ההערות'}
+          </button>
+        </div>
+
+        {analyzeSummary && (
+          <p className="clar-summary">
+            נותחו {analyzeSummary.guests_analyzed} מוזמנים ·{' '}
+            {analyzeSummary.resolved} העדפות זוהו ·{' '}
+            {analyzeSummary.pending_clarifications} ממתינים להבהרה
+          </p>
+        )}
+
+        {clarifications.length > 0 ? (
+          <div className="clar-list">
+            {clarifications.map((c) => (
+              <div className="clar-card" key={c.id}>
+                <div className="clar-q">
+                  <strong>{c.source_guest_name}</strong> ביקש/ה{' '}
+                  {REL_TEXT[c.relation_type]} "<strong>{c.target_text}</strong>" —
+                  למי הכוונה?
+                </div>
+                <div className="clar-actions">
+                  {c.candidates.map((cand) => (
+                    <button
+                      key={cand.id}
+                      className="btn-ghost clar-choice"
+                      onClick={() => onResolve(c.id, cand.id)}
+                    >
+                      {cand.full_name}
+                    </button>
+                  ))}
+                  <button className="btn-text" onClick={() => onResolve(c.id, null)}>
+                    אף אחד מהם
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          analyzeSummary && <p className="clar-ok">אין הבהרות ממתינות ✓</p>
+        )}
+      </div>
+
+      <div className="hall-toolbar">
+        <button className="btn-primary btn-add-table" onClick={addTable}>
+          ➕ הוסף שולחן
+        </button>
+        <label className="seats-field" title="מספר מקומות ברירת מחדל לשולחן חדש ולסידור ההושבה">
+          מקומות ברירת מחדל
+          <select value={seats} onChange={(e) => setSeats(Number(e.target.value))}>
+            {SEAT_OPTIONS.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button className="btn-ghost" onClick={onRegenerate} disabled={loading}>
+          ✨ סידור הושבה חכם
+        </button>
+        <button className="btn-primary" onClick={onSave} disabled={loading || !dirty}>
+          {loading ? 'שומר…' : dirty ? 'שמירת המפה' : 'שמרנו ✓'}
+        </button>
+        <input ref={sketchInputRef} type="file" accept="image/*" hidden onChange={onPickSketch} />
+        <button className="btn-ghost" onClick={() => sketchInputRef.current?.click()}>
+          {sketch ? '🖼 החלפת סקיצה' : '🖼 העלאת סקיצת אולם'}
+        </button>
+        {sketch && (
+          <button className="btn-text" onClick={removeSketch}>
+            הסרת סקיצה
+          </button>
+        )}
+        <button
+          className={`btn-ghost ${smartPanelOpen ? 'active' : ''}`}
+          onClick={() => setSmartPanelOpen((v) => !v)}
+        >
+          ✨ העוזר החכם להושבה
+        </button>
+      </div>
+
+      <div className="hall-palette">
+        <span className="palette-label">הוספה למפה:</span>
+        {VISIBLE_ELEMENTS.map((type) => (
+          <button key={type} type="button" className="palette-btn" onClick={() => addElement(type)}>
+            + {ELEMENT_DEFS[type].label}
+          </button>
+        ))}
+        <span className="hall-hint">
+          גררו שולחן כדי להזיז אותו · גררו מוזמן לשולחן · Shift+קליק לבחירה מרובה
+        </span>
+      </div>
+
+      {error && <p className="form-error">{error}</p>}
+
+      {warnings.length > 0 && (
+        <div className="hall-warnings">
+          {warnings.map((w, i) => (
+            <p key={i}>⚠ {w}</p>
+          ))}
+        </div>
+      )}
+
+      {/* מקרא צבעים — מסביר את מצב התפוסה של השולחנות במפה (לפי עיצוב VEYA Seating) */}
+      <div className="hall-legend" aria-hidden="true">
+        <span className="hall-legend-item">
+          <span className="hall-legend-swatch open" />מקומות פנויים
+        </span>
+        <span className="hall-legend-item">
+          <span className="hall-legend-swatch near" />כמעט מלא
+        </span>
+        <span className="hall-legend-item">
+          <span className="hall-legend-swatch full" />שולחן מלא
+        </span>
+      </div>
+
+      <div className="hall-layout">
+        {/* מגש מוזמנים ללא שולחן */}
+        <div
+          className={`hall-tray ${selected !== null ? 'droppable' : ''} ${
+            dragOver === 'tray' ? 'drag-over' : ''
+          }`}
+          onClick={onTrayClick}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOver('tray')
+          }}
+          onDragLeave={() => setDragOver((c) => (c === 'tray' ? null : c))}
+          onDrop={(e) => onDropTo(e, null)}
+        >
+          <h4 className="tray-title">ללא שולחן ({unassigned.length})</h4>
+          {unassigned.length > 5 && (
+            <input
+              type="text"
+              className="tray-search"
+              placeholder="חיפוש מוזמן…"
+              value={traySearch}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setTraySearch(e.target.value)}
+            />
+          )}
+          {unassigned.length === 0 && <p className="tray-empty">כולם משובצים ✓</p>}
+          {unassigned.length > 0 && visibleUnassigned.length === 0 && (
+            <p className="tray-empty tray-no-match">לא נמצאה התאמה ל"{traySearch}"</p>
+          )}
+          <div className="tray-list">
+            {visibleUnassigned.map((g) => (
+              <GuestChip
+                key={g.id}
+                g={g}
+                selected={selected === g.id}
+                onClick={(e) => onGuestClick(e, g.id)}
+                onDragStart={(e) => onGuestDragStart(e, g.id)}
+                onDragEnd={onGuestDragEnd}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* לוח מפת האולם: מאגר-מצלמה (Viewport) + הלוח שזז/מתקרב בפנים (World) */}
+        <div className="hall-canvas-wrap">
+          <div
+            className="hall-viewport"
+            ref={viewportRef}
+            onPointerMove={onCanvasPointerMove}
+            onPointerUp={onCanvasPointerUp}
+            onPointerLeave={onCanvasPointerUp}
+          >
+            <div
+              className="hall-world"
+              ref={worldRef}
+              style={{ width: WORLD_W, height: WORLD_H }}
+              onPointerDown={onWorldPointerDown}
+            >
+              {sketch && (
+                <div className="hall-sketch-bg" style={{ backgroundImage: `url(${sketch})` }} aria-hidden="true" />
+              )}
+              {tables.length === 0 && elements.length === 0 && (
+                <p className="hall-empty">
+                  אין עדיין שולחנות. לחצו "➕ הוסף שולחן" או "סידור הושבה חכם".
+                </p>
+              )}
+
+              {elements.map((el) => {
+                const isSel = selectedEl === el.id
+                const color = el.color || ELEMENT_DEFS[el.type]?.color || '#7fb3e0'
+                const radius =
+                  el.shape === 'circle' || el.shape === 'ellipse' ? '50%' : el.shape === 'square' ? '16px' : '12px'
+                // כשהזוג לא בחר צבע מותאם — האלמנטים (DJ/בר/כניסה/רחבה) מקבלים
+                // מראה מעוצב קבוע לפי עיצוב VEYA Seating (דרך מחלקת CSS). אם נבחר
+                // צבע ידני, חוזרים לגוון הכללי (שומר על ההתאמה האישית הקיימת).
+                const hasCustom = !!el.color
+                return (
+                  <div
+                    key={el.id}
+                    className={`hall-element el-${el.type} ${hasCustom ? '' : 'themed'} ${
+                      isSel ? 'selected' : ''
+                    } ${el.locked ? 'locked' : ''}`}
+                    style={{
+                      left: el.x,
+                      top: el.y,
+                      width: el.width,
+                      height: el.height,
+                      transform: `rotate(${el.rotation}deg)`,
+                      borderRadius: radius,
+                      ...(hasCustom ? { background: `${color}26`, borderColor: color } : {}),
+                    }}
+                    onPointerDown={(e) => onElementPointerDown(e, el.id)}
+                  >
+                    <span className="element-label" style={hasCustom ? { color } : undefined}>
+                      {el.label}
+                    </span>
+                    {el.locked && (
+                      <span className="element-lock-badge" title="נעול">
+                        🔒
+                      </span>
+                    )}
+
+                    {isSel && (
+                      <>
+                        <div className="element-toolbar" onPointerDown={(e) => e.stopPropagation()}>
+                          <div className="shape-row">
+                            {ELEMENT_SHAPES.map((s) => (
+                              <button
+                                key={s.key}
+                                type="button"
+                                className={el.shape === s.key ? 'active' : ''}
+                                title={s.key}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  updateElement(el.id, { shape: s.key })
+                                }}
+                              >
+                                {s.label}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="color-row">
+                            {ELEMENT_COLORS.map((c) => (
+                              <button
+                                key={c}
+                                type="button"
+                                className="color-swatch"
+                                style={{ background: c }}
+                                title="צבע"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  updateElement(el.id, { color: c })
+                                }}
+                              />
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            title={el.locked ? 'שחרר נעילה' : 'נעל'}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleElementLock(el.id)
+                            }}
+                          >
+                            {el.locked ? '🔓' : '🔒'}
+                          </button>
+                          <button
+                            type="button"
+                            title="שכפל"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              duplicateElement(el.id)
+                            }}
+                          >
+                            ⧉
+                          </button>
+                          <button
+                            type="button"
+                            title="מחק"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removeElement(el.id)
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+
+                        {!el.locked && (
+                          <>
+                            <span
+                              className="handle handle-rotate"
+                              title="סובב"
+                              onPointerDown={(e) => onRotatePointerDown(e, el.id)}
+                            />
+                            <span
+                              className="handle handle-resize"
+                              title="שנה גודל"
+                              onPointerDown={(e) => onResizePointerDown(e, el.id)}
+                            />
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )
+              })}
+
+              {tables.map((t) => {
+                const used = t.guests.reduce((s, g) => s + g.seats, 0)
+                const over = used > t.capacity
+                const free = t.capacity - used
+                const isSelT = selectedTables.has(t.table_number)
+                const { w, h } = tableSize(t.table_type, t.capacity)
+                const color = t.color || TABLE_TYPE_DEFAULT_COLOR[t.table_type]
+                const occupied: string[] = []
+                for (const g of t.guests) for (let i = 0; i < g.seats; i++) occupied.push(g.side)
+                const seatCount = Math.max(t.capacity, occupied.length, 1)
+                const pts = seatPositions(t.table_type, seatCount, w, h)
+                // כל מוזמן "תופס" נקודת כיסא ראשית (שבה יוצג עיגול-המוזמן) ואולי
+                // עוד נקודות-לוואי (מלווים/seats>1) שמסומנות כתפוסות בלי עיגול נפרד.
+                const guestAtPoint = new Map<number, HallGuest>()
+                const companionPoints = new Set<number>()
+                {
+                  let idx = 0
+                  for (const g of t.guests) {
+                    guestAtPoint.set(idx, g)
+                    for (let k = 1; k < g.seats; k++) companionPoints.add(idx + k)
+                    idx += Math.max(1, g.seats)
+                  }
+                }
+                const status = tableStatus.get(t.table_number) ?? 'green'
+                // מצב תפוסה חזותי (מקרא): שולחן מלא = זהב, כמעט מלא (≥80%) = ירוק,
+                // אחרת = ניטרלי. מוצג רק כשאין בעיה/אזהרה (status='green'), כדי לא
+                // להסתיר את טבעת האזהרה האדומה/צהובה. תואם עיצוב VEYA Seating.
+                const fillClass =
+                  status === 'green' && !over
+                    ? used >= t.capacity
+                      ? 'fill-full'
+                      : t.capacity > 0 && used / t.capacity >= 0.8
+                        ? 'fill-near'
+                        : ''
+                    : ''
+                // גוף השולחן מתמלא בצבע לפי תפוסה (עיצוב VEYA Seating):
+                // פנוי=לבן, כמעט מלא=שמנת-חול, מלא=זהב. אם הזוג בחר צבע ידני
+                // לשולחן — מכבדים אותו (שומרים על תכונת הצבע המותאם).
+                const hasCustomColor = !!t.color
+                let bodyBg = `${color}33`
+                let bodyBorder = color
+                if (!hasCustomColor && status === 'green' && !over) {
+                  if (used >= t.capacity) {
+                    bodyBg = 'linear-gradient(160deg,#E9DCB3,#C9A227)'
+                    bodyBorder = '#FFFFFF'
+                  } else if (t.capacity > 0 && used / t.capacity >= 0.8) {
+                    bodyBg = 'linear-gradient(160deg,#F4EEE0,#D9CBA6)'
+                    bodyBorder = '#FFFFFF'
+                  } else {
+                    bodyBg = '#FFFFFF'
+                    bodyBorder = '#E5DEC9'
+                  }
+                }
+                const liveCheck =
+                  dragOver === t.table_number && draggedGuestForLive
+                    ? liveDragValidation(draggedGuestForLive, t, forbiddenPairs, familyGroups)
+                    : null
+                return (
+                  <div
+                    key={t.table_number}
+                    data-tnum={t.table_number}
+                    className={`hall-table ${over ? 'over' : ''} ${
+                      !over && warnTables.has(t.table_number) ? 'warn' : ''
+                    } ${selected !== null ? 'droppable' : ''} ${isSelT ? 'selected' : ''} ${
+                      t.locked ? 'locked' : ''
+                    } ${dragOver === t.table_number ? 'drag-over' : ''} ${fillClass}`}
+                    style={{ left: t.x, top: t.y, width: w }}
+                    onClick={(e) => onTableClick(e, t.table_number)}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      setDragOver(t.table_number)
+                    }}
+                    onDragLeave={() => setDragOver((c) => (c === t.table_number ? null : c))}
+                    onDrop={(e) => onDropTo(e, t.table_number)}
+                  >
+                    <span
+                      className={`table-status-dot status-${status}`}
+                      title={
+                        status === 'red'
+                          ? 'בעיה בשולחן — ראו אזהרות'
+                          : status === 'yellow'
+                            ? 'יש המלצה/אזהרה קלה לשולחן הזה'
+                            : 'תקין'
+                      }
+                    />
+                    <div
+                      className={`table-graphic type-${t.table_type}`}
+                      style={{
+                        width: w,
+                        height: h,
+                        transform: `rotate(${t.rotation}deg)`,
+                        background: bodyBg,
+                        borderColor: bodyBorder,
+                      }}
+                      onPointerDown={(e) => onTablePointerDown(e, t.table_number)}
+                    >
+                      {/* כיסאות נקיים סביב היקף השולחן — תפוס/פנוי, בלי שמות
+                          (עיצוב VEYA Seating: השולחן נשאר נקי, המספר והסְפירה
+                          מספרים כמה יושבים). ניהול המוזמנים נעשה בפאנל הצד. */}
+                      <span className="seat-layer" aria-hidden="true">
+                        {pts.map((p, i) => (
+                          <span
+                            key={i}
+                            className={`seat-pip ${
+                              guestAtPoint.has(i) || companionPoints.has(i) ? 'seat-taken' : ''
+                            } ${i >= t.capacity ? 'seat-extra' : ''}`}
+                            style={{ left: p.left, top: p.top }}
+                          />
+                        ))}
+                      </span>
+                      <span className="table-center">
+                        <span className="table-num">{t.table_number}</span>
+                        {t.name && <span className="table-name">{t.name}</span>}
+                        <span className="table-occ">
+                          {used}/{t.capacity}
+                        </span>
+                      </span>
+                      {t.locked && (
+                        <span className="element-lock-badge" title="נעול">
+                          🔒
+                        </span>
+                      )}
+                      {isSelT && !t.locked && soleSelectedNum === t.table_number && (
+                        <span
+                          className="handle handle-rotate table-rot"
+                          title="סובב שולחן"
+                          onPointerDown={(e) => onTableRotatePointerDown(e, t.table_number)}
+                        />
+                      )}
+                    </div>
+
+                    {dragOver === t.table_number && (
+                      <span className={`free-badge ${free <= 0 ? 'full' : ''}`}>
+                        {free > 0 ? `${free} כיסאות פנויים` : 'השולחן מלא'}
+                        {liveCheck && liveCheck.lines.length > 0 && (
+                          <span className={`free-badge-live ${liveCheck.level}`}>
+                            {liveCheck.lines.map((line, i) => (
+                              <span key={i}>{line}</span>
+                            ))}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* בקרות זום (פינה תחתונה) — הרחקה / אחוז / התקרבות / 100% / התאם */}
+          <div className="hall-zoom-controls" onPointerDown={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="zoom-btn"
+              onClick={() => zoomAtCenter(1 / 1.2)}
+              title="הרחקה"
+              aria-label="הרחקה"
+            >
+              −
+            </button>
+            <span className="zoom-label" ref={zoomLabelRef}>
+              100%
+            </span>
+            <button
+              type="button"
+              className="zoom-btn"
+              onClick={() => zoomAtCenter(1.2)}
+              title="התקרבות"
+              aria-label="התקרבות"
+            >
+              +
+            </button>
+            <span className="zoom-sep" aria-hidden="true" />
+            <button type="button" className="zoom-btn zoom-text" onClick={setZoom100} title="גודל אמיתי (100%)">
+              100%
+            </button>
+            <button type="button" className="zoom-btn zoom-text" onClick={fitToScreen} title="התאם את כל האולם למסך">
+              התאם למסך
+            </button>
+          </div>
+
+          {/* מיני-מפה (פינה תחתונה) — תצוגת-על של כל האולם + מלבן הצפייה */}
+          <div className="hall-minimap" aria-hidden="true">
+            {elements.map((el) => (
+              <div
+                key={el.id}
+                className="mini-el"
+                style={{
+                  left: el.x * MINI_SX,
+                  top: el.y * MINI_SY,
+                  width: Math.max(2, el.width * MINI_SX),
+                  height: Math.max(2, el.height * MINI_SY),
+                }}
+              />
+            ))}
+            {tables.map((t) => {
+              const { w, h } = tableSize(t.table_type, t.capacity)
+              return (
+                <div
+                  key={t.table_number}
+                  className="mini-table"
+                  style={{
+                    left: t.x * MINI_SX,
+                    top: t.y * MINI_SY,
+                    width: Math.max(2, w * MINI_SX),
+                    height: Math.max(2, h * MINI_SY),
+                  }}
+                />
+              )
+            })}
+            <div className="mini-viewport" ref={miniRectRef} />
+          </div>
+
+          {/* פאנל בחירה מרובה */}
+          {selectedTables.size > 1 && (
+            <div className="hall-props-panel multi" onPointerDown={(e) => e.stopPropagation()}>
+              <div className="props-head">
+                <h4>נבחרו {selectedTables.size} שולחנות</h4>
+                <button className="x" onClick={() => setSelectedTables(new Set())}>
+                  ✕
+                </button>
+              </div>
+              <p className="file-name">גררו כל שולחן נבחר כדי להזיז את כולם יחד.</p>
+              <div className="props-actions">
+                <button
+                  className="danger"
+                  onClick={() => {
+                    selectedTables.forEach((n) => deleteTable(n))
+                  }}
+                >
+                  🗑 מחיקת הנבחרים
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* פאנל עריכת שולחן בודד */}
+          {soleSelected && (
+            <div className="hall-props-panel" onPointerDown={(e) => e.stopPropagation()}>
+              <div className="props-head">
+                <h4>עריכת שולחן</h4>
+                <button className="x" onClick={() => setSelectedTables(new Set())}>
+                  ✕
+                </button>
+              </div>
+
+              <label className="props-field">
+                מספר שולחן
+                <input
+                  type="number"
+                  min={1}
+                  defaultValue={soleSelected.table_number}
+                  key={soleSelected.table_number}
+                  onBlur={(e) => renumberTable(soleSelected.table_number, e.target.value)}
+                />
+              </label>
+
+              <label className="props-field">
+                שם (אופציונלי)
+                <input
+                  type="text"
+                  value={soleSelected.name}
+                  maxLength={60}
+                  placeholder='למשל "משפחת כהן"'
+                  onChange={(e) => updateTable(soleSelected.table_number, { name: e.target.value })}
+                />
+              </label>
+
+              <div className="props-field">
+                סוג שולחן
+                <div className="type-chip-row">
+                  {(Object.keys(TABLE_TYPE_LABELS) as TableType[]).map((tt) => (
+                    <button
+                      key={tt}
+                      type="button"
+                      className={soleSelected.table_type === tt ? 'active' : ''}
+                      onClick={() =>
+                        updateTable(soleSelected.table_number, {
+                          table_type: tt,
+                          // שולחן אבירים תמיד מתחיל ב-24 מקומות, כל שאר הסוגים ב-12 —
+                          // כי מעבר בין סוגים משנה גם את הגודל הטבעי של השולחן.
+                          capacity: defaultCapacityForType(tt),
+                        })
+                      }
+                    >
+                      {TABLE_TYPE_LABELS[tt]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="props-field">
+                מספר מקומות
+                <div className="stepper">
+                  <button type="button" onClick={() => bumpCapacity(soleSelected.table_number, -1)}>
+                    −
+                  </button>
+                  <select
+                    value={soleSelected.capacity}
+                    onChange={(e) =>
+                      updateTable(soleSelected.table_number, { capacity: Number(e.target.value) })
+                    }
+                  >
+                    {SEAT_OPTIONS.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={() => bumpCapacity(soleSelected.table_number, 1)}>
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="props-field">
+                צבע
+                <div className="color-row">
+                  {TABLE_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      className={`color-swatch ${soleSelected.color === c ? 'active' : ''}`}
+                      style={{ background: c }}
+                      onClick={() => updateTable(soleSelected.table_number, { color: c })}
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    className={`color-swatch none ${soleSelected.color === '' ? 'active' : ''}`}
+                    title="ברירת מחדל"
+                    onClick={() => updateTable(soleSelected.table_number, { color: '' })}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              <div className="props-field">
+                יושבים בשולחן ({soleSelected.guests.reduce((s, g) => s + g.seats, 0)}/
+                {soleSelected.capacity})
+                {soleSelected.guests.length === 0 ? (
+                  <p className="seated-empty">גררו מוזמנים מהמגש אל השולחן כדי להושיב אותם כאן.</p>
+                ) : (
+                  <div className="seated-list">
+                    {soleSelected.guests.map((g) => (
+                      <span key={g.id} className={`seated-row side-${g.side}`}>
+                        <span
+                          className="seated-name"
+                          draggable
+                          onDragStart={(e) => onGuestDragStart(e, g.id)}
+                          onDragEnd={onGuestDragEnd}
+                          title={`${g.full_name} · ${SIDE_LABELS[g.side]} · גררו לשולחן אחר`}
+                        >
+                          {g.full_name}
+                          {g.seats > 1 && <span className="chip-size">×{g.seats}</span>}
+                        </span>
+                        <button
+                          type="button"
+                          className="seated-remove"
+                          title="הסרה מהשולחן (חזרה למגש)"
+                          onClick={() => moveGuestToTable(g.id, null)}
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <label className="props-field">
+                הערות
+                <textarea
+                  value={soleSelected.notes}
+                  maxLength={400}
+                  rows={2}
+                  onChange={(e) => updateTable(soleSelected.table_number, { notes: e.target.value })}
+                />
+              </label>
+
+              <div className="props-actions">
+                <button onClick={() => duplicateTable(soleSelected.table_number)}>⧉ שכפול</button>
+                <button
+                  onClick={() => updateTable(soleSelected.table_number, { locked: !soleSelected.locked })}
+                >
+                  {soleSelected.locked ? '🔓 שחרור' : '🔒 נעילה'}
+                </button>
+                <button className="danger" onClick={() => deleteTable(soleSelected.table_number)}>
+                  🗑 מחיקה
+                </button>
+              </div>
+
+              {/* תובנת שולחן מהעוזר החכם — לא פאנל נפרד, כדי למנוע כפילות ממשק */}
+              {soleSelectedInsight && (
+                <div className={`table-insight ${soleSelectedInsight.hasProblem ? 'has-problem' : ''}`}>
+                  <h5>תובנת שולחן</h5>
+                  <p>
+                    {soleSelectedInsight.occupied}/{soleSelectedInsight.capacity} תפוסים ·{' '}
+                    {soleSelectedInsight.free} פנויים
+                  </p>
+                  {soleSelectedInsight.families.length > 0 && (
+                    <p className="table-insight-line">
+                      משפחות: {soleSelectedInsight.families.join(', ')}
+                    </p>
+                  )}
+                  {soleSelectedInsight.groups.length > 0 && (
+                    <p className="table-insight-line">קבוצות: {soleSelectedInsight.groups.join(', ')}</p>
+                  )}
+                  {soleSelectedInsight.hasProblem && (
+                    <p className="table-insight-warn">⚠ יש בעיה בשולחן הזה — ראו אזהרות למעלה</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* פאנל עריכת אלמנט (תווית בלבד — צבע/צורה בסרגל הצף שעל האלמנט) */}
+          {soleSelectedEl && (
+            <div className="hall-props-panel" onPointerDown={(e) => e.stopPropagation()}>
+              <div className="props-head">
+                <h4>{soleSelectedEl.label}</h4>
+                <button className="x" onClick={() => setSelectedEl(null)}>
+                  ✕
+                </button>
+              </div>
+              <label className="props-field">
+                תווית
+                <input
+                  type="text"
+                  value={soleSelectedEl.label}
+                  maxLength={40}
+                  onChange={(e) => updateElement(soleSelectedEl.id, { label: e.target.value })}
+                />
+              </label>
+
+              <div className="props-field props-dim-row">
+                <label>
+                  רוחב
+                  <input
+                    type="number"
+                    min={30}
+                    max={1000}
+                    value={Math.round(soleSelectedEl.width)}
+                    onChange={(e) =>
+                      updateElement(soleSelectedEl.id, { width: clamp(Number(e.target.value) || 30, 30, 1000) })
+                    }
+                  />
+                </label>
+                <label>
+                  גובה
+                  <input
+                    type="number"
+                    min={20}
+                    max={1000}
+                    value={Math.round(soleSelectedEl.height)}
+                    onChange={(e) =>
+                      updateElement(soleSelectedEl.id, { height: clamp(Number(e.target.value) || 20, 20, 1000) })
+                    }
+                  />
+                </label>
+                <label>
+                  סיבוב°
+                  <input
+                    type="number"
+                    min={-180}
+                    max={180}
+                    value={Math.round(soleSelectedEl.rotation)}
+                    onChange={(e) =>
+                      updateElement(soleSelectedEl.id, { rotation: clamp(Number(e.target.value) || 0, -180, 180) })
+                    }
+                  />
+                </label>
+              </div>
+
+              <div className="props-actions">
+                <button onClick={() => duplicateElement(soleSelectedEl.id)}>⧉ שכפול</button>
+                <button onClick={() => toggleElementLock(soleSelectedEl.id)}>
+                  {soleSelectedEl.locked ? '🔓 שחרור' : '🔒 נעילה'}
+                </button>
+                <button className="danger" onClick={() => removeElement(soleSelectedEl.id)}>
+                  🗑 מחיקה
+                </button>
+              </div>
+
+              <p className="file-name">גררו לתזוזה · גררו את הידיות לסיבוב/שינוי גודל, או הזינו ערכים מדויקים למעלה.</p>
+            </div>
+          )}
+        </div>
+
+        {/* עוזר הושבה חכם — פאנל צד קבוע (Dock), לא חלון צף שמכסה את המפה. */}
+        {smartPanelOpen && (
+          <SmartAssistantPanel
+            stats={smartStats}
+            warnings={smartWarnings}
+            suggestions={smartSuggestions}
+            searchQuery={smartSearchQuery}
+            onSearchQueryChange={setSmartSearchQuery}
+            searchResults={smartSearchResults}
+            pendingProposal={pendingProposal}
+            onProposeSuggestion={onProposeSuggestion}
+            onConfirmProposal={onConfirmProposal}
+            onCancelProposal={onCancelProposal}
+            onSmartFill={onSmartFill}
+            unassignedCount={unassigned.length}
+            onClose={() => setSmartPanelOpen(false)}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function GuestChip({
+  g,
+  selected,
+  onClick,
+  onDragStart,
+  onDragEnd,
+}: {
+  g: HallGuest
+  selected: boolean
+  onClick: (e: React.MouseEvent) => void
+  onDragStart?: (e: React.DragEvent) => void
+  onDragEnd?: () => void
+}) {
+  return (
+    <span
+      className={`guest-chip side-${g.side} ${selected ? 'selected' : ''}`}
+      draggable={!!onDragStart}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onClick={onClick}
+      title={`${SIDE_LABELS[g.side]} · גררו לשולחן או לחצו לבחירה`}
+    >
+      {g.full_name}
+      {g.seats > 1 && <span className="chip-size">×{g.seats}</span>}
+    </span>
+  )
+}
+

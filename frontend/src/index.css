@@ -1,0 +1,20 @@
+:root {
+  font-family: 'Assistant', 'Rubik', system-ui, sans-serif;
+  line-height: 1.5;
+  color: #f5efe2;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #0b0a0c;   /* שחור עמוק — מונע הבזק לבן בטעינה */
+}
+
+#root {
+  min-height: 100vh;
+}
