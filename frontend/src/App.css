@@ -1735,6 +1735,55 @@
 .event-image-drop:hover {
   border-color: var(--gold);
 }
+/* מוקאפ הזמנה בסגנון הודעת טלפון — רק בכרטיס האירוע בדשבורד */
+.phone-mock {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 10px 8px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--black-soft) 0%, var(--black) 100%);
+  box-shadow: 0 10px 26px -14px rgba(20, 18, 14, 0.45);
+  flex-shrink: 0;
+}
+.phone-mock-notch {
+  width: 34px;
+  height: 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.22);
+}
+.phone-mock-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 6px 5px;
+  border-radius: 14px;
+  background: linear-gradient(160deg, #fdf6e3 0%, #f6ecd2 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.phone-mock-bubble .event-image-thumb,
+.phone-mock-bubble .event-invite-img {
+  display: block;
+  border: none;
+  border-radius: 8px;
+}
+.phone-mock-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  padding: 0 2px;
+}
+.phone-mock-meta span:first-child {
+  color: var(--body);
+  margin-inline-end: auto;
+}
+.phone-mock-check {
+  color: var(--gold-deep);
+  font-weight: 700;
+  letter-spacing: -1px;
+}
 /* תמונת ההזמנה בתצוגה המקדימה של ההודעה */
 .tpl-preview-img {
   width: 100%;

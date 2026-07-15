@@ -232,11 +232,20 @@ export function DashboardPage({ onNavigate }: Props) {
               <span className="event-image-label">תמונת ההזמנה</span>
               {form.invite_image ? (
                 <div className="event-image-has">
-                  <img
-                    className="event-image-thumb"
-                    src={form.invite_image}
-                    alt="תצוגה מקדימה של ההזמנה"
-                  />
+                  <div className="phone-mock">
+                    <div className="phone-mock-notch" />
+                    <div className="phone-mock-bubble">
+                      <img
+                        className="event-image-thumb"
+                        src={form.invite_image}
+                        alt="תצוגה מקדימה של ההזמנה"
+                      />
+                      <div className="phone-mock-meta">
+                        <span>הזמנה לחתונה</span>
+                        <span className="phone-mock-check">✓✓</span>
+                      </div>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     className="btn-text"
@@ -271,11 +280,20 @@ export function DashboardPage({ onNavigate }: Props) {
         ) : (
           <div className="event-view">
             {event?.invite_image && (
-              <img
-                className="event-invite-img"
-                src={event.invite_image}
-                alt="הזמנה לחתונה"
-              />
+              <div className="phone-mock">
+                <div className="phone-mock-notch" />
+                <div className="phone-mock-bubble">
+                  <img
+                    className="event-invite-img"
+                    src={event.invite_image}
+                    alt="הזמנה לחתונה"
+                  />
+                  <div className="phone-mock-meta">
+                    <span>הזמנה לחתונה</span>
+                    <span className="phone-mock-check">✓✓</span>
+                  </div>
+                </div>
+              </div>
             )}
             <div className="event-view-text">
               <h2 className="event-couple">{couple ?? 'החתונה שלנו'}</h2>
