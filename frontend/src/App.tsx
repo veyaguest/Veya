@@ -5,10 +5,11 @@ import { clearAuth, getEventId, getToken, setEventId } from './authStore'
 import { AdminPage } from './components/AdminPage'
 import { AuthPage } from './components/AuthPage'
 import { DashboardPage } from './components/DashboardPage'
-import { EventPicker, FirstEventScreen } from './components/EventControls'
+import { EventPicker } from './components/EventControls'
 import { EventMembersDialog } from './components/EventMembersDialog'
 import { GuestsPage } from './components/GuestsPage'
 import { HallPage } from './components/HallPage'
+import { OnboardingWizard } from './components/OnboardingWizard'
 import { ProfileDialog } from './components/ProfileDialog'
 import { RsvpPage } from './components/RsvpPage'
 import type { EventSummary, User } from './types'
@@ -200,7 +201,7 @@ function App() {
         </div>
       )
     }
-    return <FirstEventScreen onCreated={handleEventCreated} />
+    return <OnboardingWizard onCreated={handleEventCreated} />
   }
 
   const navItems: { key: Page; label: string; short: string }[] = user.is_admin

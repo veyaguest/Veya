@@ -5895,3 +5895,138 @@
     flex: 1 1 auto;
   }
 }
+
+/* ───────────────────────────────────────────────────────────
+   אשף פתיחה מדורג — מסך הכניסה לזוג חדש שאין לו עדיין אירוע.
+   שני שלבים: פרטי האירוע, ואז התחלת רשימת המוזמנים. עמוד מלא,
+   ממורכז, על רקע השנהב הבהיר הרגיל של האפליקציה (כמו .shell).
+   ─────────────────────────────────────────────────────────── */
+.onboard-wrap {
+  min-height: 100vh;
+  background: var(--ivory);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+.onboard-card {
+  width: 100%;
+  max-width: 760px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+  padding: 32px 36px 30px;
+}
+.onboard-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.onboard-logo-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 20px;
+  letter-spacing: 7px;
+  color: var(--charcoal);
+  font-weight: 600;
+}
+.onboard-title {
+  text-align: center;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  color: var(--charcoal);
+  font-size: 24px;
+  margin: 0 0 6px;
+}
+.onboard-subtitle {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 26px;
+}
+
+/* ---- עיגולי שלבים (בהשראת .wizard-step) ---- */
+.onboard-steps {
+  list-style: none;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin: 0 0 26px;
+  padding: 0;
+}
+.onboard-step-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--ivory);
+}
+.onboard-step-pill.current {
+  border-color: rgba(201, 162, 39, 0.45);
+  background: rgba(201, 162, 39, 0.08);
+}
+.onboard-step-pill.done .wizard-step-label {
+  opacity: 0.7;
+}
+.onboard-step-pill .wizard-num {
+  background: var(--line);
+  color: var(--charcoal);
+}
+.onboard-step-pill.done .wizard-num {
+  background: var(--gold);
+  color: #fff;
+}
+.onboard-step-pill.current .wizard-num {
+  background: var(--gold-deep);
+  color: #fff;
+}
+
+/* ---- שלב 2: הוספת מוזמנים ---- */
+.onboard-guest-intro {
+  margin-bottom: 16px;
+  text-align: start;
+}
+.onboard-guest-count {
+  color: var(--gold-deep);
+  font-weight: 700;
+  font-size: 14px;
+  margin: 0 0 12px;
+}
+/* בהקשר האשף כפתור "ביטול" של טופס המוזמן לא רלוונטי (אין ממה לחזור) */
+.onboard-guest-step .add-actions .btn-ghost {
+  display: none;
+}
+
+/* ---- ניווט בין שלבים ---- */
+.onboard-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.onboard-skip {
+  background: none;
+  border: none;
+  padding: 8px 2px;
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.onboard-skip:hover {
+  color: var(--gold-deep);
+}
+
+@media (max-width: 620px) {
+  .onboard-card {
+    padding: 24px 18px 22px;
+  }
+  .onboard-steps {
+    flex-direction: column;
+  }
+}
