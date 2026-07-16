@@ -15,6 +15,25 @@ from app.deps import get_current_event
 router = APIRouter(prefix="/event", tags=["event"])
 
 
+def _describe_changed_fields(changed: dict) -> str:
+    """הופך את שמות השדות הטכניים שהשתנו למשפט עברי קריא ליומן הפעילות.
+
+    כך הזוג רואה "עדכנתם: שמות בני הזוג, פרטי האולם" ולא "עודכנו שדות:
+    groom_name, venue_name".
+    """
+    categories = [
+        (("groom_name", "bride_name"), "שמות בני הזוג"),
+        (("venue_name", "venue_address"), "פרטי האולם"),
+        (("event_date", "event_time"), "תאריך ושעת האירוע"),
+        (("invite_image",), "תמונת ההזמנה"),
+        (("venue_commit_days_before",), "יום ההתחייבות לאולם"),
+    ]
+    labels = [label for keys, label in categories if any(k in changed for k in keys)]
+    if not labels:
+        return "עדכנתם את פרטי האירוע"
+    return "עדכנתם: " + ", ".join(labels)
+
+
 def _event_read(event: models.Event) -> schemas.EventRead:
     """בונה תשובה עם URL מלא לתמונת ההזמנה (במקום הנתיב הגולמי שב-DB)."""
     return schemas.EventRead(
@@ -79,7 +98,7 @@ def update_event(
     audit.record(
         db, "update_event",
         event_id=event.id, user_id=user.id,
-        detail="עודכנו שדות: " + ", ".join(changed.keys()),
+        detail=_describe_changed_fields(changed),
         ip=request.client.host if request.client else None,
     )
     db.commit()
