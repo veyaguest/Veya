@@ -36,3 +36,9 @@ services:
       # למשל: https://veya.vercel.app
       - key: PUBLIC_BASE_URL
         sync: false
+      # מסד הנתונים (Postgres חיצוני קבוע — למשל Supabase). בלי זה השרת נופל
+      # חזרה לקובץ SQLite מקומי, שנמחק בכל פעם שהשרת ב-Render נרדם ומתעורר.
+      # ממלאים ב-Connection String שמקבלים מ-Supabase, בפורמט:
+      # postgresql://postgres:[הסיסמה]@[host]:5432/postgres
+      - key: DATABASE_URL
+        sync: false
