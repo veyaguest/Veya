@@ -110,7 +110,7 @@ export function groupLabel(group: string): string {
 }
 
 export const RSVP_LABELS: Record<RsvpStatus, string> = {
-  pending: 'ממתין',
+  pending: 'ממתין לתשובה',
   confirmed: 'מגיע',
   declined: 'לא מגיע',
   maybe: 'אולי',
