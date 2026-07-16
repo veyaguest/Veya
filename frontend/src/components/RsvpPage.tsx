@@ -48,7 +48,37 @@ const TABS: { key: Tab; label: string }[] = [
  */
 export function RsvpPage({ isAdmin }: { isAdmin: boolean }) {
   if (!isAdmin) return <CoupleRsvpView />
-  return <AdminRsvpView />
+  return <AdminRsvpShell />
+}
+
+/**
+ * מעטפת לאדמין: כברירת מחדל מציגה את חוויית הזוג (מסלול אישורי ההגעה),
+ * כי זה הלב של המוצר. מתג קטן מאפשר לעבור לפאנל הניהול הטכני בעת הצורך.
+ * זוג רגיל לא רואה את המתג הזה כלל.
+ */
+function AdminRsvpShell() {
+  const [view, setView] = useState<'couple' | 'admin'>('couple')
+  return (
+    <>
+      <div className="rsvp-view-toggle" role="tablist">
+        <button
+          role="tab"
+          className={`rsvp-view-btn ${view === 'couple' ? 'active' : ''}`}
+          onClick={() => setView('couple')}
+        >
+          תצוגת הזוג
+        </button>
+        <button
+          role="tab"
+          className={`rsvp-view-btn ${view === 'admin' ? 'active' : ''}`}
+          onClick={() => setView('admin')}
+        >
+          ניהול טכני
+        </button>
+      </div>
+      {view === 'couple' ? <CoupleRsvpView /> : <AdminRsvpView />}
+    </>
+  )
 }
 
 function AdminRsvpView() {
