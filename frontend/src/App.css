@@ -5927,8 +5927,12 @@
     height: 44px;
   }
   .hm-search-icon {
-    font-size: 15px;
-    opacity: 0.6;
+    display: inline-flex;
+    align-items: center;
+    color: var(--muted);
+  }
+  .hm-icon {
+    display: block;
   }
   .hm-search input {
     flex: 1;
@@ -6090,6 +6094,9 @@
     animation: hmFabIn 0.16s ease;
   }
   .hm-fab-menu button {
+    display: flex;
+    align-items: center;
+    gap: 9px;
     border: 1px solid var(--line);
     background: var(--cream);
     color: var(--charcoal);
@@ -6101,6 +6108,9 @@
     cursor: pointer;
     white-space: nowrap;
     text-align: start;
+  }
+  .hm-fab-menu button .hm-icon {
+    color: var(--gold-deep);
   }
   @keyframes hmFabIn {
     from {
@@ -6260,6 +6270,10 @@
     color: var(--muted);
   }
   .hm-primary-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     border: none;
     background: linear-gradient(160deg, var(--gold-light), var(--gold));
     color: #fff;
@@ -6276,6 +6290,10 @@
     box-shadow: none;
   }
   .hm-ghost-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     border: 1px solid var(--line);
     background: var(--cream);
     color: var(--charcoal);
@@ -6386,10 +6404,9 @@
     cursor: pointer;
   }
   .hm-tab-icon {
-    font-size: 20px;
+    display: inline-flex;
     line-height: 1;
-    filter: grayscale(0.4);
-    opacity: 0.7;
+    color: var(--muted);
   }
   .hm-tab-label {
     font-size: 11px;
@@ -6400,8 +6417,7 @@
     background: rgba(201, 162, 39, 0.12);
   }
   .hm-tab.active .hm-tab-icon {
-    filter: none;
-    opacity: 1;
+    color: var(--gold-deep);
   }
   .hm-tab.active .hm-tab-label {
     color: var(--gold-deep);
@@ -6533,6 +6549,9 @@
     flex: 0 0 auto;
   }
   .hm-seated-actions button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     border: 1px solid var(--line);
     background: var(--cream);
     color: var(--gold-deep);

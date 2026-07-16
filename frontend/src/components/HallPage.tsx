@@ -177,6 +177,172 @@ function seatPositions(type: TableType, capacity: number, w: number, h: number):
   return pts
 }
 
+/** אייקונים קוויים נקיים למסך המובייל — במקום אימוג'ים, באותו סגנון של סרגל הצד. */
+type HmIconName =
+  | 'hall'
+  | 'tables'
+  | 'guests'
+  | 'smart'
+  | 'tools'
+  | 'search'
+  | 'plus'
+  | 'round'
+  | 'knights'
+  | 'bar'
+  | 'dance'
+  | 'chuppah'
+  | 'move'
+  | 'edit'
+  | 'save'
+  | 'refresh'
+  | 'copy'
+  | 'trash'
+
+function HmIcon({ name, size = 22 }: { name: HmIconName; size?: number }) {
+  const common = {
+    className: 'hm-icon',
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.7,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  }
+  switch (name) {
+    case 'hall':
+      return (
+        <svg {...common}>
+          <path d="M3 10.5 12 3l9 7.5" />
+          <path d="M5 9.5V21h14V9.5" />
+          <path d="M9.5 21v-6h5v6" />
+        </svg>
+      )
+    case 'tables':
+      return (
+        <svg {...common}>
+          <path d="M7 4v7m10-7v7" />
+          <path d="M6 11h12l-1 5H7z" />
+          <path d="M8 16v4m8-4v4" />
+        </svg>
+      )
+    case 'guests':
+      return (
+        <svg {...common}>
+          <circle cx="9" cy="8" r="3" />
+          <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
+          <path d="M16 6.5a3 3 0 0 1 0 5.8" />
+          <path d="M17.5 20a5.5 5.5 0 0 0-2.5-4.6" />
+        </svg>
+      )
+    case 'smart':
+      return (
+        <svg {...common}>
+          <path d="M12 3.5 13.4 8l4.6 1.4-4.6 1.4L12 15.4 10.6 10.8 6 9.4 10.6 8z" />
+          <path d="M18 15l.7 2.3L21 18l-2.3.7L18 21l-.7-2.3L15 18l2.3-.7z" />
+        </svg>
+      )
+    case 'tools':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" />
+        </svg>
+      )
+    case 'search':
+      return (
+        <svg {...common}>
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+      )
+    case 'plus':
+      return (
+        <svg {...common}>
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      )
+    case 'round':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="7.5" />
+        </svg>
+      )
+    case 'knights':
+      return (
+        <svg {...common}>
+          <rect x="3.5" y="8.5" width="17" height="7" rx="2" />
+        </svg>
+      )
+    case 'bar':
+      return (
+        <svg {...common}>
+          <path d="M5 4h14l-7 8z" />
+          <path d="M12 12v6M8 21h8" />
+        </svg>
+      )
+    case 'dance':
+      return (
+        <svg {...common}>
+          <path d="M9 18V6l10-2v12" />
+          <circle cx="6.5" cy="18" r="2.5" />
+          <circle cx="16.5" cy="16" r="2.5" />
+        </svg>
+      )
+    case 'chuppah':
+      return (
+        <svg {...common}>
+          <path d="M4 21V8a8 8 0 0 1 16 0v13" />
+          <path d="M4 8h16M12 8v13" />
+        </svg>
+      )
+    case 'move':
+      return (
+        <svg {...common}>
+          <path d="M7 8H4l3-3M4 8l3 3" />
+          <path d="M17 16h3l-3-3m3 3-3 3" />
+          <path d="M4 8h13M20 16H7" />
+        </svg>
+      )
+    case 'edit':
+      return (
+        <svg {...common}>
+          <path d="M4 20h4L19 9l-4-4L4 16z" />
+          <path d="m13.5 6.5 4 4" />
+        </svg>
+      )
+    case 'save':
+      return (
+        <svg {...common}>
+          <path d="M5 5h11l3 3v11H5z" />
+          <path d="M8 5v5h7V5M8 19v-5h8v5" />
+        </svg>
+      )
+    case 'refresh':
+      return (
+        <svg {...common}>
+          <path d="M20 12a8 8 0 1 1-2.3-5.6" />
+          <path d="M20 4v4h-4" />
+        </svg>
+      )
+    case 'copy':
+      return (
+        <svg {...common}>
+          <rect x="9" y="9" width="11" height="11" rx="2" />
+          <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+        </svg>
+      )
+    case 'trash':
+      return (
+        <svg {...common}>
+          <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />
+        </svg>
+      )
+  }
+}
+
 export function HallPage() {
   const [tables, setTables] = useState<TableView[]>([])
   const [unassigned, setUnassigned] = useState<HallGuest[]>([])
@@ -1204,7 +1370,9 @@ export function HallPage() {
         {/* ---- פס עליון: כותרת + חיפוש ---- */}
         <div className="hm-topbar">
           <div className="hm-search">
-            <span className="hm-search-icon" aria-hidden="true">🔍</span>
+            <span className="hm-search-icon" aria-hidden="true">
+              <HmIcon name="search" size={18} />
+            </span>
             <input
               type="search"
               value={mobileSearch}
@@ -1394,11 +1562,21 @@ export function HallPage() {
               <div className={`hm-fab-wrap ${fabOpen ? 'open' : ''}`}>
                 {fabOpen && (
                   <div className="hm-fab-menu" onClick={() => setFabOpen(false)}>
-                    <button onClick={() => addTable('round')}>⬤ שולחן עגול</button>
-                    <button onClick={() => addTable('knights')}>▬ שולחן אבירים</button>
-                    <button onClick={() => addElement('bar')}>🥂 בר</button>
-                    <button onClick={() => addElement('dance_floor')}>💃 רחבת ריקודים</button>
-                    <button onClick={() => addElement('head_table', '💒 חופה')}>💒 חופה</button>
+                    <button onClick={() => addTable('round')}>
+                      <HmIcon name="round" size={18} /> שולחן עגול
+                    </button>
+                    <button onClick={() => addTable('knights')}>
+                      <HmIcon name="knights" size={18} /> שולחן אבירים
+                    </button>
+                    <button onClick={() => addElement('bar')}>
+                      <HmIcon name="bar" size={18} /> בר
+                    </button>
+                    <button onClick={() => addElement('dance_floor')}>
+                      <HmIcon name="dance" size={18} /> רחבת ריקודים
+                    </button>
+                    <button onClick={() => addElement('head_table', 'חופה')}>
+                      <HmIcon name="chuppah" size={18} /> חופה
+                    </button>
                   </div>
                 )}
                 <button
@@ -1517,7 +1695,7 @@ export function HallPage() {
                 onClick={onSmartFill}
                 disabled={unassigned.length === 0}
               >
-                ✨ מילוי שולחנות אוטומטי
+                <HmIcon name="smart" size={18} /> מילוי שולחנות אוטומטי
               </button>
 
               {pendingProposal && (
@@ -1562,10 +1740,18 @@ export function HallPage() {
           {mobileTab === 'tools' && (
             <div className="hm-panel">
               <button className="hm-primary-btn" onClick={onSave} disabled={loading || !dirty}>
-                {loading ? 'שומרים…' : dirty ? '💾 שמירת הסידור' : '✓ הכול שמור'}
+                {loading ? (
+                  'שומרים…'
+                ) : dirty ? (
+                  <>
+                    <HmIcon name="save" size={18} /> שמירת הסידור
+                  </>
+                ) : (
+                  'הכול שמור'
+                )}
               </button>
               <button className="hm-ghost-btn" onClick={onRegenerate} disabled={loading}>
-                ↻ סידור מחדש מההתחלה
+                <HmIcon name="refresh" size={18} /> סידור מחדש מההתחלה
               </button>
 
               <div className="hm-tools-group">
@@ -1606,11 +1792,11 @@ export function HallPage() {
         <nav className="hm-tabs" aria-label="ניווט מסך הושבה">
           {(
             [
-              { key: 'hall', icon: '🏠', label: 'אולם' },
-              { key: 'tables', icon: '🪑', label: 'שולחנות' },
-              { key: 'guests', icon: '👥', label: 'מוזמנים' },
-              { key: 'smart', icon: '🤖', label: 'הושבה' },
-              { key: 'tools', icon: '⚙️', label: 'כלים' },
+              { key: 'hall', icon: 'hall', label: 'אולם' },
+              { key: 'tables', icon: 'tables', label: 'שולחנות' },
+              { key: 'guests', icon: 'guests', label: 'מוזמנים' },
+              { key: 'smart', icon: 'smart', label: 'הושבה' },
+              { key: 'tools', icon: 'tools', label: 'כלים' },
             ] as const
           ).map((tab) => (
             <button
@@ -1619,7 +1805,7 @@ export function HallPage() {
               onClick={() => setMobileTab(tab.key)}
             >
               <span className="hm-tab-icon" aria-hidden="true">
-                {tab.icon}
+                <HmIcon name={tab.icon} />
               </span>
               <span className="hm-tab-label">{tab.label}</span>
               {tab.key === 'guests' && visibleUnassigned.length > 0 && (
@@ -1665,7 +1851,7 @@ export function HallPage() {
                           </span>
                           <span className="hm-seated-actions">
                             <button onClick={() => startMove(g.id)} title="העברה לשולחן אחר">
-                              ⇄ העברה
+                              <HmIcon name="move" size={16} /> העברה
                             </button>
                             <button className="danger" onClick={() => moveGuestToTable(g.id, null)} title="הסרה מהשולחן">
                               הסרה
@@ -1685,10 +1871,10 @@ export function HallPage() {
                         closeSheet()
                       }}
                     >
-                      ➕ הוספת מוזמן
+                      <HmIcon name="plus" size={18} /> הוספת מוזמן
                     </button>
                     <button className="hm-ghost-btn" onClick={() => setSheetEdit(true)}>
-                      ✏️ עריכת שולחן
+                      <HmIcon name="edit" size={18} /> עריכת שולחן
                     </button>
                   </div>
                 </>
@@ -1780,7 +1966,7 @@ export function HallPage() {
                         closeSheet()
                       }}
                     >
-                      ⧉ שכפול
+                      <HmIcon name="copy" size={18} /> שכפול
                     </button>
                     <button
                       className="hm-ghost-btn danger"
@@ -1789,7 +1975,7 @@ export function HallPage() {
                         closeSheet()
                       }}
                     >
-                      🗑 מחיקה
+                      <HmIcon name="trash" size={18} /> מחיקה
                     </button>
                   </div>
                 </>
