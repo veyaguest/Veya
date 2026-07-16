@@ -5882,3 +5882,766 @@
     flex-direction: column;
   }
 }
+
+/* ==========================================================================
+   מובייל: חוויית הושבה ייעודית (שכבה נפרדת מהדסקטופ)
+   --------------------------------------------------------------------------
+   שכבה מלאה (position: fixed) שהופכת את מסך ההושבה לעורך ברמת אפליקציה:
+   פס עליון עם חיפוש, לוח אולם ש"נכנס" במלואו למסך (Auto-Fit, בלי גלילה ובלי
+   זום), ניווט תחתון עם 5 מדורים, כפתור הוספה צף (FAB) ו-Bottom Sheet לפרטי
+   שולחן. הכול מוסתר מעל 760px — הדסקטופ נשאר בדיוק כפי שהיה.
+   ה-.hm-tabs יושב מעל הניווט הגלובלי הקבוע (.side-nav, z-index 60), ולכן
+   השכבה נעצרת מעליו כדי לא לכסות אותו — הזוג תמיד יכול לעבור למסך אחר.
+   ========================================================================== */
+@media (max-width: 760px) {
+  .hall-mobile {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    background: var(--ivory);
+    direction: rtl;
+    overscroll-behavior: contain;
+  }
+
+  /* ---- פס עליון + חיפוש ---- */
+  .hm-topbar {
+    position: relative;
+    flex: 0 0 auto;
+    padding: 10px 12px;
+    background: var(--cream);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 2px 10px -6px rgba(43, 38, 32, 0.18);
+  }
+  .hm-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ivory);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0 12px;
+    height: 44px;
+  }
+  .hm-search-icon {
+    font-size: 15px;
+    opacity: 0.6;
+  }
+  .hm-search input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 16px; /* מונע זום-אוטומטי ב-iOS */
+    color: var(--charcoal);
+    outline: none;
+    min-width: 0;
+  }
+  .hm-search input::placeholder {
+    color: var(--muted);
+  }
+  .hm-search-clear {
+    border: none;
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--muted);
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+  }
+  .hm-search-results {
+    position: absolute;
+    inset-inline: 12px;
+    top: calc(100% - 4px);
+    background: var(--cream);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    z-index: 5;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  .hm-search-empty {
+    margin: 0;
+    padding: 16px;
+    color: var(--muted);
+    font-size: 14px;
+    text-align: center;
+  }
+  .hm-search-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+    padding: 12px 14px;
+    border: none;
+    border-bottom: 1px solid var(--line-2);
+    background: transparent;
+    text-align: start;
+    cursor: pointer;
+  }
+  .hm-search-row:last-child {
+    border-bottom: none;
+  }
+  .hm-search-name {
+    font-size: 15px;
+    color: var(--charcoal);
+    font-weight: 600;
+  }
+  .hm-search-loc {
+    font-size: 13px;
+    color: var(--gold-deep);
+    white-space: nowrap;
+  }
+
+  /* ---- אזור התוכן ---- */
+  .hm-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* באנר "מצב העברה" */
+  .hm-move-banner {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(201, 162, 39, 0.14);
+    border-bottom: 1px solid var(--gold-light);
+    color: var(--charcoal);
+    font-size: 14px;
+  }
+  .hm-move-banner.assign {
+    background: rgba(47, 158, 95, 0.12);
+    border-bottom-color: #9fd3b3;
+  }
+  .hm-move-banner button {
+    flex: 0 0 auto;
+    border: 1px solid var(--line);
+    background: var(--cream);
+    color: var(--gold-deep);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* ---- לוח האולם (Auto-Fit) ---- */
+  .hm-canvas {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+    overflow: hidden; /* בלי גלילה ובלי זום — הכול נכנס למסך */
+    background: #fbf6ee;
+    direction: ltr; /* קואורדינטות פנימיות LTR (כמו Figma) */
+    touch-action: none;
+  }
+  .hm-canvas .hall-world {
+    will-change: transform;
+  }
+
+  /* FAB — הוספה מהירה */
+  .hm-fab-wrap {
+    position: absolute;
+    inset-inline-start: 16px;
+    bottom: 16px;
+    z-index: 8;
+    direction: rtl;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .hm-fab {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(160deg, var(--gold-light), var(--gold));
+    color: #fff;
+    font-size: 28px;
+    line-height: 1;
+    box-shadow: 0 8px 20px -6px rgba(154, 123, 46, 0.6);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease;
+  }
+  .hm-fab-wrap.open .hm-fab {
+    transform: rotate(90deg);
+    background: var(--charcoal);
+  }
+  .hm-fab-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: hmFabIn 0.16s ease;
+  }
+  .hm-fab-menu button {
+    border: 1px solid var(--line);
+    background: var(--cream);
+    color: var(--charcoal);
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: var(--shadow-card);
+    cursor: pointer;
+    white-space: nowrap;
+    text-align: start;
+  }
+  @keyframes hmFabIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ---- פאנלים (שולחנות/מוזמנים/חכם/כלים) ---- */
+  .hm-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 14px 14px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hm-panel-head {
+    margin: 4px 2px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .hm-empty {
+    margin: 24px 8px;
+    color: var(--muted);
+    font-size: 14px;
+    text-align: center;
+  }
+
+  /* כרטיס שולחן */
+  .hm-table-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--cream);
+    box-shadow: var(--shadow-card);
+    text-align: start;
+    cursor: pointer;
+  }
+  .hm-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+  .hm-dot.status-green {
+    background: var(--green);
+  }
+  .hm-dot.status-yellow {
+    background: var(--gold);
+  }
+  .hm-dot.status-red {
+    background: var(--error);
+  }
+  .hm-tc-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .hm-tc-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--charcoal);
+  }
+  .hm-tc-sub {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .hm-tc-count {
+    flex: 0 0 auto;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gold-deep);
+    font-variant-numeric: tabular-nums;
+  }
+  .hm-tc-count.over {
+    color: var(--error);
+  }
+
+  /* שורת מוזמן */
+  .hm-guest-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--cream);
+    text-align: start;
+    cursor: pointer;
+  }
+  .hm-guest-row.sel {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.25);
+  }
+  .hm-gr-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .hm-gr-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--charcoal);
+  }
+  .hm-gr-sub {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .hm-gr-cta {
+    flex: 0 0 auto;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gold-deep);
+  }
+
+  /* פאנל חכם */
+  .hm-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .hm-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--cream);
+  }
+  .hm-stat-num {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--gold-deep);
+    font-variant-numeric: tabular-nums;
+  }
+  .hm-stat-lbl {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .hm-primary-btn {
+    border: none;
+    background: linear-gradient(160deg, var(--gold-light), var(--gold));
+    color: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 16px -8px rgba(154, 123, 46, 0.6);
+  }
+  .hm-primary-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+    box-shadow: none;
+  }
+  .hm-ghost-btn {
+    border: 1px solid var(--line);
+    background: var(--cream);
+    color: var(--charcoal);
+    border-radius: 12px;
+    padding: 13px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .hm-ghost-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .hm-ghost-btn.danger {
+    color: var(--error);
+    border-color: #e2c2bf;
+  }
+  .hm-proposal {
+    padding: 14px;
+    border: 1px solid var(--gold-light);
+    border-radius: 14px;
+    background: rgba(201, 162, 39, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hm-proposal-text {
+    margin: 0;
+    font-size: 14px;
+    color: var(--charcoal);
+  }
+  .hm-proposal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .hm-warn {
+    padding: 11px 13px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    border: 1px solid var(--line);
+    background: var(--cream);
+    color: var(--charcoal);
+  }
+  .hm-warn.sev-red {
+    border-color: #e2c2bf;
+    background: rgba(166, 96, 90, 0.08);
+  }
+  .hm-warn.sev-yellow {
+    border-color: var(--gold-light);
+    background: rgba(201, 162, 39, 0.08);
+  }
+  .hm-suggestion {
+    width: 100%;
+    text-align: start;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--cream);
+    color: var(--charcoal);
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .hm-tools-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 6px;
+    margin-top: 6px;
+    border-top: 1px solid var(--line-2);
+  }
+  .hm-tools-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--cream);
+    color: var(--charcoal);
+    font-size: 15px;
+  }
+
+  /* ---- ניווט תחתון (5 מדורים) ---- */
+  .hm-tabs {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    gap: 2px;
+    padding: 6px 4px;
+    background: var(--cream);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -4px 18px -8px rgba(43, 38, 32, 0.16);
+  }
+  .hm-tab {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 2px;
+    border: none;
+    background: transparent;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .hm-tab-icon {
+    font-size: 20px;
+    line-height: 1;
+    filter: grayscale(0.4);
+    opacity: 0.7;
+  }
+  .hm-tab-label {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .hm-tab.active {
+    background: rgba(201, 162, 39, 0.12);
+  }
+  .hm-tab.active .hm-tab-icon {
+    filter: none;
+    opacity: 1;
+  }
+  .hm-tab.active .hm-tab-label {
+    color: var(--gold-deep);
+    font-weight: 700;
+  }
+  .hm-tab-badge {
+    position: absolute;
+    top: 2px;
+    inset-inline-start: 50%;
+    margin-inline-start: 6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--error);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  /* ---- Bottom Sheet ---- */
+  .hm-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 18, 14, 0.42);
+    z-index: 70;
+    animation: hmFade 0.18s ease;
+  }
+  @keyframes hmFade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  .hm-sheet {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 71;
+    background: var(--cream);
+    border-radius: 22px 22px 0 0;
+    padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -10px 40px -12px rgba(20, 18, 14, 0.4);
+    max-height: 82dvh;
+    overflow-y: auto;
+    direction: rtl;
+    animation: hmSheetUp 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes hmSheetUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  .hm-sheet-handle {
+    width: 42px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--line);
+    margin: 6px auto 12px;
+    cursor: pointer;
+  }
+  .hm-sheet-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .hm-sheet-title {
+    margin: 0;
+    font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+    font-size: 20px;
+    color: var(--charcoal);
+  }
+  .hm-sheet-sub {
+    margin: 3px 0 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .hm-sheet-count {
+    flex: 0 0 auto;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gold-deep);
+    font-variant-numeric: tabular-nums;
+  }
+  .hm-sheet-count.over {
+    color: var(--error);
+  }
+  .hm-sheet-back {
+    border: none;
+    background: transparent;
+    color: var(--gold-deep);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .hm-sheet-guests {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .hm-seated-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--ivory);
+  }
+  .hm-seated-name {
+    font-size: 15px;
+    color: var(--charcoal);
+    min-width: 0;
+  }
+  .hm-seated-actions {
+    display: flex;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+  .hm-seated-actions button {
+    border: 1px solid var(--line);
+    background: var(--cream);
+    color: var(--gold-deep);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .hm-seated-actions button.danger {
+    color: var(--error);
+    border-color: #e2c2bf;
+  }
+  .hm-sheet-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  /* עריכת שולחן ב-Sheet */
+  .hm-edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .hm-edit-field label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .hm-edit-field input {
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--ivory);
+    color: var(--charcoal);
+    font-size: 16px;
+  }
+  .hm-type-chips {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .hm-type-chips button {
+    padding: 11px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--cream);
+    color: var(--charcoal);
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .hm-type-chips button.active {
+    border-color: var(--gold);
+    background: rgba(201, 162, 39, 0.12);
+    color: var(--gold-deep);
+    font-weight: 700;
+  }
+  .hm-stepper {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    align-self: flex-start;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 4px;
+    background: var(--cream);
+  }
+  .hm-stepper button {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: var(--ivory);
+    border-radius: 10px;
+    font-size: 22px;
+    color: var(--charcoal);
+    cursor: pointer;
+  }
+  .hm-stepper span {
+    min-width: 40px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--charcoal);
+    font-variant-numeric: tabular-nums;
+  }
+  .hm-colors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .hm-color {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+  }
+  .hm-color.active {
+    border-color: var(--charcoal);
+    box-shadow: 0 0 0 2px #fff inset;
+  }
+  .hm-color.none {
+    background: var(--cream);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 16px;
+  }
+}

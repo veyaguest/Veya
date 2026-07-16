@@ -17,7 +17,7 @@ import type {
   HallState,
   TableType,
 } from '../types'
-import { SIDE_LABELS } from '../types'
+import { GROUP_LABELS, SIDE_LABELS } from '../types'
 import {
   computeSmartFill,
   computeSmartWarnings,
@@ -197,19 +197,41 @@ export function HallPage() {
   // ---- מגש "ללא שולחן" (צד ימין): חיפוש כדי למצוא מוזמן ברשימה ארוכה ----
   const [traySearch, setTraySearch] = useState('')
 
+  // ---- מובייל: חוויית הושבה ייעודית (Auto-Fit, Bottom Sheet, ניווט תחתון) ----
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches,
+  )
+  const isMobileRef = useRef(isMobile)
+  const [mobileTab, setMobileTab] = useState<'hall' | 'tables' | 'guests' | 'smart' | 'tools'>('hall')
+  const [sheetTable, setSheetTable] = useState<number | null>(null)
+  const [sheetEdit, setSheetEdit] = useState(false)
+  // כשמוסיפים מוזמן לשולחן מסוים דרך ה-Bottom Sheet: מעבר ללשונית "מוזמנים"
+  // במצב "שיוך" — כל הקשה על מוזמן משבצת אותו ישירות לשולחן הזה.
+  const [assignTarget, setAssignTarget] = useState<number | null>(null)
+  const [fabOpen, setFabOpen] = useState(false)
+  const [mobileSearch, setMobileSearch] = useState('')
+  const [viewTransform, setViewTransform] = useState<string | undefined>(undefined)
+
   // ---- לוח האולם: בלי זום — תמיד בגודל אמיתי (100%), נגלל באופן טבעי ----
   const viewportRef = useRef<HTMLDivElement | null>(null)
   const worldRef = useRef<HTMLDivElement | null>(null)
 
-  // מיפוי נקודת-מסך → קואורדינטת-לוח: מרחק מפינת המאגר בתוספת מיקום הגלילה
-  // הנוכחי (אין זום, אז אין צורך לחלק בגורם קנה-מידה).
+  // ---- מובייל: התאמת האולם אוטומטית למסך (Fit-to-Screen) ----
+  // בדסקטופ scale=1 והיסט=0, כך שכל החישובים למטה מתנהגים בדיוק כמו קודם.
+  // במובייל הלוח מוקטן וממורכז דרך transform על .hall-world, ולכן צריך
+  // לתרגם נקודת-מגע חזרה לקואורדינטת-לוח לפי קנה-המידה וההיסט.
+  const scaleRef = useRef(1)
+  const offsetRef = useRef({ x: 0, y: 0 })
+
   const toWorld = useCallback((clientX: number, clientY: number) => {
     const vp = viewportRef.current
     if (!vp) return { x: 0, y: 0 }
     const rect = vp.getBoundingClientRect()
+    const s = scaleRef.current || 1
+    const off = offsetRef.current
     return {
-      x: clientX - rect.left + vp.scrollLeft,
-      y: clientY - rect.top + vp.scrollTop,
+      x: (clientX - rect.left + vp.scrollLeft - off.x) / s,
+      y: (clientY - rect.top + vp.scrollTop - off.y) / s,
     }
   }, [])
 
@@ -330,8 +352,92 @@ export function HallPage() {
     loadClarifications()
   }, [load, loadClarifications])
 
-  // אין יותר זום — הלוח נגלל באופן טבעי (גלגלת/מגע רגילים דרך overflow:
-  // auto של המאגר), בלי מאזינים מותאמים-אישית.
+  // ---- מובייל: מעקב אחרי רוחב המסך (matchMedia) ----
+  useEffect(() => {
+    isMobileRef.current = isMobile
+  }, [isMobile])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 760px)')
+    const on = () => setIsMobile(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+
+  // ---- מובייל: Fit-to-Screen — האולם כולו מוקטן וממורכז כדי להיראות במלואו ----
+  // מחשב את תיבת-התוכן (כל השולחנות + האלמנטים) ומקטין/ממרכז אותה לגודל המסך,
+  // בלי גלילה ובלי זום ידני. בדסקטופ הפונקציה יוצאת מיד (scale נשאר 1).
+  const recomputeFit = useCallback(() => {
+    const vp = viewportRef.current
+    if (!isMobileRef.current || !vp) {
+      scaleRef.current = 1
+      offsetRef.current = { x: 0, y: 0 }
+      return
+    }
+    const cw = vp.clientWidth
+    const ch = vp.clientHeight
+    if (cw === 0 || ch === 0) return
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    const pad = 30 // שוליים סביב שולחן (כיסאות/מספר) בקואורדינטות-לוח
+    for (const t of tables) {
+      const { w, h } = tableSize(t.table_type, t.capacity)
+      minX = Math.min(minX, t.x - pad)
+      minY = Math.min(minY, t.y - pad)
+      maxX = Math.max(maxX, t.x + w + pad)
+      maxY = Math.max(maxY, t.y + h + pad)
+    }
+    for (const el of elements) {
+      minX = Math.min(minX, el.x)
+      minY = Math.min(minY, el.y)
+      maxX = Math.max(maxX, el.x + el.width)
+      maxY = Math.max(maxY, el.y + el.height)
+    }
+    if (!isFinite(minX)) {
+      // אין תוכן — פינת הלוח בפינה עליונה, בלי הקטנה.
+      scaleRef.current = 1
+      offsetRef.current = { x: 20, y: 20 }
+      setViewTransform('translate(20px, 20px) scale(1)')
+      return
+    }
+    const margin = 18 // רווח לבן בקצוות המסך (בפיקסלי-מסך)
+    const contentW = Math.max(1, maxX - minX)
+    const contentH = Math.max(1, maxY - minY)
+    const s = clamp(
+      Math.min((cw - margin * 2) / contentW, (ch - margin * 2) / contentH),
+      0.2,
+      1.4,
+    )
+    const ox = (cw - contentW * s) / 2 - minX * s
+    const oy = (ch - contentH * s) / 2 - minY * s
+    scaleRef.current = s
+    offsetRef.current = { x: ox, y: oy }
+    setViewTransform(`translate(${ox}px, ${oy}px) scale(${s})`)
+  }, [tables, elements])
+
+  useEffect(() => {
+    if (!isMobile) {
+      setViewTransform(undefined)
+      scaleRef.current = 1
+      offsetRef.current = { x: 0, y: 0 }
+      return
+    }
+    recomputeFit()
+  }, [isMobile, mobileTab, recomputeFit])
+
+  useEffect(() => {
+    if (!isMobile) return
+    const vp = viewportRef.current
+    if (!vp || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => recomputeFit())
+    ro.observe(vp)
+    return () => ro.disconnect()
+  }, [isMobile, mobileTab, recomputeFit])
+
+  // אין יותר זום בדסקטופ — הלוח נגלל באופן טבעי (גלגלת/מגע רגילים דרך
+  // overflow: auto של המאגר), בלי מאזינים מותאמים-אישית.
 
   // ---- קיצורי מקלדת: Delete למחיקה, Esc לביטול בחירה, Ctrl/Cmd+D לשכפול ----
   useEffect(() => {
@@ -511,9 +617,10 @@ export function HallPage() {
       const y = snapVal(Math.max(0, w.y - drag.dy))
       setElements((prev) => prev.map((el) => (el.id === drag.id ? { ...el, x, y } : el)))
     } else if (drag.kind === 'resize') {
-      // אין זום — תזוזת-מסך שווה ישירות לתזוזת-לוח.
-      const dx = e.clientX - drag.startX
-      const dy = e.clientY - drag.startY
+      // תזוזת-מסך → תזוזת-לוח: בדסקטופ 1:1, במובייל מחולק בקנה-המידה.
+      const s = scaleRef.current || 1
+      const dx = (e.clientX - drag.startX) / s
+      const dy = (e.clientY - drag.startY) / s
       let w = Math.max(40, drag.startW + dx)
       let h = Math.max(30, drag.startH + dy)
       if (drag.lockSquare) {
@@ -562,7 +669,7 @@ export function HallPage() {
   }
 
   // ---- שולחנות: הוספה / שכפול / מחיקה / עדכון שדה ----
-  function addTable() {
+  function addTable(type: TableType = 'round') {
     const rect = viewportRef.current?.getBoundingClientRect()
     const center = toWorld(
       (rect?.left ?? 0) + (rect?.width ?? 400) / 2,
@@ -571,14 +678,14 @@ export function HallPage() {
     const nextNum = nextTableNumRef.current
     nextTableNumRef.current += 1
     const off = nextPlaceOffset()
-    const capacity = defaultCapacityForType('round')
-    const { w, h } = tableSize('round', capacity)
+    const capacity = defaultCapacityForType(type)
+    const { w, h } = tableSize(type, capacity)
     const t: TableView = {
       table_number: nextNum,
       x: Math.max(0, Math.round(center.x - w / 2 + off)),
       y: Math.max(0, Math.round(center.y - h / 2 + off)),
       guests: [],
-      table_type: 'round',
+      table_type: type,
       capacity,
       rotation: 0,
       name: '',
@@ -644,8 +751,10 @@ export function HallPage() {
     updateTable(tnum, { capacity: SEAT_OPTIONS[nextIdx] })
   }
 
-  // ---- אלמנטים (רחבת ריקודים / בר / DJ / כניסה) ----
-  function addElement(type: HallElementType) {
+  // ---- אלמנטים (רחבת ריקודים / בר / DJ / כניסה / חופה) ----
+  // labelOverride מאפשר להוסיף אלמנט עם תווית מותאמת (למשל "חופה") על בסיס
+  // צורת/גודל אלמנט קיים, בלי להוסיף סוג חדש לסכימת השרת.
+  function addElement(type: HallElementType, labelOverride?: string) {
     const def = ELEMENT_DEFS[type]
     const rect = viewportRef.current?.getBoundingClientRect()
     const center = toWorld(
@@ -662,7 +771,7 @@ export function HallPage() {
       height: def.height,
       rotation: 0,
       locked: false,
-      label: def.label,
+      label: labelOverride ?? def.label,
       shape: def.shape,
       // ללא צבע מותאם כברירת מחדל — כך האלמנט מקבל את המראה המעוצב מלוח
       // ההשראה (themed). הצבע נקבע רק כשהזוג בוחר גוון ידני בסרגל.
@@ -806,6 +915,12 @@ export function HallPage() {
     if (movedRef.current) return // זו הייתה גרירה, לא קליק לבחירה
     if (selected !== null) {
       moveGuestToTable(selected, tnum)
+      return
+    }
+    // במובייל: הקשה על שולחן פותחת Bottom Sheet עם כל הפרטים והפעולות.
+    if (isMobileRef.current) {
+      setSheetTable(tnum)
+      setSheetEdit(false)
       return
     }
     setSelectedEl(null)
@@ -1061,6 +1176,631 @@ export function HallPage() {
     setPendingProposal(null)
   }
 
+  // ============================================================
+  // ============  מובייל: חוויית הושבה ייעודית  ================
+  // ============================================================
+  // שכבה נפרדת לגמרי לטלפון (early-return) — הדסקטופ שמתחת נשאר ללא שינוי.
+  // עקרונות: האולם תמיד "נכנס" במלואו למסך (Auto-Fit, בלי גלילה ובלי זום),
+  // הקשה על שולחן פותחת Bottom Sheet, והעברת מוזמן נעשית בהקשה (לא בגרירה).
+  if (isMobile) {
+    const sheetT = sheetTable != null ? tables.find((t) => t.table_number === sheetTable) ?? null : null
+    const q = mobileSearch.trim()
+    const searchResults = q ? smartSearch(q, tables, unassigned) : []
+    const seatedInSheet = sheetT ? sheetT.guests.reduce((s, g) => s + g.seats, 0) : 0
+    const freeInSheet = sheetT ? sheetT.capacity - seatedInSheet : 0
+
+    const closeSheet = () => {
+      setSheetTable(null)
+      setSheetEdit(false)
+    }
+    const startMove = (guestId: number) => {
+      setSelected(guestId)
+      closeSheet()
+      setMobileTab('hall')
+    }
+
+    return (
+      <div className="hall-mobile">
+        {/* ---- פס עליון: כותרת + חיפוש ---- */}
+        <div className="hm-topbar">
+          <div className="hm-search">
+            <span className="hm-search-icon" aria-hidden="true">🔍</span>
+            <input
+              type="search"
+              value={mobileSearch}
+              onChange={(e) => setMobileSearch(e.target.value)}
+              placeholder="חיפוש מוזמן או מספר שולחן"
+              aria-label="חיפוש מוזמן או שולחן"
+            />
+            {q && (
+              <button className="hm-search-clear" onClick={() => setMobileSearch('')} aria-label="ניקוי חיפוש">
+                ×
+              </button>
+            )}
+          </div>
+          {q && (
+            <div className="hm-search-results">
+              {searchResults.length === 0 ? (
+                <p className="hm-search-empty">לא נמצא מוזמן בשם הזה.</p>
+              ) : (
+                searchResults.slice(0, 8).map((r) => (
+                  <button
+                    key={r.guestId}
+                    className="hm-search-row"
+                    onClick={() => {
+                      setMobileSearch('')
+                      if (r.tableNumber != null) {
+                        setSheetTable(r.tableNumber)
+                        setSheetEdit(false)
+                        setMobileTab('hall')
+                      } else {
+                        setSelected(r.guestId)
+                        setMobileTab('hall')
+                      }
+                    }}
+                  >
+                    <span className="hm-search-name">{r.fullName}</span>
+                    <span className="hm-search-loc">
+                      {r.tableNumber != null ? `שולחן ${r.tableNumber}` : 'ללא שולחן'}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ---- אזור התוכן המתחלף לפי הלשונית ---- */}
+        <div className="hm-body">
+          {/* באנר "מצב העברה" — פעיל בכל הלשוניות כשנבחר מוזמן להעברה */}
+          {selected !== null && (
+            <div className="hm-move-banner">
+              <span>נבחר מוזמן להעברה — הקישו על שולחן כדי לשבץ אותו.</span>
+              <button onClick={() => setSelected(null)}>ביטול</button>
+            </div>
+          )}
+          {assignTarget !== null && mobileTab === 'guests' && (
+            <div className="hm-move-banner assign">
+              <span>בחרו מוזמן לשיבוץ לשולחן {assignTarget}.</span>
+              <button onClick={() => setAssignTarget(null)}>ביטול</button>
+            </div>
+          )}
+
+          {/* ===== לשונית: אולם ===== */}
+          {mobileTab === 'hall' && (
+            <div
+              className="hm-canvas"
+              ref={viewportRef}
+              onPointerMove={onCanvasPointerMove}
+              onPointerUp={onCanvasPointerUp}
+              onPointerLeave={onCanvasPointerUp}
+            >
+              <div
+                className="hall-world"
+                ref={worldRef}
+                style={{ width: WORLD_W, height: WORLD_H, transform: viewTransform, transformOrigin: '0 0' }}
+              >
+                {sketch && (
+                  <div className="hall-sketch-bg" style={{ backgroundImage: `url(${sketch})` }} aria-hidden="true" />
+                )}
+                {tables.length === 0 && elements.length === 0 && (
+                  <p className="hall-empty">אין עדיין שולחנות. הקישו על ➕ כדי להוסיף שולחן.</p>
+                )}
+
+                {/* אלמנטים (רחבה/בר/DJ/חופה) — לתצוגה בלבד במובייל */}
+                {elements.map((el) => {
+                  const color = el.color || ELEMENT_DEFS[el.type]?.color || '#7fb3e0'
+                  const radius =
+                    el.shape === 'circle' || el.shape === 'ellipse' ? '50%' : el.shape === 'square' ? '16px' : '12px'
+                  const hasCustom = !!el.color
+                  return (
+                    <div
+                      key={el.id}
+                      className={`hall-element el-${el.type} ${hasCustom ? '' : 'themed'}`}
+                      style={{
+                        left: el.x,
+                        top: el.y,
+                        width: el.width,
+                        height: el.height,
+                        transform: `rotate(${el.rotation}deg)`,
+                        borderRadius: radius,
+                        ...(hasCustom ? { background: `${color}26`, borderColor: color } : {}),
+                      }}
+                    >
+                      <span className="element-label" style={hasCustom ? { color } : undefined}>
+                        {el.label}
+                      </span>
+                    </div>
+                  )
+                })}
+
+                {/* שולחנות — הקשה פותחת Bottom Sheet, לחיצה ארוכה/גרירה מזיזה */}
+                {tables.map((t) => {
+                  const used = t.guests.reduce((s, g) => s + g.seats, 0)
+                  const over = used > t.capacity
+                  const { w, h } = tableSize(t.table_type, t.capacity)
+                  const color = t.color || TABLE_TYPE_DEFAULT_COLOR[t.table_type]
+                  const seatCount = Math.max(t.capacity, used, 1)
+                  const pts = seatPositions(t.table_type, seatCount, w, h)
+                  const occupiedPoints = new Set<number>()
+                  {
+                    let idx = 0
+                    for (const g of t.guests) {
+                      for (let k = 0; k < Math.max(1, g.seats); k++) occupiedPoints.add(idx + k)
+                      idx += Math.max(1, g.seats)
+                    }
+                  }
+                  const status = tableStatus.get(t.table_number) ?? 'green'
+                  const hasCustomColor = !!t.color
+                  let bodyBg = `${color}33`
+                  let bodyBorder = color
+                  if (!hasCustomColor && status === 'green' && !over) {
+                    if (used >= t.capacity) {
+                      bodyBg = 'linear-gradient(160deg,#E9DCB3,#C9A227)'
+                      bodyBorder = '#FFFFFF'
+                    } else if (t.capacity > 0 && used / t.capacity >= 0.8) {
+                      bodyBg = 'linear-gradient(160deg,#F4EEE0,#D9CBA6)'
+                      bodyBorder = '#FFFFFF'
+                    } else {
+                      bodyBg = '#FFFFFF'
+                      bodyBorder = '#E5DEC9'
+                    }
+                  }
+                  return (
+                    <div
+                      key={t.table_number}
+                      data-tnum={t.table_number}
+                      className={`hall-table ${over ? 'over' : ''} ${selected !== null ? 'droppable' : ''}`}
+                      style={{ left: t.x, top: t.y, width: w }}
+                      onClick={(e) => onTableClick(e, t.table_number)}
+                    >
+                      <span className={`table-status-dot status-${status}`} />
+                      <div
+                        className={`table-graphic type-${t.table_type}`}
+                        style={{
+                          width: w,
+                          height: h,
+                          transform: `rotate(${t.rotation}deg)`,
+                          background: bodyBg,
+                          borderColor: bodyBorder,
+                        }}
+                        onPointerDown={(e) => onTablePointerDown(e, t.table_number)}
+                      >
+                        <span className="seat-layer" aria-hidden="true">
+                          {pts.map((p, i) => (
+                            <span
+                              key={i}
+                              className={`seat-pip ${occupiedPoints.has(i) ? 'seat-taken' : ''} ${
+                                i >= t.capacity ? 'seat-extra' : ''
+                              }`}
+                              style={{ left: p.left, top: p.top }}
+                            />
+                          ))}
+                        </span>
+                        <span className="table-center">
+                          <span className="table-num">{t.table_number}</span>
+                          {t.name && <span className="table-name">{t.name}</span>}
+                          <span className="table-occ">
+                            {used}/{t.capacity}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* FAB — הוספה מהירה */}
+              <div className={`hm-fab-wrap ${fabOpen ? 'open' : ''}`}>
+                {fabOpen && (
+                  <div className="hm-fab-menu" onClick={() => setFabOpen(false)}>
+                    <button onClick={() => addTable('round')}>⬤ שולחן עגול</button>
+                    <button onClick={() => addTable('knights')}>▬ שולחן אבירים</button>
+                    <button onClick={() => addElement('bar')}>🥂 בר</button>
+                    <button onClick={() => addElement('dance_floor')}>💃 רחבת ריקודים</button>
+                    <button onClick={() => addElement('head_table', '💒 חופה')}>💒 חופה</button>
+                  </div>
+                )}
+                <button
+                  className="hm-fab"
+                  onClick={() => setFabOpen((v) => !v)}
+                  aria-label={fabOpen ? 'סגירת תפריט הוספה' : 'הוספה'}
+                >
+                  {fabOpen ? '×' : '＋'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ===== לשונית: שולחנות ===== */}
+          {mobileTab === 'tables' && (
+            <div className="hm-panel">
+              {tables.length === 0 ? (
+                <p className="hm-empty">עדיין אין שולחנות. הוסיפו שולחן מלשונית "אולם".</p>
+              ) : (
+                [...tables]
+                  .sort((a, b) => a.table_number - b.table_number)
+                  .map((t) => {
+                    const used = t.guests.reduce((s, g) => s + g.seats, 0)
+                    const status = tableStatus.get(t.table_number) ?? 'green'
+                    return (
+                      <button
+                        key={t.table_number}
+                        className="hm-table-card"
+                        onClick={() => {
+                          setSheetTable(t.table_number)
+                          setSheetEdit(false)
+                          setMobileTab('hall')
+                        }}
+                      >
+                        <span className={`hm-dot status-${status}`} />
+                        <span className="hm-tc-main">
+                          <span className="hm-tc-title">
+                            שולחן {t.table_number}
+                            {t.name ? ` · ${t.name}` : ''}
+                          </span>
+                          <span className="hm-tc-sub">{TABLE_TYPE_LABELS[t.table_type]}</span>
+                        </span>
+                        <span className={`hm-tc-count ${used > t.capacity ? 'over' : ''}`}>
+                          {used}/{t.capacity}
+                        </span>
+                      </button>
+                    )
+                  })
+              )}
+            </div>
+          )}
+
+          {/* ===== לשונית: מוזמנים (ללא שולחן) ===== */}
+          {mobileTab === 'guests' && (
+            <div className="hm-panel">
+              <p className="hm-panel-head">
+                ללא שולחן: {visibleUnassigned.length}
+                {assignTarget !== null ? ` · הקישו לשיבוץ לשולחן ${assignTarget}` : ' · הקישו כדי לשבץ'}
+              </p>
+              {visibleUnassigned.length === 0 ? (
+                <p className="hm-empty">כל המוזמנים כבר משובצים. יופי! 🎉</p>
+              ) : (
+                visibleUnassigned.map((g) => (
+                  <button
+                    key={g.id}
+                    className={`hm-guest-row ${selected === g.id ? 'sel' : ''}`}
+                    onClick={() => {
+                      if (assignTarget !== null) {
+                        moveGuestToTable(g.id, assignTarget)
+                        setAssignTarget(null)
+                        setMobileTab('hall')
+                      } else {
+                        setSelected(g.id)
+                        setMobileTab('hall')
+                      }
+                    }}
+                  >
+                    <span className="hm-gr-main">
+                      <span className="hm-gr-name">{g.full_name}</span>
+                      <span className="hm-gr-sub">
+                        {GROUP_LABELS[g.group_type]} · {SIDE_LABELS[g.side]}
+                        {g.seats > 1 ? ` · ${g.seats} מקומות` : ''}
+                      </span>
+                    </span>
+                    <span className="hm-gr-cta">שיבוץ ›</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* ===== לשונית: הושבה חכמה ===== */}
+          {mobileTab === 'smart' && (
+            <div className="hm-panel">
+              <div className="hm-stats">
+                <div className="hm-stat">
+                  <span className="hm-stat-num">{smartStats.seatedPeople}</span>
+                  <span className="hm-stat-lbl">משובצים</span>
+                </div>
+                <div className="hm-stat">
+                  <span className="hm-stat-num">{smartStats.unseatedPeople}</span>
+                  <span className="hm-stat-lbl">ללא שולחן</span>
+                </div>
+                <div className="hm-stat">
+                  <span className="hm-stat-num">{smartStats.numTables}</span>
+                  <span className="hm-stat-lbl">שולחנות</span>
+                </div>
+                <div className="hm-stat">
+                  <span className="hm-stat-num">{smartStats.freeSeats}</span>
+                  <span className="hm-stat-lbl">מקומות פנויים</span>
+                </div>
+              </div>
+
+              <button
+                className="hm-primary-btn"
+                onClick={onSmartFill}
+                disabled={unassigned.length === 0}
+              >
+                ✨ מילוי שולחנות אוטומטי
+              </button>
+
+              {pendingProposal && (
+                <div className="hm-proposal">
+                  <p className="hm-proposal-text">{pendingProposal.text}</p>
+                  <div className="hm-proposal-actions">
+                    <button className="hm-primary-btn" onClick={onConfirmProposal}>
+                      אישור
+                    </button>
+                    <button className="hm-ghost-btn" onClick={onCancelProposal}>
+                      ביטול
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {smartWarnings.length > 0 && (
+                <div className="hm-warnings">
+                  <p className="hm-panel-head">שווה לשים לב</p>
+                  {smartWarnings.slice(0, 6).map((w, i) => (
+                    <div key={i} className={`hm-warn sev-${w.severity}`}>
+                      {w.text}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {smartSuggestions.length > 0 && (
+                <div className="hm-suggestions">
+                  <p className="hm-panel-head">הצעות לשיפור</p>
+                  {smartSuggestions.slice(0, 5).map((s, i) => (
+                    <button key={i} className="hm-suggestion" onClick={() => onProposeSuggestion(s)}>
+                      {s.text}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== לשונית: כלים ===== */}
+          {mobileTab === 'tools' && (
+            <div className="hm-panel">
+              <button className="hm-primary-btn" onClick={onSave} disabled={loading || !dirty}>
+                {loading ? 'שומרים…' : dirty ? '💾 שמירת הסידור' : '✓ הכול שמור'}
+              </button>
+              <button className="hm-ghost-btn" onClick={onRegenerate} disabled={loading}>
+                ↻ סידור מחדש מההתחלה
+              </button>
+
+              <div className="hm-tools-group">
+                <p className="hm-panel-head">רקע האולם (סקיצה)</p>
+                {sketch ? (
+                  <button className="hm-ghost-btn" onClick={removeSketch}>
+                    הסרת הסקיצה
+                  </button>
+                ) : (
+                  <button className="hm-ghost-btn" onClick={() => sketchInputRef.current?.click()}>
+                    העלאת סקיצת אולם
+                  </button>
+                )}
+                <input
+                  ref={sketchInputRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={onPickSketch}
+                />
+              </div>
+
+              <div className="hm-tools-group">
+                <p className="hm-panel-head">מקומות ברירת מחדל לשולחן</p>
+                <select value={seats} onChange={(e) => setSeats(Number(e.target.value))}>
+                  {SEAT_OPTIONS.map((n) => (
+                    <option key={n} value={n}>
+                      {n} מקומות
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ---- ניווט תחתון (5 מדורים) ---- */}
+        <nav className="hm-tabs" aria-label="ניווט מסך הושבה">
+          {(
+            [
+              { key: 'hall', icon: '🏠', label: 'אולם' },
+              { key: 'tables', icon: '🪑', label: 'שולחנות' },
+              { key: 'guests', icon: '👥', label: 'מוזמנים' },
+              { key: 'smart', icon: '🤖', label: 'הושבה' },
+              { key: 'tools', icon: '⚙️', label: 'כלים' },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              className={`hm-tab ${mobileTab === tab.key ? 'active' : ''}`}
+              onClick={() => setMobileTab(tab.key)}
+            >
+              <span className="hm-tab-icon" aria-hidden="true">
+                {tab.icon}
+              </span>
+              <span className="hm-tab-label">{tab.label}</span>
+              {tab.key === 'guests' && visibleUnassigned.length > 0 && (
+                <span className="hm-tab-badge">{visibleUnassigned.length}</span>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        {/* ---- Bottom Sheet: פרטי שולחן ---- */}
+        {sheetT && (
+          <>
+            <div className="hm-sheet-backdrop" onClick={closeSheet} />
+            <div className="hm-sheet" role="dialog" aria-label={`שולחן ${sheetT.table_number}`}>
+              <div className="hm-sheet-handle" onClick={closeSheet} />
+
+              {!sheetEdit ? (
+                <>
+                  <div className="hm-sheet-head">
+                    <div>
+                      <h3 className="hm-sheet-title">
+                        שולחן {sheetT.table_number}
+                        {sheetT.name ? ` · ${sheetT.name}` : ''}
+                      </h3>
+                      <p className="hm-sheet-sub">
+                        {TABLE_TYPE_LABELS[sheetT.table_type]} · {freeInSheet > 0 ? `${freeInSheet} מקומות פנויים` : 'מלא'}
+                      </p>
+                    </div>
+                    <span className={`hm-sheet-count ${seatedInSheet > sheetT.capacity ? 'over' : ''}`}>
+                      {seatedInSheet}/{sheetT.capacity}
+                    </span>
+                  </div>
+
+                  <div className="hm-sheet-guests">
+                    {sheetT.guests.length === 0 ? (
+                      <p className="hm-empty">אין עדיין מוזמנים בשולחן הזה.</p>
+                    ) : (
+                      sheetT.guests.map((g) => (
+                        <div key={g.id} className="hm-seated-row">
+                          <span className="hm-seated-name">
+                            {g.full_name}
+                            {g.seats > 1 ? ` (${g.seats})` : ''}
+                          </span>
+                          <span className="hm-seated-actions">
+                            <button onClick={() => startMove(g.id)} title="העברה לשולחן אחר">
+                              ⇄ העברה
+                            </button>
+                            <button className="danger" onClick={() => moveGuestToTable(g.id, null)} title="הסרה מהשולחן">
+                              הסרה
+                            </button>
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="hm-sheet-actions">
+                    <button
+                      className="hm-primary-btn"
+                      onClick={() => {
+                        setAssignTarget(sheetT.table_number)
+                        setMobileTab('guests')
+                        closeSheet()
+                      }}
+                    >
+                      ➕ הוספת מוזמן
+                    </button>
+                    <button className="hm-ghost-btn" onClick={() => setSheetEdit(true)}>
+                      ✏️ עריכת שולחן
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="hm-sheet-head">
+                    <h3 className="hm-sheet-title">עריכת שולחן {sheetT.table_number}</h3>
+                    <button className="hm-sheet-back" onClick={() => setSheetEdit(false)}>
+                      › חזרה
+                    </button>
+                  </div>
+
+                  <div className="hm-edit-field">
+                    <label>מספר שולחן</label>
+                    <input
+                      type="number"
+                      defaultValue={sheetT.table_number}
+                      key={sheetT.table_number}
+                      onBlur={(e) => renumberTable(sheetT.table_number, e.target.value)}
+                    />
+                  </div>
+
+                  <div className="hm-edit-field">
+                    <label>שם (אופציונלי)</label>
+                    <input
+                      type="text"
+                      value={sheetT.name}
+                      placeholder="למשל: משפחת הכלה"
+                      onChange={(e) => updateTable(sheetT.table_number, { name: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="hm-edit-field">
+                    <label>סוג שולחן</label>
+                    <div className="hm-type-chips">
+                      {(Object.keys(TABLE_TYPE_LABELS) as TableType[]).map((tt) => (
+                        <button
+                          key={tt}
+                          className={sheetT.table_type === tt ? 'active' : ''}
+                          onClick={() =>
+                            updateTable(sheetT.table_number, {
+                              table_type: tt,
+                              capacity: defaultCapacityForType(tt),
+                            })
+                          }
+                        >
+                          {TABLE_TYPE_LABELS[tt]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="hm-edit-field">
+                    <label>מספר מקומות</label>
+                    <div className="hm-stepper">
+                      <button onClick={() => bumpCapacity(sheetT.table_number, -1)}>−</button>
+                      <span>{sheetT.capacity}</span>
+                      <button onClick={() => bumpCapacity(sheetT.table_number, 1)}>+</button>
+                    </div>
+                  </div>
+
+                  <div className="hm-edit-field">
+                    <label>צבע</label>
+                    <div className="hm-colors">
+                      {TABLE_COLORS.map((c) => (
+                        <button
+                          key={c}
+                          className={`hm-color ${sheetT.color === c ? 'active' : ''}`}
+                          style={{ background: c }}
+                          onClick={() => updateTable(sheetT.table_number, { color: c })}
+                          aria-label="בחירת צבע"
+                        />
+                      ))}
+                      <button
+                        className={`hm-color none ${sheetT.color === '' ? 'active' : ''}`}
+                        onClick={() => updateTable(sheetT.table_number, { color: '' })}
+                        aria-label="בלי צבע"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="hm-sheet-actions">
+                    <button
+                      className="hm-ghost-btn"
+                      onClick={() => {
+                        duplicateTable(sheetT.table_number)
+                        closeSheet()
+                      }}
+                    >
+                      ⧉ שכפול
+                    </button>
+                    <button
+                      className="hm-ghost-btn danger"
+                      onClick={() => {
+                        deleteTable(sheetT.table_number)
+                        closeSheet()
+                      }}
+                    >
+                      🗑 מחיקה
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="hall-page">
       {/* ---- אילוצים מההערות (לפני השיבוץ) ---- */}
@@ -1118,7 +1858,7 @@ export function HallPage() {
       </div>
 
       <div className="hall-toolbar">
-        <button className="btn-primary btn-add-table" onClick={addTable}>
+        <button className="btn-primary btn-add-table" onClick={() => addTable()}>
           ➕ הוסף שולחן
         </button>
         <label className="seats-field" title="מספר מקומות ברירת מחדל לשולחן חדש ולסידור ההושבה">
