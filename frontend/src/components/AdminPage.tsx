@@ -47,7 +47,7 @@ const ACTION_LABELS: Record<string, string> = {
 }
 
 /** טופס יצירת חשבון מפיק/אולם — לתפקידים אלו אין הרשמה עצמאית. */
-function CreateAccountForm({ onCreated }: { onCreated: () => void }) {
+export function CreateAccountForm({ onCreated }: { onCreated: () => void }) {
   const [email, setEmail] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [accountType, setAccountType] = useState<'planner' | 'venue'>('planner')
@@ -396,7 +396,7 @@ function VeyaStepCard({
 }
 
 /** ניהול ברירות המחדל הגלובליות של VEYA — ספריית תבניות + המסלול הקבוע. */
-function VeyaDefaultsManager() {
+export function VeyaDefaultsManager() {
   const [templates, setTemplates] = useState<VeyaTemplate[] | null>(null)
   const [workflow, setWorkflow] = useState<VeyaWorkflowStep[] | null>(null)
   const [error, setError] = useState<string | null>(null)

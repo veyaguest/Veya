@@ -464,6 +464,40 @@ export interface AdminAccountCreateResult {
   temporary_password: string
 }
 
+// ---- לוח הבקרה של האדמין ----
+
+export interface AdminDashboardEvent {
+  id: number
+  couple: string
+  venue_name: string
+  owner_email: string | null
+  event_date: string
+  guests_count: number
+  days_until: number | null
+}
+
+export interface AdminDashboardPoint {
+  label: string
+  count: number
+}
+
+export interface AdminDashboardAlert {
+  level: string
+  text: string
+}
+
+export interface AdminDashboard {
+  total_events: number
+  upcoming_events: number
+  total_users: number
+  total_venues: number
+  total_guests: number
+  whatsapp_sent: number
+  recent_events: AdminDashboardEvent[]
+  signups: AdminDashboardPoint[]
+  alerts: AdminDashboardAlert[]
+}
+
 // ---- שיתוף גישה לאירוע (מפיק/אולם) ----
 
 export const PLANNER_PERMISSIONS = [

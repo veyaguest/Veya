@@ -5,6 +5,8 @@
 יקבל 403.
 """
 import secrets
+from datetime import date, datetime, timedelta
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, select
@@ -15,6 +17,151 @@ from app.auth import get_current_admin
 from app.database import get_db
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+def _parse_event_date(value: str) -> Optional[date]:
+    """מנסה לפרש 'YYYY-MM-DD'; מחזיר None אם ריק/לא תקין (לא מפיל את הבקשה)."""
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value[:10], "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return None
+
+
+@router.get("/dashboard", response_model=schemas.AdminDashboard)
+def admin_dashboard(
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """סקירת מערכת ללוח הבקרה של האדמין — מונים אמיתיים, אירועים אחרונים,
+    גרף הרשמות לפי יום, והתראות נגזרות. נתונים בלבד; שום פעולה משנה.
+    """
+    today = date.today()
+    today_str = today.isoformat()
+
+    total_events = db.scalar(select(func.count(models.Event.id))) or 0
+    total_users = db.scalar(select(func.count(models.User.id))) or 0
+    total_venues = db.scalar(select(func.count(models.Venue.id))) or 0
+    total_guests = db.scalar(select(func.count(models.Guest.id))) or 0
+    whatsapp_sent = (
+        db.scalar(
+            select(func.count(models.Message.id)).where(
+                models.Message.direction == "outbound",
+                models.Message.channel == "whatsapp",
+            )
+        )
+        or 0
+    )
+    # אירועים עתידיים — תאריך לא ריק וגדול/שווה להיום (השוואת מחרוזות ISO תקינה).
+    upcoming_events = (
+        db.scalar(
+            select(func.count(models.Event.id)).where(
+                models.Event.event_date >= today_str,
+                models.Event.event_date != "",
+            )
+        )
+        or 0
+    )
+
+    # --- האירועים האחרונים (8) עם בעלים וספירת מוזמנים ---
+    guests_by_event = dict(
+        db.execute(
+            select(models.Guest.event_id, func.count(models.Guest.id)).group_by(
+                models.Guest.event_id
+            )
+        ).all()
+    )
+    emails = {u.id: u.email for u in db.scalars(select(models.User)).all()}
+    recent = db.scalars(
+        select(models.Event).order_by(models.Event.id.desc()).limit(8)
+    ).all()
+    recent_events = []
+    for e in recent:
+        couple = " · ".join([n for n in (e.groom_name, e.bride_name) if n]) or "—"
+        ed = _parse_event_date(e.event_date)
+        days_until = (ed - today).days if ed and ed >= today else None
+        recent_events.append(
+            schemas.AdminDashboardEvent(
+                id=e.id,
+                couple=couple,
+                venue_name=e.venue_name or "",
+                owner_email=emails.get(e.owner_id) if e.owner_id else None,
+                event_date=e.event_date or "",
+                guests_count=guests_by_event.get(e.id, 0),
+                days_until=days_until,
+            )
+        )
+
+    # --- גרף הרשמות ל-14 הימים האחרונים ---
+    window_days = 14
+    start = today - timedelta(days=window_days - 1)
+    counts: dict[date, int] = {}
+    users = db.scalars(
+        select(models.User).where(models.User.created_at >= datetime(start.year, start.month, start.day))
+    ).all()
+    for u in users:
+        if u.created_at:
+            d = u.created_at.date()
+            counts[d] = counts.get(d, 0) + 1
+    signups = [
+        schemas.AdminDashboardPoint(
+            label=(start + timedelta(days=i)).strftime("%d/%m"),
+            count=counts.get(start + timedelta(days=i), 0),
+        )
+        for i in range(window_days)
+    ]
+
+    # --- התראות נגזרות ---
+    alerts: list[schemas.AdminDashboardAlert] = []
+    events_no_date = (
+        db.scalar(
+            select(func.count(models.Event.id)).where(models.Event.event_date == "")
+        )
+        or 0
+    )
+    if events_no_date:
+        alerts.append(
+            schemas.AdminDashboardAlert(
+                level="warn",
+                text=f"{events_no_date} אירועים בלי תאריך שנקבע",
+            )
+        )
+    # אירועים בשבוע הקרוב.
+    soon_str = (today + timedelta(days=7)).isoformat()
+    events_this_week = (
+        db.scalar(
+            select(func.count(models.Event.id)).where(
+                models.Event.event_date >= today_str,
+                models.Event.event_date <= soon_str,
+                models.Event.event_date != "",
+            )
+        )
+        or 0
+    )
+    if events_this_week:
+        alerts.append(
+            schemas.AdminDashboardAlert(
+                level="info",
+                text=f"{events_this_week} אירועים בשבוע הקרוב",
+            )
+        )
+    if not alerts:
+        alerts.append(
+            schemas.AdminDashboardAlert(level="info", text="הכול תקין — אין התראות פתוחות")
+        )
+
+    return schemas.AdminDashboard(
+        total_events=total_events,
+        upcoming_events=upcoming_events,
+        total_users=total_users,
+        total_venues=total_venues,
+        total_guests=total_guests,
+        whatsapp_sent=whatsapp_sent,
+        recent_events=recent_events,
+        signups=signups,
+        alerts=alerts,
+    )
 
 
 @router.get("/users", response_model=list[schemas.AdminUserRow])

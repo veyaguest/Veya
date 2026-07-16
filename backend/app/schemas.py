@@ -609,6 +609,49 @@ class AdminAccountCreateResult(BaseModel):
     temporary_password: str
 
 
+# ---- לוח הבקרה של האדמין (סקירת מערכת) ----
+
+
+class AdminDashboardEvent(BaseModel):
+    """אירוע בתצוגת "האירועים האחרונים" בלוח הבקרה."""
+
+    id: int
+    couple: str                    # "חתן · כלה"
+    venue_name: str
+    owner_email: Optional[str]
+    event_date: str                # YYYY-MM-DD (יכול להיות ריק)
+    guests_count: int
+    days_until: Optional[int]      # ימים עד האירוע; None אם אין תאריך/עבר
+
+
+class AdminDashboardPoint(BaseModel):
+    """נקודה בגרף הרשמות לפי יום."""
+
+    label: str                     # DD/MM
+    count: int
+
+
+class AdminDashboardAlert(BaseModel):
+    """התראת מערכת נגזרת (לא קריטית — עזרה לאדמין לשים לב)."""
+
+    level: str                     # info / warn
+    text: str
+
+
+class AdminDashboard(BaseModel):
+    """כל הנתונים ללוח הבקרה של האדמין במסך אחד."""
+
+    total_events: int
+    upcoming_events: int
+    total_users: int
+    total_venues: int
+    total_guests: int
+    whatsapp_sent: int
+    recent_events: list[AdminDashboardEvent]
+    signups: list[AdminDashboardPoint]
+    alerts: list[AdminDashboardAlert]
+
+
 # ---- שיתוף גישה לאירוע (מפיק/אולם) ----
 
 # הרשאות אפשריות לפי תפקיד — משמש גם לוולידציה בצד השרת וגם לתצוגה בפרונט.

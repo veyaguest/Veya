@@ -1,5 +1,6 @@
 import type {
   AdminAccountCreateResult,
+  AdminDashboard,
   AdminEventRow,
   AdminUserRow,
   AnalyzeResult,
@@ -204,6 +205,12 @@ export async function deleteMyEvent(id: number): Promise<void> {
 }
 
 // ---- פאנל אדמין ----
+
+export async function adminDashboard(): Promise<AdminDashboard> {
+  const res = await apiFetch('/admin/dashboard')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
 
 export async function adminListUsers(): Promise<AdminUserRow[]> {
   const res = await apiFetch('/admin/users')

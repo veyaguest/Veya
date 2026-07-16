@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import { getMe, healthCheck, listMyEvents } from './api'
 import { clearAuth, getEventId, getToken, setEventId } from './authStore'
-import { AdminPage } from './components/AdminPage'
+import { AdminApp } from './components/AdminApp'
 import { AuthPage } from './components/AuthPage'
 import { DashboardPage } from './components/DashboardPage'
 import { EventMembersDialog } from './components/EventMembersDialog'
@@ -13,14 +13,13 @@ import { ProfileDialog } from './components/ProfileDialog'
 import { RsvpPage } from './components/RsvpPage'
 import type { EventSummary, User } from './types'
 
-type Page = 'dashboard' | 'guests' | 'rsvp' | 'hall' | 'admin'
+type Page = 'dashboard' | 'guests' | 'rsvp' | 'hall'
 
 const PAGE_TITLES: Record<Page, string> = {
   dashboard: 'סקירה כללית',
   guests: 'ניהול מוזמנים',
   rsvp: 'אישורי הגעה',
   hall: 'מפת אולם והושבה',
-  admin: 'ניהול המערכת',
 }
 
 // label — הטקסט המלא בסרגל הצד (דסקטופ); short — טקסט קצר לניווט התחתון בטלפון.
@@ -77,13 +76,6 @@ function NavIcon({ page }: { page: Page }) {
           <circle cx="17" cy="8" r="2.4" />
           <circle cx="12" cy="17" r="2.4" />
           <path d="M4 20h16" />
-        </svg>
-      )
-    case 'admin':
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" />
         </svg>
       )
   }
@@ -178,6 +170,11 @@ function App() {
     return <AuthPage onAuth={handleAuth} />
   }
 
+  // אדמין → פאנל ניהול מלא ונפרד (לא נכנס למסלול יצירת אירוע של זוג).
+  if (user.is_admin) {
+    return <AdminApp user={user} onLogout={handleLogout} />
+  }
+
   // מחובר אבל אין עדיין אירוע.
   if (events.length === 0) {
     // מפיק/אולם לא יוצרים אירוע בעצמם — הם מחכים שבעל אירוע יזמין אותם.
@@ -197,9 +194,7 @@ function App() {
     return <OnboardingWizard onCreated={handleEventCreated} />
   }
 
-  const navItems: { key: Page; label: string; short: string }[] = user.is_admin
-    ? [...NAV_ITEMS, { key: 'admin', label: 'ניהול', short: 'ניהול' }]
-    : NAV_ITEMS
+  const navItems = NAV_ITEMS
 
   const activeEvent = events.find((e) => e.id === activeEventId) ?? null
   const eventLabel = activeEvent
@@ -274,7 +269,6 @@ function App() {
           {page === 'guests' && <GuestsPage />}
           {page === 'rsvp' && <RsvpPage isAdmin={user.is_admin} />}
           {page === 'hall' && <HallPage />}
-          {page === 'admin' && <AdminPage />}
         </main>
       </div>
 
