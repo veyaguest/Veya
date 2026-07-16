@@ -7,19 +7,14 @@ import { computeReadiness, type ReadinessPage } from '../readiness'
 import { ReadinessMeter } from './ReadinessMeter'
 import { PrepWizard } from './PrepWizard'
 import { VenueAutocomplete } from './VenueAutocomplete'
+import { strings } from '../strings/he'
 
 interface Props {
   // ניווט למסך אחר (מוזמנים / מפת אולם) — עבור אשף ההכנה ומדד המוכנות.
   onNavigate?: (page: ReadinessPage) => void
 }
 
-const AUDIT_LABELS: Record<string, string> = {
-  send_invitations: 'שליחת הזמנות',
-  send_reminders: 'שליחת תזכורות',
-  update_event: 'עדכון פרטי אירוע',
-  confirm_submit: 'אישור הגעה מהקישור',
-  confirm_invalid_token: '⚠ ניסיון גישה לקישור לא תקין',
-}
+const t = strings.dashboard
 
 export function DashboardPage({ onNavigate }: Props) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -59,7 +54,7 @@ export function DashboardPage({ onNavigate }: Props) {
       })
       setCommitLocked(e.venue_commit_locked)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון כרגע, ננסה שוב')
+      setError(err instanceof Error ? err.message : t.loadError)
     }
   }, [])
 
@@ -88,7 +83,7 @@ export function DashboardPage({ onNavigate }: Props) {
       setEditing(false)
       await refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור את הפרטים, נסו שוב')
+      setError(err instanceof Error ? err.message : t.saveError)
     }
   }
 
@@ -97,11 +92,11 @@ export function DashboardPage({ onNavigate }: Props) {
     e.target.value = '' // מאפשר לבחור שוב את אותו קובץ
     if (!file) return
     if (!file.type.startsWith('image/')) {
-      setError('אפשר להעלות קובץ תמונה בלבד')
+      setError(t.imageTypeError)
       return
     }
     if (file.size > 3 * 1024 * 1024) {
-      setError('התמונה גדולה מדי — עד 3MB')
+      setError(t.imageSizeError)
       return
     }
     setError('')
@@ -130,12 +125,12 @@ export function DashboardPage({ onNavigate }: Props) {
           <div className="event-edit">
             <div className="event-fields">
               <input
-                placeholder="שם החתן"
+                placeholder={t.groomPlaceholder}
                 value={form.groom_name}
                 onChange={(e) => setForm({ ...form, groom_name: e.target.value })}
               />
               <input
-                placeholder="שם הכלה"
+                placeholder={t.bridePlaceholder}
                 value={form.bride_name}
                 onChange={(e) => setForm({ ...form, bride_name: e.target.value })}
               />
@@ -150,10 +145,10 @@ export function DashboardPage({ onNavigate }: Props) {
                     venue_address: f.venue_address.trim() ? f.venue_address : address,
                   }))
                 }
-                placeholder="שם האולם"
+                placeholder={t.venuePlaceholder}
               />
               <input
-                placeholder="כתובת האולם (לניווט בהודעות)"
+                placeholder={t.venueAddressPlaceholder}
                 value={form.venue_address}
                 onChange={(e) =>
                   setForm({ ...form, venue_address: e.target.value })
@@ -163,7 +158,7 @@ export function DashboardPage({ onNavigate }: Props) {
 
             <div className="event-datetime">
               <label className="field-group">
-                <span className="field-label">תאריך האירוע</span>
+                <span className="field-label">{t.dateLabel}</span>
                 <input
                   type="date"
                   value={form.event_date}
@@ -173,7 +168,7 @@ export function DashboardPage({ onNavigate }: Props) {
                 />
               </label>
               <label className="field-group">
-                <span className="field-label">שעת האירוע</span>
+                <span className="field-label">{t.timeLabel}</span>
                 <input
                   type="time"
                   value={form.event_time}
@@ -186,20 +181,14 @@ export function DashboardPage({ onNavigate }: Props) {
 
             {/* ---- יום ההתחייבות לאולם — בחירה חד-פעמית ובלתי-הפיכה ---- */}
             <div className="commit-field">
-              <span className="field-label">יום ההתחייבות לאולם</span>
-              <p className="commit-explain">
-                כמה ימים לפני החתונה אתם צריכים למסור לאולם מספר סופי? זה היום
-                שבו כל אישורי ההגעה נסגרים — תדעו בדיוק מי מגיע ומי לא. כל לוח
-                הזמנים של אישורי ההגעה נבנה לאחור סביב היום הזה.
-              </p>
+              <span className="field-label">{t.commitLabel}</span>
+              <p className="commit-explain">{t.commitExplain}</p>
               {commitLocked ? (
                 <div className="commit-locked">
                   <span className="commit-locked-value">
-                    {form.venue_commit_days_before} ימים לפני האירוע
+                    {t.commitLockedValue(form.venue_commit_days_before)}
                   </span>
-                  <span className="commit-locked-note">
-                    🔒 כבר בחרתם — הבחירה נעולה כי לוח הזמנים כבר בנוי סביבה.
-                  </span>
+                  <span className="commit-locked-note">{t.commitLockedNote}</span>
                 </div>
               ) : (
                 <>
@@ -214,22 +203,20 @@ export function DashboardPage({ onNavigate }: Props) {
                       })
                     }
                   >
-                    <option value="">בחרו מספר ימים…</option>
+                    <option value="">{t.commitSelectPlaceholder}</option>
                     {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
                       <option key={n} value={n}>
-                        {n} ימים לפני האירוע
+                        {t.commitOptionLabel(n)}
                       </option>
                     ))}
                   </select>
-                  <span className="commit-warn">
-                    שימו לב: אחרי השמירה לא ניתן לשנות את הבחירה הזו.
-                  </span>
+                  <span className="commit-warn">{t.commitWarn}</span>
                 </>
               )}
             </div>
 
             <div className="event-image-edit">
-              <span className="event-image-label">תמונת ההזמנה</span>
+              <span className="event-image-label">{t.imageLabel}</span>
               {form.invite_image ? (
                 <div className="event-image-has">
                   <div className="phone-mock">
@@ -238,10 +225,10 @@ export function DashboardPage({ onNavigate }: Props) {
                       <img
                         className="event-image-thumb"
                         src={form.invite_image}
-                        alt="תצוגה מקדימה של ההזמנה"
+                        alt={t.imageAlt}
                       />
                       <div className="phone-mock-meta">
-                        <span>הזמנה לחתונה</span>
+                        <span>{t.imageBubbleLabel}</span>
                         <span className="phone-mock-check">✓✓</span>
                       </div>
                     </div>
@@ -251,7 +238,7 @@ export function DashboardPage({ onNavigate }: Props) {
                     className="btn-text"
                     onClick={() => setForm({ ...form, invite_image: '' })}
                   >
-                    הסרת התמונה
+                    {t.imageRemove}
                   </button>
                 </div>
               ) : (
@@ -262,18 +249,18 @@ export function DashboardPage({ onNavigate }: Props) {
                     onChange={onPickImage}
                     style={{ display: 'none' }}
                   />
-                  <span>⬆ העלאת תמונת הזמנה</span>
-                  <small>זו התמונה שתישלח למוזמנים בהזמנה</small>
+                  <span>{t.imageUpload}</span>
+                  <small>{t.imageUploadHint}</small>
                 </label>
               )}
             </div>
 
             <div className="event-edit-actions">
               <button className="btn-primary" onClick={onSaveEvent}>
-                שמירה
+                {strings.common.save}
               </button>
               <button className="btn-text" onClick={() => setEditing(false)}>
-                ביטול
+                {strings.common.cancel}
               </button>
             </div>
           </div>
@@ -286,25 +273,24 @@ export function DashboardPage({ onNavigate }: Props) {
                   <img
                     className="event-invite-img"
                     src={event.invite_image}
-                    alt="הזמנה לחתונה"
+                    alt={t.inviteImgAlt}
                   />
                   <div className="phone-mock-meta">
-                    <span>הזמנה לחתונה</span>
+                    <span>{t.imageBubbleLabel}</span>
                     <span className="phone-mock-check">✓✓</span>
                   </div>
                 </div>
               </div>
             )}
             <div className="event-view-text">
-              <h2 className="event-couple">{couple ?? 'החתונה שלנו'}</h2>
+              <h2 className="event-couple">{couple ?? t.coupleFallback}</h2>
               <p className="event-venue">
-                {event?.venue_name ||
-                  'עוד לא הזנתם את פרטי האירוע — בואו נשלים את שמות בני הזוג, האולם והתאריך'}
+                {event?.venue_name || t.venueFallback}
               </p>
               {when && <p className="event-when">{when}</p>}
             </div>
             <button className="btn-ghost" onClick={() => setEditing(true)}>
-              ✎ עריכת פרטים
+              {t.editButton}
             </button>
           </div>
         )}
@@ -322,29 +308,27 @@ export function DashboardPage({ onNavigate }: Props) {
 
       {/* ---- תמונת מצב ראשית — אישורי הגעה (העוגה הגדולה, החלק החשוב) ---- */}
       <div className="dash-hero">
-        <h3 className="dash-hero-title">תמונת מצב — אישורי הגעה</h3>
+        <h3 className="dash-hero-title">{t.rsvpTitle}</h3>
         <p className="dash-hero-sub">
-          {stats
-            ? `${stats.confirmed_people} אורחים אישרו הגעה מתוך ${stats.total_people}`
-            : 'טוען נתונים…'}
+          {stats ? t.rsvpSub(stats.confirmed_people, stats.total_people) : t.loadingData}
         </p>
         <div className="dash-hero-chart">
           <Donut
             segments={[
-              { label: 'אישרו הגעה', value: stats?.confirmed ?? 0, color: 'var(--green)' },
-              { label: 'לא החליטו', value: stats?.maybe ?? 0, color: 'var(--gold)' },
-              { label: 'לא מגיעים', value: stats?.declined ?? 0, color: 'var(--error)' },
-              { label: 'טרם הגיבו', value: stats?.pending ?? 0, color: 'var(--faint)' },
+              { label: t.segConfirmed, value: stats?.confirmed ?? 0, color: 'var(--green)' },
+              { label: t.segMaybe, value: stats?.maybe ?? 0, color: 'var(--gold)' },
+              { label: t.segDeclined, value: stats?.declined ?? 0, color: 'var(--error)' },
+              { label: t.segPending, value: stats?.pending ?? 0, color: 'var(--faint)' },
             ]}
             centerNum={stats ? `${stats.confirmed_people}` : '—'}
-            centerLabel="אורחים אישרו"
+            centerLabel={t.centerLabel}
           />
         </div>
         <ul className="donut-legend">
-          <LegendRow color="var(--green)" label="אישרו הגעה" value={stats?.confirmed ?? 0} />
-          <LegendRow color="var(--gold)" label="לא החליטו (אולי)" value={stats?.maybe ?? 0} />
-          <LegendRow color="var(--error)" label="לא מגיעים" value={stats?.declined ?? 0} />
-          <LegendRow color="var(--faint)" label="טרם הגיבו" value={stats?.pending ?? 0} />
+          <LegendRow color="var(--green)" label={t.segConfirmed} value={stats?.confirmed ?? 0} />
+          <LegendRow color="var(--gold)" label={t.legendMaybe} value={stats?.maybe ?? 0} />
+          <LegendRow color="var(--error)" label={t.segDeclined} value={stats?.declined ?? 0} />
+          <LegendRow color="var(--faint)" label={t.segPending} value={stats?.pending ?? 0} />
         </ul>
       </div>
 
@@ -352,36 +336,33 @@ export function DashboardPage({ onNavigate }: Props) {
       <div className="dash-grid">
         <div className="stat-card">
           <span className="stat-num">{stats?.total_guests ?? '—'}</span>
-          <span className="stat-label">מוזמנים ברשימה</span>
+          <span className="stat-label">{t.statTotalGuests}</span>
         </div>
         <div className="stat-card">
           <span className="stat-num">{stats?.total_people ?? '—'}</span>
-          <span className="stat-label">סך האורחים</span>
+          <span className="stat-label">{t.statTotalPeople}</span>
         </div>
         <div className="stat-card ok">
           <span className="stat-num">{stats?.confirmed_people ?? '—'}</span>
-          <span className="stat-label">אישרו הגעה</span>
+          <span className="stat-label">{t.statConfirmed}</span>
         </div>
         <div className="stat-card wait">
           <span className="stat-num">
             {stats ? `${stats.response_rate}%` : '—'}
           </span>
-          <span className="stat-label">שיעור מענה</span>
+          <span className="stat-label">{t.statResponseRate}</span>
         </div>
       </div>
 
       {/* ---- התראת הבהרות ---- */}
       {stats && stats.pending_clarifications > 0 && (
-        <p className="dash-alert">
-          ⚠ יש {stats.pending_clarifications} הבהרות שממתינות לכם — במסך "מפת
-          אולם והושבה" נשלים אותן יחד.
-        </p>
+        <p className="dash-alert">{t.clarificationsAlert(stats.pending_clarifications)}</p>
       )}
 
       {/* ---- פילוחים ---- */}
       <div className="dash-panels">
         <div className="dash-panel">
-          <h3 className="clar-title">לפי צד</h3>
+          <h3 className="clar-title">{t.bySide}</h3>
           <div className="bar-rows">
             {(Object.keys(SIDE_LABELS) as Side[]).map((s) => (
               <BarRow
@@ -395,7 +376,7 @@ export function DashboardPage({ onNavigate }: Props) {
         </div>
 
         <div className="dash-panel">
-          <h3 className="clar-title">לפי קבוצה</h3>
+          <h3 className="clar-title">{t.byGroup}</h3>
           <div className="bar-rows">
             {(Object.keys(GROUP_LABELS) as KnownGroupType[]).map((g) => (
               <BarRow
@@ -409,19 +390,19 @@ export function DashboardPage({ onNavigate }: Props) {
         </div>
 
         <div className="dash-panel">
-          <h3 className="clar-title">הושבה</h3>
+          <h3 className="clar-title">{t.seatingTitle}</h3>
           <div className="dash-mini">
             <div>
               <span className="mini-num">{stats?.tables_assigned ?? '—'}</span>
-              <span className="mini-label">שולחנות שובצו</span>
+              <span className="mini-label">{t.tablesAssigned}</span>
             </div>
             <div>
               <span className="mini-num">{stats?.seated_guests ?? '—'}</span>
-              <span className="mini-label">מוזמנים משובצים</span>
+              <span className="mini-label">{t.guestsSeated}</span>
             </div>
             <div>
               <span className="mini-num">{stats?.invitations_sent ?? '—'}</span>
-              <span className="mini-label">הזמנות שנשלחו</span>
+              <span className="mini-label">{t.invitationsSent}</span>
             </div>
           </div>
         </div>
@@ -430,15 +411,13 @@ export function DashboardPage({ onNavigate }: Props) {
       {/* ---- יומן אבטחה ---- */}
       {audit.length > 0 && (
         <div className="dash-panel audit-panel">
-          <h3 className="clar-title">יומן פעילות ואבטחה</h3>
-          <span className="clar-sub">
-            תיעוד הפעולות הרגישות האחרונות (שליחות, עדכונים, גישה לקישורים).
-          </span>
+          <h3 className="clar-title">{t.auditTitle}</h3>
+          <span className="clar-sub">{t.auditSub}</span>
           <ul className="audit-list">
             {audit.map((a) => (
               <li key={a.id} className="audit-row">
                 <span className="audit-action">
-                  {AUDIT_LABELS[a.action] ?? a.action}
+                  {t.auditLabels[a.action] ?? a.action}
                 </span>
                 <span className="audit-detail">{a.detail}</span>
                 <span className="audit-time">{formatTime(a.created_at)}</span>
