@@ -2,12 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { deleteGuest, listGuests } from '../api'
 import type { Guest } from '../types'
 import { groupLabel, RSVP_LABELS, SIDE_LABELS } from '../types'
+import { strings } from '../strings/he'
 import { AddGuestForm } from './AddGuestForm'
 import { GroupNotesPanel } from './GroupNotesPanel'
 import { GroupSuggestions } from './GroupSuggestions'
 import { ImportDialog } from './ImportDialog'
 import { OnboardingDialog } from './OnboardingDialog'
 import { PasteImportDialog } from './PasteImportDialog'
+
+const t = strings.guests
 
 // דגל localStorage — מסך הפתיחה מוצג פעם אחת בלבד.
 const ONBOARDING_KEY = 'veya_guests_onboarding_seen'
@@ -47,7 +50,7 @@ export function GuestsPage() {
       setConfirmedPeople(page.confirmed_people)
       setRefreshTick((t) => t + 1)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון את הרשימה, ננסה שוב')
+      setError(err instanceof Error ? err.message : t.loadError)
     } finally {
       setLoading(false)
     }
@@ -61,7 +64,7 @@ export function GuestsPage() {
       setGuests((prev) => [...prev, ...page.items])
       setTotal(page.total)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון את הרשימה, ננסה שוב')
+      setError(err instanceof Error ? err.message : t.loadError)
     } finally {
       setLoadingMore(false)
     }
@@ -74,12 +77,12 @@ export function GuestsPage() {
   }, [search, load])
 
   async function onDelete(g: Guest) {
-    if (!confirm(`להסיר את ${g.full_name} מהרשימה?`)) return
+    if (!confirm(t.deleteConfirm(g.full_name))) return
     try {
       await deleteGuest(g.id)
       load(search)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'לא הצלחנו להסיר, נסו שוב')
+      alert(err instanceof Error ? err.message : t.deleteError)
     }
   }
 
@@ -92,19 +95,19 @@ export function GuestsPage() {
           className="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="חיפוש לפי שם או טלפון…"
+          placeholder={t.searchPlaceholder}
         />
         <button className="btn-ghost" onClick={() => setShowPaste(true)}>
-          📋 הדבקת רשימה
+          {t.pasteButton}
         </button>
         <button className="btn-ghost" onClick={() => setShowNotes(true)}>
-          ⭐ העדפות קבוצה
+          {t.notesButton}
         </button>
         <button className="btn-ghost" onClick={() => fileInput.current?.click()}>
-          ⬆ העלאת קובץ אקסל
+          {t.uploadButton}
         </button>
         <button className="btn-primary" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'סגירת הטופס' : '+ הוספת מוזמן'}
+          {showForm ? t.closeForm : t.addGuestButton}
         </button>
         <input
           ref={fileInput}
@@ -127,11 +130,8 @@ export function GuestsPage() {
           onClose={() => setImportFile(null)}
           onImported={(created, skippedDuplicates) => {
             setImportFile(null)
-            const dup =
-              skippedDuplicates > 0
-                ? ` (${skippedDuplicates} כבר היו אצלכם)`
-                : ''
-            setToast(`הוספנו ${created} מוזמנים לרשימה ✓${dup}`)
+            const dup = skippedDuplicates > 0 ? t.dupSuffix(skippedDuplicates) : ''
+            setToast(t.importedToast(created, dup))
             setTimeout(() => setToast(''), 4000)
             load(search)
           }}
@@ -143,11 +143,8 @@ export function GuestsPage() {
           onClose={() => setShowPaste(false)}
           onImported={(created, skippedDuplicates) => {
             setShowPaste(false)
-            const dup =
-              skippedDuplicates > 0
-                ? ` (${skippedDuplicates} כבר היו אצלכם)`
-                : ''
-            setToast(`הוספנו ${created} מוזמנים לרשימה ✓${dup}`)
+            const dup = skippedDuplicates > 0 ? t.dupSuffix(skippedDuplicates) : ''
+            setToast(t.importedToast(created, dup))
             setTimeout(() => setToast(''), 4000)
             load(search)
           }}
@@ -185,8 +182,7 @@ export function GuestsPage() {
       />
 
       <div className="summary">
-        {total} מוזמנים · {totalPeople} אנשים הוזמנו ·{' '}
-        {confirmedPeople} אישרו הגעה
+        {t.summary(total, totalPeople, confirmedPeople)}
       </div>
 
       {error && <p className="form-error">{error}</p>}
@@ -195,14 +191,14 @@ export function GuestsPage() {
         <table className="guests-table">
           <thead>
             <tr>
-              <th>שם מלא</th>
-              <th>טלפון</th>
-              <th>צד</th>
-              <th>קבוצה</th>
-              <th>כמות</th>
-              <th>אישור הגעה</th>
-              <th>שולחן</th>
-              <th>הערות</th>
+              <th>{t.colFullName}</th>
+              <th>{t.colPhone}</th>
+              <th>{t.colSide}</th>
+              <th>{t.colGroup}</th>
+              <th>{t.colCount}</th>
+              <th>{t.colRsvp}</th>
+              <th>{t.colTable}</th>
+              <th>{t.colNotes}</th>
               <th></th>
             </tr>
           </thead>
@@ -225,7 +221,7 @@ export function GuestsPage() {
                 <td className="notes">{g.notes_raw ?? ''}</td>
                 <td>
                   <button className="btn-delete" onClick={() => onDelete(g)}>
-                    מחיקה
+                    {t.deleteRow}
                   </button>
                 </td>
               </tr>
@@ -235,12 +231,10 @@ export function GuestsPage() {
 
         {!loading && guests.length === 0 && (
           <div className="empty">
-            {search
-              ? 'לא נמצאו מוזמנים שתואמים לחיפוש.'
-              : 'הרשימה עדיין ריקה. הוסיפו מוזמן ראשון או ייבאו קובץ אקסל כדי להתחיל.'}
+            {search ? t.emptySearch : t.emptyList}
           </div>
         )}
-        {loading && <div className="empty">טוען…</div>}
+        {loading && <div className="empty">{t.loadingRows}</div>}
       </div>
 
       {!loading && hasMore && (
@@ -250,9 +244,7 @@ export function GuestsPage() {
             onClick={loadMore}
             disabled={loadingMore}
           >
-            {loadingMore
-              ? 'טוען…'
-              : `טעינת עוד (${guests.length} מתוך ${total})`}
+            {loadingMore ? t.loadingRows : t.loadMore(guests.length, total)}
           </button>
         </div>
       )}

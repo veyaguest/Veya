@@ -2,15 +2,10 @@ import { useEffect, useState } from 'react'
 import { getGuestTimeline } from '../api'
 import type { GuestTimeline, TimelineEvent } from '../types'
 import { RSVP_LABELS } from '../types'
+import { strings } from '../strings/he'
 
-const KIND_LABEL: Record<string, string> = {
-  invitation: 'הזמנה נשלחה',
-  reminder: 'תזכורת נשלחה',
-  pre_event: 'הודעה לפני האירוע',
-  thank_you: 'הודעת תודה',
-  reply: 'תשובת המוזמן',
-  custom: 'הודעה נשלחה',
-}
+const t = strings.guests
+const KIND_LABEL = t.timelineKindLabels
 
 function fmt(iso: string): string {
   const d = new Date(iso)
@@ -24,8 +19,8 @@ function fmt(iso: string): string {
 }
 
 function lineFor(e: TimelineEvent): string {
-  if (e.direction === 'inbound') return 'המוזמן הגיב'
-  return KIND_LABEL[e.kind] ?? 'הודעה נשלחה'
+  if (e.direction === 'inbound') return t.timelineReplied
+  return KIND_LABEL[e.kind] ?? KIND_LABEL.custom
 }
 
 /** חלון ציר-זמן של מוזמן — כל ההודעות היוצאות והנכנסות לפי סדר. */
@@ -43,7 +38,7 @@ export function GuestTimelineModal({
     getGuestTimeline(guestId)
       .then(setData)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'שגיאה בטעינת ציר הזמן'),
+        setError(err instanceof Error ? err.message : t.timelineLoadError),
       )
   }, [guestId])
 
@@ -52,10 +47,10 @@ export function GuestTimelineModal({
       <div className="auto-modal" onClick={(e) => e.stopPropagation()}>
         <div className="auto-modal-head">
           <h3 className="clar-title">
-            ציר זמן — {data?.guest_name ?? '…'}
+            {t.timelineTitle(data?.guest_name ?? '…')}
           </h3>
           <button className="btn-text" onClick={onClose}>
-            סגירה ✕
+            {t.closeX}
           </button>
         </div>
 
@@ -64,14 +59,14 @@ export function GuestTimelineModal({
         {data && (
           <>
             <div className="auto-modal-status">
-              סטטוס נוכחי:{' '}
+              {t.currentStatus}{' '}
               <span className={`rsvp-badge ${data.rsvp_status}`}>
                 {RSVP_LABELS[data.rsvp_status]}
               </span>
             </div>
 
             {data.events.length === 0 ? (
-              <p className="auto-empty">עדיין לא נשלחו הודעות למוזמן הזה.</p>
+              <p className="auto-empty">{t.timelineEmpty}</p>
             ) : (
               <ul className="auto-timeline">
                 {data.events.map((e, i) => (

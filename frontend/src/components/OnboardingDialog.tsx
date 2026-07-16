@@ -1,25 +1,13 @@
+import { strings } from '../strings/he'
+
+const t = strings.guests
+
 interface Props {
   onClose: () => void
 }
 
 // שלושת היתרונות המרכזיים שמוצגים במסך הפתיחה — קצר, ברור, מרגיע.
-const POINTS = [
-  {
-    icon: '📋',
-    title: 'מדביקים רשימה — וזהו',
-    text: 'רשימה מ-WhatsApp, מאקסל או מכל מקום. VEYA מזהה לבד שם, טלפון וכמות.',
-  },
-  {
-    icon: '✨',
-    title: 'קבוצות מסתדרות מעצמן',
-    text: 'אנחנו מציעים לכם לאחד משפחות וחברים לקבוצות — אתם רק מאשרים.',
-  },
-  {
-    icon: '🎉',
-    title: 'הושבה בקליק',
-    text: 'כשהכול מוכן, VEYA מסדרת את השולחנות לפי הקשרים וההעדפות שלכם.',
-  },
-]
+const POINTS = t.onboardingPoints
 
 /**
  * מסך פתיחה בכניסה הראשונה לאזור המוזמנים. מטרה: להרגיע ולהראות שהחלק
@@ -37,11 +25,8 @@ export function OnboardingDialog({ onClose }: Props) {
         </button>
 
         <div className="onboarding-head">
-          <h2>חסכו לעצמכם שעות של כאב ראש לפני החתונה</h2>
-          <p className="onboarding-sub">
-            ניהול המוזמנים והושבה הם החלק הכי מלחיץ. VEYA כאן כדי לעשות אותו
-            פשוט — צעד אחר צעד, בלי גיליונות מסובכים.
-          </p>
+          <h2>{t.onboardingTitle}</h2>
+          <p className="onboarding-sub">{t.onboardingSub}</p>
         </div>
 
         <div className="onboarding-points">
@@ -58,7 +43,7 @@ export function OnboardingDialog({ onClose }: Props) {
 
         <div className="add-actions onboarding-actions">
           <button className="btn-primary" onClick={onClose}>
-            בואו נתחיל
+            {t.onboardingCta}
           </button>
         </div>
       </div>

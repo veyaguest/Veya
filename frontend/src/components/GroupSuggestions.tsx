@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { bulkGroup, groupSuggestions } from '../api'
 import type { GroupSuggestion } from '../types'
+import { strings } from '../strings/he'
+
+const t = strings.guests
 
 interface Props {
   // משתנה בכל רענון של רשימת המוזמנים — מפעיל טעינה מחדש של ההצעות.
@@ -38,9 +41,9 @@ export function GroupSuggestions({ refreshToken, onApplied }: Props) {
     setBusy(s.surname)
     try {
       const res = await bulkGroup(s.guest_ids, s.group_name)
-      onApplied(`נוצרה קבוצת '${s.group_name}' עם ${res.updated} מוזמנים ✓`)
+      onApplied(t.suggestionCreatedToast(s.group_name, res.updated))
     } catch {
-      onApplied('לא הצלחנו ליצור את הקבוצה. נסו שוב.')
+      onApplied(t.suggestionCreateError)
     } finally {
       setBusy(null)
     }
@@ -56,6 +59,10 @@ export function GroupSuggestions({ refreshToken, onApplied }: Props) {
         <div key={s.surname} className="suggestion-card">
           <div className="suggestion-text">
             <span className="suggestion-icon">✨</span>
+            {/* משפט זה משלב טקסט עברי עם <strong> סביב ערכים דינמיים —
+                לא ניתן להוציא אותו כמחרוזת שטוחה יחידה ל-he.ts בלי לאבד
+                את הדגשת ה-JSX. חריג מכוון ומתועד; שאר הטקסטים במסך זה
+                כן ממורכזים ב-he.ts. */}
             מצאנו <strong>{s.count}</strong> מוזמנים עם שם המשפחה{' '}
             <strong>"{s.surname}"</strong>. ליצור את הקבוצה{' '}
             <strong>"{s.group_name}"</strong>?
@@ -66,14 +73,14 @@ export function GroupSuggestions({ refreshToken, onApplied }: Props) {
               onClick={() => apply(s)}
               disabled={busy === s.surname}
             >
-              {busy === s.surname ? 'יוצר…' : 'צור קבוצה'}
+              {busy === s.surname ? t.suggestionCreating : t.suggestionCreateGroup}
             </button>
             <button
               className="btn-ghost btn-sm"
               onClick={() => dismiss(s.surname)}
               disabled={busy === s.surname}
             >
-              לא עכשיו
+              {t.suggestionNotNow}
             </button>
           </div>
         </div>

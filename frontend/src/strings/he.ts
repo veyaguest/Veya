@@ -84,4 +84,147 @@ export const strings = {
       confirm_invalid_token: '⚠ ניסיון גישה לקישור לא תקין',
     } as Record<string, string>,
   },
+  guests: {
+    // GuestsPage
+    loadError: 'לא הצלחנו לטעון את הרשימה, ננסה שוב',
+    deleteError: 'לא הצלחנו להסיר, נסו שוב',
+    deleteConfirm: (name: string) => `להסיר את ${name} מהרשימה?`,
+    searchPlaceholder: 'חיפוש לפי שם או טלפון…',
+    pasteButton: '📋 הדבקת רשימה',
+    notesButton: '⭐ העדפות קבוצה',
+    uploadButton: '⬆ העלאת קובץ אקסל',
+    closeForm: 'סגירת הטופס',
+    addGuestButton: '+ הוספת מוזמן',
+    dupSuffix: (n: number) => ` (${n} כבר היו אצלכם)`,
+    importedToast: (created: number, dupSuffix: string) =>
+      `הוספנו ${created} מוזמנים לרשימה ✓${dupSuffix}`,
+    summary: (total: number, totalPeople: number, confirmedPeople: number) =>
+      `${total} מוזמנים · ${totalPeople} אנשים הוזמנו · ${confirmedPeople} אישרו הגעה`,
+    colFullName: 'שם מלא',
+    colPhone: 'טלפון',
+    colSide: 'צד',
+    colGroup: 'קבוצה',
+    colCount: 'כמות',
+    colRsvp: 'אישור הגעה',
+    colTable: 'שולחן',
+    colNotes: 'הערות',
+    deleteRow: 'מחיקה',
+    emptySearch: 'לא נמצאו מוזמנים שתואמים לחיפוש.',
+    emptyList: 'הרשימה עדיין ריקה. הוסיפו מוזמן ראשון או ייבאו קובץ אקסל כדי להתחיל.',
+    loadingRows: 'טוען…',
+    loadMore: (shown: number, total: number) => `טעינת עוד (${shown} מתוך ${total})`,
+
+    // AddGuestForm
+    saveErrorGeneric: 'לא הצלחנו לשמור, נסו שוב',
+    fullNameLabel: 'שם מלא *',
+    fullNamePlaceholder: 'לדוגמה: דני כהן',
+    phoneLabel: 'טלפון *',
+    phonePlaceholder: '050-123-4567',
+    sideLabel: 'צד',
+    groupLabelText: 'קבוצה',
+    newGroupOption: '➕ קבוצה חדשה…',
+    newGroupPlaceholder: 'שם הקבוצה, למשל: חברים מהצבא',
+    partySizeLabel: 'כמות אנשים',
+    isChildLabel: 'ילד/ה',
+    notesFieldLabel: "הערות (העדפות ישיבה וכו')",
+    notesFieldPlaceholder: 'לדוגמה: לא לשבת ליד משפחת לוי',
+    saving: 'שומר…',
+    submitAdd: 'הוספת מוזמן',
+
+    // GuestTimelineModal
+    timelineKindLabels: {
+      invitation: 'הזמנה נשלחה',
+      reminder: 'תזכורת נשלחה',
+      pre_event: 'הודעה לפני האירוע',
+      thank_you: 'הודעת תודה',
+      reply: 'תשובת המוזמן',
+      custom: 'הודעה נשלחה',
+    } as Record<string, string>,
+    timelineReplied: 'המוזמן הגיב',
+    timelineLoadError: 'שגיאה בטעינת ציר הזמן',
+    timelineTitle: (name: string) => `ציר זמן — ${name}`,
+    closeX: 'סגירה ✕',
+    currentStatus: 'סטטוס נוכחי:',
+    timelineEmpty: 'עדיין לא נשלחו הודעות למוזמן הזה.',
+
+    // ImportDialog
+    importFileError: 'לא הצלחנו לקרוא את הקובץ. ודאו שזה קובץ אקסל תקין.',
+    importAddError: 'לא הצלחנו להוסיף את הרשימה, נסו שוב',
+    importTitle: 'העלאת קובץ אקסל',
+    readingFile: 'רגע, קוראים את הקובץ…',
+    importSummaryPrefix: (total: number) => `נמצאו ${total} שורות:`,
+    validCount: (n: number) => `${n} תקינות`,
+    invalidCount: (n: number) => `${n} עם בעיה (לא נוסיף אותן)`,
+    colRowNumber: 'שורה',
+    colStatus: 'מצב',
+    rowValid: 'תקין',
+    importing: 'מייבא…',
+    importCount: (n: number) => `ייבוא ${n} מוזמנים`,
+
+    // OnboardingDialog
+    onboardingPoints: [
+      {
+        icon: '📋',
+        title: 'מדביקים רשימה — וזהו',
+        text: 'רשימה מ-WhatsApp, מאקסל או מכל מקום. VEYA מזהה לבד שם, טלפון וכמות.',
+      },
+      {
+        icon: '✨',
+        title: 'קבוצות מסתדרות מעצמן',
+        text: 'אנחנו מציעים לכם לאחד משפחות וחברים לקבוצות — אתם רק מאשרים.',
+      },
+      {
+        icon: '🎉',
+        title: 'הושבה בקליק',
+        text: 'כשהכול מוכן, VEYA מסדרת את השולחנות לפי הקשרים וההעדפות שלכם.',
+      },
+    ],
+    onboardingTitle: 'חסכו לעצמכם שעות של כאב ראש לפני החתונה',
+    onboardingSub:
+      'ניהול המוזמנים והושבה הם החלק הכי מלחיץ. VEYA כאן כדי לעשות אותו פשוט — צעד אחר צעד, בלי גיליונות מסובכים.',
+    onboardingCta: 'בואו נתחיל',
+
+    // GroupNotesPanel
+    notesLoadError: 'לא הצלחנו לטעון כרגע, ננסה שוב',
+    notesSaveError: 'לא הצלחנו לשמור, נסו שוב',
+    notesTitle: 'העדפות קבוצה',
+    notesHint:
+      'לכל קבוצה אפשר לרשום העדפה קצרה — למשל "רחוק מהרעש" או "קרוב לרחבה". נשמור אותה לכל חברי הקבוצה כדי לעזור בסידור ההושבה.',
+    notesEmpty: 'עדיין אין קבוצות. הוסיפו מוזמנים ושייכו אותם לקבוצות כדי להגדיר העדפות.',
+    notesInputPlaceholder: 'למשל: רחוק מהרעש',
+    notesSaved: 'שמרנו ✓',
+    notesDone: 'סיום',
+    groupCount: (n: number) => `${n} מוזמנים`,
+
+    // GroupSuggestions
+    suggestionCreateError: 'לא הצלחנו ליצור את הקבוצה. נסו שוב.',
+    suggestionCreatedToast: (groupName: string, updated: number) =>
+      `נוצרה קבוצת '${groupName}' עם ${updated} מוזמנים ✓`,
+    suggestionCreating: 'יוצר…',
+    suggestionCreateGroup: 'צור קבוצה',
+    suggestionNotNow: 'לא עכשיו',
+
+    // PasteImportDialog
+    rowIssueNoName: 'חסר שם',
+    rowIssueNoPhone: 'חסר טלפון',
+    rowIssueBadPhone: 'טלפון לא תקין',
+    rowIssueDuplicate: 'כפילות',
+    pasteParseError: 'לא הצלחנו לפענח את הרשימה. נסו שוב.',
+    pasteImportError: 'לא הצלחנו להוסיף את הרשימה, נסו שוב',
+    pasteTitle: 'הדבקת רשימת מוזמנים',
+    pasteHint:
+      'הדביקו כאן רשימה מ-WhatsApp, מאקסל או מכל מקום — שורה לכל מוזמן. אנחנו נזהה לבד את השם, הטלפון וכמות האנשים.',
+    pasteAreaPlaceholder:
+      'לדוגמה:\nיוסי כהן 052-1234567\nמשפחת לוי 5 אנשים 050-123-4567\nדנה מזרחי 054 987 6543 (2)',
+    parsing: 'מפענח…',
+    parseButton: 'פענוח הרשימה',
+    pasteReviewHint:
+      'הכנו עבורכם את הרשימה. מומלץ לעבור ולוודא שאין טעויות בשם, בטלפון או בכמות. סמנו אילו שורות לייבא.',
+    pasteSelectedSummary: (selected: number, total: number) =>
+      `נבחרו לייבוא ${selected} מתוך ${total} שורות`,
+    selectAll: 'סמן הכל',
+    clearAll: 'נקה בחירה',
+    colImport: 'ייבוא',
+    backToEdit: 'חזרה לעריכת הטקסט',
+  },
 }

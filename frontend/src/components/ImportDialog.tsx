@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react'
 import { commitImport, previewImport } from '../api'
 import type { GuestCreate, ImportPreview } from '../types'
 import { groupLabel, SIDE_LABELS } from '../types'
+import { strings } from '../strings/he'
+
+const t = strings.guests
+const tc = strings.common
 
 interface Props {
   file: File
@@ -19,7 +23,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
     let cancelled = false
     previewImport(file)
       .then((p) => !cancelled && setPreview(p))
-      .catch((err) => !cancelled && setError(err instanceof Error ? err.message : 'לא הצלחנו לקרוא את הקובץ. ודאו שזה קובץ אקסל תקין.'))
+      .catch((err) => !cancelled && setError(err instanceof Error ? err.message : t.importFileError))
       .finally(() => !cancelled && setLoading(false))
     return () => {
       cancelled = true
@@ -43,7 +47,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
       const res = await commitImport(validRows)
       onImported(res.created, res.skipped_duplicates)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו להוסיף את הרשימה, נסו שוב')
+      setError(err instanceof Error ? err.message : t.importAddError)
       setCommitting(false)
     }
   }
@@ -52,7 +56,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
     <div className="overlay" onClick={onClose}>
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
-          <h2>העלאת קובץ אקסל</h2>
+          <h2>{t.importTitle}</h2>
           <button className="x" onClick={onClose}>
             ✕
           </button>
@@ -60,19 +64,19 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
 
         <p className="file-name">📄 {file.name}</p>
 
-        {loading && <div className="empty">רגע, קוראים את הקובץ…</div>}
+        {loading && <div className="empty">{t.readingFile}</div>}
         {error && <p className="form-error">{error}</p>}
 
         {preview && (
           <>
             <div className="import-summary">
-              נמצאו {preview.total} שורות:{' '}
-              <strong className="ok-text">{preview.valid_count} תקינות</strong>
+              {t.importSummaryPrefix(preview.total)}{' '}
+              <strong className="ok-text">{t.validCount(preview.valid_count)}</strong>
               {preview.invalid_count > 0 && (
                 <>
                   {' · '}
                   <strong className="err-text">
-                    {preview.invalid_count} עם בעיה (לא נוסיף אותן)
+                    {t.invalidCount(preview.invalid_count)}
                   </strong>
                 </>
               )}
@@ -82,13 +86,13 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
               <table className="guests-table">
                 <thead>
                   <tr>
-                    <th>שורה</th>
-                    <th>שם מלא</th>
-                    <th>טלפון</th>
-                    <th>צד</th>
-                    <th>קבוצה</th>
-                    <th>כמות</th>
-                    <th>מצב</th>
+                    <th>{t.colRowNumber}</th>
+                    <th>{t.colFullName}</th>
+                    <th>{t.colPhone}</th>
+                    <th>{t.colSide}</th>
+                    <th>{t.colGroup}</th>
+                    <th>{t.colCount}</th>
+                    <th>{t.colStatus}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -104,7 +108,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
                       <td className="center">{r.party_size}</td>
                       <td>
                         {r.valid ? (
-                          <span className="badge confirmed">תקין</span>
+                          <span className="badge confirmed">{t.rowValid}</span>
                         ) : (
                           <span className="badge declined">{r.errors.join(', ')}</span>
                         )}
@@ -122,11 +126,11 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
                 disabled={committing || preview.valid_count === 0}
               >
                 {committing
-                  ? 'מייבא…'
-                  : `ייבוא ${preview.valid_count} מוזמנים`}
+                  ? t.importing
+                  : t.importCount(preview.valid_count)}
               </button>
               <button className="btn-ghost" onClick={onClose}>
-                ביטול
+                {tc.cancel}
               </button>
             </div>
           </>

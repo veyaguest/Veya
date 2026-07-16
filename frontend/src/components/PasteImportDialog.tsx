@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { commitImport, pasteImportPreview } from '../api'
 import type { GroupType, GuestCreate, Side } from '../types'
 import { GROUP_LABELS, SIDE_LABELS } from '../types'
+import { strings } from '../strings/he'
+
+const t = strings.guests
+const tc = strings.common
 
 interface Props {
   onClose: () => void
@@ -34,10 +38,10 @@ function rowIssues(r: EditRow): { canImport: boolean; badges: string[] } {
   const badges: string[] = []
   const hasName = r.full_name.trim().length > 0
   const phoneOk = normalizePhone(r.phone) !== null
-  if (!hasName) badges.push('חסר שם')
-  if (!r.phone.trim()) badges.push('חסר טלפון')
-  else if (!phoneOk) badges.push('טלפון לא תקין')
-  if (r.duplicate) badges.push('כפילות')
+  if (!hasName) badges.push(t.rowIssueNoName)
+  if (!r.phone.trim()) badges.push(t.rowIssueNoPhone)
+  else if (!phoneOk) badges.push(t.rowIssueBadPhone)
+  if (r.duplicate) badges.push(t.rowIssueDuplicate)
   return { canImport: hasName && phoneOk, badges }
 }
 
@@ -72,7 +76,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
       setError(
         err instanceof Error
           ? err.message
-          : 'לא הצלחנו לפענח את הרשימה. נסו שוב.',
+          : t.pasteParseError,
       )
     } finally {
       setParsing(false)
@@ -143,7 +147,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
       const res = await commitImport(payload)
       onImported(res.created, res.skipped_duplicates)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו להוסיף את הרשימה, נסו שוב')
+      setError(err instanceof Error ? err.message : t.pasteImportError)
       setCommitting(false)
     }
   }
@@ -152,7 +156,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
     <div className="overlay" onClick={onClose}>
       <div className="dialog paste-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
-          <h2>הדבקת רשימת מוזמנים</h2>
+          <h2>{t.pasteTitle}</h2>
           <button className="x" onClick={onClose}>
             ✕
           </button>
@@ -160,17 +164,12 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
 
         {!rows && (
           <>
-            <p className="paste-hint">
-              הדביקו כאן רשימה מ-WhatsApp, מאקסל או מכל מקום — שורה לכל מוזמן.
-              אנחנו נזהה לבד את השם, הטלפון וכמות האנשים.
-            </p>
+            <p className="paste-hint">{t.pasteHint}</p>
             <textarea
               className="paste-area"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={
-                'לדוגמה:\nיוסי כהן 052-1234567\nמשפחת לוי 5 אנשים 050-123-4567\nדנה מזרחי 054 987 6543 (2)'
-              }
+              placeholder={t.pasteAreaPlaceholder}
               dir="rtl"
               autoFocus
             />
@@ -181,10 +180,10 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                 onClick={doParse}
                 disabled={parsing || text.trim().length === 0}
               >
-                {parsing ? 'מפענח…' : 'פענוח הרשימה'}
+                {parsing ? t.parsing : t.parseButton}
               </button>
               <button className="btn-ghost" onClick={onClose}>
-                ביטול
+                {tc.cancel}
               </button>
             </div>
           </>
@@ -192,16 +191,9 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
 
         {rows && (
           <>
-            <p className="paste-hint">
-              הכנו עבורכם את הרשימה. מומלץ לעבור ולוודא שאין טעויות בשם, בטלפון
-              או בכמות. סמנו אילו שורות לייבא.
-            </p>
+            <p className="paste-hint">{t.pasteReviewHint}</p>
             <div className="import-summary">
-              <span>
-                נבחרו לייבוא{' '}
-                <strong className="ok-text">{includedReady.length}</strong> מתוך{' '}
-                {rows.length} שורות
-              </span>
+              <span>{t.pasteSelectedSummary(includedReady.length, rows.length)}</span>
               <span className="select-actions">
                 <button
                   type="button"
@@ -209,7 +201,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                   onClick={selectAll}
                   disabled={selectableCount === 0}
                 >
-                  סמן הכל
+                  {t.selectAll}
                 </button>
                 <button
                   type="button"
@@ -217,7 +209,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                   onClick={clearAll}
                   disabled={includedReady.length === 0}
                 >
-                  נקה בחירה
+                  {t.clearAll}
                 </button>
               </span>
             </div>
@@ -226,13 +218,13 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
               <table className="guests-table paste-table">
                 <thead>
                   <tr>
-                    <th className="center">ייבוא</th>
-                    <th>שם מלא</th>
-                    <th>טלפון</th>
-                    <th>צד</th>
-                    <th>קבוצה</th>
-                    <th className="center">כמות</th>
-                    <th>הערות</th>
+                    <th className="center">{t.colImport}</th>
+                    <th>{t.colFullName}</th>
+                    <th>{t.colPhone}</th>
+                    <th>{t.colSide}</th>
+                    <th>{t.colGroup}</th>
+                    <th className="center">{t.colCount}</th>
+                    <th>{t.colNotes}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -326,7 +318,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                             <span
                               key={b}
                               className={`warn-badge ${
-                                b === 'חסר שם' ? 'warn-block' : ''
+                                b === t.rowIssueNoName ? 'warn-block' : ''
                               }`}
                             >
                               {b}
@@ -349,8 +341,8 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                 disabled={committing || includedReady.length === 0}
               >
                 {committing
-                  ? 'מייבא…'
-                  : `ייבוא ${includedReady.length} מוזמנים`}
+                  ? t.importing
+                  : t.importCount(includedReady.length)}
               </button>
               <button
                 className="btn-ghost"
@@ -359,7 +351,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                   setError('')
                 }}
               >
-                חזרה לעריכת הטקסט
+                {t.backToEdit}
               </button>
             </div>
           </>

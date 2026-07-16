@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { createGuest } from '../api'
 import type { GroupType, GuestCreate, Side } from '../types'
 import { GROUP_LABELS, SIDE_LABELS } from '../types'
+import { strings } from '../strings/he'
+
+const t = strings.guests
+const tc = strings.common
 
 interface Props {
   onAdded: () => void
@@ -55,7 +59,7 @@ export function AddGuestForm({ onAdded, onCancel }: Props) {
       setCustomGroup(false)
       onAdded()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור, נסו שוב')
+      setError(err instanceof Error ? err.message : t.saveErrorGeneric)
     } finally {
       setSaving(false)
     }
@@ -65,24 +69,24 @@ export function AddGuestForm({ onAdded, onCancel }: Props) {
     <form className="add-form" onSubmit={submit}>
       <div className="add-grid">
         <label>
-          שם מלא *
+          {t.fullNameLabel}
           <input
             value={form.full_name}
             onChange={(e) => update('full_name', e.target.value)}
-            placeholder="לדוגמה: דני כהן"
+            placeholder={t.fullNamePlaceholder}
           />
         </label>
         <label>
-          טלפון *
+          {t.phoneLabel}
           <input
             value={form.phone}
             onChange={(e) => update('phone', e.target.value)}
-            placeholder="050-123-4567"
+            placeholder={t.phonePlaceholder}
             dir="ltr"
           />
         </label>
         <label>
-          צד
+          {t.sideLabel}
           <select
             value={form.side}
             onChange={(e) => update('side', e.target.value as Side)}
@@ -95,7 +99,7 @@ export function AddGuestForm({ onAdded, onCancel }: Props) {
           </select>
         </label>
         <label>
-          קבוצה
+          {t.groupLabelText}
           <select
             value={customGroup ? CUSTOM : form.group_type}
             onChange={(e) => onGroupSelect(e.target.value)}
@@ -105,20 +109,20 @@ export function AddGuestForm({ onAdded, onCancel }: Props) {
                 {l}
               </option>
             ))}
-            <option value={CUSTOM}>➕ קבוצה חדשה…</option>
+            <option value={CUSTOM}>{t.newGroupOption}</option>
           </select>
           {customGroup && (
             <input
               className="custom-group-input"
               value={form.group_type}
               onChange={(e) => update('group_type', e.target.value)}
-              placeholder="שם הקבוצה, למשל: חברים מהצבא"
+              placeholder={t.newGroupPlaceholder}
               autoFocus
             />
           )}
         </label>
         <label>
-          כמות אנשים
+          {t.partySizeLabel}
           <input
             type="number"
             min={1}
@@ -132,14 +136,14 @@ export function AddGuestForm({ onAdded, onCancel }: Props) {
             checked={form.is_child ?? false}
             onChange={(e) => update('is_child', e.target.checked)}
           />
-          ילד/ה
+          {t.isChildLabel}
         </label>
         <label className="wide">
-          הערות (העדפות ישיבה וכו')
+          {t.notesFieldLabel}
           <input
             value={form.notes_raw}
             onChange={(e) => update('notes_raw', e.target.value)}
-            placeholder="לדוגמה: לא לשבת ליד משפחת לוי"
+            placeholder={t.notesFieldPlaceholder}
           />
         </label>
       </div>
@@ -148,10 +152,10 @@ export function AddGuestForm({ onAdded, onCancel }: Props) {
 
       <div className="add-actions">
         <button type="submit" className="btn-primary" disabled={saving}>
-          {saving ? 'שומר…' : 'הוספת מוזמן'}
+          {saving ? t.saving : t.submitAdd}
         </button>
         <button type="button" className="btn-ghost" onClick={onCancel}>
-          ביטול
+          {tc.cancel}
         </button>
       </div>
     </form>
