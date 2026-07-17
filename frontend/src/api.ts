@@ -7,6 +7,9 @@ import type {
   AdminUserDetail,
   AdminUserRow,
   AdminUserUpdate,
+  AdminVenueMerge,
+  AdminVenueRow,
+  AdminVenueUpdate,
   AnalyzeResult,
   AuditLogRow,
   AutomationDashboard,
@@ -292,6 +295,45 @@ export async function adminCreateAccount(data: {
   account_type: 'planner' | 'venue'
 }): Promise<AdminAccountCreateResult> {
   const res = await apiFetch('/admin/accounts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- ניהול מאגר האולמות (אדמין) ----
+
+export async function adminListVenues(): Promise<AdminVenueRow[]> {
+  const res = await apiFetch('/admin/venues')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function adminUpdateVenue(
+  venueId: number,
+  data: AdminVenueUpdate,
+): Promise<AdminVenueRow> {
+  const res = await apiFetch(`/admin/venues/${venueId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function adminDeleteVenue(venueId: number): Promise<void> {
+  const res = await apiFetch(`/admin/venues/${venueId}`, { method: 'DELETE' })
+  if (!res.ok) throw await toError(res)
+}
+
+export async function adminMergeVenue(
+  venueId: number,
+  data: AdminVenueMerge,
+): Promise<AdminVenueRow> {
+  const res = await apiFetch(`/admin/venues/${venueId}/merge`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),

@@ -4373,6 +4373,47 @@
   font-size: 13px;
 }
 
+/* ===== אדמין שלב 4 — ניהול מאגר האולמות ===== */
+.adm-venue-nav {
+  display: inline-flex;
+  gap: 10px;
+}
+.adm-venue-nav a {
+  color: var(--gold-deep);
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: none;
+}
+.adm-venue-nav a:hover {
+  text-decoration: underline;
+}
+.adm-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 2px 8px;
+}
+.dialog-note {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+.adm-venue-form .adm-field-input {
+  width: 100%;
+}
+
 /* ===== ניהול ברירות המחדל של VEYA (מסך אדמין) ===== */
 .veya-defaults {
   margin-top: 8px;

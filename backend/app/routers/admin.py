@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import audit, auth, models, schemas
+from app import audit, auth, messaging, models, schemas, venues
 from app.auth import get_current_admin
 from app.database import get_db
 
@@ -710,3 +710,141 @@ def update_veya_workflow_step(
     db.commit()
     db.refresh(step)
     return step
+
+
+# ---------------------------------------------------------------------------
+# ניהול מאגר האולמות (שלב אדמין 4)
+# ---------------------------------------------------------------------------
+
+def _venue_to_row(v: models.Venue) -> schemas.AdminVenueRow:
+    """ממיר רשומת אולם לשורת תצוגה באדמין, כולל קישורי ניווט מחושבים מהכתובת."""
+    address = v.address or ""
+    return schemas.AdminVenueRow(
+        id=v.id,
+        name=v.name,
+        address=address,
+        city=v.city or "",
+        usage_count=v.usage_count,
+        maps_link=messaging.maps_link(address) if address else "",
+        waze_link=messaging.waze_link(address) if address else "",
+        created_at=v.created_at,
+    )
+
+
+@router.get("/venues", response_model=list[schemas.AdminVenueRow])
+def list_venues(
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """כל האולמות במאגר, הפופולריים קודם."""
+    rows = db.scalars(
+        select(models.Venue).order_by(
+            models.Venue.usage_count.desc(), models.Venue.name
+        )
+    ).all()
+    return [_venue_to_row(v) for v in rows]
+
+
+@router.patch("/venues/{venue_id}", response_model=schemas.AdminVenueRow)
+def update_venue(
+    venue_id: int,
+    payload: schemas.AdminVenueUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """עדכון שם/כתובת/עיר של אולם. שינוי שם מעדכן גם את מפתח הדדופ."""
+    venue = db.get(models.Venue, venue_id)
+    if venue is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="האולם לא נמצא")
+    data = payload.model_dump(exclude_unset=True)
+    before = f"{venue.name} / {venue.address} / {venue.city}"
+
+    new_name = data.get("name")
+    if new_name is not None:
+        new_name = new_name.strip()
+        if not new_name:
+            raise HTTPException(status_code=400, detail="שם האולם לא יכול להיות ריק")
+        new_key = venues._dedup_key(new_name)
+        if new_key != venue.dedup_key:
+            clash = db.scalar(
+                select(models.Venue).where(
+                    models.Venue.dedup_key == new_key, models.Venue.id != venue.id
+                )
+            )
+            if clash is not None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="כבר קיים אולם עם שם זהה. אפשר למזג ביניהם במקום לשנות שם.",
+                )
+            venue.dedup_key = new_key
+        venue.name = new_name
+
+    if "address" in data and data["address"] is not None:
+        venue.address = data["address"].strip()
+    if "city" in data and data["city"] is not None:
+        venue.city = data["city"].strip()
+
+    after = f"{venue.name} / {venue.address} / {venue.city}"
+    audit.record(
+        db, "admin_update_venue",
+        user_id=admin.id,
+        detail=f"עדכון אולם #{venue.id}: [{before}] ← [{after}]",
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+    db.refresh(venue)
+    return _venue_to_row(venue)
+
+
+@router.delete("/venues/{venue_id}", status_code=204)
+def delete_venue(
+    venue_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """מחיקת אולם מהמאגר. לא משפיע על אירועים קיימים (הם שומרים את שם האולם אצלם)."""
+    venue = db.get(models.Venue, venue_id)
+    if venue is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="האולם לא נמצא")
+    audit.record(
+        db, "admin_delete_venue",
+        user_id=admin.id,
+        detail=f"מחיקת אולם #{venue.id} ({venue.name})",
+        ip=request.client.host if request.client else None,
+    )
+    db.delete(venue)
+    db.commit()
+    return None
+
+
+@router.post("/venues/{venue_id}/merge", response_model=schemas.AdminVenueRow)
+def merge_venue(
+    venue_id: int,
+    payload: schemas.AdminVenueMerge,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """מיזוג אולם כפול לתוך אולם יעד: מחבר את מונה השימושים ומוחק את המקור."""
+    source = db.get(models.Venue, venue_id)
+    if source is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="האולם למיזוג לא נמצא")
+    target = db.get(models.Venue, payload.target_id)
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="אולם היעד לא נמצא")
+    if source.id == target.id:
+        raise HTTPException(status_code=400, detail="אי אפשר למזג אולם לתוך עצמו")
+
+    target.usage_count += source.usage_count
+    audit.record(
+        db, "admin_merge_venue",
+        user_id=admin.id,
+        detail=f"מיזוג אולם #{source.id} ({source.name}) → #{target.id} ({target.name})",
+        ip=request.client.host if request.client else None,
+    )
+    db.delete(source)
+    db.commit()
+    db.refresh(target)
+    return _venue_to_row(target)

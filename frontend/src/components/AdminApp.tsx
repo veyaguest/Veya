@@ -2,29 +2,35 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   adminDashboard,
   adminDeleteUser,
+  adminDeleteVenue,
   adminDisableUser,
   adminEnableUser,
   adminGetUser,
   adminListEvents,
   adminListUsers,
+  adminListVenues,
+  adminMergeVenue,
   adminResetPassword,
   adminUpdateUser,
+  adminUpdateVenue,
 } from '../api'
 import type {
   AdminDashboard,
   AdminEventRow,
   AdminUserDetail,
   AdminUserRow,
+  AdminVenueRow,
   User,
 } from '../types'
 import { CreateAccountForm, VeyaDefaultsManager } from './AdminPage'
 
-type AdminPage = 'dashboard' | 'users' | 'events' | 'messages'
+type AdminPage = 'dashboard' | 'users' | 'events' | 'venues' | 'messages'
 
 const ADMIN_PAGE_TITLES: Record<AdminPage, string> = {
   dashboard: 'לוח בקרה',
   users: 'ניהול משתמשים',
   events: 'ניהול אירועים',
+  venues: 'מאגר האולמות',
   messages: 'הודעות ומסלול אישורים',
 }
 
@@ -32,6 +38,7 @@ const ADMIN_NAV: { key: AdminPage; label: string }[] = [
   { key: 'dashboard', label: 'לוח בקרה' },
   { key: 'users', label: 'משתמשים' },
   { key: 'events', label: 'אירועים' },
+  { key: 'venues', label: 'אולמות' },
   { key: 'messages', label: 'הודעות ומסלול' },
 ]
 
@@ -79,6 +86,13 @@ function AdminNavIcon({ page }: { page: AdminPage }) {
         <svg {...common}>
           <rect x="3" y="4.5" width="18" height="16" rx="2" />
           <path d="M3 9h18M8 3v3M16 3v3" />
+        </svg>
+      )
+    case 'venues':
+      return (
+        <svg {...common}>
+          <path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z" />
+          <circle cx="12" cy="10" r="2.5" />
         </svg>
       )
     case 'messages':
@@ -878,6 +892,346 @@ function AdminEventsView({
   )
 }
 
+/** ניהול מאגר האולמות — צפייה, עריכה, מחיקה ומיזוג כפילויות. */
+function AdminVenuesView() {
+  const [venues, setVenues] = useState<AdminVenueRow[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [editing, setEditing] = useState<AdminVenueRow | null>(null)
+  const [merging, setMerging] = useState<AdminVenueRow | null>(null)
+
+  function reload() {
+    adminListVenues()
+      .then(setVenues)
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : 'שגיאה בטעינת האולמות'),
+      )
+  }
+
+  useEffect(() => {
+    reload()
+  }, [])
+
+  const filtered = useMemo(() => {
+    if (!venues) return []
+    const q = query.trim().toLowerCase()
+    if (!q) return venues
+    return venues.filter(
+      (v) =>
+        v.name.toLowerCase().includes(q) ||
+        (v.address || '').toLowerCase().includes(q) ||
+        (v.city || '').toLowerCase().includes(q),
+    )
+  }, [venues, query])
+
+  async function handleDelete(v: AdminVenueRow) {
+    if (
+      !window.confirm(
+        `למחוק את "${v.name}" מהמאגר? האירועים הקיימים לא יושפעו — רק ההצעה האוטומטית לזוגות חדשים.`,
+      )
+    )
+      return
+    try {
+      await adminDeleteVenue(v.id)
+      setVenues((prev) => (prev ? prev.filter((x) => x.id !== v.id) : prev))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'מחיקת האולם נכשלה')
+    }
+  }
+
+  if (error && !venues) return <div className="admin-error">{error}</div>
+  if (!venues) return <div className="admin-loading">טוען…</div>
+
+  return (
+    <div className="admin-page">
+      <div className="adm-users-head">
+        <h2 className="admin-section-title">
+          מאגר האולמות ({filtered.length}
+          {filtered.length !== venues.length ? ` מתוך ${venues.length}` : ''})
+        </h2>
+        <input
+          type="search"
+          className="adm-search"
+          placeholder="חיפוש לפי שם, כתובת או עיר…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      {error && <div className="admin-error">{error}</div>}
+
+      <div className="table-wrap">
+        <table className="guests-table">
+          <thead>
+            <tr>
+              <th>שם האולם</th>
+              <th>כתובת</th>
+              <th>עיר</th>
+              <th>שימושים</th>
+              <th>ניווט</th>
+              <th>פעולות</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((v) => (
+              <tr key={v.id}>
+                <td>{v.name}</td>
+                <td>{v.address || '—'}</td>
+                <td>{v.city || '—'}</td>
+                <td>{v.usage_count}</td>
+                <td>
+                  {v.address ? (
+                    <span className="adm-venue-nav">
+                      <a href={v.maps_link} target="_blank" rel="noreferrer">
+                        Maps
+                      </a>
+                      <a href={v.waze_link} target="_blank" rel="noreferrer">
+                        Waze
+                      </a>
+                    </span>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+                <td>
+                  <div className="adm-row-actions">
+                    <button
+                      type="button"
+                      className="btn-ghost btn-sm"
+                      onClick={() => setEditing(v)}
+                    >
+                      עריכה
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-ghost btn-sm"
+                      onClick={() => setMerging(v)}
+                    >
+                      מיזוג
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-ghost btn-sm danger"
+                      onClick={() => handleDelete(v)}
+                    >
+                      מחיקה
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={6} className="adm-empty-row">
+                  לא נמצאו אולמות שתואמים לחיפוש.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {editing && (
+        <AdminVenueEditDialog
+          venue={editing}
+          onClose={() => setEditing(null)}
+          onSaved={(updated) => {
+            setVenues((prev) =>
+              prev ? prev.map((x) => (x.id === updated.id ? updated : x)) : prev,
+            )
+            setEditing(null)
+          }}
+        />
+      )}
+
+      {merging && (
+        <AdminVenueMergeDialog
+          source={merging}
+          venues={venues}
+          onClose={() => setMerging(null)}
+          onMerged={() => {
+            setMerging(null)
+            reload()
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+/** חלונית עריכת אולם — שם, כתובת, עיר. */
+function AdminVenueEditDialog({
+  venue,
+  onClose,
+  onSaved,
+}: {
+  venue: AdminVenueRow
+  onClose: () => void
+  onSaved: (updated: AdminVenueRow) => void
+}) {
+  const [name, setName] = useState(venue.name)
+  const [address, setAddress] = useState(venue.address)
+  const [city, setCity] = useState(venue.city)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function save() {
+    if (!name.trim()) {
+      setError('שם האולם לא יכול להיות ריק')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      const updated = await adminUpdateVenue(venue.id, {
+        name: name.trim(),
+        address: address.trim(),
+        city: city.trim(),
+      })
+      onSaved(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שמירת האולם נכשלה')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="dialog" onClick={(e) => e.stopPropagation()}>
+        <div className="dialog-head">
+          <h3>עריכת אולם</h3>
+          <button type="button" className="x" onClick={onClose} aria-label="סגירה">
+            ×
+          </button>
+        </div>
+        <div className="dialog-body adm-venue-form">
+          <label className="adm-field">
+            <span className="adm-field-label">שם האולם</span>
+            <input
+              className="adm-field-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <label className="adm-field">
+            <span className="adm-field-label">כתובת</span>
+            <input
+              className="adm-field-input"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </label>
+          <label className="adm-field">
+            <span className="adm-field-label">עיר</span>
+            <input
+              className="adm-field-input"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+            />
+          </label>
+          {error && <div className="admin-error">{error}</div>}
+        </div>
+        <div className="dialog-foot">
+          <button type="button" className="btn-ghost" onClick={onClose} disabled={busy}>
+            ביטול
+          </button>
+          <button type="button" className="btn-primary" onClick={save} disabled={busy}>
+            {busy ? 'רגע…' : 'שמירה'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** חלונית מיזוג אולם כפול לתוך אולם יעד. */
+function AdminVenueMergeDialog({
+  source,
+  venues,
+  onClose,
+  onMerged,
+}: {
+  source: AdminVenueRow
+  venues: AdminVenueRow[]
+  onClose: () => void
+  onMerged: () => void
+}) {
+  const [targetId, setTargetId] = useState<number | ''>('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const options = venues.filter((v) => v.id !== source.id)
+
+  async function merge() {
+    if (targetId === '') {
+      setError('יש לבחור אולם יעד למיזוג')
+      return
+    }
+    const target = options.find((v) => v.id === targetId)
+    if (
+      !window.confirm(
+        `למזג את "${source.name}" לתוך "${target?.name}"? האולם "${source.name}" יימחק והשימושים שלו יתווספו ליעד. לא ניתן לבטל.`,
+      )
+    )
+      return
+    setBusy(true)
+    setError(null)
+    try {
+      await adminMergeVenue(source.id, { target_id: targetId })
+      onMerged()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'המיזוג נכשל')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="dialog" onClick={(e) => e.stopPropagation()}>
+        <div className="dialog-head">
+          <h3>מיזוג אולם כפול</h3>
+          <button type="button" className="x" onClick={onClose} aria-label="סגירה">
+            ×
+          </button>
+        </div>
+        <div className="dialog-body adm-venue-form">
+          <p className="dialog-note">
+            ממזגים את <strong>{source.name}</strong> לתוך אולם אחר. השימושים
+            ({source.usage_count}) יתווספו ליעד, והרשומה הכפולה תימחק.
+          </p>
+          <label className="adm-field">
+            <span className="adm-field-label">אולם יעד</span>
+            <select
+              className="adm-field-input"
+              value={targetId}
+              onChange={(e) =>
+                setTargetId(e.target.value ? Number(e.target.value) : '')
+              }
+            >
+              <option value="">בחרו אולם…</option>
+              {options.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                  {v.city ? ` — ${v.city}` : ''} ({v.usage_count})
+                </option>
+              ))}
+            </select>
+          </label>
+          {error && <div className="admin-error">{error}</div>}
+        </div>
+        <div className="dialog-foot">
+          <button type="button" className="btn-ghost" onClick={onClose} disabled={busy}>
+            ביטול
+          </button>
+          <button type="button" className="btn-primary" onClick={merge} disabled={busy}>
+            {busy ? 'רגע…' : 'מיזוג'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** פאנל האדמין המלא — מסך נפרד לגמרי מממשק הזוג (App.tsx מנתב לפי is_admin). */
 export function AdminApp({
   user,
@@ -947,6 +1301,7 @@ export function AdminApp({
           {page === 'dashboard' && <AdminDashboardView />}
           {page === 'users' && <AdminUsersView onImpersonate={onImpersonate} />}
           {page === 'events' && <AdminEventsView onImpersonate={onImpersonate} />}
+          {page === 'venues' && <AdminVenuesView />}
           {page === 'messages' && <VeyaDefaultsManager />}
         </main>
       </div>

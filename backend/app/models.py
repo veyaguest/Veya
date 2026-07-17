@@ -368,6 +368,8 @@ class Venue(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String, index=True)
     address: Mapped[str] = mapped_column(String, default="")
+    # עיר — שדה אופציונלי לניהול/סינון במאגר האדמין (לא נדרש להשלמה האוטומטית).
+    city: Mapped[str] = mapped_column(String, default="")
     # מפתח דדופ = שם מנורמל (lower + רווחים מכווצים), כדי לא לכפול אולמות.
     dedup_key: Mapped[str] = mapped_column(String, unique=True, index=True)
     # כמה אירועים השתמשו באולם — לדירוג ההצעות (הפופולריים קודם).

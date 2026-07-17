@@ -506,6 +506,27 @@ export interface AdminImpersonateResult {
   display_name: string
 }
 
+export interface AdminVenueRow {
+  id: number
+  name: string
+  address: string
+  city: string
+  usage_count: number
+  maps_link: string
+  waze_link: string
+  created_at: string
+}
+
+export interface AdminVenueUpdate {
+  name?: string
+  address?: string
+  city?: string
+}
+
+export interface AdminVenueMerge {
+  target_id: number
+}
+
 // ---- לוח הבקרה של האדמין ----
 
 export interface AdminDashboardEvent {

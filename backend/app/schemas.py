@@ -653,6 +653,33 @@ class AdminAccountCreateResult(BaseModel):
     temporary_password: str
 
 
+class AdminVenueRow(BaseModel):
+    """שורת אולם במאגר האדמין — כולל קישורי ניווט מוכנים לפי הכתובת."""
+
+    id: int
+    name: str
+    address: str = ""
+    city: str = ""
+    usage_count: int
+    maps_link: str
+    waze_link: str
+    created_at: datetime
+
+
+class AdminVenueUpdate(BaseModel):
+    """עדכון פרטי אולם — כל השדות אופציונליים (עדכון חלקי)."""
+
+    name: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+
+
+class AdminVenueMerge(BaseModel):
+    """איחוד אולם כפול לתוך אולם יעד — המקור נמחק, השימושים עוברים ליעד."""
+
+    target_id: int
+
+
 # ---- לוח הבקרה של האדמין (סקירת מערכת) ----
 
 

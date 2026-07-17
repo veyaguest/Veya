@@ -103,6 +103,9 @@ _EXTRA_COLUMNS = {
         "guest_note": "TEXT",
         "is_child": "BOOLEAN DEFAULT 0",
     },
+    "venues": {
+        "city": "VARCHAR DEFAULT ''",
+    },
 }
 
 
