@@ -4414,6 +4414,38 @@
   width: 100%;
 }
 
+/* ===== אדמין שלב 5 — נפח הודעות (מוני שליחה) ===== */
+.veya-msg-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.veya-msg-stat {
+  flex: 1 1 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.veya-msg-stat.total {
+  border-color: var(--gold);
+  background: var(--ivory);
+}
+.veya-msg-num {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--charcoal);
+  font-variant-numeric: tabular-nums;
+}
+.veya-msg-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
 /* ===== ניהול ברירות המחדל של VEYA (מסך אדמין) ===== */
 .veya-defaults {
   margin-top: 8px;

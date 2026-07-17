@@ -712,6 +712,38 @@ def update_veya_workflow_step(
     return step
 
 
+@router.get("/veya/message-stats", response_model=schemas.AdminMessageStats)
+def veya_message_stats(
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """נפח ההודעות במערכת: יוצאות ב-WhatsApp לפי סוג, ונכנסות."""
+    rows = db.execute(
+        select(models.Message.kind, func.count(models.Message.id))
+        .where(
+            models.Message.direction == "outbound",
+            models.Message.channel == "whatsapp",
+        )
+        .group_by(models.Message.kind)
+        .order_by(func.count(models.Message.id).desc())
+    ).all()
+    by_kind = [schemas.AdminMessageStat(kind=k or "custom", count=c) for k, c in rows]
+    total_outbound = sum(s.count for s in by_kind)
+    total_inbound = (
+        db.scalar(
+            select(func.count(models.Message.id)).where(
+                models.Message.direction == "inbound"
+            )
+        )
+        or 0
+    )
+    return schemas.AdminMessageStats(
+        total_outbound=total_outbound,
+        total_inbound=total_inbound,
+        by_kind=by_kind,
+    )
+
+
 # ---------------------------------------------------------------------------
 # ניהול מאגר האולמות (שלב אדמין 4)
 # ---------------------------------------------------------------------------

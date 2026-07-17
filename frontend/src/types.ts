@@ -798,6 +798,17 @@ export interface VeyaWorkflowStepInput {
   active?: boolean
 }
 
+export interface AdminMessageStat {
+  kind: string
+  count: number
+}
+
+export interface AdminMessageStats {
+  total_outbound: number
+  total_inbound: number
+  by_kind: AdminMessageStat[]
+}
+
 // ---- מסלול אישורי-ההגעה של האירוע (מסך הזוג) ----
 
 export interface RsvpTrackPhoneRow {

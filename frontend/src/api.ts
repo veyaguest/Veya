@@ -5,6 +5,7 @@ import type {
   AdminImpersonateResult,
   AdminPasswordResetResult,
   AdminUserDetail,
+  AdminMessageStats,
   AdminUserRow,
   AdminUserUpdate,
   AdminVenueMerge,
@@ -917,6 +918,12 @@ export async function adminUpdateVeyaWorkflowStep(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function adminMessageStats(): Promise<AdminMessageStats> {
+  const res = await apiFetch('/admin/veya/message-stats')
   if (!res.ok) throw await toError(res)
   return res.json()
 }

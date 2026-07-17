@@ -1065,6 +1065,19 @@ class VeyaWorkflowStepUpdate(BaseModel):
         return v
 
 
+class AdminMessageStat(BaseModel):
+    """ספירת הודעות WhatsApp יוצאות לפי סוג — לתצוגת 'כמה נשלח' בפאנל האדמין."""
+    kind: str
+    count: int
+
+
+class AdminMessageStats(BaseModel):
+    """סיכום נפח הודעות במערכת: יוצאות (לפי סוג) ונכנסות."""
+    total_outbound: int
+    total_inbound: int
+    by_kind: list[AdminMessageStat]
+
+
 # --- מסלול אישורי-ההגעה של האירוע (סטטוס למסך הזוג) ---
 
 

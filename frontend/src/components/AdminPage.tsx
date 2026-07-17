@@ -7,11 +7,13 @@ import {
   adminListUsers,
   adminListVeyaTemplates,
   adminListVeyaWorkflow,
+  adminMessageStats,
   adminUpdateVeyaTemplate,
   adminUpdateVeyaWorkflowStep,
 } from '../api'
 import type {
   AdminEventRow,
+  AdminMessageStats,
   AdminUserRow,
   VeyaStage,
   VeyaTemplate,
@@ -44,6 +46,15 @@ const STAGE_ORDER: VeyaStage[] = [
 const ACTION_LABELS: Record<string, string> = {
   send: 'שליחת הודעה',
   phone_followup: 'מעקב טלפוני',
+}
+
+const MESSAGE_KIND_LABELS: Record<string, string> = {
+  invitation: 'הזמנות',
+  reminder: 'תזכורות',
+  pre_event: 'לפני האירוע',
+  thank_you: 'תודה',
+  reply: 'תשובות',
+  custom: 'מותאם',
 }
 
 /** טופס יצירת חשבון מפיק/אולם — לתפקידים אלו אין הרשמה עצמאית. */
@@ -399,6 +410,7 @@ function VeyaStepCard({
 export function VeyaDefaultsManager() {
   const [templates, setTemplates] = useState<VeyaTemplate[] | null>(null)
   const [workflow, setWorkflow] = useState<VeyaWorkflowStep[] | null>(null)
+  const [stats, setStats] = useState<AdminMessageStats | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -410,6 +422,10 @@ export function VeyaDefaultsManager() {
       .catch((err) =>
         setError(err instanceof Error ? err.message : 'שגיאה בטעינת ברירות המחדל'),
       )
+    // נפח ההודעות — לא חוסם את המסך אם נכשל.
+    adminMessageStats()
+      .then(setStats)
+      .catch(() => setStats(null))
   }, [])
 
   if (error) return <div className="admin-error">{error}</div>
@@ -417,6 +433,30 @@ export function VeyaDefaultsManager() {
 
   return (
     <div className="veya-defaults">
+      {stats && (
+        <>
+          <h2 className="admin-section-title">נפח ההודעות במערכת</h2>
+          <div className="veya-msg-stats">
+            <div className="veya-msg-stat total">
+              <span className="veya-msg-num">{stats.total_outbound}</span>
+              <span className="veya-msg-label">נשלחו בסה״כ</span>
+            </div>
+            {stats.by_kind.map((s) => (
+              <div className="veya-msg-stat" key={s.kind}>
+                <span className="veya-msg-num">{s.count}</span>
+                <span className="veya-msg-label">
+                  {MESSAGE_KIND_LABELS[s.kind] ?? s.kind}
+                </span>
+              </div>
+            ))}
+            <div className="veya-msg-stat">
+              <span className="veya-msg-num">{stats.total_inbound}</span>
+              <span className="veya-msg-label">תשובות שהתקבלו</span>
+            </div>
+          </div>
+        </>
+      )}
+
       <h2 className="admin-section-title">מסלול אישורי ההגעה הקבוע</h2>
       <p className="file-name">
         השלבים רצים אוטומטית על כל אירוע חדש. אפשר לשנות את מרווחי הימים, לשנות שם
