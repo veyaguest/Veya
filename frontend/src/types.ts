@@ -499,6 +499,13 @@ export interface AdminPasswordResetResult {
   temporary_password: string
 }
 
+export interface AdminImpersonateResult {
+  token: string
+  user_id: number
+  email: string
+  display_name: string
+}
+
 // ---- לוח הבקרה של האדמין ----
 
 export interface AdminDashboardEvent {

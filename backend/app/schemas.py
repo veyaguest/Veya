@@ -600,6 +600,15 @@ class AdminUserDetail(BaseModel):
     login_count: int
 
 
+class AdminImpersonateResult(BaseModel):
+    """תוצאת התחזות אדמין: טוקן זמני שמאפשר לראות את המערכת בעיני המשתמש."""
+
+    token: str
+    user_id: int
+    email: str
+    display_name: str
+
+
 class AdminAccountCreate(BaseModel):
     """יצירת חשבון מפיק/אולם ע"י אדמין — לתפקידים אלו אין הרשמה עצמאית,
 

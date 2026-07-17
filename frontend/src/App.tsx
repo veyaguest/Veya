@@ -1,7 +1,18 @@
 import { useEffect, useState } from 'react'
+import type { ReactElement } from 'react'
 import './App.css'
-import { getMe, healthCheck, listMyEvents } from './api'
-import { clearAuth, getEventId, getToken, setEventId } from './authStore'
+import { adminImpersonate, getMe, healthCheck, listMyEvents } from './api'
+import {
+  clearAdminToken,
+  clearAuth,
+  getAdminToken,
+  getEventId,
+  getToken,
+  isImpersonating,
+  setAdminToken,
+  setEventId,
+  setToken,
+} from './authStore'
 import { AdminApp } from './components/AdminApp'
 import { AuthPage } from './components/AuthPage'
 import { DashboardPage } from './components/DashboardPage'
@@ -91,6 +102,9 @@ function App() {
   const [authChecked, setAuthChecked] = useState(false)
   const [events, setEvents] = useState<EventSummary[]>([])
   const [activeEventId, setActiveEventId] = useState<number | null>(getEventId())
+  // מצב התחזות: אדמין שמחובר כרגע כמשתמש (טוקן האדמין שמור בצד).
+  const [impersonating, setImpersonating] = useState<boolean>(isImpersonating())
+  const [impBusy, setImpBusy] = useState(false)
 
   useEffect(() => {
     healthCheck().then(setOnline)
@@ -128,6 +142,8 @@ function App() {
   // האזנה ל-401 גלובלי (טוקן פג) — מחזיר למסך התחברות.
   useEffect(() => {
     const handler = () => {
+      clearAdminToken()
+      setImpersonating(false)
       setUser(null)
       setEvents([])
       setActiveEventId(null)
@@ -135,6 +151,43 @@ function App() {
     window.addEventListener('veya-unauthorized', handler)
     return () => window.removeEventListener('veya-unauthorized', handler)
   }, [])
+
+  // אדמין "מתחבר כמשתמש": שומר את טוקן האדמין בצד, מכניס טוקן משתמש במקומו,
+  // וטוען מחדש את הממשק בעיני אותו משתמש. שגיאות מוחזרות לקורא (AdminApp).
+  async function handleImpersonate(userId: number) {
+    const adminToken = getToken()
+    if (!adminToken) return
+    const res = await adminImpersonate(userId)
+    setAdminToken(adminToken)
+    setToken(res.token)
+    setEventId(null)
+    setImpersonating(true)
+    setPage('dashboard')
+    const u = await getMe()
+    setUser(u)
+    await loadEvents()
+  }
+
+  // חזרה מהתחזות למצב אדמין: משחזר את טוקן האדמין ומרענן את המשתמש.
+  async function handleStopImpersonate() {
+    const adminToken = getAdminToken()
+    setImpBusy(true)
+    try {
+      if (adminToken) setToken(adminToken)
+      clearAdminToken()
+      setImpersonating(false)
+      setEventId(null)
+      setEvents([])
+      setActiveEventId(null)
+      setPage('dashboard')
+      const u = await getMe()
+      setUser(u)
+    } catch {
+      handleLogout()
+    } finally {
+      setImpBusy(false)
+    }
+  }
 
   async function handleAuth(u: User) {
     setUser(u)
@@ -172,14 +225,40 @@ function App() {
 
   // אדמין → פאנל ניהול מלא ונפרד (לא נכנס למסלול יצירת אירוע של זוג).
   if (user.is_admin) {
-    return <AdminApp user={user} onLogout={handleLogout} />
+    return (
+      <AdminApp user={user} onLogout={handleLogout} onImpersonate={handleImpersonate} />
+    )
   }
+
+  // בזמן התחזות עוטפים את ממשק הזוג בבאנר קבוע עם דרך חזרה לאדמין.
+  const withImpersonation = (view: ReactElement): ReactElement =>
+    impersonating ? (
+      <>
+        <div className="imp-banner" role="status">
+          <span className="imp-banner-text">
+            <span className="imp-banner-dot" aria-hidden="true" />
+            אתה מחובר כרגע כאדמין למשתמש זה — {user.display_name || user.email}
+          </span>
+          <button
+            type="button"
+            className="imp-banner-exit"
+            onClick={handleStopImpersonate}
+            disabled={impBusy}
+          >
+            {impBusy ? 'רגע…' : 'חזרה לאדמין'}
+          </button>
+        </div>
+        <div className="imp-shift">{view}</div>
+      </>
+    ) : (
+      view
+    )
 
   // מחובר אבל אין עדיין אירוע.
   if (events.length === 0) {
     // מפיק/אולם לא יוצרים אירוע בעצמם — הם מחכים שבעל אירוע יזמין אותם.
     if (user.account_type === 'planner' || user.account_type === 'venue') {
-      return (
+      return withImpersonation(
         <div className="auth-wrap">
           <div className="auth-card">
             <h1 className="first-event-title">ברוכים הבאים ל-VEYA</h1>
@@ -188,10 +267,10 @@ function App() {
               אתכם דרך האימייל שאיתו נרשמתם: <strong dir="ltr">{user.email}</strong>
             </p>
           </div>
-        </div>
+        </div>,
       )
     }
-    return <OnboardingWizard onCreated={handleEventCreated} />
+    return withImpersonation(<OnboardingWizard onCreated={handleEventCreated} />)
   }
 
   const navItems = NAV_ITEMS
@@ -202,7 +281,7 @@ function App() {
     : '—'
   const userInitial = (user.display_name || user.email || '?').trim().charAt(0).toUpperCase()
 
-  return (
+  return withImpersonation(
     <div className="shell">
       <aside className="sidebar">
         <div className="sidebar-logo" dir="ltr">
@@ -295,7 +374,7 @@ function App() {
       {membersOpen && activeEventId != null && (
         <EventMembersDialog eventId={activeEventId} onClose={() => setMembersOpen(false)} />
       )}
-    </div>
+    </div>,
   )
 }
 

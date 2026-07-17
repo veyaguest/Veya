@@ -521,6 +521,54 @@ def delete_user(
     db.commit()
 
 
+@router.post("/users/{user_id}/impersonate", response_model=schemas.AdminImpersonateResult)
+def impersonate_user(
+    user_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """מנפיק טוקן זמני שמאפשר לאדמין לראות את המערכת בדיוק כמו המשתמש.
+
+    זהו ה"התחבר כמשתמש" — בלי לדעת את סיסמת המשתמש. הטוקן מונפק עבור המשתמש
+    היעד, כך שכל נקודות הקצה של הזוג ממילא מסננות לפי המשתמש הזה. הפרונט שומר
+    את טוקן האדמין בצד, מציג באנר קבוע, ומאפשר לחזור לאדמין בכל רגע.
+    """
+    target = db.get(models.User, user_id)
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש לא נמצא")
+    if target.id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="אתה כבר מחובר כאדמין הזה",
+        )
+    if target.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="אי אפשר להתחזות לאדמין אחר",
+        )
+    if target.disabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="החשבון מושבת. יש להפעיל אותו לפני התחזות",
+        )
+
+    token = auth.create_access_token(target)
+    audit.record(
+        db, "admin_impersonate",
+        user_id=admin.id,
+        detail=f"התחזות למשתמש {target.email} (#{target.id})",
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+    return schemas.AdminImpersonateResult(
+        token=token,
+        user_id=target.id,
+        email=target.email,
+        display_name=target.display_name,
+    )
+
+
 @router.post("/accounts", response_model=schemas.AdminAccountCreateResult, status_code=201)
 def create_account(
     payload: schemas.AdminAccountCreate,

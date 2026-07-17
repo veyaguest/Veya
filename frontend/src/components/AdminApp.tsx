@@ -275,10 +275,12 @@ function AdminUserDialog({
   userId,
   onClose,
   onChanged,
+  onImpersonate,
 }: {
   userId: number
   onClose: () => void
   onChanged: () => void
+  onImpersonate: (userId: number) => Promise<void>
 }) {
   const [detail, setDetail] = useState<AdminUserDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -381,6 +383,19 @@ function AdminUserDialog({
       setError(err instanceof Error ? err.message : 'המחיקה נכשלה')
       setConfirm(null)
     } finally {
+      setBusy(false)
+    }
+  }
+
+  async function impersonate() {
+    if (!detail) return
+    setBusy(true)
+    setError(null)
+    try {
+      await onImpersonate(detail.id)
+      // ההתחזות מחליפה את כל המסך — הדיאלוג ירד עם רענון האפליקציה.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'ההתחברות כמשתמש נכשלה')
       setBusy(false)
     }
   }
@@ -550,6 +565,21 @@ function AdminUserDialog({
 
             {/* פעולות */}
             <div className="adm-user-actions">
+              {!detail.is_admin && (
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={impersonate}
+                  disabled={busy || detail.disabled}
+                  title={
+                    detail.disabled
+                      ? 'צריך להפעיל את החשבון לפני התחברות כמשתמש'
+                      : undefined
+                  }
+                >
+                  התחבר כמשתמש
+                </button>
+              )}
               <button
                 type="button"
                 className="btn-ghost"
@@ -608,7 +638,11 @@ function AdminUserDialog({
 }
 
 /** ניהול משתמשים — חיפוש, טבלה לחיצה, כרטיס משתמש מלא, ויצירת חשבון. */
-function AdminUsersView() {
+function AdminUsersView({
+  onImpersonate,
+}: {
+  onImpersonate: (userId: number) => Promise<void>
+}) {
   const [users, setUsers] = useState<AdminUserRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -719,16 +753,23 @@ function AdminUsersView() {
           userId={openUserId}
           onClose={() => setOpenUserId(null)}
           onChanged={reload}
+          onImpersonate={onImpersonate}
         />
       )}
     </div>
   )
 }
 
-/** ניהול אירועים (שלב 1 — טבלה; כניסה לאירוע/התחזות בשלב הבא). */
-function AdminEventsView() {
+/** ניהול אירועים — טבלת כל האירועים + כניסה לאירוע כזוג (התחזות לבעלים). */
+function AdminEventsView({
+  onImpersonate,
+}: {
+  onImpersonate: (userId: number) => Promise<void>
+}) {
   const [events, setEvents] = useState<AdminEventRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [busyOwner, setBusyOwner] = useState<number | null>(null)
 
   useEffect(() => {
     adminListEvents()
@@ -738,12 +779,53 @@ function AdminEventsView() {
       )
   }, [])
 
-  if (error) return <div className="admin-error">{error}</div>
+  const filtered = useMemo(() => {
+    if (!events) return []
+    const q = query.trim().toLowerCase()
+    if (!q) return events
+    return events.filter(
+      (e) =>
+        e.groom_name.toLowerCase().includes(q) ||
+        e.bride_name.toLowerCase().includes(q) ||
+        (e.venue_name || '').toLowerCase().includes(q) ||
+        (e.owner_email || '').toLowerCase().includes(q) ||
+        String(e.id) === q,
+    )
+  }, [events, query])
+
+  async function enterEvent(ownerId: number) {
+    setBusyOwner(ownerId)
+    setError(null)
+    try {
+      await onImpersonate(ownerId)
+      // מצליח → כל המסך מתחלף לממשק הזוג; אין צורך לאפס busy.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'הכניסה לאירוע נכשלה')
+      setBusyOwner(null)
+    }
+  }
+
+  if (error && !events) return <div className="admin-error">{error}</div>
   if (!events) return <div className="admin-loading">טוען…</div>
 
   return (
     <div className="admin-page">
-      <h2 className="admin-section-title">כל האירועים ({events.length})</h2>
+      <div className="adm-users-head">
+        <h2 className="admin-section-title">
+          כל האירועים ({filtered.length}
+          {filtered.length !== events.length ? ` מתוך ${events.length}` : ''})
+        </h2>
+        <input
+          type="search"
+          className="adm-search"
+          placeholder="חיפוש לפי זוג, אולם, בעלים או מזהה…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      {error && <div className="admin-error">{error}</div>}
+
       <div className="table-wrap">
         <table className="guests-table">
           <thead>
@@ -753,10 +835,11 @@ function AdminEventsView() {
               <th>אולם</th>
               <th>בעלים</th>
               <th>מוזמנים</th>
+              <th>פעולות</th>
             </tr>
           </thead>
           <tbody>
-            {events.map((e) => (
+            {filtered.map((e) => (
               <tr key={e.id}>
                 <td>{e.id}</td>
                 <td>
@@ -765,8 +848,29 @@ function AdminEventsView() {
                 <td>{e.venue_name || '—'}</td>
                 <td dir="ltr">{e.owner_email || '—'}</td>
                 <td>{e.guests_count}</td>
+                <td>
+                  {e.owner_id ? (
+                    <button
+                      type="button"
+                      className="btn-ghost btn-sm"
+                      onClick={() => enterEvent(e.owner_id as number)}
+                      disabled={busyOwner != null}
+                    >
+                      {busyOwner === e.owner_id ? 'רגע…' : 'כניסה כזוג'}
+                    </button>
+                  ) : (
+                    <span className="adm-event-noowner">ללא בעלים</span>
+                  )}
+                </td>
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={6} className="adm-empty-row">
+                  לא נמצאו אירועים שתואמים לחיפוש.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -775,7 +879,15 @@ function AdminEventsView() {
 }
 
 /** פאנל האדמין המלא — מסך נפרד לגמרי מממשק הזוג (App.tsx מנתב לפי is_admin). */
-export function AdminApp({ user, onLogout }: { user: User; onLogout: () => void }) {
+export function AdminApp({
+  user,
+  onLogout,
+  onImpersonate,
+}: {
+  user: User
+  onLogout: () => void
+  onImpersonate: (userId: number) => Promise<void>
+}) {
   const [page, setPage] = useState<AdminPage>('dashboard')
   const userInitial = (user.display_name || user.email || '?').trim().charAt(0).toUpperCase()
 
@@ -833,8 +945,8 @@ export function AdminApp({ user, onLogout }: { user: User; onLogout: () => void 
         </header>
         <main className="content" key={page}>
           {page === 'dashboard' && <AdminDashboardView />}
-          {page === 'users' && <AdminUsersView />}
-          {page === 'events' && <AdminEventsView />}
+          {page === 'users' && <AdminUsersView onImpersonate={onImpersonate} />}
+          {page === 'events' && <AdminEventsView onImpersonate={onImpersonate} />}
           {page === 'messages' && <VeyaDefaultsManager />}
         </main>
       </div>

@@ -4303,6 +4303,76 @@
   }
 }
 
+/* ===== אדמין שלב 3 — התחזות למשתמש (באנר קבוע) ===== */
+.imp-banner {
+  position: sticky;
+  top: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  height: 48px;
+  padding: 0 18px;
+  background: var(--charcoal);
+  color: var(--cream);
+  box-shadow: 0 2px 14px -6px rgba(43, 38, 32, 0.6);
+}
+.imp-banner-text {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.imp-banner-dot {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 3px rgba(198, 163, 92, 0.28);
+}
+.imp-banner-exit {
+  flex-shrink: 0;
+  min-height: 34px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(233, 226, 213, 0.5);
+  background: transparent;
+  color: var(--cream);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.imp-banner-exit:hover:not(:disabled) {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--charcoal);
+}
+.imp-banner-exit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+/* משאירים לסרגל הצד ולפריסה מקום מתחת לבאנר בזמן התחזות. */
+.imp-shift .shell {
+  min-height: calc(100vh - 48px);
+}
+.imp-shift .sidebar {
+  top: 48px;
+  height: calc(100vh - 48px);
+}
+.adm-event-noowner {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 /* ===== ניהול ברירות המחדל של VEYA (מסך אדמין) ===== */
 .veya-defaults {
   margin-top: 8px;

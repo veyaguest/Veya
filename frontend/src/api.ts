@@ -2,6 +2,7 @@ import type {
   AdminAccountCreateResult,
   AdminDashboard,
   AdminEventRow,
+  AdminImpersonateResult,
   AdminPasswordResetResult,
   AdminUserDetail,
   AdminUserRow,
@@ -275,6 +276,13 @@ export async function adminEnableUser(userId: number): Promise<void> {
 export async function adminDeleteUser(userId: number): Promise<void> {
   const res = await apiFetch(`/admin/users/${userId}`, { method: 'DELETE' })
   if (!res.ok) throw await toError(res)
+}
+
+/** "התחבר כמשתמש" — מנפיק טוקן זמני שמאפשר לראות את המערכת בעיני המשתמש. */
+export async function adminImpersonate(userId: number): Promise<AdminImpersonateResult> {
+  const res = await apiFetch(`/admin/users/${userId}/impersonate`, { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
 }
 
 /** יצירת חשבון מפיק/אולם ע"י אדמין (אין הרשמה עצמאית לתפקידים אלו). */
