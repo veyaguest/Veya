@@ -372,11 +372,12 @@ export function HallPage() {
   // ---- מגש "ללא שולחן" (צד ימין): חיפוש כדי למצוא מוזמן ברשימה ארוכה ----
   const [traySearch, setTraySearch] = useState('')
 
-  // ---- מובייל: חוויית הושבה ייעודית (Auto-Fit, Bottom Sheet, ניווט תחתון) ----
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches,
-  )
-  const isMobileRef = useRef(isMobile)
+  // ---- חוויית הושבה אחידה בטלפון ובמחשב (Auto-Fit, Bottom Sheet, ניווט תחתון) ----
+  // אותה מפה נוחה בכל מכשיר: הלוח נכנס במלואו למסך, הקשה על שולחן פותחת
+  // Bottom Sheet, וניווט תחתון עם 5 מדורים. במחשב הלוח ממלא את אזור התוכן
+  // שלצד סרגל הצד (המיקום נקבע ב-CSS לפי רוחב המסך).
+  const mobileMode = true as boolean
+  const isMobileRef = useRef(true)
   const [mobileTab, setMobileTab] = useState<'hall' | 'tables' | 'guests' | 'smart' | 'tools'>('hall')
   const [sheetTable, setSheetTable] = useState<number | null>(null)
   const [sheetEdit, setSheetEdit] = useState(false)
@@ -527,18 +528,6 @@ export function HallPage() {
     loadClarifications()
   }, [load, loadClarifications])
 
-  // ---- מובייל: מעקב אחרי רוחב המסך (matchMedia) ----
-  useEffect(() => {
-    isMobileRef.current = isMobile
-  }, [isMobile])
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 760px)')
-    const on = () => setIsMobile(mq.matches)
-    mq.addEventListener('change', on)
-    return () => mq.removeEventListener('change', on)
-  }, [])
-
   // ---- מובייל: Fit-to-Screen — האולם כולו מוקטן וממורכז כדי להיראות במלואו ----
   // מחשב את תיבת-התוכן (כל השולחנות + האלמנטים) ומקטין/ממרכז אותה לגודל המסך,
   // בלי גלילה ובלי זום ידני. בדסקטופ הפונקציה יוצאת מיד (scale נשאר 1).
@@ -593,23 +582,23 @@ export function HallPage() {
   }, [tables, elements])
 
   useEffect(() => {
-    if (!isMobile) {
+    if (!mobileMode) {
       setViewTransform(undefined)
       scaleRef.current = 1
       offsetRef.current = { x: 0, y: 0 }
       return
     }
     recomputeFit()
-  }, [isMobile, mobileTab, recomputeFit])
+  }, [mobileMode, mobileTab, recomputeFit])
 
   useEffect(() => {
-    if (!isMobile) return
+    if (!mobileMode) return
     const vp = viewportRef.current
     if (!vp || typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver(() => recomputeFit())
     ro.observe(vp)
     return () => ro.disconnect()
-  }, [isMobile, mobileTab, recomputeFit])
+  }, [mobileMode, mobileTab, recomputeFit])
 
   // אין יותר זום בדסקטופ — הלוח נגלל באופן טבעי (גלגלת/מגע רגילים דרך
   // overflow: auto של המאגר), בלי מאזינים מותאמים-אישית.
@@ -1357,7 +1346,7 @@ export function HallPage() {
   // שכבה נפרדת לגמרי לטלפון (early-return) — הדסקטופ שמתחת נשאר ללא שינוי.
   // עקרונות: האולם תמיד "נכנס" במלואו למסך (Auto-Fit, בלי גלילה ובלי זום),
   // הקשה על שולחן פותחת Bottom Sheet, והעברת מוזמן נעשית בהקשה (לא בגרירה).
-  if (isMobile) {
+  if (mobileMode) {
     const sheetT = sheetTable != null ? tables.find((t) => t.table_number === sheetTable) ?? null : null
     const q = mobileSearch.trim()
     const searchResults = q ? smartSearch(q, tables, unassigned) : []
