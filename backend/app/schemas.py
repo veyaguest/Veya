@@ -1078,6 +1078,19 @@ class AdminMessageStats(BaseModel):
     by_kind: list[AdminMessageStat]
 
 
+class AdminAuditRow(BaseModel):
+    """שורת יומן פעולות אדמין — מי, מתי, איזו פעולה, ותיאור."""
+    id: int
+    action: str
+    detail: str = ""
+    ip: Optional[str] = None
+    event_id: Optional[int] = None
+    user_id: Optional[int] = None
+    actor_email: Optional[str] = None
+    actor_name: Optional[str] = None
+    created_at: datetime
+
+
 # --- מסלול אישורי-ההגעה של האירוע (סטטוס למסך הזוג) ---
 
 

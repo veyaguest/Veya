@@ -4446,6 +4446,20 @@
   color: var(--muted);
 }
 
+/* ===== אדמין שלב 6 — יומן פעולות ===== */
+.adm-audit-when {
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.adm-audit-detail {
+  font-size: 13px;
+  color: var(--charcoal);
+  max-width: 380px;
+  overflow-wrap: anywhere;
+}
+
 /* ===== ניהול ברירות המחדל של VEYA (מסך אדמין) ===== */
 .veya-defaults {
   margin-top: 8px;

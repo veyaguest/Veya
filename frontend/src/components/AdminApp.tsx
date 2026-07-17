@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  adminAuditLog,
   adminDashboard,
   adminDeleteUser,
   adminDeleteVenue,
@@ -15,6 +16,7 @@ import {
   adminUpdateVenue,
 } from '../api'
 import type {
+  AdminAuditRow,
   AdminDashboard,
   AdminEventRow,
   AdminUserDetail,
@@ -24,7 +26,13 @@ import type {
 } from '../types'
 import { CreateAccountForm, VeyaDefaultsManager } from './AdminPage'
 
-type AdminPage = 'dashboard' | 'users' | 'events' | 'venues' | 'messages'
+type AdminPage =
+  | 'dashboard'
+  | 'users'
+  | 'events'
+  | 'venues'
+  | 'messages'
+  | 'audit'
 
 const ADMIN_PAGE_TITLES: Record<AdminPage, string> = {
   dashboard: 'לוח בקרה',
@@ -32,6 +40,7 @@ const ADMIN_PAGE_TITLES: Record<AdminPage, string> = {
   events: 'ניהול אירועים',
   venues: 'מאגר האולמות',
   messages: 'הודעות ומסלול אישורים',
+  audit: 'יומן פעולות',
 }
 
 const ADMIN_NAV: { key: AdminPage; label: string }[] = [
@@ -40,7 +49,24 @@ const ADMIN_NAV: { key: AdminPage; label: string }[] = [
   { key: 'events', label: 'אירועים' },
   { key: 'venues', label: 'אולמות' },
   { key: 'messages', label: 'הודעות ומסלול' },
+  { key: 'audit', label: 'יומן פעולות' },
 ]
+
+/** תוויות עבריות לסוגי פעולות ביומן. */
+const AUDIT_ACTION_LABELS: Record<string, string> = {
+  admin_impersonate: 'התחברות כמשתמש',
+  admin_update_user: 'עדכון משתמש',
+  admin_disable_user: 'השבתת משתמש',
+  admin_enable_user: 'הפעלת משתמש',
+  admin_delete_user: 'מחיקת משתמש',
+  admin_reset_password: 'איפוס סיסמה',
+  admin_create_account: 'יצירת חשבון',
+  admin_update_venue: 'עדכון אולם',
+  admin_delete_venue: 'מחיקת אולם',
+  admin_merge_venue: 'מיזוג אולמות',
+  update_event: 'עדכון אירוע',
+  send_invitations: 'שליחת הזמנות',
+}
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   couple: 'זוג',
@@ -100,6 +126,13 @@ function AdminNavIcon({ page }: { page: AdminPage }) {
         <svg {...common}>
           <path d="M4 5h16v11H8l-4 3z" />
           <path d="M8 10h8M8 13h5" />
+        </svg>
+      )
+    case 'audit':
+      return (
+        <svg {...common}>
+          <path d="M9 3h6l2 2v14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+          <path d="M9.5 9h5M9.5 12h5M9.5 15h3" />
         </svg>
       )
   }
@@ -1232,6 +1265,95 @@ function AdminVenueMergeDialog({
   )
 }
 
+/** יומן פעולות האדמין — מי עשה מה ומתי, החדשות קודם. */
+function AdminAuditView() {
+  const [rows, setRows] = useState<AdminAuditRow[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+
+  useEffect(() => {
+    adminAuditLog()
+      .then(setRows)
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : 'שגיאה בטעינת היומן'),
+      )
+  }, [])
+
+  const filtered = useMemo(() => {
+    if (!rows) return []
+    const q = query.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter(
+      (r) =>
+        (AUDIT_ACTION_LABELS[r.action] ?? r.action).toLowerCase().includes(q) ||
+        r.action.toLowerCase().includes(q) ||
+        (r.detail || '').toLowerCase().includes(q) ||
+        (r.actor_email || '').toLowerCase().includes(q),
+    )
+  }, [rows, query])
+
+  if (error && !rows) return <div className="admin-error">{error}</div>
+  if (!rows) return <div className="admin-loading">טוען…</div>
+
+  return (
+    <div className="admin-page">
+      <div className="adm-users-head">
+        <h2 className="admin-section-title">
+          פעולות אחרונות ({filtered.length}
+          {filtered.length !== rows.length ? ` מתוך ${rows.length}` : ''})
+        </h2>
+        <input
+          type="search"
+          className="adm-search"
+          placeholder="חיפוש לפי פעולה, פרטים או מבצע…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      <p className="file-name">
+        כל פעולה רגישה במערכת נרשמת כאן אוטומטית — מי ביצע, מתי, ומה השתנה.
+      </p>
+
+      <div className="table-wrap">
+        <table className="guests-table">
+          <thead>
+            <tr>
+              <th>מתי</th>
+              <th>מי</th>
+              <th>פעולה</th>
+              <th>פרטים</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((r) => (
+              <tr key={r.id}>
+                <td dir="ltr" className="adm-audit-when">
+                  {new Date(r.created_at).toLocaleString('he-IL')}
+                </td>
+                <td>{r.actor_name || r.actor_email || '—'}</td>
+                <td>
+                  <span className="badge">
+                    {AUDIT_ACTION_LABELS[r.action] ?? r.action}
+                  </span>
+                </td>
+                <td className="adm-audit-detail">{r.detail || '—'}</td>
+              </tr>
+            ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={4} className="adm-empty-row">
+                  לא נמצאו פעולות שתואמות לחיפוש.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 /** פאנל האדמין המלא — מסך נפרד לגמרי מממשק הזוג (App.tsx מנתב לפי is_admin). */
 export function AdminApp({
   user,
@@ -1303,6 +1425,7 @@ export function AdminApp({
           {page === 'events' && <AdminEventsView onImpersonate={onImpersonate} />}
           {page === 'venues' && <AdminVenuesView />}
           {page === 'messages' && <VeyaDefaultsManager />}
+          {page === 'audit' && <AdminAuditView />}
         </main>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import type {
   AdminAccountCreateResult,
+  AdminAuditRow,
   AdminDashboard,
   AdminEventRow,
   AdminImpersonateResult,
@@ -924,6 +925,13 @@ export async function adminUpdateVeyaWorkflowStep(
 
 export async function adminMessageStats(): Promise<AdminMessageStats> {
   const res = await apiFetch('/admin/veya/message-stats')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function adminAuditLog(action?: string): Promise<AdminAuditRow[]> {
+  const qs = action ? `?action=${encodeURIComponent(action)}` : ''
+  const res = await apiFetch(`/admin/audit-log${qs}`)
   if (!res.ok) throw await toError(res)
   return res.json()
 }

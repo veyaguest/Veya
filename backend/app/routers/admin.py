@@ -745,6 +745,46 @@ def veya_message_stats(
 
 
 # ---------------------------------------------------------------------------
+# יומן פעולות האדמין (שלב אדמין 6)
+# ---------------------------------------------------------------------------
+
+@router.get("/audit-log", response_model=list[schemas.AdminAuditRow])
+def list_audit_log(
+    limit: int = 150,
+    action: Optional[str] = None,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """יומן הפעולות האחרונות במערכת — החדשות קודם. סינון אופציונלי לפי סוג פעולה."""
+    limit = max(1, min(limit, 500))
+    stmt = (
+        select(models.AuditLog, models.User)
+        .outerjoin(models.User, models.AuditLog.user_id == models.User.id)
+        .order_by(models.AuditLog.created_at.desc(), models.AuditLog.id.desc())
+        .limit(limit)
+    )
+    if action:
+        stmt = stmt.where(models.AuditLog.action == action)
+    rows = db.execute(stmt).all()
+    result = []
+    for log, user in rows:
+        result.append(
+            schemas.AdminAuditRow(
+                id=log.id,
+                action=log.action,
+                detail=log.detail or "",
+                ip=log.ip,
+                event_id=log.event_id,
+                user_id=log.user_id,
+                actor_email=user.email if user else None,
+                actor_name=user.display_name if user else None,
+                created_at=log.created_at,
+            )
+        )
+    return result
+
+
+# ---------------------------------------------------------------------------
 # ניהול מאגר האולמות (שלב אדמין 4)
 # ---------------------------------------------------------------------------
 

@@ -809,6 +809,18 @@ export interface AdminMessageStats {
   by_kind: AdminMessageStat[]
 }
 
+export interface AdminAuditRow {
+  id: number
+  action: string
+  detail: string
+  ip: string | null
+  event_id: number | null
+  user_id: number | null
+  actor_email: string | null
+  actor_name: string | null
+  created_at: string
+}
+
 // ---- מסלול אישורי-ההגעה של האירוע (מסך הזוג) ----
 
 export interface RsvpTrackPhoneRow {
