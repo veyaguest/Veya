@@ -98,6 +98,10 @@ def get_current_user(
     # בדיקת גרסת הטוקן: אם המשתמש העלה גרסה (יציאה/שינוי סיסמה), טוקן ישן נפסל.
     if payload.get("tv") != user.token_version:
         raise err
+    # חשבון שהושבת ע"י אדמין — הטוקן בטל (הפעלת ההשבתה מעלה גם את גרסת הטוקן,
+    # אבל בודקים גם כאן במפורש כדי לא להסתמך רק על כך).
+    if user.disabled:
+        raise err
     return user
 
 

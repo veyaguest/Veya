@@ -194,6 +194,7 @@ def list_users(
             display_name=u.display_name,
             is_admin=u.is_admin,
             account_type=u.account_type,
+            disabled=u.disabled,
             events_count=events_by_owner.get(u.id, 0),
             guests_count=guests_by_owner.get(u.id, 0),
             created_at=u.created_at,
@@ -266,6 +267,258 @@ def reset_user_password(
         email=target.email,
         temporary_password=temp_password,
     )
+
+
+@router.get("/users/{user_id}", response_model=schemas.AdminUserDetail)
+def get_user_detail(
+    user_id: int,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """כרטיס משתמש מלא: פרופיל, האירועים שלו, ו-10 ההתחברויות האחרונות."""
+    target = db.get(models.User, user_id)
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש לא נמצא")
+
+    events = db.scalars(
+        select(models.Event)
+        .where(models.Event.owner_id == user_id)
+        .order_by(models.Event.id.desc())
+    ).all()
+    guests_by_event = dict(
+        db.execute(
+            select(models.Guest.event_id, func.count(models.Guest.id))
+            .where(models.Guest.event_id.in_([e.id for e in events] or [0]))
+            .group_by(models.Guest.event_id)
+        ).all()
+    )
+    event_rows = [
+        schemas.AdminEventRow(
+            id=e.id,
+            groom_name=e.groom_name,
+            bride_name=e.bride_name,
+            venue_name=e.venue_name,
+            owner_id=e.owner_id,
+            owner_email=target.email,
+            guests_count=guests_by_event.get(e.id, 0),
+        )
+        for e in events
+    ]
+
+    login_count = db.scalar(
+        select(func.count())
+        .select_from(models.LoginEvent)
+        .where(models.LoginEvent.user_id == user_id)
+    ) or 0
+    logins = db.scalars(
+        select(models.LoginEvent)
+        .where(models.LoginEvent.user_id == user_id)
+        .order_by(models.LoginEvent.id.desc())
+        .limit(10)
+    ).all()
+    login_rows = [
+        schemas.AdminLoginRow(
+            id=lg.id,
+            ip=lg.ip,
+            user_agent=lg.user_agent,
+            created_at=lg.created_at,
+        )
+        for lg in logins
+    ]
+
+    return schemas.AdminUserDetail(
+        id=target.id,
+        email=target.email,
+        display_name=target.display_name,
+        phone=target.phone or "",
+        is_admin=target.is_admin,
+        account_type=target.account_type,
+        disabled=target.disabled,
+        created_at=target.created_at,
+        events=event_rows,
+        recent_logins=login_rows,
+        login_count=login_count,
+    )
+
+
+@router.patch("/users/{user_id}", response_model=schemas.AdminUserRow)
+def update_user(
+    user_id: int,
+    payload: schemas.AdminUserUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """עריכת פרטי משתמש ע"י אדמין: שם תצוגה, טלפון, סוג חשבון, והרשאת אדמין."""
+    target = db.get(models.User, user_id)
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש לא נמצא")
+
+    changes = []
+    if payload.display_name is not None:
+        new_name = payload.display_name.strip()
+        if new_name and new_name != target.display_name:
+            changes.append(f"שם: {target.display_name}→{new_name}")
+            target.display_name = new_name
+    if payload.phone is not None and payload.phone != target.phone:
+        target.phone = payload.phone
+        changes.append("טלפון עודכן")
+    if payload.account_type is not None and payload.account_type != target.account_type:
+        changes.append(f"סוג: {target.account_type}→{payload.account_type}")
+        target.account_type = payload.account_type
+    if payload.is_admin is not None and payload.is_admin != target.is_admin:
+        # שמירה: אסור להסיר את הרשאת האדמין האחרונה במערכת.
+        if target.is_admin and not payload.is_admin:
+            admin_count = db.scalar(
+                select(func.count()).select_from(models.User).where(models.User.is_admin.is_(True))
+            ) or 0
+            if admin_count <= 1:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="לא ניתן להסיר את הרשאת האדמין האחרונה במערכת",
+                )
+        changes.append(f"אדמין: {target.is_admin}→{payload.is_admin}")
+        target.is_admin = payload.is_admin
+
+    if changes:
+        audit.record(
+            db, "admin_update_user",
+            user_id=admin.id,
+            detail=f"עדכון משתמש {target.email} (#{target.id}): {', '.join(changes)}",
+            ip=request.client.host if request.client else None,
+        )
+    db.commit()
+    db.refresh(target)
+
+    events_count = db.scalar(
+        select(func.count()).select_from(models.Event).where(models.Event.owner_id == user_id)
+    ) or 0
+    guests_count = db.scalar(
+        select(func.count())
+        .select_from(models.Guest)
+        .join(models.Event, models.Guest.event_id == models.Event.id)
+        .where(models.Event.owner_id == user_id)
+    ) or 0
+    return schemas.AdminUserRow(
+        id=target.id,
+        email=target.email,
+        display_name=target.display_name,
+        is_admin=target.is_admin,
+        account_type=target.account_type,
+        disabled=target.disabled,
+        events_count=events_count,
+        guests_count=guests_count,
+        created_at=target.created_at,
+    )
+
+
+@router.post("/users/{user_id}/disable", status_code=204)
+def disable_user(
+    user_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """השבתת חשבון: המשתמש לא יוכל להתחבר, וכל הטוקנים הקיימים נפסלים."""
+    target = db.get(models.User, user_id)
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש לא נמצא")
+    if target.id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="אי אפשר להשבית את החשבון שלך",
+        )
+    if not target.disabled:
+        target.disabled = True
+        target.token_version = (target.token_version or 1) + 1
+        audit.record(
+            db, "admin_disable_user",
+            user_id=admin.id,
+            detail=f"השבתת משתמש {target.email} (#{target.id})",
+            ip=request.client.host if request.client else None,
+        )
+        db.commit()
+
+
+@router.post("/users/{user_id}/enable", status_code=204)
+def enable_user(
+    user_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """הפעלה מחדש של חשבון מושבת."""
+    target = db.get(models.User, user_id)
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש לא נמצא")
+    if target.disabled:
+        target.disabled = False
+        audit.record(
+            db, "admin_enable_user",
+            user_id=admin.id,
+            detail=f"הפעלת משתמש {target.email} (#{target.id})",
+            ip=request.client.host if request.client else None,
+        )
+        db.commit()
+
+
+@router.delete("/users/{user_id}", status_code=204)
+def delete_user(
+    user_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """מחיקת משתמש — פעולה בלתי-הפיכה, עם שמירות בטיחות מחמירות.
+
+    חסום אם: זה החשבון שלך, זה האדמין האחרון, או שיש למשתמש אירועים משויכים
+    (כדי לא ליצור אירועים יתומים ולא למחוק נתונים בטעות).
+    """
+    target = db.get(models.User, user_id)
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש לא נמצא")
+    if target.id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="אי אפשר למחוק את החשבון שלך",
+        )
+    if target.is_admin:
+        admin_count = db.scalar(
+            select(func.count()).select_from(models.User).where(models.User.is_admin.is_(True))
+        ) or 0
+        if admin_count <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="לא ניתן למחוק את האדמין האחרון במערכת",
+            )
+    owned_events = db.scalar(
+        select(func.count()).select_from(models.Event).where(models.Event.owner_id == user_id)
+    ) or 0
+    if owned_events:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"למשתמש יש {owned_events} אירועים. יש להעביר בעלות או למחוק אותם קודם",
+        )
+
+    # ניקוי הפניות לפני המחיקה כדי לא להפר מפתחות זרים.
+    for lg in db.scalars(
+        select(models.LoginEvent).where(models.LoginEvent.user_id == user_id)
+    ).all():
+        db.delete(lg)
+    for al in db.scalars(
+        select(models.AuditLog).where(models.AuditLog.user_id == user_id)
+    ).all():
+        al.user_id = None
+
+    email = target.email
+    audit.record(
+        db, "admin_delete_user",
+        user_id=admin.id,
+        detail=f"מחיקת משתמש {email} (#{user_id})",
+        ip=request.client.host if request.client else None,
+    )
+    db.delete(target)
+    db.commit()
 
 
 @router.post("/accounts", response_model=schemas.AdminAccountCreateResult, status_code=201)

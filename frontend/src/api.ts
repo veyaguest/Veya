@@ -2,7 +2,10 @@ import type {
   AdminAccountCreateResult,
   AdminDashboard,
   AdminEventRow,
+  AdminPasswordResetResult,
+  AdminUserDetail,
   AdminUserRow,
+  AdminUserUpdate,
   AnalyzeResult,
   AuditLogRow,
   AutomationDashboard,
@@ -222,6 +225,56 @@ export async function adminListEvents(): Promise<AdminEventRow[]> {
   const res = await apiFetch('/admin/events')
   if (!res.ok) throw await toError(res)
   return res.json()
+}
+
+/** כרטיס משתמש מלא: פרופיל + אירועים + היסטוריית התחברות. */
+export async function adminGetUser(userId: number): Promise<AdminUserDetail> {
+  const res = await apiFetch(`/admin/users/${userId}`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** עריכת פרטי משתמש ע"י אדמין (עדכון חלקי). */
+export async function adminUpdateUser(
+  userId: number,
+  data: AdminUserUpdate,
+): Promise<AdminUserRow> {
+  const res = await apiFetch(`/admin/users/${userId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** איפוס סיסמה: מחזיר סיסמה זמנית שהאדמין ימסור למשתמש. */
+export async function adminResetPassword(
+  userId: number,
+  newPassword?: string,
+): Promise<AdminPasswordResetResult> {
+  const res = await apiFetch(`/admin/users/${userId}/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ new_password: newPassword ?? null }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function adminDisableUser(userId: number): Promise<void> {
+  const res = await apiFetch(`/admin/users/${userId}/disable`, { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+}
+
+export async function adminEnableUser(userId: number): Promise<void> {
+  const res = await apiFetch(`/admin/users/${userId}/enable`, { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+}
+
+export async function adminDeleteUser(userId: number): Promise<void> {
+  const res = await apiFetch(`/admin/users/${userId}`, { method: 'DELETE' })
+  if (!res.ok) throw await toError(res)
 }
 
 /** יצירת חשבון מפיק/אולם ע"י אדמין (אין הרשמה עצמאית לתפקידים אלו). */

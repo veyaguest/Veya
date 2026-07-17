@@ -442,8 +442,23 @@ export interface AdminUserRow {
   display_name: string
   is_admin: boolean
   account_type: string
+  disabled: boolean
   events_count: number
   guests_count: number
+  created_at: string
+}
+
+export interface AdminUserUpdate {
+  display_name?: string
+  phone?: string
+  account_type?: 'couple' | 'planner' | 'venue'
+  is_admin?: boolean
+}
+
+export interface AdminLoginRow {
+  id: number
+  ip: string | null
+  user_agent: string | null
   created_at: string
 }
 
@@ -457,10 +472,30 @@ export interface AdminEventRow {
   guests_count: number
 }
 
+export interface AdminUserDetail {
+  id: number
+  email: string
+  display_name: string
+  phone: string
+  is_admin: boolean
+  account_type: string
+  disabled: boolean
+  created_at: string
+  events: AdminEventRow[]
+  recent_logins: AdminLoginRow[]
+  login_count: number
+}
+
 export interface AdminAccountCreateResult {
   user_id: number
   email: string
   account_type: string
+  temporary_password: string
+}
+
+export interface AdminPasswordResetResult {
+  user_id: number
+  email: string
   temporary_password: string
 }
 

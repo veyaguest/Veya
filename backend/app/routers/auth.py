@@ -72,6 +72,23 @@ def login(payload: schemas.LoginRequest, request: Request, db: Session = Depends
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="אימייל או סיסמה שגויים",
         )
+    if user.disabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="החשבון הושבת. יש לפנות למנהל המערכת",
+        )
+    # רישום ההתחברות להיסטוריה (מטא-דאטה בלבד). לא מפיל את הכניסה אם נכשל.
+    try:
+        db.add(
+            models.LoginEvent(
+                user_id=user.id,
+                ip=ip,
+                user_agent=(request.headers.get("user-agent") or "")[:300] or None,
+            )
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
     token = auth.create_access_token(user)
     return schemas.TokenResponse(access_token=token, user=user)
 

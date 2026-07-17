@@ -527,8 +527,27 @@ class AdminUserRow(BaseModel):
     display_name: str
     is_admin: bool
     account_type: str = "couple"
+    disabled: bool = False
     events_count: int
     guests_count: int
+    created_at: datetime
+
+
+class AdminUserUpdate(BaseModel):
+    """עריכת פרטי משתמש ע"י אדמין — כל השדות אופציונליים (עדכון חלקי)."""
+
+    display_name: Optional[str] = None
+    phone: Optional[str] = None
+    account_type: Optional[Literal["couple", "planner", "venue"]] = None
+    is_admin: Optional[bool] = None
+
+
+class AdminLoginRow(BaseModel):
+    """רשומת התחברות בהיסטוריית המשתמש."""
+
+    id: int
+    ip: Optional[str]
+    user_agent: Optional[str]
     created_at: datetime
 
 
@@ -563,6 +582,22 @@ class AdminEventRow(BaseModel):
     owner_id: Optional[int]
     owner_email: Optional[str]
     guests_count: int
+
+
+class AdminUserDetail(BaseModel):
+    """כרטיס משתמש מלא בפאנל האדמין — פרופיל + אירועים + היסטוריית התחברות."""
+
+    id: int
+    email: str
+    display_name: str
+    phone: str = ""
+    is_admin: bool
+    account_type: str = "couple"
+    disabled: bool = False
+    created_at: datetime
+    events: list[AdminEventRow]
+    recent_logins: list[AdminLoginRow]
+    login_count: int
 
 
 class AdminAccountCreate(BaseModel):

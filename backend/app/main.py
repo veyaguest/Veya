@@ -95,6 +95,7 @@ _EXTRA_COLUMNS = {
         "token_version": "INTEGER DEFAULT 1",
         "account_type": "TEXT DEFAULT 'couple'",
         "phone": "TEXT DEFAULT ''",
+        "disabled": "BOOLEAN DEFAULT 0",
     },
     "guests": {
         "guest_token": "TEXT",

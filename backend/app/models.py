@@ -35,6 +35,9 @@ class User(Base):
     # ציר נפרד מ-is_admin — is_admin הוא "אדמין-על", account_type הוא "מי המשתמש".
     # שלב 1 בלבד: השדה קיים אך אינו נקרא בשום מקום עדיין (אין שינוי התנהגות).
     account_type: Mapped[str] = mapped_column(String, default="couple")
+    # חשבון מושבת ע"י אדמין — המשתמש לא יכול להתחבר וכל הטוקנים שלו נפסלים.
+    # ניתן לביטול (אפשר להפעיל מחדש). לא מוחק שום נתון.
+    disabled: Mapped[bool] = mapped_column(Boolean, default=False)
     # גרסת הטוקן: כל טוקן JWT נושא את הגרסה שהייתה בזמן ההנפקה. העלאת המספר
     # (יציאה מכל המכשירים / שינוי סיסמה / איפוס) פוסלת מיד את כל הטוקנים הישנים.
     token_version: Mapped[int] = mapped_column(Integer, default=1)
@@ -140,6 +143,22 @@ class Guest(Base):
         if self.rsvp_status == "confirmed" and self.confirmed_count is not None:
             return self.confirmed_count
         return self.party_size
+
+
+class LoginEvent(Base):
+    """רישום התחברות מוצלחת — היסטוריית כניסות למשתמש (לפאנל האדמין).
+
+    נרשם בכל login מוצלח. מכיל רק מטא-דאטה של האירוע (מתי, מאיזה IP/דפדפן),
+    לא סיסמאות ולא תוכן. מאפשר לאדמין לראות "מתי המשתמש התחבר לאחרונה".
+    """
+
+    __tablename__ = "login_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    ip: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
 class EventMember(Base):

@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   adminDashboard,
+  adminDeleteUser,
+  adminDisableUser,
+  adminEnableUser,
+  adminGetUser,
   adminListEvents,
   adminListUsers,
+  adminResetPassword,
+  adminUpdateUser,
 } from '../api'
 import type {
   AdminDashboard,
   AdminEventRow,
+  AdminUserDetail,
   AdminUserRow,
   User,
 } from '../types'
@@ -204,10 +211,408 @@ function AdminDashboardView() {
   )
 }
 
-/** ניהול משתמשים (שלב 1 — טבלה + יצירת חשבון; עריכה/השבתה בשלב הבא). */
+/** מעצב תאריך+שעה קצר בעברית (DD/MM/YYYY HH:MM). */
+function formatDateTime(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return iso
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/** תג תפקיד/מצב אחיד למשתמש. */
+function UserRoleBadge({ user }: { user: { is_admin: boolean; account_type: string } }) {
+  if (user.is_admin) return <span className="badge confirmed">אדמין</span>
+  return (
+    <span className="badge">
+      {ACCOUNT_TYPE_LABELS[user.account_type ?? 'couple'] ?? 'משתמש'}
+    </span>
+  )
+}
+
+/** דיאלוג אישור לפעולה מסוכנת (מחיקה/השבתה). */
+function ConfirmDialog({
+  title,
+  body,
+  confirmLabel,
+  danger,
+  busy,
+  onConfirm,
+  onCancel,
+}: {
+  title: string
+  body: string
+  confirmLabel: string
+  danger?: boolean
+  busy?: boolean
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  return (
+    <div className="overlay" onClick={onCancel}>
+      <div className="dialog adm-confirm" onClick={(e) => e.stopPropagation()}>
+        <h3 className="adm-confirm-title">{title}</h3>
+        <p className="adm-confirm-body">{body}</p>
+        <div className="adm-confirm-actions">
+          <button type="button" className="btn-ghost" onClick={onCancel} disabled={busy}>
+            ביטול
+          </button>
+          <button
+            type="button"
+            className={danger ? 'btn-danger' : 'btn-primary'}
+            onClick={onConfirm}
+            disabled={busy}
+          >
+            {busy ? 'רגע…' : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** כרטיס משתמש מלא — פרופיל, עריכה, אירועים, היסטוריית התחברות, ופעולות אדמין. */
+function AdminUserDialog({
+  userId,
+  onClose,
+  onChanged,
+}: {
+  userId: number
+  onClose: () => void
+  onChanged: () => void
+}) {
+  const [detail, setDetail] = useState<AdminUserDetail | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  // עריכת פרופיל
+  const [editing, setEditing] = useState(false)
+  const [displayName, setDisplayName] = useState('')
+  const [phone, setPhone] = useState('')
+
+  // תוצאת איפוס סיסמה + דיאלוגי אישור
+  const [tempPassword, setTempPassword] = useState<string | null>(null)
+  const [confirm, setConfirm] = useState<null | 'disable' | 'delete'>(null)
+
+  function load() {
+    adminGetUser(userId)
+      .then((d) => {
+        setDetail(d)
+        setDisplayName(d.display_name)
+        setPhone(d.phone)
+      })
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : 'שגיאה בטעינת המשתמש'),
+      )
+  }
+
+  useEffect(() => {
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
+
+  async function saveProfile() {
+    if (!detail) return
+    setBusy(true)
+    setError(null)
+    try {
+      await adminUpdateUser(detail.id, {
+        display_name: displayName.trim(),
+        phone: phone.trim(),
+      })
+      setEditing(false)
+      setNotice('הפרטים נשמרו')
+      load()
+      onChanged()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שמירת הפרטים נכשלה')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function resetPassword() {
+    if (!detail) return
+    setBusy(true)
+    setError(null)
+    setNotice(null)
+    try {
+      const res = await adminResetPassword(detail.id)
+      setTempPassword(res.temporary_password)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'איפוס הסיסמה נכשל')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function toggleDisabled() {
+    if (!detail) return
+    setBusy(true)
+    setError(null)
+    try {
+      if (detail.disabled) {
+        await adminEnableUser(detail.id)
+        setNotice('החשבון הופעל מחדש')
+      } else {
+        await adminDisableUser(detail.id)
+        setNotice('החשבון הושבת')
+      }
+      setConfirm(null)
+      load()
+      onChanged()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'הפעולה נכשלה')
+      setConfirm(null)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function deleteUser() {
+    if (!detail) return
+    setBusy(true)
+    setError(null)
+    try {
+      await adminDeleteUser(detail.id)
+      onChanged()
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'המחיקה נכשלה')
+      setConfirm(null)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="dialog adm-user-dialog" onClick={(e) => e.stopPropagation()}>
+        <div className="dialog-head adm-user-head">
+          <h2>כרטיס משתמש</h2>
+          <button type="button" className="x" onClick={onClose} aria-label="סגירה">
+            ×
+          </button>
+        </div>
+
+        {error && <div className="admin-error">{error}</div>}
+        {notice && <div className="adm-user-notice">{notice}</div>}
+
+        {!detail ? (
+          <div className="admin-loading">טוען…</div>
+        ) : (
+          <div className="adm-user-body">
+            {detail.disabled && (
+              <div className="adm-user-disabled-banner">החשבון מושבת כרגע</div>
+            )}
+
+            {/* פרופיל */}
+            <section className="adm-user-section">
+              <div className="adm-user-section-head">
+                <span className="adm-user-section-title">פרטים</span>
+                {!editing && (
+                  <button
+                    type="button"
+                    className="btn-ghost btn-sm"
+                    onClick={() => setEditing(true)}
+                  >
+                    עריכה
+                  </button>
+                )}
+              </div>
+
+              {editing ? (
+                <div className="adm-user-edit">
+                  <label className="adm-field">
+                    <span className="adm-field-label">שם תצוגה</span>
+                    <input
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="adm-field-input"
+                    />
+                  </label>
+                  <label className="adm-field">
+                    <span className="adm-field-label">טלפון</span>
+                    <input
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="adm-field-input"
+                      dir="ltr"
+                    />
+                  </label>
+                  <div className="adm-user-edit-actions">
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      onClick={() => {
+                        setEditing(false)
+                        setDisplayName(detail.display_name)
+                        setPhone(detail.phone)
+                      }}
+                      disabled={busy}
+                    >
+                      ביטול
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={saveProfile}
+                      disabled={busy}
+                    >
+                      {busy ? 'רגע…' : 'שמירה'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <dl className="adm-user-facts">
+                  <div>
+                    <dt>שם</dt>
+                    <dd>{detail.display_name || '—'}</dd>
+                  </div>
+                  <div>
+                    <dt>אימייל</dt>
+                    <dd dir="ltr">{detail.email}</dd>
+                  </div>
+                  <div>
+                    <dt>טלפון</dt>
+                    <dd dir="ltr">{detail.phone || '—'}</dd>
+                  </div>
+                  <div>
+                    <dt>תפקיד</dt>
+                    <dd>
+                      <UserRoleBadge user={detail} />
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>נרשם</dt>
+                    <dd>{formatDateTime(detail.created_at)}</dd>
+                  </div>
+                  <div>
+                    <dt>התחברויות</dt>
+                    <dd>{detail.login_count}</dd>
+                  </div>
+                </dl>
+              )}
+            </section>
+
+            {/* אירועים */}
+            <section className="adm-user-section">
+              <span className="adm-user-section-title">
+                אירועים ({detail.events.length})
+              </span>
+              {detail.events.length === 0 ? (
+                <p className="adm-user-empty">אין אירועים משויכים למשתמש הזה.</p>
+              ) : (
+                <ul className="adm-user-events">
+                  {detail.events.map((e) => (
+                    <li key={e.id}>
+                      <span className="adm-user-event-couple">
+                        {[e.groom_name, e.bride_name].filter(Boolean).join(' · ') ||
+                          `אירוע #${e.id}`}
+                      </span>
+                      <span className="adm-user-event-meta">
+                        {e.venue_name || 'ללא אולם'} · {e.guests_count} מוזמנים
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            {/* היסטוריית התחברות */}
+            <section className="adm-user-section">
+              <span className="adm-user-section-title">התחברויות אחרונות</span>
+              {detail.recent_logins.length === 0 ? (
+                <p className="adm-user-empty">אין עדיין רישומי התחברות.</p>
+              ) : (
+                <ul className="adm-user-logins">
+                  {detail.recent_logins.map((lg) => (
+                    <li key={lg.id}>
+                      <span className="adm-user-login-time">
+                        {formatDateTime(lg.created_at)}
+                      </span>
+                      <span className="adm-user-login-ip" dir="ltr">
+                        {lg.ip || '—'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            {/* תוצאת איפוס סיסמה */}
+            {tempPassword && (
+              <div className="adm-user-temp-pass">
+                <span>סיסמה זמנית — מסרו אותה למשתמש:</span>
+                <code dir="ltr">{tempPassword}</code>
+              </div>
+            )}
+
+            {/* פעולות */}
+            <div className="adm-user-actions">
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={resetPassword}
+                disabled={busy}
+              >
+                איפוס סיסמה
+              </button>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() =>
+                  detail.disabled ? toggleDisabled() : setConfirm('disable')
+                }
+                disabled={busy}
+              >
+                {detail.disabled ? 'הפעלה מחדש' : 'השבתת חשבון'}
+              </button>
+              <button
+                type="button"
+                className="btn-danger"
+                onClick={() => setConfirm('delete')}
+                disabled={busy}
+              >
+                מחיקה
+              </button>
+            </div>
+          </div>
+        )}
+
+        {confirm === 'disable' && detail && (
+          <ConfirmDialog
+            title="להשבית את החשבון?"
+            body={`${detail.display_name || detail.email} לא יוכל להתחבר עד שתפעילו מחדש. כל המכשירים המחוברים יתנתקו.`}
+            confirmLabel="השבתה"
+            danger
+            busy={busy}
+            onConfirm={toggleDisabled}
+            onCancel={() => setConfirm(null)}
+          />
+        )}
+        {confirm === 'delete' && detail && (
+          <ConfirmDialog
+            title="למחוק את המשתמש?"
+            body={`פעולה בלתי-הפיכה: ${detail.display_name || detail.email} יימחק לצמיתות. אם יש למשתמש אירועים, המחיקה תיחסם.`}
+            confirmLabel="מחיקה סופית"
+            danger
+            busy={busy}
+            onConfirm={deleteUser}
+            onCancel={() => setConfirm(null)}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** ניהול משתמשים — חיפוש, טבלה לחיצה, כרטיס משתמש מלא, ויצירת חשבון. */
 function AdminUsersView() {
   const [users, setUsers] = useState<AdminUserRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [openUserId, setOpenUserId] = useState<number | null>(null)
 
   function reload() {
     adminListUsers()
@@ -221,6 +626,18 @@ function AdminUsersView() {
     reload()
   }, [])
 
+  const filtered = useMemo(() => {
+    if (!users) return []
+    const q = query.trim().toLowerCase()
+    if (!q) return users
+    return users.filter(
+      (u) =>
+        u.display_name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        String(u.id) === q,
+    )
+  }, [users, query])
+
   if (error) return <div className="admin-error">{error}</div>
   if (!users) return <div className="admin-loading">טוען…</div>
 
@@ -228,9 +645,22 @@ function AdminUsersView() {
     <div className="admin-page">
       <CreateAccountForm onCreated={reload} />
 
-      <h2 className="admin-section-title">כל המשתמשים ({users.length})</h2>
+      <div className="adm-users-head">
+        <h2 className="admin-section-title">
+          משתמשים ({filtered.length}
+          {filtered.length !== users.length ? ` מתוך ${users.length}` : ''})
+        </h2>
+        <input
+          type="search"
+          className="adm-search"
+          placeholder="חיפוש לפי שם, אימייל או מזהה…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
       <div className="table-wrap">
-        <table className="guests-table">
+        <table className="guests-table adm-clickable-table">
           <thead>
             <tr>
               <th>#</th>
@@ -239,30 +669,58 @@ function AdminUsersView() {
               <th>תפקיד</th>
               <th>אירועים</th>
               <th>מוזמנים</th>
+              <th>מצב</th>
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
-              <tr key={u.id}>
+            {filtered.map((u) => (
+              <tr
+                key={u.id}
+                className="adm-row-click"
+                onClick={() => setOpenUserId(u.id)}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setOpenUserId(u.id)
+                  }
+                }}
+              >
                 <td>{u.id}</td>
                 <td>{u.display_name || '—'}</td>
                 <td dir="ltr">{u.email}</td>
                 <td>
-                  {u.is_admin ? (
-                    <span className="badge confirmed">בעלים</span>
-                  ) : (
-                    <span className="badge">
-                      {ACCOUNT_TYPE_LABELS[u.account_type ?? 'couple'] ?? 'משתמש'}
-                    </span>
-                  )}
+                  <UserRoleBadge user={u} />
                 </td>
                 <td>{u.events_count}</td>
                 <td>{u.guests_count}</td>
+                <td>
+                  {u.disabled ? (
+                    <span className="badge declined">מושבת</span>
+                  ) : (
+                    <span className="badge confirmed">פעיל</span>
+                  )}
+                </td>
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={7} className="adm-empty-row">
+                  לא נמצאו משתמשים שתואמים לחיפוש.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      {openUserId != null && (
+        <AdminUserDialog
+          userId={openUserId}
+          onClose={() => setOpenUserId(null)}
+          onChanged={reload}
+        />
+      )}
     </div>
   )
 }

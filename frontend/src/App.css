@@ -4045,6 +4045,264 @@
   background: var(--error, #c0392b);
 }
 
+/* ===== אדמין שלב 2 — ניהול משתמשים ===== */
+.adm-users-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 18px 0 10px;
+}
+.adm-users-head .admin-section-title {
+  margin: 0;
+}
+.adm-search {
+  flex: 1 1 260px;
+  max-width: 360px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--cream);
+  color: var(--charcoal);
+  font-size: 15px;
+  font-family: inherit;
+}
+.adm-search::placeholder {
+  color: var(--muted);
+}
+.adm-search:focus {
+  outline: none;
+  border-color: var(--gold-deep);
+  box-shadow: 0 0 0 3px rgba(191, 160, 84, 0.15);
+}
+
+.adm-clickable-table .adm-row-click {
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.adm-clickable-table .adm-row-click:hover,
+.adm-clickable-table .adm-row-click:focus-visible {
+  background: rgba(191, 160, 84, 0.09);
+  outline: none;
+}
+.adm-empty-row {
+  text-align: center;
+  color: var(--muted);
+  padding: 20px 8px;
+}
+
+/* --- כפתור פעולה מסוכנת --- */
+.btn-danger {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(166, 96, 90, 0.5);
+  background: var(--error, #c0392b);
+  color: #fff;
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+.btn-danger:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* --- כרטיס משתמש (דיאלוג) --- */
+.adm-user-dialog {
+  max-width: 620px;
+}
+.adm-user-notice {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(88, 140, 96, 0.12);
+  color: #3f7048;
+  font-size: 14px;
+}
+.adm-user-body {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.adm-user-disabled-banner {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(166, 96, 90, 0.12);
+  color: var(--error, #c0392b);
+  font-size: 14px;
+  font-weight: 600;
+}
+.adm-user-section {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--cream);
+}
+.adm-user-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.adm-user-section-title {
+  font-weight: 700;
+  color: var(--charcoal);
+  font-size: 15px;
+}
+.adm-user-facts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 18px;
+  margin: 0;
+}
+.adm-user-facts div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.adm-user-facts dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.adm-user-facts dd {
+  margin: 0;
+  font-size: 15px;
+  color: var(--charcoal);
+}
+.adm-user-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.adm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.adm-field-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+.adm-field-input {
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--charcoal);
+  font-size: 15px;
+  font-family: inherit;
+}
+.adm-field-input:focus {
+  outline: none;
+  border-color: var(--gold-deep);
+}
+.adm-user-edit-actions,
+.adm-confirm-actions,
+.adm-user-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.adm-user-actions {
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+.adm-user-empty {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
+.adm-user-events,
+.adm-user-logins {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.adm-user-events li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.adm-user-event-couple {
+  font-weight: 600;
+  color: var(--charcoal);
+  font-size: 14px;
+}
+.adm-user-event-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+.adm-user-logins li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--charcoal);
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.adm-user-logins li:last-child {
+  border-bottom: none;
+}
+.adm-user-login-ip {
+  color: var(--muted);
+}
+.adm-user-temp-pass {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(191, 160, 84, 0.12);
+  border: 1px solid rgba(191, 160, 84, 0.35);
+  font-size: 14px;
+  color: var(--charcoal);
+}
+.adm-user-temp-pass code {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--gold-deep);
+}
+
+/* --- דיאלוג אישור פעולה --- */
+.adm-confirm {
+  max-width: 420px;
+  border-top-color: var(--error, #c0392b);
+}
+.adm-confirm-title {
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  color: var(--charcoal);
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+.adm-confirm-body {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 18px;
+}
+
+@media (max-width: 560px) {
+  .adm-user-facts {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ===== ניהול ברירות המחדל של VEYA (מסך אדמין) ===== */
 .veya-defaults {
   margin-top: 8px;
