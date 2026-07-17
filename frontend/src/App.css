@@ -2211,6 +2211,19 @@
   border-color: var(--error);
   color: var(--error);
 }
+/* גרסת מובייל: כפתורים גדולים יותר, ידידותיים לאצבע */
+.element-toolbar.mobile {
+  top: -52px;
+  gap: 10px;
+  padding: 6px 10px;
+}
+.element-toolbar.mobile button {
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  border: 1px solid var(--line);
+  background: var(--ivory-light);
+}
 .color-swatch {
   width: 18px;
   height: 18px;

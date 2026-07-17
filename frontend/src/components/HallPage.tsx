@@ -191,6 +191,7 @@ type HmIconName =
   | 'bar'
   | 'dance'
   | 'chuppah'
+  | 'dj'
   | 'move'
   | 'edit'
   | 'save'
@@ -296,6 +297,14 @@ function HmIcon({ name, size = 22 }: { name: HmIconName; size?: number }) {
         <svg {...common}>
           <path d="M4 21V8a8 8 0 0 1 16 0v13" />
           <path d="M4 8h16M12 8v13" />
+        </svg>
+      )
+    case 'dj':
+      return (
+        <svg {...common}>
+          <path d="M4 13v-1a8 8 0 0 1 16 0v1" />
+          <rect x="3" y="13" width="4" height="7" rx="1.5" />
+          <rect x="17" y="13" width="4" height="7" rx="1.5" />
         </svg>
       )
     case 'move':
@@ -1455,8 +1464,9 @@ export function HallPage() {
                   <p className="hall-empty">אין עדיין שולחנות. הקישו על ➕ כדי להוסיף שולחן.</p>
                 )}
 
-                {/* אלמנטים (רחבה/בר/DJ/חופה) — לתצוגה בלבד במובייל */}
+                {/* אלמנטים (רחבה/בר/DJ/חופה) — ניתנים לגרירה ובחירה גם במובייל */}
                 {elements.map((el) => {
+                  const isSel = selectedEl === el.id
                   const color = el.color || ELEMENT_DEFS[el.type]?.color || '#7fb3e0'
                   const radius =
                     el.shape === 'circle' || el.shape === 'ellipse' ? '50%' : el.shape === 'square' ? '16px' : '12px'
@@ -1464,7 +1474,9 @@ export function HallPage() {
                   return (
                     <div
                       key={el.id}
-                      className={`hall-element el-${el.type} ${hasCustom ? '' : 'themed'}`}
+                      className={`hall-element el-${el.type} ${hasCustom ? '' : 'themed'} ${
+                        isSel ? 'selected' : ''
+                      } ${el.locked ? 'locked' : ''}`}
                       style={{
                         left: el.x,
                         top: el.y,
@@ -1474,10 +1486,47 @@ export function HallPage() {
                         borderRadius: radius,
                         ...(hasCustom ? { background: `${color}26`, borderColor: color } : {}),
                       }}
+                      onPointerDown={(e) => onElementPointerDown(e, el.id)}
                     >
                       <span className="element-label" style={hasCustom ? { color } : undefined}>
                         {el.label}
                       </span>
+                      {el.locked && (
+                        <span className="element-lock-badge" title="נעול">
+                          🔒
+                        </span>
+                      )}
+                      {isSel && (
+                        <div className="element-toolbar mobile" onPointerDown={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            title={el.locked ? 'שחרר נעילה' : 'נעל'}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleElementLock(el.id)
+                            }}
+                          >
+                            {el.locked ? '🔓' : '🔒'}
+                          </button>
+                          <button
+                            type="button"
+                            title="מחק"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removeElement(el.id)
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      )}
+                      {isSel && !el.locked && (
+                        <span
+                          className="handle handle-resize"
+                          title="שנה גודל"
+                          onPointerDown={(e) => onResizePointerDown(e, el.id)}
+                        />
+                      )}
                     </div>
                   )
                 })}
@@ -1574,8 +1623,8 @@ export function HallPage() {
                     <button onClick={() => addElement('dance_floor')}>
                       <HmIcon name="dance" size={18} /> רחבת ריקודים
                     </button>
-                    <button onClick={() => addElement('head_table', 'חופה')}>
-                      <HmIcon name="chuppah" size={18} /> חופה
+                    <button onClick={() => addElement('dj')}>
+                      <HmIcon name="dj" size={18} /> עמדת דיג'יי
                     </button>
                   </div>
                 )}
