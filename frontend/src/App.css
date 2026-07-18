@@ -492,6 +492,93 @@
   text-decoration: underline;
 }
 
+.row-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  white-space: nowrap;
+}
+.btn-edit {
+  background: transparent;
+  color: var(--gold-deep);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+.btn-edit:hover {
+  text-decoration: underline;
+}
+
+/* ---- חלונית עריכת מוזמן ---- */
+.edit-guest-dialog {
+  max-width: 640px;
+  width: 92vw;
+}
+/* בתוך החלונית הטופס כבר עטוף — מבטלים כפל מסגרת/רקע */
+.edit-guest-dialog .add-form {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+/* ---- חלונית יצירת קבוצה ---- */
+.cg-name-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+.cg-name-label .cell-input {
+  margin-top: 6px;
+  width: 100%;
+}
+.cg-pick-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.cg-selected-count {
+  color: var(--gold-deep);
+  font-size: 13px;
+}
+.cg-search {
+  width: 100%;
+  margin-bottom: 10px;
+}
+.cg-guest-list {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.cg-guest-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.cg-guest-row:last-child {
+  border-bottom: none;
+}
+.cg-guest-row input[type='checkbox'] {
+  accent-color: var(--gold);
+  width: 18px;
+  height: 18px;
+}
+.cg-guest-name {
+  font-weight: 600;
+}
+.cg-guest-meta {
+  color: var(--muted);
+  font-size: 13px;
+  margin-inline-start: auto;
+}
+
 /* ---- Add form ---- */
 .add-form {
   background: var(--cream);

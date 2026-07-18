@@ -109,6 +109,8 @@ export const strings = {
     colTable: 'שולחן',
     colNotes: 'הערות',
     deleteRow: 'מחיקה',
+    editRow: 'עריכה',
+    groupButton: '👥 צור קבוצה',
     emptySearch: 'לא נמצאו מוזמנים שתואמים לחיפוש.',
     emptyList: 'הרשימה עדיין ריקה. הוסיפו מוזמן ראשון או ייבאו קובץ אקסל כדי להתחיל.',
     loadingRows: 'טוען…',
@@ -130,6 +132,7 @@ export const strings = {
     notesFieldPlaceholder: 'לדוגמה: לא לשבת ליד משפחת לוי',
     saving: 'שומר…',
     submitAdd: 'הוספת מוזמן',
+    submitEdit: 'שמירת שינויים',
 
     // GuestTimelineModal
     timelineKindLabels: {
@@ -226,5 +229,23 @@ export const strings = {
     clearAll: 'נקה בחירה',
     colImport: 'ייבוא',
     backToEdit: 'חזרה לעריכת הטקסט',
+
+    // CreateGroupDialog — יצירת קבוצה ושיוך מוזמנים
+    createGroupTitle: 'יצירת קבוצה חדשה',
+    createGroupHint:
+      'תנו שם לקבוצה (למשל "חברים מהצבא" או "משפחת כהן"), וסמנו מי שייך אליה. אפשר להשתמש בזה כדי לשמור קבוצות יחד בהושבה.',
+    createGroupNameLabel: 'שם הקבוצה',
+    createGroupNamePlaceholder: 'למשל: חברים מהצבא',
+    createGroupPickHint: 'בחרו את המוזמנים שישויכו לקבוצה:',
+    createGroupSelected: (n: number) => `${n} נבחרו`,
+    createGroupSave: 'שמירת הקבוצה',
+    createGroupSaving: 'שומר…',
+    createGroupNoName: 'רשמו שם לקבוצה',
+    createGroupNoGuests: 'בחרו לפחות מוזמן אחד',
+    createGroupError: 'לא הצלחנו לשמור את הקבוצה, נסו שוב',
+    createGroupSavedToast: (name: string, n: number) =>
+      `נוצרה קבוצת '${name}' עם ${n} מוזמנים ✓`,
+    createGroupEmpty: 'אין עדיין מוזמנים. הוסיפו מוזמנים כדי ליצור קבוצה.',
+    createGroupLoading: 'טוען מוזמנים…',
   },
 }

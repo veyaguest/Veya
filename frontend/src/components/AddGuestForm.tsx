@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { createGuest } from '../api'
-import type { GroupType, GuestCreate, Side } from '../types'
+import { createGuest, updateGuest } from '../api'
+import type { GroupType, Guest, GuestCreate, Side } from '../types'
 import { GROUP_LABELS, SIDE_LABELS } from '../types'
 import { strings } from '../strings/he'
 
@@ -10,6 +10,7 @@ const tc = strings.common
 interface Props {
   onAdded: () => void
   onCancel: () => void
+  guest?: Guest // אם קיים — מצב עריכה של מוזמן קיים
 }
 
 const EMPTY: GuestCreate = {
@@ -24,9 +25,29 @@ const EMPTY: GuestCreate = {
 
 const CUSTOM = '__custom__' // ערך דמה בבורר: "קבוצה חדשה…"
 
-export function AddGuestForm({ onAdded, onCancel }: Props) {
-  const [form, setForm] = useState<GuestCreate>(EMPTY)
-  const [customGroup, setCustomGroup] = useState(false)
+// האם ערך הקבוצה הוא קבוצה מותאמת (לא אחת מהמוכרות)?
+function isCustomGroup(group: string): boolean {
+  return !!group && !(group in GROUP_LABELS)
+}
+
+export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
+  const editing = !!guest
+  const [form, setForm] = useState<GuestCreate>(
+    guest
+      ? {
+          full_name: guest.full_name,
+          phone: guest.phone,
+          side: guest.side,
+          group_type: guest.group_type,
+          party_size: guest.party_size,
+          notes_raw: guest.notes_raw ?? '',
+          is_child: guest.is_child ?? false,
+        }
+      : EMPTY,
+  )
+  const [customGroup, setCustomGroup] = useState(
+    guest ? isCustomGroup(guest.group_type) : false,
+  )
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -50,13 +71,21 @@ export function AddGuestForm({ onAdded, onCancel }: Props) {
     setSaving(true)
     try {
       const group = (form.group_type || '').trim() || 'other'
-      await createGuest({
-        ...form,
-        group_type: group,
-        notes_raw: form.notes_raw || undefined,
-      })
-      setForm(EMPTY)
-      setCustomGroup(false)
+      if (guest) {
+        await updateGuest(guest.id, {
+          ...form,
+          group_type: group,
+          notes_raw: form.notes_raw || null,
+        })
+      } else {
+        await createGuest({
+          ...form,
+          group_type: group,
+          notes_raw: form.notes_raw || undefined,
+        })
+        setForm(EMPTY)
+        setCustomGroup(false)
+      }
       onAdded()
     } catch (err) {
       setError(err instanceof Error ? err.message : t.saveErrorGeneric)
@@ -152,7 +181,7 @@ export function AddGuestForm({ onAdded, onCancel }: Props) {
 
       <div className="add-actions">
         <button type="submit" className="btn-primary" disabled={saving}>
-          {saving ? t.saving : t.submitAdd}
+          {saving ? t.saving : editing ? t.submitEdit : t.submitAdd}
         </button>
         <button type="button" className="btn-ghost" onClick={onCancel}>
           {tc.cancel}

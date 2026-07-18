@@ -413,6 +413,18 @@ export function HallPage() {
   const scaleRef = useRef(1)
   const offsetRef = useRef({ x: 0, y: 0 })
 
+  // מראה עדכנית של השולחנות/האלמנטים ל-recomputeFit — כדי שההתאמה-למסך תוכל
+  // לקרוא את המיקומים הנוכחיים בלי לתלות את עצמה ב-tables/elements. כך גרירה
+  // (ששִנתה מיקום בלבד) לא מפעילה refit ולא מכווצת את המפה בכל תזוזה.
+  const tablesRef = useRef(tables)
+  const elementsRef = useRef(elements)
+  useEffect(() => {
+    tablesRef.current = tables
+  }, [tables])
+  useEffect(() => {
+    elementsRef.current = elements
+  }, [elements])
+
   const toWorld = useCallback((clientX: number, clientY: number) => {
     const vp = viewportRef.current
     if (!vp) return { x: 0, y: 0 }
@@ -563,14 +575,14 @@ export function HallPage() {
     let maxX = -Infinity
     let maxY = -Infinity
     const pad = 30 // שוליים סביב שולחן (כיסאות/מספר) בקואורדינטות-לוח
-    for (const t of tables) {
+    for (const t of tablesRef.current) {
       const { w, h } = tableSize(t.table_type, t.capacity)
       minX = Math.min(minX, t.x - pad)
       minY = Math.min(minY, t.y - pad)
       maxX = Math.max(maxX, t.x + w + pad)
       maxY = Math.max(maxY, t.y + h + pad)
     }
-    for (const el of elements) {
+    for (const el of elementsRef.current) {
       minX = Math.min(minX, el.x)
       minY = Math.min(minY, el.y)
       maxX = Math.max(maxX, el.x + el.width)
@@ -600,8 +612,11 @@ export function HallPage() {
     offsetRef.current = { x: ox, y: oy }
     setViewTransform(`translate(${ox}px, ${oy}px) scale(${s})`)
     setViewScale(s)
-  }, [tables, elements])
+  }, [])
 
+  // התאמה-למסך אוטומטית רק באירועים "מבניים": כניסה למובייל, החלפת לשונית,
+  // וטעינה/הוספה/מחיקה של שולחן או אלמנט (מזוהה לפי שינוי בכמות). גרירה בלבד
+  // משנה מיקום ולא כמות — ולכן לא מפעילה refit ולא מכווצת את המפה בכל תזוזה.
   useEffect(() => {
     if (!mobileMode) {
       setViewTransform(undefined)
@@ -611,7 +626,7 @@ export function HallPage() {
       return
     }
     recomputeFit()
-  }, [mobileMode, mobileTab, recomputeFit])
+  }, [mobileMode, mobileTab, tables.length, elements.length, recomputeFit])
 
   useEffect(() => {
     if (!mobileMode) return
@@ -706,6 +721,10 @@ export function HallPage() {
     e.stopPropagation()
     const t = tables.find((x) => x.table_number === tnum)
     if (!t) return
+    // מתחילים אינטראקציה חדשה: מאפסים את דגל ה"נגרר" כאן (בתחילת הלחיצה) ולא
+    // ב-pointerup — כדי שה-click שרץ *אחרי* הגרירה עדיין יראה שהיתה גרירה
+    // ולא יפתח את חלון העריכה. (ראה onCanvasPointerUp — שם כבר לא מאפסים.)
+    movedRef.current = false
     dragStartRef.current = { x: e.clientX, y: e.clientY }
     const activeSet = selectedTables.has(tnum) && selectedTables.size > 1 ? selectedTables : new Set([tnum])
     const movable = tables.filter((x) => activeSet.has(x.table_number) && !x.locked)
@@ -744,6 +763,7 @@ export function HallPage() {
     if (!el) return
     // הבחירה (והצגת תפריט העריכה/הידיות) מתבצעת ב-onElementClick, כלומר רק
     // בהקשה בלי גרירה. כך גרירה להזזת אלמנט לא "מקפיצה" את תפריט העריכה.
+    movedRef.current = false // ראה הערה ב-onTablePointerDown — איפוס בתחילת הגרירה
     dragStartRef.current = { x: e.clientX, y: e.clientY }
     if (el.locked) return
     const w = toWorld(e.clientX, e.clientY)
@@ -878,7 +898,10 @@ export function HallPage() {
       dragPendingRef.current = null
     }
     dragRef.current = null
-    movedRef.current = false
+    // שימו לב: לא מאפסים כאן את movedRef. אירוע ה-click נורה *אחרי* pointerup,
+    // ואם נאפס כאן — onTableClick/onElementClick יחשבו שזו הקשה ויפתחו עריכה
+    // אחרי גרירה. האיפוס מתבצע בתחילת האינטראקציה הבאה (onTablePointerDown /
+    // onElementPointerDown). כך הקליק שאחרי הגרירה מזהה נכון שהיתה גרירה.
     dragStartRef.current = null
   }
 

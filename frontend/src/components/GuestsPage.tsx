@@ -4,6 +4,7 @@ import type { Guest } from '../types'
 import { groupLabel, RSVP_LABELS, SIDE_LABELS } from '../types'
 import { strings } from '../strings/he'
 import { AddGuestForm } from './AddGuestForm'
+import { CreateGroupDialog } from './CreateGroupDialog'
 import { GroupNotesPanel } from './GroupNotesPanel'
 import { GroupSuggestions } from './GroupSuggestions'
 import { ImportDialog } from './ImportDialog'
@@ -30,6 +31,8 @@ export function GuestsPage() {
   const [importFile, setImportFile] = useState<File | null>(null)
   const [showPaste, setShowPaste] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
+  const [showCreateGroup, setShowCreateGroup] = useState(false)
+  const [editGuest, setEditGuest] = useState<Guest | null>(null)
   const [showOnboarding, setShowOnboarding] = useState(
     () => localStorage.getItem(ONBOARDING_KEY) !== '1',
   )
@@ -100,6 +103,9 @@ export function GuestsPage() {
         <button className="btn-ghost" onClick={() => setShowPaste(true)}>
           {t.pasteButton}
         </button>
+        <button className="btn-ghost" onClick={() => setShowCreateGroup(true)}>
+          {t.groupButton}
+        </button>
         <button className="btn-ghost" onClick={() => setShowNotes(true)}>
           {t.notesButton}
         </button>
@@ -162,6 +168,42 @@ export function GuestsPage() {
 
       {showNotes && <GroupNotesPanel onClose={() => setShowNotes(false)} />}
 
+      {showCreateGroup && (
+        <CreateGroupDialog
+          onClose={() => setShowCreateGroup(false)}
+          onCreated={(message) => {
+            setShowCreateGroup(false)
+            setToast(message)
+            setTimeout(() => setToast(''), 4000)
+            load(search)
+          }}
+        />
+      )}
+
+      {editGuest && (
+        <div className="overlay" onClick={() => setEditGuest(null)}>
+          <div
+            className="dialog edit-guest-dialog"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="dialog-head">
+              <h2>{t.editRow}</h2>
+              <button className="x" onClick={() => setEditGuest(null)}>
+                ✕
+              </button>
+            </div>
+            <AddGuestForm
+              guest={editGuest}
+              onAdded={() => {
+                setEditGuest(null)
+                load(search)
+              }}
+              onCancel={() => setEditGuest(null)}
+            />
+          </div>
+        </div>
+      )}
+
       {showForm && (
         <AddGuestForm
           onAdded={() => {
@@ -219,7 +261,10 @@ export function GuestsPage() {
                 </td>
                 <td className="center">{g.table_number ?? '—'}</td>
                 <td className="notes">{g.notes_raw ?? ''}</td>
-                <td>
+                <td className="row-actions">
+                  <button className="btn-edit" onClick={() => setEditGuest(g)}>
+                    {t.editRow}
+                  </button>
                   <button className="btn-delete" onClick={() => onDelete(g)}>
                     {t.deleteRow}
                   </button>

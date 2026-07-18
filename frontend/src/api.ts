@@ -32,6 +32,7 @@ import type {
   GuestTimeline,
   Guest,
   GuestCreate,
+  GuestUpdate,
   HallElement,
   HallState,
   HallTableSave,
@@ -413,6 +414,17 @@ export async function listGuests(
 export async function createGuest(data: GuestCreate): Promise<Guest> {
   const res = await apiFetch('/guests', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** עדכון פרטי מוזמן קיים (עריכה ע"י בעל האירוע). */
+export async function updateGuest(id: number, data: GuestUpdate): Promise<Guest> {
+  const res = await apiFetch(`/guests/${id}`, {
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })

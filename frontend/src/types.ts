@@ -85,6 +85,19 @@ export interface GuestCreate {
   is_child?: boolean
 }
 
+// עדכון חלקי של מוזמן קיים (עריכה) — כל השדות אופציונליים.
+export interface GuestUpdate {
+  full_name?: string
+  phone?: string
+  side?: Side
+  group_type?: GroupType
+  party_size?: number
+  notes_raw?: string | null
+  rsvp_status?: RsvpStatus
+  table_number?: number | null
+  is_child?: boolean
+}
+
 // תוויות בעברית לתצוגה
 export const SIDE_LABELS: Record<Side, string> = {
   groom: 'חתן',
