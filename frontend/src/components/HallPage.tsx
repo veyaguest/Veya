@@ -18,6 +18,7 @@ import type {
   TableType,
 } from '../types'
 import { GROUP_LABELS, SIDE_LABELS } from '../types'
+import { getEventId } from '../authStore'
 import {
   computeSmartFill,
   computeSmartWarnings,
@@ -187,6 +188,7 @@ type HmIconName =
   | 'search'
   | 'plus'
   | 'round'
+  | 'square'
   | 'knights'
   | 'bar'
   | 'dance'
@@ -269,6 +271,12 @@ function HmIcon({ name, size = 22 }: { name: HmIconName; size?: number }) {
       return (
         <svg {...common}>
           <circle cx="12" cy="12" r="7.5" />
+        </svg>
+      )
+    case 'square':
+      return (
+        <svg {...common}>
+          <rect x="5" y="5" width="14" height="14" rx="2" />
         </svg>
       )
     case 'knights':
@@ -386,7 +394,13 @@ export function HallPage() {
   const [assignTarget, setAssignTarget] = useState<number | null>(null)
   const [fabOpen, setFabOpen] = useState(false)
   const [mobileSearch, setMobileSearch] = useState('')
+  // מדריך פתיחה קצר למשתמש. נפתח אוטומטית בביקור הראשון (נשמר ב-localStorage),
+  // וניתן לפתוח שוב בכל רגע מכפתור "?" בפס העליון.
+  const [guideOpen, setGuideOpen] = useState(false)
   const [viewTransform, setViewTransform] = useState<string | undefined>(undefined)
+  // קנה-המידה הנוכחי של הלוח במובייל (1 בדסקטופ). נחשף כמשתנה CSS כדי
+  // שידיות הסיבוב/שינוי-הגודל יישארו בגודל-מסך קבוע ונוח למגע גם כשהלוח מוקטן.
+  const [viewScale, setViewScale] = useState(1)
 
   // ---- לוח האולם: בלי זום — תמיד בגודל אמיתי (100%), נגלל באופן טבעי ----
   const viewportRef = useRef<HTMLDivElement | null>(null)
@@ -457,6 +471,9 @@ export function HallPage() {
   const dragPendingRef = useRef<{ dx: number; dy: number } | null>(null)
   const dragNodesRef = useRef<Map<number, HTMLElement>>(new Map())
   const movedRef = useRef(false)
+  // נקודת-המסך שבה התחילה הגרירה — לחישוב סף-תזוזה שמבדיל בין הקשה (בחירה)
+  // לבין גרירה אמיתית (הזזה). כך נגיעה קטנה עם רעד-אצבע לא נחשבת גרירה.
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null)
   // מונה קטן להוספות רצופות (שולחן/אלמנט) — כדי שכשלוחצים "הוסף" כמה פעמים
   // ברצף הפריטים ייפלו במדרגה קלה זה מזה, ולא יתערמו זה על גבי זה במרכז.
   const placeSeqRef = useRef(0)
@@ -564,26 +581,31 @@ export function HallPage() {
       scaleRef.current = 1
       offsetRef.current = { x: 20, y: 20 }
       setViewTransform('translate(20px, 20px) scale(1)')
+      setViewScale(1)
       return
     }
     const margin = 18 // רווח לבן בקצוות המסך (בפיקסלי-מסך)
     const contentW = Math.max(1, maxX - minX)
     const contentH = Math.max(1, maxY - minY)
+    // תקרה 1.0: אף פעם לא "מנפחים" תוכן דליל מעבר לגודלו הטבעי — רק מקטינים
+    // כדי להכניס הכול למסך. כך מפה עם מעט שולחנות נראית בגודל נורמלי, לא ענקית.
     const s = clamp(
       Math.min((cw - margin * 2) / contentW, (ch - margin * 2) / contentH),
       0.2,
-      1.4,
+      1,
     )
     const ox = (cw - contentW * s) / 2 - minX * s
     const oy = (ch - contentH * s) / 2 - minY * s
     scaleRef.current = s
     offsetRef.current = { x: ox, y: oy }
     setViewTransform(`translate(${ox}px, ${oy}px) scale(${s})`)
+    setViewScale(s)
   }, [tables, elements])
 
   useEffect(() => {
     if (!mobileMode) {
       setViewTransform(undefined)
+      setViewScale(1)
       scaleRef.current = 1
       offsetRef.current = { x: 0, y: 0 }
       return
@@ -599,6 +621,21 @@ export function HallPage() {
     ro.observe(vp)
     return () => ro.disconnect()
   }, [mobileMode, mobileTab, recomputeFit])
+
+  // פתיחה אוטומטית של מדריך ההדרכה בביקור הראשון במסך האולם — פעם אחת לכל
+  // אירוע (ולא פעם אחת לדפדפן), כדי שכל זוג/אירוע חדש יראה אותו גם באותו מכשיר.
+  useEffect(() => {
+    try {
+      const eid = getEventId()
+      const key = eid != null ? `veya_hall_guide_v1_${eid}` : 'veya_hall_guide_v1'
+      if (!localStorage.getItem(key)) {
+        setGuideOpen(true)
+        localStorage.setItem(key, '1')
+      }
+    } catch {
+      /* localStorage לא זמין (מצב פרטי וכו') — פשוט לא פותחים אוטומטית */
+    }
+  }, [])
 
   // אין יותר זום בדסקטופ — הלוח נגלל באופן טבעי (גלגלת/מגע רגילים דרך
   // overflow: auto של המאגר), בלי מאזינים מותאמים-אישית.
@@ -669,6 +706,7 @@ export function HallPage() {
     e.stopPropagation()
     const t = tables.find((x) => x.table_number === tnum)
     if (!t) return
+    dragStartRef.current = { x: e.clientX, y: e.clientY }
     const activeSet = selectedTables.has(tnum) && selectedTables.size > 1 ? selectedTables : new Set([tnum])
     const movable = tables.filter((x) => activeSet.has(x.table_number) && !x.locked)
     if (movable.length === 0) return
@@ -704,12 +742,22 @@ export function HallPage() {
     e.stopPropagation()
     const el = elements.find((x) => x.id === id)
     if (!el) return
-    setSelectedEl(id)
-    setSelectedTables(new Set())
+    // הבחירה (והצגת תפריט העריכה/הידיות) מתבצעת ב-onElementClick, כלומר רק
+    // בהקשה בלי גרירה. כך גרירה להזזת אלמנט לא "מקפיצה" את תפריט העריכה.
+    dragStartRef.current = { x: e.clientX, y: e.clientY }
     if (el.locked) return
     const w = toWorld(e.clientX, e.clientY)
     dragRef.current = { kind: 'element', id, dx: w.x - el.x, dy: w.y - el.y }
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  // הקשה (בלי גרירה) על אלמנט → בחירה. הדפדפן לא מפעיל click אחרי גרירה, ולכן
+  // גרירה להזזה לא בוחרת/פותחת תפריט. movedRef הוא הגנה נוספת.
+  function onElementClick(e: React.MouseEvent, id: string) {
+    e.stopPropagation()
+    if (movedRef.current) return
+    setSelectedEl(id)
+    setSelectedTables(new Set())
   }
 
   function onResizePointerDown(e: React.PointerEvent, id: string) {
@@ -730,24 +778,25 @@ export function HallPage() {
 
   function onRotatePointerDown(e: React.PointerEvent, id: string) {
     e.stopPropagation()
-    const el = elements.find((x) => x.id === id)
-    if (!el) return
-    const vp = viewportRef.current
-    if (!vp) return
-    const rect = vp.getBoundingClientRect()
-    // מרכז האלמנט בקואורדינטות-מסך = מוצא-הלוח על המסך (בניכוי גלילה) + מיקום.
-    dragRef.current = {
-      kind: 'rotate',
-      id,
-      cx: rect.left - vp.scrollLeft + el.x + el.width / 2,
-      cy: rect.top - vp.scrollTop + el.y + el.height / 2,
-    }
+    // מרכז הסיבוב נלקח מה-rect האמיתי של האלמנט על המסך (getBoundingClientRect),
+    // ולא מחישוב לפי el.x/scroll — כך זה נכון גם במובייל שבו הלוח מוקטן (scale<1).
+    const elNode = (e.currentTarget as HTMLElement).parentElement
+    if (!elNode) return
+    const r = elNode.getBoundingClientRect()
+    dragRef.current = { kind: 'rotate', id, cx: r.left + r.width / 2, cy: r.top + r.height / 2 }
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
   }
 
   function onCanvasPointerMove(e: React.PointerEvent) {
     const drag = dragRef.current
     if (!drag) return
+    // סף-תזוזה: רק להזזת אלמנט/שולחן. עד שהאצבע לא זזה ~6px זו עדיין הקשה
+    // (בחירה) ולא גרירה — כדי שרעד קטן לא יזיז ולא יבטל את הבחירה. ידיות
+    // סיבוב/שינוי-גודל לא מוגבלות בסף (שם כל תזוזה קטנה חשובה).
+    if (!movedRef.current && (drag.kind === 'element' || drag.kind === 'table-group')) {
+      const st = dragStartRef.current
+      if (st && Math.hypot(e.clientX - st.x, e.clientY - st.y) < 6) return
+    }
     movedRef.current = true
 
     if (drag.kind === 'table-group') {
@@ -830,6 +879,7 @@ export function HallPage() {
     }
     dragRef.current = null
     movedRef.current = false
+    dragStartRef.current = null
   }
 
   // ---- שולחנות: הוספה / שכפול / מחיקה / עדכון שדה ----
@@ -1367,6 +1417,27 @@ export function HallPage() {
       <div className="hall-mobile">
         {/* ---- פס עליון: כותרת + חיפוש ---- */}
         <div className="hm-topbar">
+          <button
+            className="hm-help-btn"
+            onClick={() => setGuideOpen(true)}
+            aria-label="איך זה עובד? פתיחת המדריך"
+            title="איך זה עובד?"
+          >
+            ?
+          </button>
+          <button
+            className="hm-fit-btn"
+            onClick={() => recomputeFit()}
+            aria-label="מרכוז המפה — התאמה למסך"
+            title="מרכוז המפה"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 9V5a1 1 0 0 1 1-1h4" />
+              <path d="M20 9V5a1 1 0 0 0-1-1h-4" />
+              <path d="M4 15v4a1 1 0 0 0 1 1h4" />
+              <path d="M20 15v4a1 1 0 0 1-1 1h-4" />
+            </svg>
+          </button>
           <div className="hm-search">
             <span className="hm-search-icon" aria-hidden="true">
               <HmIcon name="search" size={18} />
@@ -1444,7 +1515,15 @@ export function HallPage() {
               <div
                 className="hall-world"
                 ref={worldRef}
-                style={{ width: WORLD_W, height: WORLD_H, transform: viewTransform, transformOrigin: '0 0' }}
+                style={
+                  {
+                    width: WORLD_W,
+                    height: WORLD_H,
+                    transform: viewTransform,
+                    transformOrigin: '0 0',
+                    '--hm-s': viewScale,
+                  } as React.CSSProperties
+                }
               >
                 {sketch && (
                   <div className="hall-sketch-bg" style={{ backgroundImage: `url(${sketch})` }} aria-hidden="true" />
@@ -1476,6 +1555,7 @@ export function HallPage() {
                         ...(hasCustom ? { background: `${color}26`, borderColor: color } : {}),
                       }}
                       onPointerDown={(e) => onElementPointerDown(e, el.id)}
+                      onClick={(e) => onElementClick(e, el.id)}
                     >
                       <span className="element-label" style={hasCustom ? { color } : undefined}>
                         {el.label}
@@ -1510,11 +1590,18 @@ export function HallPage() {
                         </div>
                       )}
                       {isSel && !el.locked && (
-                        <span
-                          className="handle handle-resize"
-                          title="שנה גודל"
-                          onPointerDown={(e) => onResizePointerDown(e, el.id)}
-                        />
+                        <>
+                          <span
+                            className="handle handle-rotate"
+                            title="סובב"
+                            onPointerDown={(e) => onRotatePointerDown(e, el.id)}
+                          />
+                          <span
+                            className="handle handle-resize"
+                            title="שנה גודל"
+                            onPointerDown={(e) => onResizePointerDown(e, el.id)}
+                          />
+                        </>
                       )}
                     </div>
                   )
@@ -1602,6 +1689,9 @@ export function HallPage() {
                   <div className="hm-fab-menu" onClick={() => setFabOpen(false)}>
                     <button onClick={() => addTable('round')}>
                       <HmIcon name="round" size={18} /> שולחן עגול
+                    </button>
+                    <button onClick={() => addTable('square')}>
+                      <HmIcon name="square" size={18} /> שולחן מרובע
                     </button>
                     <button onClick={() => addTable('knights')}>
                       <HmIcon name="knights" size={18} /> שולחן אבירים
@@ -2018,6 +2108,111 @@ export function HallPage() {
                   </div>
                 </>
               )}
+            </div>
+          </>
+        )}
+
+        {/* ---- מדריך פתיחה: איך עובד מסך האולם ---- */}
+        {guideOpen && (
+          <>
+            <div className="hm-guide-backdrop" onClick={() => setGuideOpen(false)} />
+            <div className="hm-guide" role="dialog" aria-label="מדריך מסך האולם">
+              <button
+                className="hm-guide-close"
+                onClick={() => setGuideOpen(false)}
+                aria-label="סגירה"
+              >
+                ×
+              </button>
+              <div className="hm-guide-scroll">
+                <h2 className="hm-guide-title">ברוכים הבאים למפת האולם 🎉</h2>
+                <p className="hm-guide-lead">
+                  כאן מסדרים את הערב — שולחנות, אלמנטים והושבה. הנה כל מה שצריך לדעת, בקצרה:
+                </p>
+
+                <div className="hm-guide-step">
+                  <span className="hm-guide-emoji">➕</span>
+                  <div>
+                    <h3>מוסיפים שולחנות ואלמנטים</h3>
+                    <p>
+                      לוחצים על כפתור ה־➕ בפינה, ובוחרים מה להוסיף: שולחן עגול, שולחן אבירים,
+                      בר, רחבת ריקודים או עמדת דיג׳יי.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="hm-guide-step">
+                  <span className="hm-guide-emoji">✋</span>
+                  <div>
+                    <h3>מזיזים, מסובבים ומשנים גודל</h3>
+                    <p>
+                      גוררים כל שולחן או אלמנט למקום שלו. הקשה קצרה בוחרת אותו — ואז מופיעות
+                      שתי ידיות: העליונה לסיבוב, והפינתית לשינוי גודל.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="hm-guide-step">
+                  <span className="hm-guide-emoji">🪑</span>
+                  <div>
+                    <h3>הושבה בקליק</h3>
+                    <p>
+                      בלשונית "מוזמנים" בוחרים אורח, ואז מקישים על השולחן שאליו הוא ישב. זהו —
+                      הוא משובץ. כך אפשר להעביר כל אורח בכמה שניות.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="hm-guide-step">
+                  <span className="hm-guide-emoji">✨</span>
+                  <div>
+                    <h3>מילוי אוטומטי חכם</h3>
+                    <p>
+                      אין כוח לשבץ ידנית? בלשונית "הושבה" יש "מילוי שולחנות אוטומטי" שמסדר את
+                      כולם בשבילכם — לפי הקבוצות והבקשות. תמיד אפשר לגרור ולתקן אחר כך.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="hm-guide-step">
+                  <span className="hm-guide-emoji">🖼️</span>
+                  <div>
+                    <h3>סקיצת האולם כרקע</h3>
+                    <p>
+                      יש לכם תמונה או סקיצה של האולם? בלשונית "כלים" אפשר להעלות אותה כרקע,
+                      ולסדר את השולחנות בדיוק לפי המבנה האמיתי.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="hm-guide-tabs">
+                  <h3>חמש הלשוניות למטה</h3>
+                  <ul>
+                    <li>
+                      <b>אולם</b> — המפה עצמה, כאן בונים ומסדרים.
+                    </li>
+                    <li>
+                      <b>שולחנות</b> — רשימת כל השולחנות ומי יושב בכל אחד.
+                    </li>
+                    <li>
+                      <b>מוזמנים</b> — מי עוד מחכה למקום.
+                    </li>
+                    <li>
+                      <b>הושבה</b> — מילוי אוטומטי, סטטיסטיקה והצעות לשיפור.
+                    </li>
+                    <li>
+                      <b>כלים</b> — שמירה, העלאת סקיצה והגדרות.
+                    </li>
+                  </ul>
+                </div>
+
+                <p className="hm-guide-tip">
+                  אפשר לפתוח את המדריך הזה שוב בכל רגע — מכפתור ה־"?" למעלה.
+                </p>
+              </div>
+              <button className="hm-guide-cta" onClick={() => setGuideOpen(false)}>
+                יאללה, מתחילים
+              </button>
             </div>
           </>
         )}
