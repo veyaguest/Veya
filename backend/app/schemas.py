@@ -1166,6 +1166,8 @@ class RsvpTrackActivateRequest(BaseModel):
     scope: str = "new"
     # אם ניתן — שולחים רק למוזמנים אלה (ניסיון חוזר לנכשלים בלבד). גובר על scope.
     retry_ids: Optional[list[int]] = None
+    # בחירת נמענים מפורשת מהזוג (רשימת סימון בדיאלוג). גובר על scope ועל retry_ids.
+    guest_ids: Optional[list[int]] = None
 
 
 class RsvpTrackActivateResult(RsvpTrackStatus):

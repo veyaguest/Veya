@@ -906,10 +906,12 @@ export async function previewSend(): Promise<InvitationSendPreview> {
 export async function activateRsvpTrack(opts?: {
   scope?: SendScope
   retryIds?: number[]
+  guestIds?: number[]
 }): Promise<RsvpTrackActivateResult> {
-  const body: { scope?: SendScope; retry_ids?: number[] } = {}
+  const body: { scope?: SendScope; retry_ids?: number[]; guest_ids?: number[] } = {}
   if (opts?.scope) body.scope = opts.scope
   if (opts?.retryIds) body.retry_ids = opts.retryIds
+  if (opts?.guestIds) body.guest_ids = opts.guestIds
   const res = await apiFetch('/automation/track/activate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

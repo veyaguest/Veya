@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   activateRsvpTrack,
   advanceRsvpTrack,
   getAutomationDashboard,
+  getAutomationPlaceholders,
   getEvent,
   getRsvpTrack,
   getTemplate,
+  listAutomationTemplates,
   listGuests,
   mediaUrl,
   messageLog,
@@ -193,7 +195,11 @@ function CoupleRsvpView() {
   }
 
   // ביצוע השליחה בפועל (אחרי אישור), עם היקף נבחר או ניסיון חוזר לנכשלים.
-  async function runSend(opts?: { scope?: SendScope; retryIds?: number[] }) {
+  async function runSend(opts?: {
+    scope?: SendScope
+    retryIds?: number[]
+    guestIds?: number[]
+  }) {
     setPhase('sending')
     setDialogError('')
     try {
@@ -216,6 +222,18 @@ function CoupleRsvpView() {
     setDialogError('')
     // מרעננים סטטוס אחרי סגירה כדי שהכרטיס יציג את המצב המעודכן.
     load()
+  }
+
+  // "לעריכת ההודעה" מתוך הדיאלוג — סוגרים וגוללים לעורך ההודעות שמתחת.
+  function editMessage() {
+    setPhase('idle')
+    setPreview(null)
+    setDialogError('')
+    setTimeout(() => {
+      document
+        .getElementById('mb-anchor')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 50)
   }
 
   if (loading) {
@@ -242,7 +260,9 @@ function CoupleRsvpView() {
         track && <TrackStatusCard track={track} onResend={openSendDialog} />
       )}
 
-      <MessageBuilder />
+      <div id="mb-anchor">
+        <MessageBuilder />
+      </div>
 
       {phase !== 'idle' && preview && (
         <SendInvitationsDialog
@@ -253,6 +273,7 @@ function CoupleRsvpView() {
           mode={track?.mode ?? 'mock'}
           onConfirm={runSend}
           onRetry={(ids) => runSend({ retryIds: ids })}
+          onEditMessage={editMessage}
           onClose={closeDialog}
         />
       )}
@@ -262,7 +283,7 @@ function CoupleRsvpView() {
 
 /**
  * דיאלוג שליחת ההזמנות — עובר בין 3 מצבים:
- * אישור (עם ספירה + מניעת כפילות) → התקדמות → סיכום (עם ניסיון חוזר לנכשלים).
+ * אישור (תצוגת הודעה + בחירת נמענים) → התקדמות → סיכום (ניסיון חוזר לנכשלים).
  */
 function SendInvitationsDialog({
   phase,
@@ -272,6 +293,7 @@ function SendInvitationsDialog({
   mode,
   onConfirm,
   onRetry,
+  onEditMessage,
   onClose,
 }: {
   phase: SendPhase
@@ -279,13 +301,11 @@ function SendInvitationsDialog({
   result: RsvpTrackActivateResult | null
   error: string
   mode: string
-  onConfirm: (opts?: { scope?: SendScope }) => void
+  onConfirm: (opts?: { scope?: SendScope; guestIds?: number[] }) => void
   onRetry: (ids: number[]) => void
+  onEditMessage: () => void
   onClose: () => void
 }) {
-  const cannotReceive = preview.missing_phone + preview.invalid_phone
-  const alreadySent = preview.already_sent > 0
-
   return (
     <div className="send-dialog-overlay" role="dialog" aria-modal="true">
       <div className="send-dialog">
@@ -343,84 +363,279 @@ function SendInvitationsDialog({
 
         {/* ---- מצב: אישור לפני שליחה ---- */}
         {phase === 'confirm' && (
-          <div className="send-confirm">
-            {alreadySent ? (
-              <>
-                <h3 className="send-dialog-title">כבר נשלחו הזמנות לאירוע זה</h3>
-                <p className="clar-sub">
-                  {preview.already_sent} מוזמנים כבר קיבלו הזמנה. מה תרצו לעשות?
-                </p>
-                {preview.not_yet_sent > 0 && (
-                  <p className="send-confirm-line">
-                    {preview.not_yet_sent} מוזמנים עדיין לא קיבלו הזמנה.
-                  </p>
-                )}
-                {error && <p className="form-error">{error}</p>}
-                <div className="send-dialog-actions column">
-                  <button
-                    className="btn-primary"
-                    disabled={preview.not_yet_sent === 0}
-                    onClick={() => onConfirm({ scope: 'new' })}
-                  >
-                    שלח רק למי שלא קיבל ({preview.not_yet_sent})
-                  </button>
-                  <button
-                    className="btn-ghost"
-                    onClick={() => onConfirm({ scope: 'all' })}
-                  >
-                    שלח מחדש לכולם ({preview.can_receive})
-                  </button>
-                  <button className="btn-text" onClick={onClose}>
-                    ביטול
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h3 className="send-dialog-title">שליחת הזמנות</h3>
-                <p className="send-confirm-line">
-                  ההזמנה תישלח ל־<strong>{preview.not_yet_sent}</strong> מוזמנים.
-                </p>
-                {cannotReceive > 0 && (
-                  <div className="send-confirm-warn">
-                    <p>
-                      {cannotReceive} מוזמנים <strong>לא</strong> יקבלו הודעה:
-                    </p>
-                    <ul>
-                      {preview.missing_phone > 0 && (
-                        <li>{preview.missing_phone} — חסר מספר טלפון</li>
-                      )}
-                      {preview.invalid_phone > 0 && (
-                        <li>{preview.invalid_phone} — מספר טלפון לא תקין</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-                <p className="clar-sub">
-                  לאחר השליחה יתחיל טיימר אישורי ההגעה, וכל התזכורות יחושבו מרגע זה.
-                </p>
-                {error && <p className="form-error">{error}</p>}
-                <div className="send-dialog-actions">
-                  <button
-                    className="btn-primary"
-                    disabled={preview.not_yet_sent === 0}
-                    onClick={() => onConfirm({ scope: 'new' })}
-                  >
-                    שליחת ההזמנות
-                  </button>
-                  <button className="btn-ghost" onClick={onClose}>
-                    ביטול
-                  </button>
-                </div>
-                {preview.not_yet_sent === 0 && (
-                  <p className="send-confirm-line">
-                    אין כרגע מוזמנים עם טלפון תקין לשליחה.
-                  </p>
-                )}
-              </>
-            )}
-          </div>
+          <SendConfirmStep
+            preview={preview}
+            error={error}
+            onConfirm={onConfirm}
+            onEditMessage={onEditMessage}
+            onClose={onClose}
+          />
         )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * שלב האישור: מציג תצוגה מקדימה של הודעת ההזמנה (עם קישור לעריכה) ורשימת
+ * נמענים לבחירה (חיפוש + סימון). הזוג רואה בדיוק מה יישלח ולמי.
+ */
+function SendConfirmStep({
+  preview,
+  error,
+  onConfirm,
+  onEditMessage,
+  onClose,
+}: {
+  preview: InvitationSendPreview
+  error: string
+  onConfirm: (opts?: { guestIds?: number[] }) => void
+  onEditMessage: () => void
+  onClose: () => void
+}) {
+  const [guests, setGuests] = useState<Guest[]>([])
+  const [inviteBody, setInviteBody] = useState('')
+  const [placeholders, setPlaceholders] = useState<TemplatePlaceholder[]>([])
+  const [event, setEvent] = useState<EventDetails | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+
+  // מוזמן יכול לקבל הזמנה רק אם יש לו מספר טלפון כלשהו (מספר לא-תקין יסונן בשרת).
+  const canReceive = useCallback((g: Guest) => (g.phone || '').trim() !== '', [])
+
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      try {
+        const [g, tpls, phs, ev] = await Promise.all([
+          listGuests('', 500, 0),
+          listAutomationTemplates(),
+          getAutomationPlaceholders(),
+          getEvent(),
+        ])
+        if (!alive) return
+        setGuests(g.items)
+        const invite = tpls.find((t) => t.kind === 'invitation') ?? tpls[0]
+        setInviteBody(invite?.body ?? '')
+        setPlaceholders(phs)
+        setEvent(ev)
+        // ברירת מחדל: מי שעדיין לא קיבל הזמנה ויש לו טלפון.
+        setSelected(
+          new Set(
+            g.items
+              .filter((x) => canReceive(x) && x.invite_status === 'not_sent')
+              .map((x) => x.id),
+          ),
+        )
+      } catch (err) {
+        if (alive)
+          setLoadError(
+            err instanceof Error ? err.message : 'לא הצלחנו לטעון את רשימת המוזמנים',
+          )
+      } finally {
+        if (alive) setLoading(false)
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [canReceive])
+
+  const filtered = useMemo(() => {
+    const q = search.trim()
+    if (!q) return guests
+    return guests.filter((g) => g.full_name.includes(q) || (g.phone || '').includes(q))
+  }, [guests, search])
+
+  // תצוגת ההודעה — מחליף כינויים בערכי דוגמה (כמו בעורך ההודעות).
+  const previewText = useMemo(() => {
+    const first = guests.find((g) => selected.has(g.id)) ?? guests[0]
+    const couple =
+      event && (event.groom_name || event.bride_name)
+        ? `${event.groom_name} ו${event.bride_name}`
+        : 'בני הזוג'
+    const sample: Record<string, string> = {
+      '{{guest_name}}': first?.full_name || 'דנה כהן',
+      '{{couple_names}}': couple,
+      '{{event_date}}': event?.event_date || 'תאריך האירוע',
+      '{{event_time}}': event?.event_time || 'שעה',
+      '{{venue_name}}': event?.venue_name || 'שם האולם',
+      '{{venue_address}}': event?.venue_address || 'כתובת האולם',
+      '{{maps_link}}': 'ניווט באמצעות Waze / Google Maps',
+      '{{rsvp_link}}': 'קישור אישי לאישור הגעה',
+    }
+    let text = inviteBody
+    for (const p of placeholders) {
+      const val = sample[p.key] ?? ''
+      if (p.token) text = text.split(p.token).join(val)
+      text = text.split(p.key).join(val)
+    }
+    return text
+  }, [inviteBody, placeholders, event, guests, selected])
+
+  function toggle(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function selectNotSent() {
+    setSelected(
+      new Set(
+        guests
+          .filter((g) => canReceive(g) && g.invite_status === 'not_sent')
+          .map((g) => g.id),
+      ),
+    )
+  }
+
+  function selectAll() {
+    setSelected(new Set(guests.filter(canReceive).map((g) => g.id)))
+  }
+
+  const selectedCount = selected.size
+  const missingPhone = preview.missing_phone
+  const alreadySelected = guests.filter(
+    (g) => selected.has(g.id) && g.invite_status !== 'not_sent',
+  ).length
+
+  if (loading) {
+    return (
+      <div className="send-confirm">
+        <h3 className="send-dialog-title">שליחת הזמנות</h3>
+        <p className="clar-sub">רגע, מכינים את רשימת המוזמנים…</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="send-confirm">
+      <h3 className="send-dialog-title">שליחת הזמנות</h3>
+
+      {loadError && <p className="form-error">{loadError}</p>}
+
+      {/* תצוגת ההודעה שתישלח + קישור לעריכה */}
+      <div className="send-msg-preview">
+        <div className="send-msg-head">
+          <span className="mb-preview-label">ההודעה שתישלח</span>
+          <button className="btn-text" onClick={onEditMessage}>
+            לעריכת ההודעה
+          </button>
+        </div>
+        <div className="wa-screen" dir="rtl">
+          <div className="wa-bubble">
+            {event?.invite_image && (
+              <img
+                className="wa-image"
+                src={mediaUrl(event.invite_image)}
+                alt="הזמנה"
+              />
+            )}
+            <div className="wa-text">
+              {previewText.trim() ? (
+                previewText.split('\n').map((line, i) => (
+                  <div key={i} className="wa-line">
+                    {line || ' '}
+                  </div>
+                ))
+              ) : (
+                <span className="wa-empty">אין עדיין נוסח להודעה</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* בחירת נמענים */}
+      <div className="send-recipients">
+        <div className="send-recipients-head">
+          <span className="mb-preview-label">למי לשלוח</span>
+          <div className="send-recipients-quick">
+            <button className="btn-text" onClick={selectNotSent}>
+              מי שעדיין לא קיבל
+            </button>
+            <button className="btn-text" onClick={selectAll}>
+              בחר הכל
+            </button>
+            <button className="btn-text" onClick={() => setSelected(new Set())}>
+              נקה
+            </button>
+          </div>
+        </div>
+
+        <input
+          className="send-recipients-search"
+          type="search"
+          dir="rtl"
+          placeholder="חיפוש לפי שם או טלפון…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <ul className="send-recipients-list">
+          {filtered.map((g) => {
+            const receivable = canReceive(g)
+            return (
+              <li key={g.id} className={`send-recipient-row ${receivable ? '' : 'disabled'}`}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(g.id)}
+                    disabled={!receivable}
+                    onChange={() => toggle(g.id)}
+                  />
+                  <span className="rsvp-name">{g.full_name}</span>
+                  {g.invite_status && g.invite_status !== 'not_sent' && (
+                    <span className="send-recipient-tag">כבר נשלח</span>
+                  )}
+                  {!receivable && (
+                    <span className="send-recipient-tag warn">חסר טלפון</span>
+                  )}
+                </label>
+              </li>
+            )
+          })}
+          {filtered.length === 0 && (
+            <li className="send-recipient-empty">לא נמצאו מוזמנים תואמים.</li>
+          )}
+        </ul>
+      </div>
+
+      <p className="send-confirm-line">
+        יישלח ל־<strong>{selectedCount}</strong> מוזמנים.
+      </p>
+      {alreadySelected > 0 && (
+        <p className="send-confirm-warn-line">
+          {alreadySelected} מהנבחרים כבר קיבלו הזמנה — הם יקבלו אותה שוב.
+        </p>
+      )}
+      {missingPhone > 0 && (
+        <p className="clar-sub">
+          {missingPhone} מוזמנים ללא מספר טלפון אינם ניתנים לבחירה.
+        </p>
+      )}
+      <p className="clar-sub">
+        לאחר השליחה יתחיל טיימר אישורי ההגעה, וכל התזכורות יחושבו מרגע זה.
+      </p>
+
+      {error && <p className="form-error">{error}</p>}
+
+      <div className="send-dialog-actions">
+        <button
+          className="btn-primary"
+          disabled={selectedCount === 0}
+          onClick={() => onConfirm({ guestIds: [...selected] })}
+        >
+          שליחת ההזמנות ({selectedCount})
+        </button>
+        <button className="btn-ghost" onClick={onClose}>
+          ביטול
+        </button>
       </div>
     </div>
   )

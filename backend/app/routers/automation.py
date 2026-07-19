@@ -474,7 +474,10 @@ def activate_track(
     guests = _guests(db, event.id)
 
     # קביעת קהל היעד לפי היקף הבקשה.
-    if payload.retry_ids:
+    if payload.guest_ids is not None:
+        chosen = set(payload.guest_ids)
+        targets = [g for g in guests if g.id in chosen]
+    elif payload.retry_ids:
         retry_set = set(payload.retry_ids)
         targets = [g for g in guests if g.id in retry_set]
     elif payload.scope == "all":

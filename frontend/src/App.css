@@ -7925,7 +7925,9 @@
   border-radius: 18px;
   padding: 28px 26px;
   width: 100%;
-  max-width: 440px;
+  max-width: 480px;
+  max-height: 88vh;
+  overflow-y: auto;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
   text-align: center;
 }
@@ -7966,6 +7968,101 @@
 .send-dialog-actions.column .btn-primary,
 .send-dialog-actions.column .btn-ghost {
   width: 100%;
+}
+
+/* ---- שלב האישור: תצוגת הודעה + בחירת נמענים ---- */
+.send-msg-preview {
+  text-align: right;
+  margin: 12px 0 16px;
+}
+.send-msg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.send-recipients {
+  text-align: right;
+  margin-bottom: 14px;
+}
+.send-recipients-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.send-recipients-quick {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.send-recipients-quick .btn-text {
+  font-size: 13px;
+}
+.send-recipients-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid rgba(120, 110, 95, 0.28);
+  border-radius: 10px;
+  font-size: 14px;
+  margin-bottom: 8px;
+  background: #fff;
+}
+.send-recipients-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid rgba(120, 110, 95, 0.2);
+  border-radius: 12px;
+  background: #fff;
+}
+.send-recipient-row {
+  padding: 0;
+}
+.send-recipient-row label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.send-recipient-row label:hover {
+  background: rgba(120, 110, 95, 0.06);
+}
+.send-recipient-row.disabled label {
+  cursor: default;
+  opacity: 0.55;
+}
+.send-recipient-row .rsvp-name {
+  flex: 1;
+}
+.send-recipient-tag {
+  font-size: 12px;
+  color: var(--body, #6a655d);
+  background: rgba(120, 110, 95, 0.12);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+.send-recipient-tag.warn {
+  color: #a5453b;
+  background: rgba(160, 90, 90, 0.12);
+}
+.send-recipient-empty {
+  padding: 14px 10px;
+  text-align: center;
+  color: var(--body, #6a655d);
+  font-size: 14px;
+}
+.send-confirm-warn-line {
+  font-size: 14px;
+  color: #a5453b;
+  margin: 4px 0;
 }
 
 /* התקדמות — סרגל אינדטרמיניסטי + ספינר עדין. */
