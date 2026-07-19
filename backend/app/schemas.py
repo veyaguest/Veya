@@ -362,6 +362,17 @@ class HallElement(BaseModel):
     color: str = ""           # צבע מותאם (hex); ריק = ברירת מחדל לפי סוג
 
 
+class HallLayout(BaseModel):
+    """פרופיל הפריסה של האולם — נקבע בהגדרה הראשונית ונשמר נעול.
+
+    density קובע את גודל האלמנטים הקבוע (spacious/comfortable/compact/dense),
+    planned_tables הוא מספר השולחנות שתוכנן — לזיהוי "נוספו הרבה מעבר לתכנון".
+    """
+
+    density: str = "comfortable"   # spacious | comfortable | compact | dense
+    planned_tables: int = 0
+
+
 class HallState(BaseModel):
     seats_per_table: int
     tables: list[HallTable]
@@ -369,6 +380,7 @@ class HallState(BaseModel):
     elements: list[HallElement]          # אלמנטים מיוחדים במפה
     warnings: list[str]                  # חריגות (קיבולת/זוג אסור באותו שולחן)
     sketch: Optional[str] = None         # סקיצת האולם (data URL) — רקע עדין
+    hall_layout: Optional[HallLayout] = None  # פרופיל צפיפות + מספר מתוכנן
     # זוגות אילוצים שכבר מחושבים היום מהערות חופשיות (constraints.py) — נחשפים
     # כאן כדי שעוזר ההושבה החכם בצד הלקוח יוכל לבדוק אותם מיידית (כולל בזמן
     # גרירה) בלי קריאת רשת נוספת. אין כאן לוגיקה חדשה, רק חשיפה.
@@ -395,6 +407,7 @@ class SaveHallRequest(BaseModel):
     tables: list[HallTableSave]
     elements: Optional[list[HallElement]] = None
     sketch: Optional[str] = None         # None => לא לשנות; מחרוזת ריקה => למחוק
+    hall_layout: Optional[HallLayout] = None  # None => לא לשנות
 
 
 # ---- משתמשים והתחברות (שלב 8) ----

@@ -75,6 +75,7 @@ _EXTRA_COLUMNS = {
         "group_notes": "JSON",
         "table_positions": "JSON",
         "hall_elements": "JSON",
+        "hall_layout": "JSON",
         "seats_per_table": "INTEGER DEFAULT 12",
         "message_template": "TEXT",
         "event_date": "TEXT DEFAULT ''",

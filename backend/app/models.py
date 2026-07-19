@@ -82,6 +82,9 @@ class Event(Base):
     # [{"id": .., "type": .., "x": .., "y": .., "width": .., "height": .., "label": ..}]
     hall_elements: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     seats_per_table: Mapped[int] = mapped_column(Integer, default=12)
+    # פרופיל הפריסה של האולם (נקבע בהגדרה הראשונית, נשמר נעול):
+    # {"density": "spacious|comfortable|compact|dense", "planned_tables": int}
+    hall_layout: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     # תבנית הודעת ההזמנה (שלב RSVP 2). None => משתמשים בתבנית ברירת המחדל.
     message_template: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     # תמונת ההזמנה שהזוג העלה (data URL בבסיס64). None => אין תמונה.

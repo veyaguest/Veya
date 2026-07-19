@@ -34,6 +34,7 @@ import type {
   GuestCreate,
   GuestUpdate,
   HallElement,
+  HallLayout,
   HallState,
   HallTableSave,
   ImportPreview,
@@ -687,6 +688,7 @@ export async function saveHall(
   seatsPerTable?: number,
   elements?: HallElement[],
   sketch?: string | null,
+  hallLayout?: HallLayout | null,
 ): Promise<HallState> {
   const res = await apiFetch('/hall', {
     method: 'PUT',
@@ -696,6 +698,7 @@ export async function saveHall(
       seats_per_table: seatsPerTable,
       elements,
       sketch,
+      hall_layout: hallLayout,
     }),
   })
   if (!res.ok) throw await toError(res)

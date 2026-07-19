@@ -151,6 +151,7 @@ def get_hall(
         elements=elements,
         warnings=warnings,
         sketch=media.to_url(event.hall_sketch),
+        hall_layout=schemas.HallLayout(**event.hall_layout) if event.hall_layout else None,
         forbidden_pairs=forbidden_pairs,
         together_pairs=together_pairs,
     )
@@ -199,6 +200,8 @@ def save_hall(
         event.hall_elements = [el.model_dump() for el in payload.elements]
     if payload.seats_per_table:
         event.seats_per_table = payload.seats_per_table
+    if payload.hall_layout is not None:
+        event.hall_layout = payload.hall_layout.model_dump()
     # סקיצת האולם: None => לא נגענו; "" => מחיקה; data URL => בלוב חדש;
     # URL קיים => ללא שינוי. הטיפול מרוכז ב-media.resolve_incoming.
     if payload.sketch is not None:

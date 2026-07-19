@@ -14,6 +14,7 @@ import type {
   HallElement,
   HallElementType,
   HallGuest,
+  HallLayout,
   HallState,
   TableType,
 } from '../types'
@@ -101,11 +102,42 @@ const ELEMENT_SHAPES: { key: ElementShape; label: string }[] = [
   { key: 'ellipse', label: '⬭' },
 ]
 
-// גודל לוח האולם (עולם פנימי בקואורדינטות LTR, כמו Figma). אין זום/מצלמה —
-// הלוח מוצג תמיד בגודל אמיתי (100%), והמאגר (viewport) נגלל סביבו באופן
-// טבעי (overflow: auto) כשהאולם גדול מהמסך. כך התצוגה תמיד ברורה וקריאה.
-const WORLD_W = 2000
-const WORLD_H = 1400
+// גודל בסיס ללוח האולם (עולם פנימי בקואורדינטות LTR, כמו Figma). אין זום ואין
+// הקטנה אוטומטית — הלוח מוצג תמיד בגודל אמיתי (100%) והמאגר (viewport) נגלל
+// סביבו (overflow: auto). הגודל בפועל גדל דינמית כדי להכיל את כל התוכן
+// (ראה worldSize) — הערכים כאן הם רק מינימום כשהאולם קטן/ריק.
+const WORLD_W = 1400
+const WORLD_H = 1000
+
+// ---- פרופיל צפיפות: גודל אלמנטים קבוע לפי מספר השולחנות המתוכנן ----
+// במקום להקטין את כל המפה בכל שינוי, מחליטים מראש על גודל האלמנטים לפי כמות
+// השולחנות. הפרופיל נבחר פעם אחת (בהגדרת האולם) ונשמר נעול — הוא לא משתנה
+// לבד כשמוסיפים כיסאות או שולחנות. כל האלמנטים באולם חולקים את אותו קנה-מידה.
+type DensityKey = 'spacious' | 'comfortable' | 'compact' | 'dense'
+
+interface DensityPreset {
+  round: number // קוטר לשולחן עגול/מרובע
+  knightsW: number // אורך שולחן אבירים/מלבני
+  knightsH: number
+  dance: { w: number; h: number }
+  bar: { w: number; h: number }
+  dj: { w: number; h: number }
+  ring: number // מרווח בין שולחנות בסקיצה האוטומטית
+}
+
+const DENSITY_PRESETS: Record<DensityKey, DensityPreset> = {
+  spacious: { round: 150, knightsW: 300, knightsH: 66, dance: { w: 270, h: 156 }, bar: { w: 224, h: 66 }, dj: { w: 152, h: 60 }, ring: 210 },
+  comfortable: { round: 122, knightsW: 252, knightsH: 58, dance: { w: 226, h: 132 }, bar: { w: 194, h: 58 }, dj: { w: 140, h: 56 }, ring: 176 },
+  compact: { round: 98, knightsW: 204, knightsH: 52, dance: { w: 192, h: 112 }, bar: { w: 166, h: 52 }, dj: { w: 128, h: 50 }, ring: 146 },
+  dense: { round: 80, knightsW: 168, knightsH: 46, dance: { w: 168, h: 98 }, bar: { w: 150, h: 46 }, dj: { w: 118, h: 44 }, ring: 122 },
+}
+
+function densityKeyForCount(n: number): DensityKey {
+  if (n <= 10) return 'spacious'
+  if (n <= 20) return 'comfortable'
+  if (n <= 35) return 'compact'
+  return 'dense'
+}
 
 // מספרי מקומות אפשריים לשולחן — סט סגור בלבד (לא כל מספר), לפי בקשת הבעלים.
 // שולחן אבירים (מלבני ארוך) מיועד לחבורה גדולה ולכן ברירת המחדל שלו גבוהה
@@ -125,22 +157,24 @@ function clamp(v: number, min: number, max: number) {
   return Math.min(max, Math.max(min, v))
 }
 
-// גודל חזותי של השולחן (בפיקסלים) — נגזר ממספר המקומות, כך ש"שינוי גודל"
-// קורה אוטומטית עם שינוי כמות הכיסאות (בהתאם לדרישה: "כשמספר המקומות
-// משתנה, הכיסאות מתעדכנים אוטומטית להתאמת צורת השולחן").
-function tableSize(type: TableType, capacity: number): { w: number; h: number } {
+// גודל חזותי של השולחן (בפיקסלים) — קבוע לפי פרופיל הצפיפות בלבד, לא לפי מספר
+// הכיסאות. הוספת/הסרת כיסא לא משנה את גודל השולחן (הכיסאות פשוט מתפזרים סביב
+// אותה מסגרת קבועה). כל השולחנות באולם באותו קנה-מידה.
+function tableSize(type: TableType, preset: DensityPreset): { w: number; h: number } {
   if (type === 'round' || type === 'square') {
-    const d = Math.round(clamp(46 + capacity * 6, 68, 190))
-    return { w: d, h: d }
+    return { w: preset.round, h: preset.round }
   }
-  const hasEnds = type === 'knights'
-  const rowSeats = hasEnds && capacity >= 6 ? capacity - 2 : capacity
-  const topCount = Math.max(1, Math.ceil(rowSeats / 2))
-  // רוחב שולחן האבירים מוגבל לטווח קרוב לשולחנות העגולים/מרובעים (68–190),
-  // כך שגם בקיבולת המרבית (24) הוא לא "בולע" את הלוח — בלי לגעת במספר
-  // המקומות עצמו.
-  const w = Math.round(clamp(topCount * 17, 76, 200))
-  return { w, h: 52 }
+  // מלבני / אבירים — שולחן ארוך בגודל קבוע לפי הפרופיל.
+  return { w: preset.knightsW, h: preset.knightsH }
+}
+
+// גודל אלמנט מיוחד (רחבה/בר/DJ) לפי פרופיל הצפיפות. שאר הסוגים → null (גודל
+// ברירת המחדל מ-ELEMENT_DEFS).
+function elementSizeFor(type: HallElementType, preset: DensityPreset): { w: number; h: number } | null {
+  if (type === 'dance_floor') return preset.dance
+  if (type === 'bar') return preset.bar
+  if (type === 'dj') return preset.dj
+  return null
 }
 
 interface SeatPoint {
@@ -365,6 +399,8 @@ export function HallPage() {
   const [unassigned, setUnassigned] = useState<HallGuest[]>([])
   const [elements, setElements] = useState<HallElement[]>([])
   const [seats, setSeats] = useState(12)
+  // פרופיל הפריסה של האולם (density + planned). null = טרם הוגדר (אולם ישן/ריק).
+  const [hallLayout, setHallLayout] = useState<HallLayout | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
   const [selected, setSelected] = useState<number | null>(null) // מוזמן שנבחר להעברה
   const [selectedEl, setSelectedEl] = useState<string | null>(null)
@@ -500,6 +536,29 @@ export function HallPage() {
   // שהרינדור התעדכן, ואז שני השולחנות "יחשבו" שאותו המספר פנוי.
   const nextTableNumRef = useRef(1)
 
+  // פרופיל הצפיפות בפועל: אם נשמר פרופיל נעול — משתמשים בו; אחרת (אולם ישן
+  // ללא הגדרה) נגזר מכמות השולחנות הנוכחית, כדי שנתונים קיימים ייראו תקין.
+  const densityKey: DensityKey = hallLayout?.density ?? densityKeyForCount(tables.length)
+  const preset = DENSITY_PRESETS[densityKey]
+
+  // גודל הלוח גדל דינמית כדי להכיל את כל התוכן (שולחנות + אלמנטים) עם שוליים,
+  // כך שאפשר לגלול לכל פינה בלי לחתוך — ובלי להקטין שום דבר. מינימום = גודל
+  // בסיס (WORLD_W/H) כשהאולם קטן.
+  const worldSize = useMemo(() => {
+    let maxX = 0
+    let maxY = 0
+    for (const t of tables) {
+      const { w, h } = tableSize(t.table_type, preset)
+      maxX = Math.max(maxX, t.x + w)
+      maxY = Math.max(maxY, t.y + h)
+    }
+    for (const el of elements) {
+      maxX = Math.max(maxX, el.x + el.width)
+      maxY = Math.max(maxY, el.y + el.height)
+    }
+    return { w: Math.max(WORLD_W, Math.ceil(maxX) + 260), h: Math.max(WORLD_H, Math.ceil(maxY) + 260) }
+  }, [tables, elements, preset])
+
   const applyState = useCallback((h: HallState) => {
     setTables(
       h.tables.map((t) => ({
@@ -528,6 +587,7 @@ export function HallPage() {
       })),
     )
     setSeats(snapCapacity(h.seats_per_table))
+    setHallLayout(h.hall_layout ?? null)
     setWarnings(h.warnings)
     setSketch(h.sketch ?? null)
     setForbiddenPairs(h.forbidden_pairs ?? [])
@@ -557,85 +617,39 @@ export function HallPage() {
     loadClarifications()
   }, [load, loadClarifications])
 
-  // ---- מובייל: Fit-to-Screen — האולם כולו מוקטן וממורכז כדי להיראות במלואו ----
-  // מחשב את תיבת-התוכן (כל השולחנות + האלמנטים) ומקטין/ממרכז אותה לגודל המסך,
-  // בלי גלילה ובלי זום ידני. בדסקטופ הפונקציה יוצאת מיד (scale נשאר 1).
-  const recomputeFit = useCallback(() => {
+  // ---- ללא זום וללא הקטנה ----
+  // הלוח מוצג תמיד בגודל אמיתי (scale=1, בלי היסט) ונגלל באופן טבעי דרך
+  // overflow:auto של המאגר. אין יותר Fit-to-Screen — האלמנטים נשארים גדולים
+  // וברורים תמיד. scrollToContent רק *מגלגל* אל התוכן (לא מקטין), לכפתור
+  // "מרכוז".
+  const scrollToContent = useCallback(() => {
     const vp = viewportRef.current
-    if (!isMobileRef.current || !vp) {
-      scaleRef.current = 1
-      offsetRef.current = { x: 0, y: 0 }
-      return
-    }
-    const cw = vp.clientWidth
-    const ch = vp.clientHeight
-    if (cw === 0 || ch === 0) return
+    if (!vp) return
     let minX = Infinity
     let minY = Infinity
-    let maxX = -Infinity
-    let maxY = -Infinity
-    const pad = 30 // שוליים סביב שולחן (כיסאות/מספר) בקואורדינטות-לוח
     for (const t of tablesRef.current) {
-      const { w, h } = tableSize(t.table_type, t.capacity)
-      minX = Math.min(minX, t.x - pad)
-      minY = Math.min(minY, t.y - pad)
-      maxX = Math.max(maxX, t.x + w + pad)
-      maxY = Math.max(maxY, t.y + h + pad)
+      minX = Math.min(minX, t.x)
+      minY = Math.min(minY, t.y)
     }
     for (const el of elementsRef.current) {
       minX = Math.min(minX, el.x)
       minY = Math.min(minY, el.y)
-      maxX = Math.max(maxX, el.x + el.width)
-      maxY = Math.max(maxY, el.y + el.height)
     }
     if (!isFinite(minX)) {
-      // אין תוכן — פינת הלוח בפינה עליונה, בלי הקטנה.
-      scaleRef.current = 1
-      offsetRef.current = { x: 20, y: 20 }
-      setViewTransform('translate(20px, 20px) scale(1)')
-      setViewScale(1)
+      vp.scrollTo({ left: 0, top: 0, behavior: 'smooth' })
       return
     }
-    const margin = 18 // רווח לבן בקצוות המסך (בפיקסלי-מסך)
-    const contentW = Math.max(1, maxX - minX)
-    const contentH = Math.max(1, maxY - minY)
-    // תקרה 1.0: אף פעם לא "מנפחים" תוכן דליל מעבר לגודלו הטבעי — רק מקטינים
-    // כדי להכניס הכול למסך. כך מפה עם מעט שולחנות נראית בגודל נורמלי, לא ענקית.
-    const s = clamp(
-      Math.min((cw - margin * 2) / contentW, (ch - margin * 2) / contentH),
-      0.2,
-      1,
-    )
-    const ox = (cw - contentW * s) / 2 - minX * s
-    const oy = (ch - contentH * s) / 2 - minY * s
-    scaleRef.current = s
-    offsetRef.current = { x: ox, y: oy }
-    setViewTransform(`translate(${ox}px, ${oy}px) scale(${s})`)
-    setViewScale(s)
+    vp.scrollTo({ left: Math.max(0, minX - 40), top: Math.max(0, minY - 40), behavior: 'smooth' })
   }, [])
 
-  // התאמה-למסך אוטומטית רק באירועים "מבניים": כניסה למובייל, החלפת לשונית,
-  // וטעינה/הוספה/מחיקה של שולחן או אלמנט (מזוהה לפי שינוי בכמות). גרירה בלבד
-  // משנה מיקום ולא כמות — ולכן לא מפעילה refit ולא מכווצת את המפה בכל תזוזה.
+  // קנה-המידה נעול על 1 לתמיד (בלי זום). מוודאים זאת פעם אחת בעליית הרכיב, כדי
+  // ש-toWorld (שמחלק ב-scale ומחסיר offset) יתרגם נקודת-מגע ישירות דרך scroll.
   useEffect(() => {
-    if (!mobileMode) {
-      setViewTransform(undefined)
-      setViewScale(1)
-      scaleRef.current = 1
-      offsetRef.current = { x: 0, y: 0 }
-      return
-    }
-    recomputeFit()
-  }, [mobileMode, mobileTab, tables.length, elements.length, recomputeFit])
-
-  useEffect(() => {
-    if (!mobileMode) return
-    const vp = viewportRef.current
-    if (!vp || typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(() => recomputeFit())
-    ro.observe(vp)
-    return () => ro.disconnect()
-  }, [mobileMode, mobileTab, recomputeFit])
+    scaleRef.current = 1
+    offsetRef.current = { x: 0, y: 0 }
+    setViewTransform(undefined)
+    setViewScale(1)
+  }, [])
 
   // פתיחה אוטומטית של מדריך ההדרכה בביקור הראשון במסך האולם — פעם אחת לכל
   // אירוע (ולא פעם אחת לדפדפן), כדי שכל זוג/אירוע חדש יראה אותו גם באותו מכשיר.
@@ -934,7 +948,7 @@ export function HallPage() {
     nextTableNumRef.current += 1
     const off = nextPlaceOffset()
     const capacity = defaultCapacityForType(type)
-    const { w, h } = tableSize(type, capacity)
+    const { w, h } = tableSize(type, preset)
     const t: TableView = {
       table_number: nextNum,
       x: Math.max(0, Math.round(center.x - w / 2 + off)),
@@ -1011,6 +1025,11 @@ export function HallPage() {
   // צורת/גודל אלמנט קיים, בלי להוסיף סוג חדש לסכימת השרת.
   function addElement(type: HallElementType, labelOverride?: string) {
     const def = ELEMENT_DEFS[type]
+    // גודל רחבה/בר/DJ נקבע לפי פרופיל הצפיפות (קבוע לכל האולם); שאר הסוגים
+    // נשארים בגודל ברירת המחדל שלהם.
+    const sized = elementSizeFor(type, preset)
+    const width = sized?.w ?? def.width
+    const height = sized?.h ?? def.height
     const rect = viewportRef.current?.getBoundingClientRect()
     const center = toWorld(
       (rect?.left ?? 0) + (rect?.width ?? 400) / 2,
@@ -1020,10 +1039,10 @@ export function HallPage() {
     const el: HallElement = {
       id: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       type,
-      x: Math.max(0, Math.round(center.x - def.width / 2 + off)),
-      y: Math.max(0, Math.round(center.y - def.height / 2 + off)),
-      width: def.width,
-      height: def.height,
+      x: Math.max(0, Math.round(center.x - width / 2 + off)),
+      y: Math.max(0, Math.round(center.y - height / 2 + off)),
+      width,
+      height,
       rotation: 0,
       locked: false,
       label: labelOverride ?? def.label,
@@ -1114,7 +1133,7 @@ export function HallPage() {
         (rect?.top ?? 0) + (rect?.height ?? 300) / 2,
       )
       newTables.forEach((nt) => {
-        const { w, h } = tableSize('round', nt.capacity)
+        const { w, h } = tableSize('round', preset)
         const off = nextPlaceOffset()
         nextTables.push({
           table_number: nt.table_number,
@@ -1257,7 +1276,13 @@ export function HallPage() {
         notes: t.notes,
         locked: t.locked,
       }))
-      applyState(await saveHall(payload, seats, elements, sketch ?? ''))
+      // נועלים פרופיל צפיפות: אם כבר נבחר — שומרים אותו; אחרת (אולם ישן) גוזרים
+      // מכמות השולחנות הנוכחית, כדי שמכאן ואילך הגדלים יישארו יציבים.
+      const layoutToSave: HallLayout = hallLayout ?? {
+        density: densityKeyForCount(tables.length),
+        planned_tables: tables.length,
+      }
+      applyState(await saveHall(payload, seats, elements, sketch ?? '', layoutToSave))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור את המפה, נסו שוב')
     } finally {
@@ -1468,8 +1493,8 @@ export function HallPage() {
           </button>
           <button
             className="hm-fit-btn"
-            onClick={() => recomputeFit()}
-            aria-label="מרכוז המפה — התאמה למסך"
+            onClick={() => scrollToContent()}
+            aria-label="מרכוז המפה — גלילה לשולחנות"
             title="מרכוז המפה"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1558,8 +1583,8 @@ export function HallPage() {
                 ref={worldRef}
                 style={
                   {
-                    width: WORLD_W,
-                    height: WORLD_H,
+                    width: worldSize.w,
+                    height: worldSize.h,
                     transform: viewTransform,
                     transformOrigin: '0 0',
                     '--hm-s': viewScale,
@@ -1652,7 +1677,7 @@ export function HallPage() {
                 {tables.map((t) => {
                   const used = t.guests.reduce((s, g) => s + g.seats, 0)
                   const over = used > t.capacity
-                  const { w, h } = tableSize(t.table_type, t.capacity)
+                  const { w, h } = tableSize(t.table_type, preset)
                   const color = t.color || TABLE_TYPE_DEFAULT_COLOR[t.table_type]
                   const seatCount = Math.max(t.capacity, used, 1)
                   const pts = seatPositions(t.table_type, seatCount, w, h)
@@ -2444,7 +2469,7 @@ export function HallPage() {
             <div
               className="hall-world"
               ref={worldRef}
-              style={{ width: WORLD_W, height: WORLD_H }}
+              style={{ width: worldSize.w, height: worldSize.h }}
               onPointerDown={onWorldPointerDown}
             >
               {sketch && (
@@ -2582,7 +2607,7 @@ export function HallPage() {
                 const over = used > t.capacity
                 const free = t.capacity - used
                 const isSelT = selectedTables.has(t.table_number)
-                const { w, h } = tableSize(t.table_type, t.capacity)
+                const { w, h } = tableSize(t.table_type, preset)
                 const color = t.color || TABLE_TYPE_DEFAULT_COLOR[t.table_type]
                 const occupied: string[] = []
                 for (const g of t.guests) for (let i = 0; i < g.seats; i++) occupied.push(g.side)

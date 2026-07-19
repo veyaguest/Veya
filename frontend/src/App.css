@@ -6736,18 +6736,21 @@
     cursor: pointer;
   }
 
-  /* ---- לוח האולם (Auto-Fit) ---- */
+  /* ---- לוח האולם: גודל אמיתי (100%) + גלילה טבעית, בלי זום ובלי הקטנה ---- */
   .hm-canvas {
     flex: 1 1 auto;
     min-height: 0;
     position: relative;
-    overflow: hidden; /* בלי גלילה ובלי זום — הכול נכנס למסך */
+    overflow: auto; /* גלילה טבעית כשהאולם גדול מהמסך — האלמנטים תמיד בגודל מלא */
+    -webkit-overflow-scrolling: touch;
     background: #fbf6ee;
     direction: ltr; /* קואורדינטות פנימיות LTR (כמו Figma) */
-    touch-action: none;
+    touch-action: pan-x pan-y; /* מגע ריק על הרקע → גלילה */
   }
-  .hm-canvas .hall-world {
-    will-change: transform;
+  /* גרירת שולחן/אלמנט לא אמורה לגלול את הלוח — המגע עליהם נתפס לגרירה בלבד. */
+  .hm-canvas .hall-table,
+  .hm-canvas .hall-element {
+    touch-action: none;
   }
   /* ידיות סיבוב/שינוי-גודל במובייל: הלוח מוקטן (scale<1), ולכן מבצעים
      counter-scale (1/scale) לפי המשתנה --hm-s כדי שהידיות יישארו בגודל-מסך

@@ -395,6 +395,15 @@ export interface HallElement {
   color: string
 }
 
+// פרופיל הפריסה של האולם — נקבע בהגדרה הראשונית ונשמר נעול. density קובע את
+// גודל האלמנטים הקבוע; planned_tables לזיהוי "נוספו הרבה מעבר לתכנון".
+export type HallDensity = 'spacious' | 'comfortable' | 'compact' | 'dense'
+
+export interface HallLayout {
+  density: HallDensity
+  planned_tables: number
+}
+
 export interface HallState {
   seats_per_table: number
   tables: HallTable[]
@@ -402,6 +411,7 @@ export interface HallState {
   elements: HallElement[]
   warnings: string[]
   sketch: string | null
+  hall_layout: HallLayout | null
   // זוגות אילוצים שכבר מחושבים היום מהערות חופשיות — לשימוש עוזר ההושבה
   // החכם בצד הלקוח (בדיקות מיידיות כולל בזמן גרירה, בלי קריאת רשת נוספת).
   forbidden_pairs: [number, number][]
