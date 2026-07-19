@@ -74,8 +74,8 @@ export const strings = {
     tablesAssigned: 'שולחנות שובצו',
     guestsSeated: 'מוזמנים משובצים',
     invitationsSent: 'הזמנות שנשלחו',
-    auditTitle: 'יומן פעילות ואבטחה',
-    auditSub: 'תיעוד הפעולות הרגישות האחרונות: שליחות, עדכונים וגישה לקישורים.',
+    auditTitle: 'פעילות אחרונה',
+    auditSub: 'מה קרה לאחרונה באירוע שלכם — שליחות, אישורים ועדכונים.',
     auditLabels: {
       send_invitations: 'שליחת הזמנות',
       send_reminders: 'שליחת תזכורות',

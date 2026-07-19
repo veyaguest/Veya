@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getEvent, getStats, readAudit, updateEvent } from '../api'
 import type { AuditLogRow, DashboardStats, EventDetails } from '../types'
-import { GROUP_LABELS, SIDE_LABELS } from '../types'
-import type { KnownGroupType, Side } from '../types'
 import { computeReadiness, type ReadinessPage } from '../readiness'
 import { ReadinessMeter } from './ReadinessMeter'
 import { PrepWizard } from './PrepWizard'
@@ -332,83 +330,12 @@ export function DashboardPage({ onNavigate }: Props) {
         </ul>
       </div>
 
-      {/* ---- מדדים ראשיים ---- */}
-      <div className="dash-grid">
-        <div className="stat-card">
-          <span className="stat-num">{stats?.total_guests ?? '—'}</span>
-          <span className="stat-label">{t.statTotalGuests}</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-num">{stats?.total_people ?? '—'}</span>
-          <span className="stat-label">{t.statTotalPeople}</span>
-        </div>
-        <div className="stat-card ok">
-          <span className="stat-num">{stats?.confirmed_people ?? '—'}</span>
-          <span className="stat-label">{t.statConfirmed}</span>
-        </div>
-        <div className="stat-card wait">
-          <span className="stat-num">
-            {stats ? `${stats.response_rate}%` : '—'}
-          </span>
-          <span className="stat-label">{t.statResponseRate}</span>
-        </div>
-      </div>
-
-      {/* ---- התראת הבהרות ---- */}
+      {/* ---- התראת הבהרות (פעולה נדרשת) ---- */}
       {stats && stats.pending_clarifications > 0 && (
         <p className="dash-alert">{t.clarificationsAlert(stats.pending_clarifications)}</p>
       )}
 
-      {/* ---- פילוחים ---- */}
-      <div className="dash-panels">
-        <div className="dash-panel">
-          <h3 className="clar-title">{t.bySide}</h3>
-          <div className="bar-rows">
-            {(Object.keys(SIDE_LABELS) as Side[]).map((s) => (
-              <BarRow
-                key={s}
-                label={SIDE_LABELS[s]}
-                value={stats?.by_side[s] ?? 0}
-                total={stats?.total_guests ?? 0}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="dash-panel">
-          <h3 className="clar-title">{t.byGroup}</h3>
-          <div className="bar-rows">
-            {(Object.keys(GROUP_LABELS) as KnownGroupType[]).map((g) => (
-              <BarRow
-                key={g}
-                label={GROUP_LABELS[g]}
-                value={stats?.by_group[g] ?? 0}
-                total={stats?.total_guests ?? 0}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="dash-panel">
-          <h3 className="clar-title">{t.seatingTitle}</h3>
-          <div className="dash-mini">
-            <div>
-              <span className="mini-num">{stats?.tables_assigned ?? '—'}</span>
-              <span className="mini-label">{t.tablesAssigned}</span>
-            </div>
-            <div>
-              <span className="mini-num">{stats?.seated_guests ?? '—'}</span>
-              <span className="mini-label">{t.guestsSeated}</span>
-            </div>
-            <div>
-              <span className="mini-num">{stats?.invitations_sent ?? '—'}</span>
-              <span className="mini-label">{t.invitationsSent}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ---- יומן אבטחה ---- */}
+      {/* ---- פעילות אחרונה ---- */}
       {audit.length > 0 && (
         <div className="dash-panel audit-panel">
           <h3 className="clar-title">{t.auditTitle}</h3>
@@ -529,25 +456,3 @@ function LegendRow({
   )
 }
 
-function BarRow({
-  label,
-  value,
-  total,
-  tone,
-}: {
-  label: string
-  value: number
-  total: number
-  tone?: 'ok' | 'err' | 'wait'
-}) {
-  const pct = total > 0 ? Math.round((value / total) * 100) : 0
-  return (
-    <div className="bar-row">
-      <span className="bar-label">{label}</span>
-      <span className="bar-track">
-        <span className={`bar-fill ${tone ?? ''}`} style={{ width: `${pct}%` }} />
-      </span>
-      <span className="bar-value">{value}</span>
-    </div>
-  )
-}
