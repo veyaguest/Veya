@@ -16,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import models
-from app.database import get_db
+from app.database import get_db, set_request_identity
 
 # מפתח חתימת הטוקנים. בפרודקשן חובה להגדיר JWT_SECRET אמיתי במשתני הסביבה;
 # בפיתוח יש ברירת-מחדל כדי שהמערכת תרוץ מיד.
@@ -92,6 +92,9 @@ def get_current_user(
         user_id = int(payload["sub"])
     except (KeyError, ValueError, TypeError):
         raise err
+    # קובעים את זהות הבקשה מתוך הטוקן *לפני* השאילתה הראשונה, כדי שגם שליפת
+    # רשומת המשתמש עצמה תרוץ תחת RLS (מדיניות "כל אחד רואה רק את עצמו").
+    set_request_identity(user_id)
     user = db.get(models.User, user_id)
     if user is None:
         raise err
