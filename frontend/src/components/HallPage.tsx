@@ -103,12 +103,19 @@ const ELEMENT_SHAPES: { key: ElementShape; label: string }[] = [
   { key: 'ellipse', label: '⬭' },
 ]
 
-// גודל בסיס ללוח האולם (עולם פנימי בקואורדינטות LTR, כמו Figma). אין זום ואין
-// הקטנה אוטומטית — הלוח מוצג תמיד בגודל אמיתי (100%) והמאגר (viewport) נגלל
-// סביבו (overflow: auto). הגודל בפועל גדל דינמית כדי להכיל את כל התוכן
-// (ראה worldSize) — הערכים כאן הם רק מינימום כשהאולם קטן/ריק.
-const WORLD_W = 1400
-const WORLD_H = 1000
+// גודל בסיס ללוח האולם (עולם פנימי בקואורדינטות LTR, כמו Figma). הלוח "עוטף"
+// את התוכן בפועל (ראה worldSize) עם שוליים נוחים, ואז שכבת ההתאמה-למסך
+// (recomputeFit) קובעת קנה-מידה חד-פעמי שמכניס את כל העולם לאזור התצוגה בלי
+// גלילה.
+// שוליים (ביחידות-עולם) סביב התוכן — "מרחב נשימה" לגרירה, וגם מרווח יפה סביב
+// האולם אחרי ההתאמה-למסך. מינימום לעולם כדי שאולם זעיר/ריק לא ייראה מוזר.
+const WORLD_MARGIN = 140
+const WORLD_MIN_W = 760
+const WORLD_MIN_H = 560
+// גבולות קנה-המידה של ההתאמה-למסך. תקרה 1 = לא מגדילים מעבר לגודל הטבעי.
+// רצפה נמוכה מאוד — לפי בקשת הבעלים "להכניס הכל בכל מחיר" גם באולם ענק.
+const FIT_MAX_SCALE = 1
+const FIT_MIN_SCALE = 0.08
 
 // ---- פרופיל צפיפות: גודל אלמנטים קבוע לפי מספר השולחנות המתוכנן ----
 // במקום להקטין את כל המפה בכל שינוי, מחליטים מראש על גודל האלמנטים לפי כמות
@@ -655,6 +662,12 @@ export function HallPage() {
   // ללא הגדרה) נגזר מכמות השולחנות הנוכחית, כדי שנתונים קיימים ייראו תקין.
   const densityKey: DensityKey = hallLayout?.density ?? densityKeyForCount(tables.length)
   const preset = DENSITY_PRESETS[densityKey]
+  // מראה עדכנית של הפרופיל ל-recomputeFit — כדי שההתאמה-למסך תקרא את הגדלים
+  // הנוכחיים בלי לתלות את עצמה ב-preset (ולהיבנות מחדש בכל שינוי).
+  const presetRef = useRef(preset)
+  useEffect(() => {
+    presetRef.current = preset
+  }, [preset])
 
   // גודל הלוח גדל דינמית כדי להכיל את כל התוכן (שולחנות + אלמנטים) עם שוליים,
   // כך שאפשר לגלול לכל פינה בלי לחתוך — ובלי להקטין שום דבר. מינימום = גודל
@@ -671,7 +684,10 @@ export function HallPage() {
       maxX = Math.max(maxX, el.x + el.width)
       maxY = Math.max(maxY, el.y + el.height)
     }
-    return { w: Math.max(WORLD_W, Math.ceil(maxX) + 260), h: Math.max(WORLD_H, Math.ceil(maxY) + 260) }
+    return {
+      w: Math.max(WORLD_MIN_W, Math.ceil(maxX) + WORLD_MARGIN),
+      h: Math.max(WORLD_MIN_H, Math.ceil(maxY) + WORLD_MARGIN),
+    }
   }, [tables, elements, preset])
 
   const applyState = useCallback((h: HallState) => {
@@ -738,39 +754,69 @@ export function HallPage() {
     loadClarifications()
   }, [load, loadClarifications])
 
-  // ---- ללא זום וללא הקטנה ----
-  // הלוח מוצג תמיד בגודל אמיתי (scale=1, בלי היסט) ונגלל באופן טבעי דרך
-  // overflow:auto של המאגר. אין יותר Fit-to-Screen — האלמנטים נשארים גדולים
-  // וברורים תמיד. scrollToContent רק *מגלגל* אל התוכן (לא מקטין), לכפתור
-  // "מרכוז".
-  const scrollToContent = useCallback(() => {
+  // ---- התאמה-למסך חד-פעמית (Auto-Fit) ----
+  // מחשבים קנה-מידה אחד שמכניס את כל העולם (התוכן + שוליים) לאזור התצוגה, וממרכז
+  // אותו. זה רץ *פעם אחת* בכניסה, אחרי בניית אולם, ובשינוי גודל מסך/סיבוב — אבל
+  // *לא* בהוספת שולחן/כיסא או בגרירה, כדי שלא יהיו קפיצות-גודל תוך כדי עבודה.
+  // הידיות והתוויות נשארות בגודל-מסך דרך המשתנה --hm-s (counter-scale ב-CSS).
+  const recomputeFit = useCallback(() => {
     const vp = viewportRef.current
     if (!vp) return
-    let minX = Infinity
-    let minY = Infinity
+    const vpW = vp.clientWidth
+    const vpH = vp.clientHeight
+    if (!vpW || !vpH) return
+    // גבולות התוכן → גודל העולם (אותה נוסחה כמו worldSize memo).
+    let maxX = 0
+    let maxY = 0
     for (const t of tablesRef.current) {
-      minX = Math.min(minX, t.x)
-      minY = Math.min(minY, t.y)
+      const { w, h } = tableSize(t.table_type, presetRef.current)
+      maxX = Math.max(maxX, t.x + w)
+      maxY = Math.max(maxY, t.y + h)
     }
     for (const el of elementsRef.current) {
-      minX = Math.min(minX, el.x)
-      minY = Math.min(minY, el.y)
+      maxX = Math.max(maxX, el.x + el.width)
+      maxY = Math.max(maxY, el.y + el.height)
     }
-    if (!isFinite(minX)) {
-      vp.scrollTo({ left: 0, top: 0, behavior: 'smooth' })
-      return
-    }
-    vp.scrollTo({ left: Math.max(0, minX - 40), top: Math.max(0, minY - 40), behavior: 'smooth' })
+    const worldW = Math.max(WORLD_MIN_W, Math.ceil(maxX) + WORLD_MARGIN)
+    const worldH = Math.max(WORLD_MIN_H, Math.ceil(maxY) + WORLD_MARGIN)
+    // מכניסים את כל העולם לתצוגה (min של שני היחסים) → אין גלילה כברירת מחדל.
+    const s = clamp(Math.min(vpW / worldW, vpH / worldH), FIT_MIN_SCALE, FIT_MAX_SCALE)
+    // ממרכזים את העולם המוקטן בתוך אזור התצוגה.
+    const offX = Math.max(0, (vpW - worldW * s) / 2)
+    const offY = Math.max(0, (vpH - worldH * s) / 2)
+    scaleRef.current = s
+    offsetRef.current = { x: offX, y: offY }
+    setViewScale(s)
+    setViewTransform(`translate(${offX}px, ${offY}px) scale(${s})`)
   }, [])
 
-  // קנה-המידה נעול על 1 לתמיד (בלי זום). מוודאים זאת פעם אחת בעליית הרכיב, כדי
-  // ש-toWorld (שמחלק ב-scale ומחסיר offset) יתרגם נקודת-מגע ישירות דרך scroll.
+  // Auto-Fit ראשוני: פעם אחת אחרי שהטעינה הסתיימה והתוכן צויר.
+  const didFitRef = useRef(false)
   useEffect(() => {
-    scaleRef.current = 1
-    offsetRef.current = { x: 0, y: 0 }
-    setViewTransform(undefined)
-    setViewScale(1)
-  }, [])
+    if (loading || didFitRef.current) return
+    didFitRef.current = true
+    const id = requestAnimationFrame(() => recomputeFit())
+    return () => cancelAnimationFrame(id)
+  }, [loading, recomputeFit])
+
+  // שינוי גודל מסך/סיבוב מכשיר — הסביבה השתנתה, אז מתאימים מחדש (לא "זום תוך
+  // כדי עבודה"). מדלגים בזמן גרירה כדי לא לקטוע אותה. ResizeObserver יורה גם
+  // מיד עם ההרשמה — משמש גם כרשת-ביטחון ל-Fit הראשוני.
+  useEffect(() => {
+    const vp = viewportRef.current
+    if (!vp) return
+    let timer = 0
+    const ro = new ResizeObserver(() => {
+      if (dragRef.current) return
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => recomputeFit(), 150)
+    })
+    ro.observe(vp)
+    return () => {
+      ro.disconnect()
+      window.clearTimeout(timer)
+    }
+  }, [recomputeFit])
 
   // פתיחה אוטומטית של מדריך ההדרכה בביקור הראשון במסך האולם — פעם אחת לכל
   // אירוע (ולא פעם אחת לדפדפן), כדי שכל זוג/אירוע חדש יראה אותו גם באותו מכשיר.
@@ -1126,20 +1172,23 @@ export function HallPage() {
     let ringMaxFoot = 0
     let stagger = 0
     let prevHalf = 0 // חצי-רוחב זוויתי של השולחן הקודם שהונח
+    let firstHalf = 0 // חצי-רוחב זוויתי של השולחן הראשון בטבעת הנוכחית
     for (let i = 0; i < types.length; i++) {
       const t = types[i]
       const foot = footOf(t)
       const half = Math.asin(clamp(foot / 2 / r, 0, 1))
       const gapA = gap / r
       const advance = i === 0 ? 0 : prevHalf + gapA + half
-      // האם השולחן (על קצהו) חורג ממעגל שלם? → טבעת חדשה, רחבה יותר.
-      if (i > 0 && angleUsed + advance + half > Math.PI * 2) {
+      // האם אין מקום לשולחן בטבעת הנוכחית בלי להתנגש בשולחן הראשון (התפר)?
+      // שומרים מרווח (gapA) + חצי-הרוחב של השולחן הראשון → טבעת חדשה, רחבה יותר.
+      if (i > 0 && angleUsed + advance + half + gapA + firstHalf > Math.PI * 2) {
         r += ringMaxFoot / 2 + gap + foot / 2
         stagger += 0.5
         angle = -Math.PI / 2 + stagger
         const half0 = Math.asin(clamp(foot / 2 / r, 0, 1))
         pushAt(t, angle, r)
-        angleUsed = half0
+        angleUsed = 0
+        firstHalf = half0
         ringMaxFoot = foot
         prevHalf = half0
         continue
@@ -1147,6 +1196,7 @@ export function HallPage() {
       angle += advance
       angleUsed += advance
       pushAt(t, angle, r)
+      if (i === 0) firstHalf = half
       prevHalf = half
       ringMaxFoot = Math.max(ringMaxFoot, foot)
     }
@@ -1155,27 +1205,16 @@ export function HallPage() {
     const all = [...elDefs.map((e) => e.place), ...tablePlaces.map((t) => t.place)]
     let minX = Infinity
     let minY = Infinity
-    let maxX = -Infinity
-    let maxY = -Infinity
     for (const pl of all) {
       minX = Math.min(minX, pl.cx - pl.w / 2)
       minY = Math.min(minY, pl.cy - pl.h / 2)
-      maxX = Math.max(maxX, pl.cx + pl.w / 2)
-      maxY = Math.max(maxY, pl.cy + pl.h / 2)
     }
     if (!isFinite(minX)) {
       minX = 0
       minY = 0
-      maxX = 0
-      maxY = 0
     }
     const offX = 120 - minX
     const offY = 120 - minY
-    // מרכז התוכן בקואורדינטות העולם (אחרי הנרמול) — כדי לגלול אליו אחרי הבנייה.
-    const contentCenter = {
-      x: 120 + (maxX - minX) / 2,
-      y: 120 + (maxY - minY) / 2,
-    }
     const toXY = (pl: Placed) => ({
       x: Math.round(pl.cx - pl.w / 2 + offX),
       y: Math.round(pl.cy - pl.h / 2 + offY),
@@ -1229,17 +1268,9 @@ export function HallPage() {
     setWizardOpen(false)
     setDirty(true)
     setMobileTab('hall')
-    // אחרי שהלוח התרנדר (worldSize גדל) — גוללים כך שמרכז האולם יופיע במרכז
-    // המסך, ולא בפינה. scale נעול על 1, לכן ההמרה ישירה.
-    window.setTimeout(() => {
-      const vp = viewportRef.current
-      if (!vp) return
-      vp.scrollTo({
-        left: Math.max(0, contentCenter.x - vp.clientWidth / 2),
-        top: Math.max(0, contentCenter.y - vp.clientHeight / 2),
-        behavior: 'smooth',
-      })
-    }, 80)
+    // אחרי שהלוח התרנדר (worldSize התעדכן) — מבצעים התאמה-למסך חד-פעמית כך
+    // שכל האולם החדש ייכנס לתצוגה, ממורכז, בלי גלילה.
+    window.setTimeout(() => recomputeFit(), 80)
   }
 
   function addTable(type: TableType = 'round') {
@@ -1826,9 +1857,9 @@ export function HallPage() {
           </button>
           <button
             className="hm-fit-btn"
-            onClick={() => scrollToContent()}
-            aria-label="מרכוז המפה — גלילה לשולחנות"
-            title="מרכוז המפה"
+            onClick={() => recomputeFit()}
+            aria-label="התאמת האולם למסך"
+            title="התאם למסך"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M4 9V5a1 1 0 0 1 1-1h4" />
