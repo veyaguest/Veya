@@ -115,15 +115,34 @@ def render_template(
 # המשתנה הטכני — למשל "[שם אורח]" במקום "{{guest_name}}". שני הסגנונות
 # ממופים לאותו ערך, כך שהזוג לא נחשף לקוד אבל הכול נשאר תואם לאחור.
 AUTOMATION_PLACEHOLDERS = [
-    {"key": "{{guest_name}}", "token": "[שם אורח]", "desc": "שם המוזמן"},
-    {"key": "{{couple_names}}", "token": "[שמות בני הזוג]", "desc": "שמות בני הזוג"},
-    {"key": "{{event_date}}", "token": "[תאריך האירוע]", "desc": "תאריך האירוע"},
+    {"key": "{{first_name}}", "token": "[שם פרטי]", "desc": "שם פרטי של המוזמן"},
+    {"key": "{{bride_name}}", "token": "[שם הכלה]", "desc": "שם הכלה"},
+    {"key": "{{groom_name}}", "token": "[שם החתן]", "desc": "שם החתן"},
+    {"key": "{{event_name}}", "token": "[שמות בני הזוג]", "desc": "שמות בני הזוג"},
+    {"key": "{{event_date}}", "token": "[תאריך]", "desc": "תאריך האירוע"},
     {"key": "{{event_time}}", "token": "[שעה]", "desc": "שעת האירוע"},
     {"key": "{{venue_name}}", "token": "[שם האולם]", "desc": "שם האולם"},
     {"key": "{{venue_address}}", "token": "[כתובת]", "desc": "כתובת האולם"},
-    {"key": "{{maps_link}}", "token": "[קישור ניווט]", "desc": "קישור לניווט בגוגל מפות"},
+    {"key": "{{confirmation_link}}", "token": "[קישור אישור]", "desc": "קישור אישי לאישור הגעה"},
+    {"key": "{{navigation_link}}", "token": "[קישור ניווט]", "desc": "קישור לניווט (Google Maps)"},
     {"key": "{{waze_link}}", "token": "[קישור וייז]", "desc": "קישור לניווט ב-Waze"},
-    {"key": "{{rsvp_link}}", "token": "[קישור אישור]", "desc": "הקישור האישי לאישור הגעה"},
+    {"key": "{{table_number}}", "token": "[מספר שולחן]", "desc": "מספר השולחן של המוזמן"},
+    {"key": "{{guest_count}}", "token": "[כמות מקומות]", "desc": "כמות המקומות השמורים למוזמן"},
+    {"key": "{{gift_link}}", "token": "[קישור מתנה]", "desc": "קישור למתנה / העברה כספית"},
+    {"key": "{{photo_gallery}}", "token": "[גלריית תמונות]", "desc": "קישור לגלריית התמונות"},
+    {"key": "{{video_gallery}}", "token": "[גלריית וידאו]", "desc": "קישור לגלריית הווידאו"},
+]
+
+# מפת כינויים לתאימות-לאחור: משתנים/טוקנים ישנים שכבר נשמרו בתבניות קיימות,
+# ממופים לאותם ערכים כמו המשתנים החדשים. כך תבנית שנכתבה פעם עדיין עובדת,
+# בלי שהם יופיעו יותר בבורר-המשתנים של הזוג.
+AUTOMATION_ALIASES = [
+    {"key": "{{guest_name}}", "same_as": "{{first_name}}"},
+    {"key": "{{couple_names}}", "same_as": "{{event_name}}"},
+    {"key": "{{rsvp_link}}", "same_as": "{{confirmation_link}}"},
+    {"key": "{{maps_link}}", "same_as": "{{navigation_link}}"},
+    {"key": "[שם אורח]", "same_as": "{{first_name}}"},
+    {"key": "[תאריך האירוע]", "same_as": "{{event_date}}"},
 ]
 
 
@@ -151,6 +170,63 @@ def waze_link(address: str) -> str:
     return f"https://waze.com/ul?q={quote_plus(address)}&navigate=yes"
 
 
+def build_automation_values(
+    *,
+    guest_name: str,
+    groom: str,
+    bride: str,
+    venue: str,
+    venue_address: str = "",
+    date: str = "",
+    time: str = "",
+    link: str = "",
+    table_number: int | None = None,
+    guest_count: int | None = None,
+    gift_link: str = "",
+    photo_gallery: str = "",
+    video_gallery: str = "",
+) -> dict[str, str]:
+    """בונה מפה מלאה של כל טוקן (טכני וידידותי, חדש וישן) → הערך שלו.
+
+    זהו מקור-האמת היחיד לערכי המשתנים. מפריד את חישוב הערכים מהחלפתם, כדי
+    ש-``render_automation_template`` יוכל גם *להסתיר שורות* שכל המשתנים בהן ריקים.
+    """
+    couple = " ו".join([n for n in (groom, bride) if n]) or "בני הזוג"
+    first = guest_name.split()[0] if guest_name else ""
+    nav = maps_link(venue_address)
+    tbl = str(table_number) if table_number else ""
+    cnt = str(guest_count) if (guest_count and guest_count > 0) else ""
+
+    # ערך קנוני לכל משתנה מהרשימה הרשמית.
+    canonical = {
+        "{{first_name}}": first,
+        "{{bride_name}}": bride or "",
+        "{{groom_name}}": groom or "",
+        "{{event_name}}": couple,
+        "{{event_date}}": date or "",
+        "{{event_time}}": time or "",
+        "{{venue_name}}": venue or "",
+        "{{venue_address}}": venue_address or "",
+        "{{confirmation_link}}": link or "",
+        "{{navigation_link}}": nav,
+        "{{waze_link}}": waze_link(venue_address),
+        "{{table_number}}": tbl,
+        "{{guest_count}}": cnt,
+        "{{gift_link}}": gift_link or "",
+        "{{photo_gallery}}": photo_gallery or "",
+        "{{video_gallery}}": video_gallery or "",
+    }
+    values: dict[str, str] = dict(canonical)
+    # הטוקנים הידידותיים ([שם פרטי] וכו') מקבלים את אותו ערך.
+    for p in AUTOMATION_PLACEHOLDERS:
+        if p.get("token"):
+            values[p["token"]] = canonical.get(p["key"], "")
+    # כינויים ישנים לתאימות-לאחור.
+    for a in AUTOMATION_ALIASES:
+        values[a["key"]] = canonical.get(a["same_as"], "")
+    return values
+
+
 def render_automation_template(
     body: str,
     *,
@@ -162,32 +238,59 @@ def render_automation_template(
     date: str = "",
     time: str = "",
     link: str = "",
+    table_number: int | None = None,
+    guest_count: int | None = None,
+    gift_link: str = "",
+    photo_gallery: str = "",
+    video_gallery: str = "",
 ) -> str:
     """ממלא תבנית אוטומציה במשתני {{...}} של מוזמן ואירוע ספציפיים.
 
-    תומך גם במשתנים הישנים בסגנון {...} דרך ``render_template`` (תאימות לאחור),
-    כך שתבנית שנכתבה פעם עדיין תעבוד.
+    שני שדרוגים חשובים:
+    1. *תוכן חכם* — שורה שכל המשתנים שבה ריקים (למשל "מספר השולחן שלך:
+       {{table_number}}" כשעדיין אין שיבוץ) נמחקת לגמרי, כדי לא להשאיר שורה
+       קטועה או משתנה "שבור" מול המוזמן. שורת ברכה בלי שם ("שלום {{first_name}}")
+       נעלמת גם היא במקום להציג ברכה ריקה.
+    2. *תאימות לאחור* — משתנים ישנים בסגנון {{guest_name}} / [שם אורח] וגם
+       {...} הישנים ממשיכים לעבוד.
     """
-    couple = " ו".join([n for n in (groom, bride) if n]) or "בני הזוג"
-    values = {
-        "{{guest_name}}": guest_name.split()[0] if guest_name else "שלום",
-        "{{couple_names}}": couple,
-        "{{event_date}}": date or "",
-        "{{event_time}}": time or "",
-        "{{venue_name}}": venue or "",
-        "{{venue_address}}": venue_address or "",
-        "{{maps_link}}": maps_link(venue_address),
-        "{{waze_link}}": waze_link(venue_address),
-        "{{rsvp_link}}": link or "",
-    }
+    import re
+
+    values = build_automation_values(
+        guest_name=guest_name,
+        groom=groom,
+        bride=bride,
+        venue=venue,
+        venue_address=venue_address,
+        date=date,
+        time=time,
+        link=link,
+        table_number=table_number,
+        guest_count=guest_count,
+        gift_link=gift_link,
+        photo_gallery=photo_gallery,
+        video_gallery=video_gallery,
+    )
+    # מחליפים טוקנים ארוכים לפני קצרים, כדי ש-"[תאריך האירוע]" לא ייחתך ל-"[תאריך]".
+    tokens_by_len = sorted(values.keys(), key=len, reverse=True)
+
     text = body or DEFAULT_TEMPLATE
-    # קודם ממירים את הכינויים הידידותיים ([שם אורח]) לערכים — זה מה שהזוג
-    # מקליד בעורך הפשוט. ממופה לאותם ערכים כמו המשתנים הטכניים.
-    friendly = {p["token"]: values.get(p["key"], "") for p in AUTOMATION_PLACEHOLDERS if p.get("token")}
-    for token, val in friendly.items():
-        text = text.replace(token, val)
-    for key, val in values.items():
-        text = text.replace(key, val)
+    out_lines: list[str] = []
+    for line in text.split("\n"):
+        present = [tok for tok in values if tok in line]
+        # תוכן חכם: אם בשורה יש משתנים והם *כולם* ריקים — מוחקים את השורה.
+        if present and all(values[tok] == "" for tok in present):
+            continue
+        for tok in tokens_by_len:
+            if tok in line:
+                line = line.replace(tok, values[tok])
+        out_lines.append(line)
+    text = "\n".join(out_lines)
+
+    # אם התוכן החכם מחק את כל השורות — מחזירים ריק (בלי ליפול לתבנית ברירת המחדל).
+    if not text.strip():
+        return ""
+
     # תאימות לאחור: אם התבנית משתמשת עדיין במשתנים הישנים {...}, נמלא גם אותם.
     text = render_template(
         text,
@@ -198,6 +301,8 @@ def render_automation_template(
         link=link,
         date=date,
     )
+    # איחוד רווחים מיותרים שנוצרו ממחיקת שורות: 3+ שורות ריקות → אחת.
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
     return text
 
 

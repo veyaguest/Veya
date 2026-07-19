@@ -508,6 +508,8 @@ def activate_track(
             date=date_display,
             time=event.event_time or "",
             link=messaging.confirm_link(g.guest_token),
+            table_number=g.table_number,
+            guest_count=g.effective_seats,
         )
         res = provider.send_invitation(g.phone, text)
         db.add(models.Message(
