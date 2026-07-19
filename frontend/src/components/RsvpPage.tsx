@@ -405,6 +405,13 @@ function SendConfirmStep({
   // מוזמן יכול לקבל הזמנה רק אם יש לו מספר טלפון כלשהו (מספר לא-תקין יסונן בשרת).
   const canReceive = useCallback((g: Guest) => (g.phone || '').trim() !== '', [])
 
+  // מי שאפשר לשלוח אליו הזמנה עכשיו: יש טלפון ועדיין לא קיבל הזמנה.
+  // כל אורח מקבל הזמנה פעם אחת בלבד — שליחה חוזרת שמורה לאדמין (בפאנל הניהול).
+  const canSend = useCallback(
+    (g: Guest) => (g.phone || '').trim() !== '' && g.invite_status === 'not_sent',
+    [],
+  )
+
   useEffect(() => {
     let alive = true
     ;(async () => {
@@ -476,6 +483,8 @@ function SendConfirmStep({
   }, [inviteBody, placeholders, event, guests, selected])
 
   function toggle(id: number) {
+    const g = guests.find((x) => x.id === id)
+    if (g && !canSend(g)) return // מי שכבר קיבל / בלי טלפון — לא ניתן לבחירה
     setSelected((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -485,24 +494,11 @@ function SendConfirmStep({
   }
 
   function selectNotSent() {
-    setSelected(
-      new Set(
-        guests
-          .filter((g) => canReceive(g) && g.invite_status === 'not_sent')
-          .map((g) => g.id),
-      ),
-    )
-  }
-
-  function selectAll() {
-    setSelected(new Set(guests.filter(canReceive).map((g) => g.id)))
+    setSelected(new Set(guests.filter(canSend).map((g) => g.id)))
   }
 
   const selectedCount = selected.size
   const missingPhone = preview.missing_phone
-  const alreadySelected = guests.filter(
-    (g) => selected.has(g.id) && g.invite_status !== 'not_sent',
-  ).length
 
   if (loading) {
     return (
@@ -557,10 +553,7 @@ function SendConfirmStep({
           <span className="mb-preview-label">למי לשלוח</span>
           <div className="send-recipients-quick">
             <button className="btn-text" onClick={selectNotSent}>
-              מי שעדיין לא קיבל
-            </button>
-            <button className="btn-text" onClick={selectAll}>
-              בחר הכל
+              בחר את כל מי שעדיין לא קיבל
             </button>
             <button className="btn-text" onClick={() => setSelected(new Set())}>
               נקה
@@ -579,21 +572,22 @@ function SendConfirmStep({
 
         <ul className="send-recipients-list">
           {filtered.map((g) => {
-            const receivable = canReceive(g)
+            const sendable = canSend(g)
+            const alreadySent = !!g.invite_status && g.invite_status !== 'not_sent'
             return (
-              <li key={g.id} className={`send-recipient-row ${receivable ? '' : 'disabled'}`}>
+              <li key={g.id} className={`send-recipient-row ${sendable ? '' : 'disabled'}`}>
                 <label>
                   <input
                     type="checkbox"
                     checked={selected.has(g.id)}
-                    disabled={!receivable}
+                    disabled={!sendable}
                     onChange={() => toggle(g.id)}
                   />
                   <span className="rsvp-name">{g.full_name}</span>
-                  {g.invite_status && g.invite_status !== 'not_sent' && (
-                    <span className="send-recipient-tag">כבר נשלח</span>
+                  {alreadySent && (
+                    <span className="send-recipient-tag">כבר קיבל/ה — פעם אחת בלבד</span>
                   )}
-                  {!receivable && (
+                  {!canReceive(g) && (
                     <span className="send-recipient-tag warn">חסר טלפון</span>
                   )}
                 </label>
@@ -609,9 +603,10 @@ function SendConfirmStep({
       <p className="send-confirm-line">
         יישלח ל־<strong>{selectedCount}</strong> מוזמנים.
       </p>
-      {alreadySelected > 0 && (
-        <p className="send-confirm-warn-line">
-          {alreadySelected} מהנבחרים כבר קיבלו הזמנה — הם יקבלו אותה שוב.
+      {preview.already_sent > 0 && (
+        <p className="clar-sub">
+          {preview.already_sent} מוזמנים כבר קיבלו הזמנה — כל אורח מקבל הזמנה פעם
+          אחת בלבד, ולכן לא תישלח אליהם שוב.
         </p>
       )}
       {missingPhone > 0 && (

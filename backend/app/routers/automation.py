@@ -520,6 +520,17 @@ def activate_track(
     else:  # "new" — רק מי שעדיין לא קיבל הזמנה (idempotent).
         targets = [g for g in guests if g.id not in already_invited]
 
+    # --- אכיפת "הזמנה אחת בלבד לכל אורח" ---
+    # כל אורח מקבל הזמנה פעם אחת. שליחה חוזרת למי שכבר קיבל הזמנה מותרת
+    # לאדמין-על בלבד; לזוג רגיל מדלגים תמיד על מי שכבר קיבל, כדי שאף אורח
+    # לא יקבל הזמנה כפולה בטעות. (ניסיון חוזר לנכשלים אינו "שליחה חוזרת" —
+    # מי שהשליחה אליו נכשלה אינו נספר כ"כבר קיבל".)
+    resend_skipped = 0
+    if not user.is_admin:
+        before = len(targets)
+        targets = [g for g in targets if g.id not in already_invited]
+        resend_skipped = before - len(targets)
+
     body = rsvp_track.invitation_template_body(db, event)
     provider = messaging.get_provider()
     date_display = automation.event_date_display(event)
@@ -579,6 +590,14 @@ def activate_track(
             db, "send_invitations",
             event_id=event.id, user_id=user.id,
             detail=f"{skipped_total} מוזמנים לא קיבלו הזמנה עקב מספר טלפון חסר או לא תקין",
+            ip=ip,
+        )
+    if resend_skipped:
+        audit.record(
+            db, "send_invitations",
+            event_id=event.id, user_id=user.id,
+            detail=f"{resend_skipped} מוזמנים כבר קיבלו הזמנה — לא נשלחה שוב "
+                   "(שליחה חוזרת מותרת לאדמין בלבד)",
             ip=ip,
         )
     if newly_activated:
