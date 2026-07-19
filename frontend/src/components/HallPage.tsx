@@ -112,10 +112,15 @@ const ELEMENT_SHAPES: { key: ElementShape; label: string }[] = [
 const WORLD_MARGIN = 140
 const WORLD_MIN_W = 760
 const WORLD_MIN_H = 560
-// גבולות קנה-המידה של ההתאמה-למסך. תקרה 1 = לא מגדילים מעבר לגודל הטבעי.
+// גבולות קנה-המידה של ההתאמה-למסך. תקרה מעל 1 = מרשים הגדלה מתונה כך שאולם
+// קטן/בינוני "ימלא" את המסך והאלמנטים יֵראו נוחים (במקום להיתקע קטנים במרכז).
 // רצפה נמוכה מאוד — לפי בקשת הבעלים "להכניס הכל בכל מחיר" גם באולם ענק.
-const FIT_MAX_SCALE = 1
+const FIT_MAX_SCALE = 2.2
 const FIT_MIN_SCALE = 0.08
+// כרית-ביטחון: ה-fit ממלא ~96% מהתצוגה ולא 100%, כך שעיגול תת-פיקסלי או ידיות
+// שבולטות בפיקסל לא "יגלשו" מעבר לקצה ויפעילו פס גלילה. משאיר שוליים זעירים
+// שתמיד מונעים גלילה, בלי לפגוע מורגשות בגודל האלמנטים.
+const FIT_SAFETY = 0.96
 
 // ---- פרופיל צפיפות: גודל אלמנטים קבוע לפי מספר השולחנות המתוכנן ----
 // במקום להקטין את כל המפה בכל שינוי, מחליטים מראש על גודל האלמנטים לפי כמות
@@ -780,7 +785,9 @@ export function HallPage() {
     const worldW = Math.max(WORLD_MIN_W, Math.ceil(maxX) + WORLD_MARGIN)
     const worldH = Math.max(WORLD_MIN_H, Math.ceil(maxY) + WORLD_MARGIN)
     // מכניסים את כל העולם לתצוגה (min של שני היחסים) → אין גלילה כברירת מחדל.
-    const s = clamp(Math.min(vpW / worldW, vpH / worldH), FIT_MIN_SCALE, FIT_MAX_SCALE)
+    // מכפילים בכרית-הביטחון כדי להשאיר שוליים זעירים ולא למלא 100% (מונע גלילה
+    // מעיגול תת-פיקסלי). הכרית מוחלת לפני ה-clamp כך שגם התקרה נשמרת.
+    const s = clamp(Math.min(vpW / worldW, vpH / worldH) * FIT_SAFETY, FIT_MIN_SCALE, FIT_MAX_SCALE)
     // ממרכזים את העולם המוקטן בתוך אזור התצוגה.
     const offX = Math.max(0, (vpW - worldW * s) / 2)
     const offY = Math.max(0, (vpH - worldH * s) / 2)
@@ -1201,7 +1208,9 @@ export function HallPage() {
       ringMaxFoot = Math.max(ringMaxFoot, foot)
     }
 
-    // נרמול לקואורדינטות חיוביות (פינה שמאלית-עליונה בריפוד 120).
+    // נרמול לקואורדינטות חיוביות (פינה שמאלית-עליונה בריפוד 120). הריפוד משאיר
+    // מקום לכיסאות/תוויות שבולטים סביב השולחנות החיצוניים כך שלא "יֵצאו" מגבול
+    // הלוח ויגרמו לפס גלילה.
     const all = [...elDefs.map((e) => e.place), ...tablePlaces.map((t) => t.place)]
     let minX = Infinity
     let minY = Infinity
