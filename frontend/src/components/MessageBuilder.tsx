@@ -93,6 +93,17 @@ export function MessageBuilder() {
     load()
   }, [load])
 
+  // כשספריית ההודעות פתוחה — נועלים גלילת רקע, כדי שבמובייל לא תיווצר
+  // "גלילת גומיה" שמקפיצה את סרגל הדפדפן ומקשה על לחיצה על הכפתורים.
+  useEffect(() => {
+    if (!libOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [libOpen])
+
   // כשמחליפים תבנית נבחרת — טוענים את הגוף שלה לעריכה.
   useEffect(() => {
     const t = templates.find((x) => x.id === selectedId)
@@ -477,18 +488,24 @@ export function MessageBuilder() {
                             <span className="wa-meta">כך זה ייראה למוזמן · עכשיו</span>
                           </div>
                         </div>
-                        <button
-                          className="btn-primary lib-use"
-                          onClick={() => applyLibraryMessage(libPreviewMsg)}
-                        >
-                          השתמשו בהודעה זו
-                        </button>
                       </>
                     ) : (
                       <p className="mb-empty">בחרו הודעה מהרשימה כדי לראות תצוגה מקדימה</p>
                     )}
                   </div>
                 </div>
+
+                {/* פוטר פעולה קבוע — תמיד נגיש, גם במובייל (מעל סרגל הדפדפן). */}
+                {libPreviewMsg && (
+                  <div className="lib-foot">
+                    <button
+                      className="btn-primary lib-use"
+                      onClick={() => applyLibraryMessage(libPreviewMsg)}
+                    >
+                      השתמשו בהודעה זו
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>
