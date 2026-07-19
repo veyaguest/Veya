@@ -3,7 +3,16 @@ import secrets
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    LargeBinary,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
 
@@ -374,4 +383,22 @@ class Venue(Base):
     dedup_key: Mapped[str] = mapped_column(String, unique=True, index=True)
     # כמה אירועים השתמשו באולם — לדירוג ההצעות (הפופולריים קודם).
     usage_count: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class MediaBlob(Base):
+    """אחסון קבוע של קובצי תמונה (הזמנה/סקיצת אולם) בתוך מסד הנתונים.
+
+    למה בטבלה נפרדת ולא בשורת האירוע: כדי שהבייטים הכבדים (מאות KB לתמונה)
+    לא ייטענו בכל שאילתת אירוע — הם נשלפים רק כשהדפדפן מבקש את ה-URL של
+    התמונה בפועל (``/media/<id>``). למה ב-DB ולא על הדיסק: הדיסק של Render
+    זמני ונמחק בכל אתחול; מסד הנתונים (Postgres) קבוע, אז התמונות נשמרות
+    לתמיד. בשורת האירוע נשמר רק נתיב קצר (``/media/<id>``).
+    """
+
+    __tablename__ = "media_blobs"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    content_type: Mapped[str] = mapped_column(String(100), default="application/octet-stream")
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

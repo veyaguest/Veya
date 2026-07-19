@@ -1,14 +1,20 @@
-"""אחסון תמונות כקבצים (במקום base64 בתוך שורת ה-DB).
+"""אחסון קבוע של תמונות (הזמנה/סקיצת אולם) בתוך מסד הנתונים.
 
-למה: תמונת הזמנה/סקיצת אולם כ-base64 בתוך שורת האירוע מנפחת כל שאילתה
-(מגה-בייטים בכל טעינת אירוע). כאן שומרים את הקובץ תחת ``backend/uploads/``
-ובמסד נשמר רק נתיב קצר (``/uploads/<file>``). בקריאה מחזירים URL מלא כדי
-שהדפדפן (גם דף האישור הציבורי) יטען את התמונה ישירות מהשרת.
+למה: קודם שמרנו את התמונות כקבצים תחת ``backend/uploads/``. הבעיה — הדיסק
+של Render (וגם של רוב שירותי הענן החינמיים) הוא **זמני**: בכל אתחול/שינה של
+השרת הקבצים נמחקים, בדיוק כמו שקרה עם ה-SQLite הישן. לכן תמונת ההזמנה הייתה
+נעלמת. הפתרון: שומרים את בייטים של התמונה בטבלה נפרדת (``media_blobs``) במסד
+הנתונים (Postgres) שהוא קבוע, ובשורת האירוע נשמר רק נתיב קצר (``/media/<id>``).
+הבייטים נשלפים רק כשמבקשים את ה-URL בפועל (endpoint ``/media/<id>``), כך
+ששאילתת האירוע נשארת קלה.
 
-כלל הכתיבה:
-- ערך שהוא ``data:`` (base64) → נכתב לקובץ חדש, מוחזר נתיב ``/uploads/...``.
-- ערך ריק ("") → מחיקת התמונה (None).
+כלל הכתיבה (זהה לקודם, רק היעד השתנה מדיסק ל-DB):
+- ערך שהוא ``data:`` (base64) → נשמר כרשומת בלוב חדשה, מוחזר נתיב ``/media/<id>``.
+- ערך ריק ("") → מחיקת התמונה (None) + מחיקת הבלוב.
 - כל ערך אחר (URL קיים שחזר מקריאה) → אין שינוי, שומרים את מה שכבר יש.
+
+תאימות לאחור: ערכים ישנים בסגנון ``/uploads/<file>`` או ``data:`` עדיין
+מטופלים ב-``to_url`` כדי לא לשבור נתונים קיימים.
 """
 from __future__ import annotations
 
@@ -18,7 +24,12 @@ import secrets
 from pathlib import Path
 from typing import Optional
 
-# backend/uploads (app נמצא ב-backend/app → parent.parent = backend)
+from sqlalchemy.orm import Session
+
+from app import models
+
+# תיקיית uploads הישנה — נשמרת רק לתאימות לאחור (הגשת קבצים ישנים שכבר קיימים
+# מקומית). כתיבה חדשה כבר לא מגיעה לכאן.
 UPLOADS_DIR = Path(__file__).resolve().parent.parent / "uploads"
 
 _MIME_EXT = {
@@ -36,21 +47,34 @@ def _api_base() -> str:
     return os.getenv("API_PUBLIC_URL", "http://localhost:8000").rstrip("/")
 
 
-def _write_data_url(data_url: str, prefix: str) -> str:
-    """כותב data URL לקובץ ומחזיר נתיב יחסי (/uploads/<file>)."""
+def _parse_data_url(data_url: str) -> tuple[str, bytes]:
+    """מפרק data URL ל-(content_type, bytes)."""
     header, _, b64 = data_url.partition(",")
     mime = header[5:].split(";")[0] if header.startswith("data:") else ""
-    ext = _MIME_EXT.get(mime.lower(), "bin")
+    content_type = mime.lower() if mime else "application/octet-stream"
     raw = base64.b64decode(b64, validate=False)
-    UPLOADS_DIR.mkdir(exist_ok=True)
-    fname = f"{prefix}-{secrets.token_hex(8)}.{ext}"
-    (UPLOADS_DIR / fname).write_bytes(raw)
-    return f"/uploads/{fname}"
+    return content_type, raw
 
 
-def delete_stored(stored: Optional[str]) -> None:
-    """מוחק את קובץ התמונה אם הערך השמור מצביע על קובץ מקומי שלנו."""
-    if stored and stored.startswith("/uploads/"):
+def _write_data_url(db: Session, data_url: str, prefix: str) -> str:
+    """שומר data URL כרשומת בלוב במסד ומחזיר נתיב יחסי (/media/<id>)."""
+    content_type, raw = _parse_data_url(data_url)
+    blob_id = f"{prefix}-{secrets.token_hex(8)}"
+    db.add(models.MediaBlob(id=blob_id, content_type=content_type, data=raw))
+    db.flush()  # מוודא שהרשומה נכתבת יחד עם שאר השינויים של הבקשה.
+    return f"/media/{blob_id}"
+
+
+def delete_stored(db: Session, stored: Optional[str]) -> None:
+    """מוחק את התמונה השמורה — רשומת בלוב במסד או קובץ ישן על הדיסק."""
+    if not stored:
+        return
+    if stored.startswith("/media/"):
+        blob_id = stored.rsplit("/", 1)[-1]
+        blob = db.get(models.MediaBlob, blob_id)
+        if blob is not None:
+            db.delete(blob)
+    elif stored.startswith("/uploads/"):
         try:
             (UPLOADS_DIR / Path(stored).name).unlink()
         except OSError:
@@ -58,26 +82,30 @@ def delete_stored(stored: Optional[str]) -> None:
 
 
 def resolve_incoming(
-    new_value: Optional[str], current: Optional[str], prefix: str
+    db: Session, new_value: Optional[str], current: Optional[str], prefix: str
 ) -> Optional[str]:
     """מחזיר את הערך שיש לשמור ב-DB לפי כלל הכתיבה שלמעלה."""
     if new_value is None:
         return current
     v = new_value.strip()
     if not v:
-        delete_stored(current)
+        delete_stored(db, current)
         return None
     if v.startswith("data:"):
-        delete_stored(current)
-        return _write_data_url(v, prefix)
+        delete_stored(db, current)
+        return _write_data_url(db, v, prefix)
     # URL קיים שחזר מקריאה → אין שינוי.
     return current
 
 
 def to_url(stored: Optional[str]) -> Optional[str]:
-    """ממיר נתיב שמור ל-URL מלא לתצוגה. ערכי base64 ישנים מוחזרים כמו שהם."""
+    """ממיר נתיב שמור ל-URL מלא לתצוגה.
+
+    - ``/media/...`` (חדש) ו-``/uploads/...`` (ישן) → מקבלים קידומת בסיס ה-API.
+    - ערכי ``data:`` ישנים או URL חיצוני → מוחזרים כמו שהם.
+    """
     if not stored:
         return None
-    if stored.startswith("/uploads/"):
+    if stored.startswith("/media/") or stored.startswith("/uploads/"):
         return _api_base() + stored
     return stored

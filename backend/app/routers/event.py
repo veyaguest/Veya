@@ -68,7 +68,7 @@ def update_event(
         if key == "invite_image":
             # תמונה: data URL → קובץ; ריק → מחיקה; URL קיים → ללא שינוי.
             event.invite_image = media.resolve_incoming(
-                value, event.invite_image, prefix=f"invite-{event.id}"
+                db, value, event.invite_image, prefix=f"invite-{event.id}"
             )
         elif key == "venue_commit_days_before":
             # יום ההתחייבות — בחירה חד-פעמית ובלתי-הפיכה. אפשר להגדיר רק פעם

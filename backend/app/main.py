@@ -22,6 +22,7 @@ from app.routers import (
     guests,
     hall,
     import_guests,
+    media_serve,
     messaging,
     seating,
     stats,
@@ -58,6 +59,7 @@ app.include_router(hall.router)
 app.include_router(confirm.router)
 app.include_router(automation.router)
 app.include_router(venues.router)
+app.include_router(media_serve.router)
 
 # הגשת קבצי תמונות שהועלו (הזמנה/סקיצת אולם) מתוך backend/uploads.
 from app.media import UPLOADS_DIR  # noqa: E402
@@ -149,11 +151,12 @@ def _ensure_indexes() -> None:
 
 
 def _migrate_images() -> None:
-    """מיגרציה חד-פעמית: מוציא תמונות base64 קיימות מה-DB לקבצים.
+    """מיגרציה חד-פעמית: מוציא תמונות base64 קיימות מה-DB לאחסון הקבוע.
 
     ערכים ישנים של ``invite_image``/``hall_sketch`` שנשמרו כ-``data:...``
-    נכתבים לקובץ תחת uploads, ובמסד נשמר הנתיב הקצר במקומם. רץ בבטחה שוב ושוב
-    (ערכים שכבר הומרו מתחילים ב-/uploads ולא ייגעו).
+    נשמרים כרשומת בלוב ב-``media_blobs``, ובשורת האירוע נשמר הנתיב הקצר
+    (``/media/<id>``) במקומם. רץ בבטחה שוב ושוב (ערכים שכבר הומרו מתחילים
+    ב-``/media`` או ``/uploads`` ולא ייגעו).
     """
     from sqlalchemy import select
 
@@ -165,10 +168,10 @@ def _migrate_images() -> None:
         changed = False
         for ev in events:
             if ev.invite_image and ev.invite_image.startswith("data:"):
-                ev.invite_image = media._write_data_url(ev.invite_image, f"invite-{ev.id}")
+                ev.invite_image = media._write_data_url(db, ev.invite_image, f"invite-{ev.id}")
                 changed = True
             if ev.hall_sketch and ev.hall_sketch.startswith("data:"):
-                ev.hall_sketch = media._write_data_url(ev.hall_sketch, f"sketch-{ev.id}")
+                ev.hall_sketch = media._write_data_url(db, ev.hall_sketch, f"sketch-{ev.id}")
                 changed = True
         if changed:
             db.commit()
