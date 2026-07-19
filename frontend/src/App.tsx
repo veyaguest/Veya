@@ -27,7 +27,7 @@ import type { EventSummary, User } from './types'
 type Page = 'dashboard' | 'guests' | 'rsvp' | 'hall'
 
 const PAGE_TITLES: Record<Page, string> = {
-  dashboard: 'סקירה כללית',
+  dashboard: 'האירוע שלנו',
   guests: 'ניהול מוזמנים',
   rsvp: 'אישורי הגעה',
   hall: 'סידור הושבה',
@@ -38,7 +38,7 @@ const NAV_ITEMS: { key: Page; label: string; short: string }[] = [
   { key: 'dashboard', label: 'תמונת מצב', short: 'בית' },
   { key: 'guests', label: 'ניהול מוזמנים', short: 'מוזמנים' },
   { key: 'rsvp', label: 'אישורי הגעה', short: 'אישורים' },
-  { key: 'hall', label: 'סידור הושבה', short: 'מפה' },
+  { key: 'hall', label: 'סידור הושבה', short: 'הושבה' },
 ]
 
 /** אייקון קווי לכל פריט ניווט — מוצג בניווט התחתון בטלפון. */
