@@ -28,10 +28,6 @@ services:
       # ממלאים אחרי שיודעים את כתובת ה-Vercel, למשל: https://veya.vercel.app
       - key: CORS_ORIGINS
         sync: false
-      # כתובת השרת עצמו ב-Render (לבניית קישורים לתמונות שהועלו).
-      # למשל: https://veya-backend.onrender.com
-      - key: API_PUBLIC_URL
-        sync: false
       # כתובת ה-Frontend בוורסל (לבניית קישורי אישור הגעה /confirm).
       # למשל: https://veya.vercel.app
       - key: PUBLIC_BASE_URL

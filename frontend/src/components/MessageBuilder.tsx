@@ -3,6 +3,7 @@ import {
   getAutomationPlaceholders,
   getEvent,
   listAutomationTemplates,
+  mediaUrl,
   listGuests,
   updateAutomationTemplate,
 } from '../api'
@@ -223,7 +224,7 @@ export function MessageBuilder() {
                   {event?.invite_image && (
                     <img
                       className="wa-image"
-                      src={event.invite_image}
+                      src={mediaUrl(event.invite_image)}
                       alt="הזמנה"
                     />
                   )}

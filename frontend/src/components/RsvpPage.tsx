@@ -7,6 +7,7 @@ import {
   getRsvpTrack,
   getTemplate,
   listGuests,
+  mediaUrl,
   messageLog,
   previewTemplate,
   rsvpSummary,
@@ -624,7 +625,7 @@ function ManualTab({ onChanged }: { onChanged: () => void }) {
             {event?.invite_image && (
               <img
                 className="tpl-preview-img"
-                src={event.invite_image}
+                src={mediaUrl(event.invite_image)}
                 alt="הזמנה לחתונה"
               />
             )}

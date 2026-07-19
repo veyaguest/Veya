@@ -69,6 +69,29 @@ import {
 // כדי שבייצור אפשר להצביע על השרת האמיתי. ברירת מחדל: שרת הפיתוח המקומי.
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
+/**
+ * מרכיב כתובת תצוגה תקינה לתמונה ששמורה בשרת (הזמנה/סקיצת אולם).
+ *
+ * למה זה קיים: השרת מחזיר נתיב תמונה כמו ``/media/<id>``. מקור האמת היחיד
+ * לכתובת השרת הוא ``VITE_API_URL`` של הפרונטאנד (חייב להיות נכון, אחרת שום
+ * קריאת API לא עובדת) — ולכן כאן מרכיבים את הכתובת המלאה מולו. כך תמונות
+ * עובדות בכל סביבה בלי להסתמך על משתנה סביבה נפרד ושביר בצד השרת.
+ *
+ * - ``data:`` / ``blob:`` (תצוגה מקדימה מקומית לפני שמירה) → מוחזר כמו שהוא.
+ * - כל ערך שמכיל ``/media/..`` או ``/uploads/..`` (גם אם הגיע עם host שגוי
+ *   כמו localhost) → מחלצים את הנתיב ומרכיבים אותו מול ``API_URL`` הנכון.
+ * - כתובת חיצונית אחרת (http/https) → מוחזרת כמו שהיא.
+ */
+export function mediaUrl(raw?: string | null): string {
+  if (!raw) return ''
+  if (/^(data:|blob:)/i.test(raw)) return raw
+  const base = API_URL.replace(/\/$/, '')
+  const m = raw.match(/\/(?:media|uploads)\/.+$/)
+  if (m) return base + m[0]
+  if (/^https?:\/\//i.test(raw)) return raw
+  return base + (raw.startsWith('/') ? raw : '/' + raw)
+}
+
 /** מרכיב כותרות בקשה כולל טוקן ההתחברות והאירוע הפעיל. */
 function authHeaders(extra?: HeadersInit): Record<string, string> {
   const h: Record<string, string> = { ...(extra as Record<string, string>) }

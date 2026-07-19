@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getConfirm, submitConfirm } from '../api'
+import { getConfirm, mediaUrl, submitConfirm } from '../api'
 import type { ConfirmGuestPublic } from '../types'
 
 type Choice = 'confirmed' | 'declined' | 'maybe'
@@ -166,7 +166,7 @@ export function ConfirmPage({ token }: { token: string }) {
             {/* תמונת ההזמנה היא הכוכבת — היא מכילה את שמות בני הזוג והפרטים */}
             <img
               className="confirm-invite-img"
-              src={ev.invite_image}
+              src={mediaUrl(ev.invite_image)}
               alt={`הזמנה לחתונה של ${couple}`}
             />
             <div className="confirm-caption">

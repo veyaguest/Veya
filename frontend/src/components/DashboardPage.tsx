@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getEvent, getStats, readAudit, updateEvent } from '../api'
+import { getEvent, getStats, mediaUrl, readAudit, updateEvent } from '../api'
 import type { AuditLogRow, DashboardStats, EventDetails } from '../types'
 import { computeReadiness, type ReadinessPage } from '../readiness'
 import { ReadinessMeter } from './ReadinessMeter'
@@ -222,7 +222,7 @@ export function DashboardPage({ onNavigate }: Props) {
                     <div className="phone-mock-bubble">
                       <img
                         className="event-image-thumb"
-                        src={form.invite_image}
+                        src={mediaUrl(form.invite_image)}
                         alt={t.imageAlt}
                       />
                       <div className="phone-mock-meta">
@@ -270,7 +270,7 @@ export function DashboardPage({ onNavigate }: Props) {
                 <div className="phone-mock-bubble">
                   <img
                     className="event-invite-img"
-                    src={event.invite_image}
+                    src={mediaUrl(event.invite_image)}
                     alt={t.inviteImgAlt}
                   />
                   <div className="phone-mock-meta">

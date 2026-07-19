@@ -4,6 +4,7 @@ import {
   generateSeating,
   getHall,
   listClarifications,
+  mediaUrl,
   resolveClarification,
   saveHall,
 } from '../api'
@@ -1924,7 +1925,7 @@ export function HallPage() {
                 }
               >
                 {sketch && (
-                  <div className="hall-sketch-bg" style={{ backgroundImage: `url(${sketch})` }} aria-hidden="true" />
+                  <div className="hall-sketch-bg" style={{ backgroundImage: `url(${mediaUrl(sketch)})` }} aria-hidden="true" />
                 )}
                 {tables.length === 0 && elements.length === 0 && (
                   <p className="hall-empty">אין עדיין שולחנות. הקישו על ➕ כדי להוסיף שולחן.</p>
@@ -2821,7 +2822,7 @@ export function HallPage() {
               onPointerDown={onWorldPointerDown}
             >
               {sketch && (
-                <div className="hall-sketch-bg" style={{ backgroundImage: `url(${sketch})` }} aria-hidden="true" />
+                <div className="hall-sketch-bg" style={{ backgroundImage: `url(${mediaUrl(sketch)})` }} aria-hidden="true" />
               )}
               {tables.length === 0 && elements.length === 0 && (
                 <p className="hall-empty">

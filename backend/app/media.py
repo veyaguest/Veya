@@ -19,7 +19,6 @@
 from __future__ import annotations
 
 import base64
-import os
 import secrets
 from pathlib import Path
 from typing import Optional
@@ -40,11 +39,6 @@ _MIME_EXT = {
     "image/gif": "gif",
     "image/svg+xml": "svg",
 }
-
-
-def _api_base() -> str:
-    """כתובת הבסיס הציבורית של ה-API (להרכבת URL מלא לתמונה)."""
-    return os.getenv("API_PUBLIC_URL", "http://localhost:8000").rstrip("/")
 
 
 def _parse_data_url(data_url: str) -> tuple[str, bytes]:
@@ -99,13 +93,13 @@ def resolve_incoming(
 
 
 def to_url(stored: Optional[str]) -> Optional[str]:
-    """ממיר נתיב שמור ל-URL מלא לתצוגה.
+    """מחזיר את הנתיב לתצוגה כפי שהוא (יחסי), בלי לקבע כתובת שרת.
 
-    - ``/media/...`` (חדש) ו-``/uploads/...`` (ישן) → מקבלים קידומת בסיס ה-API.
-    - ערכי ``data:`` ישנים או URL חיצוני → מוחזרים כמו שהם.
+    למה יחסי ולא מוחלט: קידום עם host קשיח (למשל ``API_PUBLIC_URL``) היה שביר —
+    אם המשתנה לא הוגדר בייצור, כל תמונה קיבלה כתובת ``http://localhost:8000/...``
+    שהדפדפן של המשתמש לא יכול להגיע אליה, והתמונה נשברה. במקום זה מחזירים את
+    הנתיב היחסי (``/media/<id>`` או ``/uploads/<file>``), והפרונטאנד מרכיב את
+    הכתובת המלאה מול ה-API שהוא כבר יודע (ראה ``mediaUrl`` ב-``frontend/api.ts``).
+    ערכי ``data:`` ישנים או URL חיצוני מוחזרים כמו שהם.
     """
-    if not stored:
-        return None
-    if stored.startswith("/media/") or stored.startswith("/uploads/"):
-        return _api_base() + stored
-    return stored
+    return stored or None
