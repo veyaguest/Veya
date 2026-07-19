@@ -7875,3 +7875,171 @@
     bottom: 0;
   }
 }
+
+/* ==========================================================================
+   סטטוס הזמנה לכל מוזמן (badge) + דיאלוג שליחת ההזמנות הידנית.
+   ========================================================================== */
+
+/* תגי סטטוס הזמנה — ניטרלי לא-נשלח, ירקרק לנשלח/נמסר/נקרא, זהב/אדום לתשובה. */
+.badge.invite-not_sent {
+  background: rgba(139, 133, 120, 0.1);
+  color: #6b655a;
+  border-color: rgba(139, 133, 120, 0.3);
+}
+.badge.invite-sent,
+.badge.invite-awaiting {
+  background: rgba(72, 120, 170, 0.12);
+  color: #3b6ea5;
+  border-color: rgba(72, 120, 170, 0.35);
+}
+.badge.invite-delivered,
+.badge.invite-read {
+  background: rgba(72, 160, 120, 0.14);
+  color: #2f8a5f;
+  border-color: rgba(72, 160, 120, 0.35);
+}
+.badge.invite-confirmed {
+  background: rgba(201, 162, 39, 0.14);
+  color: #8a6d1f;
+  border-color: rgba(201, 162, 39, 0.4);
+}
+.badge.invite-declined {
+  background: rgba(120, 60, 60, 0.14);
+  color: #a5453b;
+  border-color: rgba(160, 90, 90, 0.35);
+}
+
+/* ---- דיאלוג שליחת הזמנות ---- */
+.send-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(14, 14, 16, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 60;
+}
+.send-dialog {
+  background: var(--cream, #fbf9f4);
+  border-radius: 18px;
+  padding: 28px 26px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  text-align: center;
+}
+.send-dialog-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--ink, #2b2620);
+}
+.send-confirm-line {
+  font-size: 15px;
+  color: var(--body, #4a453d);
+  margin: 6px 0;
+}
+.send-confirm-warn {
+  background: rgba(120, 60, 60, 0.06);
+  border: 1px solid rgba(160, 90, 90, 0.25);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  text-align: right;
+  font-size: 14px;
+  color: #a5453b;
+}
+.send-confirm-warn ul {
+  margin: 6px 0 0;
+  padding-inline-start: 18px;
+}
+.send-dialog-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+.send-dialog-actions.column {
+  flex-direction: column;
+}
+.send-dialog-actions.column .btn-primary,
+.send-dialog-actions.column .btn-ghost {
+  width: 100%;
+}
+
+/* התקדמות — סרגל אינדטרמיניסטי + ספינר עדין. */
+.send-progress {
+  padding: 8px 0;
+}
+.send-spinner {
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  border: 4px solid var(--line-2, #e6e0d5);
+  border-top-color: var(--green, #48c07c);
+  animation: sendSpin 0.9s linear infinite;
+}
+@keyframes sendSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.send-progress-bar {
+  height: 10px;
+  background: var(--surface-hi, #efeae0);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 16px;
+}
+.send-progress-fill.indeterminate {
+  display: block;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, var(--green, #48c07c), #7fd6a5);
+  border-radius: 999px;
+  animation: sendIndet 1.1s ease-in-out infinite;
+}
+@keyframes sendIndet {
+  0% {
+    margin-inline-start: -40%;
+  }
+  100% {
+    margin-inline-start: 100%;
+  }
+}
+
+/* סיכום — שורות מודגשות לפי חומרה. */
+.send-summary-main {
+  font-size: 16px;
+  margin: 6px 0;
+  color: var(--body, #4a453d);
+}
+.send-summary-warn {
+  color: #8a6d1f;
+  font-size: 14px;
+  margin: 6px 0;
+}
+.send-summary-err {
+  color: #a5453b;
+  font-size: 14px;
+  margin: 6px 0;
+}
+.send-summary-ok {
+  color: #2f8a5f;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 6px 0;
+}
+
+/* כפתור שליחה חוזרת בכרטיס הסטטוס הפעיל. */
+.track-resend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  border-top: 1px solid var(--line-2, #e6e0d5);
+  padding-top: 16px;
+  margin-top: 4px;
+}

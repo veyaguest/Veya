@@ -9,6 +9,7 @@ import {
   listGuests,
   mediaUrl,
   messageLog,
+  previewSend,
   previewTemplate,
   rsvpSummary,
   saveTemplate,
@@ -20,9 +21,12 @@ import type {
   AutomationDashboard,
   EventDetails,
   Guest,
+  InvitationSendPreview,
   Message,
   RsvpSummary,
+  RsvpTrackActivateResult,
   RsvpTrackStatus,
+  SendScope,
   TemplatePlaceholder,
 } from '../types'
 import { RSVP_LABELS } from '../types'
@@ -128,12 +132,20 @@ function AdminRsvpView() {
 
 // ============ מסך הזוג — מסלול אישורי הגעה פשוט ============
 
+// שלבי דיאלוג השליחה: סגור / אישור / שולח (התקדמות) / סיכום.
+type SendPhase = 'idle' | 'confirm' | 'sending' | 'summary'
+
 function CoupleRsvpView() {
   const [track, setTrack] = useState<RsvpTrackStatus | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activating, setActivating] = useState(false)
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
+
+  // מצב דיאלוג השליחה הידנית.
+  const [phase, setPhase] = useState<SendPhase>('idle')
+  const [preview, setPreview] = useState<InvitationSendPreview | null>(null)
+  const [result, setResult] = useState<RsvpTrackActivateResult | null>(null)
+  const [dialogError, setDialogError] = useState('')
 
   // בטעינה: טוענים סטטוס, ואם המסלול פעיל — מקדמים אותו אוטומטית (idempotent).
   const load = useCallback(async () => {
@@ -166,22 +178,44 @@ function CoupleRsvpView() {
     load()
   }, [load])
 
-  async function onActivate() {
-    setActivating(true)
-    setError('')
+  // לחיצה על "שליחת הזמנות" — טוענים ספירה מקדימה ופותחים דיאלוג אישור.
+  async function openSendDialog() {
+    setDialogError('')
+    setResult(null)
     setNote('')
     try {
-      const res = await activateRsvpTrack()
-      setTrack(res)
-      setNote(
-        `המסלול הופעל! נשלחו ${res.invitations_sent} הזמנות` +
-          (res.mode === 'mock' ? ' (מצב תצוגה — עדיין לא שלחנו הודעות אמיתיות)' : ''),
-      )
+      const p = await previewSend()
+      setPreview(p)
+      setPhase('confirm')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו להפעיל כרגע, ננסה שוב')
-    } finally {
-      setActivating(false)
+      setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון כרגע, ננסה שוב')
     }
+  }
+
+  // ביצוע השליחה בפועל (אחרי אישור), עם היקף נבחר או ניסיון חוזר לנכשלים.
+  async function runSend(opts?: { scope?: SendScope; retryIds?: number[] }) {
+    setPhase('sending')
+    setDialogError('')
+    try {
+      const res = await activateRsvpTrack(opts)
+      setResult(res)
+      setTrack(res)
+      setPhase('summary')
+    } catch (err) {
+      setDialogError(
+        err instanceof Error ? err.message : 'לא הצלחנו לשלוח כרגע, ננסה שוב',
+      )
+      setPhase('confirm')
+    }
+  }
+
+  function closeDialog() {
+    setPhase('idle')
+    setPreview(null)
+    setResult(null)
+    setDialogError('')
+    // מרעננים סטטוס אחרי סגירה כדי שהכרטיס יציג את המצב המעודכן.
+    load()
   }
 
   if (loading) {
@@ -203,31 +237,204 @@ function CoupleRsvpView() {
       <RsvpTimeline />
 
       {!active ? (
-        <ActivateCard onActivate={onActivate} busy={activating} />
+        <ActivateCard onSend={openSendDialog} />
       ) : (
-        track && <TrackStatusCard track={track} />
+        track && <TrackStatusCard track={track} onResend={openSendDialog} />
       )}
 
       <MessageBuilder />
+
+      {phase !== 'idle' && preview && (
+        <SendInvitationsDialog
+          phase={phase}
+          preview={preview}
+          result={result}
+          error={dialogError}
+          mode={track?.mode ?? 'mock'}
+          onConfirm={runSend}
+          onRetry={(ids) => runSend({ retryIds: ids })}
+          onClose={closeDialog}
+        />
+      )}
     </div>
   )
 }
 
-function ActivateCard({
-  onActivate,
-  busy,
+/**
+ * דיאלוג שליחת ההזמנות — עובר בין 3 מצבים:
+ * אישור (עם ספירה + מניעת כפילות) → התקדמות → סיכום (עם ניסיון חוזר לנכשלים).
+ */
+function SendInvitationsDialog({
+  phase,
+  preview,
+  result,
+  error,
+  mode,
+  onConfirm,
+  onRetry,
+  onClose,
 }: {
-  onActivate: () => void
-  busy: boolean
+  phase: SendPhase
+  preview: InvitationSendPreview
+  result: RsvpTrackActivateResult | null
+  error: string
+  mode: string
+  onConfirm: (opts?: { scope?: SendScope }) => void
+  onRetry: (ids: number[]) => void
+  onClose: () => void
 }) {
+  const cannotReceive = preview.missing_phone + preview.invalid_phone
+  const alreadySent = preview.already_sent > 0
+
+  return (
+    <div className="send-dialog-overlay" role="dialog" aria-modal="true">
+      <div className="send-dialog">
+        {/* ---- מצב: התקדמות ---- */}
+        {phase === 'sending' && (
+          <div className="send-progress">
+            <div className="send-spinner" aria-hidden="true" />
+            <h3 className="send-dialog-title">שולחים את ההזמנות…</h3>
+            <p className="clar-sub">רגע, מעבירים את ההזמנות למוזמנים שלכם.</p>
+            <div className="send-progress-bar">
+              <span className="send-progress-fill indeterminate" />
+            </div>
+          </div>
+        )}
+
+        {/* ---- מצב: סיכום ---- */}
+        {phase === 'summary' && result && (
+          <div className="send-summary">
+            <h3 className="send-dialog-title">
+              {result.failed > 0 ? 'השליחה הסתיימה — חלק נכשלו' : 'ההזמנות נשלחו! 🎉'}
+            </h3>
+            <p className="send-summary-main">
+              נשלחו <strong>{result.invitations_sent}</strong> הזמנות בהצלחה
+              {mode === 'mock' && ' (מצב תצוגה — עדיין לא שלחנו הודעות אמיתיות)'}
+            </p>
+            {(result.skipped_missing + result.skipped_invalid) > 0 && (
+              <p className="send-summary-warn">
+                {result.skipped_missing + result.skipped_invalid} מוזמנים לא קיבלו
+                הזמנה עקב מספר טלפון חסר או לא תקין.
+              </p>
+            )}
+            {result.failed > 0 && (
+              <p className="send-summary-err">
+                {result.failed} שליחות נכשלו. אפשר לנסות שוב רק עבורן.
+              </p>
+            )}
+            {result.newly_activated && (
+              <p className="send-summary-ok">מערכת אישורי ההגעה הופעלה ✓</p>
+            )}
+            <div className="send-dialog-actions">
+              {result.failed > 0 && result.failed_ids.length > 0 && (
+                <button
+                  className="btn-primary"
+                  onClick={() => onRetry(result.failed_ids)}
+                >
+                  ניסיון חוזר לנכשלים ({result.failed})
+                </button>
+              )}
+              <button className="btn-ghost" onClick={onClose}>
+                סגירה
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ---- מצב: אישור לפני שליחה ---- */}
+        {phase === 'confirm' && (
+          <div className="send-confirm">
+            {alreadySent ? (
+              <>
+                <h3 className="send-dialog-title">כבר נשלחו הזמנות לאירוע זה</h3>
+                <p className="clar-sub">
+                  {preview.already_sent} מוזמנים כבר קיבלו הזמנה. מה תרצו לעשות?
+                </p>
+                {preview.not_yet_sent > 0 && (
+                  <p className="send-confirm-line">
+                    {preview.not_yet_sent} מוזמנים עדיין לא קיבלו הזמנה.
+                  </p>
+                )}
+                {error && <p className="form-error">{error}</p>}
+                <div className="send-dialog-actions column">
+                  <button
+                    className="btn-primary"
+                    disabled={preview.not_yet_sent === 0}
+                    onClick={() => onConfirm({ scope: 'new' })}
+                  >
+                    שלח רק למי שלא קיבל ({preview.not_yet_sent})
+                  </button>
+                  <button
+                    className="btn-ghost"
+                    onClick={() => onConfirm({ scope: 'all' })}
+                  >
+                    שלח מחדש לכולם ({preview.can_receive})
+                  </button>
+                  <button className="btn-text" onClick={onClose}>
+                    ביטול
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="send-dialog-title">שליחת הזמנות</h3>
+                <p className="send-confirm-line">
+                  ההזמנה תישלח ל־<strong>{preview.not_yet_sent}</strong> מוזמנים.
+                </p>
+                {cannotReceive > 0 && (
+                  <div className="send-confirm-warn">
+                    <p>
+                      {cannotReceive} מוזמנים <strong>לא</strong> יקבלו הודעה:
+                    </p>
+                    <ul>
+                      {preview.missing_phone > 0 && (
+                        <li>{preview.missing_phone} — חסר מספר טלפון</li>
+                      )}
+                      {preview.invalid_phone > 0 && (
+                        <li>{preview.invalid_phone} — מספר טלפון לא תקין</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+                <p className="clar-sub">
+                  לאחר השליחה יתחיל טיימר אישורי ההגעה, וכל התזכורות יחושבו מרגע זה.
+                </p>
+                {error && <p className="form-error">{error}</p>}
+                <div className="send-dialog-actions">
+                  <button
+                    className="btn-primary"
+                    disabled={preview.not_yet_sent === 0}
+                    onClick={() => onConfirm({ scope: 'new' })}
+                  >
+                    שליחת ההזמנות
+                  </button>
+                  <button className="btn-ghost" onClick={onClose}>
+                    ביטול
+                  </button>
+                </div>
+                {preview.not_yet_sent === 0 && (
+                  <p className="send-confirm-line">
+                    אין כרגע מוזמנים עם טלפון תקין לשליחה.
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ActivateCard({ onSend }: { onSend: () => void }) {
   return (
     <div className="track-hero">
       <span className="track-hero-badge">מסלול אישורי הגעה</span>
       <h2 className="track-hero-title">הכנו עבורכם מסלול אישורי הגעה מלא</h2>
       <p className="track-hero-sub">
-        ברגע שתפעילו, נשלח לכל המוזמנים הזמנה אישית — ואז אנחנו נמשיך לבד:
-        תזכורות עדינות למי שעוד לא ענה, ורשימת מעקב טלפוני למי שצריך תשומת לב.
-        אתם רק צריכים לאשר את הנוסח.
+        כשתלחצו "שליחת הזמנות" נראה לכם בדיוק לכמה מוזמנים תישלח ההזמנה לפני
+        שנשלח. אחרי אישורכם נשלח לכולם — ואז נמשיך לבד: תזכורות עדינות למי שעוד
+        לא ענה, ורשימת מעקב טלפוני למי שצריך תשומת לב.
       </p>
       <ul className="track-flow">
         <li><span className="track-flow-num">1</span> הזמנה לכל המוזמנים</li>
@@ -235,17 +442,23 @@ function ActivateCard({
         <li><span className="track-flow-num">3</span> תזכורת שנייה אחרי 6 ימים</li>
         <li><span className="track-flow-num">4</span> מעקב טלפוני למי שעדיין לא ענה</li>
       </ul>
-      <button className="btn-primary track-activate-btn" onClick={onActivate} disabled={busy}>
-        {busy ? 'מפעיל…' : 'הפעלת מסלול אישורי ההגעה'}
+      <button className="btn-primary track-activate-btn" onClick={onSend}>
+        שליחת הזמנות
       </button>
       <span className="track-hero-note">
-        אפשר לערוך את נוסח ההודעות למטה לפני ואחרי ההפעלה.
+        אפשר לערוך את נוסח ההודעות למטה לפני השליחה.
       </span>
     </div>
   )
 }
 
-function TrackStatusCard({ track }: { track: RsvpTrackStatus }) {
+function TrackStatusCard({
+  track,
+  onResend,
+}: {
+  track: RsvpTrackStatus
+  onResend: () => void
+}) {
   const answered = track.confirmed + track.declined
   const total = track.total_guests || 1
   const pct = Math.round((answered / total) * 100)
@@ -279,6 +492,15 @@ function TrackStatusCard({ track }: { track: RsvpTrackStatus }) {
         <StatCard num={track.pending} label="ממתינים לתשובה" tone="wait" />
         <StatCard num={track.declined} label="לא מגיעים" tone="err" />
         <StatCard num={track.in_phone_followup} label="במעקב טלפוני" />
+      </div>
+
+      <div className="track-resend">
+        <button className="btn-ghost" onClick={onResend}>
+          שליחת הזמנות
+        </button>
+        <span className="clar-sub">
+          הוספתם מוזמנים חדשים? אפשר לשלוח להם הזמנה בלי לשלוח שוב למי שכבר קיבל.
+        </span>
       </div>
 
       {track.phone_list.length > 0 && (

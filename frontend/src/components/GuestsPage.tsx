@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { deleteGuest, listGuests } from '../api'
 import type { Guest } from '../types'
-import { groupLabel, RSVP_LABELS, SIDE_LABELS } from '../types'
+import { groupLabel, INVITE_STATUS_LABELS, RSVP_LABELS, SIDE_LABELS } from '../types'
 import { strings } from '../strings/he'
 import { AddGuestForm } from './AddGuestForm'
 import { CreateGroupDialog } from './CreateGroupDialog'
@@ -239,6 +239,7 @@ export function GuestsPage() {
               <th>{t.colGroup}</th>
               <th>{t.colCount}</th>
               <th>{t.colRsvp}</th>
+              <th>{t.colInviteStatus}</th>
               <th>{t.colTable}</th>
               <th>{t.colNotes}</th>
               <th></th>
@@ -257,6 +258,11 @@ export function GuestsPage() {
                 <td>
                   <span className={`badge ${g.rsvp_status}`}>
                     {RSVP_LABELS[g.rsvp_status]}
+                  </span>
+                </td>
+                <td>
+                  <span className={`badge invite-${g.invite_status ?? 'not_sent'}`}>
+                    {INVITE_STATUS_LABELS[g.invite_status ?? 'not_sent']}
                   </span>
                 </td>
                 <td className="center">{g.table_number ?? '—'}</td>

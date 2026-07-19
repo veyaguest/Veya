@@ -50,6 +50,8 @@ import type {
   RsvpTrackActivateResult,
   RsvpTrackAdvanceResult,
   RsvpTrackStatus,
+  InvitationSendPreview,
+  SendScope,
   TokenResponse,
   User,
   VenueSuggestion,
@@ -888,9 +890,31 @@ export async function getRsvpTrack(): Promise<RsvpTrackStatus> {
   return res.json()
 }
 
-/** מפעיל את המסלול: מקצה תבניות+חוקים ושולח הזמנות לכל המוזמנים (mock). */
-export async function activateRsvpTrack(): Promise<RsvpTrackActivateResult> {
-  const res = await apiFetch('/automation/track/activate', { method: 'POST' })
+/** ספירה מקדימה לפני שליחה — כמה יקבלו, כמה לא (וסיבה), האם כבר נשלח. */
+export async function previewSend(): Promise<InvitationSendPreview> {
+  const res = await apiFetch('/automation/track/preview')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/**
+ * שולח הזמנות ומפעיל את המסלול (mock). היקף השליחה:
+ * - ללא אפשרויות / scope='new' → רק מי שעדיין לא קיבל.
+ * - scope='all' → שליחה מחדש לכולם.
+ * - retryIds → ניסיון חוזר רק למוזמנים אלה.
+ */
+export async function activateRsvpTrack(opts?: {
+  scope?: SendScope
+  retryIds?: number[]
+}): Promise<RsvpTrackActivateResult> {
+  const body: { scope?: SendScope; retry_ids?: number[] } = {}
+  if (opts?.scope) body.scope = opts.scope
+  if (opts?.retryIds) body.retry_ids = opts.retryIds
+  const res = await apiFetch('/automation/track/activate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
   if (!res.ok) throw await toError(res)
   return res.json()
 }

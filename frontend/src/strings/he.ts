@@ -106,6 +106,7 @@ export const strings = {
     colGroup: 'קבוצה',
     colCount: 'כמות',
     colRsvp: 'אישור הגעה',
+    colInviteStatus: 'סטטוס הזמנה',
     colTable: 'שולחן',
     colNotes: 'הערות',
     deleteRow: 'מחיקה',

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session
 
-from app import models, schemas
+from app import invitations, models, schemas
 from app.database import get_db
 from app.deps import get_current_event
 
@@ -109,6 +109,13 @@ def list_guests(
         .limit(limit)
         .offset(offset)
     ).all()
+
+    # סטטוס נגזר לכל מוזמן בעמוד (שאילתה אחת ל"מי כבר קיבל הזמנה").
+    invited = invitations.invited_guest_ids(db, event.id)
+    for g in items:
+        g.invite_status = invitations.derive_invite_status(
+            g.rsvp_status, g.id in invited
+        )
 
     return schemas.GuestListPage(
         items=items,

@@ -15,7 +15,16 @@ from sqlalchemy.orm import Session
 
 from datetime import datetime
 
-from app import audit, automation, messaging, models, rsvp_timeline, rsvp_track, schemas
+from app import (
+    audit,
+    automation,
+    invitations,
+    messaging,
+    models,
+    rsvp_timeline,
+    rsvp_track,
+    schemas,
+)
 from app.auth import get_current_user
 from app.database import get_db
 from app.deps import get_current_event
@@ -415,34 +424,76 @@ def get_track(
     return _track_status(db, event)
 
 
+@router.get("/track/preview", response_model=schemas.InvitationSendPreview)
+def preview_send(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(get_current_event),
+):
+    """ספירה מקדימה לדיאלוג האישור: כמה יקבלו הזמנה, כמה לא (וסיבה), כמה כבר
+    קיבלו, והאם המסלול כבר הופעל (לזיהוי שליחה כפולה). לא משנה שום נתון."""
+    p = invitations.build_send_preview(db, event)
+    return schemas.InvitationSendPreview(
+        total_guests=p.total_guests,
+        can_receive=p.can_receive,
+        not_yet_sent=p.not_yet_sent,
+        already_sent=p.already_sent,
+        missing_phone=p.missing_phone,
+        invalid_phone=p.invalid_phone,
+        already_activated=p.already_activated,
+    )
+
+
 @router.post("/track/activate", response_model=schemas.RsvpTrackActivateResult)
 def activate_track(
     request: Request,
+    payload: Optional[schemas.RsvpTrackActivateRequest] = None,
     db: Session = Depends(get_db),
     event: models.Event = Depends(get_current_event),
     user: models.User = Depends(get_current_user),
 ):
-    """מפעיל את המסלול הקבוע לאירוע: מקצה תבניות+חוקים (idempotent), מסמן
-    את המסלול כפעיל, ושולח הזמנה לכל מוזמן שעדיין לא קיבל אחת (mock)."""
+    """שולח הזמנות ומפעיל את מסלול אישורי-ההגעה (מקצה תבניות+חוקים, idempotent).
+
+    היקף השליחה נקבע ב-``payload``:
+    - ``retry_ids``   — שליחה חוזרת רק למוזמנים אלה (ניסיון חוזר לנכשלים). גובר על scope.
+    - ``scope=all``   — שליחה מחדש לכל מי שיש לו טלפון תקין.
+    - ``scope=new``   — (ברירת מחדל) רק מי שעדיין לא קיבל הזמנה.
+
+    מוזמנים בלי טלפון / עם מספר לא תקין מדולגים ונספרים בנפרד. הטיימר (עוגן
+    האוטומציות) נדלק בקריאה הראשונה; מכאן כל התזכורות מחושבות מזמן השליחה בפועל.
+    """
+    payload = payload or schemas.RsvpTrackActivateRequest()
     result = rsvp_track.provision_rsvp_track(db, event)
 
+    newly_activated = not event.rsvp_track_active
     if not event.rsvp_track_active:
         event.rsvp_track_active = True
     if event.rsvp_track_started_at is None:
         event.rsvp_track_started_at = datetime.utcnow()
 
-    # שליחת הזמנות — רק למי שעדיין לא קיבל הזמנה (idempotent על הפעלה חוזרת).
-    already_invited = {
-        m.guest_id for m in _messages(db, event.id)
-        if m.direction == "outbound" and m.kind == "invitation"
-        and m.status == "sent" and m.guest_id is not None
-    }
+    already_invited = invitations.invited_guest_ids(db, event.id)
+    guests = _guests(db, event.id)
+
+    # קביעת קהל היעד לפי היקף הבקשה.
+    if payload.retry_ids:
+        retry_set = set(payload.retry_ids)
+        targets = [g for g in guests if g.id in retry_set]
+    elif payload.scope == "all":
+        targets = list(guests)
+    else:  # "new" — רק מי שעדיין לא קיבל הזמנה (idempotent).
+        targets = [g for g in guests if g.id not in already_invited]
+
     body = rsvp_track.invitation_template_body(db, event)
     provider = messaging.get_provider()
     date_display = automation.event_date_display(event)
-    invitations_sent = 0
-    for g in _guests(db, event.id):
-        if not g.phone or g.id in already_invited:
+    invitations_sent = skipped_missing = skipped_invalid = failed = 0
+    failed_ids: list[int] = []
+    for g in targets:
+        kind = invitations.classify_phone(g.phone)
+        if kind == "missing":
+            skipped_missing += 1
+            continue
+        if kind == "invalid":
+            skipped_invalid += 1
             continue
         text = messaging.render_automation_template(
             body,
@@ -468,16 +519,36 @@ def activate_track(
         ))
         if res.ok:
             invitations_sent += 1
+        else:
+            failed += 1
+            failed_ids.append(g.id)
 
-    audit.record(
-        db, "rsvp_track_activate",
-        event_id=event.id, user_id=user.id,
-        detail=(
-            f"הפעלת מסלול אישורי הגעה: {result['templates_created']} תבניות, "
-            f"{result['rules_created']} חוקים, {invitations_sent} הזמנות"
-        ),
-        ip=request.client.host if request.client else None,
-    )
+    # יומן הפעילות — רישום קריא לזוג (רק מה שקרה בפועל).
+    ip = request.client.host if request.client else None
+    if invitations_sent or failed:
+        detail = f"נשלחו {invitations_sent} הזמנות בהצלחה"
+        if failed:
+            detail += f" · {failed} נכשלו"
+        audit.record(
+            db, "send_invitations",
+            event_id=event.id, user_id=user.id, detail=detail, ip=ip,
+        )
+    skipped_total = skipped_missing + skipped_invalid
+    if skipped_total:
+        audit.record(
+            db, "send_invitations",
+            event_id=event.id, user_id=user.id,
+            detail=f"{skipped_total} מוזמנים לא קיבלו הזמנה עקב מספר טלפון חסר או לא תקין",
+            ip=ip,
+        )
+    if newly_activated:
+        audit.record(
+            db, "rsvp_track_activate",
+            event_id=event.id, user_id=user.id,
+            detail="מערכת אישורי ההגעה הופעלה",
+            ip=ip,
+        )
+
     db.commit()
     db.refresh(event)
 
@@ -487,6 +558,11 @@ def activate_track(
         templates_created=result["templates_created"],
         rules_created=result["rules_created"],
         invitations_sent=invitations_sent,
+        skipped_missing=skipped_missing,
+        skipped_invalid=skipped_invalid,
+        failed=failed,
+        failed_ids=failed_ids,
+        newly_activated=newly_activated,
     )
 
 

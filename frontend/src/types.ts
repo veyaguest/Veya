@@ -27,7 +27,29 @@ export interface Guest {
   confirmed_count: number | null
   guest_note: string | null
   is_child: boolean
+  // סטטוס נגזר של ההזמנה (מהשרת): not_sent/sent/awaiting/confirmed/declined
+  // ובעתיד delivered/read. אופציונלי — לא כל endpoint מחזיר אותו.
+  invite_status?: InviteStatus
   created_at: string
+}
+
+export type InviteStatus =
+  | 'not_sent'
+  | 'sent'
+  | 'delivered'
+  | 'read'
+  | 'awaiting'
+  | 'confirmed'
+  | 'declined'
+
+export const INVITE_STATUS_LABELS: Record<InviteStatus, string> = {
+  not_sent: 'לא נשלחה הזמנה',
+  sent: 'נשלחה הזמנה',
+  delivered: 'נמסרה',
+  read: 'נקראה',
+  awaiting: 'ממתין למענה',
+  confirmed: 'אישר הגעה',
+  declined: 'סירב להגיע',
 }
 
 /**
@@ -882,7 +904,26 @@ export interface RsvpTrackActivateResult extends RsvpTrackStatus {
   templates_created: number
   rules_created: number
   invitations_sent: number
+  skipped_missing: number
+  skipped_invalid: number
+  failed: number
+  failed_ids: number[]
+  newly_activated: boolean
 }
+
+// ספירה מקדימה לדיאלוג האישור לפני שליחת הזמנות ידנית.
+export interface InvitationSendPreview {
+  total_guests: number
+  can_receive: number
+  not_yet_sent: number
+  already_sent: number
+  missing_phone: number
+  invalid_phone: number
+  already_activated: boolean
+}
+
+// היקף שליחה: רק חדשים / שליחה מחדש לכולם.
+export type SendScope = 'new' | 'all'
 
 export interface RsvpTrackAdvanceResult extends RsvpTrackStatus {
   sent: number

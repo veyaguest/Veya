@@ -99,6 +99,10 @@ class GuestRead(BaseModel):
     confirmed_count: Optional[int] = None
     guest_note: Optional[str] = None
     is_child: bool = False
+    # סטטוס נגזר (לא עמודה ב-DB): not_sent/sent/awaiting/confirmed/declined
+    # ובעתיד delivered/read. מחושב מתוך rsvp_status + יומן ההודעות. ברירת המחדל
+    # מתאימה למוזמן חדש שטרם נשלחה אליו הזמנה.
+    invite_status: str = "not_sent"
     created_at: datetime
 
 
@@ -1143,10 +1147,36 @@ class RsvpTrackStatus(BaseModel):
     due_now: int            # כמה פעולות במסלול הבשילו וממתינות כרגע
 
 
+class InvitationSendPreview(BaseModel):
+    """ספירה מקדימה לדיאלוג האישור לפני שליחת הזמנות ידנית."""
+
+    total_guests: int
+    can_receive: int         # בעלי טלפון תקין (כמה יכולים לקבל)
+    not_yet_sent: int        # טלפון תקין ועדיין לא נשלחה אליהם הזמנה
+    already_sent: int        # כבר קיבלו הזמנה
+    missing_phone: int       # אין מספר טלפון
+    invalid_phone: int       # מספר לא תקין
+    already_activated: bool  # מסלול אישורי-ההגעה כבר הופעל (לזיהוי שליחה כפולה)
+
+
+class RsvpTrackActivateRequest(BaseModel):
+    """בקשת שליחה: היקף הנמענים. ברירת מחדל — רק מי שעדיין לא קיבל."""
+
+    # new = רק מי שעדיין לא קיבל הזמנה ; all = שליחה מחדש לכולם.
+    scope: str = "new"
+    # אם ניתן — שולחים רק למוזמנים אלה (ניסיון חוזר לנכשלים בלבד). גובר על scope.
+    retry_ids: Optional[list[int]] = None
+
+
 class RsvpTrackActivateResult(RsvpTrackStatus):
     templates_created: int
     rules_created: int
     invitations_sent: int
+    skipped_missing: int = 0   # דולגו — אין מספר טלפון
+    skipped_invalid: int = 0   # דולגו — מספר לא תקין
+    failed: int = 0            # השליחה נכשלה (תקלת ספק)
+    failed_ids: list[int] = []  # מזהי מוזמנים שנכשלו — לניסיון חוזר
+    newly_activated: bool = False  # האם הקריאה הזו הדליקה את הטיימר לראשונה
 
 
 class RsvpTrackAdvanceResult(RsvpTrackStatus):
