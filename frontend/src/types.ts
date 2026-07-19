@@ -167,6 +167,27 @@ export interface MessageTemplate {
   placeholders: TemplatePlaceholder[]
 }
 
+// ספריית ההודעות האנושית (קריאה בלבד, מוגשת מהשרת).
+export interface LibraryMessage {
+  id: number
+  stage: string
+  category: string
+  style: string
+  name: string
+  body: string
+}
+
+export interface LibraryMeta {
+  key: string
+  label: string
+}
+
+export interface MessageLibrary {
+  messages: LibraryMessage[]
+  categories: LibraryMeta[]
+  styles: LibraryMeta[]
+}
+
 export interface ImportPreviewRow {
   row_number: number
   full_name: string

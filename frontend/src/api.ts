@@ -46,6 +46,7 @@ import type {
   SeatingResult,
   SendInvitationsResult,
   TemplatePlaceholder,
+  MessageLibrary,
   RsvpTimelineView,
   RsvpTrackActivateResult,
   RsvpTrackAdvanceResult,
@@ -758,6 +759,14 @@ export async function submitConfirm(
 /** רשימת המשתנים הדינמיים ({{...}}) הזמינים לתבניות האוטומציה. */
 export async function getAutomationPlaceholders(): Promise<TemplatePlaceholder[]> {
   const res = await apiFetch('/automation/placeholders')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// -- ספריית ההודעות האנושית (קריאה בלבד) --
+
+export async function getMessageLibrary(): Promise<MessageLibrary> {
+  const res = await apiFetch('/automation/library')
   if (!res.ok) throw await toError(res)
   return res.json()
 }
