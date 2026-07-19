@@ -1979,8 +1979,8 @@
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: 16px;
-  padding: 34px 30px 30px;
-  margin-bottom: 18px;
+  padding: 40px 30px 34px;
+  margin-bottom: 20px;
   box-shadow: var(--shadow-card);
 }
 .dash-hero-chart {
@@ -2000,9 +2000,9 @@
 }
 .donut-wrap {
   position: relative;
-  width: 340px;
-  height: 340px;
-  max-width: 80vw;
+  width: 380px;
+  height: 380px;
+  max-width: 82vw;
   flex-shrink: 0;
 }
 .donut {
@@ -2027,7 +2027,7 @@
 }
 .donut-num {
   font-family: 'Cormorant Garamond', 'Assistant', serif;
-  font-size: 52px;
+  font-size: 60px;
   font-weight: 600;
   line-height: 1;
   color: var(--charcoal);
@@ -2069,6 +2069,138 @@
   color: var(--charcoal);
 }
 
+/* ============================================================
+   דף "תמונת מצב" — רענון טיפוגרפיה (Heebo, מודרני/פרימיום).
+   כל ההגדרות ממוקדות תחת .dash-page בלבד: אינן נוגעות בלוגו
+   (שנמצא ב-.sidebar) ולא בשאר המסכים (RSVP וכו' שחולקים כמה
+   מחלקות כמו .stat-num/.clar-title). העיקרון: היררכיה לפי משקל
+   ולא רק לפי גודל, מספרים בספרות טבלאיות מיושרות, וריווח נקי.
+   הצבעים, האייקונים והפריסה נשארים כפי שהם.
+   ============================================================ */
+.dash-page {
+  --font-ui: 'Heebo', 'Assistant', system-ui, sans-serif;
+  font-family: var(--font-ui);
+}
+
+/* כותרות ומספרים שהיו בסריף (Frank Ruhl / Cormorant) עוברים ל-Heebo. */
+.dash-page .event-couple,
+.dash-page .dash-hero-title,
+.dash-page .clar-title,
+.dash-page .stat-num,
+.dash-page .donut-num,
+.dash-page .mini-num,
+.dash-page .legend-val {
+  font-family: var(--font-ui);
+}
+
+/* מספרים וסטטיסטיקות — ספרות טבלאיות מיושרות (יישור עמודות נקי). */
+.dash-page .stat-num,
+.dash-page .donut-num,
+.dash-page .mini-num,
+.dash-page .legend-val,
+.dash-page .bar-value {
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* --- כותרת ראשית: שמות הזוג --- */
+.dash-page .event-couple {
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+.dash-page .event-venue {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.dash-page .event-when {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* --- כותרות משניות: כותרת ההירו + כותרות הפאנלים --- */
+.dash-page .dash-hero-title {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.dash-page .dash-hero-sub {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.dash-page .clar-title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.dash-page .clar-sub {
+  font-weight: 400;
+}
+
+/* --- המספר הגדול במרכז העוגה --- */
+.dash-page .donut-num {
+  font-size: 60px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.dash-page .donut-lbl {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* --- מקרא העוגה --- */
+.dash-page .legend-row {
+  font-size: 14px;
+  font-weight: 400;
+}
+.dash-page .legend-val {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+/* --- כרטיסי מדד: 4 המספרים הראשיים --- */
+.dash-page .stat-num {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.dash-page .stat-label {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+}
+
+/* --- מדדי מיני: שולחנות / מושבים / הזמנות --- */
+.dash-page .mini-num {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.dash-page .mini-label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* --- שורות פילוח: לפי צד / לפי קבוצה --- */
+.dash-page .bar-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+.dash-page .bar-value {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* --- יומן פעילות --- */
+.dash-page .audit-action {
+  font-weight: 600;
+}
+
 /* ---- מפת אולם (שלב 7) — עורך בסגנון Figma/Miro: בהיר, נקי, מקצועי ---- */
 .hall-toolbar {
   display: flex;
@@ -2080,6 +2212,22 @@
 .btn-add-table {
   font-weight: 700;
   padding: 10px 18px;
+}
+.hall-autosave {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: #eef3ec;
+  color: #5a7a52;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.hall-autosave.saving {
+  background: #fbf6e8;
+  color: var(--gold-dark, #9a7b2e);
 }
 .hall-hint {
   font-size: 12px;
@@ -3435,8 +3583,8 @@
     grid-template-columns: repeat(2, 1fr);
   }
   .donut-wrap {
-    width: 260px;
-    height: 260px;
+    width: 300px;
+    height: 300px;
   }
   .donut-legend {
     flex-direction: column;
@@ -5130,10 +5278,17 @@
 /* ---- יומן אבטחה בדשבורד ---- */
 .audit-panel {
   grid-column: 1 / -1;
+  padding: 26px 28px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+}
+.dash-page .audit-panel .clar-title {
+  font-size: 20px;
+  margin-bottom: 2px;
 }
 .audit-panel .clar-sub {
   display: block;
-  margin: 2px 0 12px;
+  margin: 2px 0 18px;
 }
 .audit-list {
   list-style: none;
@@ -5141,22 +5296,27 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .audit-row {
   display: grid;
-  grid-template-columns: 150px 1fr auto;
-  gap: 10px;
+  grid-template-columns: 160px 1fr auto;
+  gap: 14px;
   align-items: center;
-  padding: 8px 10px;
+  padding: 13px 16px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--surface-hi);
-  font-size: 13px;
+  font-size: 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.audit-row:hover {
+  border-color: var(--gold-light);
+  box-shadow: 0 6px 18px -14px rgba(43, 38, 32, 0.4);
 }
 .audit-action {
-  color: var(--gold-light);
-  font-weight: 500;
+  color: var(--gold-deep);
+  font-weight: 600;
 }
 .audit-detail {
   color: var(--body);
@@ -7308,6 +7468,187 @@
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
+  }
+
+  /* ---- אשף בניית האולם (שלב 2) ---- */
+  .hm-wizard-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 18, 14, 0.5);
+    z-index: 82;
+    animation: hmFade 0.18s ease;
+  }
+  .hm-wizard {
+    position: fixed;
+    inset-inline: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-inline: auto;
+    max-width: 440px;
+    max-height: 88dvh;
+    overflow-y: auto;
+    z-index: 83;
+    background: var(--ivory);
+    border-radius: 22px;
+    box-shadow: 0 20px 60px -16px rgba(20, 18, 14, 0.5);
+    direction: rtl;
+    padding: 24px 20px 20px;
+    animation: hmGuideIn 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .hm-wizard-title {
+    margin: 0 0 6px;
+    font-size: 21px;
+    color: var(--charcoal);
+    text-align: center;
+  }
+  .hm-wizard-lead {
+    margin: 0 0 18px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--charcoal-soft, #5a5346);
+    text-align: center;
+  }
+  .hm-wizard-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .hm-wizard-row label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--charcoal);
+  }
+  .hm-wizard-stepper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+  .hm-wizard-stepper button {
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--gold);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--gold);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .hm-wizard-stepper input {
+    width: 56px;
+    height: 38px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    border: 1px solid var(--sand, #e5dec9);
+    border-radius: 10px;
+    color: var(--charcoal);
+    -moz-appearance: textfield;
+  }
+  .hm-wizard-stepper input::-webkit-outer-spin-button,
+  .hm-wizard-stepper input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .hm-wizard-sub {
+    margin: 16px 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--charcoal);
+  }
+  .hm-wizard-toggles {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .hm-wizard-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border: 1.5px solid var(--sand, #e5dec9);
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--charcoal);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .hm-wizard-toggle.on {
+    border-color: var(--gold);
+    background: linear-gradient(160deg, #fbf6e8, #f4ecd7);
+  }
+  .hm-wizard-toggle input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--gold);
+  }
+  .hm-wizard-total {
+    margin: 16px 0 4px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gold-dark, #9a7b2e);
+  }
+  .hm-wizard-warn {
+    margin: 4px 0 12px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #9a5b2e;
+    background: #fbf1e5;
+    border-radius: 10px;
+    padding: 8px 12px;
+  }
+  .hm-wizard-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .hm-wizard-build {
+    flex: 1;
+    height: 50px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(160deg, var(--gold-light), var(--gold));
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .hm-wizard-build:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .hm-wizard-cancel {
+    flex: 0 0 auto;
+    height: 50px;
+    padding: 0 18px;
+    border: 1px solid var(--sand, #e5dec9);
+    border-radius: 14px;
+    background: #fff;
+    color: var(--charcoal);
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  /* חיווי שמירה אוטומטית (במקום כפתור שמירה) */
+  .hm-autosave {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 46px;
+    border-radius: 14px;
+    background: #eef3ec;
+    color: #5a7a52;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .hm-autosave.saving {
+    background: #fbf6e8;
+    color: var(--gold-dark, #9a7b2e);
   }
   .hm-sheet {
     position: fixed;

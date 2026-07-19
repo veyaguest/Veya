@@ -394,6 +394,108 @@ function HmIcon({ name, size = 22 }: { name: HmIconName; size?: number }) {
   }
 }
 
+/** אשף בניית האולם — נפתח כשהאולם ריק (או מכפתור "בניית אולם מחדש"). שואל כמה
+ *  שולחנות רגילים/אבירים ואילו אלמנטים מרכזיים לכלול, ומייצר סקיצה התחלתית. */
+function HallWizard(props: {
+  regular: number
+  knights: number
+  dance: boolean
+  dj: boolean
+  bar: boolean
+  hasContent: boolean
+  onRegular: (n: number) => void
+  onKnights: (n: number) => void
+  onDance: (b: boolean) => void
+  onDj: (b: boolean) => void
+  onBar: (b: boolean) => void
+  onBuild: () => void
+  onClose: () => void
+}) {
+  const total = Math.max(0, props.regular) + Math.max(0, props.knights)
+  const clampNum = (v: number) => Math.max(0, Math.round(v || 0))
+  return (
+    <>
+      <div className="hm-wizard-backdrop" onClick={props.onClose} />
+      <div className="hm-wizard" role="dialog" aria-label="בניית אולם">
+        <h2 className="hm-wizard-title">בואו נבנה את האולם 🏛️</h2>
+        <p className="hm-wizard-lead">
+          כמה שולחנות יהיו, ומה עוד להוסיף? נכין לכם סקיצה מסודרת להתחיל ממנה —
+          תוכלו לגרור, לסובב ולשנות הכול אחר כך.
+        </p>
+
+        <div className="hm-wizard-row">
+          <label>שולחנות רגילים (12 מקומות)</label>
+          <div className="hm-wizard-stepper">
+            <button type="button" onClick={() => props.onRegular(Math.max(0, props.regular - 1))}>
+              −
+            </button>
+            <input
+              type="number"
+              min={0}
+              value={props.regular}
+              onChange={(e) => props.onRegular(clampNum(Number(e.target.value)))}
+            />
+            <button type="button" onClick={() => props.onRegular(props.regular + 1)}>
+              +
+            </button>
+          </div>
+        </div>
+
+        <div className="hm-wizard-row">
+          <label>שולחנות אבירים (ארוכים, 24)</label>
+          <div className="hm-wizard-stepper">
+            <button type="button" onClick={() => props.onKnights(Math.max(0, props.knights - 1))}>
+              −
+            </button>
+            <input
+              type="number"
+              min={0}
+              value={props.knights}
+              onChange={(e) => props.onKnights(clampNum(Number(e.target.value)))}
+            />
+            <button type="button" onClick={() => props.onKnights(props.knights + 1)}>
+              +
+            </button>
+          </div>
+        </div>
+
+        <p className="hm-wizard-sub">מה עוד להוסיף למרכז האולם?</p>
+        <div className="hm-wizard-toggles">
+          <label className={`hm-wizard-toggle ${props.dance ? 'on' : ''}`}>
+            <input type="checkbox" checked={props.dance} onChange={(e) => props.onDance(e.target.checked)} />
+            <span>💃 רחבת ריקודים</span>
+          </label>
+          <label className={`hm-wizard-toggle ${props.dj ? 'on' : ''}`}>
+            <input type="checkbox" checked={props.dj} onChange={(e) => props.onDj(e.target.checked)} />
+            <span>🎧 עמדת DJ</span>
+          </label>
+          <label className={`hm-wizard-toggle ${props.bar ? 'on' : ''}`}>
+            <input type="checkbox" checked={props.bar} onChange={(e) => props.onBar(e.target.checked)} />
+            <span>🥂 בר</span>
+          </label>
+        </div>
+
+        <p className="hm-wizard-total">סה"כ {total} שולחנות</p>
+
+        {props.hasContent && (
+          <p className="hm-wizard-warn">
+            ⚠ בנייה מחדש תחליף את הסידור הנוכחי — המוזמנים המשובצים יחזרו ל"ללא שולחן".
+          </p>
+        )}
+
+        <div className="hm-wizard-actions">
+          <button className="hm-wizard-build" onClick={props.onBuild} disabled={total === 0}>
+            בניית האולם
+          </button>
+          <button className="hm-wizard-cancel" onClick={props.onClose}>
+            {props.hasContent ? 'ביטול' : 'אתחיל ממסך ריק'}
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export function HallPage() {
   const [tables, setTables] = useState<TableView[]>([])
   const [unassigned, setUnassigned] = useState<HallGuest[]>([])
@@ -411,6 +513,9 @@ export function HallPage() {
   const [draggingGuestId, setDraggingGuestId] = useState<number | null>(null)
   const [dirty, setDirty] = useState(false)
   const [loading, setLoading] = useState(false)
+  // שמירה אוטומטית (בלי כפתור): saving = בקשת שמירה פעילה כרגע.
+  const [saving, setSaving] = useState(false)
+  const [savedTick, setSavedTick] = useState(false) // הבהוב "נשמר ✓" קצר
   const [error, setError] = useState('')
 
   // ---- מגש "ללא שולחן" (צד ימין): חיפוש כדי למצוא מוזמן ברשימה ארוכה ----
@@ -433,6 +538,15 @@ export function HallPage() {
   // מדריך פתיחה קצר למשתמש. נפתח אוטומטית בביקור הראשון (נשמר ב-localStorage),
   // וניתן לפתוח שוב בכל רגע מכפתור "?" בפס העליון.
   const [guideOpen, setGuideOpen] = useState(false)
+  // אשף בניית האולם (שלב 2). נפתח אוטומטית כשהאולם ריק, וניתן לפתוח שוב
+  // בכל רגע מכפתור "בניית אולם מחדש". שואל כמה שולחנות רגילים (12) ואבירים,
+  // ואילו אלמנטים לכלול (רחבה/DJ/בר), ואז מייצר סקיצה התחלתית מסודרת.
+  const [wizardOpen, setWizardOpen] = useState(false)
+  const [wzRegular, setWzRegular] = useState(12)
+  const [wzKnights, setWzKnights] = useState(0)
+  const [wzDance, setWzDance] = useState(true)
+  const [wzDj, setWzDj] = useState(true)
+  const [wzBar, setWzBar] = useState(true)
   const [viewTransform, setViewTransform] = useState<string | undefined>(undefined)
   // קנה-המידה הנוכחי של הלוח במובייל (1 בדסקטופ). נחשף כמשתנה CSS כדי
   // שידיות הסיבוב/שינוי-הגודל יישארו בגודל-מסך קבוע ונוח למגע גם כשהלוח מוקטן.
@@ -598,7 +712,13 @@ export function HallPage() {
   const load = useCallback(async () => {
     setError('')
     try {
-      applyState(await getHall())
+      const h = await getHall()
+      applyState(h)
+      // אולם ריק לגמרי (בלי שולחנות ובלי אלמנטים) => פותחים את אשף הבנייה
+      // אוטומטית, כדי שהזוג יתחיל מסקיצה מסודרת ולא ממסך ריק.
+      if (h.tables.length === 0 && (h.elements?.length ?? 0) === 0) {
+        setWizardOpen(true)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון את מפת האולם, ננסה שוב')
     }
@@ -938,6 +1058,189 @@ export function HallPage() {
   }
 
   // ---- שולחנות: הוספה / שכפול / מחיקה / עדכון שדה ----
+  // ---- אשף בניית אולם: יצירת סקיצה התחלתית מסודרת ----
+  // מייצר שולחנות + אלמנטים (רחבה/DJ/בר) מסודרים: הרחבה במרכז, ה-DJ צמוד
+  // מעליה, הבר בצד, והשולחנות בטבעות מאוזנות סביב הרחבה. זו רק *נקודת התחלה*
+  // טובה — הזוג יכול לגרור/לסובב/למחוק הכול אחר כך. הגדלים קבועים לפי פרופיל
+  // הצפיפות שנגזר מכמות השולחנות הכוללת (ונשמר נעול).
+  function generateHall(opts: {
+    regular: number
+    knights: number
+    dance: boolean
+    dj: boolean
+    bar: boolean
+  }) {
+    const total = Math.max(0, opts.regular) + Math.max(0, opts.knights)
+    const key = densityKeyForCount(total || 1)
+    const p = DENSITY_PRESETS[key]
+    const gap = 46 // מרווח מינימלי בין אלמנטים סמוכים
+
+    // עובדים בקואורדינטות-מרכז סביב (0,0), ואז מנרמלים לערכים חיוביים.
+    type Placed = { cx: number; cy: number; w: number; h: number }
+    const elDefs: { place: Placed; type: HallElementType }[] = []
+
+    const dW = p.dance.w
+    const dH = p.dance.h
+    if (opts.dance) {
+      elDefs.push({ type: 'dance_floor', place: { cx: 0, cy: 0, w: dW, h: dH } })
+    }
+    if (opts.dj) {
+      elDefs.push({
+        type: 'dj',
+        place: { cx: 0, cy: -(dH / 2 + p.dj.h / 2 + 18), w: p.dj.w, h: p.dj.h },
+      })
+    }
+    if (opts.bar) {
+      elDefs.push({
+        type: 'bar',
+        place: { cx: dW / 2 + p.bar.w / 2 + 60, cy: 0, w: p.bar.w, h: p.bar.h },
+      })
+    }
+
+    // רדיוס טבעת ראשונה — מפנה מקום לאשכול המרכזי (רחבה + DJ מעל + בר מהצד).
+    const clusterR = Math.max(
+      dW / 2 + (opts.bar ? p.bar.w + 60 : 0),
+      dH / 2 + (opts.dj ? p.dj.h + 18 : 0),
+    )
+    // סדר: קודם השולחנות העגולים (טבעות פנימיות), ואז האבירים (טבעות חיצוניות,
+    // כי הם ארוכים יותר).
+    const types: TableType[] = [
+      ...Array(Math.max(0, opts.regular)).fill('round'),
+      ...Array(Math.max(0, opts.knights)).fill('knights'),
+    ]
+    const tablePlaces: { place: Placed; type: TableType }[] = []
+    // "טביעת רגל" זוויתית — הרוחב הגדול של השולחן (אבירים ארוכים יותר). המרווח
+    // בין שני שולחנות סמוכים לוקח בחשבון את *שניהם* (חצי מכל אחד + מרווח),
+    // כדי שמעבר בין עגול צר לאבירים רחב לא ייצור חפיפה.
+    const footOf = (t: TableType) =>
+      t === 'knights' ? Math.max(p.knightsW, p.knightsH) : p.round
+    const pushAt = (t: TableType, ang: number, rad: number) => {
+      const w = t === 'knights' ? p.knightsW : p.round
+      const h = t === 'knights' ? p.knightsH : p.round
+      tablePlaces.push({ type: t, place: { cx: Math.cos(ang) * rad, cy: Math.sin(ang) * rad, w, h } })
+    }
+    let r = clusterR + gap + (types.length ? footOf(types[0]) / 2 : 0)
+    let angle = -Math.PI / 2
+    let angleUsed = 0
+    let ringMaxFoot = 0
+    let stagger = 0
+    let prevHalf = 0 // חצי-רוחב זוויתי של השולחן הקודם שהונח
+    for (let i = 0; i < types.length; i++) {
+      const t = types[i]
+      const foot = footOf(t)
+      const half = Math.asin(clamp(foot / 2 / r, 0, 1))
+      const gapA = gap / r
+      const advance = i === 0 ? 0 : prevHalf + gapA + half
+      // האם השולחן (על קצהו) חורג ממעגל שלם? → טבעת חדשה, רחבה יותר.
+      if (i > 0 && angleUsed + advance + half > Math.PI * 2) {
+        r += ringMaxFoot / 2 + gap + foot / 2
+        stagger += 0.5
+        angle = -Math.PI / 2 + stagger
+        const half0 = Math.asin(clamp(foot / 2 / r, 0, 1))
+        pushAt(t, angle, r)
+        angleUsed = half0
+        ringMaxFoot = foot
+        prevHalf = half0
+        continue
+      }
+      angle += advance
+      angleUsed += advance
+      pushAt(t, angle, r)
+      prevHalf = half
+      ringMaxFoot = Math.max(ringMaxFoot, foot)
+    }
+
+    // נרמול לקואורדינטות חיוביות (פינה שמאלית-עליונה בריפוד 120).
+    const all = [...elDefs.map((e) => e.place), ...tablePlaces.map((t) => t.place)]
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    for (const pl of all) {
+      minX = Math.min(minX, pl.cx - pl.w / 2)
+      minY = Math.min(minY, pl.cy - pl.h / 2)
+      maxX = Math.max(maxX, pl.cx + pl.w / 2)
+      maxY = Math.max(maxY, pl.cy + pl.h / 2)
+    }
+    if (!isFinite(minX)) {
+      minX = 0
+      minY = 0
+      maxX = 0
+      maxY = 0
+    }
+    const offX = 120 - minX
+    const offY = 120 - minY
+    // מרכז התוכן בקואורדינטות העולם (אחרי הנרמול) — כדי לגלול אליו אחרי הבנייה.
+    const contentCenter = {
+      x: 120 + (maxX - minX) / 2,
+      y: 120 + (maxY - minY) / 2,
+    }
+    const toXY = (pl: Placed) => ({
+      x: Math.round(pl.cx - pl.w / 2 + offX),
+      y: Math.round(pl.cy - pl.h / 2 + offY),
+    })
+
+    const newElements: HallElement[] = elDefs.map((e, i) => {
+      const def = ELEMENT_DEFS[e.type]
+      const { x, y } = toXY(e.place)
+      return {
+        id: `${e.type}-${Date.now()}-${i}`,
+        type: e.type,
+        x,
+        y,
+        width: e.place.w,
+        height: e.place.h,
+        rotation: 0,
+        locked: false,
+        label: def.label,
+        shape: def.shape,
+        color: '',
+      }
+    })
+
+    const newTables: TableView[] = tablePlaces.map((t, i) => {
+      const { x, y } = toXY(t.place)
+      return {
+        table_number: i + 1,
+        x,
+        y,
+        guests: [],
+        table_type: t.type,
+        capacity: defaultCapacityForType(t.type),
+        rotation: 0,
+        name: '',
+        color: '',
+        notes: '',
+        locked: false,
+      }
+    })
+
+    // בנייה מחדש כשכבר יש אורחים משובצים — מחזירים אותם ל"ללא שולחן".
+    const seated = tables.flatMap((t) => t.guests)
+    if (seated.length) setUnassigned((prev) => [...prev, ...seated])
+
+    setElements(newElements)
+    setTables(newTables)
+    setHallLayout({ density: key, planned_tables: total })
+    nextTableNumRef.current = newTables.length + 1
+    setSelectedTables(new Set())
+    setSelectedEl(null)
+    setWizardOpen(false)
+    setDirty(true)
+    setMobileTab('hall')
+    // אחרי שהלוח התרנדר (worldSize גדל) — גוללים כך שמרכז האולם יופיע במרכז
+    // המסך, ולא בפינה. scale נעול על 1, לכן ההמרה ישירה.
+    window.setTimeout(() => {
+      const vp = viewportRef.current
+      if (!vp) return
+      vp.scrollTo({
+        left: Math.max(0, contentCenter.x - vp.clientWidth / 2),
+        top: Math.max(0, contentCenter.y - vp.clientHeight / 2),
+        behavior: 'smooth',
+      })
+    }, 80)
+  }
+
   function addTable(type: TableType = 'round') {
     const rect = viewportRef.current?.getBoundingClientRect()
     const center = toWorld(
@@ -1259,36 +1562,65 @@ export function HallPage() {
     setDirty(true)
   }
 
-  async function onSave() {
-    setLoading(true)
-    setError('')
-    try {
-      const payload = tables.map((t) => ({
-        table_number: t.table_number,
-        x: t.x,
-        y: t.y,
-        guest_ids: t.guests.map((g) => g.id),
-        table_type: t.table_type,
-        capacity: t.capacity,
-        rotation: t.rotation,
-        name: t.name,
-        color: t.color,
-        notes: t.notes,
-        locked: t.locked,
-      }))
-      // נועלים פרופיל צפיפות: אם כבר נבחר — שומרים אותו; אחרת (אולם ישן) גוזרים
-      // מכמות השולחנות הנוכחית, כדי שמכאן ואילך הגדלים יישארו יציבים.
-      const layoutToSave: HallLayout = hallLayout ?? {
-        density: densityKeyForCount(tables.length),
-        planned_tables: tables.length,
+  // ---- שמירה אוטומטית (בלי כפתור "שמירה") ----
+  // כל שינוי מסומן ב-dirty; אחרי השהיה קצרה (debounce) נשמר לשרת ברקע. לא
+  // מפריע בזמן גרירה (מדלגים אם יש drag פעיל — סיום הגרירה יזמן שמירה חדשה),
+  // ולא "קופץ" (לא מחליפים מיקומי שולחנות מתשובת השרת — רק אזהרות ו"ללא שולחן").
+  const savingRef = useRef(false)
+  const editVersionRef = useRef(0)
+  const [saveRetry, setSaveRetry] = useState(0)
+
+  useEffect(() => {
+    if (!dirty) return
+    editVersionRef.current += 1
+    const version = editVersionRef.current
+    const timer = window.setTimeout(async () => {
+      // באמצע גרירה או בזמן שמירה קודמת — לא שומרים כרגע; ננסה שוב בהמשך.
+      if (dragRef.current || savingRef.current) return
+      savingRef.current = true
+      setSaving(true)
+      setError('')
+      try {
+        const payload = tables.map((t) => ({
+          table_number: t.table_number,
+          x: t.x,
+          y: t.y,
+          guest_ids: t.guests.map((g) => g.id),
+          table_type: t.table_type,
+          capacity: t.capacity,
+          rotation: t.rotation,
+          name: t.name,
+          color: t.color,
+          notes: t.notes,
+          locked: t.locked,
+        }))
+        // נועלים פרופיל צפיפות: אם כבר נבחר — שומרים אותו; אחרת (אולם ישן)
+        // גוזרים מכמות השולחנות הנוכחית, כדי שהגדלים יישארו יציבים.
+        const layoutToSave: HallLayout = hallLayout ?? {
+          density: densityKeyForCount(tables.length),
+          planned_tables: tables.length,
+        }
+        const res = await saveHall(payload, seats, elements, sketch ?? '', layoutToSave)
+        setWarnings(res.warnings)
+        setUnassigned(res.unassigned)
+        // מנקים dirty רק אם לא נעשה שינוי נוסף בזמן השמירה; אחרת שומרים שוב.
+        if (editVersionRef.current === version) {
+          setDirty(false)
+          setSavedTick(true)
+          window.setTimeout(() => setSavedTick(false), 1600)
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור אוטומטית — נמשיך לנסות')
+      } finally {
+        savingRef.current = false
+        setSaving(false)
+        // אם התווספו שינויים בזמן השמירה (או שדילגנו על גרירה) — מפעילים סבב נוסף.
+        if (editVersionRef.current !== version) setSaveRetry((r) => r + 1)
       }
-      applyState(await saveHall(payload, seats, elements, sketch ?? '', layoutToSave))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור את המפה, נסו שוב')
-    } finally {
-      setLoading(false)
-    }
-  }
+    }, 900)
+    return () => window.clearTimeout(timer)
+    // saveRetry בכוונה בתלויות — מאלץ בדיקת-שמירה חוזרת אחרי סבב שהסתיים עם שינויים.
+  }, [dirty, tables, elements, sketch, seats, hallLayout, saveRetry])
 
   async function onRegenerate() {
     setLoading(true)
@@ -1933,19 +2265,15 @@ export function HallPage() {
           {/* ===== לשונית: כלים ===== */}
           {mobileTab === 'tools' && (
             <div className="hm-panel">
-              <button className="hm-primary-btn" onClick={onSave} disabled={loading || !dirty}>
-                {loading ? (
-                  'שומרים…'
-                ) : dirty ? (
-                  <>
-                    <HmIcon name="save" size={18} /> שמירת הסידור
-                  </>
-                ) : (
-                  'הכול שמור'
-                )}
-              </button>
+              <div className={`hm-autosave ${saving || dirty ? 'saving' : ''}`}>
+                <HmIcon name="save" size={16} />
+                {saving ? 'שומר…' : dirty ? 'שינויים יישמרו אוטומטית' : savedTick ? 'נשמר ✓' : 'הכול שמור אוטומטית'}
+              </div>
               <button className="hm-ghost-btn" onClick={onRegenerate} disabled={loading}>
                 <HmIcon name="refresh" size={18} /> סידור מחדש מההתחלה
+              </button>
+              <button className="hm-ghost-btn" onClick={() => setWizardOpen(true)}>
+                <HmIcon name="hall" size={18} /> בניית אולם מחדש
               </button>
 
               <div className="hm-tools-group">
@@ -2282,6 +2610,26 @@ export function HallPage() {
             </div>
           </>
         )}
+
+        {wizardOpen && (
+          <HallWizard
+            regular={wzRegular}
+            knights={wzKnights}
+            dance={wzDance}
+            dj={wzDj}
+            bar={wzBar}
+            hasContent={tables.length > 0 || elements.length > 0}
+            onRegular={setWzRegular}
+            onKnights={setWzKnights}
+            onDance={setWzDance}
+            onDj={setWzDj}
+            onBar={setWzBar}
+            onBuild={() =>
+              generateHall({ regular: wzRegular, knights: wzKnights, dance: wzDance, dj: wzDj, bar: wzBar })
+            }
+            onClose={() => setWizardOpen(false)}
+          />
+        )}
       </div>
     )
   }
@@ -2359,9 +2707,9 @@ export function HallPage() {
         <button className="btn-ghost" onClick={onRegenerate} disabled={loading}>
           ✨ סידור הושבה חכם
         </button>
-        <button className="btn-primary" onClick={onSave} disabled={loading || !dirty}>
-          {loading ? 'שומר…' : dirty ? 'שמירת המפה' : 'שמרנו ✓'}
-        </button>
+        <span className={`hall-autosave ${saving || dirty ? 'saving' : ''}`}>
+          {saving ? '💾 שומר…' : dirty ? '💾 יישמר אוטומטית' : savedTick ? '✓ נשמר' : '✓ שמור אוטומטית'}
+        </span>
         <input ref={sketchInputRef} type="file" accept="image/*" hidden onChange={onPickSketch} />
         <button className="btn-ghost" onClick={() => sketchInputRef.current?.click()}>
           {sketch ? '🖼 החלפת סקיצה' : '🖼 העלאת סקיצת אולם'}
