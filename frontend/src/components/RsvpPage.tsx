@@ -661,7 +661,19 @@ function ActivateCard({ onSend }: { onSend: () => void }) {
         שליחת הזמנות
       </button>
       <span className="track-hero-note">
-        אפשר לערוך את נוסח ההודעות למטה לפני השליחה.
+        רוצים לערוך את ההזמנה או לבחור נוסח מוכן?{' '}
+        <button
+          type="button"
+          className="track-hero-link"
+          onClick={() =>
+            document
+              .getElementById('mb-anchor')
+              ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+        >
+          עברו לעריכת ההודעות
+        </button>{' '}
+        לפני השליחה.
       </span>
     </div>
   )

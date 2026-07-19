@@ -33,6 +33,15 @@ const KIND_LABEL: Record<string, string> = {
   custom: 'הודעה נוספת',
 }
 
+// מיפוי סוג ההודעה במסלול → קטגוריה בספריית ההודעות. כך כשעורכים את
+// ההזמנה, בורר הספרייה נפתח ישר על ההזמנות בלבד ("ספרייה יעודית להזמנות").
+const KIND_TO_CATEGORY: Record<string, string> = {
+  invitation: 'invitation',
+  reminder: 'reminder',
+  thank_you: 'thank_you',
+  pre_event: 'event_day',
+}
+
 /**
  * עורך הודעות ידידותי לזוג — בוחרים הודעה מהמסלול, עורכים בטקסט פשוט עם
  * כפתורי "כינויים" ([שם אורח] וכו'), ורואים תצוגה מקדימה בסגנון WhatsApp
@@ -183,8 +192,15 @@ export function MessageBuilder() {
     }
   }
 
-  // פתיחת ספריית ההודעות — טוענים בעצלתיים בפעם הראשונה.
+  // פתיחת ספריית ההודעות — טוענים בעצלתיים בפעם הראשונה. מסננים אוטומטית
+  // לקטגוריה שתואמת את סוג ההודעה שנערך כרגע (הזמנה → הזמנות בלבד), כדי
+  // שהזוג יראה "ספרייה יעודית" לסוג ההודעה, לא ערבוב של כל הקטגוריות.
   async function openLibrary() {
+    const cur = templates.find((t) => t.id === selectedId)
+    setLibCat(KIND_TO_CATEGORY[cur?.kind ?? ''] ?? '')
+    setLibStyle('')
+    setLibSearch('')
+    setLibPreviewId(null)
     setLibOpen(true)
     if (library || libLoading) return
     setLibLoading(true)
@@ -267,7 +283,9 @@ export function MessageBuilder() {
           <div className="mb-editor">
             <div className="mb-editor-bar">
               <button type="button" className="mb-lib-btn" onClick={openLibrary}>
-                📚 בחירה מספריית ההודעות
+                📚 {selected && KIND_TO_CATEGORY[selected.kind]
+                  ? `נוסחים מוכנים ל${KIND_LABEL[selected.kind] ?? 'הודעה'}`
+                  : 'בחירה מספריית ההודעות'}
               </button>
               <span className="mb-editor-hint">
                 בחרו נוסח מוכן ומעוצב, או כתבו בעצמכם למטה
@@ -352,7 +370,9 @@ export function MessageBuilder() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="lib-head">
-              <h3 className="clar-title">ספריית ההודעות</h3>
+              <h3 className="clar-title">
+                {libCat ? `נוסחים ל${catLabel(libCat)}` : 'ספריית ההודעות'}
+              </h3>
               <button
                 type="button"
                 className="lib-close"
