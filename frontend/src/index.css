@@ -10,11 +10,43 @@
   box-sizing: border-box;
 }
 
+/* ==========================================================================
+   חוויית מובייל כמו אפליקציה — חסימת זום/overscroll וגלילה יחידה נקייה.
+   1. html/body ננעלים לרוחב המסך (בלי גלילה אופקית), עם גובה מלא.
+   2. overscroll-behavior: none — מבטל את ה"קפיצה" של iOS ומשיכה-לרענון
+      של אנדרואיד, וגם מונע chaining בין אזורי גלילה מקוננים.
+   3. touch-action: manipulation — מבטל Double-Tap Zoom ומבטל את השהיית
+      300ms של הקשה, בלי לפגוע בגלילה/הקשה רגילה.
+   4. -webkit-text-size-adjust: 100% — מונע הגדלת פונט אוטומטית בסיבוב מסך.
+   ה-Pinch Zoom נחסם ברמת ה-viewport (index.html) + חוסם ג'סטורה ב-main.tsx
+   עבור iOS Safari שמתעלם מ-user-scalable=no.
+   ========================================================================== */
+/* ה-html נשאר סקרולר הגלילה האנכי הטבעי של המסמך; overflow-x: hidden
+   רק חוסם גלילה אופקית ולא הופך אף אלמנט לסקרולר משני. את overscroll
+   ושאר ההתנהגויות מגדירים על ה-body (הדפדפן מפיץ אותן ל-viewport). */
+html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
+  width: 100%;
+  max-width: 100%;
   background: #0b0a0c;   /* שחור עמוק — מונע הבזק לבן בטעינה */
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #root {
   min-height: 100vh;
+  /* גובה דינמי אמיתי במובייל (מתחשב בסרגלי הדפדפן) — נופל חזרה ל-vh
+     בדפדפנים ישנים שלא תומכים ב-dvh. */
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
 }
