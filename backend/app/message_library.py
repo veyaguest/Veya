@@ -42,6 +42,32 @@ S_FORMAL = "formal"            # רשמי
 S_EMOTIONAL = "emotional"      # רגשי
 
 
+# תוויות בעברית לתצוגה בממשק (מקור-אמת משותף לשרת ולפרונט). הסדר כאן הוא
+# הסדר שבו הקטגוריות/הסגנונות יוצגו למשתמש.
+CATEGORY_LABELS: dict[str, str] = {
+    CAT_INVITATION: "הזמנות",
+    CAT_RSVP_REQUEST: "בקשות אישור",
+    CAT_REMINDER: "תזכורות",
+    CAT_THANK_YOU: "תודה על אישור",
+    CAT_EVENT_DAY: "יום האירוע",
+    CAT_NAVIGATION: "ניווט",
+    CAT_PARKING: "חנייה",
+}
+
+STYLE_LABELS: dict[str, str] = {
+    S_ELEGANT: "אלגנטי",
+    S_FORMAL: "רשמי",
+    S_ROMANTIC: "רומנטי",
+    S_LUXURY: "יוקרתי",
+    S_EMOTIONAL: "רגשי",
+    S_FAMILY: "משפחתי",
+    S_TRADITIONAL: "מסורתי",
+    S_MINIMAL: "מינימלי",
+    S_YOUNG: "צעיר",
+    S_FUNNY: "הומוריסטי",
+}
+
+
 LIBRARY: list[dict] = [
     # ========================================================================
     #  הזמנות

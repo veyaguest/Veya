@@ -73,6 +73,41 @@ def list_placeholders():
     ]
 
 
+@router.get("/library", response_model=schemas.MessageLibrary)
+def get_message_library():
+    """ספריית ההודעות האנושית של VEYA — קריאה בלבד, מוגשת ישירות מהקוד.
+
+    אין כאן שום נגיעה במסד הנתונים: הזוג *מעיין* בספרייה, ורק כשהוא בוחר הודעה
+    היא נכתבת לתבנית של האירוע שלו (דרך נתיב התבניות הקיים). כך הספרייה
+    זמינה לכל אירוע בלי זריעה לפרודקשן ובלי שינוי סכימה.
+    """
+    from app import message_library as lib
+
+    messages = [
+        schemas.LibraryMessage(
+            id=i,
+            stage=m["stage"],
+            category=m["category"],
+            style=m["style"],
+            name=m["name"],
+            body=m["body"],
+        )
+        for i, m in enumerate(lib.LIBRARY)
+    ]
+    # רק קטגוריות/סגנונות שבאמת מופיעים בספרייה, בסדר התוויות הקבוע.
+    present_cats = {m["category"] for m in lib.LIBRARY}
+    present_styles = {m["style"] for m in lib.LIBRARY}
+    categories = [
+        schemas.LibraryMeta(key=k, label=v)
+        for k, v in lib.CATEGORY_LABELS.items() if k in present_cats
+    ]
+    styles = [
+        schemas.LibraryMeta(key=k, label=v)
+        for k, v in lib.STYLE_LABELS.items() if k in present_styles
+    ]
+    return schemas.MessageLibrary(messages=messages, categories=categories, styles=styles)
+
+
 @router.get("/templates", response_model=list[schemas.AutomationTemplateRead])
 def list_templates(
     db: Session = Depends(get_db),

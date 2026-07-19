@@ -886,6 +886,28 @@ class AutomationTemplateUpdate(BaseModel):
     body: Optional[str] = None
 
 
+# ---- ספריית ההודעות האנושית (קריאה בלבד, מוגשת מהקוד) ----
+
+class LibraryMessage(BaseModel):
+    id: int                # אינדקס יציב בתוך הספרייה (לבחירה בממשק)
+    stage: str             # invitation / first_reminder / ... (שלב במסלול)
+    category: str          # מפתח קטגוריה (invitation / reminder / ...)
+    style: str             # מפתח סגנון (elegant / romantic / ...)
+    name: str              # שם קצר שהזוג רואה
+    body: str              # גוף ההודעה עם טוקנים ([שם פרטי] וכו')
+
+
+class LibraryMeta(BaseModel):
+    key: str               # מפתח טכני (invitation / elegant / ...)
+    label: str             # תווית בעברית לתצוגה
+
+
+class MessageLibrary(BaseModel):
+    messages: list[LibraryMessage]
+    categories: list[LibraryMeta]
+    styles: list[LibraryMeta]
+
+
 class AutomationRuleRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
