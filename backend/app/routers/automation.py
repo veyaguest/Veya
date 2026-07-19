@@ -113,6 +113,12 @@ def list_templates(
     db: Session = Depends(get_db),
     event: models.Event = Depends(get_current_event),
 ):
+    # מוודאים שתבניות ברירת המחדל של VEYA קיימות כבר עכשיו — כדי שהזוג יוכל
+    # לערוך את ההזמנה (ולבחור מהספרייה) עוד לפני השליחה הראשונה. idempotent:
+    # לא מפעיל את המסלול, לא מדליק את הטיימר, ולא שולח דבר.
+    result = rsvp_track.provision_rsvp_track(db, event)
+    if result["templates_created"] or result["rules_created"]:
+        db.commit()
     return _templates(db, event.id)
 
 
