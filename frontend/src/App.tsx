@@ -30,15 +30,15 @@ const PAGE_TITLES: Record<Page, string> = {
   dashboard: 'סקירה כללית',
   guests: 'ניהול מוזמנים',
   rsvp: 'אישורי הגעה',
-  hall: 'מפת אולם והושבה',
+  hall: 'סידור הושבה',
 }
 
 // label — הטקסט המלא בסרגל הצד (דסקטופ); short — טקסט קצר לניווט התחתון בטלפון.
 const NAV_ITEMS: { key: Page; label: string; short: string }[] = [
-  { key: 'dashboard', label: 'סקירה', short: 'בית' },
-  { key: 'guests', label: 'מוזמנים', short: 'מוזמנים' },
+  { key: 'dashboard', label: 'תמונת מצב', short: 'בית' },
+  { key: 'guests', label: 'ניהול מוזמנים', short: 'מוזמנים' },
   { key: 'rsvp', label: 'אישורי הגעה', short: 'אישורים' },
-  { key: 'hall', label: 'מפת אולם והושבה', short: 'מפה' },
+  { key: 'hall', label: 'סידור הושבה', short: 'מפה' },
 ]
 
 /** אייקון קווי לכל פריט ניווט — מוצג בניווט התחתון בטלפון. */
