@@ -2135,6 +2135,8 @@
   text-align: center;
   box-shadow: 0 3px 10px rgba(20, 18, 14, 0.1);
   transition: box-shadow 0.15s;
+  /* גרירת מגע באלמנט שייכת לנו (JS) ולא לגלילת הדפדפן — עקביות במובייל. */
+  touch-action: none;
 }
 .hall-element:active {
   cursor: grabbing;
@@ -2830,6 +2832,9 @@
   align-items: center;
   justify-content: center;
   transition: box-shadow 0.15s;
+  /* גרירת מגע בשולחן שייכת לנו (JS) ולא לגלילת הדפדפן — כך pointermove/up
+     נורים באופן עקבי במובייל ואין pointercancel שמבלבל בין גרירה להקשה. */
+  touch-action: none;
 }
 /* ריחוף — צל זהב רך בדיוק כמו בעיצוב VEYA Seating (בלי לדרוס הדגשת בחירה) */
 .hall-table:not(.selected):hover .table-graphic {

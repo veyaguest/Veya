@@ -869,8 +869,26 @@ export function HallPage() {
     setDirty(true)
   }
 
+  // חסימת ה-click ה"רפאים" שהדפדפן יורה מיד אחרי סיום גרירה. גם אם movedRef
+  // התאפס או שה-click מכוון לאלמנט אחר — כאן אנחנו בולעים את ה-click הבא בשלב
+  // ה-capture (לפני שהוא מגיע ל-onTableClick/onElementClick), וכך גרירה לעולם
+  // לא פותחת את חלון העריכה. הגנת timeout מסירה את המאזין אם משום מה אין click.
+  function suppressNextClick() {
+    const handler = (ev: MouseEvent) => {
+      ev.stopPropagation()
+      ev.preventDefault()
+      window.removeEventListener('click', handler, true)
+      clearTimeout(timer)
+    }
+    const timer = setTimeout(() => {
+      window.removeEventListener('click', handler, true)
+    }, 400)
+    window.addEventListener('click', handler, true)
+  }
+
   function onCanvasPointerUp() {
     const drag = dragRef.current
+    const wasDrag = movedRef.current // האם באמת הייתה תזוזה (גרירה) ולא הקשה?
     // סיום גרירת שולחנות: משקפים את המיקום הסופי ל-state (פעם אחת) ומנקים
     // את ה-transform הזמני. React מעדכן left/top באותו tick — בלי ריצוד.
     if (drag && drag.kind === 'table-group') {
@@ -898,11 +916,11 @@ export function HallPage() {
       dragPendingRef.current = null
     }
     dragRef.current = null
-    // שימו לב: לא מאפסים כאן את movedRef. אירוע ה-click נורה *אחרי* pointerup,
-    // ואם נאפס כאן — onTableClick/onElementClick יחשבו שזו הקשה ויפתחו עריכה
-    // אחרי גרירה. האיפוס מתבצע בתחילת האינטראקציה הבאה (onTablePointerDown /
-    // onElementPointerDown). כך הקליק שאחרי הגרירה מזהה נכון שהיתה גרירה.
     dragStartRef.current = null
+    // אם הייתה גרירה אמיתית — בולעים את ה-click שיבוא מיד אחריה, כדי שלא
+    // ייפתח חלון עריכה/פרטים. זו שכבת הגנה ראשית; movedRef ב-onTableClick הוא
+    // שכבה שנייה (הוא מתאפס רק בתחילת האינטראקציה הבאה, לא כאן).
+    if (wasDrag) suppressNextClick()
   }
 
   // ---- שולחנות: הוספה / שכפול / מחיקה / עדכון שדה ----
