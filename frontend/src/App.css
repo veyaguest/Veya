@@ -8697,6 +8697,33 @@
     color: var(--charcoal);
     font-size: 16px;
   }
+  .hm-num-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .hm-num-row input {
+    flex: 1;
+    min-width: 0;
+  }
+  .hm-num-ok {
+    flex: 0 0 auto;
+    width: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(160deg, var(--gold-light), var(--gold));
+    color: #fff;
+    cursor: pointer;
+  }
+  .hm-num-ok:disabled {
+    background: var(--cream);
+    color: var(--muted);
+    cursor: default;
+    opacity: 0.7;
+  }
   .hm-type-chips {
     display: grid;
     grid-template-columns: 1fr 1fr;

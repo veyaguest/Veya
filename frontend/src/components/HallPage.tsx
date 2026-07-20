@@ -359,6 +359,7 @@ type HmIconName =
   | 'refresh'
   | 'copy'
   | 'trash'
+  | 'check'
 
 function HmIcon({ name, size = 22 }: { name: HmIconName; size?: number }) {
   const common = {
@@ -487,6 +488,12 @@ function HmIcon({ name, size = 22 }: { name: HmIconName; size?: number }) {
         <svg {...common}>
           <path d="M4 20h4L19 9l-4-4L4 16z" />
           <path d="m13.5 6.5 4 4" />
+        </svg>
+      )
+    case 'check':
+      return (
+        <svg {...common}>
+          <path d="M5 12.5 10 17.5 19.5 7" />
         </svg>
       )
     case 'save':
@@ -929,6 +936,9 @@ export function HallPage() {
   const [mobileTab, setMobileTab] = useState<'hall' | 'tables' | 'guests' | 'smart' | 'tools'>('hall')
   const [sheetTable, setSheetTable] = useState<number | null>(null)
   const [sheetEdit, setSheetEdit] = useState(false)
+  // טיוטת "מספר שולחן" בעריכה — שדה מבוקר, כדי שכל הקלדה תישמר מיד ולא נסמוך
+  // על קריאה עמומה ב-onBlur (שבנייד לפעמים מחזירה ערך ריק/ישן).
+  const [numDraft, setNumDraft] = useState('')
   // כשמוסיפים מוזמן לשולחן מסוים דרך ה-Bottom Sheet: מעבר ללשונית "מוזמנים"
   // במצב "שיוך" — כל הקשה על מוזמן משבצת אותו ישירות לשולחן הזה.
   const [assignTarget, setAssignTarget] = useState<number | null>(null)
@@ -1686,18 +1696,50 @@ export function HallPage() {
   function renumberTable(oldNum: number, raw: string) {
     const newNum = Math.max(1, Math.round(Number(raw)) || oldNum)
     if (newNum === oldNum) return
-    if (tables.some((t) => t.table_number === newNum)) {
-      setError(`מספר שולחן ${newNum} כבר תפוס — בחרו מספר אחר`)
-      return
-    }
     setError('')
-    setTables((prev) => prev.map((t) => (t.table_number === oldNum ? { ...t, table_number: newNum } : t)))
+    // אם המספר החדש כבר תפוס ע"י שולחן אחר — מבצעים החלפה מלאה: שני השולחנות
+    // מתחלפים גם במספר וגם במיקום על המפה. כך המוזמנים "נוסעים" יחד עם השולחן
+    // שלהם: מי שישב בשולחן הישן יושב עכשיו בשולחן החדש (במקומו של החדש).
+    const target = tables.find((t) => t.table_number === newNum)
+    const source = tables.find((t) => t.table_number === oldNum)
+    setTables((prev) =>
+      prev.map((t) => {
+        if (t.table_number === oldNum) {
+          return target
+            ? { ...t, table_number: newNum, x: target.x, y: target.y }
+            : { ...t, table_number: newNum }
+        }
+        if (target && source && t.table_number === newNum) {
+          return { ...t, table_number: oldNum, x: source.x, y: source.y }
+        }
+        return t
+      }),
+    )
     setSelectedTables(new Set([newNum]))
     // חשוב: אם חלון עריכת השולחן (הגיליון התחתון) פתוח על השולחן הזה — צריך
     // להצביע על המספר החדש, אחרת החלון "מאבד" את השולחן ונסגר בלי לשמור.
     setSheetTable((cur) => (cur === oldNum ? newNum : cur))
     nextTableNumRef.current = Math.max(nextTableNumRef.current, newNum + 1)
     setDirty(true)
+  }
+
+  // מסנכרן את שדה "מספר שולחן" (הטיוטה) עם השולחן שנמצא כעת בעריכה. רץ בכל פעם
+  // שנפתח שולחן אחר או שהמספר משתנה בהצלחה — כך השדה תמיד מציג את המספר הנכון.
+  useEffect(() => {
+    if (sheetTable != null && sheetEdit) setNumDraft(String(sheetTable))
+  }, [sheetTable, sheetEdit])
+
+  // מאשר את מספר השולחן שהוקלד בשדה המבוקר. בודק רק תקינות בסיסית (מספר חיובי
+  // ושונה מהקיים). אם המספר תפוס ע"י שולחן אחר — renumberTable יחליף ביניהם.
+  function commitNumber() {
+    if (sheetTable == null) return
+    const oldNum = sheetTable
+    const parsed = Math.round(Number(numDraft.trim()))
+    if (!Number.isFinite(parsed) || parsed < 1 || parsed === oldNum) {
+      setNumDraft(String(oldNum))
+      return
+    }
+    renumberTable(oldNum, String(parsed))
   }
 
   function bumpCapacity(tnum: number, delta: number) {
@@ -2908,12 +2950,30 @@ export function HallPage() {
 
                   <div className="hm-edit-field">
                     <label>מספר שולחן</label>
-                    <input
-                      type="number"
-                      defaultValue={sheetT.table_number}
-                      key={sheetT.table_number}
-                      onBlur={(e) => renumberTable(sheetT.table_number, e.target.value)}
-                    />
+                    <div className="hm-num-row">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={numDraft}
+                        onChange={(e) => setNumDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') e.currentTarget.blur()
+                        }}
+                        onBlur={commitNumber}
+                      />
+                      <button
+                        type="button"
+                        className="hm-num-ok"
+                        onClick={commitNumber}
+                        disabled={
+                          numDraft.trim() === '' ||
+                          Math.round(Number(numDraft)) === sheetT.table_number
+                        }
+                        aria-label="אישור מספר שולחן"
+                      >
+                        <HmIcon name="check" size={18} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="hm-edit-field">
