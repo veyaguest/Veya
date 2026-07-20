@@ -142,6 +142,8 @@ function CoupleRsvpView() {
   const [loading, setLoading] = useState(true)
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
+  // כמה מוזמנים חדשים (עם טלפון תקין) עדיין לא קיבלו הזמנה — מזין את הבאנר.
+  const [newCount, setNewCount] = useState(0)
 
   // מצב דיאלוג השליחה הידנית.
   const [phase, setPhase] = useState<SendPhase>('idle')
@@ -155,8 +157,11 @@ function CoupleRsvpView() {
     try {
       const status = await getRsvpTrack()
       if (status.active) {
-        const advanced = await advanceRsvpTrack()
+        // מסלול פעיל: מקדמים אותו (idempotent) ובמקביל בודקים כמה מוזמנים
+        // חדשים עדיין לא קיבלו הזמנה — כדי להציג באנר "נוספו מוזמנים".
+        const [advanced, p] = await Promise.all([advanceRsvpTrack(), previewSend()])
         setTrack(advanced)
+        setNewCount(p.not_yet_sent)
         const moved = advanced.sent + advanced.phoned
         if (moved > 0) {
           setNote(
@@ -251,18 +256,28 @@ function CoupleRsvpView() {
       {error && <p className="form-error">{error}</p>}
       {note && <p className="rsvp-note">{note}</p>}
 
-      {/* יומן המשימות היומי — לוח הזמנים שנבנה לאחור מיום ההתחייבות לאולם. */}
-      <RsvpTimeline />
-
       {!active ? (
-        <ActivateCard onSend={openSendDialog} />
+        /* לפני שליחה ראשונה — מסך יעודי: עריכת ההזמנה בלבד + שליחה. */
+        <>
+          <ActivateCard onSend={openSendDialog} />
+          <div id="mb-anchor">
+            <MessageBuilder invitationOnly />
+          </div>
+        </>
       ) : (
-        track && <TrackStatusCard track={track} onResend={openSendDialog} />
+        /* אחרי השליחה — נפתחת חוויית אישורי ההגעה המלאה. */
+        <>
+          {newCount > 0 && (
+            <NewGuestsBanner count={newCount} onSend={openSendDialog} />
+          )}
+          {/* יומן המשימות היומי — לוח הזמנים שנבנה לאחור מיום ההתחייבות לאולם. */}
+          <RsvpTimeline />
+          {track && <TrackStatusCard track={track} onResend={openSendDialog} />}
+          <div id="mb-anchor">
+            <MessageBuilder />
+          </div>
+        </>
       )}
-
-      <div id="mb-anchor">
-        <MessageBuilder />
-      </div>
 
       {phase !== 'idle' && preview && (
         <SendInvitationsDialog
@@ -639,18 +654,18 @@ function SendConfirmStep({
 function ActivateCard({ onSend }: { onSend: () => void }) {
   return (
     <div className="track-hero">
-      <span className="track-hero-badge">מסלול אישורי הגעה</span>
-      <h2 className="track-hero-title">הכנו עבורכם מסלול אישורי הגעה מלא</h2>
+      <span className="track-hero-badge">שלב ראשון · שליחת ההזמנה</span>
+      <h2 className="track-hero-title">שלחו את ההזמנה הראשונה למוזמנים שלכם</h2>
       <p className="track-hero-sub">
-        כשתלחצו "שליחת הזמנות" נראה לכם בדיוק לכמה מוזמנים תישלח ההזמנה לפני
-        שנשלח. אחרי אישורכם נשלח לכולם — ואז נמשיך לבד: תזכורות עדינות למי שעוד
-        לא ענה, ורשימת מעקב טלפוני למי שצריך תשומת לב.
+        ערכו את ההזמנה למטה או בחרו נוסח מוכן מהספרייה, ואז לחצו "שליחת הזמנות".
+        נראה לכם בדיוק לכמה מוזמנים תישלח לפני השליחה. מיד לאחר השליחה ייפתח מסך
+        אישורי ההגעה, ונמשיך לבד: תזכורות עדינות ומעקב טלפוני למי שצריך.
       </p>
       <ul className="track-flow">
-        <li><span className="track-flow-num">1</span> הזמנה לכל המוזמנים</li>
-        <li><span className="track-flow-num">2</span> תזכורת ראשונה אחרי 3 ימים</li>
-        <li><span className="track-flow-num">3</span> תזכורת שנייה אחרי 6 ימים</li>
-        <li><span className="track-flow-num">4</span> מעקב טלפוני למי שעדיין לא ענה</li>
+        <li><span className="track-flow-num">1</span> עריכת ההזמנה ובחירת נוסח</li>
+        <li><span className="track-flow-num">2</span> שליחת ההזמנה למוזמנים</li>
+        <li><span className="track-flow-num">3</span> פתיחת מסך אישורי ההגעה</li>
+        <li><span className="track-flow-num">4</span> תזכורות ומעקב טלפוני אוטומטיים</li>
       </ul>
       <button className="btn-primary track-activate-btn" onClick={onSend}>
         שליחת הזמנות
@@ -666,10 +681,35 @@ function ActivateCard({ onSend }: { onSend: () => void }) {
               ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
           }
         >
-          עברו לעריכת ההודעות
+          עברו לעריכת ההזמנה
         </button>{' '}
-        לפני השליחה.
+        למטה.
       </span>
+    </div>
+  )
+}
+
+/**
+ * באנר "נוספו מוזמנים חדשים" — מופיע רק אחרי שההזמנה הראשונה נשלחה וכשיש
+ * מוזמנים חדשים (עם טלפון תקין) שעדיין לא קיבלו הזמנה. השליחה מכאן תגיע רק
+ * אליהם — בלי לשלוח שוב למי שכבר קיבל, ובלי לפגוע במעקב אישורי ההגעה הקיים.
+ */
+function NewGuestsBanner({ count, onSend }: { count: number; onSend: () => void }) {
+  return (
+    <div className="new-guests-banner" role="status">
+      <div className="new-guests-banner-text">
+        <span className="new-guests-banner-icon" aria-hidden>
+          👋
+        </span>
+        <span>
+          נוספו <strong>{count}</strong>{' '}
+          {count === 1 ? 'מוזמן/ת חדש/ה שעדיין לא קיבל/ה' : 'מוזמנים חדשים שעדיין לא קיבלו'}{' '}
+          הזמנה.
+        </span>
+      </div>
+      <button className="btn-primary new-guests-banner-btn" onClick={onSend}>
+        שליחת הזמנות למוזמנים החדשים
+      </button>
     </div>
   )
 }

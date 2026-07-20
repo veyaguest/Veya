@@ -46,8 +46,12 @@ const KIND_TO_CATEGORY: Record<string, string> = {
  * עורך הודעות ידידותי לזוג — בוחרים הודעה מהמסלול, עורכים בטקסט פשוט עם
  * כפתורי "כינויים" ([שם אורח] וכו'), ורואים תצוגה מקדימה בסגנון WhatsApp
  * עם נתוני האירוע האמיתיים. אין קוד טכני ({{...}}) מול הזוג.
+ *
+ * ``invitationOnly`` — מצב "הזמנה ראשונית בלבד": לפני שליחת ההזמנה הראשונה
+ * מציגים רק את עריכת ההזמנה (בלי תזכורות/תודות), עם ספרייה יעודית להזמנות.
+ * אחרי השליחה נפתח העורך המלא עם כל סוגי ההודעות.
  */
-export function MessageBuilder() {
+export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: boolean } = {}) {
   const [templates, setTemplates] = useState<AutomationTemplate[]>([])
   const [placeholders, setPlaceholders] = useState<TemplatePlaceholder[]>([])
   const [event, setEvent] = useState<EventDetails | null>(null)
@@ -83,11 +87,16 @@ export function MessageBuilder() {
       setPlaceholders(phs)
       setEvent(ev)
       setSampleGuest(g.items[0]?.full_name || 'דנה כהן')
-      setSelectedId((cur) => cur ?? sorted[0]?.id ?? null)
+      // במצב "הזמנה בלבד" נבחרת אוטומטית תבנית ההזמנה (ולא הראשונה שבמיון).
+      const firstInvite = sorted.find((t) => t.kind === 'invitation')
+      setSelectedId(
+        (cur) =>
+          cur ?? (invitationOnly ? firstInvite?.id : undefined) ?? sorted[0]?.id ?? null,
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון את ההודעות, ננסה שוב')
     }
-  }, [])
+  }, [invitationOnly])
 
   useEffect(() => {
     load()
@@ -256,13 +265,23 @@ export function MessageBuilder() {
 
   const selected = templates.find((t) => t.id === selectedId) || null
 
+  // במצב "הזמנה בלבד" מציגים רק את תבנית ההזמנה, ומסתירים את בורר הסוגים
+  // (העורך תופס את כל הרוחב) — חוויה יעודית ופשוטה לשליחה הראשונה.
+  const visibleTemplates = invitationOnly
+    ? templates.filter((t) => t.kind === 'invitation')
+    : templates
+  const showList = !invitationOnly
+
   return (
     <div className="mb-wrap">
       <div className="mb-head">
-        <h3 className="clar-title">עריכת ההודעות שלכם</h3>
+        <h3 className="clar-title">
+          {invitationOnly ? 'עריכת ההזמנה' : 'עריכת ההודעות שלכם'}
+        </h3>
         <span className="clar-sub">
-          בחרו הודעה, ערכו את הנוסח, והוסיפו פרטים אישיים בלחיצה. כך זה ייראה
-          למוזמנים ב-WhatsApp.
+          {invitationOnly
+            ? 'ערכו את נוסח ההזמנה או בחרו נוסח מוכן מהספרייה. כך זה ייראה למוזמנים ב-WhatsApp.'
+            : 'בחרו הודעה, ערכו את הנוסח, והוסיפו פרטים אישיים בלחיצה. כך זה ייראה למוזמנים ב-WhatsApp.'}
         </span>
       </div>
 
@@ -273,22 +292,24 @@ export function MessageBuilder() {
           ההודעות ייווצרו אוטומטית ברגע שתפעילו את מסלול אישורי ההגעה.
         </p>
       ) : (
-        <div className="mb-layout">
-          {/* ספריית ההודעות במסלול */}
-          <aside className="mb-list">
-            {templates.map((t) => (
-              <button
-                key={t.id}
-                className={`mb-list-item ${t.id === selectedId ? 'active' : ''}`}
-                onClick={() => setSelectedId(t.id)}
-              >
-                <span className="mb-list-kind">
-                  {KIND_LABEL[t.kind] ?? 'הודעה'}
-                </span>
-                <span className="mb-list-name">{t.name}</span>
-              </button>
-            ))}
-          </aside>
+        <div className={`mb-layout ${showList ? '' : 'mb-solo'}`}>
+          {/* ספריית ההודעות במסלול — מוסתרת במצב "הזמנה בלבד" */}
+          {showList && (
+            <aside className="mb-list">
+              {visibleTemplates.map((t) => (
+                <button
+                  key={t.id}
+                  className={`mb-list-item ${t.id === selectedId ? 'active' : ''}`}
+                  onClick={() => setSelectedId(t.id)}
+                >
+                  <span className="mb-list-kind">
+                    {KIND_LABEL[t.kind] ?? 'הודעה'}
+                  </span>
+                  <span className="mb-list-name">{t.name}</span>
+                </button>
+              ))}
+            </aside>
+          )}
 
           {/* עורך + תצוגה מקדימה */}
           <div className="mb-editor">
