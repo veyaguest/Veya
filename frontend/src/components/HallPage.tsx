@@ -1256,6 +1256,20 @@ export function HallPage() {
     }
   }, [])
 
+  // ברגע שהמשתמש גורר שולחן בפעם הראשונה — הוא כבר "בפנים". סוגרים את המדריך
+  // אם פתוח, ומסמנים שראה אותו, כדי שלא ייפתח שוב אוטומטית. הכפתור "?" למעלה
+  // תמיד זמין לפתיחה חוזרת ידנית.
+  function markUserMovedTable() {
+    setGuideOpen(false)
+    try {
+      const eid = getEventId()
+      const key = eid != null ? `veya_hall_guide_v1_${eid}` : 'veya_hall_guide_v1'
+      localStorage.setItem(key, '1')
+    } catch {
+      /* localStorage לא זמין — לא נורא, פשוט לא נזכור בין רענונים */
+    }
+  }
+
   // אין יותר זום בדסקטופ — הלוח נגלל באופן טבעי (גלגלת/מגע רגילים דרך
   // overflow: auto של המאגר), בלי מאזינים מותאמים-אישית.
 
@@ -1514,6 +1528,7 @@ export function HallPage() {
           }),
         )
         setDirty(true)
+        markUserMovedTable()
       }
       for (const node of dragNodesRef.current.values()) node.style.transform = ''
       dragNodesRef.current.clear()
@@ -1678,6 +1693,9 @@ export function HallPage() {
     setError('')
     setTables((prev) => prev.map((t) => (t.table_number === oldNum ? { ...t, table_number: newNum } : t)))
     setSelectedTables(new Set([newNum]))
+    // חשוב: אם חלון עריכת השולחן (הגיליון התחתון) פתוח על השולחן הזה — צריך
+    // להצביע על המספר החדש, אחרת החלון "מאבד" את השולחן ונסגר בלי לשמור.
+    setSheetTable((cur) => (cur === oldNum ? newNum : cur))
     nextTableNumRef.current = Math.max(nextTableNumRef.current, newNum + 1)
     setDirty(true)
   }
@@ -2998,10 +3016,52 @@ export function HallPage() {
                 ×
               </button>
               <div className="hm-guide-scroll">
-                <h2 className="hm-guide-title">ברוכים הבאים למפת האולם 🎉</h2>
+                <h2 className="hm-guide-title">ברוכים הבאים לסידור ההושבה ✨</h2>
                 <p className="hm-guide-lead">
-                  כאן מסדרים את הערב — שולחנות, אלמנטים והושבה. הנה כל מה שצריך לדעת, בקצרה:
+                  כאן תוכלו לסדר את השולחנות באולם בקלות ובנוחות.
                 </p>
+
+                {/* אנימציית הסבר: יד גוררת שולחן לצד, המפה מתכווצת כדי להשאיר הכל גלוי,
+                    ואז חוזרת למרכז והמפה גדלה שוב. CSS טהור, בלולאה. */}
+                <div className="hm-demo" aria-hidden="true">
+                  <div className="hm-demo-frame">
+                    <div className="hm-demo-world">
+                      <span className="hm-demo-table t1" />
+                      <span className="hm-demo-table t2" />
+                      <span className="hm-demo-table t3" />
+                      <span className="hm-demo-table t4" />
+                      <span className="hm-demo-table mover" />
+                      <span className="hm-demo-hand">👆</span>
+                    </div>
+                    <span className="hm-demo-badge">הכל נשאר גלוי ✓</span>
+                  </div>
+                </div>
+
+                <div className="hm-guide-smart">
+                  <h3>איך זה עובד?</h3>
+                  <ul>
+                    <li>אין צורך לגלול או לחפש את השולחנות — המפה מתאימה את עצמה לבד.</li>
+                    <li>
+                      מזיזים שולחן לכיוון הצדדים? המערכת תקטין בעדינות את המפה כדי שכל
+                      האולם יישאר מולכם.
+                    </li>
+                    <li>
+                      מחזירים שולחנות לכיוון המרכז? המפה תגדל שוב כדי שתוכלו לראות הכול
+                      בצורה ברורה ונוחה.
+                    </li>
+                  </ul>
+                  <p className="hm-guide-hint">
+                    💡 <b>טיפ קטן:</b> פשוט גררו את השולחנות למקום הרצוי — המערכת כבר
+                    תדאג לגודל המתאים בשבילכם.
+                  </p>
+                  <p className="hm-guide-reassure">
+                    אין צורך בזום, אין גלילות — רק לסדר את האולם כמו שאתם רוצים 😊
+                  </p>
+                </div>
+
+                <div className="hm-guide-divider">
+                  <span>עוד דברים שכדאי לדעת</span>
+                </div>
 
                 <div className="hm-guide-step">
                   <span className="hm-guide-emoji">➕</span>

@@ -6286,6 +6286,9 @@
   flex-direction: column;
   gap: 18px;
 }
+.wiz-panel[hidden] {
+  display: none;
+}
 .wiz-panel:not([hidden]) {
   animation: wizFade 0.25s ease;
 }
@@ -8152,6 +8155,229 @@
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
+  }
+
+  /* ---- אנימציית הסבר: המפה מתאימה את עצמה ---- */
+  .hm-demo {
+    margin: 0 0 18px;
+  }
+  .hm-demo-frame {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    height: 168px;
+    margin: 0 auto;
+    border-radius: 18px;
+    overflow: hidden;
+    background: radial-gradient(
+        120% 120% at 50% 0%,
+        rgba(201, 162, 39, 0.08),
+        transparent 60%
+      ),
+      var(--ivory);
+    border: 1px solid var(--line);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  }
+  .hm-demo-world {
+    position: absolute;
+    inset: 0;
+    transform-origin: 50% 55%;
+    animation: hmDemoWorld 6s ease-in-out infinite;
+  }
+  .hm-demo-table {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+    border-radius: 50%;
+    background: linear-gradient(155deg, #fff 0%, #f3ead2 55%, #e7d7a6 100%);
+    border: 2px solid var(--gold);
+    box-shadow: 0 3px 8px rgba(90, 70, 20, 0.18);
+  }
+  .hm-demo-table.t1 {
+    left: 24%;
+    top: 30%;
+  }
+  .hm-demo-table.t2 {
+    left: 50%;
+    top: 22%;
+  }
+  .hm-demo-table.t3 {
+    left: 30%;
+    top: 66%;
+  }
+  .hm-demo-table.t4 {
+    left: 62%;
+    top: 68%;
+  }
+  .hm-demo-table.mover {
+    left: 46%;
+    top: 48%;
+    border-color: var(--gold-deep);
+    background: linear-gradient(155deg, #fff 0%, #f4e3b0 55%, #e3c766 100%);
+    box-shadow: 0 5px 14px rgba(150, 110, 20, 0.32);
+    animation: hmDemoMover 6s ease-in-out infinite;
+  }
+  .hm-demo-hand {
+    position: absolute;
+    left: 46%;
+    top: 48%;
+    margin: 8px 0 0 6px;
+    font-size: 26px;
+    line-height: 1;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+    animation: hmDemoHand 6s ease-in-out infinite;
+  }
+  .hm-demo-badge {
+    position: absolute;
+    left: 50%;
+    bottom: 12px;
+    transform: translate(-50%, 6px);
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--charcoal);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+    opacity: 0;
+    animation: hmDemoBadge 6s ease-in-out infinite;
+  }
+  @keyframes hmDemoWorld {
+    0%,
+    8% {
+      transform: scale(1);
+    }
+    38%,
+    58% {
+      transform: scale(0.7);
+    }
+    88%,
+    100% {
+      transform: scale(1);
+    }
+  }
+  @keyframes hmDemoMover {
+    0%,
+    8% {
+      transform: translate(0, 0);
+    }
+    38%,
+    58% {
+      transform: translate(74px, -26px);
+    }
+    88%,
+    100% {
+      transform: translate(0, 0);
+    }
+  }
+  @keyframes hmDemoHand {
+    0%,
+    8% {
+      transform: translate(0, 0) rotate(-6deg);
+    }
+    38%,
+    58% {
+      transform: translate(74px, -26px) rotate(-6deg);
+    }
+    88%,
+    100% {
+      transform: translate(0, 0) rotate(-6deg);
+    }
+  }
+  @keyframes hmDemoBadge {
+    0%,
+    82% {
+      opacity: 0;
+      transform: translate(-50%, 6px) scale(0.92);
+    }
+    90%,
+    97% {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, 6px) scale(0.92);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hm-demo-world,
+    .hm-demo-table.mover,
+    .hm-demo-hand,
+    .hm-demo-badge {
+      animation: none !important;
+    }
+    .hm-demo-badge {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+
+  /* ---- בלוק "איך זה עובד": המפה מתאימה את עצמה ---- */
+  .hm-guide-smart {
+    margin: 0 0 4px;
+  }
+  .hm-guide-smart h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    color: var(--charcoal);
+    text-align: center;
+  }
+  .hm-guide-smart ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .hm-guide-smart li {
+    position: relative;
+    padding-inline-start: 26px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .hm-guide-smart li::before {
+    content: "✓";
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0;
+    color: var(--gold-deep);
+    font-weight: 800;
+  }
+  .hm-guide-hint {
+    margin: 14px 0 8px;
+    font-size: 13.5px;
+    color: var(--charcoal);
+    background: rgba(201, 162, 39, 0.1);
+    border-radius: 12px;
+    padding: 11px 13px;
+    line-height: 1.55;
+  }
+  .hm-guide-reassure {
+    margin: 0;
+    font-size: 14px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
+  }
+  .hm-guide-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0 2px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .hm-guide-divider::before,
+  .hm-guide-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
   }
 
   /* ---- אשף בניית האולם (שלב 2) ---- */
