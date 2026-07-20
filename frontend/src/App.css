@@ -2848,19 +2848,161 @@
 .hall-world {
   position: relative;
 }
-/* סקיצת האולם שהזוג העלה — רקע עדין מתחת לשולחנות */
+/* סקיצת האולם שהזוג העלה — רקע עדין מתחת לשולחנות. גודלו נקבע דינמית
+   (width/height inline = גודל ה"עולם"), ממורכז ומותאם בלי מתיחה (contain).
+   pointer-events:none → אי אפשר להזיז אותו בטעות בזמן גרירת אלמנטים. */
 .hall-sketch-bg {
   position: absolute;
   top: 0;
   left: 0;
-  width: 1400px;
-  height: 900px;
   background-size: contain;
-  background-position: top right;
+  background-position: center;
   background-repeat: no-repeat;
-  opacity: 0.4;
+  opacity: 0.42;
   pointer-events: none;
   z-index: 0;
+}
+
+/* ─── עורך הסקיצה (חיתוך/זום/סיבוב לפני שמירה) ─────────────────────── */
+.sk-editor-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 14, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 1200;
+}
+.sk-editor {
+  position: fixed;
+  z-index: 1201;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(680px, 94vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--card, #fff);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(20, 18, 14, 0.28);
+  padding: 18px;
+  gap: 14px;
+  direction: rtl;
+}
+.sk-editor-head h2 {
+  margin: 0 0 4px;
+  font-size: 19px;
+}
+.sk-editor-head p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted, #7a7266);
+  line-height: 1.5;
+}
+.sk-editor-stage {
+  position: relative;
+  width: 100%;
+  height: min(48vh, 360px);
+  border-radius: 12px;
+  overflow: hidden;
+  background: repeating-conic-gradient(#eee 0% 25%, #f6f6f6 0% 50%) 50% / 22px 22px;
+  touch-action: none;
+  cursor: grab;
+}
+.sk-editor-stage:active {
+  cursor: grabbing;
+}
+.sk-editor-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.sk-editor-loading,
+.sk-editor-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  color: var(--muted, #7a7266);
+  font-size: 14px;
+}
+.sk-editor-error {
+  position: relative;
+  height: min(48vh, 360px);
+}
+.sk-editor-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+.sk-zoom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 240px;
+}
+.sk-zoom input[type='range'] {
+  flex: 1;
+  min-width: 120px;
+}
+.sk-zoom button,
+.sk-rotate button {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #e5ded2);
+  background: var(--card, #fff);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ink, #2c2a25);
+}
+.sk-zoom button:hover,
+.sk-rotate button:hover {
+  background: var(--hover, #f4efe6);
+}
+.sk-rotate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sk-rotate .sk-reset {
+  width: auto;
+  padding: 0 14px;
+  font-size: 14px;
+  color: var(--muted, #7a7266);
+}
+.sk-editor-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+}
+.sk-confirm {
+  flex: 1;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent, #c9a35b);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sk-confirm:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.sk-cancel {
+  padding: 12px 18px;
+  border: 1px solid var(--border, #e5ded2);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink, #2c2a25);
+  font-size: 15px;
+  cursor: pointer;
 }
 .hall-empty {
   position: absolute;

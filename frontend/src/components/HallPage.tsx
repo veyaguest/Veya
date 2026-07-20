@@ -511,6 +511,257 @@ function HallWizard(props: {
   )
 }
 
+// ─── עורך הסקיצה ─────────────────────────────────────────────────────────
+// חלון עריכה שנפתח מיד אחרי בחירת קובץ, לפני שמירה. הזוג יכול להזיז, לזום,
+// לסובב ולחתוך את התמונה בתוך מסגרת חיתוך ביחס-ממדים של הקנבס — ורק ב"אישור"
+// אנחנו "אופים" את מה שבתוך המסגרת לתמונה נקייה אחת שנשמרת ומוצגת כרקע.
+// הכל רץ על קנבס יחיד: אותו חישוב מצייר גם את התצוגה החיה וגם את הפלט הסופי,
+// כך שמה שרואים במסגרת הוא בדיוק מה שנשמר. בלי ספריות חיצוניות.
+function SketchEditor(props: {
+  src: string
+  aspect: number // יחס מסגרת החיתוך (רוחב/גובה) — נגזר מהקנבס
+  onCancel: () => void
+  onConfirm: (dataUrl: string) => void
+}) {
+  const { src, aspect } = props
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const stageRef = useRef<HTMLDivElement | null>(null)
+  const imgRef = useRef<HTMLImageElement | null>(null)
+  const [ready, setReady] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const [scale, setScale] = useState(1) // 1 = "cover" (ממלא את המסגרת)
+  const [rotation, setRotation] = useState(0) // מעלות, בקפיצות של 90°
+  const [offset, setOffset] = useState({ x: 0, y: 0 }) // הזזה בפיקסלים של הבמה
+  const [tick, setTick] = useState(0) // מאלץ ציור-מחדש בשינוי גודל הבמה
+  const dragRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null)
+
+  // טעינת התמונה. לתמונה שמורה (media URL, אולי ממקור אחר) מבקשים crossOrigin
+  // כדי שה-canvas לא "יזדהם" ונוכל לייצא ממנו; ל-data URL זה לא רלוונטי.
+  useEffect(() => {
+    const image = new Image()
+    if (!/^data:/i.test(src)) image.crossOrigin = 'anonymous'
+    image.onload = () => {
+      imgRef.current = image
+      setReady(true)
+    }
+    image.onerror = () => setFailed(true)
+    image.src = src
+    return () => {
+      image.onload = null
+      image.onerror = null
+    }
+  }, [src])
+
+  // מלבן מסגרת החיתוך בתוך הבמה — ממורכז, עם שוליים, לפי היחס aspect.
+  function frameRect(sw: number, sh: number) {
+    const pad = 20
+    let fw = sw - pad * 2
+    let fh = fw / aspect
+    if (fh > sh - pad * 2) {
+      fh = sh - pad * 2
+      fw = fh * aspect
+    }
+    return { x: (sw - fw) / 2, y: (sh - fh) / 2, w: fw, h: fh }
+  }
+
+  // מידות התמונה אחרי סיבוב (90/270 מחליפים רוחב/גובה).
+  function rotatedImgDims() {
+    const img = imgRef.current!
+    const rot = ((rotation % 360) + 360) % 360
+    const swap = rot === 90 || rot === 270
+    return { ew: swap ? img.height : img.width, eh: swap ? img.width : img.height }
+  }
+
+  // סקייל-בסיס שממלא (cover) את המסגרת כשזום=1.
+  function coverScale(fw: number, fh: number) {
+    const { ew, eh } = rotatedImgDims()
+    return Math.max(fw / ew, fh / eh)
+  }
+
+  // ציור הסצנה על קשר נתון, בקואורדינטות של הבמה. forExport => רקע לבן בתוך
+  // המסגרת (כדי שאזורי "לטרבוקס" בזום-אאוט לא ייצאו שחורים).
+  function paint(ctx: CanvasRenderingContext2D, sw: number, sh: number, fr: { x: number; y: number; w: number; h: number }, forExport: boolean) {
+    const img = imgRef.current!
+    if (forExport) {
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(fr.x, fr.y, fr.w, fr.h)
+    }
+    const s = coverScale(fr.w, fr.h) * scale
+    ctx.save()
+    ctx.translate(sw / 2 + offset.x, sh / 2 + offset.y)
+    ctx.rotate((rotation * Math.PI) / 180)
+    ctx.drawImage(img, (-img.width * s) / 2, (-img.height * s) / 2, img.width * s, img.height * s)
+    ctx.restore()
+  }
+
+  // תצוגה חיה: מציירים את התמונה, מחשיכים מחוץ למסגרת, ומוסיפים מסגרת + קווי שליש.
+  useEffect(() => {
+    if (!ready) return
+    const canvas = canvasRef.current
+    const stage = stageRef.current
+    if (!canvas || !stage) return
+    const sw = Math.max(1, stage.clientWidth)
+    const sh = Math.max(1, stage.clientHeight)
+    canvas.width = sw
+    canvas.height = sh
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    const fr = frameRect(sw, sh)
+    ctx.clearRect(0, 0, sw, sh)
+    paint(ctx, sw, sh, fr, false)
+    // החשכה מחוץ למסגרת (חור באמצעות evenodd)
+    ctx.save()
+    ctx.fillStyle = 'rgba(24, 22, 18, 0.55)'
+    ctx.beginPath()
+    ctx.rect(0, 0, sw, sh)
+    ctx.rect(fr.x, fr.y, fr.w, fr.h)
+    ctx.fill('evenodd')
+    ctx.restore()
+    // מסגרת + קווי שליש עדינים
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(fr.x + 1, fr.y + 1, fr.w - 2, fr.h - 2)
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)'
+    ctx.lineWidth = 1
+    for (let i = 1; i < 3; i++) {
+      ctx.beginPath()
+      ctx.moveTo(fr.x + (fr.w * i) / 3, fr.y)
+      ctx.lineTo(fr.x + (fr.w * i) / 3, fr.y + fr.h)
+      ctx.moveTo(fr.x, fr.y + (fr.h * i) / 3)
+      ctx.lineTo(fr.x + fr.w, fr.y + (fr.h * i) / 3)
+      ctx.stroke()
+    }
+  }, [ready, scale, rotation, offset, tick, aspect])
+
+  // מעקב אחרי שינוי גודל הבמה (סיבוב מסך/שינוי חלון) — ציור מחדש.
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => setTick((t) => t + 1))
+    ro.observe(stage)
+    return () => ro.disconnect()
+  }, [])
+
+  // גרירה = הזזת התמונה.
+  function onPointerDown(e: React.PointerEvent) {
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    dragRef.current = { px: e.clientX, py: e.clientY, ox: offset.x, oy: offset.y }
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    const d = dragRef.current
+    if (!d) return
+    setOffset({ x: d.ox + (e.clientX - d.px), y: d.oy + (e.clientY - d.py) })
+  }
+  function onPointerUp() {
+    dragRef.current = null
+  }
+  function onWheel(e: React.WheelEvent) {
+    setScale((s) => clamp(s * (e.deltaY < 0 ? 1.08 : 1 / 1.08), 0.2, 5))
+  }
+
+  function reset() {
+    setScale(1)
+    setRotation(0)
+    setOffset({ x: 0, y: 0 })
+  }
+
+  // "אפייה": מציירים את אזור המסגרת בלבד לקנבס פלט ברזולוציה טובה ומייצאים.
+  function confirm() {
+    const stage = stageRef.current
+    if (!stage || !imgRef.current) return
+    const sw = Math.max(1, stage.clientWidth)
+    const sh = Math.max(1, stage.clientHeight)
+    const fr = frameRect(sw, sh)
+    const outW = 1600
+    const outH = Math.round(outW / aspect)
+    const k = outW / fr.w // מיפוי פיקסלֵי-במה ← פיקסלֵי-פלט
+    const out = document.createElement('canvas')
+    out.width = outW
+    out.height = outH
+    const ctx = out.getContext('2d')
+    if (!ctx) return
+    // ממפים כך שפינת המסגרת (fr.x,fr.y) תיפול על (0,0) של הפלט, בקנה-מידה k.
+    ctx.setTransform(k, 0, 0, k, -fr.x * k, -fr.y * k)
+    paint(ctx, sw, sh, fr, true)
+    try {
+      props.onConfirm(out.toDataURL('image/jpeg', 0.85))
+    } catch {
+      setFailed(true)
+    }
+  }
+
+  return (
+    <>
+      <div className="sk-editor-backdrop" onClick={props.onCancel} />
+      <div className="sk-editor" role="dialog" aria-label="עריכת סקיצת האולם">
+        <div className="sk-editor-head">
+          <h2>עריכת סקיצת האולם ✂️</h2>
+          <p>גררו להזזה · השתמשו בזום כדי להתקרב · סובבו אם צריך. מה שבתוך המסגרת יהפוך לרקע.</p>
+        </div>
+
+        {failed ? (
+          <div className="sk-editor-stage sk-editor-error">
+            <p>לא הצלחנו לטעון את התמונה לעריכה. נסו להעלות תמונה אחרת.</p>
+          </div>
+        ) : (
+          <div
+            className="sk-editor-stage"
+            ref={stageRef}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerLeave={onPointerUp}
+            onWheel={onWheel}
+          >
+            <canvas ref={canvasRef} className="sk-editor-canvas" />
+            {!ready && <div className="sk-editor-loading">טוען תמונה…</div>}
+          </div>
+        )}
+
+        <div className="sk-editor-controls">
+          <div className="sk-zoom">
+            <button type="button" onClick={() => setScale((s) => clamp(s / 1.15, 0.2, 5))} aria-label="הקטנה">
+              −
+            </button>
+            <input
+              type="range"
+              min={0.2}
+              max={5}
+              step={0.01}
+              value={scale}
+              onChange={(e) => setScale(Number(e.target.value))}
+              aria-label="זום"
+            />
+            <button type="button" onClick={() => setScale((s) => clamp(s * 1.15, 0.2, 5))} aria-label="הגדלה">
+              +
+            </button>
+          </div>
+          <div className="sk-rotate">
+            <button type="button" onClick={() => setRotation((r) => r - 90)} title="סיבוב שמאלה">
+              ↺
+            </button>
+            <button type="button" onClick={() => setRotation((r) => r + 90)} title="סיבוב ימינה">
+              ↻
+            </button>
+            <button type="button" className="sk-reset" onClick={reset}>
+              איפוס
+            </button>
+          </div>
+        </div>
+
+        <div className="sk-editor-actions">
+          <button className="sk-confirm" onClick={confirm} disabled={!ready || failed}>
+            אישור והוספה לקנבס
+          </button>
+          <button className="sk-cancel" onClick={props.onCancel}>
+            ביטול
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export function HallPage() {
   const [tables, setTables] = useState<TableView[]>([])
   const [unassigned, setUnassigned] = useState<HallGuest[]>([])
@@ -557,7 +808,7 @@ export function HallPage() {
   // בכל רגע מכפתור "בניית אולם מחדש". שואל כמה שולחנות רגילים (12) ואבירים,
   // ואילו אלמנטים לכלול (רחבה/DJ/בר), ואז מייצר סקיצה התחלתית מסודרת.
   const [wizardOpen, setWizardOpen] = useState(false)
-  const [wzRegular, setWzRegular] = useState(12)
+  const [wzRegular, setWzRegular] = useState(0)
   const [wzKnights, setWzKnights] = useState(0)
   const [wzDance, setWzDance] = useState(true)
   const [wzDj, setWzDj] = useState(true)
@@ -607,6 +858,11 @@ export function HallPage() {
   // סקיצת האולם (data URL) — רקע עדין מתחת לשולחנות.
   const [sketch, setSketch] = useState<string | null>(null)
   const sketchInputRef = useRef<HTMLInputElement | null>(null)
+  // עורך הסקיצה: התמונה הגולמית שממתינה לעריכה (לפני שמירה), והתמונה
+  // המקורית שנשמרת בזיכרון-הפעלה כדי שעריכה חוזרת תהיה איכותית (חיתוך-מחדש
+  // מהמקור ולא מהתמונה שכבר נחתכה). לא נשמר בשרת — רק לנוחות הסשן.
+  const [sketchEditSrc, setSketchEditSrc] = useState<string | null>(null)
+  const sketchOriginalRef = useRef<string | null>(null)
 
   // ---- עוזר הושבה חכם (Dock) ----
   // זוגות אילוצים שכבר מחושבים בשרת מהערות חופשיות — נשמרים כאן כדי
@@ -1151,80 +1407,90 @@ export function HallPage() {
     const total = Math.max(0, opts.regular) + Math.max(0, opts.knights)
     const key = densityKeyForCount(total || 1)
     const p = DENSITY_PRESETS[key]
-    // ---- פריסת רשת (Grid) חכמה ----
-    // במקום טבעות: שולחנות ברשת מאוזנת, ומעליהם אשכול הרחבה/DJ/בר. מספר העמודות
-    // מסתגל ליחס-המסך (רחב במסך רחב, גבוה במסך צר) כדי לנצל את השטח ביעילות,
-    // ו-Auto-Fit דואג שהכל ייכנס במלואו, ממורכז, בלי גלילה.
+    // ---- פריסת רצועות מסודרת ----
+    // מלמעלה למטה: DJ + רחבת ריקודים במרכז, אחר כך רצועת שולחנות אבירים (הארוכים),
+    // הבר במרכז האולם, ולמטה רצועת השולחנות העגולים. כל רצועה נפרשת ל"שורות":
+    // שתיים כברירת מחדל, ושלוש כשיש הרבה שולחנות — כדי שהפוזה תישאר יפה ומאוזנת.
+    // כל הרצועות ממורכזות סביב אותו ציר אנכי (x=0), ו-Auto-Fit דואג שהכל ייכנס
+    // במסך במלואו, ממורכז, בלי גלילה.
     type Placed = { cx: number; cy: number; w: number; h: number }
     const elDefs: { place: Placed; type: HallElementType }[] = []
 
-    const types: TableType[] = [
-      ...Array(Math.max(0, opts.regular)).fill('round'),
-      ...Array(Math.max(0, opts.knights)).fill('knights'),
-    ]
-    const anyKnights = opts.knights > 0
-    // תא-רשת אחיד = הטביעה הגדולה ביותר מבין סוגי השולחנות (מונע חפיפה), עם מרווח
-    // דינמי: פחות שולחנות → מרווח נדיב יותר; יותר שולחנות → צפוף יותר. התוספת
-    // הקבועה נותנת מקום לכיסאות שבולטים סביב השולחן.
-    const cellBaseW = anyKnights ? Math.max(p.round, p.knightsW) : p.round
-    const cellBaseH = anyKnights ? Math.max(p.round, p.knightsH) : p.round
+    const regular = Math.max(0, opts.regular)
+    const knights = Math.max(0, opts.knights)
+
+    // מספר השורות ברצועה: 1 למעט־מאוד, 2 כברירת מחדל, 3 כשכמות גדולה.
+    const rowsFor = (n: number) => (n <= 2 ? 1 : n <= 16 ? 2 : 3)
+
+    // תא-רשת = השולחן + מרווח דינמי (פחות שולחנות → נדיב יותר) + תוספת קבועה
+    // למקום לכיסאות שבולטים סביב השולחן.
     const gapFactor = clamp(0.42 - total * 0.004, 0.2, 0.42)
-    const cellW = cellBaseW + Math.round(cellBaseW * gapFactor) + 18
-    const cellH = cellBaseH + Math.round(cellBaseH * gapFactor) + 18
+    const roundCell = p.round + Math.round(p.round * gapFactor) + 18
+    const knightCellW = p.knightsW + Math.round(p.knightsW * gapFactor) + 18
+    const knightCellH = p.knightsH + Math.round(p.knightsH * gapFactor) + 18
+    const vGap = Math.round(roundCell * 0.22) + 28 // מרווח אנכי בין הרצועות
 
-    // מספר עמודות לפי יחס-המסך: cols ≈ sqrt(total * aspect) → צורת הרשת תואמת
-    // לצורת המסך, ניצול מיטבי והתאמה הדוקה. מקדם 1.35 מרחיב מעט את הרשת כדי לנצל
-    // טוב יותר את *רוחב* המסך (אחרת נשאר הרבה שטח ריק בצדדים), ומקזז את הגובה
-    // שאשכול הרחבה מוסיף מעל הרשת.
-    const vpEl = viewportRef.current
-    const aspect =
-      (vpEl && vpEl.clientHeight ? clamp(vpEl.clientWidth / vpEl.clientHeight, 0.4, 2.4) : 1.5) * 1.35
-    const cols = clamp(
-      Math.round(Math.sqrt(Math.max(1, total) * aspect)),
-      1,
-      Math.max(1, types.length),
-    )
-    const rows = Math.max(1, Math.ceil(types.length / cols))
-    const gridW = cols * cellW
-    const gridH = rows * cellH
+    const kCols = knights > 0 ? Math.ceil(knights / rowsFor(knights)) : 0
+    const rCols = regular > 0 ? Math.ceil(regular / rowsFor(regular)) : 0
 
-    const tablePlaces: { place: Placed; type: TableType }[] = []
-    for (let i = 0; i < types.length; i++) {
-      const t = types[i]
-      const row = Math.floor(i / cols)
-      const col = i % cols
-      // מרכוז שורה אחרונה חלקית כדי שהרשת תיראה מאוזנת.
-      const inThisRow = Math.min(cols, types.length - row * cols)
-      const rowShift = ((cols - inThisRow) * cellW) / 2
-      const cx = col * cellW + cellW / 2 + rowShift - gridW / 2
-      const cy = row * cellH + cellH / 2 - gridH / 2
-      const w = t === 'knights' ? p.knightsW : p.round
-      const h = t === 'knights' ? p.knightsH : p.round
-      tablePlaces.push({ type: t, place: { cx, cy, w, h } })
+    // פורש רצועת שולחנות מהשורה העליונה שלה (topY) כלפי מטה, ממורכזת ב-x=0.
+    // כל שורה חלקית ממורכזת בפני עצמה. מחזיר את גובה הרצועה.
+    const placeBand = (
+      count: number,
+      cols: number,
+      cellW: number,
+      cellH: number,
+      topY: number,
+      tW: number,
+      tH: number,
+      type: TableType,
+      out: { place: Placed; type: TableType }[],
+    ) => {
+      const rows = Math.max(1, Math.ceil(count / cols))
+      for (let i = 0; i < count; i++) {
+        const row = Math.floor(i / cols)
+        const col = i % cols
+        const inThisRow = Math.min(cols, count - row * cols)
+        const rowW = inThisRow * cellW
+        const cx = col * cellW + cellW / 2 - rowW / 2
+        const cy = topY + row * cellH + cellH / 2
+        out.push({ type, place: { cx, cy, w: tW, h: tH } })
+      }
+      return rows * cellH
     }
 
-    // אשכול מרכזי מעל הרשת: רחבת ריקודים במרכז, DJ מעליה, בר בצד.
-    if (opts.dance || opts.dj || opts.bar) {
-      const dW = p.dance.w
-      const dH = p.dance.h
-      const bandGap = Math.round(cellH * 0.18) + 16
-      const danceCy = -gridH / 2 - bandGap - dH / 2
-      if (opts.dance) {
-        elDefs.push({ type: 'dance_floor', place: { cx: 0, cy: danceCy, w: dW, h: dH } })
-      }
-      if (opts.dj) {
-        elDefs.push({
-          type: 'dj',
-          place: { cx: 0, cy: danceCy - dH / 2 - p.dj.h / 2 - 20, w: p.dj.w, h: p.dj.h },
-        })
-      }
-      if (opts.bar) {
-        elDefs.push({
-          type: 'bar',
-          place: { cx: dW / 2 + p.bar.w / 2 + 44, cy: danceCy, w: p.bar.w, h: p.bar.h },
-        })
-      }
+    const roundPlaces: { place: Placed; type: TableType }[] = []
+    const knightPlaces: { place: Placed; type: TableType }[] = []
+    let topY = 0
+
+    // DJ + רחבת ריקודים — למעלה במרכז.
+    if (opts.dj) {
+      elDefs.push({ type: 'dj', place: { cx: 0, cy: topY + p.dj.h / 2, w: p.dj.w, h: p.dj.h } })
+      topY += p.dj.h + vGap
     }
+    if (opts.dance) {
+      elDefs.push({ type: 'dance_floor', place: { cx: 0, cy: topY + p.dance.h / 2, w: p.dance.w, h: p.dance.h } })
+      topY += p.dance.h + vGap
+    }
+
+    // רצועת אבירים (למעלה).
+    if (knights > 0) {
+      topY += placeBand(knights, kCols, knightCellW, knightCellH, topY, p.knightsW, p.knightsH, 'knights', knightPlaces) + vGap
+    }
+
+    // הבר — במרכז האולם, בין הרצועה העליונה לתחתונה.
+    if (opts.bar) {
+      elDefs.push({ type: 'bar', place: { cx: 0, cy: topY + p.bar.h / 2, w: p.bar.w, h: p.bar.h } })
+      topY += p.bar.h + vGap
+    }
+
+    // רצועת עגולים (למטה).
+    if (regular > 0) {
+      topY += placeBand(regular, rCols, roundCell, roundCell, topY, p.round, p.round, 'round', roundPlaces)
+    }
+
+    // מספור: עגולים 1..N ואז אבירים — נעים לזוג (רוב השולחנות עגולים).
+    const tablePlaces: { place: Placed; type: TableType }[] = [...roundPlaces, ...knightPlaces]
 
     // נרמול לקואורדינטות חיוביות (פינה שמאלית-עליונה בריפוד 120). הריפוד משאיר
     // מקום לכיסאות/תוויות שבולטים סביב השולחנות החיצוניים כך שלא "יֵצאו" מגבול
@@ -1610,14 +1876,40 @@ export function HallPage() {
     }
     const reader = new FileReader()
     reader.onload = () => {
-      setSketch(typeof reader.result === 'string' ? reader.result : null)
-      setDirty(true)
+      // לא שומרים מיד — פותחים את עורך הסקיצה עם התמונה הגולמית.
+      if (typeof reader.result === 'string') {
+        sketchOriginalRef.current = reader.result
+        setSketchEditSrc(reader.result)
+      }
     }
     reader.readAsDataURL(file)
   }
 
+  // פתיחת עורך הסקיצה לעריכה חוזרת: מעדיפים את המקור ששמור בזיכרון (איכותי);
+  // אם אין (למשל אחרי רענון) — עורכים את הסקיצה השמורה עצמה.
+  function editSketch() {
+    setSketchEditSrc(sketchOriginalRef.current ?? sketch)
+  }
+
+  // יחס-הממדים של אזור העבודה — כדי שמסגרת החיתוך תתאים לקנבס ותיפול עליו נקי.
+  function canvasAspect() {
+    const vp = viewportRef.current
+    if (vp && vp.clientWidth > 0 && vp.clientHeight > 0) {
+      return clamp(vp.clientWidth / vp.clientHeight, 0.6, 2.4)
+    }
+    return 1.6
+  }
+
+  // אישור העריכה: התמונה ה"אפויה" נשמרת ומוצגת. ההושבה לא נוגעת.
+  function onSketchConfirm(dataUrl: string) {
+    setSketch(dataUrl)
+    setSketchEditSrc(null)
+    setDirty(true)
+  }
+
   function removeSketch() {
     setSketch(null)
+    sketchOriginalRef.current = null
     setDirty(true)
   }
 
@@ -1983,7 +2275,11 @@ export function HallPage() {
                 }
               >
                 {sketch && (
-                  <div className="hall-sketch-bg" style={{ backgroundImage: `url(${mediaUrl(sketch)})` }} aria-hidden="true" />
+                  <div
+                    className="hall-sketch-bg"
+                    style={{ backgroundImage: `url(${mediaUrl(sketch)})`, width: worldSize.w, height: worldSize.h }}
+                    aria-hidden="true"
+                  />
                 )}
                 {tables.length === 0 && elements.length === 0 && (
                   <p className="hall-empty">אין עדיין שולחנות. הקישו על ➕ כדי להוסיף שולחן.</p>
@@ -2360,9 +2656,17 @@ export function HallPage() {
               <div className="hm-tools-group">
                 <p className="hm-panel-head">רקע האולם (סקיצה)</p>
                 {sketch ? (
-                  <button className="hm-ghost-btn" onClick={removeSketch}>
-                    הסרת הסקיצה
-                  </button>
+                  <>
+                    <button className="hm-ghost-btn" onClick={editSketch}>
+                      עריכת הסקיצה
+                    </button>
+                    <button className="hm-ghost-btn" onClick={() => sketchInputRef.current?.click()}>
+                      החלפת תמונה
+                    </button>
+                    <button className="hm-ghost-btn" onClick={removeSketch}>
+                      הסרת הסקיצה
+                    </button>
+                  </>
                 ) : (
                   <button className="hm-ghost-btn" onClick={() => sketchInputRef.current?.click()}>
                     העלאת סקיצת אולם
@@ -2711,6 +3015,15 @@ export function HallPage() {
             onClose={() => setWizardOpen(false)}
           />
         )}
+
+        {sketchEditSrc && (
+          <SketchEditor
+            src={sketchEditSrc}
+            aspect={canvasAspect()}
+            onCancel={() => setSketchEditSrc(null)}
+            onConfirm={onSketchConfirm}
+          />
+        )}
       </div>
     )
   }
@@ -2792,6 +3105,11 @@ export function HallPage() {
           {saving ? '💾 שומר…' : dirty ? '💾 יישמר אוטומטית' : savedTick ? '✓ נשמר' : '✓ שמור אוטומטית'}
         </span>
         <input ref={sketchInputRef} type="file" accept="image/*" hidden onChange={onPickSketch} />
+        {sketch && (
+          <button className="btn-ghost" onClick={editSketch}>
+            ✂️ עריכת סקיצה
+          </button>
+        )}
         <button className="btn-ghost" onClick={() => sketchInputRef.current?.click()}>
           {sketch ? '🖼 החלפת סקיצה' : '🖼 העלאת סקיצת אולם'}
         </button>
@@ -2902,7 +3220,11 @@ export function HallPage() {
               onPointerDown={onWorldPointerDown}
             >
               {sketch && (
-                <div className="hall-sketch-bg" style={{ backgroundImage: `url(${mediaUrl(sketch)})` }} aria-hidden="true" />
+                <div
+                  className="hall-sketch-bg"
+                  style={{ backgroundImage: `url(${mediaUrl(sketch)})`, width: worldSize.w, height: worldSize.h }}
+                  aria-hidden="true"
+                />
               )}
               {tables.length === 0 && elements.length === 0 && (
                 <p className="hall-empty">
@@ -3476,6 +3798,14 @@ export function HallPage() {
           />
         )}
       </div>
+      {sketchEditSrc && (
+        <SketchEditor
+          src={sketchEditSrc}
+          aspect={canvasAspect()}
+          onCancel={() => setSketchEditSrc(null)}
+          onConfirm={onSketchConfirm}
+        />
+      )}
     </div>
   )
 }
