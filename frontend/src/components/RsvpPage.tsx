@@ -32,11 +32,14 @@ import type {
   TemplatePlaceholder,
 } from '../types'
 import { RSVP_LABELS } from '../types'
+import { AddGuestForm } from './AddGuestForm'
 import { AutomationRulesTab } from './AutomationRulesTab'
 import { AutomationTemplatesTab } from './AutomationTemplatesTab'
 import { AutomationQueueTab } from './AutomationQueueTab'
 import { GuestTimelineModal } from './GuestTimelineModal'
+import { ImportDialog } from './ImportDialog'
 import { MessageBuilder } from './MessageBuilder'
+import { PasteImportDialog } from './PasteImportDialog'
 import { RsvpTimeline } from './RsvpTimeline'
 
 type Tab = 'dashboard' | 'automations' | 'templates' | 'queue' | 'manual'
@@ -199,6 +202,18 @@ function CoupleRsvpView({ onNavigate }: { onNavigate?: (page: 'guests') => void 
     load()
   }, [load])
 
+  // רענון הספירה המקדימה בלבד (למשל אחרי הוספת מוזמנים באשף) — בלי לטעון מחדש
+  // את כל המסך, כדי שסיכום המוכנות באשף יתעדכן מיד.
+  const refreshPreview = useCallback(async () => {
+    try {
+      const p = await previewSend()
+      setPreview(p)
+      setNewCount(p.not_yet_sent)
+    } catch {
+      /* שקט — לא מפילים את המסך בגלל רענון ספירה */
+    }
+  }, [])
+
   // לחיצה על "שליחת הזמנות" — טוענים ספירה מקדימה ופותחים דיאלוג אישור.
   async function openSendDialog() {
     setDialogError('')
@@ -276,6 +291,7 @@ function CoupleRsvpView({ onNavigate }: { onNavigate?: (page: 'guests') => void 
           preview={preview}
           onSend={openSendDialog}
           onAddGuests={onNavigate ? () => onNavigate('guests') : undefined}
+          onGuestsChanged={refreshPreview}
         />
       ) : (
         /* אחרי השליחה — נפתחת חוויית אישורי ההגעה המלאה. */
@@ -681,12 +697,30 @@ function FirstInviteWizard({
   preview,
   onSend,
   onAddGuests,
+  onGuestsChanged,
 }: {
   preview: InvitationSendPreview | null
   onSend: () => void
   onAddGuests?: () => void
+  onGuestsChanged?: () => void
 }) {
   const [step, setStep] = useState(1)
+
+  // הוספת מוזמנים ישירות מתוך האשף — שימוש חוזר בדיאלוגים הקיימים.
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [showPaste, setShowPaste] = useState(false)
+  const [showAdd, setShowAdd] = useState(false)
+  const [addNote, setAddNote] = useState('')
+  const fileInput = useRef<HTMLInputElement | null>(null)
+
+  function afterGuestsChanged(msg: string) {
+    setImportFile(null)
+    setShowPaste(false)
+    setShowAdd(false)
+    setAddNote(msg)
+    onGuestsChanged?.()
+    setTimeout(() => setAddNote(''), 4000)
+  }
 
   const total = preview?.total_guests ?? 0
   const sendable = preview?.not_yet_sent ?? 0
@@ -776,9 +810,41 @@ function FirstInviteWizard({
           </p>
         )}
 
+        {/* הוספת מוזמנים מבלי לצאת מהאשף */}
+        <div className="wiz-add">
+          <span className="wiz-add-label">הוספת מוזמנים:</span>
+          <div className="wiz-add-actions">
+            <button
+              className="btn-ghost"
+              onClick={() => fileInput.current?.click()}
+            >
+              📄 העלאת Excel
+            </button>
+            <button className="btn-ghost" onClick={() => setShowPaste(true)}>
+              📋 הדבקת רשימה
+            </button>
+            <button className="btn-ghost" onClick={() => setShowAdd(true)}>
+              ➕ הוספה ידנית
+            </button>
+          </div>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".xlsx,.xlsm,.csv"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) setImportFile(f)
+              e.target.value = ''
+            }}
+          />
+        </div>
+
+        {addNote && <p className="rsvp-note wiz-add-note">{addNote}</p>}
+
         {onAddGuests && (
-          <button className="btn-ghost wiz-guests-link" onClick={onAddGuests}>
-            עברו למסך ניהול המוזמנים →
+          <button className="btn-text wiz-guests-link" onClick={onAddGuests}>
+            לניהול מלא של המוזמנים — עברו למסך המוזמנים →
           </button>
         )}
 
@@ -842,6 +908,50 @@ function FirstInviteWizard({
           </button>
         </div>
       </section>
+
+      {/* דיאלוגי הוספת מוזמנים (שימוש חוזר ברכיבים הקיימים) */}
+      {importFile && (
+        <ImportDialog
+          file={importFile}
+          onClose={() => setImportFile(null)}
+          onImported={(created, skipped) =>
+            afterGuestsChanged(
+              `נוספו ${created} מוזמנים${skipped ? ` · ${skipped} כפילויות דולגו` : ''}`,
+            )
+          }
+        />
+      )}
+
+      {showPaste && (
+        <PasteImportDialog
+          onClose={() => setShowPaste(false)}
+          onImported={(created, skipped) =>
+            afterGuestsChanged(
+              `נוספו ${created} מוזמנים${skipped ? ` · ${skipped} כפילויות דולגו` : ''}`,
+            )
+          }
+        />
+      )}
+
+      {showAdd && (
+        <div className="overlay" onClick={() => setShowAdd(false)}>
+          <div
+            className="dialog edit-guest-dialog"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="dialog-head">
+              <h2>הוספת מוזמן</h2>
+              <button className="x" onClick={() => setShowAdd(false)}>
+                ✕
+              </button>
+            </div>
+            <AddGuestForm
+              onAdded={() => afterGuestsChanged('המוזמן נוסף בהצלחה')}
+              onCancel={() => setShowAdd(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

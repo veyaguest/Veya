@@ -6348,6 +6348,30 @@
 .wiz-guests-link {
   align-self: flex-start;
 }
+
+.wiz-add {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface-hi);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.wiz-add-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold-deep);
+}
+.wiz-add-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.wiz-add-note {
+  margin: 0;
+}
+
 .wiz-warn {
   background: #fff6e8;
   border: 1px solid var(--gold-light);
