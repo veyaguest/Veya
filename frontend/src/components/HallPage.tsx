@@ -115,12 +115,14 @@ const WORLD_MIN_H = 560
 // גבולות קנה-המידה של ההתאמה-למסך. תקרה מעל 1 = מרשים הגדלה מתונה כך שאולם
 // קטן/בינוני "ימלא" את המסך והאלמנטים יֵראו נוחים (במקום להיתקע קטנים במרכז).
 // רצפה נמוכה מאוד — לפי בקשת הבעלים "להכניס הכל בכל מחיר" גם באולם ענק.
-const FIT_MAX_SCALE = 2.2
+const FIT_MAX_SCALE = 2.4
 const FIT_MIN_SCALE = 0.08
-// כרית-ביטחון: ה-fit ממלא ~96% מהתצוגה ולא 100%, כך שעיגול תת-פיקסלי או ידיות
-// שבולטות בפיקסל לא "יגלשו" מעבר לקצה ויפעילו פס גלילה. משאיר שוליים זעירים
-// שתמיד מונעים גלילה, בלי לפגוע מורגשות בגודל האלמנטים.
-const FIT_SAFETY = 0.96
+// יעד-מילוי: האולם ממלא ~95% מהתצוגה, ומשאיר ~5% שוליים נוחים מסביב (כמו עורך
+// תוכנית-רצפה מקצועי). זה גם מבטיח שאף פעם אין גלילה — תמיד יש מרווח.
+const FIT_SAFETY = 0.95
+// ריפוד (ביחידות-עולם) שנוסף סביב גבולות התוכן בחישוב ה-fit, כדי שכיסאות/תוויות
+// שבולטים מעט מעבר לקופסת השולחן לא ייגעו בקצה המסך.
+const FIT_CONTENT_PAD = 16
 
 // ---- פרופיל צפיפות: גודל אלמנטים קבוע לפי מספר השולחנות המתוכנן ----
 // במקום להקטין את כל המפה בכל שינוי, מחליטים מראש על גודל האלמנטים לפי כמות
@@ -770,41 +772,63 @@ export function HallPage() {
     const vpW = vp.clientWidth
     const vpH = vp.clientHeight
     if (!vpW || !vpH) return
-    // גבולות התוכן → גודל העולם (אותה נוסחה כמו worldSize memo).
-    let maxX = 0
-    let maxY = 0
+    // ---- Fit Bounds אמיתי (כמו Figma / Google Maps) ----
+    // מחשבים את *גבולות התוכן האמיתיים* (bbox של כל השולחנות והאלמנטים), מתאימים
+    // קנה-מידה שממלא את היעד (~85%), וממרכזים את מרכז-התוכן בדיוק במרכז המסך.
+    // זה מתעלם לחלוטין מגודל "קופסת העולם"/מינימום/ריפוד — כך התוכן תמיד ממורכז
+    // ומלא, בין אם יש 2 שולחנות ובין אם 80.
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
     for (const t of tablesRef.current) {
       const { w, h } = tableSize(t.table_type, presetRef.current)
+      minX = Math.min(minX, t.x)
+      minY = Math.min(minY, t.y)
       maxX = Math.max(maxX, t.x + w)
       maxY = Math.max(maxY, t.y + h)
     }
     for (const el of elementsRef.current) {
+      minX = Math.min(minX, el.x)
+      minY = Math.min(minY, el.y)
       maxX = Math.max(maxX, el.x + el.width)
       maxY = Math.max(maxY, el.y + el.height)
     }
-    const worldW = Math.max(WORLD_MIN_W, Math.ceil(maxX) + WORLD_MARGIN)
-    const worldH = Math.max(WORLD_MIN_H, Math.ceil(maxY) + WORLD_MARGIN)
-    // מכניסים את כל העולם לתצוגה (min של שני היחסים) → אין גלילה כברירת מחדל.
-    // מכפילים בכרית-הביטחון כדי להשאיר שוליים זעירים ולא למלא 100% (מונע גלילה
-    // מעיגול תת-פיקסלי). הכרית מוחלת לפני ה-clamp כך שגם התקרה נשמרת.
-    const s = clamp(Math.min(vpW / worldW, vpH / worldH) * FIT_SAFETY, FIT_MIN_SCALE, FIT_MAX_SCALE)
-    // ממרכזים את העולם המוקטן בתוך אזור התצוגה.
-    const offX = Math.max(0, (vpW - worldW * s) / 2)
-    const offY = Math.max(0, (vpH - worldH * s) / 2)
+    // אין תוכן עדיין — לא משנים כלום (נחכה שהתוכן ייטען ואז נריץ שוב).
+    if (!isFinite(minX)) return
+    // ריפוד קטן (ביחידות-עולם) סביב התוכן כדי שכיסאות/תוויות שבולטים לא ייגעו
+    // בקצה. זה חלק מחישוב ה-fit בלבד.
+    const pad = FIT_CONTENT_PAD
+    const contentW = maxX - minX + pad * 2
+    const contentH = maxY - minY + pad * 2
+    const s = clamp(
+      Math.min(vpW / contentW, vpH / contentH) * FIT_SAFETY,
+      FIT_MIN_SCALE,
+      FIT_MAX_SCALE,
+    )
+    // מרכז התוכן → מרכז אזור-התצוגה. (transformOrigin של .hall-world הוא 0 0,
+    // ולכן offset = מרכז-מסך פחות מרכז-התוכן בקנה-מידה.)
+    const centerX = (minX + maxX) / 2
+    const centerY = (minY + maxY) / 2
+    const offX = vpW / 2 - centerX * s
+    const offY = vpH / 2 - centerY * s
     scaleRef.current = s
     offsetRef.current = { x: offX, y: offY }
     setViewScale(s)
     setViewTransform(`translate(${offX}px, ${offY}px) scale(${s})`)
   }, [])
 
-  // Auto-Fit ראשוני: פעם אחת אחרי שהטעינה הסתיימה והתוכן צויר.
-  const didFitRef = useRef(false)
+  // Auto-Fit: מתאימים מחדש בכל פעם שגודל התוכן (worldSize) משתנה — טעינה, הוספת
+  // שולחן/אלמנט, בנייה מחדש — כך תמיד רואים את *כל* האולם ואף פעם לא נחתך חצי.
+  // חשוב: התלות ב-worldSize פותרת את הבאג המקורי — קודם ההתאמה רצה פעם אחת מוקדם
+  // מדי (לפני שהשולחנות נטענו) וחישבה "אולם ריק", ואז לא רצה שוב. עכשיו היא רצה
+  // כשהתוכן האמיתי מוכן. מדלגים רק בזמן גרירה פעילה כדי לא להילחם באצבע.
   useEffect(() => {
-    if (loading || didFitRef.current) return
-    didFitRef.current = true
+    if (loading) return
+    if (dragRef.current) return
     const id = requestAnimationFrame(() => recomputeFit())
     return () => cancelAnimationFrame(id)
-  }, [loading, recomputeFit])
+  }, [worldSize, loading, recomputeFit])
 
   // שינוי גודל מסך/סיבוב מכשיר — הסביבה השתנתה, אז מתאימים מחדש (לא "זום תוך
   // כדי עבודה"). מדלגים בזמן גרירה כדי לא לקטוע אותה. ResizeObserver יורה גם
@@ -1127,85 +1151,79 @@ export function HallPage() {
     const total = Math.max(0, opts.regular) + Math.max(0, opts.knights)
     const key = densityKeyForCount(total || 1)
     const p = DENSITY_PRESETS[key]
-    const gap = 46 // מרווח מינימלי בין אלמנטים סמוכים
-
-    // עובדים בקואורדינטות-מרכז סביב (0,0), ואז מנרמלים לערכים חיוביים.
+    // ---- פריסת רשת (Grid) חכמה ----
+    // במקום טבעות: שולחנות ברשת מאוזנת, ומעליהם אשכול הרחבה/DJ/בר. מספר העמודות
+    // מסתגל ליחס-המסך (רחב במסך רחב, גבוה במסך צר) כדי לנצל את השטח ביעילות,
+    // ו-Auto-Fit דואג שהכל ייכנס במלואו, ממורכז, בלי גלילה.
     type Placed = { cx: number; cy: number; w: number; h: number }
     const elDefs: { place: Placed; type: HallElementType }[] = []
 
-    const dW = p.dance.w
-    const dH = p.dance.h
-    if (opts.dance) {
-      elDefs.push({ type: 'dance_floor', place: { cx: 0, cy: 0, w: dW, h: dH } })
-    }
-    if (opts.dj) {
-      elDefs.push({
-        type: 'dj',
-        place: { cx: 0, cy: -(dH / 2 + p.dj.h / 2 + 18), w: p.dj.w, h: p.dj.h },
-      })
-    }
-    if (opts.bar) {
-      elDefs.push({
-        type: 'bar',
-        place: { cx: dW / 2 + p.bar.w / 2 + 60, cy: 0, w: p.bar.w, h: p.bar.h },
-      })
-    }
-
-    // רדיוס טבעת ראשונה — מפנה מקום לאשכול המרכזי (רחבה + DJ מעל + בר מהצד).
-    const clusterR = Math.max(
-      dW / 2 + (opts.bar ? p.bar.w + 60 : 0),
-      dH / 2 + (opts.dj ? p.dj.h + 18 : 0),
-    )
-    // סדר: קודם השולחנות העגולים (טבעות פנימיות), ואז האבירים (טבעות חיצוניות,
-    // כי הם ארוכים יותר).
     const types: TableType[] = [
       ...Array(Math.max(0, opts.regular)).fill('round'),
       ...Array(Math.max(0, opts.knights)).fill('knights'),
     ]
+    const anyKnights = opts.knights > 0
+    // תא-רשת אחיד = הטביעה הגדולה ביותר מבין סוגי השולחנות (מונע חפיפה), עם מרווח
+    // דינמי: פחות שולחנות → מרווח נדיב יותר; יותר שולחנות → צפוף יותר. התוספת
+    // הקבועה נותנת מקום לכיסאות שבולטים סביב השולחן.
+    const cellBaseW = anyKnights ? Math.max(p.round, p.knightsW) : p.round
+    const cellBaseH = anyKnights ? Math.max(p.round, p.knightsH) : p.round
+    const gapFactor = clamp(0.42 - total * 0.004, 0.2, 0.42)
+    const cellW = cellBaseW + Math.round(cellBaseW * gapFactor) + 18
+    const cellH = cellBaseH + Math.round(cellBaseH * gapFactor) + 18
+
+    // מספר עמודות לפי יחס-המסך: cols ≈ sqrt(total * aspect) → צורת הרשת תואמת
+    // לצורת המסך, ניצול מיטבי והתאמה הדוקה. מקדם 1.35 מרחיב מעט את הרשת כדי לנצל
+    // טוב יותר את *רוחב* המסך (אחרת נשאר הרבה שטח ריק בצדדים), ומקזז את הגובה
+    // שאשכול הרחבה מוסיף מעל הרשת.
+    const vpEl = viewportRef.current
+    const aspect =
+      (vpEl && vpEl.clientHeight ? clamp(vpEl.clientWidth / vpEl.clientHeight, 0.4, 2.4) : 1.5) * 1.35
+    const cols = clamp(
+      Math.round(Math.sqrt(Math.max(1, total) * aspect)),
+      1,
+      Math.max(1, types.length),
+    )
+    const rows = Math.max(1, Math.ceil(types.length / cols))
+    const gridW = cols * cellW
+    const gridH = rows * cellH
+
     const tablePlaces: { place: Placed; type: TableType }[] = []
-    // "טביעת רגל" זוויתית — הרוחב הגדול של השולחן (אבירים ארוכים יותר). המרווח
-    // בין שני שולחנות סמוכים לוקח בחשבון את *שניהם* (חצי מכל אחד + מרווח),
-    // כדי שמעבר בין עגול צר לאבירים רחב לא ייצור חפיפה.
-    const footOf = (t: TableType) =>
-      t === 'knights' ? Math.max(p.knightsW, p.knightsH) : p.round
-    const pushAt = (t: TableType, ang: number, rad: number) => {
-      const w = t === 'knights' ? p.knightsW : p.round
-      const h = t === 'knights' ? p.knightsH : p.round
-      tablePlaces.push({ type: t, place: { cx: Math.cos(ang) * rad, cy: Math.sin(ang) * rad, w, h } })
-    }
-    let r = clusterR + gap + (types.length ? footOf(types[0]) / 2 : 0)
-    let angle = -Math.PI / 2
-    let angleUsed = 0
-    let ringMaxFoot = 0
-    let stagger = 0
-    let prevHalf = 0 // חצי-רוחב זוויתי של השולחן הקודם שהונח
-    let firstHalf = 0 // חצי-רוחב זוויתי של השולחן הראשון בטבעת הנוכחית
     for (let i = 0; i < types.length; i++) {
       const t = types[i]
-      const foot = footOf(t)
-      const half = Math.asin(clamp(foot / 2 / r, 0, 1))
-      const gapA = gap / r
-      const advance = i === 0 ? 0 : prevHalf + gapA + half
-      // האם אין מקום לשולחן בטבעת הנוכחית בלי להתנגש בשולחן הראשון (התפר)?
-      // שומרים מרווח (gapA) + חצי-הרוחב של השולחן הראשון → טבעת חדשה, רחבה יותר.
-      if (i > 0 && angleUsed + advance + half + gapA + firstHalf > Math.PI * 2) {
-        r += ringMaxFoot / 2 + gap + foot / 2
-        stagger += 0.5
-        angle = -Math.PI / 2 + stagger
-        const half0 = Math.asin(clamp(foot / 2 / r, 0, 1))
-        pushAt(t, angle, r)
-        angleUsed = 0
-        firstHalf = half0
-        ringMaxFoot = foot
-        prevHalf = half0
-        continue
+      const row = Math.floor(i / cols)
+      const col = i % cols
+      // מרכוז שורה אחרונה חלקית כדי שהרשת תיראה מאוזנת.
+      const inThisRow = Math.min(cols, types.length - row * cols)
+      const rowShift = ((cols - inThisRow) * cellW) / 2
+      const cx = col * cellW + cellW / 2 + rowShift - gridW / 2
+      const cy = row * cellH + cellH / 2 - gridH / 2
+      const w = t === 'knights' ? p.knightsW : p.round
+      const h = t === 'knights' ? p.knightsH : p.round
+      tablePlaces.push({ type: t, place: { cx, cy, w, h } })
+    }
+
+    // אשכול מרכזי מעל הרשת: רחבת ריקודים במרכז, DJ מעליה, בר בצד.
+    if (opts.dance || opts.dj || opts.bar) {
+      const dW = p.dance.w
+      const dH = p.dance.h
+      const bandGap = Math.round(cellH * 0.18) + 16
+      const danceCy = -gridH / 2 - bandGap - dH / 2
+      if (opts.dance) {
+        elDefs.push({ type: 'dance_floor', place: { cx: 0, cy: danceCy, w: dW, h: dH } })
       }
-      angle += advance
-      angleUsed += advance
-      pushAt(t, angle, r)
-      if (i === 0) firstHalf = half
-      prevHalf = half
-      ringMaxFoot = Math.max(ringMaxFoot, foot)
+      if (opts.dj) {
+        elDefs.push({
+          type: 'dj',
+          place: { cx: 0, cy: danceCy - dH / 2 - p.dj.h / 2 - 20, w: p.dj.w, h: p.dj.h },
+        })
+      }
+      if (opts.bar) {
+        elDefs.push({
+          type: 'bar',
+          place: { cx: dW / 2 + p.bar.w / 2 + 44, cy: danceCy, w: p.bar.w, h: p.bar.h },
+        })
+      }
     }
 
     // נרמול לקואורדינטות חיוביות (פינה שמאלית-עליונה בריפוד 120). הריפוד משאיר
@@ -1222,8 +1240,8 @@ export function HallPage() {
       minX = 0
       minY = 0
     }
-    const offX = 120 - minX
-    const offY = 120 - minY
+    const offX = 50 - minX
+    const offY = 50 - minY
     const toXY = (pl: Placed) => ({
       x: Math.round(pl.cx - pl.w / 2 + offX),
       y: Math.round(pl.cy - pl.h / 2 + offY),
@@ -2006,6 +2024,28 @@ export function HallPage() {
                       )}
                       {isSel && (
                         <div className="element-toolbar mobile" onPointerDown={(e) => e.stopPropagation()}>
+                          {!el.locked &&
+                            ELEMENT_SHAPES.map((s) => (
+                              <button
+                                key={s.key}
+                                type="button"
+                                className={el.shape === s.key ? 'active' : ''}
+                                title={s.key}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  // בצורה עגולה/ריבועית משווים רוחב=גובה כדי שתֵצא
+                                  // עיגול/ריבוע אמיתי ולא אליפסה/מלבן מעוגל.
+                                  if (s.key === 'circle' || s.key === 'square') {
+                                    const side = Math.round((el.width + el.height) / 2)
+                                    updateElement(el.id, { shape: s.key, width: side, height: side })
+                                  } else {
+                                    updateElement(el.id, { shape: s.key })
+                                  }
+                                }}
+                              >
+                                {s.label}
+                              </button>
+                            ))}
                           <button
                             type="button"
                             title={el.locked ? 'שחרר נעילה' : 'נעל'}

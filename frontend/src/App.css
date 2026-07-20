@@ -6010,6 +6010,43 @@
   opacity: 0.8;
 }
 
+/* --- באנר "נוספו מוזמנים חדשים" (מופיע מעל מסך אישורי ההגעה) --- */
+.new-guests-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, #fff9ec, var(--surface-hi));
+  border: 1px solid var(--gold);
+  border-inline-start: 4px solid var(--gold);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 18px rgba(201, 162, 39, 0.12);
+}
+.new-guests-banner-text {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--charcoal);
+  font-weight: 600;
+  line-height: 1.5;
+}
+.new-guests-banner-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+.new-guests-banner-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+@media (max-width: 560px) {
+  .new-guests-banner-btn {
+    width: 100%;
+  }
+}
+
 /* --- כרטיס סטטוס (המסלול פעיל) --- */
 .track-status {
   background: var(--cream);
@@ -6110,6 +6147,10 @@
   display: grid;
   grid-template-columns: 220px 1fr;
   gap: 20px;
+}
+/* מצב "הזמנה בלבד" — בלי בורר סוגים, העורך תופס את כל הרוחב. */
+.mb-layout.mb-solo {
+  grid-template-columns: 1fr;
 }
 @media (max-width: 720px) {
   .mb-layout {
@@ -7142,11 +7183,12 @@
     flex: 1 1 auto;
     min-height: 0;
     position: relative;
-    overflow: auto; /* גלילה טבעית כשהאולם גדול מהמסך — האלמנטים תמיד בגודל מלא */
-    -webkit-overflow-scrolling: touch;
+    /* אף פעם אין גלילה — ה-Auto-Fit מכניס את כל האולם לתצוגה וממרכז אותו,
+       וכרית-הביטחון (4%) מבטיחה שהתוכן תמיד נכנס במלואו בלי לגלוש. */
+    overflow: hidden;
     background: #fbf6ee;
     direction: ltr; /* קואורדינטות פנימיות LTR (כמו Figma) */
-    touch-action: pan-x pan-y; /* מגע ריק על הרקע → גלילה */
+    touch-action: none; /* אין גלילה/פאן — הכל גלוי ממילא */
   }
   /* גרירת שולחן/אלמנט לא אמורה לגלול את הלוח — המגע עליהם נתפס לגרירה בלבד. */
   .hm-canvas .hall-table,
