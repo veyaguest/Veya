@@ -192,6 +192,116 @@ function elementSizeFor(type: HallElementType, preset: DensityPreset): { w: numb
   return null
 }
 
+export type HallOrientation = 'landscape' | 'portrait'
+
+// ─── פריסת רצועות משותפת ─────────────────────────────────────────────────
+// מחשב מיקומים (פינה שמאלית-עליונה, בקואורדינטות חיוביות) לפריסה מסודרת:
+// DJ + רחבת ריקודים למעלה, רצועת אבירים, הבר במרכז, ורצועת עגולים למטה.
+// האוריינטציה קובעת את *צורת* הרצועות: 'landscape' → שורות רחבות (מעט שורות,
+// הרבה עמודות); 'portrait' → צר וגבוה (מעט עמודות, הרבה שורות). אותה פונקציה
+// משמשת גם ל"בניית אולם" מאפס וגם ל"סידור מחדש" של שולחנות קיימים לפי
+// אוריינטציה — כך שתמיד מקבלים בדיוק את אותה פוזה.
+function buildBandLayout(args: {
+  regular: number
+  knights: number
+  dance: boolean
+  dj: boolean
+  bar: boolean
+  orientation: HallOrientation
+  p: DensityPreset
+}): {
+  round: { x: number; y: number; w: number; h: number }[]
+  knights: { x: number; y: number; w: number; h: number }[]
+  elements: { type: HallElementType; x: number; y: number; w: number; h: number }[]
+} {
+  const { p, orientation } = args
+  const regular = Math.max(0, args.regular)
+  const knights = Math.max(0, args.knights)
+  const total = regular + knights
+
+  // מספר העמודות ברצועה, לפי האוריינטציה:
+  // לרוחב — מעט שורות (2 כברירת מחדל, 3 כשהרבה) ולכן הרבה עמודות.
+  // לאורך — מעט עמודות (2, או 3 כשהרבה) ולכן הרבה שורות → צר וגבוה.
+  const colsFor = (n: number) => {
+    if (n <= 0) return 0
+    if (orientation === 'portrait') return n <= 2 ? n : n <= 12 ? 2 : 3
+    const rows = n <= 2 ? 1 : n <= 16 ? 2 : 3
+    return Math.ceil(n / rows)
+  }
+
+  const gapFactor = clamp(0.42 - total * 0.004, 0.2, 0.42)
+  const roundCell = p.round + Math.round(p.round * gapFactor) + 18
+  const knightCellW = p.knightsW + Math.round(p.knightsW * gapFactor) + 18
+  const knightCellH = p.knightsH + Math.round(p.knightsH * gapFactor) + 18
+  const vGap = Math.round(roundCell * 0.22) + 28
+
+  type CP = { cx: number; cy: number; w: number; h: number }
+  const elDefs: { type: HallElementType; place: CP }[] = []
+  const roundPlaces: CP[] = []
+  const knightPlaces: CP[] = []
+
+  const placeBand = (count: number, cols: number, cellW: number, cellH: number, topY: number, tW: number, tH: number, out: CP[]) => {
+    const rows = Math.max(1, Math.ceil(count / cols))
+    for (let i = 0; i < count; i++) {
+      const row = Math.floor(i / cols)
+      const col = i % cols
+      const inThisRow = Math.min(cols, count - row * cols)
+      const rowW = inThisRow * cellW
+      const cx = col * cellW + cellW / 2 - rowW / 2
+      const cy = topY + row * cellH + cellH / 2
+      out.push({ cx, cy, w: tW, h: tH })
+    }
+    return rows * cellH
+  }
+
+  let topY = 0
+  if (args.dj) {
+    elDefs.push({ type: 'dj', place: { cx: 0, cy: topY + p.dj.h / 2, w: p.dj.w, h: p.dj.h } })
+    topY += p.dj.h + vGap
+  }
+  if (args.dance) {
+    elDefs.push({ type: 'dance_floor', place: { cx: 0, cy: topY + p.dance.h / 2, w: p.dance.w, h: p.dance.h } })
+    topY += p.dance.h + vGap
+  }
+  if (knights > 0) {
+    topY += placeBand(knights, colsFor(knights), knightCellW, knightCellH, topY, p.knightsW, p.knightsH, knightPlaces) + vGap
+  }
+  if (args.bar) {
+    elDefs.push({ type: 'bar', place: { cx: 0, cy: topY + p.bar.h / 2, w: p.bar.w, h: p.bar.h } })
+    topY += p.bar.h + vGap
+  }
+  if (regular > 0) {
+    topY += placeBand(regular, colsFor(regular), roundCell, roundCell, topY, p.round, p.round, roundPlaces)
+  }
+
+  // נרמול לקואורדינטות חיוביות (פינה שמאלית-עליונה בריפוד 50).
+  const all: CP[] = [...elDefs.map((e) => e.place), ...roundPlaces, ...knightPlaces]
+  let minX = Infinity
+  let minY = Infinity
+  for (const pl of all) {
+    minX = Math.min(minX, pl.cx - pl.w / 2)
+    minY = Math.min(minY, pl.cy - pl.h / 2)
+  }
+  if (!isFinite(minX)) {
+    minX = 0
+    minY = 0
+  }
+  const offX = 50 - minX
+  const offY = 50 - minY
+  const toXY = (pl: CP) => ({
+    x: Math.round(pl.cx - pl.w / 2 + offX),
+    y: Math.round(pl.cy - pl.h / 2 + offY),
+    w: pl.w,
+    h: pl.h,
+  })
+
+  return {
+    round: roundPlaces.map(toXY),
+    knights: knightPlaces.map(toXY),
+    elements: elDefs.map((e) => ({ type: e.type, ...toXY(e.place) })),
+  }
+}
+
 interface SeatPoint {
   left: number
   top: number
@@ -519,21 +629,26 @@ function HallWizard(props: {
 // כך שמה שרואים במסגרת הוא בדיוק מה שנשמר. בלי ספריות חיצוניות.
 function SketchEditor(props: {
   src: string
-  aspect: number // יחס מסגרת החיתוך (רוחב/גובה) — נגזר מהקנבס
+  baseAspect: number // יחס הבסיס לרוחב (>1) — לאורך זהו ההפוך שלו
+  orientation: HallOrientation
   onCancel: () => void
-  onConfirm: (dataUrl: string) => void
+  onConfirm: (dataUrl: string, orientation: HallOrientation) => void
 }) {
-  const { src, aspect } = props
+  const { src, baseAspect } = props
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const stageRef = useRef<HTMLDivElement | null>(null)
   const imgRef = useRef<HTMLImageElement | null>(null)
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
+  const [orient, setOrient] = useState<HallOrientation>(props.orientation)
   const [scale, setScale] = useState(1) // 1 = "cover" (ממלא את המסגרת)
   const [rotation, setRotation] = useState(0) // מעלות, בקפיצות של 90°
   const [offset, setOffset] = useState({ x: 0, y: 0 }) // הזזה בפיקסלים של הבמה
   const [tick, setTick] = useState(0) // מאלץ ציור-מחדש בשינוי גודל הבמה
   const dragRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null)
+
+  // יחס מסגרת החיתוך: לרוחב = baseAspect (>1, רחב); לאורך = ההופכי (<1, גבוה).
+  const aspect = orient === 'portrait' ? 1 / baseAspect : baseAspect
 
   // טעינת התמונה. לתמונה שמורה (media URL, אולי ממקור אחר) מבקשים crossOrigin
   // כדי שה-canvas לא "יזדהם" ונוכל לייצא ממנו; ל-data URL זה לא רלוונטי.
@@ -684,7 +799,7 @@ function SketchEditor(props: {
     ctx.setTransform(k, 0, 0, k, -fr.x * k, -fr.y * k)
     paint(ctx, sw, sh, fr, true)
     try {
-      props.onConfirm(out.toDataURL('image/jpeg', 0.85))
+      props.onConfirm(out.toDataURL('image/jpeg', 0.85), orient)
     } catch {
       setFailed(true)
     }
@@ -719,6 +834,24 @@ function SketchEditor(props: {
         )}
 
         <div className="sk-editor-controls">
+          <div className="sk-orient" role="group" aria-label="כיוון האולם">
+            <button
+              type="button"
+              className={orient === 'landscape' ? 'sk-orient-on' : ''}
+              onClick={() => setOrient('landscape')}
+              title="אולם לרוחב"
+            >
+              ▭ לרוחב
+            </button>
+            <button
+              type="button"
+              className={orient === 'portrait' ? 'sk-orient-on' : ''}
+              onClick={() => setOrient('portrait')}
+              title="אולם לאורך"
+            >
+              ▯ לאורך
+            </button>
+          </div>
           <div className="sk-zoom">
             <button type="button" onClick={() => setScale((s) => clamp(s / 1.15, 0.2, 5))} aria-label="הקטנה">
               −
@@ -813,6 +946,9 @@ export function HallPage() {
   const [wzDance, setWzDance] = useState(true)
   const [wzDj, setWzDj] = useState(true)
   const [wzBar, setWzBar] = useState(true)
+  // כיוון האולם (לרוחב/לאורך). נקבע בעורך הסקיצה ומכתיב את סידור רצועות
+  // ההושבה. שינוי כיוון מסדר-מחדש מיד גם שולחנות קיימים (תוך שמירת השיבוצים).
+  const [hallOrientation, setHallOrientation] = useState<HallOrientation>('landscape')
   const [viewTransform, setViewTransform] = useState<string | undefined>(undefined)
   // קנה-המידה הנוכחי של הלוח במובייל (1 בדסקטופ). נחשף כמשתנה CSS כדי
   // שידיות הסיבוב/שינוי-הגודל יישארו בגודל-מסך קבוע ונוח למגע גם כשהלוח מוקטן.
@@ -1407,122 +1543,27 @@ export function HallPage() {
     const total = Math.max(0, opts.regular) + Math.max(0, opts.knights)
     const key = densityKeyForCount(total || 1)
     const p = DENSITY_PRESETS[key]
-    // ---- פריסת רצועות מסודרת ----
-    // מלמעלה למטה: DJ + רחבת ריקודים במרכז, אחר כך רצועת שולחנות אבירים (הארוכים),
-    // הבר במרכז האולם, ולמטה רצועת השולחנות העגולים. כל רצועה נפרשת ל"שורות":
-    // שתיים כברירת מחדל, ושלוש כשיש הרבה שולחנות — כדי שהפוזה תישאר יפה ומאוזנת.
-    // כל הרצועות ממורכזות סביב אותו ציר אנכי (x=0), ו-Auto-Fit דואג שהכל ייכנס
-    // במסך במלואו, ממורכז, בלי גלילה.
-    type Placed = { cx: number; cy: number; w: number; h: number }
-    const elDefs: { place: Placed; type: HallElementType }[] = []
-
-    const regular = Math.max(0, opts.regular)
-    const knights = Math.max(0, opts.knights)
-
-    // מספר השורות ברצועה: 1 למעט־מאוד, 2 כברירת מחדל, 3 כשכמות גדולה.
-    const rowsFor = (n: number) => (n <= 2 ? 1 : n <= 16 ? 2 : 3)
-
-    // תא-רשת = השולחן + מרווח דינמי (פחות שולחנות → נדיב יותר) + תוספת קבועה
-    // למקום לכיסאות שבולטים סביב השולחן.
-    const gapFactor = clamp(0.42 - total * 0.004, 0.2, 0.42)
-    const roundCell = p.round + Math.round(p.round * gapFactor) + 18
-    const knightCellW = p.knightsW + Math.round(p.knightsW * gapFactor) + 18
-    const knightCellH = p.knightsH + Math.round(p.knightsH * gapFactor) + 18
-    const vGap = Math.round(roundCell * 0.22) + 28 // מרווח אנכי בין הרצועות
-
-    const kCols = knights > 0 ? Math.ceil(knights / rowsFor(knights)) : 0
-    const rCols = regular > 0 ? Math.ceil(regular / rowsFor(regular)) : 0
-
-    // פורש רצועת שולחנות מהשורה העליונה שלה (topY) כלפי מטה, ממורכזת ב-x=0.
-    // כל שורה חלקית ממורכזת בפני עצמה. מחזיר את גובה הרצועה.
-    const placeBand = (
-      count: number,
-      cols: number,
-      cellW: number,
-      cellH: number,
-      topY: number,
-      tW: number,
-      tH: number,
-      type: TableType,
-      out: { place: Placed; type: TableType }[],
-    ) => {
-      const rows = Math.max(1, Math.ceil(count / cols))
-      for (let i = 0; i < count; i++) {
-        const row = Math.floor(i / cols)
-        const col = i % cols
-        const inThisRow = Math.min(cols, count - row * cols)
-        const rowW = inThisRow * cellW
-        const cx = col * cellW + cellW / 2 - rowW / 2
-        const cy = topY + row * cellH + cellH / 2
-        out.push({ type, place: { cx, cy, w: tW, h: tH } })
-      }
-      return rows * cellH
-    }
-
-    const roundPlaces: { place: Placed; type: TableType }[] = []
-    const knightPlaces: { place: Placed; type: TableType }[] = []
-    let topY = 0
-
-    // DJ + רחבת ריקודים — למעלה במרכז.
-    if (opts.dj) {
-      elDefs.push({ type: 'dj', place: { cx: 0, cy: topY + p.dj.h / 2, w: p.dj.w, h: p.dj.h } })
-      topY += p.dj.h + vGap
-    }
-    if (opts.dance) {
-      elDefs.push({ type: 'dance_floor', place: { cx: 0, cy: topY + p.dance.h / 2, w: p.dance.w, h: p.dance.h } })
-      topY += p.dance.h + vGap
-    }
-
-    // רצועת אבירים (למעלה).
-    if (knights > 0) {
-      topY += placeBand(knights, kCols, knightCellW, knightCellH, topY, p.knightsW, p.knightsH, 'knights', knightPlaces) + vGap
-    }
-
-    // הבר — במרכז האולם, בין הרצועה העליונה לתחתונה.
-    if (opts.bar) {
-      elDefs.push({ type: 'bar', place: { cx: 0, cy: topY + p.bar.h / 2, w: p.bar.w, h: p.bar.h } })
-      topY += p.bar.h + vGap
-    }
-
-    // רצועת עגולים (למטה).
-    if (regular > 0) {
-      topY += placeBand(regular, rCols, roundCell, roundCell, topY, p.round, p.round, 'round', roundPlaces)
-    }
-
-    // מספור: עגולים 1..N ואז אבירים — נעים לזוג (רוב השולחנות עגולים).
-    const tablePlaces: { place: Placed; type: TableType }[] = [...roundPlaces, ...knightPlaces]
-
-    // נרמול לקואורדינטות חיוביות (פינה שמאלית-עליונה בריפוד 120). הריפוד משאיר
-    // מקום לכיסאות/תוויות שבולטים סביב השולחנות החיצוניים כך שלא "יֵצאו" מגבול
-    // הלוח ויגרמו לפס גלילה.
-    const all = [...elDefs.map((e) => e.place), ...tablePlaces.map((t) => t.place)]
-    let minX = Infinity
-    let minY = Infinity
-    for (const pl of all) {
-      minX = Math.min(minX, pl.cx - pl.w / 2)
-      minY = Math.min(minY, pl.cy - pl.h / 2)
-    }
-    if (!isFinite(minX)) {
-      minX = 0
-      minY = 0
-    }
-    const offX = 50 - minX
-    const offY = 50 - minY
-    const toXY = (pl: Placed) => ({
-      x: Math.round(pl.cx - pl.w / 2 + offX),
-      y: Math.round(pl.cy - pl.h / 2 + offY),
+    // פריסת רצועות מסודרת (ראה buildBandLayout): DJ + רחבה למעלה, אבירים,
+    // בר במרכז, עגולים למטה — בצורה שמתאימה לאוריינטציה הנוכחית של האולם.
+    const layout = buildBandLayout({
+      regular: Math.max(0, opts.regular),
+      knights: Math.max(0, opts.knights),
+      dance: opts.dance,
+      dj: opts.dj,
+      bar: opts.bar,
+      orientation: hallOrientation,
+      p,
     })
 
-    const newElements: HallElement[] = elDefs.map((e, i) => {
+    const newElements: HallElement[] = layout.elements.map((e, i) => {
       const def = ELEMENT_DEFS[e.type]
-      const { x, y } = toXY(e.place)
       return {
         id: `${e.type}-${Date.now()}-${i}`,
         type: e.type,
-        x,
-        y,
-        width: e.place.w,
-        height: e.place.h,
+        x: e.x,
+        y: e.y,
+        width: e.w,
+        height: e.h,
         rotation: 0,
         locked: false,
         label: def.label,
@@ -1531,22 +1572,24 @@ export function HallPage() {
       }
     })
 
-    const newTables: TableView[] = tablePlaces.map((t, i) => {
-      const { x, y } = toXY(t.place)
-      return {
-        table_number: i + 1,
-        x,
-        y,
-        guests: [],
-        table_type: t.type,
-        capacity: defaultCapacityForType(t.type),
-        rotation: 0,
-        name: '',
-        color: '',
-        notes: '',
-        locked: false,
-      }
-    })
+    // מספור: עגולים 1..N ואז אבירים (רוב השולחנות עגולים — נעים לזוג).
+    const orderedTables = [
+      ...layout.round.map((pl) => ({ pl, type: 'round' as TableType })),
+      ...layout.knights.map((pl) => ({ pl, type: 'knights' as TableType })),
+    ]
+    const newTables: TableView[] = orderedTables.map((t, i) => ({
+      table_number: i + 1,
+      x: t.pl.x,
+      y: t.pl.y,
+      guests: [],
+      table_type: t.type,
+      capacity: defaultCapacityForType(t.type),
+      rotation: 0,
+      name: '',
+      color: '',
+      notes: '',
+      locked: false,
+    }))
 
     // בנייה מחדש כשכבר יש אורחים משובצים — מחזירים אותם ל"ללא שולחן".
     const seated = tables.flatMap((t) => t.guests)
@@ -1891,20 +1934,71 @@ export function HallPage() {
     setSketchEditSrc(sketchOriginalRef.current ?? sketch)
   }
 
-  // יחס-הממדים של אזור העבודה — כדי שמסגרת החיתוך תתאים לקנבס ותיפול עליו נקי.
+  // יחס-הבסיס לרוחב (>1) עבור עורך הסקיצה. הכיוון (לרוחב/לאורך) נבחר בעורך
+  // עצמו ומהפך את היחס בעת הצורך, לכן כאן מחזירים תמיד את ה"גודל הרחב":
+  // גוזרים מיחס-הממדים של אזור העבודה, אך מבטיחים ערך גדול מ-1.
   function canvasAspect() {
     const vp = viewportRef.current
     if (vp && vp.clientWidth > 0 && vp.clientHeight > 0) {
-      return clamp(vp.clientWidth / vp.clientHeight, 0.6, 2.4)
+      const r = vp.clientWidth / vp.clientHeight
+      return clamp(r >= 1 ? r : 1 / r, 1.2, 2.4)
     }
     return 1.6
   }
 
-  // אישור העריכה: התמונה ה"אפויה" נשמרת ומוצגת. ההושבה לא נוגעת.
-  function onSketchConfirm(dataUrl: string) {
+  // סידור-מחדש של שולחנות + אלמנטים קיימים לפי כיוון חדש (לרוחב/לאורך), תוך
+  // שמירה מלאה על השיבוצים, המספור והקיבולות — רק המיקומים משתנים. שולחנות
+  // עגולים ואבירים מקבלים את המיקומים מפריסת-הרצועות החדשה לפי סדרם, ואלמנטים
+  // (רחבה/DJ/בר) מקבלים את מיקומם החדש לפי הסוג. שולחנות מסוג אחר לא זזים.
+  function rearrangeForOrientation(orientation: HallOrientation) {
+    const roundCount = tables.filter((t) => t.table_type === 'round').length
+    const knightCount = tables.filter((t) => t.table_type === 'knights').length
+    if (roundCount === 0 && knightCount === 0) return
+    const key = hallLayout?.density ?? densityKeyForCount(tables.length || 1)
+    const p = DENSITY_PRESETS[key]
+    const layout = buildBandLayout({
+      regular: roundCount,
+      knights: knightCount,
+      dance: elements.some((e) => e.type === 'dance_floor'),
+      dj: elements.some((e) => e.type === 'dj'),
+      bar: elements.some((e) => e.type === 'bar'),
+      orientation,
+      p,
+    })
+    setTables((prev) => {
+      let ri = 0
+      let ki = 0
+      return prev.map((t) => {
+        if (t.table_type === 'round' && ri < layout.round.length) {
+          const pl = layout.round[ri++]
+          return { ...t, x: pl.x, y: pl.y }
+        }
+        if (t.table_type === 'knights' && ki < layout.knights.length) {
+          const pl = layout.knights[ki++]
+          return { ...t, x: pl.x, y: pl.y }
+        }
+        return t
+      })
+    })
+    setElements((prev) =>
+      prev.map((el) => {
+        const np = layout.elements.find((le) => le.type === el.type)
+        return np ? { ...el, x: np.x, y: np.y } : el
+      }),
+    )
+    window.setTimeout(() => recomputeFit(), 80)
+  }
+
+  // אישור העריכה: התמונה ה"אפויה" נשמרת ומוצגת. אם הכיוון השתנה (לרוחב/לאורך)
+  // מסדרים-מחדש מיד את השולחנות הקיימים כדי שיתאימו לכיוון — בלי לאבד שיבוצים.
+  function onSketchConfirm(dataUrl: string, orientation: HallOrientation) {
     setSketch(dataUrl)
     setSketchEditSrc(null)
     setDirty(true)
+    if (orientation !== hallOrientation) {
+      setHallOrientation(orientation)
+      rearrangeForOrientation(orientation)
+    }
   }
 
   function removeSketch() {
@@ -3019,7 +3113,8 @@ export function HallPage() {
         {sketchEditSrc && (
           <SketchEditor
             src={sketchEditSrc}
-            aspect={canvasAspect()}
+            baseAspect={canvasAspect()}
+            orientation={hallOrientation}
             onCancel={() => setSketchEditSrc(null)}
             onConfirm={onSketchConfirm}
           />
@@ -3801,7 +3896,8 @@ export function HallPage() {
       {sketchEditSrc && (
         <SketchEditor
           src={sketchEditSrc}
-          aspect={canvasAspect()}
+          baseAspect={canvasAspect()}
+          orientation={hallOrientation}
           onCancel={() => setSketchEditSrc(null)}
           onConfirm={onSketchConfirm}
         />
