@@ -53,9 +53,15 @@ const TABS: { key: Tab; label: string }[] = [
  * מסך אישורי ההגעה. הזוג רואה חוויה פשוטה (מסלול פעיל + עורך הודעות),
  * ואילו אדמין רואה את הלשוניות הטכניות המלאות (אוטומציות/תור/ידני).
  */
-export function RsvpPage({ isAdmin }: { isAdmin: boolean }) {
-  if (!isAdmin) return <CoupleRsvpView />
-  return <AdminRsvpShell />
+export function RsvpPage({
+  isAdmin,
+  onNavigate,
+}: {
+  isAdmin: boolean
+  onNavigate?: (page: 'guests') => void
+}) {
+  if (!isAdmin) return <CoupleRsvpView onNavigate={onNavigate} />
+  return <AdminRsvpShell onNavigate={onNavigate} />
 }
 
 /**
@@ -63,7 +69,7 @@ export function RsvpPage({ isAdmin }: { isAdmin: boolean }) {
  * כי זה הלב של המוצר. מתג קטן מאפשר לעבור לפאנל הניהול הטכני בעת הצורך.
  * זוג רגיל לא רואה את המתג הזה כלל.
  */
-function AdminRsvpShell() {
+function AdminRsvpShell({ onNavigate }: { onNavigate?: (page: 'guests') => void }) {
   const [view, setView] = useState<'couple' | 'admin'>('couple')
   return (
     <>
@@ -83,7 +89,11 @@ function AdminRsvpShell() {
           ניהול טכני
         </button>
       </div>
-      {view === 'couple' ? <CoupleRsvpView /> : <AdminRsvpView />}
+      {view === 'couple' ? (
+        <CoupleRsvpView onNavigate={onNavigate} />
+      ) : (
+        <AdminRsvpView />
+      )}
     </>
   )
 }
@@ -137,7 +147,7 @@ function AdminRsvpView() {
 // שלבי דיאלוג השליחה: סגור / אישור / שולח (התקדמות) / סיכום.
 type SendPhase = 'idle' | 'confirm' | 'sending' | 'summary'
 
-function CoupleRsvpView() {
+function CoupleRsvpView({ onNavigate }: { onNavigate?: (page: 'guests') => void }) {
   const [track, setTrack] = useState<RsvpTrackStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [note, setNote] = useState('')
@@ -172,7 +182,11 @@ function CoupleRsvpView() {
           )
         }
       } else {
+        // לפני שליחה ראשונה: טוענים ספירה מקדימה כדי להזין את שלבי הוויזארד
+        // (כמה מוזמנים מוכנים לשליחה, כמה ללא טלפון תקין).
+        const p = await previewSend()
         setTrack(status)
+        setPreview(p)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון כרגע, ננסה שוב')
@@ -257,13 +271,12 @@ function CoupleRsvpView() {
       {note && <p className="rsvp-note">{note}</p>}
 
       {!active ? (
-        /* לפני שליחה ראשונה — מסך יעודי: עריכת ההזמנה בלבד + שליחה. */
-        <>
-          <ActivateCard onSend={openSendDialog} />
-          <div id="mb-anchor">
-            <MessageBuilder invitationOnly />
-          </div>
-        </>
+        /* לפני שליחה ראשונה — אשף מודרך: עיצוב → מוזמנים → שליחה. */
+        <FirstInviteWizard
+          preview={preview}
+          onSend={openSendDialog}
+          onAddGuests={onNavigate ? () => onNavigate('guests') : undefined}
+        />
       ) : (
         /* אחרי השליחה — נפתחת חוויית אישורי ההגעה המלאה. */
         <>
@@ -651,40 +664,184 @@ function SendConfirmStep({
   )
 }
 
-function ActivateCard({ onSend }: { onSend: () => void }) {
+// שלבי האשף לשליחה הראשונית — מוצגים כפס התקדמות בראש המסך.
+const WIZARD_STEPS = [
+  { n: 1, label: 'עיצוב ההזמנה' },
+  { n: 2, label: 'מוזמנים' },
+  { n: 3, label: 'תצוגה ושליחה' },
+]
+
+/**
+ * אשף שליחת ההזמנה הראשונה — מוביל את הזוג שלב אחר שלב עם פס התקדמות:
+ * (1) עיצוב ההזמנה, (2) בדיקת רשימת המוזמנים, (3) סקירה ושליחה.
+ * המעבר בין השלבים אינו מאבד מידע (כל השלבים נשארים טעונים ורק מוסתרים),
+ * כך שאפשר לחזור אחורה בלי לאבד עריכות. השליחה בפועל נעשית בדיאלוג האישור.
+ */
+function FirstInviteWizard({
+  preview,
+  onSend,
+  onAddGuests,
+}: {
+  preview: InvitationSendPreview | null
+  onSend: () => void
+  onAddGuests?: () => void
+}) {
+  const [step, setStep] = useState(1)
+
+  const total = preview?.total_guests ?? 0
+  const sendable = preview?.not_yet_sent ?? 0
+  const missing = preview?.missing_phone ?? 0
+  const invalid = preview?.invalid_phone ?? 0
+  const badPhone = missing + invalid
+  const pct = ((step - 1) / (WIZARD_STEPS.length - 1)) * 100
+
   return (
-    <div className="track-hero">
-      <span className="track-hero-badge">שלב ראשון · שליחת ההזמנה</span>
-      <h2 className="track-hero-title">שלחו את ההזמנה הראשונה למוזמנים שלכם</h2>
-      <p className="track-hero-sub">
-        ערכו את ההזמנה למטה או בחרו נוסח מוכן מהספרייה, ואז לחצו "שליחת הזמנות".
-        נראה לכם בדיוק לכמה מוזמנים תישלח לפני השליחה. מיד לאחר השליחה ייפתח מסך
-        אישורי ההגעה, ונמשיך לבד: תזכורות עדינות ומעקב טלפוני למי שצריך.
-      </p>
-      <ul className="track-flow">
-        <li><span className="track-flow-num">1</span> עריכת ההזמנה ובחירת נוסח</li>
-        <li><span className="track-flow-num">2</span> שליחת ההזמנה למוזמנים</li>
-        <li><span className="track-flow-num">3</span> פתיחת מסך אישורי ההגעה</li>
-        <li><span className="track-flow-num">4</span> תזכורות ומעקב טלפוני אוטומטיים</li>
-      </ul>
-      <button className="btn-primary track-activate-btn" onClick={onSend}>
-        שליחת הזמנות
-      </button>
-      <span className="track-hero-note">
-        רוצים לערוך את ההזמנה או לבחור נוסח מוכן?{' '}
-        <button
-          type="button"
-          className="track-hero-link"
-          onClick={() =>
-            document
-              .getElementById('mb-anchor')
-              ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          }
-        >
-          עברו לעריכת ההזמנה
-        </button>{' '}
-        למטה.
-      </span>
+    <div className="invite-wizard">
+      {/* פס התקדמות */}
+      <div className="wiz-header">
+        <ol className="wiz-steps">
+          {WIZARD_STEPS.map((s) => (
+            <li
+              key={s.n}
+              className={`wiz-step ${step === s.n ? 'active' : ''} ${
+                step > s.n ? 'done' : ''
+              }`}
+            >
+              <button
+                type="button"
+                className="wiz-step-btn"
+                onClick={() => setStep(s.n)}
+                disabled={s.n > step && !(s.n === step + 1)}
+              >
+                <span className="wiz-step-num">{step > s.n ? '✓' : s.n}</span>
+                <span className="wiz-step-label">{s.label}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+        <div className="wiz-progress">
+          <span className="wiz-progress-fill" style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+
+      {/* ---- שלב 1: עיצוב ההזמנה ---- */}
+      <section className="wiz-panel" hidden={step !== 1}>
+        <div className="wiz-panel-head">
+          <span className="wiz-panel-badge">שלב 1 מתוך 3</span>
+          <h2 className="wiz-title">עיצוב ההזמנה</h2>
+          <p className="wiz-sub">
+            ערכו את נוסח ההזמנה או בחרו נוסח מוכן ומעוצב מהספרייה. תראו תצוגה
+            מקדימה חיה בדיוק כפי שהמוזמנים יראו ב-WhatsApp.
+          </p>
+        </div>
+        <div id="mb-anchor">
+          <MessageBuilder invitationOnly />
+        </div>
+        <div className="wiz-nav">
+          <span />
+          <button className="btn-primary" onClick={() => setStep(2)}>
+            המשך למוזמנים →
+          </button>
+        </div>
+      </section>
+
+      {/* ---- שלב 2: מוזמנים ---- */}
+      <section className="wiz-panel" hidden={step !== 2}>
+        <div className="wiz-panel-head">
+          <span className="wiz-panel-badge">שלב 2 מתוך 3</span>
+          <h2 className="wiz-title">מי מקבל את ההזמנה?</h2>
+          <p className="wiz-sub">
+            בדקו שהרשימה מוכנה. אפשר להוסיף מוזמנים או לתקן מספרי טלפון במסך ניהול
+            המוזמנים, ולחזור לכאן להמשך.
+          </p>
+        </div>
+
+        <div className="auto-stat-grid wiz-guests-grid">
+          <StatCard num={total} label="סה״כ מוזמנים" />
+          <StatCard num={sendable} label="מוכנים לשליחה" tone="ok" />
+          <StatCard num={missing} label="ללא טלפון" tone={missing ? 'wait' : undefined} />
+          <StatCard num={invalid} label="טלפון לא תקין" tone={invalid ? 'err' : undefined} />
+        </div>
+
+        {sendable === 0 ? (
+          <p className="wiz-warn">
+            אין עדיין מוזמנים עם מספר טלפון תקין. הוסיפו מוזמנים כדי שנוכל לשלוח את
+            ההזמנה.
+          </p>
+        ) : (
+          <p className="clar-sub wiz-guests-note">
+            <strong>{sendable}</strong> מוזמנים יקבלו את ההזמנה כעת.
+            {badPhone > 0 &&
+              ` ${badPhone} ללא טלפון תקין לא ייכללו — אפשר לתקן במסך המוזמנים.`}
+          </p>
+        )}
+
+        {onAddGuests && (
+          <button className="btn-ghost wiz-guests-link" onClick={onAddGuests}>
+            עברו למסך ניהול המוזמנים →
+          </button>
+        )}
+
+        <div className="wiz-nav">
+          <button className="btn-ghost" onClick={() => setStep(1)}>
+            ← חזרה
+          </button>
+          <button
+            className="btn-primary"
+            disabled={sendable === 0}
+            onClick={() => setStep(3)}
+          >
+            המשך לתצוגה →
+          </button>
+        </div>
+      </section>
+
+      {/* ---- שלב 3: תצוגה ושליחה ---- */}
+      <section className="wiz-panel" hidden={step !== 3}>
+        <div className="wiz-panel-head">
+          <span className="wiz-panel-badge">שלב 3 מתוך 3</span>
+          <h2 className="wiz-title">כמעט שם — סקירה ושליחה</h2>
+          <p className="wiz-sub">
+            זו הסקירה האחרונה. בלחיצה על "שליחת הזמנות" נציג לכם בדיוק את ההודעה
+            ואת רשימת הנמענים לאישור סופי לפני השליחה.
+          </p>
+        </div>
+
+        <ul className="wiz-review-list">
+          <li>
+            <span>ההזמנה מוכנה לשליחה</span>
+            <span className="wiz-review-ok">✓</span>
+          </li>
+          <li>
+            <span>מוזמנים שיקבלו את ההזמנה</span>
+            <strong>{sendable}</strong>
+          </li>
+          {badPhone > 0 && (
+            <li>
+              <span>ללא טלפון תקין (לא ייכללו)</span>
+              <strong>{badPhone}</strong>
+            </li>
+          )}
+        </ul>
+
+        <p className="clar-sub">
+          מיד לאחר השליחה יתחיל טיימר אישורי ההגעה וייפתח מסך המעקב המלא — תזכורות
+          ומעקב טלפוני יתנהלו אוטומטית.
+        </p>
+
+        <div className="wiz-nav">
+          <button className="btn-ghost" onClick={() => setStep(2)}>
+            ← חזרה
+          </button>
+          <button
+            className="btn-primary track-activate-btn"
+            disabled={sendable === 0}
+            onClick={onSend}
+          >
+            שליחת הזמנות
+          </button>
+        </div>
+      </section>
     </div>
   )
 }

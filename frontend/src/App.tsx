@@ -346,7 +346,9 @@ function App() {
             <DashboardPage onNavigate={(p) => setPage(p)} />
           )}
           {page === 'guests' && <GuestsPage />}
-          {page === 'rsvp' && <RsvpPage isAdmin={user.is_admin} />}
+          {page === 'rsvp' && (
+            <RsvpPage isAdmin={user.is_admin} onNavigate={(p) => setPage(p)} />
+          )}
           {page === 'hall' && <HallPage />}
         </main>
       </div>
