@@ -82,6 +82,10 @@ class Event(Base):
     # [{"id": .., "type": .., "x": .., "y": .., "width": .., "height": .., "label": ..}]
     hall_elements: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     seats_per_table: Mapped[int] = mapped_column(Integer, default=12)
+    # רזרבה מפוזרת: כמה מקומות סה"כ להשאיר פנויים בשיבוץ האוטומטי, מפוזרים
+    # אחיד בין השולחנות הפעילים (למשל 10 → שולחן של 12 מאויש עד 11/10). שולחן
+    # שלם המסומן כרזרבה נשמר בתוך table_positions (is_reserve) ואינו נספר כאן.
+    reserve_seats: Mapped[int] = mapped_column(Integer, default=0)
     # פרופיל הפריסה של האולם (נקבע בהגדרה הראשונית, נשמר נעול):
     # {"density": "spacious|comfortable|compact|dense", "planned_tables": int}
     hall_layout: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)

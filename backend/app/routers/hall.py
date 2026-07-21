@@ -128,6 +128,7 @@ def get_hall(
                 color=str(pos.get("color", "")),
                 notes=str(pos.get("notes", "")),
                 locked=bool(pos.get("locked", False)),
+                is_reserve=bool(pos.get("is_reserve", False)),
             )
         )
 
@@ -146,6 +147,7 @@ def get_hall(
 
     return schemas.HallState(
         seats_per_table=seats,
+        reserve_seats=event.reserve_seats or 0,
         tables=out_tables,
         unassigned=[_guest_out(g) for g in unassigned],
         elements=elements,
@@ -183,6 +185,7 @@ def save_hall(
             "color": t.color,
             "notes": t.notes,
             "locked": t.locked,
+            "is_reserve": t.is_reserve,
         }
         for gid in t.guest_ids:
             if gid in seen:
@@ -200,6 +203,8 @@ def save_hall(
         event.hall_elements = [el.model_dump() for el in payload.elements]
     if payload.seats_per_table:
         event.seats_per_table = payload.seats_per_table
+    if payload.reserve_seats is not None:
+        event.reserve_seats = payload.reserve_seats
     if payload.hall_layout is not None:
         event.hall_layout = payload.hall_layout.model_dump()
     # סקיצת האולם: None => לא נגענו; "" => מחיקה; data URL => בלוב חדש;

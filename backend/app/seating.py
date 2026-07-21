@@ -262,6 +262,107 @@ def _reasons_for(party, members, tid, norms, preferences) -> list[str]:
     return reasons[:3]
 
 
+def recommend_seats(
+    guest: dict,
+    tables: list[dict],
+    forbidden_pairs: Optional[list[tuple[int, int]]] = None,
+    together_pairs: Optional[list[tuple[int, int]]] = None,
+    zones: Optional[dict] = None,
+    guest_prefs: Optional[list[dict]] = None,
+    include_reserve: bool = True,
+    top_n: int = 3,
+) -> list[dict]:
+    """ממליץ על השולחנות המתאימים ביותר לשבץ בהם מוזמן בודד (מצב יום האירוע).
+
+    דטרמיניסטי לחלוטין — אותו קלט נותן אותה תשובה. ה-LLM לא מעורב: אותם משקלים
+    בדיוק כמו במנוע השיבוץ (צד/קבוצה/"לשבת עם" + העדפות מיקום). לא משבץ — רק
+    מדרג מועמדים כשירים ומצרף "למה". שולחן פסול (אין מקום / זוג אסור) נשמט.
+
+    guest: {id, side, group_type, party_size}
+    tables: [{table_number, name, capacity, is_reserve, x, y,
+              members: [{id, side, group_type, size}]}]
+    zones / guest_prefs: כמו במנוע — לניקוד העדפות מיקום מההערות.
+    """
+    forbidden: set = set()
+    for a, b in (forbidden_pairs or []):
+        forbidden.add((min(a, b), max(a, b)))
+    together: set = set()
+    for a, b in (together_pairs or []):
+        together.add((min(a, b), max(a, b)))
+
+    gid = guest["id"]
+    gside = guest.get("side", "shared")
+    ggroup = guest.get("group_type", "other")
+    gsize = max(1, int(guest.get("party_size", 1)))
+
+    # נורמות אזור לניקוד העדפות מיקום — רק אם יש מיקומי שולחנות והעדפות.
+    positions = {
+        int(t["table_number"]): (float(t.get("x", 0)), float(t.get("y", 0)))
+        for t in tables
+        if "x" in t and "y" in t
+    }
+    norms = _zone_norms(positions, zones or {}) if (positions and guest_prefs) else {}
+
+    out: list[dict] = []
+    for t in tables:
+        tnum = int(t["table_number"])
+        is_reserve = bool(t.get("is_reserve", False))
+        if is_reserve and not include_reserve:
+            continue
+        members = t.get("members", [])
+        used = sum(int(m.get("size", 1)) for m in members)
+        cap = int(t.get("capacity", 12))
+        free = cap - used
+        if free < gsize:
+            continue  # אין מספיק מקום — פסול
+        if any(
+            (min(gid, int(m["id"])), max(gid, int(m["id"]))) in forbidden
+            for m in members
+        ):
+            continue  # זוג "לא לשבת יחד" — פסול (חוק קשיח)
+
+        score = 0.0
+        for m in members:
+            mid = int(m["id"])
+            if m.get("side") == gside and gside != "shared":
+                score += SAME_SIDE_BONUS
+            if m.get("group_type") == ggroup and ggroup != "other":
+                score += SAME_GROUP_BONUS
+            if (min(gid, mid), max(gid, mid)) in together:
+                score += TOGETHER_BONUS
+
+        reasons: list[str] = []
+        if guest_prefs and norms:
+            for pr in guest_prefs:
+                contrib = _pref_contrib(pr, tnum, norms)
+                if contrib:
+                    score += STRONG_PREF_WEIGHT * contrib
+                if contrib >= SATISFY_THRESHOLD:
+                    reasons.append(pr["reason"])
+        if any(m.get("group_type") == ggroup and ggroup != "other" for m in members):
+            reasons.append("יושבים ליד בני הקבוצה שלכם")
+        elif any(m.get("side") == gside and gside != "shared" for m in members):
+            reasons.append("יושבים בצד המתאים (חתן/כלה)")
+        if is_reserve:
+            reasons.append("שולחן רזרבה פנוי")
+
+        out.append(
+            {
+                "table_number": tnum,
+                "table_name": str(t.get("name", "")),
+                "is_reserve": is_reserve,
+                "free_seats": free,
+                "score": round(score, 2),
+                "reasons": reasons[:3],
+            }
+        )
+
+    # דירוג: ניקוד חברתי גבוה קודם; בשוויון מעדיפים שולחן פעיל (לא לבזבז רזרבה),
+    # אז יותר מקום פנוי, אז מספר שולחן נמוך — הכל דטרמיניסטי.
+    out.sort(key=lambda r: (-r["score"], r["is_reserve"], -r["free_seats"], r["table_number"]))
+    return out[:top_n]
+
+
 def generate_seating(
     guests: list[dict],
     seats_per_table: int,

@@ -126,12 +126,23 @@ class SeatingRequest(BaseModel):
     only_confirmed: bool = False              # לשבץ רק מי שאישר הגעה
     persist: bool = False                     # לשמור table_number חזרה על המוזמנים
     forbidden_pairs: list[tuple[int, int]] = []  # זוגות "לא לשבת יחד" (שלב 4)
+    # רזרבה מפוזרת: כמה מקומות סה"כ להשאיר פנויים, מפוזרים אחיד בין השולחנות
+    # הפעילים. None => להשתמש בערך השמור על האירוע. שולחנות רזרבה (is_reserve)
+    # מוצאים מהשיבוץ האוטומטי בנפרד.
+    reserve_seats: Optional[int] = None
 
     @field_validator("seats_per_table")
     @classmethod
     def _seats_positive(cls, v: int) -> int:
         if v < 1:
             raise ValueError("מספר הכיסאות לשולחן חייב להיות לפחות 1")
+        return v
+
+    @field_validator("reserve_seats")
+    @classmethod
+    def _reserve_nonneg(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 0:
+            raise ValueError("מספר מקומות הרזרבה לא יכול להיות שלילי")
         return v
 
 
@@ -359,6 +370,9 @@ class HallTable(BaseModel):
     color: str = ""           # צבע מותאם (hex); ריק = ברירת מחדל לפי סוג
     notes: str = ""
     locked: bool = False
+    # שולחן רזרבה — אינו מקבל אורחים בשיבוץ האוטומטי, מסומן במפה בתג "רזרבה".
+    # שיבוץ ידני אליו (ביום האירוע) מותר.
+    is_reserve: bool = False
 
 
 class HallElement(BaseModel):
@@ -390,6 +404,8 @@ class HallLayout(BaseModel):
 
 class HallState(BaseModel):
     seats_per_table: int
+    # רזרבה מפוזרת: כמה מקומות סה"כ להשאיר פנויים בשיבוץ האוטומטי (0 = ללא).
+    reserve_seats: int = 0
     tables: list[HallTable]
     unassigned: list[HallGuest]          # מוזמנים ללא שולחן
     elements: list[HallElement]          # אלמנטים מיוחדים במפה
@@ -415,6 +431,7 @@ class HallTableSave(BaseModel):
     color: str = Field(default="", max_length=20)
     notes: str = Field(default="", max_length=400)
     locked: bool = False
+    is_reserve: bool = False
 
 
 class SaveHallRequest(BaseModel):
@@ -423,6 +440,64 @@ class SaveHallRequest(BaseModel):
     elements: Optional[list[HallElement]] = None
     sketch: Optional[str] = None         # None => לא לשנות; מחרוזת ריקה => למחוק
     hall_layout: Optional[HallLayout] = None  # None => לא לשנות
+    reserve_seats: Optional[int] = None  # None => לא לשנות; 0 = ללא רזרבה מפוזרת
+
+    @field_validator("reserve_seats")
+    @classmethod
+    def _reserve_nonneg(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 0:
+            raise ValueError("מספר מקומות הרזרבה לא יכול להיות שלילי")
+        return v
+
+
+# ---- רזרבה חכמה: סיכום, המלצת שיבוץ ושיבוץ מהיר (מצב יום האירוע) ----
+
+
+class ReserveSummary(BaseModel):
+    """תמונת מצב הרזרבה — לכרטיס הדשבורד ולפאנל 'מצב יום האירוע'."""
+
+    reserve_seats: int          # יעד הרזרבה המפוזרת שהוגדר
+    reserve_tables: int         # כמה שולחנות מסומנים כרזרבה
+    reserve_tables_capacity: int  # סך המקומות בשולחנות הרזרבה
+    free_seats_active: int      # מקומות פנויים בשולחנות הפעילים (לא-רזרבה)
+    seated_people: int          # כמה אנשים כבר משובצים
+    unseated_guests: int        # מוזמנים ללא שולחן (חבורות)
+
+
+class SeatRecommendation(BaseModel):
+    """המלצת שולחן בודדת לשיבוץ מהיר — עם 'למה' קצר ומקומות פנויים."""
+
+    table_number: int
+    table_name: str = ""
+    is_reserve: bool = False
+    free_seats: int             # מקומות פנויים בשולחן הזה כרגע
+    score: float                # ניקוד רך (גבוה = התאמה חברתית טובה יותר)
+    reasons: list[str]          # "למה כאן" — קבוצה/צד/העדפה
+
+
+class RecommendSeatRequest(BaseModel):
+    guest_id: int
+    include_reserve: bool = True   # לכלול שולחנות רזרבה כמועמדים (יום האירוע)
+
+
+class RecommendSeatResponse(BaseModel):
+    guest_id: int
+    guest_name: str
+    seats_needed: int
+    recommendations: list[SeatRecommendation]
+
+
+class AssignSeatRequest(BaseModel):
+    """שיבוץ מהיר בקליק אחד (מצב יום האירוע). None => החזרה ל'ללא שולחן'."""
+
+    guest_id: int
+    table_number: Optional[int] = None
+
+
+class AssignSeatResult(BaseModel):
+    guest_id: int
+    table_number: Optional[int]
+    warnings: list[str] = []       # חריגת קיבולת / זוג "לא לשבת יחד" (לא חוסם)
 
 
 # ---- משתמשים והתחברות (שלב 8) ----
