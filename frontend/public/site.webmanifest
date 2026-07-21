@@ -1,0 +1,15 @@
+{
+  "name": "VEYA — ניהול חתונות חכם",
+  "short_name": "VEYA",
+  "description": "מערכת חכמה לניהול חתונה: אישורי הגעה, ניהול מוזמנים וסידורי הושבה.",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0a0c",
+  "theme_color": "#0b0a0c",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/logo.png", "sizes": "1224x1067", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
@@ -10,19 +12,21 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#0b0a0c" />
-    <title>VEYA — ניהול חתונות</title>
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://veya-snowy.vercel.app/" />
+    <title>VEYA — ניהול חתונות חכם: אישורי הגעה, מוזמנים והושבה</title>
     <meta
       name="description"
-      content="VEYA — מערכת חכמה לניהול מוזמנים, אישורי הגעה (RSVP) וסידורי הושבה לחתונות."
+      content="VEYA — מערכת חכמה לניהול חתונה: אישורי הגעה (RSVP) בוואטסאפ, ניהול רשימת מוזמנים וסידורי הושבה אוטומטיים. פחות לחץ, יותר שליטה — הכול במקום אחד."
     />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="VEYA" />
-    <meta property="og:title" content="VEYA — ניהול חתונות" />
+    <meta property="og:title" content="VEYA — ניהול חתונות חכם: אישורי הגעה, מוזמנים והושבה" />
     <meta
       property="og:description"
-      content="VEYA — מערכת חכמה לניהול מוזמנים, אישורי הגעה (RSVP) וסידורי הושבה לחתונות."
+      content="מערכת חכמה לניהול חתונה: אישורי הגעה בוואטסאפ, ניהול מוזמנים וסידורי הושבה אוטומטיים. פחות לחץ, יותר שליטה — הכול במקום אחד."
     />
     <meta property="og:url" content="https://veya-snowy.vercel.app/" />
     <meta property="og:image" content="https://veya-snowy.vercel.app/og-image.png" />
@@ -33,10 +37,10 @@
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="VEYA — ניהול חתונות" />
+    <meta name="twitter:title" content="VEYA — ניהול חתונות חכם: אישורי הגעה, מוזמנים והושבה" />
     <meta
       name="twitter:description"
-      content="VEYA — מערכת חכמה לניהול מוזמנים, אישורי הגעה (RSVP) וסידורי הושבה לחתונות."
+      content="מערכת חכמה לניהול חתונה: אישורי הגעה בוואטסאפ, ניהול מוזמנים וסידורי הושבה אוטומטיים. פחות לחץ, יותר שליטה — הכול במקום אחד."
     />
     <meta name="twitter:image" content="https://veya-snowy.vercel.app/og-image.png" />
 
@@ -46,6 +50,42 @@
       href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Heebo:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@300;400;500;700&family=Cormorant+Garamond:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+
+    <!-- Structured Data (Schema.org) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://veya-snowy.vercel.app/#organization",
+            "name": "VEYA",
+            "url": "https://veya-snowy.vercel.app/",
+            "logo": "https://veya-snowy.vercel.app/logo.png",
+            "description": "מערכת חכמה לניהול חתונה: אישורי הגעה, ניהול מוזמנים וסידורי הושבה.",
+            "areaServed": "IL"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://veya-snowy.vercel.app/#website",
+            "url": "https://veya-snowy.vercel.app/",
+            "name": "VEYA",
+            "inLanguage": "he-IL",
+            "publisher": { "@id": "https://veya-snowy.vercel.app/#organization" }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "VEYA",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "url": "https://veya-snowy.vercel.app/",
+            "inLanguage": "he-IL",
+            "description": "מערכת חכמה לניהול חתונה: אישורי הגעה (RSVP) בוואטסאפ, ניהול רשימת מוזמנים וסידורי הושבה אוטומטיים.",
+            "publisher": { "@id": "https://veya-snowy.vercel.app/#organization" }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

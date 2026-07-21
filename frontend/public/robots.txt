@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /confirm/
+
+Sitemap: https://veya-snowy.vercel.app/sitemap.xml
