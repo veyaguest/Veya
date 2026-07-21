@@ -150,6 +150,15 @@ class SeatingTableRead(BaseModel):
     parties: list[SeatingPartyRead]
 
 
+class SeatingExplanation(BaseModel):
+    """הסבר קצר "למה שובץ כאן" — מוצג לזוג אחרי סידור אוטומטי (שקיפות = אמון)."""
+
+    guest_id: int
+    full_name: str
+    table_number: int
+    reasons: list[str]
+
+
 class SeatingResponse(BaseModel):
     tables: list[SeatingTableRead]
     total_people: int
@@ -159,6 +168,8 @@ class SeatingResponse(BaseModel):
     hard_ok: bool
     unseated: list[int]
     persisted: bool
+    # הסברי שיבוץ למוזמנים שהיו להם העדפה מההערות (רשימה יכולה להיות ריקה).
+    explanations: list[SeatingExplanation] = []
 
 
 # ---- פרסור הערות + הבהרות (שלב 4) ----

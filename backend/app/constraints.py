@@ -175,3 +175,172 @@ def build_forbidden_pairs(guests: list[dict]) -> list[tuple[int, int]]:
 def build_together_pairs(guests: list[dict]) -> list[tuple[int, int]]:
     """זוגות "לשבת יחד" (העדפה) מיחסי together שנפתרו."""
     return _pairs_of_type(guests, "together")
+
+
+# מילות פתיחה שמסמנות "משפחה שלמה" — היעד הוא שם משפחה, לא אדם בודד.
+_FAMILY_PREFIXES = ("משפחת", "משפחה", "למשפחת", "למשפחה", "משפ'", "משפ")
+
+
+def match_all_ids(target: str, all_guests: list[dict], self_id: int) -> list[int]:
+    """מרחיב שם-יעד ל*כל* המוזמנים התואמים (בשונה מ-resolve_name שבוחר אחד):
+
+    - "משפחת כהן" / "משפחה כהן" → כל מי ששם המשפחה מופיע בשמו המלא.
+    - שם מלא ("רותי כהן") → כל ההתאמות המדויקות.
+    - שם פרטי בלבד ("דני") → כל המוזמנים שיש להם המילה הזו בשם.
+
+    all_guests: [{id, full_name}] · self_id: המוזמן שכתב את ההערה (מוחרג תמיד).
+    """
+    t = " ".join((target or "").split())
+    if not t:
+        return []
+    toks = t.split()
+    others = [g for g in all_guests if g["id"] != self_id]
+
+    # "משפחת X" → כל בני המשפחה (שם המשפחה מופיע בשם המלא).
+    if toks[0] in _FAMILY_PREFIXES and len(toks) >= 2:
+        surname_toks = toks[1:]
+        ids = [
+            g["id"] for g in others
+            if all(s in g["full_name"].split() for s in surname_toks)
+        ]
+        return sorted(set(ids))
+
+    # שם מלא מדויק — אם יש התאמות, מחזירים את כולן.
+    exact = [g["id"] for g in others if " ".join(g["full_name"].split()) == t]
+    if exact:
+        return sorted(set(exact))
+
+    # שם חלקי / שם פרטי בלבד → כל ההתאמות (כל ה"דנים" באולם).
+    ids: list[int] = []
+    for g in others:
+        gtoks = g["full_name"].split()
+        if len(toks) >= 2:
+            if all(tok in gtoks for tok in toks):
+                ids.append(g["id"])
+        elif toks[0] in gtoks:
+            ids.append(g["id"])
+    return sorted(set(ids))
+
+
+def build_pairs_from_guests(
+    guests: list[dict],
+) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
+    """בונה ישירות מהערות המוזמנים את זוגות ה-avoid (קשיח) וה-together (רך),
+    כשכל שם-יעד מורחב ל*כל* המוזמנים התואמים — שם פרטי כולל את כל בעלי השם,
+    ו"משפחת X" כולל את כל בני המשפחה.
+
+    נגזר טרי מ-notes_raw (לא מסתמך על constraints_parsed השמור), כדי שכללי
+    "לא לשבת יחד" / "לשבת יחד" ייאכפו תמיד בסידור האוטומטי.
+
+    guests: [{id, full_name, notes_raw}] · מחזיר: (forbidden_pairs, together_pairs)
+    """
+    name_dicts = [{"id": g["id"], "full_name": g.get("full_name", "")} for g in guests]
+    forbidden: set[tuple[int, int]] = set()
+    together: set[tuple[int, int]] = set()
+    for g in guests:
+        for rel in parse_relations(g.get("notes_raw") or ""):
+            ids = match_all_ids(rel["target_text"], name_dicts, g["id"])
+            bucket = forbidden if rel["type"] == "avoid" else together
+            for m in ids:
+                bucket.add((min(g["id"], m), max(g["id"], m)))
+    return sorted(forbidden), sorted(together)
+
+
+# ---------------------------------------------------------------------------
+# העדפות מיקום ונגישות (שלב "הושבה חכמה") — מבוסס-כללים, בלי LLM.
+#
+# מזהה מההערות ביטויים כמו "ליד הרחבה" / "רחוק מהרעש" / "מבוגרים" / "בהריון"
+# והופך אותם ל"העדפות" מובנות: {zone, dir, priority, reason}. אלו אינן חוקים
+# קשיחים — הן ניקוד רך-חזק שמנוע השיבוץ שוקלל לפי מיקום השולחן באולם.
+#
+# zone: "dance_floor" | "bar" | "entrance" | "loud" | "accessible"
+# dir:  "near" (רוצים קרוב) | "far" (רוצים רחוק)
+# ---------------------------------------------------------------------------
+
+_NEAR_DANCE = [
+    "ליד הרחבה", "קרוב לרחבה", "על יד הרחבה", "ליד רחבת", "קרוב לרחבת",
+    "רחבת הריקודים", "אוהבים לרקוד", "אוהבת לרקוד", "אוהב לרקוד",
+    "רוצים לרקוד", "רוצה לרקוד", "ליד הריקודים", "קרוב לריקודים",
+]
+_NEAR_BAR = ["ליד הבר", "קרוב לבר", "על יד הבר", "צמוד לבר", "קרובים לבר"]
+_NEAR_ENTRANCE = [
+    "ליד הכניסה", "קרוב לכניסה", "ליד היציאה", "קרוב ליציאה",
+    "צריך לצאת מוקדם", "צריכים לצאת מוקדם", "עוזבים מוקדם", "עוזב מוקדם",
+    "יוצאים מוקדם", "יוצא מוקדם", "יוצאת מוקדם",
+]
+_FAR_LOUD = [
+    "רחוק מהרעש", "רחוק מרעש", "רחוק מהמוזיקה", "רחוק ממוזיקה",
+    "רחוק מהרמקולים", "רחוק מהרמקול", "רחוק מהבמה", "רחוק מהדיג'יי",
+    "רחוק מהדי.ג'יי", "רחוק מהדיג׳יי", "לא ליד הרמקולים", "לא ליד הרעש",
+    "מקום שקט", "פינה שקטה", "רוצים שקט", "רוצה שקט", "צריכים שקט", "צריך שקט",
+]
+_WHEELCHAIR = [
+    "כיסא גלגלים", "כסא גלגלים", "כיסה גלגלים", "נגישות", "נגיש", "נכה",
+    "מוגבל בניידות", "מוגבלת בניידות", "הליכון", "קביים", "מתקשה בהליכה",
+]
+_ELDERLY = [
+    "מבוגר", "מבוגרת", "מבוגרים", "קשיש", "קשישה", "קשישים", "קשישות",
+    "סבא", "סבתא", "גיל שלישי", "הורים מבוגרים",
+]
+_PREGNANT = ["בהריון", "בהיריון", "הרה", "אישה בהריון"]
+
+
+def parse_preferences(note: str) -> list[dict]:
+    """מפרק הערה חופשית להעדפות מיקום/נגישות מובנות (ללא כפילויות)."""
+    prefs: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+    if not note:
+        return prefs
+
+    def add(zone: str, direction: str, reason: str) -> None:
+        key = (zone, direction)
+        if key in seen:
+            return
+        seen.add(key)
+        prefs.append({"zone": zone, "dir": direction, "priority": "strong", "reason": reason})
+
+    def has(triggers: list[str]) -> bool:
+        return any(t in note for t in triggers)
+
+    if has(_NEAR_DANCE):
+        add("dance_floor", "near", "קרוב לרחבת הריקודים, כפי שביקשתם")
+    if has(_NEAR_BAR):
+        add("bar", "near", "קרוב לבר, כפי שביקשתם")
+    if has(_NEAR_ENTRANCE):
+        add("entrance", "near", "קרוב לכניסה, לנוחות יציאה")
+    if has(_FAR_LOUD):
+        add("loud", "far", "רחוק מהרעש והמוזיקה, כפי שביקשתם")
+    if has(_WHEELCHAIR):
+        add("accessible", "near", "נגיש וקרוב לכניסה")
+    if has(_ELDERLY):
+        add("loud", "far", "מותאם למבוגרים — רחוק מהרעש")
+        add("accessible", "near", "מותאם למבוגרים — נגיש וקרוב לכניסה")
+    if has(_PREGNANT):
+        add("loud", "far", "מותאם למי שבהריון — רחוק מהרעש")
+        add("accessible", "near", "נגיש וקרוב לכניסה")
+    return prefs
+
+
+def guest_preferences(
+    notes_raw: Optional[str],
+    guest_note: Optional[str],
+    group_note: Optional[str],
+) -> list[dict]:
+    """מאחד העדפות ממספר מקורות: הערת הבעלים, הערת המוזמן, והערת הקבוצה.
+
+    ללא כפילויות לפי (zone, dir). מקור "group" מקבל ניסוח שמסביר שזו העדפת קבוצה.
+    """
+    out: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+    for text, src in ((notes_raw, "guest"), (guest_note, "guest"), (group_note, "group")):
+        for p in parse_preferences(text or ""):
+            key = (p["zone"], p["dir"])
+            if key in seen:
+                continue
+            seen.add(key)
+            item = dict(p)
+            item["source"] = src
+            if src == "group":
+                item["reason"] = "לפי הערת הקבוצה — " + item["reason"]
+            out.append(item)
+    return out
