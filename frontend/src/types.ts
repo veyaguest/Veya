@@ -251,6 +251,13 @@ export interface SeatingTable {
   parties: SeatingParty[]
 }
 
+export interface SeatingExplanation {
+  guest_id: number
+  full_name: string
+  table_number: number
+  reasons: string[]
+}
+
 export interface SeatingResult {
   tables: SeatingTable[]
   total_people: number
@@ -260,6 +267,7 @@ export interface SeatingResult {
   hard_ok: boolean
   unseated: number[]
   persisted: boolean
+  explanations?: SeatingExplanation[]
 }
 
 export interface SeatingRequest {

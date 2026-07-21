@@ -17,6 +17,7 @@ import type {
   HallGuest,
   HallLayout,
   HallState,
+  SeatingExplanation,
   TableType,
 } from '../types'
 import { GROUP_LABELS, SIDE_LABELS } from '../types'
@@ -923,6 +924,8 @@ export function HallPage() {
   const [saving, setSaving] = useState(false)
   const [savedTick, setSavedTick] = useState(false) // הבהוב "נשמר ✓" קצר
   const [error, setError] = useState('')
+  // הסברי "למה שובץ כאן" מהסידור האוטומטי האחרון — מוצגים בפאנל סיכום שאפשר לסגור.
+  const [seatExplain, setSeatExplain] = useState<SeatingExplanation[]>([])
 
   // ---- מגש "ללא שולחן" (צד ימין): חיפוש כדי למצוא מוזמן ברשימה ארוכה ----
   const [traySearch, setTraySearch] = useState('')
@@ -2135,6 +2138,8 @@ export function HallPage() {
       if (!res.hard_ok) {
         setError('לא הצלחנו לסדר את כולם בלי להתנגש בהעדפות — כדאי להוסיף מקומות לשולחן.')
       }
+      // הסברי "למה שובץ כאן" — מציגים למי שהמערכת זיהתה לו העדפה מההערות.
+      setSeatExplain(res.explanations ?? [])
       applyState(await getHall())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'לא הצלחנו לסדר כרגע, ננסה שוב')
@@ -3058,6 +3063,51 @@ export function HallPage() {
                     </button>
                   </div>
                 </>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ---- סיכום "מה VEYA הבינה מההערות" אחרי סידור אוטומטי ---- */}
+        {seatExplain.length > 0 && (
+          <>
+            <div className="hm-explain-backdrop" onClick={() => setSeatExplain([])} />
+            <div className="hm-explain" role="dialog" aria-label="הסבר השיבוץ האוטומטי">
+              <button
+                className="hm-explain-close"
+                onClick={() => setSeatExplain([])}
+                aria-label="סגירה"
+              >
+                ×
+              </button>
+              <div className="hm-explain-head">
+                <span className="hm-explain-spark">✨</span>
+                <div>
+                  <h3 className="hm-explain-title">סידרנו לפי ההערות שלכם</h3>
+                  <p className="hm-explain-sub">
+                    VEYA הביאה בחשבון בקשות מיקום ונגישות — הנה כמה דוגמאות:
+                  </p>
+                </div>
+              </div>
+              <ul className="hm-explain-list">
+                {seatExplain.slice(0, 6).map((ex) => (
+                  <li key={ex.guest_id} className="hm-explain-item">
+                    <div className="hm-explain-row">
+                      <b>{ex.full_name}</b>
+                      <span className="hm-explain-table">שולחן {ex.table_number}</span>
+                    </div>
+                    <ul className="hm-explain-reasons">
+                      {ex.reasons.map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+              {seatExplain.length > 6 && (
+                <p className="hm-explain-more">
+                  ועוד {seatExplain.length - 6} מוזמנים סודרו לפי ההעדפות שלהם
+                </p>
               )}
             </div>
           </>
