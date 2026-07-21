@@ -799,7 +799,7 @@ class AdminDashboardEvent(BaseModel):
     """אירוע בתצוגת "האירועים האחרונים" בלוח הבקרה."""
 
     id: int
-    couple: str                    # "חתן · כלה"
+    couple: str                    # שמות בעלי האירוע, לכל סוגי האירוע ("חתן · כלה" לחתונה)
     venue_name: str
     owner_email: Optional[str]
     event_date: str                # YYYY-MM-DD (יכול להיות ריק)

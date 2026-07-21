@@ -24,6 +24,8 @@ import random
 from dataclasses import dataclass
 from typing import Optional
 
+from app.event_terms import side_axis_label
+
 # ניקוד חוקים רכים: תגמול על זוג חבורות באותו שולחן.
 SAME_SIDE_BONUS = 3    # אותו צד (חתן/כלה)
 SAME_GROUP_BONUS = 2   # אותה קבוצה (משפחה קרובה/חברים/עבודה...)
@@ -239,7 +241,7 @@ def _local_search(assignment, caps, forbidden, together, pref_score, rng) -> Non
                 assignment[t1].insert(i1, p1)
 
 
-def _reasons_for(party, members, tid, norms, preferences) -> list[str]:
+def _reasons_for(party, members, tid, norms, preferences, event_type: str | None = "wedding") -> list[str]:
     """הסבר קצר בעברית למה החבורה שובצה כאן — העדפות שסופקו + קרבה לקבוצה/צד."""
     reasons: list[str] = []
     prefs = preferences.get(party.id) if preferences else None
@@ -258,7 +260,7 @@ def _reasons_for(party, members, tid, norms, preferences) -> list[str]:
     if same_group:
         reasons.append("יושבים ליד בני הקבוצה שלכם")
     elif same_side:
-        reasons.append("יושבים בצד המתאים (חתן/כלה)")
+        reasons.append(f"יושבים בצד המתאים ({side_axis_label(event_type)})")
     return reasons[:3]
 
 
@@ -271,6 +273,7 @@ def recommend_seats(
     guest_prefs: Optional[list[dict]] = None,
     include_reserve: bool = True,
     top_n: int = 3,
+    event_type: str | None = "wedding",
 ) -> list[dict]:
     """ממליץ על השולחנות המתאימים ביותר לשבץ בהם מוזמן בודד (מצב יום האירוע).
 
@@ -342,7 +345,7 @@ def recommend_seats(
         if any(m.get("group_type") == ggroup and ggroup != "other" for m in members):
             reasons.append("יושבים ליד בני הקבוצה שלכם")
         elif any(m.get("side") == gside and gside != "shared" for m in members):
-            reasons.append("יושבים בצד המתאים (חתן/כלה)")
+            reasons.append(f"יושבים בצד המתאים ({side_axis_label(event_type)})")
         if is_reserve:
             reasons.append("שולחן רזרבה פנוי")
 
@@ -373,6 +376,7 @@ def generate_seating(
     zones: Optional[dict] = None,
     preferences: Optional[dict] = None,
     seed: int = 42,
+    event_type: str | None = "wedding",
 ) -> SeatingResult:
     """מייצר שיבוץ הושבה דטרמיניסטי.
 
@@ -458,7 +462,7 @@ def generate_seating(
                         {
                             "id": p.id, "full_name": p.name, "party_size": p.size,
                             "side": p.side, "group_type": p.group,
-                            "reasons": _reasons_for(p, members, tid, norms, preferences),
+                            "reasons": _reasons_for(p, members, tid, norms, preferences, event_type),
                         }
                         for p in members
                     ],

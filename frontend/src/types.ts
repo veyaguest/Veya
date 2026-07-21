@@ -132,13 +132,6 @@ export interface GuestUpdate {
   is_child?: boolean
 }
 
-// תוויות בעברית לתצוגה
-export const SIDE_LABELS: Record<Side, string> = {
-  groom: 'חתן',
-  bride: 'כלה',
-  shared: 'משותף',
-}
-
 export const GROUP_LABELS: Record<KnownGroupType, string> = {
   close_family: 'משפחה קרובה',
   extended_family: 'משפחה רחוקה',
@@ -774,6 +767,7 @@ export const TRIGGER_LABELS: Record<TriggerType, string> = {
   guest_confirmed: 'לאחר אישור המוזמן',
 }
 
+// ברירת מחדל (חתונה) — לרכיבים שעדיין לא הועברו ל-targetGroupLabel() הדינמי.
 export const TARGET_GROUP_LABELS: Record<TargetGroup, string> = {
   all: 'כל המוזמנים',
   pending: 'ממתינים לתשובה',
@@ -783,6 +777,18 @@ export const TARGET_GROUP_LABELS: Record<TargetGroup, string> = {
   side_groom: 'צד החתן',
   side_bride: 'צד הכלה',
   group: 'קבוצה מסוימת',
+}
+
+/**
+ * תווית קהל יעד לפי סוג האירוע — side_groom/side_bride משתמשים בתוויות הצד
+ * הדינמיות. תוויות הצד לחתונה/חינה הן שם-תפקיד עירום ("חתן") שצריך קידומת
+ * "צד ה" כדי להיקרא נכון ("צד החתן"); שאר הסוגים כבר מגיעים עם "צד" בתוך
+ * הערך עצמו ("צד האב") ולא צריך לכפול אותו.
+ */
+export function targetGroupLabel(tg: TargetGroup, sideLabels: Record<Side, string>): string {
+  const raw = tg === 'side_groom' ? sideLabels.groom : tg === 'side_bride' ? sideLabels.bride : ''
+  if (raw) return raw.startsWith('צד') ? raw : `צד ה${raw}`
+  return TARGET_GROUP_LABELS[tg]
 }
 
 export const TEMPLATE_KIND_LABELS: Record<TemplateKind, string> = {

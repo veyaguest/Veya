@@ -10,9 +10,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import constraints as parser
-from app import models, schemas, seating
+from app import models, permissions, schemas, seating
 from app.database import get_db
-from app.deps import get_current_event
+from app.deps import EventAccess
+
+_view = EventAccess(permissions.GUESTS_VIEW)
+_write = EventAccess(permissions.SEATING_WRITE)
+
 
 router = APIRouter(prefix="/seating", tags=["seating"])
 
@@ -21,7 +25,7 @@ router = APIRouter(prefix="/seating", tags=["seating"])
 def generate(
     payload: schemas.SeatingRequest,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
 ):
     stmt = select(models.Guest).where(models.Guest.event_id == event.id)
     if payload.only_confirmed:
@@ -111,6 +115,7 @@ def generate(
         tables_meta=tables_meta,
         zones=zones,
         preferences=preferences,
+        event_type=event.event_type,
     )
     elapsed = time.time() - t0
 
@@ -261,7 +266,7 @@ def _occupancy_tables(event: models.Event, guests: list[models.Guest]) -> list[d
 def recommend_seat(
     payload: schemas.RecommendSeatRequest,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_view),
 ):
     """ממליץ על השולחן המתאים ביותר לשבץ בו מוזמן (מצב יום האירוע). דטרמיניסטי —
     אותם משקלים כמו המנוע (צד/קבוצה/'לשבת עם' + העדפות). לא משבץ, רק ממליץ."""
@@ -301,6 +306,7 @@ def recommend_seat(
         zones=zones,
         guest_prefs=prefs,
         include_reserve=payload.include_reserve,
+        event_type=event.event_type,
     )
     return schemas.RecommendSeatResponse(
         guest_id=guest.id,
@@ -314,7 +320,7 @@ def recommend_seat(
 def assign_seat(
     payload: schemas.AssignSeatRequest,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
 ):
     """שיבוץ מהיר בקליק אחד (מצב יום האירוע). מחזיר אזהרות רכות (קיבולת / זוג
     'לא לשבת יחד') אך אינו חוסם — ההחלטה הסופית של המשתמש."""
@@ -361,7 +367,7 @@ def assign_seat(
 @router.get("/reserve", response_model=schemas.ReserveSummary)
 def reserve_summary(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_view),
 ):
     """סיכום הרזרבה — לכרטיס הדשבורד ולפאנל 'מצב יום האירוע'."""
     guests = db.scalars(

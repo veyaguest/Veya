@@ -11,7 +11,7 @@ const POINTS = t.onboardingPoints
 
 /**
  * מסך פתיחה בכניסה הראשונה לאזור המוזמנים. מטרה: להרגיע ולהראות שהחלק
- * המלחיץ ביותר לפני החתונה הופך לפשוט. מוצג פעם אחת (דגל localStorage).
+ * המלחיץ ביותר לפני האירוע הופך לפשוט. מוצג פעם אחת (דגל localStorage).
  */
 export function OnboardingDialog({ onClose }: Props) {
   return (

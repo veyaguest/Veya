@@ -223,7 +223,7 @@ function AdminDashboardView() {
           <thead>
             <tr>
               <th>#</th>
-              <th>חתן / כלה</th>
+              <th>בעלי האירוע</th>
               <th>אולם</th>
               <th>בעלים</th>
               <th>מוזמנים</th>
@@ -807,7 +807,7 @@ function AdminUsersView({
   )
 }
 
-/** ניהול אירועים — טבלת כל האירועים + כניסה לאירוע כזוג (התחזות לבעלים). */
+/** ניהול אירועים — טבלת כל האירועים + כניסה לאירוע כבעלים (התחזות). */
 function AdminEventsView({
   onImpersonate,
 }: {
@@ -878,7 +878,7 @@ function AdminEventsView({
           <thead>
             <tr>
               <th>#</th>
-              <th>חתן / כלה</th>
+              <th>בעלי האירוע</th>
               <th>אולם</th>
               <th>בעלים</th>
               <th>מוזמנים</th>
@@ -903,7 +903,7 @@ function AdminEventsView({
                       onClick={() => enterEvent(e.owner_id as number)}
                       disabled={busyOwner != null}
                     >
-                      {busyOwner === e.owner_id ? 'רגע…' : 'כניסה כזוג'}
+                      {busyOwner === e.owner_id ? 'רגע…' : 'כניסה כבעלים'}
                     </button>
                   ) : (
                     <span className="adm-event-noowner">ללא בעלים</span>
@@ -960,7 +960,7 @@ function AdminVenuesView() {
   async function handleDelete(v: AdminVenueRow) {
     if (
       !window.confirm(
-        `למחוק את "${v.name}" מהמאגר? האירועים הקיימים לא יושפעו — רק ההצעה האוטומטית לזוגות חדשים.`,
+        `למחוק את "${v.name}" מהמאגר? האירועים הקיימים לא יושפעו — רק ההצעה האוטומטית למשתמשים חדשים.`,
       )
     )
       return

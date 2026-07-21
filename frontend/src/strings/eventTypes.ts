@@ -220,6 +220,16 @@ export function sideLabel(side: Side): string {
 }
 
 /**
+ * ניסוח "צד X" בתוך משפט (למשל "מעורבבים 3 מצד החתן"). תוויות הצד לחתונה/
+ * חינה הן שם-תפקיד עירום ("חתן") שצריך קידומת "צד ה" כדי להיקרא נכון; שאר
+ * הסוגים כבר מגיעים עם "צד" בתוך הערך עצמו ("צד האב") ולא צריך לכפול אותו.
+ */
+export function sidePhrase(side: Side, terms: EventTerms = activeEventTerms()): string {
+  const raw = terms.sideLabels[side]
+  return raw.startsWith('צד') ? raw : `צד ה${raw}`
+}
+
+/**
  * מרכיב את שמות בעלי האירוע לתצוגה: "דני ומאיה" לחתונה, או שם יחיד לבעל
  * שמחה. מחזיר מחרוזת ריקה כשאין שמות (הקורא נופל ל-defaultTitle).
  */

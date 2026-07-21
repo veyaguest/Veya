@@ -581,7 +581,7 @@ export function AdminPage() {
           <thead>
             <tr>
               <th>#</th>
-              <th>חתן / כלה</th>
+              <th>בעלי האירוע</th>
               <th>אולם</th>
               <th>בעלים</th>
               <th>מוזמנים</th>

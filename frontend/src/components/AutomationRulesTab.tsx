@@ -12,7 +12,8 @@ import type {
   TargetGroup,
   TriggerType,
 } from '../types'
-import { TARGET_GROUP_LABELS, TRIGGER_LABELS } from '../types'
+import { targetGroupLabel, TRIGGER_LABELS } from '../types'
+import { activeEventTerms } from '../strings/eventTypes'
 
 const TRIGGER_OPTIONS: TriggerType[] = [
   'event_created',
@@ -58,6 +59,7 @@ export function AutomationRulesTab({ onChanged }: { onChanged?: () => void }) {
   const [showForm, setShowForm] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const sideLabels = activeEventTerms().sideLabels
 
   const refresh = useCallback(async () => {
     try {
@@ -214,7 +216,7 @@ export function AutomationRulesTab({ onChanged }: { onChanged?: () => void }) {
               >
                 {TARGET_OPTIONS.map((tg) => (
                   <option key={tg} value={tg}>
-                    {TARGET_GROUP_LABELS[tg]}
+                    {targetGroupLabel(tg, sideLabels)}
                   </option>
                 ))}
               </select>
@@ -273,7 +275,7 @@ export function AutomationRulesTab({ onChanged }: { onChanged?: () => void }) {
                 <span className="auto-rule-meta">
                   {TRIGGER_LABELS[r.trigger_type as TriggerType]} · {r.delay_days} ימים
                   {' · '}
-                  {TARGET_GROUP_LABELS[r.target_group as TargetGroup]}
+                  {targetGroupLabel(r.target_group as TargetGroup, sideLabels)}
                   {' · '}
                   {templateName(r.template_id)}
                 </span>

@@ -10,6 +10,7 @@
  * כל הפונקציות טהורות (קלט → פלט) וניתנות לבדיקה עצמאית.
  */
 import { groupLabel, type HallGuest, type Side, type TableType } from './types'
+import { sidePhrase } from './strings/eventTypes'
 
 // מבנה שולחן מינימלי הדרוש לניתוח — תואם מבנית ל-TableView הפרטי
 // שבתוך HallPage.tsx (בלי תלות ישירה בקובץ הזה, כדי למנוע import מעגלי
@@ -304,7 +305,7 @@ export function computeSmartWarnings(
       warnings.push({
         severity: 'yellow',
         tableNumbers: [t.table_number],
-        text: `בשולחן ${t.table_number} מעורבבים ${groom} מצד החתן ו-${bride} מצד הכלה — כדאי לוודא שזה מכוון`,
+        text: `בשולחן ${t.table_number} מעורבבים ${groom} מ${sidePhrase('groom')} ו-${bride} מ${sidePhrase('bride')} — כדאי לוודא שזה מכוון`,
       })
     }
   }

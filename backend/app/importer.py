@@ -27,10 +27,18 @@ COLUMN_KEYWORDS = {
 }
 
 SIDE_VALUE_MAP = {
+    # ערכי "צד" לחתונה/חינה (חתן/כלה) ולסוגי אירוע אחרים (אב/אם, א׳/ב׳) —
+    # פנימית כולם נשמרים כ-groom/bride/shared, והתווית המוצגת נשאבת מ-
+    # eventTypes.ts לפי event_type (ראה sideLabel/sidePhrase).
     "חתן": "groom",
     "groom": "groom",
+    "אב": "groom",
+    "א׳": "groom",
     "כלה": "bride",
     "bride": "bride",
+    "אמא": "bride",
+    "אם": "bride",
+    "ב׳": "bride",
     "משותף": "shared",
     "שני": "shared",
     "shared": "shared",

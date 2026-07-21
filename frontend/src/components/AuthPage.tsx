@@ -57,7 +57,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
           <span className="auth-wordmark">
             <span className="auth-wordmark-name">VEYA</span>
             <span className="auth-wordmark-tag" dir="rtl">
-              הדרך הפשוטה לארגן את החתונה
+              הדרך הפשוטה לארגן חתונה, ובעצם כל אירוע
             </span>
           </span>
         </div>
@@ -105,7 +105,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
 
           <div className="auth-panel-head">
             <h2 className="auth-panel-title">
-              {isLogin ? 'ברוכים השבים' : 'הרשמה כזוג'}
+              {isLogin ? 'ברוכים השבים' : 'הרשמה ל-VEYA'}
             </h2>
             <p className="auth-panel-sub">
               {isLogin
@@ -226,7 +226,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                   className="auth-link-btn"
                   onClick={() => switchMode('register')}
                 >
-                  הרשמה כזוג
+                  הרשמה ל-VEYA
                 </button>
               </>
             ) : (
