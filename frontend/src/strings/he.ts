@@ -74,6 +74,41 @@ export const strings = {
     tablesAssigned: 'שולחנות שובצו',
     guestsSeated: 'מוזמנים משובצים',
     invitationsSent: 'הזמנות שנשלחו',
+    // ---- סקשן "הכנה להושבה" (מוביל את הזוג לקראת ההושבה החכמה) ----
+    prep: {
+      title: 'הכנה להושבה',
+      intro:
+        'עוד כמה שלבים קטנים – ו-VEYA תדאג לכל השאר.\nנכיר את האורחים שלכם, נבין את ההעדפות והקבוצות, ואז תוכלו ליצור סידור הושבה חכם בלחיצה אחת.',
+      progress: (done: number, total: number) =>
+        `${done} מתוך ${total} שלבים הושלמו`,
+      stateNotStarted: 'לא התחיל',
+      stateInProgress: 'בתהליך',
+      stateDone: 'הושלם',
+      steps: [
+        { title: 'חלוקה לצד חתן או כלה', desc: 'שיוך כל אורח לצד המתאים.' },
+        {
+          title: 'יצירת קבוצות',
+          desc: 'משפחה, חברים, עבודה או כל קבוצה אחרת.',
+        },
+        {
+          title: 'העדפות והערות',
+          desc: 'מי חייב לשבת יחד, מי עדיף שלא, וכל הערת ישיבה חשובה.',
+        },
+        { title: 'סקירה ואישור', desc: 'בדיקה אחרונה לפני יצירת ההושבה.' },
+      ],
+      reviewSummary: (o: {
+        total: number
+        groom: number
+        bride: number
+        groups: number
+        prefs: number
+      }) =>
+        `${o.total} מוזמנים · ${o.groom} בצד החתן · ${o.bride} בצד הכלה · ${o.groups} קבוצות · ${o.prefs} העדפות`,
+      cta: '✨ הושבה בקליק',
+      ctaHint:
+        'VEYA תיצור עבורכם סידור הושבה חכם בהתאם לכל ההעדפות שהגדרתם.',
+      ctaLockedHint: 'השלימו את השלבים למעלה כדי ליצור את ההושבה.',
+    },
     auditTitle: 'פעילות אחרונה',
     auditSub: 'מה קרה לאחרונה באירוע שלכם — שליחות, אישורים ועדכונים.',
     auditLabels: {

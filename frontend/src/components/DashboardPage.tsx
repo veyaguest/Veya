@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getEvent, getStats, mediaUrl, readAudit, updateEvent } from '../api'
 import type { AuditLogRow, DashboardStats, EventDetails } from '../types'
-import { computeReadiness, type ReadinessPage } from '../readiness'
-import { ReadinessMeter } from './ReadinessMeter'
-import { PrepWizard } from './PrepWizard'
+import type { ReadinessPage } from '../readiness'
+import { SeatingPrep } from './SeatingPrep'
 import { VenueAutocomplete } from './VenueAutocomplete'
 import { strings } from '../strings/he'
 
 interface Props {
-  // ניווט למסך אחר (מוזמנים / מפת אולם) — עבור אשף ההכנה ומדד המוכנות.
+  // ניווט למסך אחר (מוזמנים / מפת אולם) — עבור סקשן "הכנה להושבה".
   onNavigate?: (page: ReadinessPage) => void
 }
 
@@ -112,8 +111,6 @@ export function DashboardPage({ onNavigate }: Props) {
   const when = event
     ? formatWhen(event.event_date, event.event_time)
     : ''
-
-  const readiness = computeReadiness(stats)
 
   return (
     <div className="dash-page">
@@ -296,14 +293,6 @@ export function DashboardPage({ onNavigate }: Props) {
 
       {error && <p className="form-error">{error}</p>}
 
-      {/* ---- מדד מוכנות + אשף ההכנה (מובילים את הזוג צעד אחר צעד) ---- */}
-      {stats && stats.total_guests > 0 && readiness.percent < 100 && (
-        <div className="prep-block">
-          <ReadinessMeter readiness={readiness} />
-          <PrepWizard readiness={readiness} onNavigate={onNavigate} />
-        </div>
-      )}
-
       {/* ---- תמונת מצב ראשית — אישורי הגעה (העוגה הגדולה, החלק החשוב) ---- */}
       <div className="dash-hero">
         <h3 className="dash-hero-title">{t.rsvpTitle}</h3>
@@ -329,6 +318,11 @@ export function DashboardPage({ onNavigate }: Props) {
           <LegendRow color="var(--faint)" label={t.segPending} value={stats?.pending ?? 0} />
         </ul>
       </div>
+
+      {/* ---- הכנה להושבה (אחרי העוגה, לפני הפעילות האחרונה) ---- */}
+      {stats && stats.total_guests > 0 && (
+        <SeatingPrep stats={stats} onNavigate={onNavigate} />
+      )}
 
       {/* ---- התראת הבהרות (פעולה נדרשת) ---- */}
       {stats && stats.pending_clarifications > 0 && (
