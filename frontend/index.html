@@ -117,10 +117,12 @@
         --ivory: #fbf6ee;
         --cream: #ffffff;
         --gold: #c9a227;
-        --gold-deep: #9a7b2e;
+        /* גוון זהב כהה לטקסט — מותאם לניגודיות WCAG AA על רקע שנהב (≥4.5:1) */
+        --gold-deep: #836a26;
         --charcoal: #2b2620;
         --body: #4a4438;
-        --muted: #8c8375;
+        /* אפור-חום משני מותאם לניגודיות AA (≥4.5:1) */
+        --muted: #6a6252;
         --line: #e5dec9;
         --green: #2f9e5f;
       }
@@ -146,7 +148,7 @@
         text-decoration: none; transition: transform 0.15s ease, box-shadow 0.15s ease; cursor: pointer;
       }
       .btn:focus-visible { outline: 3px solid var(--gold-deep); outline-offset: 3px; }
-      .btn-primary { background: var(--gold); color: #fff; box-shadow: 0 6px 18px rgba(201, 162, 39, 0.28); }
+      .btn-primary { background: var(--gold); color: var(--charcoal); box-shadow: 0 6px 18px rgba(201, 162, 39, 0.28); }
       .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(201, 162, 39, 0.34); }
       .btn-ghost { background: transparent; color: var(--charcoal); border: 1px solid var(--line); padding: 10px 22px; }
       .btn-ghost:hover { border-color: var(--gold-deep); }
@@ -311,7 +313,6 @@
       <div class="wrap">
         <span>© VEYA — מערכת לניהול חתונות</span>
         <nav aria-label="ניווט תחתון">
-          <a href="/blog/">בלוג</a>
           <a href="/app">כניסה למערכת</a>
         </nav>
       </div>
