@@ -226,6 +226,7 @@ export async function listMyEvents(): Promise<EventSummary[]> {
 }
 
 export async function createMyEvent(data: {
+  event_type?: string
   groom_name: string
   bride_name: string
   venue_name: string
@@ -670,6 +671,7 @@ export async function updateEvent(
   data: Partial<
     Pick<
       EventDetails,
+      | 'event_type'
       | 'groom_name'
       | 'bride_name'
       | 'venue_name'

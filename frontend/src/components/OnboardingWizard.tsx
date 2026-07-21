@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { createMyEvent, updateEvent } from '../api'
 import { setEventId } from '../authStore'
-import type { EventSummary } from '../types'
+import type { EventSummary, EventType } from '../types'
+import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 import { VenueAutocomplete } from './VenueAutocomplete'
 import { AddGuestForm } from './AddGuestForm'
 
@@ -31,6 +32,7 @@ export function OnboardingWizard({ onCreated }: Props) {
   const [error, setError] = useState('')
 
   const [form, setForm] = useState({
+    event_type: 'wedding' as EventType,
     groom_name: '',
     bride_name: '',
     venue_name: '',
@@ -40,6 +42,9 @@ export function OnboardingWizard({ onCreated }: Props) {
     invite_image: '' as string,
     venue_commit_days_before: '' as number | '',
   })
+
+  // מנוע המונחים לפי סוג האירוע שנבחר — קובע תוויות שדות, ולידציה וניסוח.
+  const terms = getEventTerms(form.event_type)
 
   function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -63,15 +68,21 @@ export function OnboardingWizard({ onCreated }: Props) {
   async function submitDetails(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    if (!form.groom_name.trim() || !form.bride_name.trim()) {
-      setError('נשמח לדעת קודם את שמות בני הזוג')
+    if (terms.hasTwoHosts) {
+      if (!form.groom_name.trim() || !form.bride_name.trim()) {
+        setError(`נשמח לדעת קודם את שמות ${terms.hostsLabel}`)
+        return
+      }
+    } else if (!form.groom_name.trim()) {
+      setError(`נשמח לדעת קודם את ${terms.hostAField}`)
       return
     }
     setBusy(true)
     try {
       const ev = await createMyEvent({
+        event_type: form.event_type,
         groom_name: form.groom_name,
-        bride_name: form.bride_name,
+        bride_name: terms.hasTwoHosts ? form.bride_name : '',
         venue_name: form.venue_name,
       })
       // עוברים לאירוע החדש מיד, כדי שהעדכון הבא (updateEvent) ידע על איזה אירוע לדבר.
@@ -137,17 +148,40 @@ export function OnboardingWizard({ onCreated }: Props) {
 
         {step === 'details' ? (
           <form className="event-edit onboard-details-step" onSubmit={submitDetails}>
+            <div className="event-type-field">
+              <span className="field-label">סוג האירוע</span>
+              <div className="event-type-grid" role="radiogroup" aria-label="סוג האירוע">
+                {EVENT_TYPE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.type}
+                    type="button"
+                    role="radio"
+                    aria-checked={form.event_type === opt.type}
+                    className={`event-type-chip ${form.event_type === opt.type ? 'active' : ''}`}
+                    onClick={() => setForm({ ...form, event_type: opt.type })}
+                  >
+                    <span className="event-type-chip-icon" aria-hidden="true">
+                      {opt.icon}
+                    </span>
+                    <span className="event-type-chip-label">{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="event-fields">
               <input
-                placeholder="שם החתן"
+                placeholder={terms.hostAField}
                 value={form.groom_name}
                 onChange={(e) => setForm({ ...form, groom_name: e.target.value })}
               />
-              <input
-                placeholder="שם הכלה"
-                value={form.bride_name}
-                onChange={(e) => setForm({ ...form, bride_name: e.target.value })}
-              />
+              {terms.hasTwoHosts && (
+                <input
+                  placeholder={terms.hostBField}
+                  value={form.bride_name}
+                  onChange={(e) => setForm({ ...form, bride_name: e.target.value })}
+                />
+              )}
               <VenueAutocomplete
                 value={form.venue_name}
                 onChange={(name) => setForm({ ...form, venue_name: name })}
@@ -189,7 +223,7 @@ export function OnboardingWizard({ onCreated }: Props) {
             <div className="commit-field">
               <span className="field-label">יום ההתחייבות לאולם</span>
               <p className="commit-explain">
-                כמה ימים לפני החתונה אתם צריכים למסור לאולם מספר סופי? זה היום
+                כמה ימים לפני האירוע אתם צריכים למסור לאולם מספר סופי? זה היום
                 שבו כל אישורי ההגעה נסגרים. אפשר גם להשלים את זה מאוחר יותר.
               </p>
               <select
