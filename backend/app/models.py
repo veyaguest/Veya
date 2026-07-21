@@ -56,7 +56,9 @@ class User(Base):
 
 
 class Event(Base):
-    """אירוע (חתונה). שייך למשתמש דרך owner_id (שלב 8)."""
+    """אירוע. חתונה היא ברירת המחדל, אך המערכת תומכת בכל סוגי האירועים
+    (בר/בת מצווה, חינה, ברית, אירוע משפחתי/עסקי ועוד) דרך event_type.
+    שייך למשתמש דרך owner_id (שלב 8)."""
 
     __tablename__ = "events"
 
@@ -64,6 +66,12 @@ class Event(Base):
     owner_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id"), nullable=True, index=True
     )
+    # סוג האירוע — קובע את השפה הדינמית בכל המערכת (חתן/כלה מול בעל השמחה וכו').
+    # ברירת המחדל 'wedding' שומרת על תאימות אחורה: כל אירוע קיים נשאר חתונה.
+    # ערכים: wedding / bar_mitzvah / bat_mitzvah / henna / brit / family / business / other.
+    event_type: Mapped[str] = mapped_column(String, default="wedding")
+    # שמות בעלי האירוע. שמורים בשמות groom/bride מטעמי תאימות אחורה, אך
+    # התוויות בממשק דינמיות לפי event_type (מנוע המונחים ב-Frontend).
     groom_name: Mapped[str] = mapped_column(String, default="")
     bride_name: Mapped[str] = mapped_column(String, default="")
     venue_name: Mapped[str] = mapped_column(String, default="")

@@ -22,7 +22,8 @@ def _describe_changed_fields(changed: dict) -> str:
     groom_name, venue_name".
     """
     categories = [
-        (("groom_name", "bride_name"), "שמות בני הזוג"),
+        (("event_type",), "סוג האירוע"),
+        (("groom_name", "bride_name"), "שמות בעלי האירוע"),
         (("venue_name", "venue_address"), "פרטי האולם"),
         (("event_date", "event_time"), "תאריך ושעת האירוע"),
         (("invite_image",), "תמונת ההזמנה"),
@@ -38,6 +39,7 @@ def _event_read(event: models.Event) -> schemas.EventRead:
     """בונה תשובה עם URL מלא לתמונת ההזמנה (במקום הנתיב הגולמי שב-DB)."""
     return schemas.EventRead(
         id=event.id,
+        event_type=event.event_type or "wedding",
         groom_name=event.groom_name,
         bride_name=event.bride_name,
         venue_name=event.venue_name,

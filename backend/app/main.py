@@ -72,6 +72,7 @@ app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 # (SQLite לא מוסיף עמודות אוטומטית ב-create_all. ב-Postgres בעתיד — Alembic.)
 _EXTRA_COLUMNS = {
     "events": {
+        "event_type": "TEXT DEFAULT 'wedding'",
         "group_notes": "JSON",
         "table_positions": "JSON",
         "hall_elements": "JSON",

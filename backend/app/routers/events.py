@@ -53,6 +53,7 @@ def create_event(
     """יוצר אירוע חדש בבעלות המשתמש."""
     event = models.Event(
         owner_id=user.id,
+        event_type=payload.event_type,
         groom_name=payload.groom_name.strip(),
         bride_name=payload.bride_name.strip(),
         venue_name=payload.venue_name.strip(),

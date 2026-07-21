@@ -10,6 +10,11 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.validators import normalize_israeli_phone
 
 Side = Literal["groom", "bride", "shared"]
+# סוג האירוע — קובע את השפה הדינמית. חתונה היא ברירת המחדל (תאימות אחורה).
+EventType = Literal[
+    "wedding", "bar_mitzvah", "bat_mitzvah", "henna", "brit",
+    "family", "business", "other",
+]
 # קבוצה: אחת מהמוכרות, או קבוצה מותאמת אישית (טקסט חופשי) — לכן str ולא Literal
 GroupType = str
 # "maybe" = המוזמן סימן "אולי" בדף האישור (עקבי עם ערכי ה-DB האפשריים).
@@ -317,6 +322,7 @@ class EventRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    event_type: EventType = "wedding"
     groom_name: str
     bride_name: str
     venue_name: str
@@ -331,6 +337,7 @@ class EventRead(BaseModel):
 
 
 class EventUpdate(BaseModel):
+    event_type: Optional[EventType] = None
     groom_name: Optional[str] = None
     bride_name: Optional[str] = None
     venue_name: Optional[str] = None
@@ -594,6 +601,7 @@ class TokenResponse(BaseModel):
 
 
 class EventCreate(BaseModel):
+    event_type: EventType = "wedding"
     groom_name: str = ""
     bride_name: str = ""
     venue_name: str = ""
@@ -605,6 +613,7 @@ class EventSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    event_type: EventType = "wedding"
     groom_name: str
     bride_name: str
     venue_name: str
