@@ -25,7 +25,8 @@ import type {
   SeatingExplanation,
   TableType,
 } from '../types'
-import { GROUP_LABELS, SIDE_LABELS } from '../types'
+import { GROUP_LABELS } from '../types'
+import { sideLabel } from '../strings/eventTypes'
 import { getEventId } from '../authStore'
 import {
   computeSmartFill,
@@ -2808,7 +2809,7 @@ export function HallPage() {
                     <span className="hm-gr-main">
                       <span className="hm-gr-name">{g.full_name}</span>
                       <span className="hm-gr-sub">
-                        {GROUP_LABELS[g.group_type]} · {SIDE_LABELS[g.side]}
+                        {GROUP_LABELS[g.group_type]} · {sideLabel(g.side)}
                         {g.seats > 1 ? ` · ${g.seats} מקומות` : ''}
                       </span>
                     </span>
@@ -3107,7 +3108,7 @@ export function HallPage() {
                     <input
                       type="text"
                       value={sheetT.name}
-                      placeholder="למשל: משפחת הכלה"
+                      placeholder="למשל: שולחן המשפחה"
                       onChange={(e) => updateTable(sheetT.table_number, { name: e.target.value })}
                     />
                   </div>
@@ -4062,7 +4063,7 @@ export function HallPage() {
                           draggable
                           onDragStart={(e) => onGuestDragStart(e, g.id)}
                           onDragEnd={onGuestDragEnd}
-                          title={`${g.full_name} · ${SIDE_LABELS[g.side]} · גררו לשולחן אחר`}
+                          title={`${g.full_name} · ${sideLabel(g.side)} · גררו לשולחן אחר`}
                         >
                           {g.full_name}
                           {g.seats > 1 && <span className="chip-size">×{g.seats}</span>}
@@ -4360,7 +4361,7 @@ function GuestChip({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      title={`${SIDE_LABELS[g.side]} · גררו לשולחן או לחצו לבחירה`}
+      title={`${sideLabel(g.side)} · גררו לשולחן או לחצו לבחירה`}
     >
       {g.full_name}
       {g.seats > 1 && <span className="chip-size">×{g.seats}</span>}

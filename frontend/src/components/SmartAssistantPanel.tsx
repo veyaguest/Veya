@@ -1,4 +1,4 @@
-import { SIDE_LABELS } from '../types'
+import { sideLabel } from '../strings/eventTypes'
 import type {
   SeatingStats,
   SmartMove,
@@ -132,7 +132,7 @@ export function SmartAssistantPanel({
             {searchResults.map((r) => (
               <div key={r.guestId} className="assistant-search-result">
                 <div className="assistant-search-name">
-                  {r.fullName} <span className="assistant-search-side">{SIDE_LABELS[r.side]}</span>
+                  {r.fullName} <span className="assistant-search-side">{sideLabel(r.side)}</span>
                 </div>
                 {r.tableNumber != null ? (
                   <div className="assistant-search-meta">

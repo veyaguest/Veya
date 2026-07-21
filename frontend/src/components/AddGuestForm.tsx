@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { createGuest, updateGuest } from '../api'
 import type { GroupType, Guest, GuestCreate, Side } from '../types'
-import { GROUP_LABELS, SIDE_LABELS } from '../types'
+import { GROUP_LABELS } from '../types'
+import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 
 const t = strings.guests
@@ -120,7 +121,7 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
             value={form.side}
             onChange={(e) => update('side', e.target.value as Side)}
           >
-            {Object.entries(SIDE_LABELS).map(([v, l]) => (
+            {Object.entries(activeEventTerms().sideLabels).map(([v, l]) => (
               <option key={v} value={v}>
                 {l}
               </option>

@@ -880,6 +880,7 @@ class EventMemberRead(BaseModel):
 class ConfirmEventInfo(BaseModel):
     """פרטי האירוע שמוצגים למוזמן בדף האישור (מידע ציבורי בלבד)."""
 
+    event_type: EventType = "wedding"
     groom_name: str
     bride_name: str
     venue_name: str

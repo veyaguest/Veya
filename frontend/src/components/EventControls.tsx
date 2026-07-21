@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { createMyEvent } from '../api'
-import type { EventSummary } from '../types'
+import type { EventSummary, EventType } from '../types'
+import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 
-/** שדות יצירת אירוע חדש (חתן / כלה / אולם) — משמש גם במסך הראשון וגם בפופאובר. */
+/** שדות יצירת אירוע חדש (סוג אירוע + בעלי האירוע + אולם) — משמש במסך הראשון ובפופאובר. */
 function NewEventFields({
   onCreated,
   onCancel,
@@ -12,11 +13,14 @@ function NewEventFields({
   onCancel?: () => void
   submitLabel?: string
 }) {
+  const [eventType, setEventType] = useState<EventType>('wedding')
   const [groom, setGroom] = useState('')
   const [bride, setBride] = useState('')
   const [venue, setVenue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  const terms = getEventTerms(eventType)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -24,8 +28,9 @@ function NewEventFields({
     setBusy(true)
     try {
       const ev = await createMyEvent({
+        event_type: eventType,
         groom_name: groom,
-        bride_name: bride,
+        bride_name: terms.hasTwoHosts ? bride : '',
         venue_name: venue,
       })
       onCreated(ev)
@@ -38,19 +43,41 @@ function NewEventFields({
 
   return (
     <form className="event-new-form" onSubmit={submit}>
+      <div className="event-type-field">
+        <span className="field-label">סוג האירוע</span>
+        <div className="event-type-grid" role="radiogroup" aria-label="סוג האירוע">
+          {EVENT_TYPE_OPTIONS.map((opt) => (
+            <button
+              key={opt.type}
+              type="button"
+              role="radio"
+              aria-checked={eventType === opt.type}
+              className={`event-type-chip ${eventType === opt.type ? 'active' : ''}`}
+              onClick={() => setEventType(opt.type)}
+            >
+              <span className="event-type-chip-icon" aria-hidden="true">
+                {opt.icon}
+              </span>
+              <span className="event-type-chip-label">{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="event-new-grid">
         <input
           type="text"
           value={groom}
           onChange={(e) => setGroom(e.target.value)}
-          placeholder="שם החתן"
+          placeholder={terms.hostAField}
         />
-        <input
-          type="text"
-          value={bride}
-          onChange={(e) => setBride(e.target.value)}
-          placeholder="שם הכלה"
-        />
+        {terms.hasTwoHosts && (
+          <input
+            type="text"
+            value={bride}
+            onChange={(e) => setBride(e.target.value)}
+            placeholder={terms.hostBField}
+          />
+        )}
         <input
           type="text"
           value={venue}

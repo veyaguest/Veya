@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { deleteGuest, listGuests } from '../api'
 import type { Guest } from '../types'
-import { groupLabel, INVITE_STATUS_LABELS, RSVP_LABELS, SIDE_LABELS } from '../types'
+import { groupLabel, INVITE_STATUS_LABELS, RSVP_LABELS } from '../types'
+import { sideLabel } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { AddGuestForm } from './AddGuestForm'
 import { CreateGroupDialog } from './CreateGroupDialog'
@@ -252,7 +253,7 @@ export function GuestsPage() {
                 <td dir="ltr" className="phone">
                   {g.phone}
                 </td>
-                <td>{SIDE_LABELS[g.side]}</td>
+                <td>{sideLabel(g.side)}</td>
                 <td>{groupLabel(g.group_type)}</td>
                 <td className="center">{g.party_size}</td>
                 <td>

@@ -81,6 +81,7 @@ export function effectiveSeats(g: {
 // ---- דף אישור הגעה ציבורי (קישור אישי) ----
 
 export interface ConfirmEventInfo {
+  event_type: EventType
   groom_name: string
   bride_name: string
   venue_name: string

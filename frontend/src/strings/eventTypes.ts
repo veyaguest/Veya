@@ -15,6 +15,7 @@
  * עקרונות הניסוח (עקבי עם strings/he.ts): עברית מדוברת-מקצועית וחמה,
  * בלי ניסוחים מתורגמים, כתיב מלא. חתונה נשארת ברירת המחדל בכל מקום.
  */
+import { getActiveEventType } from '../authStore'
 import type { EventType, Side } from '../types'
 
 export interface EventTerms {
@@ -182,6 +183,20 @@ export const EVENT_TYPE_OPTIONS: { type: EventType; label: string; icon: string 
 export function getEventTerms(type: EventType | string | null | undefined): EventTerms {
   if (type && type in EVENT_TERMS) return EVENT_TERMS[type as EventType]
   return WEDDING
+}
+
+/**
+ * מנוע המונחים של האירוע הפעיל (נקרא מ-authStore). שימושי במסכים שלא
+ * מקבלים event_type ב-prop — למשל תוויות צדדים ברשימת המוזמנים ובמפת האולם.
+ * חתונה היא ברירת המחדל הבטוחה.
+ */
+export function activeEventTerms(): EventTerms {
+  return getEventTerms(getActiveEventType())
+}
+
+/** תווית הצד לפי סוג האירוע הפעיל (חתן/כלה לחתונה, צד האב/האם לבר מצווה וכו'). */
+export function sideLabel(side: Side): string {
+  return activeEventTerms().sideLabels[side]
 }
 
 /**

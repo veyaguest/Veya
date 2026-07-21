@@ -1,5 +1,6 @@
 import type { DashboardStats } from '../types'
 import type { ReadinessPage } from '../readiness'
+import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 
 const t = strings.dashboard.prep
@@ -124,7 +125,15 @@ export function SeatingPrep({ stats, onNavigate }: Props) {
 
       {showSummary && (
         <p className="seatprep-summary">
-          {t.reviewSummary({ total, groom, bride, groups: groupsCount, prefs: prefsCount })}
+          {t.reviewSummary({
+            total,
+            groom,
+            bride,
+            groups: groupsCount,
+            prefs: prefsCount,
+            sideALabel: activeEventTerms().sideLabels.groom,
+            sideBLabel: activeEventTerms().sideLabels.bride,
+          })}
         </p>
       )}
 

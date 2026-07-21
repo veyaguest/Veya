@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { bulkGroup, listGuests } from '../api'
 import type { Guest } from '../types'
-import { groupLabel, SIDE_LABELS } from '../types'
+import { groupLabel } from '../types'
+import { sideLabel } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 
 const t = strings.guests
@@ -135,7 +136,7 @@ export function CreateGroupDialog({ onClose, onCreated }: Props) {
                 />
                 <span className="cg-guest-name">{g.full_name}</span>
                 <span className="cg-guest-meta">
-                  {SIDE_LABELS[g.side]} · {groupLabel(g.group_type)}
+                  {sideLabel(g.side)} · {groupLabel(g.group_type)}
                 </span>
               </label>
             ))}

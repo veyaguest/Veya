@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getConfirm, mediaUrl, submitConfirm } from '../api'
 import type { ConfirmGuestPublic } from '../types'
+import { getEventTerms } from '../strings/eventTypes'
 
 type Choice = 'confirmed' | 'declined' | 'maybe'
 
@@ -125,7 +126,9 @@ export function ConfirmPage({ token }: { token: string }) {
   }
 
   const ev = data!.event
-  const couple = [ev.groom_name, ev.bride_name].filter(Boolean).join(' ו')
+  const terms = getEventTerms(ev.event_type)
+  const couple =
+    [ev.groom_name, ev.bride_name].filter(Boolean).join(' ו') || terms.defaultTitle
 
   // מסך תודה אחרי שליחה
   if (done) {
@@ -167,7 +170,7 @@ export function ConfirmPage({ token }: { token: string }) {
             <img
               className="confirm-invite-img"
               src={mediaUrl(ev.invite_image)}
-              alt={`הזמנה לחתונה של ${couple}`}
+              alt={`${terms.inviteLabel} של ${couple}`}
             />
             <div className="confirm-caption">
               {ev.venue_name && (

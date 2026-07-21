@@ -4,6 +4,7 @@ import type { AuditLogRow, DashboardStats, EventDetails, ReserveSummary } from '
 import type { ReadinessPage } from '../readiness'
 import { SeatingPrep } from './SeatingPrep'
 import { VenueAutocomplete } from './VenueAutocomplete'
+import { getEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 
 interface Props {
@@ -103,6 +104,9 @@ export function DashboardPage({ onNavigate }: Props) {
     reader.readAsDataURL(file)
   }
 
+  // מנוע המונחים לפי סוג האירוע — קובע תוויות שדות, כותרת ותווית ההזמנה.
+  const terms = getEventTerms(event?.event_type)
+
   const couple =
     event && (event.groom_name || event.bride_name)
       ? [event.groom_name, event.bride_name].filter(Boolean).join(' ו')
@@ -120,15 +124,17 @@ export function DashboardPage({ onNavigate }: Props) {
           <div className="event-edit">
             <div className="event-fields">
               <input
-                placeholder={t.groomPlaceholder}
+                placeholder={terms.hostAField}
                 value={form.groom_name}
                 onChange={(e) => setForm({ ...form, groom_name: e.target.value })}
               />
-              <input
-                placeholder={t.bridePlaceholder}
-                value={form.bride_name}
-                onChange={(e) => setForm({ ...form, bride_name: e.target.value })}
-              />
+              {terms.hasTwoHosts && (
+                <input
+                  placeholder={terms.hostBField}
+                  value={form.bride_name}
+                  onChange={(e) => setForm({ ...form, bride_name: e.target.value })}
+                />
+              )}
               <VenueAutocomplete
                 value={form.venue_name}
                 onChange={(name) => setForm({ ...form, venue_name: name })}
@@ -223,7 +229,7 @@ export function DashboardPage({ onNavigate }: Props) {
                         alt={t.imageAlt}
                       />
                       <div className="phone-mock-meta">
-                        <span>{t.imageBubbleLabel}</span>
+                        <span>{terms.inviteLabel}</span>
                         <span className="phone-mock-check">✓✓</span>
                       </div>
                     </div>
@@ -268,17 +274,17 @@ export function DashboardPage({ onNavigate }: Props) {
                   <img
                     className="event-invite-img"
                     src={mediaUrl(event.invite_image)}
-                    alt={t.inviteImgAlt}
+                    alt={terms.inviteLabel}
                   />
                   <div className="phone-mock-meta">
-                    <span>{t.imageBubbleLabel}</span>
+                    <span>{terms.inviteLabel}</span>
                     <span className="phone-mock-check">✓✓</span>
                   </div>
                 </div>
               </div>
             )}
             <div className="event-view-text">
-              <h2 className="event-couple">{couple ?? t.coupleFallback}</h2>
+              <h2 className="event-couple">{couple ?? terms.defaultTitle}</h2>
               <p className="event-venue">
                 {event?.venue_name || t.venueFallback}
               </p>

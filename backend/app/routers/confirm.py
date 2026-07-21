@@ -47,6 +47,7 @@ def _public(db: Session, guest: models.Guest) -> schemas.ConfirmGuestPublic:
         confirmed_count=guest.confirmed_count,
         guest_note=guest.guest_note,
         event=schemas.ConfirmEventInfo(
+            event_type=(event.event_type or "wedding") if event else "wedding",
             groom_name=event.groom_name if event else "",
             bride_name=event.bride_name if event else "",
             venue_name=event.venue_name if event else "",

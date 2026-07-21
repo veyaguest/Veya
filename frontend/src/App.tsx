@@ -9,10 +9,12 @@ import {
   getEventId,
   getToken,
   isImpersonating,
+  setActiveEventType,
   setAdminToken,
   setEventId,
   setToken,
 } from './authStore'
+import { getEventTerms, hostNames } from './strings/eventTypes'
 import { AdminApp } from './components/AdminApp'
 import { AuthPage } from './components/AuthPage'
 import { DashboardPage } from './components/DashboardPage'
@@ -276,8 +278,12 @@ function App() {
   const navItems = NAV_ITEMS
 
   const activeEvent = events.find((e) => e.id === activeEventId) ?? null
+  // מסנכרן את סוג האירוע הפעיל ל-store, כדי שמסכים יגזרו ממנו מונחים דינמיים.
+  setActiveEventType(activeEvent?.event_type ?? null)
+  const activeTerms = getEventTerms(activeEvent?.event_type)
   const eventLabel = activeEvent
-    ? `${activeEvent.groom_name} & ${activeEvent.bride_name}`
+    ? hostNames(activeTerms, activeEvent.groom_name, activeEvent.bride_name) ||
+      activeTerms.defaultTitle
     : '—'
   const userInitial = (user.display_name || user.email || '?').trim().charAt(0).toUpperCase()
 

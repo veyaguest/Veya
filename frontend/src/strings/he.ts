@@ -34,7 +34,7 @@ export const strings = {
     timeLabel: 'שעת האירוע',
     commitLabel: 'יום ההתחייבות לאולם',
     commitExplain:
-      'כמה ימים לפני החתונה צריך למסור לאולם מספר סופי? ביום הזה כל אישורי ההגעה נסגרים, ולוח הזמנים שלהם נבנה לאחור סביבו.',
+      'כמה ימים לפני האירוע צריך למסור לאולם מספר סופי? ביום הזה כל אישורי ההגעה נסגרים, ולוח הזמנים שלהם נבנה לאחור סביבו.',
     commitLockedValue: (n: number | string) => `${n} ימים לפני האירוע`,
     commitLockedNote:
       '🔒 כבר בחרתם — הבחירה נעולה כי לוח הזמנים כבר בנוי סביבה.',
@@ -85,7 +85,7 @@ export const strings = {
       stateInProgress: 'בתהליך',
       stateDone: 'הושלם',
       steps: [
-        { title: 'חלוקה לצד חתן או כלה', desc: 'שיוך כל אורח לצד המתאים.' },
+        { title: 'חלוקה לצדדים', desc: 'שיוך כל מוזמן לצד המתאים באירוע.' },
         {
           title: 'יצירת קבוצות',
           desc: 'משפחה, חברים, עבודה או כל קבוצה אחרת.',
@@ -102,8 +102,10 @@ export const strings = {
         bride: number
         groups: number
         prefs: number
+        sideALabel: string
+        sideBLabel: string
       }) =>
-        `${o.total} מוזמנים · ${o.groom} בצד החתן · ${o.bride} בצד הכלה · ${o.groups} קבוצות · ${o.prefs} העדפות`,
+        `${o.total} מוזמנים · ${o.sideALabel}: ${o.groom} · ${o.sideBLabel}: ${o.bride} · ${o.groups} קבוצות · ${o.prefs} העדפות`,
       cta: '✨ הושבה בקליק',
       ctaHint:
         'VEYA תיצור עבורכם סידור הושבה חכם בהתאם לכל ההעדפות שהגדרתם.',
@@ -226,7 +228,7 @@ export const strings = {
         text: 'כשהכול מוכן, VEYA מסדרת את השולחנות לפי הקשרים וההעדפות שלכם.',
       },
     ],
-    onboardingTitle: 'חסכו לעצמכם שעות של כאב ראש לפני החתונה',
+    onboardingTitle: 'חסכו לעצמכם שעות של כאב ראש לפני האירוע',
     onboardingSub:
       'ניהול המוזמנים והושבה הם החלק הכי מלחיץ. VEYA כאן כדי לעשות אותו פשוט — צעד אחר צעד, בלי גיליונות מסובכים.',
     onboardingCta: 'בואו נתחיל',

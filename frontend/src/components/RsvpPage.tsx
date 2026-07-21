@@ -32,6 +32,7 @@ import type {
   TemplatePlaceholder,
 } from '../types'
 import { RSVP_LABELS } from '../types'
+import { getEventTerms, hostNames } from '../strings/eventTypes'
 import { AddGuestForm } from './AddGuestForm'
 import { AutomationRulesTab } from './AutomationRulesTab'
 import { AutomationTemplatesTab } from './AutomationTemplatesTab'
@@ -503,10 +504,11 @@ function SendConfirmStep({
   // תצוגת ההודעה — מחליף כינויים בערכי דוגמה (כמו בעורך ההודעות).
   const previewText = useMemo(() => {
     const first = guests.find((g) => selected.has(g.id)) ?? guests[0]
+    const terms = getEventTerms(event?.event_type)
     const couple =
       event && (event.groom_name || event.bride_name)
-        ? `${event.groom_name} ו${event.bride_name}`
-        : 'בני הזוג'
+        ? hostNames(terms, event.groom_name, event.bride_name)
+        : terms.hostsLabel
     const sample: Record<string, string> = {
       '{{guest_name}}': first?.full_name || 'דנה כהן',
       '{{couple_names}}': couple,
@@ -1377,7 +1379,7 @@ function ManualTab({ onChanged }: { onChanged: () => void }) {
               <img
                 className="tpl-preview-img"
                 src={mediaUrl(event.invite_image)}
-                alt="הזמנה לחתונה"
+                alt={getEventTerms(event?.event_type).inviteLabel}
               />
             )}
             <div className="tpl-preview-body">{preview || '—'}</div>

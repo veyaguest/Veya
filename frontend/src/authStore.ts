@@ -2,6 +2,9 @@
 
 const TOKEN_KEY = 'veya_token'
 const EVENT_KEY = 'veya_event_id'
+// סוג האירוע הפעיל — נשמר כדי שמסכים יוכלו לגזור מונחים דינמיים (צדדים,
+// בעלי אירוע) בלי להעביר event_type בכל prop. חתונה היא ברירת המחדל.
+const EVENT_TYPE_KEY = 'veya_event_type'
 // כשאדמין "מתחבר כמשתמש" (התחזות) — טוקן האדמין נשמר כאן בצד, וטוקן המשתמש
 // נכנס במקומו ב-TOKEN_KEY. קיום ערך כאן פירושו שאנחנו במצב התחזות פעיל.
 const ADMIN_TOKEN_KEY = 'veya_admin_token'
@@ -22,6 +25,17 @@ export function getEventId(): number | null {
 export function setEventId(id: number | null): void {
   if (id == null) localStorage.removeItem(EVENT_KEY)
   else localStorage.setItem(EVENT_KEY, String(id))
+}
+
+/** סוג האירוע הפעיל (wedding אם לא נקבע). */
+export function getActiveEventType(): string {
+  return localStorage.getItem(EVENT_TYPE_KEY) || 'wedding'
+}
+
+/** קובע את סוג האירוע הפעיל — נקרא כשמתחלף האירוע הפעיל או נטענים פרטיו. */
+export function setActiveEventType(type: string | null): void {
+  if (!type) localStorage.removeItem(EVENT_TYPE_KEY)
+  else localStorage.setItem(EVENT_TYPE_KEY, type)
 }
 
 /** טוקן האדמין השמור בזמן התחזות (או null אם לא מתחזים כרגע). */
@@ -48,6 +62,7 @@ export function isImpersonating(): boolean {
 export function clearAuth(): void {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(EVENT_KEY)
+  localStorage.removeItem(EVENT_TYPE_KEY)
   localStorage.removeItem(ADMIN_TOKEN_KEY)
 }
 

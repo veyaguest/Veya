@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { commitImport, previewImport } from '../api'
 import type { GuestCreate, ImportPreview } from '../types'
-import { groupLabel, SIDE_LABELS } from '../types'
+import { groupLabel } from '../types'
+import { sideLabel } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 
 const t = strings.guests
@@ -103,7 +104,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
                       <td dir="ltr" className="phone">
                         {r.phone}
                       </td>
-                      <td>{SIDE_LABELS[r.side]}</td>
+                      <td>{sideLabel(r.side)}</td>
                       <td>{groupLabel(r.group_type)}</td>
                       <td className="center">{r.party_size}</td>
                       <td>
