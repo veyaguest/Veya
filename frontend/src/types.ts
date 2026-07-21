@@ -1,4 +1,15 @@
 export type Side = 'groom' | 'bride' | 'shared'
+// סוג האירוע — קובע את השפה הדינמית של המערכת (ראו strings/eventTypes.ts).
+// חתונה היא ברירת המחדל ושומרת על תאימות אחורה.
+export type EventType =
+  | 'wedding'
+  | 'bar_mitzvah'
+  | 'bat_mitzvah'
+  | 'henna'
+  | 'brit'
+  | 'family'
+  | 'business'
+  | 'other'
 // קבוצה יכולה להיות אחת מהמוכרות, או קבוצה מותאמת אישית (טקסט חופשי בעברית)
 export type KnownGroupType =
   | 'close_family'
@@ -405,6 +416,7 @@ export interface DashboardStats {
 
 export interface EventDetails {
   id: number
+  event_type: EventType
   groom_name: string
   bride_name: string
   venue_name: string
@@ -554,6 +566,7 @@ export interface TokenResponse {
 
 export interface EventSummary {
   id: number
+  event_type: EventType
   groom_name: string
   bride_name: string
   venue_name: string
