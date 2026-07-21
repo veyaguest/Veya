@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getEvent, getStats, mediaUrl, readAudit, updateEvent } from '../api'
-import type { AuditLogRow, DashboardStats, EventDetails } from '../types'
+import { getEvent, getReserveSummary, getStats, mediaUrl, readAudit, updateEvent } from '../api'
+import type { AuditLogRow, DashboardStats, EventDetails, ReserveSummary } from '../types'
 import type { ReadinessPage } from '../readiness'
 import { SeatingPrep } from './SeatingPrep'
 import { VenueAutocomplete } from './VenueAutocomplete'
@@ -324,6 +324,9 @@ export function DashboardPage({ onNavigate }: Props) {
         <SeatingPrep stats={stats} onNavigate={onNavigate} />
       )}
 
+      {/* ---- כרטיס רזרבה (מוצג רק אחרי שיש שיבוץ) ---- */}
+      <ReserveCard onNavigate={onNavigate} />
+
       {/* ---- התראת הבהרות (פעולה נדרשת) ---- */}
       {stats && stats.pending_clarifications > 0 && (
         <p className="dash-alert">{t.clarificationsAlert(stats.pending_clarifications)}</p>
@@ -447,6 +450,54 @@ function LegendRow({
       <span className="legend-label">{label}</span>
       <b className="legend-val">{value}</b>
     </li>
+  )
+}
+
+// כרטיס סקירת הרזרבה בדשבורד — מקומות פנויים, שולחנות רזרבה, וכמה ללא שולחן.
+// מוצג רק אחרי שיש כבר שיבוץ (משובצים או רזרבה מוגדרת), אחרת אין לו מה לומר.
+const rt = strings.dashboard.reserve
+function ReserveCard({ onNavigate }: { onNavigate?: (page: ReadinessPage) => void }) {
+  const [sum, setSum] = useState<ReserveSummary | null>(null)
+  useEffect(() => {
+    getReserveSummary()
+      .then(setSum)
+      .catch(() => {
+        /* שקט — כרטיס לא קריטי */
+      })
+  }, [])
+
+  if (!sum) return null
+  const hasSeating =
+    sum.seated_people > 0 || sum.reserve_seats > 0 || sum.reserve_tables > 0
+  if (!hasSeating) return null
+
+  return (
+    <div className="reserve-card">
+      <div className="reserve-card-head">
+        <h3 className="reserve-card-title">{rt.title}</h3>
+        <button className="reserve-card-cta" onClick={() => onNavigate?.('hall')}>
+          {rt.manage}
+        </button>
+      </div>
+      <div className="reserve-card-stats">
+        <div className="rc-stat">
+          <span className="rc-num">{sum.free_seats_active}</span>
+          <span className="rc-label">{rt.freeSeats}</span>
+        </div>
+        <div className="rc-stat">
+          <span className="rc-num">{sum.reserve_tables}</span>
+          <span className="rc-label">{rt.reserveTables}</span>
+        </div>
+        <div className="rc-stat">
+          <span className="rc-num">{sum.seated_people}</span>
+          <span className="rc-label">{rt.seated}</span>
+        </div>
+        <div className="rc-stat">
+          <span className="rc-num">{sum.unseated_guests}</span>
+          <span className="rc-label">{rt.unseated}</span>
+        </div>
+      </div>
+    </div>
   )
 }
 

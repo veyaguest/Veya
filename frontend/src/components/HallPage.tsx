@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   analyzeConstraints,
+  assignSeat,
   generateSeating,
   getHall,
+  getReserveSummary,
   listClarifications,
   mediaUrl,
+  recommendSeat,
   resolveClarification,
   saveHall,
 } from '../api'
@@ -17,6 +20,8 @@ import type {
   HallGuest,
   HallLayout,
   HallState,
+  ReserveSummary,
+  SeatRecommendation,
   SeatingExplanation,
   TableType,
 } from '../types'
@@ -51,12 +56,16 @@ interface TableView {
   color: string
   notes: string
   locked: boolean
+  is_reserve: boolean
 }
 
 const REL_TEXT: Record<Clarification['relation_type'], string> = {
   avoid: 'לא לשבת עם',
   together: 'לשבת עם',
 }
+
+// אפשרויות מהירות לכמות מקומות הרזרבה המפוזרים (0 = ללא). מעבר לזה יש שדה חופשי.
+const RESERVE_PRESETS = [0, 5, 10, 15] as const
 
 const TABLE_TYPE_LABELS: Record<TableType, string> = {
   round: '⬤ עגול',
@@ -908,6 +917,17 @@ export function HallPage() {
   const [unassigned, setUnassigned] = useState<HallGuest[]>([])
   const [elements, setElements] = useState<HallElement[]>([])
   const [seats, setSeats] = useState(12)
+  // יעד מקומות רזרבה מפוזרים שנבחר לאירוע (נשמר, מוצג בפאנל יום האירוע).
+  const [reserveSeats, setReserveSeats] = useState(0)
+  // ---- מצב יום האירוע (ניהול בזמן אמת) ----
+  const [dayMode, setDayMode] = useState(false)
+  const [reserveSummary, setReserveSummary] = useState<ReserveSummary | null>(null)
+  // המוזמן שנבחר לשיבוץ מהיר + ההמלצות שחזרו עבורו (null = טרם נטען/סגור).
+  const [assignGuestId, setAssignGuestId] = useState<number | null>(null)
+  const [recs, setRecs] = useState<SeatRecommendation[] | null>(null)
+  const [recLoading, setRecLoading] = useState(false)
+  const [assignBusy, setAssignBusy] = useState(false)
+  const [assignNote, setAssignNote] = useState('')
   // פרופיל הפריסה של האולם (density + planned). null = טרם הוגדר (אולם ישן/ריק).
   const [hallLayout, setHallLayout] = useState<HallLayout | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
@@ -1116,6 +1136,7 @@ export function HallPage() {
         color: t.color ?? '',
         notes: t.notes ?? '',
         locked: t.locked ?? false,
+        is_reserve: t.is_reserve ?? false,
       })),
     )
     nextTableNumRef.current = h.tables.length
@@ -1130,6 +1151,7 @@ export function HallPage() {
       })),
     )
     setSeats(snapCapacity(h.seats_per_table))
+    setReserveSeats(h.reserve_seats ?? 0)
     setHallLayout(h.hall_layout ?? null)
     setWarnings(h.warnings)
     setSketch(h.sketch ?? null)
@@ -1617,6 +1639,7 @@ export function HallPage() {
       color: '',
       notes: '',
       locked: false,
+      is_reserve: false,
     }))
 
     // בנייה מחדש כשכבר יש אורחים משובצים — מחזירים אותם ל"ללא שולחן".
@@ -1660,6 +1683,7 @@ export function HallPage() {
       color: '',
       notes: '',
       locked: false,
+      is_reserve: false,
     }
     setTables((prev) => [...prev, t])
     setSelectedTables(new Set([nextNum]))
@@ -1693,6 +1717,12 @@ export function HallPage() {
 
   function updateTable(tnum: number, patch: Partial<TableView>) {
     setTables((prev) => prev.map((t) => (t.table_number === tnum ? { ...t, ...patch } : t)))
+    setDirty(true)
+  }
+
+  // כמות הרזרבה המפוזרת שנשמרת לאירוע (מוגבל 0..60, נשמר אוטומטית כמו כל שינוי).
+  function setReserveAmount(n: number) {
+    setReserveSeats(Math.max(0, Math.min(60, Math.round(n || 0))))
     setDirty(true)
   }
 
@@ -1881,6 +1911,7 @@ export function HallPage() {
           color: '',
           notes: '',
           locked: false,
+          is_reserve: false,
         })
       })
       nextTableNumRef.current = Math.max(
@@ -2101,6 +2132,7 @@ export function HallPage() {
           color: t.color,
           notes: t.notes,
           locked: t.locked,
+          is_reserve: t.is_reserve,
         }))
         // נועלים פרופיל צפיפות: אם כבר נבחר — שומרים אותו; אחרת (אולם ישן)
         // גוזרים מכמות השולחנות הנוכחית, כדי שהגדלים יישארו יציבים.
@@ -2108,7 +2140,7 @@ export function HallPage() {
           density: densityKeyForCount(tables.length),
           planned_tables: tables.length,
         }
-        const res = await saveHall(payload, seats, elements, sketch ?? '', layoutToSave)
+        const res = await saveHall(payload, seats, elements, sketch ?? '', layoutToSave, reserveSeats)
         setWarnings(res.warnings)
         setUnassigned(res.unassigned)
         // מנקים dirty רק אם לא נעשה שינוי נוסף בזמן השמירה; אחרת שומרים שוב.
@@ -2128,13 +2160,17 @@ export function HallPage() {
     }, 900)
     return () => window.clearTimeout(timer)
     // saveRetry בכוונה בתלויות — מאלץ בדיקת-שמירה חוזרת אחרי סבב שהסתיים עם שינויים.
-  }, [dirty, tables, elements, sketch, seats, hallLayout, saveRetry])
+  }, [dirty, tables, elements, sketch, seats, hallLayout, reserveSeats, saveRetry])
 
   async function onRegenerate() {
     setLoading(true)
     setError('')
     try {
-      const res = await generateSeating({ seats_per_table: seats, persist: true })
+      const res = await generateSeating({
+        seats_per_table: seats,
+        persist: true,
+        reserve_seats: reserveSeats,
+      })
       if (!res.hard_ok) {
         setError('לא הצלחנו לסדר את כולם בלי להתנגש בהעדפות — כדאי להוסיף מקומות לשולחן.')
       }
@@ -2145,6 +2181,59 @@ export function HallPage() {
       setError(err instanceof Error ? err.message : 'לא הצלחנו לסדר כרגע, ננסה שוב')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // ---- מצב יום האירוע: סיכום רזרבה + שיבוץ מהיר עם המלצה ----
+  const refreshReserve = useCallback(async () => {
+    try {
+      setReserveSummary(await getReserveSummary())
+    } catch {
+      /* שקט — לא חוסם את המפה */
+    }
+  }, [])
+
+  // כשנכנסים למצב יום האירוע — טוענים סיכום עדכני. גם אחרי כל שיבוץ מרעננים.
+  useEffect(() => {
+    if (dayMode) refreshReserve()
+  }, [dayMode, refreshReserve])
+
+  async function openAssign(guestId: number) {
+    if (assignGuestId === guestId) {
+      // לחיצה שנייה על אותו מוזמן סוגרת את כרטיס ההמלצה.
+      setAssignGuestId(null)
+      setRecs(null)
+      return
+    }
+    setAssignGuestId(guestId)
+    setRecs(null)
+    setAssignNote('')
+    setRecLoading(true)
+    try {
+      const res = await recommendSeat(guestId, true)
+      setRecs(res.recommendations)
+    } catch (err) {
+      setAssignNote(err instanceof Error ? err.message : 'לא הצלחנו להמליץ כרגע')
+    } finally {
+      setRecLoading(false)
+    }
+  }
+
+  async function doAssign(guestId: number, tableNumber: number) {
+    setAssignBusy(true)
+    setAssignNote('')
+    try {
+      const res = await assignSeat(guestId, tableNumber)
+      // רענון המפה מהשרת — האורח עובר משם ל"ללא שולחן" לשולחן, בזמן אמת.
+      applyState(await getHall())
+      await refreshReserve()
+      setAssignGuestId(null)
+      setRecs(null)
+      if (res.warnings.length) setAssignNote(res.warnings.join(' · '))
+    } catch (err) {
+      setAssignNote(err instanceof Error ? err.message : 'לא הצלחנו לשבץ כרגע')
+    } finally {
+      setAssignBusy(false)
     }
   }
 
@@ -2805,6 +2894,38 @@ export function HallPage() {
                 <HmIcon name="save" size={16} />
                 {saving ? 'שומר…' : dirty ? 'שינויים יישמרו אוטומטית' : savedTick ? 'נשמר ✓' : 'הכול שמור אוטומטית'}
               </div>
+              <div className="hm-reserve-picker">
+                <p className="hm-panel-head">מקומות רזרבה</p>
+                <p className="hm-reserve-desc">
+                  כמה מקומות פנויים להשאיר בשיבוץ האוטומטי (מפוזר אחיד בין השולחנות),
+                  לאורחים של הרגע האחרון.
+                </p>
+                <div className="hm-reserve-chips">
+                  {RESERVE_PRESETS.map((n) => (
+                    <button
+                      key={n}
+                      className={reserveSeats === n ? 'active' : ''}
+                      onClick={() => setReserveAmount(n)}
+                    >
+                      {n === 0 ? 'ללא' : n}
+                    </button>
+                  ))}
+                  <input
+                    type="number"
+                    min={0}
+                    max={60}
+                    value={reserveSeats}
+                    onChange={(e) => setReserveAmount(Number(e.target.value))}
+                    aria-label="כמות רזרבה מותאמת"
+                  />
+                </div>
+              </div>
+              <button
+                className="hm-ghost-btn hm-daymode-btn"
+                onClick={() => setDayMode(true)}
+              >
+                <HmIcon name="check" size={18} /> מצב יום האירוע
+              </button>
               <button className="hm-ghost-btn" onClick={onRegenerate} disabled={loading}>
                 <HmIcon name="refresh" size={18} /> סידור מחדש מההתחלה
               </button>
@@ -3040,6 +3161,22 @@ export function HallPage() {
                         ✕
                       </button>
                     </div>
+                  </div>
+
+                  <div className="hm-edit-field">
+                    <label className="hm-reserve-toggle">
+                      <input
+                        type="checkbox"
+                        checked={sheetT.is_reserve}
+                        onChange={(e) =>
+                          updateTable(sheetT.table_number, { is_reserve: e.target.checked })
+                        }
+                      />
+                      שולחן רזרבה
+                    </label>
+                    <p className="hm-reserve-hint">
+                      לא ישובץ אוטומטית — שמור לאורחים של הרגע האחרון.
+                    </p>
                   </div>
 
                   <div className="hm-sheet-actions">
@@ -3683,7 +3820,9 @@ export function HallPage() {
                       !over && warnTables.has(t.table_number) ? 'warn' : ''
                     } ${selected !== null ? 'droppable' : ''} ${isSelT ? 'selected' : ''} ${
                       t.locked ? 'locked' : ''
-                    } ${dragOver === t.table_number ? 'drag-over' : ''} ${fillClass}`}
+                    } ${t.is_reserve ? 'reserve' : ''} ${
+                      dragOver === t.table_number ? 'drag-over' : ''
+                    } ${fillClass}`}
                     style={{ left: t.x, top: t.y, width: w }}
                     onClick={(e) => onTableClick(e, t.table_number)}
                     onDragOver={(e) => {
@@ -3731,6 +3870,7 @@ export function HallPage() {
                       <span className="table-center">
                         <span className="table-num">{t.table_number}</span>
                         {t.name && <span className="table-name">{t.name}</span>}
+                        {t.is_reserve && <span className="table-reserve-tag">רזרבה</span>}
                         <span className="table-occ">
                           {used}/{t.capacity}
                         </span>
@@ -3891,6 +4031,22 @@ export function HallPage() {
                   </button>
                 </div>
               </div>
+
+              <label className="props-field reserve-toggle">
+                <span className="reserve-toggle-head">
+                  <input
+                    type="checkbox"
+                    checked={soleSelected.is_reserve}
+                    onChange={(e) =>
+                      updateTable(soleSelected.table_number, { is_reserve: e.target.checked })
+                    }
+                  />
+                  שולחן רזרבה
+                </span>
+                <span className="reserve-toggle-hint">
+                  לא ישובץ אוטומטית — שמור לאורחים של הרגע האחרון ביום האירוע.
+                </span>
+              </label>
 
               <div className="props-field">
                 יושבים בשולחן ({soleSelected.guests.reduce((s, g) => s + g.seats, 0)}/
@@ -4071,6 +4227,114 @@ export function HallPage() {
           onCancel={() => setSketchEditSrc(null)}
           onConfirm={onSketchConfirm}
         />
+      )}
+
+      {dayMode && (
+        <div className="day-mode" role="dialog" aria-label="מצב יום האירוע">
+          <div className="day-mode-head">
+            <div>
+              <h3>מצב יום האירוע</h3>
+              <p>שיבוץ אורחים של הרגע האחרון — בקליק, עם המלצה חכמה.</p>
+            </div>
+            <button
+              className="day-mode-close"
+              onClick={() => {
+                setDayMode(false)
+                setAssignGuestId(null)
+                setRecs(null)
+              }}
+              aria-label="סגירה"
+            >
+              ✕
+            </button>
+          </div>
+
+          {reserveSummary && (
+            <div className="day-mode-stats">
+              <div className="dm-stat">
+                <span className="dm-num">{reserveSummary.free_seats_active}</span>
+                <span className="dm-label">מקומות פנויים</span>
+              </div>
+              <div className="dm-stat">
+                <span className="dm-num">{reserveSummary.reserve_tables}</span>
+                <span className="dm-label">שולחנות רזרבה</span>
+              </div>
+              <div className="dm-stat">
+                <span className="dm-num">{reserveSummary.seated_people}</span>
+                <span className="dm-label">משובצים</span>
+              </div>
+              <div className="dm-stat">
+                <span className="dm-num">{reserveSummary.unseated_guests}</span>
+                <span className="dm-label">ללא שולחן</span>
+              </div>
+            </div>
+          )}
+
+          {assignNote && <p className="day-mode-note">{assignNote}</p>}
+
+          <div className="day-mode-list">
+            {unassigned.length === 0 ? (
+              <p className="day-mode-empty">כל המוזמנים משובצים 🎉</p>
+            ) : (
+              [...unassigned]
+                .sort((a, b) => a.full_name.localeCompare(b.full_name, 'he'))
+                .map((g) => (
+                  <div
+                    key={g.id}
+                    className={`dm-guest ${assignGuestId === g.id ? 'open' : ''}`}
+                  >
+                    <button className="dm-guest-head" onClick={() => openAssign(g.id)}>
+                      <span className="dm-guest-name">
+                        {g.full_name}
+                        {g.seats > 1 && <span className="chip-size">×{g.seats}</span>}
+                      </span>
+                      <span className="dm-guest-cta">
+                        {assignGuestId === g.id ? 'סגירה' : 'שבץ אורח'}
+                      </span>
+                    </button>
+
+                    {assignGuestId === g.id && (
+                      <div className="dm-recs">
+                        {recLoading && <p className="dm-recs-loading">מחשב המלצה…</p>}
+                        {!recLoading && recs && recs.length === 0 && (
+                          <p className="dm-recs-empty">
+                            אין שולחן פנוי מתאים — פנו מקום או הוסיפו שולחן רזרבה.
+                          </p>
+                        )}
+                        {!recLoading &&
+                          recs &&
+                          recs.map((r, i) => (
+                            <button
+                              key={r.table_number}
+                              className={`dm-rec ${i === 0 ? 'best' : ''}`}
+                              disabled={assignBusy}
+                              onClick={() => doAssign(g.id, r.table_number)}
+                            >
+                              <span className="dm-rec-top">
+                                <span className="dm-rec-table">
+                                  שולחן {r.table_number}
+                                  {r.table_name && ` · ${r.table_name}`}
+                                  {r.is_reserve && (
+                                    <span className="dm-rec-reserve">רזרבה</span>
+                                  )}
+                                </span>
+                                <span className="dm-rec-free">{r.free_seats} פנויים</span>
+                              </span>
+                              {r.reasons.length > 0 && (
+                                <span className="dm-rec-reasons">
+                                  {r.reasons.join(' · ')}
+                                </span>
+                              )}
+                              {i === 0 && <span className="dm-rec-badge">מומלץ</span>}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                ))
+            )}
+          </div>
+        </div>
       )}
     </div>
   )

@@ -275,6 +275,53 @@ export interface SeatingRequest {
   num_tables?: number
   only_confirmed?: boolean
   persist?: boolean
+  // כמה מקומות להשאיר פנויים (רזרבה מפוזרת אחיד). null/undefined => הערך השמור.
+  reserve_seats?: number | null
+}
+
+// ---- ניהול רזרבה חכם (מצב יום האירוע) ----
+
+// סיכום הרזרבה — לכרטיס הדשבורד ולפאנל "מצב יום האירוע".
+export interface ReserveSummary {
+  reserve_seats: number // יעד המקומות הפנויים המפוזרים שנבחר
+  reserve_tables: number // מספר שולחנות רזרבה שלמים
+  reserve_tables_capacity: number // סה"כ מקומות בשולחנות הרזרבה
+  free_seats_active: number // מקומות פנויים בשולחנות הפעילים
+  seated_people: number // כמה אנשים משובצים בפועל
+  unseated_guests: number // כמה מוזמנים (רשומות) עדיין ללא שולחן
+}
+
+// המלצת שיבוץ בודדת (דטרמיניסטית) לשולחן אחד.
+export interface SeatRecommendation {
+  table_number: number
+  table_name: string
+  is_reserve: boolean
+  free_seats: number
+  score: number
+  reasons: string[]
+}
+
+export interface RecommendSeatRequest {
+  guest_id: number
+  include_reserve?: boolean
+}
+
+export interface RecommendSeatResponse {
+  guest_id: number
+  guest_name: string
+  seats_needed: number
+  recommendations: SeatRecommendation[]
+}
+
+export interface AssignSeatRequest {
+  guest_id: number
+  table_number: number | null
+}
+
+export interface AssignSeatResult {
+  guest_id: number
+  table_number: number | null
+  warnings: string[]
 }
 
 // ---- פרסור הערות + הבהרות (שלב 4) ----
@@ -415,6 +462,8 @@ export interface HallTable {
   color: string
   notes: string
   locked: boolean
+  // שולחן רזרבה שלם — מוצא מהשיבוץ האוטומטי, שמור לשיבוץ ידני ביום האירוע.
+  is_reserve: boolean
 }
 
 // רק האלמנטים הגלויים בסרגל הכלים כרגע. שאר הסוגים (head_table, gift_table,
@@ -457,6 +506,7 @@ export interface HallLayout {
 
 export interface HallState {
   seats_per_table: number
+  reserve_seats: number
   tables: HallTable[]
   unassigned: HallGuest[]
   elements: HallElement[]
@@ -481,6 +531,7 @@ export interface HallTableSave {
   color: string
   notes: string
   locked: boolean
+  is_reserve: boolean
 }
 
 // ---- משתמשים והתחברות (שלב 8) ----

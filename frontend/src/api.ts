@@ -42,6 +42,9 @@ import type {
   MessageTemplate,
   RsvpSummary,
   RunDueResult,
+  ReserveSummary,
+  RecommendSeatResponse,
+  AssignSeatResult,
   SeatingRequest,
   SeatingResult,
   SendInvitationsResult,
@@ -715,6 +718,7 @@ export async function saveHall(
   elements?: HallElement[],
   sketch?: string | null,
   hallLayout?: HallLayout | null,
+  reserveSeats?: number | null,
 ): Promise<HallState> {
   const res = await apiFetch('/hall', {
     method: 'PUT',
@@ -725,7 +729,45 @@ export async function saveHall(
       elements,
       sketch,
       hall_layout: hallLayout,
+      reserve_seats: reserveSeats,
     }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- ניהול רזרבה חכם (מצב יום האירוע) ----
+
+/** סיכום הרזרבה — מקומות פנויים, שולחנות רזרבה, משובצים וללא שולחן. */
+export async function getReserveSummary(): Promise<ReserveSummary> {
+  const res = await apiFetch('/seating/reserve')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** המלצה דטרמיניסטית על השולחן/ות המתאים/ים ביותר לשיבוץ מוזמן בודד. */
+export async function recommendSeat(
+  guestId: number,
+  includeReserve = true,
+): Promise<RecommendSeatResponse> {
+  const res = await apiFetch('/seating/recommend-seat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ guest_id: guestId, include_reserve: includeReserve }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** שיבוץ מהיר של מוזמן לשולחן (או שחרור אם table_number=null). מחזיר אזהרות רכות. */
+export async function assignSeat(
+  guestId: number,
+  tableNumber: number | null,
+): Promise<AssignSeatResult> {
+  const res = await apiFetch('/seating/assign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ guest_id: guestId, table_number: tableNumber }),
   })
   if (!res.ok) throw await toError(res)
   return res.json()
