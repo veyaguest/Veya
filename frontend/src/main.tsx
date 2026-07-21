@@ -19,15 +19,8 @@ function installMobileZoomGuard() {
 installMobileZoomGuard()
 
 // נתיב ציבורי לאישור הגעה: /confirm/{token} — נפתח ללא התחברות.
+// (העמוד מוגש דרך app.html שכבר מסומן noindex, ולכן לא נדרש טיפול נוסף כאן.)
 const confirmMatch = window.location.pathname.match(/^\/confirm\/([^/]+)/)
-
-// עמוד אישור ההגעה מכיל טוקן אישי ופרטי מוזמן — לעולם אין לאנדקס אותו בגוגל.
-if (confirmMatch) {
-  const robots = document.createElement('meta')
-  robots.name = 'robots'
-  robots.content = 'noindex, nofollow'
-  document.head.appendChild(robots)
-}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
