@@ -17,6 +17,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from app import event_terms
+
 # שני כפתורי Quick Reply — עד 3 מותר בוואטסאפ (החלטה טכנית 2).
 RSVP_YES_ID = "rsvp_yes"
 RSVP_NO_ID = "rsvp_no"
@@ -29,14 +31,17 @@ def current_mode() -> str:
     return os.getenv("WHATSAPP_MODE", "mock").strip().lower()
 
 
-def build_invitation_text(guest_name: str, groom: str, bride: str, venue: str) -> str:
-    """נוסח ההזמנה שנשלח למוזמן (טקסט תבנית, לפני הכפתורים)."""
-    couple = " ו".join([n for n in (groom, bride) if n]) or "בני הזוג"
+def build_invitation_text(
+    guest_name: str, groom: str, bride: str, venue: str, event_type: str = "wedding"
+) -> str:
+    """נוסח ההזמנה שנשלח למוזמן (טקסט תבנית, לפני הכפתורים). מתאים את עצמו לסוג האירוע."""
+    terms = event_terms.get_event_terms(event_type)
+    couple = event_terms.hosts_names(event_type, groom, bride)
     where = f" ב{venue}" if venue else ""
     hi = guest_name.split()[0] if guest_name else "שלום"
     return (
-        f"היי {hi}! 💍\n"
-        f"{couple} שמחים להזמין אותך לחתונה{where}.\n"
+        f"היי {hi}! {terms.emoji}\n"
+        f"{couple} שמחים להזמין אותך ל{terms.celebration}{where}.\n"
         f"נשמח לדעת אם תגיע/י — לחיצה על אחד הכפתורים למטה:"
     )
 
@@ -44,9 +49,11 @@ def build_invitation_text(guest_name: str, groom: str, bride: str, venue: str) -
 # ---- תבניות הודעה עם משתנים (שלב RSVP 2) ----
 
 # תבנית ברירת המחדל. הבעלים יכול לערוך אותה ולשמור אחת משלו.
+# משתמשת בטוקן {{celebration}} ("החתונה"/"אירוע בר המצווה"/"האירוע") כדי
+# להתאים את עצמה לסוג האירוע — לחתונה היא נקראת בדיוק כמו קודם.
 DEFAULT_TEMPLATE = (
-    "שלום {name}! 💍\n"
-    "{event_name} שמחים להזמין אתכם לחתונה{venue}.\n"
+    "שלום {name}!\n"
+    "{event_name} שמחים להזמין אתכם ל{{celebration}}{venue}.\n"
     "נשמח לאישור הגעה בקישור האישי:\n"
     "{personal_link}"
 )
@@ -83,12 +90,15 @@ def render_template(
     venue: str,
     link: str,
     date: str = "",
+    event_type: str = "wedding",
 ) -> str:
     """ממלא את המשתנים בתבנית בערכים של מוזמן ואירוע ספציפיים.
 
-    תומך גם בכינויים בעברית ({שם}, {שמות}, {תאריך}, {מקום}, {קישור_אישי}).
+    תומך גם בכינויים בעברית ({שם}, {שמות}, {תאריך}, {מקום}, {קישור_אישי}),
+    ובטוקן {{celebration}} שמתאים את שם האירוע לסוגו.
     """
-    couple = " ו".join([n for n in (groom, bride) if n]) or "בני הזוג"
+    terms = event_terms.get_event_terms(event_type)
+    couple = event_terms.hosts_names(event_type, groom, bride)
     where = f" ב{venue}" if venue else ""
     values = {
         "name": guest_name.split()[0] if guest_name else "שלום",
@@ -98,6 +108,8 @@ def render_template(
         "personal_link": link,
     }
     text = template or DEFAULT_TEMPLATE
+    # טוקן שם האירוע לפי הסוג (למשל בתבנית ברירת המחדל).
+    text = text.replace("{{celebration}}", terms.celebration)
     # מיפוי כל הכינויים לערך
     for ph in PLACEHOLDERS:
         canonical = ph["key"].strip("{}")
@@ -118,7 +130,9 @@ AUTOMATION_PLACEHOLDERS = [
     {"key": "{{first_name}}", "token": "[שם פרטי]", "desc": "שם פרטי של המוזמן"},
     {"key": "{{bride_name}}", "token": "[שם הכלה]", "desc": "שם הכלה"},
     {"key": "{{groom_name}}", "token": "[שם החתן]", "desc": "שם החתן"},
-    {"key": "{{event_name}}", "token": "[שמות בני הזוג]", "desc": "שמות בני הזוג"},
+    {"key": "{{event_name}}", "token": "[שמות בעלי האירוע]", "desc": "שמות בעלי האירוע (בחתונה — בני הזוג)"},
+    {"key": "{{celebration}}", "token": "[האירוע]", "desc": "שם האירוע לפי סוגו, לשימוש אחרי ל/ב (חתונה / אירוע בר המצווה / אירוע)"},
+    {"key": "{{celebration_of}}", "token": "[שמחת]", "desc": "שם האירוע לפני שמות בעלי האירוע (חתונת… / בר המצווה של…)"},
     {"key": "{{event_date}}", "token": "[תאריך]", "desc": "תאריך האירוע"},
     {"key": "{{event_time}}", "token": "[שעה]", "desc": "שעת האירוע"},
     {"key": "{{venue_name}}", "token": "[שם האולם]", "desc": "שם האולם"},
@@ -143,6 +157,9 @@ AUTOMATION_ALIASES = [
     {"key": "{{maps_link}}", "same_as": "{{navigation_link}}"},
     {"key": "[שם אורח]", "same_as": "{{first_name}}"},
     {"key": "[תאריך האירוע]", "same_as": "{{event_date}}"},
+    # תאימות לאחור: הטוקן הישן "[שמות בני הזוג]" (שמופיע בספריית ההודעות
+    # ובתבניות שכבר נשמרו) ממשיך לעבוד וממופה לאותו ערך כמו [שמות בעלי האירוע].
+    {"key": "[שמות בני הזוג]", "same_as": "{{event_name}}"},
 ]
 
 
@@ -185,13 +202,16 @@ def build_automation_values(
     gift_link: str = "",
     photo_gallery: str = "",
     video_gallery: str = "",
+    event_type: str = "wedding",
 ) -> dict[str, str]:
     """בונה מפה מלאה של כל טוקן (טכני וידידותי, חדש וישן) → הערך שלו.
 
     זהו מקור-האמת היחיד לערכי המשתנים. מפריד את חישוב הערכים מהחלפתם, כדי
     ש-``render_automation_template`` יוכל גם *להסתיר שורות* שכל המשתנים בהן ריקים.
+    מונחי האירוע (שם החגיגה, כינוי בעלי האירוע) נגזרים מ-``event_type``.
     """
-    couple = " ו".join([n for n in (groom, bride) if n]) or "בני הזוג"
+    terms = event_terms.get_event_terms(event_type)
+    couple = event_terms.hosts_names(event_type, groom, bride)
     first = guest_name.split()[0] if guest_name else ""
     nav = maps_link(venue_address)
     tbl = str(table_number) if table_number else ""
@@ -203,6 +223,8 @@ def build_automation_values(
         "{{bride_name}}": bride or "",
         "{{groom_name}}": groom or "",
         "{{event_name}}": couple,
+        "{{celebration}}": terms.celebration,
+        "{{celebration_of}}": terms.celebration_construct,
         "{{event_date}}": date or "",
         "{{event_time}}": time or "",
         "{{venue_name}}": venue or "",
@@ -243,6 +265,7 @@ def render_automation_template(
     gift_link: str = "",
     photo_gallery: str = "",
     video_gallery: str = "",
+    event_type: str = "wedding",
 ) -> str:
     """ממלא תבנית אוטומציה במשתני {{...}} של מוזמן ואירוע ספציפיים.
 
@@ -270,6 +293,7 @@ def render_automation_template(
         gift_link=gift_link,
         photo_gallery=photo_gallery,
         video_gallery=video_gallery,
+        event_type=event_type,
     )
     # מחליפים טוקנים ארוכים לפני קצרים, כדי ש-"[תאריך האירוע]" לא ייחתך ל-"[תאריך]".
     tokens_by_len = sorted(values.keys(), key=len, reverse=True)
@@ -300,6 +324,7 @@ def render_automation_template(
         venue=venue,
         link=link,
         date=date,
+        event_type=event_type,
     )
     # איחוד רווחים מיותרים שנוצרו ממחיקת שורות: 3+ שורות ריקות → אחת.
     text = re.sub(r"\n{3,}", "\n\n", text).strip()

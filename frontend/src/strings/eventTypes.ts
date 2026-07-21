@@ -36,6 +36,10 @@ export interface EventTerms {
   sideLabels: Record<Side, string>
   /** שם האירוע המיודע: "החתונה" / "אירוע בר המצווה" / "האירוע" */
   eventNoun: string
+  /** שם האירוע הסתמי — בטוח אחרי ל/ב: "חתונה" / "אירוע בר המצווה" / "אירוע" (טוקן [האירוע]) */
+  celebration: string
+  /** צורת סמיכות לפני שמות: "חתונת" / "בר המצווה של" / "אירוע של" (טוקן [שמחת]) */
+  celebrationConstruct: string
   /** תווית ההזמנה: "הזמנה לחתונה" / "הזמנה לאירוע" */
   inviteLabel: string
   /** כותרת ברירת מחדל כשאין עדיין שמות: "החתונה שלנו" / "האירוע שלנו" */
@@ -54,6 +58,8 @@ const WEDDING: EventTerms = {
   hostBField: 'שם הכלה',
   sideLabels: { groom: 'חתן', bride: 'כלה', shared: 'משותף' },
   eventNoun: 'החתונה',
+  celebration: 'חתונה',
+  celebrationConstruct: 'חתונת',
   inviteLabel: 'הזמנה לחתונה',
   defaultTitle: 'החתונה שלנו',
   celebrationOf: (names) => `החתונה של ${names}`,
@@ -71,6 +77,8 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     hostBField: 'שם הכלה',
     sideLabels: { groom: 'חתן', bride: 'כלה', shared: 'משותף' },
     eventNoun: 'החינה',
+    celebration: 'חינה',
+    celebrationConstruct: 'חינת',
     inviteLabel: 'הזמנה לחינה',
     defaultTitle: 'החינה שלנו',
     celebrationOf: (names) => `החינה של ${names}`,
@@ -85,6 +93,8 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     hostBField: '',
     sideLabels: { groom: 'צד האב', bride: 'צד האם', shared: 'משותף' },
     eventNoun: 'אירוע בר המצווה',
+    celebration: 'אירוע בר המצווה',
+    celebrationConstruct: 'בר המצווה של',
     inviteLabel: 'הזמנה לבר מצווה',
     defaultTitle: 'אירוע בר המצווה',
     celebrationOf: (names) => `אירוע בר המצווה של ${names}`,
@@ -99,6 +109,8 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     hostBField: '',
     sideLabels: { groom: 'צד האב', bride: 'צד האם', shared: 'משותף' },
     eventNoun: 'אירוע בת המצווה',
+    celebration: 'אירוע בת המצווה',
+    celebrationConstruct: 'בת המצווה של',
     inviteLabel: 'הזמנה לבת מצווה',
     defaultTitle: 'אירוע בת המצווה',
     celebrationOf: (names) => `אירוע בת המצווה של ${names}`,
@@ -113,6 +125,8 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     hostBField: '',
     sideLabels: { groom: 'צד האב', bride: 'צד האם', shared: 'משותף' },
     eventNoun: 'הברית',
+    celebration: 'אירוע ברית',
+    celebrationConstruct: 'ברית של',
     inviteLabel: 'הזמנה לברית',
     defaultTitle: 'הברית שלנו',
     celebrationOf: (names) => `הברית של ${names}`,
@@ -127,6 +141,8 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     hostBField: '',
     sideLabels: { groom: 'צד א׳', bride: 'צד ב׳', shared: 'משותף' },
     eventNoun: 'האירוע המשפחתי',
+    celebration: 'אירוע משפחתי',
+    celebrationConstruct: 'אירוע של',
     inviteLabel: 'הזמנה לאירוע',
     defaultTitle: 'האירוע שלנו',
     celebrationOf: (names) => `האירוע של ${names}`,
@@ -141,6 +157,8 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     hostBField: '',
     sideLabels: { groom: 'צד א׳', bride: 'צד ב׳', shared: 'משותף' },
     eventNoun: 'האירוע',
+    celebration: 'אירוע',
+    celebrationConstruct: 'אירוע של',
     inviteLabel: 'הזמנה לאירוע',
     defaultTitle: 'האירוע שלנו',
     celebrationOf: (names) => `האירוע של ${names}`,
@@ -155,6 +173,8 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     hostBField: '',
     sideLabels: { groom: 'צד א׳', bride: 'צד ב׳', shared: 'משותף' },
     eventNoun: 'האירוע',
+    celebration: 'אירוע',
+    celebrationConstruct: 'אירוע של',
     inviteLabel: 'הזמנה לאירוע',
     defaultTitle: 'האירוע שלנו',
     celebrationOf: (names) => `האירוע של ${names}`,

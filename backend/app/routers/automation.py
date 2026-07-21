@@ -74,15 +74,19 @@ def list_placeholders():
 
 
 @router.get("/library", response_model=schemas.MessageLibrary)
-def get_message_library():
+def get_message_library(event: models.Event = Depends(get_current_event)):
     """ספריית ההודעות האנושית של VEYA — קריאה בלבד, מוגשת ישירות מהקוד.
 
     אין כאן שום נגיעה במסד הנתונים: הזוג *מעיין* בספרייה, ורק כשהוא בוחר הודעה
     היא נכתבת לתבנית של האירוע שלו (דרך נתיב התבניות הקיים). כך הספרייה
     זמינה לכל אירוע בלי זריעה לפרודקשן ובלי שינוי סכימה.
+
+    הספרייה מסוננת לפי סוג האירוע: חתונה מקבלת את עולם החתונה העשיר, וכל סוג
+    אחר מקבל ספרייה גנרית שמתנסחת דינמית לסוגו (Event-ready).
     """
     from app import message_library as lib
 
+    library = lib.entries_for(event.event_type)
     messages = [
         schemas.LibraryMessage(
             id=i,
@@ -92,11 +96,11 @@ def get_message_library():
             name=m["name"],
             body=m["body"],
         )
-        for i, m in enumerate(lib.LIBRARY)
+        for i, m in enumerate(library)
     ]
     # רק קטגוריות/סגנונות שבאמת מופיעים בספרייה, בסדר התוויות הקבוע.
-    present_cats = {m["category"] for m in lib.LIBRARY}
-    present_styles = {m["style"] for m in lib.LIBRARY}
+    present_cats = {m["category"] for m in library}
+    present_styles = {m["style"] for m in library}
     categories = [
         schemas.LibraryMeta(key=k, label=v)
         for k, v in lib.CATEGORY_LABELS.items() if k in present_cats
@@ -562,6 +566,7 @@ def activate_track(
             link=messaging.confirm_link(g.guest_token),
             table_number=g.table_number,
             guest_count=g.effective_seats,
+            event_type=event.event_type,
         )
         res = provider.send_invitation(g.phone, text)
         db.add(models.Message(

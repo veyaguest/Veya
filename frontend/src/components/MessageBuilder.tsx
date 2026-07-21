@@ -15,6 +15,7 @@ import type {
   MessageLibrary,
   TemplatePlaceholder,
 } from '../types'
+import { getEventTerms } from '../strings/eventTypes'
 
 // סדר תצוגה ידידותי של סוגי ההודעות במסלול (kind של MessageTemplate).
 const KIND_ORDER: Record<string, number> = {
@@ -123,10 +124,11 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
   // ערכי דוגמה לכל טוקן — כולל הכינויים החדשים והישנים — כדי שהתצוגה המקדימה
   // תיראה נכון גם להודעות מהספרייה וגם לתבניות ותיקות. מפה שטוחה: טוקן → ערך.
   const sampleByToken = useMemo<Record<string, string>>(() => {
+    const terms = getEventTerms(event?.event_type)
     const couple =
       event && (event.groom_name || event.bride_name)
-        ? `${event.groom_name} ו${event.bride_name}`
-        : 'בני הזוג'
+        ? [event.groom_name, event.bride_name].filter(Boolean).join(' ו')
+        : terms.hostsLabel
     const first = (sampleGuest || 'דנה כהן').split(/\s+/)[0]
     const date = event?.event_date || 'תאריך האירוע'
     const time = event?.event_time || 'שעה'
@@ -141,8 +143,12 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
       // כלה/חתן
       '{{bride_name}}': event?.bride_name || 'הכלה', '[שם הכלה]': event?.bride_name || 'הכלה',
       '{{groom_name}}': event?.groom_name || 'החתן', '[שם החתן]': event?.groom_name || 'החתן',
-      // שמות בני הזוג
-      '{{event_name}}': couple, '{{couple_names}}': couple, '[שמות בני הזוג]': couple,
+      // שמות בעלי האירוע (חדש + ישן)
+      '{{event_name}}': couple, '{{couple_names}}': couple,
+      '[שמות בעלי האירוע]': couple, '[שמות בני הזוג]': couple,
+      // שם האירוע לפי סוגו (Event-ready)
+      '{{celebration}}': terms.celebration, '[האירוע]': terms.celebration,
+      '{{celebration_of}}': terms.celebrationConstruct, '[שמחת]': terms.celebrationConstruct,
       // תאריך / שעה
       '{{event_date}}': date, '[תאריך]': date, '[תאריך האירוע]': date,
       '{{event_time}}': time, '[שעה]': time,

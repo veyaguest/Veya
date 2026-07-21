@@ -189,6 +189,7 @@ def compute_due_actions(
                 link=messaging.confirm_link(guest.guest_token),
                 table_number=guest.table_number,
                 guest_count=guest.effective_seats,
+                event_type=event.event_type,
             )
             actions.append(DueActionData(rule=rule, guest=guest, preview=preview))
     return actions

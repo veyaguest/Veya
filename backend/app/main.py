@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect, text
 
 from app import models  # noqa: F401  — נדרש כדי לרשום את הטבלאות
-from app.database import Base, SessionLocal, engine
+from app.database import Base, MigrationSessionLocal, migrations_engine
 from app.deps import get_default_event
 from app.routers import (
     admin,
@@ -115,8 +115,11 @@ _EXTRA_COLUMNS = {
 
 
 def _ensure_columns() -> None:
-    inspector = inspect(engine)
-    with engine.begin() as conn:
+    # DDL (ALTER TABLE) דורש בעלות על הטבלה — לכן תמיד דרך migrations_engine
+    # (בפרודקשן עם RLS זה חיבור postgres נפרד מ-DATABASE_URL הרגיל; היום,
+    # לפני שההפרדה מופעלת, שני המשתנים מצביעים על אותו חיבור בדיוק).
+    inspector = inspect(migrations_engine)
+    with migrations_engine.begin() as conn:
         for table, columns in _EXTRA_COLUMNS.items():
             if not inspector.has_table(table):
                 continue
@@ -143,8 +146,8 @@ _EXTRA_INDEXES = {
 
 
 def _ensure_indexes() -> None:
-    inspector = inspect(engine)
-    with engine.begin() as conn:
+    inspector = inspect(migrations_engine)
+    with migrations_engine.begin() as conn:
         for name, (table, column) in _EXTRA_INDEXES.items():
             if not inspector.has_table(table):
                 continue
@@ -165,7 +168,9 @@ def _migrate_images() -> None:
 
     from app import media
 
-    db = SessionLocal()
+    # תחזוקת עלייה רצה לפני שיש בקשה/משתמש מחובר — דרך MigrationSessionLocal
+    # (עוקף RLS), אחרת מדיניות guests/events הייתה חוסמת אותה (אין זהות).
+    db = MigrationSessionLocal()
     try:
         events = db.scalars(select(models.Event)).all()
         changed = False
@@ -190,7 +195,7 @@ def _ensure_admin() -> None:
     """
     from sqlalchemy import func, select
 
-    db = SessionLocal()
+    db = MigrationSessionLocal()
     try:
         admins = db.scalar(
             select(func.count()).select_from(models.User).where(models.User.is_admin.is_(True))
@@ -208,7 +213,7 @@ def _ensure_guest_tokens() -> None:
     """מייצר טוקן אישי למוזמנים קיימים שאין להם עדיין (אחרי מיגרציית העמודה)."""
     from sqlalchemy import select
 
-    db = SessionLocal()
+    db = MigrationSessionLocal()
     try:
         missing = db.scalars(
             select(models.Guest).where(models.Guest.guest_token.is_(None))
@@ -227,7 +232,7 @@ def seed_veya_defaults() -> None:
     שערך את הברירות לא ידרוס אותן בהפעלה הבאה."""
     from sqlalchemy import func, select
 
-    db = SessionLocal()
+    db = MigrationSessionLocal()
     try:
         have_templates = db.scalar(
             select(func.count()).select_from(models.VeyaTemplate)
@@ -236,10 +241,10 @@ def seed_veya_defaults() -> None:
             templates = [
                 models.VeyaTemplate(
                     stage="invitation", sort_order=1,
-                    name="הזמנה לחתונה",
+                    name="הזמנה",
                     body=(
-                        "שלום [שם אורח]! 💍\n"
-                        "אנחנו [שמות בני הזוג], ונשמח מאוד לראות אתכם בחתונה שלנו!\n\n"
+                        "שלום [שם אורח]! ✨\n"
+                        "אנחנו [שמות בני הזוג], ונשמח מאוד לראות אתכם ולחגוג יחד!\n\n"
                         "📅 [תאריך האירוע] בשעה [שעה]\n"
                         "📍 [שם האולם], [כתובת]\n\n"
                         "נשמח לדעת אם תגיעו — לאישור הגעה: [קישור אישור]\n"
@@ -251,7 +256,7 @@ def seed_veya_defaults() -> None:
                     name="תזכורת ראשונה",
                     body=(
                         "היי [שם אורח] 🙂\n"
-                        "רצינו להזכיר — עדיין לא קיבלנו את אישור ההגעה שלכם לחתונה של [שמות בני הזוג].\n\n"
+                        "רצינו להזכיר — עדיין לא קיבלנו את אישור ההגעה שלכם ל[שמחת] [שמות בני הזוג].\n\n"
                         "📅 [תאריך האירוע] · [שם האולם]\n\n"
                         "זה לוקח רק רגע: [קישור אישור]\n"
                         "תודה! 🙏"
@@ -262,7 +267,7 @@ def seed_veya_defaults() -> None:
                     name="תזכורת שנייה",
                     body=(
                         "[שם אורח], שלום 🙂\n"
-                        "אנחנו כבר קרובים לסגור מספרים לחתונה שלנו ([שמות בני הזוג]), ועדיין מחכים לתשובה שלכם.\n\n"
+                        "אנחנו כבר קרובים לסגור מספרים ל[שמחת] [שמות בני הזוג], ועדיין מחכים לתשובה שלכם.\n\n"
                         "נשמח אם תאשרו הגעה כאן: [קישור אישור]\n"
                         "תודה רבה! ❤️"
                     ),
@@ -272,7 +277,7 @@ def seed_veya_defaults() -> None:
                     name="תודה על האישור",
                     body=(
                         "תודה [שם אורח]! 🎉\n"
-                        "שמחנו לקבל את האישור שלכם. נתראה בחתונה של [שמות בני הזוג]!\n\n"
+                        "שמחנו לקבל את האישור שלכם. נתראה ב[שמחת] [שמות בני הזוג]!\n\n"
                         "📅 [תאריך האירוע] בשעה [שעה]\n"
                         "📍 [שם האולם], [כתובת]\n\n"
                         "לניווט: [קישור ניווט]"
@@ -283,7 +288,7 @@ def seed_veya_defaults() -> None:
                     name="לפני האירוע",
                     body=(
                         "היי [שם אורח]! 🥂\n"
-                        "מזכירים שהיום מתחתנים [שמות בני הזוג] ואתם מוזמנים!\n\n"
+                        "מזכירים שהיום [שמחת] [שמות בני הזוג] ואתם מוזמנים!\n\n"
                         "📅 [תאריך האירוע] בשעה [שעה]\n"
                         "📍 [שם האולם], [כתובת]\n\n"
                         "לניווט נוח: [קישור ניווט]\n"
@@ -328,8 +333,8 @@ def on_startup() -> None:
     from app import backup
 
     backup.create_backup()
-    # יוצר את קובץ מסד הנתונים ואת הטבלאות.
-    Base.metadata.create_all(bind=engine)
+    # יוצר את קובץ מסד הנתונים ואת הטבלאות (DDL — דרך חיבור המיגרציות).
+    Base.metadata.create_all(bind=migrations_engine)
     # מוסיף עמודות חדשות לטבלאות קיימות (מיגרציה קלה).
     _ensure_columns()
     # מוסיף אינדקסים על מפתחות זרים (לביצועים) אם עדיין אין.
@@ -342,8 +347,8 @@ def on_startup() -> None:
     _ensure_guest_tokens()
     # זורע את ברירות המחדל הגלובליות של VEYA (תבניות + מסלול קבוע) אם ריק.
     seed_veya_defaults()
-    # מוודא שקיים אירוע ברירת-מחדל אחד.
-    db = SessionLocal()
+    # מוודא שקיים אירוע ברירת-מחדל אחד (תחזוקת עלייה — בלי זהות משתמש).
+    db = MigrationSessionLocal()
     try:
         get_default_event(db)
     finally:
