@@ -12,12 +12,12 @@ import os
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app import audit, messaging, models, schemas
 from app.auth import get_current_user
-from app.database import get_db
+from app.database import IS_POSTGRES, get_db
 from app.deps import get_current_event
 
 router = APIRouter(prefix="/messaging", tags=["messaging"])
@@ -30,9 +30,20 @@ def _event_date_str(event: models.Event) -> str:
 
 
 def _record_reply(db: Session, guest: models.Guest, status: str, provider: str) -> None:
-    """מעדכן RSVP של מוזמן ורושם הודעה נכנסת ביומן."""
-    guest.rsvp_status = status
+    """מעדכן RSVP של מוזמן ורושם הודעה נכנסת ביומן.
+
+    ה-webhook רץ בלי משתמש מחובר ובלי guest_token, ולכן תחת RLS (Postgres)
+    חייבים לעבור דרך פונקציית app_record_guest_rsvp_reply (SECURITY DEFINER,
+    ראו backend/rls/01_helpers_and_grants.sql) — עדכון ORM רגיל היה נחסם/נכשל.
+    """
     label = "אישר/ה הגעה" if status == "confirmed" else "ביטל/ה הגעה"
+    if IS_POSTGRES:
+        db.execute(
+            text("SELECT app_record_guest_rsvp_reply(:gid, :status, :label, :provider)"),
+            {"gid": guest.id, "status": status, "label": label, "provider": provider},
+        )
+        return
+    guest.rsvp_status = status
     db.add(models.Message(
         event_id=guest.event_id,
         guest_id=guest.id,
@@ -391,11 +402,22 @@ def _match_guest_by_phone(db: Session, from_phone: str):
     ומחזירה את ההתאמה הראשונה. אם אותו מספר טלפון מופיע בשני אירועים שונים,
     תשובת ה-RSVP עלולה להירשם לאירוע הלא-נכון. פתרון עתידי: לשייך את הודעת
     ה-WhatsApp הנכנסת למספר העסקי/אירוע שאליו נשלחה, ולסנן לפי event_id.
+
+    תחת RLS (Postgres) אין כאן זהות מחוברת ואין guest_token, אז שאילתת ORM
+    רגילה הייתה מחזירה תמיד 0 שורות — לכן עוברים דרך app_find_guest_by_phone
+    (SECURITY DEFINER, ראו backend/rls/01_helpers_and_grants.sql).
     """
     digits = "".join(ch for ch in from_phone if ch.isdigit())
     tail = digits[-9:]
     if not tail:
         return None
+    if IS_POSTGRES:
+        row = db.execute(
+            text("SELECT * FROM app_find_guest_by_phone(:tail)"), {"tail": tail}
+        ).mappings().first()
+        if row is None or row.get("id") is None:
+            return None
+        return models.Guest(**dict(row))
     for g in db.scalars(select(models.Guest)).all():
         g_digits = "".join(ch for ch in (g.phone or "") if ch.isdigit())
         if g_digits.endswith(tail):

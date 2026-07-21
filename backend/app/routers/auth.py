@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import auth, models, schemas
-from app.database import get_db
+from app.database import get_db, set_request_identity
 from app.ratelimit import auth_limiter, client_ip
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -19,9 +19,7 @@ def register(payload: schemas.UserCreate, request: Request, db: Session = Depend
     """
     ip = client_ip(request)
     auth_limiter.check(ip)
-    exists = db.scalars(
-        select(models.User).where(models.User.email == payload.email)
-    ).first()
+    exists = auth.find_user_by_email(db, payload.email)
     if exists is not None:
         auth_limiter.record_fail(ip)
         raise HTTPException(
@@ -44,13 +42,12 @@ def register(payload: schemas.UserCreate, request: Request, db: Session = Depend
     )
     db.add(user)
     db.flush()  # מקבל id לפני שיוך אירועים
+    # קובעים את זהות הבקשה מיד אחרי שיש id — כך גם שאילתות ה-RLS הבאות
+    # (אימוץ אירועים יתומים, refresh בסוף) רצות תחת הזהות של המשתמש עצמו.
+    set_request_identity(user.id)
 
     # אימוץ אירועים "יתומים" (בלי בעלים) — מיגרציה מהמצב הישן של אירוע יחיד.
-    orphans = db.scalars(
-        select(models.Event).where(models.Event.owner_id.is_(None))
-    ).all()
-    for ev in orphans:
-        ev.owner_id = user.id
+    auth.adopt_orphan_events(db, user.id)
 
     db.commit()
     db.refresh(user)
@@ -63,9 +60,7 @@ def login(payload: schemas.LoginRequest, request: Request, db: Session = Depends
     """מאמת אימייל+סיסמה ומחזיר טוקן."""
     ip = client_ip(request)
     auth_limiter.check(ip)
-    user = db.scalars(
-        select(models.User).where(models.User.email == payload.email)
-    ).first()
+    user = auth.find_user_by_email(db, payload.email)
     if user is None or not auth.verify_password(payload.password, user.password_hash):
         auth_limiter.record_fail(ip)
         raise HTTPException(

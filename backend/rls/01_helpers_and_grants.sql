@@ -124,6 +124,92 @@ AS $$
      )
 $$;
 
+-- ── 4. פונקציות עזר לתהליכי אימות (login/register) ─────────────────────────
+-- למה צריך את זה: register/login מחפשים משתמש לפי אימייל *לפני* שיש זהות
+-- מחוברת (app.current_user_id עדיין ריק) — מדיניות users_select הרגילה
+-- ("אני רואה רק את עצמי") הייתה חוסמת את זה לגמרי ומונעת התחברות/הרשמה.
+-- הפונקציות האלה SECURITY DEFINER — עוקפות RLS בכוונה, ומוגבלות בתפקיד
+-- למה שממש צריך: שליפת שורת המשתמש לפי אימייל מדויק, לא שאילתה חופשית.
+CREATE OR REPLACE FUNCTION app_user_by_email(p_email text)
+RETURNS users
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT * FROM users WHERE email = p_email
+$$;
+
+-- אימוץ אירועים "יתומים" (בלי owner_id) בהרשמה — מיגרציה חד-פעמית מהמצב
+-- הישן של אירוע יחיד בלי בעלים. משתמש חדש (לא-אדמין) לא יכול לראות/לעדכן
+-- שורות כאלה תחת RLS רגיל (owner_id הוא NULL, לא שלו), אז זו פעולת מערכת
+-- מפורשת ולא הסתמכות על UPDATE רגיל.
+CREATE OR REPLACE FUNCTION app_adopt_orphan_events(p_user_id bigint)
+RETURNS void
+LANGUAGE sql SECURITY DEFINER SET search_path = public
+AS $$
+  UPDATE events SET owner_id = p_user_id WHERE owner_id IS NULL
+$$;
+
+-- ── 5. פונקציות עזר להרשאות מדויקות של חבר-אירוע (Producer/Venue) ──────────
+-- למה צריך את זה מעבר ל-app_is_event_member: כדי שה-RLS יאכוף גם *אילו*
+-- הרשאות ספציפיות ניתנו לחבר (permissions), לא רק "הוא חבר פעיל" — עקרון
+-- least-privilege. שימו לב למגבלה: RLS הוא ברמת-שורה, לא ברמת-עמודה, אז
+-- הרשאה ל-event_id נתון פותחת את כל השורה/הטבלה עבורו; בקרה עדינה יותר
+-- (איזה שדה ספציפי מותר לערוך) נשארת באחריות שכבת ה-API (routers), כמו היום.
+CREATE OR REPLACE FUNCTION app_member_permissions(p_event_id bigint)
+RETURNS jsonb
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT COALESCE(m.permissions::jsonb, '[]'::jsonb)
+  FROM event_members m
+  WHERE m.event_id = p_event_id
+    AND m.user_id = app_current_user_id()
+    AND m.status = 'active'
+  LIMIT 1
+$$;
+
+-- האם למשתמש הנוכחי יש לפחות אחת מההרשאות המבוקשות על האירוע (או שהוא
+-- אדמין/בעלים — להם תמיד גישה מלאה בלי קשר לרשימת ההרשאות).
+CREATE OR REPLACE FUNCTION app_has_any_event_permission(p_event_id bigint, p_permissions text[])
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT app_is_admin()
+      OR app_owns_event(p_event_id)
+      OR app_member_permissions(p_event_id) ?| p_permissions
+$$;
+
+-- ── 6. פונקציות עזר ל-webhook ה-WhatsApp הנכנס (Meta) ───────────────────────
+-- למה צריך את זה: ה-webhook הציבורי (messaging.py::receive_webhook) מקבל
+-- קריאה ישירה מ-Meta, בלי משתמש מחובר ובלי guest_token (המזהה היחיד שיש לו
+-- הוא מספר הטלפון של השולח). בלי הפונקציות האלה, תחת RLS: השאילתה שמנסה
+-- לאתר מוזמן לפי טלפון תחזיר תמיד 0 שורות (app_current_user_id() ו-
+-- app_current_guest_token() שניהם NULL), ותשובת ה-RSVP האמיתית מוואטסאפ
+-- הייתה נעלמת בשקט (ה-webhook עוטף הכול ב-try/except כדי לא להחזיר שגיאה
+-- ל-Meta) — כלומר אישורי הגעה אמיתיים דרך WhatsApp פשוט לא היו נרשמים.
+-- SECURITY DEFINER מוגבל בכוונה: רק חיפוש-לפי-טלפון-מדויק ורק עדכון סטטוס
+-- RSVP + רישום הודעה נכנסת — לא חשיפה/כתיבה כלליים.
+CREATE OR REPLACE FUNCTION app_find_guest_by_phone(p_tail text)
+RETURNS guests
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT * FROM guests
+  WHERE p_tail <> ''
+    AND right(regexp_replace(COALESCE(phone, ''), '\D', '', 'g'), 9) = p_tail
+  LIMIT 1
+$$;
+
+CREATE OR REPLACE FUNCTION app_record_guest_rsvp_reply(
+  p_guest_id bigint, p_status text, p_label text, p_provider text
+)
+RETURNS void
+LANGUAGE sql SECURITY DEFINER SET search_path = public
+AS $$
+  WITH updated AS (
+    UPDATE guests SET rsvp_status = p_status WHERE id = p_guest_id RETURNING event_id, id
+  )
+  INSERT INTO messages (event_id, guest_id, direction, kind, body, status, provider)
+  SELECT event_id, id, 'inbound', 'reply', p_label, 'received', p_provider FROM updated
+$$;
+
 -- פונקציות העזר צריכות להיות זמינות להרצה ע"י תפקיד האפליקציה.
 GRANT EXECUTE ON FUNCTION
   app_current_user_id(),
@@ -132,5 +218,11 @@ GRANT EXECUTE ON FUNCTION
   app_owns_event(bigint),
   app_is_event_member(bigint),
   app_can_access_event(bigint),
-  app_token_matches_event(bigint)
+  app_token_matches_event(bigint),
+  app_user_by_email(text),
+  app_adopt_orphan_events(bigint),
+  app_member_permissions(bigint),
+  app_has_any_event_permission(bigint, text[]),
+  app_find_guest_by_phone(text),
+  app_record_guest_rsvp_reply(bigint, text, text, text)
 TO veya_app;

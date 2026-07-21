@@ -17,13 +17,22 @@
 -- ============================================================================
 
 -- ── events ─────────────────────────────────────────────────────────────────
+-- הערה על "כל ההרשאות הידועות": הרשימה למטה = כל המחרוזות מ-PLANNER_PERMISSIONS
+-- ו-VENUE_PERMISSIONS (schemas.py). המשמעות: חבר-אירוע עם *לפחות הרשאה אחת*
+-- שהוענקה לו רואה את פרטי האירוע הבסיסיים; חבר בלי אף הרשאה (permissions=[])
+-- לא רואה כלום — עקרון least-privilege במקום "חבר פעיל" גורף. אם מוסיפים
+-- הרשאה חדשה ב-schemas.py, יש לעדכן גם כאן.
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events FORCE  ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS events_select ON events;
 CREATE POLICY events_select ON events FOR SELECT
   USING (
-    app_can_access_event(id)                 -- אדמין / בעלים / חבר פעיל
+    app_has_any_event_permission(id, ARRAY[
+      'view_event','view_guests','view_seating','view_reports',
+      'edit_guests','manage_seating','send_messages',
+      'edit_seating','manage_venue_data'
+    ])
     OR app_token_matches_event(id)           -- נתיב אישור הגעה ציבורי
   );
 
@@ -31,31 +40,45 @@ DROP POLICY IF EXISTS events_insert ON events;
 CREATE POLICY events_insert ON events FOR INSERT
   WITH CHECK (owner_id = app_current_user_id() OR app_is_admin());
 
+-- עדכון: הבעלים/אדמין תמיד; חבר-אירוע רק אם יש לו הרשאת עריכת-הושבה/אולם,
+-- או send_messages (מפיק שמפעיל מסלול RSVP / שומר תבנית הודעה — automation.py
+-- activate_track כותב rsvp_track_active/rsvp_track_started_at על האירוע,
+-- ו-messaging.py save_template כותב message_template — שני שדות אלה שייכים
+-- מבחינה עסקית להרשאת שליחת-הודעות, לא להושבה/אולם).
+-- מגבלה חשובה: RLS הוא ברמת-שורה, לא ברמת-עמודה — הרשאה זו פותחת עדכון על
+-- כל השורה (כולל שמות בני הזוג וכו'), לא רק table_positions/hall_elements.
+-- ה-API בפועל (routers) חושף לחברים כאלה רק endpoint-ים ספציפיים להושבה,
+-- וזו נשארת שכבת ההגנה העדינה בפועל — ה-RLS כאן הוא רשת ביטחון נוספת.
 DROP POLICY IF EXISTS events_update ON events;
 CREATE POLICY events_update ON events FOR UPDATE
-  USING (app_owns_event(id) OR app_is_admin())
-  WITH CHECK (app_owns_event(id) OR app_is_admin());
+  USING (app_has_any_event_permission(id, ARRAY['manage_seating','edit_seating','manage_venue_data','send_messages']))
+  WITH CHECK (app_has_any_event_permission(id, ARRAY['manage_seating','edit_seating','manage_venue_data','send_messages']));
 
 DROP POLICY IF EXISTS events_delete ON events;
 CREATE POLICY events_delete ON events FOR DELETE
   USING (app_owns_event(id) OR app_is_admin());
 
 -- ── guests ─────────────────────────────────────────────────────────────────
+-- קריאה: בעלים/אדמין תמיד; חבר-אירוע רק עם הרשאה שקשורה למוזמנים/הושבה
+-- (גם צופה-הושבה-בלבד של אולם צריך לראות שמות, כדי לדעת מי יושב איפה).
+-- כתיבה: רק מי שיש לו הרשאת עריכה בפועל (מפיק edit_guests/manage_seating,
+-- או אולם עם edit_seating) — לא כל חבר-אירוע פעיל כמו שהיה קודם.
 ALTER TABLE guests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE guests FORCE  ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS guests_select ON guests;
 CREATE POLICY guests_select ON guests FOR SELECT
   USING (
-    app_can_access_event(event_id)
+    app_has_any_event_permission(event_id, ARRAY[
+      'view_guests','edit_guests','manage_seating','view_seating','edit_seating'
+    ])
     OR guest_token = app_current_guest_token()  -- המוזמן רואה רק את השורה שלו
   );
 
--- כתיבה של בעלי-הרשאה על האירוע (הוספה/עריכה/מחיקה מהמערכת המנוהלת).
 DROP POLICY IF EXISTS guests_write ON guests;
 CREATE POLICY guests_write ON guests FOR ALL
-  USING (app_can_access_event(event_id))
-  WITH CHECK (app_can_access_event(event_id));
+  USING (app_has_any_event_permission(event_id, ARRAY['edit_guests','manage_seating','edit_seating']))
+  WITH CHECK (app_has_any_event_permission(event_id, ARRAY['edit_guests','manage_seating','edit_seating']));
 
 -- עדכון ציבורי דרך הטוקן (המוזמן מסמן הגעה/כמות/הערה על השורה שלו בלבד).
 DROP POLICY IF EXISTS guests_public_update ON guests;
@@ -64,13 +87,23 @@ CREATE POLICY guests_public_update ON guests FOR UPDATE
   WITH CHECK (guest_token = app_current_guest_token());
 
 -- ── messages ───────────────────────────────────────────────────────────────
+-- קריאה: מותרת גם למי שרק צריך "לדעת מה קרה" (view_reports/view_event),
+-- לא רק למי ששולח בפועל. כתיבה (שליחה/עדכון סטטוס): רק send_messages —
+-- הרשאה שקיימת אצל מפיקים, לא אצל אולמות (VENUE_PERMISSIONS לא כוללת אותה),
+-- כך שאולם לעולם לא יכול לשלוח הודעות בשם הזוג, גם אם ינסה לעקוף את ה-API.
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages FORCE  ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS messages_rw ON messages;
-CREATE POLICY messages_rw ON messages FOR ALL
-  USING (app_can_access_event(event_id))
-  WITH CHECK (app_can_access_event(event_id));
+
+DROP POLICY IF EXISTS messages_select ON messages;
+CREATE POLICY messages_select ON messages FOR SELECT
+  USING (app_has_any_event_permission(event_id, ARRAY['send_messages','view_reports','view_event']));
+
+DROP POLICY IF EXISTS messages_write ON messages;
+CREATE POLICY messages_write ON messages FOR ALL
+  USING (app_has_any_event_permission(event_id, ARRAY['send_messages']))
+  WITH CHECK (app_has_any_event_permission(event_id, ARRAY['send_messages']));
 
 -- המוזמן הציבורי כותב הודעת RSVP נכנסת (inbound) לאירוע שלו.
 DROP POLICY IF EXISTS messages_public_insert ON messages;
@@ -78,22 +111,24 @@ CREATE POLICY messages_public_insert ON messages FOR INSERT
   WITH CHECK (app_token_matches_event(event_id));
 
 -- ── clarifications ─────────────────────────────────────────────────────────
+-- הבהרות שם עמום שייכות לתהליך ניהול המוזמנים/הושבה — לא רלוונטי לאולם.
 ALTER TABLE clarifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE clarifications FORCE  ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS clarifications_rw ON clarifications;
 CREATE POLICY clarifications_rw ON clarifications FOR ALL
-  USING (app_can_access_event(event_id))
-  WITH CHECK (app_can_access_event(event_id));
+  USING (app_has_any_event_permission(event_id, ARRAY['edit_guests','manage_seating']))
+  WITH CHECK (app_has_any_event_permission(event_id, ARRAY['edit_guests','manage_seating']));
 
 -- ── automation_rules ───────────────────────────────────────────────────────
+-- ניהול אוטומציית ה-WhatsApp — הרשאת send_messages בלבד (מפיק, לא אולם).
 ALTER TABLE automation_rules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE automation_rules FORCE  ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS automation_rules_rw ON automation_rules;
 CREATE POLICY automation_rules_rw ON automation_rules FOR ALL
-  USING (app_can_access_event(event_id))
-  WITH CHECK (app_can_access_event(event_id));
+  USING (app_has_any_event_permission(event_id, ARRAY['send_messages']))
+  WITH CHECK (app_has_any_event_permission(event_id, ARRAY['send_messages']));
 
 -- ── message_templates ──────────────────────────────────────────────────────
 ALTER TABLE message_templates ENABLE ROW LEVEL SECURITY;
@@ -101,8 +136,8 @@ ALTER TABLE message_templates FORCE  ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS message_templates_rw ON message_templates;
 CREATE POLICY message_templates_rw ON message_templates FOR ALL
-  USING (app_can_access_event(event_id))
-  WITH CHECK (app_can_access_event(event_id));
+  USING (app_has_any_event_permission(event_id, ARRAY['send_messages']))
+  WITH CHECK (app_has_any_event_permission(event_id, ARRAY['send_messages']));
 
 -- ── audit_logs ─────────────────────────────────────────────────────────────
 -- קריאה: אדמין, או מי שיש לו גישה לאירוע. שורות ללא event_id (למשל ניסיון
@@ -122,6 +157,15 @@ CREATE POLICY audit_logs_select ON audit_logs FOR SELECT
 DROP POLICY IF EXISTS audit_logs_insert ON audit_logs;
 CREATE POLICY audit_logs_insert ON audit_logs FOR INSERT
   WITH CHECK (true);
+
+-- מחיקה: חסרה קודם! events.py::delete_event מוחק ידנית שורות audit_logs
+-- לפני מחיקת האירוע (אין ON DELETE CASCADE בין audit_logs.event_id ל-events).
+-- בלי מדיניות DELETE מפורשת, RLS+FORCE היו חוסמים את המחיקה בשקט (0 שורות
+-- נמחקות), ואז ה-DELETE על events היה נכשל עם שגיאת foreign-key — כלומר
+-- מחיקת אירוע הייתה נשברת לגמרי לכל משתמש, כולל הבעלים.
+DROP POLICY IF EXISTS audit_logs_delete ON audit_logs;
+CREATE POLICY audit_logs_delete ON audit_logs FOR DELETE
+  USING (app_is_admin() OR (event_id IS NOT NULL AND app_owns_event(event_id)));
 
 -- ── event_members ──────────────────────────────────────────────────────────
 -- קריאה: אדמין, בעל האירוע, או החבר עצמו (רואה את שורת החברות שלו).

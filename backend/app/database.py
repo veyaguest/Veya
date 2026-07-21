@@ -31,6 +31,14 @@ current_user_id: contextvars.ContextVar = contextvars.ContextVar(
     "veya_current_user_id", default=None
 )
 
+# טוקן המוזמן של הבקשה הנוכחית (עבור נתיב ציבורי /confirm/{token}). מדיניות
+# ה-RLS על guests/events/messages קוראת את זה דרך app_current_guest_token()
+# כדי לזהות מוזמן אנונימי בלי התחברות. ContextVar נפרד מ-current_user_id כי
+# שני הזיהויים יכולים להיות רלוונטיים בו-זמנית (אף שבפועל היום לא קורה יחד).
+current_guest_token: contextvars.ContextVar = contextvars.ContextVar(
+    "veya_current_guest_token", default=None
+)
+
 
 def set_request_identity(user_id) -> None:
     """קובע את זהות המשתמש של הבקשה הנוכחית (נקרא מ-auth אחרי אימות הטוקן)."""
@@ -40,6 +48,21 @@ def set_request_identity(user_id) -> None:
 def clear_request_identity() -> None:
     """מאפס את הזהות בסיום הבקשה (הגנה נוספת מפני דליפה בין בקשות)."""
     current_user_id.set(None)
+
+
+def set_guest_token(token: str) -> None:
+    """קובע את טוקן המוזמן של הבקשה הנוכחית (נקרא מ-confirm.py לפני כל שאילתה).
+
+    הטוקן כבר מגיע מהמשתמש עצמו בכתובת ה-URL (``/confirm/{token}``) — אין כאן
+    חשיפת מידע חדש, רק "מראים" אותו ל-Postgres כדי שמדיניות ה-RLS תוכל לוודא
+    שהשורה שמוחזרת אכן שייכת לאותו טוקן בדיוק.
+    """
+    current_guest_token.set(token)
+
+
+def clear_guest_token() -> None:
+    """מאפס את טוקן המוזמן בסיום הבקשה (הגנה נוספת מפני דליפה בין בקשות)."""
+    current_guest_token.set(None)
 
 # SQLite לא אוכף מפתחות זרים (FK) כברירת מחדל — צריך להפעיל זאת לכל חיבור.
 # בלי זה אפשר להישאר עם רשומות "יתומות" שמצביעות על אירוע/מוזמן שנמחק.
@@ -53,6 +76,37 @@ if DATABASE_URL.startswith("sqlite"):
 
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# ── חיבור נפרד למיגרציות/תחזוקת עלייה (DDL + זריעה) ───────────────────────
+# מתי צריך את זה: ברגע ש-DATABASE_URL יוחלף לתפקיד ה-RLS המוגבל (veya_app —
+# ראו backend/rls/01_helpers_and_grants.sql), שתי בעיות עולות בבת אחת:
+#   1. ``_ensure_columns``/``_ensure_indexes`` ב-main.py מריצים DDL
+#      (ALTER TABLE / CREATE INDEX) — מותר רק לבעל הטבלה (postgres), לא
+#      ל-veya_app, גם אם יש לו GRANT על SELECT/INSERT/UPDATE/DELETE.
+#   2. פעולות תחזוקה בעלייה (``_ensure_admin``, ``_ensure_guest_tokens``,
+#      ``_migrate_images``, ``seed_veya_defaults``) רצות *לפני* שיש בקשת
+#      HTTP כלשהי — אין "משתמש מחובר" שאפשר להזריק כזהות, אז מדיניות ה-RLS
+#      (שתלויה ב-``app_current_user_id()``) הייתה חוסמת אותן.
+# הפתרון: MIGRATIONS_DATABASE_URL — חיבור נפרד (ברירת מחדל: אותו ערך כמו
+# DATABASE_URL, כך שהיום, לפני שמחליפים תפקיד, אין שום שינוי התנהגות).
+# בפרודקשן, כשעוברים בפועל ל-veya_app עבור DATABASE_URL, יש להגדיר את
+# MIGRATIONS_DATABASE_URL לחיבור postgres (superuser/בעל הטבלאות) בנפרד —
+# ראו checklist ההפעלה. שני החיבורים יכולים להצביע על אותו DB, רק בתפקידים
+# שונים.
+MIGRATIONS_DATABASE_URL = os.getenv("MIGRATIONS_DATABASE_URL", DATABASE_URL)
+if MIGRATIONS_DATABASE_URL == DATABASE_URL:
+    migrations_engine = engine
+else:
+    _migrations_connect_args = (
+        {"check_same_thread": False} if MIGRATIONS_DATABASE_URL.startswith("sqlite") else {}
+    )
+    migrations_engine = create_engine(
+        MIGRATIONS_DATABASE_URL, connect_args=_migrations_connect_args
+    )
+
+MigrationSessionLocal = sessionmaker(
+    autocommit=False, autoflush=False, bind=migrations_engine
+)
 
 # ב-PostgreSQL: בכל תחילת טרנזקציה מזריקים את מזהה המשתמש הנוכחי כמשתנה
 # session בשם ``app.current_user_id``. מדיניות ה-RLS משתמשת בו כדי לסנן שורות.
@@ -68,6 +122,11 @@ if IS_POSTGRES:
             "SELECT set_config('app.current_user_id', %s, true)",
             (str(uid) if uid is not None else "",),
         )
+        token = current_guest_token.get()
+        connection.exec_driver_sql(
+            "SELECT set_config('app.guest_token', %s, true)",
+            (token if token is not None else "",),
+        )
 
 
 class Base(DeclarativeBase):
@@ -82,3 +141,4 @@ def get_db():
     finally:
         db.close()
         clear_request_identity()
+        clear_guest_token()

@@ -12,11 +12,11 @@ import bcrypt
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app import models
-from app.database import get_db, set_request_identity
+from app.database import IS_POSTGRES, get_db, set_request_identity
 
 # מפתח חתימת הטוקנים. בפרודקשן חובה להגדיר JWT_SECRET אמיתי במשתני הסביבה;
 # בפיתוח יש ברירת-מחדל כדי שהמערכת תרוץ מיד.
@@ -37,6 +37,40 @@ if os.getenv("VEYA_ENV", "").strip().lower() == "production" and JWT_SECRET == _
 ADMIN_EMAIL = (os.getenv("ADMIN_EMAIL", "") or "").strip().lower()
 
 _bearer = HTTPBearer(auto_error=False)
+
+
+def find_user_by_email(db: Session, email: str) -> Optional["models.User"]:
+    """שולף משתמש לפי אימייל מדויק — לשימוש ב-register/login, *לפני* שיש
+    זהות מחוברת (עדיין אין ``app.current_user_id``).
+
+    ב-Postgres עם RLS, מדיניות ``users_select`` הרגילה ("אני רואה רק את
+    עצמי") הייתה חוסמת שאילתה כזו לגמרי. לכן על Postgres קוראים לפונקציית
+    ה-DB ``app_user_by_email`` (SECURITY DEFINER, ראו backend/rls/) שעוקפת
+    RLS בכוונה, ומחזירה שורה בודדת בלבד לפי אימייל מדויק — לא חשיפה כללית.
+    ב-SQLite (פיתוח, בלי RLS) פשוט שאילתת ORM רגילה.
+    """
+    if not IS_POSTGRES:
+        return db.scalars(select(models.User).where(models.User.email == email)).first()
+
+    row = db.execute(
+        text("SELECT * FROM app_user_by_email(:email)"), {"email": email}
+    ).mappings().first()
+    if row is None or row.get("id") is None:
+        return None
+    return models.User(**dict(row))
+
+
+def adopt_orphan_events(db: Session, user_id: int) -> None:
+    """משייך אירועים "יתומים" (בלי owner_id) למשתמש שנרשם — מיגרציה חד-פעמית
+    מהמצב הישן של אירוע יחיד. ב-Postgres דרך פונקציית DB ייעודית כי RLS
+    היה חוסם למשתמש חדש (לא-אדמין) לראות/לעדכן שורות בלי owner_id משלו.
+    """
+    if IS_POSTGRES:
+        db.execute(text("SELECT app_adopt_orphan_events(:uid)"), {"uid": user_id})
+        return
+    orphans = db.scalars(select(models.Event).where(models.Event.owner_id.is_(None))).all()
+    for ev in orphans:
+        ev.owner_id = user_id
 
 
 def hash_password(password: str) -> str:

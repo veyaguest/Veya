@@ -38,3 +38,10 @@ services:
       # postgresql://postgres:[הסיסמה]@[host]:5432/postgres
       - key: DATABASE_URL
         sync: false
+      # אופציונלי, נדרש רק בשלב הפעלת RLS בפועל: חיבור נפרד עם משתמש
+      # postgres/superuser, המשמש אך ורק למיגרציות ותחזוקת עלייה (ALTER
+      # TABLE, זריעת ברירות מחדל), בזמן ש-DATABASE_URL הרגיל עובר לתפקיד
+      # המוגבל veya_app. אם לא מוגדר — ברירת המחדל היא DATABASE_URL עצמו
+      # (המצב היום, לפני שה-RLS מופעל בפועל).
+      - key: MIGRATIONS_DATABASE_URL
+        sync: false

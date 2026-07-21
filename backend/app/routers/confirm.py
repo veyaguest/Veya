@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import audit, media, messaging, models, schemas
-from app.database import get_db
+from app.database import get_db, set_guest_token
 
 router = APIRouter(prefix="/confirm", tags=["confirm"])
 
@@ -66,6 +66,9 @@ def get_confirm(token: str, request: Request, db: Session = Depends(get_db)):
     """מחזיר את פרטי האירוע והמוזמן לפי הטוקן האישי (ללא נתוני מוזמנים אחרים)."""
     ip = _client_ip(request)
     _check_rate(ip)
+    # מזריקים את הטוקן ל-session *לפני* השאילתה הראשונה, כדי שמדיניות ה-RLS
+    # (guests/events/messages) תזהה את המוזמן האנונימי — ראו database.py.
+    set_guest_token(token)
     guest = db.scalar(select(models.Guest).where(models.Guest.guest_token == token))
     if guest is None:
         _record_fail(ip)
@@ -85,6 +88,7 @@ def submit_confirm(
     """המוזמן מסמן אם הוא מגיע, כמה אנשים, והערה. מעדכן סטטוס ורושם ביומן."""
     ip = _client_ip(request)
     _check_rate(ip)
+    set_guest_token(token)
     guest = db.scalar(select(models.Guest).where(models.Guest.guest_token == token))
     if guest is None:
         _record_fail(ip)
