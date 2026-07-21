@@ -138,8 +138,8 @@ export const strings = {
     dupSuffix: (n: number) => ` (${n} כבר היו אצלכם)`,
     importedToast: (created: number, dupSuffix: string) =>
       `הוספנו ${created} מוזמנים לרשימה ✓${dupSuffix}`,
-    summary: (total: number, totalPeople: number, confirmedPeople: number) =>
-      `${total} מוזמנים · ${totalPeople} אנשים הוזמנו · ${confirmedPeople} אישרו הגעה`,
+    summary: (total: number, totalPeople: number, confirmedPeople: number, guestsLabel = 'מוזמנים') =>
+      `${total} ${guestsLabel} · ${totalPeople} אנשים הוזמנו · ${confirmedPeople} אישרו הגעה`,
     colFullName: 'שם מלא',
     colPhone: 'טלפון',
     colSide: 'צד',

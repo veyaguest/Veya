@@ -25,23 +25,29 @@ import { OnboardingWizard } from './components/OnboardingWizard'
 import { ProfileDialog } from './components/ProfileDialog'
 import { RsvpPage } from './components/RsvpPage'
 import type { EventSummary, User } from './types'
+import type { EventTerms } from './strings/eventTypes'
 
 type Page = 'dashboard' | 'guests' | 'rsvp' | 'hall'
 
-const PAGE_TITLES: Record<Page, string> = {
-  dashboard: 'האירוע שלנו',
-  guests: 'ניהול מוזמנים',
-  rsvp: 'אישורי הגעה',
-  hall: 'סידור הושבה',
+// כותרות/ניווט תלויי-סוג-אירוע: "מוזמנים" הופך ל"משתתפים" באירוע עסקי וכו'.
+function pageTitles(terms: EventTerms): Record<Page, string> {
+  return {
+    dashboard: 'האירוע שלנו',
+    guests: `ניהול ${terms.guestsLabel}`,
+    rsvp: 'אישורי הגעה',
+    hall: 'סידור הושבה',
+  }
 }
 
 // label — הטקסט המלא בסרגל הצד (דסקטופ); short — טקסט קצר לניווט התחתון בטלפון.
-const NAV_ITEMS: { key: Page; label: string; short: string }[] = [
-  { key: 'dashboard', label: 'תמונת מצב', short: 'בית' },
-  { key: 'guests', label: 'ניהול מוזמנים', short: 'מוזמנים' },
-  { key: 'rsvp', label: 'אישורי הגעה', short: 'אישורים' },
-  { key: 'hall', label: 'סידור הושבה', short: 'הושבה' },
-]
+function navItemsFor(terms: EventTerms): { key: Page; label: string; short: string }[] {
+  return [
+    { key: 'dashboard', label: 'תמונת מצב', short: 'בית' },
+    { key: 'guests', label: `ניהול ${terms.guestsLabel}`, short: terms.guestsLabel },
+    { key: 'rsvp', label: 'אישורי הגעה', short: 'אישורים' },
+    { key: 'hall', label: 'סידור הושבה', short: 'הושבה' },
+  ]
+}
 
 /** אייקון קווי לכל פריט ניווט — מוצג בניווט התחתון בטלפון. */
 function NavIcon({ page }: { page: Page }) {
@@ -275,12 +281,12 @@ function App() {
     return withImpersonation(<OnboardingWizard onCreated={handleEventCreated} />)
   }
 
-  const navItems = NAV_ITEMS
-
   const activeEvent = events.find((e) => e.id === activeEventId) ?? null
   // מסנכרן את סוג האירוע הפעיל ל-store, כדי שמסכים יגזרו ממנו מונחים דינמיים.
   setActiveEventType(activeEvent?.event_type ?? null)
   const activeTerms = getEventTerms(activeEvent?.event_type)
+  const navItems = navItemsFor(activeTerms)
+  const pageTitle = pageTitles(activeTerms)
   const eventLabel = activeEvent
     ? hostNames(activeTerms, activeEvent.groom_name, activeEvent.bride_name) ||
       activeTerms.defaultTitle
@@ -345,7 +351,7 @@ function App() {
 
       <div className="main-area">
         <header className="page-header">
-          <h1 className="page-title">{PAGE_TITLES[page]}</h1>
+          <h1 className="page-title">{pageTitle[page]}</h1>
         </header>
         <main className="content" key={`${page}-${activeEventId}`}>
           {page === 'dashboard' && (

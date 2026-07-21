@@ -31,6 +31,8 @@ class EventTerms:
     emoji: str
     side_groom: str = "חתן"     # תווית צד groom (תואם ל-sideLabels ב-eventTypes.ts)
     side_bride: str = "כלה"     # תווית צד bride
+    guests_label: str = "מוזמנים"  # תואם ל-guestsLabel ב-eventTypes.ts
+    gift_label: str = "מתנה לזוג"  # תואם ל-giftLabel ב-eventTypes.ts
 
 
 # מקור-אמת יחיד לכל סוגי האירועים. הוספת סוג חדש = רשומה אחת כאן בלבד.
@@ -46,19 +48,21 @@ EVENT_TERMS: dict[str, EventTerms] = {
         type="bar_mitzvah",
         celebration="אירוע בר המצווה",
         celebration_construct="בר המצווה של",
-        hosts="המשפחה",
+        hosts="החוגג",
         emoji="🕯️",
-        side_groom="צד האב",
-        side_bride="צד האם",
+        side_groom="צד משפחת האב",
+        side_bride="צד משפחת האם",
+        gift_label="מתנה לחוגג",
     ),
     "bat_mitzvah": EventTerms(
         type="bat_mitzvah",
         celebration="אירוע בת המצווה",
         celebration_construct="בת המצווה של",
-        hosts="המשפחה",
+        hosts="החוגגת",
         emoji="🕯️",
-        side_groom="צד האב",
-        side_bride="צד האם",
+        side_groom="צד משפחת האב",
+        side_bride="צד משפחת האם",
+        gift_label="מתנה לחוגגת",
     ),
     "henna": EventTerms(
         type="henna",
@@ -73,8 +77,9 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration_construct="ברית של",
         hosts="המשפחה",
         emoji="🍼",
-        side_groom="צד האב",
-        side_bride="צד האם",
+        side_groom="צד משפחת האב",
+        side_bride="צד משפחת האם",
+        gift_label="מתנה למשפחה",
     ),
     "family": EventTerms(
         type="family",
@@ -84,6 +89,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         emoji="🎉",
         side_groom="צד א׳",
         side_bride="צד ב׳",
+        gift_label="מתנה למשפחה",
     ),
     "business": EventTerms(
         type="business",
@@ -93,6 +99,8 @@ EVENT_TERMS: dict[str, EventTerms] = {
         emoji="✨",
         side_groom="צד א׳",
         side_bride="צד ב׳",
+        guests_label="משתתפים",
+        gift_label="מתנה לאירוע",
     ),
     "other": EventTerms(
         type="other",
@@ -102,6 +110,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         emoji="✨",
         side_groom="צד א׳",
         side_bride="צד ב׳",
+        gift_label="מתנה לאירוע",
     ),
 }
 

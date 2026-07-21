@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { deleteGuest, listGuests } from '../api'
 import type { Guest } from '../types'
 import { groupLabel, INVITE_STATUS_LABELS, RSVP_LABELS } from '../types'
-import { sideLabel } from '../strings/eventTypes'
+import { activeEventTerms, sideLabel } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { AddGuestForm } from './AddGuestForm'
 import { CreateGroupDialog } from './CreateGroupDialog'
@@ -225,7 +225,7 @@ export function GuestsPage() {
       />
 
       <div className="summary">
-        {t.summary(total, totalPeople, confirmedPeople)}
+        {t.summary(total, totalPeople, confirmedPeople, activeEventTerms().guestsLabel)}
       </div>
 
       {error && <p className="form-error">{error}</p>}

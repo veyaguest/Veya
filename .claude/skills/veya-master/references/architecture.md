@@ -48,10 +48,11 @@
 - **מודל "תור לאישור":** אוטומציות מחשבות מה הגיע זמנו; שום דבר לא נשלח בלי
   אישור מפורש של הבעלים.
 - **מיגרציות:** כרגע ידניות ב-`main.py`. מעבר ל-Alembic הוא חוב ידוע.
-- **Event-ready — `event_type` הוא מקור ההתאמה המרכזי (🔒 `decisions.md`):**
-  שדה `event_type` על `Event` (ברירת מחדל `"wedding"`) הוא ה-**single source
-  of truth** לכל התאמה תלוית-סוג-אירוע — לוגיקה ושפה כאחד. אף מסך לא מחליט
-  "זו חתונה" על סמך הנחה מקומית; הכול נשען על השדה הזה.
+- **Event-first architecture — `event_type` הוא מקור ההתאמה המרכזי (🔒
+  `decisions.md`):** מערכת אחת, לא מערכת נפרדת לכל סוג אירוע. שדה `event_type`
+  על `Event` (ברירת מחדל `"wedding"`) הוא ה-**single source of truth** לכל
+  התאמה תלוית-סוג-אירוע — לוגיקה ושפה כאחד. אף מסך לא מחליט "זו חתונה" על
+  סמך הנחה מקומית; הכול נשען על השדה הזה.
 - **שכבת Lexicon מרכזית** (לא לפזר טקסטים קשיחים במסכים): `frontend/src/
   strings/eventTypes.ts` (`getEventTerms()`, נשען על `getActiveEventType()`)
   ו-`backend/app/event_terms.py` (`EVENT_TERMS` dict) הם **מקור האמת היחיד**

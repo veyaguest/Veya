@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createMyEvent, updateEvent } from '../api'
-import { setEventId } from '../authStore'
+import { setActiveEventType, setEventId } from '../authStore'
 import type { EventSummary, EventType } from '../types'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 import { VenueAutocomplete } from './VenueAutocomplete'
@@ -87,6 +87,10 @@ export function OnboardingWizard({ onCreated }: Props) {
       })
       // עוברים לאירוע החדש מיד, כדי שהעדכון הבא (updateEvent) ידע על איזה אירוע לדבר.
       setEventId(ev.id)
+      // מסנכרן את סוג האירוע הפעיל ל-store, כדי ששלב 2 (הוספת מוזמנים,
+      // activeEventTerms) יציג מיד את התוויות הנכונות — לא ישאר על הסוג
+      // הקודם/ברירת המחדל שנשאר ב-localStorage מסשן קודם.
+      setActiveEventType(ev.event_type)
 
       const rest: Parameters<typeof updateEvent>[0] = {}
       if (form.venue_address.trim()) rest.venue_address = form.venue_address
