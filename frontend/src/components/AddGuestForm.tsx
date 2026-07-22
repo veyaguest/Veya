@@ -134,9 +134,9 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
             value={customGroup ? CUSTOM : form.group_type}
             onChange={(e) => onGroupSelect(e.target.value)}
           >
-            {Object.entries(GROUP_LABELS).map(([v, l]) => (
-              <option key={v} value={v}>
-                {l}
+            {activeEventTerms().groupOptions.map(({ key, label }) => (
+              <option key={key} value={key}>
+                {label}
               </option>
             ))}
             <option value={CUSTOM}>{t.newGroupOption}</option>

@@ -10,7 +10,8 @@ export type EventType =
   | 'family'
   | 'business'
   | 'other'
-// קבוצה יכולה להיות אחת מהמוכרות, או קבוצה מותאמת אישית (טקסט חופשי בעברית)
+// קבוצה יכולה להיות אחת מהמוכרות, או קבוצה מותאמת אישית (טקסט חופשי בעברית).
+// המפתחות תלויי-סוג-אירוע — ראו EventTerms.groupOptions ב-eventTypes.ts.
 export type KnownGroupType =
   | 'close_family'
   | 'extended_family'
@@ -20,6 +21,16 @@ export type KnownGroupType =
   | 'studies'
   | 'childhood'
   | 'neighbors'
+  | 'family_father'
+  | 'family_mother'
+  | 'class'
+  | 'staff_clubs'
+  | 'family'
+  | 'employees'
+  | 'clients'
+  | 'suppliers'
+  | 'management'
+  | 'partners'
   | 'other'
 export type GroupType = KnownGroupType | (string & {})
 export type RsvpStatus = 'pending' | 'confirmed' | 'declined' | 'maybe'
@@ -132,7 +143,13 @@ export interface GuestUpdate {
   is_child?: boolean
 }
 
-export const GROUP_LABELS: Record<KnownGroupType, string> = {
+// מקור אמת יחיד לתוויות תצוגה של כל מפתחות הקבוצה הידועים — על כל סוגי
+// האירוע (חתונה + כל השאר). "אפשרויות הבחירה" בטופס תלויות-סוג ונשאבות מ-
+// activeEventTerms().groupOptions ב-eventTypes.ts; המילון כאן רק מתרגם מפתח
+// לתווית לתצוגה, כדי שמוזמן שיובא/הוזן תחת סוג אירוע אחד יוצג נכון גם אם
+// המסך הפעיל שונה (למשל דרך ה-API/דוחות).
+export const GROUP_LABELS: Record<string, string> = {
+  // חתונה / חינה
   close_family: 'משפחה קרובה',
   extended_family: 'משפחה רחוקה',
   friends: 'חברים',
@@ -141,6 +158,19 @@ export const GROUP_LABELS: Record<KnownGroupType, string> = {
   studies: 'מהלימודים',
   childhood: 'חברי ילדות',
   neighbors: 'שכנים',
+  // בר/בת מצווה
+  family_father: 'משפחת האב',
+  family_mother: 'משפחת האם',
+  class: 'כיתה',
+  staff_clubs: 'צוות/חוגים',
+  // ברית / אירוע משפחתי / חינה
+  family: 'משפחה',
+  // אירוע עסקי
+  employees: 'עובדים',
+  clients: 'לקוחות',
+  suppliers: 'ספקים',
+  management: 'הנהלה',
+  partners: 'שותפים',
   other: 'אחר',
 }
 

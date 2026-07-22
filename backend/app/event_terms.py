@@ -19,7 +19,49 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+# אפשרויות קבוצה מוצעות לטופס/ייבוא מוזמנים, לפי סוג אירוע — תואם ל-
+# groupOptions ב-eventTypes.ts. (מפתח, תווית). group_type מאוחסן כטקסט חופשי
+# ב-DB, אז אלה רק ברירות מחדל מוצעות — לא אכיפה.
+WEDDING_GROUP_OPTIONS: list[tuple[str, str]] = [
+    ("close_family", "משפחה קרובה"),
+    ("extended_family", "משפחה רחוקה"),
+    ("friends", "חברים"),
+    ("work", "עבודה"),
+    ("army", "צבא"),
+    ("studies", "מהלימודים"),
+    ("childhood", "חברי ילדות"),
+    ("neighbors", "שכנים"),
+    ("other", "אחר"),
+]
+MITZVAH_GROUP_OPTIONS: list[tuple[str, str]] = [
+    ("family_father", "משפחת האב"),
+    ("family_mother", "משפחת האם"),
+    ("friends", "חברים"),
+    ("class", "כיתה"),
+    ("staff_clubs", "צוות/חוגים"),
+    ("other", "אחר"),
+]
+HENNA_GROUP_OPTIONS: list[tuple[str, str]] = [
+    ("family", "משפחה"),
+    ("extended_family", "צד משפחתי מורחב"),
+    ("friends", "חברים"),
+    ("other", "אחר"),
+]
+FAMILY_EVENT_GROUP_OPTIONS: list[tuple[str, str]] = [
+    ("family", "משפחה"),
+    ("friends", "חברים"),
+    ("other", "אחר"),
+]
+BUSINESS_GROUP_OPTIONS: list[tuple[str, str]] = [
+    ("employees", "עובדים"),
+    ("clients", "לקוחות"),
+    ("suppliers", "ספקים"),
+    ("management", "הנהלה"),
+    ("partners", "שותפים"),
+    ("other", "אחר"),
+]
 
 
 @dataclass(frozen=True)
@@ -33,6 +75,7 @@ class EventTerms:
     side_bride: str = "כלה"     # תווית צד bride
     guests_label: str = "מוזמנים"  # תואם ל-guestsLabel ב-eventTypes.ts
     gift_label: str = "מתנה לזוג"  # תואם ל-giftLabel ב-eventTypes.ts
+    group_options: list[tuple[str, str]] = field(default_factory=lambda: WEDDING_GROUP_OPTIONS)
 
 
 # מקור-אמת יחיד לכל סוגי האירועים. הוספת סוג חדש = רשומה אחת כאן בלבד.
@@ -53,6 +96,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         side_groom="צד משפחת האב",
         side_bride="צד משפחת האם",
         gift_label="מתנה לחוגג",
+        group_options=MITZVAH_GROUP_OPTIONS,
     ),
     "bat_mitzvah": EventTerms(
         type="bat_mitzvah",
@@ -63,6 +107,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         side_groom="צד משפחת האב",
         side_bride="צד משפחת האם",
         gift_label="מתנה לחוגגת",
+        group_options=MITZVAH_GROUP_OPTIONS,
     ),
     "henna": EventTerms(
         type="henna",
@@ -70,6 +115,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration_construct="חינת",
         hosts="בני הזוג",
         emoji="🌿",
+        group_options=HENNA_GROUP_OPTIONS,
     ),
     "brit": EventTerms(
         type="brit",
@@ -80,6 +126,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         side_groom="צד משפחת האב",
         side_bride="צד משפחת האם",
         gift_label="מתנה למשפחה",
+        group_options=FAMILY_EVENT_GROUP_OPTIONS,
     ),
     "family": EventTerms(
         type="family",
@@ -90,6 +137,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         side_groom="צד א׳",
         side_bride="צד ב׳",
         gift_label="מתנה למשפחה",
+        group_options=FAMILY_EVENT_GROUP_OPTIONS,
     ),
     "business": EventTerms(
         type="business",
@@ -101,6 +149,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         side_bride="צד ב׳",
         guests_label="משתתפים",
         gift_label="מתנה לאירוע",
+        group_options=BUSINESS_GROUP_OPTIONS,
     ),
     "other": EventTerms(
         type="other",
@@ -111,6 +160,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         side_groom="צד א׳",
         side_bride="צד ב׳",
         gift_label="מתנה לאירוע",
+        group_options=FAMILY_EVENT_GROUP_OPTIONS,
     ),
 }
 

@@ -45,6 +45,8 @@ SIDE_VALUE_MAP = {
 }
 
 GROUP_VALUE_MAP = {
+    # חתונה/חינה — קטגוריות ספציפיות קודם, כדי שלא "יבלעו" ע"י ההתאמה הכללית
+    # של "משפחה"/"אב"/"אם" למטה (הראשון שמתאים בסדר האיטרציה מנצח).
     "משפחה קרובה": "close_family",
     "קרובה": "close_family",
     "משפחה רחוקה": "extended_family",
@@ -53,6 +55,36 @@ GROUP_VALUE_MAP = {
     "חבר": "friends",
     "עבודה": "work",
     "work": "work",
+    "צבא": "army",
+    "לימודים": "studies",
+    "ילדות": "childhood",
+    "שכנים": "neighbors",
+    # בר/בת מצווה
+    "משפחת האב": "family_father",
+    "משפחת אב": "family_father",
+    "משפחת האם": "family_mother",
+    "משפחת אם": "family_mother",
+    "כיתה": "class",
+    "חוגים": "staff_clubs",
+    "צוות": "staff_clubs",
+    # אב/אם עצמאיים (אחרי הצירופים הארוכים למעלה) — "אב"/"אבא" ו"אם"/"אמא"
+    "אבא": "family_father",
+    "אב": "family_father",
+    "אמא": "family_mother",
+    "אם": "family_mother",
+    # ברית/משפחתי/חינה — כללי, אחרי כל הצירופים הספציפיים למעלה
+    "משפחה": "family",
+    # אירוע עסקי
+    "עובדים": "employees",
+    "עובד": "employees",
+    "לקוחות": "clients",
+    "לקוח": "clients",
+    "ספקים": "suppliers",
+    "ספק": "suppliers",
+    "הנהלה": "management",
+    "מנהל": "management",
+    "שותפים": "partners",
+    "שותף": "partners",
 }
 
 

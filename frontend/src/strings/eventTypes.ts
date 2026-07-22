@@ -50,7 +50,59 @@ export interface EventTerms {
   guestsLabel: string
   /** תווית מתנה (לפיצ'ר מתנות באשראי העתידי): "מתנה לזוג" / "מתנה לחוגג" */
   giftLabel: string
+  /**
+   * אפשרויות קבוצה מוצעות לטופס הוספת/ייבוא מוזמנים, לפי סוג האירוע —
+   * למשל "עובדים/לקוחות/ספקים" לעסקי במקום "משפחה/צבא/לימודים" לחתונה.
+   * המפתחות הם ערכי group_type בפועל (מאוחסנים כטקסט חופשי ב-DB); התווית
+   * לתצוגה תמיד עוברת דרך GROUP_LABELS (types.ts) כדי שנתונים קיימים
+   * יוצגו נכון גם אם הוזנו תחת סוג אירוע אחר. "אחר"/קבוצה מותאמת אישית
+   * זמינים בכל טופס בנפרד מהרשימה הזו.
+   */
+  groupOptions: { key: string; label: string }[]
 }
+
+const WEDDING_GROUP_OPTIONS = [
+  { key: 'close_family', label: 'משפחה קרובה' },
+  { key: 'extended_family', label: 'משפחה רחוקה' },
+  { key: 'friends', label: 'חברים' },
+  { key: 'work', label: 'עבודה' },
+  { key: 'army', label: 'צבא' },
+  { key: 'studies', label: 'מהלימודים' },
+  { key: 'childhood', label: 'חברי ילדות' },
+  { key: 'neighbors', label: 'שכנים' },
+  { key: 'other', label: 'אחר' },
+]
+
+const MITZVAH_GROUP_OPTIONS = [
+  { key: 'family_father', label: 'משפחת האב' },
+  { key: 'family_mother', label: 'משפחת האם' },
+  { key: 'friends', label: 'חברים' },
+  { key: 'class', label: 'כיתה' },
+  { key: 'staff_clubs', label: 'צוות/חוגים' },
+  { key: 'other', label: 'אחר' },
+]
+
+const HENNA_GROUP_OPTIONS = [
+  { key: 'family', label: 'משפחה' },
+  { key: 'extended_family', label: 'צד משפחתי מורחב' },
+  { key: 'friends', label: 'חברים' },
+  { key: 'other', label: 'אחר' },
+]
+
+const FAMILY_EVENT_GROUP_OPTIONS = [
+  { key: 'family', label: 'משפחה' },
+  { key: 'friends', label: 'חברים' },
+  { key: 'other', label: 'אחר' },
+]
+
+const BUSINESS_GROUP_OPTIONS = [
+  { key: 'employees', label: 'עובדים' },
+  { key: 'clients', label: 'לקוחות' },
+  { key: 'suppliers', label: 'ספקים' },
+  { key: 'management', label: 'הנהלה' },
+  { key: 'partners', label: 'שותפים' },
+  { key: 'other', label: 'אחר' },
+]
 
 const WEDDING: EventTerms = {
   type: 'wedding',
@@ -69,6 +121,7 @@ const WEDDING: EventTerms = {
   celebrationOf: (names) => `החתונה של ${names}`,
   guestsLabel: 'מוזמנים',
   giftLabel: 'מתנה לזוג',
+  groupOptions: WEDDING_GROUP_OPTIONS,
 }
 
 export const EVENT_TERMS: Record<EventType, EventTerms> = {
@@ -90,6 +143,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     celebrationOf: (names) => `החינה של ${names}`,
     guestsLabel: 'מוזמנים',
     giftLabel: 'מתנה לזוג',
+    groupOptions: HENNA_GROUP_OPTIONS,
   },
   bar_mitzvah: {
     type: 'bar_mitzvah',
@@ -108,6 +162,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     celebrationOf: (names) => `אירוע בר המצווה של ${names}`,
     guestsLabel: 'מוזמנים',
     giftLabel: 'מתנה לחוגג',
+    groupOptions: MITZVAH_GROUP_OPTIONS,
   },
   bat_mitzvah: {
     type: 'bat_mitzvah',
@@ -126,6 +181,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     celebrationOf: (names) => `אירוע בת המצווה של ${names}`,
     guestsLabel: 'מוזמנים',
     giftLabel: 'מתנה לחוגגת',
+    groupOptions: MITZVAH_GROUP_OPTIONS,
   },
   brit: {
     type: 'brit',
@@ -144,6 +200,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     celebrationOf: (names) => `הברית של ${names}`,
     guestsLabel: 'מוזמנים',
     giftLabel: 'מתנה למשפחה',
+    groupOptions: FAMILY_EVENT_GROUP_OPTIONS,
   },
   family: {
     type: 'family',
@@ -162,6 +219,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     celebrationOf: (names) => `האירוע של ${names}`,
     guestsLabel: 'מוזמנים',
     giftLabel: 'מתנה למשפחה',
+    groupOptions: FAMILY_EVENT_GROUP_OPTIONS,
   },
   business: {
     type: 'business',
@@ -180,6 +238,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     celebrationOf: (names) => `האירוע של ${names}`,
     guestsLabel: 'משתתפים',
     giftLabel: 'מתנה לאירוע',
+    groupOptions: BUSINESS_GROUP_OPTIONS,
   },
   other: {
     type: 'other',
@@ -198,6 +257,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     celebrationOf: (names) => `האירוע של ${names}`,
     guestsLabel: 'מוזמנים',
     giftLabel: 'מתנה לאירוע',
+    groupOptions: FAMILY_EVENT_GROUP_OPTIONS,
   },
 }
 

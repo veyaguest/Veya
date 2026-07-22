@@ -294,9 +294,9 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                               })
                             }
                           >
-                            {Object.entries(GROUP_LABELS).map(([v, l]) => (
-                              <option key={v} value={v}>
-                                {l}
+                            {activeEventTerms().groupOptions.map(({ key, label }) => (
+                              <option key={key} value={key}>
+                                {label}
                               </option>
                             ))}
                           </select>
