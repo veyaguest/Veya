@@ -67,6 +67,7 @@ BUSINESS_GROUP_OPTIONS: list[tuple[str, str]] = [
 @dataclass(frozen=True)
 class EventTerms:
     type: str
+    label: str                  # שם הסוג לתצוגה (בורר סוג אירוע, אדמין) — תואם ל-label ב-eventTypes.ts
     celebration: str            # "חתונה" (סתמי — בטוח אחרי ל/ב)
     celebration_construct: str  # "חתונת" / "בר המצווה של"
     hosts: str                  # "בני הזוג"
@@ -82,6 +83,7 @@ class EventTerms:
 EVENT_TERMS: dict[str, EventTerms] = {
     "wedding": EventTerms(
         type="wedding",
+        label="חתונה",
         celebration="חתונה",
         celebration_construct="חתונת",
         hosts="בני הזוג",
@@ -89,6 +91,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
     ),
     "bar_mitzvah": EventTerms(
         type="bar_mitzvah",
+        label="בר מצווה",
         celebration="אירוע בר המצווה",
         celebration_construct="בר המצווה של",
         hosts="החוגג",
@@ -100,6 +103,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
     ),
     "bat_mitzvah": EventTerms(
         type="bat_mitzvah",
+        label="בת מצווה",
         celebration="אירוע בת המצווה",
         celebration_construct="בת המצווה של",
         hosts="החוגגת",
@@ -111,6 +115,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
     ),
     "henna": EventTerms(
         type="henna",
+        label="חינה",
         celebration="חינה",
         celebration_construct="חינת",
         hosts="בני הזוג",
@@ -119,6 +124,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
     ),
     "brit": EventTerms(
         type="brit",
+        label="ברית / בריתה",
         celebration="אירוע ברית",
         celebration_construct="ברית של",
         hosts="המשפחה",
@@ -130,6 +136,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
     ),
     "family": EventTerms(
         type="family",
+        label="אירוע משפחתי",
         celebration="אירוע משפחתי",
         celebration_construct="אירוע של",
         hosts="המשפחה",
@@ -141,6 +148,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
     ),
     "business": EventTerms(
         type="business",
+        label="אירוע עסקי",
         celebration="אירוע",
         celebration_construct="אירוע של",
         hosts="המארגנים",
@@ -153,6 +161,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
     ),
     "other": EventTerms(
         type="other",
+        label="אחר",
         celebration="אירוע",
         celebration_construct="אירוע של",
         hosts="המארגנים",
