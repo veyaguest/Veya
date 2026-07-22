@@ -15,12 +15,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from app import audit, messaging, models, schemas
+from app import audit, messaging, models, permissions, schemas
 from app.auth import get_current_user
 from app.database import IS_POSTGRES, get_db
-from app.deps import get_current_event
+from app.deps import EventAccess
 
 router = APIRouter(prefix="/messaging", tags=["messaging"])
+
+_view = EventAccess(permissions.MESSAGES_VIEW)
+_write = EventAccess(permissions.MESSAGES_WRITE)
 
 
 def _event_date_str(event: models.Event) -> str:
@@ -58,7 +61,7 @@ def _record_reply(db: Session, guest: models.Guest, status: str, provider: str) 
 @router.get("/summary", response_model=schemas.RsvpSummary)
 def summary(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_view),
 ):
     """תמונת מצב RSVP: כמה אישרו/ביטלו/ממתינים + כמה הזמנות נשלחו."""
     def count(**where) -> int:
@@ -94,7 +97,7 @@ def send_invitations(
     payload: schemas.SendInvitationsRequest,
     request: Request,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
     user: models.User = Depends(get_current_user),
 ):
     stmt = select(models.Guest).where(models.Guest.event_id == event.id)
@@ -160,7 +163,7 @@ def send_invitations(
 def send_reminders(
     request: Request,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
     user: models.User = Depends(get_current_user),
 ):
     """שולח תזכורת עדינה רק למוזמנים שכבר קיבלו הזמנה אך עדיין לא ענו (pending).
@@ -249,7 +252,7 @@ def send_reminders(
 
 
 @router.get("/template", response_model=schemas.MessageTemplateRead)
-def get_template(event: models.Event = Depends(get_current_event)):
+def get_template(event: models.Event = Depends(_view)):
     """מחזיר את תבנית ההודעה של האירוע (או ברירת המחדל) + רשימת המשתנים."""
     return schemas.MessageTemplateRead(
         template=event.message_template or messaging.DEFAULT_TEMPLATE,
@@ -266,13 +269,12 @@ def get_template(event: models.Event = Depends(get_current_event)):
 def save_template(
     payload: schemas.MessageTemplateSave,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
 ):
     """שומר תבנית מותאמת אישית. ריק => חזרה לתבנית ברירת המחדל."""
     text = (payload.template or "").strip()
     event.message_template = text or None
     db.commit()
-    db.refresh(event)
     return get_template(event=event)
 
 
@@ -280,7 +282,7 @@ def save_template(
 def preview_template(
     payload: schemas.MessageTemplateSave,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_view),
 ):
     """תצוגה מקדימה של התבנית עם מוזמן אמיתי (הראשון) או ערכי דוגמה."""
     sample = db.scalars(
@@ -303,7 +305,7 @@ def preview_template(
 def simulate_reply(
     payload: schemas.SimulateReplyRequest,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
 ):
     """בדיקה במצב mock: מדמה לחיצת כפתור RSVP של מוזמן ומעדכן את הסטטוס."""
     guest = db.get(models.Guest, payload.guest_id)
@@ -319,7 +321,7 @@ def simulate_reply(
 def message_log(
     limit: int = 50,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_view),
 ):
     """יומן ההודעות האחרונות של האירוע (יוצאות ונכנסות)."""
     stmt = (

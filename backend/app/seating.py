@@ -26,10 +26,35 @@ from typing import Optional
 
 from app.event_terms import side_axis_label
 
-# ניקוד חוקים רכים: תגמול על זוג חבורות באותו שולחן.
+# ניקוד חוקים רכים: תגמול על זוג חבורות באותו שולחן. ברירת מחדל = חתונה
+# (ולכל סוג אירוע שלא הוגדר לו משקל ייעודי — אף פעם לא נוגעים בחוויית החתונה).
 SAME_SIDE_BONUS = 3    # אותו צד (חתן/כלה)
 SAME_GROUP_BONUS = 2   # אותה קבוצה (משפחה קרובה/חברים/עבודה...)
-TOGETHER_BONUS = 15    # בקשת "לשבת עם" מפורשת (PRD 7.4)
+TOGETHER_BONUS = 15    # בקשת "לשבת עם" מפורשת (PRD 7.4) — קבוע לכל סוג אירוע: בקשה
+                        # מפורשת של המארגן/ת נשקלת באותה חוזקה בכל סוג אירוע.
+
+# משקלי "אותו צד"/"אותה קבוצה" לפי event_type — ל-Event-first architecture.
+# עקרון: חתונה נשארת בדיוק כמו שהייתה (SAME_SIDE_BONUS/SAME_GROUP_BONUS
+# למעלה) כדי לא לפגוע בחוויית החתונה הקיימת. שאר הסוגים ברירת המחדל שלהם
+# זהה לחתונה, חוץ מ-business: שם "הצד" (מארח א/ב) כמעט לא רלוונטי לאירוע
+# עסקי, ואילו "הקבוצה" (מחלקה/עובדים/לקוחות) היא הציר המשמעותי לישיבה
+# יחד — לכן מקבל דגש הפוך. שאר ההתאמות העדינות יותר (bar/bat_mitzvah,
+# brit, henna, family) נשארות פתוחות להחלטת מוצר עתידית לפי משוב אמיתי —
+# ראו open-questions.md.
+SEATING_WEIGHTS_BY_EVENT_TYPE: dict[str, dict[str, int]] = {
+    "business": {"same_side": 1, "same_group": 4},
+}
+
+
+def get_seating_weights(event_type: str | None) -> dict[str, int]:
+    """מחזיר {same_side, same_group} למשקלי הניקוד הרך, לפי event_type.
+
+    ברירת המחדל (לכל סוג שלא הוגדר לו במפורש) זהה לחתונה — שינוי עדין
+    למשקל קיים דורש עדכון מפורש ב-SEATING_WEIGHTS_BY_EVENT_TYPE, לא ניחוש.
+    """
+    defaults = {"same_side": SAME_SIDE_BONUS, "same_group": SAME_GROUP_BONUS}
+    return {**defaults, **SEATING_WEIGHTS_BY_EVENT_TYPE.get(event_type or "wedding", {})}
+
 
 # ניקוד העדפת מיקום/נגישות מסופקת (מנורמל 0..1 לפי מרחק יחסי באולם).
 STRONG_PREF_WEIGHT = 10.0
@@ -153,16 +178,16 @@ def _table_violates(members: list[Party], cap: int, forbidden: set) -> bool:
     return False
 
 
-def _table_score(members: list[Party], tid, together: set, pref_score: dict) -> float:
+def _table_score(members: list[Party], tid, together: set, pref_score: dict, weights: dict) -> float:
     """ניקוד רך לשולחן בודד — צד/קבוצה/'לשבת עם' + העדפות מיקום."""
     s = 0.0
     for i in range(len(members)):
         for j in range(i + 1, len(members)):
             a, b = members[i], members[j]
             if a.side == b.side and a.side != "shared":
-                s += SAME_SIDE_BONUS
+                s += weights["same_side"]
             if a.group == b.group and a.group != "other":
-                s += SAME_GROUP_BONUS
+                s += weights["same_group"]
             if (min(a.id, b.id), max(a.id, b.id)) in together:
                 s += TOGETHER_BONUS
     if pref_score:
@@ -171,9 +196,9 @@ def _table_score(members: list[Party], tid, together: set, pref_score: dict) -> 
     return s
 
 
-def _score(assignment: dict, together: set, pref_score: dict) -> float:
+def _score(assignment: dict, together: set, pref_score: dict, weights: dict) -> float:
     """ניקוד כולל: סכום ניקוד כל השולחנות."""
-    return sum(_table_score(m, tid, together, pref_score) for tid, m in assignment.items())
+    return sum(_table_score(m, tid, together, pref_score, weights) for tid, m in assignment.items())
 
 
 def _greedy(parties, tids, caps, forbidden, pref_score) -> dict:
@@ -194,7 +219,7 @@ def _greedy(parties, tids, caps, forbidden, pref_score) -> dict:
     return assignment
 
 
-def _local_search(assignment, caps, forbidden, together, pref_score, rng) -> None:
+def _local_search(assignment, caps, forbidden, together, pref_score, rng, weights) -> None:
     """שיפור מקומי (in-place): חילופי/העברות חבורות בין שולחנות כל עוד לא נשבר
     חוק קשיח והניקוד לא יורד. משלב swap (החלפה) ו-move (העברה למקום פנוי).
 
@@ -205,7 +230,7 @@ def _local_search(assignment, caps, forbidden, together, pref_score, rng) -> Non
         return
 
     def tscore(tid):
-        return _table_score(assignment[tid], tid, together, pref_score)
+        return _table_score(assignment[tid], tid, together, pref_score, weights)
 
     for _ in range(LOCAL_SEARCH_ITERATIONS):
         t1 = rng.choice(tids)
@@ -297,6 +322,7 @@ def recommend_seats(
     gside = guest.get("side", "shared")
     ggroup = guest.get("group_type", "other")
     gsize = max(1, int(guest.get("party_size", 1)))
+    weights = get_seating_weights(event_type)
 
     # נורמות אזור לניקוד העדפות מיקום — רק אם יש מיקומי שולחנות והעדפות.
     positions = {
@@ -328,9 +354,9 @@ def recommend_seats(
         for m in members:
             mid = int(m["id"])
             if m.get("side") == gside and gside != "shared":
-                score += SAME_SIDE_BONUS
+                score += weights["same_side"]
             if m.get("group_type") == ggroup and ggroup != "other":
-                score += SAME_GROUP_BONUS
+                score += weights["same_group"]
             if (min(gid, mid), max(gid, mid)) in together:
                 score += TOGETHER_BONUS
 
@@ -438,9 +464,10 @@ def generate_seating(
         norms = {}
         pref_score = {}
 
+    weights = get_seating_weights(event_type)
     assignment = _greedy(parties, tids, caps, forbidden, pref_score)
-    _local_search(assignment, caps, forbidden, together, pref_score, rng)
-    score = _score(assignment, together, pref_score)
+    _local_search(assignment, caps, forbidden, together, pref_score, rng, weights)
+    score = _score(assignment, together, pref_score, weights)
 
     seated_ids = {p.id for members in assignment.values() for p in members}
     unseated = [p.id for p in parties if p.id not in seated_ids]

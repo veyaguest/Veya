@@ -25,6 +25,7 @@ import type {
   User,
 } from '../types'
 import { CreateAccountForm, VeyaDefaultsManager } from './AdminPage'
+import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 
 type AdminPage =
   | 'dashboard'
@@ -69,7 +70,7 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
 }
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  couple: 'זוג',
+  couple: 'בעל/ת אירוע',
   planner: 'מפיק',
   venue: 'אולם',
 }
@@ -217,12 +218,23 @@ function AdminDashboardView() {
         </div>
       </div>
 
+      <h2 className="admin-section-title">אירועים לפי סוג</h2>
+      <div className="adm-kpis">
+        {data.events_by_type.map((t) => (
+          <div className="adm-kpi" key={t.event_type}>
+            <span className="adm-kpi-num">{t.count}</span>
+            <span className="adm-kpi-label">{t.label}</span>
+          </div>
+        ))}
+      </div>
+
       <h2 className="admin-section-title">אירועים אחרונים</h2>
       <div className="table-wrap">
         <table className="guests-table">
           <thead>
             <tr>
               <th>#</th>
+              <th>סוג אירוע</th>
               <th>בעלי האירוע</th>
               <th>אולם</th>
               <th>בעלים</th>
@@ -234,6 +246,7 @@ function AdminDashboardView() {
             {data.recent_events.map((e) => (
               <tr key={e.id}>
                 <td>{e.id}</td>
+                <td>{getEventTerms(e.event_type).label}</td>
                 <td>{e.couple}</td>
                 <td>{e.venue_name || '—'}</td>
                 <td>{e.owner_email || '—'}</td>
@@ -569,11 +582,10 @@ function AdminUserDialog({
                   {detail.events.map((e) => (
                     <li key={e.id}>
                       <span className="adm-user-event-couple">
-                        {[e.groom_name, e.bride_name].filter(Boolean).join(' · ') ||
-                          `אירוע #${e.id}`}
+                        {e.hosts || `אירוע #${e.id}`}
                       </span>
                       <span className="adm-user-event-meta">
-                        {e.venue_name || 'ללא אולם'} · {e.guests_count} מוזמנים
+                        {getEventTerms(e.event_type).label} · {e.venue_name || 'ללא אולם'} · {e.guests_count} מוזמנים
                       </span>
                     </li>
                   ))}
@@ -816,6 +828,7 @@ function AdminEventsView({
   const [events, setEvents] = useState<AdminEventRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
   const [busyOwner, setBusyOwner] = useState<number | null>(null)
 
   useEffect(() => {
@@ -829,16 +842,20 @@ function AdminEventsView({
   const filtered = useMemo(() => {
     if (!events) return []
     const q = query.trim().toLowerCase()
-    if (!q) return events
-    return events.filter(
-      (e) =>
+    return events.filter((e) => {
+      if (typeFilter && e.event_type !== typeFilter) return false
+      if (!q) return true
+      return (
+        e.hosts.toLowerCase().includes(q) ||
         e.groom_name.toLowerCase().includes(q) ||
         e.bride_name.toLowerCase().includes(q) ||
         (e.venue_name || '').toLowerCase().includes(q) ||
         (e.owner_email || '').toLowerCase().includes(q) ||
-        String(e.id) === q,
-    )
-  }, [events, query])
+        getEventTerms(e.event_type).label.toLowerCase().includes(q) ||
+        String(e.id) === q
+      )
+    })
+  }, [events, query, typeFilter])
 
   async function enterEvent(ownerId: number) {
     setBusyOwner(ownerId)
@@ -862,10 +879,22 @@ function AdminEventsView({
           כל האירועים ({filtered.length}
           {filtered.length !== events.length ? ` מתוך ${events.length}` : ''})
         </h2>
+        <select
+          className="adm-search"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+        >
+          <option value="">כל סוגי האירוע</option>
+          {EVENT_TYPE_OPTIONS.map((opt) => (
+            <option key={opt.type} value={opt.type}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
         <input
           type="search"
           className="adm-search"
-          placeholder="חיפוש לפי זוג, אולם, בעלים או מזהה…"
+          placeholder="חיפוש לפי בעלי אירוע, אולם, בעלים או מזהה…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -878,6 +907,7 @@ function AdminEventsView({
           <thead>
             <tr>
               <th>#</th>
+              <th>סוג אירוע</th>
               <th>בעלי האירוע</th>
               <th>אולם</th>
               <th>בעלים</th>
@@ -889,9 +919,8 @@ function AdminEventsView({
             {filtered.map((e) => (
               <tr key={e.id}>
                 <td>{e.id}</td>
-                <td>
-                  {[e.groom_name, e.bride_name].filter(Boolean).join(' · ') || '—'}
-                </td>
+                <td>{getEventTerms(e.event_type).label}</td>
+                <td>{e.hosts || '—'}</td>
                 <td>{e.venue_name || '—'}</td>
                 <td dir="ltr">{e.owner_email || '—'}</td>
                 <td>{e.guests_count}</td>
@@ -913,7 +942,7 @@ function AdminEventsView({
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="adm-empty-row">
+                <td colSpan={7} className="adm-empty-row">
                   לא נמצאו אירועים שתואמים לחיפוש.
                 </td>
               </tr>

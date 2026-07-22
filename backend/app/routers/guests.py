@@ -7,9 +7,12 @@ from pydantic import BaseModel
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session
 
-from app import invitations, models, schemas
+from app import invitations, models, permissions, schemas
 from app.database import get_db
-from app.deps import get_current_event
+from app.deps import EventAccess
+
+_view = EventAccess(permissions.GUESTS_VIEW)
+_write = EventAccess(permissions.GUESTS_WRITE)
 
 router = APIRouter(prefix="/guests", tags=["guests"])
 
@@ -68,7 +71,7 @@ def list_guests(
     limit: int = DEFAULT_PAGE_LIMIT,
     offset: int = 0,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_view),
 ):
     """עמוד מתוך רשימת המוזמנים של האירוע הפעיל.
 
@@ -131,25 +134,26 @@ def list_guests(
 def create_guest(
     payload: schemas.GuestCreate,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
 ):
     guest = models.Guest(event_id=event.id, **payload.model_dump())
     db.add(guest)
     db.commit()
-    db.refresh(guest)
     return guest
 
 
 @router.get("/group-suggestions", response_model=list[GroupSuggestion])
 def group_suggestions(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_view),
 ):
     """הצעות קבוצה חכמות: איתור מקבצי שם-משפחה זהה ברשימת המוזמנים.
 
     לכל שם משפחה שמופיע אצל ``MIN_CLUSTER`` מוזמנים ומעלה, מוצע לאחד אותם
-    לקבוצה 'משפחת <שם>'. מוחזרים רק מוזמנים שעדיין לא בקבוצה המוצעת, וההצעה
-    מדולגת אם כולם כבר משויכים אליה.
+    לקבוצה. מוחזרים רק מוזמנים שעדיין לא בקבוצה המוצעת, וההצעה מדולגת אם
+    כולם כבר משויכים אליה. שם הקבוצה המוצע תלוי-סוג-אירוע: "משפחת X" לחתונה/
+    בר-בת-מצווה/חינה/ברית/משפחתי (איחוד סביר של שם משפחה זהה), "קבוצת X"
+    לעסקי/אחר — כי עמיתים בעלי שם משפחה זהה הם צירוף מקרים, לא בהכרח משפחה.
     """
     guests = db.scalars(
         select(models.Guest).where(models.Guest.event_id == event.id)
@@ -161,11 +165,12 @@ def group_suggestions(
         if len(s) >= 2:
             clusters[s].append(g)
 
+    is_business_like = event.event_type in ("business", "other")
     suggestions: list[GroupSuggestion] = []
     for surname, members in clusters.items():
         if len(members) < MIN_CLUSTER:
             continue
-        group_name = f"משפחת {surname}"
+        group_name = f"{'קבוצת' if is_business_like else 'משפחת'} {surname}"
         missing = [g for g in members if g.group_type != group_name]
         if not missing:
             continue  # כולם כבר בקבוצה — אין מה להציע
@@ -188,7 +193,7 @@ def group_suggestions(
 def bulk_group(
     payload: BulkGroupRequest,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
 ):
     """שיוך קבוצתי: מעדכן את ``group_type`` לרשימת מוזמנים בבת אחת."""
     group = payload.group_type.strip() or "other"
@@ -209,7 +214,7 @@ def bulk_group(
 @router.get("/group-notes", response_model=GroupNotesResponse)
 def get_group_notes(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_view),
 ):
     """הערות/העדפות ברמת קבוצה + רשימת הקבוצות שבשימוש באירוע (עם ספירה)."""
     counts: dict[str, int] = defaultdict(int)
@@ -228,7 +233,7 @@ def get_group_notes(
 def set_group_note(
     payload: GroupNoteUpdate,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
 ):
     """שמירת הערה לקבוצה אחת. הערה ריקה מוחקת את הרשומה."""
     notes = dict(event.group_notes or {})
@@ -260,7 +265,7 @@ def update_guest(
     guest_id: int,
     payload: schemas.GuestUpdate,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
 ):
     guest = db.get(models.Guest, guest_id)
     if guest is None or guest.event_id != event.id:
@@ -268,7 +273,6 @@ def update_guest(
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(guest, key, value)
     db.commit()
-    db.refresh(guest)
     return guest
 
 
@@ -276,7 +280,7 @@ def update_guest(
 def delete_guest(
     guest_id: int,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
 ):
     guest = db.get(models.Guest, guest_id)
     if guest is None or guest.event_id != event.id:

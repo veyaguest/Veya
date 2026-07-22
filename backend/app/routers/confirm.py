@@ -8,11 +8,11 @@
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app import audit, media, messaging, models, schemas
-from app.database import get_db, set_guest_token
+from app.database import IS_POSTGRES, get_db, set_guest_token
 
 router = APIRouter(prefix="/confirm", tags=["confirm"])
 
@@ -74,7 +74,7 @@ def get_confirm(token: str, request: Request, db: Session = Depends(get_db)):
         _record_fail(ip)
         audit.record(db, "confirm_invalid_token", detail="ניסיון גישה לקישור לא תקין", ip=ip)
         db.commit()
-        raise HTTPException(status_code=404, detail="הקישור כבר לא פעיל — בקשו מבעלי השמחה קישור חדש.")
+        raise HTTPException(status_code=404, detail="הקישור כבר לא פעיל — בקשו ממארגני האירוע קישור חדש.")
     return _public(db, guest)
 
 
@@ -94,7 +94,7 @@ def submit_confirm(
         _record_fail(ip)
         audit.record(db, "confirm_invalid_token", detail="ניסיון שליחה לקישור לא תקין", ip=ip)
         db.commit()
-        raise HTTPException(status_code=404, detail="הקישור כבר לא פעיל — בקשו מבעלי השמחה קישור חדש.")
+        raise HTTPException(status_code=404, detail="הקישור כבר לא פעיל — בקשו ממארגני האירוע קישור חדש.")
 
     if payload.maybe:
         guest.rsvp_status = "maybe"
@@ -117,15 +117,24 @@ def submit_confirm(
     guest.guest_note = note or None
 
     body = label + (f" · הערה: {note}" if note else "")
-    db.add(models.Message(
-        event_id=guest.event_id,
-        guest_id=guest.id,
-        direction="inbound",
-        kind="reply",
-        body=body,
-        status="received",
-        provider="web",
-    ))
+    # מוזמן אנונימי (רק guest_token, בלי משתמש) — messages_select דורש הרשאת
+    # משתמש, אז INSERT רגיל (עם RETURNING שברירת המחדל של SQLAlchemy) היה
+    # נדחה ע"י RLS. עוברים דרך app_record_confirm_message (SECURITY DEFINER).
+    if IS_POSTGRES:
+        db.execute(
+            text("SELECT app_record_confirm_message(:gid, :body)"),
+            {"gid": guest.id, "body": body},
+        )
+    else:
+        db.add(models.Message(
+            event_id=guest.event_id,
+            guest_id=guest.id,
+            direction="inbound",
+            kind="reply",
+            body=body,
+            status="received",
+            provider="web",
+        ))
     audit.record(
         db, "confirm_submit",
         event_id=guest.event_id,
@@ -133,5 +142,4 @@ def submit_confirm(
         ip=ip,
     )
     db.commit()
-    db.refresh(guest)
     return _public(db, guest)

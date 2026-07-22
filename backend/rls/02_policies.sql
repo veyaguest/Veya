@@ -40,19 +40,24 @@ DROP POLICY IF EXISTS events_insert ON events;
 CREATE POLICY events_insert ON events FOR INSERT
   WITH CHECK (owner_id = app_current_user_id() OR app_is_admin());
 
--- עדכון: הבעלים/אדמין תמיד; חבר-אירוע רק אם יש לו הרשאת עריכת-הושבה/אולם,
--- או send_messages (מפיק שמפעיל מסלול RSVP / שומר תבנית הודעה — automation.py
--- activate_track כותב rsvp_track_active/rsvp_track_started_at על האירוע,
--- ו-messaging.py save_template כותב message_template — שני שדות אלה שייכים
--- מבחינה עסקית להרשאת שליחת-הודעות, לא להושבה/אולם).
+-- עדכון: הבעלים/אדמין תמיד; חבר-אירוע רק אם יש לו הרשאה שדרכה endpoint
+-- ספציפי כלשהו (לא event.py::update_event עצמו — זה owner-only באפליקציה,
+-- ראו app/routers/event.py::_owner_only) כותב שדה על שורת האירוע:
+--   • manage_seating/edit_seating/manage_venue_data — hall.py (table_positions/hall_elements)
+--   • send_messages — automation.py activate_track/advance_track (rsvp_track_*),
+--     messaging.py save_template (message_template)
+--   • edit_guests — guests.py set_group_note (group_notes)
+-- הרשימה הזו חייבת להישאר זהה ל-EVENTS_UPDATE ב-backend/app/permissions.py
+-- (טסט אוטומטי מוודא זאת — ראו tests/test_permission_alignment.py).
 -- מגבלה חשובה: RLS הוא ברמת-שורה, לא ברמת-עמודה — הרשאה זו פותחת עדכון על
--- כל השורה (כולל שמות בני הזוג וכו'), לא רק table_positions/hall_elements.
--- ה-API בפועל (routers) חושף לחברים כאלה רק endpoint-ים ספציפיים להושבה,
--- וזו נשארת שכבת ההגנה העדינה בפועל — ה-RLS כאן הוא רשת ביטחון נוספת.
+-- כל השורה (כולל שמות בני הזוג וכו'), לא רק על השדה הרלוונטי. ה-API בפועל
+-- (routers, דרך EventAccess עם הרשאה מדויקת לכל endpoint) חושף לחברים רק
+-- את הפעולה הספציפית שמתאימה — וזו נשארת שכבת ההגנה העדינה בפועל; ה-RLS
+-- כאן הוא רשת ביטחון נוספת.
 DROP POLICY IF EXISTS events_update ON events;
 CREATE POLICY events_update ON events FOR UPDATE
-  USING (app_has_any_event_permission(id, ARRAY['manage_seating','edit_seating','manage_venue_data','send_messages']))
-  WITH CHECK (app_has_any_event_permission(id, ARRAY['manage_seating','edit_seating','manage_venue_data','send_messages']));
+  USING (app_has_any_event_permission(id, ARRAY['manage_seating','edit_seating','manage_venue_data','send_messages','edit_guests']))
+  WITH CHECK (app_has_any_event_permission(id, ARRAY['manage_seating','edit_seating','manage_venue_data','send_messages','edit_guests']));
 
 DROP POLICY IF EXISTS events_delete ON events;
 CREATE POLICY events_delete ON events FOR DELETE

@@ -206,8 +206,100 @@ AS $$
   WITH updated AS (
     UPDATE guests SET rsvp_status = p_status WHERE id = p_guest_id RETURNING event_id, id
   )
-  INSERT INTO messages (event_id, guest_id, direction, kind, body, status, provider)
-  SELECT event_id, id, 'inbound', 'reply', p_label, 'received', p_provider FROM updated
+  INSERT INTO messages (event_id, guest_id, direction, kind, body, status, provider, channel)
+  SELECT event_id, id, 'inbound', 'reply', p_label, 'received', p_provider, 'whatsapp' FROM updated
+$$;
+
+-- ── 7. פונקציות עזר ל-INSERT ...RETURNING לפני/בלי זהות מספיקה ──────────────
+-- התגלה בבדיקת Staging אמיתית (לא ניתן היה לגלות מול SQLite): Postgres
+-- דורש, בכל INSERT עם RETURNING (וזה מה שכל ORM INSERT של SQLAlchemy עושה
+-- כברירת מחדל כדי לקבל id/created_at) — שהשורה החדשה תעבור גם את מדיניות
+-- ה-SELECT של הטבלה, לא רק את ה-WITH CHECK של מדיניות ה-INSERT. כשהזהות
+-- הנוכחית (app_current_user_id) היא NULL (הרשמה, כניסה) או guest_token
+-- בלבד (מוזמן אנונימי בדף האישור) — מדיניות ה-SELECT (שדורשת admin/owner/
+-- חבר-אירוע עם הרשאה) נכשלת, וה-INSERT כולו נדחה עם השגיאה "new row
+-- violates row-level security policy", גם אם ה-INSERT-policy עצמה (WITH
+-- CHECK) הייתה מרשה זאת. הפונקציות הבאות עוקפות את זה באותה דרך כמו
+-- הפונקציות למעלה: SECURITY DEFINER, בעלות scope מוגבל בכוונה.
+CREATE OR REPLACE FUNCTION app_register_user(
+  p_email text, p_password_hash text, p_display_name text, p_phone text,
+  p_is_admin boolean, p_account_type text
+)
+RETURNS users
+LANGUAGE sql SECURITY DEFINER SET search_path = public
+AS $$
+  INSERT INTO users (email, password_hash, display_name, phone, is_admin, account_type, disabled, token_version)
+  VALUES (p_email, p_password_hash, p_display_name, p_phone, p_is_admin, p_account_type, false, 1)
+  RETURNING *
+$$;
+
+-- יצירת אירוע חדש (events.py::create_event) — INSERT ...RETURNING תחת RLS
+-- דורש שהשורה תעבור גם את events_select, לא רק את events_insert (WITH
+-- CHECK owner_id=app_current_user_id()). ל-owner/admin אמיתי זה עובד כי
+-- app_owns_event/app_is_admin בתוך events_select מזהים אותם — אבל זו עדיין
+-- שאילתה נפרדת שרצה כחלק מבדיקת ה-RETURNING, ולכן עדיף לעקוף לגמרי דרך
+-- SECURITY DEFINER, עקבי עם שאר תיקוני ה-INSERT...RETURNING במסמך הזה.
+CREATE OR REPLACE FUNCTION app_create_event(
+  p_owner_id bigint, p_event_type text, p_groom_name text, p_bride_name text, p_venue_name text
+)
+RETURNS events
+LANGUAGE sql SECURITY DEFINER SET search_path = public
+AS $$
+  INSERT INTO events (
+    owner_id, event_type, groom_name, bride_name, venue_name,
+    venue_address, event_date, event_time, seats_per_table, reserve_seats, rsvp_track_active
+  )
+  VALUES (p_owner_id, p_event_type, p_groom_name, p_bride_name, p_venue_name, '', '', '', 12, 0, false)
+  RETURNING *
+$$;
+
+-- ספירת משתמשים לצורך "המשתמש הראשון = אדמין": register() (routers/auth.py)
+-- בודק user_count == 0 *לפני* שיש זהות מחוברת. תחת RLS, ``SELECT COUNT(*)
+-- FROM users`` רגיל היה מסונן ע"י users_select ("אני רואה רק את עצמי") —
+-- ובלי זהות, זה 0 שורות *תמיד*, גם כשכבר יש עשרות משתמשים במערכת. התוצאה:
+-- כל הרשמה חדשה הייתה הופכת את המשתמש לאדמין-על בטעות. התגלה בבדיקת
+-- Staging אמיתית — בעיה חמורה יותר מדליפת מידע (הענקת הרשאת-על לכולם).
+CREATE OR REPLACE FUNCTION app_count_users()
+RETURNS bigint
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT count(*) FROM users
+$$;
+
+CREATE OR REPLACE FUNCTION app_record_login_event(
+  p_user_id bigint, p_ip text, p_user_agent text
+)
+RETURNS void
+LANGUAGE sql SECURITY DEFINER SET search_path = public
+AS $$
+  INSERT INTO login_events (user_id, ip, user_agent) VALUES (p_user_id, p_ip, p_user_agent)
+$$;
+
+-- הודעת RSVP נכנסת שהמוזמן האנונימי כותב *דרך דף האישור עצמו* (לא webhook —
+-- ראו app_record_guest_rsvp_reply למעלה לזרימת ה-webhook). guest_token לבדו
+-- לא מספיק כדי לעבור את מדיניות messages_select (שדורשת הרשאת משתמש), אז
+-- ה-INSERT הרגיל מ-confirm.py נחסם ללא הפונקציה הזו.
+CREATE OR REPLACE FUNCTION app_record_confirm_message(p_guest_id bigint, p_body text)
+RETURNS void
+LANGUAGE sql SECURITY DEFINER SET search_path = public
+AS $$
+  INSERT INTO messages (event_id, guest_id, direction, kind, body, status, provider, channel)
+  SELECT event_id, id, 'inbound', 'reply', p_body, 'received', 'web', 'web' FROM guests WHERE id = p_guest_id
+$$;
+
+-- יומן אבטחה (audit_logs): נקרא גם מנתיבים ציבוריים/אנונימיים לגמרי (למשל
+-- ניסיון גישה לטוקן לא תקין ב-confirm.py, לפני שידוע בכלל איזה אירוע/מוזמן
+-- מדובר) — אין שום זהות שתעבור את מדיניות audit_logs_select. מדיניות ה-
+-- INSERT כבר הייתה WITH CHECK(true) (יומן פתוח-לכתיבה בכוונה), אז זו רק
+-- עקיפת בעיית ה-RETURNING, לא הרחבת הרשאה.
+CREATE OR REPLACE FUNCTION app_record_audit_log(
+  p_action text, p_event_id bigint, p_user_id bigint, p_detail text, p_ip text
+)
+RETURNS void
+LANGUAGE sql SECURITY DEFINER SET search_path = public
+AS $$
+  INSERT INTO audit_logs (event_id, user_id, action, detail, ip)
+  VALUES (p_event_id, p_user_id, p_action, p_detail, p_ip)
 $$;
 
 -- פונקציות העזר צריכות להיות זמינות להרצה ע"י תפקיד האפליקציה.
@@ -224,5 +316,11 @@ GRANT EXECUTE ON FUNCTION
   app_member_permissions(bigint),
   app_has_any_event_permission(bigint, text[]),
   app_find_guest_by_phone(text),
-  app_record_guest_rsvp_reply(bigint, text, text, text)
+  app_record_guest_rsvp_reply(bigint, text, text, text),
+  app_register_user(text, text, text, text, boolean, text),
+  app_create_event(bigint, text, text, text, text),
+  app_count_users(),
+  app_record_login_event(bigint, text, text),
+  app_record_confirm_message(bigint, text),
+  app_record_audit_log(text, bigint, bigint, text, text)
 TO veya_app;

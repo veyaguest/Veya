@@ -626,6 +626,8 @@ export interface AdminLoginRow {
 
 export interface AdminEventRow {
   id: number
+  event_type: string
+  hosts: string
   groom_name: string
   bride_name: string
   venue_name: string
@@ -693,6 +695,7 @@ export interface AdminVenueMerge {
 
 export interface AdminDashboardEvent {
   id: number
+  event_type: string
   couple: string
   venue_name: string
   owner_email: string | null
@@ -711,6 +714,12 @@ export interface AdminDashboardAlert {
   text: string
 }
 
+export interface AdminEventTypeCount {
+  event_type: string
+  label: string
+  count: number
+}
+
 export interface AdminDashboard {
   total_events: number
   upcoming_events: number
@@ -721,6 +730,7 @@ export interface AdminDashboard {
   recent_events: AdminDashboardEvent[]
   signups: AdminDashboardPoint[]
   alerts: AdminDashboardAlert[]
+  events_by_type: AdminEventTypeCount[]
 }
 
 // ---- שיתוף גישה לאירוע (מפיק/אולם) ----

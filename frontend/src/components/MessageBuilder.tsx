@@ -140,9 +140,9 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
       // שם פרטי (חדש + ישן)
       '{{first_name}}': first, '{{guest_name}}': first,
       '[שם פרטי]': first, '[שם אורח]': first,
-      // כלה/חתן
-      '{{bride_name}}': event?.bride_name || 'הכלה', '[שם הכלה]': event?.bride_name || 'הכלה',
-      '{{groom_name}}': event?.groom_name || 'החתן', '[שם החתן]': event?.groom_name || 'החתן',
+      // כלה/חתן (או שם המארח הראשון/שני בסוגי אירוע אחרים)
+      '{{bride_name}}': event?.bride_name || terms.hostBField, '[שם הכלה]': event?.bride_name || terms.hostBField,
+      '{{groom_name}}': event?.groom_name || terms.hostAField, '[שם החתן]': event?.groom_name || terms.hostAField,
       // שמות בעלי האירוע (חדש + ישן)
       '{{event_name}}': couple, '{{couple_names}}': couple,
       '[שמות בעלי האירוע]': couple, '[שמות בני הזוג]': couple,

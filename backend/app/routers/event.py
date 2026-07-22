@@ -10,7 +10,12 @@ from sqlalchemy.orm import Session
 from app import audit, media, models, schemas, venues
 from app.auth import get_current_user
 from app.database import get_db
-from app.deps import get_current_event
+from app.deps import EventAccess, get_current_event
+
+# עדכון פרטי הליבה של האירוע (שם/תאריך/אולם/תמונה) נשאר בעלים/אדמין בלבד —
+# אין הרשאת חבר-אירוע שפותחת את זה (בשונה מהושבה/הודעות/מוזמנים, שיש להן
+# הרשאה ייעודית). ראו backend/rls/RLS_REPORT.md להסבר המלא של ההחלטה הזו.
+_owner_only = EventAccess(owner_only=True)
 
 router = APIRouter(prefix="/event", tags=["event"])
 
@@ -62,7 +67,7 @@ def update_event(
     payload: schemas.EventUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_owner_only),
     user: models.User = Depends(get_current_user),
 ):
     changed = payload.model_dump(exclude_unset=True)
@@ -104,7 +109,6 @@ def update_event(
         ip=request.client.host if request.client else None,
     )
     db.commit()
-    db.refresh(event)
     return _event_read(event)
 
 

@@ -1,6 +1,5 @@
 """Router התחברות (שלב 8): הרשמה, כניסה, ופרטי המשתמש המחובר."""
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import auth, models, schemas
@@ -28,29 +27,30 @@ def register(payload: schemas.UserCreate, request: Request, db: Session = Depend
         )
 
     # הבעלים = המשתמש הראשון שנרשם (או אימייל שהוגדר ב-ADMIN_EMAIL) → אדמין.
-    user_count = db.scalar(select(func.count()).select_from(models.User)) or 0
+    user_count = auth.count_users(db)
     is_admin = user_count == 0 or (
         auth.ADMIN_EMAIL != "" and payload.email == auth.ADMIN_EMAIL
     )
 
-    user = models.User(
+    user = auth.register_user_row(
+        db,
         email=payload.email,
         password_hash=auth.hash_password(payload.password),
         display_name=payload.display_name.strip(),
         phone=payload.phone,
         is_admin=is_admin,
+        account_type="couple",
     )
-    db.add(user)
-    db.flush()  # מקבל id לפני שיוך אירועים
     # קובעים את זהות הבקשה מיד אחרי שיש id — כך גם שאילתות ה-RLS הבאות
-    # (אימוץ אירועים יתומים, refresh בסוף) רצות תחת הזהות של המשתמש עצמו.
+    # (אימוץ אירועים יתומים) רצות תחת הזהות של המשתמש עצמו.
     set_request_identity(user.id)
 
     # אימוץ אירועים "יתומים" (בלי בעלים) — מיגרציה מהמצב הישן של אירוע יחיד.
     auth.adopt_orphan_events(db, user.id)
 
     db.commit()
-    db.refresh(user)
+    # אין צורך ב-refresh: expire_on_commit=False (ראו app/database.py) — האובייקט
+    # כבר מכיל את כל הערכים מה-INSERT (id/created_at), בלי שאילתה נוספת אחרי commit.
     token = auth.create_access_token(user)
     return schemas.TokenResponse(access_token=token, user=user)
 
@@ -74,12 +74,8 @@ def login(payload: schemas.LoginRequest, request: Request, db: Session = Depends
         )
     # רישום ההתחברות להיסטוריה (מטא-דאטה בלבד). לא מפיל את הכניסה אם נכשל.
     try:
-        db.add(
-            models.LoginEvent(
-                user_id=user.id,
-                ip=ip,
-                user_agent=(request.headers.get("user-agent") or "")[:300] or None,
-            )
+        auth.record_login_event(
+            db, user.id, ip, (request.headers.get("user-agent") or "")[:300] or None,
         )
         db.commit()
     except Exception:
@@ -118,7 +114,6 @@ def update_profile(
     if payload.phone is not None:
         user.phone = payload.phone
     db.commit()
-    db.refresh(user)
     return user
 
 
@@ -141,6 +136,5 @@ def change_password(
     user.password_hash = auth.hash_password(payload.new_password)
     user.token_version = (user.token_version or 1) + 1
     db.commit()
-    db.refresh(user)
     token = auth.create_access_token(user)
     return schemas.TokenResponse(access_token=token, user=user)

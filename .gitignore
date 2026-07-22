@@ -28,6 +28,7 @@ VEYA Seating.dc.html
 # Production env examples are tracked; real .env files are not
 backend/.env.production
 frontend/.env.production.local
+backend/.env.staging
 
 # מאגר git ריק ומקונן (veyaguest/veya) — לא חלק מהמאגר הזה
 veya/

@@ -12,9 +12,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import constraints as parser
-from app import models, schemas
+from app import models, permissions, schemas
 from app.database import get_db
-from app.deps import get_current_event
+from app.deps import EventAccess
+
+_access = EventAccess(permissions.CLARIFICATIONS)
+
 
 router = APIRouter(prefix="/constraints", tags=["constraints"])
 
@@ -29,7 +32,7 @@ def _guest_dicts(guests: list[models.Guest]) -> list[dict]:
 @router.post("/analyze", response_model=schemas.AnalyzeResult)
 def analyze(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     guests = db.scalars(
         select(models.Guest).where(models.Guest.event_id == event.id)
@@ -118,7 +121,7 @@ def analyze(
 @router.get("/clarifications", response_model=list[schemas.ClarificationRead])
 def list_clarifications(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     clars = db.scalars(
         select(models.Clarification)
@@ -163,7 +166,7 @@ def resolve_clarification(
     clar_id: int,
     payload: schemas.ResolveClarification,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     clar = db.get(models.Clarification, clar_id)
     if clar is None or clar.event_id != event.id:

@@ -5,12 +5,12 @@
 מוגבל לבעלים בלבד.
 """
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.auth import get_current_user
-from app.database import get_db
+from app.database import IS_POSTGRES, get_db
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -50,7 +50,26 @@ def create_event(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """יוצר אירוע חדש בבעלות המשתמש."""
+    """יוצר אירוע חדש בבעלות המשתמש.
+
+    ב-Postgres דרך app_create_event (SECURITY DEFINER): INSERT ...RETURNING
+    (ברירת המחדל של SQLAlchemy) דורש שהשורה תעבור גם את events_select, לא
+    רק את ה-WITH CHECK של events_insert — עוקפים זאת כמו בשאר מקומות ה-
+    INSERT הרגישים (ראו app/auth.py::register_user_row להסבר המלא).
+    """
+    if IS_POSTGRES:
+        row = db.execute(
+            text("SELECT * FROM app_create_event(:owner_id, :event_type, :groom_name, :bride_name, :venue_name)"),
+            {
+                "owner_id": user.id, "event_type": payload.event_type,
+                "groom_name": payload.groom_name.strip(),
+                "bride_name": payload.bride_name.strip(),
+                "venue_name": payload.venue_name.strip(),
+            },
+        ).mappings().first()
+        db.commit()
+        return models.Event(**dict(row))
+
     event = models.Event(
         owner_id=user.id,
         event_type=payload.event_type,
@@ -60,7 +79,6 @@ def create_event(
     )
     db.add(event)
     db.commit()
-    db.refresh(event)
     return event
 
 

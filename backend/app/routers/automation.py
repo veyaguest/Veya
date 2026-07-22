@@ -21,15 +21,21 @@ from app import (
     invitations,
     messaging,
     models,
+    permissions,
     rsvp_timeline,
     rsvp_track,
     schemas,
 )
 from app.auth import get_current_user
 from app.database import get_db
-from app.deps import get_current_event
+from app.deps import EventAccess
 
 router = APIRouter(prefix="/automation", tags=["automation"])
+
+# כל endpoint כאן (חוץ מ-/placeholders הסטטי) נוגע ב-automation_rules ו/או
+# message_templates — ישירות או דרך _rules()/_templates() הפנימיים — ושתי
+# הטבלאות האלה דורשות send_messages בלבד ב-RLS (לא קיים אצל אולמות).
+_access = EventAccess(permissions.AUTOMATION)
 
 
 # ---- עזרי טעינה ----
@@ -74,7 +80,7 @@ def list_placeholders():
 
 
 @router.get("/library", response_model=schemas.MessageLibrary)
-def get_message_library(event: models.Event = Depends(get_current_event)):
+def get_message_library(event: models.Event = Depends(_access)):
     """ספריית ההודעות האנושית של VEYA — קריאה בלבד, מוגשת ישירות מהקוד.
 
     אין כאן שום נגיעה במסד הנתונים: הזוג *מעיין* בספרייה, ורק כשהוא בוחר הודעה
@@ -115,7 +121,7 @@ def get_message_library(event: models.Event = Depends(get_current_event)):
 @router.get("/templates", response_model=list[schemas.AutomationTemplateRead])
 def list_templates(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     # מוודאים שתבניות ברירת המחדל של VEYA קיימות כבר עכשיו — כדי שהזוג יוכל
     # לערוך את ההזמנה (ולבחור מהספרייה) עוד לפני השליחה הראשונה. idempotent:
@@ -130,7 +136,7 @@ def list_templates(
 def create_template(
     payload: schemas.AutomationTemplateCreate,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     tmpl = models.MessageTemplate(
         event_id=event.id,
@@ -140,7 +146,6 @@ def create_template(
     )
     db.add(tmpl)
     db.commit()
-    db.refresh(tmpl)
     return tmpl
 
 
@@ -149,7 +154,7 @@ def update_template(
     template_id: int,
     payload: schemas.AutomationTemplateUpdate,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     tmpl = db.get(models.MessageTemplate, template_id)
     if tmpl is None or tmpl.event_id != event.id:
@@ -157,7 +162,6 @@ def update_template(
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(tmpl, key, value)
     db.commit()
-    db.refresh(tmpl)
     return tmpl
 
 
@@ -165,7 +169,7 @@ def update_template(
 def delete_template(
     template_id: int,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     tmpl = db.get(models.MessageTemplate, template_id)
     if tmpl is None or tmpl.event_id != event.id:
@@ -184,7 +188,7 @@ def delete_template(
 @router.get("/rules", response_model=list[schemas.AutomationRuleRead])
 def list_rules(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     return _rules(db, event.id)
 
@@ -193,7 +197,7 @@ def list_rules(
 def create_rule(
     payload: schemas.AutomationRuleCreate,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     _validate_template(db, event.id, payload.template_id)
     rule = models.AutomationRule(
@@ -208,7 +212,6 @@ def create_rule(
     )
     db.add(rule)
     db.commit()
-    db.refresh(rule)
     return rule
 
 
@@ -217,7 +220,7 @@ def update_rule(
     rule_id: int,
     payload: schemas.AutomationRuleUpdate,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     rule = db.get(models.AutomationRule, rule_id)
     if rule is None or rule.event_id != event.id:
@@ -228,7 +231,6 @@ def update_rule(
     for key, value in changes.items():
         setattr(rule, key, value)
     db.commit()
-    db.refresh(rule)
     return rule
 
 
@@ -236,7 +238,7 @@ def update_rule(
 def delete_rule(
     rule_id: int,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     rule = db.get(models.AutomationRule, rule_id)
     if rule is None or rule.event_id != event.id:
@@ -327,7 +329,7 @@ def _process_actions(
 @router.get("/due", response_model=schemas.DueQueue)
 def get_due(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     """התור לאישור — מי אמור לקבל הודעה עכשיו (מחושב חי, לא נשלח כלום)."""
     actions = _due_actions(db, event)
@@ -354,7 +356,7 @@ def run_due(
     payload: schemas.RunDueRequest,
     request: Request,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
     user: models.User = Depends(get_current_user),
 ):
     """שולח בפועל את הפעולות שהגיע זמנן — רק אחרי לחיצת אישור של הבעלים.
@@ -463,7 +465,7 @@ def _track_status(db: Session, event: models.Event) -> schemas.RsvpTrackStatus:
 @router.get("/track", response_model=schemas.RsvpTrackStatus)
 def get_track(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     """סטטוס מסלול אישורי-ההגעה למסך הזוג (פעיל/לא, ספירות, רשימת מעקב)."""
     return _track_status(db, event)
@@ -472,7 +474,7 @@ def get_track(
 @router.get("/track/preview", response_model=schemas.InvitationSendPreview)
 def preview_send(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     """ספירה מקדימה לדיאלוג האישור: כמה יקבלו הזמנה, כמה לא (וסיבה), כמה כבר
     קיבלו, והאם המסלול כבר הופעל (לזיהוי שליחה כפולה). לא משנה שום נתון."""
@@ -493,7 +495,7 @@ def activate_track(
     request: Request,
     payload: Optional[schemas.RsvpTrackActivateRequest] = None,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
     user: models.User = Depends(get_current_user),
 ):
     """שולח הזמנות ומפעיל את מסלול אישורי-ההגעה (מקצה תבניות+חוקים, idempotent).
@@ -620,7 +622,6 @@ def activate_track(
         )
 
     db.commit()
-    db.refresh(event)
 
     status = _track_status(db, event)
     return schemas.RsvpTrackActivateResult(
@@ -640,7 +641,7 @@ def activate_track(
 def advance_track(
     request: Request,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
     user: models.User = Depends(get_current_user),
 ):
     """מקדם את המסלול אוטומטית: מעבד את כל הפעולות שהבשילו — תזכורות WhatsApp
@@ -664,7 +665,6 @@ def advance_track(
                     ip=request.client.host if request.client else None,
                 )
             db.commit()
-            db.refresh(event)
 
     status = _track_status(db, event)
     return schemas.RsvpTrackAdvanceResult(
@@ -688,7 +688,7 @@ _KIND_LABEL = {
 def guest_timeline(
     guest_id: int,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     """ה-Timeline של מוזמן — כל ההודעות היוצאות והנכנסות לפי סדר כרונולוגי."""
     guest = db.get(models.Guest, guest_id)
@@ -724,7 +724,7 @@ def guest_timeline(
 @router.get("/timeline", response_model=schemas.RsvpTimelineView)
 def rsvp_timeline_view(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     """לוח הזמנים המלא לזוג — מה קורה היום, מה מחר, ומה עד יום ההתחייבות לאולם.
 
@@ -740,7 +740,7 @@ def rsvp_timeline_view(
 @router.get("/dashboard", response_model=schemas.AutomationDashboard)
 def dashboard(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_access),
 ):
     """תמונת מצב מלאה של מסע אישורי ההגעה + המלצות מעקב חכם."""
     guests = _guests(db, event.id)

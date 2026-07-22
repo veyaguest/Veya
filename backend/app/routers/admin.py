@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import audit, auth, messaging, models, schemas, venues
+from app import audit, auth, event_terms, messaging, models, schemas, venues
 from app.auth import get_current_admin
 from app.database import get_db
 
@@ -78,12 +78,13 @@ def admin_dashboard(
     ).all()
     recent_events = []
     for e in recent:
-        couple = " · ".join([n for n in (e.groom_name, e.bride_name) if n]) or "—"
+        couple = event_terms.hosts_names(e.event_type, e.groom_name, e.bride_name)
         ed = _parse_event_date(e.event_date)
         days_until = (ed - today).days if ed and ed >= today else None
         recent_events.append(
             schemas.AdminDashboardEvent(
                 id=e.id,
+                event_type=e.event_type,
                 couple=couple,
                 venue_name=e.venue_name or "",
                 owner_email=emails.get(e.owner_id) if e.owner_id else None,
@@ -92,6 +93,21 @@ def admin_dashboard(
                 days_until=days_until,
             )
         )
+
+    # --- פילוח אירועים לפי event_type — לסטטיסטיקות/דוחות באדמין ---
+    type_counts = dict(
+        db.execute(
+            select(models.Event.event_type, func.count(models.Event.id)).group_by(
+                models.Event.event_type
+            )
+        ).all()
+    )
+    events_by_type = [
+        schemas.AdminEventTypeCount(
+            event_type=et, label=event_terms.get_event_terms(et).label, count=count
+        )
+        for et, count in sorted(type_counts.items(), key=lambda kv: -kv[1])
+    ]
 
     # --- גרף הרשמות ל-14 הימים האחרונים ---
     window_days = 14
@@ -161,6 +177,7 @@ def admin_dashboard(
         recent_events=recent_events,
         signups=signups,
         alerts=alerts,
+        events_by_type=events_by_type,
     )
 
 
@@ -205,10 +222,14 @@ def list_users(
 
 @router.get("/events", response_model=list[schemas.AdminEventRow])
 def list_all_events(
+    event_type: Optional[str] = None,
     db: Session = Depends(get_db),
     admin: models.User = Depends(get_current_admin),
 ):
-    """כל האירועים במערכת (מכל המשתמשים), עם בעלים וספירת מוזמנים."""
+    """כל האירועים במערכת (מכל המשתמשים), עם בעלים וספירת מוזמנים.
+
+    ``event_type`` — סינון אופציונלי בצד השרת (בנוסף לחיפוש בצד הלקוח).
+    """
     guests_by_event = dict(
         db.execute(
             select(models.Guest.event_id, func.count(models.Guest.id))
@@ -217,10 +238,15 @@ def list_all_events(
     )
     emails = {u.id: u.email for u in db.scalars(select(models.User)).all()}
 
-    events = db.scalars(select(models.Event).order_by(models.Event.id.desc())).all()
+    query = select(models.Event).order_by(models.Event.id.desc())
+    if event_type:
+        query = query.where(models.Event.event_type == event_type)
+    events = db.scalars(query).all()
     return [
         schemas.AdminEventRow(
             id=e.id,
+            event_type=e.event_type,
+            hosts=event_terms.hosts_names(e.event_type, e.groom_name, e.bride_name),
             groom_name=e.groom_name,
             bride_name=e.bride_name,
             venue_name=e.venue_name,
@@ -295,6 +321,8 @@ def get_user_detail(
     event_rows = [
         schemas.AdminEventRow(
             id=e.id,
+            event_type=e.event_type,
+            hosts=event_terms.hosts_names(e.event_type, e.groom_name, e.bride_name),
             groom_name=e.groom_name,
             bride_name=e.bride_name,
             venue_name=e.venue_name,
@@ -388,7 +416,6 @@ def update_user(
             ip=request.client.host if request.client else None,
         )
     db.commit()
-    db.refresh(target)
 
     events_count = db.scalar(
         select(func.count()).select_from(models.Event).where(models.Event.owner_id == user_id)
@@ -531,7 +558,7 @@ def impersonate_user(
     """מנפיק טוקן זמני שמאפשר לאדמין לראות את המערכת בדיוק כמו המשתמש.
 
     זהו ה"התחבר כמשתמש" — בלי לדעת את סיסמת המשתמש. הטוקן מונפק עבור המשתמש
-    היעד, כך שכל נקודות הקצה של הזוג ממילא מסננות לפי המשתמש הזה. הפרונט שומר
+    היעד, כך שכל נקודות הקצה של בעל האירוע ממילא מסננות לפי המשתמש הזה. הפרונט שומר
     את טוקן האדמין בצד, מציג באנר קבוע, ומאפשר לחזור לאדמין בכל רגע.
     """
     target = db.get(models.User, user_id)
@@ -599,7 +626,6 @@ def create_account(
     )
     db.add(user)
     db.commit()
-    db.refresh(user)
     audit.record(
         db, "admin_create_account",
         user_id=admin.id,
@@ -616,7 +642,7 @@ def create_account(
 
 
 # --- ניהול ברירות המחדל הגלובליות של VEYA (ספריית תבניות + מסלול קבוע) ---
-# רק אדמין. אלה הברירות שמוחלות אוטומטית על כל זוג חדש; הזוג מקבל עותק לעריכה.
+# רק אדמין. אלה הברירות שמוחלות אוטומטית על כל אירוע חדש; הבעלים מקבלים עותק לעריכה.
 
 
 @router.get("/veya/templates", response_model=list[schemas.VeyaTemplateRead])
@@ -648,7 +674,6 @@ def create_veya_template(
     )
     db.add(tpl)
     db.commit()
-    db.refresh(tpl)
     return tpl
 
 
@@ -666,7 +691,6 @@ def update_veya_template(
     for field, value in data.items():
         setattr(tpl, field, value)
     db.commit()
-    db.refresh(tpl)
     return tpl
 
 
@@ -708,7 +732,6 @@ def update_veya_workflow_step(
     for field, value in data.items():
         setattr(step, field, value)
     db.commit()
-    db.refresh(step)
     return step
 
 
@@ -865,7 +888,6 @@ def update_venue(
         ip=request.client.host if request.client else None,
     )
     db.commit()
-    db.refresh(venue)
     return _venue_to_row(venue)
 
 
@@ -918,5 +940,4 @@ def merge_venue(
     )
     db.delete(source)
     db.commit()
-    db.refresh(target)
     return _venue_to_row(target)

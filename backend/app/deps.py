@@ -1,5 +1,5 @@
 """Dependencies משותפים ל-routers."""
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import select
@@ -25,17 +25,31 @@ class EventAccess:
     """דיפנדנסי גישה לאירוע — עם בדיקת הרשאה אופציונלית לחברי-אירוע.
 
     סדר הבדיקה: (1) בעלים — תמיד עובר. (2) אדמין-על (``is_admin``) — תמיד
-    עובר. (3) חבר-אירוע פעיל (``EventMember`` עם ``status='active'``) — עובר
-    רק אם ``permission`` לא התבקש, או שהוא מופיע ברשימת ההרשאות שלו. אחרת 404
-    (לא חושפים למשתמש שאירוע כלשהו קיים) או 403 (האירוע קיים אך חסרה הרשאה).
+    עובר. (3) ``owner_only=True`` — אף חבר-אירוע לא עובר, בלי קשר להרשאות
+    (למשל עריכת פרטי הליבה של האירוע — שם/תאריך/סוג — נשארת רק לבעלים).
+    (4) חבר-אירוע פעיל (``EventMember`` עם ``status='active'``) — עובר רק אם
+    ``permission`` לא התבקש, או שיש חפיפה בינו לבין רשימת ההרשאות שלו. אחרת
+    404 (לא חושפים למשתמש שאירוע כלשהו קיים) או 403 (האירוע קיים אך חסרה
+    הרשאה).
+
+    ``permission`` יכול להיות מחרוזת בודדת, או רשימה — ואז מספיקה הרשאה
+    *אחת* מתוכה (בדיוק הסמנטיקה של ``app_has_any_event_permission`` ב-RLS,
+    ראו ``backend/rls/01_helpers_and_grants.sql``). כשבודקים כמה endpoint-ים
+    צריכים אותה קבוצת הרשאות, יש להשתמש בקבועים מ-``app/permissions.py`` —
+    לא לכתוב רשימות מפוזרות ב-routers, כדי שה-API וה-RLS לא יסטו זה מזה.
 
     שימוש: ``Depends(EventAccess())`` לגישה בסיסית — זהה ל-``get_current_event``
-    ההיסטורי. ``Depends(EventAccess("view_guests"))`` כשנדרשת הרשאה ספציפית
-    (ישמש routers בשלב 3, כשתהיה דרך בפועל ליצור חברי-אירוע).
+    ההיסטורי. ``Depends(EventAccess(permissions.GUESTS_WRITE))`` כשנדרשת
+    הרשאה ספציפית.
     """
 
-    def __init__(self, permission: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        permission: Optional[Union[str, list[str]]] = None,
+        owner_only: bool = False,
+    ) -> None:
         self.permission = permission
+        self.owner_only = owner_only
 
     def __call__(
         self,
@@ -53,6 +67,10 @@ class EventAccess:
                 raise not_found
             if event.owner_id == user.id or user.is_admin:
                 return event
+            if self.owner_only:
+                # פעולה ששמורה לבעלים/אדמין בלבד — חבר-אירוע לא עובר, בלי
+                # קשר לאילו הרשאות הוענקו לו (למשל שינוי שם בני הזוג/תאריך).
+                raise not_found
             member = db.scalars(
                 select(models.EventMember).where(
                     models.EventMember.event_id == event.id,
@@ -62,11 +80,17 @@ class EventAccess:
             ).first()
             if member is None:
                 raise not_found
-            if self.permission and self.permission not in (member.permissions or []):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="אין לך הרשאה לפעולה הזו",
+            if self.permission:
+                required = (
+                    [self.permission] if isinstance(self.permission, str)
+                    else self.permission
                 )
+                granted = set(member.permissions or [])
+                if not granted.intersection(required):
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="אין לך הרשאה לפעולה הזו",
+                    )
             return event
 
         # בלי כותרת אירוע: ברירת המחדל היא האירוע הראשון בבעלות המשתמש

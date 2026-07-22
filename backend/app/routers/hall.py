@@ -12,9 +12,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import constraints as parser
-from app import media, models, schemas
+from app import media, models, permissions, schemas
 from app.database import get_db
-from app.deps import get_current_event
+from app.deps import EventAccess
+
+_view = EventAccess(permissions.HALL_VIEW)
+_write = EventAccess(permissions.HALL_WRITE)
+
 
 router = APIRouter(prefix="/hall", tags=["hall"])
 
@@ -83,7 +87,7 @@ def _compute_warnings(
 @router.get("", response_model=schemas.HallState)
 def get_hall(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_view),
 ):
     guests = db.scalars(
         select(models.Guest).where(models.Guest.event_id == event.id)
@@ -163,7 +167,7 @@ def get_hall(
 def save_hall(
     payload: schemas.SaveHallRequest,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
 ):
     guests = db.scalars(
         select(models.Guest).where(models.Guest.event_id == event.id)

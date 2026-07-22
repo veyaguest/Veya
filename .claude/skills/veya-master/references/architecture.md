@@ -62,9 +62,60 @@
   במסכים. פירוט כללי הניסוח (דקדוק `celebration`/`celebration_construct`)
   ב-`decisions.md`; כללי קופי מלאים ב-`brand.md`.
 - **מאגר הודעות מודע-סוג-אירוע:** `message_library.py: entries_for(event_type)`
-  — `wedding` מקבל את `LIBRARY` המלאה (75 תבניות ייעודיות), כל סוג אחר מקבל
-  `GENERIC_LIBRARY` משותפת (12 תבניות מבוססות-טוקנים). ראה פער עתידי ב-
-  `product-state.md`/`roadmap.md` (מאגר עמוק לכל קטגוריה עדיין לא בנוי).
+  — `wedding` (75), `henna` (10), `bar_mitzvah`/`bat_mitzvah` (10),
+  `brit` (8) מקבלים ספרייה ייעודית בטון שלה; `family`/`business`/`other`
+  עדיין על `GENERIC_LIBRARY` משותפת (12 תבניות מבוססות-טוקנים) — עתידי לפי
+  ביקוש, ראה `product-state.md`/`roadmap.md`.
+- **טקסונומיית קבוצות מודעת-סוג-אירוע:** `group_options`/`groupOptions`
+  בלקסיקון (שני הצדדים) — רשימת קבוצות שונה לכל `event_type` (למשל עסקי:
+  עובדים/לקוחות/ספקים/הנהלה/שותפים; בר/בת מצווה: משפחת אב/אם/כיתה/צוות).
+  משפיע על טופס הוספת מוזמן, ייבוא (`importer.py: GROUP_VALUE_MAP`),
+  וסטטיסטיקות (`routers/stats.py`). `group_type` עצמו נשאר `str` חופשי
+  ב-DB — לכן הוספת/שינוי טקסונומיה היא שינוי לקסיקון בלבד, לא מיגרציה.
+- **מנוע ההושבה מודע-event_type (עדין):** `seating.py:
+  SEATING_WEIGHTS_BY_EVENT_TYPE` — משקלי "אותו צד"/"אותה קבוצה" יכולים
+  להשתנות לפי סוג אירוע (למשל `business` מדגיש קבוצה על פני צד). ברירת
+  המחדל לכל סוג שלא הוגדר לו במפורש = בדיוק כמו חתונה, כדי לא לפגוע
+  בחוויית החתונה הקיימת. חוקים קשיחים (קיבולת/זוגות אסורים) **לא**
+  משתנים לפי סוג — נשארים אוניברסליים.
+- **פאנל אדמין מודע-event_type:** `AdminEventRow`/`AdminDashboardEvent`
+  (`schemas.py`) חושפים `event_type` + `hosts` (בנוי דרך
+  `event_terms.hosts_names()`, לא groom/bride גולמי); לוח הבקרה כולל
+  פילוח `events_by_type`. מסך "כל האירועים" תומך סינון/חיפוש לפי סוג.
+
+### איך מוסיפים סוג אירוע חדש (Step-by-step)
+הוספת סוג אירוע ל-VEYA **לא דורשת שינוי סכימה ולא נגיעה במסכים** — רק
+עדכון הלקסיקון בשני הצדדים:
+1. **Backend** — `backend/app/event_terms.py`: הוסיפו רשומת `EventTerms`
+   חדשה ל-`EVENT_TERMS` (label/hosts_label/side_groom/side_bride/
+   celebration/celebration_construct/guests_label/gift_label/
+   group_options). עדכנו את ה-`Literal["wedding", ...]` ב-`schemas.py`
+   (`EventType`) ובמודל אם צריך ולידציה נוספת.
+2. **Frontend** — `frontend/src/strings/eventTypes.ts`: הוסיפו רשומה
+   מקבילה ל-`EVENT_TERMS` ופריט ל-`EVENT_TYPE_OPTIONS` (הבורר ביצירת
+   אירוע). ודאו ש-`groupOptions` תואם בדיוק לצד ה-backend.
+3. **(אופציונלי) ספריית הודעות ייעודית** — `message_library.py`: הוסיפו
+   `<TYPE>_LIBRARY` ורשמו אותה ב-`_LIBRARY_BY_TYPE`. אם מדלגים על השלב
+   הזה, הסוג החדש נופל אוטומטית ל-`GENERIC_LIBRARY` (בטוח, לא שגיאה).
+4. **(אופציונלי) משקלי הושבה ייעודיים** — `seating.py:
+   SEATING_WEIGHTS_BY_EVENT_TYPE`: רק אם יש סיבה מוצרית ברורה לסטות
+   מברירת המחדל (=חתונה).
+5. **בדיקה:** צרו אירוע מהסוג החדש בדפדפן ועברו על כל ה-flow (דשבורד →
+   מוזמנים → קבוצות → הודעות → הזמנה → הושבה → RSVP) — ודאו שאין טקסט
+   "חתן/כלה/זוג" דולף. שום קובץ אחר לא אמור להזדקק לעריכה.
+
+### מה אסור לעשות (Event-first — כללי ברזל)
+- **אסור** לבנות מסך/רכיב/endpoint נפרד לכל סוג אירוע — תמיד שכבת
+  התאמה מעל מערכת אחת (`event_type` + Lexicon), לעולם לא הסתעפות קוד.
+- **אסור** לקבע "חתן"/"כלה"/"זוג"/"חתונה" כטקסט קשיח בשום מסך, הודעה,
+  placeholder, tooltip, empty state, הודעת הצלחה/שגיאה — תמיד דרך
+  `activeEventTerms()` / `event_terms.get_event_terms()`.
+- **אסור** להניח שברירת המחדל היא חתונה בלוגיקה (רק כברירת מחדל
+  מפורשת בפרמטר/שדה, לתאימות אחורה — לא כהנחה שקטה).
+- **מותר ובטוח** להשאיר שמות שדה פנימיים (`groom_name`/`bride_name`/
+  `Side = 'groom'|'bride'|'shared'`) כפי שהם — אלה מפתחות טכניים
+  שמוצגים תמיד דרך הלקסיקון; שינוי שמם הוא מיגרציה מיותרת בלי תועלת
+  משתמש (`decisions.md`).
 
 ## אינטגרציות חיצוניות (מפת תלויות)
 כל שירות חיצוני = נקודת תלות וסיכון (`risk-register.md`) ועלות (`business-model-finance.md`).

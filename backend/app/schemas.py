@@ -688,6 +688,8 @@ class AdminEventRow(BaseModel):
     """שורת אירוע בפאנל האדמין — כולל בעלים וספירת מוזמנים."""
 
     id: int
+    event_type: EventType = "wedding"
+    hosts: str                     # שמות בעלי האירוע, מותאם לסוג האירוע (event_terms.hosts_names)
     groom_name: str
     bride_name: str
     venue_name: str
@@ -799,7 +801,8 @@ class AdminDashboardEvent(BaseModel):
     """אירוע בתצוגת "האירועים האחרונים" בלוח הבקרה."""
 
     id: int
-    couple: str                    # שמות בעלי האירוע, לכל סוגי האירוע ("חתן · כלה" לחתונה)
+    event_type: EventType = "wedding"
+    couple: str                    # שמות בעלי האירוע, מותאם לסוג האירוע (event_terms.hosts_names)
     venue_name: str
     owner_email: Optional[str]
     event_date: str                # YYYY-MM-DD (יכול להיות ריק)
@@ -821,6 +824,14 @@ class AdminDashboardAlert(BaseModel):
     text: str
 
 
+class AdminEventTypeCount(BaseModel):
+    """כמות אירועים מסוג נתון — לפילוח סטטיסטיקות האדמין לפי event_type."""
+
+    event_type: EventType
+    label: str                     # תווית עברית לתצוגה (event_terms.label)
+    count: int
+
+
 class AdminDashboard(BaseModel):
     """כל הנתונים ללוח הבקרה של האדמין במסך אחד."""
 
@@ -833,6 +844,7 @@ class AdminDashboard(BaseModel):
     recent_events: list[AdminDashboardEvent]
     signups: list[AdminDashboardPoint]
     alerts: list[AdminDashboardAlert]
+    events_by_type: list[AdminEventTypeCount] = []
 
 
 # ---- שיתוף גישה לאירוע (מפיק/אולם) ----

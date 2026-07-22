@@ -75,7 +75,18 @@ if DATABASE_URL.startswith("sqlite"):
         cursor.close()
 
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# expire_on_commit=False: קריטי עבור RLS, לא רק אופטימיזציה. התגלה בבדיקת
+# Staging אמיתית מול Postgres: כברירת מחדל (expire_on_commit=True) SQLAlchemy
+# "מפקיע" את כל השדות של אובייקט אחרי commit(), כך שגישה לשדה כלשהו (או
+# db.refresh() מפורש) אחרי commit מפעילה שאילתת SELECT נוספת בטרנזקציה חדשה.
+# גילינו (ריפרודוקציה עם הדפסות אבחון) שבטרנזקציה הנוספת הזו, בתנאים
+# מסוימים סביב הריצה בת'רד-פול של FastAPI/anyio, ה-ContextVar של זהות
+# המשתמש (current_user_id) יכול להיקרא כ-None למרות שהוגדר נכון קודם באותה
+# בקשה ממש — מה שגורם למדיניות ה-SELECT (RLS) לדחות את השאילתה ולזרוק
+# שגיאה כאילו השורה "נמחקה". כש-expire_on_commit=False, האובייקט שומר את
+# הערכים שכבר קיבל מ-INSERT/UPDATE...RETURNING בזיכרון, ואין צורך בשאילתת
+# רענון נוספת אחרי ה-commit בכלל — כל ה-db.refresh() המיותרים הוסרו מהקוד.
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False)
 
 # ── חיבור נפרד למיגרציות/תחזוקת עלייה (DDL + זריעה) ───────────────────────
 # מתי צריך את זה: ברגע ש-DATABASE_URL יוחלף לתפקיד ה-RLS המוגבל (veya_app —
@@ -105,7 +116,7 @@ else:
     )
 
 MigrationSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=migrations_engine
+    autocommit=False, autoflush=False, bind=migrations_engine, expire_on_commit=False
 )
 
 # ב-PostgreSQL: בכל תחילת טרנזקציה מזריקים את מזהה המשתמש הנוכחי כמשתנה

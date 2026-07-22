@@ -12,7 +12,7 @@ import bcrypt
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app import models
@@ -58,6 +58,75 @@ def find_user_by_email(db: Session, email: str) -> Optional["models.User"]:
     if row is None or row.get("id") is None:
         return None
     return models.User(**dict(row))
+
+
+def count_users(db: Session) -> int:
+    """סופר את כלל המשתמשים — לשימוש ב-register() כדי לקבוע "האם זה המשתמש
+    הראשון" (ואז הוא הופך לאדמין-על). ב-Postgres, ``SELECT COUNT(*) FROM
+    users`` רגיל תמיד מסונן ע"י ``users_select`` ("אני רואה רק את עצמי") —
+    ובלי זהות מחוברת (המצב לפני הרשמה), זה מחזיר 0 *תמיד*, גם כשיש כבר
+    עשרות משתמשים — מה שהיה הופך כל הרשמה חדשה לאדמין-על בטעות. לכן, על
+    Postgres, עוברים דרך ``app_count_users`` (SECURITY DEFINER).
+    """
+    if not IS_POSTGRES:
+        return db.scalar(select(func.count()).select_from(models.User)) or 0
+    return db.execute(text("SELECT app_count_users()")).scalar() or 0
+
+
+def register_user_row(
+    db: Session,
+    *,
+    email: str,
+    password_hash: str,
+    display_name: str,
+    phone: str,
+    is_admin: bool,
+    account_type: str,
+) -> "models.User":
+    """יוצר שורת משתמש חדשה ומחזיר אותה.
+
+    ב-Postgres עם RLS: SQLAlchemy מבצע כל INSERT עם ``RETURNING`` (כדי לקבל
+    ``id``/``created_at``), ו-Postgres דורש שהשורה המוחזרת תעבור גם את
+    מדיניות ה-SELECT — לא רק את ה-WITH CHECK של מדיניות ה-INSERT. בהרשמה
+    עדיין אין זהות מחוברת (``app_current_user_id()`` הוא NULL), אז
+    ``users_select`` ("אני רואה רק את עצמי") נכשל וה-INSERT כולו נדחה, גם
+    ש-``users_insert`` עצמה פתוחה לגמרי (``WITH CHECK (true)``). לכן
+    עוברים דרך ``app_register_user`` (SECURITY DEFINER) שעוקפת את זה.
+    התגלה בבדיקת Staging אמיתית מול Postgres — לא ניתן היה לגלות מול
+    SQLite, ששם RLS הוא no-op לגמרי.
+    """
+    if not IS_POSTGRES:
+        user = models.User(
+            email=email, password_hash=password_hash, display_name=display_name,
+            phone=phone, is_admin=is_admin, account_type=account_type,
+        )
+        db.add(user)
+        db.flush()
+        return user
+
+    row = db.execute(
+        text("SELECT * FROM app_register_user(:email, :password_hash, :display_name, :phone, :is_admin, :account_type)"),
+        {
+            "email": email, "password_hash": password_hash, "display_name": display_name,
+            "phone": phone, "is_admin": is_admin, "account_type": account_type,
+        },
+    ).mappings().first()
+    return models.User(**dict(row))
+
+
+def record_login_event(db: Session, user_id: int, ip: Optional[str], user_agent: Optional[str]) -> None:
+    """רושם רשומת התחברות (היסטוריית כניסות). ב-Postgres דרך פונקציית DB
+    ייעודית — אותה סיבה בדיוק כמו ``register_user_row``: בזמן ה-login עדיין
+    אין ``set_request_identity`` (הוא נקרא רק אחרי בדיקת הסיסמה/הנפקת
+    הטוקן), ומדיניות ``login_events_select`` הייתה חוסמת את ה-RETURNING.
+    """
+    if IS_POSTGRES:
+        db.execute(
+            text("SELECT app_record_login_event(:uid, :ip, :ua)"),
+            {"uid": user_id, "ip": ip, "ua": user_agent},
+        )
+        return
+    db.add(models.LoginEvent(user_id=user_id, ip=ip, user_agent=user_agent))
 
 
 def adopt_orphan_events(db: Session, user_id: int) -> None:

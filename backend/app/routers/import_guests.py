@@ -4,9 +4,12 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import models, schemas
+from app import models, permissions, schemas
 from app.database import get_db
-from app.deps import get_current_event
+from app.deps import EventAccess
+
+_write = EventAccess(permissions.GUESTS_WRITE)
+
 from app.importer import build_preview, detect_columns, parse_file, parse_freeform_text
 from app.validators import normalize_israeli_phone
 
@@ -62,7 +65,7 @@ class ImportPaste(BaseModel):
 def paste_import(
     payload: ImportPaste,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
 ):
     """ייבוא חכם: מקבלים רשימת טקסט חופשי (הדבקה מ-WhatsApp/אקסל/כל מקום),
     מחזירים תצוגה מקדימה במבנה זהה ל-`/preview`.
@@ -113,7 +116,7 @@ def _phone_key(phone: str) -> str:
 def commit_import(
     payload: ImportCommit,
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_write),
 ):
     """שלב 2: מקבלים את השורות התקינות ושומרים אותן כמוזמנים.
 

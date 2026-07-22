@@ -64,7 +64,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
 
         <div className="auth-hero">
           <div className="auth-hero-text">
-            <h1 className="auth-hero-title">החתונה שלכם, מאורגנת אחת ולתמיד</h1>
+            <h1 className="auth-hero-title">האירוע שלכם, מאורגן אחת ולתמיד</h1>
             <p className="auth-hero-sub">
               רשימת מוזמנים, אישורי הגעה וסידורי הושבה — במקום אחד נקי ופשוט,
               בלי גיליונות אקסל ובלי בלגן.
@@ -87,7 +87,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
         </div>
 
         <div className="auth-copyright">
-          © 2026 VEYA · מלווים אתכם עד היום הגדול
+          © 2026 VEYA · מלווים אתכם עד היום שלכם
         </div>
       </aside>
 
@@ -123,7 +123,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="דנה ויוסי"
+                  placeholder="דנה כהן"
                   autoComplete="name"
                 />
               </div>

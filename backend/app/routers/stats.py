@@ -7,9 +7,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import models, schemas
+from app import event_terms, models, permissions, schemas
 from app.database import get_db
-from app.deps import get_current_event
+from app.deps import EventAccess
+
+_view = EventAccess(permissions.EVENTS_VIEW)
+
 
 router = APIRouter(prefix="/stats", tags=["stats"])
 
@@ -17,7 +20,7 @@ router = APIRouter(prefix="/stats", tags=["stats"])
 @router.get("", response_model=schemas.DashboardStats)
 def dashboard(
     db: Session = Depends(get_db),
-    event: models.Event = Depends(get_current_event),
+    event: models.Event = Depends(_view),
 ):
     guests = db.scalars(
         select(models.Guest).where(models.Guest.event_id == event.id)
@@ -40,10 +43,10 @@ def dashboard(
     response_rate = round(responded / total_guests * 100) if total_guests else 0
 
     by_side: dict = {"groom": 0, "bride": 0, "shared": 0}
-    by_group: dict = {
-        "close_family": 0, "extended_family": 0, "friends": 0, "work": 0,
-        "army": 0, "studies": 0, "childhood": 0, "neighbors": 0, "other": 0,
-    }
+    # מאותחל מאפשרויות הקבוצה של סוג האירוע הזה (לא קבוע לחתונה) — כך שהפילוח
+    # תמיד מציג את הקטגוריות הרלוונטיות לסוג, גם באפס, ולא מציף עם קטגוריות
+    # לא-רלוונטיות. קבוצות מותאמות-אישית עדיין נספרות (dict.get נופל ל-0).
+    by_group: dict = {key: 0 for key, _ in event_terms.get_event_terms(event.event_type).group_options}
     for g in guests:
         by_side[g.side] = by_side.get(g.side, 0) + 1
         by_group[g.group_type] = by_group.get(g.group_type, 0) + 1

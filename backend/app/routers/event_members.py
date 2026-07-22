@@ -103,7 +103,6 @@ def add_member(
     )
     db.add(member)
     db.commit()
-    db.refresh(member)
     return _to_read(member, db)
 
 
@@ -124,7 +123,6 @@ def update_member(
     allowed = set(_permissions_for_role(member.role))
     member.permissions = [p for p in payload.permissions if p in allowed]
     db.commit()
-    db.refresh(member)
     return _to_read(member, db)
 
 
