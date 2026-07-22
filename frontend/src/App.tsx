@@ -18,6 +18,7 @@ import { getEventTerms, hostNames } from './strings/eventTypes'
 import { AdminApp } from './components/AdminApp'
 import { AuthPage } from './components/AuthPage'
 import { DashboardPage } from './components/DashboardPage'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { EventMembersDialog } from './components/EventMembersDialog'
 import { GuestsPage } from './components/GuestsPage'
 import { HallPage } from './components/HallPage'
@@ -114,8 +115,17 @@ function App() {
   const [impersonating, setImpersonating] = useState<boolean>(isImpersonating())
   const [impBusy, setImpBusy] = useState(false)
 
+  // בדיקת "מחובר" חוזרת (לא רק פעם אחת בטעינה) — אם השרת נופל באמצע
+  // השימוש, הנקודה תתעדכן בתוך עד 20 שניות ולא תישאר תקועה על "מחובר".
   useEffect(() => {
-    healthCheck().then(setOnline)
+    let alive = true
+    const check = () => healthCheck().then((ok) => alive && setOnline(ok))
+    check()
+    const interval = window.setInterval(check, 20000)
+    return () => {
+      alive = false
+      window.clearInterval(interval)
+    }
   }, [])
 
   // טעינת האירועים של המשתמש ובחירת האירוע הפעיל.
@@ -354,14 +364,16 @@ function App() {
           <h1 className="page-title">{pageTitle[page]}</h1>
         </header>
         <main className="content" key={`${page}-${activeEventId}`}>
-          {page === 'dashboard' && (
-            <DashboardPage onNavigate={(p) => setPage(p)} />
-          )}
-          {page === 'guests' && <GuestsPage />}
-          {page === 'rsvp' && (
-            <RsvpPage isAdmin={user.is_admin} onNavigate={(p) => setPage(p)} />
-          )}
-          {page === 'hall' && <HallPage />}
+          <ErrorBoundary>
+            {page === 'dashboard' && (
+              <DashboardPage onNavigate={(p) => setPage(p)} />
+            )}
+            {page === 'guests' && <GuestsPage />}
+            {page === 'rsvp' && (
+              <RsvpPage isAdmin={user.is_admin} onNavigate={(p) => setPage(p)} />
+            )}
+            {page === 'hall' && <HallPage onNavigate={(p) => setPage(p)} />}
+          </ErrorBoundary>
         </main>
       </div>
 

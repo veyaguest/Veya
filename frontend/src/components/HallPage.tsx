@@ -913,7 +913,7 @@ function SketchEditor(props: {
   )
 }
 
-export function HallPage() {
+export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => void } = {}) {
   const [tables, setTables] = useState<TableView[]>([])
   const [unassigned, setUnassigned] = useState<HallGuest[]>([])
   const [elements, setElements] = useState<HallElement[]>([])
@@ -2152,6 +2152,9 @@ export function HallPage() {
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור אוטומטית — נמשיך לנסות')
+        // ניסיון חוזר אמיתי גם בלי עריכה נוספת — אחרת "נמשיך לנסות" בהודעה
+        // לא היה קורה בפועל (ה-effect מסתמך על saveRetry/dirty כדי לרוץ שוב).
+        window.setTimeout(() => setSaveRetry((r) => r + 1), 4000)
       } finally {
         savingRef.current = false
         setSaving(false)
@@ -2416,6 +2419,19 @@ export function HallPage() {
       <div className="hall-mobile">
         {/* ---- פס עליון: כותרת + חיפוש ---- */}
         <div className="hm-topbar">
+          {onNavigate && (
+            <button
+              className="hm-home-btn"
+              onClick={() => onNavigate('dashboard')}
+              aria-label="חזרה לתמונת המצב"
+              title="תמונת מצב"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 10.5 12 3l9 7.5" />
+                <path d="M5 9.5V21h14V9.5" />
+              </svg>
+            </button>
+          )}
           <button
             className="hm-help-btn"
             onClick={() => setGuideOpen(true)}

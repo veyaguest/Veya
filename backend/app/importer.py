@@ -88,22 +88,53 @@ GROUP_VALUE_MAP = {
 }
 
 
+_FRIENDLY_READ_ERROR = "לא הצלחנו לקרוא את הקובץ. בדקו שהקובץ תקין ונסו שוב."
+
+# סדר ניסיונות קידוד ל-CSV: UTF-8 (עם/בלי BOM) קודם כי זו ברירת המחדל של
+# Google Sheets ורוב הכלים המודרניים; cp1255/Windows-1255 כגיבוי כי זה
+# הקידוד שאקסל בעברית על Windows עדיין מייצא אליו לפעמים ("CSV (Comma
+# delimited)") — בלי הגיבוי הזה שמות בעברית הופכים לג'יבריש בשקט, בלי שגיאה.
+_CSV_ENCODINGS = ["utf-8-sig", "cp1255", "iso-8859-8"]
+
+
+def _decode_csv_text(content: bytes) -> str:
+    """מנסה כמה קידודים בסדר עדיפות; רק אם כולם נכשלים, נופל ל-UTF-8 עם
+    replace (עדיף טקסט חלקי קריא על פני קריסה, אבל זה המוצא האחרון)."""
+    for enc in _CSV_ENCODINGS:
+        try:
+            return content.decode(enc)
+        except (UnicodeDecodeError, LookupError):
+            continue
+    return content.decode("utf-8", errors="replace")
+
+
 def parse_file(filename: str, content: bytes) -> tuple[list[str], list[list]]:
-    """מחזיר (כותרות, שורות) מקובץ CSV או XLSX."""
+    """מחזיר (כותרות, שורות) מקובץ CSV או XLSX.
+
+    כל שגיאת קריאה (קובץ פגום, לא-זיפ, XLSX שקרס, קידוד לא צפוי) נתפסת פה
+    והופכת ל-ValueError עם הודעה בעברית שהמשתמש יכול להבין ולפעול לפיה —
+    לא מותר שקובץ פגום יגרום ל-500 גולמי.
+    """
     name = (filename or "").lower()
     if name.endswith(".csv"):
-        text = content.decode("utf-8-sig", errors="replace")
-        reader = list(csv.reader(io.StringIO(text)))
+        try:
+            text = _decode_csv_text(content)
+            reader = list(csv.reader(io.StringIO(text)))
+        except Exception:
+            raise ValueError(_FRIENDLY_READ_ERROR)
         if not reader:
             return [], []
         headers = [str(h).strip() for h in reader[0]]
         rows = [list(r) for r in reader[1:]]
         return headers, rows
     if name.endswith(".xlsx") or name.endswith(".xlsm"):
-        wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
-        ws = wb.active
-        all_rows = list(ws.iter_rows(values_only=True))
-        wb.close()
+        try:
+            wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+            ws = wb.active
+            all_rows = list(ws.iter_rows(values_only=True))
+            wb.close()
+        except Exception:
+            raise ValueError(_FRIENDLY_READ_ERROR)
         if not all_rows:
             return [], []
         headers = [str(h).strip() if h is not None else "" for h in all_rows[0]]

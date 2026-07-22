@@ -67,6 +67,12 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
   admin_merge_venue: 'מיזוג אולמות',
   update_event: 'עדכון אירוע',
   send_invitations: 'שליחת הזמנות',
+  send_reminders: 'שליחת תזכורות',
+  automation_run_due: 'הרצת אוטומציה',
+  confirm_submit: 'אישור/ה הגעה',
+  confirm_invalid_token: 'ניסיון גישה עם קישור לא תקין',
+  rsvp_track_activate: 'הפעלת מסלול אישורי הגעה',
+  rsvp_track_advance: 'התקדמות במסלול אישורי הגעה',
 }
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {

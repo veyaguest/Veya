@@ -5,6 +5,7 @@ import { groupLabel, INVITE_STATUS_LABELS, RSVP_LABELS } from '../types'
 import { activeEventTerms, sideLabel } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { AddGuestForm } from './AddGuestForm'
+import { ConfirmDialog } from './ConfirmDialog'
 import { CreateGroupDialog } from './CreateGroupDialog'
 import { GroupNotesPanel } from './GroupNotesPanel'
 import { GroupSuggestions } from './GroupSuggestions'
@@ -38,6 +39,8 @@ export function GuestsPage() {
     () => localStorage.getItem(ONBOARDING_KEY) !== '1',
   )
   const [toast, setToast] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<Guest | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
   // עולה בכל טעינה מוצלחת — מפעיל טעינה מחדש של הצעות הקבוצה החכמות.
   const [refreshTick, setRefreshTick] = useState(0)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -80,13 +83,22 @@ export function GuestsPage() {
     return () => clearTimeout(t)
   }, [search, load])
 
-  async function onDelete(g: Guest) {
-    if (!confirm(t.deleteConfirm(g.full_name))) return
+  function onDelete(g: Guest) {
+    setDeleteTarget(g)
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    setDeleteBusy(true)
     try {
-      await deleteGuest(g.id)
+      await deleteGuest(deleteTarget.id)
+      setDeleteTarget(null)
       load(search)
     } catch (err) {
-      alert(err instanceof Error ? err.message : t.deleteError)
+      setToast(err instanceof Error ? err.message : t.deleteError)
+      setTimeout(() => setToast(''), 4000)
+    } finally {
+      setDeleteBusy(false)
     }
   }
 
@@ -130,6 +142,18 @@ export function GuestsPage() {
       </div>
 
       {toast && <div className="toast">{toast}</div>}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title={t.deleteTitle}
+          message={t.deleteConfirm(deleteTarget.full_name)}
+          confirmLabel={t.deleteConfirmButton}
+          danger
+          busy={deleteBusy}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
 
       {importFile && (
         <ImportDialog

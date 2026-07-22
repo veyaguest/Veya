@@ -20,6 +20,7 @@ export const strings = {
   common: {
     save: 'שמירה',
     cancel: 'ביטול',
+    confirm: 'אישור',
   },
   dashboard: {
     loadError: 'לא הצלחנו לטעון כרגע. ננסה שוב',
@@ -128,7 +129,9 @@ export const strings = {
     // GuestsPage
     loadError: 'לא הצלחנו לטעון את הרשימה, ננסה שוב',
     deleteError: 'לא הצלחנו להסיר, נסו שוב',
+    deleteTitle: 'הסרת מוזמן',
     deleteConfirm: (name: string) => `להסיר את ${name} מהרשימה?`,
+    deleteConfirmButton: 'כן, להסיר',
     searchPlaceholder: 'חיפוש לפי שם או טלפון…',
     pasteButton: '📋 הדבקת רשימה',
     notesButton: '⭐ העדפות קבוצה',

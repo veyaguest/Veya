@@ -21,10 +21,14 @@ MAX_IMPORT_ROWS = 5000               # מספר שורות מקסימלי בקו
 
 
 @router.post("/preview")
-async def preview_import(file: UploadFile = File(...)):
+async def preview_import(
+    file: UploadFile = File(...),
+    event: models.Event = Depends(_write),
+):
     """שלב 1: מעלים קובץ, מקבלים תצוגה מקדימה עם זיהוי עמודות וולידציה.
 
-    לא נשמר כלום למסד הנתונים בשלב הזה.
+    לא נשמר כלום למסד הנתונים בשלב הזה. דורש התחברות + הרשאת כתיבה על
+    האירוע (כמו /paste ו-/commit) — לא endpoint פתוח.
     """
     content = await file.read()
     if len(content) > MAX_IMPORT_BYTES:
@@ -37,6 +41,13 @@ async def preview_import(file: UploadFile = File(...)):
         headers, rows = parse_file(file.filename or "", content)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+    except Exception:
+        # רשת ביטחון: כל תקלת קריאה לא-צפויה (קובץ פגום בצורה חריגה,
+        # שגיאת ספרייה פנימית) — לא מותר שתיפול כ-500 גולמי למשתמש.
+        raise HTTPException(
+            status_code=400,
+            detail="לא הצלחנו לקרוא את הקובץ. בדקו שהקובץ תקין ונסו שוב.",
+        )
 
     if not headers:
         raise HTTPException(status_code=400, detail="הקובץ ריק או ללא כותרות")

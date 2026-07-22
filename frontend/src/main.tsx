@@ -4,6 +4,7 @@ import './index.css'
 import './App.css'
 import App from './App.tsx'
 import { ConfirmPage } from './components/ConfirmPage.tsx'
+import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 
 // ---- חסימת Pinch Zoom ברמת המסמך (iOS Safari) ----
 // iOS Safari מתעלם מ-user-scalable=no ב-viewport, ולכן חוסמים ידנית את
@@ -24,6 +25,8 @@ const confirmMatch = window.location.pathname.match(/^\/confirm\/([^/]+)/)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {confirmMatch ? <ConfirmPage token={decodeURIComponent(confirmMatch[1])} /> : <App />}
+    <ErrorBoundary>
+      {confirmMatch ? <ConfirmPage token={decodeURIComponent(confirmMatch[1])} /> : <App />}
+    </ErrorBoundary>
   </StrictMode>,
 )

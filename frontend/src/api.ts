@@ -108,12 +108,33 @@ function authHeaders(extra?: HeadersInit): Record<string, string> {
   return h
 }
 
-/** fetch עוטף שמזריק כותרות אימות ומטפל ב-401 (טוקן פג/לא תקין). */
+const NETWORK_ERROR_MESSAGE = 'החיבור לשרת נכשל. בדקו את החיבור ונסו שוב.'
+const SERVER_ERROR_MESSAGE = 'משהו השתבש. נסו שוב בעוד רגע.'
+const PERMISSION_ERROR_MESSAGE = 'אין לכם הרשאה לבצע פעולה זו.'
+const AUTH_ERROR_MESSAGE = 'אתם צריכים להתחבר מחדש.'
+
+/**
+ * שכבת שגיאות אחידה: כל מסך במערכת מקבל הודעת שגיאה בעברית שאפשר להבין
+ * ולפעול לפיה — לעולם לא "Failed to fetch", "Value error" גולמי, או stack
+ * trace. שני מקומות אחראים לכך: apiFetch (תקלת רשת — אין בכלל תשובה
+ * מהשרת) ו-toError (תשובה עם קוד שגיאה — מנקה/ממיין אותה).
+ */
+
+/** fetch עוטף שמזריק כותרות אימות, הופך תקלת רשת גולמית להודעה בעברית,
+ * ומטפל ב-401 (טוקן פג/לא תקין). */
 async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: authHeaders(init?.headers),
-  })
+  let res: Response
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers: authHeaders(init?.headers),
+    })
+  } catch {
+    // fetch() עצמו נכשל (אין רשת/שרת לא זמין/CORS) — לא Response בכלל,
+    // אלא TypeError גולמי מהדפדפן. זה המקום היחיד לתפוס את זה עבור כל
+    // קריאות ה-API במערכת.
+    throw new Error(NETWORK_ERROR_MESSAGE)
+  }
   if (res.status === 401) {
     clearAuth()
     notifyUnauthorized()
@@ -121,18 +142,48 @@ async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   return res
 }
 
+/** כמו apiFetch, אבל בלי כותרות אימות — למסכים הציבוריים (הרשמה/התחברות/
+ * דף אישור הגעה) שעדיין אין להם טוקן, או שלא צריכים אחד. אותה הגנה מפני
+ * תקלת רשת גולמית — קריטי דווקא כאן כי אלה המסכים הראשונים שכל משתמש/ת
+ * (או מוזמן/ת אנונימי/ת בדף האישור) פוגשים. */
+async function publicFetch(path: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(`${API_URL}${path}`, init)
+  } catch {
+    throw new Error(NETWORK_ERROR_MESSAGE)
+  }
+}
+
+/** מנקה קידומות טכניות שפיידנטיק (Pydantic) מוסיף לשגיאות ולידציה
+ * מותאמות-אישית (למשל "Value error, הסיסמה חייבת..." → "הסיסמה חייבת..."). */
+function cleanDetailMessage(msg: string): string {
+  return msg.replace(/^(value error|assertion error)\s*,\s*/i, '').trim()
+}
+
 /** מחלץ הודעת שגיאה קריאה מתשובת FastAPI (כולל שגיאות ולידציה 422). */
 async function toError(res: Response): Promise<Error> {
+  // שגיאת שרת (5xx): לעולם לא מציגים למשתמש את התוכן הגולמי (יכול להיות
+  // traceback/HTML) — רק את ההודעה הידידותית, בלי קשר למה שהשרת החזיר.
+  if (res.status >= 500) {
+    return new Error(SERVER_ERROR_MESSAGE)
+  }
   try {
     const body = await res.json()
-    if (typeof body.detail === 'string') return new Error(body.detail)
-    if (Array.isArray(body.detail)) {
-      const msgs = body.detail.map((d: { msg: string }) => d.msg).join(', ')
-      return new Error(msgs || `שגיאה ${res.status}`)
+    if (typeof body.detail === 'string' && body.detail.trim()) {
+      return new Error(cleanDetailMessage(body.detail))
+    }
+    if (Array.isArray(body.detail) && body.detail.length) {
+      const msgs = body.detail
+        .map((d: { msg: string }) => cleanDetailMessage(d.msg))
+        .filter(Boolean)
+        .join(', ')
+      if (msgs) return new Error(msgs)
     }
   } catch {
-    /* ignore */
+    /* התשובה לא הייתה JSON תקין — נופלים לברירות המחדל לפי קוד הסטטוס. */
   }
+  if (res.status === 401) return new Error(AUTH_ERROR_MESSAGE)
+  if (res.status === 403) return new Error(PERMISSION_ERROR_MESSAGE)
   return new Error(`שגיאה ${res.status}`)
 }
 
@@ -153,7 +204,7 @@ export async function register(
   displayName: string,
   phone: string,
 ): Promise<TokenResponse> {
-  const res = await fetch(`${API_URL}/auth/register`, {
+  const res = await publicFetch('/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, display_name: displayName, phone }),
@@ -166,7 +217,7 @@ export async function login(
   email: string,
   password: string,
 ): Promise<TokenResponse> {
-  const res = await fetch(`${API_URL}/auth/login`, {
+  const res = await publicFetch('/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -779,7 +830,7 @@ export async function assignSeat(
 
 /** מביא את פרטי המוזמן והאירוע לפי הטוקן האישי (נתיב ציבורי, בלי טוקן אימות). */
 export async function getConfirm(token: string): Promise<ConfirmGuestPublic> {
-  const res = await fetch(`${API_URL}/confirm/${encodeURIComponent(token)}`)
+  const res = await publicFetch(`/confirm/${encodeURIComponent(token)}`)
   if (!res.ok) throw await toError(res)
   return res.json()
 }
@@ -789,7 +840,7 @@ export async function submitConfirm(
   token: string,
   payload: ConfirmSubmit,
 ): Promise<ConfirmGuestPublic> {
-  const res = await fetch(`${API_URL}/confirm/${encodeURIComponent(token)}`, {
+  const res = await publicFetch(`/confirm/${encodeURIComponent(token)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
