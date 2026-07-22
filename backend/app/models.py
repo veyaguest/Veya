@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     LargeBinary,
     String,
@@ -124,6 +125,12 @@ class Guest(Base):
     """מוזמן — מקור האמת המרכזי של המערכת (PRD חלק 4)."""
 
     __tablename__ = "guests"
+    # שלב 2 (אופטימיזציית שאילתות): כמעט כל סינון לפי סטטוס RSVP מגיע יחד עם
+    # event_id (למשל "כמה ממתינים באירוע הזה") — אינדקס מורכב עוזר לשאילתות
+    # האלה במקום full scan של כל המוזמנים של האירוע. ראה QUERY_OPTIMIZATION.md.
+    __table_args__ = (
+        Index("ix_guests_event_rsvp", "event_id", "rsvp_status"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
@@ -242,8 +249,10 @@ class AuditLog(Base):
     event_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("events.id"), nullable=True, index=True
     )
+    # אינדקס: נסרק ע"י admin.py בעת מחיקת משתמש (ניקוי/ניתוק יומן שלו) וב-
+    # רשימת יומן האדמין (outerjoin לפי user_id).
     user_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("users.id"), nullable=True
+        ForeignKey("users.id"), nullable=True, index=True
     )
     action: Mapped[str] = mapped_column(String, index=True)  # send_invitations/update_event/...
     detail: Mapped[str] = mapped_column(Text, default="")
@@ -259,6 +268,15 @@ class Message(Base):
     """
 
     __tablename__ = "messages"
+    # שלב 2: שאילתות ספירה/סינון חוזרות (הזמנות שנשלחו, תזכורות, וכו') תמיד
+    # מסננות את ארבע העמודות האלה יחד (event_id+direction+kind+status) — ראה
+    # app/routers/messaging.py ו-stats.py. QUERY_OPTIMIZATION.md.
+    __table_args__ = (
+        Index(
+            "ix_messages_event_direction_kind_status",
+            "event_id", "direction", "kind", "status",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)

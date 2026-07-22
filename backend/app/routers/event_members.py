@@ -5,6 +5,8 @@
 מדויק, ורק לחשבונות מסוג planner/venue קיימים (לא נחשפים משתמשים אחרים —
 עקבי עם עקרון בידוד המידע בין אירועים).
 """
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -33,6 +35,12 @@ def _require_owner(event_id: int, db: Session, user: models.User) -> models.Even
 
 def _to_read(member: models.EventMember, db: Session) -> schemas.EventMemberRead:
     u = db.get(models.User, member.user_id)
+    return _member_read(member, u)
+
+
+def _member_read(
+    member: models.EventMember, u: Optional[models.User]
+) -> schemas.EventMemberRead:
     return schemas.EventMemberRead(
         id=member.id,
         user_id=member.user_id,
@@ -55,7 +63,14 @@ def list_members(
     members = db.scalars(
         select(models.EventMember).where(models.EventMember.event_id == event_id)
     ).all()
-    return [_to_read(m, db) for m in members]
+    # שלב 2: שאילתה אחת לכל המשתמשים הרלוונטיים במקום db.get(User) בלולאה
+    # (N+1) — אותה תוצאה בדיוק, פחות round-trips ל-DB.
+    user_ids = {m.user_id for m in members}
+    users_by_id = {
+        u.id: u
+        for u in db.scalars(select(models.User).where(models.User.id.in_(user_ids))).all()
+    } if user_ids else {}
+    return [_member_read(m, users_by_id.get(m.user_id)) for m in members]
 
 
 @router.post("", response_model=schemas.EventMemberRead, status_code=201)

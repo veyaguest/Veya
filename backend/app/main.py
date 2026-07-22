@@ -142,17 +142,25 @@ _EXTRA_INDEXES = {
     "ix_clarifications_event_id": ("clarifications", "event_id"),
     "ix_message_templates_event_id": ("message_templates", "event_id"),
     "ix_automation_rules_event_id": ("automation_rules", "event_id"),
+    # שלב 2 (אופטימיזציית שאילתות, ראה QUERY_OPTIMIZATION.md) — אינדקסים
+    # מורכבים (כמה עמודות), לכן הערך הוא tuple של שמות עמודות ולא מחרוזת יחידה.
+    "ix_guests_event_rsvp": ("guests", ("event_id", "rsvp_status")),
+    "ix_messages_event_direction_kind_status": (
+        "messages", ("event_id", "direction", "kind", "status")
+    ),
+    "ix_audit_logs_user_id": ("audit_logs", "user_id"),
 }
 
 
 def _ensure_indexes() -> None:
     inspector = inspect(migrations_engine)
     with migrations_engine.begin() as conn:
-        for name, (table, column) in _EXTRA_INDEXES.items():
+        for name, (table, columns) in _EXTRA_INDEXES.items():
             if not inspector.has_table(table):
                 continue
+            cols = columns if isinstance(columns, str) else ", ".join(columns)
             conn.execute(
-                text(f"CREATE INDEX IF NOT EXISTS {name} ON {table} ({column})")
+                text(f"CREATE INDEX IF NOT EXISTS {name} ON {table} ({cols})")
             )
 
 

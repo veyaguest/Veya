@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import audit, auth, event_terms, messaging, models, schemas, venues
+from app import audit, auth, cache, event_terms, messaging, models, schemas, venues
 from app.auth import get_current_admin
 from app.database import get_db
 
@@ -65,17 +65,27 @@ def admin_dashboard(
     )
 
     # --- האירועים האחרונים (8) עם בעלים וספירת מוזמנים ---
-    guests_by_event = dict(
-        db.execute(
-            select(models.Guest.event_id, func.count(models.Guest.id)).group_by(
-                models.Guest.event_id
-            )
-        ).all()
-    )
-    emails = {u.id: u.email for u in db.scalars(select(models.User)).all()}
+    # שלב 2: קודם שולפים את 8 האירועים, ורק אז את ספירת המוזמנים/המיילים
+    # *עבורם בלבד* — לפני זה זה היה סורק את כל טבלת guests ואת כל טבלת users
+    # במערכת כדי להציג בסוף רק 8 שורות. אותה תוצאה, הרבה פחות דאטה שנטען.
     recent = db.scalars(
         select(models.Event).order_by(models.Event.id.desc()).limit(8)
     ).all()
+    recent_ids = [e.id for e in recent]
+    recent_owner_ids = {e.owner_id for e in recent if e.owner_id}
+    guests_by_event = dict(
+        db.execute(
+            select(models.Guest.event_id, func.count(models.Guest.id))
+            .where(models.Guest.event_id.in_(recent_ids))
+            .group_by(models.Guest.event_id)
+        ).all()
+    ) if recent_ids else {}
+    emails = {
+        u.id: u.email
+        for u in db.scalars(
+            select(models.User).where(models.User.id.in_(recent_owner_ids))
+        ).all()
+    } if recent_owner_ids else {}
     recent_events = []
     for e in recent:
         couple = event_terms.hosts_names(e.event_type, e.groom_name, e.bride_name)
@@ -113,12 +123,16 @@ def admin_dashboard(
     window_days = 14
     start = today - timedelta(days=window_days - 1)
     counts: dict[date, int] = {}
-    users = db.scalars(
-        select(models.User).where(models.User.created_at >= datetime(start.year, start.month, start.day))
+    # שלב 2: שולפים רק את עמודת created_at (לא את כל השורה — email/password וכו')
+    # כי זה כל מה שנחוץ פה; אותה ספירה בדיוק, פחות דאטה מועבר מה-DB.
+    signup_dates = db.scalars(
+        select(models.User.created_at).where(
+            models.User.created_at >= datetime(start.year, start.month, start.day)
+        )
     ).all()
-    for u in users:
-        if u.created_at:
-            d = u.created_at.date()
+    for created_at in signup_dates:
+        if created_at:
+            d = created_at.date()
             counts[d] = counts.get(d, 0) + 1
     signups = [
         schemas.AdminDashboardPoint(
@@ -230,18 +244,29 @@ def list_all_events(
 
     ``event_type`` — סינון אופציונלי בצד השרת (בנוסף לחיפוש בצד הלקוח).
     """
-    guests_by_event = dict(
-        db.execute(
-            select(models.Guest.event_id, func.count(models.Guest.id))
-            .group_by(models.Guest.event_id)
-        ).all()
-    )
-    emails = {u.id: u.email for u in db.scalars(select(models.User)).all()}
-
     query = select(models.Event).order_by(models.Event.id.desc())
     if event_type:
         query = query.where(models.Event.event_type == event_type)
     events = db.scalars(query).all()
+
+    # שלב 2: מסננים לפי האירועים שבאמת הוחזרו (בפרט כש-event_type מסונן) —
+    # במקום לטעון את כל טבלת guests/users בכל קריאה. אותה תוצאה, פחות דאטה.
+    event_ids = [e.id for e in events]
+    owner_ids = {e.owner_id for e in events if e.owner_id}
+    guests_by_event = dict(
+        db.execute(
+            select(models.Guest.event_id, func.count(models.Guest.id))
+            .where(models.Guest.event_id.in_(event_ids))
+            .group_by(models.Guest.event_id)
+        ).all()
+    ) if event_ids else {}
+    emails = {
+        u.id: u.email
+        for u in db.scalars(
+            select(models.User).where(models.User.id.in_(owner_ids))
+        ).all()
+    } if owner_ids else {}
+
     return [
         schemas.AdminEventRow(
             id=e.id,
@@ -645,17 +670,31 @@ def create_account(
 # רק אדמין. אלה הברירות שמוחלות אוטומטית על כל אירוע חדש; הבעלים מקבלים עותק לעריכה.
 
 
+# TTL של ספריית התבניות/המסלול הגלובליים — נתונים שהאדמין עורך לעיתים
+# רחוקות, ורוב הקריאות אליהם הן פנימיות (provision_rsvp_track בכל אירוע
+# חדש/GET /automation/templates), לא ממסך שהמשתמש מחכה לו. invalidate_prefix
+# מיד אחרי כל כתיבה מבטיח שהאדמין רואה שינוי בלי לחכות ל-TTL.
+VEYA_LIBRARY_CACHE_TTL_SECONDS = 300  # 5 דקות
+
+
 @router.get("/veya/templates", response_model=list[schemas.VeyaTemplateRead])
 def list_veya_templates(
     db: Session = Depends(get_db),
     admin: models.User = Depends(get_current_admin),
 ):
     """כל תבניות ברירת המחדל הגלובליות, מסודרות לפי שלב ומיקום."""
-    return db.scalars(
-        select(models.VeyaTemplate).order_by(
-            models.VeyaTemplate.sort_order, models.VeyaTemplate.id
-        )
-    ).all()
+
+    def _load():
+        rows = db.scalars(
+            select(models.VeyaTemplate).order_by(
+                models.VeyaTemplate.sort_order, models.VeyaTemplate.id
+            )
+        ).all()
+        return cache.snapshot_all(rows)
+
+    return cache.get_or_set(
+        "veya_templates:admin_all", VEYA_LIBRARY_CACHE_TTL_SECONDS, _load
+    )
 
 
 @router.post("/veya/templates", response_model=schemas.VeyaTemplateRead, status_code=201)
@@ -674,6 +713,7 @@ def create_veya_template(
     )
     db.add(tpl)
     db.commit()
+    cache.invalidate_prefix("veya_templates:")
     return tpl
 
 
@@ -691,6 +731,7 @@ def update_veya_template(
     for field, value in data.items():
         setattr(tpl, field, value)
     db.commit()
+    cache.invalidate_prefix("veya_templates:")
     return tpl
 
 
@@ -705,6 +746,7 @@ def delete_veya_template(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="התבנית לא נמצאה")
     db.delete(tpl)
     db.commit()
+    cache.invalidate_prefix("veya_templates:")
 
 
 @router.get("/veya/workflow", response_model=list[schemas.VeyaWorkflowStepRead])
@@ -713,9 +755,16 @@ def list_veya_workflow(
     admin: models.User = Depends(get_current_admin),
 ):
     """שלבי המסלול הקבוע של VEYA, לפי סדר."""
-    return db.scalars(
-        select(models.VeyaWorkflowStep).order_by(models.VeyaWorkflowStep.step_order)
-    ).all()
+
+    def _load():
+        rows = db.scalars(
+            select(models.VeyaWorkflowStep).order_by(models.VeyaWorkflowStep.step_order)
+        ).all()
+        return cache.snapshot_all(rows)
+
+    return cache.get_or_set(
+        "veya_workflow:admin_all", VEYA_LIBRARY_CACHE_TTL_SECONDS, _load
+    )
 
 
 @router.patch("/veya/workflow/{step_id}", response_model=schemas.VeyaWorkflowStepRead)
@@ -732,6 +781,7 @@ def update_veya_workflow_step(
     for field, value in data.items():
         setattr(step, field, value)
     db.commit()
+    cache.invalidate_prefix("veya_workflow:")
     return step
 
 
@@ -832,12 +882,18 @@ def list_venues(
     admin: models.User = Depends(get_current_admin),
 ):
     """כל האולמות במאגר, הפופולריים קודם."""
-    rows = db.scalars(
-        select(models.Venue).order_by(
-            models.Venue.usage_count.desc(), models.Venue.name
-        )
-    ).all()
-    return [_venue_to_row(v) for v in rows]
+
+    def _load():
+        rows = db.scalars(
+            select(models.Venue).order_by(
+                models.Venue.usage_count.desc(), models.Venue.name
+            )
+        ).all()
+        return [_venue_to_row(v) for v in rows]
+
+    return cache.get_or_set(
+        "venues:admin_list", venues.VENUE_CACHE_TTL_SECONDS, _load
+    )
 
 
 @router.patch("/venues/{venue_id}", response_model=schemas.AdminVenueRow)
@@ -888,6 +944,7 @@ def update_venue(
         ip=request.client.host if request.client else None,
     )
     db.commit()
+    cache.invalidate_prefix("venues:")
     return _venue_to_row(venue)
 
 
@@ -910,6 +967,7 @@ def delete_venue(
     )
     db.delete(venue)
     db.commit()
+    cache.invalidate_prefix("venues:")
     return None
 
 
@@ -940,4 +998,5 @@ def merge_venue(
     )
     db.delete(source)
     db.commit()
+    cache.invalidate_prefix("venues:")
     return _venue_to_row(target)

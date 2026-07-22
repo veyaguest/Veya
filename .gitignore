@@ -7,6 +7,7 @@ backend/.env
 *.sqlite3
 backend/backups/
 backend/uploads/
+/backups/
 
 # Node / frontend
 node_modules/

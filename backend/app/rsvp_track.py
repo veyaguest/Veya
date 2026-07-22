@@ -13,7 +13,12 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import models
+from app import cache, models
+
+# TTL לספריית ברירות המחדל הגלובליות (תבניות + מסלול) — נקראת בכל
+# GET /automation/templates ובכל הפעלת מסלול, אבל משתנה רק כשאדמין עורך
+# בפאנל הניהול. invalidate_prefix ב-admin.py מבטיח שהעריכה תיראה מיד.
+LIBRARY_CACHE_TTL_SECONDS = 300  # 5 דקות
 
 # מיפוי שלב VEYA -> סוג ה-MessageTemplate של האירוע (לתיוג/סינון בלבד).
 STAGE_TO_KIND = {
@@ -25,13 +30,41 @@ STAGE_TO_KIND = {
 }
 
 
+def _active_veya_templates(db: Session) -> list:
+    """תבניות ברירת המחדל הפעילות, מסודרות — ממוטמן (נקרא בכל אירוע/הפעלה)."""
+
+    def _load():
+        rows = db.scalars(
+            select(models.VeyaTemplate)
+            .where(models.VeyaTemplate.active.is_(True))
+            .order_by(models.VeyaTemplate.sort_order, models.VeyaTemplate.id)
+        ).all()
+        return cache.snapshot_all(rows)
+
+    return cache.get_or_set(
+        "veya_templates:active", LIBRARY_CACHE_TTL_SECONDS, _load
+    )
+
+
+def _active_workflow_steps(db: Session) -> list:
+    """שלבי המסלול הקבוע הפעילים, לפי סדר — ממוטמן (נקרא בכל הפעלת מסלול)."""
+
+    def _load():
+        rows = db.scalars(
+            select(models.VeyaWorkflowStep)
+            .where(models.VeyaWorkflowStep.active.is_(True))
+            .order_by(models.VeyaWorkflowStep.step_order)
+        ).all()
+        return cache.snapshot_all(rows)
+
+    return cache.get_or_set(
+        "veya_workflow:active", LIBRARY_CACHE_TTL_SECONDS, _load
+    )
+
+
 def _default_templates_by_stage(db: Session) -> dict[str, models.VeyaTemplate]:
     """תבנית ברירת המחדל לכל שלב (הראשונה לפי sort_order אם יש כמה)."""
-    rows = db.scalars(
-        select(models.VeyaTemplate)
-        .where(models.VeyaTemplate.active.is_(True))
-        .order_by(models.VeyaTemplate.sort_order, models.VeyaTemplate.id)
-    ).all()
+    rows = _active_veya_templates(db)
     out: dict[str, models.VeyaTemplate] = {}
     for t in rows:
         if not t.is_default:
@@ -85,11 +118,7 @@ def provision_rsvp_track(db: Session, event: models.Event) -> dict:
             )
         ).all()
     }
-    steps = db.scalars(
-        select(models.VeyaWorkflowStep)
-        .where(models.VeyaWorkflowStep.active.is_(True))
-        .order_by(models.VeyaWorkflowStep.step_order)
-    ).all()
+    steps = _active_workflow_steps(db)
     rules_created = 0
     for step in steps:
         if step.name in existing_rule_names:

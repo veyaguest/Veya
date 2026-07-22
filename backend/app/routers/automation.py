@@ -258,24 +258,48 @@ def _validate_template(db: Session, event_id: int, template_id: Optional[int]) -
 
 # ---- התור לאישור + שליחה ----
 
-def _due_actions(db: Session, event: models.Event) -> list[automation.DueActionData]:
-    templates_by_id = {t.id: t for t in _templates(db, event.id)}
+def _due_actions(
+    db: Session,
+    event: models.Event,
+    *,
+    guests: Optional[list[models.Guest]] = None,
+    messages: Optional[list[models.Message]] = None,
+    rules: Optional[list[models.AutomationRule]] = None,
+    templates_by_id: Optional[dict[int, models.MessageTemplate]] = None,
+) -> list[automation.DueActionData]:
+    """מחשב את תור הפעולות שהגיע זמנן. אפשר להעביר נתונים שכבר נטענו באותה
+    בקשה (guests/messages/rules/templates_by_id — כל האירוע, לא מסונן) כדי
+    לחסוך שאילתה כפולה; ברירת המחדל (``None``) טוענת בעצמה, בדיוק כמו קודם.
+    """
+    if templates_by_id is None:
+        templates_by_id = {t.id: t for t in _templates(db, event.id)}
+    if guests is None:
+        guests = _guests(db, event.id)
+    if rules is None:
+        rules = _rules(db, event.id)
+    if messages is None:
+        messages = _messages(db, event.id)
     return automation.compute_due_actions(
         event=event,
-        guests=_guests(db, event.id),
-        rules=[r for r in _rules(db, event.id) if r.active],
-        messages=_messages(db, event.id),
+        guests=guests,
+        rules=[r for r in rules if r.active],
+        messages=messages,
         templates_by_id=templates_by_id,
     )
 
 
 def _process_actions(
-    db: Session, event: models.Event, actions: list[automation.DueActionData]
+    db: Session,
+    event: models.Event,
+    actions: list[automation.DueActionData],
+    *,
+    templates_by_id: Optional[dict[int, models.MessageTemplate]] = None,
 ) -> dict:
     """מבצע בפועל פעולות שהגיע זמנן — שליחת WhatsApp (mock) או הכנסה לרשימת
     מעקב טלפוני, לפי ``action_kind`` של החוק. כל פעולה נרשמת ביומן ההודעות עם
     ``rule_id`` (dedup: המנוע לא יחזור על אותו חוק+מוזמן). לא עושה commit."""
-    templates_by_id = {t.id: t for t in _templates(db, event.id)}
+    if templates_by_id is None:
+        templates_by_id = {t.id: t for t in _templates(db, event.id)}
     provider = messaging.get_provider()
     sent = failed = skipped = phoned = 0
     last_detail = ""
@@ -364,7 +388,10 @@ def run_due(
     אפשר לצמצם לחוקים מסוימים דרך ``rule_ids``. כל שליחה נרשמת ביומן ההודעות
     עם ``rule_id`` (למניעת כפילות בעתיד ולבניית ה-Timeline).
     """
-    actions = _due_actions(db, event)
+    # שלב 2: טוענים את התבניות פעם אחת ומעבירים גם ל-_process_actions —
+    # קודם זה נטען פעמיים (פנימית בכל פונקציה) לאותה בקשה בדיוק.
+    templates_by_id = {t.id: t for t in _templates(db, event.id)}
+    actions = _due_actions(db, event, templates_by_id=templates_by_id)
     if payload.rule_ids is not None:
         wanted = set(payload.rule_ids)
         actions = [a for a in actions if a.rule.id in wanted]
@@ -372,7 +399,7 @@ def run_due(
     if not actions:
         raise HTTPException(status_code=400, detail="אין כרגע פעולות לשליחה בתור")
 
-    r = _process_actions(db, event, actions)
+    r = _process_actions(db, event, actions, templates_by_id=templates_by_id)
     detail = r["detail"]
     if r["phoned"]:
         detail = (detail + " · " if detail else "") + f"{r['phoned']} נכנסו למעקב טלפוני"
@@ -431,6 +458,10 @@ def _track_status(db: Session, event: models.Event) -> schemas.RsvpTrackStatus:
     for m in messages:
         if m.rule_id is not None and m.guest_id is not None:
             fired_by_rule.setdefault(m.rule_id, set()).add(m.guest_id)
+    # שלב 2: טוענים את חוקי האוטומציה פעם אחת ומעבירים ל-_due_actions (אם
+    # המסלול פעיל) — קודם זה נטען כאן וגם שוב בתוך _due_actions, וכנ"ל
+    # guests/messages שכבר נטענו למעלה. אותה תוצאה בדיוק, בלי הכפלת שאילתות.
+    all_rules = _rules(db, event.id)
     steps = [
         schemas.RsvpTrackStepRow(
             rule_id=r.id,
@@ -440,10 +471,13 @@ def _track_status(db: Session, event: models.Event) -> schemas.RsvpTrackStatus:
             active=r.active,
             done=len(fired_by_rule.get(r.id, set())),
         )
-        for r in sorted(_rules(db, event.id), key=lambda r: r.delay_days)
+        for r in sorted(all_rules, key=lambda r: r.delay_days)
     ]
 
-    due = _due_actions(db, event) if event.rsvp_track_active else []
+    due = (
+        _due_actions(db, event, guests=guests, messages=messages, rules=all_rules)
+        if event.rsvp_track_active else []
+    )
 
     return schemas.RsvpTrackStatus(
         active=bool(event.rsvp_track_active),
@@ -650,9 +684,10 @@ def advance_track(
     כך שאפשר לקרוא לזה שוב ושוב (למשל בכל טעינת מסך RSVP) בלי נזק."""
     sent = phoned = failed = 0
     if event.rsvp_track_active:
-        actions = _due_actions(db, event)
+        templates_by_id = {t.id: t for t in _templates(db, event.id)}
+        actions = _due_actions(db, event, templates_by_id=templates_by_id)
         if actions:
-            r = _process_actions(db, event, actions)
+            r = _process_actions(db, event, actions, templates_by_id=templates_by_id)
             sent, phoned, failed = r["sent"], r["phoned"], r["failed"]
             if sent or phoned or failed:
                 audit.record(
@@ -768,13 +803,13 @@ def dashboard(
     event_date = automation.parse_event_date(event.event_date)
     days_to_event = (event_date - datetime.utcnow().date()).days if event_date else None
 
-    active_rules = db.scalar(
-        select(func.count()).select_from(models.AutomationRule)
-        .where(models.AutomationRule.event_id == event.id)
-        .where(models.AutomationRule.active.is_(True))
-    ) or 0
+    # שלב 2: טוענים את חוקי האוטומציה פעם אחת — גם לספירת "חוקים פעילים" וגם
+    # להעברה ל-_due_actions (יחד עם guests/messages שכבר נטענו למעלה), במקום
+    # שאילתת COUNT נפרדת ועוד טעינה כפולה בתוך _due_actions. אותה תוצאה בדיוק.
+    all_rules = _rules(db, event.id)
+    active_rules = sum(1 for r in all_rules if r.active)
 
-    due = _due_actions(db, event)
+    due = _due_actions(db, event, guests=guests, messages=messages, rules=all_rules)
     recs = automation.compute_recommendations(event, guests)
 
     return schemas.AutomationDashboard(

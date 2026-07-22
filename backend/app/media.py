@@ -25,7 +25,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from app import models
+from app import cache, models
 
 # תיקיית uploads הישנה — נשמרת רק לתאימות לאחור (הגשת קבצים ישנים שכבר קיימים
 # מקומית). כתיבה חדשה כבר לא מגיעה לכאן.
@@ -68,6 +68,9 @@ def delete_stored(db: Session, stored: Optional[str]) -> None:
         blob = db.get(models.MediaBlob, blob_id)
         if blob is not None:
             db.delete(blob)
+        # מנקים גם מטמון (אם הבלוב הזה נטען קודם ב-GET /media/<id>), כדי
+        # שלא יוגש תוכן ישן לכתובת שנמחקה תוך כדי ה-TTL.
+        cache.invalidate_key(f"media:{blob_id}")
     elif stored.startswith("/uploads/"):
         try:
             (UPLOADS_DIR / Path(stored).name).unlink()

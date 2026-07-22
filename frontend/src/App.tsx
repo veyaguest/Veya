@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
 import './App.css'
 import { adminImpersonate, getMe, healthCheck, listMyEvents } from './api'
@@ -15,18 +15,35 @@ import {
   setToken,
 } from './authStore'
 import { getEventTerms, hostNames } from './strings/eventTypes'
-import { AdminApp } from './components/AdminApp'
 import { AuthPage } from './components/AuthPage'
 import { DashboardPage } from './components/DashboardPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { EventMembersDialog } from './components/EventMembersDialog'
 import { GuestsPage } from './components/GuestsPage'
-import { HallPage } from './components/HallPage'
 import { OnboardingWizard } from './components/OnboardingWizard'
 import { ProfileDialog } from './components/ProfileDialog'
 import { RsvpPage } from './components/RsvpPage'
 import type { EventSummary, User } from './types'
 import type { EventTerms } from './strings/eventTypes'
+
+// Code splitting: AdminApp ו-HallPage הם הקבצים הכבדים ביותר בבנדל (פאנל
+// אדמין שלם / עורך מפת אולם עם ~4400 שורות), אבל רוב הסשנים (זוג רגיל
+// שלא נכנס למפת ההושבה, וכל מי שאינו אדמין) אף פעם לא צריכים אותם. טעינה
+// עצלה (lazy) מוציאה אותם מה-bundle הראשוני לצ'אנק נפרד שנטען רק בשימוש בפועל.
+const AdminApp = lazy(() =>
+  import('./components/AdminApp').then((m) => ({ default: m.AdminApp })),
+)
+const HallPage = lazy(() =>
+  import('./components/HallPage').then((m) => ({ default: m.HallPage })),
+)
+
+// אותו מסך "טוען…" שכבר קיים לבדיקת ההתחברות הראשונית (boot-screen) — משתמשים
+// בו גם כ-fallback ל-Suspense, כדי שלא תיווסף שפת טעינה חדשה לאפליקציה.
+const bootFallback = (
+  <div className="boot-screen">
+    <span className="dot loading" /> טוען…
+  </div>
+)
 
 type Page = 'dashboard' | 'guests' | 'rsvp' | 'hall'
 
@@ -244,7 +261,9 @@ function App() {
   // אדמין → פאנל ניהול מלא ונפרד (לא נכנס למסלול יצירת אירוע של זוג).
   if (user.is_admin) {
     return (
-      <AdminApp user={user} onLogout={handleLogout} onImpersonate={handleImpersonate} />
+      <Suspense fallback={bootFallback}>
+        <AdminApp user={user} onLogout={handleLogout} onImpersonate={handleImpersonate} />
+      </Suspense>
     )
   }
 
@@ -372,7 +391,11 @@ function App() {
             {page === 'rsvp' && (
               <RsvpPage isAdmin={user.is_admin} onNavigate={(p) => setPage(p)} />
             )}
-            {page === 'hall' && <HallPage onNavigate={(p) => setPage(p)} />}
+            {page === 'hall' && (
+              <Suspense fallback={bootFallback}>
+                <HallPage onNavigate={(p) => setPage(p)} />
+              </Suspense>
+            )}
           </ErrorBoundary>
         </main>
       </div>

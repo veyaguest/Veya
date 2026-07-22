@@ -64,15 +64,17 @@ def summary(
     event: models.Event = Depends(_view),
 ):
     """תמונת מצב RSVP: כמה אישרו/ביטלו/ממתינים + כמה הזמנות נשלחו."""
-    def count(**where) -> int:
-        stmt = (
-            select(func.count())
-            .select_from(models.Guest)
+    # שלב 2: שאילתת GROUP BY אחת במקום 4 שאילתות COUNT נפרדות (total/confirmed/
+    # declined/pending) — אותם מספרים בדיוק (total = סכום כל הסטטוסים, כולל
+    # ערכים אחרים כמו "maybe", בדיוק כמו הספירה הכוללת הקודמת), פחות round-trips.
+    status_counts = dict(
+        db.execute(
+            select(models.Guest.rsvp_status, func.count())
             .where(models.Guest.event_id == event.id)
-        )
-        for k, v in where.items():
-            stmt = stmt.where(getattr(models.Guest, k) == v)
-        return db.scalar(stmt) or 0
+            .group_by(models.Guest.rsvp_status)
+        ).all()
+    )
+    total_guests = sum(status_counts.values())
 
     sent = db.scalar(
         select(func.count()).select_from(models.Message)
@@ -83,10 +85,10 @@ def summary(
     ) or 0
 
     return schemas.RsvpSummary(
-        total_guests=count(),
-        confirmed=count(rsvp_status="confirmed"),
-        declined=count(rsvp_status="declined"),
-        pending=count(rsvp_status="pending"),
+        total_guests=total_guests,
+        confirmed=status_counts.get("confirmed", 0),
+        declined=status_counts.get("declined", 0),
+        pending=status_counts.get("pending", 0),
         invitations_sent=sent,
         mode=messaging.current_mode(),
     )

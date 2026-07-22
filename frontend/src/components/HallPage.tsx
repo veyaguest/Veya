@@ -2247,11 +2247,15 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
 
   // מספרי שולחנות המוזכרים באזהרות (למשל זוג "לא לשבת יחד") — לסימון חזותי
   // ישירות על השולחן, לא רק ברשימת האזהרות הכללית.
-  const warnTables = new Set(
-    warnings
-      .map((w) => w.match(/^שולחן (\d+):/)?.[1])
-      .filter((n): n is string => !!n)
-      .map(Number),
+  const warnTables = useMemo(
+    () =>
+      new Set(
+        warnings
+          .map((w) => w.match(/^שולחן (\d+):/)?.[1])
+          .filter((n): n is string => !!n)
+          .map(Number),
+      ),
+    [warnings],
   )
 
   // רשימת "ללא שולחן" ממוינת לפי שם (קל יותר לסרוק) ומסוננת לפי חיפוש —
@@ -2296,19 +2300,25 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // נקודת-סטטוס צבעונית לכל שולחן (ירוק/צהוב/אדום) — מידע בלבד, לא חוסמת
   // כלום. אדום = בעיה קשה (חריגת קיבולת/זוג אסור/ילד בלי מבוגר מהמשפחה),
   // צהוב = יש המלצה/אזהרה רכה (משפחה או קבוצה מפוצלת וכו'), ירוק = תקין.
-  const redFromSmart = new Set(
-    smartWarnings.filter((w) => w.severity === 'red').flatMap((w) => w.tableNumbers),
-  )
-  const yellowFromSmart = new Set(
-    smartWarnings.filter((w) => w.severity === 'yellow').flatMap((w) => w.tableNumbers),
-  )
-  const tableStatus = new Map<number, 'red' | 'yellow' | 'green'>()
-  for (const t of tables) {
-    const used = t.guests.reduce((s, g) => s + g.seats, 0)
-    const isRed = used > t.capacity || warnTables.has(t.table_number) || redFromSmart.has(t.table_number)
-    const isYellow = !isRed && yellowFromSmart.has(t.table_number)
-    tableStatus.set(t.table_number, isRed ? 'red' : isYellow ? 'yellow' : 'green')
-  }
+  // ממוזער (useMemo): בלי זה זה נבנה מחדש בכל רינדור — כולל כל 20 שניות
+  // מבדיקת "מחובר לשרת" ב-App.tsx — למרות שהחישובים הסמוכים (smartWarnings
+  // וכו') כבר ממוזערים.
+  const tableStatus = useMemo(() => {
+    const redFromSmart = new Set(
+      smartWarnings.filter((w) => w.severity === 'red').flatMap((w) => w.tableNumbers),
+    )
+    const yellowFromSmart = new Set(
+      smartWarnings.filter((w) => w.severity === 'yellow').flatMap((w) => w.tableNumbers),
+    )
+    const status = new Map<number, 'red' | 'yellow' | 'green'>()
+    for (const t of tables) {
+      const used = t.guests.reduce((s, g) => s + g.seats, 0)
+      const isRed = used > t.capacity || warnTables.has(t.table_number) || redFromSmart.has(t.table_number)
+      const isYellow = !isRed && yellowFromSmart.has(t.table_number)
+      status.set(t.table_number, isRed ? 'red' : isYellow ? 'yellow' : 'green')
+    }
+    return status
+  }, [tables, smartWarnings, warnTables])
 
   // האורח שבפועל נגרר כרגע (אם יש) — לשימוש בבדיקה החיה בזמן ריחוף מעל שולחן.
   const draggedGuestForLive = useMemo(() => {
