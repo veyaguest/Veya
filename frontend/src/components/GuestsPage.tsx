@@ -6,12 +6,17 @@ import { activeEventTerms, sideLabel } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { AddGuestForm } from './AddGuestForm'
 import { ConfirmDialog } from './ConfirmDialog'
+import { ContactsImportDialog, isContactPickerSupported } from './ContactsImportDialog'
 import { CreateGroupDialog } from './CreateGroupDialog'
 import { GroupNotesPanel } from './GroupNotesPanel'
 import { GroupSuggestions } from './GroupSuggestions'
 import { ImportDialog } from './ImportDialog'
+import { ImportMenu } from './ImportMenu'
 import { OnboardingDialog } from './OnboardingDialog'
 import { PasteImportDialog } from './PasteImportDialog'
+
+// נבדק פעם אחת בטעינת המודול — תמיכת הדפדפן בבחירת אנשי קשר לא משתנה תוך כדי שימוש.
+const contactsSupported = isContactPickerSupported()
 
 const t = strings.guests
 
@@ -32,6 +37,7 @@ export function GuestsPage() {
   const [error, setError] = useState('')
   const [importFile, setImportFile] = useState<File | null>(null)
   const [showPaste, setShowPaste] = useState(false)
+  const [showContacts, setShowContacts] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
   const [showCreateGroup, setShowCreateGroup] = useState(false)
   const [editGuest, setEditGuest] = useState<Guest | null>(null)
@@ -113,17 +119,16 @@ export function GuestsPage() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t.searchPlaceholder}
         />
-        <button className="btn-ghost" onClick={() => setShowPaste(true)}>
-          {t.pasteButton}
-        </button>
+        <ImportMenu
+          onExcel={() => fileInput.current?.click()}
+          onPaste={() => setShowPaste(true)}
+          onContacts={contactsSupported ? () => setShowContacts(true) : undefined}
+        />
         <button className="btn-ghost" onClick={() => setShowCreateGroup(true)}>
           {t.groupButton}
         </button>
         <button className="btn-ghost" onClick={() => setShowNotes(true)}>
           {t.notesButton}
-        </button>
-        <button className="btn-ghost" onClick={() => fileInput.current?.click()}>
-          {t.uploadButton}
         </button>
         <button className="btn-primary" onClick={() => setShowForm((s) => !s)}>
           {showForm ? t.closeForm : t.addGuestButton}
@@ -174,6 +179,19 @@ export function GuestsPage() {
           onClose={() => setShowPaste(false)}
           onImported={(created, skippedDuplicates) => {
             setShowPaste(false)
+            const dup = skippedDuplicates > 0 ? t.dupSuffix(skippedDuplicates) : ''
+            setToast(t.importedToast(created, dup))
+            setTimeout(() => setToast(''), 4000)
+            load(search)
+          }}
+        />
+      )}
+
+      {showContacts && (
+        <ContactsImportDialog
+          onClose={() => setShowContacts(false)}
+          onImported={(created, skippedDuplicates) => {
+            setShowContacts(false)
             const dup = skippedDuplicates > 0 ? t.dupSuffix(skippedDuplicates) : ''
             setToast(t.importedToast(created, dup))
             setTimeout(() => setToast(''), 4000)

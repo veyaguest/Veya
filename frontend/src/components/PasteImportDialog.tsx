@@ -4,6 +4,7 @@ import type { GroupType, GuestCreate, Side } from '../types'
 import { GROUP_LABELS } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
+import { type EditRow, normalizePhone, rowIssues } from '../lib/importRows'
 
 const t = strings.guests
 const tc = strings.common
@@ -11,39 +12,6 @@ const tc = strings.common
 interface Props {
   onClose: () => void
   onImported: (created: number, skippedDuplicates: number) => void
-}
-
-// שורה בתצוגה המקדימה הניתנת לעריכה — עותק עבודה מקומי שהמשתמש יכול לשנות.
-interface EditRow {
-  key: number
-  full_name: string
-  phone: string
-  side: Side
-  group_type: GroupType
-  party_size: number
-  duplicate: boolean
-  include: boolean
-}
-
-/** נרמול טלפון ישראלי בצד הלקוח — תואם ללוגיקת השרת. מחזיר null אם לא תקין. */
-function normalizePhone(raw: string): string | null {
-  let d = (raw || '').replace(/\D/g, '')
-  if (d.startsWith('972')) d = '0' + d.slice(3)
-  if (!d.startsWith('0')) return null
-  if (d.length !== 9 && d.length !== 10) return null
-  return d
-}
-
-// תגי אזהרה מחושבים חי לפי הערכים הנוכחיים (כדי שיתעדכנו תוך כדי עריכה).
-function rowIssues(r: EditRow): { canImport: boolean; badges: string[] } {
-  const badges: string[] = []
-  const hasName = r.full_name.trim().length > 0
-  const phoneOk = normalizePhone(r.phone) !== null
-  if (!hasName) badges.push(t.rowIssueNoName)
-  if (!r.phone.trim()) badges.push(t.rowIssueNoPhone)
-  else if (!phoneOk) badges.push(t.rowIssueBadPhone)
-  if (r.duplicate) badges.push(t.rowIssueDuplicate)
-  return { canImport: hasName && phoneOk, badges }
 }
 
 export function PasteImportDialog({ onClose, onImported }: Props) {

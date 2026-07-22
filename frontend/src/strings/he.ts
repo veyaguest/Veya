@@ -133,9 +133,11 @@ export const strings = {
     deleteConfirm: (name: string) => `להסיר את ${name} מהרשימה?`,
     deleteConfirmButton: 'כן, להסיר',
     searchPlaceholder: 'חיפוש לפי שם או טלפון…',
-    pasteButton: '📋 הדבקת רשימה',
+    importMenuButton: '⬆ ייבוא מוזמנים',
+    pasteButton: '📋 הדבקה מרשימה קיימת',
     notesButton: '⭐ העדפות קבוצה',
-    uploadButton: '⬆ העלאת קובץ אקסל',
+    uploadButton: '📄 ייבוא מקובץ Excel / CSV',
+    contactsButton: '👤 ייבוא מאנשי קשר',
     closeForm: 'סגירת הטופס',
     addGuestButton: '+ הוספת מוזמן',
     dupSuffix: (n: number) => ` (${n} כבר היו אצלכם)`,
@@ -273,6 +275,23 @@ export const strings = {
     clearAll: 'נקה בחירה',
     colImport: 'ייבוא',
     backToEdit: 'חזרה לעריכת הטקסט',
+
+    // ContactsImportDialog
+    contactsTitle: 'ייבוא מאנשי קשר',
+    contactsHint:
+      'בחרו אנשי קשר מהטלפון — נמשוך את השם והטלפון שלהם אוטומטית. תוכלו לבדוק, לערוך או להסיר לפני שמוסיפים אותם לרשימה. זמין כרגע בדפדפן Chrome באנדרואיד בלבד.',
+    contactsUnsupported:
+      'הדפדפן הזה לא תומך בבחירת אנשי קשר. אפשר להשתמש ב"הדבקה מרשימה קיימת" או בייבוא מאקסל במקום.',
+    contactsPickButton: 'בחירת אנשי קשר',
+    contactsPicking: 'פותחים את אנשי הקשר…',
+    contactsPickError: 'לא הצלחנו לפתוח את אנשי הקשר. נסו שוב.',
+    contactsReviewHint:
+      'בדקו את הרשימה לפני ההוספה — אפשר לערוך שם וטלפון או להסיר מי שלא צריך. שום דבר לא נוסף עד שתלחצו על הוספה.',
+    contactsHiddenDuplicates: (n: number) =>
+      `${n} אנשי קשר כבר נמצאים ברשימת המוזמנים ולא הוצגו.`,
+    contactsEmptyAfterDedup:
+      'כל אנשי הקשר שנבחרו כבר קיימים ברשימת המוזמנים.',
+    backToPick: 'בחירה מחדש',
 
     // CreateGroupDialog — יצירת קבוצה ושיוך מוזמנים
     createGroupTitle: 'יצירת קבוצה חדשה',
