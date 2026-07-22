@@ -26,7 +26,7 @@ import type {
   TableType,
 } from '../types'
 import { GROUP_LABELS } from '../types'
-import { sideLabel } from '../strings/eventTypes'
+import { activeEventTerms, sideLabel } from '../strings/eventTypes'
 import { getEventId } from '../authStore'
 import {
   computeSmartFill,
@@ -622,7 +622,7 @@ function HallWizard(props: {
 
         {props.hasContent && (
           <p className="hm-wizard-warn">
-            ⚠ בנייה מחדש תחליף את הסידור הנוכחי — המוזמנים המשובצים יחזרו ל"ללא שולחן".
+            ⚠ בנייה מחדש תחליף את הסידור הנוכחי — {activeEventTerms().guestsLabel} המשובצים יחזרו ל"ללא שולחן".
           </p>
         )}
 
@@ -2365,11 +2365,12 @@ export function HallPage() {
       return
     }
     const tableWord = result.newTables.length === 1 ? 'שולחן חדש אחד' : `${result.newTables.length} שולחנות חדשים`
+    const guestsWord = activeEventTerms().guestsLabel
     const text =
       result.newTables.length > 0
-        ? `מילוי שולחנות: הושבת ${result.placedCount} מוזמנים, כולל פתיחת ${tableWord}` +
+        ? `מילוי שולחנות: הושבת ${result.placedCount} ${guestsWord}, כולל פתיחת ${tableWord}` +
           (result.unplacedCount > 0 ? ` (${result.unplacedCount} נשארו ללא שולחן — חבורה גדולה מדי)` : '')
-        : `מילוי שולחנות: הושבת ${result.placedCount} מוזמנים בשולחנות הקיימים` +
+        : `מילוי שולחנות: הושבת ${result.placedCount} ${guestsWord} בשולחנות הקיימים` +
           (result.unplacedCount > 0 ? ` (${result.unplacedCount} נשארו ללא שולחן — חבורה גדולה מדי)` : '')
     setPendingProposal({
       text,
@@ -2789,7 +2790,7 @@ export function HallPage() {
                 {assignTarget !== null ? ` · הקישו לשיבוץ לשולחן ${assignTarget}` : ' · הקישו כדי לשבץ'}
               </p>
               {visibleUnassigned.length === 0 ? (
-                <p className="hm-empty">כל המוזמנים כבר משובצים. יופי! 🎉</p>
+                <p className="hm-empty">כל ה{activeEventTerms().guestsLabel} כבר משובצים. יופי! 🎉</p>
               ) : (
                 visibleUnassigned.map((g) => (
                   <button
@@ -2982,7 +2983,7 @@ export function HallPage() {
             [
               { key: 'hall', icon: 'hall', label: 'אולם' },
               { key: 'tables', icon: 'tables', label: 'שולחנות' },
-              { key: 'guests', icon: 'guests', label: 'מוזמנים' },
+              { key: 'guests', icon: 'guests', label: activeEventTerms().guestsLabel },
               { key: 'smart', icon: 'smart', label: 'הושבה' },
               { key: 'tools', icon: 'tools', label: 'כלים' },
             ] as const
@@ -3029,7 +3030,7 @@ export function HallPage() {
 
                   <div className="hm-sheet-guests">
                     {sheetT.guests.length === 0 ? (
-                      <p className="hm-empty">אין עדיין מוזמנים בשולחן הזה.</p>
+                      <p className="hm-empty">אין עדיין {activeEventTerms().guestsLabel} בשולחן הזה.</p>
                     ) : (
                       sheetT.guests.map((g) => (
                         <div key={g.id} className="hm-seated-row">
@@ -3244,7 +3245,7 @@ export function HallPage() {
               </ul>
               {seatExplain.length > 6 && (
                 <p className="hm-explain-more">
-                  ועוד {seatExplain.length - 6} מוזמנים סודרו לפי ההעדפות שלהם
+                  ועוד {seatExplain.length - 6} {activeEventTerms().guestsLabel} סודרו לפי ההעדפות שלהם
                 </p>
               )}
             </div>
@@ -3338,7 +3339,7 @@ export function HallPage() {
                   <div>
                     <h3>הושבה בקליק</h3>
                     <p>
-                      בלשונית "מוזמנים" בוחרים אורח, ואז מקישים על השולחן שאליו הוא ישב. זהו —
+                      בלשונית "{activeEventTerms().guestsLabel}" בוחרים אורח, ואז מקישים על השולחן שאליו הוא ישב. זהו —
                       הוא משובץ. כך אפשר להעביר כל אורח בכמה שניות.
                     </p>
                   </div>
@@ -3376,7 +3377,7 @@ export function HallPage() {
                       <b>שולחנות</b> — רשימת כל השולחנות ומי יושב בכל אחד.
                     </li>
                     <li>
-                      <b>מוזמנים</b> — מי עוד מחכה למקום.
+                      <b>{activeEventTerms().guestsLabel}</b> — מי עוד מחכה למקום.
                     </li>
                     <li>
                       <b>הושבה</b> — מילוי אוטומטי, סטטיסטיקה והצעות לשיפור.
@@ -3450,7 +3451,7 @@ export function HallPage() {
 
         {analyzeSummary && (
           <p className="clar-summary">
-            נותחו {analyzeSummary.guests_analyzed} מוזמנים ·{' '}
+            נותחו {analyzeSummary.guests_analyzed} {activeEventTerms().guestsLabel} ·{' '}
             {analyzeSummary.resolved} העדפות זוהו ·{' '}
             {analyzeSummary.pending_clarifications} ממתינים להבהרה
           </p>
@@ -4275,7 +4276,7 @@ export function HallPage() {
 
           <div className="day-mode-list">
             {unassigned.length === 0 ? (
-              <p className="day-mode-empty">כל המוזמנים משובצים 🎉</p>
+              <p className="day-mode-empty">כל ה{activeEventTerms().guestsLabel} משובצים 🎉</p>
             ) : (
               [...unassigned]
                 .sort((a, b) => a.full_name.localeCompare(b.full_name, 'he'))

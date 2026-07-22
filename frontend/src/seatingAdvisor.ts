@@ -11,6 +11,7 @@
  */
 import { groupLabel, type HallGuest, type Side, type TableType } from './types'
 import { sidePhrase } from './strings/eventTypes'
+import { getActiveEventType } from './authStore'
 
 // מבנה שולחן מינימלי הדרוש לניתוח — תואם מבנית ל-TableView הפרטי
 // שבתוך HallPage.tsx (בלי תלות ישירה בקובץ הזה, כדי למנוע import מעגלי
@@ -648,12 +649,37 @@ interface FillWorkingTable {
   isNew: boolean
 }
 
-// ניקוד "צד" (חתן/כלה): מנחה את המילוי לשמור אנשים מאותו צד יחד, ולהימנע
-// מלערבב צד חתן עם צד כלה באותו שולחן — בלי לחסום. מוזמן "משותף" ניטרלי
-// ומשתלב בכל שולחן בלי בונוס או קנס. הקנס רך: הוא רק משנה סדר עדיפויות,
-// לעולם לא מונע הושבה (שולחן עם מקום פנוי תמיד נשאר מועמד חוקי).
-const SAME_SIDE_BONUS = 2
-const OPPOSITE_SIDE_PENALTY = 3
+// ניקוד "צד" (חתן/כלה, או צד א׳/ב׳ בסוגי אירוע אחרים): מנחה את המילוי לשמור
+// אנשים מאותו צד יחד, ולהימנע מלערבב צד עם הצד הנגדי באותו שולחן — בלי
+// לחסום. מוזמן "משותף" ניטרלי ומשתלב בכל שולחן בלי בונוס או קנס. הקנס רך:
+// הוא רק משנה סדר עדיפויות, לעולם לא מונע הושבה (שולחן עם מקום פנוי תמיד
+// נשאר מועמד חוקי).
+//
+// משקלי "אותו צד"/"אותה קבוצה" לפי event_type — תואם לעיקרון של
+// SEATING_WEIGHTS_BY_EVENT_TYPE בבקאנד (backend/app/seating.py): ברירת
+// המחדל (לכל סוג שלא הוגדר לו כאן) זהה לחתונה, כדי לא לפגוע בחוויה
+// הקיימת. רק business סוטה — "צד" (מארח א/ב) כמעט לא רלוונטי לאירוע עסקי,
+// ואילו "קבוצה" (מחלקה/לקוחות/ספקים) היא הציר המשמעותי לישיבה יחד, בדיוק
+// כמו שהוגדר בבקאנד.
+const DEFAULT_SAME_SIDE_BONUS = 2
+const DEFAULT_OPPOSITE_SIDE_PENALTY = 3
+const DEFAULT_GROUP_MULTIPLIER = 3
+
+const SEATING_WEIGHTS_BY_EVENT_TYPE: Record<
+  string,
+  { sameSide: number; oppositeSide: number; group: number }
+> = {
+  business: { sameSide: 1, oppositeSide: 1, group: 6 },
+}
+
+function seatingWeights(): { sameSide: number; oppositeSide: number; group: number } {
+  const defaults = {
+    sameSide: DEFAULT_SAME_SIDE_BONUS,
+    oppositeSide: DEFAULT_OPPOSITE_SIDE_PENALTY,
+    group: DEFAULT_GROUP_MULTIPLIER,
+  }
+  return SEATING_WEIGHTS_BY_EVENT_TYPE[getActiveEventType() || 'wedding'] ?? defaults
+}
 
 /** ניקוד התאמת הצד של מוזמן לתמהיל הצדדים שכבר יושב בשולחן. */
 function sideScore(guestSide: Side, tableSides: Map<Side, number>): number {
@@ -661,7 +687,8 @@ function sideScore(guestSide: Side, tableSides: Map<Side, number>): number {
   const oppositeSide: Side = guestSide === 'groom' ? 'bride' : 'groom'
   const same = tableSides.get(guestSide) ?? 0
   const opposite = tableSides.get(oppositeSide) ?? 0
-  return same * SAME_SIDE_BONUS - opposite * OPPOSITE_SIDE_PENALTY
+  const w = seatingWeights()
+  return same * w.sameSide - opposite * w.oppositeSide
 }
 
 export function computeSmartFill(
@@ -723,7 +750,7 @@ export function computeSmartFill(
         if (togetherSet.has(pairKey(g.id, otherId))) score += 10
       }
       if (g.group_type && g.group_type !== 'other') {
-        score += (t.groups.get(g.group_type) ?? 0) * 3
+        score += (t.groups.get(g.group_type) ?? 0) * seatingWeights().group
       }
       // צד חתן/כלה: בונוס לאותו צד, קנס רך לערבוב עם הצד הנגדי.
       score += sideScore(g.side, t.sides)

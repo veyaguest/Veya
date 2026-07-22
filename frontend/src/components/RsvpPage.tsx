@@ -32,7 +32,7 @@ import type {
   TemplatePlaceholder,
 } from '../types'
 import { RSVP_LABELS } from '../types'
-import { getEventTerms, hostNames } from '../strings/eventTypes'
+import { activeEventTerms, getEventTerms, hostNames } from '../strings/eventTypes'
 import { AddGuestForm } from './AddGuestForm'
 import { AutomationRulesTab } from './AutomationRulesTab'
 import { AutomationTemplatesTab } from './AutomationTemplatesTab'
@@ -683,11 +683,14 @@ function SendConfirmStep({
 }
 
 // שלבי האשף לשליחה הראשונית — מוצגים כפס התקדמות בראש המסך.
-const WIZARD_STEPS = [
-  { n: 1, label: 'עיצוב ההזמנה' },
-  { n: 2, label: 'מוזמנים' },
-  { n: 3, label: 'תצוגה ושליחה' },
-]
+// פונקציה (לא קבוע) כי guestsLabel תלוי בסוג האירוע הפעיל.
+function wizardSteps(guestsLabel: string) {
+  return [
+    { n: 1, label: 'עיצוב ההזמנה' },
+    { n: 2, label: guestsLabel },
+    { n: 3, label: 'תצוגה ושליחה' },
+  ]
+}
 
 /**
  * אשף שליחת ההזמנה הראשונה — מוביל את הזוג שלב אחר שלב עם פס התקדמות:
@@ -729,14 +732,15 @@ function FirstInviteWizard({
   const missing = preview?.missing_phone ?? 0
   const invalid = preview?.invalid_phone ?? 0
   const badPhone = missing + invalid
-  const pct = ((step - 1) / (WIZARD_STEPS.length - 1)) * 100
+  const steps = wizardSteps(activeEventTerms().guestsLabel)
+  const pct = ((step - 1) / (steps.length - 1)) * 100
 
   return (
     <div className="invite-wizard">
       {/* פס התקדמות */}
       <div className="wiz-header">
         <ol className="wiz-steps">
-          {WIZARD_STEPS.map((s) => (
+          {steps.map((s) => (
             <li
               key={s.n}
               className={`wiz-step ${step === s.n ? 'active' : ''} ${
@@ -1141,7 +1145,7 @@ function DashboardTab({
       {/* רשימת מוזמנים עם גישה לציר זמן */}
       <div className="rsvp-guests">
         <div className="rsvp-guests-head">
-          <h3 className="clar-title">מוזמנים</h3>
+          <h3 className="clar-title">{activeEventTerms().guestsLabel}</h3>
           <span className="clar-sub">לחצו "ציר זמן" כדי לראות את היסטוריית ההודעות של מוזמן.</span>
         </div>
         <ul className="rsvp-list">
