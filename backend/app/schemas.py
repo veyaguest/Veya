@@ -515,6 +515,13 @@ class UserCreate(BaseModel):
     password: str
     display_name: str = ""
     phone: str = ""
+    # חובה: תיבת "אני מאשר/ת את תנאי השימוש ואת מדיניות הפרטיות" בהרשמה —
+    # לא מסומנת מראש בפרונט, ונאכפת גם כאן (422 אם false), לא רק ב-UI
+    # (ראו legal/11-dev-compliance-tasklist.md, Frontend #2 / Backend #1).
+    accepted_terms: bool = False
+    # אופציונלי: תיבה נפרדת ("אני מעוניין/ת לקבל עדכונים מ-VEYA") — לא חובה
+    # ליצירת חשבון, נשמרת כהסכמת שיווק נפרדת אם סומנה.
+    accepted_marketing: bool = False
 
     @field_validator("email")
     @classmethod
@@ -533,6 +540,13 @@ class UserCreate(BaseModel):
     @classmethod
     def _phone_valid(cls, v: str) -> str:
         return normalize_israeli_phone(v)
+
+    @field_validator("accepted_terms")
+    @classmethod
+    def _terms_required(cls, v: bool) -> bool:
+        if not v:
+            raise ValueError("יש לאשר את תנאי השימוש ואת מדיניות הפרטיות כדי ליצור חשבון")
+        return v
 
 
 class LoginRequest(BaseModel):
@@ -589,6 +603,16 @@ class UserRead(BaseModel):
     is_admin: bool = False
     # couple (זוג) / planner (מפיק) / venue (אולם) — ציר נפרד מ-is_admin.
     account_type: str = "couple"
+    # True אם המשתמש אישר גרסה ישנה של תנאי השימוש/מדיניות הפרטיות מהעדכנית
+    # (app/legal.py::needs_reconsent) — לא שדה על ה-ORM, מחושב בזמן קריאה
+    # ב-routers/auth.py::me, לכן ברירת המחדל כאן היא False בלבד.
+    needs_reconsent: bool = False
+
+
+class ConsentAccept(BaseModel):
+    """אישור/אישור-מחדש מפורש למסמך אחד או יותר (למשל אחרי עדכון תנאים)."""
+
+    types: list[Literal["terms", "privacy", "marketing"]] = ["terms", "privacy"]
 
 
 class TokenResponse(BaseModel):

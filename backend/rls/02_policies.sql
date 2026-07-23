@@ -228,6 +228,32 @@ DROP POLICY IF EXISTS login_events_insert ON login_events;
 CREATE POLICY login_events_insert ON login_events FOR INSERT
   WITH CHECK (true);
 
+-- ── consent_records ────────────────────────────────────────────────────────
+-- קריאה/עדכון: המשתמש עצמו (עדכון = ניתוק user_id בעת מחיקת חשבון עצמית,
+-- ראו auth.py::delete_my_account), או אדמין. הוספה: מותרת רק בשם עצמו —
+-- בניגוד ל-users_insert, כאן תמיד יש כבר זהות מחוברת (ההסכמה נרשמת אחרי
+-- שהמשתמש כבר נוצר/מחובר, לא לפני), אז אין צורך בפונקציית SECURITY DEFINER.
+-- מחיקה: אדמין בלבד (יומן הסכמות הוא append-only, לא נמחק ע"י המשתמש עצמו).
+ALTER TABLE consent_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE consent_records FORCE  ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS consent_records_select ON consent_records;
+CREATE POLICY consent_records_select ON consent_records FOR SELECT
+  USING (user_id = app_current_user_id() OR app_is_admin());
+
+DROP POLICY IF EXISTS consent_records_insert ON consent_records;
+CREATE POLICY consent_records_insert ON consent_records FOR INSERT
+  WITH CHECK (user_id = app_current_user_id());
+
+DROP POLICY IF EXISTS consent_records_update ON consent_records;
+CREATE POLICY consent_records_update ON consent_records FOR UPDATE
+  USING (user_id = app_current_user_id() OR app_is_admin())
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS consent_records_delete ON consent_records;
+CREATE POLICY consent_records_delete ON consent_records FOR DELETE
+  USING (app_is_admin());
+
 -- ── טבלאות משותפות/ציבוריות: venues, veya_templates, veya_workflow_steps,
 --    media_blobs ───────────────────────────────────────────────────────────
 -- אלה תוכן מערכת/קטלוג ותמונות — לא נתונים פרטיים פר-משתמש. לא מפעילים עליהן

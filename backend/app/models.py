@@ -236,6 +236,33 @@ class Clarification(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class ConsentRecord(Base):
+    """אישור מפורש של משתמש למסמך משפטי (תנאי שימוש/מדיניות פרטיות/שיווק).
+
+    שורה חדשה נוספת בכל אישור — לא עדכון-במקום — כך שמשתמש שאישר כמה
+    גרסאות לאורך זמן שומר היסטוריה מלאה (ראו legal/11-dev-compliance-tasklist.md).
+    ההשוואה ל"האם המשתמש עדכני" (``needs_reconsent``) נעשית ב-app/legal.py
+    מול ``LEGAL_DOCS_VERSION``, לא כאן.
+    """
+
+    __tablename__ = "consent_records"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # Optional (לא FK-required בפועל, בדומה ל-AuditLog.user_id): במחיקת חשבון
+    # עצמית (auth.py::delete_my_account) השורה נשארת לצורך רישום/שקיפות, אבל
+    # מנותקת מהמשתמש (user_id=None) — כדי לא לשמור מזהה של חשבון שנמחק.
+    user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
+    # terms / privacy / marketing — ראו app/legal.py::ConsentType.
+    consent_type: Mapped[str] = mapped_column(String, index=True)
+    document_version: Mapped[str] = mapped_column(String)
+    # מאיפה ניתנה ההסכמה, למשל "signup_form" / "reconsent_modal".
+    source: Mapped[str] = mapped_column(String, default="signup_form")
+    ip: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    accepted_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class AuditLog(Base):
     """יומן אבטחה — מתעד פעולות רגישות (שליחת הודעות, עדכון אירוע, גישה לקישור).
 
