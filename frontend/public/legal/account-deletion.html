@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>מדיניות מחיקת חשבון · VEYA</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0; padding: 0 20px 64px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Heebo, Arial, sans-serif;
+    background: #fbf9f5; color: #2a2420; line-height: 1.75; font-size: 16.5px;
+  }
+  .legal-topbar {
+    max-width: 780px; margin: 0 auto; padding: 22px 0 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .legal-topbar a { color: #9a7b1f; text-decoration: none; font-weight: 600; font-size: 14.5px; }
+  .legal-doc { max-width: 780px; margin: 0 auto; background: #fff; border: 1px solid #ece4d3;
+    border-radius: 14px; padding: 40px clamp(20px, 5vw, 56px); }
+  .legal-doc h1 { font-size: 1.7rem; margin-top: 0; }
+  .legal-doc h2 { font-size: 1.28rem; margin-top: 2.1em; border-top: 1px solid #f0e9da; padding-top: 1em; }
+  .legal-doc h3 { font-size: 1.08rem; margin-top: 1.6em; }
+  .legal-doc a { color: #9a7b1f; }
+  .legal-doc table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: 0.95em; }
+  .legal-doc th, .legal-doc td { border: 1px solid #ece4d3; padding: 8px 10px; text-align: right; vertical-align: top; }
+  .legal-doc th { background: #f7f2e8; }
+  .legal-doc code { background: #f3ede0; padding: 1px 6px; border-radius: 5px; font-size: 0.92em; }
+  .legal-doc hr { border: none; border-top: 1px solid #ece4d3; margin: 2em 0; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #16130f; color: #e9e1d2; }
+    .legal-doc { background: #1e1a14; border-color: #322c22; }
+    .legal-doc h2 { border-top-color: #322c22; }
+    .legal-doc th, .legal-doc td { border-color: #322c22; }
+    .legal-doc th { background: #241f18; }
+    .legal-doc code { background: #241f18; }
+    .legal-doc hr { border-top-color: #322c22; }
+  }
+</style>
+</head>
+<body>
+  <div class="legal-topbar">
+    <a href="/">← חזרה ל-VEYA</a>
+    <a href="/app">כניסה למערכת</a>
+  </div>
+  <article class="legal-doc">
+    <h1>מדיניות מחיקת חשבון</h1>
+<p><strong>עדכון אחרון: [להשלמה: תאריך כניסה לתוקף]</strong></p>
+<p>מסמך זה מפרט כיצד לבקש מחיקת חשבון VEYA, אילו נתונים נמחקים, אילו
+נתונים נשמרים (ולמה), ותוך כמה זמן המחיקה מתבצעת בפועל. מסמך זה משלים
+את <a href="/legal/privacy.html">מדיניות הפרטיות</a> שלנו.</p>
+<h2>1. איך מבקשים מחיקה</h2>
+<p>ניתן לבקש מחיקת חשבון בשתי דרכים:</p>
+<ol>
+<li><strong>דרך הגדרות החשבון בשירות</strong> — [להשלמה: לתאר את הנתיב המדויק בממשק
+ברגע שתיבנה אפשרות מחיקה עצמאית, למשל &quot;פרופיל ← הגדרות חשבון ←
+מחיקת חשבון&quot;. נכון להיום אפשרות זו טרם קיימת בממשק כפעולה עצמאית.]</li>
+<li><strong>פנייה ישירה בדוא&quot;ל</strong> — שליחת בקשה מפורשת לכתובת
+[להשלמה: אימייל לפניות פרטיות/הגנת מידע], מהכתובת הרשומה בחשבון,
+לצורך אימות זהות המבקש/ת.</li>
+</ol>
+<p>בקשה למחיקה יכולה להיות ברמות שונות:</p>
+<ul>
+<li><strong>מחיקת אירוע בודד</strong> — מוחקת את כל הנתונים המשויכים לאותו אירוע
+(לרבות רשימת המוזמנים שלו), אך משאירה את החשבון ואירועים אחרים
+פעילים.</li>
+<li><strong>מחיקת חשבון מלאה</strong> — מוחקת את החשבון וכל האירועים המשויכים אליו.</li>
+</ul>
+<h2>2. אילו נתונים נמחקים</h2>
+<p>עם אישור בקשת המחיקה, נמחקים:</p>
+<ul>
+<li>פרטי החשבון (שם, דוא&quot;ל, טלפון, סיסמה מוצפנת).</li>
+<li>כל האירועים המשויכים לחשבון (או האירוע הספציפי שנבחר למחיקה).</li>
+<li><strong>כל פרטי המוזמנים המשויכים</strong> (שמות, טלפונים, הערות, סטטוס RSVP) —
+המערכת מבצעת מחיקה מדורגת (cascade delete) של נתוני המוזמנים יחד עם
+מחיקת האירוע/החשבון.</li>
+<li>מפת האולם, תבניות הודעה, היסטוריית תקשורת, ותוכן משתמשים אחר
+שהמשתמש הזין.</li>
+<li>הרשאות גישה שהוענקו לצדדים נוספים (מפיק/אולם) על אותו אירוע/חשבון.</li>
+</ul>
+<h2>3. אילו נתונים נשמרים, ולמה</h2>
+<p>חלק מהמידע עשוי להישמר גם לאחר אישור בקשת המחיקה, למשך זמן מוגבל
+בלבד, מהסיבות הבאות:</p>
+<ul>
+<li><strong>גיבויים טכניים (Backups):</strong> לצורך שחזור אסון (Disaster Recovery),
+המערכת מבצעת גיבוי תקופתי של בסיס הנתונים. מידע שנמחק ממערכת
+הייצור עשוי להישאר בעותקי גיבוי היסטוריים עד למחיקתם/דריסתם השגרתית,
+למשך <strong>[להשלמה: מספר ימי שמירת גיבויים — הצעה לדיון: 30 יום, בכפוף
+לאישור טכני]</strong>. גיבויים אלה אינם נגישים לשימוש שוטף ומיועדים אך ורק
+לשחזור חירום.</li>
+<li><strong>חובות שמירה על פי דין:</strong> ככל שקיימת חובה חוקית לשמור מידע מסוים
+(למשל רישומי חיוב/חשבוניות/קבלות לצורכי מס, ככל שיחולו לאחר הפעלת
+שירותי תשלום), מידע זה יישמר בנפרד מהמידע האישי הכללי, בהתאם לתקופת
+השמירה הנדרשת בדין הישראלי בלבד (ככלל, מספר שנים לפי דיני המס), ולא
+לכל מטרה אחרת.</li>
+<li><strong>יומני ביקורת אבטחה (Audit Log) מזוהים במינימום הנדרש:</strong> רישומים
+טכניים הנחוצים לחקירת אירועי אבטחה (למשל ניסיון פריצה) עשויים להישמר
+לתקופה מוגבלת נוספת, במידע מצומצם ככל האפשר.</li>
+</ul>
+<p><strong>לא נשמר</strong> תוכן פעיל, נגיש או ניתן לשימוש שוטף מעבר לתקופות אלה.</p>
+<h2>4. תוך כמה זמן המחיקה מתבצעת</h2>
+<ul>
+<li>מחיקת הנתונים ממערכות הייצור הפעילות (הנגישות דרך השירות עצמו) —
+<strong>תוך [להשלמה: מספר ימי עסקים, הצעה לדיון: 7 ימי עסקים]</strong> ממועד אישור
+הבקשה ואימות זהות המבקש/ת.</li>
+<li>מחיקה מלאה מעותקי הגיבוי — עד תום תקופת שמירת הגיבויים שצוינה בסעיף 3.</li>
+</ul>
+<h2>5. השפעת מחיקה על צדדים נוספים</h2>
+<p>אם לאירוע יש משתמשים נוספים עם הרשאת גישה (למשל מפיק אירוע או נציג
+אולם — &quot;משתמשים עסקיים&quot;), מחיקת החשבון הראשי תסיר גם את גישתם לאותו
+אירוע. מומלץ לוודא מראש עם שאר בעלי הגישה שאין צורך בנתונים לפני ביצוע
+המחיקה. לקוחות עסקיים הפועלים תחת <a href="10-data-processing-addendum.md">נספח עיבוד הנתונים</a>
+כפופים גם לתנאי המחיקה/החזרת המידע המפורטים באותו נספח.</p>
+<h2>6. ביטול בקשת מחיקה</h2>
+<p>ניתן לבטל בקשת מחיקה <strong>בטרם הושלם ביצועה בפועל</strong>, על ידי פנייה מיידית
+לכתובת המצוינת בסעיף 1. לאחר השלמת המחיקה בפועל — לא ניתן לשחזר את
+המידע.</p>
+<h2>7. יצירת קשר</h2>
+<p>לשאלות או בקשות בנוגע למחיקת חשבון:</p>
+<ul>
+<li>דוא&quot;ל: [להשלמה: אימייל לפניות פרטיות/הגנת מידע]</li>
+</ul>
+<hr>
+<p>מסמכים קשורים: <a href="/legal/privacy.html">מדיניות פרטיות</a> ·
+<a href="/legal/terms.html">תנאי שימוש</a> ·
+<a href="/legal/security.html">מדיניות אבטחת מידע</a> ·
+<a href="10-data-processing-addendum.md">נספח עיבוד נתונים</a></p>
+
+  </article>
+</body>
+</html>

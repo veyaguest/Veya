@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>מדיניות אבטחת מידע · VEYA</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0; padding: 0 20px 64px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Heebo, Arial, sans-serif;
+    background: #fbf9f5; color: #2a2420; line-height: 1.75; font-size: 16.5px;
+  }
+  .legal-topbar {
+    max-width: 780px; margin: 0 auto; padding: 22px 0 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .legal-topbar a { color: #9a7b1f; text-decoration: none; font-weight: 600; font-size: 14.5px; }
+  .legal-doc { max-width: 780px; margin: 0 auto; background: #fff; border: 1px solid #ece4d3;
+    border-radius: 14px; padding: 40px clamp(20px, 5vw, 56px); }
+  .legal-doc h1 { font-size: 1.7rem; margin-top: 0; }
+  .legal-doc h2 { font-size: 1.28rem; margin-top: 2.1em; border-top: 1px solid #f0e9da; padding-top: 1em; }
+  .legal-doc h3 { font-size: 1.08rem; margin-top: 1.6em; }
+  .legal-doc a { color: #9a7b1f; }
+  .legal-doc table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: 0.95em; }
+  .legal-doc th, .legal-doc td { border: 1px solid #ece4d3; padding: 8px 10px; text-align: right; vertical-align: top; }
+  .legal-doc th { background: #f7f2e8; }
+  .legal-doc code { background: #f3ede0; padding: 1px 6px; border-radius: 5px; font-size: 0.92em; }
+  .legal-doc hr { border: none; border-top: 1px solid #ece4d3; margin: 2em 0; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #16130f; color: #e9e1d2; }
+    .legal-doc { background: #1e1a14; border-color: #322c22; }
+    .legal-doc h2 { border-top-color: #322c22; }
+    .legal-doc th, .legal-doc td { border-color: #322c22; }
+    .legal-doc th { background: #241f18; }
+    .legal-doc code { background: #241f18; }
+    .legal-doc hr { border-top-color: #322c22; }
+  }
+</style>
+</head>
+<body>
+  <div class="legal-topbar">
+    <a href="/">← חזרה ל-VEYA</a>
+    <a href="/app">כניסה למערכת</a>
+  </div>
+  <article class="legal-doc">
+    <h1>מדיניות אבטחת מידע</h1>
+<p><strong>עדכון אחרון: [להשלמה: תאריך כניסה לתוקף]</strong></p>
+<p>מסמך זה מסביר כיצד VEYA מגנה על המידע המוחזק במערכת. הוא נכתב בשפה
+ברורה עבור משתמשים שאינם אנשי טכנולוגיה, לצד פרטים טכניים לגורמים
+מקצועיים (למשל אנשי אבטחת מידע באולמות/מפיקים המשתפים פעולה עם VEYA).</p>
+<h2>1. עקרון-העל</h2>
+<p>VEYA מחזיקה מידע אישי רגיש — פרטי מוזמנים למאות אנשים בכל אירוע —
+ומתייחסת לאבטחת מידע כתנאי סף לאמון, לא כדרישה פורמלית בלבד. אנו נוקטים
+גישת <strong>&quot;אבטחה מעוצבת מראש&quot; (Security by Design)</strong>: כל תכונה חדשה
+נבחנת גם מהיבט אבטחתי לפני שהיא יוצאת לדרך.</p>
+<h2>2. הצפנה</h2>
+<ul>
+<li><strong>הצפנה במעבר (In Transit):</strong> כל התקשורת בין הדפדפן/האפליקציה לבין
+שרתי VEYA מוצפנת באמצעות HTTPS/TLS.</li>
+<li><strong>הצפנת סיסמאות:</strong> סיסמאות משתמשים אינן נשמרות כטקסט גלוי — הן
+עוברות גיבוב (hashing) באמצעות אלגוריתם bcrypt לפני אחסון.</li>
+<li><strong>הצפנה במנוחה (At Rest):</strong> בסיס הנתונים של השירות מתארח אצל ספק
+התשתית Supabase, המיישם הצפנה במנוחה כחלק משירותיו הסטנדרטיים.</li>
+<li><strong>תשלומים (עתידי):</strong> כאשר יופעל שירות תשלומים, VEYA לא תאחסן פרטי
+כרטיס אשראי גולמיים — אלה יעברו ישירות לספק סליקה מוסמך באמצעות
+Tokenization/Hosted Fields, כך שהיקף החשיפה לדרישות PCI-DSS יצטמצם
+למינימום הנדרש (SAQ-A או שווה ערך). ראו גם <a href="/legal/ai-policy.html">מדיניות ה-AI</a>
+ו<a href="09-subprocessors.md">רשימת ספקי המשנה</a> לעניין אבטחת מידע המועבר
+לספקים חיצוניים נוספים (AI, תקשורת, סליקה).</li>
+</ul>
+<h2>3. ניהול הרשאות ואימות</h2>
+<ul>
+<li><strong>אימות מבוסס-טוקן (JWT):</strong> כניסה למערכת מבוססת על טוקני JWT הכוללים
+מזהה גרסה (<code>token_version</code>) המאפשר <strong>ביטול מיידי</strong> של טוקנים קיימים
+(למשל בעת שינוי סיסמה או חשד לחשבון פרוץ).</li>
+<li><strong>הגבלת קצב בקשות (Rate Limiting):</strong> המערכת מגבילה את קצב הבקשות
+לנקודות קצה רגישות (כגון כניסה למערכת), כדי לצמצם ניסיונות פריצה
+אוטומטיים (brute-force).</li>
+<li><strong>הרשאות מדורגות:</strong> בעת שיתוף גישה לאירוע עם משתמש נוסף (מפיק/אולם),
+ההרשאות מוגבלות לתפקידו — כך שגורם חיצוני לא נחשף אוטומטית לכלל
+המידע האישי של מוזמנים.</li>
+<li><strong>טוקן אישי למוזמן:</strong> קישור אישור ההגעה של כל מוזמן מבוסס על טוקן
+אקראי ובלתי-ניחוש (נוצר באמצעות מנגנון קריפטוגרפי מאובטח), כך
+שלא ניתן לנחש או לגשת לקישור של מוזמן אחר.</li>
+</ul>
+<h2>4. ניטור ותיעוד</h2>
+<ul>
+<li><strong>יומן ביקורת (Audit Log):</strong> פעולות רגישות במערכת — לרבות שינויי
+הרשאה, פעולות אדמין, <strong>אישור תנאי שימוש/מדיניות פרטיות (הסכמות)</strong>,
+ופעולות הקשורות למידע אישי (למשל מחיקת אירוע/מוזמן) — מתועדות ביומן
+ביקורת ייעודי, לצורך שקיפות ויכולת חקירה במקרה הצורך.</li>
+<li><strong>רישום כניסות (Login Events):</strong> אירועי כניסה למערכת נרשמים לצורך
+זיהוי פעילות חריגה.</li>
+</ul>
+<h2>4.1. טיפול באירועי אבטחה (Incident Response)</h2>
+<p>VEYA שומרת נוהל פנימי לזיהוי, בלימה וטיפול באירועי אבטחה (למשל גישה
+בלתי מורשית לנתונים). במקרה של אירוע אבטחה חמור המשפיע על מידע אישי:</p>
+<ul>
+<li>ננקוט צעדים מיידיים לבלימת האירוע ולמזעור הנזק.</li>
+<li>נבחן את החובה לדווח לרשות להגנת הפרטיות בהתאם לתקנות אבטחת מידע
+(אבטחת מידע), התשע&quot;ז-2017, ולכל דין רלוונטי נוסף (לרבות תיקון 13).</li>
+<li>נודיע למשתמשים הרלוונטיים (בעלי אירועים/משתמשים עסקיים שנפגעו) ללא
+דיחוי בלתי סביר, ככל שהדבר נדרש בדין או עשוי לסייע להם לצמצם נזק.</li>
+<li>לקוחות עסקיים הפועלים תחת <a href="10-data-processing-addendum.md">נספח עיבוד הנתונים</a>
+זכאים ללוחות זמני דיווח כמפורט שם.</li>
+</ul>
+<h2>5. גיבויים</h2>
+<p>המערכת מבצעת <strong>גיבוי מתוזמן של בסיס הנתונים</strong> בכל הפעלה מחדש של השרת
+(startup), לצורך שחזור מהיר במקרה של כשל טכני. גיבויים נשמרים בנפרד
+ממערכת הייצור החיה.</p>
+<h2>6. שרתים ותשתית</h2>
+<p>השירות מופעל על תשתית ענן של ספקים מוכרים ומאובטחים:</p>
+<ul>
+<li><strong>Vercel</strong> — אירוח האתר (Frontend).</li>
+<li><strong>Render</strong> — אירוח שרת ה-Backend.</li>
+<li><strong>Supabase (PostgreSQL)</strong> — אחסון בסיס הנתונים בסביבת הייצור.</li>
+</ul>
+<p>VEYA אינה מפעילה שרתים פיזיים משלה — כל התשתית מבוססת ספקי ענן מוכרים
+העומדים בסטנדרטים מקובלים בתעשייה. הרשימה המלאה והמעודכנת של כל ספקי
+המשנה הטכניים (כולל תשתית, AI, תקשורת וסליקה עתידית) מפורטת ב<a href="09-subprocessors.md">רשימת
+ספקי המשנה</a>.</p>
+<h2>7. גישה למידע (עקרון המינימום הנדרש)</h2>
+<p>הגישה למידע במערכת, לרבות בצוות VEYA עצמו, מוגבלת לפי <strong>עקרון המינימום
+הנדרש (Least Privilege)</strong> — כלומר, גישה למידע רגיש ניתנת רק למי שצריך
+אותה לצורך ביצוע תפקידו, ולא באופן גורף.</p>
+<h2>8. עדכוני אבטחה</h2>
+<p>VEYA עוקבת אחר עדכוני אבטחה בתלויות התוכנה (ספריות, מסגרות עבודה)
+בהן היא משתמשת, ומיישמת עדכונים ותיקוני אבטחה על בסיס שוטף ובהתאם
+לחומרת הממצא.</p>
+<h2>9. מגבלות ידועות ותהליכי שיפור מתמשכים</h2>
+<p>לשקיפות מלאה: VEYA היא מוצר בשלב צמיחה פעיל, ואנו ממשיכים לחזק את
+שכבת האבטחה שלו על בסיס שוטף — לרבות חיזוק מנגנוני הרשאות ברמת שורה
+במסד הנתונים (Row-Level Security) והרחבת כיסוי הבדיקות האוטומטיות.
+אנו רואים באבטחה תהליך מתמשך, לא יעד חד-פעמי.</p>
+<h2>10. דיווח על חולשת אבטחה (Responsible Disclosure)</h2>
+<p>אם גילית חולשת אבטחה בשירות — נשמח שתדווח/י לנו באחריות ולפני חשיפה
+פומבית, כדי שנוכל לטפל בה במהירות:</p>
+<ul>
+<li>דוא&quot;ל: [להשלמה: אימייל לדיווח על חולשות/פרצות אבטחה]</li>
+</ul>
+<p>אנו מתחייבים לא לנקוט הליכים משפטיים כנגד חוקרי אבטחה הפועלים בתום לב
+ובאחריות, בהתאם לעקרונות &quot;Responsible Disclosure&quot; מקובלים, ולחקור כל
+דיווח סביר בהקדם האפשרי.</p>
+<h2>11. יצירת קשר</h2>
+<p>לשאלות נוספות בנוגע לאבטחת המידע:</p>
+<ul>
+<li>דוא&quot;ל: [להשלמה: אימייל כללי ליצירת קשר]</li>
+</ul>
+<hr>
+<p>מסמכים קשורים: <a href="/legal/privacy.html">מדיניות פרטיות</a> ·
+<a href="/legal/account-deletion.html">מדיניות מחיקת חשבון</a> ·
+<a href="/legal/terms.html">תנאי שימוש</a> ·
+<a href="09-subprocessors.md">רשימת ספקי משנה</a> ·
+<a href="10-data-processing-addendum.md">נספח עיבוד נתונים</a></p>
+
+  </article>
+</body>
+</html>

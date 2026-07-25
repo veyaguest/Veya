@@ -316,9 +316,18 @@
       .footer-brand { display: flex; align-items: center; gap: 14px; }
       .footer-logo { height: 40px; width: auto; }
       .footer-tag { font-size: 13.5px; color: #9b907c; max-width: 280px; }
-      .site-footer nav { display: flex; gap: 22px; }
+      .site-footer nav { display: flex; flex-wrap: wrap; gap: 22px; }
       .site-footer nav a { text-decoration: none; color: #cabfa9; font-size: 14.5px; transition: color 0.18s ease; }
       .site-footer nav a:hover { color: var(--gold-light); }
+      .site-footer nav[aria-label="קישורים משפטיים"] { flex-basis: 100%; gap: 8px 18px; }
+      .site-footer nav[aria-label="קישורים משפטיים"] a { font-size: 13px; color: #9b907c; }
+
+      /* Cookie Banner (דף נחיתה סטטי — ראו CookieBanner.tsx לגרסת ה-SPA) */
+      .cookie-banner-static { position: fixed; inset-inline: 0; bottom: 0; z-index: 100; background: var(--ink); border-top: 1px solid rgba(201,162,39,0.35); padding: env(safe-area-inset-bottom, 0px) 0 0; }
+      .cookie-banner-static-inner { max-width: 1100px; margin: 0 auto; padding: 16px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; justify-content: space-between; }
+      .cookie-banner-static-inner p { margin: 0; font-size: 13px; line-height: 1.6; color: #cabfa9; flex: 1 1 320px; }
+      .cookie-banner-static-inner a { color: var(--gold-light); margin: 0 4px; }
+      .cookie-banner-static-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
       /* ===== Scroll reveal ===== */
       .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
@@ -622,11 +631,31 @@
           <a href="#how">איך זה עובד</a>
           <a href="/app">כניסה למערכת</a>
         </nav>
+        <nav aria-label="קישורים משפטיים">
+          <a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">תנאי שימוש</a>
+          <a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">מדיניות פרטיות</a>
+          <a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">מדיניות Cookies</a>
+          <a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">הצהרת נגישות</a>
+          <a href="/legal/about.html#contact" target="_blank" rel="noopener noreferrer">יצירת קשר</a>
+        </nav>
       </div>
       <div class="wrap" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(201,162,39,0.14); font-size: 13px; color: #9b907c;">
         © VEYA — מערכת לניהול אירועים
       </div>
     </footer>
+
+    <div id="cookie-banner" class="cookie-banner-static" style="display:none" role="region" aria-label="הסכמת Cookies">
+      <div class="cookie-banner-static-inner">
+        <p>
+          אנחנו משתמשים בעוגיות הכרחיות לתפעול האתר. עוגיות נוספות (סטטיסטיקה/שיפור)
+          יופעלו רק באישורך המפורש. פרטים ב<a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">מדיניות ה-Cookies</a>.
+        </p>
+        <div class="cookie-banner-static-actions">
+          <button type="button" class="btn btn-primary" onclick="veyaCookieDecide(true)">קבל הכל</button>
+          <button type="button" class="btn btn-ghost" onclick="veyaCookieDecide(false)">דחה לא-הכרחיים</button>
+        </div>
+      </div>
+    </div>
 
     <script>
       (function () {
@@ -641,6 +670,23 @@
           });
         }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
         els.forEach(function (el) { io.observe(el); });
+      })();
+
+      // Cookie Banner — אותו מפתח localStorage כמו ה-SPA (src/cookieConsent.ts),
+      // כדי שבחירה בדף הנחיתה לא תבקש שוב אישור אחרי מעבר ל-/app.
+      var VEYA_COOKIE_KEY = 'veya_cookie_consent';
+      function veyaCookieDecide(analytics) {
+        localStorage.setItem(VEYA_COOKIE_KEY, JSON.stringify({ analytics: analytics, decidedAt: new Date().toISOString() }));
+        var el = document.getElementById('cookie-banner');
+        if (el) el.style.display = 'none';
+      }
+      (function () {
+        try {
+          if (!localStorage.getItem(VEYA_COOKIE_KEY)) {
+            var el = document.getElementById('cookie-banner');
+            if (el) el.style.display = '';
+          }
+        } catch (e) { /* localStorage חסום (מצב פרטי קיצוני) — לא מציגים באנר */ }
       })();
     </script>
   </body>

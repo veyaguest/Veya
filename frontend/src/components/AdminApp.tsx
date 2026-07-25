@@ -26,6 +26,7 @@ import type {
 } from '../types'
 import { CreateAccountForm, VeyaDefaultsManager } from './AdminPage'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
+import { Footer } from './Footer'
 
 type AdminPage =
   | 'dashboard'
@@ -1462,6 +1463,7 @@ export function AdminApp({
           {page === 'messages' && <VeyaDefaultsManager />}
           {page === 'audit' && <AdminAuditView />}
         </main>
+        <Footer />
       </div>
     </div>
   )

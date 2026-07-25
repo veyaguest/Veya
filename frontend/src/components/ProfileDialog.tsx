@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { changePassword, logoutAll, updateProfile } from '../api'
+import { changePassword, deleteMyAccount, exportMyData, logoutAll, updateProfile } from '../api'
 import { setToken } from '../authStore'
 import type { User } from '../types'
 
@@ -27,6 +27,10 @@ export function ProfileDialog({
   const [error, setError] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [deleteStage, setDeleteStage] = useState<'idle' | 'confirming'>('idle')
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   async function saveName(e: React.FormEvent) {
     e.preventDefault()
@@ -60,6 +64,39 @@ export function ProfileDialog({
       setError(err instanceof Error ? err.message : 'לא הצלחנו לעדכן את הסיסמה, נסו שוב')
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function doExport() {
+    setError(null)
+    setExporting(true)
+    try {
+      const data = await exportMyData()
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `veya-export-${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'לא הצלחנו לייצא את המידע, נסו שוב')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  async function doDeleteAccount() {
+    setError(null)
+    setDeleting(true)
+    try {
+      await deleteMyAccount()
+      onLogout()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'לא הצלחנו למחוק את החשבון, נסו שוב')
+      setDeleting(false)
     }
   }
 
@@ -200,6 +237,73 @@ export function ProfileDialog({
         >
           יציאה מכל המכשירים
         </button>
+
+        <div className="auth-divider">
+          <span className="auth-divider-line" />
+          <span className="auth-divider-word">המידע שלי</span>
+          <span className="auth-divider-line" />
+        </div>
+
+        <button
+          type="button"
+          className="auth-secondary"
+          onClick={doExport}
+          disabled={exporting}
+        >
+          {exporting ? 'מייצא…' : 'ייצוא המידע שלי (JSON)'}
+        </button>
+
+        <div className="auth-divider">
+          <span className="auth-divider-line" />
+          <span className="auth-divider-word">אזור מסוכן</span>
+          <span className="auth-divider-line" />
+        </div>
+
+        {deleteStage === 'idle' ? (
+          <button
+            type="button"
+            className="auth-danger"
+            onClick={() => setDeleteStage('confirming')}
+          >
+            מחיקת החשבון שלי
+          </button>
+        ) : (
+          <div className="danger-zone-confirm">
+            <p className="danger-zone-warning">
+              פעולה זו בלתי הפיכה: כל האירועים, המוזמנים, ההודעות והקבצים
+              שלך יימחקו לצמיתות. כדי לאשר, הקלידו <strong>מחק</strong> בשדה
+              למטה.
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="הקלידו מחק לאישור"
+              dir="rtl"
+            />
+            <div className="danger-zone-actions">
+              <button
+                type="button"
+                className="auth-danger"
+                onClick={doDeleteAccount}
+                disabled={deleteConfirmText !== 'מחק' || deleting}
+              >
+                {deleting ? 'מוחק…' : 'מחיקה סופית של החשבון'}
+              </button>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => {
+                  setDeleteStage('idle')
+                  setDeleteConfirmText('')
+                }}
+                disabled={deleting}
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

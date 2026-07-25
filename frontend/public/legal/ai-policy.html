@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>מדיניות בינה מלאכותית · VEYA</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0; padding: 0 20px 64px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Heebo, Arial, sans-serif;
+    background: #fbf9f5; color: #2a2420; line-height: 1.75; font-size: 16.5px;
+  }
+  .legal-topbar {
+    max-width: 780px; margin: 0 auto; padding: 22px 0 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .legal-topbar a { color: #9a7b1f; text-decoration: none; font-weight: 600; font-size: 14.5px; }
+  .legal-doc { max-width: 780px; margin: 0 auto; background: #fff; border: 1px solid #ece4d3;
+    border-radius: 14px; padding: 40px clamp(20px, 5vw, 56px); }
+  .legal-doc h1 { font-size: 1.7rem; margin-top: 0; }
+  .legal-doc h2 { font-size: 1.28rem; margin-top: 2.1em; border-top: 1px solid #f0e9da; padding-top: 1em; }
+  .legal-doc h3 { font-size: 1.08rem; margin-top: 1.6em; }
+  .legal-doc a { color: #9a7b1f; }
+  .legal-doc table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: 0.95em; }
+  .legal-doc th, .legal-doc td { border: 1px solid #ece4d3; padding: 8px 10px; text-align: right; vertical-align: top; }
+  .legal-doc th { background: #f7f2e8; }
+  .legal-doc code { background: #f3ede0; padding: 1px 6px; border-radius: 5px; font-size: 0.92em; }
+  .legal-doc hr { border: none; border-top: 1px solid #ece4d3; margin: 2em 0; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #16130f; color: #e9e1d2; }
+    .legal-doc { background: #1e1a14; border-color: #322c22; }
+    .legal-doc h2 { border-top-color: #322c22; }
+    .legal-doc th, .legal-doc td { border-color: #322c22; }
+    .legal-doc th { background: #241f18; }
+    .legal-doc code { background: #241f18; }
+    .legal-doc hr { border-top-color: #322c22; }
+  }
+</style>
+</head>
+<body>
+  <div class="legal-topbar">
+    <a href="/">← חזרה ל-VEYA</a>
+    <a href="/app">כניסה למערכת</a>
+  </div>
+  <article class="legal-doc">
+    <h1>מדיניות בינה מלאכותית (AI Policy)</h1>
+<p><strong>עדכון אחרון: [להשלמה: תאריך כניסה לתוקף]</strong></p>
+<p>מסמך זה משלים את <a href="/legal/terms.html">תנאי השימוש</a> ואת <a href="/legal/privacy.html">מדיניות
+הפרטיות</a>, ומרכז את כל העקרונות החלים על שימוש
+ביכולות בינה מלאכותית (AI) בשירות VEYA — היום ובעתיד. <strong>מסמך זה נכתב
+כך שיכסה גם יכולות AI עתידיות</strong> (למשל הרחבת עוזר ההושבה לכדי &quot;AI
+Wedding Assistant&quot; מלא) <strong>מבלי לדרוש כתיבת מדיניות חדשה לכל תכונת AI
+נוספת</strong> — תכונה חדשה שמשתמשת ב-AI כפופה אוטומטית לעקרונות כאן, אלא אם
+תפורסם הרחבה ייעודית.</p>
+<h2>1. אילו יכולות AI קיימות ומתוכננות</h2>
+<ul>
+<li><strong>עוזר הושבה חכם</strong> — מסייע בפרשנות הערות טקסט חופשי על מוזמנים
+(למשל מגבלות ישיבה) ובהצעת שיבוצים.</li>
+<li><strong>לולאת הבהרות</strong> — כאשר ה-AI אינו בטוח בפרשנות (למשל שם פרטי המשויך
+לכמה מוזמנים), הוא שואל שאלה סגורה בכפתורים, ולא פועל על בסיס ניחוש.</li>
+<li><strong>(עתידי) עוזר שיחה מורחב</strong> — ליווי רחב יותר של בעל/ת האירוע לאורך
+התהליך (מתי לשלוח תזכורת, מה חסר וכו&#39;).</li>
+<li>כל יכולת AI נוספת שתתווסף לשירות בעתיד תיכלל אוטומטית תחת מסמך זה.</li>
+</ul>
+<h2>2. העיקרון המרכזי: AI לפרשנות ושיח, לא לחישוב קשיח</h2>
+<p><strong>חישוב שיבוץ המוזמנים בפועל — לרבות אכיפת חוקים קשיחים כמו קיבולת
+שולחן ו&quot;אסור לשבת יחד&quot; — הוא תמיד דטרמיניסטי, ואינו מבוסס על מודל
+שפה.</strong> ה-AI משמש אך ורק לפרשנות טקסט חופשי, שיח, הסברים והמלצות. עיקרון
+זה הוא החלטה ארכיטקטונית נעולה של VEYA, בדיוק כדי שהחלטות הושבה לעולם
+לא ייכשלו בגלל &quot;הזיה&quot; (Hallucination) של מודל שפה.</p>
+<h2>3. תוצרי AI הם המלצה — לא התחייבות לתוצאה</h2>
+<p>כל תוצר של יכולת AI בשירות (הצעת שיבוץ, פרשנות הערה, הסבר &quot;למה שובץ
+כאן&quot;) הוא <strong>כלי עזר בלבד</strong>. VEYA אינה מתחייבת לדיוק, לשלמות, או להתאמה
+מושלמת של תוצרי AI למציאות. <strong>ההחלטה הסופית, ואישור כל פעולה (שיבוץ,
+שליחת הודעה), נותרים תמיד בידי המשתמש</strong> — בהתאם למודל &quot;תור לאישור&quot;:
+שום פעולה משנה-נתונים או שולחת הודעה אינה מתבצעת אוטומטית בלי אישור
+מפורש.</p>
+<h2>4. מגבלות טכנולוגיה ושינוי לאורך זמן</h2>
+<p>יכולות AI מבוססות על טכנולוגיה שמשתפרת ומשתנה עם הזמן. VEYA רשאית
+לשנות, לשדרג, או להחליף את ספק/י ה-AI ואת המודלים שבשימוש, מעת לעת,
+מבלי שהדבר ייחשב לשינוי מהותי בשירות, ובלבד שהעיקרון בסעיף 2 (AI
+לפרשנות בלבד) לא ייפגע.</p>
+<h2>5. שימוש בספקי AI חיצוניים ועיבוד מידע</h2>
+<p>VEYA משתמשת בספק/י בינה מלאכותית חיצוניים (LLM) לצורך מתן יכולות ה-AI
+בשירות. תוכן שמועבר לספק כאמור מוגבל למינימום הנדרש (למשל תוכן ההערה
+הרלוונטית בלבד, לא כלל מאגר המוזמנים). פרטי הספק/ים בפועל מתפרסמים
+ב<a href="09-subprocessors.md">רשימת ספקי המשנה</a>, ועיבוד המידע כפוף ל<a href="/legal/privacy.html">מדיניות
+הפרטיות</a> המלאה.</p>
+<h2>6. שקיפות ובקרת משתמש</h2>
+<ul>
+<li>כל הצעת AI מוצגת עם הסבר קצר (&quot;למה שובץ כאן&quot;) — לא כ&quot;קופסה שחורה&quot;.</li>
+<li>ניתן תמיד לדחות, לערוך, או להתעלם מהצעת AI.</li>
+<li>כשה-AI אינו בטוח — הוא שואל שאלה סגורה וממתין להבהרה, ולא מנחש
+(&quot;לולאת הבהרות&quot;).</li>
+</ul>
+<h2>7. מגבלת אחריות ייעודית ל-AI</h2>
+<p>מבלי לגרוע מהגבלת האחריות הכללית ב<a href="/legal/terms.html">תנאי השימוש</a>
+(סעיף 15): VEYA אינה אחראית לנזק שנגרם כתוצאה מהסתמכות על תוצר AI
+מבלי לבצע בדיקה סבירה של המשתמש, ואינה מתחייבת שתוצרי AI יהיו נקיים
+מטעויות. יכולות AI בשירות <strong>אינן תחליף לשיקול דעת אנושי</strong>, ובוודאי לא
+לייעוץ מקצועי (משפטי, פיננסי או אחר).</p>
+<h2>8. עדכון מדיניות זו</h2>
+<p>VEYA רשאית לעדכן מדיניות זו מעת לעת, בפרט עם הוספת יכולות AI חדשות
+לשירות. שינוי מהותי בעקרון-העל שבסעיף 2 (הפרדת AI מחישוב דטרמיניסטי)
+יובא לידיעת המשתמשים מראש; הרחבת יכולות AI קיימות (למשל שיפור עוזר
+ההושבה) אינה מחייבת עדכון נפרד של מסמך זה, כל עוד היא פועלת לפי
+העקרונות שכבר מפורטים כאן.</p>
+<h2>9. יצירת קשר</h2>
+<p>לשאלות בנוגע לשימוש ב-AI בשירות:</p>
+<ul>
+<li>דוא&quot;ל: [להשלמה: אימייל כללי ליצירת קשר]</li>
+</ul>
+<hr>
+<p>מסמכים קשורים: <a href="/legal/terms.html">תנאי שימוש</a> ·
+<a href="/legal/privacy.html">מדיניות פרטיות</a> ·
+<a href="09-subprocessors.md">רשימת ספקי משנה</a></p>
+
+  </article>
+</body>
+</html>

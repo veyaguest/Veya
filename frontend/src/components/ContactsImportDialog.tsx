@@ -318,6 +318,11 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
 
             {error && <p className="form-error">{error}</p>}
 
+            <p className="import-consent-disclosure">
+              המשתמש מאשר כי יש לו הרשאה להשתמש בפרטי הקשר שהועלו למערכת
+              ולשלוח אליהם הודעות בהתאם לדין ולמדיניות ספקי התקשורת.
+            </p>
+
             <div className="add-actions">
               <button
                 className="btn-primary"

@@ -228,12 +228,19 @@ def delete_my_account(
     שונה במכוון מ-admin.delete_user (שם מחיקה חסומה אם יש למשתמש אירועים
     בבעלותו, כדי למנוע יתמות בטעות ע"י אדמין): כאן זו בקשת מחיקה עצמית —
     "אני רוצה שהחשבון והנתונים שלי יימחקו" כולל האירועים, לא רק לחסום אותה.
-    מתעד ב-Audit Log *לפני* המחיקה (אחרי המחיקה אין user_id לקשר אליו).
+
+    השורה נרשמת עם ``user_id=None`` מלכתחילה (לא ננסה לנתק אותה בהמשך): מזהה
+    המשתמש נשמר בטקסט ה-``detail`` בלבד. הסיבה: ``SessionLocal`` פועל עם
+    ``autoflush=False`` (ראו database.py), ולכן שורה חדשה שנוספה עם user_id
+    תקין לא הייתה נראית לשאילתת ה-SELECT שמנתקת שורות קיימות בהמשך (היא לא
+    נשלחת ל-DB לפני ה-commit) — והייתה נשארת עם FK חי לרגע לפני המחיקה,
+    וגורמת ל-IntegrityError על ה-DELETE FROM users (נתפס ידנית בבדיקה מקומית
+    מול SQLite, לפני שהגיע לייצור).
     """
     ip = client_ip(request)
     audit.record(
-        db, "account_delete_requested", user_id=user.id,
-        detail=f"מחיקת חשבון עצמית: {user.email}", ip=ip,
+        db, "account_delete_requested",
+        detail=f"מחיקת חשבון עצמית: {user.email} (#{user.id})", ip=ip,
     )
 
     owned_events = db.scalars(

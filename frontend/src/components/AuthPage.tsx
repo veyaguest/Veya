@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { login, register } from '../api'
 import { setToken } from '../authStore'
+import { Footer } from './Footer'
 import type { User } from '../types'
 
 /** מסך התחברות / הרשמה — פריסת split-screen: פאנל שיווקי + טופס כניסה. */
@@ -10,6 +11,10 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [phone, setPhone] = useState('')
+  // חובה: תיבת אישור תנאי שימוש+פרטיות בהרשמה. לא מסומנת מראש (בניגוד ל"זכור
+  // אותי" של ההתחברות) — ראו legal/11-dev-compliance-tasklist.md, Frontend #2.
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [acceptedMarketing, setAcceptedMarketing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -23,7 +28,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
       const res =
         mode === 'login'
           ? await login(email, password)
-          : await register(email, password, displayName, phone)
+          : await register(email, password, displayName, phone, acceptedTerms, acceptedMarketing)
       setToken(res.access_token)
       onAuth(res.user)
     } catch (err) {
@@ -42,6 +47,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
   const isLogin = mode === 'login'
 
   return (
+    <>
     <div className="auth-split" dir="rtl">
       {/* ===== פאנל שיווקי ===== */}
       <aside className="auth-marketing">
@@ -190,10 +196,45 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
               </div>
             )}
 
+            {!isLogin && (
+              <div className="auth-consent">
+                <label className="auth-consent-row">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    required
+                  />
+                  <span>
+                    אני מאשר/ת את{' '}
+                    <a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">
+                      תנאי השימוש
+                    </a>{' '}
+                    ואת{' '}
+                    <a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">
+                      מדיניות הפרטיות
+                    </a>
+                  </span>
+                </label>
+                <label className="auth-consent-row auth-consent-optional">
+                  <input
+                    type="checkbox"
+                    checked={acceptedMarketing}
+                    onChange={(e) => setAcceptedMarketing(e.target.checked)}
+                  />
+                  <span>אני מעוניין/ת לקבל עדכונים מ-VEYA</span>
+                </label>
+              </div>
+            )}
+
             {error && <div className="auth-error">{error}</div>}
             {note && <div className="auth-note">{note}</div>}
 
-            <button type="submit" className="auth-submit" disabled={busy}>
+            <button
+              type="submit"
+              className="auth-submit"
+              disabled={busy || (!isLogin && !acceptedTerms)}
+            >
               {busy ? 'רגע…' : isLogin ? 'התחברות' : 'יצירת חשבון'}
             </button>
 
@@ -245,5 +286,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
         </div>
       </section>
     </div>
+    <Footer />
+    </>
   )
 }

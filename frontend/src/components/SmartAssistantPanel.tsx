@@ -63,6 +63,10 @@ export function SmartAssistantPanel({
       <p className="assistant-sub">
         תמונת מצב, דברים ששווה לבדוק והצעות — כל הצעה מוצגת לאישור לפני שמשהו זז.
       </p>
+      <p className="assistant-ai-disclosure">
+        המלצות המערכת מבוססות AI ונועדו לסיוע בלבד. האחריות לקבלת החלטות
+        נשארת בידי המשתמש.
+      </p>
 
       {/* ---- מקרא נקודות הסטטוס שמופיעות על כל שולחן במפה ---- */}
       <div className="assistant-legend">

@@ -4,6 +4,7 @@ import './index.css'
 import './App.css'
 import App from './App.tsx'
 import { ConfirmPage } from './components/ConfirmPage.tsx'
+import { CookieBanner } from './components/CookieBanner.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 
 // ---- חסימת Pinch Zoom ברמת המסמך (iOS Safari) ----
@@ -27,6 +28,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       {confirmMatch ? <ConfirmPage token={decodeURIComponent(confirmMatch[1])} /> : <App />}
+      <CookieBanner />
     </ErrorBoundary>
   </StrictMode>,
 )

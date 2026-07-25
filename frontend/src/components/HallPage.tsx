@@ -2850,6 +2850,10 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
           {/* ===== לשונית: הושבה חכמה ===== */}
           {mobileTab === 'smart' && (
             <div className="hm-panel">
+              <p className="assistant-ai-disclosure">
+                המלצות המערכת מבוססות AI ונועדו לסיוע בלבד. האחריות לקבלת
+                החלטות נשארת בידי המשתמש.
+              </p>
               <div className="hm-stats">
                 <div className="hm-stat">
                   <span className="hm-stat-num">{smartStats.seatedPeople}</span>
@@ -3468,6 +3472,10 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
             <p className="clar-sub">
               אנחנו קוראים את ההערות וממירים אותן להעדפות ישיבה — מי לשבת עם
               מי, וממי להרחיק — לפני שנסדר את ההושבה.
+            </p>
+            <p className="assistant-ai-disclosure">
+              המלצות המערכת מבוססות AI ונועדו לסיוע בלבד. האחריות לקבלת
+              החלטות נשארת בידי המשתמש.
             </p>
           </div>
           <button className="btn-ghost" onClick={onAnalyze} disabled={analyzing}>

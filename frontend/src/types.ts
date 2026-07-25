@@ -580,6 +580,9 @@ export interface User {
   is_admin: boolean
   // couple (זוג) / planner (מפיק) / venue (אולם) — ציר נפרד מ-is_admin.
   account_type: string
+  // True אם המשתמש אישר גרסה ישנה של תנאי השימוש/מדיניות הפרטיות —
+  // ראו legal.py::needs_reconsent (backend) ו-ReconsentModal (frontend).
+  needs_reconsent?: boolean
 }
 
 export interface TokenResponse {

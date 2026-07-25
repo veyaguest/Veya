@@ -203,12 +203,46 @@ export async function register(
   password: string,
   displayName: string,
   phone: string,
+  acceptedTerms: boolean,
+  acceptedMarketing = false,
 ): Promise<TokenResponse> {
   const res = await publicFetch('/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, display_name: displayName, phone }),
+    body: JSON.stringify({
+      email,
+      password,
+      display_name: displayName,
+      phone,
+      accepted_terms: acceptedTerms,
+      accepted_marketing: acceptedMarketing,
+    }),
   })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** אישור/אישור-מחדש מפורש של תנאי שימוש/מדיניות פרטיות (למשל אחרי עדכון גרסה). */
+export async function acceptConsent(
+  types: Array<'terms' | 'privacy' | 'marketing'> = ['terms', 'privacy'],
+): Promise<void> {
+  const res = await apiFetch('/auth/consent', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ types }),
+  })
+  if (!res.ok) throw await toError(res)
+}
+
+/** מוחק לצמיתות את החשבון המחובר (כולל כל האירועים שלו). בלתי הפיך. */
+export async function deleteMyAccount(): Promise<void> {
+  const res = await apiFetch('/auth/me', { method: 'DELETE' })
+  if (!res.ok) throw await toError(res)
+}
+
+/** מייצא את כל המידע האישי של המשתמש המחובר כאובייקט JSON. */
+export async function exportMyData(): Promise<Record<string, unknown>> {
+  const res = await apiFetch('/auth/me/export')
   if (!res.ok) throw await toError(res)
   return res.json()
 }

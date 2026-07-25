@@ -19,9 +19,11 @@ import { AuthPage } from './components/AuthPage'
 import { DashboardPage } from './components/DashboardPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { EventMembersDialog } from './components/EventMembersDialog'
+import { Footer } from './components/Footer'
 import { GuestsPage } from './components/GuestsPage'
 import { OnboardingWizard } from './components/OnboardingWizard'
 import { ProfileDialog } from './components/ProfileDialog'
+import { ReconsentModal } from './components/ReconsentModal'
 import { RsvpPage } from './components/RsvpPage'
 import type { EventSummary, User } from './types'
 import type { EventTerms } from './strings/eventTypes'
@@ -258,6 +260,13 @@ function App() {
     return <AuthPage onAuth={handleAuth} />
   }
 
+  // תנאים/פרטיות עודכנו מאז שהמשתמש אישר לאחרונה → חוסמים גישה עד אישור מחדש.
+  if (user.needs_reconsent) {
+    return (
+      <ReconsentModal onAccepted={() => setUser({ ...user, needs_reconsent: false })} />
+    )
+  }
+
   // אדמין → פאנל ניהול מלא ונפרד (לא נכנס למסלול יצירת אירוע של זוג).
   if (user.is_admin) {
     return (
@@ -296,18 +305,26 @@ function App() {
     // מפיק/אולם לא יוצרים אירוע בעצמם — הם מחכים שבעל אירוע יזמין אותם.
     if (user.account_type === 'planner' || user.account_type === 'venue') {
       return withImpersonation(
-        <div className="auth-wrap">
-          <div className="auth-card">
-            <h1 className="first-event-title">ברוכים הבאים ל-VEYA</h1>
-            <p className="auth-tagline">
-              עדיין לא שותפה איתכם גישה לאף אירוע. בקשו מבעל האירוע להוסיף
-              אתכם דרך האימייל שאיתו נרשמתם: <strong dir="ltr">{user.email}</strong>
-            </p>
+        <>
+          <div className="auth-wrap">
+            <div className="auth-card">
+              <h1 className="first-event-title">ברוכים הבאים ל-VEYA</h1>
+              <p className="auth-tagline">
+                עדיין לא שותפה איתכם גישה לאף אירוע. בקשו מבעל האירוע להוסיף
+                אתכם דרך האימייל שאיתו נרשמתם: <strong dir="ltr">{user.email}</strong>
+              </p>
+            </div>
           </div>
-        </div>,
+          <Footer />
+        </>,
       )
     }
-    return withImpersonation(<OnboardingWizard onCreated={handleEventCreated} />)
+    return withImpersonation(
+      <>
+        <OnboardingWizard onCreated={handleEventCreated} />
+        <Footer />
+      </>,
+    )
   }
 
   const activeEvent = events.find((e) => e.id === activeEventId) ?? null
@@ -398,6 +415,7 @@ function App() {
             )}
           </ErrorBoundary>
         </main>
+        <Footer />
       </div>
 
       {profileOpen && (
