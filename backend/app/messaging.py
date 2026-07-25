@@ -133,6 +133,7 @@ AUTOMATION_PLACEHOLDERS = [
     {"key": "{{event_name}}", "token": "[שמות בעלי האירוע]", "desc": "שמות בעלי האירוע (בחתונה — בני הזוג)"},
     {"key": "{{groom_parents_line}}", "token": "[הורי החתן]", "desc": "שורת הורי החתן להזמנה דתית/חב\"ד/חרדית (למשל 'משפחת כהן' או 'יצחק ורבקה כהן'); ריק בברירת מחדל"},
     {"key": "{{bride_parents_line}}", "token": "[הורי הכלה]", "desc": "שורת הורי הכלה להזמנה דתית/חב\"ד/חרדית; ריק בברירת מחדל"},
+    {"key": "{{update_details}}", "token": "[פרטי שינוי]", "desc": "טקסט חופשי שהבעלים ממלא בשליחת עדכון אירוע (שעה חדשה, מיקום חדש, סיבת דחייה/ביטול). ריק = השורה שלמה תיעלם."},
     {"key": "{{celebration}}", "token": "[האירוע]", "desc": "שם האירוע לפי סוגו, לשימוש אחרי ל/ב (חתונה / אירוע בר המצווה / אירוע)"},
     {"key": "{{celebration_of}}", "token": "[שמחת]", "desc": "שם האירוע לפני שמות בעלי האירוע (חתונת… / בר המצווה של…)"},
     {"key": "{{event_date}}", "token": "[תאריך]", "desc": "תאריך האירוע"},
@@ -207,6 +208,7 @@ def build_automation_values(
     event_type: str = "wedding",
     groom_parents_line: str = "",
     bride_parents_line: str = "",
+    update_details: str = "",
 ) -> dict[str, str]:
     """בונה מפה מלאה של כל טוקן (טכני וידידותי, חדש וישן) → הערך שלו.
 
@@ -243,6 +245,7 @@ def build_automation_values(
         "{{video_gallery}}": video_gallery or "",
         "{{groom_parents_line}}": groom_parents_line or "",
         "{{bride_parents_line}}": bride_parents_line or "",
+        "{{update_details}}": update_details or "",
     }
     values: dict[str, str] = dict(canonical)
     # הטוקנים הידידותיים ([שם פרטי] וכו') מקבלים את אותו ערך.
@@ -274,6 +277,7 @@ def render_automation_template(
     event_type: str = "wedding",
     groom_parents_line: str = "",
     bride_parents_line: str = "",
+    update_details: str = "",
 ) -> str:
     """ממלא תבנית אוטומציה במשתני {{...}} של מוזמן ואירוע ספציפיים.
 
@@ -304,6 +308,7 @@ def render_automation_template(
         event_type=event_type,
         groom_parents_line=groom_parents_line,
         bride_parents_line=bride_parents_line,
+        update_details=update_details,
     )
     # מחליפים טוקנים ארוכים לפני קצרים, כדי ש-"[תאריך האירוע]" לא ייחתך ל-"[תאריך]".
     tokens_by_len = sorted(values.keys(), key=len, reverse=True)
