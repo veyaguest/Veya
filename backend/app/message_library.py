@@ -37,9 +37,12 @@ S_YOUNG = "young"              # צעיר / קליל
 S_FUNNY = "funny"              # הומוריסטי
 S_MINIMAL = "minimal"          # מינימלי
 S_FAMILY = "family"            # משפחתי / חם
-S_TRADITIONAL = "traditional"  # מסורתי
+S_TRADITIONAL = "traditional"  # מסורתי (חילוני-חגיגי)
 S_FORMAL = "formal"            # רשמי
 S_EMOTIONAL = "emotional"      # רגשי
+S_RELIGIOUS = "religious"      # דתי — הורים מזמינים, "בשבח והודיה"
+S_CHABAD = "chabad"            # חב"ד — "בעזהי"ת", "נישואי צאצאינו"
+S_HAREDI = "haredi"            # חרדי — "בשבח והודיה להשי"ת", "ילדינו היקרים"
 
 
 # תוויות בעברית לתצוגה בממשק (מקור-אמת משותף לשרת ולפרונט). הסדר כאן הוא
@@ -62,6 +65,9 @@ STYLE_LABELS: dict[str, str] = {
     S_EMOTIONAL: "רגשי",
     S_FAMILY: "משפחתי",
     S_TRADITIONAL: "מסורתי",
+    S_RELIGIOUS: "דתי",
+    S_CHABAD: "חב\"ד",
+    S_HAREDI: "חרדי",
     S_MINIMAL: "מינימלי",
     S_YOUNG: "צעיר",
     S_FUNNY: "הומוריסטי",
