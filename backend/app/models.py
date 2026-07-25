@@ -75,6 +75,11 @@ class Event(Base):
     # התוויות בממשק דינמיות לפי event_type (מנוע המונחים ב-Frontend).
     groom_name: Mapped[str] = mapped_column(String, default="")
     bride_name: Mapped[str] = mapped_column(String, default="")
+    # שמות ההורים כשורה מוכנה להצגה בהזמנה — לא כשם פרטי בודד.
+    # רגיסטרים דתי/חב"ד/חרדי דורשים ההורים כמזמינים. בעלים ממלא בפורמט הרצוי:
+    # "משפחת כהן" / "יצחק ורבקה כהן" / "פנחס וחיה שרה שיחיו". ריק = הזוג מזמין.
+    groom_parents_line: Mapped[str] = mapped_column(String, default="")
+    bride_parents_line: Mapped[str] = mapped_column(String, default="")
     venue_name: Mapped[str] = mapped_column(String, default="")
     # כתובת מלאה של האולם — לשימוש במשתנה {{venue_address}} ובקישור Google Maps
     # ({{maps_link}} נגזר ממנה אוטומטית, בלי עמודה נוספת).
