@@ -559,6 +559,15 @@ class LoginRequest(BaseModel):
         return (v or "").strip().lower()
 
 
+class GoogleExchangeRequest(BaseModel):
+    """טוקן access של Supabase (מה-Frontend, אחרי OAuth של גוגל).
+
+    ה-Backend מוודא אותו מול SUPABASE_JWT_SECRET, מוציא ממנו email + user_metadata,
+    ומחזיר טוקן פנימי שלנו (TokenResponse) — משם כל המערכת עובדת כרגיל.
+    """
+    supabase_access_token: str
+
+
 class ProfileUpdate(BaseModel):
     """עדכון פרטי הפרופיל של המשתמש המחובר (שם תצוגה + טלפון)."""
 

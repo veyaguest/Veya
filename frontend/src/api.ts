@@ -260,6 +260,20 @@ export async function login(
   return res.json()
 }
 
+/** ממיר טוקן Supabase (אחרי OAuth של גוגל) לטוקן פנימי של VEYA.
+ * המשך זהה ל-login רגיל: שומרים את access_token ב-authStore ונכנסים לאפליקציה. */
+export async function googleExchange(
+  supabaseAccessToken: string,
+): Promise<TokenResponse> {
+  const res = await publicFetch('/auth/google/exchange', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ supabase_access_token: supabaseAccessToken }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
 export async function getMe(): Promise<User> {
   const res = await apiFetch('/auth/me')
   if (!res.ok) throw await toError(res)

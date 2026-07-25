@@ -100,6 +100,82 @@ def login(payload: schemas.LoginRequest, request: Request, db: Session = Depends
     return schemas.TokenResponse(access_token=token, user=user)
 
 
+@router.post("/google/exchange", response_model=schemas.TokenResponse)
+def google_exchange(
+    payload: schemas.GoogleExchangeRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """מקבל טוקן Supabase (אחרי OAuth של גוגל בצד-לקוח) ומחזיר טוקן פנימי שלנו.
+
+    המסלול:
+    1. מאמת את הטוקן מול SUPABASE_JWT_SECRET (HS256, aud='authenticated').
+    2. שולף email + display_name מה-payload.
+    3. מוצא משתמש קיים לפי email, או יוצר חדש (הופך לאדמין רק אם ראשון /
+       תואם ADMIN_EMAIL — בדיוק כמו register רגיל).
+    4. משתמש חדש → רושם הסכמות terms+privacy אוטומטית (מקבילה למקרה
+       שבו המשתמש סימן וי בטופס הרשמה; ה-Frontend חייב להציג את התנאים
+       ליד כפתור "התחבר עם גוגל").
+    5. מחזיר TokenResponse עם טוקן פנימי — משם המשך זהה ל-login רגיל.
+    """
+    ip = client_ip(request)
+    auth_limiter.check(ip)
+
+    supabase_payload = auth.verify_supabase_token(payload.supabase_access_token)
+
+    email = (supabase_payload.get("email") or "").strip().lower()
+    if not email:
+        auth_limiter.record_fail(ip)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="לא נמצאה כתובת אימייל בטוקן של גוגל",
+        )
+
+    user_metadata = supabase_payload.get("user_metadata") or {}
+    display_name = (
+        user_metadata.get("full_name")
+        or user_metadata.get("name")
+        or ""
+    )
+
+    user, is_new = auth.find_or_create_google_user(
+        db, email=email, display_name=display_name,
+    )
+
+    if user.disabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="החשבון הושבת. יש לפנות למנהל המערכת",
+        )
+
+    if is_new:
+        legal.record_consent(db, user.id, "terms", source="google_signup", ip=ip)
+        legal.record_consent(db, user.id, "privacy", source="google_signup", ip=ip)
+        audit.record(
+            db, "consent_accepted", user_id=user.id,
+            detail="terms+privacy בהרשמה דרך גוגל", ip=ip,
+        )
+
+    try:
+        auth.record_login_event(
+            db, user.id, ip, (request.headers.get("user-agent") or "")[:300] or None,
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        # אם נכשל רק רישום הכניסה — עדיין מנפיקים טוקן. אם נכשל commit של
+        # יצירת המשתמש/הסכמות, ה-rollback יגרום ל-user.id להיות לא-שמור;
+        # במקרה כזה נזרוק 500 מפורש במקום להחזיר טוקן לא-תקף.
+        if is_new and user.id is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="שגיאה ביצירת החשבון",
+            )
+
+    token = auth.create_access_token(user)
+    return schemas.TokenResponse(access_token=token, user=user)
+
+
 @router.get("/me", response_model=schemas.UserRead)
 def me(
     db: Session = Depends(get_db),

@@ -3,8 +3,13 @@
 - סיסמאות נשמרות מגובבות עם bcrypt (לעולם לא בטקסט גלוי).
 - אחרי התחברות מקבל המשתמש טוקן JWT חתום, שנשלח בכל בקשה בכותרת
   Authorization: Bearer <token>.
+- התחברות עם גוגל (Supabase OAuth) — verify_supabase_token מאמת טוקן Supabase
+  ו-find_or_create_google_user מוצא/יוצר את שורת המשתמש הפנימית. שאר המערכת
+  ממשיכה לעבוד עם הטוקן הפנימי הרגיל (create_access_token) כרגיל — RLS,
+  token_version, disabled וכו' לא משתנים.
 """
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -35,6 +40,14 @@ if os.getenv("VEYA_ENV", "").strip().lower() == "production" and JWT_SECRET == _
 
 # אימייל שיקבל הרשאת אדמין אוטומטית בהרשמה (אופציונלי).
 ADMIN_EMAIL = (os.getenv("ADMIN_EMAIL", "") or "").strip().lower()
+
+# מפתח החתימה של Supabase — דרוש לאימות טוקני OAuth (התחברות עם גוגל).
+# מגיע מ-Supabase Dashboard → Project Settings → API → JWT Settings → JWT Secret.
+# אם ריק, /auth/google/exchange יחזיר 503 (התחברות גוגל כבויה) — כל שאר
+# האימות (אימייל+סיסמה) ממשיך לעבוד ללא שינוי.
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "").strip()
+SUPABASE_JWT_ALGORITHM = "HS256"
+SUPABASE_JWT_AUDIENCE = "authenticated"
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -221,3 +234,78 @@ def get_current_admin(
             detail="נדרשת הרשאת מנהל",
         )
     return user
+
+
+# ---------------------------------------------------------------------------
+# התחברות עם גוגל דרך Supabase OAuth
+# ---------------------------------------------------------------------------
+
+def verify_supabase_token(token: str) -> dict:
+    """מאמת טוקן Supabase (HS256, aud='authenticated') ומחזיר את ה-payload.
+
+    זורק HTTPException(401) על כל טוקן לא-תקין/פגוע/פג-תוקף — הודעה כללית
+    בכוונה, כדי לא לחשוף פרטים על סיבת הכשל.
+    """
+    if not SUPABASE_JWT_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="התחברות עם גוגל אינה מוגדרת בשרת",
+        )
+    try:
+        return jwt.decode(
+            token,
+            SUPABASE_JWT_SECRET,
+            algorithms=[SUPABASE_JWT_ALGORITHM],
+            audience=SUPABASE_JWT_AUDIENCE,
+        )
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="טוקן התחברות לא תקין",
+        )
+
+
+def _unusable_password_hash() -> str:
+    """מייצר bcrypt hash של סוד אקראי (32 בייטים) — לשימוש במשתמש שנרשם דרך
+    גוגל בלבד ואין לו סיסמה. אף אחד לא יכול להתחבר איתו (הסוד לא נשמר בשום
+    מקום), אבל השדה password_hash הוא NOT NULL אז חייבים ערך כלשהו.
+    """
+    random_secret = secrets.token_urlsafe(32)
+    return hash_password(random_secret)
+
+
+def find_or_create_google_user(
+    db: Session,
+    *,
+    email: str,
+    display_name: str,
+) -> tuple["models.User", bool]:
+    """מוצא משתמש קיים לפי email, או יוצר חדש אם לא קיים. מחזיר (user, is_new).
+
+    - אם המשתמש קיים: מחזיר אותו כמו-שהוא. גם אם נרשם במקור בסיסמה — הוא יכול
+      עכשיו להתחבר גם דרך גוגל (אותו email).
+    - אם לא קיים: יוצר משתמש חדש עם password_hash לא-שמיש (ראו למעלה), display_name
+      מגוגל, טלפון ריק, account_type=couple. הופך לאדמין רק אם זה המשתמש הראשון
+      *או* אם ה-email תואם ל-ADMIN_EMAIL — בדיוק כמו register רגיל.
+    - אימוץ אירועים יתומים (adopt_orphan_events) נעשה גם כאן, כדי לשמור על
+      התנהגות זהה ל-register.
+    """
+    existing = find_user_by_email(db, email)
+    if existing is not None:
+        return existing, False
+
+    user_count = count_users(db)
+    is_admin = user_count == 0 or (ADMIN_EMAIL != "" and email == ADMIN_EMAIL)
+
+    user = register_user_row(
+        db,
+        email=email,
+        password_hash=_unusable_password_hash(),
+        display_name=display_name.strip() or email.split("@")[0],
+        phone="",
+        is_admin=is_admin,
+        account_type="couple",
+    )
+    set_request_identity(user.id)
+    adopt_orphan_events(db, user.id)
+    return user, True

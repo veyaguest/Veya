@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { login, register } from '../api'
+import { useEffect, useState } from 'react'
+import { googleExchange, login, register } from '../api'
 import { setToken } from '../authStore'
+import { getSupabase, isGoogleAuthConfigured } from '../lib/supabase'
 import { Footer } from './Footer'
 import type { User } from '../types'
 
@@ -18,6 +19,69 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
   const [error, setError] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // גוגל בנפרד: busy נפרד כדי שהמצב יישאר "מתחבר עם גוגל..." גם בזמן שהדפדפן
+  // חוזר מ-OAuth callback וממיר את הטוקן ב-Backend.
+  const [googleBusy, setGoogleBusy] = useState(false)
+  const googleEnabled = isGoogleAuthConfigured()
+
+  // טיפול ב-callback של גוגל: אחרי ש-Supabase שולחת את המשתמש בחזרה,
+  // ה-URL מכיל #access_token=... . הלקוח (עם detectSessionInUrl:true)
+  // מפענח את זה אוטומטית ושומר session. אנחנו קוראים getSession(),
+  // ואם יש טוקן — ממירים אותו לטוקן פנימי של VEYA דרך /auth/google/exchange.
+  // חשוב: נכנסים לזה רק אם ה-URL מכיל את החתימה של OAuth (#access_token=)
+  // כדי לא לרוץ לחינם כל טעינה של דף הכניסה.
+  useEffect(() => {
+    const client = getSupabase()
+    if (!client) return
+    const hash = window.location.hash || ''
+    if (!hash.includes('access_token=')) return
+
+    setGoogleBusy(true)
+    setError(null)
+    ;(async () => {
+      try {
+        const { data, error: sessionErr } = await client.auth.getSession()
+        if (sessionErr || !data.session) {
+          throw new Error(sessionErr?.message || 'לא הצלחנו לקבל את פרטי הכניסה מגוגל')
+        }
+        const res = await googleExchange(data.session.access_token)
+        setToken(res.access_token)
+        // מנקים את ה-hash מה-URL כדי שריענון לא ינסה להריץ שוב את החילוף.
+        // Supabase לא נוגעת ב-hash אחרי getSession — צריך לנקות ידנית.
+        window.history.replaceState(null, '', window.location.pathname + window.location.search)
+        // מנתקים מ-Supabase — הטוקן שלה כבר לא נחוץ (הפכנו אותו לטוקן פנימי).
+        // בלי זה session נשאר ב-localStorage וניסיון התחברות עתידי היה חוזר לאותו משתמש.
+        await client.auth.signOut()
+        onAuth(res.user)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'התחברות עם גוגל נכשלה')
+      } finally {
+        setGoogleBusy(false)
+      }
+    })()
+  }, [onAuth])
+
+  async function handleGoogleLogin() {
+    setError(null)
+    setNote(null)
+    const client = getSupabase()
+    if (!client) {
+      setError('התחברות עם גוגל אינה מוגדרת כרגע')
+      return
+    }
+    setGoogleBusy(true)
+    try {
+      const { error: oauthErr } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin },
+      })
+      if (oauthErr) throw new Error(oauthErr.message)
+      // הצלחה = הדפדפן מנווט לגוגל. הקוד מכאן והלאה כבר לא ירוץ.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'לא הצלחנו לפתוח את התחברות גוגל')
+      setGoogleBusy(false)
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -238,7 +302,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
               {busy ? 'רגע…' : isLogin ? 'התחברות' : 'יצירת חשבון'}
             </button>
 
-            {isLogin && (
+            {googleEnabled && (
               <>
                 <div className="auth-divider">
                   <span className="auth-divider-line" />
@@ -247,13 +311,34 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                 </div>
                 <button
                   type="button"
-                  className="auth-secondary"
-                  onClick={() =>
-                    setNote('כניסה עם קוד לנייד תגיע בקרוב.')
-                  }
+                  className="auth-secondary auth-google"
+                  onClick={handleGoogleLogin}
+                  disabled={googleBusy || busy}
                 >
-                  כניסה עם קוד חד-פעמי לנייד
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    aria-hidden="true"
+                    style={{ marginInlineEnd: 8, verticalAlign: 'middle' }}
+                  >
+                    <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+                    <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.83.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.32A9 9 0 0 0 9 18z"/>
+                    <path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.96H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3.01-2.32z"/>
+                    <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.47.9 11.43 0 9 0A9 9 0 0 0 .96 4.96l3.01 2.32C4.68 5.16 6.66 3.58 9 3.58z"/>
+                  </svg>
+                  {googleBusy ? 'מתחבר עם גוגל…' : 'התחברות עם גוגל'}
                 </button>
+                <p className="auth-google-consent">
+                  בהתחברות עם גוגל אני מאשר/ת את{' '}
+                  <a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">
+                    תנאי השימוש
+                  </a>{' '}
+                  ואת{' '}
+                  <a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">
+                    מדיניות הפרטיות
+                  </a>
+                </p>
               </>
             )}
           </form>
