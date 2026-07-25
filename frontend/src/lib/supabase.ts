@@ -1,17 +1,24 @@
 /**
- * לקוח Supabase — משמש רק לצורך OAuth של גוגל (התחברות).
+ * לקוח Supabase + Google — משמש לזרימת ID-token flow:
+ * גוגל (בפרונט) → id_token → supabase.auth.signInWithIdToken → session →
+ * /auth/google/exchange בבקאנד → טוקן פנימי שלנו.
  *
  * הלקוח נוצר בעצלות (lazy): אם אחד ממשתני הסביבה חסר, מחזיר null, וכפתור
- * "התחבר עם גוגל" ב-AuthPage לא יוצג. שאר האפליקציה (התחברות עם אימייל+סיסמה)
- * עובדת בלי תלות בזה — אין דרך שהעדר Supabase ישבור משהו קיים.
+ * הגוגל ב-AuthPage לא יוצג. שאר האפליקציה (אימייל+סיסמה) עובדת בלי תלות בזה.
  *
- * ה-anon key הוא ציבורי במכוון (זה תפקידו) — הוא מזהה את הפרויקט של Supabase
- * ומאפשר קריאות אנונימיות דרך RLS. את ה-JWT Secret הרגיש נשמור רק ב-Backend.
+ * שים לב: מעברנו מ-OAuth redirect flow ל-ID-token flow — לכן:
+ *   - persistSession=false: אין טעם לשמור session של Supabase; ברגע שקיבלנו
+ *     ממנה את הטוקן והמרנו אותו לטוקן פנימי, לא נחזור אליה עד להתחברות הבאה.
+ *   - detectSessionInUrl=false: אין יותר callback עם hash — הכל בפרונט ישירות.
+ *   - flowType מיותר (רלוונטי רק ל-redirect flow).
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as
+  | string
+  | undefined
 
 let _client: SupabaseClient | null = null
 
@@ -20,18 +27,17 @@ export function getSupabase(): SupabaseClient | null {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null
   _client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      // מפענח את ה-hash שגוגל מחזירה אליו בסוף ה-OAuth (#access_token=...)
-      // ושומר session מיידית. חובה כדי שנוכל לקרוא getSession() ב-callback.
-      detectSessionInUrl: true,
-      flowType: 'implicit',
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
     },
   })
   return _client
 }
 
-/** האם התחברות עם גוגל מוגדרת במערכת (יש env vars). לשימוש ב-UI (הצגת הכפתור). */
+/** האם התחברות עם גוגל מוגדרת במלואה (Supabase + Google Client ID).
+ * צריך את כל השלושה — Google Client ID לפרונט לרנדר את הכפתור,
+ * ו-Supabase לאימות ה-id_token. */
 export function isGoogleAuthConfigured(): boolean {
-  return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY)
+  return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY && GOOGLE_CLIENT_ID)
 }

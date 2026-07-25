@@ -4882,6 +4882,32 @@
   border-color: var(--gold);
   color: var(--gold-light);
 }
+/* מיקום כפתור Google Identity Services — הוא iframe שרנדר-אצל-גוגל,
+   רק ממרכזים אותו אופקית. הרוחב עצמו מוגדר ב-prop width של <GoogleLogin>. */
+.auth-google-slot {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+.auth-google-busy {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint);
+  font-size: 14px;
+}
+.auth-google-consent {
+  font-size: 12px;
+  color: var(--faint);
+  text-align: center;
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+.auth-google-consent a {
+  color: var(--gold-light);
+  text-decoration: underline;
+}
 .auth-danger {
   height: 48px;
   width: 100%;
