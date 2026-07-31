@@ -37,13 +37,11 @@ import {
   detectChildrenWithoutFamily,
   detectFamilyGroups,
   detectSplitGroups,
-  liveDragValidation,
   smartSearch,
   type PairList,
   type SmartMove,
   type SmartSuggestion,
 } from '../seatingAdvisor'
-import { SmartAssistantPanel } from './SmartAssistantPanel'
 
 interface TableView {
   table_number: number
@@ -83,13 +81,12 @@ const TABLE_TYPE_DEFAULT_COLOR: Record<TableType, string> = {
 }
 
 const TABLE_COLORS = ['#c9a227', '#4a7fc9', '#5fa66c', '#c96b6b', '#8a6bc9', '#3f4756']
-const ELEMENT_COLORS = ['#7fb3e0', '#e4c96b', '#8fd0a8', '#e08f8f', '#b79ae0', '#9a7b2e']
 
 // הגדרות ברירת-מחדל לכל סוג אלמנט מיוחד (תווית, גודל, צורה, צבע).
 // הגדלים כאן קטנים יחסית לגודל המפה (WORLD_W/H) — כדי שגם ברמת זום 100%
 // האלמנטים ייראו פרופורציונליים לחלל האולם, לא ענקיים.
-// חלק מהסוגים (head_table/gift_table/restroom/stage) מוסתרים כרגע מהסרגל
-// (VISIBLE_ELEMENTS) — הקוד שלהם נשאר שלם כדי שאפשר יהיה להחזיר אותם בעתיד.
+// חלק מהסוגים (head_table/gift_table/restroom/stage) לא מוצעים כרגע בתפריט
+// ההוספה — הקוד שלהם נשאר שלם כדי שאפשר יהיה להחזיר אותם בעתיד.
 const ELEMENT_DEFS: Record<
   HallElementType,
   { label: string; width: number; height: number; shape: ElementShape; color: string }
@@ -104,9 +101,6 @@ const ELEMENT_DEFS: Record<
   restroom: { label: '🚻 שירותים', width: 68, height: 34, shape: 'rectangle', color: '#8c8375' },
 }
 
-// רק אלה מוצגים בסרגל ה"הוספה למפה" (לפי בקשת הבעלים — רוב המידע הזה
-// כבר מופיע בסקיצת האולם שמעלים כרקע).
-const VISIBLE_ELEMENTS: HallElementType[] = ['dance_floor', 'bar', 'dj', 'entrance']
 const ELEMENT_SHAPES: { key: ElementShape; label: string }[] = [
   { key: 'rectangle', label: '▭' },
   { key: 'square', label: '◼' },
@@ -934,11 +928,6 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   const [warnings, setWarnings] = useState<string[]>([])
   const [selected, setSelected] = useState<number | null>(null) // מוזמן שנבחר להעברה
   const [selectedEl, setSelectedEl] = useState<string | null>(null)
-  const [selectedTables, setSelectedTables] = useState<Set<number>>(new Set())
-  const [dragOver, setDragOver] = useState<number | 'tray' | null>(null)
-  // מוזמן שנמצא כרגע בגרירה בפועל (HTML5 DnD) — לשימוש בבדיקה חיה
-  // (liveDragValidation) שמוצגת בזמן ריחוף מעל שולחן, לפני drop בפועל.
-  const [draggingGuestId, setDraggingGuestId] = useState<number | null>(null)
   const [dirty, setDirty] = useState(false)
   const [loading, setLoading] = useState(false)
   // שמירה אוטומטית (בלי כפתור): saving = בקשת שמירה פעילה כרגע.
@@ -948,15 +937,10 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // הסברי "למה שובץ כאן" מהסידור האוטומטי האחרון — מוצגים בפאנל סיכום שאפשר לסגור.
   const [seatExplain, setSeatExplain] = useState<SeatingExplanation[]>([])
 
-  // ---- מגש "ללא שולחן" (צד ימין): חיפוש כדי למצוא מוזמן ברשימה ארוכה ----
-  const [traySearch, setTraySearch] = useState('')
-
   // ---- חוויית הושבה אחידה בטלפון ובמחשב (Auto-Fit, Bottom Sheet, ניווט תחתון) ----
   // אותה מפה נוחה בכל מכשיר: הלוח נכנס במלואו למסך, הקשה על שולחן פותחת
   // Bottom Sheet, וניווט תחתון עם 5 מדורים. במחשב הלוח ממלא את אזור התוכן
   // שלצד סרגל הצד (המיקום נקבע ב-CSS לפי רוחב המסך).
-  const mobileMode = true as boolean
-  const isMobileRef = useRef(true)
   const [mobileTab, setMobileTab] = useState<'hall' | 'tables' | 'guests' | 'smart' | 'tools'>('hall')
   const [sheetTable, setSheetTable] = useState<number | null>(null)
   const [sheetEdit, setSheetEdit] = useState(false)
@@ -1039,8 +1023,6 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // שהעוזר יוכל לבדוק אותם מיידית בצד לקוח בלי קריאת רשת נוספת.
   const [forbiddenPairs, setForbiddenPairs] = useState<PairList>([])
   const [togetherPairs, setTogetherPairs] = useState<PairList>([])
-  const [smartPanelOpen, setSmartPanelOpen] = useState(false)
-  const [smartSearchQuery, setSmartSearchQuery] = useState('')
   // הצעה/מהלכים "בהמתנה לאישור" — אף פעם לא מוחלת לבד. רק לחיצה מפורשת על
   // "אשר" מיישמת את כל המהלכים בבת אחת (בדיוק כמו גרירה ידנית, אותה
   // סמנטיקה: מקומי בלבד, dirty=true); המשתמש עדיין צריך ללחוץ "שמירת
@@ -1309,32 +1291,32 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // אין יותר זום בדסקטופ — הלוח נגלל באופן טבעי (גלגלת/מגע רגילים דרך
   // overflow: auto של המאגר), בלי מאזינים מותאמים-אישית.
 
-  // ---- קיצורי מקלדת: Delete למחיקה, Esc לביטול בחירה, Ctrl/Cmd+D לשכפול ----
+  // ---- קיצורי מקלדת (במחשב): Delete למחיקה, Esc לסגירה, Ctrl/Cmd+D לשכפול ----
+  // הבחירה הפעילה היא מה שפתוח כרגע: אלמנט נבחר במפה, או השולחן שה-Bottom
+  // Sheet שלו פתוח. אין יותר בחירה מרובה (היא הייתה קיימת רק בשכבת הדסקטופ
+  // הישנה שנמחקה, ולא הייתה דרך להפעיל אותה במסך שהמשתמש רואה בפועל).
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const tag = (document.activeElement?.tagName || '').toLowerCase()
       if (tag === 'input' || tag === 'textarea') return
       if (e.key === 'Escape') {
-        setSelectedTables(new Set())
+        setSheetTable(null)
         setSelectedEl(null)
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedTables.size > 0) {
-          selectedTables.forEach((n) => deleteTable(n))
-        } else if (selectedEl) {
-          removeElement(selectedEl)
-        }
+        if (sheetTable != null) deleteTable(sheetTable)
+        else if (selectedEl) removeElement(selectedEl)
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
-        if (selectedEl || selectedTables.size === 1) {
+        if (selectedEl || sheetTable != null) {
           e.preventDefault()
           if (selectedEl) duplicateElement(selectedEl)
-          else duplicateTable([...selectedTables][0])
+          else if (sheetTable != null) duplicateTable(sheetTable)
         }
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTables, selectedEl, tables, elements])
+  }, [sheetTable, selectedEl, tables, elements])
 
   async function onAnalyze() {
     setAnalyzing(true)
@@ -1363,14 +1345,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     return Math.round(v)
   }
 
-  // ---- לחיצה על רקע הלוח: ביטול בחירה בלבד (הגלילה טבעית של הדפדפן) ----
-  function onWorldPointerDown(e: React.PointerEvent) {
-    if (e.target !== e.currentTarget) return // קליק על ילד (שולחן/אלמנט) — מטופל בנפרד
-    setSelectedTables(new Set())
-    setSelectedEl(null)
-  }
-
-  // ---- גרירת שולחן (בודד או קבוצה נבחרת) ----
+  // ---- גרירת שולחן ----
   function onTablePointerDown(e: React.PointerEvent, tnum: number) {
     e.stopPropagation()
     const t = tables.find((x) => x.table_number === tnum)
@@ -1380,8 +1355,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     // ולא יפתח את חלון העריכה. (ראה onCanvasPointerUp — שם כבר לא מאפסים.)
     movedRef.current = false
     dragStartRef.current = { x: e.clientX, y: e.clientY }
-    const activeSet = selectedTables.has(tnum) && selectedTables.size > 1 ? selectedTables : new Set([tnum])
-    const movable = tables.filter((x) => activeSet.has(x.table_number) && !x.locked)
+    const movable = tables.filter((x) => x.table_number === tnum && !x.locked)
     if (movable.length === 0) return
     const w = toWorld(e.clientX, e.clientY)
     dragRef.current = {
@@ -1399,15 +1373,6 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     })
     dragNodesRef.current = nodes
     dragPendingRef.current = null
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
-  }
-
-  function onTableRotatePointerDown(e: React.PointerEvent, tnum: number) {
-    e.stopPropagation()
-    const graphic = (e.currentTarget as HTMLElement).parentElement
-    if (!graphic) return
-    const r = graphic.getBoundingClientRect()
-    dragRef.current = { kind: 'table-rotate', id: tnum, cx: r.left + r.width / 2, cy: r.top + r.height / 2 }
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
   }
 
@@ -1431,7 +1396,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     e.stopPropagation()
     if (movedRef.current) return
     setSelectedEl(id)
-    setSelectedTables(new Set())
+    setSheetTable(null)
   }
 
   function onResizePointerDown(e: React.PointerEvent, id: string) {
@@ -1651,7 +1616,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     setTables(newTables)
     setHallLayout({ density: key, planned_tables: total })
     nextTableNumRef.current = newTables.length + 1
-    setSelectedTables(new Set())
+    setSheetTable(null)
     setSelectedEl(null)
     setWizardOpen(false)
     setDirty(true)
@@ -1687,7 +1652,6 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       is_reserve: false,
     }
     setTables((prev) => [...prev, t])
-    setSelectedTables(new Set([nextNum]))
     setSelectedEl(null)
     setDirty(true)
   }
@@ -1700,7 +1664,6 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     const copy: TableView = { ...src, table_number: nextNum, x: src.x + 30, y: src.y + 30, guests: [], locked: false }
     setTables((prev) => [...prev, copy])
     setUnassigned((prev) => [...prev, ...src.guests])
-    setSelectedTables(new Set([nextNum]))
     setDirty(true)
   }
 
@@ -1708,11 +1671,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     const src = tables.find((t) => t.table_number === tnum)
     setTables((prev) => prev.filter((t) => t.table_number !== tnum))
     if (src && src.guests.length) setUnassigned((prev) => [...prev, ...src.guests])
-    setSelectedTables((prev) => {
-      const next = new Set(prev)
-      next.delete(tnum)
-      return next
-    })
+    setSheetTable((cur) => (cur === tnum ? null : cur))
     setDirty(true)
   }
 
@@ -1749,7 +1708,6 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
         return t
       }),
     )
-    setSelectedTables(new Set([newNum]))
     // חשוב: אם חלון עריכת השולחן (הגיליון התחתון) פתוח על השולחן הזה — צריך
     // להצביע על המספר החדש, אחרת החלון "מאבד" את השולחן ונסגר בלי לשמור.
     setSheetTable((cur) => (cur === oldNum ? newNum : cur))
@@ -1818,7 +1776,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     }
     setElements((prev) => [...prev, el])
     setSelectedEl(el.id)
-    setSelectedTables(new Set())
+    setSheetTable(null)
     setDirty(true)
   }
 
@@ -1945,58 +1903,18 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     setDirty(true)
   }
 
-  function onGuestClick(e: React.MouseEvent, guestId: number) {
-    e.stopPropagation()
-    setSelected((cur) => (cur === guestId ? null : guestId))
-  }
-
   function onTableClick(e: React.MouseEvent, tnum: number) {
     e.stopPropagation()
     if (movedRef.current) return // זו הייתה גרירה, לא קליק לבחירה
+    // מוזמן "נבחר להעברה" (הקשה עליו ברשימה) — הקשה על שולחן משבצת אותו לשם.
     if (selected !== null) {
       moveGuestToTable(selected, tnum)
       return
     }
-    // במובייל: הקשה על שולחן פותחת Bottom Sheet עם כל הפרטים והפעולות.
-    if (isMobileRef.current) {
-      setSheetTable(tnum)
-      setSheetEdit(false)
-      return
-    }
+    // אחרת: הקשה על שולחן פותחת Bottom Sheet עם כל הפרטים והפעולות.
     setSelectedEl(null)
-    setSelectedTables((prev) => {
-      if (e.shiftKey) {
-        const next = new Set(prev)
-        if (next.has(tnum)) next.delete(tnum)
-        else next.add(tnum)
-        return next
-      }
-      return prev.size === 1 && prev.has(tnum) ? new Set() : new Set([tnum])
-    })
-  }
-
-  function onTrayClick() {
-    if (selected !== null) moveGuestToTable(selected, null)
-  }
-
-  // ---- גרירת מוזמן אמיתית (HTML5 drag & drop) ----
-  function onGuestDragStart(e: React.DragEvent, guestId: number) {
-    e.dataTransfer.setData('text/plain', String(guestId))
-    e.dataTransfer.effectAllowed = 'move'
-    setSelected(null)
-    setDraggingGuestId(guestId)
-  }
-
-  function onGuestDragEnd() {
-    setDraggingGuestId(null)
-  }
-
-  function onDropTo(e: React.DragEvent, target: number | null) {
-    e.preventDefault()
-    const gid = Number(e.dataTransfer.getData('text/plain'))
-    if (!Number.isNaN(gid)) moveGuestToTable(gid, target)
-    setDragOver(null)
-    setDraggingGuestId(null)
+    setSheetTable(tnum)
+    setSheetEdit(false)
   }
 
   // ---- סקיצת האולם ----
@@ -2241,10 +2159,6 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     }
   }
 
-  const soleSelectedNum = selectedTables.size === 1 ? [...selectedTables][0] : null
-  const soleSelected = soleSelectedNum != null ? tables.find((t) => t.table_number === soleSelectedNum) ?? null : null
-  const soleSelectedEl = selectedEl ? elements.find((el) => el.id === selectedEl) ?? null : null
-
   // מספרי שולחנות המוזכרים באזהרות (למשל זוג "לא לשבת יחד") — לסימון חזותי
   // ישירות על השולחן, לא רק ברשימת האזהרות הכללית.
   const warnTables = useMemo(
@@ -2258,12 +2172,10 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     [warnings],
   )
 
-  // רשימת "ללא שולחן" ממוינת לפי שם (קל יותר לסרוק) ומסוננת לפי חיפוש —
-  // כדי שברשימות ארוכות (100+ מוזמנים) אפשר יהיה למצוא מישהו מיד.
-  const traySearchNorm = traySearch.trim()
-  const visibleUnassigned = [...unassigned]
-    .filter((g) => !traySearchNorm || g.full_name.includes(traySearchNorm))
-    .sort((a, b) => a.full_name.localeCompare(b.full_name, 'he'))
+  // רשימת "ללא שולחן" ממוינת לפי שם — קל יותר לסרוק ברשימות ארוכות.
+  const visibleUnassigned = [...unassigned].sort((a, b) =>
+    a.full_name.localeCompare(b.full_name, 'he'),
+  )
 
   // ---- עוזר הושבה חכם: חישובים נגזרים (טהורים, בלי קריאת רשת) ----
   // כל הפונקציות מ-seatingAdvisor.ts הן O(n) — מחושבות מחדש רק כשמשהו
@@ -2287,15 +2199,11 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     () => computeSuggestions(tables, familyGroups, splitGroups, childWarnings, togetherPairs),
     [tables, familyGroups, splitGroups, childWarnings, togetherPairs],
   )
-  const smartSearchResults = useMemo(
-    () => (smartSearchQuery.trim() ? smartSearch(smartSearchQuery, tables, unassigned) : []),
-    [smartSearchQuery, tables, unassigned],
-  )
-  const soleSelectedInsight = useMemo(
-    () =>
-      soleSelected ? computeTableInsight(soleSelected, familyGroups, forbiddenPairs, childWarnings) : null,
-    [soleSelected, familyGroups, forbiddenPairs, childWarnings],
-  )
+  // תובנות לשולחן שה-Bottom Sheet שלו פתוח — משפחות, קבוצות, ובעיות פתוחות.
+  const sheetInsight = useMemo(() => {
+    const t = sheetTable != null ? tables.find((x) => x.table_number === sheetTable) : null
+    return t ? computeTableInsight(t, familyGroups, forbiddenPairs, childWarnings) : null
+  }, [sheetTable, tables, familyGroups, forbiddenPairs, childWarnings])
 
   // נקודת-סטטוס צבעונית לכל שולחן (ירוק/צהוב/אדום) — מידע בלבד, לא חוסמת
   // כלום. אדום = בעיה קשה (חריגת קיבולת/זוג אסור/ילד בלי מבוגר מהמשפחה),
@@ -2319,15 +2227,6 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     }
     return status
   }, [tables, smartWarnings, warnTables])
-
-  // האורח שבפועל נגרר כרגע (אם יש) — לשימוש בבדיקה החיה בזמן ריחוף מעל שולחן.
-  const draggedGuestForLive = useMemo(() => {
-    if (draggingGuestId == null) return undefined
-    return (
-      tables.flatMap((t) => t.guests).find((g) => g.id === draggingGuestId) ??
-      unassigned.find((g) => g.id === draggingGuestId)
-    )
-  }, [draggingGuestId, tables, unassigned])
 
   // הצעה נכנסת ל"המתנה לאישור" בלבד — לא מזיזה אף אורח עד לחיצה מפורשת על
   // "אשר". "בטל" רק מנקה את ה-state, אפס שינוי בפועל.
@@ -2403,12 +2302,16 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   }
 
   // ============================================================
-  // ============  מובייל: חוויית הושבה ייעודית  ================
+  // ============  חוויית ההושבה (מסך אחד לכל מכשיר)  ===========
   // ============================================================
-  // שכבה נפרדת לגמרי לטלפון (early-return) — הדסקטופ שמתחת נשאר ללא שינוי.
+  // עד 2026-07 היו כאן שתי שכבות: "מובייל" ו"דסקטופ". בפועל השכבה הזו רצה
+  // תמיד (הדגל שגידר אותה היה קבוע `true`), והשכבה השנייה הייתה קוד מת
+  // שאיש לא ראה — ולכן פיצ'רים שישבו רק בה (סיבוב שולחן, פאנל ההבהרות,
+  // הוספת אלמנט "כניסה") היו בלתי נגישים למשתמש. הדסקטופ הישן נמחק, וזו
+  // עכשיו השכבה היחידה — היא נראית טוב בטלפון ובמחשב (המיקום ב-CSS).
   // עקרונות: האולם תמיד "נכנס" במלואו למסך (Auto-Fit, בלי גלילה ובלי זום),
   // הקשה על שולחן פותחת Bottom Sheet, והעברת מוזמן נעשית בהקשה (לא בגרירה).
-  if (mobileMode) {
+  {
     const sheetT = sheetTable != null ? tables.find((t) => t.table_number === sheetTable) ?? null : null
     const q = mobileSearch.trim()
     const searchResults = q ? smartSearch(q, tables, unassigned) : []
@@ -2514,6 +2417,16 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
 
         {/* ---- אזור התוכן המתחלף לפי הלשונית ---- */}
         <div className="hm-body">
+          {/* שגיאות: עד היום הן נשמרו ל-state אבל לא הוצגו בשום מקום (הן הוצגו
+              רק בשכבת הדסקטופ שנמחקה) — כך תקלות שמירה/טעינה נבלעו בשקט. */}
+          {error && (
+            <div className="hm-error-banner" role="alert">
+              <span>{error}</span>
+              <button onClick={() => setError('')} aria-label="סגירת ההודעה">
+                ×
+              </button>
+            </div>
+          )}
           {/* באנר "מצב העברה" — פעיל בכל הלשוניות כשנבחר מוזמן להעברה */}
           {selected !== null && (
             <div className="hm-move-banner">
@@ -2895,9 +2808,16 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                 </div>
               )}
 
-              {smartWarnings.length > 0 && (
+              {(warnings.length > 0 || smartWarnings.length > 0) && (
                 <div className="hm-warnings">
                   <p className="hm-panel-head">שווה לשים לב</p>
+                  {/* אזהרות מהשרת (חריגת קיבולת, זוג "לא לשבת יחד" באותו שולחן) —
+                      עד היום הן נטענו אבל לא הוצגו בשום מסך שהמשתמש רואה. */}
+                  {warnings.map((w, i) => (
+                    <div key={`srv-${i}`} className="hm-warn sev-red">
+                      {w}
+                    </div>
+                  ))}
                   {smartWarnings.slice(0, 6).map((w, i) => (
                     <div key={i} className={`hm-warn sev-${w.severity}`}>
                       {w.text}
@@ -2952,6 +2872,53 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                   />
                 </div>
               </div>
+              {/* ---- אילוצים והעדפות מההערות (לולאת ההבהרות) ----
+                  הפאנל הזה היה קיים רק בשכבת הדסקטופ שנמחקה, כלומר המשתמש
+                  מעולם לא יכול היה לראות אילו אילוצים המערכת זיהתה, ולא לפתור
+                  הערה עמומה ("דני" כשיש כמה דנים). כאן הוא חוזר למסך החי. */}
+              <div className="hm-tools-group">
+                <p className="hm-panel-head">אילוצים והעדפות</p>
+                <p className="hm-reserve-desc">
+                  אנחנו קוראים את הערות ההושבה והופכים אותן לכללים — מי לשבת עם מי,
+                  וממי להרחיק — לפני שנסדר את ההושבה.
+                </p>
+                {analyzeSummary && (
+                  <p className="hm-clar-summary">
+                    נותחו {analyzeSummary.guests_analyzed} {activeEventTerms().guestsLabel} ·{' '}
+                    {analyzeSummary.resolved} העדפות זוהו ·{' '}
+                    {analyzeSummary.pending_clarifications} ממתינים להבהרה
+                  </p>
+                )}
+                <button className="hm-ghost-btn" onClick={onAnalyze} disabled={analyzing}>
+                  <HmIcon name="refresh" size={18} /> {analyzing ? 'בודקים…' : 'בדיקת ההערות'}
+                </button>
+
+                {clarifications.length > 0
+                  ? clarifications.map((c) => (
+                      <div className="hm-clar-card" key={c.id}>
+                        <p className="hm-clar-q">
+                          <strong>{c.source_guest_name}</strong> ביקש/ה {REL_TEXT[c.relation_type]}{' '}
+                          "<strong>{c.target_text}</strong>" — למי הכוונה?
+                        </p>
+                        <div className="hm-clar-actions">
+                          {c.candidates.map((cand) => (
+                            <button
+                              key={cand.id}
+                              className="hm-ghost-btn"
+                              onClick={() => onResolve(c.id, cand.id)}
+                            >
+                              {cand.full_name}
+                            </button>
+                          ))}
+                          <button className="hm-clar-none" onClick={() => onResolve(c.id, null)}>
+                            אף אחד מהם
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  : analyzeSummary && <p className="hm-clar-ok">אין הבהרות ממתינות ✓</p>}
+              </div>
+
               <button
                 className="hm-ghost-btn hm-daymode-btn"
                 onClick={() => setDayMode(true)}
@@ -3080,6 +3047,25 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                       ))
                     )}
                   </div>
+
+                  {/* תובנות על השולחן — משפחות/קבוצות שיושבות בו, וסימון אם יש
+                      בעיה פתוחה (חריגת קיבולת / זוג "לא לשבת יחד" / ילד בלי
+                      מבוגר מהמשפחה). היה קיים רק בשכבת הדסקטופ שנמחקה. */}
+                  {sheetInsight && (sheetInsight.families.length > 0 || sheetInsight.groups.length > 0 || sheetInsight.hasProblem) && (
+                    <div className={`hm-sheet-insight ${sheetInsight.hasProblem ? 'problem' : ''}`}>
+                      {sheetInsight.families.length > 0 && (
+                        <span>משפחות: {sheetInsight.families.join(' · ')}</span>
+                      )}
+                      {sheetInsight.groups.length > 0 && (
+                        <span>קבוצות: {sheetInsight.groups.join(' · ')}</span>
+                      )}
+                      {sheetInsight.hasProblem && (
+                        <span className="hm-sheet-insight-flag">
+                          ⚠ יש בעיה פתוחה בשולחן הזה — ראו "שווה לשים לב" בלשונית ההושבה.
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   <div className="hm-sheet-actions">
                     <button
@@ -3458,949 +3444,110 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
             onConfirm={onSketchConfirm}
           />
         )}
-      </div>
-    )
-  }
 
-  return (
-    <div className="hall-page">
-      {/* ---- אילוצים מההערות (לפני השיבוץ) ---- */}
-      <div className="clar-panel">
-        <div className="clar-head">
-          <div>
-            <h3 className="clar-title">העדפות הישיבה שלכם</h3>
-            <p className="clar-sub">
-              אנחנו קוראים את ההערות וממירים אותן להעדפות ישיבה — מי לשבת עם
-              מי, וממי להרחיק — לפני שנסדר את ההושבה.
-            </p>
-            <p className="assistant-ai-disclosure">
-              המלצות המערכת מבוססות AI ונועדו לסיוע בלבד. האחריות לקבלת
-              החלטות נשארת בידי המשתמש.
-            </p>
-          </div>
-          <button className="btn-ghost" onClick={onAnalyze} disabled={analyzing}>
-            {analyzing ? 'בודקים…' : '↻ בדיקת ההערות'}
-          </button>
-        </div>
-
-        {analyzeSummary && (
-          <p className="clar-summary">
-            נותחו {analyzeSummary.guests_analyzed} {activeEventTerms().guestsLabel} ·{' '}
-            {analyzeSummary.resolved} העדפות זוהו ·{' '}
-            {analyzeSummary.pending_clarifications} ממתינים להבהרה
-          </p>
-        )}
-
-        {clarifications.length > 0 ? (
-          <div className="clar-list">
-            {clarifications.map((c) => (
-              <div className="clar-card" key={c.id}>
-                <div className="clar-q">
-                  <strong>{c.source_guest_name}</strong> ביקש/ה{' '}
-                  {REL_TEXT[c.relation_type]} "<strong>{c.target_text}</strong>" —
-                  למי הכוונה?
-                </div>
-                <div className="clar-actions">
-                  {c.candidates.map((cand) => (
-                    <button
-                      key={cand.id}
-                      className="btn-ghost clar-choice"
-                      onClick={() => onResolve(c.id, cand.id)}
-                    >
-                      {cand.full_name}
-                    </button>
-                  ))}
-                  <button className="btn-text" onClick={() => onResolve(c.id, null)}>
-                    אף אחד מהם
-                  </button>
-                </div>
+        {/* ---- מצב יום האירוע: שיבוץ אורחים של הרגע האחרון, עם המלצה חכמה ---- */}
+        {dayMode && (
+          <div className="day-mode" role="dialog" aria-label="מצב יום האירוע">
+            <div className="day-mode-head">
+              <div>
+                <h3>מצב יום האירוע</h3>
+                <p>שיבוץ אורחים של הרגע האחרון — בקליק, עם המלצה חכמה.</p>
               </div>
-            ))}
-          </div>
-        ) : (
-          analyzeSummary && <p className="clar-ok">אין הבהרות ממתינות ✓</p>
-        )}
-      </div>
-
-      <div className="hall-toolbar">
-        <button className="btn-primary btn-add-table" onClick={() => addTable()}>
-          ➕ הוסף שולחן
-        </button>
-        <label className="seats-field" title="מספר מקומות ברירת מחדל לשולחן חדש ולסידור ההושבה">
-          מקומות ברירת מחדל
-          <select value={seats} onChange={(e) => setSeats(Number(e.target.value))}>
-            {SEAT_OPTIONS.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button className="btn-ghost" onClick={onRegenerate} disabled={loading}>
-          ✨ סידור הושבה חכם
-        </button>
-        <span className={`hall-autosave ${saving || dirty ? 'saving' : ''}`}>
-          {saving ? '💾 שומר…' : dirty ? '💾 יישמר אוטומטית' : savedTick ? '✓ נשמר' : '✓ שמור אוטומטית'}
-        </span>
-        <input ref={sketchInputRef} type="file" accept="image/*" hidden onChange={onPickSketch} />
-        {sketch && (
-          <button className="btn-ghost" onClick={editSketch}>
-            ✂️ עריכת סקיצה
-          </button>
-        )}
-        <button className="btn-ghost" onClick={() => sketchInputRef.current?.click()}>
-          {sketch ? '🖼 החלפת סקיצה' : '🖼 העלאת סקיצת אולם'}
-        </button>
-        {sketch && (
-          <button className="btn-text" onClick={removeSketch}>
-            הסרת סקיצה
-          </button>
-        )}
-        <button
-          className={`btn-ghost ${smartPanelOpen ? 'active' : ''}`}
-          onClick={() => setSmartPanelOpen((v) => !v)}
-        >
-          ✨ העוזר החכם להושבה
-        </button>
-      </div>
-
-      <div className="hall-palette">
-        <span className="palette-label">הוספה למפה:</span>
-        {VISIBLE_ELEMENTS.map((type) => (
-          <button key={type} type="button" className="palette-btn" onClick={() => addElement(type)}>
-            + {ELEMENT_DEFS[type].label}
-          </button>
-        ))}
-        <span className="hall-hint">
-          גררו שולחן כדי להזיז אותו · גררו מוזמן לשולחן · Shift+קליק לבחירה מרובה
-        </span>
-      </div>
-
-      {error && <p className="form-error">{error}</p>}
-
-      {warnings.length > 0 && (
-        <div className="hall-warnings">
-          {warnings.map((w, i) => (
-            <p key={i}>⚠ {w}</p>
-          ))}
-        </div>
-      )}
-
-      {/* מקרא צבעים — מסביר את מצב התפוסה של השולחנות במפה (לפי עיצוב VEYA Seating) */}
-      <div className="hall-legend" aria-hidden="true">
-        <span className="hall-legend-item">
-          <span className="hall-legend-swatch open" />מקומות פנויים
-        </span>
-        <span className="hall-legend-item">
-          <span className="hall-legend-swatch near" />כמעט מלא
-        </span>
-        <span className="hall-legend-item">
-          <span className="hall-legend-swatch full" />שולחן מלא
-        </span>
-      </div>
-
-      <div className="hall-layout">
-        {/* מגש מוזמנים ללא שולחן */}
-        <div
-          className={`hall-tray ${selected !== null ? 'droppable' : ''} ${
-            dragOver === 'tray' ? 'drag-over' : ''
-          }`}
-          onClick={onTrayClick}
-          onDragOver={(e) => {
-            e.preventDefault()
-            setDragOver('tray')
-          }}
-          onDragLeave={() => setDragOver((c) => (c === 'tray' ? null : c))}
-          onDrop={(e) => onDropTo(e, null)}
-        >
-          <h4 className="tray-title">ללא שולחן ({unassigned.length})</h4>
-          {unassigned.length > 5 && (
-            <input
-              type="text"
-              className="tray-search"
-              placeholder="חיפוש מוזמן…"
-              value={traySearch}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setTraySearch(e.target.value)}
-            />
-          )}
-          {unassigned.length === 0 && <p className="tray-empty">כולם משובצים ✓</p>}
-          {unassigned.length > 0 && visibleUnassigned.length === 0 && (
-            <p className="tray-empty tray-no-match">לא נמצאה התאמה ל"{traySearch}"</p>
-          )}
-          <div className="tray-list">
-            {visibleUnassigned.map((g) => (
-              <GuestChip
-                key={g.id}
-                g={g}
-                selected={selected === g.id}
-                onClick={(e) => onGuestClick(e, g.id)}
-                onDragStart={(e) => onGuestDragStart(e, g.id)}
-                onDragEnd={onGuestDragEnd}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* לוח מפת האולם: מאגר נגלל (Viewport) המכיל את הלוח בגודל אמיתי (World) */}
-        <div className="hall-canvas-wrap">
-          <div
-            className="hall-viewport"
-            ref={viewportRef}
-            onPointerMove={onCanvasPointerMove}
-            onPointerUp={onCanvasPointerUp}
-            onPointerLeave={onCanvasPointerUp}
-          >
-            <div
-              className="hall-world"
-              ref={worldRef}
-              style={{ width: worldSize.w, height: worldSize.h }}
-              onPointerDown={onWorldPointerDown}
-            >
-              {sketch && (
-                <div
-                  className="hall-sketch-bg"
-                  style={{ backgroundImage: `url(${mediaUrl(sketch)})`, width: worldSize.w, height: worldSize.h }}
-                  aria-hidden="true"
-                />
-              )}
-              {tables.length === 0 && elements.length === 0 && (
-                <p className="hall-empty">
-                  אין עדיין שולחנות. לחצו "➕ הוסף שולחן" או "סידור הושבה חכם".
-                </p>
-              )}
-
-              {elements.map((el) => {
-                const isSel = selectedEl === el.id
-                const color = el.color || ELEMENT_DEFS[el.type]?.color || '#7fb3e0'
-                const radius =
-                  el.shape === 'circle' || el.shape === 'ellipse' ? '50%' : el.shape === 'square' ? '16px' : '12px'
-                // כשהזוג לא בחר צבע מותאם — האלמנטים (DJ/בר/כניסה/רחבה) מקבלים
-                // מראה מעוצב קבוע לפי עיצוב VEYA Seating (דרך מחלקת CSS). אם נבחר
-                // צבע ידני, חוזרים לגוון הכללי (שומר על ההתאמה האישית הקיימת).
-                const hasCustom = !!el.color
-                return (
-                  <div
-                    key={el.id}
-                    className={`hall-element el-${el.type} ${hasCustom ? '' : 'themed'} ${
-                      isSel ? 'selected' : ''
-                    } ${el.locked ? 'locked' : ''}`}
-                    style={{
-                      left: el.x,
-                      top: el.y,
-                      width: el.width,
-                      height: el.height,
-                      transform: `rotate(${el.rotation}deg)`,
-                      borderRadius: radius,
-                      ...(hasCustom ? { background: `${color}26`, borderColor: color } : {}),
-                    }}
-                    onPointerDown={(e) => onElementPointerDown(e, el.id)}
-                  >
-                    <span className="element-label" style={hasCustom ? { color } : undefined}>
-                      {el.label}
-                    </span>
-                    {el.locked && (
-                      <span className="element-lock-badge" title="נעול">
-                        🔒
-                      </span>
-                    )}
-
-                    {isSel && (
-                      <>
-                        <div className="element-toolbar" onPointerDown={(e) => e.stopPropagation()}>
-                          <div className="shape-row">
-                            {ELEMENT_SHAPES.map((s) => (
-                              <button
-                                key={s.key}
-                                type="button"
-                                className={el.shape === s.key ? 'active' : ''}
-                                title={s.key}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  updateElement(el.id, { shape: s.key })
-                                }}
-                              >
-                                {s.label}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="color-row">
-                            {ELEMENT_COLORS.map((c) => (
-                              <button
-                                key={c}
-                                type="button"
-                                className="color-swatch"
-                                style={{ background: c }}
-                                title="צבע"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  updateElement(el.id, { color: c })
-                                }}
-                              />
-                            ))}
-                          </div>
-                          <button
-                            type="button"
-                            title={el.locked ? 'שחרר נעילה' : 'נעל'}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleElementLock(el.id)
-                            }}
-                          >
-                            {el.locked ? '🔓' : '🔒'}
-                          </button>
-                          <button
-                            type="button"
-                            title="שכפל"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              duplicateElement(el.id)
-                            }}
-                          >
-                            ⧉
-                          </button>
-                          <button
-                            type="button"
-                            title="מחק"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              removeElement(el.id)
-                            }}
-                          >
-                            ×
-                          </button>
-                        </div>
-
-                        {!el.locked && (
-                          <>
-                            <span
-                              className="handle handle-rotate"
-                              title="סובב"
-                              onPointerDown={(e) => onRotatePointerDown(e, el.id)}
-                            />
-                            <span
-                              className="handle handle-resize"
-                              title="שנה גודל"
-                              onPointerDown={(e) => onResizePointerDown(e, el.id)}
-                            />
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )
-              })}
-
-              {tables.map((t) => {
-                const used = t.guests.reduce((s, g) => s + g.seats, 0)
-                const over = used > t.capacity
-                const free = t.capacity - used
-                const isSelT = selectedTables.has(t.table_number)
-                const { w, h } = tableSize(t.table_type, preset)
-                const color = t.color || TABLE_TYPE_DEFAULT_COLOR[t.table_type]
-                const occupied: string[] = []
-                for (const g of t.guests) for (let i = 0; i < g.seats; i++) occupied.push(g.side)
-                const seatCount = Math.max(t.capacity, occupied.length, 1)
-                const pts = seatPositions(t.table_type, seatCount, w, h)
-                // כל מוזמן "תופס" נקודת כיסא ראשית (שבה יוצג עיגול-המוזמן) ואולי
-                // עוד נקודות-לוואי (מלווים/seats>1) שמסומנות כתפוסות בלי עיגול נפרד.
-                const guestAtPoint = new Map<number, HallGuest>()
-                const companionPoints = new Set<number>()
-                {
-                  let idx = 0
-                  for (const g of t.guests) {
-                    guestAtPoint.set(idx, g)
-                    for (let k = 1; k < g.seats; k++) companionPoints.add(idx + k)
-                    idx += Math.max(1, g.seats)
-                  }
-                }
-                const status = tableStatus.get(t.table_number) ?? 'green'
-                // מצב תפוסה חזותי (מקרא): שולחן מלא = זהב, כמעט מלא (≥80%) = ירוק,
-                // אחרת = ניטרלי. מוצג רק כשאין בעיה/אזהרה (status='green'), כדי לא
-                // להסתיר את טבעת האזהרה האדומה/צהובה. תואם עיצוב VEYA Seating.
-                const fillClass =
-                  status === 'green' && !over
-                    ? used >= t.capacity
-                      ? 'fill-full'
-                      : t.capacity > 0 && used / t.capacity >= 0.8
-                        ? 'fill-near'
-                        : ''
-                    : ''
-                // גוף השולחן מתמלא בצבע לפי תפוסה (עיצוב VEYA Seating):
-                // פנוי=לבן, כמעט מלא=שמנת-חול, מלא=זהב. אם הזוג בחר צבע ידני
-                // לשולחן — מכבדים אותו (שומרים על תכונת הצבע המותאם).
-                const hasCustomColor = !!t.color
-                let bodyBg = `${color}33`
-                let bodyBorder = color
-                if (!hasCustomColor && status === 'green' && !over) {
-                  if (used >= t.capacity) {
-                    bodyBg = 'linear-gradient(160deg,#E9DCB3,#C9A227)'
-                    bodyBorder = '#FFFFFF'
-                  } else if (t.capacity > 0 && used / t.capacity >= 0.8) {
-                    bodyBg = 'linear-gradient(160deg,#F4EEE0,#D9CBA6)'
-                    bodyBorder = '#FFFFFF'
-                  } else {
-                    bodyBg = '#FFFFFF'
-                    bodyBorder = '#E5DEC9'
-                  }
-                }
-                const liveCheck =
-                  dragOver === t.table_number && draggedGuestForLive
-                    ? liveDragValidation(draggedGuestForLive, t, forbiddenPairs, familyGroups)
-                    : null
-                return (
-                  <div
-                    key={t.table_number}
-                    data-tnum={t.table_number}
-                    className={`hall-table ${over ? 'over' : ''} ${
-                      !over && warnTables.has(t.table_number) ? 'warn' : ''
-                    } ${selected !== null ? 'droppable' : ''} ${isSelT ? 'selected' : ''} ${
-                      t.locked ? 'locked' : ''
-                    } ${t.is_reserve ? 'reserve' : ''} ${
-                      dragOver === t.table_number ? 'drag-over' : ''
-                    } ${fillClass}`}
-                    style={{ left: t.x, top: t.y, width: w }}
-                    onClick={(e) => onTableClick(e, t.table_number)}
-                    onDragOver={(e) => {
-                      e.preventDefault()
-                      setDragOver(t.table_number)
-                    }}
-                    onDragLeave={() => setDragOver((c) => (c === t.table_number ? null : c))}
-                    onDrop={(e) => onDropTo(e, t.table_number)}
-                  >
-                    <span
-                      className={`table-status-dot status-${status}`}
-                      title={
-                        status === 'red'
-                          ? 'בעיה בשולחן — ראו אזהרות'
-                          : status === 'yellow'
-                            ? 'יש המלצה/אזהרה קלה לשולחן הזה'
-                            : 'תקין'
-                      }
-                    />
-                    <div
-                      className={`table-graphic type-${t.table_type}`}
-                      style={{
-                        width: w,
-                        height: h,
-                        transform: `rotate(${t.rotation}deg)`,
-                        background: bodyBg,
-                        borderColor: bodyBorder,
-                      }}
-                      onPointerDown={(e) => onTablePointerDown(e, t.table_number)}
-                    >
-                      {/* כיסאות נקיים סביב היקף השולחן — תפוס/פנוי, בלי שמות
-                          (עיצוב VEYA Seating: השולחן נשאר נקי, המספר והסְפירה
-                          מספרים כמה יושבים). ניהול המוזמנים נעשה בפאנל הצד. */}
-                      <span className="seat-layer" aria-hidden="true">
-                        {pts.map((p, i) => (
-                          <span
-                            key={i}
-                            className={`seat-pip ${
-                              guestAtPoint.has(i) || companionPoints.has(i) ? 'seat-taken' : ''
-                            } ${i >= t.capacity ? 'seat-extra' : ''}`}
-                            style={{ left: p.left, top: p.top }}
-                          />
-                        ))}
-                      </span>
-                      <span className="table-center">
-                        <span className="table-num">{t.table_number}</span>
-                        {t.name && <span className="table-name">{t.name}</span>}
-                        {t.is_reserve && <span className="table-reserve-tag">רזרבה</span>}
-                        <span className="table-occ">
-                          {used}/{t.capacity}
-                        </span>
-                      </span>
-                      {t.locked && (
-                        <span className="element-lock-badge" title="נעול">
-                          🔒
-                        </span>
-                      )}
-                      {isSelT && !t.locked && soleSelectedNum === t.table_number && (
-                        <span
-                          className="handle handle-rotate table-rot"
-                          title="סובב שולחן"
-                          onPointerDown={(e) => onTableRotatePointerDown(e, t.table_number)}
-                        />
-                      )}
-                    </div>
-
-                    {dragOver === t.table_number && (
-                      <span className={`free-badge ${free <= 0 ? 'full' : ''}`}>
-                        {free > 0 ? `${free} כיסאות פנויים` : 'השולחן מלא'}
-                        {liveCheck && liveCheck.lines.length > 0 && (
-                          <span className={`free-badge-live ${liveCheck.level}`}>
-                            {liveCheck.lines.map((line, i) => (
-                              <span key={i}>{line}</span>
-                            ))}
-                          </span>
-                        )}
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
+              <button
+                className="day-mode-close"
+                onClick={() => {
+                  setDayMode(false)
+                  setAssignGuestId(null)
+                  setRecs(null)
+                }}
+                aria-label="סגירה"
+              >
+                ✕
+              </button>
             </div>
-          </div>
 
-          {/* פאנל בחירה מרובה */}
-          {selectedTables.size > 1 && (
-            <div className="hall-props-panel multi" onPointerDown={(e) => e.stopPropagation()}>
-              <div className="props-head">
-                <h4>נבחרו {selectedTables.size} שולחנות</h4>
-                <button className="x" onClick={() => setSelectedTables(new Set())}>
-                  ✕
-                </button>
-              </div>
-              <p className="file-name">גררו כל שולחן נבחר כדי להזיז את כולם יחד.</p>
-              <div className="props-actions">
-                <button
-                  className="danger"
-                  onClick={() => {
-                    selectedTables.forEach((n) => deleteTable(n))
-                  }}
-                >
-                  🗑 מחיקת הנבחרים
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* פאנל עריכת שולחן בודד */}
-          {soleSelected && (
-            <div className="hall-props-panel" onPointerDown={(e) => e.stopPropagation()}>
-              <div className="props-head">
-                <h4>עריכת שולחן</h4>
-                <button className="x" onClick={() => setSelectedTables(new Set())}>
-                  ✕
-                </button>
-              </div>
-
-              <label className="props-field">
-                מספר שולחן
-                <input
-                  type="number"
-                  min={1}
-                  defaultValue={soleSelected.table_number}
-                  key={soleSelected.table_number}
-                  onBlur={(e) => renumberTable(soleSelected.table_number, e.target.value)}
-                />
-              </label>
-
-              <label className="props-field">
-                שם (אופציונלי)
-                <input
-                  type="text"
-                  value={soleSelected.name}
-                  maxLength={60}
-                  placeholder='למשל "משפחת כהן"'
-                  onChange={(e) => updateTable(soleSelected.table_number, { name: e.target.value })}
-                />
-              </label>
-
-              <div className="props-field">
-                סוג שולחן
-                <div className="type-chip-row">
-                  {(Object.keys(TABLE_TYPE_LABELS) as TableType[]).map((tt) => (
-                    <button
-                      key={tt}
-                      type="button"
-                      className={soleSelected.table_type === tt ? 'active' : ''}
-                      onClick={() =>
-                        updateTable(soleSelected.table_number, {
-                          table_type: tt,
-                          // שולחן אבירים תמיד מתחיל ב-24 מקומות, כל שאר הסוגים ב-12 —
-                          // כי מעבר בין סוגים משנה גם את הגודל הטבעי של השולחן.
-                          capacity: defaultCapacityForType(tt),
-                        })
-                      }
-                    >
-                      {TABLE_TYPE_LABELS[tt]}
-                    </button>
-                  ))}
+            {reserveSummary && (
+              <div className="day-mode-stats">
+                <div className="dm-stat">
+                  <span className="dm-num">{reserveSummary.free_seats_active}</span>
+                  <span className="dm-label">מקומות פנויים</span>
+                </div>
+                <div className="dm-stat">
+                  <span className="dm-num">{reserveSummary.reserve_tables}</span>
+                  <span className="dm-label">שולחנות רזרבה</span>
+                </div>
+                <div className="dm-stat">
+                  <span className="dm-num">{reserveSummary.seated_people}</span>
+                  <span className="dm-label">משובצים</span>
+                </div>
+                <div className="dm-stat">
+                  <span className="dm-num">{reserveSummary.unseated_guests}</span>
+                  <span className="dm-label">ללא שולחן</span>
                 </div>
               </div>
+            )}
 
-              <div className="props-field">
-                מספר מקומות
-                <div className="stepper">
-                  <button type="button" onClick={() => bumpCapacity(soleSelected.table_number, -1)}>
-                    −
-                  </button>
-                  <select
-                    value={soleSelected.capacity}
-                    onChange={(e) =>
-                      updateTable(soleSelected.table_number, { capacity: Number(e.target.value) })
-                    }
-                  >
-                    {SEAT_OPTIONS.map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                  <button type="button" onClick={() => bumpCapacity(soleSelected.table_number, 1)}>
-                    +
-                  </button>
-                </div>
-              </div>
+            {assignNote && <p className="day-mode-note">{assignNote}</p>}
 
-              <div className="props-field">
-                צבע
-                <div className="color-row">
-                  {TABLE_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      className={`color-swatch ${soleSelected.color === c ? 'active' : ''}`}
-                      style={{ background: c }}
-                      onClick={() => updateTable(soleSelected.table_number, { color: c })}
-                    />
-                  ))}
-                  <button
-                    type="button"
-                    className={`color-swatch none ${soleSelected.color === '' ? 'active' : ''}`}
-                    title="ברירת מחדל"
-                    onClick={() => updateTable(soleSelected.table_number, { color: '' })}
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-
-              <label className="props-field reserve-toggle">
-                <span className="reserve-toggle-head">
-                  <input
-                    type="checkbox"
-                    checked={soleSelected.is_reserve}
-                    onChange={(e) =>
-                      updateTable(soleSelected.table_number, { is_reserve: e.target.checked })
-                    }
-                  />
-                  שולחן רזרבה
-                </span>
-                <span className="reserve-toggle-hint">
-                  לא ישובץ אוטומטית — שמור לאורחים של הרגע האחרון ביום האירוע.
-                </span>
-              </label>
-
-              <div className="props-field">
-                יושבים בשולחן ({soleSelected.guests.reduce((s, g) => s + g.seats, 0)}/
-                {soleSelected.capacity})
-                {soleSelected.guests.length === 0 ? (
-                  <p className="seated-empty">גררו מוזמנים מהמגש אל השולחן כדי להושיב אותם כאן.</p>
-                ) : (
-                  <div className="seated-list">
-                    {soleSelected.guests.map((g) => (
-                      <span key={g.id} className={`seated-row side-${g.side}`}>
-                        <span
-                          className="seated-name"
-                          draggable
-                          onDragStart={(e) => onGuestDragStart(e, g.id)}
-                          onDragEnd={onGuestDragEnd}
-                          title={`${g.full_name} · ${sideLabel(g.side)} · גררו לשולחן אחר`}
-                        >
+            <div className="day-mode-list">
+              {unassigned.length === 0 ? (
+                <p className="day-mode-empty">כל ה{activeEventTerms().guestsLabel} משובצים 🎉</p>
+              ) : (
+                [...unassigned]
+                  .sort((a, b) => a.full_name.localeCompare(b.full_name, 'he'))
+                  .map((g) => (
+                    <div key={g.id} className={`dm-guest ${assignGuestId === g.id ? 'open' : ''}`}>
+                      <button className="dm-guest-head" onClick={() => openAssign(g.id)}>
+                        <span className="dm-guest-name">
                           {g.full_name}
                           {g.seats > 1 && <span className="chip-size">×{g.seats}</span>}
                         </span>
-                        <button
-                          type="button"
-                          className="seated-remove"
-                          title="הסרה מהשולחן (חזרה למגש)"
-                          onClick={() => moveGuestToTable(g.id, null)}
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+                        <span className="dm-guest-cta">
+                          {assignGuestId === g.id ? 'סגירה' : 'שבץ אורח'}
+                        </span>
+                      </button>
 
-              <label className="props-field">
-                הערות
-                <textarea
-                  value={soleSelected.notes}
-                  maxLength={400}
-                  rows={2}
-                  onChange={(e) => updateTable(soleSelected.table_number, { notes: e.target.value })}
-                />
-              </label>
-
-              <div className="props-actions">
-                <button onClick={() => duplicateTable(soleSelected.table_number)}>⧉ שכפול</button>
-                <button
-                  onClick={() => updateTable(soleSelected.table_number, { locked: !soleSelected.locked })}
-                >
-                  {soleSelected.locked ? '🔓 שחרור' : '🔒 נעילה'}
-                </button>
-                <button className="danger" onClick={() => deleteTable(soleSelected.table_number)}>
-                  🗑 מחיקה
-                </button>
-              </div>
-
-              {/* תובנת שולחן מהעוזר החכם — לא פאנל נפרד, כדי למנוע כפילות ממשק */}
-              {soleSelectedInsight && (
-                <div className={`table-insight ${soleSelectedInsight.hasProblem ? 'has-problem' : ''}`}>
-                  <h5>תובנת שולחן</h5>
-                  <p>
-                    {soleSelectedInsight.occupied}/{soleSelectedInsight.capacity} תפוסים ·{' '}
-                    {soleSelectedInsight.free} פנויים
-                  </p>
-                  {soleSelectedInsight.families.length > 0 && (
-                    <p className="table-insight-line">
-                      משפחות: {soleSelectedInsight.families.join(', ')}
-                    </p>
-                  )}
-                  {soleSelectedInsight.groups.length > 0 && (
-                    <p className="table-insight-line">קבוצות: {soleSelectedInsight.groups.join(', ')}</p>
-                  )}
-                  {soleSelectedInsight.hasProblem && (
-                    <p className="table-insight-warn">⚠ יש בעיה בשולחן הזה — ראו אזהרות למעלה</p>
-                  )}
-                </div>
+                      {assignGuestId === g.id && (
+                        <div className="dm-recs">
+                          {recLoading && <p className="dm-recs-loading">מחשב המלצה…</p>}
+                          {!recLoading && recs && recs.length === 0 && (
+                            <p className="dm-recs-empty">
+                              אין שולחן פנוי מתאים — פנו מקום או הוסיפו שולחן רזרבה.
+                            </p>
+                          )}
+                          {!recLoading &&
+                            recs &&
+                            recs.map((r, i) => (
+                              <button
+                                key={r.table_number}
+                                className={`dm-rec ${i === 0 ? 'best' : ''}`}
+                                disabled={assignBusy}
+                                onClick={() => doAssign(g.id, r.table_number)}
+                              >
+                                <span className="dm-rec-top">
+                                  <span className="dm-rec-table">
+                                    שולחן {r.table_number}
+                                    {r.table_name && ` · ${r.table_name}`}
+                                    {r.is_reserve && <span className="dm-rec-reserve">רזרבה</span>}
+                                  </span>
+                                  <span className="dm-rec-free">{r.free_seats} פנויים</span>
+                                </span>
+                                {r.reasons.length > 0 && (
+                                  <span className="dm-rec-reasons">{r.reasons.join(' · ')}</span>
+                                )}
+                                {i === 0 && <span className="dm-rec-badge">מומלץ</span>}
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  ))
               )}
             </div>
-          )}
-
-          {/* פאנל עריכת אלמנט (תווית בלבד — צבע/צורה בסרגל הצף שעל האלמנט) */}
-          {soleSelectedEl && (
-            <div className="hall-props-panel" onPointerDown={(e) => e.stopPropagation()}>
-              <div className="props-head">
-                <h4>{soleSelectedEl.label}</h4>
-                <button className="x" onClick={() => setSelectedEl(null)}>
-                  ✕
-                </button>
-              </div>
-              <label className="props-field">
-                תווית
-                <input
-                  type="text"
-                  value={soleSelectedEl.label}
-                  maxLength={40}
-                  onChange={(e) => updateElement(soleSelectedEl.id, { label: e.target.value })}
-                />
-              </label>
-
-              <div className="props-field props-dim-row">
-                <label>
-                  רוחב
-                  <input
-                    type="number"
-                    min={30}
-                    max={1000}
-                    value={Math.round(soleSelectedEl.width)}
-                    onChange={(e) =>
-                      updateElement(soleSelectedEl.id, { width: clamp(Number(e.target.value) || 30, 30, 1000) })
-                    }
-                  />
-                </label>
-                <label>
-                  גובה
-                  <input
-                    type="number"
-                    min={20}
-                    max={1000}
-                    value={Math.round(soleSelectedEl.height)}
-                    onChange={(e) =>
-                      updateElement(soleSelectedEl.id, { height: clamp(Number(e.target.value) || 20, 20, 1000) })
-                    }
-                  />
-                </label>
-                <label>
-                  סיבוב°
-                  <input
-                    type="number"
-                    min={-180}
-                    max={180}
-                    value={Math.round(soleSelectedEl.rotation)}
-                    onChange={(e) =>
-                      updateElement(soleSelectedEl.id, { rotation: clamp(Number(e.target.value) || 0, -180, 180) })
-                    }
-                  />
-                </label>
-              </div>
-
-              <div className="props-actions">
-                <button onClick={() => duplicateElement(soleSelectedEl.id)}>⧉ שכפול</button>
-                <button onClick={() => toggleElementLock(soleSelectedEl.id)}>
-                  {soleSelectedEl.locked ? '🔓 שחרור' : '🔒 נעילה'}
-                </button>
-                <button className="danger" onClick={() => removeElement(soleSelectedEl.id)}>
-                  🗑 מחיקה
-                </button>
-              </div>
-
-              <p className="file-name">גררו לתזוזה · גררו את הידיות לסיבוב/שינוי גודל, או הזינו ערכים מדויקים למעלה.</p>
-            </div>
-          )}
-        </div>
-
-        {/* עוזר הושבה חכם — פאנל צד קבוע (Dock), לא חלון צף שמכסה את המפה. */}
-        {smartPanelOpen && (
-          <SmartAssistantPanel
-            stats={smartStats}
-            warnings={smartWarnings}
-            suggestions={smartSuggestions}
-            searchQuery={smartSearchQuery}
-            onSearchQueryChange={setSmartSearchQuery}
-            searchResults={smartSearchResults}
-            pendingProposal={pendingProposal}
-            onProposeSuggestion={onProposeSuggestion}
-            onConfirmProposal={onConfirmProposal}
-            onCancelProposal={onCancelProposal}
-            onSmartFill={onSmartFill}
-            unassignedCount={unassigned.length}
-            onClose={() => setSmartPanelOpen(false)}
-          />
+          </div>
         )}
       </div>
-      {sketchEditSrc && (
-        <SketchEditor
-          src={sketchEditSrc}
-          baseAspect={canvasAspect()}
-          orientation={hallOrientation}
-          onCancel={() => setSketchEditSrc(null)}
-          onConfirm={onSketchConfirm}
-        />
-      )}
-
-      {dayMode && (
-        <div className="day-mode" role="dialog" aria-label="מצב יום האירוע">
-          <div className="day-mode-head">
-            <div>
-              <h3>מצב יום האירוע</h3>
-              <p>שיבוץ אורחים של הרגע האחרון — בקליק, עם המלצה חכמה.</p>
-            </div>
-            <button
-              className="day-mode-close"
-              onClick={() => {
-                setDayMode(false)
-                setAssignGuestId(null)
-                setRecs(null)
-              }}
-              aria-label="סגירה"
-            >
-              ✕
-            </button>
-          </div>
-
-          {reserveSummary && (
-            <div className="day-mode-stats">
-              <div className="dm-stat">
-                <span className="dm-num">{reserveSummary.free_seats_active}</span>
-                <span className="dm-label">מקומות פנויים</span>
-              </div>
-              <div className="dm-stat">
-                <span className="dm-num">{reserveSummary.reserve_tables}</span>
-                <span className="dm-label">שולחנות רזרבה</span>
-              </div>
-              <div className="dm-stat">
-                <span className="dm-num">{reserveSummary.seated_people}</span>
-                <span className="dm-label">משובצים</span>
-              </div>
-              <div className="dm-stat">
-                <span className="dm-num">{reserveSummary.unseated_guests}</span>
-                <span className="dm-label">ללא שולחן</span>
-              </div>
-            </div>
-          )}
-
-          {assignNote && <p className="day-mode-note">{assignNote}</p>}
-
-          <div className="day-mode-list">
-            {unassigned.length === 0 ? (
-              <p className="day-mode-empty">כל ה{activeEventTerms().guestsLabel} משובצים 🎉</p>
-            ) : (
-              [...unassigned]
-                .sort((a, b) => a.full_name.localeCompare(b.full_name, 'he'))
-                .map((g) => (
-                  <div
-                    key={g.id}
-                    className={`dm-guest ${assignGuestId === g.id ? 'open' : ''}`}
-                  >
-                    <button className="dm-guest-head" onClick={() => openAssign(g.id)}>
-                      <span className="dm-guest-name">
-                        {g.full_name}
-                        {g.seats > 1 && <span className="chip-size">×{g.seats}</span>}
-                      </span>
-                      <span className="dm-guest-cta">
-                        {assignGuestId === g.id ? 'סגירה' : 'שבץ אורח'}
-                      </span>
-                    </button>
-
-                    {assignGuestId === g.id && (
-                      <div className="dm-recs">
-                        {recLoading && <p className="dm-recs-loading">מחשב המלצה…</p>}
-                        {!recLoading && recs && recs.length === 0 && (
-                          <p className="dm-recs-empty">
-                            אין שולחן פנוי מתאים — פנו מקום או הוסיפו שולחן רזרבה.
-                          </p>
-                        )}
-                        {!recLoading &&
-                          recs &&
-                          recs.map((r, i) => (
-                            <button
-                              key={r.table_number}
-                              className={`dm-rec ${i === 0 ? 'best' : ''}`}
-                              disabled={assignBusy}
-                              onClick={() => doAssign(g.id, r.table_number)}
-                            >
-                              <span className="dm-rec-top">
-                                <span className="dm-rec-table">
-                                  שולחן {r.table_number}
-                                  {r.table_name && ` · ${r.table_name}`}
-                                  {r.is_reserve && (
-                                    <span className="dm-rec-reserve">רזרבה</span>
-                                  )}
-                                </span>
-                                <span className="dm-rec-free">{r.free_seats} פנויים</span>
-                              </span>
-                              {r.reasons.length > 0 && (
-                                <span className="dm-rec-reasons">
-                                  {r.reasons.join(' · ')}
-                                </span>
-                              )}
-                              {i === 0 && <span className="dm-rec-badge">מומלץ</span>}
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                ))
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function GuestChip({
-  g,
-  selected,
-  onClick,
-  onDragStart,
-  onDragEnd,
-}: {
-  g: HallGuest
-  selected: boolean
-  onClick: (e: React.MouseEvent) => void
-  onDragStart?: (e: React.DragEvent) => void
-  onDragEnd?: () => void
-}) {
-  return (
-    <span
-      className={`guest-chip side-${g.side} ${selected ? 'selected' : ''}`}
-      draggable={!!onDragStart}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      onClick={onClick}
-      title={`${sideLabel(g.side)} · גררו לשולחן או לחצו לבחירה`}
-    >
-      {g.full_name}
-      {g.seats > 1 && <span className="chip-size">×{g.seats}</span>}
-    </span>
-  )
+    )
+  }
 }
 

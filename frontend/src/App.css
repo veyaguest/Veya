@@ -8345,6 +8345,30 @@
     position: relative;
   }
 
+  /* באנר שגיאה — עד 2026-07 שגיאות נשמרו ל-state אבל לא הוצגו בשום מקום */
+  .hm-error-banner {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(166, 96, 90, 0.12);
+    border-bottom: 1px solid #e2c2bf;
+    color: var(--charcoal);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .hm-error-banner button {
+    flex: 0 0 auto;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
   /* באנר "מצב העברה" */
   .hm-move-banner {
     flex: 0 0 auto;
@@ -8726,6 +8750,74 @@
     padding-top: 6px;
     margin-top: 6px;
     border-top: 1px solid var(--line-2);
+  }
+
+  /* ---- אילוצים והעדפות: סיכום ותור ההבהרות ---- */
+  .hm-clar-summary {
+    margin: 0;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .hm-clar-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 13px;
+    border: 1px solid var(--gold-light);
+    border-radius: 12px;
+    background: rgba(201, 162, 39, 0.07);
+  }
+  .hm-clar-q {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--charcoal);
+  }
+  .hm-clar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .hm-clar-actions .hm-ghost-btn {
+    width: auto;
+    flex: 0 1 auto;
+  }
+  .hm-clar-none {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .hm-clar-ok {
+    margin: 0;
+    font-size: 13px;
+    color: #2f7d55;
+  }
+
+  /* ---- תובנות שולחן בתוך ה-Bottom Sheet ---- */
+  .hm-sheet-insight {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    margin: 0 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--cream);
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .hm-sheet-insight.problem {
+    border-color: #e2c2bf;
+    background: rgba(166, 96, 90, 0.07);
+  }
+  .hm-sheet-insight-flag {
+    color: #a6605a;
+    font-weight: 600;
   }
   .hm-tools-group select {
     width: 100%;
