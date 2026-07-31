@@ -23,8 +23,9 @@ router = APIRouter(prefix="/constraints", tags=["constraints"])
 
 
 def _guest_dicts(guests: list[models.Guest]) -> list[dict]:
+    """הקלט לפרסור — הערות ההושבה בלבד (ההערה הפנימית לא מנותחת)."""
     return [
-        {"id": g.id, "full_name": g.full_name, "notes_raw": g.notes_raw}
+        {"id": g.id, "full_name": g.full_name, "seating_notes": g.seating_notes}
         for g in guests
     ]
 
@@ -56,7 +57,7 @@ def analyze(
 
     for g in guests:
         parsed = parser.analyze_guest(
-            {"id": g.id, "full_name": g.full_name, "notes_raw": g.notes_raw},
+            {"id": g.id, "full_name": g.full_name, "seating_notes": g.seating_notes},
             guest_dicts,
         )
         for rel in parsed["relations"]:

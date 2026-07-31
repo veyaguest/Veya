@@ -57,14 +57,16 @@ def generate(
         for g in guests
     ]
 
-    # אילוצים מההערות — נגזרים *טרי* בזמן השיבוץ, ולא מסתמכים על constraints_parsed
-    # השמור (שעלול להיות ריק אם המשתמש רק הקליד הערה ולא הריץ ניתוח ידני). כך
-    # "לא לשבת יחד" שנכתב בהערה תמיד נאכף כחוק קשיח בסידור האוטומטי.
+    # אילוצים מ**הערות ההושבה בלבד** (`seating_notes`) — הערה פנימית
+    # (`notes_raw`) לא נקראת כאן במכוון. נגזרים *טרי* בזמן השיבוץ, ולא
+    # מסתמכים על constraints_parsed השמור (שעלול להיות ריק אם המשתמש רק
+    # הקליד הערה ולא הריץ ניתוח ידני). כך "לא לשבת יחד" שנכתב בהערת הושבה
+    # תמיד נאכף כחוק קשיח בסידור האוטומטי.
     # התאמה *מכלילה*: שם פרטי בלבד → כל המוזמנים באותו שם (כל ה"דני" באולם);
     # "משפחת X" → כל בני המשפחה. build_pairs_from_guests מיישם זאת ישירות מתוך
     # ההערות הגולמיות, בלי resolve_name (שבוחר התאמה יחידה והופך שם עמום להבהרה).
     guest_full = [
-        {"id": g.id, "full_name": g.full_name, "notes_raw": g.notes_raw}
+        {"id": g.id, "full_name": g.full_name, "seating_notes": g.seating_notes}
         for g in guests
     ]
     fb, tg = parser.build_pairs_from_guests(guest_full)
@@ -99,7 +101,7 @@ def generate(
     group_notes = event.group_notes or {}
     preferences = {
         g.id: parser.guest_preferences(
-            g.notes_raw, g.guest_note, group_notes.get(g.group_type)
+            g.seating_notes, g.guest_note, group_notes.get(g.group_type)
         )
         for g in guests
     }
@@ -279,7 +281,7 @@ def recommend_seat(
     ).all()
 
     guest_full = [
-        {"id": g.id, "full_name": g.full_name, "notes_raw": g.notes_raw}
+        {"id": g.id, "full_name": g.full_name, "seating_notes": g.seating_notes}
         for g in guests
     ]
     fb, tg = parser.build_pairs_from_guests(guest_full)
@@ -292,7 +294,7 @@ def recommend_seat(
     zones = _build_zones(event.hall_elements or [])
     group_notes = event.group_notes or {}
     prefs = parser.guest_preferences(
-        guest.notes_raw, guest.guest_note, group_notes.get(guest.group_type)
+        guest.seating_notes, guest.guest_note, group_notes.get(guest.group_type)
     )
     needed = max(1, guest.effective_seats)
     recs = seating.recommend_seats(
@@ -346,7 +348,7 @@ def assign_seat(
                 f"שולחן {payload.table_number}: {used} אנשים מתוך {cap} — חריגה מהקיבולת"
             )
         guest_full = [
-            {"id": g.id, "full_name": g.full_name, "notes_raw": g.notes_raw}
+            {"id": g.id, "full_name": g.full_name, "seating_notes": g.seating_notes}
             for g in guests
         ]
         fb, _ = parser.build_pairs_from_guests(guest_full)

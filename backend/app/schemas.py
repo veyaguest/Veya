@@ -40,7 +40,10 @@ class GuestCreate(BaseModel):
     side: Side = "shared"
     group_type: GroupType = "other"
     party_size: int = 1
+    # notes_raw = הערה פנימית (לא משפיעה על ההושבה)
     notes_raw: Optional[str] = None
+    # seating_notes = הערות הושבה — המקור היחיד שמנוע ההושבה קורא מהבעלים
+    seating_notes: Optional[str] = None
     is_child: bool = False
 
     @field_validator("full_name")
@@ -76,6 +79,7 @@ class GuestUpdate(BaseModel):
     group_type: Optional[GroupType] = None
     party_size: Optional[int] = None
     notes_raw: Optional[str] = None
+    seating_notes: Optional[str] = None
     rsvp_status: Optional[RsvpStatus] = None
     table_number: Optional[int] = None
     is_child: Optional[bool] = None
@@ -98,6 +102,7 @@ class GuestRead(BaseModel):
     group_type: str
     party_size: int
     notes_raw: Optional[str]
+    seating_notes: Optional[str] = None
     rsvp_status: str
     table_number: Optional[int]
     guest_token: Optional[str] = None

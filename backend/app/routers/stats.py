@@ -56,7 +56,9 @@ def dashboard(
 
     # אותות ל"העדפות ישיבה" במדד המוכנות: מוזמנים עם הערה חופשית + קבוצות
     # שהוגדרה להן העדפה (סבב B). שניהם רכים — לא חוסמים.
-    guests_with_notes = sum(1 for g in guests if (g.notes_raw or "").strip())
+    # מוכנות ההושבה נמדדת לפי **הערות הושבה** — הערה פנימית לא תורמת כלום
+    # למנוע, ולכן לא נכון לספור אותה כ"העדפה שהוגדרה".
+    guests_with_notes = sum(1 for g in guests if (g.seating_notes or "").strip())
     group_notes_count = len(event.group_notes or {})
 
     invitations_sent = db.scalar(

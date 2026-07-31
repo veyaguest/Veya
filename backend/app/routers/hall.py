@@ -55,17 +55,25 @@ def _table_type_from_pos(pos: dict) -> str:
     return _LEGACY_SHAPE_TO_TYPE.get(str(pos.get("shape", "round")), "round")
 
 
+def _seating_note_dicts(guests: list[models.Guest]) -> list[dict]:
+    """הקלט ל-``parser.build_pairs_from_guests`` — הערות הושבה בלבד."""
+    return [
+        {"id": g.id, "full_name": g.full_name, "seating_notes": g.seating_notes}
+        for g in guests
+    ]
+
+
 def _compute_warnings(
     tables: dict[int, list[models.Guest]],
     capacities: dict[int, int],
     all_guests: list[models.Guest],
 ) -> list[str]:
     warnings: list[str] = []
-    forbidden = set(
-        parser.build_forbidden_pairs(
-            [{"id": g.id, "constraints_parsed": g.constraints_parsed} for g in all_guests]
-        )
-    )
+    # נגזר **טרי** מהערות ההושבה, בדיוק כמו ב-routers/seating.py.
+    # עד 2026-07 זה נבנה מ-`constraints_parsed` השמור, שנשאר ריק אלא אם
+    # המשתמש הריץ ידנית "בדיקת ההערות" — ולכן אזהרת "לא לשבת יחד" כמעט
+    # אף פעם לא הופיעה, וזה נראה כאילו המערכת מתעלמת מההערות.
+    forbidden = set(parser.build_pairs_from_guests(_seating_note_dicts(all_guests))[0])
     name_by_id = {g.id: g.full_name for g in all_guests}
     for tnum, members in tables.items():
         used = sum(g.effective_seats for g in members)
@@ -140,14 +148,13 @@ def get_hall(
         schemas.HallElement(**el) for el in (event.hall_elements or [])
     ]
 
-    # זוגות אילוצים שכבר מחושבים היום מהערות חופשיות — נחשפים כאן כדי
-    # שעוזר ההושבה החכם בצד הלקוח יוכל לבדוק אותם מיידית (כולל בזמן גרירה)
-    # בלי קריאת רשת נוספת. אותו דפוס בדיוק כמו ב-routers/seating.py.
-    constraint_dicts = [
-        {"id": g.id, "constraints_parsed": g.constraints_parsed} for g in guests
-    ]
-    forbidden_pairs = parser.build_forbidden_pairs(constraint_dicts)
-    together_pairs = parser.build_together_pairs(constraint_dicts)
+    # זוגות אילוצים מהערות ההושבה — נחשפים כאן כדי שעוזר ההושבה החכם בצד
+    # הלקוח יוכל לבדוק אותם מיידית בלי קריאת רשת נוספת. נגזר טרי, בדיוק
+    # כמו ב-routers/seating.py, ולא מ-constraints_parsed השמור (ראו ההערה
+    # ב-_compute_warnings — זה היה מקור לכך שההערות "לא השפיעו").
+    forbidden_pairs, together_pairs = parser.build_pairs_from_guests(
+        _seating_note_dicts(guests)
+    )
 
     return schemas.HallState(
         seats_per_table=seats,

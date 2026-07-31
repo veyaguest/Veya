@@ -232,6 +232,7 @@ def export_my_data(
             "group_type": g.group_type,
             "party_size": g.party_size,
             "notes_raw": g.notes_raw,
+            "seating_notes": g.seating_notes,
             "rsvp_status": g.rsvp_status,
             "table_number": g.table_number,
             "confirmed_count": g.confirmed_count,

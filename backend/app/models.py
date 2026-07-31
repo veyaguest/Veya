@@ -147,8 +147,14 @@ class Guest(Base):
     side: Mapped[str] = mapped_column(String, default="shared")  # groom/bride/shared
     group_type: Mapped[str] = mapped_column(String, default="other")
     party_size: Mapped[int] = mapped_column(Integer, default=1)
+    # הערה פנימית של הבעלים ("דיברנו איתו", "צריך לחזור אליו"). מידע בלבד —
+    # **לא** מוזנת למנוע ההושבה ולא מנותחת לאילוצים.
     notes_raw: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    # נגזר אוטומטית מ-notes_raw ע"י ה-AI בשלב 4 (כרגע ריק)
+    # הערות הושבה ("לא לשבת ליד משה", "קרוב לבר", "רחוק מהרעש"). זה **המקור
+    # היחיד** שמנוע ההושבה קורא מהבעלים. ההפרדה נעשתה כדי שהערה תפעולית
+    # ("צריך לבדוק מולו") לא תתפרש בטעות כאילוץ ישיבה.
+    seating_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # נגזר אוטומטית מ-seating_notes (ניתוח ההערות + תור ההבהרות)
     constraints_parsed: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     rsvp_status: Mapped[str] = mapped_column(String, default="pending")  # pending/confirmed/declined/maybe
     table_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)

@@ -108,6 +108,10 @@ _EXTRA_COLUMNS = {
         "confirmed_count": "INTEGER",
         "guest_note": "TEXT",
         "is_child": "BOOLEAN DEFAULT 0",
+        # הערות הושבה — נפרד מ-notes_raw (שהפך להערה פנימית בלבד). מתווסף
+        # ריק בכוונה: הערות ישנות לא מועתקות אוטומטית, כדי לא להפוך הערה
+        # תפעולית לאילוץ ישיבה. במסך המוזמנים יש הצעה להעביר ידנית.
+        "seating_notes": "TEXT",
     },
     "venues": {
         "city": "VARCHAR DEFAULT ''",

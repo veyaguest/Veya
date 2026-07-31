@@ -23,6 +23,10 @@ COLUMN_KEYWORDS = {
     "side": ["צד", "side"],
     "group_type": ["קבוצה", "קבוצת", "group", "שיוך"],
     "party_size": ["כמות", "אנשים", "מוזמנים", "size", "count"],
+    # seating_notes חייב לבוא **לפני** notes_raw: detect_columns משייך כל
+    # עמודה לשדה הראשון שתופס אותה, ולכן עמודה "הערות הושבה" צריכה להיתפס
+    # כאן ולא ע"י המילה הכללית "הערות" שמתחתיה.
+    "seating_notes": ["הערות הושבה", "הערת הושבה", "הושבה", "seating"],
     "notes_raw": ["הערה", "הערות", "notes", "מגבל"],
 }
 
@@ -203,6 +207,7 @@ def build_preview(headers: list[str], rows: list[list], mapping: dict) -> dict:
         side = _map_side(_cell(row, mapping.get("side")))
         group_type = _map_group(_cell(row, mapping.get("group_type")))
         notes_raw = _cell(row, mapping.get("notes_raw")) or None
+        seating_notes = _cell(row, mapping.get("seating_notes")) or None
 
         party_raw = _cell(row, mapping.get("party_size"))
         try:
@@ -235,6 +240,7 @@ def build_preview(headers: list[str], rows: list[list], mapping: dict) -> dict:
                 "group_type": group_type,
                 "party_size": party_size,
                 "notes_raw": notes_raw,
+                "seating_notes": seating_notes,
                 "valid": is_valid,
                 "errors": errors,
             }
@@ -371,6 +377,7 @@ def parse_freeform_text(text: str, existing_keys: Optional[set] = None) -> dict:
                 "group_type": group_type,
                 "party_size": party_size,
                 "notes_raw": None,
+                "seating_notes": None,
                 "valid": is_valid,
                 "errors": errors,
                 "warnings": warnings,

@@ -136,8 +136,12 @@ def resolve_name(target: str, all_guests: list[dict], self_id: int) -> dict:
 
 
 def analyze_guest(guest: dict, all_guests: list[dict]) -> dict:
-    """מפרק את ההערה של מוזמן ומתאים שמות. מחזיר constraints_parsed."""
-    note = guest.get("notes_raw") or ""
+    """מפרק את הערת ההושבה של מוזמן ומתאים שמות. מחזיר constraints_parsed.
+
+    קורא **רק** מ-``seating_notes`` — הערה פנימית (``notes_raw``) לעולם לא
+    מנותחת לאילוצים.
+    """
+    note = guest.get("seating_notes") or ""
     relations = []
     for rel in parse_relations(note):
         res = resolve_name(rel["target_text"], all_guests, guest["id"])
@@ -229,16 +233,17 @@ def build_pairs_from_guests(
     כשכל שם-יעד מורחב ל*כל* המוזמנים התואמים — שם פרטי כולל את כל בעלי השם,
     ו"משפחת X" כולל את כל בני המשפחה.
 
-    נגזר טרי מ-notes_raw (לא מסתמך על constraints_parsed השמור), כדי שכללי
-    "לא לשבת יחד" / "לשבת יחד" ייאכפו תמיד בסידור האוטומטי.
+    נגזר טרי מ-seating_notes (לא מסתמך על constraints_parsed השמור), כדי
+    שכללי "לא לשבת יחד" / "לשבת יחד" ייאכפו תמיד בסידור האוטומטי. ההערה
+    הפנימית (notes_raw) לא נקראת כאן במכוון.
 
-    guests: [{id, full_name, notes_raw}] · מחזיר: (forbidden_pairs, together_pairs)
+    guests: [{id, full_name, seating_notes}] · מחזיר: (forbidden, together)
     """
     name_dicts = [{"id": g["id"], "full_name": g.get("full_name", "")} for g in guests]
     forbidden: set[tuple[int, int]] = set()
     together: set[tuple[int, int]] = set()
     for g in guests:
-        for rel in parse_relations(g.get("notes_raw") or ""):
+        for rel in parse_relations(g.get("seating_notes") or ""):
             ids = match_all_ids(rel["target_text"], name_dicts, g["id"])
             bucket = forbidden if rel["type"] == "avoid" else together
             for m in ids:
@@ -322,17 +327,24 @@ def parse_preferences(note: str) -> list[dict]:
 
 
 def guest_preferences(
-    notes_raw: Optional[str],
+    seating_notes: Optional[str],
     guest_note: Optional[str],
     group_note: Optional[str],
 ) -> list[dict]:
-    """מאחד העדפות ממספר מקורות: הערת הבעלים, הערת המוזמן, והערת הקבוצה.
+    """מאחד העדפות אזור/נגישות ממספר מקורות.
 
+    - ``seating_notes`` — הערת ההושבה שהבעלים כתב/ה על המוזמן.
+    - ``guest_note`` — מה שהמוזמן עצמו כתב בדף אישור ההגעה ("כיסא גלגלים",
+      "יש לנו תינוק"). נשאר מקור לגיטימי גם אחרי הפרדת ההערות: זו בקשת
+      נגישות של המוזמן עצמו, לא הערה תפעולית של הבעלים.
+    - ``group_note`` — העדפת הקבוצה כולה ("רחוק מהרעש").
+
+    ההערה הפנימית (``notes_raw``) **לא** נכללת כאן במכוון.
     ללא כפילויות לפי (zone, dir). מקור "group" מקבל ניסוח שמסביר שזו העדפת קבוצה.
     """
     out: list[dict] = []
     seen: set[tuple[str, str]] = set()
-    for text, src in ((notes_raw, "guest"), (guest_note, "guest"), (group_note, "group")):
+    for text, src in ((seating_notes, "guest"), (guest_note, "guest"), (group_note, "group")):
         for p in parse_preferences(text or ""):
             key = (p["zone"], p["dir"])
             if key in seen:
