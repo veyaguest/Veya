@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createMyEvent } from '../api'
 import type { EventSummary, EventType } from '../types'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
+import { strings } from '../strings/he'
 
 /** שדות יצירת אירוע חדש (סוג אירוע + בעלי האירוע + אולם) — משמש במסך הראשון ובפופאובר. */
 function NewEventFields({
@@ -35,7 +36,7 @@ function NewEventFields({
       })
       onCreated(ev)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו ליצור את האירוע, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.eventCreateFailed)
     } finally {
       setBusy(false)
     }

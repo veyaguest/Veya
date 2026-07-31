@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getRsvpTimeline } from '../api'
 import type { RsvpTimelineView, TimelineAction, TimelineDay } from '../types'
+import { strings } from '../strings/he'
 
 /**
  * יומן המשימות של אישורי-ההגעה — לוח זמנים יומי לזוג, שנבנה *לאחור* מיום
@@ -17,7 +18,7 @@ export function RsvpTimeline() {
     try {
       setView(await getRsvpTimeline())
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון את היומן, ננסה שוב')
+      setError(err instanceof Error ? err.message : strings.errors.timelineLoadFailed)
     } finally {
       setLoading(false)
     }

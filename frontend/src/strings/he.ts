@@ -21,7 +21,182 @@ export const strings = {
     save: 'שמירה',
     cancel: 'ביטול',
     confirm: 'אישור',
+    close: 'סגירה',
+    delete: 'מחיקה',
+    edit: 'עריכה',
+    add: 'הוספה',
+    remove: 'הסרה',
+    retry: 'ניסיון חוזר',
+    done: 'סיום',
+    back: 'חזרה',
+    loading: 'טוען…',
+    saving: 'שומר…',
+    working: 'רגע…',
   },
+
+  // ========================================================================
+  //  errors — הודעות שגיאה מרוכזות (מוצגות למשתמש דרך setError/toast).
+  //  מפתחות נפרדים גם לניסוחים דומים עד סימן פיסוק אחד — כי הטקסט המדויק
+  //  נמסר על-ידי הקומפוננטה שלכדה את השגיאה, וכל שינוי הוא שינוי UX.
+  // ========================================================================
+  errors: {
+    // מסך הזוג — משותפים
+    loadGenericRetry: 'לא הצלחנו לטעון כרגע, ננסה שוב',
+    // ProfileDialog
+    profileSaveFailed: 'לא הצלחנו לשמור את השינוי, נסו שוב',
+    profilePasswordFailed: 'לא הצלחנו לעדכן את הסיסמה, נסו שוב',
+    profileExportFailed: 'לא הצלחנו לייצא את המידע, נסו שוב',
+    profileDeleteFailed: 'לא הצלחנו למחוק את החשבון, נסו שוב',
+    profileLogoutAllFailed: 'לא הצלחנו להוציא אתכם מכל המכשירים, נסו שוב',
+    // ReconsentModal
+    consentSaveFailed: 'לא הצלחנו לשמור את האישור, נסו שוב',
+    // AuthPage
+    authGoogleNoToken: 'לא התקבל טוקן מגוגל',
+    authGoogleNotConfigured: 'התחברות עם גוגל אינה מוגדרת כרגע',
+    authGoogleSupabase: 'Supabase לא קיבל את הטוקן של גוגל',
+    authGoogleFailed: 'התחברות עם גוגל נכשלה',
+    authLoginFailed: 'לא הצלחנו להתחבר. בדקו את הפרטים ונסו שוב.',
+    // EventControls / OnboardingWizard
+    eventCreateFailed: 'לא הצלחנו ליצור את האירוע, נסו שוב',
+    imageTypeError: 'אפשר להעלות קובץ תמונה בלבד',
+    imageSize3MB: 'התמונה גדולה מדי — עד 3MB',
+    onboardingHostsMissing: (label: string) => `נשמח לדעת קודם את שמות ${label}`,
+    onboardingHostAMissing: (label: string) => `נשמח לדעת קודם את ${label}`,
+    // EventMembersDialog
+    membersLoadFailed: 'לא הצלחנו לטעון את רשימת הגישה',
+    membersAddFailed: 'לא הצלחנו להוסיף גישה',
+    membersUpdateFailed: 'לא הצלחנו לעדכן הרשאות',
+    membersRemoveFailed: 'לא הצלחנו להסיר את הגישה',
+    // ConfirmPage — המוזמן!
+    confirmLoadFailed: 'לא הצלחנו לטעון את ההזמנה. נסו לרענן את הדף.',
+    confirmSubmitFailed: 'לא הצלחנו לשלוח את התשובה. נסו שוב.',
+    // HallPage
+    hallLoadFailed: 'לא הצלחנו לטעון את מפת האולם, ננסה שוב',
+    hallNotesLoadFailed: 'לא הצלחנו לקרוא את ההערות, ננסה שוב',
+    hallChoiceSaveFailed: 'לא הצלחנו לשמור את הבחירה, נסו שוב',
+    hallImageTypeError: 'יש לבחור קובץ תמונה (JPG/PNG).',
+    hallImage4MB: 'התמונה גדולה מדי (עד 4MB). נסו תמונה קטנה יותר.',
+    hallAutoSaveFailed: 'לא הצלחנו לשמור אוטומטית — נמשיך לנסות',
+    hallSeatingCollision: 'לא הצלחנו לסדר את כולם בלי להתנגש בהעדפות — כדאי להוסיף מקומות לשולחן.',
+    hallSeatingFailed: 'לא הצלחנו לסדר כרגע, ננסה שוב',
+    hallSeatingNoRoom: 'לא נמצא מקום להושבה אוטומטית — נסו קיבולת גדולה יותר לשולחן.',
+    // MessageBuilder
+    messagesLoadFailed: 'לא הצלחנו לטעון את ההודעות, ננסה שוב',
+    messageSaveFailed: 'לא הצלחנו לשמור, נסו שוב',
+    messagesLibraryLoadFailed: 'לא הצלחנו לטעון את ספריית ההודעות',
+    // RsvpPage
+    rsvpStateLoadFailed: 'שגיאה בטעינת המצב',
+    rsvpDataLoadFailed: 'שגיאה בטעינת נתוני RSVP',
+    rsvpTemplateSaveFailed: 'שגיאה בשמירת התבנית',
+    rsvpInvitationsSendFailed: 'שגיאה בשליחת ההזמנות',
+    rsvpRemindersSendFailed: 'שגיאה בשליחת התזכורות',
+    rsvpAnswerUpdateFailed: 'שגיאה בעדכון התשובה',
+    // RsvpTimeline
+    timelineLoadFailed: 'לא הצלחנו לטעון את היומן, ננסה שוב',
+    // AutomationQueueTab
+    queueLoadFailed: 'שגיאה בטעינת התור',
+    queueSendFailed: 'שגיאה בשליחה',
+    // AutomationRulesTab
+    rulesLoadFailed: 'שגיאה בטעינת החוקים',
+    ruleNameRequired: 'צריך לתת שם לחוק',
+    ruleSaveFailed: 'שגיאה בשמירת החוק',
+    ruleUpdateFailed: 'שגיאה בעדכון החוק',
+    ruleDeleteFailed: 'שגיאה במחיקת החוק',
+    // AutomationTemplatesTab
+    templatesLoadFailed: 'שגיאה בטעינת התבניות',
+    templateNameRequired: 'צריך לתת שם לתבנית',
+    templateSaveFailed: 'שגיאה בשמירת התבנית',
+    templateDeleteFailed: 'שגיאה במחיקת התבנית',
+    // AdminApp
+    adminDashboardLoadFailed: 'שגיאה בטעינת לוח הבקרה',
+    adminUserLoadFailed: 'שגיאה בטעינת המשתמש',
+    adminUserSaveFailed: 'שמירת הפרטים נכשלה',
+    adminPasswordResetFailed: 'איפוס הסיסמה נכשל',
+    adminActionFailed: 'הפעולה נכשלה',
+    adminDeleteFailed: 'המחיקה נכשלה',
+    adminImpersonateFailed: 'ההתחברות כמשתמש נכשלה',
+    adminUsersLoadFailed: 'שגיאה בטעינת המשתמשים',
+    adminEventsLoadFailed: 'שגיאה בטעינת האירועים',
+    adminEventEnterFailed: 'הכניסה לאירוע נכשלה',
+    adminVenuesLoadFailed: 'שגיאה בטעינת האולמות',
+    adminVenueDeleteFailed: 'מחיקת האולם נכשלה',
+    adminVenueNameRequired: 'שם האולם לא יכול להיות ריק',
+    adminVenueSaveFailed: 'שמירת האולם נכשלה',
+    adminVenueMergeTargetRequired: 'יש לבחור אולם יעד למיזוג',
+    adminVenueMergeFailed: 'המיזוג נכשל',
+    adminAuditLoadFailed: 'שגיאה בטעינת היומן',
+    // AdminPage (VEYA workflow admin)
+    adminAccountCreateFailed: 'לא הצלחנו ליצור את החשבון, נסו שוב',
+    adminSaveFailedRetry: 'השמירה נכשלה, נסו שוב',
+    adminDeleteFailedRetry: 'המחיקה נכשלה, נסו שוב',
+    adminAddFailedRetry: 'ההוספה נכשלה, נסו שוב',
+    adminDefaultsLoadFailed: 'שגיאה בטעינת ברירות המחדל',
+    // HallPage — assignNote (עוזר הושבה, לא setError)
+    hallRecommendFailed: 'לא הצלחנו להמליץ כרגע',
+    hallAssignFailed: 'לא הצלחנו לשבץ כרגע',
+    // RsvpPage — סטטוסים דרך callbacks
+    rsvpSendGenericRetry: 'לא הצלחנו לשלוח כרגע, ננסה שוב',
+    rsvpGuestsLoadFailed: 'לא הצלחנו לטעון את רשימת המוזמנים',
+    rsvpSendPartialFail: 'השליחה הסתיימה — חלק נכשלו',
+  },
+
+  // ========================================================================
+  //  toasts — הודעות הצלחה חיוביות שמוצגות דרך setNote / notification.
+  // ========================================================================
+  toasts: {
+    profileUpdated: 'הפרטים עודכנו בהצלחה',
+    passwordUpdated: 'הסיסמה עודכנה. מכשירים אחרים נותקו.',
+    messageSaved: 'שמרנו את ההודעה ✓',
+    messageLoaded: 'הודעה נטענה מהספרייה — אפשר לערוך ואז לשמור',
+    templateCreated: 'התבנית נוצרה ✓',
+    templateSaved: 'התבנית נשמרה ✓',
+    passwordResetNote: 'איפוס סיסמה עצמאי בדרך — בינתיים כתבו לנו ונעזור.',
+    adminUserDetailsSaved: 'הפרטים נשמרו',
+    invitationsSent: 'ההזמנות נשלחו! 🎉',
+  },
+
+  // ========================================================================
+  //  legal — טקסטים משפטיים (Cookies, Reconsent, Footer, AuthPage checkboxes).
+  //  נפרד ממש כי שגיאה כאן = חשיפה רגולטורית.
+  // ========================================================================
+  legal: {
+    // CookieBanner (legal/03-cookie-policy.md §3)
+    cookieAriaLabel: 'הסכמת Cookies',
+    cookieBody:
+      'אנחנו משתמשים בעוגיות הכרחיות לתפעול השירות (כמו שמירת החיבור\n              שלך). עוגיות נוספות (סטטיסטיקה/שיפור) יופעלו רק באישורך המפורש.\n              פרטים ב',
+    cookiePolicyLink: 'מדיניות ה-Cookies',
+    cookieAcceptAll: 'קבל הכל',
+    cookieRejectNonEssential: 'דחה לא-הכרחיים',
+    cookieCustomize: 'הגדרות מותאמות',
+    cookieEssentialLabel: 'עוגיות הכרחיות (חובה לתפעול השירות)',
+    cookieAnalyticsLabel: 'עוגיות סטטיסטיקה/שיפור (כרגע אינן בשימוש בפועל)',
+    cookieSavePrefs: 'שמירת ההעדפות',
+    cookieBack: 'חזרה',
+    // ReconsentModal
+    reconsentTitle: 'עדכנו את התנאים שלנו',
+    reconsentBody:
+      'תנאי השימוש ומדיניות הפרטיות של VEYA עודכנו מאז שאישרתם אותם לאחרונה.\n          כדי להמשיך להשתמש במערכת, יש לאשר את הגרסה העדכנית:',
+    reconsentTermsLink: 'תנאי השימוש',
+    reconsentPrivacyLink: 'מדיניות הפרטיות',
+    reconsentSubmit: 'אני מאשר/ת וממשיך/ה',
+    // Footer
+    footerLinksLabel: 'קישורים משפטיים',
+    footerTerms: 'תנאי שימוש',
+    footerPrivacy: 'מדיניות פרטיות',
+    footerCookies: 'מדיניות Cookies',
+    footerAccessibility: 'הצהרת נגישות',
+    footerContact: 'יצירת קשר',
+    footerCopy: '© VEYA · מערכת לניהול אירועים',
+    // AuthPage — checkboxes המשפטיים (Frontend #2 בטסקליסט)
+    authAgreePrefix: 'אני מאשר/ת את',
+    authAgreeAnd: 'ואת',
+    authTermsLink: 'תנאי השימוש',
+    authPrivacyLink: 'מדיניות הפרטיות',
+    authMarketingOptIn: 'אני מעוניין/ת לקבל עדכונים מ-VEYA',
+    authGoogleAgreePrefix: 'בהתחברות עם גוגל אני מאשר/ת את',
+  },
+
+
   dashboard: {
     loadError: 'לא הצלחנו לטעון כרגע. ננסה שוב',
     saveError: 'לא הצלחנו לשמור את הפרטים. נסו שוב',

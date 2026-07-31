@@ -27,6 +27,7 @@ import type {
 } from '../types'
 import { GROUP_LABELS } from '../types'
 import { activeEventTerms, sideLabel } from '../strings/eventTypes'
+import { strings } from '../strings/he'
 import { getEventId } from '../authStore'
 import {
   computeSmartFill,
@@ -1154,7 +1155,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
         setWizardOpen(true)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון את מפת האולם, ננסה שוב')
+      setError(err instanceof Error ? err.message : strings.errors.hallLoadFailed)
     }
   }, [applyState])
 
@@ -1325,7 +1326,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       setAnalyzeSummary(await analyzeConstraints())
       await loadClarifications()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לקרוא את ההערות, ננסה שוב')
+      setError(err instanceof Error ? err.message : strings.errors.hallNotesLoadFailed)
     } finally {
       setAnalyzing(false)
     }
@@ -1336,7 +1337,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       setAnalyzeSummary(await resolveClarification(id, chosenGuestId))
       await loadClarifications()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור את הבחירה, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.hallChoiceSaveFailed)
     }
   }
 
@@ -1923,11 +1924,11 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     e.target.value = ''
     if (!file) return
     if (!file.type.startsWith('image/')) {
-      setError('יש לבחור קובץ תמונה (JPG/PNG).')
+      setError(strings.errors.hallImageTypeError)
       return
     }
     if (file.size > 4 * 1024 * 1024) {
-      setError('התמונה גדולה מדי (עד 4MB). נסו תמונה קטנה יותר.')
+      setError(strings.errors.hallImage4MB)
       return
     }
     const reader = new FileReader()
@@ -2069,7 +2070,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
           window.setTimeout(() => setSavedTick(false), 1600)
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור אוטומטית — נמשיך לנסות')
+        setError(err instanceof Error ? err.message : strings.errors.hallAutoSaveFailed)
         // ניסיון חוזר אמיתי גם בלי עריכה נוספת — אחרת "נמשיך לנסות" בהודעה
         // לא היה קורה בפועל (ה-effect מסתמך על saveRetry/dirty כדי לרוץ שוב).
         window.setTimeout(() => setSaveRetry((r) => r + 1), 4000)
@@ -2094,13 +2095,13 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
         reserve_seats: reserveSeats,
       })
       if (!res.hard_ok) {
-        setError('לא הצלחנו לסדר את כולם בלי להתנגש בהעדפות — כדאי להוסיף מקומות לשולחן.')
+        setError(strings.errors.hallSeatingCollision)
       }
       // הסברי "למה שובץ כאן" — מציגים למי שהמערכת זיהתה לו העדפה מההערות.
       setSeatExplain(res.explanations ?? [])
       applyState(await getHall())
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לסדר כרגע, ננסה שוב')
+      setError(err instanceof Error ? err.message : strings.errors.hallSeatingFailed)
     } finally {
       setLoading(false)
     }
@@ -2135,7 +2136,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       const res = await recommendSeat(guestId, true)
       setRecs(res.recommendations)
     } catch (err) {
-      setAssignNote(err instanceof Error ? err.message : 'לא הצלחנו להמליץ כרגע')
+      setAssignNote(err instanceof Error ? err.message : strings.errors.hallRecommendFailed)
     } finally {
       setRecLoading(false)
     }
@@ -2153,7 +2154,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       setRecs(null)
       if (res.warnings.length) setAssignNote(res.warnings.join(' · '))
     } catch (err) {
-      setAssignNote(err instanceof Error ? err.message : 'לא הצלחנו לשבץ כרגע')
+      setAssignNote(err instanceof Error ? err.message : strings.errors.hallAssignFailed)
     } finally {
       setAssignBusy(false)
     }
@@ -2273,7 +2274,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       nextTableNumRef.current,
     )
     if (result.moves.length === 0) {
-      setError('לא נמצא מקום להושבה אוטומטית — נסו קיבולת גדולה יותר לשולחן.')
+      setError(strings.errors.hallSeatingNoRoom)
       return
     }
     const tableWord = result.newTables.length === 1 ? 'שולחן חדש אחד' : `${result.newTables.length} שולחנות חדשים`

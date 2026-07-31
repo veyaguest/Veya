@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getConfirm, mediaUrl, submitConfirm } from '../api'
 import type { ConfirmGuestPublic } from '../types'
 import { getEventTerms } from '../strings/eventTypes'
+import { strings } from '../strings/he'
 
 type Choice = 'confirmed' | 'declined' | 'maybe'
 
@@ -79,7 +80,7 @@ export function ConfirmPage({ token }: { token: string }) {
         setCount(d.confirmed_count && d.confirmed_count > 0 ? d.confirmed_count : d.party_size)
         setNote(d.guest_note || '')
       })
-      .catch((e) => alive && setError(e instanceof Error ? e.message : 'לא הצלחנו לטעון את ההזמנה. נסו לרענן את הדף.'))
+      .catch((e) => alive && setError(e instanceof Error ? e.message : strings.errors.confirmLoadFailed))
       .finally(() => alive && setLoading(false))
     return () => {
       alive = false
@@ -99,7 +100,7 @@ export function ConfirmPage({ token }: { token: string }) {
       })
       setDone(res)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'לא הצלחנו לשלוח את התשובה. נסו שוב.')
+      setError(e instanceof Error ? e.message : strings.errors.confirmSubmitFailed)
     } finally {
       setBusy(false)
     }

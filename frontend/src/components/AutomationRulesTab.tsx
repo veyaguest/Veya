@@ -14,6 +14,7 @@ import type {
 } from '../types'
 import { targetGroupLabel, TRIGGER_LABELS } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
+import { strings } from '../strings/he'
 
 const TRIGGER_OPTIONS: TriggerType[] = [
   'event_created',
@@ -70,7 +71,7 @@ export function AutomationRulesTab({ onChanged }: { onChanged?: () => void }) {
       setRules(r)
       setTemplates(t)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בטעינת החוקים')
+      setError(err instanceof Error ? err.message : strings.errors.rulesLoadFailed)
     }
   }, [])
 
@@ -105,7 +106,7 @@ export function AutomationRulesTab({ onChanged }: { onChanged?: () => void }) {
 
   async function onSubmit() {
     if (!form.rule_name.trim()) {
-      setError('צריך לתת שם לחוק')
+      setError(strings.errors.ruleNameRequired)
       return
     }
     setBusy(true)
@@ -120,7 +121,7 @@ export function AutomationRulesTab({ onChanged }: { onChanged?: () => void }) {
       await refresh()
       onChanged?.()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בשמירת החוק')
+      setError(err instanceof Error ? err.message : strings.errors.ruleSaveFailed)
     } finally {
       setBusy(false)
     }
@@ -132,7 +133,7 @@ export function AutomationRulesTab({ onChanged }: { onChanged?: () => void }) {
       await refresh()
       onChanged?.()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בעדכון החוק')
+      setError(err instanceof Error ? err.message : strings.errors.ruleUpdateFailed)
     }
   }
 
@@ -143,7 +144,7 @@ export function AutomationRulesTab({ onChanged }: { onChanged?: () => void }) {
       await refresh()
       onChanged?.()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה במחיקת החוק')
+      setError(err instanceof Error ? err.message : strings.errors.ruleDeleteFailed)
     }
   }
 

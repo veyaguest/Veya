@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getCookieConsent, setCookieConsent } from '../cookieConsent'
+import { strings } from '../strings/he'
 
 /**
  * באנר הסכמת Cookies — מוצג בביקור ראשון (כל עוד אין העדפה שמורה), עם שלוש
@@ -29,28 +30,27 @@ export function CookieBanner() {
   }
 
   return (
-    <div className="cookie-banner" dir="rtl" role="region" aria-label="הסכמת Cookies">
+    <div className="cookie-banner" dir="rtl" role="region" aria-label={strings.legal.cookieAriaLabel}>
       <div className="cookie-banner-inner">
         {!customizing ? (
           <>
             <p className="cookie-banner-text">
-              אנחנו משתמשים בעוגיות הכרחיות לתפעול השירות (כמו שמירת החיבור
-              שלך). עוגיות נוספות (סטטיסטיקה/שיפור) יופעלו רק באישורך המפורש.
-              פרטים ב
+              {strings.legal.cookieBody}
+              {' '}
               <a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">
-                מדיניות ה-Cookies
+                {strings.legal.cookiePolicyLink}
               </a>
               .
             </p>
             <div className="cookie-banner-actions">
               <button type="button" className="btn-primary" onClick={acceptAll}>
-                קבל הכל
+                {strings.legal.cookieAcceptAll}
               </button>
               <button type="button" className="btn-ghost" onClick={rejectNonEssential}>
-                דחה לא-הכרחיים
+                {strings.legal.cookieRejectNonEssential}
               </button>
               <button type="button" className="btn-link" onClick={() => setCustomizing(true)}>
-                הגדרות מותאמות
+                {strings.legal.cookieCustomize}
               </button>
             </div>
           </>
@@ -59,7 +59,7 @@ export function CookieBanner() {
             <div className="cookie-banner-custom-row">
               <label className="auth-consent-row">
                 <input type="checkbox" checked disabled />
-                <span>עוגיות הכרחיות (חובה לתפעול השירות)</span>
+                <span>{strings.legal.cookieEssentialLabel}</span>
               </label>
               <label className="auth-consent-row">
                 <input
@@ -67,15 +67,15 @@ export function CookieBanner() {
                   checked={analyticsChecked}
                   onChange={(e) => setAnalyticsChecked(e.target.checked)}
                 />
-                <span>עוגיות סטטיסטיקה/שיפור (כרגע אינן בשימוש בפועל)</span>
+                <span>{strings.legal.cookieAnalyticsLabel}</span>
               </label>
             </div>
             <div className="cookie-banner-actions">
               <button type="button" className="btn-primary" onClick={saveCustom}>
-                שמירת ההעדפות
+                {strings.legal.cookieSavePrefs}
               </button>
               <button type="button" className="btn-ghost" onClick={() => setCustomizing(false)}>
-                חזרה
+                {strings.legal.cookieBack}
               </button>
             </div>
           </>

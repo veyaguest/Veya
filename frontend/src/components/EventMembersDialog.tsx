@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { addEventMember, listEventMembers, removeEventMember, updateEventMember } from '../api'
 import type { EventMemberRead } from '../types'
 import { PERMISSION_LABELS, PLANNER_PERMISSIONS, VENUE_PERMISSIONS } from '../types'
+import { strings } from '../strings/he'
 
 const ROLE_LABELS: Record<string, string> = { planner: 'מפיק', venue: 'אולם' }
 
@@ -33,7 +34,7 @@ function MemberRow({
       await updateEventMember(eventId, member.id, next)
       onChanged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לעדכן הרשאות')
+      setError(err instanceof Error ? err.message : strings.errors.membersUpdateFailed)
     } finally {
       setBusy(false)
     }
@@ -47,7 +48,7 @@ function MemberRow({
       await removeEventMember(eventId, member.id)
       onChanged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו להסיר את הגישה')
+      setError(err instanceof Error ? err.message : strings.errors.membersRemoveFailed)
       setBusy(false)
     }
   }
@@ -101,7 +102,7 @@ export function EventMembersDialog({
     listEventMembers(eventId)
       .then(setMembers)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון את רשימת הגישה'),
+        setError(err instanceof Error ? err.message : strings.errors.membersLoadFailed),
       )
   }
 
@@ -119,7 +120,7 @@ export function EventMembersDialog({
       setEmail('')
       reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו להוסיף גישה')
+      setError(err instanceof Error ? err.message : strings.errors.membersAddFailed)
     } finally {
       setBusy(false)
     }

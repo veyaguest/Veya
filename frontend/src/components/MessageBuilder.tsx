@@ -16,6 +16,7 @@ import type {
   TemplatePlaceholder,
 } from '../types'
 import { getEventTerms } from '../strings/eventTypes'
+import { strings } from '../strings/he'
 
 // סדר תצוגה ידידותי של סוגי ההודעות במסלול (kind של MessageTemplate).
 const KIND_ORDER: Record<string, number> = {
@@ -95,7 +96,7 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
           cur ?? (invitationOnly ? firstInvite?.id : undefined) ?? sorted[0]?.id ?? null,
       )
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון את ההודעות, ננסה שוב')
+      setError(err instanceof Error ? err.message : strings.errors.messagesLoadFailed)
     }
   }, [invitationOnly])
 
@@ -210,9 +211,9 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
       setTemplates((list) =>
         list.map((t) => (t.id === updated.id ? updated : t)),
       )
-      setNote('שמרנו את ההודעה ✓')
+      setNote(strings.toasts.messageSaved)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.messageSaveFailed)
     } finally {
       setSaving(false)
     }
@@ -234,7 +235,7 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
       const lib = await getMessageLibrary()
       setLibrary(lib)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון את ספריית ההודעות')
+      setError(err instanceof Error ? err.message : strings.errors.messagesLibraryLoadFailed)
       setLibOpen(false)
     } finally {
       setLibLoading(false)
@@ -265,7 +266,7 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
     setBody(m.body)
     setLibOpen(false)
     setLibPreviewId(null)
-    setNote('הודעה נטענה מהספרייה — אפשר לערוך ואז לשמור')
+    setNote(strings.toasts.messageLoaded)
     setTimeout(() => taRef.current?.focus(), 0)
   }
 

@@ -5,6 +5,7 @@ import { setToken } from '../authStore'
 import { getSupabase, isGoogleAuthConfigured } from '../lib/supabase'
 import { Footer } from './Footer'
 import type { User } from '../types'
+import { strings } from '../strings/he'
 
 /** מסך התחברות / הרשמה — פריסת split-screen: פאנל שיווקי + טופס כניסה. */
 export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
@@ -34,12 +35,12 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
     setNote(null)
     const idToken = response.credential
     if (!idToken) {
-      setError('לא התקבל טוקן מגוגל')
+      setError(strings.errors.authGoogleNoToken)
       return
     }
     const client = getSupabase()
     if (!client) {
-      setError('התחברות עם גוגל אינה מוגדרת כרגע')
+      setError(strings.errors.authGoogleNotConfigured)
       return
     }
     setGoogleBusy(true)
@@ -49,7 +50,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
         token: idToken,
       })
       if (sbErr || !data.session) {
-        throw new Error(sbErr?.message || 'Supabase לא קיבל את הטוקן של גוגל')
+        throw new Error(sbErr?.message || strings.errors.authGoogleSupabase)
       }
       const res = await googleExchange(data.session.access_token)
       setToken(res.access_token)
@@ -58,7 +59,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
       await client.auth.signOut()
       onAuth(res.user)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'התחברות עם גוגל נכשלה')
+      setError(err instanceof Error ? err.message : strings.errors.authGoogleFailed)
     } finally {
       setGoogleBusy(false)
     }
@@ -77,7 +78,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
       setToken(res.access_token)
       onAuth(res.user)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו להתחבר. בדקו את הפרטים ונסו שוב.')
+      setError(err instanceof Error ? err.message : strings.errors.authLoginFailed)
     } finally {
       setBusy(false)
     }
@@ -233,7 +234,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                   type="button"
                   className="auth-link-btn"
                   onClick={() =>
-                    setNote('איפוס סיסמה עצמאי בדרך — בינתיים כתבו לנו ונעזור.')
+                    setNote(strings.toasts.passwordResetNote)
                   }
                 >
                   שכחתם סיסמה?
@@ -251,13 +252,13 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                     required
                   />
                   <span>
-                    אני מאשר/ת את{' '}
+                    {strings.legal.authAgreePrefix}{' '}
                     <a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">
-                      תנאי השימוש
+                      {strings.legal.authTermsLink}
                     </a>{' '}
-                    ואת{' '}
+                    {strings.legal.authAgreeAnd}{' '}
                     <a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">
-                      מדיניות הפרטיות
+                      {strings.legal.authPrivacyLink}
                     </a>
                   </span>
                 </label>
@@ -267,7 +268,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                     checked={acceptedMarketing}
                     onChange={(e) => setAcceptedMarketing(e.target.checked)}
                   />
-                  <span>אני מעוניין/ת לקבל עדכונים מ-VEYA</span>
+                  <span>{strings.legal.authMarketingOptIn}</span>
                 </label>
               </div>
             )}
@@ -299,7 +300,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                   ) : (
                     <GoogleLogin
                       onSuccess={handleGoogleCredential}
-                      onError={() => setError('התחברות עם גוגל נכשלה')}
+                      onError={() => setError(strings.errors.authGoogleFailed)}
                       locale="he_IL"
                       text={isLogin ? 'signin_with' : 'signup_with'}
                       shape="rectangular"
@@ -315,13 +316,13 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                   )}
                 </div>
                 <p className="auth-google-consent">
-                  בהתחברות עם גוגל אני מאשר/ת את{' '}
+                  {strings.legal.authGoogleAgreePrefix}{' '}
                   <a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">
-                    תנאי השימוש
+                    {strings.legal.authTermsLink}
                   </a>{' '}
-                  ואת{' '}
+                  {strings.legal.authAgreeAnd}{' '}
                   <a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">
-                    מדיניות הפרטיות
+                    {strings.legal.authPrivacyLink}
                   </a>
                 </p>
               </>

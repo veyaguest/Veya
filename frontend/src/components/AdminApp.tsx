@@ -27,6 +27,7 @@ import type {
 import { CreateAccountForm, VeyaDefaultsManager } from './AdminPage'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 import { Footer } from './Footer'
+import { strings } from '../strings/he'
 
 type AdminPage =
   | 'dashboard'
@@ -182,7 +183,7 @@ function AdminDashboardView() {
     adminDashboard()
       .then(setData)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'שגיאה בטעינת לוח הבקרה'),
+        setError(err instanceof Error ? err.message : strings.errors.adminDashboardLoadFailed),
       )
   }, [])
 
@@ -371,7 +372,7 @@ function AdminUserDialog({
         setPhone(d.phone)
       })
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'שגיאה בטעינת המשתמש'),
+        setError(err instanceof Error ? err.message : strings.errors.adminUserLoadFailed),
       )
   }
 
@@ -390,11 +391,11 @@ function AdminUserDialog({
         phone: phone.trim(),
       })
       setEditing(false)
-      setNotice('הפרטים נשמרו')
+      setNotice(strings.toasts.adminUserDetailsSaved)
       load()
       onChanged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שמירת הפרטים נכשלה')
+      setError(err instanceof Error ? err.message : strings.errors.adminUserSaveFailed)
     } finally {
       setBusy(false)
     }
@@ -409,7 +410,7 @@ function AdminUserDialog({
       const res = await adminResetPassword(detail.id)
       setTempPassword(res.temporary_password)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'איפוס הסיסמה נכשל')
+      setError(err instanceof Error ? err.message : strings.errors.adminPasswordResetFailed)
     } finally {
       setBusy(false)
     }
@@ -431,7 +432,7 @@ function AdminUserDialog({
       load()
       onChanged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'הפעולה נכשלה')
+      setError(err instanceof Error ? err.message : strings.errors.adminActionFailed)
       setConfirm(null)
     } finally {
       setBusy(false)
@@ -447,7 +448,7 @@ function AdminUserDialog({
       onChanged()
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'המחיקה נכשלה')
+      setError(err instanceof Error ? err.message : strings.errors.adminDeleteFailed)
       setConfirm(null)
     } finally {
       setBusy(false)
@@ -462,7 +463,7 @@ function AdminUserDialog({
       await onImpersonate(detail.id)
       // ההתחזות מחליפה את כל המסך — הדיאלוג ירד עם רענון האפליקציה.
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'ההתחברות כמשתמש נכשלה')
+      setError(err instanceof Error ? err.message : strings.errors.adminImpersonateFailed)
       setBusy(false)
     }
   }
@@ -718,7 +719,7 @@ function AdminUsersView({
     adminListUsers()
       .then(setUsers)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'שגיאה בטעינת המשתמשים'),
+        setError(err instanceof Error ? err.message : strings.errors.adminUsersLoadFailed),
       )
   }
 
@@ -842,7 +843,7 @@ function AdminEventsView({
     adminListEvents()
       .then(setEvents)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'שגיאה בטעינת האירועים'),
+        setError(err instanceof Error ? err.message : strings.errors.adminEventsLoadFailed),
       )
   }, [])
 
@@ -871,7 +872,7 @@ function AdminEventsView({
       await onImpersonate(ownerId)
       // מצליח → כל המסך מתחלף לממשק הזוג; אין צורך לאפס busy.
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'הכניסה לאירוע נכשלה')
+      setError(err instanceof Error ? err.message : strings.errors.adminEventEnterFailed)
       setBusyOwner(null)
     }
   }
@@ -973,7 +974,7 @@ function AdminVenuesView() {
     adminListVenues()
       .then(setVenues)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'שגיאה בטעינת האולמות'),
+        setError(err instanceof Error ? err.message : strings.errors.adminVenuesLoadFailed),
       )
   }
 
@@ -1004,7 +1005,7 @@ function AdminVenuesView() {
       await adminDeleteVenue(v.id)
       setVenues((prev) => (prev ? prev.filter((x) => x.id !== v.id) : prev))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'מחיקת האולם נכשלה')
+      setError(err instanceof Error ? err.message : strings.errors.adminVenueDeleteFailed)
     }
   }
 
@@ -1146,7 +1147,7 @@ function AdminVenueEditDialog({
 
   async function save() {
     if (!name.trim()) {
-      setError('שם האולם לא יכול להיות ריק')
+      setError(strings.errors.adminVenueNameRequired)
       return
     }
     setBusy(true)
@@ -1159,7 +1160,7 @@ function AdminVenueEditDialog({
       })
       onSaved(updated)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שמירת האולם נכשלה')
+      setError(err instanceof Error ? err.message : strings.errors.adminVenueSaveFailed)
       setBusy(false)
     }
   }
@@ -1233,7 +1234,7 @@ function AdminVenueMergeDialog({
 
   async function merge() {
     if (targetId === '') {
-      setError('יש לבחור אולם יעד למיזוג')
+      setError(strings.errors.adminVenueMergeTargetRequired)
       return
     }
     const target = options.find((v) => v.id === targetId)
@@ -1249,7 +1250,7 @@ function AdminVenueMergeDialog({
       await adminMergeVenue(source.id, { target_id: targetId })
       onMerged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'המיזוג נכשל')
+      setError(err instanceof Error ? err.message : strings.errors.adminVenueMergeFailed)
       setBusy(false)
     }
   }
@@ -1311,7 +1312,7 @@ function AdminAuditView() {
     adminAuditLog()
       .then(setRows)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'שגיאה בטעינת היומן'),
+        setError(err instanceof Error ? err.message : strings.errors.adminAuditLoadFailed),
       )
   }, [])
 

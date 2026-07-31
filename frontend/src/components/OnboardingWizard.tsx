@@ -5,6 +5,7 @@ import type { EventSummary, EventType } from '../types'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 import { VenueAutocomplete } from './VenueAutocomplete'
 import { AddGuestForm } from './AddGuestForm'
+import { strings } from '../strings/he'
 
 interface Props {
   onCreated: (ev: EventSummary) => void
@@ -51,11 +52,11 @@ export function OnboardingWizard({ onCreated }: Props) {
     e.target.value = '' // מאפשר לבחור שוב את אותו קובץ
     if (!file) return
     if (!file.type.startsWith('image/')) {
-      setError('אפשר להעלות קובץ תמונה בלבד')
+      setError(strings.errors.imageTypeError)
       return
     }
     if (file.size > 3 * 1024 * 1024) {
-      setError('התמונה גדולה מדי — עד 3MB')
+      setError(strings.errors.imageSize3MB)
       return
     }
     setError('')
@@ -70,11 +71,11 @@ export function OnboardingWizard({ onCreated }: Props) {
     setError('')
     if (terms.hasTwoHosts) {
       if (!form.groom_name.trim() || !form.bride_name.trim()) {
-        setError(`נשמח לדעת קודם את שמות ${terms.hostsLabel}`)
+        setError(strings.errors.onboardingHostsMissing(terms.hostsLabel))
         return
       }
     } else if (!form.groom_name.trim()) {
-      setError(`נשמח לדעת קודם את ${terms.hostAField}`)
+      setError(strings.errors.onboardingHostAMissing(terms.hostAField))
       return
     }
     setBusy(true)
@@ -107,7 +108,7 @@ export function OnboardingWizard({ onCreated }: Props) {
       setEvent(ev)
       setStep('guests')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו ליצור את האירוע, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.eventCreateFailed)
     } finally {
       setBusy(false)
     }

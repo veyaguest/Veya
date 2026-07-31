@@ -1,3 +1,5 @@
+import { strings } from '../strings/he'
+
 /**
  * פוטר משפטי קבוע — מוצג בכל מסכי האפליקציה (לא רק בדף הנחיתה), כדי שקישור
  * לתנאי שימוש/פרטיות/Cookies/נגישות יהיה זמין תמיד, לא רק לפני התחברות.
@@ -7,24 +9,24 @@
 export function Footer() {
   return (
     <footer className="app-footer" dir="rtl">
-      <nav className="app-footer-links" aria-label="קישורים משפטיים">
+      <nav className="app-footer-links" aria-label={strings.legal.footerLinksLabel}>
         <a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">
-          תנאי שימוש
+          {strings.legal.footerTerms}
         </a>
         <a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">
-          מדיניות פרטיות
+          {strings.legal.footerPrivacy}
         </a>
         <a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">
-          מדיניות Cookies
+          {strings.legal.footerCookies}
         </a>
         <a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">
-          הצהרת נגישות
+          {strings.legal.footerAccessibility}
         </a>
         <a href="/legal/about.html#contact" target="_blank" rel="noopener noreferrer">
-          יצירת קשר
+          {strings.legal.footerContact}
         </a>
       </nav>
-      <span className="app-footer-copy">© VEYA · מערכת לניהול אירועים</span>
+      <span className="app-footer-copy">{strings.legal.footerCopy}</span>
     </footer>
   )
 }

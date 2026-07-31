@@ -12,6 +12,7 @@ import type {
   TemplatePlaceholder,
 } from '../types'
 import { TEMPLATE_KIND_LABELS } from '../types'
+import { strings } from '../strings/he'
 
 const KIND_OPTIONS: TemplateKind[] = [
   'invitation',
@@ -47,7 +48,7 @@ export function AutomationTemplatesTab({
       setTemplates(tpls)
       setPlaceholders(phs)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בטעינת התבניות')
+      setError(err instanceof Error ? err.message : strings.errors.templatesLoadFailed)
     }
   }, [])
 
@@ -86,7 +87,7 @@ export function AutomationTemplatesTab({
 
   async function onSave() {
     if (!form.name.trim()) {
-      setError('צריך לתת שם לתבנית')
+      setError(strings.errors.templateNameRequired)
       return
     }
     setBusy(true)
@@ -97,16 +98,16 @@ export function AutomationTemplatesTab({
         const t = await createAutomationTemplate(form)
         await refresh()
         selectTemplate(t)
-        setNote('התבנית נוצרה ✓')
+        setNote(strings.toasts.templateCreated)
       } else {
         const t = await updateAutomationTemplate(selectedId, form)
         await refresh()
         selectTemplate(t)
-        setNote('התבנית נשמרה ✓')
+        setNote(strings.toasts.templateSaved)
       }
       onChanged?.()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בשמירת התבנית')
+      setError(err instanceof Error ? err.message : strings.errors.templateSaveFailed)
     } finally {
       setBusy(false)
     }
@@ -123,7 +124,7 @@ export function AutomationTemplatesTab({
       await refresh()
       onChanged?.()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה במחיקת התבנית')
+      setError(err instanceof Error ? err.message : strings.errors.templateDeleteFailed)
     } finally {
       setBusy(false)
     }

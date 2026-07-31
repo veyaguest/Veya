@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { changePassword, deleteMyAccount, exportMyData, logoutAll, updateProfile } from '../api'
 import { setToken } from '../authStore'
 import type { User } from '../types'
+import { strings } from '../strings/he'
 
 /**
  * מודל "החשבון שלי": עריכת שם תצוגה, שינוי סיסמה, ויציאה מכל המכשירים.
@@ -40,9 +41,9 @@ export function ProfileDialog({
     try {
       const updated = await updateProfile(displayName, phone)
       onUpdated(updated)
-      setNote('הפרטים עודכנו בהצלחה')
+      setNote(strings.toasts.profileUpdated)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לשמור את השינוי, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.profileSaveFailed)
     } finally {
       setBusy(false)
     }
@@ -59,9 +60,9 @@ export function ProfileDialog({
       setToken(res.access_token)
       setCurrentPassword('')
       setNewPassword('')
-      setNote('הסיסמה עודכנה. מכשירים אחרים נותקו.')
+      setNote(strings.toasts.passwordUpdated)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לעדכן את הסיסמה, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.profilePasswordFailed)
     } finally {
       setBusy(false)
     }
@@ -82,7 +83,7 @@ export function ProfileDialog({
       a.remove()
       URL.revokeObjectURL(url)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לייצא את המידע, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.profileExportFailed)
     } finally {
       setExporting(false)
     }
@@ -95,7 +96,7 @@ export function ProfileDialog({
       await deleteMyAccount()
       onLogout()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו למחוק את החשבון, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.profileDeleteFailed)
       setDeleting(false)
     }
   }
@@ -112,7 +113,7 @@ export function ProfileDialog({
       await logoutAll()
       onLogout()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו להוציא אתכם מכל המכשירים, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.profileLogoutAllFailed)
       setBusy(false)
     }
   }

@@ -15,6 +15,7 @@ import type {
   VeyaTemplate,
   VeyaWorkflowStep,
 } from '../types'
+import { strings } from '../strings/he'
 
 /** שמות ידידותיים לשלבי המסלול (לא מציגים לאדמין קודים טכניים). */
 const STAGE_LABELS: Record<VeyaStage, string> = {
@@ -74,7 +75,7 @@ export function CreateAccountForm({ onCreated }: { onCreated: () => void }) {
       setDisplayName('')
       onCreated()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו ליצור את החשבון, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.adminAccountCreateFailed)
     } finally {
       setBusy(false)
     }
@@ -167,7 +168,7 @@ function VeyaTemplateCard({
       })
       onSaved(updated)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'השמירה נכשלה, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.adminSaveFailedRetry)
     } finally {
       setBusy(false)
     }
@@ -181,7 +182,7 @@ function VeyaTemplateCard({
       await adminDeleteVeyaTemplate(tpl.id)
       onDeleted(tpl.id)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'המחיקה נכשלה, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.adminDeleteFailedRetry)
       setBusy(false)
     }
   }
@@ -264,7 +265,7 @@ function AddVeyaTemplate({ onAdded }: { onAdded: (t: VeyaTemplate) => void }) {
       setStage('invitation')
       setOpen(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'ההוספה נכשלה, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.adminAddFailedRetry)
     } finally {
       setBusy(false)
     }
@@ -352,7 +353,7 @@ function VeyaStepCard({
       })
       onSaved(updated)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'השמירה נכשלה, נסו שוב')
+      setError(err instanceof Error ? err.message : strings.errors.adminSaveFailedRetry)
     } finally {
       setBusy(false)
     }
@@ -410,7 +411,7 @@ export function VeyaDefaultsManager() {
         setWorkflow(w)
       })
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'שגיאה בטעינת ברירות המחדל'),
+        setError(err instanceof Error ? err.message : strings.errors.adminDefaultsLoadFailed),
       )
     // נפח ההודעות — לא חוסם את המסך אם נכשל.
     adminMessageStats()

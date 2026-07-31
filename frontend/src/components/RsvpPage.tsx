@@ -33,6 +33,7 @@ import type {
 } from '../types'
 import { RSVP_LABELS } from '../types'
 import { activeEventTerms, getEventTerms, hostNames } from '../strings/eventTypes'
+import { strings } from '../strings/he'
 import { AddGuestForm } from './AddGuestForm'
 import { AutomationRulesTab } from './AutomationRulesTab'
 import { AutomationTemplatesTab } from './AutomationTemplatesTab'
@@ -193,7 +194,7 @@ function CoupleRsvpView({ onNavigate }: { onNavigate?: (page: 'guests') => void 
         setPreview(p)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון כרגע, ננסה שוב')
+      setError(err instanceof Error ? err.message : strings.errors.loadGenericRetry)
     } finally {
       setLoading(false)
     }
@@ -225,7 +226,7 @@ function CoupleRsvpView({ onNavigate }: { onNavigate?: (page: 'guests') => void 
       setPreview(p)
       setPhase('confirm')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון כרגע, ננסה שוב')
+      setError(err instanceof Error ? err.message : strings.errors.loadGenericRetry)
     }
   }
 
@@ -244,7 +245,7 @@ function CoupleRsvpView({ onNavigate }: { onNavigate?: (page: 'guests') => void 
       setPhase('summary')
     } catch (err) {
       setDialogError(
-        err instanceof Error ? err.message : 'לא הצלחנו לשלוח כרגע, ננסה שוב',
+        err instanceof Error ? err.message : strings.errors.rsvpSendGenericRetry,
       )
       setPhase('confirm')
     }
@@ -370,7 +371,7 @@ function SendInvitationsDialog({
         {phase === 'summary' && result && (
           <div className="send-summary">
             <h3 className="send-dialog-title">
-              {result.failed > 0 ? 'השליחה הסתיימה — חלק נכשלו' : 'ההזמנות נשלחו! 🎉'}
+              {result.failed > 0 ? strings.errors.rsvpSendPartialFail : strings.toasts.invitationsSent}
             </h3>
             <p className="send-summary-main">
               נשלחו <strong>{result.invitations_sent}</strong> הזמנות בהצלחה
@@ -484,7 +485,7 @@ function SendConfirmStep({
       } catch (err) {
         if (alive)
           setLoadError(
-            err instanceof Error ? err.message : 'לא הצלחנו לטעון את רשימת המוזמנים',
+            err instanceof Error ? err.message : strings.errors.rsvpGuestsLoadFailed,
           )
       } finally {
         if (alive) setLoading(false)
@@ -1084,7 +1085,7 @@ function DashboardTab({
       setDash(d)
       setGuests(g.items)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בטעינת המצב')
+      setError(err instanceof Error ? err.message : strings.errors.rsvpStateLoadFailed)
     }
   }, [])
 
@@ -1222,7 +1223,7 @@ function ManualTab({ onChanged }: { onChanged: () => void }) {
       setDefaultTemplate(t.default_template)
       setPlaceholders(t.placeholders)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בטעינת נתוני RSVP')
+      setError(err instanceof Error ? err.message : strings.errors.rsvpDataLoadFailed)
     }
   }, [])
 
@@ -1262,9 +1263,9 @@ function ManualTab({ onChanged }: { onChanged: () => void }) {
     try {
       const t = await saveTemplate(template)
       setTemplate(t.template)
-      setTplNote('התבנית נשמרה ✓')
+      setTplNote(strings.toasts.templateSaved)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בשמירת התבנית')
+      setError(err instanceof Error ? err.message : strings.errors.rsvpTemplateSaveFailed)
     } finally {
       setSavingTpl(false)
     }
@@ -1285,7 +1286,7 @@ function ManualTab({ onChanged }: { onChanged: () => void }) {
       await refresh()
       onChanged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בשליחת ההזמנות')
+      setError(err instanceof Error ? err.message : strings.errors.rsvpInvitationsSendFailed)
     } finally {
       setBusy(false)
     }
@@ -1306,7 +1307,7 @@ function ManualTab({ onChanged }: { onChanged: () => void }) {
       await refresh()
       onChanged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בשליחת התזכורות')
+      setError(err instanceof Error ? err.message : strings.errors.rsvpRemindersSendFailed)
     } finally {
       setBusy(false)
     }
@@ -1319,7 +1320,7 @@ function ManualTab({ onChanged }: { onChanged: () => void }) {
       await refresh()
       onChanged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בעדכון התשובה')
+      setError(err instanceof Error ? err.message : strings.errors.rsvpAnswerUpdateFailed)
     }
   }
 

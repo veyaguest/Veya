@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { getDueQueue, runDueQueue } from '../api'
 import type { DueAction, TriggerType } from '../types'
 import { TRIGGER_LABELS } from '../types'
+import { strings } from '../strings/he'
 
 /** התור לאישור — מי אמור לקבל הודעה עכשיו, ושליחה בלחיצה. */
 export function AutomationQueueTab({ onSent }: { onSent?: () => void }) {
@@ -17,7 +18,7 @@ export function AutomationQueueTab({ onSent }: { onSent?: () => void }) {
       setActions(q.actions)
       setMode(q.mode)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בטעינת התור')
+      setError(err instanceof Error ? err.message : strings.errors.queueLoadFailed)
     }
   }, [])
 
@@ -40,7 +41,7 @@ export function AutomationQueueTab({ onSent }: { onSent?: () => void }) {
       await refresh()
       onSent?.()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בשליחה')
+      setError(err instanceof Error ? err.message : strings.errors.queueSendFailed)
     } finally {
       setBusy(false)
     }
