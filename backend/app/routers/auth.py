@@ -157,6 +157,20 @@ def google_exchange(
             detail="terms+privacy בהרשמה דרך גוגל", ip=ip,
         )
 
+    # קודם מוודאים שהמשתמש (וההסכמות, למשתמש חדש) נשמרו בהצלחה — *לפני*
+    # שמנסים לרשום את אירוע ההתחברות. קריטי: register_user_row לא עושה
+    # commit בעצמה (ה-INSERT חי בטרנזקציה הנוכחית), ו-user.id כבר מאוכלס
+    # בזיכרון מיד אחרי ה-INSERT (RETURNING), גם *לפני* commit — כך שבדיקת
+    # "user.id is None" בהמשך אף פעם לא הייתה יכולה לתפוס rollback. אם ה-
+    # commit הזה נכשל, זו שגיאה אמיתית שצריכה 500 מפורש: בלי המשתמש הזה
+    # שמור בפועל, אסור להנפיק לו טוקן (היה מייצר טוקן תקף-למראה למשתמש
+    # שלא קיים ב-DB — הבקשה המאומתת הבאה הייתה נכשלת ב-401 ומחזירה למסך
+    # ההתחברות, למרות שההתחברות "הצליחה").
+    db.commit()
+
+    # רישום ההתחברות להיסטוריה (מטא-דאטה בלבד) — best-effort: המשתמש כבר
+    # שמור מהשלב הקודם, אז rollback כאן פוגע רק ברישום הזה, לא במשתמש עצמו
+    # (בדיוק כמו login() הרגיל, ראו למטה).
     try:
         auth.record_login_event(
             db, user.id, ip, (request.headers.get("user-agent") or "")[:300] or None,
@@ -164,14 +178,6 @@ def google_exchange(
         db.commit()
     except Exception:
         db.rollback()
-        # אם נכשל רק רישום הכניסה — עדיין מנפיקים טוקן. אם נכשל commit של
-        # יצירת המשתמש/הסכמות, ה-rollback יגרום ל-user.id להיות לא-שמור;
-        # במקרה כזה נזרוק 500 מפורש במקום להחזיר טוקן לא-תקף.
-        if is_new and user.id is None:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="שגיאה ביצירת החשבון",
-            )
 
     token = auth.create_access_token(user)
     return schemas.TokenResponse(access_token=token, user=user)

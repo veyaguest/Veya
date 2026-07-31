@@ -296,12 +296,22 @@ def find_or_create_google_user(
     כדי לא לגעת בפונקציית ה-DB app_register_user (SECURITY DEFINER) ב-Postgres —
     זה היה דורש מיגרציית SQL ידנית. עדכון self על עמודה רגילה עובר תחת RLS
     הרגיל (מדיניות users_update: "אני רואה/מעדכן רק את עצמי").
+
+    הערה טכנית חשובה: ב-Postgres, find_user_by_email/register_user_row
+    מחזירות אובייקט "transient" (נבנה ידנית מ-dict של תוצאת RPC, לא דרך
+    session.query) — מוטציה עליו *לא* נתפסת ב-db.commit() כי הוא לא מחובר
+    ל-unit-of-work של SQLAlchemy. לכן, כשצריך לשנות avatar_url, טוענים
+    מחדש דרך db.get() (אותה שורה, בתוך אותה טרנזקציה — לא שאילתה חיצונית)
+    כדי לקבל מופע שה-ORM באמת עוקב אחריו, ומחזירים אותו במקום המקורי.
     """
     existing = find_user_by_email(db, email)
     if existing is not None:
+        set_request_identity(existing.id)
         if avatar_url and existing.avatar_url != avatar_url:
-            set_request_identity(existing.id)
-            existing.avatar_url = avatar_url
+            tracked = db.get(models.User, existing.id)
+            if tracked is not None:
+                tracked.avatar_url = avatar_url
+                existing = tracked
         return existing, False
 
     user_count = count_users(db)
@@ -318,6 +328,9 @@ def find_or_create_google_user(
     )
     set_request_identity(user.id)
     if avatar_url:
-        user.avatar_url = avatar_url
+        tracked = db.get(models.User, user.id)
+        if tracked is not None:
+            tracked.avatar_url = avatar_url
+            user = tracked
     adopt_orphan_events(db, user.id)
     return user, True
