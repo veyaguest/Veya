@@ -577,6 +577,7 @@ export interface User {
   email: string
   display_name: string
   phone: string
+  avatar_url?: string
   is_admin: boolean
   // couple (זוג) / planner (מפיק) / venue (אולם) — ציר נפרד מ-is_admin.
   account_type: string

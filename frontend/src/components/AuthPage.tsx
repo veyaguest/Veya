@@ -306,6 +306,11 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                       theme="filled_black"
                       size="large"
                       width="320"
+                      // Safari חוסם cookies של צד-שלישי (ITP) — בלי הדגל הזה גוגל
+                      // עלולה "לברוח" ל-navigation מלא בעמוד במקום popup/FedCM,
+                      // מה שגרם בפועל להפניה שגויה על iPhone. זו ההמלצה הרשמית
+                      // של גוגל לטיפול ב-ITP.
+                      itp_support
                     />
                   )}
                 </div>

@@ -137,9 +137,10 @@ def google_exchange(
         or user_metadata.get("name")
         or ""
     )
+    avatar_url = user_metadata.get("avatar_url") or user_metadata.get("picture") or ""
 
     user, is_new = auth.find_or_create_google_user(
-        db, email=email, display_name=display_name,
+        db, email=email, display_name=display_name, avatar_url=avatar_url,
     )
 
     if user.disabled:

@@ -279,19 +279,29 @@ def find_or_create_google_user(
     *,
     email: str,
     display_name: str,
+    avatar_url: str = "",
 ) -> tuple["models.User", bool]:
     """מוצא משתמש קיים לפי email, או יוצר חדש אם לא קיים. מחזיר (user, is_new).
 
-    - אם המשתמש קיים: מחזיר אותו כמו-שהוא. גם אם נרשם במקור בסיסמה — הוא יכול
-      עכשיו להתחבר גם דרך גוגל (אותו email).
+    - אם המשתמש קיים: מחזיר אותו, ומעדכן avatar_url אם התקבל ערך חדש מגוגל
+      (התמונה יכולה להתעדכן — נשמור אותה טרייה בכל כניסה). גם אם נרשם במקור
+      בסיסמה — הוא יכול עכשיו להתחבר גם דרך גוגל (אותו email).
     - אם לא קיים: יוצר משתמש חדש עם password_hash לא-שמיש (ראו למעלה), display_name
       מגוגל, טלפון ריק, account_type=couple. הופך לאדמין רק אם זה המשתמש הראשון
       *או* אם ה-email תואם ל-ADMIN_EMAIL — בדיוק כמו register רגיל.
     - אימוץ אירועים יתומים (adopt_orphan_events) נעשה גם כאן, כדי לשמור על
       התנהגות זהה ל-register.
+
+    avatar_url מוגדר דרך UPDATE נפרד אחרי היצירה (לא כפרמטר ל-register_user_row)
+    כדי לא לגעת בפונקציית ה-DB app_register_user (SECURITY DEFINER) ב-Postgres —
+    זה היה דורש מיגרציית SQL ידנית. עדכון self על עמודה רגילה עובר תחת RLS
+    הרגיל (מדיניות users_update: "אני רואה/מעדכן רק את עצמי").
     """
     existing = find_user_by_email(db, email)
     if existing is not None:
+        if avatar_url and existing.avatar_url != avatar_url:
+            set_request_identity(existing.id)
+            existing.avatar_url = avatar_url
         return existing, False
 
     user_count = count_users(db)
@@ -307,5 +317,7 @@ def find_or_create_google_user(
         account_type="couple",
     )
     set_request_identity(user.id)
+    if avatar_url:
+        user.avatar_url = avatar_url
     adopt_orphan_events(db, user.id)
     return user, True

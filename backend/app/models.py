@@ -39,6 +39,9 @@ class User(Base):
     display_name: Mapped[str] = mapped_column(String, default="")
     # מספר טלפון של בעל/ת החשבון (לא של המוזמנים) — נאסף בהרשמה.
     phone: Mapped[str] = mapped_column(String, default="")
+    # תמונת פרופיל — כרגע מגיעה רק ממשתמשי גוגל (Supabase user_metadata.picture).
+    # משתמשי אימייל+סיסמה נשארים עם מחרוזת ריקה; אין העלאת תמונה ידנית עדיין.
+    avatar_url: Mapped[str] = mapped_column(String, default="")
     # אדמין = הבעלים של המערכת, רואה ומנהל את כל המשתמשים והאירועים.
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     # סוג החשבון: couple (זוג, ברירת מחדל) / planner (מפיק) / venue (אולם).

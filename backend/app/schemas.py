@@ -609,6 +609,7 @@ class UserRead(BaseModel):
     email: str
     display_name: str
     phone: str = ""
+    avatar_url: str = ""
     is_admin: bool = False
     # couple (זוג) / planner (מפיק) / venue (אולם) — ציר נפרד מ-is_admin.
     account_type: str = "couple"
