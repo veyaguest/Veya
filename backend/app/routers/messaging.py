@@ -122,7 +122,7 @@ def send_invitations(
         if not g.phone:
             skipped += 1
             continue
-        text = messaging.render_template(
+        text = messaging.render_automation_template(
             template,
             guest_name=g.full_name,
             groom=event.groom_name,
@@ -130,6 +130,7 @@ def send_invitations(
             venue=event.venue_name,
             link=messaging.confirm_link(g.guest_token),
             date=event_date,
+            event_type=event.event_type,
         )
         res = provider.send_invitation(g.phone, text)
         db.add(models.Message(
@@ -213,7 +214,7 @@ def send_reminders(
         if not g.phone:
             skipped += 1
             continue
-        base = messaging.render_template(
+        base = messaging.render_automation_template(
             template,
             guest_name=g.full_name,
             groom=event.groom_name,
@@ -221,6 +222,7 @@ def send_reminders(
             venue=event.venue_name,
             link=messaging.confirm_link(g.guest_token),
             date=event_date,
+            event_type=event.event_type,
         )
         text = f"{messaging.REMINDER_PREFIX}\n\n{base}"
         res = provider.send_invitation(g.phone, text)
@@ -292,13 +294,14 @@ def preview_template(
     ).first()
     name = sample.full_name if sample else "ישראל ישראלי"
     token = sample.guest_token if sample else "example"
-    text = messaging.render_template(
+    text = messaging.render_automation_template(
         payload.template or messaging.DEFAULT_TEMPLATE,
         guest_name=name,
         groom=event.groom_name,
         bride=event.bride_name,
         venue=event.venue_name,
         link=messaging.confirm_link(token),
+        event_type=event.event_type,
     )
     return schemas.TemplatePreview(preview=text)
 
