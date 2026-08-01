@@ -184,6 +184,20 @@ class SeatingExplanation(BaseModel):
     reasons: list[str]
 
 
+class SeatingUndoResult(BaseModel):
+    """תוצאת "החזרת הסידור הקודם"."""
+
+    restored_guests: int
+    can_undo: bool
+
+
+class SeatingUndoState(BaseModel):
+    """האם יש סידור קודם לשחזור, ומתי נשמר."""
+
+    can_undo: bool
+    at: Optional[str] = None
+
+
 class SeatingViolation(BaseModel):
     """הפרה בודדת שנמצאה בבדיקת התקינות שאחרי השיבוץ."""
 
@@ -205,6 +219,8 @@ class SeatingResponse(BaseModel):
     persisted: bool
     # דוח בדיקת התקינות שרץ **אחרי** השיבוץ. ריק = ההושבה תקינה.
     violations: list[SeatingViolation] = []
+    # האם קיים סידור קודם לשחזור ("החזרת הסידור הקודם").
+    can_undo: bool = False
     # הסברי שיבוץ למוזמנים שהיו להם העדפה מההערות (רשימה יכולה להיות ריקה).
     explanations: list[SeatingExplanation] = []
 

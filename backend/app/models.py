@@ -106,6 +106,11 @@ class Event(Base):
     # פרופיל הפריסה של האולם (נקבע בהגדרה הראשונית, נשמר נעול):
     # {"density": "spacious|comfortable|compact|dense", "planned_tables": int}
     hall_layout: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    # תצלום מצב ההושבה **לפני** ההרצה האחרונה של "הושבה בקליק", לצורך
+    # "החזרת הסידור הקודם": {"at": ISO, "tables": {"<guest_id>": table|None}}.
+    # נשמר בשרת (ולא בזיכרון הדפדפן) כדי שהביטול ישרוד רענון דף ומעבר מכשיר.
+    # None = אין מה לשחזר (עוד לא הורצה הושבה, או שהשחזור כבר בוצע).
+    seating_snapshot: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     # תבנית הודעת ההזמנה (שלב RSVP 2). None => משתמשים בתבנית ברירת המחדל.
     message_template: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     # תמונת ההזמנה שהזוג העלה (data URL בבסיס64). None => אין תמונה.

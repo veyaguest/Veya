@@ -333,6 +333,55 @@ def test_zone_words_do_not_become_fake_people() -> None:
         teardown()
 
 
+def test_undo_restores_previous_arrangement() -> None:
+    """"החזרת הסידור הקודם" מחזירה בדיוק את המצב שלפני ההרצה.
+
+    כולל שינוי ידני שנעשה **לפני** ההושבה — הוא לא נמחק (דרישה 6).
+    """
+    api, teardown = bootstrap()
+    try:
+        manual = api.add_guest("שובץ ידנית", "0510000001")
+        others = [api.add_guest(f"אורח {i}", f"05110000{i:02d}") for i in range(5)]
+
+        # סידור ידני: המוזמן הראשון בשולחן 2, השאר ללא שולחן.
+        api.save_hall([
+            _table(1, 100, 100, capacity=6),
+            _table(2, 400, 100, capacity=6, guest_ids=[manual["id"]]),
+        ], seats_per_table=6)
+        before = {g["full_name"]: _table_of(api.get_hall(), g["full_name"])
+                  for g in [manual] + others}
+        assert before["שובץ ידנית"] == 2
+
+        # לפני הרצה — אין מה לשחזר.
+        st = api.client.get("/seating/undo-state", headers=api.headers).json()
+        assert st["can_undo"] is False, st
+
+        r = api.generate(seats_per_table=6, persist=True)
+        assert r.status_code == 200, r.text
+        assert r.json()["can_undo"] is True, "לא נשמר תצלום לשחזור"
+        after = {name: _table_of(api.get_hall(), name) for name in before}
+        assert after != before, "ההושבה לא שינתה כלום — הבדיקה לא בודקת כלום"
+
+        # שחזור.
+        u = api.client.post("/seating/undo", headers=api.headers)
+        assert u.status_code == 200, u.text
+        assert u.json()["restored_guests"] >= 1, u.json()
+
+        restored = {name: _table_of(api.get_hall(), name) for name in before}
+        assert restored == before, (
+            f"השחזור לא החזיר את המצב הקודם: {restored} != {before}"
+        )
+
+        # אחרי שחזור — אין מה לשחזר שוב (לא "מבטלים את הביטול").
+        st = api.client.get("/seating/undo-state", headers=api.headers).json()
+        assert st["can_undo"] is False, st
+        again = api.client.post("/seating/undo", headers=api.headers)
+        assert again.status_code == 400, "שחזור כפול לא נחסם"
+        print("✓ החזרת הסידור הקודם משחזרת במדויק, כולל שיבוץ ידני")
+    finally:
+        teardown()
+
+
 if __name__ == "__main__":
     try:
         test_internal_note_does_not_affect_seating()
@@ -345,6 +394,7 @@ if __name__ == "__main__":
         test_group_constraint_applies_to_whole_group()
         test_violations_are_reported_when_unsolvable()
         test_zone_words_do_not_become_fake_people()
+        test_undo_restores_previous_arrangement()
         print("OK — מערכת ההושבה עוברת את בדיקות הקצה-לקצה.")
     finally:
         shutdown()

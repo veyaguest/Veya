@@ -4,6 +4,7 @@
 ומחזירה שיבוץ לשולחנות. אפשר גם לשמור את מספר השולחן חזרה על כל מוזמן.
 """
 import time
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -158,6 +159,12 @@ def generate(
 
     persisted = False
     if payload.persist and result.hard_ok:
+        # תצלום מצב **לפני** הכתיבה — זה מה שמאפשר "החזרת הסידור הקודם".
+        # נשמר לפני השינוי, ולכן משחזר גם שינויים ידניים שנעשו קודם לכן.
+        event.seating_snapshot = {
+            "at": datetime.now(timezone.utc).isoformat(),
+            "tables": {str(g.id): g.table_number for g in guests},
+        }
         table_by_guest = {
             party["id"]: table["table_number"]
             for table in result.tables
@@ -186,6 +193,51 @@ def generate(
         persisted=persisted,
         explanations=explanations,
         violations=[schemas.SeatingViolation(**v) for v in result.violations],
+        can_undo=bool(event.seating_snapshot),
+    )
+
+
+@router.post("/undo", response_model=schemas.SeatingUndoResult)
+def undo_seating(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_write),
+):
+    """מחזיר את ההושבה למצב שלפני ההרצה האחרונה של "הושבה בקליק".
+
+    Undo ייעודי, לא "סידור מחדש": משחזר בדיוק את השיוך שהיה רגע לפני
+    ההרצה — כולל שינויים ידניים שהמשתמש עשה לפניה. אחרי שחזור אחד
+    התצלום נמחק, כדי שלא ייווצר מצב שבו לחיצה נוספת "מבטלת את הביטול"
+    ומחזירה דווקא את מה שרצינו לזרוק.
+    """
+    snapshot = event.seating_snapshot or {}
+    tables = snapshot.get("tables") or {}
+    if not tables:
+        raise HTTPException(
+            status_code=400,
+            detail="אין סידור קודם לשחזור — עוד לא הופעלה הושבה בקליק.",
+        )
+
+    guests = db.scalars(
+        select(models.Guest).where(models.Guest.event_id == event.id)
+    ).all()
+    restored = 0
+    for g in guests:
+        if str(g.id) in tables:
+            previous = tables[str(g.id)]
+            if g.table_number != previous:
+                restored += 1
+            g.table_number = previous
+    event.seating_snapshot = None
+    db.commit()
+    return schemas.SeatingUndoResult(restored_guests=restored, can_undo=False)
+
+
+@router.get("/undo-state", response_model=schemas.SeatingUndoState)
+def undo_state(event: models.Event = Depends(_view)):
+    """האם יש סידור קודם לשחזור — כדי שהכפתור ישרוד רענון דף."""
+    snapshot = event.seating_snapshot or {}
+    return schemas.SeatingUndoState(
+        can_undo=bool(snapshot.get("tables")), at=snapshot.get("at")
     )
 
 

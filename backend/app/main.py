@@ -93,6 +93,8 @@ _EXTRA_COLUMNS = {
         # מאז יש גם רשת ביטחון אוטומטית שמונעת הישנות של המקרה הזה.
         "groom_parents_line": "TEXT DEFAULT ''",
         "bride_parents_line": "TEXT DEFAULT ''",
+        # תצלום מצב ההושבה שלפני ההרצה האחרונה — ל"החזרת הסידור הקודם".
+        "seating_snapshot": "JSON",
     },
     "messages": {
         "channel": "TEXT DEFAULT 'whatsapp'",
