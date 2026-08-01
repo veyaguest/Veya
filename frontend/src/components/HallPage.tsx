@@ -2975,11 +2975,18 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                     <>
                       <p className="hm-report-title">{hallT.conflictTitle}</p>
                       <p className="hm-report-sub">{hallT.conflictHint}</p>
+                      {/* מגבילים את הרשימה: 30 שורות זהות הן רעש, לא מידע.
+                          המשתמש צריך להבין *מה* הבעיה, לא לקרוא אותה 30 פעם. */}
                       <ul className="hm-report-list">
-                        {seatingReport.violations.map((v, i) => (
+                        {seatingReport.violations.slice(0, 6).map((v, i) => (
                           <li key={i}>{v.text}</li>
                         ))}
                       </ul>
+                      {seatingReport.violations.length > 6 && (
+                        <p className="hm-report-sub">
+                          {hallT.conflictMore(seatingReport.violations.length - 6)}
+                        </p>
+                      )}
                     </>
                   )}
                 </div>

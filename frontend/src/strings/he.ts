@@ -77,9 +77,10 @@ export const strings = {
     hallImageTypeError: 'יש לבחור קובץ תמונה (JPG/PNG).',
     hallImage4MB: 'התמונה גדולה מדי (עד 4MB). נסו תמונה קטנה יותר.',
     hallAutoSaveFailed: 'לא הצלחנו לשמור אוטומטית — נמשיך לנסות',
-    hallSeatingCollision: 'לא הצלחנו לסדר את כולם בלי להתנגש בהעדפות — כדאי להוסיף מקומות לשולחן.',
     hallSeatingFailed: 'לא הצלחנו לסדר כרגע, ננסה שוב',
-    hallSeatingNoRoom: 'לא נמצא מקום להושבה אוטומטית — נסו קיבולת גדולה יותר לשולחן.',
+    // הערה: hallSeatingCollision ו-hallSeatingNoRoom הוסרו — התנגשות מוצגת
+    // עכשיו בכרטיס דוח מפורט (strings.hall.conflictTitle) עם רשימת ההפרות
+    // בפועל, במקום הודעת שגיאה כללית שלא אמרה למשתמש מה נכשל ואצל מי.
     // MessageBuilder
     messagesLoadFailed: 'לא הצלחנו לטעון את ההודעות, ננסה שוב',
     messageSaveFailed: 'לא הצלחנו לשמור, נסו שוב',
@@ -529,6 +530,8 @@ export const strings = {
     conflictTitle:
       'נמצאה התנגשות בין העדפות הישיבה. ניתן לשנות אילוצים או לבצע התאמה מחדש.',
     conflictHint: 'הסידור לא נשמר. אלה הדברים שלא הצלחנו לפתור:',
+    conflictMore: (n: number) =>
+      n === 1 ? 'ועוד מוזמן אחד' : `ועוד ${n} מוזמנים באותו מצב`,
 
     // דרישה 6 — ביטול ושחזור.
     undoButton: '↩ החזרת הסידור הקודם',
