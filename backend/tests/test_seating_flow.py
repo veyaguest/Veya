@@ -382,6 +382,50 @@ def test_undo_restores_previous_arrangement() -> None:
         teardown()
 
 
+def test_user_phrasing_lo_yoshev_lyad() -> None:
+    """הניסוח שהמשתמש כותב בפועל: "לא יושב ליד X".
+
+    זה היה הבאג: הפרסר זיהה את הטריגר החיובי "ליד" והתעלם מה"לא" שלפניו,
+    ולכן ההערה התפרשה כ**בקשה להושיב יחד** — היפוך משמעות מוחלט. הבדיקה
+    מריצה את המסלול המלא דרך ה-API ומוודאת שהשניים באמת מופרדים.
+    """
+    api, teardown = bootstrap()
+    try:
+        api.add_guest("גדי אבן", "0509990001",
+                      seating_notes="לא יושב ליד משה לוי")
+        api.add_guest("משה לוי", "0509990002")
+        for i in range(6):
+            api.add_guest(f"אורח {i}", f"05099910{i:02d}")
+
+        hall = api.get_hall()
+        assert len(hall["forbidden_pairs"]) == 1, (
+            f'"לא יושב ליד" לא יצר אילוץ קשיח: {hall["forbidden_pairs"]}'
+        )
+        assert hall["together_pairs"] == [], (
+            f'"לא יושב ליד" נקרא כבקשה לשבת יחד — היפוך משמעות: '
+            f'{hall["together_pairs"]}'
+        )
+
+        api.save_hall([
+            _table(1, 100, 100, capacity=4),
+            _table(2, 400, 100, capacity=4),
+        ], seats_per_table=4)
+        r = api.generate(seats_per_table=4, persist=True)
+        assert r.status_code == 200, r.text
+        assert r.json()["violations"] == [], r.json()["violations"]
+
+        hall = api.get_hall()
+        t_gadi = _table_of(hall, "גדי אבן")
+        t_moshe = _table_of(hall, "משה לוי")
+        assert t_gadi is not None and t_moshe is not None, "מישהו לא שובץ"
+        assert t_gadi != t_moshe, (
+            f'"לא יושב ליד משה לוי" הופר — שניהם בשולחן {t_gadi}'
+        )
+        print(f"✓ 'לא יושב ליד': גדי בשולחן {t_gadi}, משה בשולחן {t_moshe}")
+    finally:
+        teardown()
+
+
 if __name__ == "__main__":
     try:
         test_internal_note_does_not_affect_seating()
@@ -395,6 +439,7 @@ if __name__ == "__main__":
         test_violations_are_reported_when_unsolvable()
         test_zone_words_do_not_become_fake_people()
         test_undo_restores_previous_arrangement()
+        test_user_phrasing_lo_yoshev_lyad()
         print("OK — מערכת ההושבה עוברת את בדיקות הקצה-לקצה.")
     finally:
         shutdown()

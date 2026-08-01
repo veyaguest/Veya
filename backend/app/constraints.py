@@ -47,6 +47,17 @@ TOGETHER_TRIGGERS = [
     "ליד",
 ]
 
+# מילות שלילה. **קריטי:** בלעדיהן "לא יושב ליד משה" היה מתפרש כ-together
+# (הטריגר "ליד" נמצא, ה"לא" שלפניו מתעלמים ממנו) — כלומר המנוע היה מנסה
+# להושיב יחד בדיוק את מי שביקשו להפריד. רשימת טריגרים שטוחה לעולם לא תכסה
+# את כל הנטיות בעברית ("לא יושב"/"לא יושבת"/"לא יושבים"/"שלא ישב"), ולכן
+# הפתרון הוא זיהוי שלילה כללי ולא עוד ביטוי ברשימה.
+_NEGATIONS = {"לא", "אל", "אין", "אסור", "ללא", "שלא", "בלי", "נמנע", "נא"}
+
+# כמה מילים אחורה מהטריגר מחפשים שלילה. חלון קצר בכוונה: "לא אכפת לי,
+# שישבו ליד משה" — ה"לא" שייך למשפט אחר ולא אמור להפוך את המשמעות.
+_NEGATION_WINDOW = 4
+
 # מילים שמסמנות סוף שם-היעד (מה שאחריהן אינו חלק מהשם).
 STOP_WORDS = ["כי", "בגלל", "כדי", "אבל", "שהם", "שהוא", "שהיא", "מפני"]
 
@@ -106,6 +117,12 @@ def parse_relations(note: str) -> list[dict]:
                 break
         if not rel_type:
             continue
+        # שלילה הופכת "לשבת יחד" ל"לא לשבת יחד". זה מכסה את כל הנטיות
+        # ("לא יושב ליד" / "לא יושבת ליד" / "שלא ישבו ליד" / "אסור ליד")
+        # בלי להוסיף כל ניסוח לרשימה. אי-זיהוי כאן אינו "החמצה" אלא
+        # **היפוך משמעות** — המנוע היה מקרב את מי שביקשו להרחיק.
+        if rel_type == "together" and _has_negation_before(seg, trigger_pos):
+            rel_type = "avoid"
         target = _clean_target(seg[trigger_pos + trigger_len:])
         if not target:
             continue
@@ -115,6 +132,26 @@ def parse_relations(note: str) -> list[dict]:
             continue
         relations.append({"type": rel_type, "target_text": target})
     return relations
+
+
+def _has_negation_before(segment: str, trigger_pos: int) -> bool:
+    """האם יש מילת שלילה בסמוך *לפני* הטריגר, באותו סעיף?
+
+    מסתכלים רק על ``_NEGATION_WINDOW`` המילים שקדמו לטריגר — שלילה רחוקה
+    שייכת בדרך כלל למשפט אחר ("לא אכפת לי, שישבו ליד משה").
+    """
+    words = segment[:trigger_pos].split()
+    window = words[-_NEGATION_WINDOW:]
+    for i, raw in enumerate(window):
+        word = raw.strip(".,;:!?\"'()־-")
+        if word not in _NEGATIONS:
+            continue
+        # "בלי בעיה לשבת ליד X" — הסכמה, לא שלילה.
+        nxt = window[i + 1].strip(".,;:!?\"'()־-") if i + 1 < len(window) else ""
+        if word == "בלי" and nxt.startswith("בעי"):
+            continue
+        return True
+    return False
 
 
 def _is_zone_target(target: str) -> bool:
