@@ -42,6 +42,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
         group_type: r.group_type,
         party_size: r.party_size,
         notes_raw: r.notes_raw || undefined,
+        seating_notes: r.seating_notes || undefined,
       }))
     setCommitting(true)
     try {

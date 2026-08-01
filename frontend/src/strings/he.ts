@@ -328,7 +328,8 @@ export const strings = {
     colRsvp: 'אישור הגעה',
     colInviteStatus: 'סטטוס הזמנה',
     colTable: 'שולחן',
-    colNotes: 'הערות',
+    colNotes: 'הערה פנימית',
+    colSeatingNotes: 'הערות הושבה',
     deleteRow: 'מחיקה',
     editRow: 'עריכה',
     groupButton: '👥 צור קבוצה',
@@ -349,8 +350,28 @@ export const strings = {
     newGroupPlaceholder: 'שם הקבוצה, למשל: חברים מהצבא',
     partySizeLabel: 'כמות אנשים',
     isChildLabel: 'ילד/ה',
-    notesFieldLabel: "הערות (העדפות ישיבה וכו')",
-    notesFieldPlaceholder: 'לדוגמה: לא לשבת ליד משפחת לוי',
+    // שני שדות הערות נפרדים. ההפרדה קיימת כדי שהערה תפעולית ("צריך לחזור
+    // אליו") לא תתפרש בטעות כאילוץ ישיבה — רק השדה השני מגיע למנוע.
+    notesFieldLabel: 'הערה פנימית',
+    notesFieldPlaceholder: 'לדוגמה: דיברנו איתו, צריך לחזור אליו',
+    notesFieldHint: 'לשימושכם בלבד. לא משפיעה על סידור ההושבה.',
+    seatingNotesLabel: 'הערות הושבה',
+    seatingNotesPlaceholder: 'לדוגמה: לא לשבת ליד משפחת לוי · קרוב לבר · רחוק מהרעש',
+    seatingNotesHint: 'רק מה שכתוב כאן נלקח בחשבון בסידור ההושבה.',
+
+    // באנר "מצאנו הערות שנראות כמו העדפות ישיבה"
+    noteSplitTitle: (n: number) =>
+      n === 1
+        ? 'מצאנו הערה אחת שנראית כמו העדפת ישיבה'
+        : `מצאנו ${n} הערות שנראות כמו העדפות ישיבה`,
+    noteSplitBody:
+      'הן שמורות כהערה פנימית, ולכן לא נלקחות בחשבון בסידור ההושבה. אפשר להעביר אותן לשדה "הערות הושבה".',
+    noteSplitPreview: 'הצגת ההערות',
+    noteSplitHide: 'הסתרה',
+    noteSplitApply: 'העברה להערות הושבה',
+    noteSplitDismiss: 'לא עכשיו',
+    noteSplitDone: (n: number) => `${n} הערות הועברו להערות הושבה`,
+    noteSplitError: 'לא הצלחנו להעביר כרגע. נסו שוב',
     saving: 'שומר…',
     submitAdd: 'הוספת מוזמן',
     submitEdit: 'שמירת שינויים',
@@ -485,5 +506,55 @@ export const strings = {
       `נוצרה קבוצת '${name}' עם ${n} מוזמנים ✓`,
     createGroupEmpty: 'אין עדיין מוזמנים. הוסיפו מוזמנים כדי ליצור קבוצה.',
     createGroupLoading: 'טוען מוזמנים…',
+  },
+
+  // ==========================================================================
+  //  hall — מסך סידור ההושבה ומפת האולם.
+  // ==========================================================================
+  hall: {
+    // "הושבה בקליק" — הפעולה המרכזית של המסך.
+    oneClickButton: '✨ הושבה בקליק',
+    oneClickRunning: 'מסדרים…',
+    oneClickHint:
+      'סידור חכם לפי הקבוצות, הערות ההושבה, האילוצים ומבנה האולם — בלחיצה אחת.',
+    fillEmptyButton: 'השלמת מי שללא שולחן',
+    fillEmptyHint: 'משבץ רק את מי שעדיין אין לו שולחן. אף אחד מהמשובצים לא זז.',
+
+    // סיכום אחרי הרצה
+    doneTitle: 'הסידור מוכן',
+    doneSummary: (people: number, tables: number) =>
+      `${people} מוזמנים שובצו ב-${tables} שולחנות`,
+
+    // דרישה 5 — הודעת ההתנגשות, בניסוח שנקבע מראש.
+    conflictTitle:
+      'נמצאה התנגשות בין העדפות הישיבה. ניתן לשנות אילוצים או לבצע התאמה מחדש.',
+    conflictHint: 'הסידור לא נשמר. אלה הדברים שלא הצלחנו לפתור:',
+
+    // דרישה 6 — ביטול ושחזור.
+    undoButton: '↩ החזרת הסידור הקודם',
+    undoRunning: 'מחזירים…',
+    undoHint: 'מחזיר את המוזמנים למקומות שהיו לפני ההושבה בקליק.',
+    undoDone: (n: number) =>
+      n === 1 ? 'מוזמן אחד הוחזר למקומו הקודם' : `${n} מוזמנים הוחזרו למקומות הקודמים`,
+    undoError: 'לא הצלחנו להחזיר את הסידור הקודם. נסו שוב',
+
+    // דרישה 7 — לשונית ההגדרות.
+    settingsTab: 'הגדרות הושבה',
+    constraintsTitle: 'אילוצים והעדפות',
+    constraintsHint:
+      'אנחנו קוראים את הערות ההושבה והופכים אותן לכללים — מי לשבת עם מי, וממי להרחיק.',
+    constraintsRecheck: 'בדיקת ההערות',
+    constraintsChecking: 'בודקים…',
+    constraintsSummary: (guests: number, found: number, pending: number) =>
+      `נבדקו ${guests} · ${found} העדפות זוהו · ${pending} ממתינות להבהרה`,
+    constraintsNonePending: 'אין הבהרות ממתינות ✓',
+    clarificationQuestion: (who: string, what: string, target: string) =>
+      `${who} ביקש/ה ${what} "${target}" — למי הכוונה?`,
+    clarificationNone: 'אף אחד מהם',
+
+    // סיבוב שולחן (דרישה 9)
+    rotationLabel: 'זווית השולחן',
+    rotationReset: 'איפוס',
+    rotationHint: 'גררו את הידית שמעל השולחן, או בחרו זווית מהירה.',
   },
 }

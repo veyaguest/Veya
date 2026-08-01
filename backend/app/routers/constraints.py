@@ -30,6 +30,76 @@ def _guest_dicts(guests: list[models.Guest]) -> list[dict]:
     ]
 
 
+def _looks_like_seating_note(text: str) -> bool:
+    """האם בהערה חופשית יש סימן לאילוץ או להעדפת ישיבה?
+
+    משמש רק ל**הצעה** למשתמש (ראו /note-split/suggestions) — המערכת לעולם
+    לא מעבירה הערה בעצמה. מבוסס על אותו פרסור שמניע את המנוע, כדי שההצעה
+    תשקף בדיוק את מה שיקרה אם ההערה תועבר.
+    """
+    note = (text or "").strip()
+    if not note:
+        return False
+    return bool(parser.parse_relations(note) or parser.parse_preferences(note))
+
+
+@router.get("/note-split/suggestions", response_model=schemas.NoteSplitSuggestions)
+def note_split_suggestions(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+):
+    """מוזמנים שההערה הפנימית שלהם נראית כמו העדפת ישיבה, ושדה ההושבה ריק.
+
+    רקע: כשהופרדו ההערות, שדה "הערות הושבה" התחיל ריק לכולם במכוון — כדי
+    שהערה תפעולית ("צריך לחזור אליו") לא תהפוך פתאום לאילוץ. הצד השני של
+    ההחלטה הוא שאירועים קיימים "מאבדים" אילוצים שכבר הוגדרו. כאן מציעים
+    למשתמש להעביר אותם — בהחלטה מפורשת שלו, בלי ניחוש של המערכת.
+    """
+    guests = db.scalars(
+        select(models.Guest).where(models.Guest.event_id == event.id)
+    ).all()
+    items = [
+        schemas.NoteSplitCandidate(
+            guest_id=g.id, full_name=g.full_name, notes_raw=g.notes_raw or ""
+        )
+        for g in guests
+        if not (g.seating_notes or "").strip() and _looks_like_seating_note(g.notes_raw)
+    ]
+    return schemas.NoteSplitSuggestions(candidates=items)
+
+
+@router.post("/note-split/apply", response_model=schemas.NoteSplitResult)
+def note_split_apply(
+    payload: schemas.NoteSplitApply,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+):
+    """מעתיק את ההערה הפנימית לשדה "הערות הושבה" עבור המוזמנים שנבחרו.
+
+    **מעתיק ולא מעביר** — ההערה הפנימית נשארת במקומה. הסיבה: היא עשויה
+    להכיל גם מידע תפעולי שהמשתמש עדיין רוצה לראות, ומחיקה אוטומטית של
+    טקסט שהמשתמש כתב היא פעולה שאי אפשר לבטל.
+    """
+    ids = set(payload.guest_ids or [])
+    if not ids:
+        return schemas.NoteSplitResult(moved=0)
+    guests = db.scalars(
+        select(models.Guest)
+        .where(models.Guest.event_id == event.id)
+        .where(models.Guest.id.in_(ids))
+    ).all()
+    moved = 0
+    for g in guests:
+        if (g.seating_notes or "").strip():
+            continue  # לא דורסים הערת הושבה קיימת
+        if not (g.notes_raw or "").strip():
+            continue
+        g.seating_notes = g.notes_raw
+        moved += 1
+    db.commit()
+    return schemas.NoteSplitResult(moved=moved)
+
+
 @router.post("/analyze", response_model=schemas.AnalyzeResult)
 def analyze(
     db: Session = Depends(get_db),

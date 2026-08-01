@@ -228,6 +228,26 @@ class SeatingResponse(BaseModel):
 # ---- פרסור הערות + הבהרות (שלב 4) ----
 
 
+class NoteSplitCandidate(BaseModel):
+    """הערה פנימית שנראית כמו העדפת ישיבה, אצל מוזמן ששדה ההושבה שלו ריק."""
+
+    guest_id: int
+    full_name: str
+    notes_raw: str
+
+
+class NoteSplitSuggestions(BaseModel):
+    candidates: list[NoteSplitCandidate] = []
+
+
+class NoteSplitApply(BaseModel):
+    guest_ids: list[int] = []
+
+
+class NoteSplitResult(BaseModel):
+    moved: int
+
+
 class AnalyzeResult(BaseModel):
     guests_analyzed: int
     relations_found: int

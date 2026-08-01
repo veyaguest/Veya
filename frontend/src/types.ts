@@ -42,7 +42,10 @@ export interface Guest {
   side: Side
   group_type: GroupType
   party_size: number
+  // הערה פנימית (מידע לזוג בלבד — לא משפיעה על ההושבה)
   notes_raw: string | null
+  // הערות הושבה — המקור היחיד שמנוע ההושבה קורא מהבעלים
+  seating_notes: string | null
   rsvp_status: RsvpStatus
   table_number: number | null
   guest_token: string | null
@@ -127,6 +130,7 @@ export interface GuestCreate {
   group_type: GroupType
   party_size: number
   notes_raw?: string
+  seating_notes?: string
   is_child?: boolean
 }
 
@@ -138,6 +142,7 @@ export interface GuestUpdate {
   group_type?: GroupType
   party_size?: number
   notes_raw?: string | null
+  seating_notes?: string | null
   rsvp_status?: RsvpStatus
   table_number?: number | null
   is_child?: boolean
@@ -231,6 +236,7 @@ export interface ImportPreviewRow {
   group_type: GroupType
   party_size: number
   notes_raw: string | null
+  seating_notes: string | null
   valid: boolean
   errors: string[]
   // אזהרות רכות (לא חוסמות) — מגיע רק מייבוא הדבקת טקסט חופשי: "חסר טלפון",
@@ -303,6 +309,19 @@ export interface SeatingResult {
   unseated: number[]
   persisted: boolean
   explanations?: SeatingExplanation[]
+  // דוח בדיקת התקינות שרץ אחרי השיבוץ. ריק = ההושבה תקינה.
+  violations?: SeatingViolation[]
+  // האם יש סידור קודם לשחזור ("החזרת הסידור הקודם").
+  can_undo?: boolean
+}
+
+// הפרה בודדת מדוח התקינות שאחרי ההושבה.
+export interface SeatingViolation {
+  kind: 'capacity' | 'forbidden_pair' | 'unseated'
+  table_number: number | null
+  guest_ids: number[]
+  names: string[]
+  text: string
 }
 
 export interface SeatingRequest {
@@ -312,6 +331,8 @@ export interface SeatingRequest {
   persist?: boolean
   // כמה מקומות להשאיר פנויים (רזרבה מפוזרת אחיד). null/undefined => הערך השמור.
   reserve_seats?: number | null
+  // משבץ רק את מי שאין לו שולחן; מי שכבר משובץ נשאר בדיוק במקומו.
+  only_unassigned?: boolean
 }
 
 // ---- ניהול רזרבה חכם (מצב יום האירוע) ----
@@ -1118,4 +1139,26 @@ export interface RsvpTimelineView {
   next_action_date: string | null
   next_action_label: string | null
   days: TimelineDay[]
+}
+
+// ---- הפרדת ההערות: הצעה להעביר הערה פנימית לשדה "הערות הושבה" ----
+export interface NoteSplitCandidate {
+  guest_id: number
+  full_name: string
+  notes_raw: string
+}
+
+export interface NoteSplitSuggestions {
+  candidates: NoteSplitCandidate[]
+}
+
+// ---- "החזרת הסידור הקודם" ----
+export interface SeatingUndoResult {
+  restored_guests: number
+  can_undo: boolean
+}
+
+export interface SeatingUndoState {
+  can_undo: boolean
+  at: string | null
 }

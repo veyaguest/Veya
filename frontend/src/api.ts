@@ -47,6 +47,9 @@ import type {
   AssignSeatResult,
   SeatingRequest,
   SeatingResult,
+  NoteSplitSuggestions,
+  SeatingUndoResult,
+  SeatingUndoState,
   SendInvitationsResult,
   TemplatePlaceholder,
   MessageLibrary,
@@ -651,6 +654,36 @@ export async function generateSeating(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
   })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- הפרדת ההערות: הצעה להעביר הערות קיימות לשדה "הערות הושבה" ----
+export async function getNoteSplitSuggestions(): Promise<NoteSplitSuggestions> {
+  const res = await apiFetch('/constraints/note-split/suggestions')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function applyNoteSplit(guestIds: number[]): Promise<{ moved: number }> {
+  const res = await apiFetch('/constraints/note-split/apply', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ guest_ids: guestIds }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- "החזרת הסידור הקודם" (Undo ייעודי להושבה בקליק) ----
+export async function undoSeating(): Promise<SeatingUndoResult> {
+  const res = await apiFetch('/seating/undo', { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function getSeatingUndoState(): Promise<SeatingUndoState> {
+  const res = await apiFetch('/seating/undo-state')
   if (!res.ok) throw await toError(res)
   return res.json()
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { deleteGuest, listGuests } from '../api'
-import type { Guest } from '../types'
+import { applyNoteSplit, deleteGuest, getNoteSplitSuggestions, listGuests } from '../api'
+import type { Guest, NoteSplitCandidate } from '../types'
 import { groupLabel, INVITE_STATUS_LABELS, RSVP_LABELS } from '../types'
 import { activeEventTerms, sideLabel } from '../strings/eventTypes'
 import { strings } from '../strings/he'
@@ -38,6 +38,12 @@ export function GuestsPage() {
   const [importFile, setImportFile] = useState<File | null>(null)
   const [showPaste, setShowPaste] = useState(false)
   const [showContacts, setShowContacts] = useState(false)
+  // הערות פנימיות שנראות כמו העדפות ישיבה, אצל מוזמנים ששדה ההושבה שלהם ריק.
+  // המערכת לא מעבירה אותן בעצמה — רק מציעה, וההחלטה של המשתמש.
+  const [noteSplit, setNoteSplit] = useState<NoteSplitCandidate[]>([])
+  const [noteSplitOpen, setNoteSplitOpen] = useState(false)
+  const [noteSplitBusy, setNoteSplitBusy] = useState(false)
+  const [noteSplitHidden, setNoteSplitHidden] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
   const [showCreateGroup, setShowCreateGroup] = useState(false)
   const [editGuest, setEditGuest] = useState<Guest | null>(null)
@@ -88,6 +94,37 @@ export function GuestsPage() {
     const t = setTimeout(() => load(search), 250)
     return () => clearTimeout(t)
   }, [search, load])
+
+  // בדיקת "הערות שנראות כמו העדפות ישיבה" — פעם אחת בטעינה ואחרי כל העברה.
+  const loadNoteSplit = useCallback(async () => {
+    try {
+      const res = await getNoteSplitSuggestions()
+      setNoteSplit(res.candidates)
+    } catch {
+      /* שקט — זו הצעה, לא פעולה קריטית */
+    }
+  }, [])
+
+  useEffect(() => {
+    loadNoteSplit()
+  }, [loadNoteSplit])
+
+  async function onApplyNoteSplit() {
+    setNoteSplitBusy(true)
+    try {
+      const res = await applyNoteSplit(noteSplit.map((c) => c.guest_id))
+      setToast(t.noteSplitDone(res.moved))
+      setTimeout(() => setToast(''), 4000)
+      setNoteSplitOpen(false)
+      await loadNoteSplit()
+      await load(search)
+    } catch {
+      setToast(t.noteSplitError)
+      setTimeout(() => setToast(''), 4000)
+    } finally {
+      setNoteSplitBusy(false)
+    }
+  }
 
   function onDelete(g: Guest) {
     setDeleteTarget(g)
@@ -147,6 +184,47 @@ export function GuestsPage() {
       </div>
 
       {toast && <div className="toast">{toast}</div>}
+
+      {/* הפרדת ההערות: שדה "הערות הושבה" מתחיל ריק בכוונה, כדי שהערה
+          תפעולית לא תהפוך פתאום לאילוץ. כאן מציעים למשתמש להעביר את מה
+          שכן נראה כמו העדפת ישיבה — בהחלטה מפורשת שלו. */}
+      {noteSplit.length > 0 && !noteSplitHidden && (
+        <div className="note-split-banner">
+          <div className="note-split-head">
+            <div>
+              <p className="note-split-title">{t.noteSplitTitle(noteSplit.length)}</p>
+              <p className="note-split-body">{t.noteSplitBody}</p>
+            </div>
+            <button
+              className="btn-text"
+              onClick={() => setNoteSplitOpen((v) => !v)}
+            >
+              {noteSplitOpen ? t.noteSplitHide : t.noteSplitPreview}
+            </button>
+          </div>
+          {noteSplitOpen && (
+            <ul className="note-split-list">
+              {noteSplit.map((c) => (
+                <li key={c.guest_id}>
+                  <strong>{c.full_name}</strong> — {c.notes_raw}
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="note-split-actions">
+            <button
+              className="btn-primary"
+              disabled={noteSplitBusy}
+              onClick={onApplyNoteSplit}
+            >
+              {t.noteSplitApply}
+            </button>
+            <button className="btn-text" onClick={() => setNoteSplitHidden(true)}>
+              {t.noteSplitDismiss}
+            </button>
+          </div>
+        </div>
+      )}
 
       {deleteTarget && (
         <ConfirmDialog
@@ -284,6 +362,7 @@ export function GuestsPage() {
               <th>{t.colRsvp}</th>
               <th>{t.colInviteStatus}</th>
               <th>{t.colTable}</th>
+              <th>{t.colSeatingNotes}</th>
               <th>{t.colNotes}</th>
               <th></th>
             </tr>
@@ -309,6 +388,7 @@ export function GuestsPage() {
                   </span>
                 </td>
                 <td className="center">{g.table_number ?? '—'}</td>
+                <td className="notes seating">{g.seating_notes ?? ''}</td>
                 <td className="notes">{g.notes_raw ?? ''}</td>
                 <td className="row-actions">
                   <button className="btn-edit" onClick={() => setEditGuest(g)}>

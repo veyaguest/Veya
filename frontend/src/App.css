@@ -722,6 +722,64 @@
 .add-grid label.wide {
   grid-column: 1 / -1;
 }
+/* באנר "מצאנו הערות שנראות כמו העדפות ישיבה" — הצעה בלבד, לא פעולה
+   אוטומטית. מוצג במסך המוזמנים אחרי הפרדת שדות ההערות. */
+.note-split-banner {
+  border: 1px solid var(--gold-light);
+  background: rgba(201, 162, 39, 0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.note-split-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.note-split-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: var(--charcoal);
+  font-size: 14.5px;
+}
+.note-split-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.note-split-list {
+  margin: 0;
+  padding-inline-start: 18px;
+  max-height: 190px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--charcoal);
+}
+.note-split-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+/* עמודת הערות ההושבה בטבלת המוזמנים — מובלטת מעט מהערה הפנימית, כי היא
+   זו שמשפיעה על הסידור. */
+td.notes.seating {
+  color: var(--charcoal);
+}
+
+/* הסבר קצר מתחת לשדה — מבדיל בין "הערה פנימית" ל"הערות הושבה", כדי שיהיה
+   ברור מיד איזה שדה משפיע על סידור ההושבה ואיזה לא. */
+.field-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+  opacity: 0.9;
+  line-height: 1.45;
+}
 .add-grid input,
 .add-grid select {
   padding: 9px 12px;

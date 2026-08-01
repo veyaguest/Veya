@@ -21,6 +21,7 @@ const EMPTY: GuestCreate = {
   group_type: 'other',
   party_size: 1,
   notes_raw: '',
+  seating_notes: '',
   is_child: false,
 }
 
@@ -42,6 +43,7 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
           group_type: guest.group_type,
           party_size: guest.party_size,
           notes_raw: guest.notes_raw ?? '',
+          seating_notes: guest.seating_notes ?? '',
           is_child: guest.is_child ?? false,
         }
       : EMPTY,
@@ -77,12 +79,14 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
           ...form,
           group_type: group,
           notes_raw: form.notes_raw || null,
+          seating_notes: form.seating_notes || null,
         })
       } else {
         await createGuest({
           ...form,
           group_type: group,
           notes_raw: form.notes_raw || undefined,
+          seating_notes: form.seating_notes || undefined,
         })
         setForm(EMPTY)
         setCustomGroup(false)
@@ -168,6 +172,9 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
           />
           {t.isChildLabel}
         </label>
+        {/* שני שדות נפרדים: הערה פנימית לא נקראת ע"י מנוע ההושבה, והערת
+            ההושבה היא המקור היחיד שהוא כן קורא. ההפרדה מונעת מצב שבו
+            "צריך לחזור אליו" מתפרש כאילוץ ישיבה. */}
         <label className="wide">
           {t.notesFieldLabel}
           <input
@@ -175,6 +182,16 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
             onChange={(e) => update('notes_raw', e.target.value)}
             placeholder={t.notesFieldPlaceholder}
           />
+          <span className="field-hint">{t.notesFieldHint}</span>
+        </label>
+        <label className="wide">
+          {t.seatingNotesLabel}
+          <input
+            value={form.seating_notes}
+            onChange={(e) => update('seating_notes', e.target.value)}
+            placeholder={t.seatingNotesPlaceholder}
+          />
+          <span className="field-hint">{t.seatingNotesHint}</span>
         </label>
       </div>
 
