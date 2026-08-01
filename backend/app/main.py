@@ -87,6 +87,12 @@ _EXTRA_COLUMNS = {
         "rsvp_track_active": "BOOLEAN DEFAULT 0",
         "rsvp_track_started_at": "DATETIME",
         "venue_commit_days_before": "INTEGER",
+        # שורת ההורים כמזמינים (רגיסטרים דתי/חב"ד/חרדי). נוספו למודל בסבב
+        # "3ח" בלי רשומה כאן — ולכן כל DB קיים נשבר בכל שאילתת events
+        # ("no such column: events.groom_parents_line"). ראו _ensure_columns:
+        # מאז יש גם רשת ביטחון אוטומטית שמונעת הישנות של המקרה הזה.
+        "groom_parents_line": "TEXT DEFAULT ''",
+        "bride_parents_line": "TEXT DEFAULT ''",
     },
     "messages": {
         "channel": "TEXT DEFAULT 'whatsapp'",
@@ -119,6 +125,54 @@ _EXTRA_COLUMNS = {
 }
 
 
+def derive_column_ddl(column) -> str:
+    """בונה DDL ל-``ALTER TABLE ... ADD COLUMN`` מתוך הגדרת העמודה במודל.
+
+    רשת ביטחון ל-``_ensure_columns``: אם מישהו הוסיף עמודה למודל ושכח רשומה
+    ידנית ב-``_EXTRA_COLUMNS``, העמודה עדיין תתווסף ל-DB במקום לשבור כל
+    שאילתה על הטבלה. הטיפוס נגזר דרך מנוע הטיפוסים של SQLAlchemy, ולכן
+    נכון גם ל-SQLite וגם ל-Postgres.
+
+    שני כללי בטיחות:
+    - **לעולם לא NOT NULL.** ``ADD COLUMN`` עם NOT NULL נכשל על טבלה שכבר יש
+      בה שורות, אלא אם יש DEFAULT — ולא בכל מנוע. עמודה חדשה תמיד nullable.
+    - **DEFAULT רק לערך סקלרי.** ברירת מחדל שהיא פונקציה (למשל מחולל טוקן)
+      מיושמת ע"י SQLAlchemy בזמן INSERT ואין לה ייצוג DDL תקין.
+    """
+    ddl = column.type.compile(dialect=migrations_engine.dialect)
+    default = getattr(column, "default", None)
+    if default is not None and not getattr(default, "is_callable", False):
+        value = getattr(default, "arg", None)
+        if isinstance(value, bool):
+            ddl += f" DEFAULT {1 if value else 0}"
+        elif isinstance(value, (int, float)):
+            ddl += f" DEFAULT {value}"
+        elif isinstance(value, str):
+            escaped = value.replace("'", "''")
+            ddl += f" DEFAULT '{escaped}'"
+    return ddl
+
+
+def missing_migrations() -> dict[str, list[str]]:
+    """עמודות שקיימות במודל, חסרות ב-DB, ואין להן רשומה ב-``_EXTRA_COLUMNS``.
+
+    מוחזר גם לשימוש בבדיקת הרגרסיה (``tests/test_schema_migrations.py``),
+    כדי שהמקרה הזה ייתפס בבדיקה ולא רק בזמן ריצה בייצור.
+    """
+    inspector = inspect(migrations_engine)
+    gaps: dict[str, list[str]] = {}
+    for table_name, table in Base.metadata.tables.items():
+        if not inspector.has_table(table_name):
+            continue
+        existing = {c["name"] for c in inspector.get_columns(table_name)}
+        declared = set(_EXTRA_COLUMNS.get(table_name, {}))
+        absent = [c.name for c in table.columns if c.name not in existing]
+        undeclared = [name for name in absent if name not in declared]
+        if undeclared:
+            gaps[table_name] = sorted(undeclared)
+    return gaps
+
+
 def _ensure_columns() -> None:
     # DDL (ALTER TABLE) דורש בעלות על הטבלה — לכן תמיד דרך migrations_engine
     # (בפרודקשן עם RLS זה חיבור postgres נפרד מ-DATABASE_URL הרגיל; היום,
@@ -132,6 +186,26 @@ def _ensure_columns() -> None:
             for name, ddl in columns.items():
                 if name not in existing:
                     conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
+
+        # רשת ביטחון: עמודות שבמודל אך לא ב-DB ולא ברשימה הידנית. בלי זה,
+        # שכחה של רשומה אחת שוברת כל שאילתה על הטבלה (כפי שקרה עם
+        # events.groom_parents_line). מדפיסים אזהרה כדי שזה ייראה בלוג.
+        for table_name, table in Base.metadata.tables.items():
+            if not inspector.has_table(table_name):
+                continue
+            existing = {c["name"] for c in inspector.get_columns(table_name)}
+            declared = set(_EXTRA_COLUMNS.get(table_name, {}))
+            for column in table.columns:
+                if column.name in existing or column.name in declared:
+                    continue
+                ddl = derive_column_ddl(column)
+                print(
+                    f"[migrations] warning: {table_name}.{column.name} חסרה "
+                    f"ב-_EXTRA_COLUMNS — מתווספת אוטומטית כ-{ddl}"
+                )
+                conn.execute(
+                    text(f"ALTER TABLE {table_name} ADD COLUMN {column.name} {ddl}")
+                )
 
 
 # אינדקסים על מפתחות זרים לביצועים. create_all לא מוסיף אותם לטבלאות שכבר
