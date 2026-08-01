@@ -58,6 +58,42 @@ DEFAULT_TEMPLATE = (
     "{personal_link}"
 )
 
+# סדר עדיפויות לבחירת סגנון תבנית ברירת המחדל לסוגים לא-חתונתיים (סבב 3ט).
+# מפורש בכוונה — לא להסתמך על סדר ההופעה במערך של message_library.
+_DEFAULT_STYLE_PRIORITY = ("formal", "elegant", "family")
+
+
+def default_template_for(event_type: str | None) -> str:
+    """מחזירה תבנית הזמנת ברירת המחדל המתאימה לסוג האירוע (סבב 3ט).
+
+    ``wedding`` — מחזירה בדיוק את הקבוע ``DEFAULT_TEMPLATE`` (השוואת זהות
+    לאובייקט המקורי, לא רק שוויון טקסטואלי), כדי לשמור על ``אפס שינוי
+    התנהגות`` לחתונות שאין להן ``message_template`` מותאם אישית.
+
+    שאר סוגי האירוע — נמשכות מ-``message_library.entries_for(event_type)``,
+    לפי סדר עדיפות סגנון: ``formal → elegant → family → הראשונה הזמינה``
+    ב-``stage='invitation'``. לא מסתמכים על סדר ההופעה במערך.
+
+    ``event_type`` ריק או לא-מוכר, או ספרייה בלי תבניות invitation → נופלים
+    בעדינות ל-``DEFAULT_TEMPLATE`` (חתונה) כדי לא לשבור שליחה.
+    """
+    if not event_type or event_type == "wedding":
+        return DEFAULT_TEMPLATE
+
+    # ייבוא lazy כדי להימנע ממחזוריות ולוודא שאין תלות זמן-import.
+    from app.message_library import entries_for
+
+    invitations = [e for e in entries_for(event_type) if e.get("stage") == "invitation"]
+    if not invitations:
+        return DEFAULT_TEMPLATE
+
+    for style in _DEFAULT_STYLE_PRIORITY:
+        for entry in invitations:
+            if entry.get("style") == style:
+                return entry["body"]
+    return invitations[0]["body"]
+
+
 # קידומת עדינה שנוספת בראש הודעת תזכורת (למי שעדיין לא ענה).
 REMINDER_PREFIX = "תזכורת קטנה 🙂 עדיין לא קיבלנו את אישורכם —"
 

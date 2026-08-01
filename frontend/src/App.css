@@ -8810,6 +8810,65 @@ td.notes.seating {
     border-top: 1px solid var(--line-2);
   }
 
+  /* ---- "הושבה בקליק": הפעולה המרכזית + דוח התוצאה ---- */
+  .hm-oneclick {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .hm-oneclick-btn {
+    font-size: 16px;
+    padding: 15px 16px;
+  }
+  .hm-oneclick-hint {
+    margin: 0 0 6px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .hm-oneclick-done {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: #2f7d55;
+  }
+  .hm-undo-btn {
+    margin-top: 4px;
+  }
+  .hm-seating-report {
+    border-radius: 12px;
+    padding: 13px 14px;
+    border: 1px solid var(--line);
+    background: var(--cream);
+  }
+  .hm-seating-report.ok {
+    border-color: #9fd3b3;
+    background: rgba(47, 158, 95, 0.09);
+  }
+  .hm-seating-report.conflict {
+    border-color: #e2c2bf;
+    background: rgba(166, 96, 90, 0.09);
+  }
+  .hm-report-title {
+    margin: 0 0 4px;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--charcoal);
+  }
+  .hm-report-sub {
+    margin: 0;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .hm-report-list {
+    margin: 8px 0 0;
+    padding-inline-start: 18px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--charcoal);
+  }
+
   /* ---- אילוצים והעדפות: סיכום ותור ההבהרות ---- */
   .hm-clar-summary {
     margin: 0;

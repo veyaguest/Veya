@@ -3,6 +3,8 @@ import {
   analyzeConstraints,
   assignSeat,
   generateSeating,
+  getSeatingUndoState,
+  undoSeating,
   getHall,
   getReserveSummary,
   listClarifications,
@@ -23,14 +25,17 @@ import type {
   ReserveSummary,
   SeatRecommendation,
   SeatingExplanation,
+  SeatingViolation,
   TableType,
 } from '../types'
 import { GROUP_LABELS } from '../types'
 import { activeEventTerms, sideLabel } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { getEventId } from '../authStore'
+
+// טקסטי מסך ההושבה — כולם ב-strings/he.ts, אף פעם לא קשיחים בקומפוננטה.
+const hallT = strings.hall
 import {
-  computeSmartFill,
   computeSmartWarnings,
   computeStats,
   computeSuggestions,
@@ -937,6 +942,17 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   const [error, setError] = useState('')
   // הסברי "למה שובץ כאן" מהסידור האוטומטי האחרון — מוצגים בפאנל סיכום שאפשר לסגור.
   const [seatExplain, setSeatExplain] = useState<SeatingExplanation[]>([])
+  // דוח ההרצה האחרונה של "הושבה בקליק": כמה שובצו, והאם נמצאו הפרות.
+  const [seatingReport, setSeatingReport] = useState<{
+    ok: boolean
+    people: number
+    tables: number
+    violations: SeatingViolation[]
+  } | null>(null)
+  // "החזרת הסידור הקודם" — נטען מהשרת כדי שישרוד רענון דף.
+  const [canUndo, setCanUndo] = useState(false)
+  const [undoing, setUndoing] = useState(false)
+  const [undoNote, setUndoNote] = useState('')
 
   // ---- חוויית הושבה אחידה בטלפון ובמחשב (Auto-Fit, Bottom Sheet, ניווט תחתון) ----
   // אותה מפה נוחה בכל מכשיר: הלוח נכנס במלואו למסך, הקשה על שולחן פותחת
@@ -1170,6 +1186,13 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   useEffect(() => {
     load()
     loadClarifications()
+    // האם יש סידור קודם לשחזור. נטען מהשרת (ולא מהזיכרון של הדפדפן) כדי
+    // שכפתור "החזרת הסידור הקודם" ישרוד רענון דף ומעבר מכשיר.
+    getSeatingUndoState()
+      .then((s) => setCanUndo(s.can_undo))
+      .catch(() => {
+        /* שקט — היעדר הכפתור עדיף על הודעת שגיאה בטעינה */
+      })
   }, [load, loadClarifications])
 
   // ---- התאמה-למסך חד-פעמית (Auto-Fit) ----
@@ -2085,18 +2108,29 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     // saveRetry בכוונה בתלויות — מאלץ בדיקת-שמירה חוזרת אחרי סבב שהסתיים עם שינויים.
   }, [dirty, tables, elements, sketch, seats, hallLayout, reserveSeats, saveRetry])
 
-  async function onRegenerate() {
+  // "הושבה בקליק" — הפעולה המרכזית של המסך. onlyUnassigned=true משבץ רק את
+  // מי שאין לו שולחן (אף אחד מהמשובצים לא זז). שני המצבים רצים על **אותו**
+  // מנוע בשרת — לא על שני אלגוריתמים שונים שנותנים תשובות שונות.
+  async function onOneClickSeating(onlyUnassigned = false) {
     setLoading(true)
     setError('')
+    setSeatingReport(null)
     try {
       const res = await generateSeating({
         seats_per_table: seats,
         persist: true,
         reserve_seats: reserveSeats,
+        only_unassigned: onlyUnassigned,
       })
-      if (!res.hard_ok) {
-        setError(strings.errors.hallSeatingCollision)
-      }
+      // דוח הבדיקה שרץ בשרת אחרי השיבוץ. אם יש הפרה — לא מציגים את
+      // ההושבה כתקינה, ומפרטים בדיוק מה לא הסתדר (דרישה 5).
+      setSeatingReport({
+        ok: res.hard_ok,
+        people: res.total_people,
+        tables: res.num_tables,
+        violations: res.violations ?? [],
+      })
+      setCanUndo(res.can_undo ?? false)
       // הסברי "למה שובץ כאן" — מציגים למי שהמערכת זיהתה לו העדפה מההערות.
       setSeatExplain(res.explanations ?? [])
       applyState(await getHall())
@@ -2104,6 +2138,26 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       setError(err instanceof Error ? err.message : strings.errors.hallSeatingFailed)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // "החזרת הסידור הקודם" — Undo ייעודי (דרישה 6). התצלום נשמר בשרת, ולכן
+  // הכפתור זמין גם אחרי רענון דף.
+  async function onUndoSeating() {
+    setUndoing(true)
+    setError('')
+    try {
+      const res = await undoSeating()
+      setCanUndo(false)
+      setSeatingReport(null)
+      setSeatExplain([])
+      applyState(await getHall())
+      setUndoNote(hallT.undoDone(res.restored_guests))
+      window.setTimeout(() => setUndoNote(''), 4000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : hallT.undoError)
+    } finally {
+      setUndoing(false)
     }
   }
 
@@ -2197,8 +2251,16 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     [tables, familyGroups, splitGroups, childWarnings, togetherPairs],
   )
   const smartSuggestions = useMemo(
-    () => computeSuggestions(tables, familyGroups, splitGroups, childWarnings, togetherPairs),
-    [tables, familyGroups, splitGroups, childWarnings, togetherPairs],
+    () =>
+      computeSuggestions(
+        tables,
+        familyGroups,
+        splitGroups,
+        childWarnings,
+        togetherPairs,
+        forbiddenPairs,
+      ),
+    [tables, familyGroups, splitGroups, childWarnings, togetherPairs, forbiddenPairs],
   )
   // תובנות לשולחן שה-Bottom Sheet שלו פתוח — משפחות, קבוצות, ובעיות פתוחות.
   const sheetInsight = useMemo(() => {
@@ -2260,38 +2322,13 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     setPendingProposal({ text: s.text, moves: s.moves, diff: buildProposalDiff(s.moves) })
   }
 
-  // "מלא שולחנות" — Best-Fit Decreasing עצמאי (seatingAdvisor.ts), רק על
-  // מי שב"ללא שולחן"; לא מזיז אף מוזמן שכבר משובץ. גם זה רק ממלא
-  // pendingProposal — שום הזזה בפועל עד "אשר" (אותו מנגנון preview).
-  function onSmartFill() {
-    if (unassigned.length === 0) return
-    const result = computeSmartFill(
-      tables,
-      unassigned,
-      forbiddenPairs,
-      togetherPairs,
-      seats,
-      nextTableNumRef.current,
-    )
-    if (result.moves.length === 0) {
-      setError(strings.errors.hallSeatingNoRoom)
-      return
-    }
-    const tableWord = result.newTables.length === 1 ? 'שולחן חדש אחד' : `${result.newTables.length} שולחנות חדשים`
-    const guestsWord = activeEventTerms().guestsLabel
-    const text =
-      result.newTables.length > 0
-        ? `מילוי שולחנות: הושבת ${result.placedCount} ${guestsWord}, כולל פתיחת ${tableWord}` +
-          (result.unplacedCount > 0 ? ` (${result.unplacedCount} נשארו ללא שולחן — חבורה גדולה מדי)` : '')
-        : `מילוי שולחנות: הושבת ${result.placedCount} ${guestsWord} בשולחנות הקיימים` +
-          (result.unplacedCount > 0 ? ` (${result.unplacedCount} נשארו ללא שולחן — חבורה גדולה מדי)` : '')
-    setPendingProposal({
-      text,
-      moves: result.moves,
-      diff: buildProposalDiff(result.moves),
-      newTables: result.newTables,
-    })
-  }
+  // הערה על מה שהיה כאן: עד 2026-08 היה כאן `onSmartFill` — מנוע מילוי
+  // עצמאי בצד הלקוח (Best-Fit Decreasing ב-seatingAdvisor.ts). הוא לא הכיר
+  // העדפות אזור, לא ידע איפה השולחנות מונחים באולם, ולא ראה שולחנות
+  // נעולים — ולכן נתן תשובה **שונה** מהמנוע האמיתי לאותה שאלה. שני כפתורי
+  // "אוטומטי" עם שתי תוצאות שונות הם בדיוק מה שיוצר חוסר אמון. היום שני
+  // המצבים ("הושבה בקליק" ו"השלמת מי שללא שולחן") רצים על אותו מנוע בשרת
+  // דרך `onOneClickSeating`, עם הדגל only_unassigned.
 
   function onConfirmProposal() {
     if (!pendingProposal) return
@@ -2787,13 +2824,65 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                 </div>
               </div>
 
-              <button
-                className="hm-primary-btn"
-                onClick={onSmartFill}
-                disabled={unassigned.length === 0}
-              >
-                <HmIcon name="smart" size={18} /> מילוי שולחנות אוטומטי
-              </button>
+              {/* ---- הושבה בקליק: הפעולה המרכזית של המסך (דרישות 1, 5, 6) ---- */}
+              <div className="hm-oneclick">
+                <button
+                  className="hm-primary-btn hm-oneclick-btn"
+                  onClick={() => onOneClickSeating(false)}
+                  disabled={loading}
+                >
+                  <HmIcon name="smart" size={18} />{' '}
+                  {loading ? hallT.oneClickRunning : hallT.oneClickButton}
+                </button>
+                <p className="hm-oneclick-hint">{hallT.oneClickHint}</p>
+
+                <button
+                  className="hm-ghost-btn"
+                  onClick={() => onOneClickSeating(true)}
+                  disabled={loading || unassigned.length === 0}
+                >
+                  {hallT.fillEmptyButton}
+                </button>
+                <p className="hm-oneclick-hint">{hallT.fillEmptyHint}</p>
+
+                {canUndo && (
+                  <>
+                    <button
+                      className="hm-ghost-btn hm-undo-btn"
+                      onClick={onUndoSeating}
+                      disabled={undoing}
+                    >
+                      {undoing ? hallT.undoRunning : hallT.undoButton}
+                    </button>
+                    <p className="hm-oneclick-hint">{hallT.undoHint}</p>
+                  </>
+                )}
+                {undoNote && <p className="hm-oneclick-done">{undoNote}</p>}
+              </div>
+
+              {/* דוח ההרצה האחרונה — הצלחה או התנגשות, אף פעם לא "בוצע" סתמי */}
+              {seatingReport && (
+                <div className={`hm-seating-report ${seatingReport.ok ? 'ok' : 'conflict'}`}>
+                  {seatingReport.ok ? (
+                    <>
+                      <p className="hm-report-title">{hallT.doneTitle}</p>
+                      <p className="hm-report-sub">
+                        {hallT.doneSummary(seatingReport.people, seatingReport.tables)}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="hm-report-title">{hallT.conflictTitle}</p>
+                      <p className="hm-report-sub">{hallT.conflictHint}</p>
+                      <ul className="hm-report-list">
+                        {seatingReport.violations.map((v, i) => (
+                          <li key={i}>{v.text}</li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              )}
 
               {pendingProposal && (
                 <div className="hm-proposal">
@@ -2878,28 +2967,31 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                   מעולם לא יכול היה לראות אילו אילוצים המערכת זיהתה, ולא לפתור
                   הערה עמומה ("דני" כשיש כמה דנים). כאן הוא חוזר למסך החי. */}
               <div className="hm-tools-group">
-                <p className="hm-panel-head">אילוצים והעדפות</p>
-                <p className="hm-reserve-desc">
-                  אנחנו קוראים את הערות ההושבה והופכים אותן לכללים — מי לשבת עם מי,
-                  וממי להרחיק — לפני שנסדר את ההושבה.
-                </p>
+                <p className="hm-panel-head">{hallT.constraintsTitle}</p>
+                <p className="hm-reserve-desc">{hallT.constraintsHint}</p>
                 {analyzeSummary && (
                   <p className="hm-clar-summary">
-                    נותחו {analyzeSummary.guests_analyzed} {activeEventTerms().guestsLabel} ·{' '}
-                    {analyzeSummary.resolved} העדפות זוהו ·{' '}
-                    {analyzeSummary.pending_clarifications} ממתינים להבהרה
+                    {hallT.constraintsSummary(
+                      analyzeSummary.guests_analyzed,
+                      analyzeSummary.resolved,
+                      analyzeSummary.pending_clarifications,
+                    )}
                   </p>
                 )}
                 <button className="hm-ghost-btn" onClick={onAnalyze} disabled={analyzing}>
-                  <HmIcon name="refresh" size={18} /> {analyzing ? 'בודקים…' : 'בדיקת ההערות'}
+                  <HmIcon name="refresh" size={18} />{' '}
+                  {analyzing ? hallT.constraintsChecking : hallT.constraintsRecheck}
                 </button>
 
                 {clarifications.length > 0
                   ? clarifications.map((c) => (
                       <div className="hm-clar-card" key={c.id}>
                         <p className="hm-clar-q">
-                          <strong>{c.source_guest_name}</strong> ביקש/ה {REL_TEXT[c.relation_type]}{' '}
-                          "<strong>{c.target_text}</strong>" — למי הכוונה?
+                          {hallT.clarificationQuestion(
+                            c.source_guest_name,
+                            REL_TEXT[c.relation_type],
+                            c.target_text,
+                          )}
                         </p>
                         <div className="hm-clar-actions">
                           {c.candidates.map((cand) => (
@@ -2912,12 +3004,14 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                             </button>
                           ))}
                           <button className="hm-clar-none" onClick={() => onResolve(c.id, null)}>
-                            אף אחד מהם
+                            {hallT.clarificationNone}
                           </button>
                         </div>
                       </div>
                     ))
-                  : analyzeSummary && <p className="hm-clar-ok">אין הבהרות ממתינות ✓</p>}
+                  : analyzeSummary && (
+                      <p className="hm-clar-ok">{hallT.constraintsNonePending}</p>
+                    )}
               </div>
 
               <button
@@ -2925,9 +3019,6 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                 onClick={() => setDayMode(true)}
               >
                 <HmIcon name="check" size={18} /> מצב יום האירוע
-              </button>
-              <button className="hm-ghost-btn" onClick={onRegenerate} disabled={loading}>
-                <HmIcon name="refresh" size={18} /> סידור מחדש מההתחלה
               </button>
               <button className="hm-ghost-btn" onClick={() => setWizardOpen(true)}>
                 <HmIcon name="hall" size={18} /> בניית אולם מחדש
@@ -2983,7 +3074,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
               { key: 'tables', icon: 'tables', label: 'שולחנות' },
               { key: 'guests', icon: 'guests', label: activeEventTerms().guestsLabel },
               { key: 'smart', icon: 'smart', label: 'הושבה' },
-              { key: 'tools', icon: 'tools', label: 'כלים' },
+              { key: 'tools', icon: 'tools', label: hallT.settingsTab },
             ] as const
           ).map((tab) => (
             <button

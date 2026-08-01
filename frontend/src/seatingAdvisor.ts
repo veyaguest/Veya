@@ -11,7 +11,6 @@
  */
 import { groupLabel, type HallGuest, type Side, type TableType } from './types'
 import { sidePhrase } from './strings/eventTypes'
-import { getActiveEventType } from './authStore'
 
 // מבנה שולחן מינימלי הדרוש לניתוח — תואם מבנית ל-TableView הפרטי
 // שבתוך HallPage.tsx (בלי תלות ישירה בקובץ הזה, כדי למנוע import מעגלי
@@ -387,6 +386,7 @@ export function computeSuggestions(
   splitGroups: SplitGroupInfo[],
   childWarnings: ChildWithoutFamilyWarning[],
   togetherPairs?: PairList,
+  forbiddenPairs?: PairList,
 ): SmartSuggestion[] {
   const suggestions: SmartSuggestion[] = []
   const guestById = new Map<number, HallGuest>()
@@ -398,6 +398,26 @@ export function computeSuggestions(
     }
   }
   const tableByNum = new Map(tables.map((t) => [t.table_number, t]))
+
+  // חוק קשיח: הצעה לעולם לא תושיב יחד זוג "לא לשבת יחד". עד 2026-08
+  // ההצעות לא בדקו את זה כלל, ולכן "עוזר ההושבה" יכול היה להציע בדיוק
+  // את מה שמנוע ההושבה אוסר — וזה מה שגרם למשתמש להרגיש שהמערכת
+  // מתעלמת מההערות שלו.
+  const forbidden = pairSetFrom(forbiddenPairs)
+  const wouldConflict = (guestIds: number[], target: SeatingTable): boolean => {
+    const movingSet = new Set(guestIds)
+    for (const id of guestIds) {
+      for (const seated of target.guests) {
+        if (movingSet.has(seated.id)) continue
+        if (forbidden.has(pairKey(id, seated.id))) return true
+      }
+      // גם בין הנעים עצמם, אם מעבירים כמה יחד.
+      for (const other of guestIds) {
+        if (other !== id && forbidden.has(pairKey(id, other))) return true
+      }
+    }
+    return false
+  }
 
   // (א) איחוד משפחות מפוצלות
   for (const fam of familyGroups) {
@@ -412,6 +432,7 @@ export function computeSuggestions(
     const neededSeats = toMove.reduce((sum, id) => sum + (guestById.get(id)?.seats ?? 1), 0)
     if (tableFreeCapacity(target) < neededSeats) continue
     if (toMove.length === 0) continue
+    if (wouldConflict(toMove, target)) continue
     suggestions.push({
       text: `לאחד את משפחת ${fam.surname} — להעביר ${toMove.length} מוזמנים לשולחן ${target.table_number}`,
       moves: toMove.map((id) => ({ guestId: id, toTable: target.table_number })),
@@ -427,6 +448,7 @@ export function computeSuggestions(
     const toMove = allIds.filter((id) => tableByGuestId.get(id) !== target.table_number)
     const neededSeats = toMove.reduce((sum, id) => sum + (guestById.get(id)?.seats ?? 1), 0)
     if (toMove.length === 0 || tableFreeCapacity(target) < neededSeats) continue
+    if (wouldConflict(toMove, target)) continue
     suggestions.push({
       text: `לאחד את קבוצת "${sg.label}" — להעביר ${toMove.length} מוזמנים לשולחן ${target.table_number}`,
       moves: toMove.map((id) => ({ guestId: id, toTable: target.table_number })),
@@ -456,6 +478,7 @@ export function computeSuggestions(
     } else {
       continue
     }
+    if (wouldConflict([mover.id], target)) continue
     suggestions.push({
       text: `להעביר את ${mover.full_name} משולחן ${moverFrom.table_number} לשולחן ${target.table_number} כדי לשבת עם ${
         mover.id === a ? guestB.full_name : guestA.full_name
@@ -491,6 +514,7 @@ export function computeSuggestions(
       }
     }
     if (!target) continue
+    if (wouldConflict([cw.childId], target)) continue
     suggestions.push({
       text: `להעביר את ${cw.childName} לשולחן ${target.table_number}, לצד מבוגר מהמשפחה`,
       moves: [{ guestId: cw.childId, toTable: target.table_number }],
@@ -618,189 +642,20 @@ export function smartSearch(
   return results.sort((a, b) => a.fullName.localeCompare(b.fullName, 'he'))
 }
 
-// ---- שלב 9: מילוי שולחנות (Smart Fill) ----------------------------------
+// ---- שלב 9 (הוסר): מילוי שולחנות בצד הלקוח ------------------------------
 //
-// היוריסטיקה **עצמאית וקטנה** (Best-Fit Decreasing), לא קשורה בשום צורה
-// למנוע הנעול app/seating.py ולא מייבאת ממנו — רק ממומשת מחדש בהשראת
-// עקרונות דומים (זוגות אסורים = חוק קשיח, אותו צד/קבוצה/together = בונוס
-// רך). לא מזיזה אף מוזמן שכבר משובץ — רק ממקמת מי שברשימת "ללא שולחן".
-// פותחת שולחן חדש רק אם אין מקום בשום שולחן קיים.
-
-export interface SmartFillNewTable {
-  table_number: number
-  capacity: number
-}
-
-export interface SmartFillResult {
-  moves: SmartMove[]
-  newTables: SmartFillNewTable[]
-  placedCount: number
-  unplacedCount: number
-}
-
-/** שולחן-עבודה פנימי לאלגוריתם — רק המידע הדרוש לניקוד/קיבולת. */
-interface FillWorkingTable {
-  table_number: number
-  capacity: number
-  freeCapacity: number
-  guestIds: Set<number>
-  sides: Map<Side, number>
-  groups: Map<string, number>
-  isNew: boolean
-}
-
-// ניקוד "צד" (חתן/כלה, או צד א׳/ב׳ בסוגי אירוע אחרים): מנחה את המילוי לשמור
-// אנשים מאותו צד יחד, ולהימנע מלערבב צד עם הצד הנגדי באותו שולחן — בלי
-// לחסום. מוזמן "משותף" ניטרלי ומשתלב בכל שולחן בלי בונוס או קנס. הקנס רך:
-// הוא רק משנה סדר עדיפויות, לעולם לא מונע הושבה (שולחן עם מקום פנוי תמיד
-// נשאר מועמד חוקי).
+// עד 2026-08 ישב כאן `computeSmartFill` — היוריסטיקת Best-Fit Decreasing
+// עצמאית שמילאה שולחנות בדפדפן, עם טבלת משקלים משלה במקביל לזו של
+// `backend/app/seating.py`. היא הוסרה במכוון:
 //
-// משקלי "אותו צד"/"אותה קבוצה" לפי event_type — תואם לעיקרון של
-// SEATING_WEIGHTS_BY_EVENT_TYPE בבקאנד (backend/app/seating.py): ברירת
-// המחדל (לכל סוג שלא הוגדר לו כאן) זהה לחתונה, כדי לא לפגוע בחוויה
-// הקיימת. רק business סוטה — "צד" (מארח א/ב) כמעט לא רלוונטי לאירוע עסקי,
-// ואילו "קבוצה" (מחלקה/לקוחות/ספקים) היא הציר המשמעותי לישיבה יחד, בדיוק
-// כמו שהוגדר בבקאנד.
-const DEFAULT_SAME_SIDE_BONUS = 2
-const DEFAULT_OPPOSITE_SIDE_PENALTY = 3
-const DEFAULT_GROUP_MULTIPLIER = 3
-
-const SEATING_WEIGHTS_BY_EVENT_TYPE: Record<
-  string,
-  { sameSide: number; oppositeSide: number; group: number }
-> = {
-  business: { sameSide: 1, oppositeSide: 1, group: 6 },
-}
-
-function seatingWeights(): { sameSide: number; oppositeSide: number; group: number } {
-  const defaults = {
-    sameSide: DEFAULT_SAME_SIDE_BONUS,
-    oppositeSide: DEFAULT_OPPOSITE_SIDE_PENALTY,
-    group: DEFAULT_GROUP_MULTIPLIER,
-  }
-  return SEATING_WEIGHTS_BY_EVENT_TYPE[getActiveEventType() || 'wedding'] ?? defaults
-}
-
-/** ניקוד התאמת הצד של מוזמן לתמהיל הצדדים שכבר יושב בשולחן. */
-function sideScore(guestSide: Side, tableSides: Map<Side, number>): number {
-  if (guestSide === 'shared') return 0 // משותף — משתלב בכל מקום, בלי העדפה
-  const oppositeSide: Side = guestSide === 'groom' ? 'bride' : 'groom'
-  const same = tableSides.get(guestSide) ?? 0
-  const opposite = tableSides.get(oppositeSide) ?? 0
-  const w = seatingWeights()
-  return same * w.sameSide - opposite * w.oppositeSide
-}
-
-export function computeSmartFill(
-  tables: SeatingTable[],
-  unassigned: HallGuest[],
-  forbiddenPairs: PairList | undefined,
-  togetherPairs: PairList | undefined,
-  defaultCapacity: number,
-  nextTableNumber: number,
-): SmartFillResult {
-  const forbiddenSet = pairSetFrom(forbiddenPairs)
-  const togetherSet = pairSetFrom(togetherPairs)
-
-  const working: FillWorkingTable[] = tables.map((t) => {
-    const sides = new Map<Side, number>()
-    const groups = new Map<string, number>()
-    for (const g of t.guests) {
-      sides.set(g.side, (sides.get(g.side) ?? 0) + 1)
-      if (g.group_type && g.group_type !== 'other') {
-        groups.set(g.group_type, (groups.get(g.group_type) ?? 0) + 1)
-      }
-    }
-    return {
-      table_number: t.table_number,
-      capacity: t.capacity,
-      freeCapacity: tableFreeCapacity(t),
-      guestIds: new Set(t.guests.map((g) => g.id)),
-      sides,
-      groups,
-      isNew: false,
-    }
-  })
-
-  // חבורות גדולות קודם (Best-Fit Decreasing) — קל יותר למקם חבורה גדולה
-  // מוקדם, לפני שהמקום הפנוי מתפזר לפירורים בין שולחנות.
-  const ordered = [...unassigned].sort((a, b) => b.seats - a.seats)
-
-  const moves: SmartMove[] = []
-  const newTables: SmartFillNewTable[] = []
-  let nextNum = nextTableNumber
-  let placedCount = 0
-
-  for (const g of ordered) {
-    // חוק קשיח: לא לשבץ לצד מישהו שברשימת "לא לשבת יחד" איתו.
-    const fitsHard = (t: FillWorkingTable) => {
-      if (t.freeCapacity < g.seats) return false
-      for (const otherId of t.guestIds) {
-        if (forbiddenSet.has(pairKey(g.id, otherId))) return false
-      }
-      return true
-    }
-
-    let best: FillWorkingTable | null = null
-    let bestScore = -Infinity
-    for (const t of working) {
-      if (!fitsHard(t)) continue
-      let score = 0
-      for (const otherId of t.guestIds) {
-        if (togetherSet.has(pairKey(g.id, otherId))) score += 10
-      }
-      if (g.group_type && g.group_type !== 'other') {
-        score += (t.groups.get(g.group_type) ?? 0) * seatingWeights().group
-      }
-      // צד חתן/כלה: בונוס לאותו צד, קנס רך לערבוב עם הצד הנגדי.
-      score += sideScore(g.side, t.sides)
-      // Best-Fit: בין שולחנות עם אותו ניקוי, מעדיפים את זה עם פחות מקום
-      // פנוי שנשאר אחרי ההושבה (ממלאים שולחנות עד הסוף, לא מפזרים).
-      const leftoverAfter = t.freeCapacity - g.seats
-      const tieBreak = -leftoverAfter * 0.01
-      const total = score + tieBreak
-      if (total > bestScore) {
-        bestScore = total
-        best = t
-      }
-    }
-
-    if (!best) {
-      // חבורה גדולה מקיבולת שולחן בודד (ברירת המחדל) — לא ניתן למקם
-      // אוטומטית בלי לחרוג מקיבולת; משאירים "ללא שולחן" במקום להפר חוק קשיח.
-      if (g.seats > defaultCapacity) continue
-      // אין מקום בשום שולחן קיים — פותחים שולחן חדש בקיבולת ברירת המחדל.
-      best = {
-        table_number: nextNum,
-        capacity: defaultCapacity,
-        freeCapacity: defaultCapacity,
-        guestIds: new Set(),
-        sides: new Map(),
-        groups: new Map(),
-        isNew: true,
-      }
-      working.push(best)
-      newTables.push({ table_number: nextNum, capacity: defaultCapacity })
-      nextNum += 1
-    }
-
-    best.freeCapacity -= g.seats
-    best.guestIds.add(g.id)
-    best.sides.set(g.side, (best.sides.get(g.side) ?? 0) + 1)
-    if (g.group_type && g.group_type !== 'other') {
-      best.groups.set(g.group_type, (best.groups.get(g.group_type) ?? 0) + 1)
-    }
-    moves.push({ guestId: g.id, toTable: best.table_number })
-    placedCount++
-  }
-
-  return {
-    moves,
-    newTables,
-    placedCount,
-    unplacedCount: unassigned.length - placedCount,
-  }
-}
+// היא לא הכירה העדפות אזור מהערות ההושבה ("קרוב לבר", "רחוק מהרעש"), לא
+// ידעה איפה השולחנות מונחים בפועל במפה, ולא ראתה שולחנות נעולים — ולכן
+// נתנה לאותה שאלה תשובה **שונה** מהמנוע האמיתי. שני כפתורי "אוטומטי"
+// שמסדרים אחרת הם בדיוק מה שגורם למשתמש לא לסמוך על אף אחד מהם.
+//
+// היום יש מנוע אחד: `POST /seating/generate`. "השלמת מי שללא שולחן" היא
+// אותה קריאה עם `only_unassigned: true` — אותם משקלים, אותם אילוצים,
+// אותה בדיקת תקינות.
 
 // ---- שלב 10: בדיקה חיה בזמן גרירה ---------------------------------------
 //
