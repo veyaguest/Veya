@@ -50,6 +50,17 @@ TOGETHER_TRIGGERS = [
 # מילים שמסמנות סוף שם-היעד (מה שאחריהן אינו חלק מהשם).
 STOP_WORDS = ["כי", "בגלל", "כדי", "אבל", "שהם", "שהוא", "שהיא", "מפני"]
 
+# מילים שמתארות **אזור באולם**, לא אדם. הטריגר "רחוק מ" מופיע גם ב-
+# AVOID_TRIGGERS וגם בביטויי העדפת-אזור ("רחוק מהרעש"), ולכן בלי הרשימה הזו
+# "רחוק מהרעש" היה נקרא גם כיחס avoid ליעד בשם "הרעש" — יחס מזויף שמלכלך את
+# רשימת האילוצים ואת תור ההבהרות. אזור מטופל ב-parse_preferences בלבד.
+_ZONE_WORDS = {
+    "רעש", "הרעש", "מוזיקה", "המוזיקה", "רמקול", "רמקולים", "הרמקול",
+    "הרמקולים", "במה", "הבמה", "דיג'יי", "הדיג'יי", "דיגיי", "הדיגיי",
+    "די.ג'יי", "dj", "רחבה", "הרחבה", "ריקודים", "הריקודים", "בר", "הבר",
+    "כניסה", "הכניסה", "יציאה", "היציאה", "שירותים", "השירותים",
+}
+
 # מפרידים בין סעיפים בהערה.
 _SEGMENT_SPLIT = re.compile(r"[,.;\n·|/]+|\s-\s|\bוגם\b")
 
@@ -96,9 +107,24 @@ def parse_relations(note: str) -> list[dict]:
         if not rel_type:
             continue
         target = _clean_target(seg[trigger_pos + trigger_len:])
-        if target:
-            relations.append({"type": rel_type, "target_text": target})
+        if not target:
+            continue
+        # "רחוק מהרעש" / "ליד הבר" מתארים אזור באולם, לא אדם — הם מטופלים
+        # ב-parse_preferences. בלי הבדיקה הזו נוצר יחס avoid ליעד "הרעש".
+        if _is_zone_target(target):
+            continue
+        relations.append({"type": rel_type, "target_text": target})
     return relations
+
+
+def _is_zone_target(target: str) -> bool:
+    """האם שם-היעד מתאר אזור באולם ולא אדם/משפחה/קבוצה."""
+    tokens = [t.strip("\"'.,־-") for t in target.split()]
+    meaningful = [t for t in tokens if t]
+    if not meaningful:
+        return False
+    # מספיק שהמילה הראשונה היא אזור ("הרעש והמוזיקה", "הבר").
+    return meaningful[0].lower() in _ZONE_WORDS
 
 
 def resolve_name(target: str, all_guests: list[dict], self_id: int) -> dict:
@@ -185,20 +211,62 @@ def build_together_pairs(guests: list[dict]) -> list[tuple[int, int]]:
 _FAMILY_PREFIXES = ("משפחת", "משפחה", "למשפחת", "למשפחה", "משפ'", "משפ")
 
 
-def match_all_ids(target: str, all_guests: list[dict], self_id: int) -> list[int]:
+def _group_matches(target: str, others: list[dict], event_type: str | None) -> list[int]:
+    """מרחיב שם-**קבוצה** מהלקסיקון לכל המוזמנים שמשויכים לקבוצה הזו.
+
+    מממש את "הפרדה בין קבוצות" / "התנגשות דרך קשר קבוצתי": הערת הושבה
+    כמו "לא ליד עובדים" או "יחד עם משפחת האב" צריכה לחול על כל בני הקבוצה,
+    לא רק על מי שבמקרה קוראים לו כך.
+
+    Event-first: התוויות נשאבות מהלקסיקון לפי ``event_type`` — אירוע עסקי
+    מקבל עובדים/לקוחות/ספקים, בר מצווה מקבל משפחת האב/האם/כיתה — בלי
+    רשימת מונחים חתונתית קשיחה.
+    """
+    from app.event_terms import get_event_terms  # ייבוא מקומי — הימנעות ממעגל
+
+    t = " ".join((target or "").split()).strip(" \t.-\"'")
+    if not t:
+        return []
+    lowered = t.lower()
+    terms = get_event_terms(event_type)
+    for key, label in terms.group_options:
+        if key == "other":
+            continue  # "אחר" אינה קבוצה משמעותית להרחקה/קירוב
+        label_norm = label.lower()
+        # התאמה דו-כיוונית: "עובדים" מול התווית "עובדים", וגם "צוות/חוגים"
+        # מול "צוות". נדרשת מילה שלמה כדי ש"משפחה" לא יבלע "משפחת כהן".
+        if lowered == label_norm or label_norm in lowered or lowered in label_norm:
+            return sorted({g["id"] for g in others if g.get("group_type") == key})
+    return []
+
+
+def match_all_ids(
+    target: str,
+    all_guests: list[dict],
+    self_id: int,
+    event_type: str | None = None,
+) -> list[int]:
     """מרחיב שם-יעד ל*כל* המוזמנים התואמים (בשונה מ-resolve_name שבוחר אחד):
 
+    - שם קבוצה מהלקסיקון ("עובדים", "משפחת האב") → כל בני הקבוצה.
     - "משפחת כהן" / "משפחה כהן" → כל מי ששם המשפחה מופיע בשמו המלא.
     - שם מלא ("רותי כהן") → כל ההתאמות המדויקות.
     - שם פרטי בלבד ("דני") → כל המוזמנים שיש להם המילה הזו בשם.
 
-    all_guests: [{id, full_name}] · self_id: המוזמן שכתב את ההערה (מוחרג תמיד).
+    all_guests: [{id, full_name, group_type}] · self_id: כותב ההערה (מוחרג).
+    event_type: לשאיבת תוויות הקבוצות מהלקסיקון (None => חתונה).
     """
     t = " ".join((target or "").split())
     if not t:
         return []
     toks = t.split()
     others = [g for g in all_guests if g["id"] != self_id]
+
+    # קבוצה קודם: "משפחת האב" היא תווית קבוצה בבר מצווה, ורק אם אין קבוצה
+    # כזו נופלים לפרשנות "שם משפחה" הרגילה.
+    group_ids = _group_matches(t, others, event_type)
+    if group_ids:
+        return group_ids
 
     # "משפחת X" → כל בני המשפחה (שם המשפחה מופיע בשם המלא).
     if toks[0] in _FAMILY_PREFIXES and len(toks) >= 2:
@@ -228,6 +296,7 @@ def match_all_ids(target: str, all_guests: list[dict], self_id: int) -> list[int
 
 def build_pairs_from_guests(
     guests: list[dict],
+    event_type: str | None = None,
 ) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
     """בונה ישירות מהערות המוזמנים את זוגות ה-avoid (קשיח) וה-together (רך),
     כשכל שם-יעד מורחב ל*כל* המוזמנים התואמים — שם פרטי כולל את כל בעלי השם,
@@ -239,15 +308,25 @@ def build_pairs_from_guests(
 
     guests: [{id, full_name, seating_notes}] · מחזיר: (forbidden, together)
     """
-    name_dicts = [{"id": g["id"], "full_name": g.get("full_name", "")} for g in guests]
+    name_dicts = [
+        {
+            "id": g["id"],
+            "full_name": g.get("full_name", ""),
+            "group_type": g.get("group_type", "other"),
+        }
+        for g in guests
+    ]
     forbidden: set[tuple[int, int]] = set()
     together: set[tuple[int, int]] = set()
     for g in guests:
         for rel in parse_relations(g.get("seating_notes") or ""):
-            ids = match_all_ids(rel["target_text"], name_dicts, g["id"])
+            ids = match_all_ids(rel["target_text"], name_dicts, g["id"], event_type)
             bucket = forbidden if rel["type"] == "avoid" else together
             for m in ids:
                 bucket.add((min(g["id"], m), max(g["id"], m)))
+    # חוק קשיח גובר: אם זוג הופיע גם כ"יחד" (למשל דרך קבוצה) וגם כ"לא יחד"
+    # (בקשה מפורשת), האיסור מנצח — אחרת בקשה רכה הייתה מסתירה חוק.
+    together -= forbidden
     return sorted(forbidden), sorted(together)
 
 

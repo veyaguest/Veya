@@ -21,6 +21,23 @@ _write = EventAccess(permissions.SEATING_WRITE)
 router = APIRouter(prefix="/seating", tags=["seating"])
 
 
+def _seating_note_dicts(guests) -> list[dict]:
+    """הקלט לפרסור האילוצים — הערות הושבה בלבד, כולל שיוך הקבוצה.
+
+    ``group_type`` נדרש כדי ש"לא ליד עובדים" / "יחד עם משפחת האב" יתפרשו
+    כקבוצה שלמה ולא כשם פרטי (ראו ``constraints._group_matches``).
+    """
+    return [
+        {
+            "id": g.id,
+            "full_name": g.full_name,
+            "group_type": g.group_type,
+            "seating_notes": g.seating_notes,
+        }
+        for g in guests
+    ]
+
+
 @router.post("/generate", response_model=schemas.SeatingResponse)
 def generate(
     payload: schemas.SeatingRequest,
@@ -65,11 +82,8 @@ def generate(
     # התאמה *מכלילה*: שם פרטי בלבד → כל המוזמנים באותו שם (כל ה"דני" באולם);
     # "משפחת X" → כל בני המשפחה. build_pairs_from_guests מיישם זאת ישירות מתוך
     # ההערות הגולמיות, בלי resolve_name (שבוחר התאמה יחידה והופך שם עמום להבהרה).
-    guest_full = [
-        {"id": g.id, "full_name": g.full_name, "seating_notes": g.seating_notes}
-        for g in guests
-    ]
-    fb, tg = parser.build_pairs_from_guests(guest_full)
+    guest_full = _seating_note_dicts(guests)
+    fb, tg = parser.build_pairs_from_guests(guest_full, event.event_type)
     forbidden = set(fb)
     forbidden.update(tuple(p) for p in payload.forbidden_pairs)  # + מה שהמשתמש ביקש
     together = tg
@@ -107,6 +121,22 @@ def generate(
     }
     preferences = {gid: prefs for gid, prefs in preferences.items() if prefs}
 
+    # --- מי אסור להזיז ---
+    # (א) שולחן שסומן "נעול" במפה: המשתמש סידר אותו ידנית בכוונה, ואסור
+    #     ש"הושבה בקליק" תדרוס את העבודה הזו.
+    # (ב) מצב only_unassigned: כל מי שכבר משובץ נשאר בדיוק במקומו.
+    locked_tables = {
+        int(key)
+        for key, pos in (event.table_positions or {}).items()
+        if isinstance(pos, dict) and pos.get("locked") and str(key).lstrip("-").isdigit()
+    }
+    fixed = {
+        g.id: g.table_number
+        for g in guests
+        if g.table_number is not None
+        and (payload.only_unassigned or g.table_number in locked_tables)
+    }
+
     t0 = time.time()
     result = seating.generate_seating(
         guests=guest_dicts,
@@ -118,6 +148,7 @@ def generate(
         zones=zones,
         preferences=preferences,
         event_type=event.event_type,
+        fixed=fixed,
     )
     elapsed = time.time() - t0
 
@@ -154,6 +185,7 @@ def generate(
         unseated=result.unseated,
         persisted=persisted,
         explanations=explanations,
+        violations=[schemas.SeatingViolation(**v) for v in result.violations],
     )
 
 
@@ -280,11 +312,9 @@ def recommend_seat(
         select(models.Guest).where(models.Guest.event_id == event.id)
     ).all()
 
-    guest_full = [
-        {"id": g.id, "full_name": g.full_name, "seating_notes": g.seating_notes}
-        for g in guests
-    ]
-    fb, tg = parser.build_pairs_from_guests(guest_full)
+    fb, tg = parser.build_pairs_from_guests(
+        _seating_note_dicts(guests), event.event_type
+    )
 
     tables = _occupancy_tables(event, guests)
     # מסירים את המוזמן עצמו מהשולחן הנוכחי שלו (אם משבצים מחדש) — שלא ייחשב.
@@ -347,11 +377,9 @@ def assign_seat(
             warnings.append(
                 f"שולחן {payload.table_number}: {used} אנשים מתוך {cap} — חריגה מהקיבולת"
             )
-        guest_full = [
-            {"id": g.id, "full_name": g.full_name, "seating_notes": g.seating_notes}
-            for g in guests
-        ]
-        fb, _ = parser.build_pairs_from_guests(guest_full)
+        fb, _ = parser.build_pairs_from_guests(
+            _seating_note_dicts(guests), event.event_type
+        )
         forbidden = {(min(a, b), max(a, b)) for a, b in fb}
         for o in others:
             if (min(o.id, guest.id), max(o.id, guest.id)) in forbidden:

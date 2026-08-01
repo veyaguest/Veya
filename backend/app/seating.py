@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import math
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from app.event_terms import side_axis_label
@@ -84,6 +84,9 @@ class SeatingResult:
     score: int
     hard_ok: bool               # True אם אין הפרת חוק קשיח
     unseated: list[int]         # מזהי חבורות שלא הצלחנו לשבץ (אמור להיות ריק)
+    # דוח בדיקה מובנה אחרי השיבוץ. ריק = הכול תקין. כל פריט:
+    # {kind, table_number, guest_ids, names, text} — ``text`` בעברית לתצוגה.
+    violations: list[dict] = field(default_factory=list)
 
 
 def _capacity_needed(parties: list[Party], seats_per_table: int) -> int:
@@ -201,25 +204,93 @@ def _score(assignment: dict, together: set, pref_score: dict, weights: dict) -> 
     return sum(_table_score(m, tid, together, pref_score, weights) for tid, m in assignment.items())
 
 
-def _greedy(parties, tids, caps, forbidden, pref_score) -> dict:
+def _greedy(parties, tids, caps, forbidden, pref_score, pinned: dict) -> dict:
     """שיבוץ חמדני ראשוני: חבורות גדולות קודם. מבין השולחנות האפשריים בוחר את
-    זה שממקסם את העדפת המיקום של החבורה, ואז את הכי הרבה מקום פנוי."""
+    זה שממקסם את העדפת המיקום של החבורה, ואז את הכי הרבה מקום פנוי.
+
+    ``pinned`` (party_id -> table) הן חבורות שכבר יושבות ואסור להזיז — הן
+    נכנסות לשיבוץ כפי שהן ותופסות מקום, אבל לא נבחרות מחדש."""
     assignment: dict = {t: [] for t in tids}
     remaining = dict(caps)
+    for party in parties:
+        tid = pinned.get(party.id)
+        if tid is not None and tid in assignment:
+            assignment[tid].append(party)
+            remaining[tid] -= party.size
     for party in sorted(parties, key=lambda p: p.size, reverse=True):
+        if party.id in pinned:
+            continue
         feasible = [
             t for t in tids
             if remaining[t] >= party.size and not _has_forbidden(assignment[t], party, forbidden)
         ]
         if not feasible:
-            continue  # אין מקום — יסומן כ-unseated
+            continue  # אין מקום — ינוסה שוב ב-_repair, ואז יסומן כ-unseated
         best_t = max(feasible, key=lambda t: (pref_score.get((party.id, t), 0.0), remaining[t]))
         assignment[best_t].append(party)
         remaining[best_t] -= party.size
     return assignment
 
 
-def _local_search(assignment, caps, forbidden, together, pref_score, rng, weights) -> None:
+def _repair(assignment: dict, parties, caps, forbidden, pinned: dict) -> None:
+    """מעבר תיקון: מנסה לשבץ חבורות שנשארו בחוץ, ע"י פינוי מקום.
+
+    בלי המעבר הזה, חבורה אחת שלא מצאה שולחן גורמת ל-``hard_ok=False`` —
+    ואז **שום דבר לא נשמר** והמשתמש מקבל שגיאה כללית, גם כשקיים סידור
+    תקין לחלוטין שדורש רק הזזה אחת. הפעולה: מוצאים שולחן שבו יש מספיק
+    מקום *אילו* היינו מעבירים ממנו חבורה קטנה לשולחן אחר, ומבצעים.
+
+    לא נוגע בחבורות מקובעות (``pinned``), ולעולם לא מפר חוק קשיח.
+    """
+    seated = {p.id for members in assignment.values() for p in members}
+    leftovers = [p for p in parties if p.id not in seated]
+    if not leftovers:
+        return
+    tids = list(assignment.keys())
+
+    for party in sorted(leftovers, key=lambda p: p.size, reverse=True):
+        placed = False
+        for target in tids:
+            if _has_forbidden(assignment[target], party, forbidden):
+                continue
+            free = caps[target] - _seats_used(assignment[target])
+            needed = party.size - free
+            if needed <= 0:
+                assignment[target].append(party)
+                placed = True
+                break
+            # מנסים לפנות בדיוק מספיק מקום ע"י העברת חבורה אחת משם.
+            movable = sorted(
+                (m for m in assignment[target] if m.id not in pinned and m.size >= needed),
+                key=lambda m: m.size,
+            )
+            for mover in movable:
+                for other in tids:
+                    if other == target:
+                        continue
+                    if caps[other] - _seats_used(assignment[other]) < mover.size:
+                        continue
+                    if _has_forbidden(assignment[other], mover, forbidden):
+                        continue
+                    assignment[target].remove(mover)
+                    assignment[other].append(mover)
+                    assignment[target].append(party)
+                    if _table_violates(assignment[target], caps[target], forbidden):
+                        assignment[target].remove(party)      # ביטול
+                        assignment[other].remove(mover)
+                        assignment[target].append(mover)
+                        continue
+                    placed = True
+                    break
+                if placed:
+                    break
+            if placed:
+                break
+        if not placed:
+            continue  # באמת אין מקום — יסומן כ-unseated ויופיע בדוח
+
+
+def _local_search(assignment, caps, forbidden, together, pref_score, rng, weights, pinned=None) -> None:
     """שיפור מקומי (in-place): חילופי/העברות חבורות בין שולחנות כל עוד לא נשבר
     חוק קשיח והניקוד לא יורד. משלב swap (החלפה) ו-move (העברה למקום פנוי).
 
@@ -228,6 +299,7 @@ def _local_search(assignment, caps, forbidden, together, pref_score, rng, weight
     tids = list(assignment.keys())
     if len(tids) < 2:
         return
+    pinned = pinned or {}
 
     def tscore(tid):
         return _table_score(assignment[tid], tid, together, pref_score, weights)
@@ -238,6 +310,8 @@ def _local_search(assignment, caps, forbidden, together, pref_score, rng, weight
             continue
         i1 = rng.randrange(len(assignment[t1]))
         p1 = assignment[t1][i1]
+        if p1.id in pinned:
+            continue  # חבורה מקובעת (שולחן נעול / מצב "רק מי שללא שולחן")
         t2 = rng.choice(tids)
         if t2 == t1:
             continue
@@ -247,6 +321,8 @@ def _local_search(assignment, caps, forbidden, together, pref_score, rng, weight
             # החלפה בין שתי חבורות — שני השולחנות עלולים להפר חוק קשיח.
             i2 = rng.randrange(len(assignment[t2]))
             p2 = assignment[t2][i2]
+            if p2.id in pinned:
+                continue
             assignment[t1][i1], assignment[t2][i2] = p2, p1
             if (
                 _table_violates(assignment[t1], caps[t1], forbidden)
@@ -264,6 +340,52 @@ def _local_search(assignment, caps, forbidden, together, pref_score, rng, weight
             ):
                 assignment[t2].pop()  # ביטול
                 assignment[t1].insert(i1, p1)
+
+
+def audit_assignment(assignment: dict, caps: dict, forbidden: set,
+                     unseated_parties: list) -> list[dict]:
+    """בדיקת תקינות מלאה **אחרי** השיבוץ (דרישה: "בדיקת תקינות לאחר ההושבה").
+
+    לא סומכת על מה שהמנוע "חושב" שקרה — סורקת את התוצאה בפועל ומחזירה רשימת
+    הפרות מובנית. רשימה ריקה = ההושבה תקינה. כל פריט מכיל גם ``text`` בעברית
+    מוכן לתצוגה, כדי שהמשתמש יראה בדיוק מה נכשל ואצל מי.
+    """
+    violations: list[dict] = []
+    for tid in sorted(assignment):
+        members = assignment[tid]
+        used = _seats_used(members)
+        cap = caps.get(tid, 0)
+        if used > cap:
+            violations.append({
+                "kind": "capacity",
+                "table_number": tid,
+                "guest_ids": [p.id for p in members],
+                "names": [p.name for p in members],
+                "text": f"שולחן {tid}: {used} אנשים מתוך {cap} מקומות — חריגה מהקיבולת",
+            })
+        for i in range(len(members)):
+            for j in range(i + 1, len(members)):
+                a, b = members[i], members[j]
+                if (min(a.id, b.id), max(a.id, b.id)) in forbidden:
+                    violations.append({
+                        "kind": "forbidden_pair",
+                        "table_number": tid,
+                        "guest_ids": [a.id, b.id],
+                        "names": [a.name, b.name],
+                        "text": (
+                            f"שולחן {tid}: {a.name} ו{b.name} מסומנים "
+                            f'כ"לא לשבת יחד" אך שובצו יחד'
+                        ),
+                    })
+    for party in unseated_parties:
+        violations.append({
+            "kind": "unseated",
+            "table_number": None,
+            "guest_ids": [party.id],
+            "names": [party.name],
+            "text": f"{party.name} נשאר/ה ללא שולחן — אין מקום פנוי שמכבד את האילוצים",
+        })
+    return violations
 
 
 def _reasons_for(party, members, tid, norms, preferences, event_type: str | None = "wedding") -> list[str]:
@@ -403,6 +525,7 @@ def generate_seating(
     preferences: Optional[dict] = None,
     seed: int = 42,
     event_type: str | None = "wedding",
+    fixed: Optional[dict] = None,
 ) -> SeatingResult:
     """מייצר שיבוץ הושבה דטרמיניסטי.
 
@@ -416,6 +539,11 @@ def generate_seating(
         (מספר, מיקום וקיבולת), במקום להמציא שולחנות אבסטרקטיים.
     zones: מרכזי אזורים — {"dance_floor"|"bar"|"entrance"|"loud": [(x,y), ...]}
     preferences: {party_id: [{zone, dir, priority, reason}, ...]}
+    fixed: {party_id: table_number} — חבורות שאסור להזיז. שני שימושים:
+        (א) מוזמנים שיושבים בשולחן **נעול** במפה — סידור מחדש לא ידרוס
+            עבודה ידנית שהמשתמש נעל בכוונה;
+        (ב) מצב "רק מי שללא שולחן" — כל מי שכבר משובץ מקובע.
+        חבורה מקובעת לשולחן שאינו קיים במפה פשוט מתעלמים ממנה.
     """
     rng = random.Random(seed)  # דטרמיניסטי — אותה קלט נותן אותו פלט
 
@@ -443,7 +571,7 @@ def generate_seating(
     total_people = sum(p.size for p in parties)
 
     if not parties:
-        return SeatingResult([], 0, 0, seats_per_table, 0, True, [])
+        return SeatingResult([], 0, 0, seats_per_table, 0, True, [], [])
 
     position_aware = bool(tables_meta)
     if position_aware:
@@ -464,14 +592,25 @@ def generate_seating(
         norms = {}
         pref_score = {}
 
+    # מסננים קיבועים לשולחנות שלא קיימים בפריסה הנוכחית.
+    pinned = {
+        pid: int(tid) for pid, tid in (fixed or {}).items()
+        if tid is not None and int(tid) in caps
+    }
+
     weights = get_seating_weights(event_type)
-    assignment = _greedy(parties, tids, caps, forbidden, pref_score)
-    _local_search(assignment, caps, forbidden, together, pref_score, rng, weights)
+    assignment = _greedy(parties, tids, caps, forbidden, pref_score, pinned)
+    _local_search(assignment, caps, forbidden, together, pref_score, rng, weights, pinned)
+    # מעבר תיקון לפני שמוותרים על מי שלא שובץ (ראו _repair).
+    _repair(assignment, parties, caps, forbidden, pinned)
     score = _score(assignment, together, pref_score, weights)
 
     seated_ids = {p.id for members in assignment.values() for p in members}
     unseated = [p.id for p in parties if p.id not in seated_ids]
-    hard_ok = not _violates_hard(assignment, caps, forbidden) and not unseated
+    unseated_parties = [p for p in parties if p.id not in seated_ids]
+    # בדיקת תקינות מלאה על התוצאה בפועל — לא על מה שהמנוע "חושב" שקרה.
+    violations = audit_assignment(assignment, caps, forbidden, unseated_parties)
+    hard_ok = not violations
 
     tables_out: list[dict] = []
     if position_aware:
@@ -524,4 +663,5 @@ def generate_seating(
         score=int(round(score)),
         hard_ok=hard_ok,
         unseated=unseated,
+        violations=violations,
     )

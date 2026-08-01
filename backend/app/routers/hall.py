@@ -6,6 +6,7 @@
 אבל לא חוסמת — ההחלטה הסופית של הבעלים.
 """
 import math
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -56,9 +57,17 @@ def _table_type_from_pos(pos: dict) -> str:
 
 
 def _seating_note_dicts(guests: list[models.Guest]) -> list[dict]:
-    """הקלט ל-``parser.build_pairs_from_guests`` — הערות הושבה בלבד."""
+    """הקלט ל-``parser.build_pairs_from_guests`` — הערות הושבה + שיוך קבוצה.
+
+    ``group_type`` נדרש כדי ש"לא ליד עובדים" יתפרש כקבוצה שלמה.
+    """
     return [
-        {"id": g.id, "full_name": g.full_name, "seating_notes": g.seating_notes}
+        {
+            "id": g.id,
+            "full_name": g.full_name,
+            "group_type": g.group_type,
+            "seating_notes": g.seating_notes,
+        }
         for g in guests
     ]
 
@@ -67,13 +76,16 @@ def _compute_warnings(
     tables: dict[int, list[models.Guest]],
     capacities: dict[int, int],
     all_guests: list[models.Guest],
+    event_type: Optional[str] = None,
 ) -> list[str]:
     warnings: list[str] = []
     # נגזר **טרי** מהערות ההושבה, בדיוק כמו ב-routers/seating.py.
     # עד 2026-07 זה נבנה מ-`constraints_parsed` השמור, שנשאר ריק אלא אם
     # המשתמש הריץ ידנית "בדיקת ההערות" — ולכן אזהרת "לא לשבת יחד" כמעט
     # אף פעם לא הופיעה, וזה נראה כאילו המערכת מתעלמת מההערות.
-    forbidden = set(parser.build_pairs_from_guests(_seating_note_dicts(all_guests))[0])
+    forbidden = set(
+        parser.build_pairs_from_guests(_seating_note_dicts(all_guests), event_type)[0]
+    )
     name_by_id = {g.id: g.full_name for g in all_guests}
     for tnum, members in tables.items():
         used = sum(g.effective_seats for g in members)
@@ -120,7 +132,7 @@ def get_hall(
         tnum: int((positions.get(str(tnum)) or {}).get("capacity") or seats)
         for tnum in all_table_numbers
     }
-    warnings = _compute_warnings(tables, capacities, guests)
+    warnings = _compute_warnings(tables, capacities, guests, event.event_type)
 
     out_tables: list[schemas.HallTable] = []
     for idx, tnum in enumerate(sorted(all_table_numbers)):
@@ -153,7 +165,7 @@ def get_hall(
     # כמו ב-routers/seating.py, ולא מ-constraints_parsed השמור (ראו ההערה
     # ב-_compute_warnings — זה היה מקור לכך שההערות "לא השפיעו").
     forbidden_pairs, together_pairs = parser.build_pairs_from_guests(
-        _seating_note_dicts(guests)
+        _seating_note_dicts(guests), event.event_type
     )
 
     return schemas.HallState(

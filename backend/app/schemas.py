@@ -135,6 +135,10 @@ class SeatingRequest(BaseModel):
     num_tables: Optional[int] = None          # None => חישוב אוטומטי
     only_confirmed: bool = False              # לשבץ רק מי שאישר הגעה
     persist: bool = False                     # לשמור table_number חזרה על המוזמנים
+    # מצב "השלמת מקומות": מי שכבר משובץ נשאר בדיוק במקומו, והמנוע רק מוצא
+    # שולחן למי שאין לו. מחליף את מנוע ה"מילוי" הנפרד שהיה בצד הלקוח, כך
+    # שיש מנוע ניקוד אחד בלבד לשני המצבים.
+    only_unassigned: bool = False
     forbidden_pairs: list[tuple[int, int]] = []  # זוגות "לא לשבת יחד" (שלב 4)
     # רזרבה מפוזרת: כמה מקומות סה"כ להשאיר פנויים, מפוזרים אחיד בין השולחנות
     # הפעילים. None => להשתמש בערך השמור על האירוע. שולחנות רזרבה (is_reserve)
@@ -180,6 +184,16 @@ class SeatingExplanation(BaseModel):
     reasons: list[str]
 
 
+class SeatingViolation(BaseModel):
+    """הפרה בודדת שנמצאה בבדיקת התקינות שאחרי השיבוץ."""
+
+    kind: str                       # capacity / forbidden_pair / unseated
+    table_number: Optional[int] = None
+    guest_ids: list[int] = []
+    names: list[str] = []
+    text: str                       # ניסוח בעברית, מוכן לתצוגה
+
+
 class SeatingResponse(BaseModel):
     tables: list[SeatingTableRead]
     total_people: int
@@ -189,6 +203,8 @@ class SeatingResponse(BaseModel):
     hard_ok: bool
     unseated: list[int]
     persisted: bool
+    # דוח בדיקת התקינות שרץ **אחרי** השיבוץ. ריק = ההושבה תקינה.
+    violations: list[SeatingViolation] = []
     # הסברי שיבוץ למוזמנים שהיו להם העדפה מההערות (רשימה יכולה להיות ריקה).
     explanations: list[SeatingExplanation] = []
 

@@ -187,6 +187,152 @@ def test_zone_preference_from_seating_note() -> None:
         teardown()
 
 
+def _table(num: int, x: int, y: int, capacity: int = 12, locked: bool = False,
+           guest_ids=None) -> dict:
+    """שולחן במבנה ש-``PUT /hall`` מצפה לו."""
+    return {
+        "table_number": num, "x": x, "y": y, "guest_ids": guest_ids or [],
+        "table_type": "round", "capacity": capacity, "rotation": 0,
+        "name": "", "color": "", "notes": "", "locked": locked,
+        "is_reserve": False,
+    }
+
+
+def test_locked_table_is_not_touched() -> None:
+    """שולחן נעול שומר בדיוק על מי שיושב בו גם אחרי "הושבה בקליק".
+
+    זה מה שהופך את הכפתור לבטוח: עבודה ידנית שהמשתמש נעל בכוונה לא נמחקת.
+    """
+    api, teardown = bootstrap()
+    try:
+        keep_a = api.add_guest("אורח נעול א", "0501000001")
+        keep_b = api.add_guest("אורח נעול ב", "0501000002")
+        for i in range(8):
+            api.add_guest(f"אורח חופשי {i}", f"05020000{i:02d}")
+
+        api.save_hall([
+            _table(1, 100, 100, capacity=6, locked=True,
+                   guest_ids=[keep_a["id"], keep_b["id"]]),
+            _table(2, 400, 100, capacity=6),
+            _table(3, 700, 100, capacity=6),
+        ], seats_per_table=6)
+
+        r = api.generate(seats_per_table=6, persist=True)
+        assert r.status_code == 200, r.text
+        assert r.json()["violations"] == [], r.json()["violations"]
+
+        hall = api.get_hall()
+        assert _table_of(hall, "אורח נעול א") == 1, "מוזמן הוזז משולחן נעול"
+        assert _table_of(hall, "אורח נעול ב") == 1, "מוזמן הוזז משולחן נעול"
+        print("✓ שולחן נעול נשמר כפי שהוא")
+    finally:
+        teardown()
+
+
+def test_only_unassigned_keeps_everyone_in_place() -> None:
+    """מצב "השלמת מקומות": מי שכבר משובץ לא זז, ומי שלא — מקבל שולחן."""
+    api, teardown = bootstrap()
+    try:
+        seated = [api.add_guest(f"יושב {i}", f"05030000{i:02d}") for i in range(4)]
+        api.save_hall([
+            _table(1, 100, 100, capacity=6, guest_ids=[g["id"] for g in seated]),
+            _table(2, 400, 100, capacity=6),
+        ], seats_per_table=6)
+
+        before = {g["full_name"]: 1 for g in seated}
+        newcomer = api.add_guest("מאחר לארוחה", "0504000001")
+
+        r = api.generate(seats_per_table=6, persist=True, only_unassigned=True)
+        assert r.status_code == 200, r.text
+        hall = api.get_hall()
+        for name, tnum in before.items():
+            assert _table_of(hall, name) == tnum, (
+                f"{name} הוזז למרות only_unassigned"
+            )
+        assert _table_of(hall, newcomer["full_name"]) is not None, "המאחר לא שובץ"
+        print("✓ only_unassigned לא מזיז אף מוזמן משובץ")
+    finally:
+        teardown()
+
+
+def test_group_constraint_applies_to_whole_group() -> None:
+    """"לא לשבת ליד עובדים" באירוע עסקי חל על **כל** בני הקבוצה."""
+    api, teardown = bootstrap(event_type="business")
+    try:
+        api.add_guest("מנכ\"לית", "0505000001", group_type="management",
+                      seating_notes="לא לשבת ליד עובדים")
+        for i in range(3):
+            api.add_guest(f"עובד {i}", f"05060000{i:02d}", group_type="employees")
+        for i in range(2):
+            api.add_guest(f"לקוח {i}", f"05070000{i:02d}", group_type="clients")
+
+        hall = api.get_hall()
+        assert len(hall["forbidden_pairs"]) == 3, (
+            f"ציפינו ל-3 אילוצים (מנכ\"לית מול 3 עובדים): {hall['forbidden_pairs']}"
+        )
+
+        api.save_hall([
+            _table(1, 100, 100, capacity=3),
+            _table(2, 400, 100, capacity=3),
+        ], seats_per_table=3)
+        r = api.generate(seats_per_table=3, persist=True)
+        assert r.status_code == 200, r.text
+        assert r.json()["violations"] == [], r.json()["violations"]
+
+        hall = api.get_hall()
+        boss = _table_of(hall, "מנכ\"לית")
+        for i in range(3):
+            assert _table_of(hall, f"עובד {i}") != boss, (
+                f"עובד {i} שובץ עם המנכ\"לית — אילוץ הקבוצה הופר"
+            )
+        print("✓ אילוץ ברמת קבוצה חל על כל בני הקבוצה")
+    finally:
+        teardown()
+
+
+def test_violations_are_reported_when_unsolvable() -> None:
+    """כשאין פתרון — המערכת לא מציגה את ההושבה כתקינה ומפרטת מה נכשל."""
+    api, teardown = bootstrap()
+    try:
+        # שני אנשים שאסור להם יחד, ורק שולחן אחד באולם => בהכרח הפרה.
+        api.add_guest("דני כהן", "0508000001",
+                      seating_notes="לא לשבת ליד משה לוי")
+        api.add_guest("משה לוי", "0508000002")
+        api.save_hall([_table(1, 100, 100, capacity=12)])
+
+        r = api.generate(persist=True)
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert not body["hard_ok"], "הושבה עם הפרה סומנה כתקינה"
+        assert body["violations"], "אין דוח הפרות למרות שההושבה נכשלה"
+        assert not body["persisted"], "הושבה עם הפרה נשמרה"
+        kinds = {v["kind"] for v in body["violations"]}
+        assert "unseated" in kinds or "forbidden_pair" in kinds, kinds
+        assert all(v["text"] for v in body["violations"]), "הפרה בלי ניסוח לתצוגה"
+        print(f"✓ דוח הפרות מלא: {[v['text'] for v in body['violations']]}")
+    finally:
+        teardown()
+
+
+def test_zone_words_do_not_become_fake_people() -> None:
+    """"רחוק מהרעש" היא העדפת אזור — ולא יחס "להתרחק מאדם בשם הרעש"."""
+    api, teardown = bootstrap()
+    try:
+        api.add_guest("סבתא רחל", "0509000001",
+                      seating_notes="רחוק מהרעש, קרוב לכניסה")
+        api.add_guest("אורח רגיל", "0509000002")
+        hall = api.get_hall()
+        assert hall["forbidden_pairs"] == [], (
+            f"ביטוי אזור יצר אילוץ מזויף: {hall['forbidden_pairs']}"
+        )
+        assert hall["together_pairs"] == [], (
+            f"ביטוי אזור יצר קשר מזויף: {hall['together_pairs']}"
+        )
+        print("✓ ביטויי אזור לא הופכים לאילוצים בין אנשים")
+    finally:
+        teardown()
+
+
 if __name__ == "__main__":
     try:
         test_internal_note_does_not_affect_seating()
@@ -194,6 +340,11 @@ if __name__ == "__main__":
         test_hard_constraint_is_never_broken()
         test_internal_note_cannot_break_seating()
         test_zone_preference_from_seating_note()
+        test_locked_table_is_not_touched()
+        test_only_unassigned_keeps_everyone_in_place()
+        test_group_constraint_applies_to_whole_group()
+        test_violations_are_reported_when_unsolvable()
+        test_zone_words_do_not_become_fake_people()
         print("OK — מערכת ההושבה עוברת את בדיקות הקצה-לקצה.")
     finally:
         shutdown()
