@@ -116,7 +116,7 @@ def send_invitations(
     sent = failed = skipped = 0
     last_detail = ""
 
-    template = event.message_template or messaging.DEFAULT_TEMPLATE
+    template = event.message_template or messaging.default_template_for(event.event_type)
     event_date = _event_date_str(event)
     for g in guests:
         if not g.phone:
@@ -128,8 +128,10 @@ def send_invitations(
             groom=event.groom_name,
             bride=event.bride_name,
             venue=event.venue_name,
+            venue_address=event.venue_address,
             link=messaging.confirm_link(g.guest_token),
             date=event_date,
+            time=event.event_time,
             event_type=event.event_type,
         )
         res = provider.send_invitation(g.phone, text)
@@ -208,7 +210,7 @@ def send_reminders(
     sent = failed = skipped = 0
     last_detail = ""
 
-    template = event.message_template or messaging.DEFAULT_TEMPLATE
+    template = event.message_template or messaging.default_template_for(event.event_type)
     event_date = _event_date_str(event)
     for g in guests:
         if not g.phone:
@@ -220,8 +222,10 @@ def send_reminders(
             groom=event.groom_name,
             bride=event.bride_name,
             venue=event.venue_name,
+            venue_address=event.venue_address,
             link=messaging.confirm_link(g.guest_token),
             date=event_date,
+            time=event.event_time,
             event_type=event.event_type,
         )
         text = f"{messaging.REMINDER_PREFIX}\n\n{base}"
@@ -258,10 +262,11 @@ def send_reminders(
 @router.get("/template", response_model=schemas.MessageTemplateRead)
 def get_template(event: models.Event = Depends(_view)):
     """מחזיר את תבנית ההודעה של האירוע (או ברירת המחדל) + רשימת המשתנים."""
+    default_for_event = messaging.default_template_for(event.event_type)
     return schemas.MessageTemplateRead(
-        template=event.message_template or messaging.DEFAULT_TEMPLATE,
+        template=event.message_template or default_for_event,
         is_custom=bool(event.message_template),
-        default_template=messaging.DEFAULT_TEMPLATE,
+        default_template=default_for_event,
         placeholders=[
             schemas.TemplatePlaceholder(key=p["key"], desc=p["desc"])
             for p in messaging.PLACEHOLDERS
@@ -295,12 +300,15 @@ def preview_template(
     name = sample.full_name if sample else "ישראל ישראלי"
     token = sample.guest_token if sample else "example"
     text = messaging.render_automation_template(
-        payload.template or messaging.DEFAULT_TEMPLATE,
+        payload.template or messaging.default_template_for(event.event_type),
         guest_name=name,
         groom=event.groom_name,
         bride=event.bride_name,
         venue=event.venue_name,
+        venue_address=event.venue_address,
         link=messaging.confirm_link(token),
+        date=_event_date_str(event),
+        time=event.event_time,
         event_type=event.event_type,
     )
     return schemas.TemplatePreview(preview=text)
