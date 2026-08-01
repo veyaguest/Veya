@@ -32,7 +32,7 @@ from app.deps import EventAccess
 
 router = APIRouter(prefix="/automation", tags=["automation"])
 
-# כל endpoint כאן (חוץ מ-/placeholders הסטטי) נוגע ב-automation_rules ו/או
+# כל endpoint כאן נוגע ב-automation_rules ו/או
 # message_templates — ישירות או דרך _rules()/_templates() הפנימיים — ושתי
 # הטבלאות האלה דורשות send_messages בלבד ב-RLS (לא קיים אצל אולמות).
 _access = EventAccess(permissions.AUTOMATION)
@@ -71,11 +71,18 @@ def _messages(db: Session, event_id: int) -> list[models.Message]:
 # ---- תבניות הודעה בעלות שם ----
 
 @router.get("/placeholders", response_model=list[schemas.TemplatePlaceholder])
-def list_placeholders():
-    """רשימת המשתנים הזמינים לתבניות (עבור כפתורי הוספת-משתנה בממשק)."""
+def list_placeholders(event: models.Event = Depends(_access)):
+    """רשימת הטוקנים הזמינים לתבניות, מותאמת לסוג האירוע.
+
+    מותאמת ולא קבועה: באירוע עם בעל שמחה יחיד (בר/בת מצווה, ברית, משפחתי,
+    עסקי) אין "שם הכלה" במסך יצירת האירוע, ולכן הצעת הטוקן הזו שם הייתה
+    מציעה משתנה שנשאר ריק תמיד. ראו ``messaging.placeholders_for``.
+    """
     return [
-        schemas.TemplatePlaceholder(key=p["key"], desc=p["desc"], token=p.get("token", ""))
-        for p in messaging.AUTOMATION_PLACEHOLDERS
+        schemas.TemplatePlaceholder(
+            key=p["key"], desc=p["desc"], token=p.get("token", ""), cat=p.get("cat", ""),
+        )
+        for p in messaging.placeholders_for(event.event_type)
     ]
 
 
@@ -579,7 +586,7 @@ def activate_track(
 
     body = rsvp_track.invitation_template_body(db, event)
     provider = messaging.get_provider()
-    date_display = automation.event_date_display(event)
+    ev_values = messaging.event_values(event)
     invitations_sent = skipped_missing = skipped_invalid = failed = 0
     failed_ids: list[int] = []
     for g in targets:
@@ -593,16 +600,10 @@ def activate_track(
         text = messaging.render_automation_template(
             body,
             guest_name=g.full_name,
-            groom=event.groom_name,
-            bride=event.bride_name,
-            venue=event.venue_name,
-            venue_address=event.venue_address or "",
-            date=date_display,
-            time=event.event_time or "",
             link=messaging.confirm_link(g.guest_token),
             table_number=g.table_number,
             guest_count=g.effective_seats,
-            event_type=event.event_type,
+            **ev_values,
         )
         res = provider.send_invitation(g.phone, text)
         db.add(models.Message(

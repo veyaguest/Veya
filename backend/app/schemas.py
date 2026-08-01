@@ -305,6 +305,10 @@ class TemplatePlaceholder(BaseModel):
     # כינוי ידידותי בעברית שמוצג ומוכנס לזוג במקום המשתנה הטכני, למשל
     # "[שם אורח]". ריק כשאין כינוי (המשתנים הישנים בסגנון {name}).
     token: str = ""
+    # קטגוריה לקיבוץ בעורך ההודעות (guest / event / when_where / links / extra).
+    # שדה תוספתי: לקוח ותיק שלא מכיר אותו פשוט מתעלם ממנו, כך שאפשר לפרוס
+    # שרת לפני פרונט בלי לשבור את המסך. התוויות בעברית חיות ב-strings/he.ts.
+    cat: str = ""
 
 
 class MessageTemplateRead(BaseModel):
@@ -382,6 +386,10 @@ class EventRead(BaseModel):
     event_type: EventType = "wedding"
     groom_name: str
     bride_name: str
+    # שורות ההורים כמזמינים — נדרשות לנוסחי ההזמנה הדתי/חב"ד/חרדי, שבהם
+    # ההורים מזמינים ולא בעלי האירוע. ריק = הנוסח נופל בעדינות לפתיח בלבד.
+    groom_parents_line: str = ""
+    bride_parents_line: str = ""
     venue_name: str
     venue_address: str = ""
     event_date: str = ""
@@ -397,6 +405,8 @@ class EventUpdate(BaseModel):
     event_type: Optional[EventType] = None
     groom_name: Optional[str] = None
     bride_name: Optional[str] = None
+    groom_parents_line: Optional[str] = None
+    bride_parents_line: Optional[str] = None
     venue_name: Optional[str] = None
     venue_address: Optional[str] = None
     event_date: Optional[str] = None

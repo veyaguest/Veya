@@ -7375,122 +7375,287 @@ td.notes.seating {
 }
 
 /* ============ עורך ההודעות הידידותי (MessageBuilder) ============ */
+/* פריסת כרטיסים: כל אזור עבודה הוא כרטיס עם כותרת משלו — בחירת ההודעה,
+   העורך, הפרטים האישיים והתצוגה המקדימה. בדסקטופ העורך והתצוגה יושבים זה
+   לצד זה כדי לראות את התוצאה תוך כדי כתיבה; במובייל הכול נערם לעמודה אחת
+   בסדר הגיוני (בוחרים → כותבים → מוסיפים פרט → רואים). */
 
 .mb-wrap {
   background: var(--cream);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 24px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
 }
 .mb-head {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+}
+.mb-title {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--charcoal);
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+.mb-sub {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0;
+  max-width: 62ch;
 }
 .mb-empty {
   color: var(--muted);
   padding: 12px 0;
 }
 
-.mb-layout {
+/* --- רשת הכרטיסים --- */
+.mb-grid {
   display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
 }
-/* מצב "הזמנה בלבד" — בלי בורר סוגים, העורך תופס את כל הרוחב. */
-.mb-layout.mb-solo {
-  grid-template-columns: 1fr;
+/* בורר ההודעה ורשימת הפרטים תופסים את כל הרוחב; העורך והתצוגה המקדימה
+   יושבים זה מול זה, כדי לראות את התוצאה תוך כדי כתיבה. */
+.mb-card-picker,
+.mb-card-tokens {
+  grid-column: 1 / -1;
 }
-@media (max-width: 720px) {
-  .mb-layout {
+@media (max-width: 900px) {
+  .mb-grid {
     grid-template-columns: 1fr;
+  }
+  .mb-wrap {
+    padding: 16px;
+    border-radius: 14px;
   }
 }
 
-.mb-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.mb-list-item {
-  text-align: right;
+/* --- כרטיס בסיס --- */
+.mb-card {
   background: var(--surface-hi);
-  border: 1px solid var(--line-2);
-  border-radius: 10px;
-  padding: 10px 12px;
-  cursor: pointer;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  gap: 10px;
+  min-width: 0;
 }
-.mb-list-item:hover {
-  border-color: var(--gold);
+.mb-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
 }
-.mb-list-item.active {
-  border-color: var(--gold);
-  background: #fff;
-  box-shadow: inset 3px 0 0 var(--gold);
-}
-.mb-list-kind {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--gold-deep);
-}
-.mb-list-name {
+.mb-card-title {
   font-size: 14px;
+  font-weight: 700;
   color: var(--charcoal);
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+.mb-card-hint {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0;
 }
 
-.mb-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.mb-tokens {
+/* --- בורר ההודעה --- */
+.mb-picker {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-.mb-token-chip {
-  font-size: 13px;
-  color: var(--gold-deep);
-  background: var(--surface-hi);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 5px 12px;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-.mb-token-chip:hover {
+.mb-picker-item {
+  flex: 1 1 150px;
+  text-align: right;
   background: #fff;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.mb-picker-item:hover {
   border-color: var(--gold);
+}
+.mb-picker-item.active {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px var(--gold);
+}
+.mb-picker-kind {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--gold-deep);
+  letter-spacing: 0.02em;
+}
+.mb-picker-name {
+  font-size: 13.5px;
+  color: var(--charcoal);
+}
+
+/* --- העורך --- */
+.mb-lib-btn {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold-deep);
+  background: #fff;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.mb-lib-btn:hover {
+  box-shadow: 0 2px 10px rgba(180, 150, 90, 0.18);
 }
 .mb-textarea {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 14px;
+  padding: 14px 16px;
   font-size: 15px;
-  line-height: 1.7;
+  line-height: 1.75;
   color: var(--charcoal);
-  background: var(--surface-hi);
+  background: #fff;
   resize: vertical;
   font-family: inherit;
+  min-height: 260px;
 }
 .mb-textarea:focus {
   outline: none;
   border-color: var(--gold);
-  background: #fff;
+  box-shadow: 0 0 0 3px rgba(180, 150, 90, 0.14);
 }
 .mb-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
 }
+.mb-dirty {
+  font-size: 12.5px;
+  color: var(--gold-deep);
+}
 
-/* --- תצוגת WhatsApp --- */
-.mb-preview {
-  margin-top: 4px;
+/* --- הפרטים האישיים (טוקנים) --- */
+.mb-token-search {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 14px;
+  background: #fff;
+  color: var(--charcoal);
+  font-family: inherit;
+}
+.mb-token-search:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.mb-token-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mb-cat-chip {
+  font-size: 12px;
+  color: var(--muted);
+  background: #fff;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 4px 11px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.mb-cat-chip:hover {
+  border-color: var(--gold);
+}
+.mb-cat-chip.active {
+  border-color: var(--gold);
+  color: var(--gold-deep);
+  font-weight: 700;
+}
+/* הקבוצות נפרשות לעמודות לפי הרוחב הפנוי — כרטיס הפרטים תופס את כל רוחב
+   המסך, ולכן רשימה אנכית אחת הייתה ארוכה ומבזבזת. */
+.mb-token-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px 18px;
+  align-items: start;
+}
+.mb-token-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold-deep);
+  letter-spacing: 0.04em;
+  margin: 0 0 6px;
+}
+.mb-token-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.mb-token {
+  width: 100%;
+  text-align: right;
+  background: #fff;
+  border: 1px solid var(--line-2);
+  border-radius: 9px;
+  padding: 7px 11px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.mb-token:hover {
+  border-color: var(--gold);
+  background: var(--surface-hi);
+}
+.mb-token-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--gold-deep);
+}
+.mb-token-desc {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.mb-token-empty {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 4px 0;
+}
+
+/* --- התצוגה המקדימה --- */
+.mb-card-preview {
+  /* נשארת בשדה הראייה תוך כדי כתיבה בדסקטופ. */
+  position: sticky;
+  top: 16px;
+}
+@media (max-width: 900px) {
+  .mb-card-preview {
+    position: static;
+  }
+}
+.mb-preview-note {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0;
 }
 .mb-preview-label {
   display: block;
@@ -7505,16 +7670,16 @@ td.notes.seating {
     repeating-linear-gradient(45deg, #ece5dd 0 12px, #e7dfd4 12px 24px);
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 18px 14px;
+  padding: 20px 16px;
   display: flex;
   justify-content: flex-start;
 }
 .wa-bubble {
   position: relative;
-  max-width: 80%;
+  max-width: 92%;
   background: #dcf8c6;
   border-radius: 10px 10px 10px 2px;
-  padding: 8px 10px 6px;
+  padding: 10px 12px 7px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
 }
 .wa-image {
@@ -7524,11 +7689,12 @@ td.notes.seating {
   display: block;
 }
 .wa-text {
-  font-size: 14.5px;
-  line-height: 1.55;
+  font-size: 15px;
+  line-height: 1.6;
   color: #1f2c1a;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 .wa-line {
   min-height: 1.2em;
@@ -7542,35 +7708,10 @@ td.notes.seating {
   text-align: left;
   font-size: 11px;
   color: #5b7052;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 /* ============ ספריית ההודעות (בורר מודאלי) ============ */
-.mb-editor-bar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.mb-lib-btn {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--gold-deep);
-  background: var(--surface-hi);
-  border: 1px solid var(--gold);
-  border-radius: 999px;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
-}
-.mb-lib-btn:hover {
-  background: #fff;
-  box-shadow: 0 2px 10px rgba(180, 150, 90, 0.18);
-}
-.mb-editor-hint {
-  font-size: 12.5px;
-  color: var(--muted);
-}
 
 .lib-overlay {
   position: fixed;

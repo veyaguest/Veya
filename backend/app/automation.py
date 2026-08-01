@@ -160,7 +160,9 @@ def compute_due_actions(
     conf_time = _confirm_time_by_guest(messages)
     fired = _already_fired(messages)
     event_date = parse_event_date(event.event_date)
-    date_display = event_date_display(event)
+    # כל ערכי האירוע במקום אחד (כולל שורות ההורים להזמנה דתית) — מחושב פעם
+    # אחת לכל התור, לא לכל מוזמן.
+    ev_values = messaging.event_values(event)
 
     actions: list[DueActionData] = []
     for rule in rules:
@@ -180,16 +182,10 @@ def compute_due_actions(
             preview = messaging.render_automation_template(
                 body,
                 guest_name=guest.full_name,
-                groom=event.groom_name,
-                bride=event.bride_name,
-                venue=event.venue_name,
-                venue_address=event.venue_address or "",
-                date=date_display,
-                time=event.event_time or "",
                 link=messaging.confirm_link(guest.guest_token),
                 table_number=guest.table_number,
                 guest_count=guest.effective_seats,
-                event_type=event.event_type,
+                **ev_values,
             )
             actions.append(DueActionData(rule=rule, guest=guest, preview=preview))
     return actions

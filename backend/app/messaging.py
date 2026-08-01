@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 
 from app import event_terms
@@ -58,11 +59,6 @@ DEFAULT_TEMPLATE = (
     "{personal_link}"
 )
 
-# סדר עדיפויות לבחירת סגנון תבנית ברירת המחדל לסוגים לא-חתונתיים (סבב 3ט).
-# מפורש בכוונה — לא להסתמך על סדר ההופעה במערך של message_library.
-_DEFAULT_STYLE_PRIORITY = ("formal", "elegant", "family")
-
-
 def default_template_for(event_type: str | None) -> str:
     """מחזירה תבנית הזמנת ברירת המחדל המתאימה לסוג האירוע (סבב 3ט).
 
@@ -70,32 +66,23 @@ def default_template_for(event_type: str | None) -> str:
     לאובייקט המקורי, לא רק שוויון טקסטואלי), כדי לשמור על ``אפס שינוי
     התנהגות`` לחתונות שאין להן ``message_template`` מותאם אישית.
 
-    שאר סוגי האירוע — נמשכות מ-``message_library.entries_for(event_type)``,
-    לפי סדר עדיפות סגנון: ``formal → elegant → family → הראשונה הזמינה``
-    ב-``stage='invitation'``. לא מסתמכים על סדר ההופעה במערך.
+    שאר סוגי האירוע — נמשכות מ-``message_library.default_body_for``, שהוא
+    מקור-האמת המשותף לכל נוסחי הפתיחה לפי סוג (אותה פונקציה מזינה גם את
+    ``rsvp_track.provision_rsvp_track``, כך ששני המסלולים לא נפרדים שוב).
 
     ``event_type`` ריק או לא-מוכר, או ספרייה בלי תבניות invitation → נופלים
     בעדינות ל-``DEFAULT_TEMPLATE`` (חתונה) כדי לא לשבור שליחה.
     """
-    if not event_type or event_type == "wedding":
-        return DEFAULT_TEMPLATE
-
     # ייבוא lazy כדי להימנע ממחזוריות ולוודא שאין תלות זמן-import.
-    from app.message_library import entries_for
+    from app.message_library import default_body_for
 
-    invitations = [e for e in entries_for(event_type) if e.get("stage") == "invitation"]
-    if not invitations:
-        return DEFAULT_TEMPLATE
-
-    for style in _DEFAULT_STYLE_PRIORITY:
-        for entry in invitations:
-            if entry.get("style") == style:
-                return entry["body"]
-    return invitations[0]["body"]
+    return default_body_for(event_type, "invitation") or DEFAULT_TEMPLATE
 
 
-# קידומת עדינה שנוספת בראש הודעת תזכורת (למי שעדיין לא ענה).
-REMINDER_PREFIX = "תזכורת קטנה 🙂 עדיין לא קיבלנו את אישורכם —"
+# קידומת עדינה שנוספת בראש הודעת תזכורת (למי שעדיין לא ענה). מנוסחת כך
+# שהסיבה לפנייה היא *שלנו* ("אנחנו סוגרים רשימה") ולא כישלון של המוזמן
+# ("לא עניתם") — זה קו המותג של VEYA מול הסטנדרט בשוק.
+REMINDER_PREFIX = "תזכורת קטנה 🙂 אנחנו סוגרים את הרשימה —"
 
 # המשתנים הנתמכים — כל אחד עם כמה כינויים (אנגלית + עברית) לנוחות.
 PLACEHOLDERS = [
@@ -162,29 +149,135 @@ def render_template(
 # לכל משתנה גם כינוי ידידותי בעברית ("token") שהזוג רואה ומכניס במקום
 # המשתנה הטכני — למשל "[שם אורח]" במקום "{{guest_name}}". שני הסגנונות
 # ממופים לאותו ערך, כך שהזוג לא נחשף לקוד אבל הכול נשאר תואם לאחור.
+# קטגוריות הטוקנים לתצוגה מקובצת בעורך ההודעות (מקור-אמת משותף לשרת ולפרונט).
+# הסדר כאן הוא סדר הקבוצות שהזוג רואה.
+TOKEN_CAT_GUEST = "guest"          # מי מקבל את ההודעה
+TOKEN_CAT_EVENT = "event"          # מי מארח ומה חוגגים
+TOKEN_CAT_WHEN_WHERE = "when_where"  # מתי ואיפה
+TOKEN_CAT_LINKS = "links"          # קישורים
+TOKEN_CAT_EXTRA = "extra"          # תוספות
+
+TOKEN_CATEGORY_LABELS: dict[str, str] = {
+    TOKEN_CAT_GUEST: "המוזמן",
+    TOKEN_CAT_EVENT: "האירוע",
+    TOKEN_CAT_WHEN_WHERE: "מתי ואיפה",
+    TOKEN_CAT_LINKS: "קישורים",
+    TOKEN_CAT_EXTRA: "תוספות",
+}
+
 AUTOMATION_PLACEHOLDERS = [
-    {"key": "{{first_name}}", "token": "[שם פרטי]", "desc": "שם פרטי של המוזמן"},
-    {"key": "{{bride_name}}", "token": "[שם הכלה]", "desc": "שם בעל/ת האירוע השני/ה (בחתונה — הכלה)"},
-    {"key": "{{groom_name}}", "token": "[שם החתן]", "desc": "שם בעל/ת האירוע הראשי/ת (בחתונה — החתן)"},
-    {"key": "{{event_name}}", "token": "[שמות בעלי האירוע]", "desc": "שמות בעלי האירוע (בחתונה — בני הזוג)"},
-    {"key": "{{groom_parents_line}}", "token": "[הורי החתן]", "desc": "שורת הורי החתן להזמנה דתית/חב\"ד/חרדית (למשל 'משפחת כהן' או 'יצחק ורבקה כהן'); ריק בברירת מחדל"},
-    {"key": "{{bride_parents_line}}", "token": "[הורי הכלה]", "desc": "שורת הורי הכלה להזמנה דתית/חב\"ד/חרדית; ריק בברירת מחדל"},
-    {"key": "{{update_details}}", "token": "[פרטי שינוי]", "desc": "טקסט חופשי שהבעלים ממלא בשליחת עדכון אירוע (שעה חדשה, מיקום חדש, סיבת דחייה/ביטול). ריק = השורה שלמה תיעלם."},
-    {"key": "{{celebration}}", "token": "[האירוע]", "desc": "שם האירוע לפי סוגו, לשימוש אחרי ל/ב (חתונה / אירוע בר המצווה / אירוע)"},
-    {"key": "{{celebration_of}}", "token": "[שמחת]", "desc": "שם האירוע לפני שמות בעלי האירוע (חתונת… / בר המצווה של…)"},
-    {"key": "{{event_date}}", "token": "[תאריך]", "desc": "תאריך האירוע"},
-    {"key": "{{event_time}}", "token": "[שעה]", "desc": "שעת האירוע"},
-    {"key": "{{venue_name}}", "token": "[שם האולם]", "desc": "שם האולם"},
-    {"key": "{{venue_address}}", "token": "[כתובת]", "desc": "כתובת האולם"},
-    {"key": "{{confirmation_link}}", "token": "[קישור אישור]", "desc": "קישור אישי לאישור הגעה"},
-    {"key": "{{navigation_link}}", "token": "[קישור ניווט]", "desc": "קישור לניווט (Google Maps)"},
-    {"key": "{{waze_link}}", "token": "[קישור וייז]", "desc": "קישור לניווט ב-Waze"},
-    {"key": "{{table_number}}", "token": "[מספר שולחן]", "desc": "מספר השולחן של המוזמן"},
-    {"key": "{{guest_count}}", "token": "[כמות מקומות]", "desc": "כמות המקומות השמורים למוזמן"},
-    {"key": "{{gift_link}}", "token": "[קישור מתנה]", "desc": "קישור למתנה / העברה כספית"},
-    {"key": "{{photo_gallery}}", "token": "[גלריית תמונות]", "desc": "קישור לגלריית התמונות"},
-    {"key": "{{video_gallery}}", "token": "[גלריית וידאו]", "desc": "קישור לגלריית הווידאו"},
+    {"key": "{{first_name}}", "token": "[שם פרטי]", "cat": TOKEN_CAT_GUEST,
+     "desc": "השם הפרטי של המוזמן. אין שם — שורת הפנייה כולה נעלמת מההודעה."},
+    {"key": "{{table_number}}", "token": "[מספר שולחן]", "cat": TOKEN_CAT_GUEST,
+     "desc": "מספר השולחן של המוזמן. עוד לא שובץ — השורה נעלמת."},
+    {"key": "{{guest_count}}", "token": "[כמות מקומות]", "cat": TOKEN_CAT_GUEST,
+     "desc": "כמה מקומות שמורים למוזמן"},
+
+    {"key": "{{event_name}}", "token": "[שמות בעלי האירוע]", "cat": TOKEN_CAT_EVENT,
+     "desc": "שמות בעלי האירוע — מה שמילאתם בפרטי האירוע"},
+    {"key": "{{groom_name}}", "token": "[שם החתן]", "cat": TOKEN_CAT_EVENT,
+     "desc": "שם החתן בלבד"},
+    {"key": "{{bride_name}}", "token": "[שם הכלה]", "cat": TOKEN_CAT_EVENT,
+     "desc": "שם הכלה בלבד"},
+    {"key": "{{celebration_of}}", "token": "[שמחת]", "cat": TOKEN_CAT_EVENT,
+     "desc": "פתיח לפני השמות: \"חתונת דנה ויואב\" / \"בר המצווה של יונתן\""},
+    {"key": "{{celebration}}", "token": "[האירוע]", "cat": TOKEN_CAT_EVENT,
+     "desc": "שם האירוע אחרי ל/ב: \"לחתונה\" / \"לאירוע בר המצווה\""},
+    {"key": "{{groom_parents_line}}", "token": "[הורי החתן]", "cat": TOKEN_CAT_EVENT,
+     "desc": "שורת הורי החתן בהזמנה דתית (\"משפחת כהן\" / \"יצחק ורבקה כהן\"). לא מילאתם — השורה נעלמת."},
+    {"key": "{{bride_parents_line}}", "token": "[הורי הכלה]", "cat": TOKEN_CAT_EVENT,
+     "desc": "שורת הורי הכלה בהזמנה דתית. לא מילאתם — השורה נעלמת."},
+
+    {"key": "{{event_date}}", "token": "[תאריך]", "cat": TOKEN_CAT_WHEN_WHERE,
+     "desc": "תאריך האירוע, בפורמט ישראלי (10.09.2026)"},
+    {"key": "{{event_time}}", "token": "[שעה]", "cat": TOKEN_CAT_WHEN_WHERE,
+     "desc": "שעת האירוע (20:00)"},
+    {"key": "{{venue_name}}", "token": "[שם האולם]", "cat": TOKEN_CAT_WHEN_WHERE,
+     "desc": "שם האולם"},
+    {"key": "{{venue_address}}", "token": "[כתובת]", "cat": TOKEN_CAT_WHEN_WHERE,
+     "desc": "כתובת האולם המלאה"},
+
+    {"key": "{{confirmation_link}}", "token": "[קישור אישור]", "cat": TOKEN_CAT_LINKS,
+     "desc": "הקישור האישי של המוזמן לאישור הגעה"},
+    {"key": "{{navigation_link}}", "token": "[קישור ניווט]", "cat": TOKEN_CAT_LINKS,
+     "desc": "ניווט ב-Google Maps. נגזר מכתובת האולם."},
+    {"key": "{{waze_link}}", "token": "[קישור וייז]", "cat": TOKEN_CAT_LINKS,
+     "desc": "ניווט ב-Waze. נגזר מכתובת האולם."},
+
+    {"key": "{{update_details}}", "token": "[פרטי שינוי]", "cat": TOKEN_CAT_EXTRA,
+     "desc": "פרטי העדכון שתכתבו בשליחת הודעת שינוי (שעה חדשה, מקום חדש). ריק — השורה נעלמת."},
 ]
+
+# טוקנים שהיו בבורר ואינם עוד: אין להם מקור נתונים באירוע (אין שדה מתנה או
+# גלריה במערכת), ולכן הם היו נשארים ריקים תמיד ומוחקים את השורה שבה נכתבו.
+# הם ממשיכים *להתפרש* (ראו ``build_automation_values``) כדי שתבנית שמורה
+# ישנה שכוללת אותם לא תישבר — הם פשוט לא מוצעים יותר לבחירה.
+RETIRED_TOKENS = ["[קישור מתנה]", "[גלריית תמונות]", "[גלריית וידאו]"]
+
+# הטוקן שמוצע כ"שמות בעלי האירוע" בכל סוג אירוע. באירוע עם בעל שמחה יחיד
+# מסך יצירת האירוע מבקש "שם החוגג", ולכן זה גם הטוקן שהזוג יראה בעורך —
+# לא "[שמות בעלי האירוע]" שמדבר על שניים. כל הטוקנים כאן מצביעים לאותו ערך
+# ({{event_name}}), כך שגם תבנית מהספרייה שכתובה עם [שמות בעלי האירוע]
+# ממשיכה להתפרש נכון.
+_HOSTS_TOKEN_BY_TYPE: dict[str, str] = {
+    "bar_mitzvah": "[שם החוגג]",
+    "bat_mitzvah": "[שם החוגגת]",
+    "family": "[שם בעל השמחה]",
+}
+
+
+def placeholders_for(event_type: str | None) -> list[dict]:
+    """רשימת הטוקנים שמוצעים לזוג בעורך ההודעות, מותאמת לסוג האירוע.
+
+    למה לא רשימה אחת קבועה: באירוע עם בעל שמחה יחיד (בר/בת מצווה, ברית,
+    משפחתי, עסקי, אחר) יש שדה שם *אחד* במסך יצירת האירוע. הצעת "[שם החתן]"
+    ו-"[שם הכלה]" שם מציעה טוקנים שאין להם מקור נתונים — [שם הכלה] היה נשאר
+    ריק תמיד, ו-[שם החתן] היה כפילות מיותרת של [שמות בעלי האירוע].
+
+    ארבע התאמות לפי סוג:
+    1. טוקן בעלי האירוע מקבל את השם שהזוג מכיר מהטופס ("[שם החוגג]").
+    2. טוקני החתן/כלה הנפרדים מוצעים רק לסוגים עם שני בעלי אירוע.
+    3. שורות ההורים — סוג חד-מארח מקבל "[הורי החוגג]" אחד במקום שניים.
+    4. שורות ההורים מוצעות רק לסוג שיש לו בפועל נוסח דתי שמשתמש בהן
+       (נבדק מול הספרייה, לא מרשימה קשיחה — כך שהוספת נוסח דתי לסוג חדש
+       מפעילה את הטוקן מעצמה). באירוע עסקי, למשל, הן לא רלוונטיות.
+
+    הערכים עצמם לא משתנים — רק מה שמוצע לבחירה. כל טוקן שהיה קיים ממשיך
+    להתפרש בשליחה, כך ששום תבנית שמורה לא נשברת.
+    """
+    from app import event_terms as _terms
+    from app.message_library import entries_for
+
+    terms = _terms.get_event_terms(event_type)
+    hosts_token = _HOSTS_TOKEN_BY_TYPE.get(terms.type, "[שמות בעלי האירוע]")
+    # האם הספרייה של הסוג בכלל מכילה נוסח שמזמין דרך ההורים.
+    has_parents_templates = any(
+        "[הורי" in e.get("body", "") for e in entries_for(event_type)
+    )
+
+    out: list[dict] = []
+    for p in AUTOMATION_PLACEHOLDERS:
+        token = p["token"]
+        if token in ("[הורי החתן]", "[הורי הכלה]") and not has_parents_templates:
+            continue
+        if not terms.has_two_hosts:
+            # סוג חד-מארח: אין חתן/כלה נפרדים, ואין שתי שורות הורים.
+            if token in ("[שם החתן]", "[שם הכלה]", "[הורי הכלה]"):
+                continue
+            if token == "[שמות בעלי האירוע]":
+                p = {**p, "token": hosts_token,
+                     "desc": f"{terms.host_field_label} — מה שמילאתם בפרטי האירוע"}
+            elif token == "[הורי החתן]":
+                p = {**p, "token": "[הורי החוגג]",
+                     "desc": "שורת ההורים בהזמנה דתית (\"משפחת כהן\"). "
+                             "לא מילאתם — השורה נעלמת."}
+        else:
+            if token == "[שם החתן]":
+                p = {**p, "desc": f"{terms.host_field_label} בלבד"}
+            elif token == "[שם הכלה]":
+                p = {**p, "desc": f"{terms.host_b_field_label} בלבד"}
+        out.append(p)
+    return out
 
 # מפת כינויים לתאימות-לאחור: משתנים/טוקנים ישנים שכבר נשמרו בתבניות קיימות,
 # ממופים לאותם ערכים כמו המשתנים החדשים. כך תבנית שנכתבה פעם עדיין עובדת,
@@ -199,6 +292,13 @@ AUTOMATION_ALIASES = [
     # תאימות לאחור: הטוקן הישן "[שמות בני הזוג]" (שמופיע בספריית ההודעות
     # ובתבניות שכבר נשמרו) ממשיך לעבוד וממופה לאותו ערך כמו [שמות בעלי האירוע].
     {"key": "[שמות בני הזוג]", "same_as": "{{event_name}}"},
+    # שמות באירוע עם בעל שמחה יחיד. באירועים כאלה מסך יצירת האירוע מציג
+    # "שם החוגג/ת" ולא "שמות בעלי האירוע", ולכן זה הטוקן שהזוג מצפה לו —
+    # והוא מוצע לו בבורר (ראו ``placeholders_for``). שניהם מצביעים לאותו ערך.
+    {"key": "[שם החוגג]", "same_as": "{{event_name}}"},
+    {"key": "[שם החוגגת]", "same_as": "{{event_name}}"},
+    {"key": "[שם בעל השמחה]", "same_as": "{{event_name}}"},
+    {"key": "[הורי החוגג]", "same_as": "{{groom_parents_line}}"},
 ]
 
 
@@ -224,6 +324,34 @@ def waze_link(address: str) -> str:
     from urllib.parse import quote_plus
 
     return f"https://waze.com/ul?q={quote_plus(address)}&navigate=yes"
+
+
+def event_values(event) -> dict:
+    """כל ערכי ה*אירוע* המוזנים ל-``render_automation_template``, במקום אחד.
+
+    קיים כדי שלא יקרה שוב מה שקרה עד עכשיו: שדות ``groom_parents_line`` /
+    ``bride_parents_line`` היו קיימים במודל ובטוקנים, אבל אף אחד מארבעת מקומות
+    השליחה לא העביר אותם — ולכן ההזמנות בסגנון דתי/חב"ד/חרדי איבדו את שורת
+    ההורים תמיד, גם כשהיא מולאה. מכאן והלאה, הוספת שדה אירוע לתבנית = שינוי
+    בפונקציה אחת, וכל מסלולי השליחה מקבלים אותו יחד.
+
+    השימוש: ``render_automation_template(body, guest_name=..., link=...,
+    **messaging.event_values(event))``.
+    """
+    # ייבוא lazy — ``automation`` מייבא את המודול הזה בראש הקובץ.
+    from app import automation
+
+    return {
+        "groom": event.groom_name or "",
+        "bride": event.bride_name or "",
+        "venue": event.venue_name or "",
+        "venue_address": event.venue_address or "",
+        "date": automation.event_date_display(event),
+        "time": event.event_time or "",
+        "event_type": event.event_type or "wedding",
+        "groom_parents_line": event.groom_parents_line or "",
+        "bride_parents_line": event.bride_parents_line or "",
+    }
 
 
 def build_automation_values(
@@ -288,10 +416,37 @@ def build_automation_values(
     for p in AUTOMATION_PLACEHOLDERS:
         if p.get("token"):
             values[p["token"]] = canonical.get(p["key"], "")
+    # טוקנים שהוצאו מהבורר אך עדיין עשויים להופיע בתבנית שמורה — חייבים
+    # להישאר במפה. בלעדיהם הם היו נכתבים למוזמן כטקסט גולמי ("[קישור מתנה]")
+    # במקום להיעלם בשקט יחד עם השורה שלהם.
+    values["[קישור מתנה]"] = canonical["{{gift_link}}"]
+    values["[גלריית תמונות]"] = canonical["{{photo_gallery}}"]
+    values["[גלריית וידאו]"] = canonical["{{video_gallery}}"]
     # כינויים ישנים לתאימות-לאחור.
     for a in AUTOMATION_ALIASES:
         values[a["key"]] = canonical.get(a["same_as"], "")
     return values
+
+
+_MULTI_SPACE = re.compile(r"[ \t]{2,}")
+# תווי הפרדה שמחברים שני ערכים באותה שורה ("[תאריך] · [שעה]", "[אולם], [כתובת]").
+_SEPARATORS = r"[,·|–—]"
+
+
+def _drop_separator_around(line: str, token: str) -> str:
+    """מוחק מפריד שנשען על ``token`` ריק, יחד עם הטוקן עצמו.
+
+    למה נקודתי ולא "לחתוך פיסוק בסוף שורה": שורה כמו "[שם פרטי] שלום,"
+    מסתיימת בפסיק *לגמרי בכוונה*, וחיתוך גורף היה הופך אותה ל"דנה שלום".
+    כאן נמחק רק פסיק או נקודה-אמצעית שהצמוד להם הוא ערך שנעלם — למשל
+    "[שמות בני הזוג] · [תאריך]" באירוע שעדיין אין לו תאריך, או
+    "📍 [שם האולם], [כתובת]" בלי כתובת.
+    """
+    tok = re.escape(token)
+    # מפריד שלפני הטוקן ("… · [תאריך]") ומפריד שאחריו ("[תאריך] · …").
+    line = re.sub(rf"[ \t]*{_SEPARATORS}[ \t]*{tok}", "", line)
+    line = re.sub(rf"{tok}[ \t]*{_SEPARATORS}[ \t]*", "", line)
+    return line
 
 
 def render_automation_template(
@@ -317,16 +472,17 @@ def render_automation_template(
 ) -> str:
     """ממלא תבנית אוטומציה במשתני {{...}} של מוזמן ואירוע ספציפיים.
 
-    שני שדרוגים חשובים:
+    שלושה שדרוגים חשובים:
     1. *תוכן חכם* — שורה שכל המשתנים שבה ריקים (למשל "מספר השולחן שלך:
        {{table_number}}" כשעדיין אין שיבוץ) נמחקת לגמרי, כדי לא להשאיר שורה
        קטועה או משתנה "שבור" מול המוזמן. שורת ברכה בלי שם ("שלום {{first_name}}")
        נעלמת גם היא במקום להציג ברכה ריקה.
-    2. *תאימות לאחור* — משתנים ישנים בסגנון {{guest_name}} / [שם אורח] וגם
+    2. *ניקוי שאריות* — שורה שרק *חלק* מהמשתנים בה התרוקנו לא נמחקת, אבל
+       הסימנים שנשארו תלויים בגללם כן ("דנה ויואב · " ← "דנה ויואב"), וכך גם
+       רווחים כפולים ונקודתיים שהבטיחו רשימה שכל שורותיה נמחקו.
+    3. *תאימות לאחור* — משתנים ישנים בסגנון {{guest_name}} / [שם אורח] וגם
        {...} הישנים ממשיכים לעבוד.
     """
-    import re
-
     values = build_automation_values(
         guest_name=guest_name,
         groom=groom,
@@ -351,14 +507,26 @@ def render_automation_template(
 
     text = body or DEFAULT_TEMPLATE
     out_lines: list[str] = []
+    dropped_any = False
     for line in text.split("\n"):
         present = [tok for tok in values if tok in line]
         # תוכן חכם: אם בשורה יש משתנים והם *כולם* ריקים — מוחקים את השורה.
         if present and all(values[tok] == "" for tok in present):
+            dropped_any = True
             continue
+        # שורה מעורבת (חלק מהערכים קיימים וחלק ריקים): מוחקים כל טוקן ריק
+        # *יחד עם המפריד שנשען עליו*, לפני ההחלפה הרגילה. בלי זה נשארות
+        # שאריות שהזוג לא כתב — "דנה ויואב · " או "📍 אולמי הגן,".
+        for tok in tokens_by_len:
+            if values[tok] == "" and tok in line:
+                line = _drop_separator_around(line, tok)
         for tok in tokens_by_len:
             if tok in line:
                 line = line.replace(tok, values[tok])
+        # רווח כפול נוצר כשטוקן ריק ישב בין שתי מילים. נוגעים רק בשורות
+        # שבאמת עברו החלפה — שורת טקסט קבוע נשארת בדיוק כפי שנכתבה.
+        if present:
+            line = _MULTI_SPACE.sub(" ", line).rstrip()
         out_lines.append(line)
     text = "\n".join(out_lines)
 
@@ -379,6 +547,11 @@ def render_automation_template(
     )
     # איחוד רווחים מיותרים שנוצרו ממחיקת שורות: 3+ שורות ריקות → אחת.
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    # נקודתיים יתומות: "כמה פרטים להגעה נוחה:" שכל השורות שהיא הבטיחה נמחקו
+    # (אין עדיין אולם או כתובת). מסירים רק כשבאמת נמחקו שורות, כדי לא לגעת
+    # בתבנית שמסתיימת בנקודתיים בכוונת הזוג.
+    if dropped_any:
+        text = re.sub(r"\s*:\s*$", "", text)
     return text
 
 

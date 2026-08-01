@@ -198,6 +198,9 @@ export interface TemplatePlaceholder {
   // כינוי ידידותי בעברית ([שם אורח]) שהזוג רואה ומכניס במקום {{...}}.
   token: string
   desc: string
+  // קטגוריה לקיבוץ בעורך ההודעות (guest / event / when_where / links / extra).
+  // ריק בתשובה משרת ותיק — הקומפוננטה נופלת אז לקבוצה אחת.
+  cat?: string
 }
 
 export interface MessageTemplate {
@@ -464,6 +467,9 @@ export interface EventDetails {
   event_type: EventType
   groom_name: string
   bride_name: string
+  // שורות ההורים כמזמינים — משמשות את נוסחי ההזמנה הדתי/חב"ד/חרדי.
+  groom_parents_line?: string
+  bride_parents_line?: string
   venue_name: string
   venue_address: string
   event_date: string

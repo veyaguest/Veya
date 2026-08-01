@@ -26,10 +26,12 @@ _view = EventAccess(permissions.MESSAGES_VIEW)
 _write = EventAccess(permissions.MESSAGES_WRITE)
 
 
-def _event_date_str(event: models.Event) -> str:
-    """מרכיב מחרוזת תאריך+שעה לתצוגה בתבנית ההודעה (ריק אם לא הוזן)."""
-    parts = [p for p in [(event.event_date or "").strip(), (event.event_time or "").strip()] if p]
-    return " בשעה ".join(parts) if len(parts) == 2 else (parts[0] if parts else "")
+# הערה על תאריך ושעה: עד לסבב הזה הייתה כאן ``_event_date_str`` שהחזירה
+# "תאריך בשעה שעה" מאוחדים, והמחרוזת הזו הוזנה לטוקן ``[תאריך]`` בזמן
+# ש-``[שעה]`` קיבל את השעה בנפרד. כל תבנית בתבנית הסטנדרטית של הספרייה
+# ("📅 [תאריך] בשעה [שעה]") יצאה למוזמן ככפילות: "10/09/2026 בשעה 20:00
+# בשעה 20:00". היום כל ערכי האירוע — כולל תאריך מפורמט ושעה נפרדת — מגיעים
+# ממקור אחד, ``messaging.event_values(event)``.
 
 
 def _record_reply(db: Session, guest: models.Guest, status: str, provider: str) -> None:
@@ -117,7 +119,7 @@ def send_invitations(
     last_detail = ""
 
     template = event.message_template or messaging.default_template_for(event.event_type)
-    event_date = _event_date_str(event)
+    ev_values = messaging.event_values(event)
     for g in guests:
         if not g.phone:
             skipped += 1
@@ -125,14 +127,10 @@ def send_invitations(
         text = messaging.render_automation_template(
             template,
             guest_name=g.full_name,
-            groom=event.groom_name,
-            bride=event.bride_name,
-            venue=event.venue_name,
-            venue_address=event.venue_address,
             link=messaging.confirm_link(g.guest_token),
-            date=event_date,
-            time=event.event_time,
-            event_type=event.event_type,
+            table_number=g.table_number,
+            guest_count=g.effective_seats,
+            **ev_values,
         )
         res = provider.send_invitation(g.phone, text)
         db.add(models.Message(
@@ -211,7 +209,7 @@ def send_reminders(
     last_detail = ""
 
     template = event.message_template or messaging.default_template_for(event.event_type)
-    event_date = _event_date_str(event)
+    ev_values = messaging.event_values(event)
     for g in guests:
         if not g.phone:
             skipped += 1
@@ -219,14 +217,10 @@ def send_reminders(
         base = messaging.render_automation_template(
             template,
             guest_name=g.full_name,
-            groom=event.groom_name,
-            bride=event.bride_name,
-            venue=event.venue_name,
-            venue_address=event.venue_address,
             link=messaging.confirm_link(g.guest_token),
-            date=event_date,
-            time=event.event_time,
-            event_type=event.event_type,
+            table_number=g.table_number,
+            guest_count=g.effective_seats,
+            **ev_values,
         )
         text = f"{messaging.REMINDER_PREFIX}\n\n{base}"
         res = provider.send_invitation(g.phone, text)
@@ -302,14 +296,10 @@ def preview_template(
     text = messaging.render_automation_template(
         payload.template or messaging.default_template_for(event.event_type),
         guest_name=name,
-        groom=event.groom_name,
-        bride=event.bride_name,
-        venue=event.venue_name,
-        venue_address=event.venue_address,
         link=messaging.confirm_link(token),
-        date=_event_date_str(event),
-        time=event.event_time,
-        event_type=event.event_type,
+        table_number=sample.table_number if sample else None,
+        guest_count=sample.effective_seats if sample else None,
+        **messaging.event_values(event),
     )
     return schemas.TemplatePreview(preview=text)
 

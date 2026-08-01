@@ -3,7 +3,6 @@ import {
   activateRsvpTrack,
   advanceRsvpTrack,
   getAutomationDashboard,
-  getAutomationPlaceholders,
   getEvent,
   getRsvpTrack,
   getTemplate,
@@ -32,7 +31,8 @@ import type {
   TemplatePlaceholder,
 } from '../types'
 import { RSVP_LABELS } from '../types'
-import { activeEventTerms, getEventTerms, hostNames } from '../strings/eventTypes'
+import { activeEventTerms, getEventTerms } from '../strings/eventTypes'
+import { buildSampleTokens, renderMessagePreview } from '../lib/messagePreview'
 import { strings } from '../strings/he'
 import { AddGuestForm } from './AddGuestForm'
 import { AutomationRulesTab } from './AutomationRulesTab'
@@ -441,7 +441,6 @@ function SendConfirmStep({
 }) {
   const [guests, setGuests] = useState<Guest[]>([])
   const [inviteBody, setInviteBody] = useState('')
-  const [placeholders, setPlaceholders] = useState<TemplatePlaceholder[]>([])
   const [event, setEvent] = useState<EventDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -462,17 +461,15 @@ function SendConfirmStep({
     let alive = true
     ;(async () => {
       try {
-        const [g, tpls, phs, ev] = await Promise.all([
+        const [g, tpls, ev] = await Promise.all([
           listGuests('', 500, 0),
           listAutomationTemplates(),
-          getAutomationPlaceholders(),
           getEvent(),
         ])
         if (!alive) return
         setGuests(g.items)
         const invite = tpls.find((t) => t.kind === 'invitation') ?? tpls[0]
         setInviteBody(invite?.body ?? '')
-        setPlaceholders(phs)
         setEvent(ev)
         // ברירת מחדל: מי שעדיין לא קיבל הזמנה ויש לו טלפון.
         setSelected(
@@ -502,32 +499,19 @@ function SendConfirmStep({
     return guests.filter((g) => g.full_name.includes(q) || (g.phone || '').includes(q))
   }, [guests, search])
 
-  // תצוגת ההודעה — מחליף כינויים בערכי דוגמה (כמו בעורך ההודעות).
+  // תצוגת ההודעה שתישלח — אותו מנוע בדיוק כמו בעורך ההודעות וכמו בשרת.
+  //
+  // עד לסבב הזה עמדה כאן מפת ערכים מקומית עם שמונה מפתחות ישנים בלבד
+  // ({{guest_name}}, {{couple_names}}, {{rsvp_link}}…). רשימת הטוקנים
+  // שהשרת מחזיר עברה מזמן למפתחות הקנוניים ({{first_name}}, {{event_name}},
+  // {{confirmation_link}}…), ולכן ``sample[p.key] ?? ''`` החזיר מחרוזת ריקה
+  // כמעט לכל טוקן — והמסך האחרון לפני השליחה הראה הודעה קטועה בלי שם
+  // המוזמן, בלי שמות בעלי האירוע ובלי קישור האישור.
   const previewText = useMemo(() => {
     const first = guests.find((g) => selected.has(g.id)) ?? guests[0]
-    const terms = getEventTerms(event?.event_type)
-    const couple =
-      event && (event.groom_name || event.bride_name)
-        ? hostNames(terms, event.groom_name, event.bride_name)
-        : terms.hostsLabel
-    const sample: Record<string, string> = {
-      '{{guest_name}}': first?.full_name || 'דנה כהן',
-      '{{couple_names}}': couple,
-      '{{event_date}}': event?.event_date || 'תאריך האירוע',
-      '{{event_time}}': event?.event_time || 'שעה',
-      '{{venue_name}}': event?.venue_name || 'שם האולם',
-      '{{venue_address}}': event?.venue_address || 'כתובת האולם',
-      '{{maps_link}}': 'ניווט באמצעות Waze / Google Maps',
-      '{{rsvp_link}}': 'קישור אישי לאישור הגעה',
-    }
-    let text = inviteBody
-    for (const p of placeholders) {
-      const val = sample[p.key] ?? ''
-      if (p.token) text = text.split(p.token).join(val)
-      text = text.split(p.key).join(val)
-    }
-    return text
-  }, [inviteBody, placeholders, event, guests, selected])
+    const sample = buildSampleTokens(event, first?.full_name || 'דנה כהן')
+    return renderMessagePreview(inviteBody, sample)
+  }, [inviteBody, event, guests, selected])
 
   function toggle(id: number) {
     const g = guests.find((x) => x.id === id)

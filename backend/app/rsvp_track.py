@@ -73,8 +73,30 @@ def _default_templates_by_stage(db: Session) -> dict[str, models.VeyaTemplate]:
     return out
 
 
+def _body_for_event(event: models.Event, stage: str, veya_body: str) -> str:
+    """גוף התבנית שהאירוע יקבל בשלב מסוים — מותאם לסוג האירוע.
+
+    למה זה קיים: ברירות המחדל הגלובליות (``VeyaTemplate``) נכתבו בשפת חתונה
+    ("אנחנו [שמות בני הזוג]"). עד כה הן הועתקו כמו-שהן לכל אירוע, ולכן בר
+    מצווה קיבל בעורך ההודעות נוסח חתונתי שנקרא "אנחנו יונתן" — גם אחרי
+    שמסלול השליחה הישיר כבר ידע לבחור נוסח לפי סוג.
+
+    חתונה (וכל אירוע בלי סוג) מקבלת בדיוק את גוף ה-``VeyaTemplate`` כמו קודם
+    — אפס שינוי התנהגות, כולל האפשרות של האדמין לערוך את ברירות המחדל בפאנל.
+    שאר הסוגים מקבלים את הנוסח שנכתב במיוחד לסוג שלהם ב-``message_library``;
+    אם אין התאמה לשלב, נופלים בעדינות חזרה לגוף הגלובלי.
+    """
+    from app.message_library import default_body_for
+
+    return default_body_for(event.event_type, stage) or veya_body
+
+
 def provision_rsvp_track(db: Session, event: models.Event) -> dict:
     """מעתיק את ברירות המחדל הגלובליות של VEYA אל האירוע. idempotent.
+
+    גוף כל תבנית נבחר לפי *סוג האירוע* (ראו ``_body_for_event``) — התבניות
+    הגלובליות קובעות אילו שלבים קיימים ואיך הם נקראים, וסוג האירוע קובע איך
+    ההודעה מנוסחת.
 
     מחזיר {"templates_created": n, "rules_created": m}. לא עושה commit —
     הקורא אחראי לכך (כדי לאגד עם פעולות נוספות באותה טרנזקציה).
@@ -99,7 +121,7 @@ def provision_rsvp_track(db: Session, event: models.Event) -> dict:
                 event_id=event.id,
                 name=vt.name,
                 kind=STAGE_TO_KIND.get(stage, "custom"),
-                body=vt.body,
+                body=_body_for_event(event, stage, vt.body),
             )
             db.add(mt)
             db.flush()

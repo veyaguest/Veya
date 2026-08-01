@@ -15,8 +15,10 @@ import type {
   MessageLibrary,
   TemplatePlaceholder,
 } from '../types'
-import { getEventTerms } from '../strings/eventTypes'
+import { buildSampleTokens, renderMessagePreview } from '../lib/messagePreview'
 import { strings } from '../strings/he'
+
+const t = strings.messages
 
 // סדר תצוגה ידידותי של סוגי ההודעות במסלול (kind של MessageTemplate).
 const KIND_ORDER: Record<string, number> = {
@@ -44,9 +46,13 @@ const KIND_TO_CATEGORY: Record<string, string> = {
   pre_event: 'event_day',
 }
 
+// סדר הקבוצות בבורר הפרטים האישיים. חייב להתאים למפתחות ש-messaging.py
+// שולח בשדה ``cat``; קבוצה שלא מוכרת נופלת לסוף תחת "תוספות".
+const TOKEN_CAT_ORDER = ['guest', 'event', 'when_where', 'links', 'extra']
+
 /**
  * עורך הודעות ידידותי לזוג — בוחרים הודעה מהמסלול, עורכים בטקסט פשוט עם
- * כפתורי "כינויים" ([שם אורח] וכו'), ורואים תצוגה מקדימה בסגנון WhatsApp
+ * כפתורי "פרטים אישיים" ([שם פרטי] וכו'), ורואים תצוגה מקדימה בסגנון WhatsApp
  * עם נתוני האירוע האמיתיים. אין קוד טכני ({{...}}) מול הזוג.
  *
  * ``invitationOnly`` — מצב "הזמנה ראשונית בלבד": לפני שליחת ההזמנה הראשונה
@@ -64,6 +70,10 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
   const taRef = useRef<HTMLTextAreaElement | null>(null)
+
+  // בורר הפרטים האישיים: חיפוש חופשי + סינון לפי קבוצה.
+  const [tokenSearch, setTokenSearch] = useState('')
+  const [tokenCat, setTokenCat] = useState('')
 
   // ספריית ההודעות (נטענת בעצלתיים בפתיחת החלון).
   const [library, setLibrary] = useState<MessageLibrary | null>(null)
@@ -122,69 +132,50 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
     setNote('')
   }, [selectedId, templates])
 
-  // ערכי דוגמה לכל טוקן — כולל הכינויים החדשים והישנים — כדי שהתצוגה המקדימה
-  // תיראה נכון גם להודעות מהספרייה וגם לתבניות ותיקות. מפה שטוחה: טוקן → ערך.
-  const sampleByToken = useMemo<Record<string, string>>(() => {
-    const terms = getEventTerms(event?.event_type)
-    const couple =
-      event && (event.groom_name || event.bride_name)
-        ? [event.groom_name, event.bride_name].filter(Boolean).join(' ו')
-        : terms.hostsLabel
-    const first = (sampleGuest || 'דנה כהן').split(/\s+/)[0]
-    const date = event?.event_date || 'תאריך האירוע'
-    const time = event?.event_time || 'שעה'
-    const venue = event?.venue_name || 'שם האולם'
-    const addr = event?.venue_address || 'כתובת האולם'
-    const nav = 'קישור ניווט'
-    const rsvp = 'קישור אישי לאישור הגעה'
-    return {
-      // שם פרטי (חדש + ישן)
-      '{{first_name}}': first, '{{guest_name}}': first,
-      '[שם פרטי]': first, '[שם אורח]': first,
-      // כלה/חתן (או שם המארח הראשון/שני בסוגי אירוע אחרים)
-      '{{bride_name}}': event?.bride_name || terms.hostBField, '[שם הכלה]': event?.bride_name || terms.hostBField,
-      '{{groom_name}}': event?.groom_name || terms.hostAField, '[שם החתן]': event?.groom_name || terms.hostAField,
-      // שמות בעלי האירוע (חדש + ישן)
-      '{{event_name}}': couple, '{{couple_names}}': couple,
-      '[שמות בעלי האירוע]': couple, '[שמות בני הזוג]': couple,
-      // שם האירוע לפי סוגו (Event-ready)
-      '{{celebration}}': terms.celebration, '[האירוע]': terms.celebration,
-      '{{celebration_of}}': terms.celebrationConstruct, '[שמחת]': terms.celebrationConstruct,
-      // תאריך / שעה
-      '{{event_date}}': date, '[תאריך]': date, '[תאריך האירוע]': date,
-      '{{event_time}}': time, '[שעה]': time,
-      // אולם / כתובת
-      '{{venue_name}}': venue, '[שם האולם]': venue,
-      '{{venue_address}}': addr, '[כתובת]': addr,
-      // קישורים
-      '{{confirmation_link}}': rsvp, '{{rsvp_link}}': rsvp, '[קישור אישור]': rsvp,
-      '{{navigation_link}}': nav, '{{maps_link}}': nav, '[קישור ניווט]': nav,
-      '{{waze_link}}': nav, '[קישור וייז]': nav,
-      // שולחן / כמות
-      '{{table_number}}': '12', '[מספר שולחן]': '12',
-      '{{guest_count}}': '2', '[כמות מקומות]': '2',
-      // מתנה / גלריות
-      '{{gift_link}}': 'קישור למתנה', '[קישור מתנה]': 'קישור למתנה',
-      '{{photo_gallery}}': 'גלריית תמונות', '[גלריית תמונות]': 'גלריית תמונות',
-      '{{video_gallery}}': 'גלריית וידאו', '[גלריית וידאו]': 'גלריית וידאו',
-    }
-  }, [event, sampleGuest])
+  // ערכי דוגמה לכל טוקן שהמערכת מכירה — מקור משותף עם מסך שליחת ההזמנות,
+  // כדי ששני המסכים יראו בדיוק את אותה הודעה.
+  const sampleByToken = useMemo(
+    () => buildSampleTokens(event, sampleGuest || 'דנה כהן'),
+    [event, sampleGuest],
+  )
 
-  // ממיר גוף כלשהו לתצוגה מקדימה. מחליף טוקנים ארוכים לפני קצרים כדי ש-
-  // "[תאריך האירוע]" לא ייחתך ל-"[תאריך]".
+  // תצוגה מקדימה נאמנה לשליחה בפועל (כולל מחיקת שורות ריקות ומפרידים תלויים).
   const renderPreview = useCallback(
-    (text: string): string => {
-      const tokens = Object.keys(sampleByToken).sort((a, b) => b.length - a.length)
-      let out = text
-      for (const tok of tokens) {
-        if (out.includes(tok)) out = out.split(tok).join(sampleByToken[tok])
-      }
-      return out
-    },
+    (text: string): string => renderMessagePreview(text, sampleByToken),
     [sampleByToken],
   )
 
   const previewText = useMemo(() => renderPreview(body), [renderPreview, body])
+
+  const selected = templates.find((t) => t.id === selectedId) || null
+  const isDirty = !!selected && selected.body !== body
+
+  // הפרטים האישיים אחרי חיפוש + סינון קבוצה, מקובצים לתצוגה.
+  const tokenGroups = useMemo(() => {
+    const q = tokenSearch.trim()
+    const usable = placeholders.filter((p) => {
+      if (!p.token) return false
+      if (tokenCat && (p.cat || 'extra') !== tokenCat) return false
+      if (q && !(p.token.includes(q) || p.desc.includes(q))) return false
+      return true
+    })
+    const byCat = new Map<string, TemplatePlaceholder[]>()
+    for (const p of usable) {
+      const key = p.cat || 'extra'
+      if (!byCat.has(key)) byCat.set(key, [])
+      byCat.get(key)!.push(p)
+    }
+    return [...byCat.entries()].sort(
+      (a, b) =>
+        (TOKEN_CAT_ORDER.indexOf(a[0]) + 1 || 99) - (TOKEN_CAT_ORDER.indexOf(b[0]) + 1 || 99),
+    )
+  }, [placeholders, tokenSearch, tokenCat])
+
+  // הקבוצות הקיימות בפועל (לצ'יפים של הסינון), בסדר הקבוע.
+  const availableCats = useMemo(() => {
+    const present = new Set(placeholders.filter((p) => p.token).map((p) => p.cat || 'extra'))
+    return TOKEN_CAT_ORDER.filter((c) => present.has(c))
+  }, [placeholders])
 
   function insertToken(token: string) {
     const ta = taRef.current
@@ -270,134 +261,180 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
     setTimeout(() => taRef.current?.focus(), 0)
   }
 
-  const selected = templates.find((t) => t.id === selectedId) || null
-
   // במצב "הזמנה בלבד" מציגים רק את תבנית ההזמנה, ומסתירים את בורר הסוגים
   // (העורך תופס את כל הרוחב) — חוויה יעודית ופשוטה לשליחה הראשונה.
   const visibleTemplates = invitationOnly
     ? templates.filter((t) => t.kind === 'invitation')
     : templates
-  const showList = !invitationOnly
+  const showPicker = !invitationOnly
+
+  const bubbleLines = previewText.split('\n')
 
   return (
-    <div className="mb-wrap">
-      <div className="mb-head">
-        <h3 className="clar-title">
-          {invitationOnly ? 'עריכת ההזמנה' : 'עריכת ההודעות שלכם'}
-        </h3>
-        <span className="clar-sub">
-          {invitationOnly
-            ? 'ערכו את נוסח ההזמנה או בחרו נוסח מוכן מהספרייה. כך זה ייראה למוזמנים ב-WhatsApp.'
-            : 'בחרו הודעה, ערכו את הנוסח, והוסיפו פרטים אישיים בלחיצה. כך זה ייראה למוזמנים ב-WhatsApp.'}
-        </span>
-      </div>
+    <div className="mb-wrap" dir="rtl">
+      <header className="mb-head">
+        <h2 className="mb-title">{invitationOnly ? t.titleInvitation : t.titleFull}</h2>
+        <p className="mb-sub">
+          {invitationOnly ? t.subtitleInvitation : t.subtitleFull}
+        </p>
+      </header>
 
       {error && <p className="form-error">{error}</p>}
 
       {templates.length === 0 ? (
-        <p className="mb-empty">
-          ההודעות ייווצרו אוטומטית ברגע שתפעילו את מסלול אישורי ההגעה.
-        </p>
+        <p className="mb-empty">{t.emptyState}</p>
       ) : (
-        <div className={`mb-layout ${showList ? '' : 'mb-solo'}`}>
-          {/* ספריית ההודעות במסלול — מוסתרת במצב "הזמנה בלבד" */}
-          {showList && (
-            <aside className="mb-list">
-              {visibleTemplates.map((t) => (
-                <button
-                  key={t.id}
-                  className={`mb-list-item ${t.id === selectedId ? 'active' : ''}`}
-                  onClick={() => setSelectedId(t.id)}
-                >
-                  <span className="mb-list-kind">
-                    {KIND_LABEL[t.kind] ?? 'הודעה'}
-                  </span>
-                  <span className="mb-list-name">{t.name}</span>
-                </button>
-              ))}
-            </aside>
-          )}
-
-          {/* עורך + תצוגה מקדימה */}
-          <div className="mb-editor">
-            <div className="mb-editor-bar">
-              <button type="button" className="mb-lib-btn" onClick={openLibrary}>
-                📚 {selected && KIND_TO_CATEGORY[selected.kind]
-                  ? `נוסחים מוכנים ל${KIND_LABEL[selected.kind] ?? 'הודעה'}`
-                  : 'בחירה מספריית ההודעות'}
-              </button>
-              <span className="mb-editor-hint">
-                בחרו נוסח מוכן ומעוצב, או כתבו בעצמכם למטה
-              </span>
-            </div>
-
-            <div className="mb-tokens">
-              {placeholders
-                .filter((p) => p.token)
-                .map((p) => (
+        <div className="mb-grid">
+          {/* ---- כרטיס 1: איזו הודעה עורכים ---- */}
+          {showPicker && (
+            <section className="mb-card mb-card-picker">
+              <h3 className="mb-card-title">{t.pickerTitle}</h3>
+              <div className="mb-picker" role="tablist" aria-label={t.pickerTitle}>
+                {visibleTemplates.map((tpl) => (
                   <button
-                    key={p.key}
-                    type="button"
-                    className="mb-token-chip"
-                    title={p.desc}
-                    onClick={() => insertToken(p.token)}
+                    key={tpl.id}
+                    role="tab"
+                    aria-selected={tpl.id === selectedId}
+                    className={`mb-picker-item ${tpl.id === selectedId ? 'active' : ''}`}
+                    onClick={() => setSelectedId(tpl.id)}
                   >
-                    + {p.token}
+                    <span className="mb-picker-kind">
+                      {KIND_LABEL[tpl.kind] ?? 'הודעה'}
+                    </span>
+                    <span className="mb-picker-name">{tpl.name}</span>
                   </button>
                 ))}
+              </div>
+            </section>
+          )}
+
+          {/* ---- כרטיס 2: עורך הנוסח ---- */}
+          <section className="mb-card mb-card-editor">
+            <div className="mb-card-head">
+              <h3 className="mb-card-title">{t.editorTitle}</h3>
+              <button type="button" className="mb-lib-btn" onClick={openLibrary}>
+                📚{' '}
+                {selected && KIND_TO_CATEGORY[selected.kind]
+                  ? t.libraryButtonFor(KIND_LABEL[selected.kind] ?? 'הודעה')
+                  : t.libraryButton}
+              </button>
             </div>
+            <p className="mb-card-hint">{t.editorHint}</p>
 
             <textarea
               ref={taRef}
               className="mb-textarea"
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              rows={8}
+              rows={12}
               dir="rtl"
-              placeholder="כתבו כאן את ההודעה למוזמנים…"
+              placeholder={t.editorPlaceholder}
             />
 
             <div className="mb-actions">
               <button
                 className="btn-primary"
                 onClick={onSave}
-                disabled={saving || selectedId == null}
+                disabled={saving || selectedId == null || !isDirty}
               >
-                {saving ? 'שומר…' : 'שמירת ההודעה'}
+                {saving ? t.saving : t.save}
               </button>
-              {note && <span className="tpl-saved">{note}</span>}
+              {isDirty && !saving && <span className="mb-dirty">{t.unsaved}</span>}
+              {note && !isDirty && <span className="tpl-saved">{note}</span>}
             </div>
+          </section>
 
-            {/* תצוגת WhatsApp */}
-            <div className="mb-preview">
-              <span className="mb-preview-label">כך זה ייראה למוזמן</span>
-              <div className="wa-screen" dir="rtl">
-                <div className="wa-bubble">
-                  {event?.invite_image && (
-                    <img
-                      className="wa-image"
-                      src={mediaUrl(event.invite_image)}
-                      alt="הזמנה"
-                    />
+          {/* ---- כרטיס 3: תצוגה מקדימה ---- */}
+          <section className="mb-card mb-card-preview">
+            <h3 className="mb-card-title">{t.previewTitle}</h3>
+            <div className="wa-screen">
+              <div className="wa-bubble">
+                {event?.invite_image && (
+                  <img
+                    className="wa-image"
+                    src={mediaUrl(event.invite_image)}
+                    alt=""
+                  />
+                )}
+                <div className="wa-text">
+                  {previewText.trim() ? (
+                    bubbleLines.map((line, i) => (
+                      <div key={i} className="wa-line">
+                        {line || ' '}
+                      </div>
+                    ))
+                  ) : (
+                    <span className="wa-empty">{t.previewEmpty}</span>
                   )}
-                  <div className="wa-text">
-                    {previewText.trim() ? (
-                      previewText.split('\n').map((line, i) => (
-                        <div key={i} className="wa-line">
-                          {line || ' '}
-                        </div>
-                      ))
-                    ) : (
-                      <span className="wa-empty">אין עדיין נוסח להודעה</span>
-                    )}
-                  </div>
-                  <span className="wa-meta">
-                    {selected ? KIND_LABEL[selected.kind] ?? '' : ''} · עכשיו
-                  </span>
                 </div>
+                <span className="wa-meta">
+                  {selected ? KIND_LABEL[selected.kind] ?? '' : ''} · {t.previewNow}
+                </span>
               </div>
             </div>
-          </div>
+            <p className="mb-preview-note">{t.previewNote}</p>
+          </section>
+          {/* ---- כרטיס 4: פרטים אישיים (טוקנים) ---- */}
+          <section className="mb-card mb-card-tokens">
+            <h3 className="mb-card-title">{t.tokensTitle}</h3>
+            <p className="mb-card-hint">{t.tokensHint}</p>
+
+            <input
+              className="mb-token-search"
+              value={tokenSearch}
+              onChange={(e) => setTokenSearch(e.target.value)}
+              placeholder={t.tokensSearch}
+              dir="rtl"
+              aria-label={t.tokensSearch}
+            />
+
+            <div className="mb-token-cats">
+              <button
+                className={`mb-cat-chip ${tokenCat === '' ? 'active' : ''}`}
+                onClick={() => setTokenCat('')}
+              >
+                {t.tokensAll}
+              </button>
+              {availableCats.map((c) => (
+                <button
+                  key={c}
+                  className={`mb-cat-chip ${tokenCat === c ? 'active' : ''}`}
+                  onClick={() => setTokenCat(c)}
+                >
+                  {t.tokenCategories[c] ?? c}
+                </button>
+              ))}
+            </div>
+
+            {tokenGroups.length === 0 ? (
+              <p className="mb-token-empty">{t.tokensNoResults}</p>
+            ) : (
+              <div className="mb-token-groups">
+                {tokenGroups.map(([cat, items]) => (
+                  <div key={cat} className="mb-token-group">
+                    <h4 className="mb-token-group-title">
+                      {t.tokenCategories[cat] ?? cat}
+                    </h4>
+                    <ul className="mb-token-list">
+                      {items.map((p) => (
+                        <li key={p.key}>
+                          <button
+                            type="button"
+                            className="mb-token"
+                            onClick={() => insertToken(p.token)}
+                          >
+                            <span className="mb-token-name">{p.token}</span>
+                            <span className="mb-token-desc">{p.desc}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
         </div>
       )}
 
@@ -406,24 +443,26 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
           <div
             className="lib-modal"
             dir="rtl"
+            role="dialog"
+            aria-modal="true"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="lib-head">
-              <h3 className="clar-title">
-                {libCat ? `נוסחים ל${catLabel(libCat)}` : 'ספריית ההודעות'}
+              <h3 className="mb-card-title">
+                {libCat ? t.libraryTitleFor(catLabel(libCat)) : t.libraryTitle}
               </h3>
               <button
                 type="button"
                 className="lib-close"
                 onClick={() => setLibOpen(false)}
-                aria-label="סגירה"
+                aria-label={t.close}
               >
                 ✕
               </button>
             </div>
 
             {libLoading ? (
-              <p className="mb-empty">טוען הודעות…</p>
+              <p className="mb-empty">{t.libraryLoading}</p>
             ) : (
               <>
                 <div className="lib-filters">
@@ -431,16 +470,17 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
                     className="lib-search"
                     value={libSearch}
                     onChange={(e) => setLibSearch(e.target.value)}
-                    placeholder="חיפוש חופשי בהודעות…"
+                    placeholder={t.librarySearch}
                     dir="rtl"
+                    aria-label={t.librarySearch}
                   />
                   <div className="lib-chips">
-                    <span className="lib-chips-label">קטגוריה:</span>
+                    <span className="lib-chips-label">{t.libraryCategory}</span>
                     <button
                       className={`lib-chip ${libCat === '' ? 'active' : ''}`}
                       onClick={() => setLibCat('')}
                     >
-                      הכול
+                      {t.tokensAll}
                     </button>
                     {library?.categories.map((c) => (
                       <button
@@ -453,12 +493,12 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
                     ))}
                   </div>
                   <div className="lib-chips">
-                    <span className="lib-chips-label">סגנון:</span>
+                    <span className="lib-chips-label">{t.libraryStyle}</span>
                     <button
                       className={`lib-chip ${libStyle === '' ? 'active' : ''}`}
                       onClick={() => setLibStyle('')}
                     >
-                      הכול
+                      {t.tokensAll}
                     </button>
                     {library?.styles.map((s) => (
                       <button
@@ -475,7 +515,7 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
                 <div className="lib-body">
                   <div className="lib-list">
                     {libFiltered.length === 0 ? (
-                      <p className="mb-empty">לא נמצאו הודעות מתאימות לסינון</p>
+                      <p className="mb-empty">{t.libraryNoResults}</p>
                     ) : (
                       libFiltered.map((m) => (
                         <button
@@ -500,9 +540,9 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
                     {libPreviewMsg ? (
                       <>
                         <span className="mb-preview-label">
-                          תצוגה מקדימה — {libPreviewMsg.name}
+                          {t.libraryPreviewOf(libPreviewMsg.name)}
                         </span>
-                        <div className="wa-screen" dir="rtl">
+                        <div className="wa-screen">
                           <div className="wa-bubble">
                             <div className="wa-text">
                               {renderPreview(libPreviewMsg.body)
@@ -513,12 +553,14 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
                                   </div>
                                 ))}
                             </div>
-                            <span className="wa-meta">כך זה ייראה למוזמן · עכשיו</span>
+                            <span className="wa-meta">
+                              {t.previewTitle} · {t.previewNow}
+                            </span>
                           </div>
                         </div>
                       </>
                     ) : (
-                      <p className="mb-empty">בחרו הודעה מהרשימה כדי לראות תצוגה מקדימה</p>
+                      <p className="mb-empty">{t.libraryPickPrompt}</p>
                     )}
                   </div>
                 </div>
@@ -530,7 +572,7 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
                       className="btn-primary lib-use"
                       onClick={() => applyLibraryMessage(libPreviewMsg)}
                     >
-                      השתמשו בהודעה זו
+                      {t.libraryUse}
                     </button>
                   </div>
                 )}

@@ -29,6 +29,7 @@ def _describe_changed_fields(changed: dict) -> str:
     categories = [
         (("event_type",), "סוג האירוע"),
         (("groom_name", "bride_name"), "שמות בעלי האירוע"),
+        (("groom_parents_line", "bride_parents_line"), "שמות ההורים בהזמנה"),
         (("venue_name", "venue_address"), "פרטי האולם"),
         (("event_date", "event_time"), "תאריך ושעת האירוע"),
         (("invite_image",), "תמונת ההזמנה"),
@@ -47,6 +48,8 @@ def _event_read(event: models.Event) -> schemas.EventRead:
         event_type=event.event_type or "wedding",
         groom_name=event.groom_name,
         bride_name=event.bride_name,
+        groom_parents_line=event.groom_parents_line or "",
+        bride_parents_line=event.bride_parents_line or "",
         venue_name=event.venue_name,
         venue_address=event.venue_address or "",
         event_date=event.event_date or "",

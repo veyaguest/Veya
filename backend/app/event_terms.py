@@ -12,6 +12,15 @@
   - ``celebration_construct``— צורת סמיכות לפני שם ("חתונת", "בר המצווה של", "אירוע של").
                                כך "חתונת דניאל ושירה" מול "בר המצווה של יונתן".
   - ``hosts``                — כינוי בעלי האירוע כברירת מחדל ("בני הזוג", "המשפחה", "המארגנים").
+  - ``has_two_hosts``        — האם לסוג יש *שני* בעלי אירוע (חתן+כלה) או אחד בלבד.
+                               התאום של ``hasTwoHosts`` ב-``eventTypes.ts``: מסך יצירת
+                               האירוע מציג שדה שם אחד לסוגים חד-מארחים, ולכן
+                               ``bride_name`` שם ריק תמיד. הדגל מונע ניסוח "יונתן ושרה"
+                               באירוע עם חוגג יחיד (למשל אחרי שינוי סוג אירוע).
+  - ``host_field_label``     — תווית שדה השם במסך יצירת האירוע ("שם החתן" / "שם החוגג").
+                               תאום של ``hostAField``. משמשת גם כתווית הטוקן
+                               ``[שמות בעלי האירוע]`` בבורר הטוקנים, כדי שמה שהזוג רואה
+                               בעורך ההודעות יתאים בדיוק למה שהוא מילא ביצירת האירוע.
   - ``emoji``                — אמוג'י עדין המשויך לסוג (לא חובה בשימוש).
 
 ברירת המחדל בכל מקום היא ``wedding`` — כך אירועים קיימים (וכל מי שלא בחר סוג)
@@ -72,6 +81,9 @@ class EventTerms:
     celebration_construct: str  # "חתונת" / "בר המצווה של"
     hosts: str                  # "בני הזוג"
     emoji: str
+    has_two_hosts: bool = True  # שני בעלי אירוע (חתן+כלה) — תואם ל-hasTwoHosts ב-eventTypes.ts
+    host_field_label: str = "שם החתן"      # תווית שדה השם הראשון — תואם ל-hostAField
+    host_b_field_label: str = "שם הכלה"    # תווית שדה השם השני — תואם ל-hostBField
     side_groom: str = "חתן"     # תווית צד groom (תואם ל-sideLabels ב-eventTypes.ts)
     side_bride: str = "כלה"     # תווית צד bride
     guests_label: str = "מוזמנים"  # תואם ל-guestsLabel ב-eventTypes.ts
@@ -96,6 +108,9 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration_construct="בר המצווה של",
         hosts="החוגג",
         emoji="🕯️",
+        has_two_hosts=False,
+        host_field_label="שם החוגג",
+        host_b_field_label="",
         side_groom="צד משפחת האב",
         side_bride="צד משפחת האם",
         gift_label="מתנה לחוגג",
@@ -108,6 +123,9 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration_construct="בת המצווה של",
         hosts="החוגגת",
         emoji="🕯️",
+        has_two_hosts=False,
+        host_field_label="שם החוגגת",
+        host_b_field_label="",
         side_groom="צד משפחת האב",
         side_bride="צד משפחת האם",
         gift_label="מתנה לחוגגת",
@@ -129,6 +147,9 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration_construct="ברית של",
         hosts="המשפחה",
         emoji="🍼",
+        has_two_hosts=False,
+        host_field_label="שם המשפחה",
+        host_b_field_label="",
         side_groom="צד משפחת האב",
         side_bride="צד משפחת האם",
         gift_label="מתנה למשפחה",
@@ -141,6 +162,9 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration_construct="אירוע של",
         hosts="המשפחה",
         emoji="🎉",
+        has_two_hosts=False,
+        host_field_label="שם בעל/ת השמחה",
+        host_b_field_label="",
         side_groom="צד א׳",
         side_bride="צד ב׳",
         gift_label="מתנה למשפחה",
@@ -153,6 +177,9 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration_construct="אירוע של",
         hosts="המארגנים",
         emoji="✨",
+        has_two_hosts=False,
+        host_field_label="שם האירוע / החברה",
+        host_b_field_label="",
         side_groom="צד א׳",
         side_bride="צד ב׳",
         guests_label="משתתפים",
@@ -166,6 +193,9 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration_construct="אירוע של",
         hosts="המארגנים",
         emoji="✨",
+        has_two_hosts=False,
+        host_field_label="שם האירוע",
+        host_b_field_label="",
         side_groom="צד א׳",
         side_bride="צד ב׳",
         gift_label="מתנה לאירוע",
@@ -180,9 +210,25 @@ def get_event_terms(event_type: str | None) -> EventTerms:
 
 
 def hosts_names(event_type: str | None, groom: str, bride: str) -> str:
-    """שמות בעלי האירוע ("דניאל ושירה") או כינוי ברירת מחדל לפי הסוג."""
-    joined = " ו".join([n for n in (groom, bride) if n])
-    return joined or get_event_terms(event_type).hosts
+    """שמות בעלי האירוע ("דניאל ושירה") או כינוי ברירת מחדל לפי הסוג.
+
+    שלוש הקפדות שמונעות ניסוח שבור בהודעה למוזמן:
+
+    1. *ניקוי רווחים* — שם שמכיל רווחים בלבד נחשב ריק, אחרת נוצרת הודעה עם
+       "ו" מיותרת או רווח כפול ("יונתן ו").
+    2. *בעל אירוע יחיד* — בסוגים שמסך יצירת האירוע מציג להם שדה שם אחד
+       (בר/בת מצווה, ברית, משפחתי, עסקי, אחר) מוחזר רק השם הראשון. כך
+       ``bride_name`` שנשאר מאירוע שהיה פעם חתונה לא מייצר "יונתן ושרה"
+       בהזמנה לבר מצווה. אם השם הראשון ריק — נופלים לשני, כדי לא לאבד מידע.
+    3. *נפילה רכה* — בלי שמות כלל מוחזר כינוי הסוג ("בני הזוג" / "החוגג").
+    """
+    a = (groom or "").strip()
+    b = (bride or "").strip()
+    terms = get_event_terms(event_type)
+    if not terms.has_two_hosts:
+        return a or b or terms.hosts
+    joined = " ו".join([n for n in (a, b) if n])
+    return joined or terms.hosts
 
 
 def side_axis_label(event_type: str | None) -> str:
