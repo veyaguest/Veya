@@ -183,6 +183,46 @@ function clamp(v: number, min: number, max: number) {
   return Math.min(max, Math.max(min, v))
 }
 
+// זווית מנורמלת ל-0..359 ומוצמדת לצעדים של 5°. atan2 מחזיר טווח שלילי
+// חלקית, ובלי נרמול נשמרות זוויות כמו 90-; ההצמדה מונעת "רעד" של מעלה
+// אחת בגרירה ומקלה על יישור מדויק לקיר האולם.
+const ROTATION_SNAP_DEG = 5
+
+export function normalizeRotation(deg: number): number {
+  const snapped = Math.round(deg / ROTATION_SNAP_DEG) * ROTATION_SNAP_DEG
+  return ((snapped % 360) + 360) % 360
+}
+
+/** תיבת הגבולות (bbox) של מלבן אחרי סיבוב סביב מרכזו.
+ *
+ * `transform: rotate()` ב-CSS הוא אפקט ציור בלבד — הוא לא משנה את הפריסה,
+ * ולכן חישוב גבולות לפי `x + width` מפספס לגמרי אובייקט מסובב. שולחן
+ * אבירים (252×58) שמסובב 90° בולט ~97px מעל ומתחת למה שהחישוב הנאיבי
+ * מניח, ולכן הוא נחתך ב"התאמה למסך" — ובמסך הזה אין גלילה או זום, אז
+ * למשתמש אין שום דרך להגיע אליו. משמש גם לשולחנות וגם לאלמנטים.
+ */
+export function rotatedBounds(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  deg: number,
+): { minX: number; minY: number; maxX: number; maxY: number } {
+  const rad = ((deg || 0) * Math.PI) / 180
+  const cos = Math.abs(Math.cos(rad))
+  const sin = Math.abs(Math.sin(rad))
+  const bw = w * cos + h * sin
+  const bh = w * sin + h * cos
+  const cx = x + w / 2
+  const cy = y + h / 2
+  return {
+    minX: cx - bw / 2,
+    minY: cy - bh / 2,
+    maxX: cx + bw / 2,
+    maxY: cy + bh / 2,
+  }
+}
+
 // גודל חזותי של השולחן (בפיקסלים) — קבוע לפי פרופיל הצפיפות בלבד, לא לפי מספר
 // הכיסאות. הוספת/הסרת כיסא לא משנה את גודל השולחן (הכיסאות פשוט מתפזרים סביב
 // אותה מסגרת קבועה). כל השולחנות באולם באותו קנה-מידה.
@@ -200,6 +240,9 @@ function elementSizeFor(type: HallElementType, preset: DensityPreset): { w: numb
   if (type === 'dance_floor') return preset.dance
   if (type === 'bar') return preset.bar
   if (type === 'dj') return preset.dj
+  // "כניסה" נגזרת מרוחב עמדת ה-DJ ובגובה נמוך יותר — פתח, לא רהיט. בלי
+  // המקרה הזה היא נוספה תמיד בגודל קבוע ולא הצטמצמה יחד עם שאר האולם.
+  if (type === 'entrance') return { w: preset.dj.w, h: Math.round(preset.dj.h * 0.8) }
   return null
 }
 
@@ -1062,7 +1105,16 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     | { kind: 'table-group'; items: { id: number; startX: number; startY: number }[]; startWorldX: number; startWorldY: number }
     | { kind: 'table-rotate'; id: number; cx: number; cy: number }
     | { kind: 'element'; id: string; dx: number; dy: number }
-    | { kind: 'resize'; id: string; startX: number; startY: number; startW: number; startH: number; lockSquare: boolean }
+    | {
+        kind: 'resize'
+        id: string
+        startX: number
+        startY: number
+        startW: number
+        startH: number
+        lockSquare: boolean
+        rotation: number
+      }
     | { kind: 'rotate'; id: string; cx: number; cy: number }
   const dragRef = useRef<DragState | null>(null)
   // ביצועים בגרירת שולחנות: במקום לעדכן state בכל תזוזה (שמרנדר מחדש את כל
@@ -1107,14 +1159,17 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   const worldSize = useMemo(() => {
     let maxX = 0
     let maxY = 0
+    // מודע-סיבוב: אחרת שולחן/אלמנט מסובב חורג מקופסת העולם ונחתך.
     for (const t of tables) {
       const { w, h } = tableSize(t.table_type, preset)
-      maxX = Math.max(maxX, t.x + w)
-      maxY = Math.max(maxY, t.y + h)
+      const b = rotatedBounds(t.x, t.y, w, h, t.rotation)
+      maxX = Math.max(maxX, b.maxX)
+      maxY = Math.max(maxY, b.maxY)
     }
     for (const el of elements) {
-      maxX = Math.max(maxX, el.x + el.width)
-      maxY = Math.max(maxY, el.y + el.height)
+      const b = rotatedBounds(el.x, el.y, el.width, el.height, el.rotation)
+      maxX = Math.max(maxX, b.maxX)
+      maxY = Math.max(maxY, b.maxY)
     }
     return {
       w: Math.max(WORLD_MIN_W, Math.ceil(maxX) + WORLD_MARGIN),
@@ -1217,16 +1272,18 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     let maxY = -Infinity
     for (const t of tablesRef.current) {
       const { w, h } = tableSize(t.table_type, presetRef.current)
-      minX = Math.min(minX, t.x)
-      minY = Math.min(minY, t.y)
-      maxX = Math.max(maxX, t.x + w)
-      maxY = Math.max(maxY, t.y + h)
+      const b = rotatedBounds(t.x, t.y, w, h, t.rotation)
+      minX = Math.min(minX, b.minX)
+      minY = Math.min(minY, b.minY)
+      maxX = Math.max(maxX, b.maxX)
+      maxY = Math.max(maxY, b.maxY)
     }
     for (const el of elementsRef.current) {
-      minX = Math.min(minX, el.x)
-      minY = Math.min(minY, el.y)
-      maxX = Math.max(maxX, el.x + el.width)
-      maxY = Math.max(maxY, el.y + el.height)
+      const b = rotatedBounds(el.x, el.y, el.width, el.height, el.rotation)
+      minX = Math.min(minX, b.minX)
+      minY = Math.min(minY, b.minY)
+      maxX = Math.max(maxX, b.maxX)
+      maxY = Math.max(maxY, b.maxY)
     }
     // אין תוכן עדיין — לא משנים כלום (נחכה שהתוכן ייטען ואז נריץ שוב).
     if (!isFinite(minX)) return
@@ -1435,6 +1492,23 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       startW: el.width,
       startH: el.height,
       lockSquare: el.shape === 'square' || el.shape === 'circle',
+      rotation: el.rotation || 0,
+    }
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  // סיבוב שולחן — זהה לחלוטין לסיבוב אלמנט (הבר), לכל סוגי השולחנות.
+  // מרכז הסיבוב נלקח מה-rect האמיתי על המסך, ולכן זה נכון גם כשהלוח מוקטן.
+  function onTableRotatePointerDown(e: React.PointerEvent, tnum: number) {
+    e.stopPropagation()
+    const graphic = (e.currentTarget as HTMLElement).parentElement
+    if (!graphic) return
+    const r = graphic.getBoundingClientRect()
+    dragRef.current = {
+      kind: 'table-rotate',
+      id: tnum,
+      cx: r.left + r.width / 2,
+      cy: r.top + r.height / 2,
     }
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
   }
@@ -1484,8 +1558,9 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       return // בלי setState / setDirty בזמן הגרירה — זה קורה פעם אחת ב-pointerup
     } else if (drag.kind === 'table-rotate') {
       const deg = (Math.atan2(e.clientY - drag.cy, e.clientX - drag.cx) * 180) / Math.PI + 90
+      const next = normalizeRotation(deg)
       setTables((prev) =>
-        prev.map((t) => (t.table_number === drag.id ? { ...t, rotation: Math.round(deg) } : t)),
+        prev.map((t) => (t.table_number === drag.id ? { ...t, rotation: next } : t)),
       )
     } else if (drag.kind === 'element') {
       const w = toWorld(e.clientX, e.clientY)
@@ -1495,8 +1570,16 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     } else if (drag.kind === 'resize') {
       // תזוזת-מסך → תזוזת-לוח: בדסקטופ 1:1, במובייל מחולק בקנה-המידה.
       const s = scaleRef.current || 1
-      const dx = (e.clientX - drag.startX) / s
-      const dy = (e.clientY - drag.startY) / s
+      const rawX = (e.clientX - drag.startX) / s
+      const rawY = (e.clientY - drag.startY) / s
+      // באלמנט מסובב, צירי המסך אינם צירי האלמנט: גרירת הפינה של בר
+      // שסובב 90° הייתה מגדילה את הצד הלא נכון. מסובבים את הדלתא
+      // ב-‎−rotation כדי לעבוד תמיד בצירים המקומיים של האלמנט.
+      const rad = ((drag.rotation || 0) * Math.PI) / 180
+      const cos = Math.cos(-rad)
+      const sin = Math.sin(-rad)
+      const dx = rawX * cos - rawY * sin
+      const dy = rawX * sin + rawY * cos
       let w = Math.max(40, drag.startW + dx)
       let h = Math.max(30, drag.startH + dy)
       if (drag.lockSquare) {
@@ -1507,7 +1590,8 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       setElements((prev) => prev.map((el) => (el.id === drag.id ? { ...el, width: w, height: h } : el)))
     } else if (drag.kind === 'rotate') {
       const deg = (Math.atan2(e.clientY - drag.cy, e.clientX - drag.cx) * 180) / Math.PI + 90
-      setElements((prev) => prev.map((el) => (el.id === drag.id ? { ...el, rotation: Math.round(deg) } : el)))
+      const next = normalizeRotation(deg)
+      setElements((prev) => prev.map((el) => (el.id === drag.id ? { ...el, rotation: next } : el)))
     }
     setDirty(true)
   }
@@ -2645,7 +2729,9 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                     <div
                       key={t.table_number}
                       data-tnum={t.table_number}
-                      className={`hall-table ${over ? 'over' : ''} ${selected !== null ? 'droppable' : ''}`}
+                      className={`hall-table ${over ? 'over' : ''} ${
+                        selected !== null ? 'droppable' : ''
+                      } ${sheetTable === t.table_number ? 'selected' : ''}`}
                       style={{ left: t.x, top: t.y, width: w }}
                       onClick={(e) => onTableClick(e, t.table_number)}
                     >
@@ -2679,6 +2765,16 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                             {used}/{t.capacity}
                           </span>
                         </span>
+                        {/* ידית סיבוב — זהה לזו של אלמנט הבר, לכל סוגי
+                            השולחנות. הכיסאות יושבים בתוך אותו אלמנט מסובב
+                            ולכן מסתובבים איתו, בלי חישוב נפרד. */}
+                        {sheetTable === t.table_number && !t.locked && (
+                          <span
+                            className="handle handle-rotate table-rot"
+                            title={hallT.rotationLabel}
+                            onPointerDown={(e) => onTableRotatePointerDown(e, t.table_number)}
+                          />
+                        )}
                       </div>
                     </div>
                   )
@@ -2706,6 +2802,11 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                     </button>
                     <button onClick={() => addElement('dj')}>
                       <HmIcon name="dj" size={18} /> עמדת דיג'יי
+                    </button>
+                    {/* כניסה — האלמנט היה מוגדר בקוד ומזין את אזור "הכניסה"
+                        במנוע ההושבה, אבל לא היה שום כפתור להוסיף אותו. */}
+                    <button onClick={() => addElement('entrance')}>
+                      <HmIcon name="hall" size={18} /> כניסה
                     </button>
                   </div>
                 )}
@@ -3249,6 +3350,43 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                       <span>{sheetT.capacity}</span>
                       <button onClick={() => bumpCapacity(sheetT.table_number, 1)}>+</button>
                     </div>
+                  </div>
+
+                  {/* זווית השולחן — מחוון חופשי + זוויות מהירות. עובד לכל
+                      סוגי השולחנות. חשוב במיוחד לשולחן עגול, שבו סיבוב
+                      חופשי כמעט לא נראה לעין ולכן קשה לכוון בגרירה. */}
+                  <div className="hm-edit-field">
+                    <label>
+                      {hallT.rotationLabel} · {Math.round(sheetT.rotation)}°
+                    </label>
+                    <input
+                      className="hm-rotation-range"
+                      type="range"
+                      min={0}
+                      max={355}
+                      step={5}
+                      value={Math.round(sheetT.rotation)}
+                      onChange={(e) =>
+                        updateTable(sheetT.table_number, {
+                          rotation: normalizeRotation(Number(e.target.value)),
+                        })
+                      }
+                      aria-label={hallT.rotationLabel}
+                    />
+                    <div className="hm-type-chips">
+                      {[0, 45, 90, 135, 180, 270].map((deg) => (
+                        <button
+                          key={deg}
+                          className={Math.round(sheetT.rotation) === deg ? 'active' : ''}
+                          onClick={() =>
+                            updateTable(sheetT.table_number, { rotation: deg })
+                          }
+                        >
+                          {deg}°
+                        </button>
+                      ))}
+                    </div>
+                    <p className="hm-rotation-hint">{hallT.rotationHint}</p>
                   </div>
 
                   <div className="hm-edit-field">

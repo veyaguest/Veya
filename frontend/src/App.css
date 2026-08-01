@@ -8810,6 +8810,18 @@ td.notes.seating {
     border-top: 1px solid var(--line-2);
   }
 
+  /* ---- זווית השולחן: מחוון + זוויות מהירות ---- */
+  .hm-rotation-range {
+    width: 100%;
+    accent-color: var(--gold);
+  }
+  .hm-rotation-hint {
+    margin: 4px 0 0;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+
   /* ---- "הושבה בקליק": הפעולה המרכזית + דוח התוצאה ---- */
   .hm-oneclick {
     display: flex;
