@@ -1566,8 +1566,8 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
           for (const item of drag.items) {
             const node = dragNodesRef.current.get(item.id)
             if (!node) continue
-            const ox = snapVal(Math.max(0, item.startX + p.dx)) - item.startX
-            const oy = snapVal(Math.max(0, item.startY + p.dy)) - item.startY
+            const ox = snapVal(item.startX + p.dx) - item.startX
+            const oy = snapVal(item.startY + p.dy) - item.startY
             node.style.transform = `translate(${ox}px, ${oy}px)`
           }
         })
@@ -1581,8 +1581,8 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       )
     } else if (drag.kind === 'element') {
       const w = toWorld(e.clientX, e.clientY)
-      const x = snapVal(Math.max(0, w.x - drag.dx))
-      const y = snapVal(Math.max(0, w.y - drag.dy))
+      const x = snapVal(w.x - drag.dx)
+      const y = snapVal(w.y - drag.dy)
       setElements((prev) => prev.map((el) => (el.id === drag.id ? { ...el, x, y } : el)))
     } else if (drag.kind === 'resize') {
       // תזוזת-מסך → תזוזת-לוח: בדסקטופ 1:1, במובייל מחולק בקנה-המידה.
@@ -1648,8 +1648,8 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
             if (!item) return t
             return {
               ...t,
-              x: snapVal(Math.max(0, item.startX + p.dx)),
-              y: snapVal(Math.max(0, item.startY + p.dy)),
+              x: snapVal(item.startX + p.dx),
+              y: snapVal(item.startY + p.dy),
             }
           }),
         )
@@ -1765,8 +1765,8 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     const { w, h } = tableSize(type, preset)
     const t: TableView = {
       table_number: nextNum,
-      x: Math.max(0, Math.round(center.x - w / 2 + off)),
-      y: Math.max(0, Math.round(center.y - h / 2 + off)),
+      x: Math.round(center.x - w / 2 + off),
+      y: Math.round(center.y - h / 2 + off),
       guests: [],
       table_type: type,
       capacity,
@@ -1888,8 +1888,8 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     const el: HallElement = {
       id: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       type,
-      x: Math.max(0, Math.round(center.x - width / 2 + off)),
-      y: Math.max(0, Math.round(center.y - height / 2 + off)),
+      x: Math.round(center.x - width / 2 + off),
+      y: Math.round(center.y - height / 2 + off),
       width,
       height,
       rotation: 0,
@@ -1987,8 +1987,8 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
         const off = nextPlaceOffset()
         nextTables.push({
           table_number: nt.table_number,
-          x: Math.max(0, Math.round(center.x - w / 2 + off)),
-          y: Math.max(0, Math.round(center.y - h / 2 + off)),
+          x: Math.round(center.x - w / 2 + off),
+          y: Math.round(center.y - h / 2 + off),
           guests: [],
           table_type: 'round',
           capacity: nt.capacity,
