@@ -3307,6 +3307,43 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                     </span>
                   </div>
 
+                  {/* סיבוב ישיר מהגיליון הקטן — אותו מנגנון בדיוק כמו בעריכת
+                      שולחן (updateTable + normalizeRotation), רק שנגיש כאן
+                      מיד בלי להיכנס ל"עריכת שולחן". שולחן נעול לא מסתובב,
+                      בדיוק כמו ידית הסיבוב על המפה. */}
+                  {!sheetT.locked && (
+                    <div className="hm-edit-field hm-sheet-rotate">
+                      <label>
+                        {hallT.rotationLabel} · {Math.round(sheetT.rotation)}°
+                      </label>
+                      <input
+                        className="hm-rotation-range"
+                        type="range"
+                        min={0}
+                        max={355}
+                        step={5}
+                        value={Math.round(sheetT.rotation)}
+                        onChange={(e) =>
+                          updateTable(sheetT.table_number, {
+                            rotation: normalizeRotation(Number(e.target.value)),
+                          })
+                        }
+                        aria-label={hallT.rotationLabel}
+                      />
+                      <div className="hm-type-chips">
+                        {[0, 45, 90, 135, 180, 270].map((deg) => (
+                          <button
+                            key={deg}
+                            className={Math.round(sheetT.rotation) === deg ? 'active' : ''}
+                            onClick={() => updateTable(sheetT.table_number, { rotation: deg })}
+                          >
+                            {deg}°
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="hm-sheet-guests">
                     {sheetT.guests.length === 0 ? (
                       <p className="hm-empty">אין עדיין {activeEventTerms().guestsLabel} בשולחן הזה.</p>
