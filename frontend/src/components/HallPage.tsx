@@ -1816,21 +1816,14 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     const newNum = Math.max(1, Math.round(Number(raw)) || oldNum)
     if (newNum === oldNum) return
     setError('')
-    // אם המספר החדש כבר תפוס ע"י שולחן אחר — מבצעים החלפה מלאה: שני השולחנות
-    // מתחלפים גם במספר וגם במיקום על המפה. כך המוזמנים "נוסעים" יחד עם השולחן
-    // שלהם: מי שישב בשולחן הישן יושב עכשיו בשולחן החדש (במקומו של החדש).
+    // אם המספר החדש כבר תפוס ע"י שולחן אחר — מחליפים רק את התווית (המספר) בין
+    // שני השולחנות. כל שאר הנתונים (מיקום, זווית, מוזמנים, קיבולת וכו') נשארים
+    // צמודים לשולחן הפיזי כפי שהוא — השולחן לא "קופץ" למקום של השולחן האחר.
     const target = tables.find((t) => t.table_number === newNum)
-    const source = tables.find((t) => t.table_number === oldNum)
     setTables((prev) =>
       prev.map((t) => {
-        if (t.table_number === oldNum) {
-          return target
-            ? { ...t, table_number: newNum, x: target.x, y: target.y }
-            : { ...t, table_number: newNum }
-        }
-        if (target && source && t.table_number === newNum) {
-          return { ...t, table_number: oldNum, x: source.x, y: source.y }
-        }
+        if (t.table_number === oldNum) return { ...t, table_number: newNum }
+        if (target && t.table_number === newNum) return { ...t, table_number: oldNum }
         return t
       }),
     )
