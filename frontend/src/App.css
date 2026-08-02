@@ -8680,6 +8680,18 @@ td.notes.seating {
   .hm-canvas .handle-rotate::after {
     display: none;
   }
+  /* סרגל הפעולות הצף של שולחן (.table-toolbar): אותו עיקרון counter-scale
+     כמו הידיות. בלעדיו הכפתורים מתכווצים יחד עם האולם ב-Auto-Fit — באולם
+     גדול עם המון שולחנות קנה-המידה יורד משמעותית, וכפתור 30px הופך
+     לבלתי-לחיץ. מסובבים את כל המכל פעם אחת (במקום כל כפתור בנפרד), כך
+     שהמרחק והפריסה הפנימית שלו נשארים עקביים. העוגן bottom (מעל השולחן)
+     מוכפל גם הוא ב-1/scale, כדי שהרווח למעלה יישאר קבוע בפיקסלים על
+     המסך במקום להצטמצם יחד עם שאר האולם. */
+  .hm-canvas .table-toolbar {
+    bottom: calc(100% + 10px / var(--hm-s, 1));
+    transform: translateX(-50%) scale(calc(1 / var(--hm-s, 1)));
+    transform-origin: bottom center;
+  }
 
   /* FAB — הוספה מהירה */
   .hm-fab-wrap {

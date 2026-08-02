@@ -3383,7 +3383,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                           setSheetEdit(false)
                         }}
                       >
-                        <HmIcon name="refresh" size={18} /> {hallT.rotationLabel}
+                        <HmIcon name="refresh" size={18} /> {hallT.selectOnMap}
                       </button>
                     )}
                   </div>
