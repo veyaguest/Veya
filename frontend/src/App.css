@@ -3416,6 +3416,48 @@ td.notes.seating {
   cursor: default;
   opacity: 0.85;
 }
+/* סרגל פעולות צף — מופיע ברגע הבחירה, בלי לפתוח שום חלון. אותו מיקום
+   ועיצוב כמו .element-toolbar (מעל האובייקט, מיושר למרכז) כדי ששולחנות
+   ואלמנטים יתנהגו אחיד. תפוס z-index גבוה מהידית (8) כדי לשבת מעליה
+   כשהם קרובים, אבל עדיין הרבה מתחת לגיליון (70/71) כשהוא כן נפתח. */
+.table-toolbar {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border-radius: 10px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 18px rgba(20, 18, 14, 0.18);
+  z-index: 9;
+  white-space: nowrap;
+}
+.tt-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--charcoal);
+  cursor: pointer;
+  font-size: 14px;
+}
+.tt-btn:hover {
+  background: rgba(201, 162, 39, 0.12);
+}
+.tt-btn.danger {
+  color: #a6605a;
+}
+.tt-btn.danger:hover {
+  background: rgba(166, 96, 90, 0.12);
+}
 .free-badge {
   position: absolute;
   top: -14px;

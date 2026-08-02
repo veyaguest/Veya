@@ -1488,6 +1488,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     e.stopPropagation()
     if (movedRef.current) return
     setSelectedEl(id)
+    setSelectedTable(null)
     setSheetTable(null)
   }
 
@@ -1741,6 +1742,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     setHallLayout({ density: key, planned_tables: total })
     nextTableNumRef.current = newTables.length + 1
     setSheetTable(null)
+    setSelectedTable(null)
     setSelectedEl(null)
     setWizardOpen(false)
     setDirty(true)
@@ -1900,6 +1902,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     }
     setElements((prev) => [...prev, el])
     setSelectedEl(el.id)
+    setSelectedTable(null)
     setSheetTable(null)
     setDirty(true)
   }
@@ -2035,11 +2038,21 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       moveGuestToTable(selected, tnum)
       return
     }
-    // אחרת: הקשה בוחרת את השולחן על המפה **וגם** פותחת את הגיליון התחתון.
-    // שתי השכבות נפרדות: סגירת הגיליון משאירה את השולחן בחור, וכך ידית
-    // הסיבוב נשארת נגישה על המפה — בדיוק כמו אלמנט הבר.
+    // אחרת: הקשה **בוחרת** את השולחן על המפה בלבד — בדיוק כמו אלמנט הבר.
+    // הבחירה מציגה מיד ידית סיבוב + סרגל פעולות קטן צמוד לשולחן (מסובבים,
+    // שוכפלים, מוחקים בלי שום חלון). "פרטים מלאים" (שם/סוג/צבע/רזרבה) הוא
+    // כפתור מפורש בסרגל — לא עוד לחיצה על השולחן, כדי לא לשבור את ההרגל.
+    // עד עכשיו הקשה פתחה ישר את הגיליון התחתון (עד 82% מהמסך), שקבר את
+    // ידית הסיבוב מתחתיו — בדיוק הבעיה שביקשת לתקן.
+    if (selectedTable === tnum) {
+      setSelectedTable(null) // הקשה שנייה על שולחן נבחר מבטלת בחירה
+      return
+    }
     setSelectedEl(null)
     setSelectedTable(tnum)
+  }
+
+  function openTableSheet(tnum: number) {
     setSheetTable(tnum)
     setSheetEdit(false)
   }
@@ -2590,18 +2603,22 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
               onPointerMove={onCanvasPointerMove}
               onPointerUp={onCanvasPointerUp}
               onPointerLeave={onCanvasPointerUp}
-              onClick={(e) => {
-                // הקשה על רקע המפה מבטלת בחירה — אחרת ידית הסיבוב נשארת
-                // תלויה על שולחן שהמשתמש כבר לא עוסק בו.
-                if (e.target !== e.currentTarget) return
-                if (movedRef.current) return
-                setSelectedTable(null)
-                setSelectedEl(null)
-              }}
             >
               <div
                 className="hall-world"
                 ref={worldRef}
+                onClick={(e) => {
+                  // הקשה על רקע המפה מבטלת בחירה — אחרת ידית הסיבוב וסרגל
+                  // הפעולות נשארים תלויים על שולחן שהמשתמש כבר לא עוסק בו.
+                  // ה-listener יושב כאן (לא על .hm-canvas) כי .hall-world
+                  // הוא השכבה שממלאת בפועל את כל שטח התצוגה — לחיצה בכל
+                  // מקום נוגעת בה תחילה, ורק שולחן/אלמנט ספציפי עוצר את
+                  // הבועה (stopPropagation) לפני שהיא מגיעה לכאן.
+                  if (e.target !== e.currentTarget) return
+                  if (movedRef.current) return
+                  setSelectedTable(null)
+                  setSelectedEl(null)
+                }}
                 style={
                   {
                     width: worldSize.w,
@@ -2794,19 +2811,60 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                         </span>
                         {/* ידית סיבוב — זהה לזו של אלמנט הבר, לכל סוגי
                             השולחנות. הכיסאות יושבים בתוך אותו אלמנט מסובב
-                            ולכן מסתובבים איתו, בלי חישוב נפרד. */}
-                        {selectedTable === t.table_number &&
-                          sheetTable === null &&
-                          !t.locked && (
-                            <span
-                              className="handle handle-rotate table-rot"
-                              title={hallT.rotationLabel}
-                              onPointerDown={(e) =>
-                                onTableRotatePointerDown(e, t.table_number)
-                              }
-                            />
-                          )}
+                            ולכן מסתובבים איתו, בלי חישוב נפרד. מופיעה מיד
+                            עם הבחירה — אין יותר גיליון שמכסה אותה. */}
+                        {selectedTable === t.table_number && !t.locked && (
+                          <span
+                            className="handle handle-rotate table-rot"
+                            title={hallT.rotationLabel}
+                            onPointerDown={(e) =>
+                              onTableRotatePointerDown(e, t.table_number)
+                            }
+                          />
+                        )}
                       </div>
+
+                      {/* סרגל פעולות צף — מופיע עם הבחירה, בלי לפתוח חלון.
+                          "פרטים" הוא הדרך המפורשת לגיליון המלא (שם/סוג/צבע/
+                          רזרבה); סיבוב זמין ישירות דרך הידית שמעל השולחן. */}
+                      {selectedTable === t.table_number && (
+                        <div
+                          className="table-toolbar"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            className="tt-btn"
+                            onClick={() => openTableSheet(t.table_number)}
+                            title={hallT.tableDetails}
+                          >
+                            <HmIcon name="edit" size={15} />
+                          </button>
+                          {!t.locked && (
+                            <button
+                              className="tt-btn"
+                              onClick={() => {
+                                duplicateTable(t.table_number)
+                              }}
+                              title={hallT.duplicateTable}
+                            >
+                              <HmIcon name="plus" size={15} />
+                            </button>
+                          )}
+                          {!t.locked && (
+                            <button
+                              className="tt-btn danger"
+                              onClick={() => {
+                                deleteTable(t.table_number)
+                                setSelectedTable(null)
+                              }}
+                              title={hallT.deleteTable}
+                            >
+                              🗑
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -3312,9 +3370,10 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                     <button className="hm-ghost-btn" onClick={() => setSheetEdit(true)}>
                       <HmIcon name="edit" size={18} /> עריכת שולחן
                     </button>
-                    {/* דרך גלויה להגיע לסיבוב בגרירה: הגיליון מכסה את המפה,
-                        ולכן ידית הסיבוב נגישה רק כשהוא סגור. הכפתור סוגר את
-                        הגיליון ומשאיר את השולחן בחור, עם הידית פעילה. */}
+                    {/* גשר חזרה למפה: כשהגיליון נפתח מלשונית "שולחנות" (לא
+                        מהקשה על המפה עצמה), עדיין אין שולחן נבחר על המפה.
+                        הכפתור סוגר את הגיליון ובוחר את השולחן, כדי שסרגל
+                        הפעולות + ידית הסיבוב יופיעו מיד בלי הקשה נוספת. */}
                     {!sheetT.locked && (
                       <button
                         className="hm-ghost-btn"
@@ -3323,9 +3382,8 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                           setSheetTable(null)
                           setSheetEdit(false)
                         }}
-                        title={hallT.rotateOnMapHint}
                       >
-                        <HmIcon name="refresh" size={18} /> {hallT.rotateOnMap}
+                        <HmIcon name="refresh" size={18} /> {hallT.rotationLabel}
                       </button>
                     )}
                   </div>
