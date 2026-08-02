@@ -1,8 +1,9 @@
-"""בודקת את ``messaging.default_template_for(event_type)`` (סבב 3ט, קומיט 1).
+"""בודקת את ``messaging.default_template_for(event_type)``.
 
-הפונקציה עצמה עדיין לא נקראת מאף מקום — לכן הבדיקה כאן היא סטטית בלבד:
-מוודאת שהחוזה של הפונקציה מתקיים לכל 8 סוגי האירוע, ושחתונה שומרת על
-זהות מוחלטת (identity) לקבוע ``DEFAULT_TEMPLATE`` הקיים.
+החוזה: כל שמונת סוגי האירוע — חתונה בכללם — מקבלים נוסח הזמנה שנכתב
+להם במפורש ב-``DEFAULT_INVITATION_BY_TYPE``, ולא נוסח שנבחר בהיוריסטיקה
+מהספרייה. שאר שלבי המסלול (תזכורות/תודה/יום האירוע) כן ממשיכים להיבחר
+מהספרייה, לפי קטגוריה ואז סגנון.
 
 הרצה: ``python tests/test_default_template.py`` (עצמאי, בלי pytest).
 """
@@ -16,25 +17,31 @@ from app.message_library import _LIBRARY_BY_TYPE  # noqa: E402
 
 
 ALL_EVENT_TYPES = list(_LIBRARY_BY_TYPE.keys())
-# None ו-"" נופלים במפורש ל-DEFAULT_TEMPLATE (התנהגות היסטורית — "לא יודעים
-# מה הסוג" → חתונה, כי זו התנהגות הפרודקשן היום).
+# None ו-"" → חתונה (התנהגות היסטורית: "לא יודעים מה הסוג" = חתונה).
+# סוג *לא-מוכר* לעומת זאת נופל לנוסח הנייטרלי של "אחר".
 IDENTITY_FALLBACK_INPUTS = [None, ""]
-# סוג שלא מוכר → נופל ל-GENERIC_LIBRARY דרך ``entries_for`` (התכנון של
-# message_library עצמו). זו התנהגות בטוחה יותר מהחתונה, כי לפחות הטקסט גנרי.
 
 
-def test_wedding_is_identity():
-    """חתונה חייבת להחזיר את אותו אובייקט מחרוזת של DEFAULT_TEMPLATE.
+def test_every_type_returns_its_explicit_default():
+    """כל סוג — כולל חתונה — מחזיר את הנוסח שנכתב לו במפורש.
 
-    זהות אובייקט (is) חזקה יותר משוויון (==), ומוודאת שלא נוצר עותק —
-    כל שינוי עתידי ב-DEFAULT_TEMPLATE ישקף עצמו אוטומטית כאן.
+    עד סבב "ברירות המחדל" חתונה החזירה את הקבוע ההיסטורי
+    ``DEFAULT_TEMPLATE`` כדי לא לשנות התנהגות. היום כל שמונת הסוגים,
+    חתונה בכללם, מקבלים נוסח מפורש מ-``DEFAULT_INVITATION_BY_TYPE`` —
+    זו ההודעה הראשונה שכל משתמש חדש רואה, ולכן היא לא נבחרת בהיוריסטיקה.
+
+    זהות אובייקט (is) חזקה יותר משוויון, ומוודאת שלא נוצר עותק בדרך.
     """
-    got = messaging.default_template_for("wedding")
-    assert got is messaging.DEFAULT_TEMPLATE, (
-        "wedding חייב להחזיר את הקבוע DEFAULT_TEMPLATE (זהות אובייקט), "
-        f"קיבלתי מחרוזת שונה באורך {len(got)}"
-    )
-    print("✓ wedding → identity ל-DEFAULT_TEMPLATE")
+    from app.message_library import DEFAULT_INVITATION_BY_TYPE
+
+    for etype in ALL_EVENT_TYPES:
+        got = messaging.default_template_for(etype)
+        want = DEFAULT_INVITATION_BY_TYPE[etype]
+        assert got is want, (
+            f"{etype}: חייב להחזיר את הנוסח המפורש מ-DEFAULT_INVITATION_BY_TYPE "
+            f"(זהות אובייקט), קיבלתי מחרוזת באורך {len(got)}"
+        )
+    print(f"✓ כל {len(ALL_EVENT_TYPES)} הסוגים → identity לנוסח המפורש שלהם")
 
 
 def test_all_event_types_return_non_empty_string():
@@ -46,104 +53,109 @@ def test_all_event_types_return_non_empty_string():
     print(f"✓ כל {len(ALL_EVENT_TYPES)} סוגי האירוע מחזירים מחרוזת לא-ריקה")
 
 
-def test_none_and_empty_fall_to_default_template():
-    """None/מחרוזת ריקה → fallback מפורש ל-DEFAULT_TEMPLATE (התנהגות היסטורית)."""
+def test_none_and_empty_fall_to_wedding():
+    """None/מחרוזת ריקה → נוסח החתונה (התנהגות היסטורית: "לא יודעים" = חתונה)."""
+    from app.message_library import DEFAULT_INVITATION_BY_TYPE
+
     for inp in IDENTITY_FALLBACK_INPUTS:
         got = messaging.default_template_for(inp)
-        assert got is messaging.DEFAULT_TEMPLATE, (
-            f"קלט {inp!r} היה אמור ליפול ל-DEFAULT_TEMPLATE אבל קיבלתי מחרוזת שונה"
+        assert got is DEFAULT_INVITATION_BY_TYPE["wedding"], (
+            f"קלט {inp!r} היה אמור ליפול לנוסח החתונה אבל קיבלתי מחרוזת שונה"
         )
-    print(f"✓ {len(IDENTITY_FALLBACK_INPUTS)} ערכי null/empty נופלים ל-DEFAULT_TEMPLATE")
+    print(f"✓ {len(IDENTITY_FALLBACK_INPUTS)} ערכי null/empty נופלים לנוסח החתונה")
 
 
-def test_unknown_type_falls_to_generic_library():
-    """סוג לא מוכר → תבנית מ-GENERIC_LIBRARY (fallback המובנה של message_library)."""
-    from app.message_library import GENERIC_LIBRARY
+def test_unknown_type_falls_to_neutral_default():
+    """סוג לא מוכר → הנוסח של "אחר", הנייטרלי ביותר.
 
-    generic_bodies = {e["body"] for e in GENERIC_LIBRARY if e.get("stage") == "invitation"}
+    לא לנוסח החתונה: סוג שלא הוגדר ב-``EventType`` הוא באג או ערך עתידי,
+    ועדיף שיקבל הזמנה שלא מניחה כלום על אופי האירוע.
+    """
+    from app.message_library import DEFAULT_INVITATION_BY_TYPE
+
     for inp in ("unknown_type", "not_a_real_type"):
         got = messaging.default_template_for(inp)
-        assert got in generic_bodies, (
-            f"קלט {inp!r} היה אמור ליפול לתבנית מ-GENERIC_LIBRARY, "
-            f"קיבלתי מחרוזת שלא מופיעה בו"
+        assert got is DEFAULT_INVITATION_BY_TYPE["other"], (
+            f"קלט {inp!r} היה אמור ליפול לנוסח הנייטרלי של 'אחר'"
         )
-    print("✓ סוגים לא-מוכרים נופלים ל-GENERIC_LIBRARY (fallback של message_library)")
+    print("✓ סוגים לא-מוכרים נופלים לנוסח הנייטרלי של 'אחר'")
 
 
-def test_non_wedding_types_come_from_library():
-    """לסוגים לא-חתונתיים — התבנית חייבת להיות אחת מ-entries_for(etype).
+def test_other_stages_still_come_from_library():
+    """שלבים שאינם ``invitation`` ממשיכים להיבחר מהספרייה של הסוג.
 
-    מוודא שלא מוחזרת מחרוזת שהומצאה במקום, וגם שהיא באמת stage='invitation'.
+    שלב ההזמנה עבר למפה מפורשת (``DEFAULT_INVITATION_BY_TYPE``), אבל
+    התזכורות, התודה ויום האירוע עדיין נבחרים מהספרייה — וחשוב שהבחירה
+    תמשיך לכבד את הקטגוריה והסגנון ולא תיפול לתבנית אקראית.
     """
-    from app.message_library import entries_for
+    from app.message_library import default_body_for, entries_for
 
+    checked = 0
     for etype in ALL_EVENT_TYPES:
         if etype == "wedding":
-            continue  # נבדק ב-test_wedding_is_identity
-        got = messaging.default_template_for(etype)
-        invitations = [e for e in entries_for(etype) if e.get("stage") == "invitation"]
-        bodies = {e["body"] for e in invitations}
-        assert got in bodies, (
-            f"{etype}: התבנית שהוחזרה אינה חלק מרשימת ההזמנות ב-message_library "
-            f"({len(invitations)} מועמדות)"
-        )
-    print(f"✓ {len(ALL_EVENT_TYPES) - 1} סוגים לא-חתונתיים — התבניות מגיעות מ-library")
+            continue  # לחתונה שאר השלבים מגיעים מ-VeyaTemplate הגלובלי
+        for stage in ("first_reminder", "second_reminder", "thank_you", "before_event"):
+            got = default_body_for(etype, stage)
+            if got is None:
+                continue
+            bodies = {e["body"] for e in entries_for(etype) if e.get("stage") == stage}
+            assert got in bodies, f"{etype}/{stage}: הנוסח אינו מהספרייה של הסוג"
+            checked += 1
+    print(f"✓ {checked} שלבים לא-הזמנתיים — הנוסח מגיע מהספרייה של הסוג")
 
 
-def test_style_priority_order():
-    """סדר העדיפות formal > elegant > family חייב להישמר.
-
-    לכל סוג לא-חתונתי, מוודא שאם יש formal — הוא נבחר; אחרת elegant; אחרת
-    family; אחרת הראשונה הזמינה. לא מסתמכים על סדר הופעה במערך.
-    """
-    from app.message_library import entries_for
+def test_stage_priority_respects_category_then_style():
+    """בשלבים שנבחרים מהספרייה — קודם הקטגוריה של השלב, ואז הסגנון."""
+    from app.message_library import (
+        DEFAULT_STYLE_PRIORITY, STAGE_PREFERRED_CATEGORY, default_body_for, entries_for,
+    )
 
     for etype in ALL_EVENT_TYPES:
         if etype == "wedding":
             continue
+        for stage, want_cat in STAGE_PREFERRED_CATEGORY.items():
+            if stage == "invitation":
+                continue
+            got = default_body_for(etype, stage)
+            if got is None:
+                continue
+            entry = next(e for e in entries_for(etype)
+                         if e["body"] == got and e["stage"] == stage)
+            in_stage = [e for e in entries_for(etype) if e["stage"] == stage]
+            cats = {e["category"] for e in in_stage}
+            if want_cat in cats:
+                assert entry["category"] == want_cat, (
+                    f"{etype}/{stage}: קטגוריה '{entry['category']}' במקום '{want_cat}'")
+            candidates = [e for e in in_stage if e["category"] == entry["category"]]
+            avail = {e["style"] for e in candidates}
+            for prio in DEFAULT_STYLE_PRIORITY:
+                if prio in avail:
+                    assert entry["style"] == prio, (
+                        f"{etype}/{stage}: סגנון '{prio}' זמין אך נבחר '{entry['style']}'")
+                    break
+    print("✓ קטגוריית השלב קודמת, והסגנון נבחר בתוכה לפי סדר העדיפות")
+
+
+def test_explicit_defaults_are_independent_of_the_library():
+    """נוסחי ההזמנה המפורשים אינם נגזרים מהספרייה — שינוי שם לא ישנה אותם."""
+    from app.message_library import DEFAULT_INVITATION_BY_TYPE, entries_for
+
+    for etype in ALL_EVENT_TYPES:
         got = messaging.default_template_for(etype)
-        invitations = [e for e in entries_for(etype) if e.get("stage") == "invitation"]
-        chosen_entry = next(e for e in invitations if e["body"] == got)
-        chosen_style = chosen_entry.get("style")
-
-        # מזהה את הסגנון הצפוי לפי סדר העדיפות + הזמינות בפועל בספרייה
-        available_styles = {e.get("style") for e in invitations}
-        expected_style = None
-        for prio in ("formal", "elegant", "family"):
-            if prio in available_styles:
-                expected_style = prio
-                break
-        if expected_style is None:
-            # אין formal/elegant/family — צפוי לקבל את הראשונה בפועל
-            expected_body = invitations[0]["body"]
-            assert got == expected_body, (
-                f"{etype}: אין formal/elegant/family, ציפינו לראשונה אבל קיבלנו "
-                f"סגנון '{chosen_style}'"
-            )
-        else:
-            assert chosen_style == expected_style, (
-                f"{etype}: סגנון זמין '{expected_style}' לא נבחר; במקום זה '{chosen_style}'"
-            )
-    print("✓ סדר עדיפות formal > elegant > family > first-available נשמר בכל הסוגים")
-
-
-def test_wedding_is_not_affected_by_library_changes():
-    """מוודא שגם אם library של חתונה משתנה, wedding עדיין מחזיר DEFAULT_TEMPLATE."""
-    got = messaging.default_template_for("wedding")
-    assert got == messaging.DEFAULT_TEMPLATE
-    # אם היינו משתמשים ב-entries_for('wedding') לחתונה, היינו מקבלים תבנית של library,
-    # שאורכה שונה מ-DEFAULT_TEMPLATE (188 מול 122). זה מאמת שהמסלול השני לא נגע בחתונה.
-    assert len(got) == len(messaging.DEFAULT_TEMPLATE)
-    print("✓ wedding לא מושפע מ-library — נשאר בקבוע")
+        assert got is DEFAULT_INVITATION_BY_TYPE[etype]
+        library_bodies = {e["body"] for e in entries_for(etype)}
+        assert got not in library_bodies, (
+            f"{etype}: נוסח ההזמנה זהה לתבנית בספרייה — הוא אמור להיות עצמאי")
+    print("✓ נוסחי ההזמנה המפורשים עצמאיים מהספרייה")
 
 
 if __name__ == "__main__":
-    test_wedding_is_identity()
+    test_every_type_returns_its_explicit_default()
     test_all_event_types_return_non_empty_string()
-    test_none_and_empty_fall_to_default_template()
-    test_unknown_type_falls_to_generic_library()
-    test_non_wedding_types_come_from_library()
-    test_style_priority_order()
-    test_wedding_is_not_affected_by_library_changes()
+    test_none_and_empty_fall_to_wedding()
+    test_unknown_type_falls_to_neutral_default()
+    test_other_stages_still_come_from_library()
+    test_stage_priority_respects_category_then_style()
+    test_explicit_defaults_are_independent_of_the_library()
     print()
-    print("=== כל הבדיקות עברו — קומיט 1 של 3ט תקין ===")
+    print("=== כל בדיקות נוסחי ברירת המחדל עברו ===")

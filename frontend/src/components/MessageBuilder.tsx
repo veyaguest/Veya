@@ -71,9 +71,12 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
   const [error, setError] = useState('')
   const taRef = useRef<HTMLTextAreaElement | null>(null)
 
-  // בורר הפרטים האישיים: חיפוש חופשי + סינון לפי קבוצה.
+  // בורר הפרטים האישיים: חיפוש חופשי + סינון לפי קבוצה + קיפול קבוצות.
   const [tokenSearch, setTokenSearch] = useState('')
   const [tokenCat, setTokenCat] = useState('')
+  // רק קבוצות שקופלו ידנית נשמרות כאן — ברירת המחדל היא פתוח, כדי שהמסך
+  // ייראה מלא ושמיש בכניסה הראשונה ולא כרשימת כותרות סגורות.
+  const [collapsedCats, setCollapsedCats] = useState<Set<string>>(new Set())
 
   // ספריית ההודעות (נטענת בעצלתיים בפתיחת החלון).
   const [library, setLibrary] = useState<MessageLibrary | null>(null)
@@ -176,6 +179,20 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
     const present = new Set(placeholders.filter((p) => p.token).map((p) => p.cat || 'extra'))
     return TOKEN_CAT_ORDER.filter((c) => present.has(c))
   }, [placeholders])
+
+  // בחיפוש פעיל כל הקבוצות נפתחות — אחרת תוצאה תואמת הייתה מסתתרת בקבוצה
+  // מקופלת והמשתמש היה חושב שאין התאמה.
+  const isGroupOpen = (cat: string) =>
+    tokenSearch.trim() !== '' || !collapsedCats.has(cat)
+
+  function toggleGroup(cat: string) {
+    setCollapsedCats((prev) => {
+      const next = new Set(prev)
+      if (next.has(cat)) next.delete(cat)
+      else next.add(cat)
+      return next
+    })
+  }
 
   function insertToken(token: string) {
     const ta = taRef.current
@@ -326,7 +343,7 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
               className="mb-textarea"
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              rows={12}
+              rows={10}
               dir="rtl"
               placeholder={t.editorPlaceholder}
             />
@@ -410,27 +427,45 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
               <p className="mb-token-empty">{t.tokensNoResults}</p>
             ) : (
               <div className="mb-token-groups">
-                {tokenGroups.map(([cat, items]) => (
-                  <div key={cat} className="mb-token-group">
-                    <h4 className="mb-token-group-title">
-                      {t.tokenCategories[cat] ?? cat}
-                    </h4>
-                    <ul className="mb-token-list">
-                      {items.map((p) => (
-                        <li key={p.key}>
-                          <button
-                            type="button"
-                            className="mb-token"
-                            onClick={() => insertToken(p.token)}
-                          >
-                            <span className="mb-token-name">{p.token}</span>
-                            <span className="mb-token-desc">{p.desc}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+                {tokenGroups.map(([cat, items]) => {
+                  const open = isGroupOpen(cat)
+                  return (
+                    <div key={cat} className={`mb-token-group ${open ? 'open' : ''}`}>
+                      <button
+                        type="button"
+                        className="mb-token-group-toggle"
+                        aria-expanded={open}
+                        onClick={() => toggleGroup(cat)}
+                      >
+                        <h4 className="mb-token-group-title">
+                          {t.tokenCategories[cat] ?? cat}
+                        </h4>
+                        <span className="mb-token-group-meta">
+                          <span>{items.length}</span>
+                          <span className="mb-token-caret" aria-hidden="true">
+                            ▾
+                          </span>
+                        </span>
+                      </button>
+                      {open && (
+                        <ul className="mb-token-list">
+                          {items.map((p) => (
+                            <li key={p.key}>
+                              <button
+                                type="button"
+                                className="mb-token"
+                                onClick={() => insertToken(p.token)}
+                              >
+                                <span className="mb-token-name">{p.token}</span>
+                                <span className="mb-token-desc">{p.desc}</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </section>

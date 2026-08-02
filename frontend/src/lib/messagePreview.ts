@@ -49,15 +49,20 @@ export function buildSampleTokens(
     // שם המוזמן (טכני, ידידותי וישן)
     '{{first_name}}': first, '{{guest_name}}': first,
     '[שם פרטי]': first, '[שם אורח]': first,
-    // בעלי האירוע, כל וריאציה
+    // בעלי האירוע — כל הווריאציות של TOKEN_VOCABULARY בשרת (messaging.py).
+    // כולן מצביעות לאותו ערך; מה שמשתנה בין סוגי האירוע הוא רק איזו מהן
+    // כתובה בנוסח ומוצעת בבורר.
     '{{event_name}}': hosts, '{{couple_names}}': hosts,
     '[שמות בעלי האירוע]': hosts, '[שמות בני הזוג]': hosts,
     '[שם החוגג]': hosts, '[שם החוגגת]': hosts, '[שם בעל השמחה]': hosts,
+    '[שם המשפחה]': hosts, '[שם החברה]': hosts, '[שם האירוע]': hosts,
+    '[משפחת התינוק]': hosts, // כינוי ותיק — נשמר כדי שנוסח שנשמר איתו יעבוד
     '{{groom_name}}': event?.groom_name || '', '[שם החתן]': event?.groom_name || '',
     '{{bride_name}}': event?.bride_name || '', '[שם הכלה]': event?.bride_name || '',
-    // שורות ההורים בהזמנה דתית
+    // שורת המשפחה/ההורים בהזמנה דתית
     '{{groom_parents_line}}': groomParents,
     '[הורי החתן]': groomParents, '[הורי החוגג]': groomParents,
+    '[משפחת החוגג]': groomParents, '[משפחת החוגגת]': groomParents,
     '{{bride_parents_line}}': brideParents, '[הורי הכלה]': brideParents,
     // שם האירוע לפי סוגו
     '{{celebration}}': terms.celebration, '[האירוע]': terms.celebration,

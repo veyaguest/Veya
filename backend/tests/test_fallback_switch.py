@@ -1,10 +1,9 @@
 """בודקת את חיבור ה-fallback ל-``default_template_for(event_type)`` (סבב 3ט, קומיט 3).
 
 מטרות:
-1. **חתונה עדיין זהה בייטים** — אירועי חתונה עם ``message_template=NULL``
-   ממשיכים להפיק אותו טקסט בדיוק (identity ל-DEFAULT_TEMPLATE נשמרת דרך
-   default_template_for('wedding')).
-2. **אירועי לא-חתונה מקבלים תבנית מ-library** — במקום הטקסט הגנרי החתונתי.
+1. **כל סוג מקבל את נוסח ההזמנה המפורש שלו** — כולל חתונה, מאז שכל שמונת
+   הנוסחים נכתבו מחדש ב-``DEFAULT_INVITATION_BY_TYPE``.
+2. **אין שני סוגים שחולקים נוסח** — אירוע שאינו חתונה לא יקבל טקסט חתונתי.
 3. **תבניות שמורות של משתמשים לא משתנות** — fallback רק כש-NULL, אז שמור != NULL
    ממשיך לרוץ כרגיל.
 4. **אין טוקנים לא-מוחלפים** — לא ``[...]`` ולא ``{...}`` נותרים בפלט.
@@ -54,19 +53,26 @@ def _simulate_send(event_type: str, saved_template: str | None = None, **overrid
     return messaging.render_automation_template(template, event_type=event_type, **kwargs)
 
 
-def test_wedding_null_message_template_byte_identity():
-    """חתונה NULL: הצינור החדש (fallback → default_template_for) חייב להפיק
-    פלט זהה בדיוק לצינור הקודם (fallback → DEFAULT_TEMPLATE)."""
-    baseline = messaging.render_automation_template(
-        messaging.DEFAULT_TEMPLATE, event_type="wedding", **FULL_KWARGS
-    )
+def test_wedding_null_message_template_uses_the_explicit_default():
+    """חתונה NULL: ה-fallback מפיק את נוסח ההזמנה המפורש של חתונה.
+
+    עד סבב "ברירות המחדל" הבדיקה כאן דרשה זהות בייטים לקבוע ההיסטורי
+    ``DEFAULT_TEMPLATE``, כדי להוכיח שהחלפת הצינור לא שינתה התנהגות.
+    היום הנוסח עצמו הוחלף בכוונה — ולכן מה שנבדק הוא שהצינור מגיע
+    לנוסח המפורש ומרנדר אותו נקי, בלי טוקן שנשאר.
+    """
+    from app.message_library import DEFAULT_INVITATION_BY_TYPE
+
+    assert messaging.default_template_for("wedding") is (
+        DEFAULT_INVITATION_BY_TYPE["wedding"]
+    ), "חתונה NULL חייבת להגיע לנוסח ההזמנה המפורש"
+
     via_fallback = _simulate_send("wedding")  # saved_template=None → default_template_for
-    assert baseline == via_fallback, (
-        f"חתונה NULL — צינור חדש חייב זהות בייטים.\n"
-        f"baseline: {baseline!r}\nfallback: {via_fallback!r}"
-    )
-    assert _no_leftover_tokens(via_fallback)
-    print(f"✓ חתונה NULL: זהות בייטים בין baseline ל-default_template_for ({len(via_fallback)} chars)")
+    assert _no_leftover_tokens(via_fallback), f"נשאר טוקן: {via_fallback!r}"
+    # שמות שני בני הזוג חייבים להופיע — זו הדרישה המפורשת לנוסח החתונה.
+    assert "יונתן" in via_fallback and "נועה" in via_fallback, (
+        f"שמות בני הזוג לא מופיעים בהזמנה: {via_fallback!r}")
+    print(f"✓ חתונה NULL: הנוסח המפורש נטען ומרונדר נקי ({len(via_fallback)} chars)")
 
 
 def test_wedding_saved_old_syntax_template_unchanged():
@@ -81,22 +87,25 @@ def test_wedding_saved_old_syntax_template_unchanged():
     print(f"✓ חתונה + תבנית שמורה: לא מושפעת מהחלפת ה-fallback ({len(via_fallback)} chars)")
 
 
-def test_non_wedding_types_use_library_templates():
-    """אירועים לא-חתונתיים מקבלים תבנית מ-message_library, לא DEFAULT_TEMPLATE."""
-    from app.message_library import entries_for
+def test_every_type_gets_its_own_distinct_default():
+    """לכל סוג אירוע נוסח הזמנה משלו — אף אחד לא מקבל את של השני.
 
+    זו הדרישה המרכזית: אירוע שאינו חתונה לא יקבל לעולם נוסח חתונתי,
+    וגם לא נוסח של סוג אחר.
+    """
+    from app.message_library import DEFAULT_INVITATION_BY_TYPE
+
+    seen: dict[str, str] = {}
     for etype in _LIBRARY_BY_TYPE:
-        if etype == "wedding":
-            continue
-        got_template = messaging.default_template_for(etype)
-        library_bodies = {e["body"] for e in entries_for(etype) if e.get("stage") == "invitation"}
-        assert got_template in library_bodies, (
-            f"{etype}: ברירת המחדל חייבת להגיע מ-library, לא מ-DEFAULT_TEMPLATE"
-        )
-        assert got_template != messaging.DEFAULT_TEMPLATE, (
-            f"{etype}: קיבל DEFAULT_TEMPLATE במקום תבנית library"
-        )
-    print(f"✓ {len(_LIBRARY_BY_TYPE) - 1} סוגים לא-חתונתיים משתמשים בתבניות library")
+        got = messaging.default_template_for(etype)
+        assert got is DEFAULT_INVITATION_BY_TYPE[etype], (
+            f"{etype}: לא קיבל את הנוסח המפורש שלו")
+        assert got != messaging.DEFAULT_TEMPLATE, (
+            f"{etype}: קיבל את הקבוע ההיסטורי במקום נוסח משלו")
+        clash = seen.get(got)
+        assert clash is None, f"{etype} ו-{clash} חולקים את אותו נוסח"
+        seen[got] = etype
+    print(f"✓ כל {len(_LIBRARY_BY_TYPE)} הסוגים — נוסח הזמנה ייחודי לכל אחד")
 
 
 def test_all_types_full_render_no_leftover_tokens():
@@ -163,7 +172,10 @@ def test_get_template_returns_per_type_default():
     brit_default = messaging.default_template_for("brit")
     business_default = messaging.default_template_for("business")
 
-    assert wedding_default is messaging.DEFAULT_TEMPLATE, "חתונה חייבת identity"
+    from app.message_library import DEFAULT_INVITATION_BY_TYPE
+
+    assert wedding_default is DEFAULT_INVITATION_BY_TYPE["wedding"], (
+        "חתונה חייבת identity לנוסח המפורש שלה")
     assert bar_default != wedding_default, "בר מצווה חייבת default שונה"
     assert brit_default != wedding_default, "ברית חייבת default שונה"
     assert business_default != wedding_default, "עסקי חייב default שונה"
@@ -183,9 +195,9 @@ def test_saved_template_never_replaced_by_fallback():
 
 
 if __name__ == "__main__":
-    test_wedding_null_message_template_byte_identity()
+    test_wedding_null_message_template_uses_the_explicit_default()
     test_wedding_saved_old_syntax_template_unchanged()
-    test_non_wedding_types_use_library_templates()
+    test_every_type_gets_its_own_distinct_default()
     test_all_types_full_render_no_leftover_tokens()
     test_bar_mitzvah_single_host_names_no_orphan_vav()
     test_brit_single_host_names_no_orphan_vav()

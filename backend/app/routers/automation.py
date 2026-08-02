@@ -107,7 +107,10 @@ def get_message_library(event: models.Event = Depends(_access)):
             category=m["category"],
             style=m["style"],
             name=m["name"],
-            body=m["body"],
+            # הטוקנים מתורגמים לשפת סוג האירוע — אותה ספרייה משרתת גם בר
+            # וגם בת מצווה, והנוסח נכתב בטוקן קנוני אחד. בלי התרגום כאן
+            # החוגג היה בוחר נוסח וקורא בו "[שמות בעלי האירוע]".
+            body=messaging.localize_tokens(m["body"], event.event_type),
         )
         for i, m in enumerate(library)
     ]
@@ -134,7 +137,10 @@ def list_templates(
     # לערוך את ההזמנה (ולבחור מהספרייה) עוד לפני השליחה הראשונה. idempotent:
     # לא מפעיל את המסלול, לא מדליק את הטיימר, ולא שולח דבר.
     result = rsvp_track.provision_rsvp_track(db, event)
-    if result["templates_created"] or result["rules_created"]:
+    # ``templates_synced`` = תבניות ברירת מחדל שרועננו לנוסח הנכון לסוג
+    # האירוע. גם הן דורשות commit, אחרת הרענון היה נזרק בסוף הבקשה.
+    if (result["templates_created"] or result["rules_created"]
+            or result["templates_synced"]):
         db.commit()
     return _templates(db, event.id)
 

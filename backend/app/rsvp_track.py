@@ -86,9 +86,46 @@ def _body_for_event(event: models.Event, stage: str, veya_body: str) -> str:
     שאר הסוגים מקבלים את הנוסח שנכתב במיוחד לסוג שלהם ב-``message_library``;
     אם אין התאמה לשלב, נופלים בעדינות חזרה לגוף הגלובלי.
     """
+    from app import messaging
     from app.message_library import default_body_for
 
-    return default_body_for(event.event_type, stage) or veya_body
+    body = default_body_for(event.event_type, stage)
+    if body is None:
+        return veya_body
+    # מתרגמים את הטוקנים לשפת הסוג לפני השמירה, כדי שהחוגג יראה בעורך
+    # "[שם החוגג]" ולא "[שמות בעלי האירוע]" — ניסוח זוגי באירוע מארח יחיד.
+    return messaging.localize_tokens(body, event.event_type)
+
+
+def _known_default_bodies(db: Session) -> set[str]:
+    """כל נוסח שהמערכת *עצמה* הקצתה אי-פעם, בכל סוג אירוע ובכל שלב.
+
+    משמש לזיהוי "התבנית הזו לא נערכה ע"י הזוג" בלי עמודה נוספת בסכימה:
+    אם הגוף השמור זהה לאחד מהנוסחים כאן — הוא ברירת מחדל שאיש לא נגע בה,
+    ולכן מותר לרענן אותו. אם הוא שונה — הזוג כתב אותו, ולא נוגעים.
+
+    האוסף כולל בכוונה גם את גופי ה-``VeyaTemplate`` *הנוכחיים* (שהאדמין
+    יכול לערוך, והם גם מה ששמור אצל אירועים ותיקים) וגם את כל נוסחי
+    הספרייה בכל צורותיהם — לפני ואחרי תרגום הטוקנים לשפת הסוג.
+    """
+    from app import messaging
+    from app.message_library import (
+        DEFAULT_INVITATION_BY_TYPE, _LIBRARY_BY_TYPE, GENERIC_LIBRARY,
+    )
+
+    known = {vt.body for vt in _active_veya_templates(db) if vt.body}
+    known.add(messaging.DEFAULT_TEMPLATE)
+    known.update(DEFAULT_INVITATION_BY_TYPE.values())
+
+    libraries = list(_LIBRARY_BY_TYPE.items()) + [(None, GENERIC_LIBRARY)]
+    for etype, entries in libraries:
+        for entry in entries:
+            body = entry.get("body", "")
+            if not body:
+                continue
+            known.add(body)
+            known.add(messaging.localize_tokens(body, etype))
+    return known
 
 
 def provision_rsvp_track(db: Session, event: models.Event) -> dict:
@@ -98,8 +135,15 @@ def provision_rsvp_track(db: Session, event: models.Event) -> dict:
     הגלובליות קובעות אילו שלבים קיימים ואיך הם נקראים, וסוג האירוע קובע איך
     ההודעה מנוסחת.
 
-    מחזיר {"templates_created": n, "rules_created": m}. לא עושה commit —
-    הקורא אחראי לכך (כדי לאגד עם פעולות נוספות באותה טרנזקציה).
+    *סנכרון מחדש:* תבנית שכבר קיימת אך גופה עדיין זהה לאחת מברירות המחדל
+    המוכרות (ראו ``_known_default_bodies``) מתרעננת לנוסח הנכון לסוג האירוע
+    הנוכחי. בלי זה, כל אירוע שנוצר פעם אחת היה קפוא לנצח על הנוסח שקיבל
+    ביום הראשון — גם אחרי שיפור הנוסחים, וגם אחרי שהזוג שינה את סוג האירוע.
+    תבנית שהזוג ערך בפועל (הגוף שונה מכל ברירת מחדל) לא נוגעים בה.
+
+    מחזיר {"templates_created": n, "rules_created": m, "templates_synced": k}.
+    לא עושה commit — הקורא אחראי לכך (כדי לאגד עם פעולות נוספות באותה
+    טרנזקציה).
     """
     veya_by_stage = _default_templates_by_stage(db)
 
@@ -112,16 +156,20 @@ def provision_rsvp_track(db: Session, event: models.Event) -> dict:
             )
         ).all()
     }
+    # נטען רק אם יש בכלל תבנית קיימת לבדוק מולה.
+    known_defaults: set[str] | None = None
     stage_template_id: dict[str, int] = {}
     templates_created = 0
+    templates_synced = 0
     for stage, vt in veya_by_stage.items():
         existing = existing_templates.get(vt.name)
+        want_body = _body_for_event(event, stage, vt.body)
         if existing is None:
             mt = models.MessageTemplate(
                 event_id=event.id,
                 name=vt.name,
                 kind=STAGE_TO_KIND.get(stage, "custom"),
-                body=_body_for_event(event, stage, vt.body),
+                body=want_body,
             )
             db.add(mt)
             db.flush()
@@ -130,6 +178,12 @@ def provision_rsvp_track(db: Session, event: models.Event) -> dict:
             templates_created += 1
         else:
             stage_template_id[stage] = existing.id
+            if existing.body != want_body:
+                if known_defaults is None:
+                    known_defaults = _known_default_bodies(db)
+                if existing.body in known_defaults:
+                    existing.body = want_body
+                    templates_synced += 1
 
     # חוקי אוטומציה קיימים של האירוע לפי שם — למניעת יצירה כפולה.
     existing_rule_names = {
@@ -164,7 +218,11 @@ def provision_rsvp_track(db: Session, event: models.Event) -> dict:
         rules_created += 1
 
     db.flush()
-    return {"templates_created": templates_created, "rules_created": rules_created}
+    return {
+        "templates_created": templates_created,
+        "rules_created": rules_created,
+        "templates_synced": templates_synced,
+    }
 
 
 def invitation_template_body(db: Session, event: models.Event) -> str:

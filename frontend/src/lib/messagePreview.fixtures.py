@@ -56,9 +56,12 @@ def browser_sample(ev: FakeEvent) -> dict:
         "{{event_name}}": hosts, "{{couple_names}}": hosts,
         "[שמות בעלי האירוע]": hosts, "[שמות בני הזוג]": hosts,
         "[שם החוגג]": hosts, "[שם החוגגת]": hosts, "[שם בעל השמחה]": hosts,
+        "[שם המשפחה]": hosts, "[שם החברה]": hosts, "[שם האירוע]": hosts,
+        "[משפחת התינוק]": hosts,   # כינוי ותיק
         "{{groom_name}}": ev.groom_name, "[שם החתן]": ev.groom_name,
         "{{bride_name}}": ev.bride_name, "[שם הכלה]": ev.bride_name,
         "{{groom_parents_line}}": gp, "[הורי החתן]": gp, "[הורי החוגג]": gp,
+        "[משפחת החוגג]": gp, "[משפחת החוגגת]": gp,
         "{{bride_parents_line}}": bp, "[הורי הכלה]": bp,
         "{{celebration}}": terms.celebration, "[האירוע]": terms.celebration,
         "{{celebration_of}}": terms.celebration_construct,
@@ -82,6 +85,22 @@ def browser_sample(ev: FakeEvent) -> dict:
 def _date(ev: FakeEvent) -> str:
     from app import automation
     return automation.event_date_display(ev)
+
+
+def _assert_tokens_known(body: str, sample: dict, tag: str) -> None:
+    """כל טוקן שמופיע בנוסח חייב להיות מוכר למפת הדפדפן.
+
+    בלי הבדיקה הזו היה נוצר עיוור: טוקן שחסר *בשני* הצדדים נשאר כטקסט
+    גולמי בשניהם, ההשוואה עוברת — והמוזמן מקבל "[משפחת החוגג]" בהודעה.
+    """
+    import re
+
+    for tok in re.findall(r"\[[^\[\]\n]{1,30}\]", body):
+        if tok not in sample:
+            raise AssertionError(
+                f"{tag}: הטוקן {tok} אינו במפת הדוגמה של הדפדפן "
+                f"(buildSampleTokens ב-messagePreview.ts)"
+            )
 
 
 def _normalize_links(text: str, ev: FakeEvent) -> str:
@@ -121,19 +140,24 @@ def main() -> None:
     for etype in lib._LIBRARY_BY_TYPE:
         for sname, kw in SCENARIOS:
             ev = FakeEvent(event_type=etype, **kw)
-            samples.append(browser_sample(ev))
+            sample = browser_sample(ev)
+            samples.append(sample)
             sample_id = len(samples) - 1
             values = messaging.event_values(ev)
             for entry in lib.entries_for(etype):
+                # בודקים את הגוף *המתורגם* — זה מה שהמשתמש עורך ורואה,
+                # ולכן זה מה שהתצוגה המקדימה צריכה לדעת לרנדר.
+                body = messaging.localize_tokens(entry["body"], etype)
+                _assert_tokens_known(body, sample, f"{etype}/{entry['name']}")
                 expected = messaging.render_automation_template(
-                    entry["body"], guest_name=GUEST,
+                    body, guest_name=GUEST,
                     link=RSVP, table_number=int(TABLE), guest_count=int(SEATS),
                     **values,
                 )
                 expected = _normalize_links(expected, ev)
                 out.append({
                     "name": f"{etype}/{sname}/{entry['name']}",
-                    "body": entry["body"],
+                    "body": body,
                     "sample_id": sample_id,
                     "expected": expected,
                 })
