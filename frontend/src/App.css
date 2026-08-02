@@ -3418,11 +3418,13 @@ td.notes.seating {
 }
 /* סרגל פעולות צף — מופיע ברגע הבחירה, בלי לפתוח שום חלון. אותו מיקום
    ועיצוב כמו .element-toolbar (מעל האובייקט, מיושר למרכז) כדי ששולחנות
-   ואלמנטים יתנהגו אחיד. תפוס z-index גבוה מהידית (8) כדי לשבת מעליה
-   כשהם קרובים, אבל עדיין הרבה מתחת לגיליון (70/71) כשהוא כן נפתח. */
+   ואלמנטים יתנהגו אחיד. z-index גבוה מהידית (8), ולכן חייב לשבת *מעל*
+   טווח הידית (top:-28px עד ~-2px כולל הקו המחבר) ולא עליה — אחרת הידית
+   היחידה לסיבוב שולחן נעלמת מתחת לסרגל. עדיין הרבה מתחת לגיליון (70/71)
+   כשהוא כן נפתח. */
 .table-toolbar {
   position: absolute;
-  bottom: calc(100% + 10px);
+  bottom: calc(100% + 34px);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -8746,7 +8748,7 @@ td.notes.seating {
      מוכפל גם הוא ב-1/scale, כדי שהרווח למעלה יישאר קבוע בפיקסלים על
      המסך במקום להצטמצם יחד עם שאר האולם. */
   .hm-canvas .table-toolbar {
-    bottom: calc(100% + 10px / var(--hm-s, 1));
+    bottom: calc(100% + 34px / var(--hm-s, 1));
     transform: translateX(-50%) scale(calc(1 / var(--hm-s, 1)));
     transform-origin: bottom center;
   }
@@ -9061,18 +9063,6 @@ td.notes.seating {
     padding-top: 6px;
     margin-top: 6px;
     border-top: 1px solid var(--line-2);
-  }
-
-  /* ---- זווית השולחן: מחוון + זוויות מהירות ---- */
-  .hm-rotation-range {
-    width: 100%;
-    accent-color: var(--gold);
-  }
-  .hm-rotation-hint {
-    margin: 4px 0 0;
-    font-size: 11.5px;
-    line-height: 1.45;
-    color: var(--muted);
   }
 
   /* ---- "הושבה בקליק": הפעולה המרכזית + דוח התוצאה ---- */
