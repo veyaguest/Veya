@@ -618,6 +618,8 @@ export const strings = {
 
     // סיבוב שולחן (דרישה 9)
     rotationLabel: 'זווית השולחן',
+    rotateOnMap: 'סיבוב על המפה',
+    rotateOnMapHint: 'סוגר את החלון ומאפשר לגרור את ידית הסיבוב שמעל השולחן.',
     rotationReset: 'איפוס',
     rotationHint: 'גררו את הידית שמעל השולחן, או בחרו זווית מהירה.',
   },
