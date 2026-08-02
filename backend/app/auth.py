@@ -17,6 +17,7 @@ import bcrypt
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import PyJWKClient
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
@@ -41,13 +42,39 @@ if os.getenv("VEYA_ENV", "").strip().lower() == "production" and JWT_SECRET == _
 # אימייל שיקבל הרשאת אדמין אוטומטית בהרשמה (אופציונלי).
 ADMIN_EMAIL = (os.getenv("ADMIN_EMAIL", "") or "").strip().lower()
 
-# מפתח החתימה של Supabase — דרוש לאימות טוקני OAuth (התחברות עם גוגל).
-# מגיע מ-Supabase Dashboard → Project Settings → API → JWT Settings → JWT Secret.
+# כתובת פרויקט ה-Supabase — דרושה לאימות טוקני OAuth (התחברות עם גוגל).
+# מגיע מ-Supabase Dashboard → Project Settings → API → Project URL
+# (למשל https://xxxx.supabase.co, בלי / בסוף).
+#
+# חשוב: הפרויקט הזה עבר ל"JWT Signing Keys" של Supabase — טוקנים חתומים
+# ב-ES256 (א-סימטרי) דרך מפתח פרטי שרק Supabase מחזיקה, לא ב-HS256 עם סוד
+# משותף (כמו שהיה בעבר, ואיך שהקוד כאן עבד במקור — זה בדיוק מה שגרם ל-
+# "טוקן התחברות לא תקין": jwt.decode עם algorithms=["HS256"] דוחה כל טוקן
+# עם alg=ES256 מיידית, לפני שבכלל מנסה לאמת חתימה). האימות הנכון: שולפים
+# את המפתח הציבורי המתאים (לפי kid בכותרת הטוקן) מ-JWKS הציבורי של
+# Supabase (/.well-known/jwks.json) ומאמתים מולו — בדיוק כמו שכל ספריית
+# JWT-verification סטנדרטית עושה מול idP חיצוני. אומת בפועל: הרצנו
+# curl ישיר מול ה-JWKS endpoint וראינו {"alg":"ES256","kty":"EC",...}.
+#
 # אם ריק, /auth/google/exchange יחזיר 503 (התחברות גוגל כבויה) — כל שאר
 # האימות (אימייל+סיסמה) ממשיך לעבוד ללא שינוי.
-SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "").strip()
-SUPABASE_JWT_ALGORITHM = "HS256"
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
+SUPABASE_JWT_ALGORITHM = "ES256"
 SUPABASE_JWT_AUDIENCE = "authenticated"
+
+_supabase_jwks_client: Optional[PyJWKClient] = None
+
+
+def _get_supabase_jwks_client() -> Optional[PyJWKClient]:
+    """מחזיר PyJWKClient לפרויקט ה-Supabase (עצל, נבנה פעם אחת). ה-client
+    שומר cache פנימי של המפתחות (ברירת מחדל: 300 שניות) כדי לא לפנות
+    ל-Supabase בכל בקשה."""
+    global _supabase_jwks_client
+    if _supabase_jwks_client is None and SUPABASE_URL:
+        _supabase_jwks_client = PyJWKClient(
+            f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json"
+        )
+    return _supabase_jwks_client
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -241,20 +268,25 @@ def get_current_admin(
 # ---------------------------------------------------------------------------
 
 def verify_supabase_token(token: str) -> dict:
-    """מאמת טוקן Supabase (HS256, aud='authenticated') ומחזיר את ה-payload.
+    """מאמת טוקן Supabase דרך JWKS (ES256 א-סימטרי, aud='authenticated')
+    ומחזיר את ה-payload.
 
     זורק HTTPException(401) על כל טוקן לא-תקין/פגוע/פג-תוקף — הודעה כללית
-    בכוונה, כדי לא לחשוף פרטים על סיבת הכשל.
+    בכוונה, כדי לא לחשוף פרטים על סיבת הכשל. גם כשל בשליפת ה-JWKS עצמו
+    (רשת/Supabase לא זמין) מטופל כ-401 באותה הודעה — לא 500, כי מבחינת
+    הקורא זו עדיין "לא הצלחנו לאמת את הזהות שלך", לא תקלת שרת פנימית.
     """
-    if not SUPABASE_JWT_SECRET:
+    client = _get_supabase_jwks_client()
+    if client is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="התחברות עם גוגל אינה מוגדרת בשרת",
         )
     try:
+        signing_key = client.get_signing_key_from_jwt(token)
         return jwt.decode(
             token,
-            SUPABASE_JWT_SECRET,
+            signing_key.key,
             algorithms=[SUPABASE_JWT_ALGORITHM],
             audience=SUPABASE_JWT_AUDIENCE,
         )

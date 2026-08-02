@@ -109,7 +109,7 @@ def google_exchange(
     """מקבל טוקן Supabase (אחרי OAuth של גוגל בצד-לקוח) ומחזיר טוקן פנימי שלנו.
 
     המסלול:
-    1. מאמת את הטוקן מול SUPABASE_JWT_SECRET (HS256, aud='authenticated').
+    1. מאמת את הטוקן מול ה-JWKS הציבורי של Supabase (ES256, aud='authenticated').
     2. שולף email + display_name מה-payload.
     3. מוצא משתמש קיים לפי email, או יוצר חדש (הופך לאדמין רק אם ראשון /
        תואם ADMIN_EMAIL — בדיוק כמו register רגיל).

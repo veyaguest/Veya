@@ -629,8 +629,9 @@ class LoginRequest(BaseModel):
 class GoogleExchangeRequest(BaseModel):
     """טוקן access של Supabase (מה-Frontend, אחרי OAuth של גוגל).
 
-    ה-Backend מוודא אותו מול SUPABASE_JWT_SECRET, מוציא ממנו email + user_metadata,
-    ומחזיר טוקן פנימי שלנו (TokenResponse) — משם כל המערכת עובדת כרגיל.
+    ה-Backend מוודא אותו מול ה-JWKS הציבורי של Supabase (SUPABASE_URL), מוציא
+    ממנו email + user_metadata, ומחזיר טוקן פנימי שלנו (TokenResponse) — משם
+    כל המערכת עובדת כרגיל.
     """
     supabase_access_token: str
 
