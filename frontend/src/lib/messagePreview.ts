@@ -28,6 +28,11 @@ const SEPARATORS = /[,·|–—]/
 export function buildSampleTokens(
   event: EventDetails | null,
   guestFullName: string,
+  // מוזמן-דוגמה אמיתי (השולחן שלו כרגע, אם יש) — כשמועבר, [מספר שולחן]
+  // בתצוגה המקדימה משקף שיבוץ אמיתי במקום מספר קבוע, בדיוק כמו בשליחה
+  // בפועל (כולל היעלמות השורה אם המוזמן עדיין לא שובץ). לא מועבר → מספר
+  // קבוע לדוגמה, כמו קודם (למשל כשעוד אין אף מוזמן באירוע).
+  realGuestTableNumber?: number | null,
 ): Record<string, string> {
   const terms = getEventTerms(event?.event_type)
   // דרך hostNames, שמכבד סוג אירוע עם בעל שמחה יחיד — חיבור ידני ב-' ו'
@@ -44,6 +49,12 @@ export function buildSampleTokens(
   // קישורי הניווט נגזרים מהכתובת — בלי כתובת אין ניווט, וגם השורה נעלמת.
   const nav = addr ? 'https://maps.google.com/…' : ''
   const rsvp = 'https://veya.co.il/confirm/…'
+  const tableNumber =
+    realGuestTableNumber === undefined
+      ? '12'
+      : realGuestTableNumber != null
+        ? String(realGuestTableNumber)
+        : ''
 
   return {
     // שם המוזמן (טכני, ידידותי וישן)
@@ -77,7 +88,7 @@ export function buildSampleTokens(
     '{{navigation_link}}': nav, '{{maps_link}}': nav, '[קישור ניווט]': nav,
     '{{waze_link}}': nav, '[קישור וייז]': nav,
     // פרטי המוזמן בשיבוץ
-    '{{table_number}}': '12', '[מספר שולחן]': '12',
+    '{{table_number}}': tableNumber, '[מספר שולחן]': tableNumber,
     '{{guest_count}}': '2', '[כמות מקומות]': '2',
     // ממולא רק בשליחת עדכון אירוע — ריק כאן, ולכן השורה נעלמת.
     '{{update_details}}': '', '[פרטי שינוי]': '',

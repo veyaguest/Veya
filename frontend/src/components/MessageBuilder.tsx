@@ -64,6 +64,9 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
   const [placeholders, setPlaceholders] = useState<TemplatePlaceholder[]>([])
   const [event, setEvent] = useState<EventDetails | null>(null)
   const [sampleGuest, setSampleGuest] = useState('')
+  // השולחן האמיתי של מוזמן-הדוגמה (אם כבר שובץ) — כדי שהתצוגה המקדימה תראה
+  // שיבוץ אמיתי במקום "12" קבוע. undefined = עוד לא נטען / אין מוזמנים.
+  const [sampleGuestTable, setSampleGuestTable] = useState<number | null | undefined>(undefined)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [body, setBody] = useState('')
   const [saving, setSaving] = useState(false)
@@ -102,6 +105,9 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
       setPlaceholders(phs)
       setEvent(ev)
       setSampleGuest(g.items[0]?.full_name || 'דנה כהן')
+      // אין מוזמנים בכלל → נשאר undefined (מספר-דוגמה קבוע, כמו שם-הדוגמה
+      // 'דנה כהן'). יש מוזמן → השולחן האמיתי שלו, גם אם null (עוד לא שובץ).
+      setSampleGuestTable(g.items[0] ? g.items[0].table_number : undefined)
       // במצב "הזמנה בלבד" נבחרת אוטומטית תבנית ההזמנה (ולא הראשונה שבמיון).
       const firstInvite = sorted.find((t) => t.kind === 'invitation')
       setSelectedId(
@@ -138,8 +144,8 @@ export function MessageBuilder({ invitationOnly = false }: { invitationOnly?: bo
   // ערכי דוגמה לכל טוקן שהמערכת מכירה — מקור משותף עם מסך שליחת ההזמנות,
   // כדי ששני המסכים יראו בדיוק את אותה הודעה.
   const sampleByToken = useMemo(
-    () => buildSampleTokens(event, sampleGuest || 'דנה כהן'),
-    [event, sampleGuest],
+    () => buildSampleTokens(event, sampleGuest || 'דנה כהן', sampleGuestTable),
+    [event, sampleGuest, sampleGuestTable],
   )
 
   // תצוגה מקדימה נאמנה לשליחה בפועל (כולל מחיקת שורות ריקות ומפרידים תלויים).
