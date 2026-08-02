@@ -1617,10 +1617,18 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // התאפס או שה-click מכוון לאלמנט אחר — כאן אנחנו בולעים את ה-click הבא בשלב
   // ה-capture (לפני שהוא מגיע ל-onTableClick/onElementClick), וכך גרירה לעולם
   // לא פותחת את חלון העריכה. הגנת timeout מסירה את המאזין אם משום מה אין click.
+  //
+  // חשוב: בולעים רק click שהיעד שלו בתוך .hall-world (שולחן/אלמנט על המפה
+  // עצמה) — לא כל click בעמוד. בלי ההגבלה הזו, גרירת שולחן ואז הקשה מיידית
+  // על כפתור מחוץ למפה (כמו ה-FAB "+" להוספת שולחן) הייתה נבלעת גם היא,
+  // כי המאזין רשום על window ותופס את ה-click הבא בכל מקום — בדיוק הבאג
+  // שדווח כ"כפתור הפלוס לפעמים לא מגיב".
   function suppressNextClick() {
     const handler = (ev: MouseEvent) => {
-      ev.stopPropagation()
-      ev.preventDefault()
+      if (worldRef.current?.contains(ev.target as Node)) {
+        ev.stopPropagation()
+        ev.preventDefault()
+      }
       window.removeEventListener('click', handler, true)
       clearTimeout(timer)
     }
