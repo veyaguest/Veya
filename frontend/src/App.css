@@ -1828,11 +1828,10 @@ td.notes.seating {
   align-items: center;
   text-align: center;
   box-shadow: var(--shadow-card);
-  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition: border-color var(--transition-fast);
 }
 .stat-card:hover {
-  box-shadow: var(--shadow-card-hover);
-  transform: translateY(-1px);
+  border-color: var(--gold-light);
 }
 .stat-card.ok {
   border-color: rgba(47, 158, 95, 0.3);
@@ -2009,10 +2008,10 @@ td.notes.seating {
 .dash-event {
   background: var(--cream);
   border: 1px solid var(--line);
-  border-radius: var(--radius-xl);
-  padding: 28px 32px;
-  margin-bottom: 28px;
-  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-l);
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  box-shadow: none;
   position: relative;
 }
 .event-view {
@@ -2398,8 +2397,8 @@ td.notes.seating {
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
-  padding: 36px 32px 32px;
-  margin-bottom: 28px;
+  padding: 28px 28px 24px;
+  margin-bottom: 20px;
   box-shadow: var(--shadow-card);
 }
 .dash-hero-chart {
@@ -2461,13 +2460,12 @@ td.notes.seating {
 .donut-legend {
   list-style: none;
   margin: 10px 0 0;
-  padding: 16px 24px;
+  padding: 12px 0 0;
   display: flex;
   flex-flow: row wrap;
   justify-content: center;
-  gap: 12px 32px;
-  background: var(--surface-hi);
-  border-radius: var(--radius-m);
+  gap: 10px 28px;
+  border-top: 1px solid var(--line);
   width: 100%;
   max-width: 440px;
   box-sizing: border-box;
@@ -2627,6 +2625,29 @@ td.notes.seating {
 /* --- יומן פעילות --- */
 .dash-page .audit-action {
   font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .dash-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .dash-panels {
+    grid-template-columns: 1fr;
+  }
+  .dash-event {
+    padding: 20px;
+  }
+  .dash-hero {
+    padding: 24px 16px 20px;
+  }
+  .dash-panel {
+    padding: 18px 20px;
+  }
+  .donut-wrap {
+    width: 220px;
+    height: 220px;
+  }
 }
 
 /* ---- מפת אולם (שלב 7) — עורך בסגנון Figma/Miro: בהיר, נקי, מקצועי ---- */
@@ -4353,10 +4374,10 @@ td.notes.seating {
 .reserve-card {
   background: var(--cream);
   border: 1px solid var(--line);
-  border-radius: var(--radius-xl);
-  padding: 22px 26px;
-  margin-bottom: 24px;
-  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-l);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: none;
 }
 .reserve-card-head {
   display: flex;
@@ -4416,6 +4437,12 @@ td.notes.seating {
   color: var(--muted);
   text-align: center;
   line-height: 1.3;
+}
+@media (max-width: 700px) {
+  .reserve-card-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
 }
 /* רשימת המוזמנים שיושבים בשולחן — מוצגת בפאנל הצד (במקום שמות על השולחן
    עצמו), כך שהמפה נשארת נקייה כמו העיצוב. אפשר לגרור לשולחן אחר או להסיר. */
@@ -6459,9 +6486,9 @@ td.notes.seating {
 /* ---- יומן פעילות בדשבורד ---- */
 .audit-panel {
   grid-column: 1 / -1;
-  padding: 24px 28px;
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-card);
+  padding: 20px 24px;
+  border-radius: var(--radius-l);
+  box-shadow: none;
   background: var(--cream);
   border: 1px solid var(--line);
 }
