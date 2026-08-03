@@ -255,11 +255,16 @@ export function OnboardingWizard({ onCreated }: Props) {
               <span className="event-image-label">תמונת ההזמנה</span>
               {form.invite_image ? (
                 <div className="event-image-has">
-                  <img
-                    className="event-image-thumb"
-                    src={form.invite_image}
-                    alt="תצוגה מקדימה של ההזמנה"
-                  />
+                  <div className="invite-frame">
+                    <div className="invite-frame-mat">
+                      <img
+                        className="event-image-thumb"
+                        src={form.invite_image}
+                        alt="תצוגה מקדימה של ההזמנה"
+                      />
+                    </div>
+                    <span className="invite-frame-caption">{terms.inviteLabel}</span>
+                  </div>
                   <button
                     type="button"
                     className="btn-text"

@@ -220,19 +220,15 @@ export function DashboardPage({ onNavigate }: Props) {
               <span className="event-image-label">{t.imageLabel}</span>
               {form.invite_image ? (
                 <div className="event-image-has">
-                  <div className="phone-mock">
-                    <div className="phone-mock-notch" />
-                    <div className="phone-mock-bubble">
+                  <div className="invite-frame">
+                    <div className="invite-frame-mat">
                       <img
                         className="event-image-thumb"
                         src={mediaUrl(form.invite_image)}
                         alt={t.imageAlt}
                       />
-                      <div className="phone-mock-meta">
-                        <span>{terms.inviteLabel}</span>
-                        <span className="phone-mock-check">✓✓</span>
-                      </div>
                     </div>
+                    <span className="invite-frame-caption">{terms.inviteLabel}</span>
                   </div>
                   <button
                     type="button"
@@ -268,20 +264,11 @@ export function DashboardPage({ onNavigate }: Props) {
         ) : (
           <div className="event-view">
             {event?.invite_image && (
-              <div className="phone-mock">
-                <div className="phone-mock-notch" />
-                <div className="phone-mock-bubble">
-                  <img
-                    className="event-invite-img"
-                    src={mediaUrl(event.invite_image)}
-                    alt={terms.inviteLabel}
-                  />
-                  <div className="phone-mock-meta">
-                    <span>{terms.inviteLabel}</span>
-                    <span className="phone-mock-check">✓✓</span>
-                  </div>
-                </div>
-              </div>
+              <img
+                className="event-invite-img"
+                src={mediaUrl(event.invite_image)}
+                alt={terms.inviteLabel}
+              />
             )}
             <div className="event-view-text">
               <h2 className="event-couple">{couple ?? terms.defaultTitle}</h2>
