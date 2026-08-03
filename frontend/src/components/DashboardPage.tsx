@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getEvent, getReserveSummary, getStats, mediaUrl, readAudit, updateEvent } from '../api'
-import type { AuditLogRow, DashboardStats, EventDetails, ReserveSummary } from '../types'
+import { getEvent, getStats, mediaUrl, updateEvent } from '../api'
+import type { DashboardStats, EventDetails } from '../types'
 import type { ReadinessPage } from '../readiness'
 import { SeatingPrep } from './SeatingPrep'
 import { VenueAutocomplete } from './VenueAutocomplete'
@@ -13,6 +13,51 @@ interface Props {
 }
 
 const t = strings.dashboard
+
+function NextAction({
+  stats,
+  onNavigate,
+}: {
+  stats: DashboardStats
+  onNavigate?: (page: ReadinessPage) => void
+}) {
+  let text: string
+  let cta: string
+  let target: ReadinessPage
+
+  if (stats.invitations_sent === 0) {
+    text = `${stats.total_guests} מוזמנים ברשימה — עדיין לא נשלחו הזמנות`
+    cta = 'שליחת הזמנות'
+    target = 'guests'
+  } else if (stats.pending > stats.confirmed + stats.declined) {
+    text = `${stats.pending} מוזמנים עדיין לא ענו`
+    cta = 'מעקב תשובות'
+    target = 'guests'
+  } else if (stats.pending_clarifications > 0) {
+    text = `${stats.pending_clarifications} הבהרות ממתינות לטיפול`
+    cta = 'לטפל בהבהרות'
+    target = 'hall'
+  } else if (stats.seated_guests < stats.confirmed) {
+    const unseated = stats.confirmed - stats.seated_guests
+    text = `${unseated} אורחים מאושרים עדיין בלי מקום בשולחן`
+    cta = 'סידור הושבה'
+    target = 'hall'
+  } else {
+    return null
+  }
+
+  return (
+    <div className="next-action">
+      <p className="next-action-text">{text}</p>
+      <button
+        className="next-action-cta"
+        onClick={() => onNavigate?.(target)}
+      >
+        {cta}
+      </button>
+    </div>
+  )
+}
 
 export function DashboardPage({ onNavigate }: Props) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -31,15 +76,13 @@ export function DashboardPage({ onNavigate }: Props) {
   })
   // האם הבחירה כבר ננעלה (בלתי-הפיכה) — נטען מהשרת.
   const [commitLocked, setCommitLocked] = useState(false)
-  const [audit, setAudit] = useState<AuditLogRow[]>([])
   const [error, setError] = useState('')
 
   const refresh = useCallback(async () => {
     try {
-      const [s, e, a] = await Promise.all([getStats(), getEvent(), readAudit(15)])
+      const [s, e] = await Promise.all([getStats(), getEvent()])
       setStats(s)
       setEvent(e)
-      setAudit(a)
       setForm({
         groom_name: e.groom_name,
         bride_name: e.bride_name,
@@ -116,10 +159,12 @@ export function DashboardPage({ onNavigate }: Props) {
     ? formatWhen(event.event_date, event.event_time)
     : ''
 
+  const countdown = event?.event_date ? daysUntil(event.event_date) : null
+
   return (
     <div className="dash-page">
-      {/* ---- כותרת האירוע ---- */}
-      <div className="dash-event">
+      {/* ---- Hero: שמות + סוג אירוע + תאריך + ספירה לאחור ---- */}
+      <div className="dash-hero-section">
         {editing ? (
           <div className="event-edit">
             <div className="event-fields">
@@ -263,22 +308,19 @@ export function DashboardPage({ onNavigate }: Props) {
           </div>
         ) : (
           <div className="event-view">
-            {event?.invite_image && (
-              <img
-                className="event-invite-img"
-                src={mediaUrl(event.invite_image)}
-                alt={terms.inviteLabel}
-              />
-            )}
-            <div className="event-view-text">
-              <h2 className="event-couple">{couple ?? terms.defaultTitle}</h2>
-              <p className="event-venue">
-                {event?.venue_name || t.venueFallback}
+            <h2 className="event-couple">{couple ?? terms.defaultTitle}</h2>
+            <p className="event-meta">
+              {terms.icon} {terms.label}
+              {event?.venue_name ? ` · ${event.venue_name}` : ''}
+            </p>
+            {when && <p className="event-when">{when}</p>}
+            {countdown !== null && countdown >= 0 && (
+              <p className="event-countdown">
+                {countdown === 0 ? 'היום!' : `עוד ${countdown} ימים`}
               </p>
-              {when && <p className="event-when">{when}</p>}
-            </div>
-            <button className="btn-ghost" onClick={() => setEditing(true)}>
-              {t.editButton}
+            )}
+            <button className="btn-text dash-edit-link" onClick={() => setEditing(true)}>
+              ✎ עריכה
             </button>
           </div>
         )}
@@ -286,13 +328,9 @@ export function DashboardPage({ onNavigate }: Props) {
 
       {error && <p className="form-error">{error}</p>}
 
-      {/* ---- תמונת מצב ראשית — אישורי הגעה (העוגה הגדולה, החלק החשוב) ---- */}
-      <div className="dash-hero">
-        <h3 className="dash-hero-title">{t.rsvpTitle}</h3>
-        <p className="dash-hero-sub">
-          {stats ? t.rsvpSub(stats.confirmed_people, stats.total_people) : t.loadingData}
-        </p>
-        <div className="dash-hero-chart">
+      {/* ---- RSVP Control Center — הדונאט + מקרא לצידו ---- */}
+      <div className="rsvp-center">
+        <div className="rsvp-center-donut">
           <Donut
             segments={[
               { label: t.segConfirmed, value: stats?.confirmed ?? 0, color: 'var(--green)' },
@@ -304,7 +342,7 @@ export function DashboardPage({ onNavigate }: Props) {
             centerLabel={t.centerLabel}
           />
         </div>
-        <ul className="donut-legend">
+        <ul className="rsvp-center-legend">
           <LegendRow color="var(--green)" label={t.segConfirmed} value={stats?.confirmed ?? 0} />
           <LegendRow color="var(--gold)" label={t.legendMaybe} value={stats?.maybe ?? 0} />
           <LegendRow color="var(--error)" label={t.segDeclined} value={stats?.declined ?? 0} />
@@ -312,36 +350,14 @@ export function DashboardPage({ onNavigate }: Props) {
         </ul>
       </div>
 
-      {/* ---- הכנה להושבה (אחרי העוגה, לפני הפעילות האחרונה) ---- */}
+      {/* ---- Next Action — הדבר הכי חשוב לעשות עכשיו ---- */}
+      {stats && stats.total_guests > 0 && (
+        <NextAction stats={stats} onNavigate={onNavigate} />
+      )}
+
+      {/* ---- VEYA Assistant — מלווה אישי להושבה ---- */}
       {stats && stats.total_guests > 0 && (
         <SeatingPrep stats={stats} onNavigate={onNavigate} />
-      )}
-
-      {/* ---- כרטיס רזרבה (מוצג רק אחרי שיש שיבוץ) ---- */}
-      <ReserveCard onNavigate={onNavigate} />
-
-      {/* ---- התראת הבהרות (פעולה נדרשת) ---- */}
-      {stats && stats.pending_clarifications > 0 && (
-        <p className="dash-alert">{t.clarificationsAlert(stats.pending_clarifications)}</p>
-      )}
-
-      {/* ---- פעילות אחרונה ---- */}
-      {audit.length > 0 && (
-        <div className="dash-panel audit-panel">
-          <h3 className="clar-title">{t.auditTitle}</h3>
-          <span className="clar-sub">{t.auditSub}</span>
-          <ul className="audit-list">
-            {audit.map((a) => (
-              <li key={a.id} className="audit-row">
-                <span className="audit-action">
-                  {t.auditLabels[a.action] ?? a.action}
-                </span>
-                <span className="audit-detail">{a.detail}</span>
-                <span className="audit-time">{formatTime(a.created_at)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
     </div>
   )
@@ -367,16 +383,12 @@ function formatWhen(date: string, time: string): string {
   return parts.join(', ')
 }
 
-/** תאריך+שעה קצרים לשורת יומן. */
-function formatTime(iso: string): string {
-  const d = new Date(iso)
-  if (isNaN(d.getTime())) return iso
-  return d.toLocaleString('he-IL', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+function daysUntil(dateStr: string): number {
+  const target = new Date(dateStr + 'T00:00:00')
+  if (isNaN(target.getTime())) return -1
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return Math.round((target.getTime() - today.getTime()) / 86_400_000)
 }
 
 /** תרשים עוגה (donut) טהור ב-SVG — בלי ספריות חיצוניות, קל ומהיר. */
@@ -446,51 +458,4 @@ function LegendRow({
   )
 }
 
-// כרטיס סקירת הרזרבה בדשבורד — מקומות פנויים, שולחנות רזרבה, וכמה ללא שולחן.
-// מוצג רק אחרי שיש כבר שיבוץ (משובצים או רזרבה מוגדרת), אחרת אין לו מה לומר.
-const rt = strings.dashboard.reserve
-function ReserveCard({ onNavigate }: { onNavigate?: (page: ReadinessPage) => void }) {
-  const [sum, setSum] = useState<ReserveSummary | null>(null)
-  useEffect(() => {
-    getReserveSummary()
-      .then(setSum)
-      .catch(() => {
-        /* שקט — כרטיס לא קריטי */
-      })
-  }, [])
-
-  if (!sum) return null
-  const hasSeating =
-    sum.seated_people > 0 || sum.reserve_seats > 0 || sum.reserve_tables > 0
-  if (!hasSeating) return null
-
-  return (
-    <div className="reserve-card">
-      <div className="reserve-card-head">
-        <h3 className="reserve-card-title">{rt.title}</h3>
-        <button className="reserve-card-cta" onClick={() => onNavigate?.('hall')}>
-          {rt.manage}
-        </button>
-      </div>
-      <div className="reserve-card-stats">
-        <div className="rc-stat">
-          <span className="rc-num">{sum.free_seats_active}</span>
-          <span className="rc-label">{rt.freeSeats}</span>
-        </div>
-        <div className="rc-stat">
-          <span className="rc-num">{sum.reserve_tables}</span>
-          <span className="rc-label">{rt.reserveTables}</span>
-        </div>
-        <div className="rc-stat">
-          <span className="rc-num">{sum.seated_people}</span>
-          <span className="rc-label">{rt.seated}</span>
-        </div>
-        <div className="rc-stat">
-          <span className="rc-num">{sum.unseated_guests}</span>
-          <span className="rc-label">{rt.unseated}</span>
-        </div>
-      </div>
-    </div>
-  )
-}
 
