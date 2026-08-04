@@ -1981,47 +1981,44 @@ td.notes.seating {
 .dash-edit-link:hover {
   opacity: 1;
 }
-/* ---- מוקאפ תמונת הזמנה בהירו ---- */
+/* ---- מוקאפ הודעת WhatsApp בהירו ---- */
 .hero-invite-mockup {
   margin-top: 24px;
+  display: flex;
+  justify-content: center;
 }
-.hero-invite-phone {
+.wa-bubble {
   position: relative;
-  width: 200px;
-  margin: 0 auto;
-  padding: 10px;
-  border-radius: 24px;
-  background: #1a1a1a;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+  max-width: 220px;
+  padding: 4px 4px 6px;
+  background: #d9fdd3;
+  border-radius: 12px 12px 4px 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
-.hero-invite-phone::before {
-  content: '';
-  display: block;
-  width: 60px;
-  height: 6px;
-  margin: 0 auto 8px;
-  border-radius: 3px;
-  background: #333;
-}
-.hero-invite-img {
+.wa-bubble-img {
   display: block;
   width: 100%;
-  border-radius: 14px;
+  border-radius: 8px;
   object-fit: cover;
 }
+.wa-bubble-caption {
+  display: block;
+  padding: 6px 8px 0;
+  font-size: 13px;
+  color: #111b21;
+  line-height: 1.4;
+}
+.wa-bubble-time {
+  display: block;
+  text-align: end;
+  padding: 2px 6px 0;
+  font-size: 11px;
+  color: #667781;
+  direction: ltr;
+}
 @media (max-width: 700px) {
-  .hero-invite-phone {
-    width: 160px;
-    padding: 8px;
-    border-radius: 20px;
-  }
-  .hero-invite-phone::before {
-    width: 48px;
-    height: 5px;
-    margin-bottom: 6px;
-  }
-  .hero-invite-img {
-    border-radius: 12px;
+  .wa-bubble {
+    max-width: 180px;
   }
 }
 /* בורר סוג האירוע (Event-ready) — צ'יפים אלגנטיים, חתונה ברירת מחדל */

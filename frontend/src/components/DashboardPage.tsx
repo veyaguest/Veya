@@ -321,12 +321,14 @@ export function DashboardPage({ onNavigate }: Props) {
             )}
             {event?.invite_image && (
               <div className="hero-invite-mockup">
-                <div className="hero-invite-phone">
+                <div className="wa-bubble">
                   <img
-                    className="hero-invite-img"
+                    className="wa-bubble-img"
                     src={mediaUrl(event.invite_image)}
                     alt={terms.inviteLabel}
                   />
+                  <span className="wa-bubble-caption">{terms.inviteLabel}</span>
+                  <span className="wa-bubble-time">✓✓ {new Date().getHours()}:{String(new Date().getMinutes()).padStart(2, '0')}</span>
                 </div>
               </div>
             )}
