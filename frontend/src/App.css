@@ -2546,6 +2546,28 @@ td.notes.seating {
 .quick-actions-btn {
   margin-top: 8px;
 }
+/* --- מצב "הצעד הבא" הפעיל — כרטיס ממוקד בזהב, כדי שהעין תלך לשם קודם --- */
+.quick-actions-card--focus {
+  background: linear-gradient(135deg, var(--gold-deep), var(--gold));
+  border-color: transparent;
+}
+.quick-actions-card--focus .quick-actions-title {
+  color: #fff;
+}
+.quick-actions-card--focus .quick-actions-desc {
+  color: rgba(255, 255, 255, 0.85);
+}
+.quick-actions-card--focus .next-action-cta {
+  color: var(--gold-deep);
+  background: #fff;
+  border-color: transparent;
+}
+.quick-actions-card--focus .next-action-cta:hover {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--gold-deep);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
 /* ---- KPI Grid — 4 כרטיסי מדד ---- */
 .kpi-grid {
   display: grid;
@@ -2582,6 +2604,21 @@ td.notes.seating {
   font-size: 12px;
   font-weight: 500;
   color: var(--muted);
+}
+.kpi-progress-track {
+  display: block;
+  width: 100%;
+  height: 3px;
+  margin-top: 6px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.kpi-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease-out;
 }
 .dash-loading {
   text-align: center;

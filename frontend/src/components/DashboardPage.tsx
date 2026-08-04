@@ -65,7 +65,7 @@ function QuickActionsCard({
   }
 
   return (
-    <div className="quick-actions-card dash-grid-card">
+    <div className="quick-actions-card quick-actions-card--focus dash-grid-card">
       <span className="quick-actions-icon">✦</span>
       <h3 className="quick-actions-title">{t.nextStepTitle}</h3>
       <p className="quick-actions-desc">{text}</p>
@@ -77,6 +77,12 @@ function QuickActionsCard({
       </button>
     </div>
   )
+}
+
+/** אחוז בין 0–100 עבור פס ההתקדמות הזעיר בכרטיסי ה-KPI, בטוח מחלוקה באפס. */
+function kpiPct(value: number, total: number): number {
+  if (total <= 0) return 0
+  return Math.max(0, Math.min(100, Math.round((value / total) * 100)))
 }
 
 /** שניות עד לתאריך/שעת האירוע (יכול להיות שלילי אם האירוע כבר עבר). */
@@ -465,21 +471,57 @@ export function DashboardPage({ onNavigate }: Props) {
                 <span className="kpi-dot" style={{ background: 'var(--green)' }} />
                 <span className="kpi-num">{stats.confirmed}</span>
                 <span className="kpi-label">{t.kpiConfirmed}</span>
+                <span className="kpi-progress-track">
+                  <span
+                    className="kpi-progress-fill"
+                    style={{
+                      width: `${kpiPct(stats.confirmed, stats.total_guests)}%`,
+                      background: 'var(--green)',
+                    }}
+                  />
+                </span>
               </div>
               <div className="kpi-card">
                 <span className="kpi-dot" style={{ background: 'var(--faint)' }} />
                 <span className="kpi-num">{stats.pending}</span>
                 <span className="kpi-label">{t.kpiPending}</span>
+                <span className="kpi-progress-track">
+                  <span
+                    className="kpi-progress-fill"
+                    style={{
+                      width: `${kpiPct(stats.pending, stats.total_guests)}%`,
+                      background: 'var(--faint)',
+                    }}
+                  />
+                </span>
               </div>
               <div className="kpi-card">
                 <span className="kpi-dot" style={{ background: 'var(--error)' }} />
                 <span className="kpi-num">{stats.declined}</span>
                 <span className="kpi-label">{t.kpiDeclined}</span>
+                <span className="kpi-progress-track">
+                  <span
+                    className="kpi-progress-fill"
+                    style={{
+                      width: `${kpiPct(stats.declined, stats.total_guests)}%`,
+                      background: 'var(--error)',
+                    }}
+                  />
+                </span>
               </div>
               <div className="kpi-card">
                 <span className="kpi-dot" style={{ background: 'var(--gold-light)' }} />
                 <span className="kpi-num">{stats.total_guests - stats.invitations_sent}</span>
                 <span className="kpi-label">{t.kpiNotSent}</span>
+                <span className="kpi-progress-track">
+                  <span
+                    className="kpi-progress-fill"
+                    style={{
+                      width: `${kpiPct(stats.total_guests - stats.invitations_sent, stats.total_guests)}%`,
+                      background: 'var(--gold-light)',
+                    }}
+                  />
+                </span>
               </div>
             </div>
 
