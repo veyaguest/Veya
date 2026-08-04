@@ -321,7 +321,6 @@ export const strings = {
     ctaDesc: 'הרשימה מוכנה — שלחו את ההזמנות ותתחילו לקבל אישורי הגעה.',
     ctaButton: 'שליחת הזמנות',
     invitePlaceholder: 'העלו תמונת הזמנה',
-    loadingData: 'טוען נתונים…',
     emptyTitle: 'הכול מתחיל מכאן',
     emptyDesc: 'הוסיפו מוזמנים כדי לראות את תמונת המצב.',
     emptyCta: 'הוספת מוזמנים',

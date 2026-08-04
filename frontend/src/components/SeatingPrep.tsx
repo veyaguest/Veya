@@ -1,11 +1,9 @@
-import type { DashboardStats } from '../types'
 import type { ReadinessPage } from '../readiness'
 import { strings } from '../strings/he'
 
 const t = strings.dashboard.prep
 
 interface Props {
-  stats: DashboardStats | null
   onNavigate?: (page: ReadinessPage) => void
 }
 
