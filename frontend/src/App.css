@@ -2027,6 +2027,8 @@ td.notes.seating {
   align-items: center;
   gap: 8px;
   margin-top: 4px;
+  /* שעון תמיד נקרא משמאל (הגדול) לימין (הקטן) — כמו שעון אמיתי — גם בעמוד RTL */
+  direction: ltr;
 }
 .countdown-cell {
   display: flex;
