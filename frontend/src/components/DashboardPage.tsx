@@ -319,6 +319,17 @@ export function DashboardPage({ onNavigate }: Props) {
                 {countdown === 0 ? 'היום!' : `עוד ${countdown} ימים`}
               </p>
             )}
+            {event?.invite_image && (
+              <div className="hero-invite-mockup">
+                <div className="hero-invite-phone">
+                  <img
+                    className="hero-invite-img"
+                    src={mediaUrl(event.invite_image)}
+                    alt={terms.inviteLabel}
+                  />
+                </div>
+              </div>
+            )}
             <button className="btn-text dash-edit-link" onClick={() => setEditing(true)}>
               ✎ עריכה
             </button>
@@ -333,20 +344,20 @@ export function DashboardPage({ onNavigate }: Props) {
         <div className="rsvp-center-donut">
           <Donut
             segments={[
-              { label: t.segConfirmed, value: stats?.confirmed ?? 0, color: 'var(--green)' },
-              { label: t.segMaybe, value: stats?.maybe ?? 0, color: 'var(--gold)' },
-              { label: t.segDeclined, value: stats?.declined ?? 0, color: 'var(--error)' },
-              { label: t.segPending, value: stats?.pending ?? 0, color: 'var(--faint)' },
+              { label: t.segConfirmed, value: stats?.confirmed ?? 0, color: '#22c55e' },
+              { label: t.segMaybe, value: stats?.maybe ?? 0, color: '#eab308' },
+              { label: t.segDeclined, value: stats?.declined ?? 0, color: '#ef4444' },
+              { label: t.segPending, value: stats?.pending ?? 0, color: '#a8a29e' },
             ]}
             centerNum={stats ? `${stats.confirmed_people}` : '—'}
             centerLabel={t.centerLabel}
           />
         </div>
         <ul className="rsvp-center-legend">
-          <LegendRow color="var(--green)" label={t.segConfirmed} value={stats?.confirmed ?? 0} />
-          <LegendRow color="var(--gold)" label={t.legendMaybe} value={stats?.maybe ?? 0} />
-          <LegendRow color="var(--error)" label={t.segDeclined} value={stats?.declined ?? 0} />
-          <LegendRow color="var(--faint)" label={t.segPending} value={stats?.pending ?? 0} />
+          <LegendRow color="#22c55e" label={t.segConfirmed} value={stats?.confirmed ?? 0} />
+          <LegendRow color="#eab308" label={t.legendMaybe} value={stats?.maybe ?? 0} />
+          <LegendRow color="#ef4444" label={t.segDeclined} value={stats?.declined ?? 0} />
+          <LegendRow color="#a8a29e" label={t.segPending} value={stats?.pending ?? 0} />
         </ul>
       </div>
 

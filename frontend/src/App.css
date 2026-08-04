@@ -1981,6 +1981,49 @@ td.notes.seating {
 .dash-edit-link:hover {
   opacity: 1;
 }
+/* ---- מוקאפ תמונת הזמנה בהירו ---- */
+.hero-invite-mockup {
+  margin-top: 24px;
+}
+.hero-invite-phone {
+  position: relative;
+  width: 200px;
+  margin: 0 auto;
+  padding: 10px;
+  border-radius: 24px;
+  background: #1a1a1a;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+}
+.hero-invite-phone::before {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 6px;
+  margin: 0 auto 8px;
+  border-radius: 3px;
+  background: #333;
+}
+.hero-invite-img {
+  display: block;
+  width: 100%;
+  border-radius: 14px;
+  object-fit: cover;
+}
+@media (max-width: 700px) {
+  .hero-invite-phone {
+    width: 160px;
+    padding: 8px;
+    border-radius: 20px;
+  }
+  .hero-invite-phone::before {
+    width: 48px;
+    height: 5px;
+    margin-bottom: 6px;
+  }
+  .hero-invite-img {
+    border-radius: 12px;
+  }
+}
 /* בורר סוג האירוע (Event-ready) — צ'יפים אלגנטיים, חתונה ברירת מחדל */
 .event-type-field {
   margin-bottom: 14px;
@@ -2361,7 +2404,7 @@ td.notes.seating {
   display: block;
 }
 .donut-bg {
-  stroke: var(--surface-hi);
+  stroke: #e8e2d6;
 }
 /* מרכז העוגה — שכבת HTML מעל ה-SVG (עברית תקינה בכל דפדפן) */
 .donut-center {
