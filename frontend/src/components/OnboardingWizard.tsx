@@ -55,7 +55,7 @@ export function OnboardingWizard({ onCreated }: Props) {
       setError(strings.errors.imageTypeError)
       return
     }
-    if (file.size > 3 * 1024 * 1024) {
+    if (file.size > 15 * 1024 * 1024) {
       setError(strings.errors.imageSize3MB)
       return
     }

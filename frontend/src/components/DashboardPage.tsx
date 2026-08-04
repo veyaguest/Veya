@@ -79,6 +79,40 @@ function QuickActionsCard({
   )
 }
 
+/** מוקאפ תמונת ההזמנה כפי שהיא נראית ב-WhatsApp — אייפון צף בתוך משבצת ה-Hero,
+ * באותו גודל קבוע כמו קודם (dash-hero-image, 4:3). */
+function InvitePhoneMock({
+  imageSrc,
+  imageAlt,
+  contactName,
+}: {
+  imageSrc: string
+  imageAlt: string
+  contactName: string
+}) {
+  return (
+    <div className="invite-phone-stage">
+      <div className="invite-phone">
+        <span className="invite-phone-notch" aria-hidden="true" />
+        <div className="invite-phone-screen">
+          <div className="invite-phone-header">
+            <span className="invite-phone-avatar" aria-hidden="true">💍</span>
+            <span className="invite-phone-name">{contactName}</span>
+          </div>
+          <div className="invite-phone-chat">
+            <div className="invite-phone-bubble">
+              <img className="invite-phone-bubble-img" src={imageSrc} alt={imageAlt} />
+              <span className="invite-phone-bubble-time" aria-hidden="true">
+                12:00 ✓✓
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** אחוז בין 0–100 עבור פס ההתקדמות הזעיר בכרטיסי ה-KPI, בטוח מחלוקה באפס. */
 function kpiPct(value: number, total: number): number {
   if (total <= 0) return 0
@@ -221,7 +255,7 @@ export function DashboardPage({ onNavigate }: Props) {
       setError(t.imageTypeError)
       return
     }
-    if (file.size > 3 * 1024 * 1024) {
+    if (file.size > 15 * 1024 * 1024) {
       setError(t.imageSizeError)
       return
     }
@@ -395,10 +429,10 @@ export function DashboardPage({ onNavigate }: Props) {
             <div className="dash-hero-image">
               {event?.invite_image ? (
                 <>
-                  <img
-                    className="dash-hero-image-img"
-                    src={mediaUrl(event.invite_image)}
-                    alt={terms.inviteLabel}
+                  <InvitePhoneMock
+                    imageSrc={mediaUrl(event.invite_image)}
+                    imageAlt={terms.inviteLabel}
+                    contactName={couple ?? terms.defaultTitle}
                   />
                   <button
                     type="button"
@@ -465,6 +499,39 @@ export function DashboardPage({ onNavigate }: Props) {
         ]
         return (
           <>
+            {/* ---- Bento Grid: כרטיס דונאט + כרטיס "הצעד הבא" — מעל כרטיסי ה-KPI,
+                 כי הדונאט הוא הנתון הראשון שמעניין את הזוג ---- */}
+            <div className="dash-grid-2col">
+              <div className="donut-card dash-grid-card">
+                <div className="donut-card-header">
+                  <h3 className="donut-card-title">{t.donutCardTitle}</h3>
+                  <span className="donut-card-badge">
+                    {t.donutResponseBadge(Math.round(stats.response_rate))}
+                  </span>
+                </div>
+                <div className="rsvp-center-donut">
+                  <Donut
+                    segments={rsvpSegments}
+                    centerNum={`${stats.confirmed_people}`}
+                    centerLabel={t.donutCenterLabel}
+                  />
+                  <p className="rsvp-summary">
+                    {t.donutCenterTotal(stats.total_guests)}
+                  </p>
+                </div>
+                <ul className="donut-legend-row">
+                  {rsvpSegments.map((seg) => (
+                    <li key={seg.label} className="donut-legend-item">
+                      <span className="donut-legend-dot" style={{ background: seg.color }} />
+                      <span className="donut-legend-count">{seg.value}</span>
+                      {seg.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <QuickActionsCard stats={stats} onNavigate={onNavigate} />
+            </div>
+
             {/* ---- KPI Cards — 4 מדדים מרכזיים ---- */}
             <div className="kpi-grid">
               <div className="kpi-card">
@@ -523,38 +590,6 @@ export function DashboardPage({ onNavigate }: Props) {
                   />
                 </span>
               </div>
-            </div>
-
-            {/* ---- Bento Grid: כרטיס דונאט + כרטיס "הצעד הבא" ---- */}
-            <div className="dash-grid-2col">
-              <div className="donut-card dash-grid-card">
-                <div className="donut-card-header">
-                  <h3 className="donut-card-title">{t.donutCardTitle}</h3>
-                  <span className="donut-card-badge">
-                    {t.donutResponseBadge(Math.round(stats.response_rate))}
-                  </span>
-                </div>
-                <div className="rsvp-center-donut">
-                  <Donut
-                    segments={rsvpSegments}
-                    centerNum={`${stats.confirmed_people}`}
-                    centerLabel={t.donutCenterLabel}
-                  />
-                  <p className="rsvp-summary">
-                    {t.donutCenterTotal(stats.total_guests)}
-                  </p>
-                </div>
-                <ul className="donut-legend-row">
-                  {rsvpSegments.map((seg) => (
-                    <li key={seg.label} className="donut-legend-item">
-                      <span className="donut-legend-dot" style={{ background: seg.color }} />
-                      <span className="donut-legend-count">{seg.value}</span>
-                      {seg.label}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <QuickActionsCard stats={stats} onNavigate={onNavigate} />
             </div>
           </>
         )

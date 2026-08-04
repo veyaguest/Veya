@@ -19,10 +19,13 @@
 from __future__ import annotations
 
 import base64
+import io
 import secrets
 from pathlib import Path
 from typing import Optional
 
+from fastapi import HTTPException
+from PIL import Image, ImageOps
 from sqlalchemy.orm import Session
 
 from app import cache, models
@@ -40,6 +43,51 @@ _MIME_EXT = {
     "image/svg+xml": "svg",
 }
 
+# תמונת ההזמנה: תקרת גודל קובץ מקור (לפני אופטימיזציה) + פרמטרי הדחיסה
+# האוטומטית. הצלע הארוכה מוגבלת ל-2500px כדי לשמור על חדות מקסימלית לטקסט
+# קטן בהזמנה תוך צמצום משמעותי של גודל הקובץ שנשמר במסד.
+MAX_UPLOAD_BYTES = 15 * 1024 * 1024  # 15MB
+MAX_IMAGE_DIMENSION = 2500
+IMAGE_QUALITY = 90
+
+_RASTER_CONTENT_TYPES = {"image/png", "image/jpeg", "image/jpg", "image/webp", "image/bmp", "image/tiff"}
+
+
+def _optimize_image(raw: bytes, content_type: str) -> tuple[bytes, str]:
+    """מקטין ודוחס תמונה: צלע ארוכה עד 2500px, WebP באיכות 90 (JPEG כגיבוי).
+
+    SVG (וקטורי) ו-GIF מונפש נשמרים כפי שהם ללא שינוי — אין מה לדחוס בווקטור,
+    ואופטימיזציה של GIF מונפש הייתה הורסת את האנימציה. WebP נבחר כברירת מחדל
+    כי כל הדפדפנים המודרניים תומכים בו ונותן איכות גבוהה יותר בגודל קטן יותר
+    מ-JPEG; אם מסיבה כלשהי הקידוד נכשל, חוזרים ל-JPEG. כל תקלה בפענוח/דחיסה
+    מחזירה את הבייטים המקוריים כמו שהם, כדי שהעלאה לעולם לא תיכשל בגלל זה.
+    """
+    if content_type not in _RASTER_CONTENT_TYPES:
+        return raw, content_type
+    try:
+        img = Image.open(io.BytesIO(raw))
+        if getattr(img, "is_animated", False):
+            return raw, content_type
+        img = ImageOps.exif_transpose(img)  # מתקן סיבוב שמצלמות טלפון שומרות ב-EXIF
+        has_alpha = img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info)
+        img = img.convert("RGBA" if has_alpha else "RGB")
+        if max(img.size) > MAX_IMAGE_DIMENSION:
+            img.thumbnail((MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION), Image.LANCZOS)
+        try:
+            buf = io.BytesIO()
+            img.save(buf, format="WEBP", quality=IMAGE_QUALITY, method=6)
+            return buf.getvalue(), "image/webp"
+        except Exception:
+            if has_alpha:
+                background = Image.new("RGB", img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[3])
+                img = background
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=IMAGE_QUALITY, optimize=True)
+            return buf.getvalue(), "image/jpeg"
+    except Exception:
+        return raw, content_type
+
 
 def _parse_data_url(data_url: str) -> tuple[str, bytes]:
     """מפרק data URL ל-(content_type, bytes)."""
@@ -50,9 +98,17 @@ def _parse_data_url(data_url: str) -> tuple[str, bytes]:
     return content_type, raw
 
 
-def _write_data_url(db: Session, data_url: str, prefix: str) -> str:
-    """שומר data URL כרשומת בלוב במסד ומחזיר נתיב יחסי (/media/<id>)."""
+def _write_data_url(db: Session, data_url: str, prefix: str, optimize: bool = False) -> str:
+    """שומר data URL כרשומת בלוב במסד ומחזיר נתיב יחסי (/media/<id>).
+
+    ``optimize=True`` מריץ דחיסה אוטומטית (ראה ``_optimize_image``) לפני
+    השמירה — נשמרת רק הגרסה הדחוסה, כדי לא לכפול אחסון עם המקור.
+    """
     content_type, raw = _parse_data_url(data_url)
+    if len(raw) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="התמונה גדולה מדי — עד 15MB")
+    if optimize:
+        raw, content_type = _optimize_image(raw, content_type)
     blob_id = f"{prefix}-{secrets.token_hex(8)}"
     db.add(models.MediaBlob(id=blob_id, content_type=content_type, data=raw))
     db.flush()  # מוודא שהרשומה נכתבת יחד עם שאר השינויים של הבקשה.
@@ -79,7 +135,11 @@ def delete_stored(db: Session, stored: Optional[str]) -> None:
 
 
 def resolve_incoming(
-    db: Session, new_value: Optional[str], current: Optional[str], prefix: str
+    db: Session,
+    new_value: Optional[str],
+    current: Optional[str],
+    prefix: str,
+    optimize: bool = False,
 ) -> Optional[str]:
     """מחזיר את הערך שיש לשמור ב-DB לפי כלל הכתיבה שלמעלה."""
     if new_value is None:
@@ -90,7 +150,7 @@ def resolve_incoming(
         return None
     if v.startswith("data:"):
         delete_stored(db, current)
-        return _write_data_url(db, v, prefix)
+        return _write_data_url(db, v, prefix, optimize=optimize)
     # URL קיים שחזר מקריאה → אין שינוי.
     return current
 

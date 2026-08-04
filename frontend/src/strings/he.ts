@@ -59,7 +59,7 @@ export const strings = {
     // EventControls / OnboardingWizard
     eventCreateFailed: 'לא הצלחנו ליצור את האירוע, נסו שוב',
     imageTypeError: 'אפשר להעלות קובץ תמונה בלבד',
-    imageSize3MB: 'התמונה גדולה מדי — עד 3MB',
+    imageSize3MB: 'התמונה גדולה מדי — עד 15MB',
     onboardingHostsMissing: (label: string) => `נשמח לדעת קודם את שמות ${label}`,
     onboardingHostAMissing: (label: string) => `נשמח לדעת קודם את ${label}`,
     // EventMembersDialog
@@ -250,7 +250,7 @@ export const strings = {
     loadError: 'לא הצלחנו לטעון כרגע. ננסה שוב',
     saveError: 'לא הצלחנו לשמור את הפרטים. נסו שוב',
     imageTypeError: 'אפשר להעלות קובץ תמונה בלבד',
-    imageSizeError: 'התמונה גדולה מדי — עד 3MB',
+    imageSizeError: 'התמונה גדולה מדי — עד 15MB',
     venuePlaceholder: 'שם האולם',
     venueAddressPlaceholder: 'כתובת האולם (לניווט בהזמנות)',
     dateLabel: 'תאריך האירוע',
