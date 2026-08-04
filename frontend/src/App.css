@@ -1909,17 +1909,23 @@ td.notes.seating {
 }
 
 /* ---- דשבורד (שלב 6) ---- */
-/* ---- Hero section: open layout, no card ---- */
+/* ---- Hero: Bento Card אופקי — תמונת הזוג מימין (RTL), פרטים+טיימר משמאל ---- */
 .dash-hero-section {
-  text-align: center;
   padding: 24px 20px 32px;
   position: relative;
 }
-.event-view {
+.dash-hero-bento {
+  display: flex;
+  align-items: stretch;
+  gap: 28px;
+}
+.dash-hero-info {
+  flex: 1.1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 10px;
 }
 .event-couple {
   margin: 0;
@@ -1930,47 +1936,16 @@ td.notes.seating {
   line-height: 1.15;
   letter-spacing: -0.02em;
 }
-.event-meta {
-  margin: 6px 0 0;
-  font-size: 15px;
-  color: var(--muted);
-  line-height: 1.5;
-}
 .event-info-line {
-  margin: 8px 0 0;
+  margin: 0;
   font-size: 14px;
   color: var(--muted);
   line-height: 1.5;
   font-weight: 400;
-}
-.event-when {
-  margin: 2px 0 0;
-  font-size: 14px;
-  color: var(--body);
-  font-weight: 400;
-}
-.event-countdown {
-  margin: 8px 0 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--gold-deep);
-  letter-spacing: 0.02em;
-}
-.countdown-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin: 10px 0 0;
-  padding: 6px 16px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--gold-deep);
-  background: color-mix(in srgb, var(--gold) 12%, transparent);
-  border-radius: 999px;
-  letter-spacing: 0.01em;
 }
 .dash-edit-link {
-  margin-top: 10px;
+  margin-top: 6px;
+  align-self: flex-start;
   font-size: 13px;
   color: var(--muted);
   opacity: 0.7;
@@ -1979,59 +1954,152 @@ td.notes.seating {
 .dash-edit-link:hover {
   opacity: 1;
 }
-/* ---- כרטיס תמונת הזמנה בהירו ---- */
-.invite-card {
-  margin-top: 10px;
-  width: 160px;
-  border-radius: 16px;
+/* ---- כרטיס תמונת הזוג בהירו — Bento 4:3, פינות רכות, עריכה ב-Hover ---- */
+.dash-hero-image {
+  position: relative;
+  flex: 1;
+  max-width: 380px;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-card);
   border: 1px solid var(--line);
   background: var(--cream);
 }
-.invite-card-img {
+.dash-hero-image-img {
   display: block;
   width: 100%;
-  height: 200px;
+  height: 100%;
   object-fit: cover;
 }
-.invite-card-placeholder {
+.dash-hero-image-edit {
+  position: absolute;
+  top: 12px;
+  inset-inline-end: 12px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--charcoal);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.dash-hero-image:hover .dash-hero-image-edit,
+.dash-hero-image:focus-within .dash-hero-image-edit {
+  opacity: 1;
+  transform: translateY(0);
+}
+.dash-hero-image-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
-  height: 120px;
+  height: 100%;
   padding: 16px;
-  border: none;
+  border: 2px dashed color-mix(in srgb, var(--muted) 40%, transparent);
   background: transparent;
   cursor: pointer;
-  border: 2px dashed color-mix(in srgb, var(--muted) 40%, transparent);
-  border-radius: 16px;
   transition: border-color 0.15s;
 }
-.invite-card-placeholder:hover {
+.dash-hero-image-placeholder:hover {
   border-color: var(--gold);
 }
-.invite-card-placeholder-icon {
-  font-size: 24px;
+.dash-hero-image-placeholder-icon {
+  font-size: 28px;
   opacity: 0.5;
 }
-.invite-card-placeholder-text {
-  font-size: 12px;
+.dash-hero-image-placeholder-text {
+  font-size: 12.5px;
   color: var(--muted);
   font-weight: 500;
 }
+/* ---- Live Countdown Timer — קוביות זכוכית עדינות (ימים/שעות/דקות/שניות) ---- */
+.countdown-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.countdown-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 58px;
+  padding: 10px 6px 8px;
+  background: color-mix(in srgb, var(--cream) 55%, transparent);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid color-mix(in srgb, var(--gold) 22%, var(--line));
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-card);
+}
+.countdown-cell-num {
+  font-family: var(--font-ui, 'Heebo', 'Assistant', system-ui, sans-serif);
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--charcoal);
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  letter-spacing: -0.01em;
+}
+.countdown-cell-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.countdown-sep {
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--faint);
+  margin: 0 -2px;
+  transform: translateY(-6px);
+  user-select: none;
+}
+.countdown-timer-today {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--gold-deep), var(--gold));
+  border-radius: 999px;
+  width: fit-content;
+}
 @media (max-width: 700px) {
-  .invite-card {
-    width: 130px;
+  .dash-hero-bento {
+    flex-direction: column-reverse;
+    gap: 16px;
   }
-  .invite-card-img {
-    height: 160px;
+  .dash-hero-image {
+    max-width: none;
   }
-  .invite-card-placeholder {
-    height: 100px;
+  .dash-hero-image-edit {
+    opacity: 1;
+    transform: none;
+  }
+  .countdown-cell {
+    min-width: 50px;
+    padding: 8px 4px 6px;
+  }
+  .countdown-cell-num {
+    font-size: 21px;
+  }
+  .countdown-cell-label {
+    font-size: 9.5px;
   }
 }
 /* בורר סוג האירוע (Event-ready) — צ'יפים אלגנטיים, חתונה ברירת מחדל */
@@ -2381,11 +2449,33 @@ td.notes.seating {
   color: var(--muted);
 }
 
-/* ---- RSVP Control Center — donut centered ---- */
-.rsvp-center {
-  display: flex;
-  justify-content: center;
+/* ---- Bento Grid: כרטיס דונאט + כרטיס "הצעד הבא" זה-לצד-זה ---- */
+.dash-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
   padding: 12px 20px 20px;
+}
+@media (min-width: 700px) {
+  .dash-grid-2col {
+    grid-template-columns: repeat(2, 1fr);
+    align-items: stretch;
+  }
+}
+.dash-grid-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.donut-card {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: 24px 20px;
+  align-items: center;
+  gap: 14px;
 }
 .rsvp-center-donut {
   display: flex;
@@ -2399,7 +2489,62 @@ td.notes.seating {
   color: var(--muted);
   text-align: center;
 }
-/* ---- KPI Grid — 4 כרטיסי מדד מתחת לדונאט ---- */
+/* ---- Legend — נקודות צבע לפי סטטוס אישור הגעה ---- */
+.donut-legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
+  padding-top: 14px;
+  margin-top: 2px;
+  border-top: 1px solid var(--line);
+  width: 100%;
+}
+.donut-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--body);
+}
+.donut-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+/* ---- כרטיס "הצעד הבא" — פעולות מהירות לצד הדונאט ---- */
+.quick-actions-card {
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 24px 22px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+.quick-actions-icon {
+  font-size: 26px;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.quick-actions-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.quick-actions-desc {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.quick-actions-btn {
+  margin-top: 8px;
+}
+/* ---- KPI Grid — 4 כרטיסי מדד ---- */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -2467,8 +2612,8 @@ td.notes.seating {
 }
 .donut-wrap {
   position: relative;
-  width: 300px;
-  height: 300px;
+  width: 240px;
+  height: 240px;
   max-width: 70vw;
   flex-shrink: 0;
 }
@@ -2581,12 +2726,12 @@ td.notes.seating {
 
 /* --- המספר הגדול במרכז העוגה --- */
 .dash-page .donut-num {
-  font-size: 56px;
+  font-size: 44px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 .dash-page .donut-lbl {
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 500;
   letter-spacing: 0;
 }
@@ -2623,12 +2768,10 @@ td.notes.seating {
   to { opacity: 1; transform: translateY(0); }
 }
 .dash-page .dash-hero-section { animation: fadeInUp 0.4s ease-out both; }
-.dash-page .rsvp-center { animation: fadeInUp 0.4s ease-out 0.08s both; }
-.dash-page .kpi-grid { animation: fadeInUp 0.4s ease-out 0.16s both; }
+.dash-page .kpi-grid { animation: fadeInUp 0.4s ease-out 0.08s both; }
+.dash-page .dash-grid-2col { animation: fadeInUp 0.4s ease-out 0.16s both; }
 .dash-page .event-progress { animation: fadeInUp 0.4s ease-out 0.24s both; }
-.dash-page .cta-card,
-.dash-page .next-action { animation: fadeInUp 0.4s ease-out 0.32s both; }
-.dash-page .seating-hero { animation: fadeInUp 0.4s ease-out 0.40s both; }
+.dash-page .seating-hero { animation: fadeInUp 0.4s ease-out 0.32s both; }
 .kpi-card {
   transition: transform 0.15s, box-shadow 0.15s;
 }
@@ -2638,11 +2781,9 @@ td.notes.seating {
 }
 @media (prefers-reduced-motion: reduce) {
   .dash-page .dash-hero-section,
-  .dash-page .rsvp-center,
   .dash-page .kpi-grid,
+  .dash-page .dash-grid-2col,
   .dash-page .event-progress,
-  .dash-page .cta-card,
-  .dash-page .next-action,
   .dash-page .seating-hero,
   .kpi-card {
     animation: none;
@@ -2650,15 +2791,16 @@ td.notes.seating {
   }
 }
 
-/* --- CTA Card — כרטיס קריאה לפעולה בולט --- */
+/* --- CTA Card — כרטיס קריאה לפעולה בולט (משבצת "הצעד הבא" ב-Grid) --- */
 .cta-card {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   padding: 28px 24px;
   background: linear-gradient(135deg, var(--gold-deep), var(--gold));
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   text-align: center;
 }
 .cta-card-title {
@@ -2690,24 +2832,7 @@ td.notes.seating {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* --- Next Action — כרטיס פעולה חכם --- */
-.next-action {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 18px 28px;
-  background: color-mix(in srgb, var(--gold-deep) 6%, transparent);
-  border-inline-start: 3px solid var(--gold-deep);
-  border-radius: 8px;
-}
-.next-action-text {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--charcoal);
-  line-height: 1.5;
-  margin: 0;
-}
+/* --- כפתור פעולה משני — משבצת "הצעד הבא" ב-Grid ---- */
 .next-action-cta {
   flex-shrink: 0;
   padding: 8px 22px;
@@ -2779,7 +2904,7 @@ td.notes.seating {
   .dash-hero-section .event-couple {
     font-size: 28px;
   }
-  .rsvp-center {
+  .dash-grid-2col {
     padding: 8px 16px 16px;
   }
   .kpi-grid {
@@ -2791,15 +2916,10 @@ td.notes.seating {
     gap: 20px;
     padding-bottom: 32px;
   }
-  .next-action {
-    flex-direction: column;
-    text-align: center;
-    gap: 12px;
-    padding: 16px 20px;
-  }
-  .cta-card {
-    padding: 24px 20px;
-    border-radius: 12px;
+  .cta-card,
+  .quick-actions-card {
+    padding: 22px 20px;
+    border-radius: var(--radius-l);
   }
   .cta-card-btn {
     width: 100%;
@@ -2813,8 +2933,8 @@ td.notes.seating {
     padding: 18px 20px;
   }
   .donut-wrap {
-    width: 240px;
-    height: 240px;
+    width: 200px;
+    height: 200px;
   }
 }
 

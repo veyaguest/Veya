@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getEvent, getStats, mediaUrl, updateEvent } from '../api'
 import type { DashboardStats, EventDetails } from '../types'
 import type { ReadinessPage } from '../readiness'
@@ -14,7 +14,8 @@ interface Props {
 
 const t = strings.dashboard
 
-function NextAction({
+/** כרטיס "הצעד הבא" — משבצת קבועה ב-Grid ליד הדונאט, תמיד מציגה משהו. */
+function QuickActionsCard({
   stats,
   onNavigate,
 }: {
@@ -23,7 +24,7 @@ function NextAction({
 }) {
   if (stats.invitations_sent === 0) {
     return (
-      <div className="cta-card">
+      <div className="cta-card dash-grid-card">
         <h3 className="cta-card-title">{t.ctaTitle}</h3>
         <p className="cta-card-desc">{t.ctaDesc}</p>
         <button
@@ -54,18 +55,85 @@ function NextAction({
     cta = 'סידור הושבה'
     target = 'hall'
   } else {
-    return null
+    return (
+      <div className="quick-actions-card dash-grid-card">
+        <span className="quick-actions-icon">🎉</span>
+        <h3 className="quick-actions-title">{t.allDoneTitle}</h3>
+        <p className="quick-actions-desc">{t.allDoneDesc}</p>
+      </div>
+    )
   }
 
   return (
-    <div className="next-action">
-      <p className="next-action-text">{text}</p>
+    <div className="quick-actions-card dash-grid-card">
+      <span className="quick-actions-icon">✦</span>
+      <h3 className="quick-actions-title">{t.nextStepTitle}</h3>
+      <p className="quick-actions-desc">{text}</p>
       <button
-        className="next-action-cta"
+        className="next-action-cta quick-actions-btn"
         onClick={() => onNavigate?.(target)}
       >
         {cta}
       </button>
+    </div>
+  )
+}
+
+/** שניות עד לתאריך/שעת האירוע (יכול להיות שלילי אם האירוע כבר עבר). */
+function useCountdown(targetMs: number | null) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (targetMs === null) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [targetMs])
+
+  if (targetMs === null) return null
+  const diff = targetMs - now
+  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true }
+  return {
+    days: Math.floor(diff / 86_400_000),
+    hours: Math.floor((diff % 86_400_000) / 3_600_000),
+    minutes: Math.floor((diff % 3_600_000) / 60_000),
+    seconds: Math.floor((diff % 60_000) / 1000),
+    isPast: false,
+  }
+}
+
+function CountdownCell({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="countdown-cell">
+      <span className="countdown-cell-num">{String(value).padStart(2, '0')}</span>
+      <span className="countdown-cell-label">{label}</span>
+    </div>
+  )
+}
+
+/** Live Countdown Timer — ימים/שעות/דקות/שניות עד האירוע, בקוביות זכוכית. */
+function CountdownTimer({ date, time }: { date?: string; time?: string }) {
+  const targetMs = useMemo(() => {
+    if (!date) return null
+    const iso = `${date}T${time || '00:00'}:00`
+    const ms = new Date(iso).getTime()
+    return isNaN(ms) ? null : ms
+  }, [date, time])
+
+  const cd = useCountdown(targetMs)
+  if (!cd) return null
+
+  if (cd.isPast) {
+    return <div className="countdown-timer-today">🎉 {t.countdownToday}</div>
+  }
+
+  return (
+    <div className="countdown-timer" role="timer" aria-label={t.countdownAriaLabel(cd.days, cd.hours, cd.minutes)}>
+      <CountdownCell value={cd.days} label={t.countdownDays} />
+      <span className="countdown-sep" aria-hidden="true">:</span>
+      <CountdownCell value={cd.hours} label={t.countdownHours} />
+      <span className="countdown-sep" aria-hidden="true">:</span>
+      <CountdownCell value={cd.minutes} label={t.countdownMinutes} />
+      <span className="countdown-sep" aria-hidden="true">:</span>
+      <CountdownCell value={cd.seconds} label={t.countdownSeconds} />
     </div>
   )
 }
@@ -169,8 +237,6 @@ export function DashboardPage({ onNavigate }: Props) {
   const when = event
     ? formatWhen(event.event_date, event.event_time)
     : ''
-
-  const countdown = event?.event_date ? daysUntil(event.event_date) : null
 
   return (
     <div className="dash-page">
@@ -318,39 +384,49 @@ export function DashboardPage({ onNavigate }: Props) {
             </div>
           </div>
         ) : (
-          <div className="event-view">
-            <h2 className="event-couple">{couple ?? terms.defaultTitle}</h2>
-            <p className="event-info-line">
-              {terms.icon} {terms.label}
-              {event?.venue_name ? ` · ${event.venue_name}` : ''}
-              {when ? ` · ${when}` : ''}
-            </p>
-            {countdown !== null && countdown >= 0 && (
-              <span className="countdown-badge">
-                ⏳ {countdown === 0 ? t.countdownToday : t.countdownBadge(countdown)}
-              </span>
-            )}
-            <div className="invite-card">
+          <div className="dash-hero-bento">
+            {/* מימין (RTL): כרטיסיית תמונת הזוג */}
+            <div className="dash-hero-image">
               {event?.invite_image ? (
-                <img
-                  className="invite-card-img"
-                  src={mediaUrl(event.invite_image)}
-                  alt={terms.inviteLabel}
-                />
+                <>
+                  <img
+                    className="dash-hero-image-img"
+                    src={mediaUrl(event.invite_image)}
+                    alt={terms.inviteLabel}
+                  />
+                  <button
+                    type="button"
+                    className="dash-hero-image-edit"
+                    onClick={() => setEditing(true)}
+                  >
+                    ✎ {strings.common.edit}
+                  </button>
+                </>
               ) : (
                 <button
                   type="button"
-                  className="invite-card-placeholder"
+                  className="dash-hero-image-placeholder"
                   onClick={() => setEditing(true)}
                 >
-                  <span className="invite-card-placeholder-icon">🖼</span>
-                  <span className="invite-card-placeholder-text">{t.invitePlaceholder}</span>
+                  <span className="dash-hero-image-placeholder-icon">🖼</span>
+                  <span className="dash-hero-image-placeholder-text">{t.invitePlaceholder}</span>
                 </button>
               )}
             </div>
-            <button className="btn-text dash-edit-link" onClick={() => setEditing(true)}>
-              ✎ עריכה
-            </button>
+
+            {/* משמאל: שמות, מיקום ותאריך, וטיימר ספירה לאחור חי */}
+            <div className="dash-hero-info">
+              <h2 className="event-couple">{couple ?? terms.defaultTitle}</h2>
+              <p className="event-info-line">
+                {terms.icon} {terms.label}
+                {event?.venue_name ? ` · ${event.venue_name}` : ''}
+                {when ? ` · ${when}` : ''}
+              </p>
+              <CountdownTimer date={event?.event_date} time={event?.event_time} />
+              <button className="btn-text dash-edit-link" onClick={() => setEditing(true)}>
+                ✎ עריכת פרטים
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -374,52 +450,66 @@ export function DashboardPage({ onNavigate }: Props) {
         </div>
       )}
 
-      {stats && stats.total_guests > 0 && (
-        <>
-          {/* ---- RSVP Control Center — הדונאט ---- */}
-          <div className="rsvp-center">
-            <div className="rsvp-center-donut">
-              <Donut
-                segments={[
-                  { label: t.segConfirmed, value: stats.confirmed, color: '#22c55e' },
-                  { label: t.segMaybe, value: stats.maybe, color: '#eab308' },
-                  { label: t.segDeclined, value: stats.declined, color: '#ef4444' },
-                  { label: t.segPending, value: stats.pending, color: '#a8a29e' },
-                ]}
-                centerNum={`${stats.confirmed_people}`}
-                centerLabel={t.centerLabel}
-              />
-              <p className="rsvp-summary">
-                {t.rsvpSummary(stats.confirmed_people, stats.total_guests)}
-              </p>
+      {stats && stats.total_guests > 0 && (() => {
+        const rsvpSegments = [
+          { label: t.segConfirmed, value: stats.confirmed, color: 'var(--green)' },
+          { label: t.segMaybe, value: stats.maybe, color: 'var(--gold-light)' },
+          { label: t.segDeclined, value: stats.declined, color: 'var(--error)' },
+          { label: t.segPending, value: stats.pending, color: 'var(--faint)' },
+        ]
+        return (
+          <>
+            {/* ---- KPI Cards — 4 מדדים מרכזיים ---- */}
+            <div className="kpi-grid">
+              <div className="kpi-card">
+                <span className="kpi-dot" style={{ background: 'var(--green)' }} />
+                <span className="kpi-num">{stats.confirmed}</span>
+                <span className="kpi-label">{t.kpiConfirmed}</span>
+              </div>
+              <div className="kpi-card">
+                <span className="kpi-dot" style={{ background: 'var(--faint)' }} />
+                <span className="kpi-num">{stats.pending}</span>
+                <span className="kpi-label">{t.kpiPending}</span>
+              </div>
+              <div className="kpi-card">
+                <span className="kpi-dot" style={{ background: 'var(--error)' }} />
+                <span className="kpi-num">{stats.declined}</span>
+                <span className="kpi-label">{t.kpiDeclined}</span>
+              </div>
+              <div className="kpi-card">
+                <span className="kpi-dot" style={{ background: 'var(--gold-light)' }} />
+                <span className="kpi-num">{stats.total_guests - stats.invitations_sent}</span>
+                <span className="kpi-label">{t.kpiNotSent}</span>
+              </div>
             </div>
-          </div>
 
-          {/* ---- KPI Cards — 4 מדדים מרכזיים ---- */}
-          <div className="kpi-grid">
-            <div className="kpi-card">
-              <span className="kpi-dot" style={{ background: '#22c55e' }} />
-              <span className="kpi-num">{stats.confirmed}</span>
-              <span className="kpi-label">{t.kpiConfirmed}</span>
+            {/* ---- Bento Grid: כרטיס דונאט + כרטיס "הצעד הבא" ---- */}
+            <div className="dash-grid-2col">
+              <div className="donut-card dash-grid-card">
+                <div className="rsvp-center-donut">
+                  <Donut
+                    segments={rsvpSegments}
+                    centerNum={`${stats.confirmed_people}`}
+                    centerLabel={t.centerLabel}
+                  />
+                  <p className="rsvp-summary">
+                    {t.rsvpSummary(stats.confirmed_people, stats.total_guests)}
+                  </p>
+                </div>
+                <ul className="donut-legend-row">
+                  {rsvpSegments.map((seg) => (
+                    <li key={seg.label} className="donut-legend-item">
+                      <span className="donut-legend-dot" style={{ background: seg.color }} />
+                      {seg.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <QuickActionsCard stats={stats} onNavigate={onNavigate} />
             </div>
-            <div className="kpi-card">
-              <span className="kpi-dot" style={{ background: '#a8a29e' }} />
-              <span className="kpi-num">{stats.pending}</span>
-              <span className="kpi-label">{t.kpiPending}</span>
-            </div>
-            <div className="kpi-card">
-              <span className="kpi-dot" style={{ background: '#ef4444' }} />
-              <span className="kpi-num">{stats.declined}</span>
-              <span className="kpi-label">{t.kpiDeclined}</span>
-            </div>
-            <div className="kpi-card">
-              <span className="kpi-dot" style={{ background: '#eab308' }} />
-              <span className="kpi-num">{stats.total_guests - stats.invitations_sent}</span>
-              <span className="kpi-label">{t.kpiNotSent}</span>
-            </div>
-          </div>
-        </>
-      )}
+          </>
+        )
+      })()}
 
       {/* ---- Event Progress — מד מוכנות ---- */}
       {stats && stats.total_guests > 0 && (() => {
@@ -438,11 +528,6 @@ export function DashboardPage({ onNavigate }: Props) {
           </div>
         )
       })()}
-
-      {/* ---- Next Action — הדבר הכי חשוב לעשות עכשיו ---- */}
-      {stats && stats.total_guests > 0 && (
-        <NextAction stats={stats} onNavigate={onNavigate} />
-      )}
 
       {/* ---- סידור הושבה חכם — פיצ'ר דגל ---- */}
       {stats && stats.total_guests > 0 && (
@@ -472,14 +557,6 @@ function formatWhen(date: string, time: string): string {
   return parts.join(', ')
 }
 
-function daysUntil(dateStr: string): number {
-  const target = new Date(dateStr + 'T00:00:00')
-  if (isNaN(target.getTime())) return -1
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  return Math.round((target.getTime() - today.getTime()) / 86_400_000)
-}
-
 /** תרשים עוגה (donut) טהור ב-SVG — בלי ספריות חיצוניות, קל ומהיר. */
 function Donut({
   segments,
@@ -491,13 +568,14 @@ function Donut({
   centerLabel: string
 }) {
   const total = segments.reduce((s, x) => s + x.value, 0)
-  const R = 52
+  const R = 58
+  const STROKE = 9
   const C = 2 * Math.PI * R
   let acc = 0
   return (
     <div className="donut-wrap">
       <svg viewBox="0 0 140 140" className="donut" role="img" aria-label={centerLabel}>
-        <circle className="donut-bg" cx="70" cy="70" r={R} fill="none" strokeWidth="18" />
+        <circle className="donut-bg" cx="70" cy="70" r={R} fill="none" strokeWidth={STROKE} />
         {total > 0 &&
           segments.map((seg, i) => {
             const len = (seg.value / total) * C
@@ -509,7 +587,7 @@ function Donut({
                 r={R}
                 fill="none"
                 stroke={seg.color}
-                strokeWidth="18"
+                strokeWidth={STROKE}
                 strokeDasharray={`${len} ${C - len}`}
                 strokeDashoffset={-acc}
                 transform="rotate(-90 70 70)"

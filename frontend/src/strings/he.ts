@@ -295,8 +295,13 @@ export const strings = {
     guestsSeated: 'מוזמנים משובצים',
     invitationsSent: 'הזמנות שנשלחו',
     // ---- Dashboard v2 — מחרוזות לעיצוב מחדש ----
-    countdownBadge: (n: number) => `עוד ${n} ימים`,
-    countdownToday: 'היום!',
+    countdownToday: 'האירוע היום!',
+    countdownDays: 'ימים',
+    countdownHours: 'שעות',
+    countdownMinutes: 'דקות',
+    countdownSeconds: 'שניות',
+    countdownAriaLabel: (days: number, hours: number, minutes: number) =>
+      `נותרו ${days} ימים, ${hours} שעות ו-${minutes} דקות לאירוע`,
     rsvpSummary: (confirmed: number, total: number) =>
       `${confirmed} מתוך ${total} מוזמנים אישרו הגעה`,
     kpiConfirmed: 'אישרו',
@@ -307,6 +312,9 @@ export const strings = {
     ctaTitle: 'הגיע הזמן לשלוח הזמנות',
     ctaDesc: 'הרשימה מוכנה — שלחו את ההזמנות ותתחילו לקבל אישורי הגעה.',
     ctaButton: 'שליחת הזמנות',
+    nextStepTitle: 'הצעד הבא',
+    allDoneTitle: 'הכול מוכן!',
+    allDoneDesc: 'כל המוזמנים אישרו הגעה ומשובצים למקום. נשאר רק ליהנות מהאירוע.',
     invitePlaceholder: 'העלו תמונת הזמנה',
     emptyTitle: 'הכול מתחיל מכאן',
     emptyDesc: 'הוסיפו מוזמנים כדי לראות את תמונת המצב.',
