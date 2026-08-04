@@ -21,15 +21,26 @@ function NextAction({
   stats: DashboardStats
   onNavigate?: (page: ReadinessPage) => void
 }) {
+  if (stats.invitations_sent === 0) {
+    return (
+      <div className="cta-card">
+        <h3 className="cta-card-title">{t.ctaTitle}</h3>
+        <p className="cta-card-desc">{t.ctaDesc}</p>
+        <button
+          className="cta-card-btn"
+          onClick={() => onNavigate?.('guests')}
+        >
+          {t.ctaButton}
+        </button>
+      </div>
+    )
+  }
+
   let text: string
   let cta: string
   let target: ReadinessPage
 
-  if (stats.invitations_sent === 0) {
-    text = `${stats.total_guests} מוזמנים ברשימה — עדיין לא נשלחו הזמנות`
-    cta = 'שליחת הזמנות'
-    target = 'guests'
-  } else if (stats.pending > stats.confirmed + stats.declined) {
+  if (stats.pending > stats.confirmed + stats.declined) {
     text = `${stats.pending} מוזמנים עדיין לא ענו`
     cta = 'מעקב תשובות'
     target = 'guests'
@@ -39,7 +50,7 @@ function NextAction({
     target = 'hall'
   } else if (stats.seated_guests < stats.confirmed) {
     const unseated = stats.confirmed - stats.seated_guests
-    text = `${unseated} אורחים מאושרים עדיין בלי מקום בשולחן`
+    text = `${unseated} מוזמנים מאושרים עדיין בלי מקום בשולחן`
     cta = 'סידור הושבה'
     target = 'hall'
   } else {
@@ -309,29 +320,34 @@ export function DashboardPage({ onNavigate }: Props) {
         ) : (
           <div className="event-view">
             <h2 className="event-couple">{couple ?? terms.defaultTitle}</h2>
-            <p className="event-meta">
+            <p className="event-info-line">
               {terms.icon} {terms.label}
               {event?.venue_name ? ` · ${event.venue_name}` : ''}
+              {when ? ` · ${when}` : ''}
             </p>
-            {when && <p className="event-when">{when}</p>}
             {countdown !== null && countdown >= 0 && (
-              <p className="event-countdown">
-                {countdown === 0 ? 'היום!' : `עוד ${countdown} ימים`}
-              </p>
+              <span className="countdown-badge">
+                ⏳ {countdown === 0 ? t.countdownToday : t.countdownBadge(countdown)}
+              </span>
             )}
-            {event?.invite_image && (
-              <div className="hero-invite-mockup">
-                <div className="wa-bubble">
-                  <img
-                    className="wa-bubble-img"
-                    src={mediaUrl(event.invite_image)}
-                    alt={terms.inviteLabel}
-                  />
-                  <span className="wa-bubble-caption">{terms.inviteLabel}</span>
-                  <span className="wa-bubble-time">✓✓ {new Date().getHours()}:{String(new Date().getMinutes()).padStart(2, '0')}</span>
-                </div>
-              </div>
-            )}
+            <div className="invite-card">
+              {event?.invite_image ? (
+                <img
+                  className="invite-card-img"
+                  src={mediaUrl(event.invite_image)}
+                  alt={terms.inviteLabel}
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="invite-card-placeholder"
+                  onClick={() => setEditing(true)}
+                >
+                  <span className="invite-card-placeholder-icon">🖼</span>
+                  <span className="invite-card-placeholder-text">{t.invitePlaceholder}</span>
+                </button>
+              )}
+            </div>
             <button className="btn-text dash-edit-link" onClick={() => setEditing(true)}>
               ✎ עריכה
             </button>
@@ -341,27 +357,87 @@ export function DashboardPage({ onNavigate }: Props) {
 
       {error && <p className="form-error">{error}</p>}
 
-      {/* ---- RSVP Control Center — הדונאט + מקרא לצידו ---- */}
-      <div className="rsvp-center">
-        <div className="rsvp-center-donut">
-          <Donut
-            segments={[
-              { label: t.segConfirmed, value: stats?.confirmed ?? 0, color: '#22c55e' },
-              { label: t.segMaybe, value: stats?.maybe ?? 0, color: '#eab308' },
-              { label: t.segDeclined, value: stats?.declined ?? 0, color: '#ef4444' },
-              { label: t.segPending, value: stats?.pending ?? 0, color: '#a8a29e' },
-            ]}
-            centerNum={stats ? `${stats.confirmed_people}` : '—'}
-            centerLabel={t.centerLabel}
-          />
+      {!stats && <p className="dash-loading">{t.loadingData}</p>}
+
+      {stats && stats.total_guests === 0 && (
+        <div className="dash-empty-state">
+          <span className="dash-empty-icon">📋</span>
+          <h3 className="dash-empty-title">{t.emptyTitle}</h3>
+          <p className="dash-empty-desc">{t.emptyDesc}</p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => onNavigate?.('guests')}
+          >
+            {t.emptyCta}
+          </button>
         </div>
-        <ul className="rsvp-center-legend">
-          <LegendRow color="#22c55e" label={t.segConfirmed} value={stats?.confirmed ?? 0} />
-          <LegendRow color="#eab308" label={t.legendMaybe} value={stats?.maybe ?? 0} />
-          <LegendRow color="#ef4444" label={t.segDeclined} value={stats?.declined ?? 0} />
-          <LegendRow color="#a8a29e" label={t.segPending} value={stats?.pending ?? 0} />
-        </ul>
-      </div>
+      )}
+
+      {stats && stats.total_guests > 0 && (
+        <>
+          {/* ---- RSVP Control Center — הדונאט ---- */}
+          <div className="rsvp-center">
+            <div className="rsvp-center-donut">
+              <Donut
+                segments={[
+                  { label: t.segConfirmed, value: stats.confirmed, color: '#22c55e' },
+                  { label: t.segMaybe, value: stats.maybe, color: '#eab308' },
+                  { label: t.segDeclined, value: stats.declined, color: '#ef4444' },
+                  { label: t.segPending, value: stats.pending, color: '#a8a29e' },
+                ]}
+                centerNum={`${stats.confirmed_people}`}
+                centerLabel={t.centerLabel}
+              />
+              <p className="rsvp-summary">
+                {t.rsvpSummary(stats.confirmed_people, stats.total_guests)}
+              </p>
+            </div>
+          </div>
+
+          {/* ---- KPI Cards — 4 מדדים מרכזיים ---- */}
+          <div className="kpi-grid">
+            <div className="kpi-card">
+              <span className="kpi-dot" style={{ background: '#22c55e' }} />
+              <span className="kpi-num">{stats.confirmed}</span>
+              <span className="kpi-label">{t.kpiConfirmed}</span>
+            </div>
+            <div className="kpi-card">
+              <span className="kpi-dot" style={{ background: '#a8a29e' }} />
+              <span className="kpi-num">{stats.pending}</span>
+              <span className="kpi-label">{t.kpiPending}</span>
+            </div>
+            <div className="kpi-card">
+              <span className="kpi-dot" style={{ background: '#ef4444' }} />
+              <span className="kpi-num">{stats.declined}</span>
+              <span className="kpi-label">{t.kpiDeclined}</span>
+            </div>
+            <div className="kpi-card">
+              <span className="kpi-dot" style={{ background: '#eab308' }} />
+              <span className="kpi-num">{stats.total_guests - stats.invitations_sent}</span>
+              <span className="kpi-label">{t.kpiNotSent}</span>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ---- Event Progress — מד מוכנות ---- */}
+      {stats && stats.total_guests > 0 && (() => {
+        const d1 = 1
+        const d2 = (stats.by_side.groom + stats.by_side.bride) / stats.total_guests
+        const d3 = 1 - ((stats.by_group as Record<string, number>).other ?? 0) / stats.total_guests
+        const d4 = stats.invitations_sent / stats.total_guests
+        const d5 = stats.response_rate / 100
+        const pct = Math.min(100, Math.round((d1 + d2 + d3 + d4 + d5) * 20))
+        return (
+          <div className="event-progress">
+            <span className="event-progress-label">{t.progressLabel(pct)}</span>
+            <div className="event-progress-track">
+              <div className="event-progress-fill" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ---- Next Action — הדבר הכי חשוב לעשות עכשיו ---- */}
       {stats && stats.total_guests > 0 && (
@@ -452,23 +528,5 @@ function Donut({
   )
 }
 
-/** שורת מקרא לצד תרשים העוגה. */
-function LegendRow({
-  color,
-  label,
-  value,
-}: {
-  color: string
-  label: string
-  value: number
-}) {
-  return (
-    <li className="legend-row">
-      <span className="legend-dot" style={{ background: color }} />
-      <span className="legend-label">{label}</span>
-      <b className="legend-val">{value}</b>
-    </li>
-  )
-}
 
 

@@ -307,6 +307,24 @@ export const strings = {
     tablesAssigned: 'שולחנות שובצו',
     guestsSeated: 'מוזמנים משובצים',
     invitationsSent: 'הזמנות שנשלחו',
+    // ---- Dashboard v2 — מחרוזות לעיצוב מחדש ----
+    countdownBadge: (n: number) => `עוד ${n} ימים`,
+    countdownToday: 'היום!',
+    rsvpSummary: (confirmed: number, total: number) =>
+      `${confirmed} מתוך ${total} מוזמנים אישרו הגעה`,
+    kpiConfirmed: 'אישרו',
+    kpiPending: 'ממתינים',
+    kpiDeclined: 'לא מגיעים',
+    kpiNotSent: 'טרם נשלחו',
+    progressLabel: (pct: number) => `${pct}% האירוע מוכן`,
+    ctaTitle: 'הגיע הזמן לשלוח הזמנות',
+    ctaDesc: 'הרשימה מוכנה — שלחו את ההזמנות ותתחילו לקבל אישורי הגעה.',
+    ctaButton: 'שליחת הזמנות',
+    invitePlaceholder: 'העלו תמונת הזמנה',
+    loadingData: 'טוען נתונים…',
+    emptyTitle: 'הכול מתחיל מכאן',
+    emptyDesc: 'הוסיפו מוזמנים כדי לראות את תמונת המצב.',
+    emptyCta: 'הוספת מוזמנים',
     // ---- סקשן סידור הושבה חכם (פיצ'ר דגל — מוכר ערך, לא רשימת משימות) ----
     prep: {
       title: 'סידור הושבה חכם',

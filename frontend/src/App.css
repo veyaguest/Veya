@@ -1758,7 +1758,6 @@ td.notes.seating {
 .stat-num,
 .donut-num,
 .mini-num,
-.legend-val,
 .bar-value {
   direction: ltr;
   unicode-bidi: isolate;
@@ -1913,7 +1912,7 @@ td.notes.seating {
 /* ---- Hero section: open layout, no card ---- */
 .dash-hero-section {
   text-align: center;
-  padding: 20px 20px 16px;
+  padding: 24px 20px 32px;
   position: relative;
 }
 .event-view {
@@ -1925,10 +1924,10 @@ td.notes.seating {
 .event-couple {
   margin: 0;
   font-family: var(--font-ui, 'Heebo', 'Assistant', system-ui, sans-serif);
-  font-size: 34px;
+  font-size: 42px;
   font-weight: 700;
   color: var(--charcoal);
-  line-height: 1.2;
+  line-height: 1.15;
   letter-spacing: -0.02em;
 }
 .event-meta {
@@ -1936,6 +1935,13 @@ td.notes.seating {
   font-size: 15px;
   color: var(--muted);
   line-height: 1.5;
+}
+.event-info-line {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+  font-weight: 400;
 }
 .event-when {
   margin: 2px 0 0;
@@ -1950,6 +1956,19 @@ td.notes.seating {
   color: var(--gold-deep);
   letter-spacing: 0.02em;
 }
+.countdown-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 10px 0 0;
+  padding: 6px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gold-deep);
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  border-radius: 999px;
+  letter-spacing: 0.01em;
+}
 .dash-edit-link {
   margin-top: 10px;
   font-size: 13px;
@@ -1960,51 +1979,59 @@ td.notes.seating {
 .dash-edit-link:hover {
   opacity: 1;
 }
-/* ---- מוקאפ הודעת WhatsApp בהירו ---- */
-.hero-invite-mockup {
-  margin-top: 8px;
-  display: flex;
-  justify-content: center;
-}
-.hero-invite-mockup .wa-bubble {
-  position: relative;
-  width: 140px;
-  max-width: 140px;
-  padding: 3px 3px 4px;
-  background: #d9fdd3;
-  border-radius: 10px 10px 3px 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+/* ---- כרטיס תמונת הזמנה בהירו ---- */
+.invite-card {
+  margin-top: 10px;
+  width: 160px;
+  border-radius: 16px;
   overflow: hidden;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--line);
+  background: var(--cream);
 }
-.hero-invite-mockup .wa-bubble-img {
+.invite-card-img {
   display: block;
   width: 100%;
-  height: 120px;
-  border-radius: 7px;
+  height: 200px;
   object-fit: cover;
 }
-.hero-invite-mockup .wa-bubble-caption {
-  display: block;
-  padding: 4px 6px 0;
-  font-size: 11px;
-  color: #111b21;
-  line-height: 1.3;
+.invite-card-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 120px;
+  padding: 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border: 2px dashed color-mix(in srgb, var(--muted) 40%, transparent);
+  border-radius: 16px;
+  transition: border-color 0.15s;
 }
-.hero-invite-mockup .wa-bubble-time {
-  display: block;
-  text-align: end;
-  padding: 1px 4px 0;
-  font-size: 9px;
-  color: #667781;
-  direction: ltr;
+.invite-card-placeholder:hover {
+  border-color: var(--gold);
+}
+.invite-card-placeholder-icon {
+  font-size: 24px;
+  opacity: 0.5;
+}
+.invite-card-placeholder-text {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
 }
 @media (max-width: 700px) {
-  .hero-invite-mockup .wa-bubble {
-    width: 110px;
-    max-width: 110px;
+  .invite-card {
+    width: 130px;
   }
-  .hero-invite-mockup .wa-bubble-img {
-    height: 90px;
+  .invite-card-img {
+    height: 160px;
+  }
+  .invite-card-placeholder {
+    height: 100px;
   }
 }
 /* בורר סוג האירוע (Event-ready) — צ'יפים אלגנטיים, חתונה ברירת מחדל */
@@ -2354,30 +2381,95 @@ td.notes.seating {
   color: var(--muted);
 }
 
-/* ---- RSVP Control Center — donut + legend side by side ---- */
+/* ---- RSVP Control Center — donut centered ---- */
 .rsvp-center {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 36px;
   padding: 12px 20px 20px;
 }
 .rsvp-center-donut {
-  flex-shrink: 0;
-}
-.rsvp-center-legend {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  align-items: center;
+  gap: 8px;
+}
+.rsvp-summary {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  text-align: center;
+}
+/* ---- KPI Grid — 4 כרטיסי מדד מתחת לדונאט ---- */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 0 20px;
+}
+.kpi-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 8px;
+  background: var(--cream);
+  box-shadow: var(--shadow-card);
+  border-radius: 12px;
+  text-align: center;
+}
+.kpi-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.kpi-num {
+  font-family: var(--font-ui, 'Heebo', 'Assistant', system-ui, sans-serif);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--charcoal);
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+.kpi-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.dash-loading {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 40px 0;
+}
+.dash-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 20px;
+  text-align: center;
+}
+.dash-empty-icon {
+  font-size: 40px;
+  line-height: 1;
+}
+.dash-empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--charcoal);
+  margin: 0;
+}
+.dash-empty-desc {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 8px;
 }
 .donut-wrap {
   position: relative;
-  width: 200px;
-  height: 200px;
-  max-width: 55vw;
+  width: 300px;
+  height: 300px;
+  max-width: 70vw;
   flex-shrink: 0;
 }
 .donut {
@@ -2402,13 +2494,13 @@ td.notes.seating {
 }
 .donut-num {
   font-family: 'Cormorant Garamond', 'Assistant', serif;
-  font-size: 40px;
+  font-size: 56px;
   font-weight: 600;
   line-height: 1;
   color: var(--charcoal);
 }
 .donut-lbl {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
   letter-spacing: 0.2px;
 }
@@ -2426,29 +2518,6 @@ td.notes.seating {
   max-width: 440px;
   box-sizing: border-box;
 }
-.legend-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--body);
-}
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-.legend-label {
-  flex: 1;
-}
-.legend-val {
-  font-family: 'Cormorant Garamond', 'Assistant', serif;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--charcoal);
-}
-
 /* ============================================================
    דף "תמונת מצב" — רענון טיפוגרפיה (Heebo, מודרני/פרימיום).
    כל ההגדרות ממוקדות תחת .dash-page בלבד: אינן נוגעות בלוגו
@@ -2460,6 +2529,10 @@ td.notes.seating {
 .dash-page {
   --font-ui: 'Heebo', 'Assistant', system-ui, sans-serif;
   font-family: var(--font-ui);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 40px;
 }
 
 /* כותרות ומספרים שהיו בסריף (Frank Ruhl / Cormorant) עוברים ל-Heebo. */
@@ -2468,8 +2541,7 @@ td.notes.seating {
 .dash-page .clar-title,
 .dash-page .stat-num,
 .dash-page .donut-num,
-.dash-page .mini-num,
-.dash-page .legend-val {
+.dash-page .mini-num {
   font-family: var(--font-ui);
 }
 
@@ -2477,25 +2549,22 @@ td.notes.seating {
 .dash-page .stat-num,
 .dash-page .donut-num,
 .dash-page .mini-num,
-.dash-page .legend-val,
-.dash-page .bar-value {
+.dash-page .bar-value,
+.dash-page .kpi-num {
   font-feature-settings: 'tnum' 1, 'lnum' 1;
 }
 
 /* --- Hero: שמות הזוג --- */
 .dash-page .event-couple {
-  font-size: 34px;
+  font-size: 42px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  line-height: 1.2;
+  line-height: 1.15;
 }
-.dash-page .event-meta {
-  font-size: 15px;
-  font-weight: 400;
-}
-.dash-page .event-when {
+.dash-page .event-info-line {
   font-size: 14px;
   font-weight: 400;
+  color: var(--muted);
 }
 
 /* --- כותרות משניות: כותרות הפאנלים --- */
@@ -2512,27 +2581,113 @@ td.notes.seating {
 
 /* --- המספר הגדול במרכז העוגה --- */
 .dash-page .donut-num {
-  font-size: 48px;
+  font-size: 56px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 .dash-page .donut-lbl {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0;
 }
 
-/* --- מקרא RSVP (אנכי, לצד הדונאט) --- */
-.rsvp-center-legend .legend-row {
-  font-size: 14px;
-  font-weight: 400;
-  gap: 10px;
+/* --- Event Progress — מד מוכנות --- */
+.event-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 20px;
 }
-.rsvp-center-legend .legend-val {
-  font-size: 20px;
+.event-progress-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.event-progress-track {
+  width: 100%;
+  height: 8px;
+  background: color-mix(in srgb, var(--muted) 20%, transparent);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.event-progress-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 4px;
+  transition: width 0.4s ease-out;
+}
+
+/* --- Animations — כניסה עדינה ---- */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.dash-page .dash-hero-section { animation: fadeInUp 0.4s ease-out both; }
+.dash-page .rsvp-center { animation: fadeInUp 0.4s ease-out 0.08s both; }
+.dash-page .kpi-grid { animation: fadeInUp 0.4s ease-out 0.16s both; }
+.dash-page .event-progress { animation: fadeInUp 0.4s ease-out 0.24s both; }
+.dash-page .cta-card,
+.dash-page .next-action { animation: fadeInUp 0.4s ease-out 0.32s both; }
+.dash-page .seating-hero { animation: fadeInUp 0.4s ease-out 0.40s both; }
+.kpi-card {
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dash-page .dash-hero-section,
+  .dash-page .rsvp-center,
+  .dash-page .kpi-grid,
+  .dash-page .event-progress,
+  .dash-page .cta-card,
+  .dash-page .next-action,
+  .dash-page .seating-hero,
+  .kpi-card {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* --- CTA Card — כרטיס קריאה לפעולה בולט --- */
+.cta-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 24px;
+  background: linear-gradient(135deg, var(--gold-deep), var(--gold));
+  border-radius: 16px;
+  text-align: center;
+}
+.cta-card-title {
+  margin: 0;
+  font-size: 18px;
   font-weight: 700;
-  min-width: 28px;
-  text-align: end;
+  color: #fff;
+}
+.cta-card-desc {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.5;
+}
+.cta-card-btn {
+  margin-top: 6px;
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gold-deep);
+  background: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.cta-card-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* --- Next Action — כרטיס פעולה חכם --- */
@@ -2622,18 +2777,19 @@ td.notes.seating {
     padding: 16px 16px 12px;
   }
   .dash-hero-section .event-couple {
-    font-size: 26px;
+    font-size: 28px;
   }
   .rsvp-center {
-    flex-direction: column;
-    gap: 12px;
     padding: 8px 16px 16px;
   }
-  .rsvp-center-legend {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px 24px;
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0 16px;
+  }
+  .dash-page {
+    gap: 20px;
+    padding-bottom: 32px;
   }
   .next-action {
     flex-direction: column;
@@ -2641,12 +2797,24 @@ td.notes.seating {
     gap: 12px;
     padding: 16px 20px;
   }
+  .cta-card {
+    padding: 24px 20px;
+    border-radius: 12px;
+  }
+  .cta-card-btn {
+    width: 100%;
+    padding: 14px;
+    min-height: 48px;
+  }
+  .event-progress {
+    padding: 0 16px;
+  }
   .dash-panel {
     padding: 18px 20px;
   }
   .donut-wrap {
-    width: 170px;
-    height: 170px;
+    width: 240px;
+    height: 240px;
   }
 }
 
