@@ -396,9 +396,11 @@ function App() {
       </aside>
 
       <div className="main-area">
-        <header className="page-header">
-          <h1 className="page-title">{pageTitle[page]}</h1>
-        </header>
+        {page !== 'dashboard' && (
+          <header className="page-header">
+            <h1 className="page-title">{pageTitle[page]}</h1>
+          </header>
+        )}
         <main className="content" key={`${page}-${activeEventId}`}>
           <ErrorBoundary>
             {page === 'dashboard' && (

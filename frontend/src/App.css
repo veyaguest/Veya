@@ -1933,8 +1933,7 @@ td.notes.seating {
 /* ---- Hero section: open layout, no card ---- */
 .dash-hero-section {
   text-align: center;
-  padding: 32px 20px 28px;
-  margin-bottom: 8px;
+  padding: 20px 20px 16px;
   position: relative;
 }
 .event-view {
@@ -1983,7 +1982,7 @@ td.notes.seating {
 }
 /* ---- מוקאפ הודעת WhatsApp בהירו ---- */
 .hero-invite-mockup {
-  margin-top: 24px;
+  margin-top: 16px;
   display: flex;
   justify-content: center;
 }
@@ -2373,9 +2372,8 @@ td.notes.seating {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 40px;
-  padding: 24px 20px 28px;
-  margin-bottom: 8px;
+  gap: 36px;
+  padding: 12px 20px 20px;
 }
 .rsvp-center-donut {
   flex-shrink: 0;
@@ -2390,9 +2388,9 @@ td.notes.seating {
 }
 .donut-wrap {
   position: relative;
-  width: 240px;
-  height: 240px;
-  max-width: 60vw;
+  width: 200px;
+  height: 200px;
+  max-width: 55vw;
   flex-shrink: 0;
 }
 .donut {
@@ -2417,7 +2415,7 @@ td.notes.seating {
 }
 .donut-num {
   font-family: 'Cormorant Garamond', 'Assistant', serif;
-  font-size: 48px;
+  font-size: 40px;
   font-weight: 600;
   line-height: 1;
   color: var(--charcoal);
@@ -2634,15 +2632,15 @@ td.notes.seating {
     grid-template-columns: 1fr;
   }
   .dash-hero-section {
-    padding: 24px 16px 20px;
+    padding: 16px 16px 12px;
   }
   .dash-hero-section .event-couple {
     font-size: 26px;
   }
   .rsvp-center {
     flex-direction: column;
-    gap: 20px;
-    padding: 20px 16px;
+    gap: 12px;
+    padding: 8px 16px 16px;
   }
   .rsvp-center-legend {
     flex-direction: row;
@@ -2660,8 +2658,8 @@ td.notes.seating {
     padding: 18px 20px;
   }
   .donut-wrap {
-    width: 220px;
-    height: 220px;
+    width: 170px;
+    height: 170px;
   }
 }
 
