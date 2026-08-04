@@ -304,6 +304,10 @@ export const strings = {
       `נותרו ${days} ימים, ${hours} שעות ו-${minutes} דקות לאירוע`,
     rsvpSummary: (confirmed: number, total: number) =>
       `${confirmed} מתוך ${total} מוזמנים אישרו הגעה`,
+    donutCardTitle: 'סטטוס אישורי הגעה',
+    donutResponseBadge: (pct: number) => `${pct}% ענו`,
+    donutCenterLabel: 'מאושרים',
+    donutCenterTotal: (total: number) => `מתוך ${total} מוזמנים`,
     kpiConfirmed: 'אישרו',
     kpiPending: 'ממתינים',
     kpiDeclined: 'לא מגיעים',
@@ -321,15 +325,10 @@ export const strings = {
     emptyCta: 'הוספת מוזמנים',
     // ---- סקשן סידור הושבה חכם (פיצ'ר דגל — מוכר ערך, לא רשימת משימות) ----
     prep: {
-      title: 'סידור הושבה חכם',
-      subtitle:
-        'הגדירו קבוצות, משפחות והעדפות ישיבה — ו-VEYA תבנה עבורכם סידור מדויק בתוך שניות.',
-      benefits: [
-        { icon: '👨‍👩‍👧', text: 'יצירת קבוצות של משפחות וחברים' },
-        { icon: '💬', text: 'הוספת העדפות והערות ישיבה' },
-        { icon: '✨', text: 'VEYA בונה עבורכם את סידור ההושבה' },
-      ],
-      cta: 'התחילו את סידור ההושבה',
+      title: 'סידור הושבה',
+      seatedProgress: (seated: number, total: number) =>
+        `${seated} / ${total} מוזמנים שובצו`,
+      openDesigner: 'פתח את מעצב האולם',
       // --- נשארים לצורך תאימות עם לוגיקה קיימת ---
       progress: (done: number, total: number) =>
         `${done} מתוך ${total} שלבים הושלמו`,

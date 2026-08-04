@@ -15,6 +15,7 @@
   --gold-light: #e4c96b;   /* זהב בהיר — הדגשה/hover */
   --gold-deep: #9a7b2e;    /* זהב מעומעם — טקסט/מסגרות זהב על בהיר */
   --charcoal: #2b2620;     /* טקסט ראשי/כותרות (spec: #2B2620) */
+  --charcoal-panel: #18181b; /* zinc-900 — כרטיס "הצעד הבא" בדשבורד: כהה ומינימלי, בכוונה מנותק מפלטת הזהב */
   --body: #4a4438;         /* טקסט משני — תאי טבלה/מספרים (spec: #4A4438) */
   --muted: #8c8375;        /* תווית מעומעמת (spec: #8C8375) */
   --faint: #b8ad97;        /* טקסט/קו חלש (spec: #B8AD97) */
@@ -22,6 +23,12 @@
   --error: #a6605a;        /* "לא מגיעים"/שגיאה — ורוד-אדמדם מאופק */
   --success: #9a7b2e;      /* "מגיעים" — זהב מעומעם, קריא על בהיר */
   --green: #2f9e5f;        /* "אישרו הגעה" — ירוק ברור וקריא על בהיר */
+  /* ---- טוקני דונאט הדשבורד בלבד — פלטה בהירה ויוקרתית, נבחרה ואושרה
+     ע"י המייסד מתוך 12 הצעות (2026-08). לא לשימוש מחוץ לכרטיס. ---- */
+  --donut-confirmed: #4f9b72;      /* Muted Emerald — "אישרו הגעה" */
+  --donut-pending: var(--faint);   /* Warm Taupe (=טוקן faint קיים) — "ממתינים" */
+  --donut-maybe: var(--gold);      /* Champagne Gold (=טוקן gold קיים) — "לא החליטו" */
+  --donut-declined: #b76e79;       /* Dusty Rose — "לא מגיעים" */
   /* צל רך אחיד לכרטיסים — תחושת עומק עדינה, Premium (לא כבד). */
   --shadow-card: 0 1px 2px rgba(43, 38, 32, 0.03), 0 4px 16px -6px rgba(43, 38, 32, 0.08);
   --shadow-card-hover: 0 2px 4px rgba(43, 38, 32, 0.04), 0 8px 24px -8px rgba(43, 38, 32, 0.12);
@@ -1352,67 +1359,51 @@ td.notes.seating {
   justify-content: center;
 }
 
-/* ---- סידור הושבה חכם — פיצ'ר דגל ---- */
-.seating-hero {
-  padding: 28px 28px 24px;
-  border-radius: var(--radius-xl);
-  background: linear-gradient(135deg, var(--gold-deep) 0%, #b8943e 100%);
-  color: #fff;
-  text-align: center;
-}
-.seating-hero-title {
-  margin: 0 0 6px;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-.seating-hero-subtitle {
-  margin: 0 0 20px;
-  font-size: 14px;
-  line-height: 1.55;
-  opacity: 0.92;
-}
-.seating-hero-benefits {
-  list-style: none;
-  margin: 0 0 24px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  text-align: start;
-}
-.seating-hero-benefit {
+/* ---- סידור הושבה — ווידג'ט פונקציונלי בדשבורד (לא באנר שיווקי) ---- */
+.seating-widget {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-.seating-hero-benefit-icon {
-  font-size: 20px;
-  flex-shrink: 0;
-  width: 28px;
-  text-align: center;
-}
-.seating-hero-benefit-text {
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.4;
-}
-.seating-hero-cta {
-  display: block;
-  width: 100%;
-  padding: 14px 20px;
-  border: none;
-  border-radius: 10px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px 24px;
   background: #fff;
-  color: var(--gold-deep);
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
+  border: 1px solid rgba(228, 228, 231, 0.6);
+  border-radius: var(--radius-xl);
 }
-.seating-hero-cta:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+.seating-widget-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.seating-widget-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.seating-widget-progress {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+.seating-widget-btn {
+  flex-shrink: 0;
+  padding: 9px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--charcoal);
+  background: transparent;
+  border: 1px solid rgba(212, 212, 216, 0.9);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+.seating-widget-btn:hover {
+  background: #f4f4f5;
+  border-color: #a1a1aa;
 }
 
 .wizard-card {
@@ -2475,9 +2466,34 @@ td.notes.seating {
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
-  padding: 24px 20px;
+  padding: 22px 22px 24px;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
+}
+/* ---- כותרת הכרטיס + Badge שיעור מענה ---- */
+.donut-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.donut-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.donut-card-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold-deep);
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  border-radius: 999px;
+  white-space: nowrap;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
 }
 .rsvp-center-donut {
   display: flex;
@@ -2505,68 +2521,52 @@ td.notes.seating {
 .donut-legend-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-size: 13px;
   color: var(--body);
 }
 .donut-legend-dot {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
 }
-/* ---- כרטיס "הצעד הבא" — פעולות מהירות לצד הדונאט ---- */
+.donut-legend-count {
+  font-weight: 700;
+  color: var(--charcoal);
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+/* ---- כרטיס "הצעד הבא" — נקודת המיקוד המרכזית של הדשבורד. כהה ומינימלי
+   (בהשראת Linear/Stripe) — בכוונה בלי זהב, בלי גרדיאנט, בלי צל כבד. ---- */
 .quick-actions-card {
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: start;
   gap: 8px;
-  padding: 24px 22px;
-  background: var(--cream);
-  border: 1px solid var(--line);
+  padding: 26px 24px;
+  background: var(--charcoal-panel);
+  border: none;
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 .quick-actions-icon {
-  font-size: 26px;
+  font-size: 20px;
   line-height: 1;
   margin-bottom: 2px;
 }
 .quick-actions-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
-  color: var(--charcoal);
+  color: #fff;
 }
 .quick-actions-desc {
   margin: 0;
   font-size: 14px;
-  color: var(--muted);
+  color: #a1a1aa;
   line-height: 1.5;
 }
 .quick-actions-btn {
-  margin-top: 8px;
-}
-/* --- מצב "הצעד הבא" הפעיל — כרטיס ממוקד בזהב, כדי שהעין תלך לשם קודם --- */
-.quick-actions-card--focus {
-  background: linear-gradient(135deg, var(--gold-deep), var(--gold));
-  border-color: transparent;
-}
-.quick-actions-card--focus .quick-actions-title {
-  color: #fff;
-}
-.quick-actions-card--focus .quick-actions-desc {
-  color: rgba(255, 255, 255, 0.85);
-}
-.quick-actions-card--focus .next-action-cta {
-  color: var(--gold-deep);
-  background: #fff;
-  border-color: transparent;
-}
-.quick-actions-card--focus .next-action-cta:hover {
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--gold-deep);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 10px;
 }
 /* ---- KPI Grid — 4 כרטיסי מדד ---- */
 .kpi-grid {
@@ -2651,9 +2651,9 @@ td.notes.seating {
 }
 .donut-wrap {
   position: relative;
-  width: 240px;
-  height: 240px;
-  max-width: 70vw;
+  width: 264px;
+  height: 264px;
+  max-width: 74vw;
   flex-shrink: 0;
 }
 .donut {
@@ -2662,7 +2662,7 @@ td.notes.seating {
   display: block;
 }
 .donut-bg {
-  stroke: #e8e2d6;
+  stroke: var(--line-2);
 }
 /* מרכז העוגה — שכבת HTML מעל ה-SVG (עברית תקינה בכל דפדפן) */
 .donut-center {
@@ -2678,13 +2678,16 @@ td.notes.seating {
 }
 .donut-num {
   font-family: 'Cormorant Garamond', 'Assistant', serif;
-  font-size: 56px;
+  font-size: 62px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   line-height: 1;
   color: var(--charcoal);
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
 }
 .donut-lbl {
   font-size: 14px;
+  font-weight: 600;
   color: var(--muted);
   letter-spacing: 0.2px;
 }
@@ -2810,7 +2813,7 @@ td.notes.seating {
 .dash-page .kpi-grid { animation: fadeInUp 0.4s ease-out 0.08s both; }
 .dash-page .dash-grid-2col { animation: fadeInUp 0.4s ease-out 0.16s both; }
 .dash-page .event-progress { animation: fadeInUp 0.4s ease-out 0.24s both; }
-.dash-page .seating-hero { animation: fadeInUp 0.4s ease-out 0.32s both; }
+.dash-page .seating-widget { animation: fadeInUp 0.4s ease-out 0.32s both; }
 .kpi-card {
   transition: transform 0.15s, box-shadow 0.15s;
 }
@@ -2823,71 +2826,58 @@ td.notes.seating {
   .dash-page .kpi-grid,
   .dash-page .dash-grid-2col,
   .dash-page .event-progress,
-  .dash-page .seating-hero,
+  .dash-page .seating-widget,
   .kpi-card {
     animation: none;
     transition: none;
   }
 }
 
-/* --- CTA Card — כרטיס קריאה לפעולה בולט (משבצת "הצעד הבא" ב-Grid) --- */
+/* --- CTA Card — משבצת "הצעד הבא" ב-Grid, אותו עיצוב כהה כמו quick-actions-card --- */
 .cta-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   gap: 10px;
-  padding: 28px 24px;
-  background: linear-gradient(135deg, var(--gold-deep), var(--gold));
+  padding: 26px 24px;
+  background: var(--charcoal-panel);
+  border: none;
   border-radius: var(--radius-xl);
-  text-align: center;
+  text-align: start;
 }
 .cta-card-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   color: #fff;
 }
 .cta-card-desc {
   margin: 0;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.85);
+  color: #a1a1aa;
   line-height: 1.5;
 }
-.cta-card-btn {
+
+/* --- כפתור CTA ראשי יחיד על רקע כהה — לבן/zinc-100, בלי צל --- */
+.cta-card-btn,
+.quick-actions-btn {
   margin-top: 6px;
-  padding: 12px 32px;
-  font-size: 16px;
+  padding: 10px 22px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--gold-deep);
-  background: #fff;
+  color: #18181b;
+  background: #f4f4f5;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-.cta-card-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* --- כפתור פעולה משני — משבצת "הצעד הבא" ב-Grid ---- */
-.next-action-cta {
-  flex-shrink: 0;
-  padding: 8px 22px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--gold-deep);
-  background: transparent;
-  border: 1.5px solid var(--gold-deep);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s ease, transform 0.15s ease;
   white-space: nowrap;
 }
-.next-action-cta:hover {
-  background: var(--gold-deep);
-  color: #fff;
+.cta-card-btn:hover,
+.quick-actions-btn:hover {
+  background: #fff;
+  transform: translateY(-1px);
 }
 
 /* --- כרטיסי מדד: 4 המספרים הראשיים --- */

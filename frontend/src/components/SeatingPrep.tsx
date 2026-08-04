@@ -1,33 +1,29 @@
+import type { DashboardStats } from '../types'
 import type { ReadinessPage } from '../readiness'
 import { strings } from '../strings/he'
 
 const t = strings.dashboard.prep
 
 interface Props {
+  stats: DashboardStats
   onNavigate?: (page: ReadinessPage) => void
 }
 
-export function SeatingPrep({ onNavigate }: Props) {
+export function SeatingPrep({ stats, onNavigate }: Props) {
   return (
-    <div className="seating-hero">
-      <h3 className="seating-hero-title">{t.title}</h3>
-      <p className="seating-hero-subtitle">{t.subtitle}</p>
-
-      <ul className="seating-hero-benefits">
-        {t.benefits.map((b, i) => (
-          <li key={i} className="seating-hero-benefit">
-            <span className="seating-hero-benefit-icon">{b.icon}</span>
-            <span className="seating-hero-benefit-text">{b.text}</span>
-          </li>
-        ))}
-      </ul>
-
+    <div className="seating-widget">
+      <div className="seating-widget-text">
+        <h3 className="seating-widget-title">{t.title}</h3>
+        <p className="seating-widget-progress">
+          {t.seatedProgress(stats.seated_guests, stats.total_guests)}
+        </p>
+      </div>
       <button
         type="button"
-        className="seating-hero-cta"
-        onClick={() => onNavigate?.('guests')}
+        className="seating-widget-btn"
+        onClick={() => onNavigate?.('hall')}
       >
-        {t.cta}
+        {t.openDesigner}
       </button>
     </div>
   )

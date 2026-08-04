@@ -65,12 +65,12 @@ function QuickActionsCard({
   }
 
   return (
-    <div className="quick-actions-card quick-actions-card--focus dash-grid-card">
+    <div className="quick-actions-card dash-grid-card">
       <span className="quick-actions-icon">✦</span>
       <h3 className="quick-actions-title">{t.nextStepTitle}</h3>
       <p className="quick-actions-desc">{text}</p>
       <button
-        className="next-action-cta quick-actions-btn"
+        className="quick-actions-btn"
         onClick={() => onNavigate?.(target)}
       >
         {cta}
@@ -458,10 +458,10 @@ export function DashboardPage({ onNavigate }: Props) {
 
       {stats && stats.total_guests > 0 && (() => {
         const rsvpSegments = [
-          { label: t.segConfirmed, value: stats.confirmed, color: 'var(--green)' },
-          { label: t.segMaybe, value: stats.maybe, color: 'var(--gold-light)' },
-          { label: t.segDeclined, value: stats.declined, color: 'var(--error)' },
-          { label: t.segPending, value: stats.pending, color: 'var(--faint)' },
+          { label: t.kpiConfirmed, value: stats.confirmed, color: 'var(--donut-confirmed)' },
+          { label: t.kpiPending, value: stats.pending, color: 'var(--donut-pending)' },
+          { label: t.segMaybe, value: stats.maybe, color: 'var(--donut-maybe)' },
+          { label: t.kpiDeclined, value: stats.declined, color: 'var(--donut-declined)' },
         ]
         return (
           <>
@@ -528,20 +528,27 @@ export function DashboardPage({ onNavigate }: Props) {
             {/* ---- Bento Grid: כרטיס דונאט + כרטיס "הצעד הבא" ---- */}
             <div className="dash-grid-2col">
               <div className="donut-card dash-grid-card">
+                <div className="donut-card-header">
+                  <h3 className="donut-card-title">{t.donutCardTitle}</h3>
+                  <span className="donut-card-badge">
+                    {t.donutResponseBadge(Math.round(stats.response_rate))}
+                  </span>
+                </div>
                 <div className="rsvp-center-donut">
                   <Donut
                     segments={rsvpSegments}
                     centerNum={`${stats.confirmed_people}`}
-                    centerLabel={t.centerLabel}
+                    centerLabel={t.donutCenterLabel}
                   />
                   <p className="rsvp-summary">
-                    {t.rsvpSummary(stats.confirmed_people, stats.total_guests)}
+                    {t.donutCenterTotal(stats.total_guests)}
                   </p>
                 </div>
                 <ul className="donut-legend-row">
                   {rsvpSegments.map((seg) => (
                     <li key={seg.label} className="donut-legend-item">
                       <span className="donut-legend-dot" style={{ background: seg.color }} />
+                      <span className="donut-legend-count">{seg.value}</span>
                       {seg.label}
                     </li>
                   ))}
@@ -573,7 +580,7 @@ export function DashboardPage({ onNavigate }: Props) {
 
       {/* ---- סידור הושבה חכם — פיצ'ר דגל ---- */}
       {stats && stats.total_guests > 0 && (
-        <SeatingPrep onNavigate={onNavigate} />
+        <SeatingPrep stats={stats} onNavigate={onNavigate} />
       )}
     </div>
   )
@@ -611,7 +618,10 @@ function Donut({
 }) {
   const total = segments.reduce((s, x) => s + x.value, 0)
   const R = 58
-  const STROKE = 9
+  const STROKE = 7
+  // מרווח זעיר בין הפלחים (בפיקסלים על היקף המעגל) — כדי שהקצוות המעוגלים
+  // לא ייגעו בפלח הבא, מראה עדין ומלוטש בסגנון Stripe/Apple.
+  const GAP = 3
   const C = 2 * Math.PI * R
   let acc = 0
   return (
@@ -620,7 +630,11 @@ function Donut({
         <circle className="donut-bg" cx="70" cy="70" r={R} fill="none" strokeWidth={STROKE} />
         {total > 0 &&
           segments.map((seg, i) => {
-            const len = (seg.value / total) * C
+            const fullLen = (seg.value / total) * C
+            // פלח בערך 0 מדלגים על ציור לגמרי — strokeLinecap="round" על
+            // dasharray "0 X" מצייר נקודה שלא אמורה להיות שם.
+            if (fullLen <= 0) return null
+            const len = Math.max(0, fullLen - GAP)
             const dash = (
               <circle
                 key={i}
@@ -630,12 +644,13 @@ function Donut({
                 fill="none"
                 stroke={seg.color}
                 strokeWidth={STROKE}
+                strokeLinecap="round"
                 strokeDasharray={`${len} ${C - len}`}
                 strokeDashoffset={-acc}
                 transform="rotate(-90 70 70)"
               />
             )
-            acc += len
+            acc += fullLen
             return dash
           })}
       </svg>
