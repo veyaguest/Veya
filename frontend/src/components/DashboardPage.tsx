@@ -368,9 +368,9 @@ export function DashboardPage({ onNavigate }: Props) {
         <NextAction stats={stats} onNavigate={onNavigate} />
       )}
 
-      {/* ---- VEYA Assistant — מלווה אישי להושבה ---- */}
+      {/* ---- סידור הושבה חכם — פיצ'ר דגל ---- */}
       {stats && stats.total_guests > 0 && (
-        <SeatingPrep stats={stats} onNavigate={onNavigate} />
+        <SeatingPrep onNavigate={onNavigate} />
       )}
     </div>
   )
