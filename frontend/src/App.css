@@ -1988,39 +1988,43 @@ td.notes.seating {
 }
 .hero-invite-mockup .wa-bubble {
   position: relative;
-  width: 80px;
-  max-width: 80px;
-  padding: 2px 2px 3px;
+  width: 140px;
+  max-width: 140px;
+  padding: 3px 3px 4px;
   background: #d9fdd3;
-  border-radius: 6px 6px 2px 6px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border-radius: 10px 10px 3px 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   overflow: hidden;
 }
 .hero-invite-mockup .wa-bubble-img {
   display: block;
   width: 100%;
-  height: 70px;
-  border-radius: 4px;
+  height: 120px;
+  border-radius: 7px;
   object-fit: cover;
 }
 .hero-invite-mockup .wa-bubble-caption {
-  display: none;
+  display: block;
+  padding: 4px 6px 0;
+  font-size: 11px;
+  color: #111b21;
+  line-height: 1.3;
 }
 .hero-invite-mockup .wa-bubble-time {
   display: block;
   text-align: end;
-  padding: 1px 3px 0;
-  font-size: 8px;
+  padding: 1px 4px 0;
+  font-size: 9px;
   color: #667781;
   direction: ltr;
 }
 @media (max-width: 700px) {
   .hero-invite-mockup .wa-bubble {
-    width: 64px;
-    max-width: 64px;
+    width: 110px;
+    max-width: 110px;
   }
   .hero-invite-mockup .wa-bubble-img {
-    height: 56px;
+    height: 90px;
   }
 }
 /* בורר סוג האירוע (Event-ready) — צ'יפים אלגנטיים, חתונה ברירת מחדל */
