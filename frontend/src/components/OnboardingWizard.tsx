@@ -55,7 +55,7 @@ export function OnboardingWizard({ onCreated }: Props) {
       setError(strings.errors.imageTypeError)
       return
     }
-    if (file.size > 15 * 1024 * 1024) {
+    if (file.size > 50 * 1024 * 1024) {
       setError(strings.errors.imageSize3MB)
       return
     }
@@ -291,7 +291,7 @@ export function OnboardingWizard({ onCreated }: Props) {
 
             <div className="onboard-actions">
               <button type="submit" className="btn-primary" disabled={busy}>
-                {busy ? 'רגע…' : 'המשך →'}
+                {busy ? 'רגע…' : 'להוספת מוזמנים →'}
               </button>
             </div>
           </form>

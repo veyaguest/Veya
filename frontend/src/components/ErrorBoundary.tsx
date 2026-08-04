@@ -31,7 +31,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="error-boundary-card">
             <div className="error-boundary-logo">V E Y A</div>
             <h1>משהו השתבש</h1>
-            <p>אל דאגה, המידע שלכם נשמר. נסו לטעון את הדף מחדש.</p>
+            <p>המידע שלכם שמור אצלנו. נסו לטעון את הדף מחדש.</p>
             <button
               type="button"
               className="btn-primary"

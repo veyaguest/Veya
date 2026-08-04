@@ -3138,7 +3138,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                 <p className="hm-panel-head">מקומות רזרבה</p>
                 <p className="hm-reserve-desc">
                   כמה מקומות פנויים להשאיר בשיבוץ האוטומטי (מפוזר אחיד בין השולחנות),
-                  לאורחים של הרגע האחרון.
+                  למוזמנים של הרגע האחרון.
                 </p>
                 <div className="hm-reserve-chips">
                   {RESERVE_PRESETS.map((n) => (
@@ -3499,7 +3499,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                       שולחן רזרבה
                     </label>
                     <p className="hm-reserve-hint">
-                      לא ישובץ אוטומטית — שמור לאורחים של הרגע האחרון.
+                      לא ישובץ אוטומטית — שמור למוזמנים של הרגע האחרון.
                     </p>
                   </div>
 
@@ -3589,7 +3589,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
               <div className="hm-guide-scroll">
                 <h2 className="hm-guide-title">ברוכים הבאים לסידור ההושבה ✨</h2>
                 <p className="hm-guide-lead">
-                  כאן תוכלו לסדר את השולחנות באולם בקלות ובנוחות.
+                  גוררים שולחנות ואלמנטים בדיוק לאן שרוצים — והכול נשמר לבד.
                 </p>
 
                 {/* אנימציית הסבר: יד גוררת שולחן לצד, המפה מתכווצת כדי להשאיר הכל גלוי,
@@ -3757,7 +3757,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
             <div className="day-mode-head">
               <div>
                 <h3>מצב יום האירוע</h3>
-                <p>שיבוץ אורחים של הרגע האחרון — בקליק, עם המלצה חכמה.</p>
+                <p>שיבוץ מוזמנים של הרגע האחרון — בקליק, עם המלצה חכמה.</p>
               </div>
               <button
                 className="day-mode-close"

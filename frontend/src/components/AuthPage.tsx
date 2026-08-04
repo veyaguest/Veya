@@ -129,7 +129,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
             </li>
             <li>
               <span className="auth-bullet" />
-              אישורי הגעה דיגיטליים שהאורחים באמת ממלאים
+              אישורי הגעה דיגיטליים שהמוזמנים באמת ממלאים
             </li>
             <li>
               <span className="auth-bullet" />

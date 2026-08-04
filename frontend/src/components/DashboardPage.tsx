@@ -85,14 +85,20 @@ function InvitePhoneMock({
   imageSrc,
   imageAlt,
   contactName,
+  captionText,
 }: {
   imageSrc: string
   imageAlt: string
   contactName: string
+  captionText: string
 }) {
   return (
     <div className="invite-phone-stage">
       <div className="invite-phone">
+        <span className="invite-phone-btn invite-phone-btn--mute" aria-hidden="true" />
+        <span className="invite-phone-btn invite-phone-btn--vol-up" aria-hidden="true" />
+        <span className="invite-phone-btn invite-phone-btn--vol-down" aria-hidden="true" />
+        <span className="invite-phone-btn invite-phone-btn--power" aria-hidden="true" />
         <span className="invite-phone-notch" aria-hidden="true" />
         <div className="invite-phone-screen">
           <div className="invite-phone-header">
@@ -102,6 +108,7 @@ function InvitePhoneMock({
           <div className="invite-phone-chat">
             <div className="invite-phone-bubble">
               <img className="invite-phone-bubble-img" src={imageSrc} alt={imageAlt} />
+              <p className="invite-phone-bubble-caption">{captionText}</p>
               <span className="invite-phone-bubble-time" aria-hidden="true">
                 12:00 ✓✓
               </span>
@@ -255,7 +262,7 @@ export function DashboardPage({ onNavigate }: Props) {
       setError(t.imageTypeError)
       return
     }
-    if (file.size > 15 * 1024 * 1024) {
+    if (file.size > 50 * 1024 * 1024) {
       setError(t.imageSizeError)
       return
     }
@@ -433,6 +440,11 @@ export function DashboardPage({ onNavigate }: Props) {
                     imageSrc={mediaUrl(event.invite_image)}
                     imageAlt={terms.inviteLabel}
                     contactName={couple ?? terms.defaultTitle}
+                    captionText={
+                      couple
+                        ? t.inviteCaptionNamed(terms.celebration, couple)
+                        : t.inviteCaptionGeneric(terms.celebration)
+                    }
                   />
                   <button
                     type="button"

@@ -1945,51 +1945,87 @@ td.notes.seating {
 .dash-edit-link:hover {
   opacity: 1;
 }
-/* ---- כרטיס תמונת הזוג בהירו — Bento 4:3, פינות רכות, עריכה ב-Hover ----
-   הגודל של המשבצת הזאת קבוע (max-width 380px, יחס 4:3) — לא משתנה בין
-   מצב "אין תמונה" למצב "מוקאפ WhatsApp/אייפון" (invite-phone-stage). */
+/* ---- משבצת תמונת הזוג בהירו — בלי מסגרת/רקע/צל משלה. הגודל קבוע
+   (max-width 380px, יחס 4:3) רק בשביל הפריסה — האייפון צף עליה בלי כרטיס
+   סביבו, לא משתנה בין מצב "אין תמונה" למצב "מוקאפ WhatsApp/אייפון". */
 .dash-hero-image {
   position: relative;
   flex: 1;
   max-width: 380px;
   aspect-ratio: 4 / 3;
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--line);
-  background: linear-gradient(160deg, #fdfaf4 0%, #f2ebdc 100%);
+  overflow: visible;
 }
-/* ---- מוקאפ WhatsApp בתוך מסגרת אייפון — תמונת ההזמנה כפי שהמוזמן רואה אותה ---- */
+/* ---- מוקאפ WhatsApp בתוך מסגרת אייפון ריאליסטית — תמונת ההזמנה כפי
+   שהמוזמן רואה אותה. בלי כרטיס-רקע מסביב — האייפון עצמו הוא האלמנט. ---- */
 .invite-phone-stage {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4% 15%;
   box-sizing: border-box;
 }
 .invite-phone {
   position: relative;
   height: 100%;
-  aspect-ratio: 9 / 18.5;
+  aspect-ratio: 9 / 19.5;
   max-width: 100%;
   box-sizing: border-box;
-  background: #0b0a0c;
-  border-radius: 22px;
-  padding: 6px;
+  /* טיטניום מוברש — גרדיאנט רב-שכבתי במקום שחור שטוח */
+  background: linear-gradient(
+    155deg,
+    #48484c 0%,
+    #1c1c1e 16%,
+    #0b0a0c 42%,
+    #17171a 78%,
+    #48484c 100%
+  );
+  border-radius: 34px;
+  padding: 5px;
   box-shadow:
-    0 24px 44px -16px rgba(11, 10, 12, 0.38),
-    0 6px 16px -6px rgba(11, 10, 12, 0.22);
+    0 28px 52px -16px rgba(11, 10, 12, 0.42),
+    0 10px 22px -8px rgba(11, 10, 12, 0.26),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+/* כפתורי הצד — מתג שקט, ווליום, פאוור — לגובה ריאליסטי */
+.invite-phone-btn {
+  position: absolute;
+  z-index: 1;
+  background: linear-gradient(180deg, #3a3a3d, #0b0a0c);
+  border-radius: 2px;
+}
+.invite-phone-btn--mute {
+  left: -2.5px;
+  top: 15%;
+  width: 2.5px;
+  height: 3.5%;
+}
+.invite-phone-btn--vol-up {
+  left: -2.5px;
+  top: 21%;
+  width: 2.5px;
+  height: 6.5%;
+}
+.invite-phone-btn--vol-down {
+  left: -2.5px;
+  top: 30%;
+  width: 2.5px;
+  height: 6.5%;
+}
+.invite-phone-btn--power {
+  right: -2.5px;
+  top: 24%;
+  width: 2.5px;
+  height: 9%;
 }
 .invite-phone-notch {
   position: absolute;
-  top: 5px;
+  top: 6px;
   left: 50%;
   transform: translateX(-50%);
-  width: 30%;
-  height: 5px;
-  background: #0b0a0c;
+  width: 32%;
+  height: 5.5px;
+  background: #000;
   border-radius: 999px;
   z-index: 3;
 }
@@ -1997,11 +2033,24 @@ td.notes.seating {
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 15px;
+  border-radius: 30px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   background: #e5ddd5;
+}
+/* ברק זכוכית עדין על המסך — תחושת מסך אמיתי, לא שטח צבע */
+.invite-phone-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0) 22%
+  );
+  pointer-events: none;
+  z-index: 5;
 }
 .invite-phone-header {
   flex-shrink: 0;
@@ -2030,18 +2079,19 @@ td.notes.seating {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* אזור הצ'אט — בועה אחת גדולה שתופסת את רוב המסך, כמו תמונה שנשלחה בפועל */
 .invite-phone-chat {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 10px 7px;
+  padding: 8px 6px;
 }
 .invite-phone-bubble {
   position: relative;
   align-self: flex-start;
-  max-width: 88%;
+  width: 94%;
   padding: 3px;
   background: #d9fdd3;
   border-radius: 8px 8px 2px 8px;
@@ -2050,22 +2100,23 @@ td.notes.seating {
 .invite-phone-bubble-img {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 3 / 4;
   object-fit: cover;
   border-radius: 5px;
 }
+/* כיתוב ההזמנה מתחת לתמונה — כמו הודעת תמונה+טקסט אמיתית ב-WhatsApp */
+.invite-phone-bubble-caption {
+  margin: 4px 3px 1px;
+  font-size: 8px;
+  line-height: 1.4;
+  color: #111b21;
+}
 .invite-phone-bubble-time {
-  position: absolute;
-  bottom: 6px;
-  inset-inline-end: 6px;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 1px 5px;
-  font-size: 7px;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.38);
-  border-radius: 999px;
+  display: block;
+  margin: 0 3px 1px;
+  text-align: end;
+  font-size: 6.5px;
+  color: #667781;
   direction: ltr;
 }
 .dash-hero-image-edit {
@@ -2186,6 +2237,13 @@ td.notes.seating {
   }
   .dash-hero-image {
     max-width: none;
+    width: 100%;
+    /* גובה קבוע ב-px, לא aspect-ratio — בתוך column-reverse עם צאצא
+       שגם הוא aspect-ratio (האייפון), חישוב היחס מתנגש עם ה-flex ומייצר
+       גובה שרירותי וענק. גובה מפורש פותר את זה בוודאות. */
+    aspect-ratio: auto;
+    height: 230px;
+    flex: none;
   }
   .dash-hero-image-edit {
     opacity: 1;
@@ -2643,17 +2701,21 @@ td.notes.seating {
   color: var(--charcoal);
   font-feature-settings: 'tnum' 1, 'lnum' 1;
 }
-/* ---- כרטיס "הצעד הבא" — נקודת המיקוד המרכזית של הדשבורד. כהה ומינימלי
-   (בהשראת Linear/Stripe) — בכוונה בלי זהב, בלי גרדיאנט, בלי צל כבד. ---- */
+/* ---- כרטיס "הצעד הבא" — נקודת המיקוד המרכזית של הדשבורד. בהיר וממותג
+   (שנהב/שמפניה עדין) — הגרסה הכהה (zinc-900) הורגשה מנותקת מדי מהמותג. ---- */
 .quick-actions-card {
   align-items: flex-start;
   text-align: start;
   gap: 8px;
   padding: 26px 24px;
-  background: var(--charcoal-panel);
-  border: none;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--gold-light) 22%, var(--cream)),
+    var(--ivory)
+  );
+  border: 1px solid color-mix(in srgb, var(--gold) 18%, transparent);
   border-radius: var(--radius-xl);
-  box-shadow: none;
+  box-shadow: var(--shadow-card);
 }
 .quick-actions-icon {
   font-size: 20px;
@@ -2664,12 +2726,12 @@ td.notes.seating {
   margin: 0;
   font-size: 17px;
   font-weight: 700;
-  color: #fff;
+  color: var(--charcoal);
 }
 .quick-actions-desc {
   margin: 0;
   font-size: 14px;
-  color: #a1a1aa;
+  color: var(--body);
   line-height: 1.5;
 }
 .quick-actions-btn {
@@ -2940,7 +3002,7 @@ td.notes.seating {
   }
 }
 
-/* --- CTA Card — משבצת "הצעד הבא" ב-Grid, אותו עיצוב כהה כמו quick-actions-card --- */
+/* --- CTA Card — משבצת "הצעד הבא" ב-Grid, אותו עיצוב בהיר כמו quick-actions-card --- */
 .cta-card {
   display: flex;
   flex-direction: column;
@@ -2948,8 +3010,12 @@ td.notes.seating {
   justify-content: center;
   gap: 10px;
   padding: 26px 24px;
-  background: var(--charcoal-panel);
-  border: none;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--gold-light) 22%, var(--cream)),
+    var(--ivory)
+  );
+  border: 1px solid color-mix(in srgb, var(--gold) 18%, transparent);
   border-radius: var(--radius-xl);
   text-align: start;
 }
@@ -2957,24 +3023,24 @@ td.notes.seating {
   margin: 0;
   font-size: 17px;
   font-weight: 700;
-  color: #fff;
+  color: var(--charcoal);
 }
 .cta-card-desc {
   margin: 0;
   font-size: 14px;
-  color: #a1a1aa;
+  color: var(--body);
   line-height: 1.5;
 }
 
-/* --- כפתור CTA ראשי יחיד על רקע כהה — לבן/zinc-100, בלי צל --- */
+/* --- כפתור CTA ראשי יחיד על רקע בהיר — זהב מלא, טקסט לבן --- */
 .cta-card-btn,
 .quick-actions-btn {
   margin-top: 6px;
   padding: 10px 22px;
   font-size: 14px;
   font-weight: 600;
-  color: #18181b;
-  background: #f4f4f5;
+  color: #fff;
+  background: var(--gold-deep);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -2983,7 +3049,7 @@ td.notes.seating {
 }
 .cta-card-btn:hover,
 .quick-actions-btn:hover {
-  background: #fff;
+  background: var(--gold);
   transform: translateY(-1px);
 }
 

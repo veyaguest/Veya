@@ -59,7 +59,7 @@ export const strings = {
     // EventControls / OnboardingWizard
     eventCreateFailed: 'לא הצלחנו ליצור את האירוע, נסו שוב',
     imageTypeError: 'אפשר להעלות קובץ תמונה בלבד',
-    imageSize3MB: 'התמונה גדולה מדי — עד 15MB',
+    imageSize3MB: 'התמונה גדולה מדי — עד 50MB',
     onboardingHostsMissing: (label: string) => `נשמח לדעת קודם את שמות ${label}`,
     onboardingHostAMissing: (label: string) => `נשמח לדעת קודם את ${label}`,
     // EventMembersDialog
@@ -250,7 +250,7 @@ export const strings = {
     loadError: 'לא הצלחנו לטעון כרגע. ננסה שוב',
     saveError: 'לא הצלחנו לשמור את הפרטים. נסו שוב',
     imageTypeError: 'אפשר להעלות קובץ תמונה בלבד',
-    imageSizeError: 'התמונה גדולה מדי — עד 15MB',
+    imageSizeError: 'התמונה גדולה מדי — עד 50MB',
     venuePlaceholder: 'שם האולם',
     venueAddressPlaceholder: 'כתובת האולם (לניווט בהזמנות)',
     dateLabel: 'תאריך האירוע',
@@ -320,6 +320,11 @@ export const strings = {
     allDoneTitle: 'הכול מוכן!',
     allDoneDesc: 'כל המוזמנים אישרו הגעה ומשובצים למקום. נשאר רק ליהנות מהאירוע.',
     invitePlaceholder: 'העלו תמונת הזמנה',
+    // ---- מוקאפ WhatsApp/אייפון — כיתוב ההזמנה מתחת לתמונה בבועה ----
+    inviteCaptionNamed: (celebration: string, names: string) =>
+      `הנכם מוזמנים ל${celebration} של ${names}`,
+    inviteCaptionGeneric: (celebration: string) =>
+      `הנכם מוזמנים ל${celebration} שלנו`,
     emptyTitle: 'הכול מתחיל מכאן',
     emptyDesc: 'הוסיפו מוזמנים כדי לראות את תמונת המצב.',
     emptyCta: 'הוספת מוזמנים',

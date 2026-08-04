@@ -134,7 +134,7 @@ export function ConfirmPage({ token }: { token: string }) {
   // מסך תודה אחרי שליחה
   if (done) {
     const guests =
-      done.confirmed_count === 1 ? 'אורח אחד' : `${done.confirmed_count} אורחים`
+      done.confirmed_count === 1 ? 'מוזמן אחד' : `${done.confirmed_count} מוזמנים`
     const msg =
       done.rsvp_status === 'confirmed'
         ? `נהדר! נתראה באירוע 🎉 (${guests})`
