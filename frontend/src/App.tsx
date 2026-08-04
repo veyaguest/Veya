@@ -54,7 +54,7 @@ function pageTitles(terms: EventTerms): Record<Page, string> {
   return {
     dashboard: 'האירוע שלנו',
     guests: `ניהול ${terms.guestsLabel}`,
-    rsvp: 'אישורי הגעה',
+    rsvp: 'ניהול הודעות',
     hall: 'סידור הושבה',
   }
 }
@@ -64,7 +64,7 @@ function navItemsFor(terms: EventTerms): { key: Page; label: string; short: stri
   return [
     { key: 'dashboard', label: 'תמונת מצב', short: 'בית' },
     { key: 'guests', label: `ניהול ${terms.guestsLabel}`, short: terms.guestsLabel },
-    { key: 'rsvp', label: 'אישורי הגעה', short: 'אישורים' },
+    { key: 'rsvp', label: 'ניהול הודעות', short: 'הודעות' },
     { key: 'hall', label: 'סידור הושבה', short: 'הושבה' },
   ]
 }

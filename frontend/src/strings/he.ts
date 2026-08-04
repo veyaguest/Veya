@@ -164,9 +164,9 @@ export const strings = {
     titleFull: 'ההודעות שלכם',
     titleInvitation: 'ההזמנה שלכם',
     subtitleFull:
-      'בחרו הודעה, ערכו את הנוסח, והוסיפו פרטים אישיים בלחיצה. כך זה ייראה למוזמנים ב-WhatsApp.',
+      'בחרו נוסח מוכן מהספרייה, או ערכו אותו בעצמכם. כך זה ייראה למוזמנים ב-WhatsApp.',
     subtitleInvitation:
-      'ערכו את נוסח ההזמנה או בחרו נוסח מוכן מהספרייה. כך זה ייראה למוזמנים ב-WhatsApp.',
+      'בחרו נוסח הזמנה מוכן מהספרייה, או כתבו את שלכם. כך זה ייראה למוזמנים ב-WhatsApp.',
     emptyState: 'ההודעות ייווצרו אוטומטית ברגע שתפעילו את מסלול אישורי ההגעה.',
 
     // כרטיס בחירת ההודעה
@@ -176,25 +176,12 @@ export const strings = {
     editorPlaceholder: 'כתבו כאן את ההודעה למוזמנים…',
     libraryButton: 'נוסחים מוכנים',
     libraryButtonFor: (kind: string) => `נוסחים מוכנים ל${kind}`,
-    editorHint: 'בחרו נוסח מוכן, או כתבו בעצמכם',
+    libraryButtonHint: 'עשרות נוסחים בכל סגנון, עם כל הפרטים של האירוע כבר בפנים',
+    editorHint: 'רוצים לערוך בעצמכם? אפשר גם ישירות כאן',
     save: 'שמירת ההודעה',
     saving: 'שומרים…',
     unsaved: 'יש שינויים שלא נשמרו',
-
-    // כרטיס הטוקנים
-    tokensTitle: 'פרטים אישיים',
-    tokensHint:
-      'לחיצה מוסיפה את הפרט לתוך ההודעה. כל מוזמן יקבל את הערך שלו במקומו.',
-    tokensSearch: 'חיפוש פרט…',
-    tokensNoResults: 'לא נמצא פרט מתאים',
-    tokensAll: 'הכול',
-    tokenCategories: {
-      guest: 'המוזמן',
-      event: 'האירוע',
-      when_where: 'מתי ואיפה',
-      links: 'קישורים',
-      extra: 'תוספות',
-    } as Record<string, string>,
+    all: 'הכול',
 
     // תצוגה מקדימה
     previewTitle: 'כך זה ייראה למוזמן',

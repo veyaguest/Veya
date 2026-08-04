@@ -48,6 +48,7 @@ export function buildSampleTokens(
   const brideParents = event?.bride_parents_line || ''
   // קישורי הניווט נגזרים מהכתובת — בלי כתובת אין ניווט, וגם השורה נעלמת.
   const nav = addr ? 'https://maps.google.com/…' : ''
+  const waze = addr ? 'https://waze.com/ul?q=…' : ''
   const rsvp = 'https://veya.co.il/confirm/…'
   const tableNumber =
     realGuestTableNumber === undefined
@@ -86,7 +87,7 @@ export function buildSampleTokens(
     // קישורים
     '{{confirmation_link}}': rsvp, '{{rsvp_link}}': rsvp, '[קישור אישור]': rsvp,
     '{{navigation_link}}': nav, '{{maps_link}}': nav, '[קישור ניווט]': nav,
-    '{{waze_link}}': nav, '[קישור וייז]': nav,
+    '{{waze_link}}': waze, '[קישור וייז]': waze,
     // פרטי המוזמן בשיבוץ
     '{{table_number}}': tableNumber, '[מספר שולחן]': tableNumber,
     '{{guest_count}}': '2', '[כמות מקומות]': '2',
