@@ -339,6 +339,94 @@ class MessageRead(BaseModel):
     created_at: datetime
 
 
+# ---- תקשורת עם אורחים (רצף ההודעות הקבוע — EventMessage/MessageDefault) ----
+
+MessageType = Literal[
+    "invitation", "reminder_1", "reminder_2",
+    "final_reminder", "event_day", "thank_you",
+]
+TargetAudience = Literal["all", "pending", "confirmed", "declined"]
+
+
+class EventMessageRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    message_type: str
+    title: str
+    content: str
+    variables_supported: list[str]
+    is_active: bool
+    trigger_offset_days: int
+    target_audience: str
+    updated_at: datetime
+
+
+class EventMessageUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    is_active: Optional[bool] = None
+    trigger_offset_days: Optional[int] = None
+    target_audience: Optional[TargetAudience] = None
+
+
+class CommunicationPreview(BaseModel):
+    preview: str  # ריק אם אין עדיין תוכן
+
+
+class CommunicationDue(BaseModel):
+    """שורה בתור לאישור של רצף התקשורת (עדיין לא נשלחה)."""
+
+    event_message_id: int
+    message_type: str
+    guest_id: int
+    guest_name: str
+    phone: str
+    preview: str
+
+
+class CommunicationDueQueue(BaseModel):
+    mode: str
+    actions: list[CommunicationDue]
+
+
+class CommunicationSendRequest(BaseModel):
+    """אישור שליחה של התור. ריק => לשלוח את כל התור; אחרת רק הצירופים שסומנו
+    (event_message_id, guest_id)."""
+    items: Optional[list[tuple[int, int]]] = None
+
+
+class CommunicationSendResult(BaseModel):
+    mode: str
+    sent: int
+    failed: int
+    detail: Optional[str] = None
+
+
+class MessageDefaultRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    event_type: str
+    message_type: str
+    title: str
+    content: str
+    variables_supported: list[str]
+    is_active: bool
+    updated_at: datetime
+
+
+class MessageDefaultUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class MessageDefaultsBackfillResult(BaseModel):
+    events_processed: int
+    messages_created: int
+
+
 class RsvpSummary(BaseModel):
     total_guests: int
     confirmed: int

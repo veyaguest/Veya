@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { getEvent, getStats, mediaUrl, readAudit, updateEvent } from '../api'
 import type { AuditLogRow, DashboardStats, EventDetails } from '../types'
 import type { ReadinessPage } from '../readiness'
@@ -13,6 +13,31 @@ interface Props {
 
 const t = strings.dashboard
 
+/** מקטין את font-size של הרכיב עד שהטקסט (בשורה אחת) נכנס בדיוק ברוחב
+ * הזמין לו — כדי שהשם המלא תמיד יוצג (אף פעם לא נחתך ב-"…"), גם באייפון
+ * הקטן במובייל וגם בשמות ארוכים. רץ מחדש כשהטקסט או רוחב המסגרת משתנים. */
+function useShrinkToFit(text: string, maxPx: number, minPx: number) {
+  const ref = useRef<HTMLSpanElement>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const fit = () => {
+      let size = maxPx
+      el.style.fontSize = `${size}px`
+      while (el.scrollWidth > el.clientWidth && size > minPx) {
+        size -= 0.5
+        el.style.fontSize = `${size}px`
+      }
+    }
+    fit()
+    // מסך שמסתובב/משתנה גודל (טאבלט, שינוי חלון) עלול לשנות את הרוחב
+    // הזמין בלי שהטקסט עצמו משתנה — צריך למדוד מחדש גם אז.
+    window.addEventListener('resize', fit)
+    return () => window.removeEventListener('resize', fit)
+  }, [text, maxPx, minPx])
+  return ref
+}
+
 /** מוקאפ תמונת ההזמנה כפי שהיא נראית ב-WhatsApp — אייפון צף בתוך משבצת ה-Hero,
  * באותו גודל קבוע כמו קודם (dash-hero-image, 4:3). */
 function InvitePhoneMock({
@@ -26,6 +51,7 @@ function InvitePhoneMock({
   contactName: string
   captionText: string
 }) {
+  const nameRef = useShrinkToFit(contactName, 10, 6.5)
   return (
     <div className="invite-phone-stage">
       <div className="invite-phone">
@@ -37,7 +63,7 @@ function InvitePhoneMock({
         <div className="invite-phone-screen">
           <div className="invite-phone-header">
             <span className="invite-phone-avatar" aria-hidden="true">💍</span>
-            <span className="invite-phone-name">{contactName}</span>
+            <span ref={nameRef} className="invite-phone-name">{contactName}</span>
           </div>
           <div className="invite-phone-chat">
             <div className="invite-phone-bubble">

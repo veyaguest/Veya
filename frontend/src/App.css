@@ -2031,6 +2031,11 @@ td.notes.seating {
   background: rgba(255, 255, 255, 0.22);
 }
 .invite-phone-name {
+  /* flex+min-width:0 — הרוחב הזמין באמת (לא "כמה שצריך"), כדי שה-JS
+     (useShrinkToFit) ימדוד נכון ויקטין את הגופן עד שהשם המלא נכנס בשורה
+     אחת, בלי "…". white-space:nowrap הכרחי למדידה — לא לעטיפה לשורה שנייה. */
+  flex: 1;
+  min-width: 0;
   font-size: 10px;
   font-weight: 700;
   white-space: nowrap;

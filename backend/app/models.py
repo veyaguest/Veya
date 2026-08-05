@@ -400,11 +400,9 @@ class AutomationRule(Base):
 
 
 class VeyaTemplate(Base):
-    """תבנית הודעה גלובלית של VEYA (ברירת מחדל ברמת המערכת, לא לכל אירוע).
-
-    זו "ספריית התבניות המומלצות" שהאדמין מנהל פעם אחת, והמערכת מעתיקה
-    אוטומטית לכל זוג חדש. הזוג לא רואה קוד — הוא רואה תבנית מוכנה שאפשר
-    לערוך. השדה ``stage`` מסמן באיזה שלב במסלול התבנית משמשת.
+    """DEPRECATED — הוחלף ב-``MessageDefault`` (event_type × message_type,
+    ראו ``communication.py``). נשאר בקוד כתיעוד היסטורי בלבד; האדמין מנהל
+    ברירות מחדל היום דרך ``/admin/message-defaults``, לא כאן.
     """
 
     __tablename__ = "veya_templates"
@@ -422,12 +420,8 @@ class VeyaTemplate(Base):
 
 
 class VeyaWorkflowStep(Base):
-    """שלב במסלול אישורי-ההגעה הקבוע של VEYA (ברירת מחדל גלובלית).
-
-    המסלול הקבוע: הזמנה → תזכורת ראשונה → תזכורת שנייה → מעקב טלפוני →
-    מעקב טלפוני שני. כל שלב אומר: "אחרי ``offset_days`` ימים מתחילת המסלול,
-    בצע ``action_kind`` עם תבנית מהשלב ``template_stage`` — רק לממתינים".
-    האדמין עורך את המרווחים/ההפעלה; המערכת מקצה את זה לכל אירוע.
+    """DEPRECATED — התזמון הקבוע עבר ל-``EventMessage.trigger_offset_days``
+    (ראו ``communication.py``). נשאר בקוד כתיעוד היסטורי בלבד.
     """
 
     __tablename__ = "veya_workflow_steps"
@@ -443,6 +437,66 @@ class VeyaWorkflowStep(Base):
     template_stage: Mapped[str] = mapped_column(String, default="")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class MessageDefault(Base):
+    """קטלוג ברירות המחדל הגלובלי לרצף התקשורת — event_type × message_type.
+
+    כאן הבעלים מזין את הטקסטים הסופיים (מסך אדמין ``/admin/message-defaults``).
+    כל אירוע חדש מעתיק ממנו את השורה המתאימה לסוג שלו אל ``EventMessage``
+    (ראו ``communication.py: provision_event_messages``). ``content`` ריק
+    (``""``) עד שיוזנו הטקסטים הסופיים — לא ממציאים תוכן כאן.
+    """
+
+    __tablename__ = "message_defaults"
+    __table_args__ = (
+        UniqueConstraint("event_type", "message_type", name="uq_message_default_type"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_type: Mapped[str] = mapped_column(String, index=True)
+    # invitation / reminder_1 / reminder_2 / final_reminder / event_day / thank_you
+    message_type: Mapped[str] = mapped_column(String, index=True)
+    title: Mapped[str] = mapped_column(String, default="")
+    content: Mapped[str] = mapped_column(Text, default="")
+    variables_supported: Mapped[list] = mapped_column(JSON, default=list)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class EventMessage(Base):
+    """הודעה אחת ברצף התקשורת של אירוע ספציפי — מקור האמת היחיד לתוכן
+    שנשלח בפועל למוזמנים. מוקצית אוטומטית (idempotent) מ-``MessageDefault``
+    לפי ``event.event_type`` כשהאירוע נוצר; הזוג עורך כאן — לא בוחר
+    מתבניות ולא מדפדף בספרייה. מחליפה את הצירוף הישן
+    MessageTemplate+AutomationRule+VeyaTemplate לרצף הקבוע (ראו
+    ``communication.py``).
+    """
+
+    __tablename__ = "event_messages"
+    __table_args__ = (
+        UniqueConstraint("event_id", "message_type", name="uq_event_message_type"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
+    message_type: Mapped[str] = mapped_column(String, index=True)
+    title: Mapped[str] = mapped_column(String, default="")
+    content: Mapped[str] = mapped_column(Text, default="")
+    variables_supported: Mapped[list] = mapped_column(JSON, default=list)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # ימים ביחס לעוגן הקבוע של message_type (חיובי=אחרי, שלילי=לפני). ראו
+    # communication.py: DEFAULT_TRIGGER_OFFSET_DAYS לברירות המחדל לכל סוג.
+    trigger_offset_days: Mapped[int] = mapped_column(Integer, default=0)
+    # all / pending / confirmed / declined — קהל היעד לשליחה.
+    target_audience: Mapped[str] = mapped_column(String, default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
 
 
 class Venue(Base):

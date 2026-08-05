@@ -14,6 +14,7 @@ from app.routers import (
     admin,
     auth,
     automation,
+    communication,
     confirm,
     constraints,
     event,
@@ -58,6 +59,7 @@ app.include_router(event.router)
 app.include_router(hall.router)
 app.include_router(confirm.router)
 app.include_router(automation.router)
+app.include_router(communication.router)
 app.include_router(venues.router)
 app.include_router(media_serve.router)
 
@@ -315,103 +317,39 @@ def _ensure_guest_tokens() -> None:
         db.close()
 
 
-def seed_veya_defaults() -> None:
-    """זורע פעם אחת את ברירות המחדל הגלובליות של VEYA: ספריית התבניות
-    המומלצות (5) + שלבי המסלול הקבוע (4). רץ רק אם הטבלאות ריקות, כך שאדמין
-    שערך את הברירות לא ידרוס אותן בהפעלה הבאה."""
+def seed_message_defaults() -> None:
+    """זורע פעם אחת את קטלוג ברירות המחדל הגלובלי לרצף התקשורת: 8 סוגי
+    אירוע × 6 סוגי הודעה = 48 שורות, כולן ``content=""`` (הבעלים יזין את
+    הטקסטים הסופיים דרך ``/admin/message-defaults``). רץ רק אם הטבלה ריקה,
+    כך שעריכה של האדמין לא נדרסת בהפעלה הבאה."""
     from sqlalchemy import func, select
+
+    from app import communication
 
     db = MigrationSessionLocal()
     try:
-        have_templates = db.scalar(
-            select(func.count()).select_from(models.VeyaTemplate)
+        have = db.scalar(
+            select(func.count()).select_from(models.MessageDefault)
         ) or 0
-        if have_templates == 0:
-            templates = [
-                models.VeyaTemplate(
-                    stage="invitation", sort_order=1,
-                    name="הזמנה",
-                    body=(
-                        "[שם פרטי] שלום,\n"
-                        "אנחנו [שמות בני הזוג], ונשמח מאוד לראות אתכם.\n\n"
-                        "📅 [תאריך האירוע] בשעה [שעה]\n"
-                        "📍 [שם האולם], [כתובת]\n\n"
-                        "נשמח לדעת אם תגיעו — לאישור הגעה: [קישור אישור]\n"
-                        "מחכים לראותכם!"
-                    ),
-                ),
-                models.VeyaTemplate(
-                    stage="first_reminder", sort_order=2,
-                    name="תזכורת ראשונה",
-                    body=(
-                        "היי [שם פרטי] 🙂\n"
-                        "רצינו לוודא שההזמנה ל[שמחת] [שמות בני הזוג] הגיעה אליכם.\n\n"
-                        "📅 [תאריך האירוע] · [שם האולם]\n\n"
-                        "זה לוקח רק רגע: [קישור אישור]\n"
-                        "תודה! 🙏"
-                    ),
-                ),
-                models.VeyaTemplate(
-                    stage="second_reminder", sort_order=3,
-                    name="תזכורת שנייה",
-                    body=(
-                        "[שם פרטי] שלום 🙂\n"
-                        "אנחנו סוגרים בימים אלה את המספרים ל[שמחת] [שמות בני הזוג].\n\n"
-                        "נשמח אם תאשרו הגעה כאן: [קישור אישור]\n"
-                        "תודה רבה!"
-                    ),
-                ),
-                models.VeyaTemplate(
-                    stage="thank_you", sort_order=4,
-                    name="תודה על האישור",
-                    body=(
-                        "תודה [שם פרטי]! 🙏\n"
-                        "שמחנו לקבל את האישור שלכם. נתראה ב[שמחת] [שמות בני הזוג]!\n\n"
-                        "📅 [תאריך האירוע] בשעה [שעה]\n"
-                        "📍 [שם האולם], [כתובת]\n\n"
-                        "לניווט: [קישור ניווט]"
-                    ),
-                ),
-                models.VeyaTemplate(
-                    stage="before_event", sort_order=5,
-                    name="לפני האירוע",
-                    body=(
-                        "היי [שם פרטי]!\n"
-                        "מזכירים שהיום [שמחת] [שמות בני הזוג] ואתם מוזמנים!\n\n"
-                        "📅 [תאריך האירוע] בשעה [שעה]\n"
-                        "📍 [שם האולם], [כתובת]\n"
-                        "🪑 השולחן שלכם: [מספר שולחן]\n\n"
-                        "לניווט נוח: [קישור ניווט]\n"
-                        "נתראה!"
-                    ),
-                ),
+        if have == 0:
+            event_types = [
+                "wedding", "bar_mitzvah", "bat_mitzvah", "henna",
+                "brit", "family", "business", "other",
             ]
-            db.add_all(templates)
-            db.commit()
-
-        have_steps = db.scalar(
-            select(func.count()).select_from(models.VeyaWorkflowStep)
-        ) or 0
-        if have_steps == 0:
-            steps = [
-                models.VeyaWorkflowStep(
-                    step_order=1, name="תזכורת ראשונה", offset_days=3,
-                    action_kind="send", template_stage="first_reminder",
-                ),
-                models.VeyaWorkflowStep(
-                    step_order=2, name="תזכורת שנייה", offset_days=6,
-                    action_kind="send", template_stage="second_reminder",
-                ),
-                models.VeyaWorkflowStep(
-                    step_order=3, name="מעקב טלפוני", offset_days=9,
-                    action_kind="phone_followup", template_stage="",
-                ),
-                models.VeyaWorkflowStep(
-                    step_order=4, name="מעקב טלפוני שני", offset_days=12,
-                    action_kind="phone_followup", template_stage="",
-                ),
+            defaults = [
+                models.MessageDefault(
+                    event_type=event_type,
+                    message_type=message_type,
+                    title=communication.MESSAGE_TYPE_LABELS[message_type],
+                    content="",
+                    variables_supported=list(
+                        communication.DEFAULT_VARIABLES_SUPPORTED.get(message_type, [])
+                    ),
+                )
+                for event_type in event_types
+                for message_type in communication.MESSAGE_TYPES
             ]
-            db.add_all(steps)
+            db.add_all(defaults)
             db.commit()
     finally:
         db.close()
@@ -435,8 +373,9 @@ def on_startup() -> None:
     _ensure_admin()
     # מוודא שלכל מוזמן קיים יש טוקן אישי לאישור הגעה.
     _ensure_guest_tokens()
-    # זורע את ברירות המחדל הגלובליות של VEYA (תבניות + מסלול קבוע) אם ריק.
-    seed_veya_defaults()
+    # זורע את קטלוג ברירות המחדל הגלובלי לרצף התקשורת (8 סוגי אירוע × 6
+    # סוגי הודעה, ריק) אם ריק.
+    seed_message_defaults()
     # מוודא שקיים אירוע ברירת-מחדל אחד (תחזוקת עלייה — בלי זהות משתמש).
     db = MigrationSessionLocal()
     try:

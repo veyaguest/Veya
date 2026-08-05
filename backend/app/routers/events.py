@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app import models, schemas
+from app import communication, models, schemas
 from app.account import delete_event_cascade
 from app.auth import get_current_user
 from app.database import IS_POSTGRES, get_db
@@ -69,16 +69,20 @@ def create_event(
             },
         ).mappings().first()
         db.commit()
-        return models.Event(**dict(row))
+        event = models.Event(**dict(row))
+    else:
+        event = models.Event(
+            owner_id=user.id,
+            event_type=payload.event_type,
+            groom_name=payload.groom_name.strip(),
+            bride_name=payload.bride_name.strip(),
+            venue_name=payload.venue_name.strip(),
+        )
+        db.add(event)
+        db.commit()
 
-    event = models.Event(
-        owner_id=user.id,
-        event_type=payload.event_type,
-        groom_name=payload.groom_name.strip(),
-        bride_name=payload.bride_name.strip(),
-        venue_name=payload.venue_name.strip(),
-    )
-    db.add(event)
+    # מקצה אוטומטית את רצף "תקשורת עם אורחים" (6 ההודעות) לפי סוג האירוע.
+    communication.provision_event_messages(db, event)
     db.commit()
     return event
 
