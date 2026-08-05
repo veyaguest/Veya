@@ -133,12 +133,29 @@ function RsvpUpdatesFeed({ rows }: { rows: AuditLogRow[] }) {
   )
 }
 
+/** קובע איפה הזוג נמצא בתהליך ההכנה להושבה, לפי נתונים אמיתיים בלבד —
+ * לא הנחה. שלב 4 (הושבה) פתוח רק אחרי שיש גם מוזמנים, גם קבוצות אמיתיות
+ * (לא כולם "אחר") וגם הערה אחת לפחות (הושבה או קבוצה). */
+function seatingReadinessStep(stats: DashboardStats): number {
+  const hasGuests = stats.total_guests > 0
+  if (!hasGuests) return 0
+  const other = (stats.by_group as Record<string, number>).other ?? 0
+  const hasGroups = stats.total_guests - other > 0
+  if (!hasGroups) return 1
+  const hasNotes = stats.guests_with_notes > 0 || stats.group_notes_count > 0
+  if (!hasNotes) return 2
+  return 3
+}
+
 /** "סידורי הושבה בלי כאב הראש" — הכרטיס המרכזי לפיצ'ר הדגל: מסביר את
- * הערך, ממחיש תהליך של 4 שלבים (השלב האחרון מודגש), ומוביל ב-CTA למפת
- * האולם. מחליף את הווידג'ט הישן — לא כפילות, זו אותה קריאה-לפעולה עם
- * הרבה יותר הקשר. */
-function SeatingHelperCard({ onNavigate }: { onNavigate?: (page: ReadinessPage) => void }) {
+ * הערך, ומוביל אשף מדורג (מוזמנים → קבוצות → הערות → הושבה חכמה) — לא
+ * זורק את הזוג ישר לעורך אולם ריק. ה-CTA "חכם": כל עוד לא הושלמו שלבי
+ * ההכנה הוא מוביל למסך המוזמנים (שם מוסיפים מוזמנים, קובעים קבוצות
+ * ומזינים הערות הושבה); רק כשהכול מוכן הוא נפתח למפת האולם. */
+function SeatingHelperCard({ stats, onNavigate }: { stats: DashboardStats; onNavigate?: (page: ReadinessPage) => void }) {
   const steps = t.seatingHelperSteps
+  const currentStep = seatingReadinessStep(stats)
+  const ready = currentStep >= steps.length - 1
   return (
     <div className="seating-helper-card">
       <h3 className="seating-helper-title">{t.seatingHelperTitle}</h3>
@@ -146,9 +163,13 @@ function SeatingHelperCard({ onNavigate }: { onNavigate?: (page: ReadinessPage) 
       <ol className="seating-helper-steps">
         {steps.map((step, i) => {
           const isFinal = i === steps.length - 1
+          const status = i < currentStep ? 'done' : i === currentStep ? 'current' : 'upcoming'
           return (
-            <li key={step} className={`seating-helper-step${isFinal ? ' seating-helper-step--final' : ''}`}>
-              <span className="seating-helper-step-num">{i + 1}</span>
+            <li
+              key={step}
+              className={`seating-helper-step seating-helper-step--${status}${isFinal ? ' seating-helper-step--final' : ''}`}
+            >
+              <span className="seating-helper-step-num">{status === 'done' ? '✓' : i + 1}</span>
               <span className="seating-helper-step-label">{step}</span>
               {!isFinal && (
                 <span className="seating-helper-step-arrow" aria-hidden="true">↓</span>
@@ -157,8 +178,12 @@ function SeatingHelperCard({ onNavigate }: { onNavigate?: (page: ReadinessPage) 
           )
         })}
       </ol>
-      <button type="button" className="seating-helper-cta" onClick={() => onNavigate?.('hall')}>
-        {t.seatingHelperCta}
+      <button
+        type="button"
+        className="seating-helper-cta"
+        onClick={() => onNavigate?.(ready ? 'hall' : 'guests')}
+      >
+        {ready ? t.seatingHelperCtaReady : t.seatingHelperCta}
       </button>
     </div>
   )
@@ -590,28 +615,10 @@ export function DashboardPage({ onNavigate }: Props) {
                 <RsvpUpdatesFeed rows={auditRows} />
               </div>
               <div className="dash-col-right">
-                <SeatingHelperCard onNavigate={onNavigate} />
+                <SeatingHelperCard stats={stats} onNavigate={onNavigate} />
               </div>
             </div>
           </>
-        )
-      })()}
-
-      {/* ---- Event Progress — מד מוכנות ---- */}
-      {stats && stats.total_guests > 0 && (() => {
-        const d1 = 1
-        const d2 = (stats.by_side.groom + stats.by_side.bride) / stats.total_guests
-        const d3 = 1 - ((stats.by_group as Record<string, number>).other ?? 0) / stats.total_guests
-        const d4 = stats.invitations_sent / stats.total_guests
-        const d5 = stats.response_rate / 100
-        const pct = Math.min(100, Math.round((d1 + d2 + d3 + d4 + d5) * 20))
-        return (
-          <div className="event-progress">
-            <span className="event-progress-label">{t.progressLabel(pct)}</span>
-            <div className="event-progress-track">
-              <div className="event-progress-fill" style={{ width: `${pct}%` }} />
-            </div>
-          </div>
         )
       })()}
     </div>

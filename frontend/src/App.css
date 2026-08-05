@@ -2961,17 +2961,33 @@ td.notes.seating {
   line-height: 1;
   color: var(--faint);
 }
-.seating-helper-step--final .seating-helper-step-num {
+/* ---- מצב אשף: "בוצע" (ירוק+וי), "כאן עכשיו" (זהב ומודגש), "עוד לא"
+   (מעומעם) — כדי שהכרטיס באמת יראה מסלול, לא רשימה סטטית. ---- */
+.seating-helper-step--done .seating-helper-step-num {
+  color: #fff;
+  background: var(--green);
+}
+.seating-helper-step--done .seating-helper-step-label {
+  color: var(--body);
+}
+.seating-helper-step--current .seating-helper-step-num {
   width: 34px;
   height: 34px;
   font-size: 14px;
   color: #fff;
   background: var(--gold-deep);
 }
-.seating-helper-step--final .seating-helper-step-label {
+.seating-helper-step--current .seating-helper-step-label {
   font-size: 14.5px;
   font-weight: 700;
   color: var(--charcoal);
+}
+.seating-helper-step--upcoming .seating-helper-step-num {
+  color: var(--muted);
+  background: var(--line-2);
+}
+.seating-helper-step--upcoming .seating-helper-step-label {
+  color: var(--muted);
 }
 .seating-helper-cta {
   align-self: center;
@@ -3098,32 +3114,6 @@ td.notes.seating {
   color: var(--muted);
 }
 
-/* --- Event Progress — מד מוכנות --- */
-.event-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 0 20px;
-}
-.event-progress-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--muted);
-}
-.event-progress-track {
-  width: 100%;
-  height: 8px;
-  background: color-mix(in srgb, var(--muted) 20%, transparent);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.event-progress-fill {
-  height: 100%;
-  background: var(--gold);
-  border-radius: 4px;
-  transition: width 0.4s ease-out;
-}
-
 /* --- Animations — כניסה עדינה ---- */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(8px); }
@@ -3132,12 +3122,10 @@ td.notes.seating {
 .dash-page .dash-hero-section { animation: fadeInUp 0.4s ease-out both; }
 .dash-page .gauge-section { animation: fadeInUp 0.4s ease-out 0.08s both; }
 .dash-page .dash-two-col { animation: fadeInUp 0.4s ease-out 0.12s both; }
-.dash-page .event-progress { animation: fadeInUp 0.4s ease-out 0.24s both; }
 @media (prefers-reduced-motion: reduce) {
   .dash-page .dash-hero-section,
   .dash-page .gauge-section,
-  .dash-page .dash-two-col,
-  .dash-page .event-progress {
+  .dash-page .dash-two-col {
     animation: none;
     transition: none;
   }
@@ -3215,9 +3203,6 @@ td.notes.seating {
   .seating-helper-card {
     padding: 20px 18px 18px;
     border-radius: var(--radius-l);
-  }
-  .event-progress {
-    padding: 0 16px;
   }
   .dash-panel {
     padding: 18px 20px;
