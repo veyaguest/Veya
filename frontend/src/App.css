@@ -246,11 +246,29 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* ---- שורת "מחובר/יציאה" — רקע כהה עם זוהר זהב עדין, כמו הדף השיווקי,
+   לתחושת פרימיום שבולטת מעט מהסרגל הבהיר סביבה. ---- */
 .sidebar-foot-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-m);
+  background:
+    radial-gradient(circle at 25% 15%, rgba(201, 162, 39, 0.16), transparent 65%),
+    var(--black);
+}
+.sidebar-foot-row .conn-text {
+  color: rgba(245, 239, 226, 0.72);
+}
+.sidebar-foot-row .logout-btn {
+  color: rgba(245, 239, 226, 0.82);
+  border-color: rgba(228, 201, 107, 0.3);
+}
+.sidebar-foot-row .logout-btn:hover {
+  color: #fff;
+  border-color: var(--gold-light);
 }
 
 .conn {
@@ -270,7 +288,7 @@
   display: inline-block;
 }
 .dot.ok {
-  background: var(--gold);
+  background: var(--green);
 }
 .dot.err {
   background: var(--error);
@@ -5418,7 +5436,10 @@ td.notes.seating {
   transform: translateX(-50%) rotate(45deg);
   width: 7px;
   height: 7px;
-  background: var(--black);
+  /* ללא מילוי — קודם הייתה כאן var(--black) שהתמזגה עם רקע העמוד הכהה
+     בדף ההתחברות, אבל נראתה כנקודה שחורה על רקע בהיר (סרגל הצד). שקוף
+     נראה זהה בהקשר הכהה ונכון גם בהקשר הבהיר. */
+  background: transparent;
   border: 1.5px solid var(--gold);
 }
 .auth-logo-divider {

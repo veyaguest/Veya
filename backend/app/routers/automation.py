@@ -1,16 +1,20 @@
-"""נקודות API למנוע האוטומציות של אישורי הגעה (RSVP Automation Engine).
+"""נקודות API למסלול אישורי-ההגעה הקבוע של VEYA (מסך "אישורי הגעה" של הזוג).
 
-זרימת "תור לאישור": הבעלים מגדיר חוקים ותבניות → המערכת מחשבת מי אמור לקבל
-הודעה עכשיו (``GET /automation/due``) → הבעלים מאשר ושולח בלחיצה
-(``POST /automation/run-due``). שום דבר לא נשלח בלי אישור מפורש. השליחה
-עצמה עוברת דרך אותו ספק (mock/Meta) של שאר המערכת — בלי נתיב חדש.
+זרימת "תור לאישור": שליחת ההזמנה עצמה היא פעולה מפורשת של הבעלים
+(``/track/activate``); התקדמות המסלול (תזכורות/יום-אירוע/תודה) מחושבת
+דטרמיניסטית ונשלחת בפועל רק כשה-Frontend קורא ל-``/track/advance`` (מופעל
+אוטומטית בכל טעינת מסך, אבל עדיין תלוי בכך שהבעלים כבר לחץ "שלח הזמנות"
+פעם אחת). שום דבר לא נשלח בלי שהבעלים כבר הפעיל את המסלול.
 
-המנוע הדטרמיניסטי (``app/automation.py``) עצמאי לגמרי ואינו נוגע ב-seating.py.
+תוכן ההודעות עצמו מגיע מ-``EventMessage`` (ראו ``app/communication.py``) —
+לא עוד ספרייה/תבניות/חוקים חופשיים.
 """
+from __future__ import annotations
+
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from datetime import datetime
@@ -18,12 +22,12 @@ from datetime import datetime
 from app import (
     audit,
     automation,
+    communication,
     invitations,
     messaging,
     models,
     permissions,
     rsvp_timeline,
-    rsvp_track,
     schemas,
 )
 from app.auth import get_current_user
@@ -32,29 +36,10 @@ from app.deps import EventAccess
 
 router = APIRouter(prefix="/automation", tags=["automation"])
 
-# כל endpoint כאן נוגע ב-automation_rules ו/או
-# message_templates — ישירות או דרך _rules()/_templates() הפנימיים — ושתי
-# הטבלאות האלה דורשות send_messages בלבד ב-RLS (לא קיים אצל אולמות).
 _access = EventAccess(permissions.AUTOMATION)
 
 
 # ---- עזרי טעינה ----
-
-def _rules(db: Session, event_id: int) -> list[models.AutomationRule]:
-    return list(db.scalars(
-        select(models.AutomationRule)
-        .where(models.AutomationRule.event_id == event_id)
-        .order_by(models.AutomationRule.created_at)
-    ).all())
-
-
-def _templates(db: Session, event_id: int) -> list[models.MessageTemplate]:
-    return list(db.scalars(
-        select(models.MessageTemplate)
-        .where(models.MessageTemplate.event_id == event_id)
-        .order_by(models.MessageTemplate.created_at)
-    ).all())
-
 
 def _guests(db: Session, event_id: int) -> list[models.Guest]:
     return list(db.scalars(
@@ -68,378 +53,20 @@ def _messages(db: Session, event_id: int) -> list[models.Message]:
     ).all())
 
 
-# ---- תבניות הודעה בעלות שם ----
+# ---- מסלול אישורי-ההגעה הקבוע (VEYA RSVP Track) ----
 
-@router.get("/placeholders", response_model=list[schemas.TemplatePlaceholder])
-def list_placeholders(event: models.Event = Depends(_access)):
-    """רשימת הטוקנים הזמינים לתבניות, מותאמת לסוג האירוע.
-
-    מותאמת ולא קבועה: באירוע עם בעל שמחה יחיד (בר/בת מצווה, ברית, משפחתי,
-    עסקי) אין "שם הכלה" במסך יצירת האירוע, ולכן הצעת הטוקן הזו שם הייתה
-    מציעה משתנה שנשאר ריק תמיד. ראו ``messaging.placeholders_for``.
-    """
-    return [
-        schemas.TemplatePlaceholder(
-            key=p["key"], desc=p["desc"], token=p.get("token", ""), cat=p.get("cat", ""),
-        )
-        for p in messaging.placeholders_for(event.event_type)
-    ]
-
-
-@router.get("/library", response_model=schemas.MessageLibrary)
-def get_message_library(event: models.Event = Depends(_access)):
-    """ספריית ההודעות האנושית של VEYA — קריאה בלבד, מוגשת ישירות מהקוד.
-
-    אין כאן שום נגיעה במסד הנתונים: הזוג *מעיין* בספרייה, ורק כשהוא בוחר הודעה
-    היא נכתבת לתבנית של האירוע שלו (דרך נתיב התבניות הקיים). כך הספרייה
-    זמינה לכל אירוע בלי זריעה לפרודקשן ובלי שינוי סכימה.
-
-    הספרייה מסוננת לפי סוג האירוע: חתונה מקבלת את עולם החתונה העשיר, וכל סוג
-    אחר מקבל ספרייה גנרית שמתנסחת דינמית לסוגו (Event-ready).
-    """
-    from app import message_library as lib
-
-    library = lib.entries_for(event.event_type)
-    messages = [
-        schemas.LibraryMessage(
-            id=i,
-            stage=m["stage"],
-            category=m["category"],
-            style=m["style"],
-            name=m["name"],
-            # הטוקנים מתורגמים לשפת סוג האירוע — אותה ספרייה משרתת גם בר
-            # וגם בת מצווה, והנוסח נכתב בטוקן קנוני אחד. בלי התרגום כאן
-            # החוגג היה בוחר נוסח וקורא בו "[שמות בעלי האירוע]".
-            body=messaging.localize_tokens(m["body"], event.event_type),
-        )
-        for i, m in enumerate(library)
-    ]
-    # רק קטגוריות/סגנונות שבאמת מופיעים בספרייה, בסדר התוויות הקבוע.
-    present_cats = {m["category"] for m in library}
-    present_styles = {m["style"] for m in library}
-    categories = [
-        schemas.LibraryMeta(key=k, label=v)
-        for k, v in lib.CATEGORY_LABELS.items() if k in present_cats
-    ]
-    styles = [
-        schemas.LibraryMeta(key=k, label=v)
-        for k, v in lib.STYLE_LABELS.items() if k in present_styles
-    ]
-    return schemas.MessageLibrary(messages=messages, categories=categories, styles=styles)
-
-
-@router.get("/templates", response_model=list[schemas.AutomationTemplateRead])
-def list_templates(
-    db: Session = Depends(get_db),
-    event: models.Event = Depends(_access),
-):
-    # מוודאים שתבניות ברירת המחדל של VEYA קיימות כבר עכשיו — כדי שהזוג יוכל
-    # לערוך את ההזמנה (ולבחור מהספרייה) עוד לפני השליחה הראשונה. idempotent:
-    # לא מפעיל את המסלול, לא מדליק את הטיימר, ולא שולח דבר.
-    result = rsvp_track.provision_rsvp_track(db, event)
-    # ``templates_synced`` = תבניות ברירת מחדל שרועננו לנוסח הנכון לסוג
-    # האירוע. גם הן דורשות commit, אחרת הרענון היה נזרק בסוף הבקשה.
-    if (result["templates_created"] or result["rules_created"]
-            or result["templates_synced"]):
-        db.commit()
-    return _templates(db, event.id)
-
-
-@router.post("/templates", response_model=schemas.AutomationTemplateRead)
-def create_template(
-    payload: schemas.AutomationTemplateCreate,
-    db: Session = Depends(get_db),
-    event: models.Event = Depends(_access),
-):
-    tmpl = models.MessageTemplate(
-        event_id=event.id,
-        name=payload.name,
-        kind=payload.kind,
-        body=payload.body,
-    )
-    db.add(tmpl)
-    db.commit()
-    return tmpl
-
-
-@router.put("/templates/{template_id}", response_model=schemas.AutomationTemplateRead)
-def update_template(
-    template_id: int,
-    payload: schemas.AutomationTemplateUpdate,
-    db: Session = Depends(get_db),
-    event: models.Event = Depends(_access),
-):
-    tmpl = db.get(models.MessageTemplate, template_id)
-    if tmpl is None or tmpl.event_id != event.id:
-        raise HTTPException(status_code=404, detail="תבנית לא נמצאה")
-    for key, value in payload.model_dump(exclude_unset=True).items():
-        setattr(tmpl, key, value)
-    db.commit()
-    return tmpl
-
-
-@router.delete("/templates/{template_id}")
-def delete_template(
-    template_id: int,
-    db: Session = Depends(get_db),
-    event: models.Event = Depends(_access),
-):
-    tmpl = db.get(models.MessageTemplate, template_id)
-    if tmpl is None or tmpl.event_id != event.id:
-        raise HTTPException(status_code=404, detail="תבנית לא נמצאה")
-    # חוקים שמפנים לתבנית הזו — מנתקים אותם (לא מוחקים אותם) כדי לא לאבד חוק.
-    for rule in _rules(db, event.id):
-        if rule.template_id == template_id:
-            rule.template_id = None
-    db.delete(tmpl)
-    db.commit()
-    return {"deleted": True}
-
-
-# ---- חוקי אוטומציה ----
-
-@router.get("/rules", response_model=list[schemas.AutomationRuleRead])
-def list_rules(
-    db: Session = Depends(get_db),
-    event: models.Event = Depends(_access),
-):
-    return _rules(db, event.id)
-
-
-@router.post("/rules", response_model=schemas.AutomationRuleRead)
-def create_rule(
-    payload: schemas.AutomationRuleCreate,
-    db: Session = Depends(get_db),
-    event: models.Event = Depends(_access),
-):
-    _validate_template(db, event.id, payload.template_id)
-    rule = models.AutomationRule(
-        event_id=event.id,
-        rule_name=payload.rule_name,
-        trigger_type=payload.trigger_type,
-        delay_days=payload.delay_days,
-        target_group=payload.target_group,
-        target_group_value=payload.target_group_value,
-        template_id=payload.template_id,
-        active=payload.active,
-    )
-    db.add(rule)
-    db.commit()
-    return rule
-
-
-@router.put("/rules/{rule_id}", response_model=schemas.AutomationRuleRead)
-def update_rule(
-    rule_id: int,
-    payload: schemas.AutomationRuleUpdate,
-    db: Session = Depends(get_db),
-    event: models.Event = Depends(_access),
-):
-    rule = db.get(models.AutomationRule, rule_id)
-    if rule is None or rule.event_id != event.id:
-        raise HTTPException(status_code=404, detail="חוק לא נמצא")
-    changes = payload.model_dump(exclude_unset=True)
-    if "template_id" in changes:
-        _validate_template(db, event.id, changes["template_id"])
-    for key, value in changes.items():
-        setattr(rule, key, value)
-    db.commit()
-    return rule
-
-
-@router.delete("/rules/{rule_id}")
-def delete_rule(
-    rule_id: int,
-    db: Session = Depends(get_db),
-    event: models.Event = Depends(_access),
-):
-    rule = db.get(models.AutomationRule, rule_id)
-    if rule is None or rule.event_id != event.id:
-        raise HTTPException(status_code=404, detail="חוק לא נמצא")
-    db.delete(rule)
-    db.commit()
-    return {"deleted": True}
-
-
-def _validate_template(db: Session, event_id: int, template_id: Optional[int]) -> None:
-    if template_id is None:
-        return
-    tmpl = db.get(models.MessageTemplate, template_id)
-    if tmpl is None or tmpl.event_id != event_id:
-        raise HTTPException(status_code=400, detail="התבנית שנבחרה אינה קיימת")
-
-
-# ---- התור לאישור + שליחה ----
-
-def _due_actions(
+def _track_status(
     db: Session,
     event: models.Event,
     *,
     guests: Optional[list[models.Guest]] = None,
     messages: Optional[list[models.Message]] = None,
-    rules: Optional[list[models.AutomationRule]] = None,
-    templates_by_id: Optional[dict[int, models.MessageTemplate]] = None,
-) -> list[automation.DueActionData]:
-    """מחשב את תור הפעולות שהגיע זמנן. אפשר להעביר נתונים שכבר נטענו באותה
-    בקשה (guests/messages/rules/templates_by_id — כל האירוע, לא מסונן) כדי
-    לחסוך שאילתה כפולה; ברירת המחדל (``None``) טוענת בעצמה, בדיוק כמו קודם.
-    """
-    if templates_by_id is None:
-        templates_by_id = {t.id: t for t in _templates(db, event.id)}
+) -> schemas.RsvpTrackStatus:
+    """מרכיב את תמונת המצב של המסלול למסך הזוג — ספירות, רשימת מעקב טלפוני."""
     if guests is None:
         guests = _guests(db, event.id)
-    if rules is None:
-        rules = _rules(db, event.id)
     if messages is None:
         messages = _messages(db, event.id)
-    return automation.compute_due_actions(
-        event=event,
-        guests=guests,
-        rules=[r for r in rules if r.active],
-        messages=messages,
-        templates_by_id=templates_by_id,
-    )
-
-
-def _process_actions(
-    db: Session,
-    event: models.Event,
-    actions: list[automation.DueActionData],
-    *,
-    templates_by_id: Optional[dict[int, models.MessageTemplate]] = None,
-) -> dict:
-    """מבצע בפועל פעולות שהגיע זמנן — שליחת WhatsApp (mock) או הכנסה לרשימת
-    מעקב טלפוני, לפי ``action_kind`` של החוק. כל פעולה נרשמת ביומן ההודעות עם
-    ``rule_id`` (dedup: המנוע לא יחזור על אותו חוק+מוזמן). לא עושה commit."""
-    if templates_by_id is None:
-        templates_by_id = {t.id: t for t in _templates(db, event.id)}
-    provider = messaging.get_provider()
-    sent = failed = skipped = phoned = 0
-    last_detail = ""
-
-    for a in actions:
-        if not a.guest.phone:
-            skipped += 1
-            continue
-        # שלב מעקב טלפוני — לא נשלחת הודעה, נרשמת משימת שיחה (הכנה בלבד).
-        if a.rule.action_kind == "phone_followup":
-            db.add(models.Message(
-                event_id=event.id,
-                guest_id=a.guest.id,
-                direction="outbound",
-                kind="call_task",
-                body=f"מעקב טלפוני: {a.guest.full_name} עדיין לא אישר/ה הגעה",
-                status="queued",
-                provider="mock",
-                channel="phone",
-                rule_id=a.rule.id,
-            ))
-            phoned += 1
-            continue
-        # שלב שליחה — הודעת WhatsApp (mock עד חיבור אמיתי).
-        tmpl = templates_by_id.get(a.rule.template_id) if a.rule.template_id else None
-        kind = tmpl.kind if tmpl else "custom"
-        res = provider.send_invitation(a.guest.phone, a.preview)
-        db.add(models.Message(
-            event_id=event.id,
-            guest_id=a.guest.id,
-            direction="outbound",
-            kind=kind,
-            body=a.preview,
-            status=res.status,
-            provider=res.provider,
-            channel="whatsapp",
-            rule_id=a.rule.id,
-        ))
-        if res.ok:
-            sent += 1
-        else:
-            failed += 1
-            last_detail = res.detail
-
-    return {
-        "sent": sent, "failed": failed, "skipped": skipped,
-        "phoned": phoned, "detail": last_detail,
-    }
-
-
-@router.get("/due", response_model=schemas.DueQueue)
-def get_due(
-    db: Session = Depends(get_db),
-    event: models.Event = Depends(_access),
-):
-    """התור לאישור — מי אמור לקבל הודעה עכשיו (מחושב חי, לא נשלח כלום)."""
-    actions = _due_actions(db, event)
-    return schemas.DueQueue(
-        mode=messaging.current_mode(),
-        actions=[
-            schemas.DueAction(
-                rule_id=a.rule.id,
-                rule_name=a.rule.rule_name,
-                trigger_type=a.rule.trigger_type,
-                guest_id=a.guest.id,
-                guest_name=a.guest.full_name,
-                phone=a.guest.phone,
-                channel="whatsapp",
-                preview=a.preview,
-            )
-            for a in actions
-        ],
-    )
-
-
-@router.post("/run-due", response_model=schemas.RunDueResult)
-def run_due(
-    payload: schemas.RunDueRequest,
-    request: Request,
-    db: Session = Depends(get_db),
-    event: models.Event = Depends(_access),
-    user: models.User = Depends(get_current_user),
-):
-    """שולח בפועל את הפעולות שהגיע זמנן — רק אחרי לחיצת אישור של הבעלים.
-
-    אפשר לצמצם לחוקים מסוימים דרך ``rule_ids``. כל שליחה נרשמת ביומן ההודעות
-    עם ``rule_id`` (למניעת כפילות בעתיד ולבניית ה-Timeline).
-    """
-    # שלב 2: טוענים את התבניות פעם אחת ומעבירים גם ל-_process_actions —
-    # קודם זה נטען פעמיים (פנימית בכל פונקציה) לאותה בקשה בדיוק.
-    templates_by_id = {t.id: t for t in _templates(db, event.id)}
-    actions = _due_actions(db, event, templates_by_id=templates_by_id)
-    if payload.rule_ids is not None:
-        wanted = set(payload.rule_ids)
-        actions = [a for a in actions if a.rule.id in wanted]
-
-    if not actions:
-        raise HTTPException(status_code=400, detail="אין כרגע פעולות לשליחה בתור")
-
-    r = _process_actions(db, event, actions, templates_by_id=templates_by_id)
-    detail = r["detail"]
-    if r["phoned"]:
-        detail = (detail + " · " if detail else "") + f"{r['phoned']} נכנסו למעקב טלפוני"
-
-    audit.record(
-        db, "automation_run_due",
-        event_id=event.id, user_id=user.id,
-        detail=(
-            f"אוטומציה: נשלחו {r['sent']}, נכשלו {r['failed']}, "
-            f"דולגו {r['skipped']}, מעקב טלפוני {r['phoned']}"
-        ),
-        ip=request.client.host if request.client else None,
-    )
-    db.commit()
-    return schemas.RunDueResult(
-        mode=messaging.current_mode(),
-        sent=r["sent"], failed=r["failed"], skipped=r["skipped"],
-        detail=detail or None,
-    )
-
-
-# ---- מסלול אישורי-ההגעה הקבוע (VEYA RSVP Track) ----
-
-def _track_status(db: Session, event: models.Event) -> schemas.RsvpTrackStatus:
-    """מרכיב את תמונת המצב של המסלול למסך הזוג — ספירות, רשימת מעקב, שלבים."""
-    guests = _guests(db, event.id)
-    messages = _messages(db, event.id)
 
     def count(status: str) -> int:
         return sum(1 for g in guests if g.rsvp_status == status)
@@ -450,14 +77,15 @@ def _track_status(db: Session, event: models.Event) -> schemas.RsvpTrackStatus:
         and m.status == "sent" and m.guest_id is not None
     }
 
-    # רשימת המעקב הטלפוני: ממתינים שנרשמה להם משימת שיחה (call_task).
-    call_task_guest_ids = {
+    # רשימת המעקב הטלפוני: ממתינים שכבר קיבלו את שתי התזכורות האוטומטיות
+    # (reminder_1 + reminder_2) ועדיין לא ענו — הגיע הזמן להתקשר בעצמכם.
+    reminder2_sent_ids = {
         m.guest_id for m in messages
-        if m.kind == "call_task" and m.guest_id is not None
+        if m.kind == "reminder_2" and m.guest_id is not None
     }
     guests_by_id = {g.id: g for g in guests}
     phone_list: list[schemas.RsvpTrackPhoneRow] = []
-    for gid in call_task_guest_ids:
+    for gid in reminder2_sent_ids:
         g = guests_by_id.get(gid)
         if g is None or g.rsvp_status != "pending":
             continue
@@ -466,29 +94,8 @@ def _track_status(db: Session, event: models.Event) -> schemas.RsvpTrackStatus:
             phone=g.phone or "", side=g.side or "",
         ))
 
-    # שלבי המסלול = חוקי האוטומציה של האירוע, עם ספירת "בוצע" לפי rule_id.
-    fired_by_rule: dict[int, set[int]] = {}
-    for m in messages:
-        if m.rule_id is not None and m.guest_id is not None:
-            fired_by_rule.setdefault(m.rule_id, set()).add(m.guest_id)
-    # שלב 2: טוענים את חוקי האוטומציה פעם אחת ומעבירים ל-_due_actions (אם
-    # המסלול פעיל) — קודם זה נטען כאן וגם שוב בתוך _due_actions, וכנ"ל
-    # guests/messages שכבר נטענו למעלה. אותה תוצאה בדיוק, בלי הכפלת שאילתות.
-    all_rules = _rules(db, event.id)
-    steps = [
-        schemas.RsvpTrackStepRow(
-            rule_id=r.id,
-            name=r.rule_name,
-            offset_days=r.delay_days,
-            action_kind=r.action_kind or "send",
-            active=r.active,
-            done=len(fired_by_rule.get(r.id, set())),
-        )
-        for r in sorted(all_rules, key=lambda r: r.delay_days)
-    ]
-
     due = (
-        _due_actions(db, event, guests=guests, messages=messages, rules=all_rules)
+        communication.compute_due_messages(db, event, guests=guests, messages=messages)
         if event.rsvp_track_active else []
     )
 
@@ -504,7 +111,7 @@ def _track_status(db: Session, event: models.Event) -> schemas.RsvpTrackStatus:
         pending=count("pending"),
         in_phone_followup=len(phone_list),
         phone_list=phone_list,
-        steps=steps,
+        steps=[],  # התזמון הקבוע נערך היום דרך "תקשורת עם אורחים", לא כרשימת שלבים כאן
         due_now=len(due),
     )
 
@@ -545,7 +152,7 @@ def activate_track(
     event: models.Event = Depends(_access),
     user: models.User = Depends(get_current_user),
 ):
-    """שולח הזמנות ומפעיל את מסלול אישורי-ההגעה (מקצה תבניות+חוקים, idempotent).
+    """שולח הזמנות ומפעיל את מסלול אישורי-ההגעה (מקצה את רצף ההודעות, idempotent).
 
     היקף השליחה נקבע ב-``payload``:
     - ``retry_ids``   — שליחה חוזרת רק למוזמנים אלה (ניסיון חוזר לנכשלים). גובר על scope.
@@ -556,7 +163,7 @@ def activate_track(
     האוטומציות) נדלק בקריאה הראשונה; מכאן כל התזכורות מחושבות מזמן השליחה בפועל.
     """
     payload = payload or schemas.RsvpTrackActivateRequest()
-    result = rsvp_track.provision_rsvp_track(db, event)
+    messages_created = communication.provision_event_messages(db, event)
 
     newly_activated = not event.rsvp_track_active
     if not event.rsvp_track_active:
@@ -590,9 +197,9 @@ def activate_track(
         targets = [g for g in targets if g.id not in already_invited]
         resend_skipped = before - len(targets)
 
-    body = rsvp_track.invitation_template_body(db, event)
+    invitation_msg = communication.event_messages_by_type(db, event.id).get("invitation")
+    body = invitation_msg.content if invitation_msg else ""
     provider = messaging.get_provider()
-    ev_values = messaging.event_values(event)
     invitations_sent = skipped_missing = skipped_invalid = failed = 0
     failed_ids: list[int] = []
     for g in targets:
@@ -603,14 +210,12 @@ def activate_track(
         if kind == "invalid":
             skipped_invalid += 1
             continue
-        text = messaging.render_automation_template(
-            body,
-            guest_name=g.full_name,
-            link=messaging.confirm_link(g.guest_token),
-            table_number=g.table_number,
-            guest_count=g.effective_seats,
-            **ev_values,
+        text = communication.render_message(
+            body, communication.communication_values(event, g)
         )
+        if not text:
+            skipped_missing += 1  # אין עדיין תוכן להזמנה — לא נשלח כלום
+            continue
         res = provider.send_invitation(g.phone, text)
         db.add(models.Message(
             event_id=event.id,
@@ -621,6 +226,7 @@ def activate_track(
             status=res.status,
             provider=res.provider,
             channel="whatsapp",
+            event_message_id=invitation_msg.id if invitation_msg else None,
         ))
         if res.ok:
             invitations_sent += 1
@@ -643,7 +249,7 @@ def activate_track(
         audit.record(
             db, "send_invitations",
             event_id=event.id, user_id=user.id,
-            detail=f"{skipped_total} מוזמנים לא קיבלו הזמנה עקב מספר טלפון חסר או לא תקין",
+            detail=f"{skipped_total} מוזמנים לא קיבלו הזמנה עקב מספר טלפון חסר/לא תקין או תוכן ריק",
             ip=ip,
         )
     if resend_skipped:
@@ -667,8 +273,8 @@ def activate_track(
     status = _track_status(db, event)
     return schemas.RsvpTrackActivateResult(
         **status.model_dump(),
-        templates_created=result["templates_created"],
-        rules_created=result["rules_created"],
+        templates_created=messages_created,
+        rules_created=0,
         invitations_sent=invitations_sent,
         skipped_missing=skipped_missing,
         skipped_invalid=skipped_invalid,
@@ -685,32 +291,27 @@ def advance_track(
     event: models.Event = Depends(_access),
     user: models.User = Depends(get_current_user),
 ):
-    """מקדם את המסלול אוטומטית: מעבד את כל הפעולות שהבשילו — תזכורות WhatsApp
-    (mock) נשלחות, שלבי טלפון נכנסים לרשימת המעקב. רק ממתינים; מי שכבר ענה
-    יוצא מהמסלול (target=pending). idempotent — dedup לפי rule_id מונע כפילות,
-    כך שאפשר לקרוא לזה שוב ושוב (למשל בכל טעינת מסך RSVP) בלי נזק."""
-    sent = phoned = failed = 0
+    """מקדם את המסלול אוטומטית: תזכורות/יום-אירוע/תודה שהגיע זמנן נשלחות
+    (mock/live). רק ממתינים/מאושרים לפי קהל היעד של כל הודעה; מי שכבר ענה
+    יוצא מהתזכורות. idempotent — dedup לפי event_message_id מונע כפילות,
+    כך שאפשר לקרוא לזה שוב ושוב (בכל טעינת מסך RSVP) בלי נזק."""
+    sent = failed = 0
     if event.rsvp_track_active:
-        templates_by_id = {t.id: t for t in _templates(db, event.id)}
-        actions = _due_actions(db, event, templates_by_id=templates_by_id)
+        actions = communication.compute_due_messages(db, event)
         if actions:
-            r = _process_actions(db, event, actions, templates_by_id=templates_by_id)
-            sent, phoned, failed = r["sent"], r["phoned"], r["failed"]
-            if sent or phoned or failed:
-                audit.record(
-                    db, "rsvp_track_advance",
-                    event_id=event.id, user_id=user.id,
-                    detail=(
-                        f"התקדמות מסלול: נשלחו {sent}, מעקב טלפוני {phoned}, "
-                        f"נכשלו {failed}"
-                    ),
-                    ip=request.client.host if request.client else None,
-                )
+            r = communication.send_due_messages(db, event, actions)
+            sent, failed = r["sent"], r["failed"]
+            audit.record(
+                db, "rsvp_track_advance",
+                event_id=event.id, user_id=user.id,
+                detail=f"התקדמות מסלול: נשלחו {sent}, נכשלו {failed}",
+                ip=request.client.host if request.client else None,
+            )
             db.commit()
 
     status = _track_status(db, event)
     return schemas.RsvpTrackAdvanceResult(
-        **status.model_dump(), sent=sent, phoned=phoned, failed=failed,
+        **status.model_dump(), sent=sent, phoned=0, failed=failed,
     )
 
 
@@ -718,8 +319,10 @@ def advance_track(
 
 _KIND_LABEL = {
     "invitation": "הזמנה",
-    "reminder": "תזכורת",
-    "pre_event": "לפני האירוע",
+    "reminder_1": "תזכורת ראשונה",
+    "reminder_2": "תזכורת שנייה",
+    "final_reminder": "תזכורת אחרונה",
+    "event_day": "יום האירוע",
     "thank_you": "תודה",
     "reply": "תשובת המוזמן",
     "custom": "הודעה",
@@ -797,26 +400,25 @@ def dashboard(
         if m.direction == "outbound" and m.kind == "invitation"
         and m.status == "sent" and m.guest_id is not None
     }
-    # ממתינים שכבר קיבלו לפחות מעקב אחד (תזכורת/לפני האירוע/הודעת חוק).
+    # ממתינים שכבר קיבלו לפחות מעקב אחד (תזכורת כלשהי ברצף).
     followed_ids = {
         m.guest_id for m in messages
         if m.direction == "outbound" and m.guest_id is not None
-        and (m.rule_id is not None or m.kind in ("reminder", "pre_event"))
+        and m.kind in ("reminder_1", "reminder_2", "final_reminder")
     }
     pending_ids = {g.id for g in guests if g.rsvp_status == "pending"}
     in_reminder = len(pending_ids & followed_ids)
 
-    from datetime import datetime
+    from datetime import datetime as _dt
     event_date = automation.parse_event_date(event.event_date)
-    days_to_event = (event_date - datetime.utcnow().date()).days if event_date else None
+    days_to_event = (event_date - _dt.utcnow().date()).days if event_date else None
 
-    # שלב 2: טוענים את חוקי האוטומציה פעם אחת — גם לספירת "חוקים פעילים" וגם
-    # להעברה ל-_due_actions (יחד עם guests/messages שכבר נטענו למעלה), במקום
-    # שאילתת COUNT נפרדת ועוד טעינה כפולה בתוך _due_actions. אותה תוצאה בדיוק.
-    all_rules = _rules(db, event.id)
-    active_rules = sum(1 for r in all_rules if r.active)
+    active_messages = sum(
+        1 for em in communication.event_messages_by_type(db, event.id).values()
+        if em.is_active
+    )
 
-    due = _due_actions(db, event, guests=guests, messages=messages, rules=all_rules)
+    due = communication.compute_due_messages(db, event, guests=guests, messages=messages)
     recs = automation.compute_recommendations(event, guests)
 
     return schemas.AutomationDashboard(
@@ -828,7 +430,7 @@ def dashboard(
         pending=count("pending"),
         in_reminder_process=in_reminder,
         days_to_event=days_to_event,
-        active_rules=int(active_rules),
+        active_rules=active_messages,
         due_now=len(due),
         recommendations=[
             schemas.SmartFollowUp(severity=r["severity"], text=r["text"])

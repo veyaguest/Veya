@@ -375,7 +375,7 @@ function SendInvitationsDialog({
             </h3>
             <p className="send-summary-main">
               נשלחו <strong>{result.invitations_sent}</strong> הזמנות
-              {mode === 'mock' && ' (מצב תצוגה — עדיין לא שלחנו הודעות אמיתיות)'}
+              {mode === 'mock' && ' (עדיין לא נשלחות הודעות אמיתיות)'}
             </p>
             {(result.skipped_missing + result.skipped_invalid) > 0 && (
               <p className="send-summary-warn">
@@ -986,13 +986,13 @@ function TrackStatusCard({
     <div className="track-status">
       <div className="track-status-head">
         <div>
-          <span className="track-hero-badge ok">המסלול פעיל</span>
-          <h2 className="track-hero-title">מסלול אישורי ההגעה רץ עבורכם</h2>
+          <span className="track-hero-badge ok">פעיל</span>
+          <h2 className="track-hero-title">עוקבים אחרי אישורי ההגעה בשבילכם</h2>
         </div>
         <span className={`mode-badge ${track.mode}`}>
           {track.mode === 'mock'
-            ? 'מצב תצוגה — עדיין לא שלחנו הודעות אמיתיות'
-            : 'מצב חי — WhatsApp מחובר'}
+            ? 'עדיין לא נשלחות הודעות אמיתיות'
+            : 'וואטסאפ מחובר — ההודעות נשלחות באמת'}
         </span>
       </div>
 
@@ -1408,8 +1408,8 @@ function ManualTab({ onChanged }: { onChanged: () => void }) {
         {summary && (
           <span className={`mode-badge ${summary.mode}`}>
             {summary.mode === 'mock'
-              ? 'מצב בדיקה — לא נשלח WhatsApp אמיתי'
-              : 'מצב חי — WhatsApp מחובר'}
+              ? 'עדיין לא נשלחות הודעות אמיתיות'
+              : 'וואטסאפ מחובר — ההודעות נשלחות באמת'}
           </span>
         )}
       </div>

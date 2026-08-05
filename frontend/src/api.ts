@@ -15,17 +15,16 @@ import type {
   AnalyzeResult,
   AuditLogRow,
   AutomationDashboard,
-  AutomationRule,
-  AutomationRuleInput,
-  AutomationTemplate,
-  AutomationTemplateInput,
   Clarification,
+  CommunicationDueQueue,
+  CommunicationSendResult,
   ConfirmGuestPublic,
   ConfirmSubmit,
   DashboardStats,
-  DueQueue,
   EventDetails,
   EventMemberRead,
+  EventMessage,
+  EventMessageInput,
   EventSummary,
   GroupNotes,
   GroupSuggestion,
@@ -39,9 +38,11 @@ import type {
   HallTableSave,
   ImportPreview,
   Message,
+  MessageDefault,
+  MessageDefaultInput,
+  MessageDefaultsBackfillResult,
   MessageTemplate,
   RsvpSummary,
-  RunDueResult,
   ReserveSummary,
   RecommendSeatResponse,
   AssignSeatResult,
@@ -51,8 +52,6 @@ import type {
   SeatingUndoResult,
   SeatingUndoState,
   SendInvitationsResult,
-  TemplatePlaceholder,
-  MessageLibrary,
   RsvpTimelineView,
   RsvpTrackActivateResult,
   RsvpTrackAdvanceResult,
@@ -62,10 +61,6 @@ import type {
   TokenResponse,
   User,
   VenueSuggestion,
-  VeyaTemplate,
-  VeyaTemplateInput,
-  VeyaWorkflowStep,
-  VeyaWorkflowStepInput,
 } from './types'
 import {
   clearAuth,
@@ -930,121 +925,6 @@ export async function submitConfirm(
   return res.json()
 }
 
-// ---- מנוע אוטומציות אישורי הגעה (RSVP Automation) ----
-
-/** רשימת המשתנים הדינמיים ({{...}}) הזמינים לתבניות האוטומציה. */
-export async function getAutomationPlaceholders(): Promise<TemplatePlaceholder[]> {
-  const res = await apiFetch('/automation/placeholders')
-  if (!res.ok) throw await toError(res)
-  return res.json()
-}
-
-// -- ספריית ההודעות האנושית (קריאה בלבד) --
-
-export async function getMessageLibrary(): Promise<MessageLibrary> {
-  const res = await apiFetch('/automation/library')
-  if (!res.ok) throw await toError(res)
-  return res.json()
-}
-
-// -- תבניות הודעה בעלות שם --
-
-export async function listAutomationTemplates(): Promise<AutomationTemplate[]> {
-  const res = await apiFetch('/automation/templates')
-  if (!res.ok) throw await toError(res)
-  return res.json()
-}
-
-export async function createAutomationTemplate(
-  data: AutomationTemplateInput,
-): Promise<AutomationTemplate> {
-  const res = await apiFetch('/automation/templates', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-  if (!res.ok) throw await toError(res)
-  return res.json()
-}
-
-export async function updateAutomationTemplate(
-  templateId: number,
-  data: Partial<AutomationTemplateInput>,
-): Promise<AutomationTemplate> {
-  const res = await apiFetch(`/automation/templates/${templateId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-  if (!res.ok) throw await toError(res)
-  return res.json()
-}
-
-export async function deleteAutomationTemplate(templateId: number): Promise<void> {
-  const res = await apiFetch(`/automation/templates/${templateId}`, {
-    method: 'DELETE',
-  })
-  if (!res.ok) throw await toError(res)
-}
-
-// -- חוקי אוטומציה --
-
-export async function listAutomationRules(): Promise<AutomationRule[]> {
-  const res = await apiFetch('/automation/rules')
-  if (!res.ok) throw await toError(res)
-  return res.json()
-}
-
-export async function createAutomationRule(
-  data: AutomationRuleInput,
-): Promise<AutomationRule> {
-  const res = await apiFetch('/automation/rules', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-  if (!res.ok) throw await toError(res)
-  return res.json()
-}
-
-export async function updateAutomationRule(
-  ruleId: number,
-  data: Partial<AutomationRuleInput>,
-): Promise<AutomationRule> {
-  const res = await apiFetch(`/automation/rules/${ruleId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-  if (!res.ok) throw await toError(res)
-  return res.json()
-}
-
-export async function deleteAutomationRule(ruleId: number): Promise<void> {
-  const res = await apiFetch(`/automation/rules/${ruleId}`, { method: 'DELETE' })
-  if (!res.ok) throw await toError(res)
-}
-
-// -- התור לאישור + שליחה --
-
-/** התור לאישור — מי אמור לקבל הודעה עכשיו (מחושב חי, לא נשלח כלום). */
-export async function getDueQueue(): Promise<DueQueue> {
-  const res = await apiFetch('/automation/due')
-  if (!res.ok) throw await toError(res)
-  return res.json()
-}
-
-/** שליחה בפועל של התור לאחר אישור. ריק => כל התור; אחרת רק החוקים שסומנו. */
-export async function runDueQueue(ruleIds?: number[]): Promise<RunDueResult> {
-  const res = await apiFetch('/automation/run-due', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ rule_ids: ruleIds ?? null }),
-  })
-  if (!res.ok) throw await toError(res)
-  return res.json()
-}
-
 // -- Timeline של מוזמן + דשבורד --
 
 export async function getGuestTimeline(guestId: number): Promise<GuestTimeline> {
@@ -1113,31 +993,74 @@ export async function advanceRsvpTrack(): Promise<RsvpTrackAdvanceResult> {
   return res.json()
 }
 
-// ---- ניהול ברירות המחדל הגלובליות של VEYA (אדמין בלבד) ----
+// ---- תקשורת עם אורחים — רצף ההודעות הקבוע של האירוע ----
 
-export async function adminListVeyaTemplates(): Promise<VeyaTemplate[]> {
-  const res = await apiFetch('/admin/veya/templates')
+export async function getCommunicationSequence(): Promise<EventMessage[]> {
+  const res = await apiFetch('/communication/sequence')
   if (!res.ok) throw await toError(res)
   return res.json()
 }
 
-export async function adminCreateVeyaTemplate(
-  data: VeyaTemplateInput,
-): Promise<VeyaTemplate> {
-  const res = await apiFetch('/admin/veya/templates', {
+export async function updateCommunicationMessage(
+  messageType: string,
+  data: Partial<EventMessageInput>,
+): Promise<EventMessage> {
+  const res = await apiFetch(`/communication/sequence/${messageType}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function previewCommunicationMessage(messageType: string): Promise<string> {
+  const res = await apiFetch(`/communication/sequence/${messageType}/preview`, {
+    method: 'POST',
+  })
+  if (!res.ok) throw await toError(res)
+  return (await res.json()).preview
+}
+
+export async function testSendCommunicationMessage(
+  messageType: string,
+): Promise<CommunicationSendResult> {
+  const res = await apiFetch(`/communication/sequence/${messageType}/test-send`, {
+    method: 'POST',
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function getCommunicationDue(): Promise<CommunicationDueQueue> {
+  const res = await apiFetch('/communication/due')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function sendCommunicationDue(): Promise<CommunicationSendResult> {
+  const res = await apiFetch('/communication/due/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify({}),
   })
   if (!res.ok) throw await toError(res)
   return res.json()
 }
 
-export async function adminUpdateVeyaTemplate(
-  templateId: number,
-  data: Partial<VeyaTemplateInput>,
-): Promise<VeyaTemplate> {
-  const res = await apiFetch(`/admin/veya/templates/${templateId}`, {
+// ---- ניהול ברירות המחדל הגלובליות של רצף ההודעות (אדמין בלבד) ----
+
+export async function adminListMessageDefaults(): Promise<MessageDefault[]> {
+  const res = await apiFetch('/admin/message-defaults')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function adminUpdateMessageDefault(
+  defaultId: number,
+  data: Partial<MessageDefaultInput>,
+): Promise<MessageDefault> {
+  const res = await apiFetch(`/admin/message-defaults/${defaultId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -1146,28 +1069,8 @@ export async function adminUpdateVeyaTemplate(
   return res.json()
 }
 
-export async function adminDeleteVeyaTemplate(templateId: number): Promise<void> {
-  const res = await apiFetch(`/admin/veya/templates/${templateId}`, {
-    method: 'DELETE',
-  })
-  if (!res.ok) throw await toError(res)
-}
-
-export async function adminListVeyaWorkflow(): Promise<VeyaWorkflowStep[]> {
-  const res = await apiFetch('/admin/veya/workflow')
-  if (!res.ok) throw await toError(res)
-  return res.json()
-}
-
-export async function adminUpdateVeyaWorkflowStep(
-  stepId: number,
-  data: VeyaWorkflowStepInput,
-): Promise<VeyaWorkflowStep> {
-  const res = await apiFetch(`/admin/veya/workflow/${stepId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
+export async function adminBackfillMessageDefaults(): Promise<MessageDefaultsBackfillResult> {
+  const res = await apiFetch('/admin/message-defaults/backfill', { method: 'POST' })
   if (!res.ok) throw await toError(res)
   return res.json()
 }

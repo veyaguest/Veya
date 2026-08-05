@@ -60,22 +60,13 @@ DEFAULT_TEMPLATE = (
 )
 
 def default_template_for(event_type: str | None) -> str:
-    """הזמנת ברירת המחדל של סוג האירוע — מקור-אמת יחיד לכל המסלולים.
-
-    כל שמונת הסוגים, כולל חתונה, מקבלים היום נוסח שנכתב במפורש ב-
-    ``message_library.DEFAULT_INVITATION_BY_TYPE``. אותה פונקציה מזינה גם
-    את ``rsvp_track.provision_rsvp_track`` (המסלול שמזין את עורך ההודעות),
-    כך ששני המסלולים לא יכולים להיפרד שוב.
-
-    ``DEFAULT_TEMPLATE`` נשאר כרשת ביטחון בלבד, לסוג לא-מוכר.
+    """DEPRECATED — נתיב ה"תבנית הישנה" (``event.message_template``) הוחלף
+    בהודעת ה-invitation ברצף "תקשורת עם אורחים" (``EventMessage``, ראו
+    ``communication.py``), שהוא היום מקור-האמת לשליחה בפועל. הפונקציה נשארת
+    (מוחזרת רק רשת הביטחון הגנרית) כדי ש-``routers/messaging.py`` הישן —
+    שאין לו יותר קורא ב-Frontend — לא ייפול אם מישהו עדיין קורא לו ישירות.
     """
-    # ייבוא lazy כדי להימנע ממחזוריות ולוודא שאין תלות זמן-import.
-    from app.message_library import default_body_for
-
-    body = default_body_for(event_type, "invitation")
-    if body is None:
-        return DEFAULT_TEMPLATE
-    return localize_tokens(body, event_type)
+    return DEFAULT_TEMPLATE
 
 
 # קידומת עדינה שנוספת בראש הודעת תזכורת (למי שעדיין לא ענה). מנוסחת כך
@@ -282,70 +273,6 @@ def localize_tokens(body: str, event_type: str | None) -> str:
     return body
 
 
-def placeholders_for(event_type: str | None) -> list[dict]:
-    """רשימת הטוקנים שמוצעים לזוג בעורך ההודעות, מותאמת לסוג האירוע.
-
-    למה לא רשימה אחת קבועה: באירוע עם בעל שמחה יחיד (בר/בת מצווה, ברית,
-    משפחתי, עסקי, אחר) יש שדה שם *אחד* במסך יצירת האירוע. הצעת "[שם החתן]"
-    ו-"[שם הכלה]" שם מציעה טוקנים שאין להם מקור נתונים — [שם הכלה] היה נשאר
-    ריק תמיד, ו-[שם החתן] היה כפילות מיותרת של [שמות בעלי האירוע].
-
-    ארבע התאמות לפי סוג:
-    1. טוקן בעלי האירוע מקבל את השם שהזוג מכיר מהטופס — דרך אותו
-       ``TOKEN_VOCABULARY`` שמתרגם גם את גוף התבנית, כדי שהטוקן בבורר
-       והטוקן שכתוב בנוסח יהיו אותה מחרוזת בדיוק.
-    2. טוקני החתן/כלה הנפרדים מוצעים רק לסוגים עם שני בעלי אירוע.
-    3. שורת ההורים — סוג חד-מארח מקבל אחת ("[משפחת החוגג]") במקום שתיים.
-    4. שורות ההורים מוצעות רק לסוג שיש לו בפועל נוסח שמשתמש בהן (נבדק מול
-       הספרייה, לא מרשימה קשיחה — כך שהוספת נוסח דתי לסוג חדש מפעילה את
-       הטוקן מעצמה).
-
-    הערכים עצמם לא משתנים — רק מה שמוצע לבחירה. כל טוקן שהיה קיים ממשיך
-    להתפרש בשליחה, כך ששום תבנית שמורה לא נשברת.
-    """
-    from app import event_terms as _terms
-    from app.message_library import entries_for
-
-    terms = _terms.get_event_terms(event_type)
-    vocab = vocabulary_for(terms.type)
-    # האם הספרייה של הסוג בכלל מכילה נוסח שמזמין דרך ההורים/המשפחה.
-    has_parents_templates = any(
-        "[הורי" in e.get("body", "") for e in entries_for(event_type)
-    )
-
-    out: list[dict] = []
-    for p in AUTOMATION_PLACEHOLDERS:
-        token = p["token"]
-        if token in ("[הורי החתן]", "[הורי הכלה]") and not has_parents_templates:
-            continue
-        # סוג חד-מארח: אין חתן/כלה נפרדים, ואין שתי שורות הורים.
-        if not terms.has_two_hosts and token in (
-            "[שם החתן]", "[שם הכלה]", "[הורי הכלה]"
-        ):
-            continue
-
-        # התרגום חל על *כל* הסוגים, כדי שהטוקן בבורר יהיה בדיוק המחרוזת
-        # שכתובה בנוסחי הספרייה של אותו סוג. בלעדיו הזוג היה מקבל בבורר
-        # "[שמות בעלי האירוע]" בזמן שהנוסח שלו כתוב "[שמות בני הזוג]".
-        localized = vocab.get(token)
-        if localized:
-            if token == "[שמות בעלי האירוע]":
-                desc = (f"{terms.host_field_label} — מה שמילאתם בפרטי האירוע"
-                        if not terms.has_two_hosts
-                        else "שמות בני הזוג, כפי שמילאתם בפרטי האירוע")
-            elif token == "[הורי החתן]":
-                desc = ("שם המשפחה כפי שיופיע בהזמנה (\"משפחת כהן\"). "
-                        "לא מילאתם — השורה נעלמת.")
-            else:
-                desc = p["desc"]
-            p = {**p, "token": localized, "desc": desc}
-        elif terms.has_two_hosts:
-            if token == "[שם החתן]":
-                p = {**p, "desc": f"{terms.host_field_label} בלבד"}
-            elif token == "[שם הכלה]":
-                p = {**p, "desc": f"{terms.host_b_field_label} בלבד"}
-        out.append(p)
-    return out
 
 # מפת כינויים לתאימות-לאחור: משתנים/טוקנים ישנים שכבר נשמרו בתבניות קיימות,
 # ממופים לאותם ערכים כמו המשתנים החדשים. כך תבנית שנכתבה פעם עדיין עובדת,

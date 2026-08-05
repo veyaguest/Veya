@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import audit, auth, cache, event_terms, messaging, models, schemas, venues
+from app import audit, auth, cache, communication, event_terms, messaging, models, schemas, venues
 from app.auth import get_current_admin
 from app.database import get_db
 
@@ -666,123 +666,68 @@ def create_account(
     )
 
 
-# --- ניהול ברירות המחדל הגלובליות של VEYA (ספריית תבניות + מסלול קבוע) ---
-# רק אדמין. אלה הברירות שמוחלות אוטומטית על כל אירוע חדש; הבעלים מקבלים עותק לעריכה.
+# --- ניהול ברירות המחדל הגלובליות לרצף "תקשורת עם אורחים" ---
+# רק אדמין. כאן הבעלים מזין את הטקסטים הסופיים לכל event_type × message_type
+# (48 שורות); כל אירוע חדש מעתיק מכאן את השורה המתאימה לו (idempotent).
+
+MESSAGE_DEFAULTS_CACHE_TTL_SECONDS = 300  # 5 דקות — עריכה נדירה, invalidate מיידי בכתיבה
 
 
-# TTL של ספריית התבניות/המסלול הגלובליים — נתונים שהאדמין עורך לעיתים
-# רחוקות, ורוב הקריאות אליהם הן פנימיות (provision_rsvp_track בכל אירוע
-# חדש/GET /automation/templates), לא ממסך שהמשתמש מחכה לו. invalidate_prefix
-# מיד אחרי כל כתיבה מבטיח שהאדמין רואה שינוי בלי לחכות ל-TTL.
-VEYA_LIBRARY_CACHE_TTL_SECONDS = 300  # 5 דקות
-
-
-@router.get("/veya/templates", response_model=list[schemas.VeyaTemplateRead])
-def list_veya_templates(
+@router.get("/message-defaults", response_model=list[schemas.MessageDefaultRead])
+def list_message_defaults(
     db: Session = Depends(get_db),
     admin: models.User = Depends(get_current_admin),
 ):
-    """כל תבניות ברירת המחדל הגלובליות, מסודרות לפי שלב ומיקום."""
+    """כל 48 ברירות המחדל (8 סוגי אירוע × 6 סוגי הודעה), לפי סוג אירוע וסדר קבוע."""
 
     def _load():
         rows = db.scalars(
-            select(models.VeyaTemplate).order_by(
-                models.VeyaTemplate.sort_order, models.VeyaTemplate.id
+            select(models.MessageDefault).order_by(
+                models.MessageDefault.event_type, models.MessageDefault.id
             )
         ).all()
         return cache.snapshot_all(rows)
 
-    return cache.get_or_set(
-        "veya_templates:admin_all", VEYA_LIBRARY_CACHE_TTL_SECONDS, _load
+    order = {mt: i for i, mt in enumerate(communication.MESSAGE_TYPES)}
+    rows = cache.get_or_set(
+        "message_defaults:admin_all", MESSAGE_DEFAULTS_CACHE_TTL_SECONDS, _load
     )
+    return sorted(rows, key=lambda r: (r.event_type, order.get(r.message_type, 99)))
 
 
-@router.post("/veya/templates", response_model=schemas.VeyaTemplateRead, status_code=201)
-def create_veya_template(
-    payload: schemas.VeyaTemplateCreate,
+@router.patch("/message-defaults/{default_id}", response_model=schemas.MessageDefaultRead)
+def update_message_default(
+    default_id: int,
+    payload: schemas.MessageDefaultUpdate,
     db: Session = Depends(get_db),
     admin: models.User = Depends(get_current_admin),
 ):
-    tpl = models.VeyaTemplate(
-        stage=payload.stage,
-        name=payload.name,
-        body=payload.body,
-        is_default=payload.is_default,
-        active=payload.active,
-        sort_order=payload.sort_order,
-    )
-    db.add(tpl)
-    db.commit()
-    cache.invalidate_prefix("veya_templates:")
-    return tpl
-
-
-@router.patch("/veya/templates/{template_id}", response_model=schemas.VeyaTemplateRead)
-def update_veya_template(
-    template_id: int,
-    payload: schemas.VeyaTemplateUpdate,
-    db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
-):
-    tpl = db.get(models.VeyaTemplate, template_id)
-    if tpl is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="התבנית לא נמצאה")
+    d = db.get(models.MessageDefault, default_id)
+    if d is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ברירת המחדל לא נמצאה")
     data = payload.model_dump(exclude_unset=True)
     for field, value in data.items():
-        setattr(tpl, field, value)
+        setattr(d, field, value)
     db.commit()
-    cache.invalidate_prefix("veya_templates:")
-    return tpl
+    cache.invalidate_prefix("message_defaults:")
+    return d
 
 
-@router.delete("/veya/templates/{template_id}", status_code=204)
-def delete_veya_template(
-    template_id: int,
+@router.post("/message-defaults/backfill", response_model=schemas.MessageDefaultsBackfillResult)
+def backfill_message_defaults(
     db: Session = Depends(get_db),
     admin: models.User = Depends(get_current_admin),
 ):
-    tpl = db.get(models.VeyaTemplate, template_id)
-    if tpl is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="התבנית לא נמצאה")
-    db.delete(tpl)
+    """מקצה את רצף "תקשורת עם אורחים" לכל אירוע קיים שעדיין חסר לו (idempotent —
+    לא נוגע באירוע שכבר קיבל את השורות, אפילו אם עדיין ריקות)."""
+    events = db.scalars(select(models.Event)).all()
+    created = 0
+    for ev in events:
+        created += communication.provision_event_messages(db, ev)
     db.commit()
-    cache.invalidate_prefix("veya_templates:")
-
-
-@router.get("/veya/workflow", response_model=list[schemas.VeyaWorkflowStepRead])
-def list_veya_workflow(
-    db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
-):
-    """שלבי המסלול הקבוע של VEYA, לפי סדר."""
-
-    def _load():
-        rows = db.scalars(
-            select(models.VeyaWorkflowStep).order_by(models.VeyaWorkflowStep.step_order)
-        ).all()
-        return cache.snapshot_all(rows)
-
-    return cache.get_or_set(
-        "veya_workflow:admin_all", VEYA_LIBRARY_CACHE_TTL_SECONDS, _load
+    return schemas.MessageDefaultsBackfillResult(
+        events_processed=len(events), messages_created=created,
     )
-
-
-@router.patch("/veya/workflow/{step_id}", response_model=schemas.VeyaWorkflowStepRead)
-def update_veya_workflow_step(
-    step_id: int,
-    payload: schemas.VeyaWorkflowStepUpdate,
-    db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
-):
-    step = db.get(models.VeyaWorkflowStep, step_id)
-    if step is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="השלב לא נמצא")
-    data = payload.model_dump(exclude_unset=True)
-    for field, value in data.items():
-        setattr(step, field, value)
-    db.commit()
-    cache.invalidate_prefix("veya_workflow:")
-    return step
 
 
 @router.get("/veya/message-stats", response_model=schemas.AdminMessageStats)
