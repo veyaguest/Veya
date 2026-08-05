@@ -989,11 +989,9 @@ function TrackStatusCard({
           <span className="track-hero-badge ok">פעיל</span>
           <h2 className="track-hero-title">עוקבים אחרי אישורי ההגעה בשבילכם</h2>
         </div>
-        <span className={`mode-badge ${track.mode}`}>
-          {track.mode === 'mock'
-            ? 'עדיין לא נשלחות הודעות אמיתיות'
-            : 'וואטסאפ מחובר — ההודעות נשלחות באמת'}
-        </span>
+        {track.mode === 'mock' && (
+          <span className="mode-badge mock">עדיין לא נשלחות הודעות אמיתיות</span>
+        )}
       </div>
 
       <div className="track-progress">
@@ -1405,12 +1403,8 @@ function ManualTab({ onChanged }: { onChanged: () => void }) {
         <button className="btn-ghost" onClick={onReminders} disabled={busy}>
           {busy ? 'שולח…' : 'שליחת תזכורת לממתינים'}
         </button>
-        {summary && (
-          <span className={`mode-badge ${summary.mode}`}>
-            {summary.mode === 'mock'
-              ? 'עדיין לא נשלחות הודעות אמיתיות'
-              : 'וואטסאפ מחובר — ההודעות נשלחות באמת'}
-          </span>
+        {summary && summary.mode === 'mock' && (
+          <span className="mode-badge mock">עדיין לא נשלחות הודעות אמיתיות</span>
         )}
       </div>
 
