@@ -103,20 +103,26 @@
   height: 100vh;
 }
 
+/* ---- "מסגרת" כהה עקבית סביב הסרגל: פס לוגו למעלה + פס חשבון למטה,
+   כהים כמו הפס העליון/תחתון במובייל — הניווט באמצע נשאר בהיר וקריא. ---- */
 .sidebar-logo {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 10px 4px 20px;
-  border-bottom: 1px solid var(--line);
+  margin: -22px -16px 0;
+  padding: 22px 16px 20px;
+  border-bottom: none;
+  background:
+    radial-gradient(circle at 30% 0%, rgba(201, 162, 39, 0.1), transparent 60%),
+    var(--charcoal);
 }
 .logo-text {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 26px;
   letter-spacing: 8px;
-  color: var(--charcoal);
+  color: var(--gold-light);
   font-weight: 600;
   line-height: 1;
 }
@@ -187,13 +193,18 @@
   display: none;
 }
 
-/* ---- Sidebar footer: user chip + status + logout ---- */
+/* ---- Sidebar footer: user chip + status + logout — פס כהה תחתון, תואם
+   לפס הלוגו הכהה למעלה (ראו .sidebar-logo). ---- */
 .sidebar-foot {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
+  margin: 0 -16px -22px;
+  padding: 16px 16px 22px;
+  border-top: none;
+  background:
+    radial-gradient(circle at 70% 100%, rgba(201, 162, 39, 0.1), transparent 60%),
+    var(--charcoal);
 }
 .user-chip {
   display: flex;
@@ -210,7 +221,7 @@
   transition: background 0.15s ease;
 }
 .user-chip:hover {
-  background: rgba(201, 162, 39, 0.1);
+  background: rgba(201, 162, 39, 0.16);
 }
 .user-avatar {
   width: 34px;
@@ -220,9 +231,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(201, 162, 39, 0.12);
-  border: 1px solid var(--gold-deep);
-  color: var(--gold-deep);
+  background: rgba(201, 162, 39, 0.18);
+  border: 1px solid var(--gold-light);
+  color: var(--gold-light);
   font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   font-size: 17px;
   font-weight: 600;
@@ -234,14 +245,14 @@
 }
 .user-name {
   font-size: 14px;
-  color: var(--charcoal);
+  color: rgba(245, 239, 226, 0.92);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .user-event {
   font-size: 12px;
-  color: var(--muted);
+  color: rgba(245, 239, 226, 0.6);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -435,8 +446,8 @@
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px 14px;
-    padding: 12px 16px;
+    gap: 8px 14px;
+    padding: 9px 16px;
     border-inline: none;
     border-bottom: none;
     background:
@@ -445,12 +456,23 @@
     box-shadow: 0 4px 20px -6px rgba(43, 38, 32, 0.28);
   }
   .sidebar-logo {
-    border-bottom: none;
+    /* איפוס טכניקת ה"פס כהה בולט" של הדסקטופ (margin/padding/background
+       משלה) — כאן כל .sidebar כבר כהה כפס אחד, אין צורך בפס נפרד. */
+    margin: 0;
     padding: 0;
+    border-bottom: none;
+    background: none;
     flex: 0 0 auto;
+    gap: 8px;
+  }
+  /* לוגו קצת יותר קומפקטי בפס העליון של המובייל — מקטין את כל המונוגרם
+     (טבעת + V) יחסית, בלי לגעת בכל אלמנט בנפרד. */
+  .sidebar-logo .auth-monogram {
+    transform: scale(0.78);
   }
   .sidebar-logo .logo-text {
-    color: var(--gold-light);
+    font-size: 20px;
+    letter-spacing: 5px;
   }
   .logo-img {
     height: 46px;
@@ -490,8 +512,8 @@
     justify-content: space-around;
     align-items: stretch;
     gap: 2px;
-    padding: 6px 4px;
-    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    padding: 4px 4px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
     background:
       radial-gradient(circle at 88% 100%, rgba(201, 162, 39, 0.1), transparent 60%),
       var(--charcoal);
@@ -505,8 +527,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    padding: 4px 2px;
+    gap: 2px;
+    padding: 3px 2px;
     border-radius: 12px;
     font-size: 11px;
   }
@@ -549,14 +571,17 @@
     order: 2;
     /* גדל וממלא את כל הרוחב שנשאר בפס העליון — לא נשאר צר סביב התוכן,
        כדי שהרקע הכהה של .sidebar-foot-row יגיע עד קצה הלוגו, לא ייעצר
-       באמצע עם שטח בהיר ריק אחריו. */
+       באמצע עם שטח בהיר ריק אחריו. גם כאן: איפוס טכניקת ה"פס כהה" של
+       הדסקטופ — .sidebar כבר כהה כפס אחד. */
     flex: 1 1 auto;
     min-width: 0;
     flex-direction: row;
     align-items: center;
     gap: 12px;
-    padding-top: 0;
+    margin: 0;
+    padding: 0;
     border-top: none;
+    background: none;
   }
   .user-chip {
     display: none;
@@ -570,7 +595,7 @@
   }
   /* מרווח תחתון כדי שהניווט הקבוע לא יכסה את סוף התוכן. */
   .content {
-    padding: 16px 18px calc(84px + env(safe-area-inset-bottom, 0px));
+    padding: 16px 18px calc(74px + env(safe-area-inset-bottom, 0px));
   }
   .page-title {
     font-size: 24px;
@@ -578,7 +603,7 @@
   /* הפוטר עצמו זז אחרי .content — צריך את אותו מרווח כדי לא להיחסם
      ע"י הניווט התחתון הקבוע (z-index:60, position:fixed). */
   .app-footer {
-    padding: 14px 18px calc(84px + env(safe-area-inset-bottom, 0px));
+    padding: 14px 18px calc(74px + env(safe-area-inset-bottom, 0px));
   }
 }
 

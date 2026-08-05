@@ -420,6 +420,7 @@ class MessageDefaultUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     is_active: Optional[bool] = None
+    variables_supported: Optional[list[str]] = None
 
 
 class MessageDefaultsBackfillResult(BaseModel):

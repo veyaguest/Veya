@@ -68,6 +68,11 @@ VARIABLE_KEYS: list[str] = [
     "navigation_link", "rsvp_link", "table_number", "gift_link",
 ]
 
+# הרחבה ייעודית לחתונה בלבד (הוחלט 2026-08-06): לצד host_names הכללי
+# (המשותף לכל סוגי האירוע), נוסחי החתונה מפרידים בפירוש בין שני בעלי
+# האירוע. לא מוצעים בעורך לסוגי אירוע אחרים — ראו DEFAULT_VARIABLES_SUPPORTED.
+WEDDING_ONLY_VARIABLE_KEYS: list[str] = ["groom_name", "bride_name"]
+
 # אילו משתנים רלוונטיים לכל סוג הודעה — להצעה בעורך (לא חוסם שימוש באחרים).
 DEFAULT_VARIABLES_SUPPORTED: dict[str, list[str]] = {
     "invitation": [
@@ -112,6 +117,8 @@ def communication_values(event: models.Event, guest: Optional[models.Guest] = No
     host_names = event_terms.hosts_names(event.event_type, event.groom_name, event.bride_name)
     values: dict[str, str] = {
         "host_names": host_names,
+        "groom_name": event.groom_name or "",
+        "bride_name": event.bride_name or "",
         "event_type": terms.celebration,
         "event_date": automation.event_date_display(event),
         "event_time": event.event_time or "",
