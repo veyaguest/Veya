@@ -422,6 +422,9 @@
   .shell {
     flex-direction: column;
   }
+  /* פס עליון כהה אחיד — לא עוד "צ'יפ" בודד בתוך פס בהיר: כל הפס (לוגו +
+     ניהול גישה + מחובר/יציאה) הוא עכשיו משטח כהה-חום אחד רציף, כמו מסגרת
+     פרימיום סביב התוכן הבהיר. שיפוע עדין למטה כדי שהקצה לא ייראה שטוח. */
   .sidebar {
     width: 100%;
     height: auto;
@@ -435,18 +438,48 @@
     gap: 10px 14px;
     padding: 12px 16px;
     border-inline: none;
-    border-bottom: 1px solid var(--line);
+    border-bottom: none;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(201, 162, 39, 0.1), transparent 60%),
+      var(--charcoal);
+    box-shadow: 0 4px 20px -6px rgba(43, 38, 32, 0.28);
   }
   .sidebar-logo {
     border-bottom: none;
     padding: 0;
     flex: 0 0 auto;
   }
+  .sidebar-logo .logo-text {
+    color: var(--gold-light);
+  }
   .logo-img {
     height: 46px;
   }
+  /* "ניהול גישה" — צ'יפ הניווט היחיד שיושב ישירות בפס העליון (לא בניווט
+     התחתון) — צריך גרסת צבע משלו על רקע כהה. */
+  .sidebar > .nav-item {
+    color: rgba(245, 239, 226, 0.82);
+  }
+  .sidebar > .nav-item .nav-bullet {
+    background: rgba(245, 239, 226, 0.4);
+  }
+  .sidebar > .nav-item:hover {
+    color: #fff;
+    background: rgba(201, 162, 39, 0.16);
+  }
+  .sidebar > .nav-item:hover .nav-bullet {
+    background: var(--gold-light);
+  }
+  .sidebar > .nav-item.active {
+    color: var(--gold-light);
+    background: rgba(201, 162, 39, 0.18);
+  }
+  .sidebar > .nav-item.active .nav-bullet {
+    background: var(--gold-light);
+  }
   /* ניווט תחתון קבוע (bottom nav) — כמו באפליקציה: פס קבוע בתחתית המסך
-     עם אייקון + תווית קצרה לכל מסך, במקום שורת צ'יפים בראש הסרגל העליון. */
+     עם אייקון + תווית קצרה לכל מסך. כהה כמו הפס העליון — "מסגרת" כהה
+     אחידה מלמעלה ומלמטה סביב התוכן הבהיר, להפרדה ברורה ויוקרתית. */
   .side-nav {
     position: fixed;
     bottom: 0;
@@ -459,9 +492,11 @@
     gap: 2px;
     padding: 6px 4px;
     padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
-    background: #f3efe7;
-    border-top: 1px solid var(--line);
-    box-shadow: 0 -4px 20px -6px rgba(43, 38, 32, 0.18);
+    background:
+      radial-gradient(circle at 88% 100%, rgba(201, 162, 39, 0.1), transparent 60%),
+      var(--charcoal);
+    border-top: none;
+    box-shadow: 0 -4px 20px -6px rgba(43, 38, 32, 0.32);
   }
   /* פריטי הניווט התחתון בלבד — לא נוגע בכפתור 'ניהול גישה' שבסרגל העליון. */
   .side-nav .nav-item {
@@ -483,18 +518,18 @@
   }
   .side-nav .nav-item .nav-icon {
     display: block;
-    color: var(--body);
+    color: rgba(245, 239, 226, 0.55);
     transition: color 0.15s;
   }
   .side-nav .nav-item .nav-label-short {
     display: block;
     line-height: 1;
     white-space: nowrap;
-    color: var(--muted);
+    color: rgba(245, 239, 226, 0.55);
     transition: color 0.15s;
   }
   .side-nav .nav-item.active {
-    background: rgba(201, 162, 39, 0.1);
+    background: rgba(201, 162, 39, 0.18);
   }
   /* בניווט התחתון אין פס צד — הפריט הפעיל מסומן בזהב מלא. */
   .side-nav .nav-item.active::before {
@@ -502,7 +537,7 @@
   }
   .side-nav .nav-item.active .nav-icon,
   .side-nav .nav-item.active .nav-label-short {
-    color: var(--gold-deep);
+    color: var(--gold-light);
   }
   /* כפתור 'ניהול גישה' נשאר צ'יפ אופקי בסרגל העליון (לא חלק מהניווט התחתון). */
   .sidebar > .nav-item {
