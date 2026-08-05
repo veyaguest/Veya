@@ -309,7 +309,7 @@ export const strings = {
     gaugeLabel: 'אישורי הגעה',
     gaugeStatusMaybe: 'מתלבטים',
     gaugeStatusDeclined: 'לא מגיעים',
-    kpiConfirmed: 'אישרו',
+    kpiConfirmed: 'מגיעים',
     kpiPending: 'ממתינים',
     invitePlaceholder: 'העלו תמונת הזמנה',
     // ---- באנר "יש מוזמנים בלי הזמנה" — מעל עדכוני אישורי ההגעה ----

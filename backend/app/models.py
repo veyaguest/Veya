@@ -12,6 +12,7 @@ from sqlalchemy import (
     LargeBinary,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -343,16 +344,20 @@ class Message(Base):
     rule_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("automation_rules.id"), nullable=True, index=True
     )
+    # הודעה חדשה שנשלחה מרצף "תקשורת עם אורחים" (``EventMessage``) — המקביל
+    # העדכני ל-``rule_id`` (שנשאר רק לתיעוד היסטורי של הודעות ישנות).
+    event_message_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("event_messages.id"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
 class MessageTemplate(Base):
-    """תבנית הודעה בעלת שם (מנוע האוטומציות של אישורי הגעה).
+    """DEPRECATED — הוחלף ב-``EventMessage`` (ראו ``communication.py``).
 
-    היום המערכת שומרת תבנית *אחת* לאירוע (``Event.message_template``). כאן
-    אפשר להחזיק כמה תבניות בעלות שם (הזמנה / תזכורת / לפני האירוע / תודה /
-    מותאם), שכל חוק אוטומציה מפנה אל אחת מהן. התבנית הישנה ממשיכה לעבוד —
-    זו שכבה נוספת מעליה, לא החלפה.
+    נשאר בקוד רק כי ``Message.rule_id``/``AutomationRule.template_id``
+    ישנים מצביעים לכאן (תיעוד היסטורי, אין Alembic למחיקת טבלה בבטחה). אין
+    לכתוב שורות חדשות לכאן.
     """
 
     __tablename__ = "message_templates"
@@ -367,12 +372,9 @@ class MessageTemplate(Base):
 
 
 class AutomationRule(Base):
-    """חוק אוטומציה במסע אישורי ההגעה (RSVP Automation Engine).
-
-    כל חוק אומר: "כשמתקיים טריגר X, אחרי delay_days ימים, שלח את התבנית
-    template_id לקהל target_group". המנוע (``automation.py``) דטרמיניסטי —
-    הוא רק *מחשב* אילו פעולות הגיע זמנן; שום דבר לא נשלח בלי אישור מפורש
-    של הבעלים (מודל "תור לאישור").
+    """DEPRECATED — הוחלף ב-``EventMessage`` (תזמון/קהל יעד קבועים לכל
+    message_type, ראו ``communication.py``). נשאר בקוד כי ``Message.rule_id``
+    ישן מצביע לכאן (תיעוד היסטורי). אין לכתוב שורות חדשות לכאן.
     """
 
     __tablename__ = "automation_rules"
