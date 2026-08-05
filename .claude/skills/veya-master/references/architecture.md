@@ -20,10 +20,12 @@
   `ratelimit.py` · `audit.py` · `backup.py` · `media.py`.
 - `seating.py` — מנוע השיבוץ הדטרמיניסטי (`seating-engine.md`).
 - `constraints.py` · `automation.py` · `messaging.py` · `importer.py` ·
-  `message_library.py` · `rsvp_timeline.py` · `rsvp_track.py` · `venues.py` · `invitations.py`.
+  `communication.py` (רצף "תקשורת עם אורחים" — ראה למטה) · `rsvp_timeline.py` ·
+  `venues.py` · `invitations.py`.
 - `routers/` — endpoint לכל תחום, prefixים: `/auth` `/admin` `/events`
   `/events/{id}/members` `/guests` `/guests/import` `/seating` `/constraints`
-  `/messaging` `/stats` `/event` `/hall` `/confirm` `/automation` `/venues` `/media`.
+  `/messaging` `/stats` `/event` `/hall` `/confirm` `/automation`
+  `/communication` `/venues` `/media`.
 
 ## מפת קוד — Frontend (`frontend/src/`)
 - `App.tsx` — שורש, ניתוב עמודים ידני, מצב אדמין/התחזות, טעינת אירוע.
@@ -32,16 +34,47 @@
 - `strings/he.ts` — **מקור אמת יחיד לטקסטים בעברית** (קול המותג).
 - `components/` — מסך לכל תחום: `DashboardPage` `GuestsPage` `RsvpPage`
   `HallPage` `ConfirmPage` `AdminApp/AdminPage` `OnboardingWizard` +
-  דיאלוגים/פאנלים (Import, Automation*, MessageBuilder, PrepWizard,
+  דיאלוגים/פאנלים (Import, `CommunicationTab` — "תקשורת עם אורחים", PrepWizard,
   SmartAssistantPanel, VenueAutocomplete ועוד).
 - מערכת עיצוב: `App.css` (~9,300 שורות, design tokens ב-`:root`) — ראה `design-system.md`.
 
 ## מודל נתונים (עיקרי)
 `User` (owner/admin, account_type couple/planner/venue) → `Event` (פרטי חתונה,
 מפת אולם JSON, תבנית הודעה, מסלול RSVP) → `Guest` (מקור אמת: צד/קבוצה/כמות/
-הערות/טוקן אישי/confirmed_count/is_child). סביבם: `Message`, `MessageTemplate`,
-`AutomationRule`, `Clarification`, `EventMember`, `AuditLog`, `LoginEvent`,
-`Venue`, `MediaBlob`, `VeyaTemplate`, `VeyaWorkflowStep`. פרטים מלאים ב-`models.py`.
+הערות/טוקן אישי/confirmed_count/is_child). סביבם: `Message`, `Clarification`,
+`EventMember`, `AuditLog`, `LoginEvent`, `Venue`, `MediaBlob`. תקשורת עם
+אורחים: `MessageDefault` (קטלוג גלובלי event_type×message_type) +
+`EventMessage` (רצף בפועל לכל אירוע) — ראה סעיף ייעודי למטה.
+`MessageTemplate`/`AutomationRule`/`VeyaTemplate`/`VeyaWorkflowStep` **DEPRECATED**
+(נשארו בקובץ לתיעוד היסטורי בלבד — לא נכתבים אליהם יותר, ראו `decisions.md`
+2026-08-05). פרטים מלאים ב-`models.py`.
+
+## תקשורת עם אורחים (רצף הודעות קבוע — 🔒 `decisions.md` 2026-08-05)
+מחליף צירוף ישן של 3 מנגנונים (ספריית קטגוריות/סגנונות + אוטומציות חופשיות +
+מסלול RSVP גלובלי) במודל אחד ופשוט:
+- **`MessageDefault`** (גלובלי, מנוהל אדמין ב-`/admin/message-defaults`) —
+  48 שורות קבועות: 8 סוגי אירוע × 6 סוגי הודעה
+  (`invitation`/`reminder_1`/`reminder_2`/`final_reminder`/`event_day`/
+  `thank_you`). `content` ריק עד שהאדמין מזין טקסט סופי — לא מומצא.
+- **`EventMessage`** (לכל אירוע) — מוקצה אוטומטית (idempotent,
+  `communication.py: provision_event_messages`) מ-`MessageDefault` לפי
+  `event.event_type`, בעת יצירת אירוע. הזוג עורך כאן — לא בוחר תבניות.
+  שדות תזמון/קהל (`trigger_offset_days`/`target_audience`) קבועים לכל
+  message_type, לא מוגדרים ידנית כמו ב-`AutomationRule` הישן.
+- **רינדור:** `communication.py: render_message()` — משתני `{{var}}` (רשימה
+  סגורה: `guest_name`/`guest_names`/`host_names`/`event_type`/`event_date`/
+  `event_time`/`venue_name`/`address`/`navigation_link`/`rsvp_link`/
+  `table_number`/`gift_link`), **שונה** מהטוקנים הישנים בסוגריים מרובעים
+  ({{name}}-style) של `messaging.py`. שורה שכל משתניה ריקים נמחקת ("תוכן חכם").
+- **UX:** `CommunicationTab.tsx` — לשונית/מסך אחד "תקשורת עם אורחים" (6
+  כרטיסים קבועים: עריכה, הפעלה/כיבוי, תצוגה מקדימה, שליחה לבדיקה), מוטמע גם
+  במסך הזוג (`CoupleRsvpView`, אנקור `#mb-anchor`) וגם בפאנל האדמין הטכני.
+- **שילוב עם השליחה האמיתית:** `routers/automation.py: /track/activate`
+  (שליחת הזמנות בפועל) ו-`/track/advance` (תזכורות/יום-אירוע/תודה אוטומטיות)
+  **נשארו** — רק המקור הפנימי שלהם הוחלף מ-`AutomationRule`/`rsvp_track.py`
+  ל-`EventMessage`/`communication.py`, כדי לא לשבור את הפלואו האמיתי שה-Dashboard
+  כבר תלוי בו. עקרון "תור לאישור" (שום דבר לא נשלח בלי אישור מפורש) נשמר —
+  `/communication/due` מחשב, `/communication/due/send` שולח רק אחרי אישור.
 
 ## עקרונות ארכיטקטוניים נעולים
 - **הפרדת AI:** LLM לפרשנות/שיח בלבד; חישוב השיבוץ **דטרמיניסטי**. ראה `decisions.md`.
@@ -61,11 +94,10 @@
   קוראת ל-Lexicon. הוספת סוג אירוע חדש = רשומה אחת בכל Lexicon, בלי לגעת
   במסכים. פירוט כללי הניסוח (דקדוק `celebration`/`celebration_construct`)
   ב-`decisions.md`; כללי קופי מלאים ב-`brand.md`.
-- **מאגר הודעות מודע-סוג-אירוע:** `message_library.py: entries_for(event_type)`
-  — `wedding` (75), `henna` (10), `bar_mitzvah`/`bat_mitzvah` (10),
-  `brit` (8) מקבלים ספרייה ייעודית בטון שלה; `family`/`business`/`other`
-  עדיין על `GENERIC_LIBRARY` משותפת (12 תבניות מבוססות-טוקנים) — עתידי לפי
-  ביקוש, ראה `product-state.md`/`roadmap.md`.
+- **רצף תקשורת מודע-סוג-אירוע:** `MessageDefault` (טבלת DB, לא קובץ קוד) —
+  שורה אחת לכל event_type×message_type (48 בסך הכול). ראה סעיף ייעודי
+  "תקשורת עם אורחים" למעלה. **מחליף** את `message_library.py` הישן (הוסר
+  לגמרי ב-2026-08-05, ראה `decisions.md`).
 - **טקסונומיית קבוצות מודעת-סוג-אירוע:** `group_options`/`groupOptions`
   בלקסיקון (שני הצדדים) — רשימת קבוצות שונה לכל `event_type` (למשל עסקי:
   עובדים/לקוחות/ספקים/הנהלה/שותפים; בר/בת מצווה: משפחת אב/אם/כיתה/צוות).
@@ -94,9 +126,11 @@
 2. **Frontend** — `frontend/src/strings/eventTypes.ts`: הוסיפו רשומה
    מקבילה ל-`EVENT_TERMS` ופריט ל-`EVENT_TYPE_OPTIONS` (הבורר ביצירת
    אירוע). ודאו ש-`groupOptions` תואם בדיוק לצד ה-backend.
-3. **(אופציונלי) ספריית הודעות ייעודית** — `message_library.py`: הוסיפו
-   `<TYPE>_LIBRARY` ורשמו אותה ב-`_LIBRARY_BY_TYPE`. אם מדלגים על השלב
-   הזה, הסוג החדש נופל אוטומטית ל-`GENERIC_LIBRARY` (בטוח, לא שגיאה).
+3. **(אופציונלי) 6 ברירות מחדל לתקשורת עם אורחים** — הוסיפו 6 שורות
+   `MessageDefault` (event_type=הסוג החדש, message_type=כל אחד מ-6
+   הסוגים הקבועים) דרך `/admin/message-defaults`. אם מדלגים, האירוע עדיין
+   מקבל 6 שורות `EventMessage` ריקות (title בלבד) — לא שגיאה, פשוט אין
+   תוכן ברירת מחדל לסוג הזה עד שיוזן.
 4. **(אופציונלי) משקלי הושבה ייעודיים** — `seating.py:
    SEATING_WEIGHTS_BY_EVENT_TYPE`: רק אם יש סיבה מוצרית ברורה לסטות
    מברירת המחדל (=חתונה).

@@ -131,6 +131,60 @@
 
 ## היסטוריית החלטות (החדש בראש)
 
+### 2026-08-05 — איחוד 3 מנגנוני ההודעות לרצף קבוע אחד ("תקשורת עם אורחים") — שלב 1: תשתית בלבד
+- **החלטה:** שלושת המנגנונים שהיו קיימים במקביל — (1) "ספריית ההודעות"
+  הישנה (`message_library.py`, ~2100 שורות, קטגוריה×סגנון×סוג אירוע +
+  `MessageBuilder.tsx`), (2) מנוע אוטומציות חופשי-לגמרי
+  (`AutomationRule`+`MessageTemplate` + `AutomationRulesTab`/
+  `AutomationTemplatesTab`/`AutomationQueueTab`, שהזוג הגדיר בעצמו
+  טריגר+דיליי+קהל+תבנית), ו-(3) "מסלול RSVP" (`VeyaTemplate`+
+  `VeyaWorkflowStep` + `rsvp_track.py`, ברירות מחדל גלובליות מועתקות
+  לכל אירוע) — אוחדו למודל **אחד, פשוט וקבוע**: לכל `event_type` בדיוק 6
+  סוגי הודעה (`invitation`/`reminder_1`/`reminder_2`/`final_reminder`/
+  `event_day`/`thank_you`), ללא קטגוריות/סגנונות לבחירה. מודלים חדשים:
+  `MessageDefault` (קטלוג גלובלי event_type×message_type, 48 שורות,
+  `content=""`) ו-`EventMessage` (עותק בפועל לכל אירוע, idempotent,
+  `backend/app/communication.py: provision_event_messages`). הוקצה
+  Backfill לכל האירועים הקיימים (לא רק חדשים). ה-UX הישן (4 לשוניות
+  בפאנל האדמין הטכני + `MessageBuilder` בתוך מסך הזוג) הוחלף במסך אחד
+  "תקשורת עם אורחים" (`CommunicationTab.tsx`) — 6 כרטיסים קבועים, כל אחד
+  עם עריכה/הפעלה-כיבוי/תצוגה מקדימה/שליחה לבדיקה. **שלב 1 בלבד: אין תוכן.**
+  כל `content` נשאר `""` — הבעלים יזין את הטקסטים הסופיים דרך מסך אדמין
+  חדש (`/admin/message-defaults`, `MessageDefaultsManager` ב-`AdminPage.tsx`).
+- **סיבה:** הוראת הבעלים המפורשת — שלושת המנגנונים יצרו חוויית שימוש
+  מבולבלת (איפה עורכים הודעה? בספרייה? בתבניות? בחוקים?). בשאלת הבהרה
+  שנשאלה במפורש, הבעלים אישר **איחוד מלא** (לא רק ניקוי הספרייה) ו-**Backfill
+  לכל האירועים הקיימים** (לא רק חדשים).
+- **השפעה:** Backend — `models.py` (MessageDefault/EventMessage חדשים;
+  `MessageTemplate`/`AutomationRule`/`VeyaTemplate`/`VeyaWorkflowStep`
+  מסומנים DEPRECATED בקוד, **נשארים בקובץ** ולא נמחקים — אין Alembic,
+  ו-`Message.rule_id` הישן מצביע עליהם; `Message` קיבל עמודה חדשה
+  `event_message_id`), `communication.py` חדש (רינדור `{{var}}` חדש —
+  12 המשתנים המדויקים שהוגדרו, שונה מהטוקנים הישנים בסוגריים מרובעים),
+  `routers/communication.py` חדש, `routers/automation.py` נכתב מחדש
+  (הוסרו `/library`, `/templates` CRUD, `/rules` CRUD, `/due`, `/run-due`;
+  **נשארו** `/track/*`/`/timeline*`/`/dashboard` — אלה מזינים את `DashboardTab`
+  הקיים במסך הזוג, ורק הוחלף המקור הפנימי שלהם מ-`rsvp_track.py`/
+  `AutomationRule` ל-`EventMessage`/`communication.py`, כדי לא לשבור את
+  זרימת השליחה האמיתית שכבר עובדת), `routers/admin.py` (הוסר ניהול
+  VeyaTemplate/Workflow, נוסף `/admin/message-defaults` + `/backfill`),
+  `message_library.py`+`rsvp_track.py` **נמחקו לגמרי**. Frontend — נמחקו
+  `MessageBuilder.tsx`/`AutomationRulesTab.tsx`/`AutomationTemplatesTab.tsx`/
+  `AutomationQueueTab.tsx`; נוסף `CommunicationTab.tsx`; `RsvpPage.tsx`
+  איבד את הלשוניות automations/templates/queue/manual לטובת לשונית
+  `communication` יחידה; `AdminPage.tsx` קיבל `MessageDefaultsManager`.
+  כל הבדיקות הקיימות (backend + frontend) ממשיכות לעבור ללא regressions.
+- **חלופות שנשקלו:** לנקות רק את (1) ולהשאיר (2)+(3) גמישים (נדחה —
+  הבעלים ביקש איחוד מלא במפורש, לא רק ניקוי קוסמטי); למחוק גם את הטבלאות
+  הישנות מה-DB (נדחה — אין Alembic, מחיקת טבלה/עמודה בלי מיגרציה אמיתית
+  מסוכנת; הטבלאות נשארות ריקות/לא-נכתבות, לא נמחקות); Backfill רק לאירועים
+  חדשים (נדחה — הבעלים אישר מפורשות Backfill לכל האירועים).
+- **המשך ידוע (לא בשלב הזה):** `routers/messaging.py: send_invitations/
+  send_reminders` (הפלואו הישן שהיה משמש את `ManualTab` שנמחק) עדיין קיימים
+  ולא חוברו למקור החדש — ללא קורא ב-Frontend כרגע, הם קוד מת בטוח אך לא
+  נוקה. כשהבעלים ישלח את הטקסטים הסופיים, שלב 2 יטמיע אותם ב-`MessageDefault`
+  ואפשר יהיה לשקול חיווט/הסרה סופית של הנתיב הישן.
+
 ### 2026-08-05 — כרטיס "סטטוס אישורי הגעה" הפך למד חצי-עגול (Gauge), לא דונאט
 - **החלטה:** הדונאט המלא בדשבורד (הכרטיס "סטטוס אישורי הגעה") הוחלף במד
   חצי-עגול (180°) בהשראת לוח מחוונים של רכב יוקרה — קשת מונפשת (ציור

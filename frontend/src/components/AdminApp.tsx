@@ -24,7 +24,7 @@ import type {
   AdminVenueRow,
   User,
 } from '../types'
-import { CreateAccountForm, VeyaDefaultsManager } from './AdminPage'
+import { CreateAccountForm, MessageDefaultsManager } from './AdminPage'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 import { Footer } from './Footer'
 import { strings } from '../strings/he'
@@ -1461,7 +1461,7 @@ export function AdminApp({
           {page === 'users' && <AdminUsersView onImpersonate={onImpersonate} />}
           {page === 'events' && <AdminEventsView onImpersonate={onImpersonate} />}
           {page === 'venues' && <AdminVenuesView />}
-          {page === 'messages' && <VeyaDefaultsManager />}
+          {page === 'messages' && <MessageDefaultsManager />}
           {page === 'audit' && <AdminAuditView />}
         </main>
         <Footer />

@@ -5,53 +5,35 @@ import {
   getAutomationDashboard,
   getEvent,
   getRsvpTrack,
-  getTemplate,
-  listAutomationTemplates,
   listGuests,
   mediaUrl,
-  messageLog,
+  previewCommunicationMessage,
   previewSend,
-  previewTemplate,
-  rsvpSummary,
-  saveTemplate,
-  sendInvitations,
-  sendReminders,
-  simulateReply,
 } from '../api'
 import type {
   AutomationDashboard,
   EventDetails,
   Guest,
   InvitationSendPreview,
-  Message,
-  RsvpSummary,
   RsvpTrackActivateResult,
   RsvpTrackStatus,
   SendScope,
-  TemplatePlaceholder,
 } from '../types'
 import { RSVP_LABELS } from '../types'
-import { activeEventTerms, getEventTerms } from '../strings/eventTypes'
-import { buildSampleTokens, renderMessagePreview } from '../lib/messagePreview'
+import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { AddGuestForm } from './AddGuestForm'
-import { AutomationRulesTab } from './AutomationRulesTab'
-import { AutomationTemplatesTab } from './AutomationTemplatesTab'
-import { AutomationQueueTab } from './AutomationQueueTab'
+import { CommunicationTab } from './CommunicationTab'
 import { GuestTimelineModal } from './GuestTimelineModal'
 import { ImportDialog } from './ImportDialog'
-import { MessageBuilder } from './MessageBuilder'
 import { PasteImportDialog } from './PasteImportDialog'
 import { RsvpTimeline } from './RsvpTimeline'
 
-type Tab = 'dashboard' | 'automations' | 'templates' | 'queue' | 'manual'
+type Tab = 'dashboard' | 'communication'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'dashboard', label: 'מצב ומעקב' },
-  { key: 'automations', label: 'אוטומציות' },
-  { key: 'templates', label: 'תבניות הודעה' },
-  { key: 'queue', label: 'תור לשליחה' },
-  { key: 'manual', label: 'שליחה ידנית' },
+  { key: 'communication', label: 'תקשורת עם אורחים' },
 ]
 
 /**
@@ -106,9 +88,7 @@ function AdminRsvpShell({ onNavigate }: { onNavigate?: (page: 'guests') => void 
 function AdminRsvpView() {
   const [tab, setTab] = useState<Tab>('dashboard')
   const [timelineGuest, setTimelineGuest] = useState<number | null>(null)
-  // מפתח רענון — כשאוטומציה/שליחה משנה נתונים, מכריח את לשונית המצב לטעון מחדש.
-  const [refreshKey, setRefreshKey] = useState(0)
-  const bump = useCallback(() => setRefreshKey((k) => k + 1), [])
+  const [refreshKey] = useState(0)
 
   return (
     <div className="rsvp-page">
@@ -132,10 +112,7 @@ function AdminRsvpView() {
           onGoTo={setTab}
         />
       )}
-      {tab === 'automations' && <AutomationRulesTab onChanged={bump} />}
-      {tab === 'templates' && <AutomationTemplatesTab onChanged={bump} />}
-      {tab === 'queue' && <AutomationQueueTab onSent={bump} />}
-      {tab === 'manual' && <ManualTab onChanged={bump} />}
+      {tab === 'communication' && <CommunicationTab />}
 
       {timelineGuest != null && (
         <GuestTimelineModal
@@ -305,7 +282,7 @@ function CoupleRsvpView({ onNavigate }: { onNavigate?: (page: 'guests') => void 
           <RsvpTimeline />
           {track && <TrackStatusCard track={track} onResend={openSendDialog} />}
           <div id="mb-anchor">
-            <MessageBuilder />
+            <CommunicationTab />
           </div>
         </>
       )}
@@ -440,7 +417,7 @@ function SendConfirmStep({
   onClose: () => void
 }) {
   const [guests, setGuests] = useState<Guest[]>([])
-  const [inviteBody, setInviteBody] = useState('')
+  const [previewText, setPreviewText] = useState('')
   const [event, setEvent] = useState<EventDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -461,15 +438,14 @@ function SendConfirmStep({
     let alive = true
     ;(async () => {
       try {
-        const [g, tpls, ev] = await Promise.all([
+        const [g, text, ev] = await Promise.all([
           listGuests('', 500, 0),
-          listAutomationTemplates(),
+          previewCommunicationMessage('invitation'),
           getEvent(),
         ])
         if (!alive) return
         setGuests(g.items)
-        const invite = tpls.find((t) => t.kind === 'invitation') ?? tpls[0]
-        setInviteBody(invite?.body ?? '')
+        setPreviewText(text)
         setEvent(ev)
         // ברירת מחדל: מי שעדיין לא קיבל הזמנה ויש לו טלפון.
         setSelected(
@@ -498,20 +474,6 @@ function SendConfirmStep({
     if (!q) return guests
     return guests.filter((g) => g.full_name.includes(q) || (g.phone || '').includes(q))
   }, [guests, search])
-
-  // תצוגת ההודעה שתישלח — אותו מנוע בדיוק כמו בעורך ההודעות וכמו בשרת.
-  //
-  // עד לסבב הזה עמדה כאן מפת ערכים מקומית עם שמונה מפתחות ישנים בלבד
-  // ({{guest_name}}, {{couple_names}}, {{rsvp_link}}…). רשימת הטוקנים
-  // שהשרת מחזיר עברה מזמן למפתחות הקנוניים ({{first_name}}, {{event_name}},
-  // {{confirmation_link}}…), ולכן ``sample[p.key] ?? ''`` החזיר מחרוזת ריקה
-  // כמעט לכל טוקן — והמסך האחרון לפני השליחה הראה הודעה קטועה בלי שם
-  // המוזמן, בלי שמות בעלי האירוע ובלי קישור האישור.
-  const previewText = useMemo(() => {
-    const first = guests.find((g) => selected.has(g.id)) ?? guests[0]
-    const sample = buildSampleTokens(event, first?.full_name || 'דנה כהן')
-    return renderMessagePreview(inviteBody, sample)
-  }, [inviteBody, event, guests, selected])
 
   function toggle(id: number) {
     const g = guests.find((x) => x.id === id)
@@ -755,12 +717,12 @@ function FirstInviteWizard({
           <span className="wiz-panel-badge">שלב 1 מתוך 3</span>
           <h2 className="wiz-title">עיצוב ההזמנה</h2>
           <p className="wiz-sub">
-            ערכו את נוסח ההזמנה או בחרו נוסח מוכן ומעוצב מהספרייה. תראו תצוגה
-            מקדימה חיה בדיוק כפי שהמוזמנים יראו ב-WhatsApp.
+            ערכו את נוסח ההזמנה בכרטיס הראשון למטה. תראו תצוגה מקדימה חיה
+            בדיוק כפי שהמוזמנים יראו ב-WhatsApp.
           </p>
         </div>
         <div id="mb-anchor">
-          <MessageBuilder invitationOnly />
+          <CommunicationTab />
         </div>
         <div className="wiz-nav">
           <span />
@@ -1098,11 +1060,11 @@ function DashboardTab({
               : 'האירוע כבר עבר'}
           </span>
         )}
-        <span className="auto-chip">{dash?.active_rules ?? 0} חוקים פעילים</span>
+        <span className="auto-chip">{dash?.active_rules ?? 0} הודעות פעילות ברצף</span>
         <button
           className="auto-chip auto-chip-btn"
-          onClick={() => onGoTo('queue')}
-          title="מעבר לתור לשליחה"
+          onClick={() => onGoTo('communication')}
+          title="מעבר לתקשורת עם אורחים"
         >
           {dash?.due_now ?? 0} הודעות ממתינות בתור →
         </button>
@@ -1165,303 +1127,6 @@ function StatCard({
     <div className={`stat-card ${tone ?? ''}`}>
       <span className="stat-num">{num ?? '—'}</span>
       <span className="stat-label">{label}</span>
-    </div>
-  )
-}
-
-// ============ לשונית "שליחה ידנית" (הזרימה הקיימת) ============
-
-function ManualTab({ onChanged }: { onChanged: () => void }) {
-  const [summary, setSummary] = useState<RsvpSummary | null>(null)
-  const [event, setEvent] = useState<EventDetails | null>(null)
-  const [guests, setGuests] = useState<Guest[]>([])
-  const [log, setLog] = useState<Message[]>([])
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [note, setNote] = useState('')
-
-  const [template, setTemplate] = useState('')
-  const [defaultTemplate, setDefaultTemplate] = useState('')
-  const [placeholders, setPlaceholders] = useState<TemplatePlaceholder[]>([])
-  const [preview, setPreview] = useState('')
-  const [tplNote, setTplNote] = useState('')
-  const [savingTpl, setSavingTpl] = useState(false)
-  const tplRef = useRef<HTMLTextAreaElement | null>(null)
-
-  const refresh = useCallback(async () => {
-    try {
-      const [s, g, l, t, ev] = await Promise.all([
-        rsvpSummary(),
-        listGuests('', 200, 0),
-        messageLog(20),
-        getTemplate(),
-        getEvent(),
-      ])
-      setSummary(s)
-      setEvent(ev)
-      setGuests(g.items)
-      setLog(l)
-      setTemplate(t.template)
-      setDefaultTemplate(t.default_template)
-      setPlaceholders(t.placeholders)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : strings.errors.rsvpDataLoadFailed)
-    }
-  }, [])
-
-  useEffect(() => {
-    refresh()
-  }, [refresh])
-
-  useEffect(() => {
-    if (!template) return
-    const id = setTimeout(() => {
-      previewTemplate(template)
-        .then(setPreview)
-        .catch(() => setPreview(''))
-    }, 350)
-    return () => clearTimeout(id)
-  }, [template])
-
-  function insertPlaceholder(key: string) {
-    const ta = tplRef.current
-    if (!ta) {
-      setTemplate((t) => t + key)
-      return
-    }
-    const start = ta.selectionStart
-    const end = ta.selectionEnd
-    setTemplate((t) => t.slice(0, start) + key + t.slice(end))
-    setTimeout(() => {
-      ta.focus()
-      ta.selectionStart = ta.selectionEnd = start + key.length
-    }, 0)
-  }
-
-  async function onSaveTemplate() {
-    setSavingTpl(true)
-    setTplNote('')
-    setError('')
-    try {
-      const t = await saveTemplate(template)
-      setTemplate(t.template)
-      setTplNote(strings.toasts.templateSaved)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : strings.errors.rsvpTemplateSaveFailed)
-    } finally {
-      setSavingTpl(false)
-    }
-  }
-
-  async function onSend(onlyPending: boolean) {
-    setBusy(true)
-    setError('')
-    setNote('')
-    try {
-      const res = await sendInvitations(onlyPending)
-      setNote(
-        `נשלחו ${res.sent} הזמנות` +
-          (res.failed ? ` · ${res.failed} נכשלו` : '') +
-          (res.skipped ? ` · ${res.skipped} דולגו (ללא טלפון)` : '') +
-          (res.mode === 'mock' ? ' · מצב בדיקה (לא נשלח בפועל)' : ''),
-      )
-      await refresh()
-      onChanged()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : strings.errors.rsvpInvitationsSendFailed)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function onReminders() {
-    setBusy(true)
-    setError('')
-    setNote('')
-    try {
-      const res = await sendReminders()
-      setNote(
-        `נשלחו ${res.sent} תזכורות לממתינים` +
-          (res.failed ? ` · ${res.failed} נכשלו` : '') +
-          (res.skipped ? ` · ${res.skipped} דולגו (ללא טלפון)` : '') +
-          (res.mode === 'mock' ? ' · מצב בדיקה (לא נשלח בפועל)' : ''),
-      )
-      await refresh()
-      onChanged()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : strings.errors.rsvpRemindersSendFailed)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function onReply(guestId: number, coming: boolean) {
-    setError('')
-    try {
-      setSummary(await simulateReply(guestId, coming))
-      await refresh()
-      onChanged()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : strings.errors.rsvpAnswerUpdateFailed)
-    }
-  }
-
-  return (
-    <div className="manual-tab">
-      {/* ---- סיכום RSVP ---- */}
-      <div className="rsvp-stats">
-        <div className="stat-card ok">
-          <span className="stat-num">{summary?.confirmed ?? '—'}</span>
-          <span className="stat-label">אישרו הגעה</span>
-        </div>
-        <div className="stat-card err">
-          <span className="stat-num">{summary?.declined ?? '—'}</span>
-          <span className="stat-label">לא מגיעים</span>
-        </div>
-        <div className="stat-card wait">
-          <span className="stat-num">{summary?.pending ?? '—'}</span>
-          <span className="stat-label">ממתינים לתשובה</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-num">{summary?.invitations_sent ?? '—'}</span>
-          <span className="stat-label">הזמנות שנשלחו</span>
-        </div>
-      </div>
-
-      {/* ---- תבנית הודעת הזמנה ---- */}
-      <div className="tpl-editor">
-        <div className="tpl-head">
-          <h3 className="clar-title">תבנית הודעת ההזמנה</h3>
-          <span className="clar-sub">
-            כתבו את נוסח ההודעה. הוסיפו משתנים והם יוחלפו אוטומטית לכל מוזמן.
-          </span>
-        </div>
-
-        <div className="tpl-placeholders">
-          {placeholders.map((p) => (
-            <button
-              key={p.key}
-              type="button"
-              className="tpl-chip"
-              title={p.desc}
-              onClick={() => insertPlaceholder(p.key)}
-            >
-              {p.key}
-            </button>
-          ))}
-        </div>
-
-        <div className="tpl-grid">
-          <textarea
-            ref={tplRef}
-            className="tpl-textarea"
-            value={template}
-            onChange={(e) => setTemplate(e.target.value)}
-            rows={6}
-            dir="rtl"
-          />
-          <div className="tpl-preview">
-            <span className="tpl-preview-label">תצוגה מקדימה</span>
-            {event?.invite_image && (
-              <img
-                className="tpl-preview-img"
-                src={mediaUrl(event.invite_image)}
-                alt={getEventTerms(event?.event_type).inviteLabel}
-              />
-            )}
-            <div className="tpl-preview-body">{preview || '—'}</div>
-          </div>
-        </div>
-
-        <div className="tpl-actions">
-          <button
-            className="btn-primary"
-            onClick={onSaveTemplate}
-            disabled={savingTpl}
-          >
-            {savingTpl ? 'שומר…' : 'שמירת תבנית'}
-          </button>
-          <button
-            className="btn-text"
-            onClick={() => setTemplate(defaultTemplate)}
-            disabled={savingTpl}
-          >
-            איפוס לברירת מחדל
-          </button>
-          {tplNote && <span className="tpl-saved">{tplNote}</span>}
-        </div>
-      </div>
-
-      {/* ---- שליחת הזמנות ---- */}
-      <div className="rsvp-actions">
-        <button className="btn-primary" onClick={() => onSend(true)} disabled={busy}>
-          {busy ? 'שולח…' : 'שליחת הזמנות לממתינים'}
-        </button>
-        <button className="btn-ghost" onClick={() => onSend(false)} disabled={busy}>
-          שליחה לכולם מחדש
-        </button>
-        <button className="btn-ghost" onClick={onReminders} disabled={busy}>
-          {busy ? 'שולח…' : 'שליחת תזכורת לממתינים'}
-        </button>
-        {summary && summary.mode === 'mock' && (
-          <span className="mode-badge mock">עדיין לא נשלחות הודעות אמיתיות</span>
-        )}
-      </div>
-
-      {note && <p className="rsvp-note">{note}</p>}
-      {error && <p className="form-error">{error}</p>}
-
-      {/* ---- רשימת מוזמנים + סימולציית תשובה ---- */}
-      <div className="rsvp-guests">
-        <div className="rsvp-guests-head">
-          <h3 className="clar-title">תשובות מוזמנים</h3>
-          {summary?.mode === 'mock' && (
-            <span className="clar-sub">
-              במצב בדיקה אפשר ללחוץ "מגיע/ה" או "לא" כדי לדמות תשובה של מוזמן.
-            </span>
-          )}
-        </div>
-        <ul className="rsvp-list">
-          {guests.map((g) => (
-            <li key={g.id} className="rsvp-row">
-              <span className="rsvp-name">{g.full_name}</span>
-              <span className={`rsvp-badge ${g.rsvp_status}`}>
-                {RSVP_LABELS[g.rsvp_status]}
-              </span>
-              {summary?.mode === 'mock' && (
-                <span className="rsvp-sim">
-                  <button
-                    className="btn-ghost clar-choice"
-                    onClick={() => onReply(g.id, true)}
-                  >
-                    מגיע/ה
-                  </button>
-                  <button className="btn-text" onClick={() => onReply(g.id, false)}>
-                    לא מגיע/ה
-                  </button>
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* ---- יומן הודעות ---- */}
-      {log.length > 0 && (
-        <div className="rsvp-log">
-          <h3 className="clar-title">יומן הודעות אחרון</h3>
-          <ul className="log-list">
-            {log.map((m) => (
-              <li key={m.id} className={`log-row ${m.direction}`}>
-                <span className="log-dir">
-                  {m.direction === 'outbound' ? '↗ יוצאת' : '↘ נכנסת'}
-                </span>
-                <span className="log-body">{m.body.split('\n')[0]}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   )
 }

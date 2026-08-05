@@ -8487,208 +8487,40 @@ td.notes.seating {
   margin-top: 4px;
 }
 
-/* ============ ספריית ההודעות (בורר מודאלי) ============ */
-
-.lib-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(40, 34, 28, 0.38);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 1000;
-}
-.lib-modal {
-  background: var(--cream);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-xl);
-  width: min(920px, 100%);
-  max-height: 90vh;
-  max-height: 90dvh;
+/* ============ תקשורת עם אורחים (רצף קבוע — CommunicationTab) ============ */
+.comm-list {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  box-shadow: var(--shadow-dialog);
+  gap: var(--mb-gap);
 }
-.lib-head {
+.comm-card-off {
+  opacity: 0.6;
+}
+.comm-active-toggle {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--line);
-}
-.lib-close {
-  border: none;
-  background: transparent;
-  font-size: 18px;
-  color: var(--muted);
-  cursor: pointer;
-  line-height: 1;
-  padding: 4px 8px;
-}
-.lib-close:hover {
-  color: var(--charcoal);
-}
-.lib-filters {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--line);
-}
-.lib-search {
-  width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 9px 12px;
-  font-size: 14px;
-  background: var(--surface-hi);
-  font-family: inherit;
-}
-.lib-search:focus {
-  outline: none;
-  border-color: var(--gold);
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.1);
-}
-.lib-chips {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-}
-.lib-chips-label {
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: 13px;
   color: var(--muted);
-  margin-inline-end: 4px;
+  cursor: pointer;
 }
-.lib-chip {
-  font-size: 12.5px;
+.comm-var-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.comm-var-btn {
+  font-size: 12px;
   color: var(--body);
   background: var(--surface-hi);
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 4px 11px;
+  padding: 4px 10px;
   cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition: border-color 0.12s ease;
 }
-.lib-chip:hover {
+.comm-var-btn:hover {
   border-color: var(--gold);
-}
-.lib-chip.active {
-  background: var(--gold);
-  border-color: var(--gold);
-  color: #fff;
-  font-weight: 700;
-}
-.lib-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
-  min-height: 0;
-  flex: 1;
-  overflow: hidden;
-}
-.lib-list {
-  overflow-y: auto;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  border-inline-end: 1px solid var(--line);
-}
-.lib-item {
-  text-align: start;
-  background: var(--surface-hi);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 11px 13px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
-}
-.lib-item:hover {
-  border-color: var(--gold);
-}
-.lib-item.active {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 2px rgba(180, 150, 90, 0.25);
-  background: #fff;
-}
-.lib-item-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--charcoal);
-}
-.lib-item-tags {
-  display: flex;
-  gap: 6px;
-}
-.lib-tag {
-  font-size: 11px;
-  color: var(--gold-deep);
-  background: var(--cream);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 2px 8px;
-}
-.lib-tag.alt {
-  color: var(--muted);
-}
-.lib-item-snippet {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.5;
-}
-.lib-preview {
-  overflow-y: auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-/* פוטר פעולה קבוע בתחתית החלון — לא נגלל, תמיד נגיש (כולל safe-area במובייל). */
-.lib-foot {
-  flex-shrink: 0;
-  padding: 12px 20px;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--line);
-  background: var(--cream);
-}
-.lib-use {
-  width: 100%;
-  min-height: 48px;
-}
-
-/* מסך צר — מציגים רשימה ותצוגה זו מעל זו, והחלון ממלא את כל המסך */
-@media (max-width: 720px) {
-  .lib-overlay {
-    align-items: stretch;
-    padding: 0;
-  }
-  .lib-modal {
-    width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    max-height: 100dvh;
-    border: none;
-    border-radius: 0;
-  }
-  .lib-body {
-    grid-template-columns: 1fr;
-  }
-  .lib-list {
-    border-inline-end: none;
-    border-bottom: 1px solid var(--line);
-    max-height: 38vh;
-    max-height: 38dvh;
-  }
 }
 
 /* ============ יום ההתחייבות לאולם (בורר בדשבורד) ============ */

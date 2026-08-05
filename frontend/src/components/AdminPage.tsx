@@ -1,43 +1,27 @@
 import { useEffect, useState } from 'react'
 import {
+  adminBackfillMessageDefaults,
   adminCreateAccount,
-  adminCreateVeyaTemplate,
-  adminDeleteVeyaTemplate,
-  adminListVeyaTemplates,
-  adminListVeyaWorkflow,
+  adminListMessageDefaults,
   adminMessageStats,
-  adminUpdateVeyaTemplate,
-  adminUpdateVeyaWorkflowStep,
+  adminUpdateMessageDefault,
 } from '../api'
-import type {
-  AdminMessageStats,
-  VeyaStage,
-  VeyaTemplate,
-  VeyaWorkflowStep,
-} from '../types'
+import type { AdminMessageStats, MessageDefault } from '../types'
+import { MESSAGE_TYPES } from '../types'
 import { strings } from '../strings/he'
 
-/** שמות ידידותיים לשלבי המסלול (לא מציגים לאדמין קודים טכניים). */
-const STAGE_LABELS: Record<VeyaStage, string> = {
-  invitation: 'הזמנה',
-  first_reminder: 'תזכורת ראשונה',
-  second_reminder: 'תזכורת שנייה',
-  thank_you: 'תודה (למי שאישר)',
-  before_event: 'לפני האירוע',
+/** תוויות סוגי האירוע לקיבוץ ברשימת ברירות המחדל (מקור: event_type בשרת). */
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  wedding: 'חתונה',
+  bar_mitzvah: 'בר מצווה',
+  bat_mitzvah: 'בת מצווה',
+  henna: 'חינה',
+  brit: 'ברית / בריתה',
+  family: 'אירוע משפחתי',
+  business: 'אירוע עסקי',
+  other: 'אירוע אחר',
 }
-
-const STAGE_ORDER: VeyaStage[] = [
-  'invitation',
-  'first_reminder',
-  'second_reminder',
-  'thank_you',
-  'before_event',
-]
-
-const ACTION_LABELS: Record<string, string> = {
-  send: 'שליחת הודעה',
-  phone_followup: 'מעקב טלפוני',
-}
+const EVENT_TYPE_ORDER = Object.keys(EVENT_TYPE_LABELS)
 
 const MESSAGE_KIND_LABELS: Record<string, string> = {
   invitation: 'הזמנות',
@@ -130,59 +114,32 @@ export function CreateAccountForm({ onCreated }: { onCreated: () => void }) {
   )
 }
 
-/** כרטיס עריכה לתבנית VEYA אחת — עריכה מקומית + שמירה/מחיקה. */
-function VeyaTemplateCard({
-  tpl,
+/** כרטיס עריכה לברירת מחדל אחת (event_type × message_type) — עריכת
+ * title/content/is_active + שמירה. אין יצירה/מחיקה — 48 השורות קבועות. */
+function MessageDefaultCard({
+  d,
   onSaved,
-  onDeleted,
 }: {
-  tpl: VeyaTemplate
-  onSaved: (t: VeyaTemplate) => void
-  onDeleted: (id: number) => void
+  d: MessageDefault
+  onSaved: (d: MessageDefault) => void
 }) {
-  const [name, setName] = useState(tpl.name)
-  const [stage, setStage] = useState<VeyaStage>(tpl.stage)
-  const [body, setBody] = useState(tpl.body)
-  const [isDefault, setIsDefault] = useState(tpl.is_default)
-  const [active, setActive] = useState(tpl.active)
+  const [title, setTitle] = useState(d.title)
+  const [content, setContent] = useState(d.content)
+  const [active, setActive] = useState(d.is_active)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const dirty =
-    name !== tpl.name ||
-    stage !== tpl.stage ||
-    body !== tpl.body ||
-    isDefault !== tpl.is_default ||
-    active !== tpl.active
+  const dirty = title !== d.title || content !== d.content || active !== d.is_active
 
   async function save() {
     setBusy(true)
     setError(null)
     try {
-      const updated = await adminUpdateVeyaTemplate(tpl.id, {
-        name,
-        stage,
-        body,
-        is_default: isDefault,
-        active,
-      })
+      const updated = await adminUpdateMessageDefault(d.id, { title, content, is_active: active })
       onSaved(updated)
     } catch (err) {
       setError(err instanceof Error ? err.message : strings.errors.adminSaveFailedRetry)
     } finally {
-      setBusy(false)
-    }
-  }
-
-  async function remove() {
-    if (!confirm(`למחוק את התבנית "${tpl.name}"?`)) return
-    setBusy(true)
-    setError(null)
-    try {
-      await adminDeleteVeyaTemplate(tpl.id)
-      onDeleted(tpl.id)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : strings.errors.adminDeleteFailedRetry)
       setBusy(false)
     }
   }
@@ -192,35 +149,20 @@ function VeyaTemplateCard({
       <div className="veya-tpl-head">
         <input
           className="veya-tpl-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="שם התבנית"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="כותרת ההודעה"
         />
-        <select value={stage} onChange={(e) => setStage(e.target.value as VeyaStage)}>
-          {STAGE_ORDER.map((s) => (
-            <option key={s} value={s}>
-              {STAGE_LABELS[s]}
-            </option>
-          ))}
-        </select>
       </div>
       <textarea
         className="veya-tpl-body"
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
         rows={4}
         dir="rtl"
-        placeholder="נוסח ההודעה (אפשר להשתמש בכינויים כמו [שם אורח])"
+        placeholder="עדיין אין תוכן — הזינו כאן את הנוסח הסופי"
       />
       <div className="veya-tpl-foot">
-        <label className="veya-chk">
-          <input
-            type="checkbox"
-            checked={isDefault}
-            onChange={(e) => setIsDefault(e.target.checked)}
-          />
-          ברירת מחדל לשלב זה
-        </label>
         <label className="veya-chk">
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
           פעילה
@@ -234,9 +176,6 @@ function VeyaTemplateCard({
           >
             {busy ? 'רגע…' : dirty ? 'שמירה' : 'נשמר'}
           </button>
-          <button type="button" className="btn-ghost btn-sm danger" onClick={remove} disabled={busy}>
-            מחיקה
-          </button>
         </span>
       </div>
       {error && <div className="auth-error">{error}</div>}
@@ -244,172 +183,18 @@ function VeyaTemplateCard({
   )
 }
 
-/** טופס הוספת תבנית VEYA חדשה. */
-function AddVeyaTemplate({ onAdded }: { onAdded: (t: VeyaTemplate) => void }) {
-  const [open, setOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [stage, setStage] = useState<VeyaStage>('invitation')
-  const [body, setBody] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault()
-    setBusy(true)
-    setError(null)
-    try {
-      const created = await adminCreateVeyaTemplate({ name, stage, body, active: true })
-      onAdded(created)
-      setName('')
-      setBody('')
-      setStage('invitation')
-      setOpen(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : strings.errors.adminAddFailedRetry)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  if (!open) {
-    return (
-      <button type="button" className="btn-ghost veya-add-btn" onClick={() => setOpen(true)}>
-        + הוספת תבנית
-      </button>
-    )
-  }
-
-  return (
-    <form className="veya-tpl-card veya-add-form" onSubmit={submit}>
-      <div className="veya-tpl-head">
-        <input
-          className="veya-tpl-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="שם התבנית"
-          required
-        />
-        <select value={stage} onChange={(e) => setStage(e.target.value as VeyaStage)}>
-          {STAGE_ORDER.map((s) => (
-            <option key={s} value={s}>
-              {STAGE_LABELS[s]}
-            </option>
-          ))}
-        </select>
-      </div>
-      <textarea
-        className="veya-tpl-body"
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        rows={4}
-        dir="rtl"
-        placeholder="נוסח ההודעה (אפשר להשתמש בכינויים כמו [שם אורח])"
-        required
-      />
-      <div className="veya-tpl-foot">
-        <span className="veya-tpl-actions">
-          <button type="submit" className="btn-primary btn-sm" disabled={busy}>
-            {busy ? 'רגע…' : 'הוספה'}
-          </button>
-          <button
-            type="button"
-            className="btn-ghost btn-sm"
-            onClick={() => setOpen(false)}
-            disabled={busy}
-          >
-            ביטול
-          </button>
-        </span>
-      </div>
-      {error && <div className="auth-error">{error}</div>}
-    </form>
-  )
-}
-
-/** כרטיס עריכה לשלב אחד במסלול הקבוע — עריכת מרווח ימים/שם/הפעלה. */
-function VeyaStepCard({
-  step,
-  onSaved,
-}: {
-  step: VeyaWorkflowStep
-  onSaved: (s: VeyaWorkflowStep) => void
-}) {
-  const [name, setName] = useState(step.name)
-  const [offset, setOffset] = useState(step.offset_days)
-  const [active, setActive] = useState(step.active)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const dirty = name !== step.name || offset !== step.offset_days || active !== step.active
-
-  async function save() {
-    setBusy(true)
-    setError(null)
-    try {
-      const updated = await adminUpdateVeyaWorkflowStep(step.id, {
-        name,
-        offset_days: offset,
-        active,
-      })
-      onSaved(updated)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : strings.errors.adminSaveFailedRetry)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <div className={`veya-step-card ${active ? '' : 'inactive'}`}>
-      <span className="veya-step-order">{step.step_order}</span>
-      <div className="veya-step-main">
-        <input
-          className="veya-step-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="שם השלב"
-        />
-        <div className="veya-step-meta">
-          <span className="badge">{ACTION_LABELS[step.action_kind] ?? step.action_kind}</span>
-          <span className="badge">{STAGE_LABELS[step.template_stage as VeyaStage] ?? step.template_stage}</span>
-        </div>
-      </div>
-      <label className="veya-step-offset">
-        אחרי
-        <input
-          type="number"
-          min={0}
-          max={90}
-          value={offset}
-          onChange={(e) => setOffset(Number(e.target.value) || 0)}
-        />
-        ימים
-      </label>
-      <label className="veya-chk">
-        <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
-        פעיל
-      </label>
-      <button type="button" className="btn-primary btn-sm" onClick={save} disabled={busy || !dirty}>
-        {busy ? 'רגע…' : dirty ? 'שמירה' : 'נשמר'}
-      </button>
-      {error && <div className="auth-error veya-step-error">{error}</div>}
-    </div>
-  )
-}
-
-/** ניהול ברירות המחדל הגלובליות של VEYA — ספריית תבניות + המסלול הקבוע. */
-export function VeyaDefaultsManager() {
-  const [templates, setTemplates] = useState<VeyaTemplate[] | null>(null)
-  const [workflow, setWorkflow] = useState<VeyaWorkflowStep[] | null>(null)
+/** ניהול ברירות המחדל הגלובליות לרצף "תקשורת עם אורחים" — 8 סוגי אירוע ×
+ * 6 סוגי הודעה. כאן מוזנים הטקסטים הסופיים; כל אירוע חדש מעתיק מכאן. */
+export function MessageDefaultsManager() {
+  const [defaults, setDefaults] = useState<MessageDefault[] | null>(null)
   const [stats, setStats] = useState<AdminMessageStats | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [backfillNote, setBackfillNote] = useState('')
+  const [backfilling, setBackfilling] = useState(false)
 
   useEffect(() => {
-    Promise.all([adminListVeyaTemplates(), adminListVeyaWorkflow()])
-      .then(([t, w]) => {
-        setTemplates(t)
-        setWorkflow(w)
-      })
+    adminListMessageDefaults()
+      .then(setDefaults)
       .catch((err) =>
         setError(err instanceof Error ? err.message : strings.errors.adminDefaultsLoadFailed),
       )
@@ -419,8 +204,31 @@ export function VeyaDefaultsManager() {
       .catch(() => setStats(null))
   }, [])
 
+  async function runBackfill() {
+    setBackfilling(true)
+    setBackfillNote('')
+    try {
+      const res = await adminBackfillMessageDefaults()
+      setBackfillNote(
+        `נבדקו ${res.events_processed} אירועים, נוצרו ${res.messages_created} הודעות חדשות`,
+      )
+    } catch (err) {
+      setBackfillNote(err instanceof Error ? err.message : 'הרצת ה-Backfill נכשלה')
+    } finally {
+      setBackfilling(false)
+    }
+  }
+
   if (error) return <div className="admin-error">{error}</div>
-  if (!templates || !workflow) return <div className="admin-loading">טוען ברירות מחדל…</div>
+  if (!defaults) return <div className="admin-loading">טוען ברירות מחדל…</div>
+
+  const byType = new Map<string, MessageDefault[]>()
+  for (const d of defaults) {
+    const list = byType.get(d.event_type) ?? []
+    list.push(d)
+    byType.set(d.event_type, list)
+  }
+  const order = new Map(MESSAGE_TYPES.map((mt, i) => [mt, i]))
 
   return (
     <div className="veya-defaults">
@@ -448,37 +256,43 @@ export function VeyaDefaultsManager() {
         </>
       )}
 
-      <h2 className="admin-section-title">מסלול אישורי ההגעה הקבוע</h2>
+      <h2 className="admin-section-title">תקשורת עם אורחים — ברירות המחדל</h2>
       <p className="file-name">
-        השלבים רצים אוטומטית על כל אירוע חדש. אפשר לשנות את מרווחי הימים, לשנות שם
-        או להשבית שלב — השינויים חלים על אירועים חדשים.
+        6 ההודעות הקבועות לכל סוג אירוע. כל אירוע חדש מקבל אוטומטית עותק
+        לעריכה משלו; שינוי כאן משפיע רק על אירועים עתידיים.
       </p>
-      <div className="veya-steps">
-        {workflow.map((s) => (
-          <VeyaStepCard
-            key={s.id}
-            step={s}
-            onSaved={(u) => setWorkflow((prev) => prev!.map((x) => (x.id === u.id ? u : x)))}
-          />
-        ))}
+      <div className="veya-tpl-actions" style={{ marginBottom: 16 }}>
+        <button
+          type="button"
+          className="btn-ghost btn-sm"
+          onClick={runBackfill}
+          disabled={backfilling}
+        >
+          {backfilling ? 'מריץ…' : 'הקצאה לכל האירועים הקיימים (Backfill)'}
+        </button>
+        {backfillNote && <span className="file-name">{backfillNote}</span>}
       </div>
 
-      <h2 className="admin-section-title">ספריית תבניות ההודעות</h2>
-      <p className="file-name">
-        התבניות שכל אירוע חדש מקבל כברירת מחדל. אפשר לערוך נוסח, לסמן ברירת מחדל לכל שלב,
-        להשבית או להוסיף תבניות חדשות.
-      </p>
-      <div className="veya-tpl-list">
-        {templates.map((t) => (
-          <VeyaTemplateCard
-            key={t.id}
-            tpl={t}
-            onSaved={(u) => setTemplates((prev) => prev!.map((x) => (x.id === u.id ? u : x)))}
-            onDeleted={(id) => setTemplates((prev) => prev!.filter((x) => x.id !== id))}
-          />
-        ))}
-      </div>
-      <AddVeyaTemplate onAdded={(t) => setTemplates((prev) => [...(prev ?? []), t])} />
+      {EVENT_TYPE_ORDER.map((eventType) => {
+        const rows = (byType.get(eventType) ?? []).slice().sort(
+          (a, b) => (order.get(a.message_type) ?? 99) - (order.get(b.message_type) ?? 99),
+        )
+        if (rows.length === 0) return null
+        return (
+          <div key={eventType} className="veya-tpl-list">
+            <h3 className="admin-section-title" style={{ fontSize: 16 }}>
+              {EVENT_TYPE_LABELS[eventType] ?? eventType}
+            </h3>
+            {rows.map((d) => (
+              <MessageDefaultCard
+                key={d.id}
+                d={d}
+                onSaved={(u) => setDefaults((prev) => prev!.map((x) => (x.id === u.id ? u : x)))}
+              />
+            ))}
+          </div>
+        )
+      })}
     </div>
   )
 }

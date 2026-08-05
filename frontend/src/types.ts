@@ -782,132 +782,108 @@ export interface EventMemberRead {
   status: string
 }
 
-// ---- מנוע אוטומציות אישורי הגעה (RSVP Automation) ----
+// ---- תקשורת עם אורחים — רצף ההודעות הקבוע של האירוע ----
 
-export type TriggerType =
-  | 'event_created'
-  | 'invitation_sent'
-  | 'no_response'
-  | 'before_event_date'
-  | 'guest_confirmed'
-
-export type TargetGroup =
-  | 'all'
-  | 'pending'
-  | 'confirmed'
-  | 'declined'
-  | 'maybe'
-  | 'side_groom'
-  | 'side_bride'
-  | 'group'
-
-export type TemplateKind =
+export type MessageType =
   | 'invitation'
-  | 'reminder'
-  | 'pre_event'
+  | 'reminder_1'
+  | 'reminder_2'
+  | 'final_reminder'
+  | 'event_day'
   | 'thank_you'
-  | 'custom'
 
-// תוויות בעברית לתצוגה בממשק.
-export const TRIGGER_LABELS: Record<TriggerType, string> = {
-  event_created: 'לאחר יצירת האירוע',
-  invitation_sent: 'לאחר שליחת ההזמנה',
-  no_response: 'אם אין תגובה',
-  before_event_date: 'לפני תאריך האירוע',
-  guest_confirmed: 'לאחר אישור המוזמן',
-}
+// הסדר הקבוע להצגה (תואם ל-backend/app/communication.py: MESSAGE_TYPES).
+export const MESSAGE_TYPES: MessageType[] = [
+  'invitation', 'reminder_1', 'reminder_2',
+  'final_reminder', 'event_day', 'thank_you',
+]
 
-// ברירת מחדל (חתונה) — לרכיבים שעדיין לא הועברו ל-targetGroupLabel() הדינמי.
-export const TARGET_GROUP_LABELS: Record<TargetGroup, string> = {
+export type TargetAudience = 'all' | 'pending' | 'confirmed' | 'declined'
+
+export const TARGET_AUDIENCE_LABELS: Record<TargetAudience, string> = {
   all: 'כל המוזמנים',
   pending: 'ממתינים לתשובה',
-  confirmed: 'מאשרים',
+  confirmed: 'מאשרים הגעה',
   declined: 'מסרבים',
-  maybe: "מסמנים 'אולי'",
-  side_groom: 'צד החתן',
-  side_bride: 'צד הכלה',
-  group: 'קבוצה מסוימת',
 }
 
-/**
- * תווית קהל יעד לפי סוג האירוע — side_groom/side_bride משתמשים בתוויות הצד
- * הדינמיות. תוויות הצד לחתונה/חינה הן שם-תפקיד עירום ("חתן") שצריך קידומת
- * "צד ה" כדי להיקרא נכון ("צד החתן"); שאר הסוגים כבר מגיעים עם "צד" בתוך
- * הערך עצמו ("צד האב") ולא צריך לכפול אותו.
- */
-export function targetGroupLabel(tg: TargetGroup, sideLabels: Record<Side, string>): string {
-  const raw = tg === 'side_groom' ? sideLabels.groom : tg === 'side_bride' ? sideLabels.bride : ''
-  if (raw) return raw.startsWith('צד') ? raw : `צד ה${raw}`
-  return TARGET_GROUP_LABELS[tg]
-}
+// 12 המשתנים הנתמכים בתוכן הודעה — {{key}} — עם תווית עברית להוספה בעורך.
+export const COMMUNICATION_VARIABLES: { key: string; label: string }[] = [
+  { key: 'guest_name', label: 'שם האורח' },
+  { key: 'guest_names', label: 'שמות האורחים' },
+  { key: 'host_names', label: 'שמות בעלי האירוע' },
+  { key: 'event_type', label: 'סוג האירוע' },
+  { key: 'event_date', label: 'תאריך האירוע' },
+  { key: 'event_time', label: 'שעת האירוע' },
+  { key: 'venue_name', label: 'שם האולם' },
+  { key: 'address', label: 'כתובת' },
+  { key: 'navigation_link', label: 'קישור ניווט' },
+  { key: 'rsvp_link', label: 'קישור אישור הגעה' },
+  { key: 'table_number', label: 'מספר שולחן' },
+  { key: 'gift_link', label: 'קישור מתנה' },
+]
 
-export const TEMPLATE_KIND_LABELS: Record<TemplateKind, string> = {
-  invitation: 'הזמנה',
-  reminder: 'תזכורת',
-  pre_event: 'לפני האירוע',
-  thank_you: 'תודה',
-  custom: 'כללי',
-}
-
-export interface AutomationTemplate {
+export interface EventMessage {
   id: number
-  name: string
-  kind: string
-  body: string
-  created_at: string
+  message_type: MessageType
+  title: string
+  content: string
+  variables_supported: string[]
+  is_active: boolean
+  trigger_offset_days: number
+  target_audience: TargetAudience
+  updated_at: string
 }
 
-export interface AutomationTemplateInput {
-  name: string
-  kind?: TemplateKind
-  body?: string
+export interface EventMessageInput {
+  title?: string
+  content?: string
+  is_active?: boolean
+  trigger_offset_days?: number
+  target_audience?: TargetAudience
 }
 
-export interface AutomationRule {
-  id: number
-  rule_name: string
-  trigger_type: string
-  delay_days: number
-  target_group: string
-  target_group_value: string
-  template_id: number | null
-  action_kind: string
-  active: boolean
-  created_at: string
-}
-
-export interface AutomationRuleInput {
-  rule_name: string
-  trigger_type?: TriggerType
-  delay_days?: number
-  target_group?: TargetGroup
-  target_group_value?: string
-  template_id?: number | null
-  active?: boolean
-}
-
-export interface DueAction {
-  rule_id: number
-  rule_name: string
-  trigger_type: string
+export interface CommunicationDue {
+  event_message_id: number
+  message_type: MessageType
   guest_id: number
   guest_name: string
   phone: string
-  channel: string
   preview: string
 }
 
-export interface DueQueue {
-  actions: DueAction[]
+export interface CommunicationDueQueue {
+  actions: CommunicationDue[]
   mode: string
 }
 
-export interface RunDueResult {
+export interface CommunicationSendResult {
   mode: string
   sent: number
   failed: number
-  skipped: number
   detail: string | null
+}
+
+export interface MessageDefault {
+  id: number
+  event_type: string
+  message_type: MessageType
+  title: string
+  content: string
+  variables_supported: string[]
+  is_active: boolean
+  updated_at: string
+}
+
+export interface MessageDefaultInput {
+  title?: string
+  content?: string
+  is_active?: boolean
+}
+
+export interface MessageDefaultsBackfillResult {
+  events_processed: number
+  messages_created: number
 }
 
 export interface TimelineEvent {
@@ -943,54 +919,6 @@ export interface AutomationDashboard {
   active_rules: number
   due_now: number
   recommendations: SmartFollowUp[]
-}
-
-// ---- ברירות המחדל הגלובליות של VEYA (ספריית תבניות + מסלול קבוע) ----
-
-export type VeyaStage =
-  | 'invitation'
-  | 'first_reminder'
-  | 'second_reminder'
-  | 'thank_you'
-  | 'before_event'
-
-export interface VeyaTemplate {
-  id: number
-  stage: VeyaStage
-  name: string
-  body: string
-  is_default: boolean
-  active: boolean
-  sort_order: number
-  created_at: string
-}
-
-export interface VeyaTemplateInput {
-  stage?: VeyaStage
-  name?: string
-  body?: string
-  is_default?: boolean
-  active?: boolean
-  sort_order?: number
-}
-
-export interface VeyaWorkflowStep {
-  id: number
-  step_order: number
-  name: string
-  offset_days: number
-  action_kind: 'send' | 'phone_followup'
-  template_stage: string
-  active: boolean
-  created_at: string
-}
-
-export interface VeyaWorkflowStepInput {
-  name?: string
-  offset_days?: number
-  action_kind?: 'send' | 'phone_followup'
-  template_stage?: string
-  active?: boolean
 }
 
 export interface AdminMessageStat {
