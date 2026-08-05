@@ -311,16 +311,31 @@ export const strings = {
     gaugeStatusDeclined: 'לא אישרו',
     kpiConfirmed: 'אישרו',
     kpiPending: 'ממתינים',
-    kpiDeclined: 'לא מגיעים',
-    kpiNotSent: 'טרם נשלחו',
     progressLabel: (pct: number) => `${pct}% האירוע מוכן`,
-    ctaTitle: 'הגיע הזמן לשלוח הזמנות',
-    ctaDesc: 'הרשימה מוכנה — שלחו את ההזמנות ותתחילו לקבל אישורי הגעה.',
-    ctaButton: 'שליחת הזמנות',
-    nextStepTitle: 'הצעד הבא',
-    allDoneTitle: 'הכול מוכן!',
-    allDoneDesc: 'כל המוזמנים אישרו הגעה ומשובצים למקום. נשאר רק ליהנות מהאירוע.',
     invitePlaceholder: 'העלו תמונת הזמנה',
+    // ---- באנר "יש מוזמנים בלי הזמנה" — מעל עדכוני אישורי ההגעה ----
+    inviteBannerTitle: (count: number) =>
+      `⚠️ יש לכם ${count} מוזמנים שעדיין לא קיבלו הזמנה`,
+    inviteBannerDesc:
+      'ככל שתשלחו את ההזמנות מוקדם יותר, כך תקבלו את אישורי ההגעה מוקדם יותר ותוכלו להתחיל את סידור ההושבה בראש שקט.',
+    inviteBannerCta: 'שלחו עכשיו',
+    // ---- Feed עדכוני אישורי הגעה — במקום כרטיסי הסטטיסטיקה הכפולים ----
+    feedTitle: 'עדכוני אישורי הגעה',
+    feedEmpty: 'עדיין אין עדכונים — ברגע שמוזמנים יתחילו לענות, תראו כאן כל עדכון בזמן אמת.',
+    feedConfirmed: (name: string) => `${name} אישר/ה הגעה`,
+    feedDeclined: (name: string) => `${name} לא מגיע/ה`,
+    feedMaybe: (name: string) => `${name} מתלבט/ת`,
+    // ---- "סידורי הושבה בלי כאב הראש" — הכרטיס המרכזי בעמודה הימנית ----
+    seatingHelperTitle: 'סידורי הושבה בלי כאב הראש',
+    seatingHelperDesc:
+      'כמעט כל זוג מוצא את עצמו בימים שלפני האירוע שוברים את הראש על סידורי ההושבה. במקום להעביר אנשים בין שולחנות במשך שעות, מספיק להגדיר קבוצות והעדפות – ו-VEYA תבנה עבורכם הושבה חכמה בלחיצה אחת.',
+    seatingHelperSteps: [
+      'הוספת מוזמנים',
+      'יצירת קבוצות',
+      'הוספת הערות הושבה',
+      'הושבה חכמה בקליק',
+    ],
+    seatingHelperCta: 'התחילו סידור הושבה',
     // ---- מוקאפ WhatsApp/אייפון — כיתוב ההזמנה מתחת לתמונה בבועה ----
     inviteCaptionNamed: (celebration: string, names: string) =>
       `הנכם מוזמנים ל${celebration} של ${names}`,
@@ -329,45 +344,6 @@ export const strings = {
     emptyTitle: 'הכול מתחיל מכאן',
     emptyDesc: 'הוסיפו מוזמנים כדי לראות את תמונת המצב.',
     emptyCta: 'הוספת מוזמנים',
-    // ---- סקשן סידור הושבה חכם (פיצ'ר דגל — מוכר ערך, לא רשימת משימות) ----
-    prep: {
-      title: 'סידור הושבה',
-      seatedProgress: (seated: number, total: number) =>
-        `${seated} / ${total} מוזמנים שובצו`,
-      openDesigner: 'פתח את מעצב האולם',
-      // --- נשארים לצורך תאימות עם לוגיקה קיימת ---
-      progress: (done: number, total: number) =>
-        `${done} מתוך ${total} שלבים הושלמו`,
-      stateNotStarted: 'לא התחיל',
-      stateInProgress: 'בתהליך',
-      stateDone: 'הושלם',
-      steps: [
-        { title: 'חלוקה לצדדים', desc: 'שיוך כל מוזמן לצד המתאים באירוע.' },
-        {
-          title: 'יצירת קבוצות',
-          desc: 'משפחה, חברים, עבודה או כל קבוצה אחרת.',
-        },
-        {
-          title: 'העדפות והערות',
-          desc: 'מי חייב לשבת יחד, מי עדיף שלא, וכל הערת ישיבה חשובה.',
-        },
-        { title: 'סקירה ואישור', desc: 'בדיקה אחרונה לפני יצירת ההושבה.' },
-      ],
-      reviewSummary: (o: {
-        total: number
-        groom: number
-        bride: number
-        groups: number
-        prefs: number
-        sideALabel: string
-        sideBLabel: string
-      }) =>
-        `${o.total} מוזמנים · ${o.sideALabel}: ${o.groom} · ${o.sideBLabel}: ${o.bride} · ${o.groups} קבוצות · ${o.prefs} העדפות`,
-      ctaHint:
-        'VEYA תיצור עבורכם סידור הושבה חכם בהתאם לכל ההעדפות שהגדרתם.',
-      ctaLockedHint: 'השלימו את השלבים למעלה כדי ליצור את ההושבה.',
-      intro: '',
-    },
     reserve: {
       title: 'רזרבה וניהול יום האירוע',
       manage: 'ניהול',

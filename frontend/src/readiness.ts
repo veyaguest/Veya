@@ -1,2 +1,2 @@
-// יעד ניווט לשלב בסקשן "הכנה להושבה" — מסך קיים באפליקציה.
-export type ReadinessPage = 'guests' | 'hall'
+// יעד ניווט מהדשבורד — מסך קיים באפליקציה (מוזמנים / הושבה / הודעות).
+export type ReadinessPage = 'guests' | 'hall' | 'rsvp'

@@ -1360,53 +1360,6 @@ td.notes.seating {
   justify-content: center;
 }
 
-/* ---- סידור הושבה — ווידג'ט פונקציונלי בדשבורד (לא באנר שיווקי) ---- */
-.seating-widget {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding: 20px 24px;
-  background: #fff;
-  border: 1px solid rgba(228, 228, 231, 0.6);
-  border-radius: var(--radius-xl);
-}
-.seating-widget-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.seating-widget-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--charcoal);
-}
-.seating-widget-progress {
-  margin: 0;
-  font-size: 14px;
-  color: var(--muted);
-  font-feature-settings: 'tnum' 1, 'lnum' 1;
-}
-.seating-widget-btn {
-  flex-shrink: 0;
-  padding: 9px 18px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--charcoal);
-  background: transparent;
-  border: 1px solid rgba(212, 212, 216, 0.9);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-  white-space: nowrap;
-}
-.seating-widget-btn:hover {
-  background: #f4f4f5;
-  border-color: #a1a1aa;
-}
-
 .wizard-card {
   padding: 18px;
   border: 1px solid var(--line);
@@ -2620,22 +2573,6 @@ td.notes.seating {
   color: var(--muted);
 }
 
-.dash-grid-card {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-/* ---- "הצעד הבא" — עומד לבדו בשורה שלו, לא ליד המד. רוחב מוגבל וממורכז
-   כדי שיישאר קריא כקריאה-לפעולה, לא יימתח לכל רוחב העמוד. ---- */
-.dash-next-row {
-  padding: 0 20px;
-}
-.dash-next-row .cta-card,
-.dash-next-row .quick-actions-card {
-  max-width: 640px;
-  margin: 0 auto;
-}
 /* ============================================================
    סקשן המד — "חלון ראווה" במלוא הרוחב, מיד מתחת להירו. לא כרטיס
    בתוך Grid: מוקד ויזואלי עצמאי, נושם, בלי כרטיסים אחרים לצידו.
@@ -2828,94 +2765,234 @@ td.notes.seating {
   color: var(--body);
   font-weight: 500;
 }
-/* ---- כרטיס "הצעד הבא" — נקודת המיקוד המרכזית של הדשבורד. בהיר וממותג
-   (שנהב/שמפניה עדין) — הגרסה הכהה (zinc-900) הורגשה מנותקת מדי מהמותג. ---- */
-.quick-actions-card {
-  align-items: flex-start;
-  text-align: start;
-  gap: 8px;
-  padding: 26px 24px;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--gold-light) 22%, var(--cream)),
-    var(--ivory)
-  );
-  border: 1px solid color-mix(in srgb, var(--gold) 18%, transparent);
+/* ============================================================
+   שתי העמודות מתחת למד: "עדכוני אישורי הגעה" (Feed חי) ו-"סידורי הושבה
+   בלי כאב הראש" (הפיצ'ר הדגל). מחליפות את "הצעד הבא" וכרטיסי הסטטיסטיקה
+   הכפולים שהיו כאן — בלי מידע כפול עם המד שלמעלה.
+   ============================================================ */
+.dash-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+  gap: 20px;
+  padding: 0 20px;
+}
+.dash-col-left,
+.dash-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.dash-col-left .rsvp-feed-card,
+.dash-col-right .seating-helper-card {
+  flex: 1;
+}
+
+/* ---- באנר "מוזמנים בלי הזמנה" — בולט אך אלגנטי, לא אזהרה אדומה. ---- */
+.invite-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px 20px;
+  background: color-mix(in srgb, var(--gold-light) 14%, var(--cream));
+  border: 1px solid color-mix(in srgb, var(--gold) 20%, transparent);
+  border-inline-start: 3px solid var(--gold-deep);
+  border-radius: var(--radius-l);
+}
+.invite-banner-title {
+  margin: 0 0 3px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.invite-banner-desc {
+  margin: 0;
+  max-width: 440px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--body);
+}
+.invite-banner-btn {
+  flex-shrink: 0;
+  padding: 9px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--gold-deep);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.invite-banner-btn:hover {
+  background: var(--gold);
+  transform: translateY(-1px);
+}
+
+/* ---- "עדכוני אישורי הגעה" — Feed חי, נקי ומודרני. ---- */
+.rsvp-feed-card {
+  box-sizing: border-box;
+  background: var(--cream);
+  border: 1px solid var(--line);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
+  padding: 22px 22px 18px;
+  display: flex;
+  flex-direction: column;
 }
-.quick-actions-icon {
-  font-size: 20px;
-  line-height: 1;
-  margin-bottom: 2px;
+.rsvp-feed-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--charcoal);
 }
-.quick-actions-title {
+.rsvp-feed-empty {
+  margin: auto 0;
+  padding: 20px 4px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  text-align: center;
+}
+.rsvp-feed-list {
+  list-style: none;
   margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.rsvp-feed-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line-2);
+  font-size: 13.5px;
+}
+.rsvp-feed-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.rsvp-feed-icon {
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 1;
+}
+.rsvp-feed-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--body);
+  font-weight: 500;
+}
+.rsvp-feed-time {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--faint);
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* ---- "סידורי הושבה בלי כאב הראש" — הפיצ'ר הדגל, במה מרכזית. ---- */
+.seating-helper-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: 26px 24px 24px;
+}
+.seating-helper-title {
+  margin: 0 0 10px;
   font-size: 17px;
   font-weight: 700;
   color: var(--charcoal);
 }
-.quick-actions-desc {
-  margin: 0;
-  font-size: 14px;
+.seating-helper-desc {
+  margin: 0 0 22px;
+  font-size: 13.5px;
+  line-height: 1.65;
   color: var(--body);
-  line-height: 1.5;
 }
-.quick-actions-btn {
-  margin-top: 10px;
-}
-/* ---- KPI Grid — 4 כרטיסי מדד ---- */
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  padding: 0 20px;
-}
-.kpi-card {
+.seating-helper-steps {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 16px 8px;
-  background: var(--cream);
-  box-shadow: var(--shadow-card);
-  border-radius: 12px;
+}
+.seating-helper-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.seating-helper-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold-deep);
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  border-radius: 50%;
+}
+.seating-helper-step-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--body);
   text-align: center;
 }
-.kpi-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.kpi-num {
-  font-family: var(--font-ui, 'Heebo', 'Assistant', system-ui, sans-serif);
-  font-size: 28px;
-  font-weight: 700;
+.seating-helper-step-arrow {
+  margin: 2px 0;
+  font-size: 14px;
   line-height: 1;
+  color: var(--faint);
+}
+.seating-helper-step--final .seating-helper-step-num {
+  width: 34px;
+  height: 34px;
+  font-size: 14px;
+  color: #fff;
+  background: var(--gold-deep);
+}
+.seating-helper-step--final .seating-helper-step-label {
+  font-size: 14.5px;
+  font-weight: 700;
   color: var(--charcoal);
-  font-feature-settings: 'tnum' 1, 'lnum' 1;
 }
-.kpi-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-}
-.kpi-progress-track {
-  display: block;
+.seating-helper-cta {
+  align-self: center;
   width: 100%;
-  height: 3px;
-  margin-top: 6px;
-  background: var(--line);
-  border-radius: 2px;
-  overflow: hidden;
+  max-width: 320px;
+  margin-top: auto;
+  padding: 12px 22px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--gold-deep);
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
-.kpi-progress-fill {
-  display: block;
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.3s ease-out;
+.seating-helper-cta:hover {
+  background: var(--gold);
+  transform: translateY(-1px);
 }
+
 .dash-loading {
   text-align: center;
   color: var(--muted);
@@ -3054,79 +3131,16 @@ td.notes.seating {
 }
 .dash-page .dash-hero-section { animation: fadeInUp 0.4s ease-out both; }
 .dash-page .gauge-section { animation: fadeInUp 0.4s ease-out 0.08s both; }
-.dash-page .dash-next-row { animation: fadeInUp 0.4s ease-out 0.12s both; }
-.dash-page .kpi-grid { animation: fadeInUp 0.4s ease-out 0.16s both; }
+.dash-page .dash-two-col { animation: fadeInUp 0.4s ease-out 0.12s both; }
 .dash-page .event-progress { animation: fadeInUp 0.4s ease-out 0.24s both; }
-.dash-page .seating-widget { animation: fadeInUp 0.4s ease-out 0.32s both; }
-.kpi-card {
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-.kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-card-hover);
-}
 @media (prefers-reduced-motion: reduce) {
   .dash-page .dash-hero-section,
-  .dash-page .kpi-grid,
   .dash-page .gauge-section,
-  .dash-page .dash-next-row,
-  .dash-page .event-progress,
-  .dash-page .seating-widget,
-  .kpi-card {
+  .dash-page .dash-two-col,
+  .dash-page .event-progress {
     animation: none;
     transition: none;
   }
-}
-
-/* --- CTA Card — משבצת "הצעד הבא" ב-Grid, אותו עיצוב בהיר כמו quick-actions-card --- */
-.cta-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 10px;
-  padding: 26px 24px;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--gold-light) 22%, var(--cream)),
-    var(--ivory)
-  );
-  border: 1px solid color-mix(in srgb, var(--gold) 18%, transparent);
-  border-radius: var(--radius-xl);
-  text-align: start;
-}
-.cta-card-title {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--charcoal);
-}
-.cta-card-desc {
-  margin: 0;
-  font-size: 14px;
-  color: var(--body);
-  line-height: 1.5;
-}
-
-/* --- כפתור CTA ראשי יחיד על רקע בהיר — זהב מלא, טקסט לבן --- */
-.cta-card-btn,
-.quick-actions-btn {
-  margin-top: 6px;
-  padding: 10px 22px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-  background: var(--gold-deep);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
-  white-space: nowrap;
-}
-.cta-card-btn:hover,
-.quick-actions-btn:hover {
-  background: var(--gold);
-  transform: translateY(-1px);
 }
 
 /* --- כרטיסי מדד: 4 המספרים הראשיים --- */
@@ -3182,24 +3196,25 @@ td.notes.seating {
   .dash-hero-section .event-couple {
     font-size: 28px;
   }
-  .kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    padding: 0 16px;
-  }
   .dash-page {
     gap: 20px;
     padding-bottom: 32px;
   }
-  .cta-card,
-  .quick-actions-card {
-    padding: 22px 20px;
-    border-radius: var(--radius-l);
+  .dash-two-col {
+    grid-template-columns: 1fr;
+    padding: 0 16px;
+    gap: 14px;
   }
-  .cta-card-btn {
+  .invite-banner {
+    padding: 14px 16px;
+  }
+  .invite-banner-btn {
     width: 100%;
-    padding: 14px;
-    min-height: 48px;
+  }
+  .rsvp-feed-card,
+  .seating-helper-card {
+    padding: 20px 18px 18px;
+    border-radius: var(--radius-l);
   }
   .event-progress {
     padding: 0 16px;

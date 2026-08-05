@@ -1,83 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getEvent, getStats, mediaUrl, updateEvent } from '../api'
-import type { DashboardStats, EventDetails } from '../types'
+import { getEvent, getStats, mediaUrl, readAudit, updateEvent } from '../api'
+import type { AuditLogRow, DashboardStats, EventDetails } from '../types'
 import type { ReadinessPage } from '../readiness'
-import { SeatingPrep } from './SeatingPrep'
 import { VenueAutocomplete } from './VenueAutocomplete'
 import { getEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 
 interface Props {
-  // ניווט למסך אחר (מוזמנים / מפת אולם) — עבור סקשן "הכנה להושבה".
+  // ניווט למסך אחר (מוזמנים / מפת אולם) — עבור הבאנר וכרטיס ההושבה.
   onNavigate?: (page: ReadinessPage) => void
 }
 
 const t = strings.dashboard
-
-/** כרטיס "הצעד הבא" — משבצת קבועה ב-Grid ליד הדונאט, תמיד מציגה משהו. */
-function QuickActionsCard({
-  stats,
-  onNavigate,
-}: {
-  stats: DashboardStats
-  onNavigate?: (page: ReadinessPage) => void
-}) {
-  if (stats.invitations_sent === 0) {
-    return (
-      <div className="cta-card dash-grid-card">
-        <h3 className="cta-card-title">{t.ctaTitle}</h3>
-        <p className="cta-card-desc">{t.ctaDesc}</p>
-        <button
-          className="cta-card-btn"
-          onClick={() => onNavigate?.('guests')}
-        >
-          {t.ctaButton}
-        </button>
-      </div>
-    )
-  }
-
-  let text: string
-  let cta: string
-  let target: ReadinessPage
-
-  if (stats.pending > stats.confirmed + stats.declined) {
-    text = `${stats.pending} מוזמנים עדיין לא ענו`
-    cta = 'מעקב תשובות'
-    target = 'guests'
-  } else if (stats.pending_clarifications > 0) {
-    text = `${stats.pending_clarifications} הבהרות ממתינות לטיפול`
-    cta = 'לטפל בהבהרות'
-    target = 'hall'
-  } else if (stats.seated_guests < stats.confirmed) {
-    const unseated = stats.confirmed - stats.seated_guests
-    text = `${unseated} מוזמנים מאושרים עדיין בלי מקום בשולחן`
-    cta = 'סידור הושבה'
-    target = 'hall'
-  } else {
-    return (
-      <div className="quick-actions-card dash-grid-card">
-        <span className="quick-actions-icon">✓</span>
-        <h3 className="quick-actions-title">{t.allDoneTitle}</h3>
-        <p className="quick-actions-desc">{t.allDoneDesc}</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="quick-actions-card dash-grid-card">
-      <span className="quick-actions-icon">✦</span>
-      <h3 className="quick-actions-title">{t.nextStepTitle}</h3>
-      <p className="quick-actions-desc">{text}</p>
-      <button
-        className="quick-actions-btn"
-        onClick={() => onNavigate?.(target)}
-      >
-        {cta}
-      </button>
-    </div>
-  )
-}
 
 /** מוקאפ תמונת ההזמנה כפי שהיא נראית ב-WhatsApp — אייפון צף בתוך משבצת ה-Hero,
  * באותו גודל קבוע כמו קודם (dash-hero-image, 4:3). */
@@ -120,10 +54,114 @@ function InvitePhoneMock({
   )
 }
 
-/** אחוז בין 0–100 עבור פס ההתקדמות הזעיר בכרטיסי ה-KPI, בטוח מחלוקה באפס. */
-function kpiPct(value: number, total: number): number {
-  if (total <= 0) return 0
-  return Math.max(0, Math.min(100, Math.round((value / total) * 100)))
+/** באנר "יש מוזמנים בלי הזמנה" — מופיע רק כשקיימים מוזמנים שטרם נשלחה
+ * אליהם הזמנה. בולט אך אלגנטי (מבטא זהב עדין), לא אזהרה אדומה. */
+function InviteBanner({ count, onSend }: { count: number; onSend: () => void }) {
+  if (count <= 0) return null
+  return (
+    <div className="invite-banner">
+      <div className="invite-banner-text">
+        <p className="invite-banner-title">{t.inviteBannerTitle(count)}</p>
+        <p className="invite-banner-desc">{t.inviteBannerDesc}</p>
+      </div>
+      <button type="button" className="invite-banner-btn" onClick={onSend}>
+        {t.inviteBannerCta}
+      </button>
+    </div>
+  )
+}
+
+/** מפענח שורת יומן ביקורת של אישור/ביטול/"אולי" מהקישור הציבורי (action
+ * "confirm_submit", detail בפורמט "שם: תווית") לפריט Feed קריא. מתעלם
+ * מכל שורה אחרת ביומן — ה-Feed הזה מוקדש לעדכוני RSVP בלבד. */
+function parseRsvpEvent(row: AuditLogRow): { icon: string; text: string } | null {
+  if (row.action !== 'confirm_submit') return null
+  const sep = row.detail.indexOf(': ')
+  if (sep < 0) return null
+  const name = row.detail.slice(0, sep)
+  const label = row.detail.slice(sep + 2)
+  if (label.startsWith('אישר')) return { icon: '✅', text: t.feedConfirmed(name) }
+  if (label.startsWith('ביטל')) return { icon: '❌', text: t.feedDeclined(name) }
+  if (label.startsWith('סימן')) return { icon: '🟡', text: t.feedMaybe(name) }
+  return null
+}
+
+/** זמן יחסי קריא בעברית ("לפני 5 דק'" וכו') — לתדפיס שעת עדכון ב-Feed. */
+function timeAgo(iso: string): string {
+  const then = new Date(iso).getTime()
+  if (isNaN(then)) return ''
+  const diffSec = Math.max(0, Math.floor((Date.now() - then) / 1000))
+  if (diffSec < 60) return 'עכשיו'
+  const diffMin = Math.floor(diffSec / 60)
+  if (diffMin < 60) return `לפני ${diffMin} דק׳`
+  const diffHour = Math.floor(diffMin / 60)
+  if (diffHour < 24) return `לפני ${diffHour} שע׳`
+  const diffDay = Math.floor(diffHour / 24)
+  if (diffDay === 1) return 'אתמול'
+  if (diffDay < 7) return `לפני ${diffDay} ימים`
+  return new Date(iso).toLocaleDateString('he-IL', { day: 'numeric', month: 'short' })
+}
+
+/** "עדכוני אישורי הגעה" — Feed חי של תגובות מוזמנים בלבד (בלי מידע כפול
+ * עם המד למעלה: כאן זו זרימת אירועים בזמן, לא סך-הכול). */
+function RsvpUpdatesFeed({ rows }: { rows: AuditLogRow[] }) {
+  const items = rows
+    .map((r) => {
+      const parsed = parseRsvpEvent(r)
+      return parsed ? { ...parsed, id: r.id, created_at: r.created_at } : null
+    })
+    .filter((x): x is { icon: string; text: string; id: number; created_at: string } => x !== null)
+    .slice(0, 6)
+
+  return (
+    <div className="rsvp-feed-card">
+      <h3 className="rsvp-feed-title">{t.feedTitle}</h3>
+      {items.length === 0 ? (
+        <p className="rsvp-feed-empty">{t.feedEmpty}</p>
+      ) : (
+        <ul className="rsvp-feed-list">
+          {items.map((it) => (
+            <li key={it.id} className="rsvp-feed-item">
+              <span className="rsvp-feed-icon" aria-hidden="true">{it.icon}</span>
+              <span className="rsvp-feed-text">{it.text}</span>
+              <span className="rsvp-feed-time">{timeAgo(it.created_at)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+/** "סידורי הושבה בלי כאב הראש" — הכרטיס המרכזי לפיצ'ר הדגל: מסביר את
+ * הערך, ממחיש תהליך של 4 שלבים (השלב האחרון מודגש), ומוביל ב-CTA למפת
+ * האולם. מחליף את הווידג'ט הישן — לא כפילות, זו אותה קריאה-לפעולה עם
+ * הרבה יותר הקשר. */
+function SeatingHelperCard({ onNavigate }: { onNavigate?: (page: ReadinessPage) => void }) {
+  const steps = t.seatingHelperSteps
+  return (
+    <div className="seating-helper-card">
+      <h3 className="seating-helper-title">{t.seatingHelperTitle}</h3>
+      <p className="seating-helper-desc">{t.seatingHelperDesc}</p>
+      <ol className="seating-helper-steps">
+        {steps.map((step, i) => {
+          const isFinal = i === steps.length - 1
+          return (
+            <li key={step} className={`seating-helper-step${isFinal ? ' seating-helper-step--final' : ''}`}>
+              <span className="seating-helper-step-num">{i + 1}</span>
+              <span className="seating-helper-step-label">{step}</span>
+              {!isFinal && (
+                <span className="seating-helper-step-arrow" aria-hidden="true">↓</span>
+              )}
+            </li>
+          )
+        })}
+      </ol>
+      <button type="button" className="seating-helper-cta" onClick={() => onNavigate?.('hall')}>
+        {t.seatingHelperCta}
+      </button>
+    </div>
+  )
 }
 
 /** שניות עד לתאריך/שעת האירוע (יכול להיות שלילי אם האירוע כבר עבר). */
@@ -203,12 +241,15 @@ export function DashboardPage({ onNavigate }: Props) {
   // האם הבחירה כבר ננעלה (בלתי-הפיכה) — נטען מהשרת.
   const [commitLocked, setCommitLocked] = useState(false)
   const [error, setError] = useState('')
+  // יומן העדכונים — מקור ה-Feed "עדכוני אישורי הגעה" (מסונן ל-confirm_submit).
+  const [auditRows, setAuditRows] = useState<AuditLogRow[]>([])
 
   const refresh = useCallback(async () => {
     try {
-      const [s, e] = await Promise.all([getStats(), getEvent()])
+      const [s, e, audit] = await Promise.all([getStats(), getEvent(), readAudit(20)])
       setStats(s)
       setEvent(e)
+      setAuditRows(audit)
       setForm({
         groom_name: e.groom_name,
         bride_name: e.bride_name,
@@ -537,68 +578,19 @@ export function DashboardPage({ onNavigate }: Props) {
               </ul>
             </section>
 
-            {/* ---- "הצעד הבא" — עומד עכשיו לבדו, לא ליד המד ---- */}
-            <div className="dash-next-row">
-              <QuickActionsCard stats={stats} onNavigate={onNavigate} />
-            </div>
-
-            {/* ---- KPI Cards — 4 מדדים מרכזיים ---- */}
-            <div className="kpi-grid">
-              <div className="kpi-card">
-                <span className="kpi-dot" style={{ background: 'var(--green)' }} />
-                <span className="kpi-num">{stats.confirmed}</span>
-                <span className="kpi-label">{t.kpiConfirmed}</span>
-                <span className="kpi-progress-track">
-                  <span
-                    className="kpi-progress-fill"
-                    style={{
-                      width: `${kpiPct(stats.confirmed, stats.total_guests)}%`,
-                      background: 'var(--green)',
-                    }}
-                  />
-                </span>
+            {/* ---- שתי עמודות: עדכוני אישורי הגעה (Feed) + סידורי הושבה
+                 (הפיצ'ר הדגל). מחליפות את כרטיס "הצעד הבא" וכרטיסי הסטטיסטיקה
+                 הכפולים — כל המידע שהיה בהם כבר מופיע במד שלמעלה. ---- */}
+            <div className="dash-two-col">
+              <div className="dash-col-left">
+                <InviteBanner
+                  count={stats.total_guests - stats.invitations_sent}
+                  onSend={() => onNavigate?.('rsvp')}
+                />
+                <RsvpUpdatesFeed rows={auditRows} />
               </div>
-              <div className="kpi-card">
-                <span className="kpi-dot" style={{ background: 'var(--faint)' }} />
-                <span className="kpi-num">{stats.pending}</span>
-                <span className="kpi-label">{t.kpiPending}</span>
-                <span className="kpi-progress-track">
-                  <span
-                    className="kpi-progress-fill"
-                    style={{
-                      width: `${kpiPct(stats.pending, stats.total_guests)}%`,
-                      background: 'var(--faint)',
-                    }}
-                  />
-                </span>
-              </div>
-              <div className="kpi-card">
-                <span className="kpi-dot" style={{ background: 'var(--error)' }} />
-                <span className="kpi-num">{stats.declined}</span>
-                <span className="kpi-label">{t.kpiDeclined}</span>
-                <span className="kpi-progress-track">
-                  <span
-                    className="kpi-progress-fill"
-                    style={{
-                      width: `${kpiPct(stats.declined, stats.total_guests)}%`,
-                      background: 'var(--error)',
-                    }}
-                  />
-                </span>
-              </div>
-              <div className="kpi-card">
-                <span className="kpi-dot" style={{ background: 'var(--gold-light)' }} />
-                <span className="kpi-num">{stats.total_guests - stats.invitations_sent}</span>
-                <span className="kpi-label">{t.kpiNotSent}</span>
-                <span className="kpi-progress-track">
-                  <span
-                    className="kpi-progress-fill"
-                    style={{
-                      width: `${kpiPct(stats.total_guests - stats.invitations_sent, stats.total_guests)}%`,
-                      background: 'var(--gold-light)',
-                    }}
-                  />
-                </span>
+              <div className="dash-col-right">
+                <SeatingHelperCard onNavigate={onNavigate} />
               </div>
             </div>
           </>
@@ -622,11 +614,6 @@ export function DashboardPage({ onNavigate }: Props) {
           </div>
         )
       })()}
-
-      {/* ---- סידור הושבה חכם — פיצ'ר דגל ---- */}
-      {stats && stats.total_guests > 0 && (
-        <SeatingPrep stats={stats} onNavigate={onNavigate} />
-      )}
     </div>
   )
 }
