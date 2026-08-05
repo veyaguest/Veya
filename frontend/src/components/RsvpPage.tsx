@@ -26,14 +26,16 @@ import { AddGuestForm } from './AddGuestForm'
 import { CommunicationTab } from './CommunicationTab'
 import { GuestTimelineModal } from './GuestTimelineModal'
 import { ImportDialog } from './ImportDialog'
+import { MessageLibrary } from './MessageLibrary'
 import { PasteImportDialog } from './PasteImportDialog'
 import { RsvpTimeline } from './RsvpTimeline'
 
-type Tab = 'dashboard' | 'communication'
+type Tab = 'dashboard' | 'communication' | 'library'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'dashboard', label: 'מצב ומעקב' },
   { key: 'communication', label: 'תקשורת עם אורחים' },
+  { key: 'library', label: 'ספריית הודעות מוכנות' },
 ]
 
 /**
@@ -113,6 +115,7 @@ function AdminRsvpView() {
         />
       )}
       {tab === 'communication' && <CommunicationTab />}
+      {tab === 'library' && <MessageLibrary />}
 
       {timelineGuest != null && (
         <GuestTimelineModal
@@ -136,6 +139,7 @@ function CoupleRsvpView({ onNavigate }: { onNavigate?: (page: 'guests') => void 
   const [error, setError] = useState('')
   // כמה מוזמנים חדשים (עם טלפון תקין) עדיין לא קיבלו הזמנה — מזין את הבאנר.
   const [newCount, setNewCount] = useState(0)
+  const [showLibrary, setShowLibrary] = useState(false)
 
   // מצב דיאלוג השליחה הידנית.
   const [phase, setPhase] = useState<SendPhase>('idle')
@@ -264,6 +268,14 @@ function CoupleRsvpView({ onNavigate }: { onNavigate?: (page: 'guests') => void 
       {error && <p className="form-error">{error}</p>}
       {note && <p className="rsvp-note">{note}</p>}
 
+      <button
+        type="button"
+        className="btn-ghost lib2-entry"
+        onClick={() => setShowLibrary(true)}
+      >
+        ספריית הודעות מוכנות
+      </button>
+
       {!active ? (
         /* לפני שליחה ראשונה — אשף מודרך: עיצוב → מוזמנים → שליחה. */
         <FirstInviteWizard
@@ -299,6 +311,26 @@ function CoupleRsvpView({ onNavigate }: { onNavigate?: (page: 'guests') => void 
           onEditMessage={editMessage}
           onClose={closeDialog}
         />
+      )}
+
+      {showLibrary && (
+        <div
+          className="send-dialog-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowLibrary(false)}
+        >
+          <div className="send-dialog lib2-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="btn-text lib2-modal-close"
+              onClick={() => setShowLibrary(false)}
+            >
+              סגירה ✕
+            </button>
+            <MessageLibrary />
+          </div>
+        </div>
       )}
     </div>
   )

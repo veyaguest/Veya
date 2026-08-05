@@ -1032,6 +1032,12 @@ export async function testSendCommunicationMessage(
   return res.json()
 }
 
+export async function getMessageLibrary(): Promise<MessageDefault[]> {
+  const res = await apiFetch('/communication/library')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
 export async function getCommunicationDue(): Promise<CommunicationDueQueue> {
   const res = await apiFetch('/communication/due')
   if (!res.ok) throw await toError(res)

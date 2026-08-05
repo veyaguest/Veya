@@ -104,6 +104,21 @@ def test_send_message(
     )
 
 
+@router.get("/library", response_model=list[schemas.MessageDefaultRead])
+def get_library(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """ספריית הודעות מוכנות — קריאה בלבד: כל ברירות המחדל (8 סוגי אירוע ×
+    6 סוגי הודעה) לצפייה מתוך אזור האירוע. אינו תלוי-אירוע ספציפי (לכן אין
+    EventAccess כאן) — כל משתמש מחובר יכול לעיין בכל סוגי האירוע. זה בדיוק
+    התוכן שמוקצה אוטומטית לכל אירוע חדש מאותו סוג (``provision_event_messages``).
+    """
+    order = {mt: i for i, mt in enumerate(communication.MESSAGE_TYPES)}
+    rows = db.scalars(select(models.MessageDefault)).all()
+    return sorted(rows, key=lambda r: (r.event_type, order.get(r.message_type, 99)))
+
+
 @router.get("/due", response_model=schemas.CommunicationDueQueue)
 def get_due(
     db: Session = Depends(get_db),

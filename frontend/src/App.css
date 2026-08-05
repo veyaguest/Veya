@@ -246,8 +246,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* ---- שורת "מחובר/יציאה" — רקע כהה עם זוהר זהב עדין, כמו הדף השיווקי,
-   לתחושת פרימיום שבולטת מעט מהסרגל הבהיר סביבה. ---- */
+/* ---- שורת "מחובר/יציאה" — רקע חום כהה-עדין (לא שחור) על כל השורה כמקשה
+   אחת, עם זוהר זהב קלוש, לתחושת פרימיום שקטה שבולטת מעט מהסרגל הבהיר
+   סביבה בלי לצעוק. --charcoal הוא הכי כהה בפלטה הבהירה של האתר (חום-פחם,
+   לא שחור טהור) — בכוונה לא var(--black) שהיה כהה/קר מדי לטעם המייסד. ---- */
 .sidebar-foot-row {
   display: flex;
   align-items: center;
@@ -256,15 +258,15 @@
   padding: 10px 12px;
   border-radius: var(--radius-m);
   background:
-    radial-gradient(circle at 25% 15%, rgba(201, 162, 39, 0.16), transparent 65%),
-    var(--black);
+    radial-gradient(circle at 25% 15%, rgba(201, 162, 39, 0.1), transparent 65%),
+    var(--charcoal);
 }
 .sidebar-foot-row .conn-text {
-  color: rgba(245, 239, 226, 0.72);
+  color: rgba(245, 239, 226, 0.78);
 }
 .sidebar-foot-row .logout-btn {
-  color: rgba(245, 239, 226, 0.82);
-  border-color: rgba(228, 201, 107, 0.3);
+  color: rgba(245, 239, 226, 0.86);
+  border-color: rgba(228, 201, 107, 0.32);
 }
 .sidebar-foot-row .logout-btn:hover {
   color: #fff;
@@ -510,7 +512,11 @@
   }
   .sidebar-foot {
     order: 2;
-    flex: 0 0 auto;
+    /* גדל וממלא את כל הרוחב שנשאר בפס העליון — לא נשאר צר סביב התוכן,
+       כדי שהרקע הכהה של .sidebar-foot-row יגיע עד קצה הלוגו, לא ייעצר
+       באמצע עם שטח בהיר ריק אחריו. */
+    flex: 1 1 auto;
+    min-width: 0;
     flex-direction: row;
     align-items: center;
     gap: 12px;
@@ -521,6 +527,7 @@
     display: none;
   }
   .sidebar-foot-row {
+    flex: 1;
     gap: 12px;
   }
   .page-header {
@@ -8521,6 +8528,67 @@ td.notes.seating {
 }
 .comm-var-btn:hover {
   border-color: var(--gold);
+}
+
+/* ============ ספריית הודעות מוכנות (MessageLibrary, קריאה בלבד) ============ */
+.lib2-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 20px;
+}
+.lib2-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--body);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.lib2-chip:hover {
+  border-color: var(--gold);
+}
+.lib2-chip.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--ink, #2b2620);
+}
+.lib2-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: inherit;
+  font: inherit;
+  color: inherit;
+}
+.lib2-card-arrow {
+  color: var(--muted);
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-inline-start: 8px;
+}
+.lib2-entry {
+  margin-bottom: 16px;
+}
+.lib2-modal {
+  max-width: 640px;
+  text-align: start;
+}
+.lib2-modal-close {
+  display: block;
+  margin-inline-start: auto;
+  margin-bottom: 12px;
 }
 
 /* ============ יום ההתחייבות לאולם (בורר בדשבורד) ============ */
