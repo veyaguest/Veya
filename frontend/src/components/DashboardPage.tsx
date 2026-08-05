@@ -531,9 +531,6 @@ export function DashboardPage({ onNavigate }: Props) {
                   <li key={seg.key} className="gauge-status-card">
                     <span className="gauge-status-dot" style={{ background: seg.color }} />
                     <span className="gauge-status-num">{seg.value}</span>
-                    <span className="gauge-status-pct">
-                      {kpiPct(seg.value, stats.total_guests)}%
-                    </span>
                     <span className="gauge-status-label">{seg.label}</span>
                   </li>
                 ))}

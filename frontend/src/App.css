@@ -2633,7 +2633,9 @@ td.notes.seating {
    בתוך Grid: מוקד ויזואלי עצמאי, נושם, בלי כרטיסים אחרים לצידו.
    ============================================================ */
 .gauge-section {
-  width: 100%;
+  /* בלי width מפורש: זה ילד flex בתוך .dash-page (column, stretch כברירת
+     מחדל) — כך שהוא ממלא את הרוחב הזמין בדיוק, כולל ה-margin, בלי לגלוש
+     (width:100% + margin אופקי היה גולש/יוצא לא-מיושר, במיוחד במובייל). */
   box-sizing: border-box;
   background: var(--cream);
   border: 1px solid var(--line);
@@ -2645,11 +2647,6 @@ td.notes.seating {
   flex-direction: column;
   align-items: center;
   text-align: center;
-}
-@media (min-width: 700px) {
-  .gauge-section {
-    width: calc(100% - 40px);
-  }
 }
 /* ---- כותרת הסקשן + Badge שיעור מענה — ממורכזים, לא בקצוות ---- */
 .gauge-section-head {
@@ -2823,12 +2820,6 @@ td.notes.seating {
   line-height: 1;
   color: var(--charcoal);
   font-feature-settings: 'tnum' 1, 'lnum' 1;
-}
-.gauge-status-pct {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  direction: ltr;
 }
 .gauge-status-label {
   font-size: 12.5px;
