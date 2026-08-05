@@ -355,6 +355,205 @@ def seed_message_defaults() -> None:
         db.close()
 
 
+def seed_message_default_options() -> None:
+    """זורע פעם אחת את ספריית הנוסחים לבחירה (``MessageDefaultOption``,
+    decisions.md 2026-08-06): הזוג בוחר וריאציה מתוך עד 12 לכל
+    event_type×message_type, במקום נוסח קבוע יחיד. רץ רק אם הטבלה ריקה.
+
+    בכוונה **חתונה בלבד בשלב הזה** (הוראת הבעלים): 12 נוסחי הזמנה אמיתיים
+    שהבעלים שלח (הומרו מ-``{טוקן}`` ל-``{{token}}``), ו-60 שורות ריקות
+    (12 לכל אחד מ-5 השלבים הנותרים) שמחכות לנוסחים הבאים. סוגי אירוע
+    אחרים לא מקבלים כאן שום שורה — לא עוברים אליהם לפני שחתונה שלמה.
+    """
+    from sqlalchemy import func, select
+
+    from app import communication
+
+    db = MigrationSessionLocal()
+    try:
+        have = db.scalar(
+            select(func.count()).select_from(models.MessageDefaultOption)
+        ) or 0
+        if have != 0:
+            return
+
+        invitation_vars_full = [
+            "guest_name", "groom_name", "bride_name", "event_date",
+            "event_time", "venue_name", "address", "rsvp_link",
+            "navigation_link",
+        ]
+        invitation_vars_no_addr_nav = [
+            "guest_name", "groom_name", "bride_name", "event_date",
+            "event_time", "venue_name", "rsvp_link",
+        ]
+        invitation_vars_no_nav = [
+            "guest_name", "groom_name", "bride_name", "event_date",
+            "event_time", "venue_name", "address", "rsvp_link",
+        ]
+
+        invitation_options = [
+            (
+                "חם ומלא פרטים",
+                "היי {{guest_name}} ❤️\n\n"
+                "אנחנו שמחים ונרגשים להזמין אותך לערב החתונה שלנו.\n\n"
+                "{{groom_name}} & {{bride_name}}\n\n"
+                "📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\n"
+                "נשמח לראות אותך איתנו ולחגוג יחד.\n\n"
+                "לאישור הגעה:\n{{rsvp_link}}\n\n"
+                "לניווט:\n{{navigation_link}}",
+                invitation_vars_full,
+            ),
+            (
+                "אישי ומשתף",
+                "היי {{guest_name}} ❤️\n\n"
+                "רצינו לשתף אותך שאנחנו מתחתנים ולהזמין אותך לחגוג איתנו את הערב המיוחד הזה.\n\n"
+                "{{groom_name}} ו־{{bride_name}}\n\n"
+                "📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\n"
+                "נשמח מאוד שתהיה איתנו.\n\n"
+                "לאישור הגעה:\n{{rsvp_link}}",
+                invitation_vars_no_addr_nav,
+            ),
+            (
+                "נרגש וחגיגי",
+                "היי {{guest_name}},\n\n"
+                "אנחנו מתרגשים לקראת היום הגדול שלנו ושמחים להזמין אותך לחתונה שלנו ❤️\n\n"
+                "{{groom_name}} & {{bride_name}}\n\n"
+                "📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\n"
+                "מחכים לראות אותך ולשמוח יחד.\n\n"
+                "לאישור הגעה:\n{{rsvp_link}}",
+                invitation_vars_no_nav,
+            ),
+            (
+                "מספר את המסע האישי",
+                "היי {{guest_name}} ❤️\n\n"
+                "אחרי הרבה הכנות והתרגשות הגיע הרגע שלנו.\n\n"
+                "נשמח להזמין אותך לערב החתונה שלנו ולחגוג איתנו.\n\n"
+                "{{groom_name}} & {{bride_name}}\n\n"
+                "📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\n"
+                "לאישור הגעה:\n{{rsvp_link}}",
+                invitation_vars_no_addr_nav,
+            ),
+            (
+                "פשוט וקצר",
+                "היי {{guest_name}},\n\n"
+                "אנחנו שמחים להזמין אותך להיות איתנו בערב החתונה שלנו ❤️\n\n"
+                "{{groom_name}} ו־{{bride_name}}\n\n"
+                "📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\n"
+                "נשמח לראות אותך איתנו.\n\n"
+                "לאישור:\n{{rsvp_link}}",
+                invitation_vars_no_addr_nav,
+            ),
+            (
+                "אישי ובלעדי",
+                "היי {{guest_name}} ❤️\n\n"
+                "רצינו להזמין אותך באופן אישי לחתונה שלנו.\n\n"
+                "אנחנו מתרגשים מאוד ונשמח לחגוג איתך את הערב הזה.\n\n"
+                "{{groom_name}} & {{bride_name}}\n\n"
+                "📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\n"
+                "לאישור הגעה:\n{{rsvp_link}}",
+                invitation_vars_no_nav,
+            ),
+            (
+                "רשמי וחגיגי",
+                "שלום {{guest_name}} ❤️\n\n"
+                "בשמחה ובהתרגשות אנחנו מזמינים אותך לחתונה שלנו.\n\n"
+                "{{groom_name}} & {{bride_name}}\n\n"
+                "📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\n"
+                "נשמח מאוד שתגיע לחגוג איתנו.\n\n"
+                "אישור הגעה:\n{{rsvp_link}}",
+                invitation_vars_no_addr_nav,
+            ),
+            (
+                "הכרזה נרגשת",
+                "היי {{guest_name}},\n\n"
+                "הגיע הזמן לשתף אותך בתאריך החשוב שלנו ❤️\n\n"
+                "אנחנו מתחתנים ונשמח שתהיה איתנו בערב החתונה.\n\n"
+                "{{groom_name}} & {{bride_name}}\n\n"
+                "📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\n"
+                "מחכים לראות אותך.\n\n"
+                "לאישור הגעה:\n{{rsvp_link}}",
+                invitation_vars_no_addr_nav,
+            ),
+            (
+                "נרגש ופשוט",
+                "היי {{guest_name}} ❤️\n\n"
+                "אנחנו נרגשים לקראת החתונה שלנו ורוצים להזמין אותך לחגוג איתנו.\n\n"
+                "{{groom_name}} ו־{{bride_name}}\n\n"
+                "📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\n"
+                "נשמח מאוד לראות אותך שם.\n\n"
+                "לאישור:\n{{rsvp_link}}",
+                invitation_vars_no_addr_nav,
+            ),
+            (
+                "רשמי וחם",
+                "שלום {{guest_name}},\n\n"
+                "אנחנו שמחים ונרגשים לקראת הערב הגדול שלנו.\n\n"
+                "נשמח שתהיה איתנו בחתונה שלנו ❤️\n\n"
+                "{{groom_name}} & {{bride_name}}\n\n"
+                "📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\n"
+                "לאישור הגעה:\n{{rsvp_link}}",
+                invitation_vars_no_nav,
+            ),
+            (
+                "ייחודי ומכובד",
+                "היי {{guest_name}} ❤️\n\n"
+                "רצינו להזמין אותך לחגוג איתנו את אחד הרגעים החשובים שלנו.\n\n"
+                "החתונה של:\n{{groom_name}} & {{bride_name}}\n\n"
+                "📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\n"
+                "נשמח לראות אותך איתנו.\n\n"
+                "אישור הגעה:\n{{rsvp_link}}",
+                invitation_vars_no_addr_nav,
+            ),
+            (
+                "חם ומרגש",
+                "היי {{guest_name}} ❤️\n\n"
+                "אנחנו מתרגשים ושמחים להזמין אותך לערב החתונה שלנו.\n\n"
+                "נשמח מאוד שתהיה חלק מהשמחה שלנו ותחגוג איתנו.\n\n"
+                "{{groom_name}} & {{bride_name}}\n\n"
+                "📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\n"
+                "לאישור הגעה:\n{{rsvp_link}}\n\n"
+                "לניווט:\n{{navigation_link}}",
+                invitation_vars_full,
+            ),
+        ]
+
+        rows = [
+            models.MessageDefaultOption(
+                event_type="wedding",
+                message_type="invitation",
+                option_number=i + 1,
+                tone=tone,
+                title=communication.MESSAGE_TYPE_LABELS["invitation"],
+                content=content,
+                variables_supported=variables,
+            )
+            for i, (tone, content, variables) in enumerate(invitation_options)
+        ]
+
+        # 60 שורות ריקות (5 שלבים × 12) — מבנה זהה, ממתין לנוסחים הבאים.
+        remaining_types = [
+            mt for mt in communication.MESSAGE_TYPES if mt != "invitation"
+        ]
+        rows += [
+            models.MessageDefaultOption(
+                event_type="wedding",
+                message_type=message_type,
+                option_number=option_number,
+                tone="",
+                title=communication.MESSAGE_TYPE_LABELS[message_type],
+                content="",
+                variables_supported=[],
+            )
+            for message_type in remaining_types
+            for option_number in range(1, 13)
+        ]
+
+        db.add_all(rows)
+        db.commit()
+    finally:
+        db.close()
+
+
 @app.on_event("startup")
 def on_startup() -> None:
     # גיבוי מתוארך של ה-DB לפני כל שינוי (רק אם הקובץ כבר קיים).
@@ -376,6 +575,9 @@ def on_startup() -> None:
     # זורע את קטלוג ברירות המחדל הגלובלי לרצף התקשורת (8 סוגי אירוע × 6
     # סוגי הודעה, ריק) אם ריק.
     seed_message_defaults()
+    # זורע את ספריית הנוסחים לבחירה (עד 12 לכל event_type×message_type),
+    # חתונה בלבד בשלב הזה — ראו seed_message_default_options.
+    seed_message_default_options()
     # מוודא שקיים אירוע ברירת-מחדל אחד (תחזוקת עלייה — בלי זהות משתמש).
     db = MigrationSessionLocal()
     try:

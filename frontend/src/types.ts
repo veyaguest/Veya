@@ -886,6 +886,38 @@ export interface MessageDefaultsBackfillResult {
   messages_created: number
 }
 
+// ספריית נוסחים לבחירה (עד 12 לכל event_type×message_type) — הזוג בוחר
+// מתוכן במקום נוסח קבוע יחיד. ראו MessageDefault (הנוסח שמוקצה אוטומטית).
+export interface MessageDefaultOption {
+  id: number
+  event_type: string
+  message_type: MessageType
+  option_number: number
+  tone: string
+  title: string
+  content: string
+  variables_supported: string[]
+  is_active: boolean
+  updated_at: string
+}
+
+export interface MessageDefaultOptionCreate {
+  event_type: string
+  message_type: MessageType
+  tone?: string
+  title?: string
+  content?: string
+  variables_supported?: string[]
+}
+
+export interface MessageDefaultOptionInput {
+  tone?: string
+  title?: string
+  content?: string
+  is_active?: boolean
+  variables_supported?: string[]
+}
+
 export interface TimelineEvent {
   kind: string
   direction: 'outbound' | 'inbound'

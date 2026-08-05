@@ -8580,6 +8580,45 @@ td.notes.seating {
 .comm-var-btn:hover {
   border-color: var(--gold);
 }
+.comm-picker-toggle {
+  align-self: flex-start;
+  margin-bottom: 8px;
+}
+.comm-picker {
+  margin-bottom: 12px;
+}
+.comm-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-inline-end: 4px;
+}
+.comm-picker-option {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 12px);
+  padding: 10px 12px;
+  background: var(--surface-hi);
+}
+.comm-picker-option-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.comm-picker-tone {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-deep, var(--gold));
+}
+.comm-picker-text {
+  font-size: 13px;
+  color: var(--body);
+  white-space: pre-wrap;
+  margin: 0;
+}
 
 /* ============ ספריית הודעות מוכנות (MessageLibrary, קריאה בלבד) ============ */
 .lib2-chips {

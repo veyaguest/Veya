@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import {
   getCommunicationSequence,
+  getMessageOptions,
   previewCommunicationMessage,
   testSendCommunicationMessage,
   updateCommunicationMessage,
 } from '../api'
-import type { EventMessage } from '../types'
+import type { EventMessage, MessageDefaultOption } from '../types'
 import { COMMUNICATION_VARIABLES } from '../types'
 
 /**
@@ -72,6 +73,9 @@ function MessageCard({
   const [preview, setPreview] = useState<string | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [testSending, setTestSending] = useState(false)
+  const [options, setOptions] = useState<MessageDefaultOption[] | null>(null)
+  const [optionsLoading, setOptionsLoading] = useState(false)
+  const [showPicker, setShowPicker] = useState(false)
 
   const dirty = content !== message.content || active !== message.is_active
 
@@ -119,6 +123,26 @@ function MessageCard({
     setContent((c) => `${c}{{${key}}}`)
   }
 
+  async function togglePicker() {
+    const next = !showPicker
+    setShowPicker(next)
+    if (next && options === null) {
+      setOptionsLoading(true)
+      try {
+        setOptions(await getMessageOptions(message.message_type))
+      } catch (err) {
+        setNote(err instanceof Error ? err.message : 'טעינת הנוסחים המוכנים נכשלה')
+      } finally {
+        setOptionsLoading(false)
+      }
+    }
+  }
+
+  function useOption(opt: MessageDefaultOption) {
+    setContent(opt.content)
+    setShowPicker(false)
+  }
+
   return (
     <div className={`mb-card comm-card ${active ? '' : 'comm-card-off'}`}>
       <div className="mb-card-head">
@@ -135,6 +159,38 @@ function MessageCard({
 
       {!message.content && (
         <p className="mb-card-hint">עדיין לא הוזן תוכן להודעה הזו.</p>
+      )}
+
+      <button type="button" className="btn-ghost comm-picker-toggle" onClick={togglePicker}>
+        {showPicker ? 'סגירת נוסחים מוכנים' : 'נוסחים מוכנים לבחירה'}
+      </button>
+
+      {showPicker && (
+        <div className="comm-picker">
+          {optionsLoading && <p className="mb-empty">טוענים נוסחים…</p>}
+          {!optionsLoading && options !== null && options.length === 0 && (
+            <p className="mb-card-hint">עדיין אין נוסחים מוכנים לשלב הזה.</p>
+          )}
+          {!optionsLoading && options && options.length > 0 && (
+            <div className="comm-picker-list">
+              {options.map((opt) => (
+                <div key={opt.id} className="comm-picker-option">
+                  <div className="comm-picker-option-head">
+                    <span className="comm-picker-tone">{opt.tone}</span>
+                    <button
+                      type="button"
+                      className="btn-text"
+                      onClick={() => useOption(opt)}
+                    >
+                      שימוש בנוסח הזה
+                    </button>
+                  </div>
+                  <p className="comm-picker-text">{opt.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       <textarea

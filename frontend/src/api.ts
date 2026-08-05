@@ -41,6 +41,9 @@ import type {
   MessageDefault,
   MessageDefaultInput,
   MessageDefaultsBackfillResult,
+  MessageDefaultOption,
+  MessageDefaultOptionCreate,
+  MessageDefaultOptionInput,
   MessageTemplate,
   RsvpSummary,
   ReserveSummary,
@@ -1038,6 +1041,12 @@ export async function getMessageLibrary(): Promise<MessageDefault[]> {
   return res.json()
 }
 
+export async function getMessageOptions(messageType: string): Promise<MessageDefaultOption[]> {
+  const res = await apiFetch(`/communication/sequence/${messageType}/options`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
 export async function getCommunicationDue(): Promise<CommunicationDueQueue> {
   const res = await apiFetch('/communication/due')
   if (!res.ok) throw await toError(res)
@@ -1079,6 +1088,46 @@ export async function adminBackfillMessageDefaults(): Promise<MessageDefaultsBac
   const res = await apiFetch('/admin/message-defaults/backfill', { method: 'POST' })
   if (!res.ok) throw await toError(res)
   return res.json()
+}
+
+export async function adminListMessageDefaultOptions(
+  eventType: string,
+  messageType: string,
+): Promise<MessageDefaultOption[]> {
+  const params = new URLSearchParams({ event_type: eventType, message_type: messageType })
+  const res = await apiFetch(`/admin/message-default-options?${params.toString()}`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function adminCreateMessageDefaultOption(
+  data: MessageDefaultOptionCreate,
+): Promise<MessageDefaultOption> {
+  const res = await apiFetch('/admin/message-default-options', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function adminUpdateMessageDefaultOption(
+  optionId: number,
+  data: Partial<MessageDefaultOptionInput>,
+): Promise<MessageDefaultOption> {
+  const res = await apiFetch(`/admin/message-default-options/${optionId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function adminDeleteMessageDefaultOption(optionId: number): Promise<void> {
+  const res = await apiFetch(`/admin/message-default-options/${optionId}`, { method: 'DELETE' })
+  if (!res.ok) throw await toError(res)
 }
 
 export async function adminMessageStats(): Promise<AdminMessageStats> {

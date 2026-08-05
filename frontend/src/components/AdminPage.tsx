@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   adminBackfillMessageDefaults,
   adminCreateAccount,
+  adminCreateMessageDefaultOption,
+  adminDeleteMessageDefaultOption,
+  adminListMessageDefaultOptions,
   adminListMessageDefaults,
   adminMessageStats,
   adminUpdateMessageDefault,
+  adminUpdateMessageDefaultOption,
 } from '../api'
-import type { AdminMessageStats, MessageDefault } from '../types'
+import type { AdminMessageStats, MessageDefault, MessageDefaultOption, MessageType } from '../types'
 import { MESSAGE_TYPES } from '../types'
 import { strings } from '../strings/he'
 
@@ -22,6 +26,16 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   other: 'אירוע אחר',
 }
 const EVENT_TYPE_ORDER = Object.keys(EVENT_TYPE_LABELS)
+
+/** תוויות שלבי ההודעה (תואם ל-backend/app/communication.py: MESSAGE_TYPE_LABELS). */
+const MESSAGE_TYPE_LABELS_HE: Record<string, string> = {
+  invitation: 'הזמנה',
+  reminder_1: 'תזכורת ראשונה',
+  reminder_2: 'תזכורת שנייה',
+  final_reminder: 'תזכורת אחרונה',
+  event_day: 'יום האירוע',
+  thank_you: 'תודה',
+}
 
 const MESSAGE_KIND_LABELS: Record<string, string> = {
   invitation: 'הזמנות',
@@ -293,6 +307,185 @@ export function MessageDefaultsManager() {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+/** כרטיס עריכה לנוסח אחד מתוך ספריית הבחירה (עד 12 לכל event_type×message_type).
+ * כולל מחיקה — בניגוד ל-48 ברירות המחדל הקבועות, כאן אפשר גם להוסיף וגם להסיר. */
+function MessageDefaultOptionCard({
+  option,
+  onSaved,
+  onDeleted,
+}: {
+  option: MessageDefaultOption
+  onSaved: (o: MessageDefaultOption) => void
+  onDeleted: (id: number) => void
+}) {
+  const [tone, setTone] = useState(option.tone)
+  const [content, setContent] = useState(option.content)
+  const [active, setActive] = useState(option.is_active)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const dirty = tone !== option.tone || content !== option.content || active !== option.is_active
+
+  async function save() {
+    setBusy(true)
+    setError(null)
+    try {
+      const updated = await adminUpdateMessageDefaultOption(option.id, {
+        tone, content, is_active: active,
+      })
+      onSaved(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : strings.errors.adminSaveFailedRetry)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function remove() {
+    setBusy(true)
+    setError(null)
+    try {
+      await adminDeleteMessageDefaultOption(option.id)
+      onDeleted(option.id)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : strings.errors.adminSaveFailedRetry)
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className={`veya-tpl-card ${active ? '' : 'inactive'}`}>
+      <div className="veya-tpl-head">
+        <span className="file-name">אופציה {option.option_number}</span>
+        <input
+          className="veya-tpl-name"
+          value={tone}
+          onChange={(e) => setTone(e.target.value)}
+          placeholder="תיאור קצר של הטון (למשל: חם ותמציתי)"
+        />
+      </div>
+      <textarea
+        className="veya-tpl-body"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        rows={6}
+        dir="rtl"
+        placeholder="עדיין אין תוכן — הזינו כאן נוסח"
+      />
+      <div className="veya-tpl-foot">
+        <label className="veya-chk">
+          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+          פעילה
+        </label>
+        <span className="veya-tpl-actions">
+          <button
+            type="button"
+            className="btn-primary btn-sm"
+            onClick={save}
+            disabled={busy || !dirty}
+          >
+            {busy ? 'רגע…' : dirty ? 'שמירה' : 'נשמר'}
+          </button>
+          <button type="button" className="btn-ghost btn-sm" onClick={remove} disabled={busy}>
+            מחיקה
+          </button>
+        </span>
+      </div>
+      {error && <div className="auth-error">{error}</div>}
+    </div>
+  )
+}
+
+/** ניהול ספריית הנוסחים לבחירה (עד 12 לכל event_type×message_type) —
+ * הזוג בוחר וריאציה מתוכה במקום נוסח קבוע יחיד (decisions.md 2026-08-06).
+ * כאן האדמין גם עורך וגם מוסיף/מוחק נוסחים — לא טקסט קשיח בקוד. */
+export function MessageDefaultOptionsManager() {
+  const [eventType, setEventType] = useState('wedding')
+  const [messageType, setMessageType] = useState<MessageType>('invitation')
+  const [options, setOptions] = useState<MessageDefaultOption[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
+
+  const load = useCallback(() => {
+    setOptions(null)
+    adminListMessageDefaultOptions(eventType, messageType)
+      .then(setOptions)
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : strings.errors.adminDefaultsLoadFailed),
+      )
+  }, [eventType, messageType])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  async function addOption() {
+    setAdding(true)
+    setError(null)
+    try {
+      const created = await adminCreateMessageDefaultOption({ event_type: eventType, message_type: messageType })
+      setOptions((prev) => [...(prev ?? []), created])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : strings.errors.adminSaveFailedRetry)
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  return (
+    <div className="veya-defaults">
+      <h2 className="admin-section-title">ספריית נוסחים לבחירה (עד 12 לכל שילוב)</h2>
+      <p className="file-name">
+        כאן הזוג בוחר וריאציה במקום נוסח קבוע — בנוסף ל"ברירת המחדל" שמוקצית
+        אוטומטית לאירוע חדש (למעלה). כרגע רק חתונה מלאה; שאר סוגי האירוע
+        ריקים בכוונה.
+      </p>
+
+      <div className="event-new-grid" style={{ marginBottom: 16 }}>
+        <select value={eventType} onChange={(e) => setEventType(e.target.value)}>
+          {EVENT_TYPE_ORDER.map((t) => (
+            <option key={t} value={t}>{EVENT_TYPE_LABELS[t]}</option>
+          ))}
+        </select>
+        <select value={messageType} onChange={(e) => setMessageType(e.target.value as MessageType)}>
+          {MESSAGE_TYPES.map((mt) => (
+            <option key={mt} value={mt}>{MESSAGE_TYPE_LABELS_HE[mt]}</option>
+          ))}
+        </select>
+      </div>
+
+      {error && <div className="admin-error">{error}</div>}
+      {!error && options === null && <div className="admin-loading">טוען נוסחים…</div>}
+
+      {options && (
+        <div className="veya-tpl-list">
+          {options.length === 0 && (
+            <p className="file-name">אין עדיין נוסחים לשילוב הזה.</p>
+          )}
+          {options.map((opt) => (
+            <MessageDefaultOptionCard
+              key={opt.id}
+              option={opt}
+              onSaved={(u) => setOptions((prev) => prev!.map((x) => (x.id === u.id ? u : x)))}
+              onDeleted={(id) => setOptions((prev) => prev!.filter((x) => x.id !== id))}
+            />
+          ))}
+          {options.length < 12 && (
+            <button
+              type="button"
+              className="btn-ghost btn-sm"
+              onClick={addOption}
+              disabled={adding}
+            >
+              {adding ? 'מוסיף…' : `הוספת נוסח (${options.length}/12)`}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

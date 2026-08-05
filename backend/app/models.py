@@ -467,6 +467,42 @@ class MessageDefault(Base):
     )
 
 
+class MessageDefaultOption(Base):
+    """ספריית נוסחים לבחירה — עד 12 וריאציות ל-event_type × message_type,
+    שהזוג יכול לבחור מתוכן (2026-08-06, decisions.md). לא מחליפה את
+    ``MessageDefault``: ``MessageDefault.content`` נשאר "הנוסח שמוקצה
+    אוטומטית לאירוע חדש" (idempotent, ללא שינוי). כשהזוג בוחר וריאציה כאן
+    (``GET /communication/sequence/{message_type}/options``), התוכן מועתק
+    לתוך ה-``EventMessage`` שלו — עדיין חופשי לעריכה אחר כך, בדיוק כמו היום.
+    האדמין הוא מקור האמת לכל התוכן כאן (עריכה/הוספה) — לא נכתב טקסט קשיח
+    בקוד.
+    """
+
+    __tablename__ = "message_default_options"
+    __table_args__ = (
+        UniqueConstraint(
+            "event_type", "message_type", "option_number",
+            name="uq_message_default_option",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_type: Mapped[str] = mapped_column(String, index=True)
+    message_type: Mapped[str] = mapped_column(String, index=True)
+    option_number: Mapped[int] = mapped_column(Integer)  # 1..12, סדר תצוגה
+    # תיאור קצר של הטון הרגשי של הנוסח הזה (למשל "חם ותמציתי") — עוזר לזוג
+    # לבחור מהר בלי לקרוא את כל 12 הנוסחים במלואם.
+    tone: Mapped[str] = mapped_column(String, default="")
+    title: Mapped[str] = mapped_column(String, default="")
+    content: Mapped[str] = mapped_column(Text, default="")
+    variables_supported: Mapped[list] = mapped_column(JSON, default=list)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+
 class EventMessage(Base):
     """הודעה אחת ברצף התקשורת של אירוע ספציפי — מקור האמת היחיד לתוכן
     שנשלח בפועל למוזמנים. מוקצית אוטומטית (idempotent) מ-``MessageDefault``

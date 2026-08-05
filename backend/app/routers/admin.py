@@ -730,6 +730,89 @@ def backfill_message_defaults(
     )
 
 
+# ---- ספריית נוסחים לבחירה (MessageDefaultOption) — עד 12 וריאציות לכל
+#      event_type×message_type, שהזוג בוחר מתוכן (decisions.md 2026-08-06).
+#      האדמין הוא מקור האמת: עריכה + הוספה כאן, לא טקסט קשיח בקוד. ----
+
+@router.get("/message-default-options", response_model=list[schemas.MessageDefaultOptionRead])
+def list_message_default_options(
+    event_type: Optional[str] = None,
+    message_type: Optional[str] = None,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    stmt = select(models.MessageDefaultOption)
+    if event_type:
+        stmt = stmt.where(models.MessageDefaultOption.event_type == event_type)
+    if message_type:
+        stmt = stmt.where(models.MessageDefaultOption.message_type == message_type)
+    rows = db.scalars(stmt).all()
+    return sorted(rows, key=lambda r: (r.event_type, r.message_type, r.option_number))
+
+
+@router.post(
+    "/message-default-options",
+    response_model=schemas.MessageDefaultOptionRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_message_default_option(
+    payload: schemas.MessageDefaultOptionCreate,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """מוסיף וריאציה חדשה — ממספר אוטומטית את המספר הפנוי הבא (1–12)."""
+    taken = set(db.scalars(
+        select(models.MessageDefaultOption.option_number)
+        .where(models.MessageDefaultOption.event_type == payload.event_type)
+        .where(models.MessageDefaultOption.message_type == payload.message_type)
+    ).all())
+    next_number = next((n for n in range(1, 13) if n not in taken), None)
+    if next_number is None:
+        raise HTTPException(status_code=400, detail="כבר יש 12 נוסחים לשילוב הזה — המקסימום המותר")
+    option = models.MessageDefaultOption(
+        event_type=payload.event_type,
+        message_type=payload.message_type,
+        option_number=next_number,
+        tone=payload.tone,
+        title=payload.title,
+        content=payload.content,
+        variables_supported=payload.variables_supported,
+    )
+    db.add(option)
+    db.commit()
+    return option
+
+
+@router.patch("/message-default-options/{option_id}", response_model=schemas.MessageDefaultOptionRead)
+def update_message_default_option(
+    option_id: int,
+    payload: schemas.MessageDefaultOptionUpdate,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    option = db.get(models.MessageDefaultOption, option_id)
+    if option is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="הנוסח לא נמצא")
+    data = payload.model_dump(exclude_unset=True)
+    for field, value in data.items():
+        setattr(option, field, value)
+    db.commit()
+    return option
+
+
+@router.delete("/message-default-options/{option_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_message_default_option(
+    option_id: int,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    option = db.get(models.MessageDefaultOption, option_id)
+    if option is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="הנוסח לא נמצא")
+    db.delete(option)
+    db.commit()
+
+
 @router.get("/veya/message-stats", response_model=schemas.AdminMessageStats)
 def veya_message_stats(
     db: Session = Depends(get_db),

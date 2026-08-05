@@ -62,6 +62,29 @@ def update_message(
     return em
 
 
+@router.get(
+    "/sequence/{message_type}/options",
+    response_model=list[schemas.MessageDefaultOptionRead],
+)
+def get_message_options(
+    message_type: str,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_view),
+):
+    """נוסחים מוכנים לבחירה עבור ההודעה הזו וסוג האירוע — לקריאה בלבד. הבחירה
+    בפועל (שימוש בנוסח) מתבצעת בצד הלקוח: מעתיקים את ``content`` הנבחר לתוך
+    הטקסטרה של ``PUT /sequence/{message_type}``, בדיוק כמו עריכה חופשית."""
+    rows = db.scalars(
+        select(models.MessageDefaultOption)
+        .where(models.MessageDefaultOption.event_type == event.event_type)
+        .where(models.MessageDefaultOption.message_type == message_type)
+        .where(models.MessageDefaultOption.is_active == True)  # noqa: E712
+        .where(models.MessageDefaultOption.content != "")
+        .order_by(models.MessageDefaultOption.option_number)
+    ).all()
+    return rows
+
+
 @router.post("/sequence/{message_type}/preview", response_model=schemas.CommunicationPreview)
 def preview_message(
     message_type: str,

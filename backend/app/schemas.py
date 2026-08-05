@@ -428,6 +428,38 @@ class MessageDefaultsBackfillResult(BaseModel):
     messages_created: int
 
 
+class MessageDefaultOptionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    event_type: str
+    message_type: str
+    option_number: int
+    tone: str
+    title: str
+    content: str
+    variables_supported: list[str]
+    is_active: bool
+    updated_at: datetime
+
+
+class MessageDefaultOptionCreate(BaseModel):
+    event_type: str
+    message_type: str
+    tone: str = ""
+    title: str = ""
+    content: str = ""
+    variables_supported: list[str] = []
+
+
+class MessageDefaultOptionUpdate(BaseModel):
+    tone: Optional[str] = None
+    title: Optional[str] = None
+    content: Optional[str] = None
+    variables_supported: Optional[list[str]] = None
+    is_active: Optional[bool] = None
+
+
 class RsvpSummary(BaseModel):
     total_guests: int
     confirmed: int
