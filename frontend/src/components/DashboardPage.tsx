@@ -523,8 +523,8 @@ export function DashboardPage({ onNavigate }: Props) {
               </div>
               <RsvpGauge
                 segments={rsvpSegments}
-                percent={kpiPct(stats.confirmed, stats.total_guests)}
-                percentLabel={t.gaugeLabel}
+                centerValue={stats.confirmed}
+                centerLabel={t.gaugeLabel}
               />
               <ul className="gauge-status-grid">
                 {rsvpSegments.map((seg) => (

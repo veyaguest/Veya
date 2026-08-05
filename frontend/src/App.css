@@ -2247,8 +2247,16 @@ td.notes.seating {
        שגם הוא aspect-ratio (האייפון), חישוב היחס מתנגש עם ה-flex ומייצר
        גובה שרירותי וענק. גובה מפורש פותר את זה בוודאות. */
     aspect-ratio: auto;
-    height: 230px;
+    height: 260px;
     flex: none;
+  }
+  /* מידות מפורשות (לא aspect-ratio נגזר) — כדי שהאייפון יישאר בדיוק באותה
+     צורת "טלפון" צרה וגבוהה כמו בדסקטופ, בלי תלות בחישוב aspect-ratio
+     דרך שרשרת flex/height:100% שיכולה להתפרש אחרת בין דפדפנים. */
+  .invite-phone {
+    width: 120px;
+    height: 260px;
+    aspect-ratio: auto;
   }
   .dash-hero-image-edit {
     opacity: 1;
@@ -2753,12 +2761,6 @@ td.notes.seating {
   letter-spacing: -0.01em;
   color: var(--charcoal);
   font-feature-settings: 'tnum' 1, 'lnum' 1;
-}
-.gauge-num-sign {
-  font-size: 0.4em;
-  font-weight: 600;
-  margin-inline-start: 1px;
-  color: var(--muted);
 }
 .gauge-lbl {
   font-size: clamp(13.5px, 1.6vw, 17px);
