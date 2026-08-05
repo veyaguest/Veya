@@ -265,7 +265,7 @@ export function AutomationRulesTab({ onChanged }: { onChanged?: () => void }) {
 
       {rules.length === 0 && !showForm ? (
         <p className="auto-empty">
-          עדיין אין חוקים. צרו חוק ראשון כדי שהמערכת תתחיל להציע הודעות לשליחה.
+          עדיין אין חוקים. צרו חוק ראשון כדי שנתחיל להציע הודעות לשליחה.
         </p>
       ) : (
         <ul className="auto-rule-list">

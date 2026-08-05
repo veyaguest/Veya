@@ -374,7 +374,7 @@ function SendInvitationsDialog({
               {result.failed > 0 ? strings.errors.rsvpSendPartialFail : strings.toasts.invitationsSent}
             </h3>
             <p className="send-summary-main">
-              נשלחו <strong>{result.invitations_sent}</strong> הזמנות בהצלחה
+              נשלחו <strong>{result.invitations_sent}</strong> הזמנות
               {mode === 'mock' && ' (מצב תצוגה — עדיין לא שלחנו הודעות אמיתיות)'}
             </p>
             {(result.skipped_missing + result.skipped_invalid) > 0 && (
@@ -636,7 +636,7 @@ function SendConfirmStep({
       </p>
       {preview.already_sent > 0 && (
         <p className="clar-sub">
-          {preview.already_sent} מוזמנים כבר קיבלו הזמנה — כל אורח מקבל הזמנה פעם
+          {preview.already_sent} מוזמנים כבר קיבלו הזמנה — כל מוזמן מקבל הזמנה פעם
           אחת בלבד, ולכן לא תישלח אליהם שוב.
         </p>
       )}
@@ -937,7 +937,7 @@ function FirstInviteWizard({
               </button>
             </div>
             <AddGuestForm
-              onAdded={() => afterGuestsChanged('המוזמן נוסף בהצלחה')}
+              onAdded={() => afterGuestsChanged('המוזמן נוסף')}
               onCancel={() => setShowAdd(false)}
             />
           </div>

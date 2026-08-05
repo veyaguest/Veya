@@ -137,7 +137,7 @@ export function ConfirmPage({ token }: { token: string }) {
       done.confirmed_count === 1 ? 'מוזמן אחד' : `${done.confirmed_count} מוזמנים`
     const msg =
       done.rsvp_status === 'confirmed'
-        ? `נהדר! נתראה באירוע 🎉 (${guests})`
+        ? `נתראה באירוע (${guests})`
         : done.rsvp_status === 'maybe'
           ? 'תודה! סימנו "אולי" — נשמח לעדכון סופי בהמשך.'
           : 'תודה שעדכנתם. חבל שלא תגיעו — נחגוג לחיים!'
@@ -238,7 +238,7 @@ export function ConfirmPage({ token }: { token: string }) {
               <button
                 type="button"
                 className="confirm-step"
-                aria-label="הפחתת אורח"
+                aria-label="הפחתת מוזמן"
                 disabled={count <= 1}
                 onClick={() => setCount((c) => Math.max(1, c - 1))}
               >
@@ -248,7 +248,7 @@ export function ConfirmPage({ token }: { token: string }) {
               <button
                 type="button"
                 className="confirm-step"
-                aria-label="הוספת אורח"
+                aria-label="הוספת מוזמן"
                 disabled={count >= 30}
                 onClick={() => setCount((c) => Math.min(30, c + 1))}
               >

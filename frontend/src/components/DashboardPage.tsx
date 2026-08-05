@@ -57,7 +57,7 @@ function QuickActionsCard({
   } else {
     return (
       <div className="quick-actions-card dash-grid-card">
-        <span className="quick-actions-icon">🎉</span>
+        <span className="quick-actions-icon">✓</span>
         <h3 className="quick-actions-title">{t.allDoneTitle}</h3>
         <p className="quick-actions-desc">{t.allDoneDesc}</p>
       </div>
@@ -169,7 +169,7 @@ function CountdownTimer({ date, time }: { date?: string; time?: string }) {
   if (!cd) return null
 
   if (cd.isPast) {
-    return <div className="countdown-timer-today">🎉 {t.countdownToday}</div>
+    return <div className="countdown-timer-today">{t.countdownToday}</div>
   }
 
   return (
@@ -504,43 +504,44 @@ export function DashboardPage({ onNavigate }: Props) {
 
       {stats && stats.total_guests > 0 && (() => {
         const rsvpSegments = [
-          { label: t.kpiConfirmed, value: stats.confirmed, color: 'var(--donut-confirmed)' },
-          { label: t.kpiPending, value: stats.pending, color: 'var(--donut-pending)' },
-          { label: t.segMaybe, value: stats.maybe, color: 'var(--donut-maybe)' },
-          { label: t.kpiDeclined, value: stats.declined, color: 'var(--donut-declined)' },
+          { key: 'confirmed', label: t.kpiConfirmed, value: stats.confirmed, color: 'var(--gauge-confirmed)' },
+          { key: 'maybe', label: t.gaugeStatusMaybe, value: stats.maybe, color: 'var(--gauge-maybe)' },
+          { key: 'declined', label: t.gaugeStatusDeclined, value: stats.declined, color: 'var(--gauge-declined)' },
+          { key: 'pending', label: t.kpiPending, value: stats.pending, color: 'var(--gauge-pending)' },
         ]
         return (
           <>
-            {/* ---- Bento Grid: כרטיס דונאט + כרטיס "הצעד הבא" — מעל כרטיסי ה-KPI,
-                 כי הדונאט הוא הנתון הראשון שמעניין את הזוג ---- */}
-            <div className="dash-grid-2col">
-              <div className="donut-card dash-grid-card">
-                <div className="donut-card-header">
-                  <h3 className="donut-card-title">{t.donutCardTitle}</h3>
-                  <span className="donut-card-badge">
-                    {t.donutResponseBadge(Math.round(stats.response_rate))}
-                  </span>
-                </div>
-                <div className="rsvp-center-donut">
-                  <Donut
-                    segments={rsvpSegments}
-                    centerNum={`${stats.confirmed_people}`}
-                    centerLabel={t.donutCenterLabel}
-                  />
-                  <p className="rsvp-summary">
-                    {t.donutCenterTotal(stats.total_guests)}
-                  </p>
-                </div>
-                <ul className="donut-legend-row">
-                  {rsvpSegments.map((seg) => (
-                    <li key={seg.label} className="donut-legend-item">
-                      <span className="donut-legend-dot" style={{ background: seg.color }} />
-                      <span className="donut-legend-count">{seg.value}</span>
-                      {seg.label}
-                    </li>
-                  ))}
-                </ul>
+            {/* ---- סקשן המד — מוקד ויזואלי במלוא הרוחב, מיד מתחת להירו.
+                 לא כרטיס קטן בתוך Grid — "חלון ראווה" עצמאי למד ולסטטיסטיקות
+                 שלו בלבד, בלי כרטיסים אחרים לצידו. ---- */}
+            <section className="gauge-section">
+              <div className="gauge-section-head">
+                <h3 className="gauge-section-title">{t.donutCardTitle}</h3>
+                <span className="gauge-section-badge">
+                  {t.donutResponseBadge(Math.round(stats.response_rate))}
+                </span>
               </div>
+              <RsvpGauge
+                segments={rsvpSegments}
+                percent={kpiPct(stats.confirmed, stats.total_guests)}
+                percentLabel={t.gaugeLabel}
+              />
+              <ul className="gauge-status-grid">
+                {rsvpSegments.map((seg) => (
+                  <li key={seg.key} className="gauge-status-card">
+                    <span className="gauge-status-dot" style={{ background: seg.color }} />
+                    <span className="gauge-status-num">{seg.value}</span>
+                    <span className="gauge-status-pct">
+                      {kpiPct(seg.value, stats.total_guests)}%
+                    </span>
+                    <span className="gauge-status-label">{seg.label}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            {/* ---- "הצעד הבא" — עומד עכשיו לבדו, לא ליד המד ---- */}
+            <div className="dash-next-row">
               <QuickActionsCard stats={stats} onNavigate={onNavigate} />
             </div>
 
@@ -653,58 +654,114 @@ function formatWhen(date: string, time: string): string {
   return parts.join(', ')
 }
 
-/** תרשים עוגה (donut) טהור ב-SVG — בלי ספריות חיצוניות, קל ומהיר. */
-function Donut({
+/** נקודה על מעגל לפי זווית (מעלות, 0=ימין, 90=למעלה) — לבניית קשתות SVG. */
+function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
+  const rad = (angleDeg * Math.PI) / 180
+  return { x: cx + r * Math.cos(rad), y: cy - r * Math.sin(rad) }
+}
+
+/** מחרוזת path של קשת SVG בין שתי זוויות (עד 180°, ולכן large-arc-flag תמיד 0). */
+function describeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number) {
+  const start = polarToCartesian(cx, cy, r, startAngle)
+  const end = polarToCartesian(cx, cy, r, endAngle)
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 0 1 ${end.x} ${end.y}`
+}
+
+/** סופר מ-0 עד היעד בעקומת ease-out, פעם אחת ברכיבה (לא מגיב לרינדורים חוזרים). */
+function useCountUp(target: number, duration = 900) {
+  const [value, setValue] = useState(0)
+  useEffect(() => {
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduceMotion) {
+      setValue(target)
+      return
+    }
+    let raf = 0
+    const startTime = performance.now()
+    function tick(now: number) {
+      const elapsed = now - startTime
+      const progress = Math.min(1, elapsed / duration)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setValue(Math.round(target * eased))
+      if (progress < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target])
+  return value
+}
+
+/** מד חצי-עגול (Gauge) — פרימיום, בהשראת לוח מחוונים של רכב יוקרה. מציג את
+ * אחוז ההגעה כמוקד הראשי של הדשבורד, עם ציור-קשתות ומספר עולה באנימציה. */
+function RsvpGauge({
   segments,
-  centerNum,
-  centerLabel,
+  percent,
+  percentLabel,
 }: {
-  segments: { label: string; value: number; color: string }[]
-  centerNum: string
-  centerLabel: string
+  segments: { key: string; label: string; value: number; color: string }[]
+  percent: number
+  percentLabel: string
 }) {
+  const animatedPercent = useCountUp(percent, 900)
   const total = segments.reduce((s, x) => s + x.value, 0)
-  const R = 58
-  const STROKE = 7
-  // מרווח זעיר בין הפלחים (בפיקסלים על היקף המעגל) — כדי שהקצוות המעוגלים
-  // לא ייגעו בפלח הבא, מראה עדין ומלוטש בסגנון Stripe/Apple.
-  const GAP = 3
-  const C = 2 * Math.PI * R
-  let acc = 0
+
+  const CX = 120
+  const CY = 122
+  const R = 96
+  const STROKE = 24
+  // מרווח זעיר (במעלות) בין הפלחים — קצוות מעוגלים בלי לגעת בפלח הבא.
+  const GAP_DEG = 3
+
+  let cursor = 180
+  const arcs = segments.map((seg) => {
+    const span = total > 0 ? (seg.value / total) * 180 : 0
+    const start = cursor
+    const end = cursor - span
+    cursor = end
+    return { ...seg, start, end, span }
+  })
+
   return (
-    <div className="donut-wrap">
-      <svg viewBox="0 0 140 140" className="donut" role="img" aria-label={centerLabel}>
-        <circle className="donut-bg" cx="70" cy="70" r={R} fill="none" strokeWidth={STROKE} />
-        {total > 0 &&
-          segments.map((seg, i) => {
-            const fullLen = (seg.value / total) * C
-            // פלח בערך 0 מדלגים על ציור לגמרי — strokeLinecap="round" על
-            // dasharray "0 X" מצייר נקודה שלא אמורה להיות שם.
-            if (fullLen <= 0) return null
-            const len = Math.max(0, fullLen - GAP)
-            const dash = (
-              <circle
-                key={i}
-                cx="70"
-                cy="70"
-                r={R}
-                fill="none"
-                stroke={seg.color}
-                strokeWidth={STROKE}
-                strokeLinecap="round"
-                strokeDasharray={`${len} ${C - len}`}
-                strokeDashoffset={-acc}
-                transform="rotate(-90 70 70)"
-              />
-            )
-            acc += fullLen
-            return dash
-          })}
+    <div className="gauge-wrap">
+      <span className="gauge-glow" aria-hidden="true" />
+      <svg viewBox="0 0 240 140" className="gauge-svg" role="img" aria-label={`${percent}% ${percentLabel}`}>
+        <path
+          d={describeArc(CX, CY, R, 180, 0)}
+          className="gauge-track"
+          fill="none"
+          strokeWidth={STROKE}
+          strokeLinecap="round"
+        />
+        {arcs.map((a, i) => {
+          if (a.span <= 0.4) return null
+          const inset = Math.min(GAP_DEG / 2, a.span / 2 - 0.2)
+          const s = a.start - inset
+          const e = a.end + inset
+          if (s <= e) return null
+          return (
+            <path
+              key={a.key}
+              d={describeArc(CX, CY, R, s, e)}
+              className="gauge-segment"
+              style={{ stroke: a.color, animationDelay: `${i * 110}ms` }}
+              fill="none"
+              strokeWidth={STROKE}
+              strokeLinecap="round"
+              pathLength={100}
+            />
+          )
+        })}
       </svg>
-      {/* מרכז העוגה כ-HTML (ולא SVG) — כדי שהעברית תוצג נכון בכל דפדפן */}
-      <div className="donut-center" aria-hidden="true">
-        <span className="donut-num">{centerNum}</span>
-        <span className="donut-lbl">{centerLabel}</span>
+      {/* מרכז המד כ-HTML (ולא SVG) — כדי שהעברית תוצג נכון בכל דפדפן */}
+      <div className="gauge-center" aria-hidden="true">
+        <span className="gauge-num">
+          {animatedPercent}
+          <span className="gauge-num-sign">%</span>
+        </span>
+        <span className="gauge-lbl">{percentLabel}</span>
       </div>
     </div>
   )

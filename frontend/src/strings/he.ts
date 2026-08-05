@@ -86,52 +86,52 @@ export const strings = {
     messageSaveFailed: 'לא הצלחנו לשמור, נסו שוב',
     messagesLibraryLoadFailed: 'לא הצלחנו לטעון את ספריית ההודעות',
     // RsvpPage
-    rsvpStateLoadFailed: 'שגיאה בטעינת המצב',
-    rsvpDataLoadFailed: 'שגיאה בטעינת נתוני RSVP',
-    rsvpTemplateSaveFailed: 'שגיאה בשמירת התבנית',
-    rsvpInvitationsSendFailed: 'שגיאה בשליחת ההזמנות',
-    rsvpRemindersSendFailed: 'שגיאה בשליחת התזכורות',
-    rsvpAnswerUpdateFailed: 'שגיאה בעדכון התשובה',
+    rsvpStateLoadFailed: 'לא הצלחנו לטעון את המצב, ננסה שוב',
+    rsvpDataLoadFailed: 'לא הצלחנו לטעון את נתוני אישורי ההגעה, ננסה שוב',
+    rsvpTemplateSaveFailed: 'לא הצלחנו לשמור את התבנית, נסו שוב',
+    rsvpInvitationsSendFailed: 'לא הצלחנו לשלוח את ההזמנות, נסו שוב',
+    rsvpRemindersSendFailed: 'לא הצלחנו לשלוח את התזכורות, נסו שוב',
+    rsvpAnswerUpdateFailed: 'לא הצלחנו לעדכן את התשובה, נסו שוב',
     // RsvpTimeline
     timelineLoadFailed: 'לא הצלחנו לטעון את היומן, ננסה שוב',
     // AutomationQueueTab
-    queueLoadFailed: 'שגיאה בטעינת התור',
-    queueSendFailed: 'שגיאה בשליחה',
+    queueLoadFailed: 'לא הצלחנו לטעון את התור, ננסה שוב',
+    queueSendFailed: 'לא הצלחנו לשלוח, נסו שוב',
     // AutomationRulesTab
-    rulesLoadFailed: 'שגיאה בטעינת החוקים',
+    rulesLoadFailed: 'לא הצלחנו לטעון את החוקים, ננסה שוב',
     ruleNameRequired: 'צריך לתת שם לחוק',
-    ruleSaveFailed: 'שגיאה בשמירת החוק',
-    ruleUpdateFailed: 'שגיאה בעדכון החוק',
-    ruleDeleteFailed: 'שגיאה במחיקת החוק',
+    ruleSaveFailed: 'לא הצלחנו לשמור את החוק, נסו שוב',
+    ruleUpdateFailed: 'לא הצלחנו לעדכן את החוק, נסו שוב',
+    ruleDeleteFailed: 'לא הצלחנו למחוק את החוק, נסו שוב',
     // AutomationTemplatesTab
-    templatesLoadFailed: 'שגיאה בטעינת התבניות',
+    templatesLoadFailed: 'לא הצלחנו לטעון את התבניות, ננסה שוב',
     templateNameRequired: 'צריך לתת שם לתבנית',
-    templateSaveFailed: 'שגיאה בשמירת התבנית',
-    templateDeleteFailed: 'שגיאה במחיקת התבנית',
+    templateSaveFailed: 'לא הצלחנו לשמור את התבנית, נסו שוב',
+    templateDeleteFailed: 'לא הצלחנו למחוק את התבנית, נסו שוב',
     // AdminApp
-    adminDashboardLoadFailed: 'שגיאה בטעינת לוח הבקרה',
-    adminUserLoadFailed: 'שגיאה בטעינת המשתמש',
-    adminUserSaveFailed: 'שמירת הפרטים נכשלה',
-    adminPasswordResetFailed: 'איפוס הסיסמה נכשל',
-    adminActionFailed: 'הפעולה נכשלה',
-    adminDeleteFailed: 'המחיקה נכשלה',
-    adminImpersonateFailed: 'ההתחברות כמשתמש נכשלה',
-    adminUsersLoadFailed: 'שגיאה בטעינת המשתמשים',
-    adminEventsLoadFailed: 'שגיאה בטעינת האירועים',
-    adminEventEnterFailed: 'הכניסה לאירוע נכשלה',
-    adminVenuesLoadFailed: 'שגיאה בטעינת האולמות',
-    adminVenueDeleteFailed: 'מחיקת האולם נכשלה',
+    adminDashboardLoadFailed: 'לא הצלחנו לטעון את לוח הבקרה, ננסה שוב',
+    adminUserLoadFailed: 'לא הצלחנו לטעון את פרטי המשתמש, ננסה שוב',
+    adminUserSaveFailed: 'לא הצלחנו לשמור את הפרטים, נסו שוב',
+    adminPasswordResetFailed: 'לא הצלחנו לאפס את הסיסמה, נסו שוב',
+    adminActionFailed: 'לא הצלחנו לבצע את הפעולה, נסו שוב',
+    adminDeleteFailed: 'לא הצלחנו למחוק, נסו שוב',
+    adminImpersonateFailed: 'לא הצלחנו להתחבר בשם המשתמש, נסו שוב',
+    adminUsersLoadFailed: 'לא הצלחנו לטעון את רשימת המשתמשים, ננסה שוב',
+    adminEventsLoadFailed: 'לא הצלחנו לטעון את רשימת האירועים, ננסה שוב',
+    adminEventEnterFailed: 'לא הצלחנו להיכנס לאירוע, נסו שוב',
+    adminVenuesLoadFailed: 'לא הצלחנו לטעון את רשימת האולמות, ננסה שוב',
+    adminVenueDeleteFailed: 'לא הצלחנו למחוק את האולם, נסו שוב',
     adminVenueNameRequired: 'שם האולם לא יכול להיות ריק',
-    adminVenueSaveFailed: 'שמירת האולם נכשלה',
+    adminVenueSaveFailed: 'לא הצלחנו לשמור את האולם, נסו שוב',
     adminVenueMergeTargetRequired: 'יש לבחור אולם יעד למיזוג',
-    adminVenueMergeFailed: 'המיזוג נכשל',
-    adminAuditLoadFailed: 'שגיאה בטעינת היומן',
+    adminVenueMergeFailed: 'לא הצלחנו למזג, נסו שוב',
+    adminAuditLoadFailed: 'לא הצלחנו לטעון את היומן, ננסה שוב',
     // AdminPage (VEYA workflow admin)
     adminAccountCreateFailed: 'לא הצלחנו ליצור את החשבון, נסו שוב',
-    adminSaveFailedRetry: 'השמירה נכשלה, נסו שוב',
-    adminDeleteFailedRetry: 'המחיקה נכשלה, נסו שוב',
-    adminAddFailedRetry: 'ההוספה נכשלה, נסו שוב',
-    adminDefaultsLoadFailed: 'שגיאה בטעינת ברירות המחדל',
+    adminSaveFailedRetry: 'לא הצלחנו לשמור, נסו שוב',
+    adminDeleteFailedRetry: 'לא הצלחנו למחוק, נסו שוב',
+    adminAddFailedRetry: 'לא הצלחנו להוסיף, נסו שוב',
+    adminDefaultsLoadFailed: 'לא הצלחנו לטעון את ברירות המחדל, ננסה שוב',
     // HallPage — assignNote (עוזר הושבה, לא setError)
     hallRecommendFailed: 'לא הצלחנו להמליץ כרגע',
     hallAssignFailed: 'לא הצלחנו לשבץ כרגע',
@@ -145,7 +145,7 @@ export const strings = {
   //  toasts — הודעות הצלחה חיוביות שמוצגות דרך setNote / notification.
   // ========================================================================
   toasts: {
-    profileUpdated: 'הפרטים עודכנו בהצלחה',
+    profileUpdated: 'הפרטים עודכנו',
     passwordUpdated: 'הסיסמה עודכנה. מכשירים אחרים נותקו.',
     messageSaved: 'שמרנו את ההודעה ✓',
     messageLoaded: 'הודעה נטענה מהספרייה — אפשר לערוך ואז לשמור',
@@ -153,7 +153,7 @@ export const strings = {
     templateSaved: 'התבנית נשמרה ✓',
     passwordResetNote: 'איפוס סיסמה עצמאי בדרך — בינתיים כתבו לנו ונעזור.',
     adminUserDetailsSaved: 'הפרטים נשמרו',
-    invitationsSent: 'ההזמנות נשלחו! 🎉',
+    invitationsSent: 'ההזמנות נשלחו',
   },
 
   // ========================================================================
@@ -277,7 +277,6 @@ export const strings = {
       `${confirmed} אישרו הגעה מתוך ${total}`,
     loadingData: 'טוען נתונים…',
     segConfirmed: 'אישרו הגעה',
-    segMaybe: 'לא החליטו',
     segDeclined: 'לא מגיעים',
     segPending: 'ממתינים לתשובה',
     centerLabel: 'אישרו הגעה',
@@ -306,8 +305,10 @@ export const strings = {
       `${confirmed} מתוך ${total} מוזמנים אישרו הגעה`,
     donutCardTitle: 'סטטוס אישורי הגעה',
     donutResponseBadge: (pct: number) => `${pct}% ענו`,
-    donutCenterLabel: 'מאושרים',
-    donutCenterTotal: (total: number) => `מתוך ${total} מוזמנים`,
+    // ---- מד ההושבה החצי-עגול (Gauge) — מחליף את הדונאט המלא ----
+    gaugeLabel: 'אישורי הגעה',
+    gaugeStatusMaybe: 'מתלבטים',
+    gaugeStatusDeclined: 'לא אישרו',
     kpiConfirmed: 'אישרו',
     kpiPending: 'ממתינים',
     kpiDeclined: 'לא מגיעים',
@@ -499,12 +500,12 @@ export const strings = {
         text: 'רשימה מ-WhatsApp, מאקסל או מכל מקום. VEYA מזהה לבד שם, טלפון וכמות.',
       },
       {
-        icon: '✨',
+        icon: '👥',
         title: 'קבוצות מסתדרות מעצמן',
         text: 'אנחנו מציעים לכם לאחד משפחות וחברים לקבוצות — אתם רק מאשרים.',
       },
       {
-        icon: '🎉',
+        icon: '🪑',
         title: 'הושבה בקליק',
         text: 'כשהכול מוכן, VEYA מסדרת את השולחנות לפי הקשרים וההעדפות שלכם.',
       },
@@ -598,7 +599,7 @@ export const strings = {
   // ==========================================================================
   hall: {
     // "הושבה בקליק" — הפעולה המרכזית של המסך.
-    oneClickButton: '✨ הושבה בקליק',
+    oneClickButton: 'הושבה בקליק',
     oneClickRunning: 'מסדרים…',
     oneClickHint:
       'סידור חכם לפי הקבוצות, הערות ההושבה, האילוצים ומבנה האולם — בלחיצה אחת.',
@@ -612,7 +613,7 @@ export const strings = {
 
     // דרישה 5 — הודעת ההתנגשות, בניסוח שנקבע מראש.
     conflictTitle:
-      'נמצאה התנגשות בין העדפות הישיבה. ניתן לשנות אילוצים או לבצע התאמה מחדש.',
+      'יש התנגשות בין העדפות הישיבה. אפשר לשנות אילוצים או להריץ את הסידור מחדש.',
     conflictHint: 'הסידור לא נשמר. אלה הדברים שלא הצלחנו לפתור:',
     conflictMore: (n: number) =>
       n === 1 ? 'ועוד מוזמן אחד' : `ועוד ${n} מוזמנים באותו מצב`,

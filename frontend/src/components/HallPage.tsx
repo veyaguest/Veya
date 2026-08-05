@@ -674,7 +674,7 @@ function HallWizard(props: {
             בניית האולם
           </button>
           <button className="hm-wizard-cancel" onClick={props.onClose}>
-            {props.hasContent ? 'ביטול' : 'אתחיל ממסך ריק'}
+            {props.hasContent ? 'ביטול' : 'התחלה ממסך ריק'}
           </button>
         </div>
       </div>
@@ -2958,7 +2958,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                 {assignTarget !== null ? ` · הקישו לשיבוץ לשולחן ${assignTarget}` : ' · הקישו כדי לשבץ'}
               </p>
               {visibleUnassigned.length === 0 ? (
-                <p className="hm-empty">כל ה{activeEventTerms().guestsLabel} כבר משובצים. יופי! 🎉</p>
+                <p className="hm-empty">כל ה{activeEventTerms().guestsLabel} כבר משובצים.</p>
               ) : (
                 visibleUnassigned.map((g) => (
                   <button
@@ -3587,7 +3587,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                 ×
               </button>
               <div className="hm-guide-scroll">
-                <h2 className="hm-guide-title">ברוכים הבאים לסידור ההושבה ✨</h2>
+                <h2 className="hm-guide-title">ברוכים הבאים לסידור ההושבה</h2>
                 <p className="hm-guide-lead">
                   גוררים שולחנות ואלמנטים בדיוק לאן שרוצים — והכול נשמר לבד.
                 </p>
@@ -3613,7 +3613,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                   <ul>
                     <li>אין צורך לגלול או לחפש את השולחנות — המפה מתאימה את עצמה לבד.</li>
                     <li>
-                      מזיזים שולחן לכיוון הצדדים? המערכת תקטין בעדינות את המפה כדי שכל
+                      מזיזים שולחן לכיוון הצדדים? המפה תתכווץ בעדינות כדי שכל
                       האולם יישאר מולכם.
                     </li>
                     <li>
@@ -3622,8 +3622,8 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                     </li>
                   </ul>
                   <p className="hm-guide-hint">
-                    💡 <b>טיפ קטן:</b> פשוט גררו את השולחנות למקום הרצוי — המערכת כבר
-                    תדאג לגודל המתאים בשבילכם.
+                    💡 <b>טיפ קטן:</b> פשוט גררו את השולחנות למקום הרצוי — אנחנו כבר
+                    נדאג לגודל המתאים בשבילכם.
                   </p>
                   <p className="hm-guide-reassure">
                     אין צורך בזום, אין גלילות — רק לסדר את האולם כמו שאתם רוצים 😊
@@ -3661,8 +3661,8 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                   <div>
                     <h3>הושבה בקליק</h3>
                     <p>
-                      בלשונית "{activeEventTerms().guestsLabel}" בוחרים אורח, ואז מקישים על השולחן שאליו הוא ישב. זהו —
-                      הוא משובץ. כך אפשר להעביר כל אורח בכמה שניות.
+                      בלשונית "{activeEventTerms().guestsLabel}" בוחרים מוזמן, ואז מקישים על השולחן שאליו הוא ישב. זהו —
+                      הוא משובץ. כך אפשר להעביר כל מוזמן בכמה שניות.
                     </p>
                   </div>
                 </div>
@@ -3797,7 +3797,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
 
             <div className="day-mode-list">
               {unassigned.length === 0 ? (
-                <p className="day-mode-empty">כל ה{activeEventTerms().guestsLabel} משובצים 🎉</p>
+                <p className="day-mode-empty">כל ה{activeEventTerms().guestsLabel} משובצים.</p>
               ) : (
                 [...unassigned]
                   .sort((a, b) => a.full_name.localeCompare(b.full_name, 'he'))
@@ -3809,7 +3809,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                           {g.seats > 1 && <span className="chip-size">×{g.seats}</span>}
                         </span>
                         <span className="dm-guest-cta">
-                          {assignGuestId === g.id ? 'סגירה' : 'שבץ אורח'}
+                          {assignGuestId === g.id ? 'סגירה' : 'שבץ מוזמן'}
                         </span>
                       </button>
 

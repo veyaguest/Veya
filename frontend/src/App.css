@@ -23,12 +23,13 @@
   --error: #a6605a;        /* "לא מגיעים"/שגיאה — ורוד-אדמדם מאופק */
   --success: #9a7b2e;      /* "מגיעים" — זהב מעומעם, קריא על בהיר */
   --green: #2f9e5f;        /* "אישרו הגעה" — ירוק ברור וקריא על בהיר */
-  /* ---- טוקני דונאט הדשבורד בלבד — פלטה בהירה ויוקרתית, נבחרה ואושרה
-     ע"י המייסד מתוך 12 הצעות (2026-08). לא לשימוש מחוץ לכרטיס. ---- */
-  --donut-confirmed: #4f9b72;      /* Muted Emerald — "אישרו הגעה" */
-  --donut-pending: var(--faint);   /* Warm Taupe (=טוקן faint קיים) — "ממתינים" */
-  --donut-maybe: var(--gold);      /* Champagne Gold (=טוקן gold קיים) — "לא החליטו" */
-  --donut-declined: #b76e79;       /* Dusty Rose — "לא מגיעים" */
+  /* ---- טוקני מד ההגעה (Gauge) בדשבורד בלבד — סגנון "לוח מחוונים" פרימיום
+     לפי הנחיית המייסד (2026-08-05), מחליף את פלטת ה-12-ההצעות הקודמת
+     (ראו Decision Log). לא לשימוש מחוץ לכרטיס. ---- */
+  --gauge-confirmed: #34c759;      /* ירוק — אישרו הגעה */
+  --gauge-maybe: var(--gold-light); /* צהוב-זהב חם ופרימיום — מתלבטים */
+  --gauge-declined: #d96c63;       /* אדום רך ואלגנטי — לא אישרו */
+  --gauge-pending: #cbcbd1;        /* אפור ניטרלי רך — ממתינים לתשובה */
   /* צל רך אחיד לכרטיסים — תחושת עומק עדינה, Premium (לא כבד). */
   --shadow-card: 0 1px 2px rgba(43, 38, 32, 0.03), 0 4px 16px -6px rgba(43, 38, 32, 0.08);
   --shadow-card-hover: 0 2px 4px rgba(43, 38, 32, 0.04), 0 8px 24px -8px rgba(43, 38, 32, 0.12);
@@ -1747,7 +1748,7 @@ td.notes.seating {
 }
 /* מספרים תמיד משמאל-לימין, כדי שלא ייראו הפוכים בהקשר עברי (למשל "75%") */
 .stat-num,
-.donut-num,
+.gauge-num,
 .mini-num,
 .bar-value {
   direction: ltr;
@@ -1980,7 +1981,11 @@ td.notes.seating {
     #17171a 78%,
     #48484c 100%
   );
-  border-radius: 34px;
+  /* רדיוס באחוזים (לא px קבוע) — כדי שהפינות יישארו יחסיות לגודל האמיתי
+     של האייפון בכל מסך (דסקטופ/מובייל), ולא ייצרו מראה "אליפסה" כשהקופסה
+     קטנה. 13% אופקי / 6% אנכי ≈ אותה עקומת פינה במונחי פיקסלים בפועל,
+     כי יחס הגובה-רוחב של האייפון קבוע (9:19.5). */
+  border-radius: 13% / 6%;
   padding: 5px;
   box-shadow:
     0 28px 52px -16px rgba(11, 10, 12, 0.42),
@@ -2033,7 +2038,7 @@ td.notes.seating {
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 30px;
+  border-radius: 11% / 5%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -2607,52 +2612,64 @@ td.notes.seating {
   color: var(--muted);
 }
 
-/* ---- Bento Grid: כרטיס דונאט + כרטיס "הצעד הבא" זה-לצד-זה ---- */
-.dash-grid-2col {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  padding: 12px 20px 20px;
-}
-@media (min-width: 700px) {
-  .dash-grid-2col {
-    grid-template-columns: repeat(2, 1fr);
-    align-items: stretch;
-  }
-}
 .dash-grid-card {
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
-.donut-card {
+/* ---- "הצעד הבא" — עומד לבדו בשורה שלו, לא ליד המד. רוחב מוגבל וממורכז
+   כדי שיישאר קריא כקריאה-לפעולה, לא יימתח לכל רוחב העמוד. ---- */
+.dash-next-row {
+  padding: 0 20px;
+}
+.dash-next-row .cta-card,
+.dash-next-row .quick-actions-card {
+  max-width: 640px;
+  margin: 0 auto;
+}
+/* ============================================================
+   סקשן המד — "חלון ראווה" במלוא הרוחב, מיד מתחת להירו. לא כרטיס
+   בתוך Grid: מוקד ויזואלי עצמאי, נושם, בלי כרטיסים אחרים לצידו.
+   ============================================================ */
+.gauge-section {
+  width: 100%;
+  box-sizing: border-box;
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
-  padding: 22px 22px 24px;
+  padding: 48px 32px 40px;
+  margin: 4px 20px 0;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
+  text-align: center;
 }
-/* ---- כותרת הכרטיס + Badge שיעור מענה ---- */
-.donut-card-header {
+@media (min-width: 700px) {
+  .gauge-section {
+    width: calc(100% - 40px);
+  }
+}
+/* ---- כותרת הסקשן + Badge שיעור מענה — ממורכזים, לא בקצוות ---- */
+.gauge-section-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 4px;
 }
-.donut-card-title {
+.gauge-section-title {
   margin: 0;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--charcoal);
 }
-.donut-card-badge {
+.gauge-section-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  font-size: 12px;
+  padding: 4px 12px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--gold-deep);
   background: color-mix(in srgb, var(--gold) 14%, transparent);
@@ -2660,46 +2677,163 @@ td.notes.seating {
   white-space: nowrap;
   font-feature-settings: 'tnum' 1, 'lnum' 1;
 }
-.rsvp-center-donut {
+/* ============================================================
+   מד ההגעה (RSVP Gauge) — לוח מחוונים חצי-עגול, פרימיום ורגשי.
+   מחליף את הדונאט המלא: מד רחב, ציור-קשתות מונפש, מספר-ענק במרכז,
+   וארבעה כרטיסי סטטוס מתחתיו. בהשראת Apple/Tesla/Linear — לא ספריית
+   תרשימים, הכול נבנה ידנית ב-SVG טהור.
+   ============================================================ */
+.gauge-wrap {
+  position: relative;
+  /* 86% מרוחב הסקשן — "מונומנטלי" אבל לא נוגע בקצוות. אחוז (לא px) כדי
+     שיתאים אוטומטית לרוחב הסקשן בכל שבירת מסך, בלי מדיה-קוורי לכל גודל. */
+  width: 86%;
+  max-width: 760px;
+  margin: 12px auto 0;
+}
+/* זוהר רך שדולק מאחורי הקשת עם הטעינה — "הכול מרגיש יקר", לא מנצנץ. */
+.gauge-glow {
+  position: absolute;
+  inset: 6% 6% 34% 6%;
+  border-radius: 999px;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--gauge-confirmed) 20%, transparent) 0%,
+    transparent 72%
+  );
+  filter: blur(20px);
+  opacity: 0;
+  animation: gauge-glow-in 1200ms ease-out forwards;
+  pointer-events: none;
+  z-index: 0;
+}
+@keyframes gauge-glow-in {
+  0% { opacity: 0; }
+  55% { opacity: 0.5; }
+  100% { opacity: 0.22; }
+}
+.gauge-svg {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  overflow: visible;
+  /* בלי זה, דפדפנים מראים (mirror) SVG בתוך עמוד RTL — הקשת הייתה מצוירת
+     הפוך (אישרו מימין, ממתינים משמאל) במקום הסדר הנכון משמאל לימין. */
+  direction: ltr;
+}
+.gauge-track {
+  stroke: var(--line-2);
+}
+.gauge-segment {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: gauge-draw 720ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  filter: drop-shadow(0 2px 6px rgba(43, 38, 32, 0.12));
+}
+@keyframes gauge-draw {
+  to { stroke-dashoffset: 0; }
+}
+/* מרכז המד כ-HTML (ולא SVG) — כדי שהעברית תוצג נכון בכל דפדפן */
+.gauge-center {
+  position: absolute;
+  z-index: 2;
+  inset-inline: 0;
+  bottom: 2%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
+  pointer-events: none;
 }
-.rsvp-summary {
-  margin: 0;
-  font-size: 14px;
-  color: var(--muted);
-  text-align: center;
-}
-/* ---- Legend — נקודות צבע לפי סטטוס אישור הגעה ---- */
-.donut-legend-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px 20px;
-  padding-top: 14px;
-  margin-top: 2px;
-  border-top: 1px solid var(--line);
-  width: 100%;
-}
-.donut-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  color: var(--body);
-}
-.donut-legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.donut-legend-count {
-  font-weight: 700;
+.gauge-num {
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  /* קלאמפ נוזלי — גדל/קטן חלק עם רוחב המסך במקום קפיצות מדיה-קוורי,
+     כדי שהמספר "ישלוט במסך" גם בטאבלט/דסקטופ בלי לגלוש במובייל. */
+  font-size: clamp(52px, 10vw, 108px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
   color: var(--charcoal);
   font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+.gauge-num-sign {
+  font-size: 0.4em;
+  font-weight: 600;
+  margin-inline-start: 1px;
+  color: var(--muted);
+}
+.gauge-lbl {
+  font-size: clamp(13.5px, 1.6vw, 17px);
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gauge-glow,
+  .gauge-segment {
+    animation: none;
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ---- כרטיסי סטטוס — 4 מדדים מתחת למד, נקודה+מספר+אחוז+תווית. אותו
+   רוחב-מקסימלי כמו המד עצמו כדי שהכול יישאר מיושר ומאוזן חזותית. ---- */
+.gauge-status-grid {
+  list-style: none;
+  margin: 28px auto 0;
+  padding: 24px 0 0;
+  border-top: 1px solid var(--line);
+  width: 92%;
+  max-width: 820px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.gauge-status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 10px;
+  background: var(--ivory);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-l);
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(43, 38, 32, 0.03);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+.gauge-status-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--line);
+}
+.gauge-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+.gauge-status-num {
+  font-family: var(--font-ui, 'Heebo', 'Assistant', system-ui, sans-serif);
+  font-size: clamp(20px, 2.4vw, 26px);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--charcoal);
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+.gauge-status-pct {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  direction: ltr;
+}
+.gauge-status-label {
+  font-size: 12.5px;
+  color: var(--body);
+  font-weight: 500;
 }
 /* ---- כרטיס "הצעד הבא" — נקודת המיקוד המרכזית של הדשבורד. בהיר וממותג
    (שנהב/שמפניה עדין) — הגרסה הכהה (zinc-900) הורגשה מנותקת מדי מהמותג. ---- */
@@ -2818,48 +2952,6 @@ td.notes.seating {
   color: var(--muted);
   margin: 0 0 8px;
 }
-.donut-wrap {
-  position: relative;
-  width: 264px;
-  height: 264px;
-  max-width: 74vw;
-  flex-shrink: 0;
-}
-.donut {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-.donut-bg {
-  stroke: var(--line-2);
-}
-/* מרכז העוגה — שכבת HTML מעל ה-SVG (עברית תקינה בכל דפדפן) */
-.donut-center {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  pointer-events: none;
-  direction: rtl;
-}
-.donut-num {
-  font-family: 'Cormorant Garamond', 'Assistant', serif;
-  font-size: 62px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1;
-  color: var(--charcoal);
-  font-feature-settings: 'tnum' 1, 'lnum' 1;
-}
-.donut-lbl {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--muted);
-  letter-spacing: 0.2px;
-}
 /* Legacy donut-legend kept for non-dashboard usage (RSVP page etc.) */
 .donut-legend {
   list-style: none;
@@ -2896,14 +2988,15 @@ td.notes.seating {
 .dash-page .dash-hero-title,
 .dash-page .clar-title,
 .dash-page .stat-num,
-.dash-page .donut-num,
 .dash-page .mini-num {
   font-family: var(--font-ui);
 }
 
-/* מספרים וסטטיסטיקות — ספרות טבלאיות מיושרות (יישור עמודות נקי). */
+/* מספרים וסטטיסטיקות — ספרות טבלאיות מיושרות (יישור עמודות נקי).
+   gauge-num לא נכלל בכוונה — הוא שומר על הפונט הסריפי היוקרתי שלו
+   (Cormorant Garamond) גם בתוך dash-page, כי הוא המספר-הגדול/הגיבור
+   של הדשבורד ומיועד להיראות אחרת משאר המספרים. */
 .dash-page .stat-num,
-.dash-page .donut-num,
 .dash-page .mini-num,
 .dash-page .bar-value,
 .dash-page .kpi-num {
@@ -2933,18 +3026,6 @@ td.notes.seating {
   font-weight: 400;
   font-size: 13px;
   color: var(--muted);
-}
-
-/* --- המספר הגדול במרכז העוגה --- */
-.dash-page .donut-num {
-  font-size: 44px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-.dash-page .donut-lbl {
-  font-size: 12.5px;
-  font-weight: 500;
-  letter-spacing: 0;
 }
 
 /* --- Event Progress — מד מוכנות --- */
@@ -2979,7 +3060,8 @@ td.notes.seating {
   to { opacity: 1; transform: translateY(0); }
 }
 .dash-page .dash-hero-section { animation: fadeInUp 0.4s ease-out both; }
-.dash-page .dash-grid-2col { animation: fadeInUp 0.4s ease-out 0.08s both; }
+.dash-page .gauge-section { animation: fadeInUp 0.4s ease-out 0.08s both; }
+.dash-page .dash-next-row { animation: fadeInUp 0.4s ease-out 0.12s both; }
 .dash-page .kpi-grid { animation: fadeInUp 0.4s ease-out 0.16s both; }
 .dash-page .event-progress { animation: fadeInUp 0.4s ease-out 0.24s both; }
 .dash-page .seating-widget { animation: fadeInUp 0.4s ease-out 0.32s both; }
@@ -2993,7 +3075,8 @@ td.notes.seating {
 @media (prefers-reduced-motion: reduce) {
   .dash-page .dash-hero-section,
   .dash-page .kpi-grid,
-  .dash-page .dash-grid-2col,
+  .dash-page .gauge-section,
+  .dash-page .dash-next-row,
   .dash-page .event-progress,
   .dash-page .seating-widget,
   .kpi-card {
@@ -3106,9 +3189,6 @@ td.notes.seating {
   .dash-hero-section .event-couple {
     font-size: 28px;
   }
-  .dash-grid-2col {
-    padding: 8px 16px 16px;
-  }
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
@@ -3134,9 +3214,21 @@ td.notes.seating {
   .dash-panel {
     padding: 18px 20px;
   }
-  .donut-wrap {
-    width: 200px;
-    height: 200px;
+  /* ---- מד ההגעה במובייל: כמעט כל רוחב המסך, נשאר חצי-עגול, מרווח נדיב.
+     לא סתם "מוקטן" — מעוצב בכוונה לגודל הזה (padding/gap נמוכים יותר). ---- */
+  .gauge-section {
+    padding: 32px 18px 28px;
+    margin: 4px 16px 0;
+  }
+  .gauge-wrap {
+    width: 96%;
+  }
+  .gauge-status-grid {
+    grid-template-columns: repeat(2, 1fr);
+    width: 100%;
+    gap: 10px;
+    margin-top: 22px;
+    padding-top: 20px;
   }
 }
 
@@ -5155,10 +5247,6 @@ td.notes.seating {
   }
   .rsvp-stats {
     grid-template-columns: repeat(2, 1fr);
-  }
-  .donut-wrap {
-    width: 220px;
-    height: 220px;
   }
   .donut-legend {
     flex-direction: column;

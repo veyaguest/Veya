@@ -631,7 +631,7 @@ def activate_track(
     # יומן הפעילות — רישום קריא לזוג (רק מה שקרה בפועל).
     ip = request.client.host if request.client else None
     if invitations_sent or failed:
-        detail = f"נשלחו {invitations_sent} הזמנות בהצלחה"
+        detail = f"נשלחו {invitations_sent} הזמנות"
         if failed:
             detail += f" · {failed} נכשלו"
         audit.record(

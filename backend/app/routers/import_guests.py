@@ -34,8 +34,8 @@ async def preview_import(
     if len(content) > MAX_IMPORT_BYTES:
         raise HTTPException(
             status_code=400,
-            detail=f"הקובץ גדול מדי (מעל {MAX_IMPORT_BYTES // (1024 * 1024)}MB). "
-            "נא לפצל לקובץ קטן יותר.",
+            detail=f"הקובץ גדול מדי (מעל {MAX_IMPORT_BYTES // (1024 * 1024)}MB) — "
+            "פצלו אותו לקובץ קטן יותר.",
         )
     try:
         headers, rows = parse_file(file.filename or "", content)
@@ -55,7 +55,7 @@ async def preview_import(
     if len(rows) > MAX_IMPORT_ROWS:
         raise HTTPException(
             status_code=400,
-            detail=f"הקובץ מכיל יותר מ-{MAX_IMPORT_ROWS} שורות. נא לפצל לקבצים קטנים יותר.",
+            detail=f"הקובץ מכיל יותר מ-{MAX_IMPORT_ROWS} שורות — פצלו אותו לכמה קבצים קטנים יותר.",
         )
 
     mapping = detect_columns(headers)
@@ -106,7 +106,7 @@ def paste_import(
     if result["total"] > MAX_IMPORT_ROWS:
         raise HTTPException(
             status_code=400,
-            detail=f"הרשימה מכילה יותר מ-{MAX_IMPORT_ROWS} שורות. נא לפצל.",
+            detail=f"הרשימה מכילה יותר מ-{MAX_IMPORT_ROWS} שורות — פצלו אותה לכמה חלקים.",
         )
     return result
 

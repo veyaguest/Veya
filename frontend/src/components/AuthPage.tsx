@@ -116,7 +116,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
 
         <div className="auth-hero">
           <div className="auth-hero-text">
-            <h1 className="auth-hero-title">האירוע שלכם, מאורגן אחת ולתמיד</h1>
+            <h1 className="auth-hero-title">האירוע שלכם, סוף־סוף מסודר</h1>
             <p className="auth-hero-sub">
               רשימת מוזמנים, אישורי הגעה וסידורי הושבה — במקום אחד נקי ופשוט,
               בלי גיליונות אקסל ובלי בלגן.

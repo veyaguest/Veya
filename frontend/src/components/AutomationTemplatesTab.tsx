@@ -115,7 +115,7 @@ export function AutomationTemplatesTab({
 
   async function onDelete() {
     if (selectedId === 'new') return
-    if (!confirm('למחוק את התבנית? חוקים שמשתמשים בה יישארו אך ללא תבנית.')) return
+    if (!confirm('למחוק את התבנית? חוקים שמשתמשים בה יישארו, אבל בלי תבנית מקושרת.')) return
     setBusy(true)
     setError('')
     try {

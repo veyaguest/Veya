@@ -81,12 +81,12 @@ def login(payload: schemas.LoginRequest, request: Request, db: Session = Depends
         auth_limiter.record_fail(ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="אימייל או סיסמה שגויים",
+            detail="לא הצלחנו לזהות את הפרטים — בדקו את האימייל והסיסמה ונסו שוב",
         )
     if user.disabled:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="החשבון הושבת. יש לפנות למנהל המערכת",
+            detail="החשבון הזה הושבת. אפשר לפנות אלינו כדי לברר למה",
         )
     # רישום ההתחברות להיסטוריה (מטא-דאטה בלבד). לא מפיל את הכניסה אם נכשל.
     try:
@@ -146,7 +146,7 @@ def google_exchange(
     if user.disabled:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="החשבון הושבת. יש לפנות למנהל המערכת",
+            detail="החשבון הזה הושבת. אפשר לפנות אלינו כדי לברר למה",
         )
 
     # קודם מוודאים שהמשתמש עצמו נשמר בהצלחה — *לפני* כל כתיבה תלוית-RLS
