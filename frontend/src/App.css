@@ -86,6 +86,8 @@
 }
 
 /* ---- Sidebar (240px, RTL → נצמד לימין) ---- */
+/* כל הסרגל כהה — לא רק פסי לוגו/חשבון: משטח חום-פחם אחיד מלמעלה עד
+   למטה, עם זוהר זהב עדין. תואם לחלוטין לפס העליון/תחתון של המובייל. */
 .sidebar {
   width: 240px;
   flex-shrink: 0;
@@ -94,29 +96,25 @@
   flex-direction: column;
   gap: 18px;
   padding: 22px 16px;
-  background: #f5f1ea;
-  border-inline-start: 1px solid var(--line-2);
-  box-shadow: -1px 0 0 var(--line) inset;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(201, 162, 39, 0.09), transparent 55%),
+    var(--charcoal);
+  border-inline-start: none;
+  box-shadow: -8px 0 24px -16px rgba(11, 10, 12, 0.4) inset;
   position: sticky;
   top: 0;
   align-self: flex-start;
   height: 100vh;
 }
 
-/* ---- "מסגרת" כהה עקבית סביב הסרגל: פס לוגו למעלה + פס חשבון למטה,
-   כהים כמו הפס העליון/תחתון במובייל — הניווט באמצע נשאר בהיר וקריא. ---- */
 .sidebar-logo {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin: -22px -16px 0;
-  padding: 22px 16px 20px;
+  padding: 10px 4px 20px;
   border-bottom: none;
-  background:
-    radial-gradient(circle at 30% 0%, rgba(201, 162, 39, 0.1), transparent 60%),
-    var(--charcoal);
 }
 .logo-text {
   font-family: 'Cormorant Garamond', Georgia, serif;
@@ -144,7 +142,7 @@
   text-align: start;
   font-family: inherit;
   font-size: 14px;
-  color: var(--body);
+  color: rgba(245, 239, 226, 0.72);
   background: transparent;
   border: none;
   border-radius: var(--radius-s);
@@ -157,20 +155,20 @@
   height: 7px;
   flex-shrink: 0;
   transform: rotate(45deg);
-  background: var(--faint);
+  background: rgba(245, 239, 226, 0.35);
   transition: background 0.2s ease;
 }
 .nav-item:hover {
-  color: var(--charcoal);
-  background: rgba(201, 162, 39, 0.07);
+  color: #fff;
+  background: rgba(201, 162, 39, 0.14);
 }
 .nav-item:hover .nav-bullet {
-  background: var(--gold-deep);
+  background: var(--gold-light);
 }
 .nav-item.active {
-  color: var(--gold-deep);
+  color: var(--gold-light);
   font-weight: 600;
-  background: rgba(201, 162, 39, 0.09);
+  background: rgba(201, 162, 39, 0.18);
 }
 .nav-item.active .nav-bullet {
   background: var(--gold);
@@ -199,12 +197,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin: 0 -16px -22px;
-  padding: 16px 16px 22px;
+  padding-top: 16px;
   border-top: none;
-  background:
-    radial-gradient(circle at 70% 100%, rgba(201, 162, 39, 0.1), transparent 60%),
-    var(--charcoal);
 }
 .user-chip {
   display: flex;
@@ -266,11 +260,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px 12px;
-  border-radius: var(--radius-m);
-  background:
-    radial-gradient(circle at 25% 15%, rgba(201, 162, 39, 0.1), transparent 65%),
-    var(--charcoal);
 }
 .sidebar-foot-row .conn-text {
   color: rgba(245, 239, 226, 0.78);
@@ -512,8 +501,8 @@
     justify-content: space-around;
     align-items: stretch;
     gap: 2px;
-    padding: 4px 4px;
-    padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    padding: 3px 4px;
+    padding-bottom: calc(3px + env(safe-area-inset-bottom, 0px));
     background:
       radial-gradient(circle at 88% 100%, rgba(201, 162, 39, 0.1), transparent 60%),
       var(--charcoal);
@@ -527,10 +516,10 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    padding: 3px 2px;
+    gap: 1px;
+    padding: 2px 2px;
     border-radius: 12px;
-    font-size: 11px;
+    font-size: 10px;
   }
   .side-nav .nav-item .nav-bullet {
     display: none;
@@ -540,6 +529,8 @@
   }
   .side-nav .nav-item .nav-icon {
     display: block;
+    width: 19px;
+    height: 19px;
     color: rgba(245, 239, 226, 0.55);
     transition: color 0.15s;
   }
@@ -595,7 +586,7 @@
   }
   /* מרווח תחתון כדי שהניווט הקבוע לא יכסה את סוף התוכן. */
   .content {
-    padding: 16px 18px calc(74px + env(safe-area-inset-bottom, 0px));
+    padding: 16px 18px calc(64px + env(safe-area-inset-bottom, 0px));
   }
   .page-title {
     font-size: 24px;
@@ -603,7 +594,7 @@
   /* הפוטר עצמו זז אחרי .content — צריך את אותו מרווח כדי לא להיחסם
      ע"י הניווט התחתון הקבוע (z-index:60, position:fixed). */
   .app-footer {
-    padding: 14px 18px calc(74px + env(safe-area-inset-bottom, 0px));
+    padding: 14px 18px calc(64px + env(safe-area-inset-bottom, 0px));
   }
 }
 
