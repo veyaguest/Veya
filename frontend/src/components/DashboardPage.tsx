@@ -692,17 +692,18 @@ function useCountUp(target: number, duration = 900) {
 }
 
 /** מד חצי-עגול (Gauge) — פרימיום, בהשראת לוח מחוונים של רכב יוקרה. מציג את
- * אחוז ההגעה כמוקד הראשי של הדשבורד, עם ציור-קשתות ומספר עולה באנימציה. */
+ * כמות המאושרים (לא אחוז — VEYA מדברת בכמות) כמוקד הראשי, עם ציור-קשתות
+ * ומספר עולה באנימציה. */
 function RsvpGauge({
   segments,
-  percent,
-  percentLabel,
+  centerValue,
+  centerLabel,
 }: {
   segments: { key: string; label: string; value: number; color: string }[]
-  percent: number
-  percentLabel: string
+  centerValue: number
+  centerLabel: string
 }) {
-  const animatedPercent = useCountUp(percent, 900)
+  const animatedValue = useCountUp(centerValue, 900)
   const total = segments.reduce((s, x) => s + x.value, 0)
 
   const CX = 120
@@ -724,7 +725,7 @@ function RsvpGauge({
   return (
     <div className="gauge-wrap">
       <span className="gauge-glow" aria-hidden="true" />
-      <svg viewBox="0 0 240 140" className="gauge-svg" role="img" aria-label={`${percent}% ${percentLabel}`}>
+      <svg viewBox="0 0 240 140" className="gauge-svg" role="img" aria-label={`${centerValue} ${centerLabel}`}>
         <path
           d={describeArc(CX, CY, R, 180, 0)}
           className="gauge-track"
@@ -754,11 +755,8 @@ function RsvpGauge({
       </svg>
       {/* מרכז המד כ-HTML (ולא SVG) — כדי שהעברית תוצג נכון בכל דפדפן */}
       <div className="gauge-center" aria-hidden="true">
-        <span className="gauge-num">
-          {animatedPercent}
-          <span className="gauge-num-sign">%</span>
-        </span>
-        <span className="gauge-lbl">{percentLabel}</span>
+        <span className="gauge-num">{animatedValue}</span>
+        <span className="gauge-lbl">{centerLabel}</span>
       </div>
     </div>
   )
