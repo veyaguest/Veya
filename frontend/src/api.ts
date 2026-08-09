@@ -1092,9 +1092,10 @@ export async function adminBackfillMessageDefaults(): Promise<MessageDefaultsBac
 
 export async function adminListMessageDefaultOptions(
   eventType: string,
-  messageType: string,
+  messageType?: string,
 ): Promise<MessageDefaultOption[]> {
-  const params = new URLSearchParams({ event_type: eventType, message_type: messageType })
+  const params = new URLSearchParams({ event_type: eventType })
+  if (messageType) params.set('message_type', messageType)
   const res = await apiFetch(`/admin/message-default-options?${params.toString()}`)
   if (!res.ok) throw await toError(res)
   return res.json()

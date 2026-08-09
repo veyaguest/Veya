@@ -405,26 +405,27 @@ function MessageDefaultOptionCard({
  * כאן האדמין גם עורך וגם מוסיף/מוחק נוסחים — לא טקסט קשיח בקוד. */
 export function MessageDefaultOptionsManager() {
   const [eventType, setEventType] = useState('wedding')
-  const [messageType, setMessageType] = useState<MessageType>('invitation')
   const [options, setOptions] = useState<MessageDefaultOption[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [adding, setAdding] = useState(false)
+  const [addingType, setAddingType] = useState<MessageType | null>(null)
 
+  // כל 6 השלבים של סוג האירוע הנבחר, בבקשה אחת — לא מסונן לשלב יחיד, כדי
+  // שהאדמין יראה מיד את כל מה שכבר הוזן ולא רק את השלב הראשון (הזמנה).
   const load = useCallback(() => {
     setOptions(null)
-    adminListMessageDefaultOptions(eventType, messageType)
+    adminListMessageDefaultOptions(eventType)
       .then(setOptions)
       .catch((err) =>
         setError(err instanceof Error ? err.message : strings.errors.adminDefaultsLoadFailed),
       )
-  }, [eventType, messageType])
+  }, [eventType])
 
   useEffect(() => {
     load()
   }, [load])
 
-  async function addOption() {
-    setAdding(true)
+  async function addOption(messageType: MessageType) {
+    setAddingType(messageType)
     setError(null)
     try {
       const created = await adminCreateMessageDefaultOption({ event_type: eventType, message_type: messageType })
@@ -432,17 +433,17 @@ export function MessageDefaultOptionsManager() {
     } catch (err) {
       setError(err instanceof Error ? err.message : strings.errors.adminSaveFailedRetry)
     } finally {
-      setAdding(false)
+      setAddingType(null)
     }
   }
 
   return (
     <div className="veya-defaults">
-      <h2 className="admin-section-title">ספריית נוסחים לבחירה (עד 12 לכל שילוב)</h2>
+      <h2 className="admin-section-title">ספריית נוסחים לבחירה (עד 12 לכל שלב)</h2>
       <p className="file-name">
         כאן הזוג בוחר וריאציה במקום נוסח קבוע — בנוסף ל"ברירת המחדל" שמוקצית
-        אוטומטית לאירוע חדש (למעלה). כרגע רק חתונה מלאה; שאר סוגי האירוע
-        ריקים בכוונה.
+        אוטומטית לאירוע חדש (למעלה). כל 6 השלבים של סוג האירוע מוצגים כאן
+        יחד. כרגע רק חתונה מלאה; שאר סוגי האירוע ריקים בכוונה.
       </p>
 
       <div className="event-new-grid" style={{ marginBottom: 16 }}>
@@ -451,41 +452,44 @@ export function MessageDefaultOptionsManager() {
             <option key={t} value={t}>{EVENT_TYPE_LABELS[t]}</option>
           ))}
         </select>
-        <select value={messageType} onChange={(e) => setMessageType(e.target.value as MessageType)}>
-          {MESSAGE_TYPES.map((mt) => (
-            <option key={mt} value={mt}>{MESSAGE_TYPE_LABELS_HE[mt]}</option>
-          ))}
-        </select>
       </div>
 
       {error && <div className="admin-error">{error}</div>}
       {!error && options === null && <div className="admin-loading">טוען נוסחים…</div>}
 
-      {options && (
-        <div className="veya-tpl-list">
-          {options.length === 0 && (
-            <p className="file-name">אין עדיין נוסחים לשילוב הזה.</p>
-          )}
-          {options.map((opt) => (
-            <MessageDefaultOptionCard
-              key={opt.id}
-              option={opt}
-              onSaved={(u) => setOptions((prev) => prev!.map((x) => (x.id === u.id ? u : x)))}
-              onDeleted={(id) => setOptions((prev) => prev!.filter((x) => x.id !== id))}
-            />
-          ))}
-          {options.length < 12 && (
-            <button
-              type="button"
-              className="btn-ghost btn-sm"
-              onClick={addOption}
-              disabled={adding}
-            >
-              {adding ? 'מוסיף…' : `הוספת נוסח (${options.length}/12)`}
-            </button>
-          )}
-        </div>
-      )}
+      {options && MESSAGE_TYPES.map((mt) => {
+        const rows = options
+          .filter((o) => o.message_type === mt)
+          .sort((a, b) => a.option_number - b.option_number)
+        return (
+          <div key={mt} className="veya-tpl-list">
+            <h3 className="admin-section-title" style={{ fontSize: 16 }}>
+              {MESSAGE_TYPE_LABELS_HE[mt]}
+            </h3>
+            {rows.length === 0 && (
+              <p className="file-name">אין עדיין נוסחים לשלב הזה.</p>
+            )}
+            {rows.map((opt) => (
+              <MessageDefaultOptionCard
+                key={opt.id}
+                option={opt}
+                onSaved={(u) => setOptions((prev) => prev!.map((x) => (x.id === u.id ? u : x)))}
+                onDeleted={(id) => setOptions((prev) => prev!.filter((x) => x.id !== id))}
+              />
+            ))}
+            {rows.length < 12 && (
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={() => addOption(mt)}
+                disabled={addingType === mt}
+              >
+                {addingType === mt ? 'מוסיף…' : `הוספת נוסח (${rows.length}/12)`}
+              </button>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
