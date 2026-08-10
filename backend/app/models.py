@@ -75,6 +75,12 @@ class Event(Base):
     # ברירת המחדל 'wedding' שומרת על תאימות אחורה: כל אירוע קיים נשאר חתונה.
     # ערכים: wedding / bar_mitzvah / bat_mitzvah / henna / brit / family / business / other.
     event_type: Mapped[str] = mapped_column(String, default="wedding")
+    # תת-קטגוריה בתוך event_type — כרגע רלוונטי רק ל-brit: "" (לא נבחר/ברית
+    # כללית) / "brit" (👶 ברית) / "brita" (🎀 בריתה). קובעת אוטומטית איזו
+    # ספריית נוסחים (MessageDefault/MessageDefaultOption) מוצגת לזוג — לא
+    # נוגעת בניסוח הדינמי (celebration/hosts וכו', event_terms.py). ריק
+    # תמיד לשאר סוגי האירוע.
+    event_subtype: Mapped[str] = mapped_column(String, default="")
     # שמות בעלי האירוע. שמורים בשמות groom/bride מטעמי תאימות אחורה, אך
     # התוויות בממשק דינמיות לפי event_type (מנוע המונחים ב-Frontend).
     groom_name: Mapped[str] = mapped_column(String, default="")
@@ -450,11 +456,16 @@ class MessageDefault(Base):
 
     __tablename__ = "message_defaults"
     __table_args__ = (
-        UniqueConstraint("event_type", "message_type", name="uq_message_default_type"),
+        UniqueConstraint(
+            "event_type", "event_subtype", "message_type",
+            name="uq_message_default_type",
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     event_type: Mapped[str] = mapped_column(String, index=True)
+    # תת-קטגוריה — ראו event_subtype ב-Event. ריק לכל סוג חוץ מ-brit.
+    event_subtype: Mapped[str] = mapped_column(String, default="", index=True)
     # invitation / reminder_1 / reminder_2 / final_reminder / event_day / thank_you
     message_type: Mapped[str] = mapped_column(String, index=True)
     title: Mapped[str] = mapped_column(String, default="")
@@ -481,13 +492,15 @@ class MessageDefaultOption(Base):
     __tablename__ = "message_default_options"
     __table_args__ = (
         UniqueConstraint(
-            "event_type", "message_type", "option_number",
+            "event_type", "event_subtype", "message_type", "option_number",
             name="uq_message_default_option",
         ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     event_type: Mapped[str] = mapped_column(String, index=True)
+    # תת-קטגוריה — ראו event_subtype ב-Event. ריק לכל סוג חוץ מ-brit.
+    event_subtype: Mapped[str] = mapped_column(String, default="", index=True)
     message_type: Mapped[str] = mapped_column(String, index=True)
     option_number: Mapped[int] = mapped_column(Integer)  # 1..12, סדר תצוגה
     # תיאור קצר של הטון הרגשי של הנוסח הזה (למשל "חם ותמציתי") — עוזר לזוג

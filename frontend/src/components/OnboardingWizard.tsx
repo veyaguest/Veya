@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { createMyEvent, updateEvent } from '../api'
 import { setActiveEventType, setEventId } from '../authStore'
-import type { EventSummary, EventType } from '../types'
-import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
+import type { EventSubtype, EventSummary, EventType } from '../types'
+import { EVENT_SUBTYPE_OPTIONS, EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 import { VenueAutocomplete } from './VenueAutocomplete'
 import { AddGuestForm } from './AddGuestForm'
 import { strings } from '../strings/he'
@@ -34,6 +34,7 @@ export function OnboardingWizard({ onCreated }: Props) {
 
   const [form, setForm] = useState({
     event_type: 'wedding' as EventType,
+    event_subtype: '' as EventSubtype,
     groom_name: '',
     bride_name: '',
     venue_name: '',
@@ -78,10 +79,15 @@ export function OnboardingWizard({ onCreated }: Props) {
       setError(strings.errors.onboardingHostAMissing(terms.hostAField))
       return
     }
+    if (form.event_type === 'brit' && !form.event_subtype) {
+      setError('בחרו אם זו ברית או בריתה')
+      return
+    }
     setBusy(true)
     try {
       const ev = await createMyEvent({
         event_type: form.event_type,
+        event_subtype: form.event_type === 'brit' ? form.event_subtype : '',
         groom_name: form.groom_name,
         bride_name: terms.hasTwoHosts ? form.bride_name : '',
         venue_name: form.venue_name,
@@ -163,7 +169,9 @@ export function OnboardingWizard({ onCreated }: Props) {
                     role="radio"
                     aria-checked={form.event_type === opt.type}
                     className={`event-type-chip ${form.event_type === opt.type ? 'active' : ''}`}
-                    onClick={() => setForm({ ...form, event_type: opt.type })}
+                    onClick={() =>
+                      setForm({ ...form, event_type: opt.type, event_subtype: '' })
+                    }
                   >
                     <span className="event-type-chip-icon" aria-hidden="true">
                       {opt.icon}
@@ -173,6 +181,29 @@ export function OnboardingWizard({ onCreated }: Props) {
                 ))}
               </div>
             </div>
+
+            {form.event_type === 'brit' && (
+              <div className="event-type-field">
+                <span className="field-label">ברית או בריתה?</span>
+                <div className="event-type-grid" role="radiogroup" aria-label="ברית או בריתה">
+                  {EVENT_SUBTYPE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={form.event_subtype === opt.value}
+                      className={`event-type-chip ${form.event_subtype === opt.value ? 'active' : ''}`}
+                      onClick={() => setForm({ ...form, event_subtype: opt.value })}
+                    >
+                      <span className="event-type-chip-icon" aria-hidden="true">
+                        {opt.icon}
+                      </span>
+                      <span className="event-type-chip-label">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="event-fields">
               <input

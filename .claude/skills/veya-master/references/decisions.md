@@ -131,6 +131,118 @@
 
 ## היסטוריית החלטות (החדש בראש)
 
+### 2026-08-10 — תיקון: "בריתה" הופכת מתת-קטגוריה של event_type ל-event_subtype (לא סוג אירוע תשיעי)
+- **החלטה:** הבעלים ביקש לבטל את ההחלטה הקודמת (למטה, "נוסף סוג אירוע
+  תשיעי"). "בריתה" **לא** סוג אירוע נפרד — `ברית` נשאר סוג האירוע היחיד
+  (`event_type='brit'`, label חוזר ל-"ברית / בריתה"). נוספה **תת-קטגוריה**
+  חדשה `event_subtype` (`''` / `'brit'` / `'brita'`) שנבחרת ביצירת האירוע
+  (👶 ברית / 🎀 בריתה) וקובעת אוטומטית איזו ספריית נוסחים מוצגת לזוג —
+  הזוג עצמו לא רואה/בוחר "ספריית הודעות", רק את התת-קטגוריה ביצירת האירוע.
+  שני הצדדים (Event, MessageDefault, MessageDefaultOption) מקבלים עמודת
+  `event_subtype` חדשה; ריקה לכל סוגי האירוע חוץ מ-`brit`.
+- **מה בוטל מהסבב הקודם:** `EVENT_TERMS["brit_bat"]` (backend+frontend),
+  `"brit_bat"` מ-`EventType` Literal/union, `EVENT_TYPE_LABELS.brit_bat`
+  ב-AdminPage. ה-24 שורות תוכן שכבר נכתבו לייצור תחת `event_type='brit_bat'`
+  (invitation+reminder_1) **לא אבדו** — מיגרציה חד-פעמית (`main.py:
+  _migrate_brit_subtype`, רצה בעליית השרת) מעבירה אותן אוטומטית ל-
+  `event_type='brit', event_subtype='brita'`, וגם מתייגת את ה-72 השורות
+  הקיימות של "ברית" הרגילה ל-`event_subtype='brit'`.
+- **מיגרציית DB:** ה-unique constraints על `message_defaults`/
+  `message_default_options` (`uq_message_default_type`/
+  `uq_message_default_option`) הורחבו לכלול `event_subtype` — שינוי constraint
+  על טבלה עם נתונים בייצור, לא מכוסה ע"י מנגנון ה-`_ensure_columns` הרגיל.
+  `_migrate_brit_subtype` עושה DROP/ADD CONSTRAINT (Postgres בלבד,
+  idempotent — בודקת אם `event_subtype` כבר בעמודות ה-constraint לפני
+  שנוגעת) + תיקון הדאטה. חייבת לרוץ אחרי `_ensure_columns()` (מוסיפה את
+  העמודה) ולפני `seed_message_defaults()`.
+- **קבצים שנגעו:** `backend/app/models.py` (Event/MessageDefault/
+  MessageDefaultOption), `backend/app/schemas.py` (EventType חזר ל-8,
+  EventSubtype חדש), `backend/app/event_terms.py`, `backend/app/main.py`
+  (`_migrate_brit_subtype`, `seed_message_defaults` זורע 2 שורות ל-brit),
+  `backend/app/routers/events.py` (`event_subtype` ב-create, מאלץ ריק
+  אם event_type≠brit), `backend/app/routers/event.py` (PATCH מנקה subtype
+  בשינוי סוג), `backend/app/communication.py`
+  (`provision_event_messages` מסנן גם לפי subtype), `backend/app/
+  routers/communication.py` (`get_message_options` — הנקודה היחידה
+  שהזוג פוגש, הכל בצד השרת), `backend/app/routers/admin.py`
+  (message-default-options מקבל `event_subtype`). Frontend: `types.ts`,
+  `strings/eventTypes.ts` (`EVENT_SUBTYPE_OPTIONS` חדש), `OnboardingWizard.tsx`
+  ו-`EventControls.tsx` (בורר תת-קטגוריה, חובה לבחור), `AdminPage.tsx`
+  (קיבוץ/סינון לפי subtype בשני מנהלי התוכן). Backend: 28/29 בדיקות עברו
+  (הכישלון היחיד + 4 שגיאות collection הן קבצי בדיקה ישנים ממודול
+  `message_library` שנמחק בסבב קודם — לא קשור לשינוי הזה). Frontend build ירוק.
+- **מה נשאר לעשות:** 48 הנוסחים הנותרים ל"בריתה" (reminder_2 עד thank_you)
+  ייכתבו ישירות לייצור עם `event_type='brit', event_subtype='brita'`, באותו
+  תהליך המאומת שכבר פעל. אחרי ה-deploy הבא: אימות בפועל (לא הנחה) שהמיגרציה
+  רצה נכון בייצור — ראו checklist ב-verification section של התוכנית.
+
+---
+
+### 2026-08-10 — נוסף סוג אירוע תשיעי: "בריתה" (ברית לבת) — **בוטל, ראו למעלה**
+- **החלטה:** הבעלים שלח נוסחי הזמנה תחת `EVENT TYPE: BRIT_BAT` — סוג אירוע
+  שלא היה קיים במערכת (8 הסוגים הנעולים עד כה: חתונה/חינה/בר/בת מצווה/
+  ברית/משפחתי/עסקי/אחר). בשאלת הבהרה מפורשת אישר הבעלים שזה סוג אירוע
+  **נפרד**, ותייג אותו במפורש "בריתה" (לא "ברית בת" כמו שהצעתי). נוסף כ-
+  event_type תשיעי: `brit_bat`, label "בריתה", אימוג'י 🎀 (מהתוכן עצמו),
+  מבנה מונחים זהה ל-`brit` (חוגג יחיד, `hosts="המשפחה"`,
+  `host_field_label="שם המשפחה"`, `group_options=FAMILY_EVENT_GROUP_OPTIONS`).
+  **ניקוי נלווה:** ל-`brit` היה label ישן "ברית / בריתה" — מאז ש"בריתה"
+  קיבל סוג עצמאי, זה כפילות מבלבלת בבורר; שונה בחזרה ל-"ברית" בלבד.
+  נוספה רשומת לקסיקון מלאה בשני הצדדים: `backend/app/schemas.py`
+  (EventType Literal), `backend/app/event_terms.py`, `backend/app/main.py`
+  (`seed_message_defaults` event_types), `frontend/src/types.ts`
+  (EventType union), `frontend/src/strings/eventTypes.ts` (EVENT_TERMS +
+  EVENT_TYPE_OPTIONS), `frontend/src/components/AdminPage.tsx`
+  (EVENT_TYPE_LABELS). Frontend build ירוק.
+- **מצב פריסה חשוב:** שינוי סוג אירוע הוא שינוי **קוד**, לא רק נתונים —
+  צריך פריסה (deploy) כדי שאירוע מסוג "בריתה" יהיה ניתן ליצירה בפועל
+  בייצור. 12 נוסחי ה-`MessageDefaultOption` (הזמנה) **כן** נכתבו ישירות
+  לייצור באותה שיטה כמו כל הסבבים הקודמים — כי ה-endpoint מקבל
+  `event_type` כמחרוזת חופשית, בלי תלות ב-Literal — כך שהתוכן כבר מוכן
+  ומחכה לרגע שהקוד ייפרס (דרך מנגנון ה-commit/push האוטומטי הקיים).
+  **⚠️ עד שהפריסה תקרה, "בריתה" עדיין לא ניתנת לבחירה בפועל ביצירת אירוע.**
+- **לא נעשה עדיין:** שורות `MessageDefault` (ברירת מחדל אוטומטית, 6 לכל
+  סוג) לא נוצרו ל-`brit_bat` — אין endpoint ליצירת שורה חדשה שם (רק
+  PATCH לשורה קיימת). לא דחוף: `provision_event_messages` נופל בחזרה
+  ל-title/content ריק אם אין MessageDefault, כך שהתשתית עדיין תעבוד תקין
+  כשהסוג ייפרס — פשוט בלי "נוסח שמוקצה אוטומטית" עד שיתווסף גם זה.
+
+---
+
+### 2026-08-10 — נמצא הפער האמיתי: תוכן הוזן רק לפיתוח המקומי, לא לייצור. מעכשיו כותבים ישירות לייצור
+- **הבעיה שדווחה:** הבעלים דיווח שעדיין לא רואה נוסחים במסך שהוא נכנס אליו
+  בפועל, וביקש בדיקת end-to-end אמיתית מול ייצור — לא הנחות.
+- **מה נמצא בפועל (עם ראיות, לא ניחוש):** כל ה-72 שורות של חתונה קיימות
+  היו קיימות בייצור (המבנה נזרע אוטומטית ב-`seed_message_default_options`
+  שרץ בכל עליית שרת) — **אבל רק 12 מהן (הזמנה) היו עם תוכן.** הסיבה: 60
+  הנוסחים הנוספים (תזכורות/יום האירוע/תודה) הוזנו בסבבים קודמים דרך
+  סקריפטים ישירים מול ה-DB **המקומי** של הפיתוח (SQLite) — מעולם לא נגעו
+  בייצור (Postgres/Render). זה תואם בדיוק להערות "⚠️ הכול קיים רק בסביבת
+  הפיתוח המקומית" שנכתבו בכל סיכום קודם, אבל מעשית זה יצר בדיוק את הבלבול
+  הזה. אומת עם `curl`/`fetch` ישירות מול `https://veya-backend-u41w.onrender.com`
+  (השם האמיתי — שונה מ-`.env.production.example` שהיה stale) ומול ה-openapi
+  שם, ואז עם קריאות API אמיתיות תחת חשבון הבעלים עצמו.
+- **תגלית צדדית (לא קשורה, נשארת פתוחה):** תוך כדי הבדיקה התגלה ש-
+  `POST /auth/register` מחזיר 500 בייצור באופן עקבי (גם דרך הדפדפן האמיתי
+  וגם ישירות) — חוסם הרשמה של משתמשים חדשים. לא נגענו ב-`auth.py`/
+  `legal.py`/`account.py` באף אחד מהסבבים האלה, כך שזה כנראה תקלה קיימת
+  ולא-קשורה. **צריך טיפול נפרד ודחוף** — לא טופל כאן.
+- **התיקון בפועל:** הבעלים סיפק טוקן גישה זמני מהחשבון שלו (לא סיסמה) כדי
+  שאפשר יהיה לבדוק ולתקן ישירות מול ייצור. הועתקו כל 60 הנוסחים (בדיוק
+  אותו תוכן שכבר אושר בסביבה המקומית — לא נכתב, לא נערך מחדש) דרך
+  `PATCH /admin/message-default-options/{id}`. אומת עם קריאה חוזרת: 72/72
+  שורות עם תוכן, טונים תואמים, ואירוע בדיקה זמני שנוצר ונמחק דרך ה-API
+  אימת שגם מסך הזוג (`GET /communication/sequence/{type}/options`) מחזיר
+  12/12 לכל שלב.
+- **החלטה קדימה:** מעכשיו, כל תוכן שהבעלים שולח (נוסחים חדשים לסוגי אירוע
+  נוספים) ייכתב **ישירות לייצור** (לא רק לסביבה המקומית) — כדי לא לחזור
+  על אותו פער. חינה/הזמנה (12 אופציות + ברירת מחדל) כבר נכתבו כך ישירות.
+- **חוב פתוח:** אירוע בדיקה זמני (id=10, "בדיקת תוכן") עדיין קיים בחשבון
+  הבעלים בייצור — ניסיון מחיקה נחסם על ידי מסנן הבטיחות (פעולה הרסנית על
+  חשבון אמיתי); הבעלים צריך למחוק אותו ידנית או לאשר מחיקה מפורשת.
+
+---
+
 ### 2026-08-09 — תיקון תצוגה: מסך אדמין "ספריית נוסחים לבחירה" הציג רק שלב אחד
 - **הבאג:** הבעלים דיווח שרואה רק "הזמנה" במסך האדמין, למרות שכל 6 השלבים
   מלאים ב-DB (ראו הרשומה הבאה). הסיבה: `MessageDefaultOptionsManager`

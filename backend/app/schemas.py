@@ -15,6 +15,10 @@ EventType = Literal[
     "wedding", "bar_mitzvah", "bat_mitzvah", "henna", "brit",
     "family", "business", "other",
 ]
+# תת-קטגוריה בתוך event_type — כרגע רלוונטי רק ל-"brit": "" / "brit" (👶 ברית)
+# / "brita" (🎀 בריתה). קובעת ניתוב לספריית הנוסחים המתאימה (ראו models.py:
+# Event.event_subtype). str ולא Literal כדי לא לשבור על ערך ישן/לא צפוי.
+EventSubtype = str
 # קבוצה: אחת מהמוכרות, או קבוצה מותאמת אישית (טקסט חופשי) — לכן str ולא Literal
 GroupType = str
 # "maybe" = המוזמן סימן "אולי" בדף האישור (עקבי עם ערכי ה-DB האפשריים).
@@ -408,6 +412,7 @@ class MessageDefaultRead(BaseModel):
 
     id: int
     event_type: str
+    event_subtype: str = ""
     message_type: str
     title: str
     content: str
@@ -433,6 +438,7 @@ class MessageDefaultOptionRead(BaseModel):
 
     id: int
     event_type: str
+    event_subtype: str = ""
     message_type: str
     option_number: int
     tone: str
@@ -445,6 +451,7 @@ class MessageDefaultOptionRead(BaseModel):
 
 class MessageDefaultOptionCreate(BaseModel):
     event_type: str
+    event_subtype: str = ""
     message_type: str
     tone: str = ""
     title: str = ""
@@ -505,6 +512,7 @@ class EventRead(BaseModel):
 
     id: int
     event_type: EventType = "wedding"
+    event_subtype: EventSubtype = ""
     groom_name: str
     bride_name: str
     # שורות ההורים כמזמינים — נדרשות לנוסחי ההזמנה הדתי/חב"ד/חרדי, שבהם
@@ -524,6 +532,7 @@ class EventRead(BaseModel):
 
 class EventUpdate(BaseModel):
     event_type: Optional[EventType] = None
+    event_subtype: Optional[EventSubtype] = None
     groom_name: Optional[str] = None
     bride_name: Optional[str] = None
     groom_parents_line: Optional[str] = None
@@ -825,6 +834,7 @@ class TokenResponse(BaseModel):
 
 class EventCreate(BaseModel):
     event_type: EventType = "wedding"
+    event_subtype: EventSubtype = ""
     groom_name: str = ""
     bride_name: str = ""
     venue_name: str = ""
@@ -837,6 +847,7 @@ class EventSummary(BaseModel):
 
     id: int
     event_type: EventType = "wedding"
+    event_subtype: EventSubtype = ""
     groom_name: str
     bride_name: str
     venue_name: str

@@ -27,6 +27,12 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 }
 const EVENT_TYPE_ORDER = Object.keys(EVENT_TYPE_LABELS)
 
+/** תוויות תת-קטגוריה (כרגע רק בתוך "ברית / בריתה") — לכותרות קיבוץ. */
+const EVENT_SUBTYPE_LABELS: Record<string, string> = {
+  brit: '👶 ברית',
+  brita: '🎀 בריתה',
+}
+
 /** תוויות שלבי ההודעה (תואם ל-backend/app/communication.py: MESSAGE_TYPE_LABELS). */
 const MESSAGE_TYPE_LABELS_HE: Record<string, string> = {
   invitation: 'הזמנה',
@@ -288,22 +294,38 @@ export function MessageDefaultsManager() {
       </div>
 
       {EVENT_TYPE_ORDER.map((eventType) => {
-        const rows = (byType.get(eventType) ?? []).slice().sort(
-          (a, b) => (order.get(a.message_type) ?? 99) - (order.get(b.message_type) ?? 99),
-        )
+        const rows = byType.get(eventType) ?? []
         if (rows.length === 0) return null
+        // תת-קטגוריה (כרגע רק "ברית / בריתה") — כותרת משנה נפרדת לכל אחת,
+        // כדי שלא יתערבבו על המסך. סוגים בלי תת-קטגוריה: קבוצה אחת בלי כותרת.
+        const subtypes = Array.from(new Set(rows.map((d) => d.event_subtype || ''))).sort()
         return (
           <div key={eventType} className="veya-tpl-list">
             <h3 className="admin-section-title" style={{ fontSize: 16 }}>
               {EVENT_TYPE_LABELS[eventType] ?? eventType}
             </h3>
-            {rows.map((d) => (
-              <MessageDefaultCard
-                key={d.id}
-                d={d}
-                onSaved={(u) => setDefaults((prev) => prev!.map((x) => (x.id === u.id ? u : x)))}
-              />
-            ))}
+            {subtypes.map((subtype) => {
+              const subRows = rows
+                .filter((d) => (d.event_subtype || '') === subtype)
+                .slice()
+                .sort((a, b) => (order.get(a.message_type) ?? 99) - (order.get(b.message_type) ?? 99))
+              return (
+                <div key={subtype || '_'}>
+                  {subtype && (
+                    <h4 className="admin-section-title" style={{ fontSize: 14, opacity: 0.75 }}>
+                      {EVENT_SUBTYPE_LABELS[subtype] ?? subtype}
+                    </h4>
+                  )}
+                  {subRows.map((d) => (
+                    <MessageDefaultCard
+                      key={d.id}
+                      d={d}
+                      onSaved={(u) => setDefaults((prev) => prev!.map((x) => (x.id === u.id ? u : x)))}
+                    />
+                  ))}
+                </div>
+              )
+            })}
           </div>
         )
       })}
@@ -405,20 +427,24 @@ function MessageDefaultOptionCard({
  * כאן האדמין גם עורך וגם מוסיף/מוחק נוסחים — לא טקסט קשיח בקוד. */
 export function MessageDefaultOptionsManager() {
   const [eventType, setEventType] = useState('wedding')
+  // תת-קטגוריה — רלוונטית רק ל"ברית / בריתה" (event_type='brit').
+  const [eventSubtype, setEventSubtype] = useState<'brit' | 'brita'>('brit')
   const [options, setOptions] = useState<MessageDefaultOption[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [addingType, setAddingType] = useState<MessageType | null>(null)
 
-  // כל 6 השלבים של סוג האירוע הנבחר, בבקשה אחת — לא מסונן לשלב יחיד, כדי
-  // שהאדמין יראה מיד את כל מה שכבר הוזן ולא רק את השלב הראשון (הזמנה).
+  const activeSubtype = eventType === 'brit' ? eventSubtype : ''
+
+  // כל 6 השלבים של סוג האירוע (ותת-הקטגוריה) הנבחרים, בבקשה אחת — לא
+  // מסונן לשלב יחיד, כדי שהאדמין יראה מיד את כל מה שכבר הוזן.
   const load = useCallback(() => {
     setOptions(null)
-    adminListMessageDefaultOptions(eventType)
+    adminListMessageDefaultOptions(eventType, undefined, activeSubtype)
       .then(setOptions)
       .catch((err) =>
         setError(err instanceof Error ? err.message : strings.errors.adminDefaultsLoadFailed),
       )
-  }, [eventType])
+  }, [eventType, activeSubtype])
 
   useEffect(() => {
     load()
@@ -428,7 +454,11 @@ export function MessageDefaultOptionsManager() {
     setAddingType(messageType)
     setError(null)
     try {
-      const created = await adminCreateMessageDefaultOption({ event_type: eventType, message_type: messageType })
+      const created = await adminCreateMessageDefaultOption({
+        event_type: eventType,
+        event_subtype: activeSubtype,
+        message_type: messageType,
+      })
       setOptions((prev) => [...(prev ?? []), created])
     } catch (err) {
       setError(err instanceof Error ? err.message : strings.errors.adminSaveFailedRetry)
@@ -442,8 +472,8 @@ export function MessageDefaultOptionsManager() {
       <h2 className="admin-section-title">ספריית נוסחים לבחירה (עד 12 לכל שלב)</h2>
       <p className="file-name">
         כאן הזוג בוחר וריאציה במקום נוסח קבוע — בנוסף ל"ברירת המחדל" שמוקצית
-        אוטומטית לאירוע חדש (למעלה). כל 6 השלבים של סוג האירוע מוצגים כאן
-        יחד. כרגע רק חתונה מלאה; שאר סוגי האירוע ריקים בכוונה.
+        אוטומטית לאירוע חדש (למעלה). כל 6 השלבים של סוג האירוע (ותת-הקטגוריה,
+        לברית/בריתה) מוצגים כאן יחד.
       </p>
 
       <div className="event-new-grid" style={{ marginBottom: 16 }}>
@@ -452,6 +482,15 @@ export function MessageDefaultOptionsManager() {
             <option key={t} value={t}>{EVENT_TYPE_LABELS[t]}</option>
           ))}
         </select>
+        {eventType === 'brit' && (
+          <select
+            value={eventSubtype}
+            onChange={(e) => setEventSubtype(e.target.value as 'brit' | 'brita')}
+          >
+            <option value="brit">{EVENT_SUBTYPE_LABELS.brit}</option>
+            <option value="brita">{EVENT_SUBTYPE_LABELS.brita}</option>
+          </select>
+        )}
       </div>
 
       {error && <div className="admin-error">{error}</div>}

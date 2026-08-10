@@ -277,6 +277,16 @@ export const EVENT_TYPE_OPTIONS: { type: EventType; label: string; icon: string 
 })
 
 /**
+ * תת-קטגוריה בתוך "ברית / בריתה" — נבחרת ביצירת האירוע (רק כש-event_type
+ * הוא 'brit') וקובעת אוטומטית איזו ספריית נוסחים מוצגת לזוג. לא סוג אירוע
+ * נפרד — ראו EventSubtype ב-types.ts ו-decisions.md (2026-08-10).
+ */
+export const EVENT_SUBTYPE_OPTIONS: { value: 'brit' | 'brita'; label: string; icon: string }[] = [
+  { value: 'brit', label: 'ברית', icon: '👶' },
+  { value: 'brita', label: 'בריתה', icon: '🎀' },
+]
+
+/**
  * שולף את מנוע המונחים לסוג אירוע. חתונה היא ברירת המחדל הבטוחה — כל ערך
  * חסר/לא מוכר נופל אליה, כך שאף מסך לא יישבר אם event_type ריק.
  */

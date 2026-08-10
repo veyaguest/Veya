@@ -58,7 +58,15 @@ def create_event(
     רק את ה-WITH CHECK של events_insert — עוקפים זאת כמו בשאר מקומות ה-
     INSERT הרגישים (ראו app/auth.py::register_user_row להסבר המלא).
     """
+    # תת-קטגוריה (כרגע רק ל-brit: "brit"/"brita") — רלוונטית רק ל-event_type
+    # "brit"; מתעלמים ממנה בכל סוג אחר, כדי שלא תישאר "תקועה" משינוי סוג.
+    event_subtype = payload.event_subtype.strip() if payload.event_type == "brit" else ""
+
     if IS_POSTGRES:
+        # app_create_event (SECURITY DEFINER) לא מכיר event_subtype — כמו
+        # שדות נוספים אחרים (venue_address, event_date וכו') שגם הם לא
+        # חלק ממנה, הוא נכתב בעדכון נפרד רגיל אחרי היצירה (RLS events_update
+        # מאפשר לבעלים לעדכן את האירוע שלו, בדיוק כמו PATCH /event הרגיל).
         row = db.execute(
             text("SELECT * FROM app_create_event(:owner_id, :event_type, :groom_name, :bride_name, :venue_name)"),
             {
@@ -70,10 +78,15 @@ def create_event(
         ).mappings().first()
         db.commit()
         event = models.Event(**dict(row))
+        if event_subtype:
+            event.event_subtype = event_subtype
+            db.add(event)
+            db.commit()
     else:
         event = models.Event(
             owner_id=user.id,
             event_type=payload.event_type,
+            event_subtype=event_subtype,
             groom_name=payload.groom_name.strip(),
             bride_name=payload.bride_name.strip(),
             venue_name=payload.venue_name.strip(),
@@ -81,7 +94,8 @@ def create_event(
         db.add(event)
         db.commit()
 
-    # מקצה אוטומטית את רצף "תקשורת עם אורחים" (6 ההודעות) לפי סוג האירוע.
+    # מקצה אוטומטית את רצף "תקשורת עם אורחים" (6 ההודעות) לפי סוג האירוע
+    # (ותת-הקטגוריה, אם רלוונטי — ראו communication.provision_event_messages).
     communication.provision_event_messages(db, event)
     db.commit()
     return event

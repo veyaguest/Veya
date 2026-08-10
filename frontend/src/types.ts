@@ -10,6 +10,9 @@ export type EventType =
   | 'family'
   | 'business'
   | 'other'
+// תת-קטגוריה בתוך event_type — כרגע רלוונטי רק ל-'brit': '' (לא נבחר) /
+// 'brit' (👶 ברית) / 'brita' (🎀 בריתה). ראו strings/eventTypes.ts.
+export type EventSubtype = '' | 'brit' | 'brita'
 // קבוצה יכולה להיות אחת מהמוכרות, או קבוצה מותאמת אישית (טקסט חופשי בעברית).
 // המפתחות תלויי-סוג-אירוע — ראו EventTerms.groupOptions ב-eventTypes.ts.
 export type KnownGroupType =
@@ -444,6 +447,7 @@ export interface DashboardStats {
 export interface EventDetails {
   id: number
   event_type: EventType
+  event_subtype?: EventSubtype
   groom_name: string
   bride_name: string
   // שורות ההורים כמזמינים — משמשות את נוסחי ההזמנה הדתי/חב"ד/חרדי.
@@ -601,6 +605,7 @@ export interface TokenResponse {
 export interface EventSummary {
   id: number
   event_type: EventType
+  event_subtype?: EventSubtype
   groom_name: string
   bride_name: string
   venue_name: string
@@ -867,6 +872,7 @@ export interface CommunicationSendResult {
 export interface MessageDefault {
   id: number
   event_type: string
+  event_subtype: string
   message_type: MessageType
   title: string
   content: string
@@ -891,6 +897,7 @@ export interface MessageDefaultsBackfillResult {
 export interface MessageDefaultOption {
   id: number
   event_type: string
+  event_subtype: string
   message_type: MessageType
   option_number: number
   tone: string
@@ -903,6 +910,7 @@ export interface MessageDefaultOption {
 
 export interface MessageDefaultOptionCreate {
   event_type: string
+  event_subtype?: string
   message_type: MessageType
   tone?: string
   title?: string

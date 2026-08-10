@@ -692,7 +692,7 @@ def list_message_defaults(
     rows = cache.get_or_set(
         "message_defaults:admin_all", MESSAGE_DEFAULTS_CACHE_TTL_SECONDS, _load
     )
-    return sorted(rows, key=lambda r: (r.event_type, order.get(r.message_type, 99)))
+    return sorted(rows, key=lambda r: (r.event_type, r.event_subtype, order.get(r.message_type, 99)))
 
 
 @router.patch("/message-defaults/{default_id}", response_model=schemas.MessageDefaultRead)
@@ -737,6 +737,7 @@ def backfill_message_defaults(
 @router.get("/message-default-options", response_model=list[schemas.MessageDefaultOptionRead])
 def list_message_default_options(
     event_type: Optional[str] = None,
+    event_subtype: Optional[str] = None,
     message_type: Optional[str] = None,
     db: Session = Depends(get_db),
     admin: models.User = Depends(get_current_admin),
@@ -744,10 +745,12 @@ def list_message_default_options(
     stmt = select(models.MessageDefaultOption)
     if event_type:
         stmt = stmt.where(models.MessageDefaultOption.event_type == event_type)
+    if event_subtype is not None:
+        stmt = stmt.where(models.MessageDefaultOption.event_subtype == event_subtype)
     if message_type:
         stmt = stmt.where(models.MessageDefaultOption.message_type == message_type)
     rows = db.scalars(stmt).all()
-    return sorted(rows, key=lambda r: (r.event_type, r.message_type, r.option_number))
+    return sorted(rows, key=lambda r: (r.event_type, r.event_subtype, r.message_type, r.option_number))
 
 
 @router.post(
@@ -764,6 +767,7 @@ def create_message_default_option(
     taken = set(db.scalars(
         select(models.MessageDefaultOption.option_number)
         .where(models.MessageDefaultOption.event_type == payload.event_type)
+        .where(models.MessageDefaultOption.event_subtype == payload.event_subtype)
         .where(models.MessageDefaultOption.message_type == payload.message_type)
     ).all())
     next_number = next((n for n in range(1, 13) if n not in taken), None)
@@ -771,6 +775,7 @@ def create_message_default_option(
         raise HTTPException(status_code=400, detail="כבר יש 12 נוסחים לשילוב הזה — המקסימום המותר")
     option = models.MessageDefaultOption(
         event_type=payload.event_type,
+        event_subtype=payload.event_subtype,
         message_type=payload.message_type,
         option_number=next_number,
         tone=payload.tone,
