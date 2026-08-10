@@ -27,7 +27,7 @@ def _describe_changed_fields(changed: dict) -> str:
     groom_name, venue_name".
     """
     categories = [
-        (("event_type", "event_subtype"), "סוג האירוע"),
+        (("event_type",), "סוג האירוע"),
         (("groom_name", "bride_name"), "שמות בעלי האירוע"),
         (("groom_parents_line", "bride_parents_line"), "שמות ההורים בהזמנה"),
         (("venue_name", "venue_address"), "פרטי האולם"),
@@ -46,7 +46,6 @@ def _event_read(event: models.Event) -> schemas.EventRead:
     return schemas.EventRead(
         id=event.id,
         event_type=event.event_type or "wedding",
-        event_subtype=event.event_subtype or "",
         groom_name=event.groom_name,
         bride_name=event.bride_name,
         groom_parents_line=event.groom_parents_line or "",
@@ -102,9 +101,6 @@ def update_event(
             event.venue_commit_days_before = value
         else:
             setattr(event, key, (value or "").strip())
-    # תת-קטגוריה רלוונטית רק ל-brit — משנים סוג אירוע מנקה subtype "תקוע".
-    if event.event_type != "brit":
-        event.event_subtype = ""
     # מאגר אולמות משותף: כל שם+כתובת שזוג שומר נרשם למאגר, כדי שזוגות אחרים
     # יקבלו הצעת השלמה עם הכתובת המוכנה. שם ריק => נדלג (record_venue מתעלם).
     if "venue_name" in changed or "venue_address" in changed:

@@ -77,7 +77,6 @@ def get_message_options(
     rows = db.scalars(
         select(models.MessageDefaultOption)
         .where(models.MessageDefaultOption.event_type == event.event_type)
-        .where(models.MessageDefaultOption.event_subtype == (event.event_subtype or ""))
         .where(models.MessageDefaultOption.message_type == message_type)
         .where(models.MessageDefaultOption.is_active == True)  # noqa: E712
         .where(models.MessageDefaultOption.content != "")

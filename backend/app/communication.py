@@ -161,7 +161,6 @@ def provision_event_messages(db: Session, event: models.Event) -> int:
         for d in db.scalars(
             select(models.MessageDefault)
             .where(models.MessageDefault.event_type == event.event_type)
-            .where(models.MessageDefault.event_subtype == (event.event_subtype or ""))
         ).all()
     }
     created = 0

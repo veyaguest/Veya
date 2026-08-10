@@ -97,15 +97,6 @@ _EXTRA_COLUMNS = {
         "bride_parents_line": "TEXT DEFAULT ''",
         # תצלום מצב ההושבה שלפני ההרצה האחרונה — ל"החזרת הסידור הקודם".
         "seating_snapshot": "JSON",
-        # תת-קטגוריה בתוך event_type (כרגע רק brit: "brit"/"brita") — ראו
-        # models.py: Event.event_subtype ו-_migrate_brit_subtype להלן.
-        "event_subtype": "TEXT DEFAULT ''",
-    },
-    "message_defaults": {
-        "event_subtype": "TEXT DEFAULT ''",
-    },
-    "message_default_options": {
-        "event_subtype": "TEXT DEFAULT ''",
     },
     "messages": {
         "channel": "TEXT DEFAULT 'whatsapp'",
@@ -326,70 +317,47 @@ def _ensure_guest_tokens() -> None:
         db.close()
 
 
-def _migrate_brit_subtype() -> None:
-    """מיגרציה חד-פעמית (2026-08-10): "בריתה" עוברת מסוג אירוע נפרד
-    (``event_type='brit_bat'``) לתת-קטגוריה בתוך "ברית"
-    (``event_type='brit', event_subtype='brita'``) — ראו decisions.md.
-    idempotent: בטוחה לרוץ בכל עלייה, לא עושה כלום אחרי הפעם הראשונה.
+def _migrate_brita_split() -> None:
+    """מיגרציה חד-פעמית (2026-08-10): "בריתה" היא סוג אירוע עצמאי משלה —
+    ``event_type='brita'`` — לא תת-קטגוריה של "ברית" ולא event_type ישן
+    בשם ``brit_bat`` (ראו decisions.md, שני תיקוני כיוון קודמים). מתקנת
+    שיירים משני הסבבים הקודמים: (1) שורות שנכתבו ישירות לפרודקשן תחת
+    ``event_type='brit_bat'`` לפני שהיה code support — עוברות ל-``brita``.
+    (2) יוצרת את 6 שורות ה-``MessageDefault`` (ברירת מחדל ריקה) ל-``brita``,
+    שמעולם לא נוצרו כי אין endpoint ליצירת שורה חדשה שם. idempotent — בטוחה
+    לרוץ בכל עלייה, לא עושה כלום אחרי הפעם הראשונה.
     """
-    from sqlalchemy import inspect as sa_inspect, select
+    from sqlalchemy import select
 
-    from app.database import IS_POSTGRES
+    from app import communication
 
-    # שלב 1: הרחבת ה-unique constraints לכלול event_subtype. Postgres בלבד —
-    # DROP CONSTRAINT לא נתמך ב-SQLite, וסביבת הפיתוח המקומית לא מכילה תוכן
-    # אמיתי יותר (כל התוכן נכתב ישירות לפרודקשן, ראו decisions.md).
-    if IS_POSTGRES:
-        inspector = sa_inspect(migrations_engine)
-        constraints = [
-            ("message_defaults", "uq_message_default_type",
-             ["event_type", "event_subtype", "message_type"]),
-            ("message_default_options", "uq_message_default_option",
-             ["event_type", "event_subtype", "message_type", "option_number"]),
-        ]
-        with migrations_engine.begin() as conn:
-            for table, name, columns in constraints:
-                if not inspector.has_table(table):
-                    continue
-                existing = {
-                    c["name"]: set(c["column_names"] or [])
-                    for c in inspector.get_unique_constraints(table)
-                }
-                if "event_subtype" in existing.get(name, set()):
-                    continue  # כבר הורחב בעלייה קודמת
-                conn.execute(text(f"ALTER TABLE {table} DROP CONSTRAINT IF EXISTS {name}"))
-                conn.execute(text(
-                    f"ALTER TABLE {table} ADD CONSTRAINT {name} UNIQUE ({', '.join(columns)})"
-                ))
-
-    # שלב 2: תיקון דאטה קיים (idempotent — לא נוגע ברשומה שכבר תוקנה).
     db = MigrationSessionLocal()
     try:
         changed = False
-        for model in (models.MessageDefault, models.MessageDefaultOption):
+        for model in (models.Event, models.MessageDefault, models.MessageDefaultOption):
             rows = db.scalars(
                 select(model).where(model.event_type == "brit_bat")
             ).all()
             for row in rows:
-                row.event_type = "brit"
-                row.event_subtype = "brita"
+                row.event_type = "brita"
                 changed = True
-            rows = db.scalars(
-                select(model)
-                .where(model.event_type == "brit")
-                .where((model.event_subtype == "") | (model.event_subtype.is_(None)))
-            ).all()
-            for row in rows:
-                row.event_subtype = "brit"
-                changed = True
-        events = db.scalars(
-            select(models.Event)
-            .where(models.Event.event_type == "brit")
-            .where((models.Event.event_subtype == "") | (models.Event.event_subtype.is_(None)))
-        ).all()
-        for ev in events:
-            ev.event_subtype = "brit"
+
+        have_brita_defaults = db.scalar(
+            select(models.MessageDefault).where(models.MessageDefault.event_type == "brita")
+        )
+        if have_brita_defaults is None:
+            for message_type in communication.MESSAGE_TYPES:
+                db.add(models.MessageDefault(
+                    event_type="brita",
+                    message_type=message_type,
+                    title=communication.MESSAGE_TYPE_LABELS[message_type],
+                    content="",
+                    variables_supported=list(
+                        communication.DEFAULT_VARIABLES_SUPPORTED.get(message_type, [])
+                    ),
+                ))
             changed = True
+
         if changed:
             db.commit()
     finally:
@@ -397,8 +365,8 @@ def _migrate_brit_subtype() -> None:
 
 
 def seed_message_defaults() -> None:
-    """זורע פעם אחת את קטלוג ברירות המחדל הגלובלי לרצף התקשורת: 8 סוגי
-    אירוע × 6 סוגי הודעה = 48 שורות, כולן ``content=""`` (הבעלים יזין את
+    """זורע פעם אחת את קטלוג ברירות המחדל הגלובלי לרצף התקשורת: 9 סוגי
+    אירוע × 6 סוגי הודעה = 54 שורות, כולן ``content=""`` (הבעלים יזין את
     הטקסטים הסופיים דרך ``/admin/message-defaults``). רץ רק אם הטבלה ריקה,
     כך שעריכה של האדמין לא נדרסת בהפעלה הבאה."""
     from sqlalchemy import func, select
@@ -413,16 +381,11 @@ def seed_message_defaults() -> None:
         if have == 0:
             event_types = [
                 "wedding", "bar_mitzvah", "bat_mitzvah", "henna",
-                "brit", "family", "business", "other",
+                "brit", "brita", "family", "business", "other",
             ]
-            # brit הוא תת-קטגוריה כפולה (👶 ברית / 🎀 בריתה, decisions.md
-            # 2026-08-10) — שתי שורות MessageDefault נפרדות לכל message_type;
-            # שאר הסוגים ללא תת-קטגוריה (event_subtype="").
-            subtypes_by_type = {"brit": ["brit", "brita"]}
             defaults = [
                 models.MessageDefault(
                     event_type=event_type,
-                    event_subtype=event_subtype,
                     message_type=message_type,
                     title=communication.MESSAGE_TYPE_LABELS[message_type],
                     content="",
@@ -431,7 +394,6 @@ def seed_message_defaults() -> None:
                     ),
                 )
                 for event_type in event_types
-                for event_subtype in subtypes_by_type.get(event_type, [""])
                 for message_type in communication.MESSAGE_TYPES
             ]
             db.add_all(defaults)
@@ -657,10 +619,10 @@ def on_startup() -> None:
     _ensure_admin()
     # מוודא שלכל מוזמן קיים יש טוקן אישי לאישור הגעה.
     _ensure_guest_tokens()
-    # "בריתה" כתת-קטגוריה בתוך "ברית" במקום סוג אירוע נפרד (2026-08-10) —
-    # חייבת לרוץ אחרי _ensure_columns (event_subtype) ולפני הזריעה למטה.
-    _migrate_brit_subtype()
-    # זורע את קטלוג ברירות המחדל הגלובלי לרצף התקשורת (8 סוגי אירוע × 6
+    # "בריתה" כ-event_type עצמאי משלה (2026-08-10) — מתקנת שיירי דאטה
+    # משני תיקוני הכיוון הקודמים. חייבת לרוץ לפני הזריעה למטה.
+    _migrate_brita_split()
+    # זורע את קטלוג ברירות המחדל הגלובלי לרצף התקשורת (9 סוגי אירוע × 6
     # סוגי הודעה, ריק) אם ריק.
     seed_message_defaults()
     # זורע את ספריית הנוסחים לבחירה (עד 12 לכל event_type×message_type),

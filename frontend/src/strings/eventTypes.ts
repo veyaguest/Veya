@@ -185,7 +185,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
   },
   brit: {
     type: 'brit',
-    label: 'ברית / בריתה',
+    label: 'ברית',
     icon: '🍼',
     hasTwoHosts: false,
     hostsLabel: 'המשפחה',
@@ -198,6 +198,25 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     inviteLabel: 'הזמנה לברית',
     defaultTitle: 'הברית שלנו',
     celebrationOf: (names) => `הברית של ${names}`,
+    guestsLabel: 'מוזמנים',
+    giftLabel: 'מתנה למשפחה',
+    groupOptions: FAMILY_EVENT_GROUP_OPTIONS,
+  },
+  brita: {
+    type: 'brita',
+    label: 'בריתה',
+    icon: '🎀',
+    hasTwoHosts: false,
+    hostsLabel: 'המשפחה',
+    hostAField: 'שם המשפחה',
+    hostBField: '',
+    sideLabels: { groom: 'צד משפחת האב', bride: 'צד משפחת האם', shared: 'משותף' },
+    eventNoun: 'הבריתה',
+    celebration: 'אירוע בריתה',
+    celebrationConstruct: 'בריתה של',
+    inviteLabel: 'הזמנה לבריתה',
+    defaultTitle: 'הבריתה שלנו',
+    celebrationOf: (names) => `הבריתה של ${names}`,
     guestsLabel: 'מוזמנים',
     giftLabel: 'מתנה למשפחה',
     groupOptions: FAMILY_EVENT_GROUP_OPTIONS,
@@ -268,6 +287,7 @@ export const EVENT_TYPE_OPTIONS: { type: EventType; label: string; icon: string 
   'bat_mitzvah',
   'henna',
   'brit',
+  'brita',
   'family',
   'business',
   'other',
@@ -275,16 +295,6 @@ export const EVENT_TYPE_OPTIONS: { type: EventType; label: string; icon: string 
   const terms = EVENT_TERMS[t as EventType]
   return { type: terms.type, label: terms.label, icon: terms.icon }
 })
-
-/**
- * תת-קטגוריה בתוך "ברית / בריתה" — נבחרת ביצירת האירוע (רק כש-event_type
- * הוא 'brit') וקובעת אוטומטית איזו ספריית נוסחים מוצגת לזוג. לא סוג אירוע
- * נפרד — ראו EventSubtype ב-types.ts ו-decisions.md (2026-08-10).
- */
-export const EVENT_SUBTYPE_OPTIONS: { value: 'brit' | 'brita'; label: string; icon: string }[] = [
-  { value: 'brit', label: 'ברית', icon: '👶' },
-  { value: 'brita', label: 'בריתה', icon: '🎀' },
-]
 
 /**
  * שולף את מנוע המונחים לסוג אירוע. חתונה היא ברירת המחדל הבטוחה — כל ערך

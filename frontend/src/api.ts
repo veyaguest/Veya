@@ -327,7 +327,6 @@ export async function listMyEvents(): Promise<EventSummary[]> {
 
 export async function createMyEvent(data: {
   event_type?: string
-  event_subtype?: string
   groom_name: string
   bride_name: string
   venue_name: string
@@ -803,7 +802,6 @@ export async function updateEvent(
     Pick<
       EventDetails,
       | 'event_type'
-      | 'event_subtype'
       | 'groom_name'
       | 'bride_name'
       | 'venue_name'
@@ -1095,11 +1093,9 @@ export async function adminBackfillMessageDefaults(): Promise<MessageDefaultsBac
 export async function adminListMessageDefaultOptions(
   eventType: string,
   messageType?: string,
-  eventSubtype?: string,
 ): Promise<MessageDefaultOption[]> {
   const params = new URLSearchParams({ event_type: eventType })
   if (messageType) params.set('message_type', messageType)
-  if (eventSubtype !== undefined) params.set('event_subtype', eventSubtype)
   const res = await apiFetch(`/admin/message-default-options?${params.toString()}`)
   if (!res.ok) throw await toError(res)
   return res.json()
