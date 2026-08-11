@@ -45,9 +45,20 @@ def register(payload: schemas.UserCreate, request: Request, db: Session = Depend
         is_admin=is_admin,
         account_type="couple",
     )
-    # קובעים את זהות הבקשה מיד אחרי שיש id — כך גם שאילתות ה-RLS הבאות
-    # (אימוץ אירועים יתומים) רצות תחת הזהות של המשתמש עצמו.
+    # קובעים את זהות הבקשה מיד אחרי שיש id, אבל זה מעדכן רק את ה-ContextVar
+    # בפייתון — לא את הזהות שכבר הוזרקה לטרנזקציה הפתוחה (ראו commit מיד
+    # למטה + ההערה המורחבת ב-google_exchange לעיל).
     set_request_identity(user.id)
+
+    # קודם מוודאים שהמשתמש עצמו נשמר — *לפני* כל כתיבה תלוית-RLS אחרת
+    # (הסכמות, אימוץ אירועים). קריטי: הטרנזקציה הנוכחית כבר הוזרקה עם זהות
+    # ריקה (ב-after_begin, לפני שהמשתמש נוצר, בשאילתת find_user_by_email
+    # למעלה) — INSERT ל-consent_records בתוכה היה נדחה ע"י RLS
+    # (WITH CHECK user_id = app_current_user_id() כשזה עדיין ''), בדיוק כמו
+    # הבאג שתוקן ב-google_exchange (ראו שם התיעוד המלא). ה-commit כאן סוגר
+    # את הטרנזקציה הראשונה; הפעולות הבאות פותחות טרנזקציה חדשה שמוזרקת עם
+    # הזהות הנכונה (current_user_id כבר עודכן ע"י set_request_identity).
+    db.commit()
 
     # אימוץ אירועים "יתומים" (בלי בעלים) — מיגרציה מהמצב הישן של אירוע יחיד.
     auth.adopt_orphan_events(db, user.id)
