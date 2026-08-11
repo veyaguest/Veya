@@ -186,6 +186,7 @@ function MessagePanel({
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const wide = useWideScreen()
 
   const values = useMemo(() => eventFieldValues(event), [event])
   const readable = asReadableText(message.content, values)
@@ -262,13 +263,15 @@ function MessagePanel({
               >
                 ✏️ עריכה
               </button>
-              <button
-                type="button"
-                className="gm2-btn gm2-btn-quiet"
-                onClick={() => setShowPreview(true)}
-              >
-                👀 תצוגה מקדימה
-              </button>
+              {!wide && (
+                <button
+                  type="button"
+                  className="gm2-btn gm2-btn-quiet"
+                  onClick={() => setShowPreview(true)}
+                >
+                  👀 תצוגה מקדימה
+                </button>
+              )}
             </div>
           </>
         )}
@@ -344,19 +347,16 @@ function MessagePanel({
         {note && <p className="gm2-note">{note}</p>}
       </section>
 
-      <aside className="gm2-side">
-        <button
-          type="button"
-          className="gm2-phone-open"
-          onClick={() => setShowPreview(true)}
-          aria-label="הגדלת התצוגה"
-        >
-          <SidePhone message={message} event={event} />
-        </button>
-        <p className="gm2-side-cap">👀 כך האורחים יראו את ההודעה</p>
-      </aside>
+      {/* במסך רחב התצוגה פשוט נמצאת שם, בגובה מלא — ולכן אין בה צורך בכפתור.
+          במובייל אין מקום לזה לצד הכרטיס, ושם היא נפתחת מהכפתור. */}
+      {wide && (
+        <aside className="gm2-side">
+          <FittedPhone message={message} event={event} />
+          <p className="gm2-side-cap">👀 כך האורחים יראו את ההודעה</p>
+        </aside>
+      )}
 
-      {showPreview && (
+      {!wide && showPreview && (
         <div className="gm2-sheet-backdrop" onClick={() => setShowPreview(false)}>
           <div className="gm2-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="gm2-sheet-head">
@@ -471,6 +471,9 @@ function Editor({
 /** גבול ההקטנה של התצוגה המקדימה: מתחת לזה הטקסט כבר קטן מכדי לקרוא. */
 const MIN_PREVIEW_SCALE = 0.72
 
+/** רוחב שממנו התצוגה נכנסת לעמודה שלצד הכרטיס. תואם ל-CSS. */
+const WIDE_QUERY = '(min-width: 1040px)'
+
 /**
  * הטלפון בתצוגה המקדימה, מוקטן עד שההודעה כולה נכנסת בבת אחת — בלי גלילה.
  * הטלפון מצויר בגודלו הטבעי (הצ'אט גדל לפי אורך ההודעה), נמדד, ואז מוקטן
@@ -510,9 +513,16 @@ function FittedPhone({
     measure()
     const raf = requestAnimationFrame(measure)
     window.addEventListener('resize', measure)
+    // תוספת ליתר ביטחון, לשינויי גובה שאינם מגיעים עם אירוע resize (למשל
+    // כשהתוכן שמעל העמודה זז). לא כל סביבה מפעילה אותו — ולכן הוא תוספת
+    // בלבד, והמדידה לא נשענת עליו.
+    const ro =
+      typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
+    if (ro && areaRef.current) ro.observe(areaRef.current)
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', measure)
+      ro?.disconnect()
     }
   }, [measure, text])
 
@@ -542,15 +552,19 @@ function FittedPhone({
   )
 }
 
-/** הטלפון הקבוע שלצד הכרטיס — גובה הצ'אט מוגבל, ולכן אין צורך בהתאמה. */
-function SidePhone({
-  message,
-  event,
-}: {
-  message: EventMessage
-  event: EventDetails | null
-}) {
-  return <PhonePreview message={message} event={event} text={usePreviewText(message)} />
+/** האם יש מקום להציג את התצוגה לצד הכרטיס (תואם ל-breakpoint ב-CSS). */
+function useWideScreen(): boolean {
+  const [wide, setWide] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(WIDE_QUERY).matches,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia(WIDE_QUERY)
+    const onChange = () => setWide(mq.matches)
+    mq.addEventListener('change', onChange)
+    onChange()
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return wide
 }
 
 /** הנוסח המוגמר של ההודעה כפי שהשרת מרנדר אותו עבור מוזמן לדוגמה. */
