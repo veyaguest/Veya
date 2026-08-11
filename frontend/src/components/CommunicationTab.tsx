@@ -19,6 +19,18 @@ const STEP_ICON: Record<MessageType, string> = {
   thank_you: '❤️',
 }
 
+/**
+ * באילו שלבים תמונת ההזמנה נלווית להודעה — מקור אמת יחיד לכלל הזה.
+ *
+ * ההזמנה וכל התזכורות נושאות את התמונה, כדי שהאורח יזהה את האירוע מיד גם
+ * בהודעה השלישית ולא רק בראשונה. "תודה" נשלחת אחרי האירוע, ושם התמונה כבר
+ * לא מוסיפה — לכן היא היחידה בלעדיה. זה קורה מאליו: אין כאן הגדרה שהזוג
+ * צריך לסמן.
+ */
+const STEPS_WITH_INVITE_IMAGE: ReadonlySet<MessageType> = new Set<MessageType>([
+  'invitation', 'reminder_1', 'reminder_2', 'final_reminder', 'event_day',
+])
+
 /** מילה טבעית לכל פרט משתנה — מוצגת כשעדיין אין ערך אמיתי לאירוע. */
 const FIELD_WORD: Record<string, string> = {
   guest_name: 'שם האורח',
@@ -177,7 +189,6 @@ function MessagePanel({
 
   const values = useMemo(() => eventFieldValues(event), [event])
   const readable = asReadableText(message.content, values)
-  const showImage = message.message_type === 'invitation' && !!event?.invite_image
 
   async function startBrowsing() {
     setMode('browse')
@@ -229,9 +240,6 @@ function MessagePanel({
 
         {mode === 'view' && (
           <>
-            {showImage && (
-              <img className="gm2-invite-img" src={mediaUrl(event!.invite_image)} alt="" />
-            )}
             {readable.trim() ? (
               <p className="gm2-text">{readable}</p>
             ) : (
@@ -253,13 +261,6 @@ function MessagePanel({
                 }}
               >
                 ✏️ עריכה
-              </button>
-              <button
-                type="button"
-                className="gm2-btn gm2-btn-quiet"
-                onClick={() => setShowPreview(true)}
-              >
-                👀 תצוגה מקדימה
               </button>
             </div>
           </>
@@ -337,7 +338,15 @@ function MessagePanel({
       </section>
 
       <aside className="gm2-side">
-        <WhatsAppPreview message={message} event={event} />
+        <button
+          type="button"
+          className="gm2-phone-open"
+          onClick={() => setShowPreview(true)}
+          aria-label="הגדלת התצוגה"
+        >
+          <PhonePreview message={message} event={event} />
+        </button>
+        <p className="gm2-side-cap">👀 כך האורחים יראו את ההודעה</p>
       </aside>
 
       {showPreview && (
@@ -353,7 +362,7 @@ function MessagePanel({
                 סגירה
               </button>
             </div>
-            <WhatsAppPreview message={message} event={event} />
+            <PhonePreview message={message} event={event} big />
           </div>
         </div>
       )}
@@ -452,13 +461,20 @@ function Editor({
   )
 }
 
-/** ההודעה כפי שהאורח יקבל אותה בפועל — נוסח מהשרת, על רקע שיחה. */
-function WhatsAppPreview({
+/**
+ * ההודעה בתוך מוקאפ טלפון — בדיוק מה שהאורח יקבל: הנוסח מגיע מהשרת עם
+ * הנתונים האמיתיים של האירוע (ולכן אין בו שום משתנה), תמונת ההזמנה נלווית
+ * לפי ``STEPS_WITH_INVITE_IMAGE``, וכפתורי הפעולה מוצגים לפי מה שההודעה
+ * באמת כוללת.
+ */
+function PhonePreview({
   message,
   event,
+  big = false,
 }: {
   message: EventMessage
   event: EventDetails | null
+  big?: boolean
 }) {
   const [text, setText] = useState<string | null>(null)
 
@@ -472,34 +488,56 @@ function WhatsAppPreview({
     }
   }, [message.message_type, message.content])
 
-  const showImage = message.message_type === 'invitation' && !!event?.invite_image
+  const showImage =
+    STEPS_WITH_INVITE_IMAGE.has(message.message_type) && !!event?.invite_image
   const showRsvp = message.content.includes('{{rsvp_link}}')
   const showNav = message.content.includes('{{navigation_link}}')
   const showGift = message.content.includes('{{gift_link}}')
 
+  const terms = event ? EVENT_TERMS[event.event_type] ?? EVENT_TERMS.wedding : null
+  const chatName =
+    [event?.groom_name, event?.bride_name].filter(Boolean).join(' ו') ||
+    terms?.celebration ||
+    'האירוע'
+
   return (
-    <div className="wa-screen" dir="rtl">
-      <div className="wa-bubble">
-        {showImage && <img className="wa-image" src={mediaUrl(event!.invite_image)} alt="" />}
-        <div className="wa-text">
-          {text && text.trim() ? (
-            text.split('\n').map((line, i) => (
-              <div key={i} className="wa-line">
-                {line || ' '}
-              </div>
-            ))
-          ) : (
-            <span className="wa-empty">אין עדיין הודעה להצגה</span>
-          )}
+    <div className={`ph ${big ? 'ph-big' : ''}`} dir="rtl">
+      <div className="ph-screen">
+        <div className="ph-status">
+          <span>9:41</span>
+          <span className="ph-status-icons" aria-hidden="true">▮▮ ⌁</span>
         </div>
-        {(showRsvp || showNav || showGift) && (
-          <div className="wa-actions">
-            {showRsvp && <span className="wa-action-btn">✅ אישור הגעה</span>}
-            {showNav && <span className="wa-action-btn">🧭 ניווט</span>}
-            {showGift && <span className="wa-action-btn">🎁 מתנה באשראי</span>}
+        <div className="ph-bar">
+          <span className="ph-back" aria-hidden="true">›</span>
+          <span className="ph-avatar" aria-hidden="true">
+            {chatName.trim().charAt(0) || '♡'}
+          </span>
+          <span className="ph-chat-name">{chatName}</span>
+        </div>
+        <div className="ph-chat">
+          <div className="ph-bubble">
+            {showImage && <img className="ph-image" src={mediaUrl(event!.invite_image)} alt="" />}
+            <div className="ph-text">
+              {text && text.trim() ? (
+                text.split('\n').map((line, i) => (
+                  <div key={i} className="ph-line">
+                    {line || ' '}
+                  </div>
+                ))
+              ) : (
+                <span className="ph-empty">אין עדיין הודעה להצגה</span>
+              )}
+            </div>
+            {(showRsvp || showNav || showGift) && (
+              <div className="ph-btns">
+                {showRsvp && <span className="ph-btn">✅ אישור הגעה</span>}
+                {showNav && <span className="ph-btn">🧭 ניווט</span>}
+                {showGift && <span className="ph-btn">🎁 מתנה באשראי</span>}
+              </div>
+            )}
+            <span className="ph-meta">12:30 ✓✓</span>
           </div>
-        )}
-        <span className="wa-meta">12:30 ✓✓</span>
+        </div>
       </div>
     </div>
   )

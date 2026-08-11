@@ -1205,6 +1205,58 @@ td.notes.seating {
 .paste-dialog {
   max-width: 860px;
 }
+/* טבלת התצוגה המקדימה של הדבקת רשימה (PasteImportDialog בלבד — לא
+   ContactsImportDialog, שמשתמש ב-.paste-table בלי המחלקה הזו) כוללת 8
+   עמודות ("כמות שהוזנה" ו"סה"כ אנשים" בנפרד). ב-table-layout: auto (ברירת
+   המחדל) גילינו שדפדפנים יכולים "לסחוט" עמודות בסוף השורה לרוחב 0 כשסכום
+   הרוחב הטבעי של העמודות הראשונות כבר ממלא את min-width של הטבלה — גם אם
+   יש overflow:auto בקונטיינר שאמור לאפשר גלילה. table-layout: fixed עם
+   רוחב מפורש לכל עמודה פותר את זה בוודאות: כל עמודה מקבלת בדיוק את הרוחב
+   שהוגדר לה, בלי תלות בתוכן. */
+.paste-table-quantity {
+  table-layout: fixed;
+  width: 920px;
+  min-width: 920px;
+}
+.paste-table-quantity th:nth-child(1),
+.paste-table-quantity td:nth-child(1) {
+  width: 50px;
+}
+.paste-table-quantity th:nth-child(2),
+.paste-table-quantity td:nth-child(2) {
+  width: 150px;
+}
+.paste-table-quantity th:nth-child(3),
+.paste-table-quantity td:nth-child(3) {
+  width: 140px;
+}
+.paste-table-quantity th:nth-child(4),
+.paste-table-quantity td:nth-child(4) {
+  width: 100px;
+}
+.paste-table-quantity th:nth-child(5),
+.paste-table-quantity td:nth-child(5) {
+  width: 130px;
+}
+.paste-table-quantity th:nth-child(6),
+.paste-table-quantity td:nth-child(6) {
+  width: 110px;
+}
+/* .guests-table th/td:nth-child(7-10) יש כלל גלובלי קיים ש-display:none
+   אותם (מיועד לטבלת המוזמנים הראשית, שם יש 10 עמודות ורק 6 הראשונות
+   מוצגות). הטבלה הזו יורשת את .guests-table לעיצוב הבסיסי, ולכן גם
+   העמודות 7-8 שלה נופלות בטעות תחת אותו כלל — צריך להחזיר display
+   במפורש כדי לבטל את הירושה הלא-מכוונת. */
+.paste-table-quantity th:nth-child(7),
+.paste-table-quantity td:nth-child(7) {
+  width: 90px;
+  display: table-cell;
+}
+.paste-table-quantity th:nth-child(8),
+.paste-table-quantity td:nth-child(8) {
+  width: 150px;
+  display: table-cell;
+}
 .paste-hint {
   font-size: 14px;
   color: var(--muted);
@@ -8637,15 +8689,32 @@ td.notes.seating {
   gap: 20px;
   align-items: start;
 }
+/* התצוגה לאורח נמצאת תמיד על המסך — במובייל מתחת לכרטיס, בדסקטופ לצדו.
+   כך אין צורך "לפתוח תצוגה מקדימה" כדי לדעת איך ההודעה נראית. */
 .gm2-side {
-  display: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.gm2-phone-open {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: zoom-in;
+  display: block;
+}
+.gm2-side-cap {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 0;
+  text-align: center;
 }
 @media (min-width: 1040px) {
   .gm2-stage {
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   }
   .gm2-side {
-    display: block;
     position: sticky;
     top: 16px;
   }
@@ -8683,12 +8752,6 @@ td.notes.seating {
   font-weight: 700;
   color: var(--charcoal);
   margin: 0;
-}
-.gm2-invite-img {
-  width: 100%;
-  max-width: 340px;
-  border-radius: var(--radius-l);
-  display: block;
 }
 .gm2-text {
   font-size: 16px;
@@ -8852,6 +8915,159 @@ td.notes.seating {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+/* ---- מוקאפ הטלפון ----
+   קטן ומרכזי במובייל כדי שגם אזור הבחירה/עריכה יישאר על המסך, אבל הטקסט
+   שבתוכו נשאר בגודל קריא (13.5px) ולא מוקטן יחד עם המכשיר. --ph-w הוא
+   הידית היחידה לשינוי גודל. */
+.ph {
+  --ph-w: 236px;
+  --ph-chat-h: 300px;
+  width: var(--ph-w);
+  margin: 0 auto;
+  background: #1c1a19;
+  border-radius: 34px;
+  padding: 8px;
+  box-shadow: 0 10px 30px rgba(28, 26, 25, 0.22), 0 1px 0 rgba(255, 255, 255, 0.14) inset;
+}
+.ph-big {
+  --ph-w: 290px;
+  --ph-chat-h: 56vh;
+}
+@media (min-width: 1040px) {
+  .ph {
+    --ph-w: 300px;
+    --ph-chat-h: 430px;
+  }
+}
+.ph-screen {
+  background: #ece5dd;
+  border-radius: 27px;
+  overflow: hidden;
+  position: relative;
+}
+/* מגרעת עדינה בראש המסך — רומזת על מכשיר בלי לצייר אותו בהגזמה. */
+.ph-screen::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 42%;
+  height: 15px;
+  background: #1c1a19;
+  border-radius: 0 0 11px 11px;
+  z-index: 2;
+}
+.ph-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #075e54;
+  color: #fff;
+  font-size: 10.5px;
+  padding: 5px 14px 3px;
+}
+.ph-status-icons {
+  letter-spacing: 1px;
+  opacity: 0.85;
+}
+.ph-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #075e54;
+  color: #fff;
+  padding: 7px 12px 10px;
+}
+.ph-back {
+  font-size: 19px;
+  line-height: 1;
+  opacity: 0.9;
+}
+.ph-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.24);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  flex: none;
+}
+.ph-chat-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ph-chat {
+  background:
+    linear-gradient(rgba(229, 221, 213, 0.5), rgba(229, 221, 213, 0.5)),
+    repeating-linear-gradient(45deg, #ece5dd 0 12px, #e7dfd4 12px 24px);
+  padding: 12px 10px 16px;
+  max-height: var(--ph-chat-h);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ph-bubble {
+  background: #dcf8c6;
+  border-radius: 10px 10px 10px 3px;
+  padding: 8px 9px 6px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.13);
+}
+/* הזמנות הן לרוב תמונות לאורך. בלי תקרה הן ממלאות את כל המסך הקטן ולא
+   נשאר מקום לטקסט — ולכן כאן היא נחתכת מעט, ובהגדלה נראית כמעט במלואה. */
+.ph-image {
+  width: 100%;
+  max-height: 150px;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  display: block;
+}
+.ph-big .ph-image {
+  max-height: 260px;
+}
+.ph-text {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #1f2c1a;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.ph-line {
+  min-height: 1.1em;
+}
+.ph-empty {
+  color: #7a8a6f;
+  font-style: italic;
+}
+.ph-btns {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+}
+.ph-btn {
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0a84c4;
+  padding-top: 6px;
+  margin-top: 6px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+.ph-meta {
+  display: block;
+  text-align: left;
+  font-size: 10px;
+  color: #5b7052;
+  margin-top: 3px;
 }
 
 /* ============ תקשורת עם אורחים (רצף קבוע — CommunicationTab) ============ */
