@@ -8544,6 +8544,145 @@ td.notes.seating {
   color: #5b7052;
   margin-top: 4px;
 }
+/* צ'יפים דמויי-כפתור בתחתית הבועה — ייצוג ויזואלי בלבד של כפתורי
+   Quick Reply של WhatsApp (אישור הגעה/ניווט/מתנה), לא פונקציונליים כאן. */
+.wa-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 8px;
+}
+.wa-action-btn {
+  display: block;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0a84c4;
+  padding-top: 7px;
+  margin-top: 7px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* ============ הודעות לאורחים (עיצוב מינימליסטי — CommunicationTab) ============ */
+.gm-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 760px) {
+  .gm-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+.gm-card {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-card);
+}
+@media (max-width: 940px) {
+  .gm-card {
+    padding: 16px;
+    border-radius: var(--radius-l);
+  }
+}
+.gm-card-off {
+  opacity: 0.55;
+}
+.gm-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.gm-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.gm-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex: none;
+}
+.gm-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--charcoal);
+  margin: 0;
+}
+.gm-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  flex: none;
+}
+.gm-toggle input {
+  accent-color: var(--gold);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+.gm-preview-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--body);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.gm-preview-empty {
+  color: var(--faint);
+  font-style: italic;
+  -webkit-line-clamp: 2;
+}
+.gm-preview-link {
+  align-self: flex-start;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.gm-preview-link:hover {
+  color: var(--gold-deep);
+}
+.gm-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.gm-picker-option {
+  font: inherit;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  text-align: right;
+  cursor: pointer;
+}
+.gm-picker-selected {
+  border-color: var(--gold);
+  background: var(--surface-hi);
+}
+.gm-picker-check {
+  flex: none;
+  color: var(--gold-deep);
+  font-weight: 700;
+}
 
 /* ============ תקשורת עם אורחים (רצף קבוע — CommunicationTab) ============ */
 .comm-list {
