@@ -214,22 +214,48 @@ $$;
 -- מסירה של Meta (messaging.py::receive_webhook, statuses[]). אותה בעיה כמו
 -- הפונקציות למעלה: אין זהות מחוברת, ולכן UPDATE...RETURNING רגיל תחת RLS
 -- היה נחסם ע"י מדיניות ה-SELECT. SECURITY DEFINER מוגבל בכוונה: רק עדכון
--- status/delivered_at/read_at/failure_reason לפי provider_message_id מדויק
--- — לא חשיפה/כתיבה כלליים על messages. ראו app/message_status.py: apply_status_update.
+-- status/delivered_at/read_at/failure_reason/failure_code/provider_status
+-- לפי provider_message_id מדויק — לא חשיפה/כתיבה כלליים על messages. ראו
+-- app/message_status.py: apply_status_update.
+--
+-- ההתאמה לפי provider_message_id בלבד מוגנת גם ע"י אינדקס ייחודי
+-- (ux_messages_provider_message_id, main.py) — כך שהעדכון הזה לעולם לא
+-- יכול "לדלוף" ולעדכן הודעה של מוזמן אחר, גם אם שני ניסיונות שליחה יקבלו
+-- באיזשהו באג אותו מזהה.
+--
+-- ה-CASE בעמודת status חוסם "נסיגה": Meta לא מבטיחה סדר הגעה של
+-- statuses[] (webhook מאוחר יכול תיאורטית להגיע אחרי אחד מוקדם ממנו). אם
+-- כבר יש לנו 'read', עדכון 'delivered'/'sent' מאוחר לא יחזיר אותנו אחורה;
+-- אם כבר יש 'delivered', לא נסוג ל-'sent'. אותה הגנה קיימת גם בצד
+-- SQLite/Python (app/message_status.py: _should_skip_regression) — שני
+-- המימושים חייבים להישאר זהים בהתנהגות. failure_code/provider_status
+-- נכתבים גולמיים תמיד (גם בעדכון שנחסם כ"נסיגה") — הם מידע גולמי לצורכי
+-- דיבאג, לא הסטטוס שהמשתמש רואה.
 CREATE OR REPLACE FUNCTION app_update_message_status(
-  p_provider_message_id text, p_status text, p_ts timestamptz, p_reason text
+  p_provider_message_id text, p_status text, p_ts timestamptz, p_reason text,
+  p_failure_code integer DEFAULT NULL, p_provider_status text DEFAULT NULL
 )
 RETURNS messages
 LANGUAGE sql SECURITY DEFINER SET search_path = public
 AS $$
   UPDATE messages
-  SET status = p_status,
-      delivered_at = CASE WHEN p_status = 'delivered' THEN p_ts ELSE delivered_at END,
+  SET status = CASE
+        WHEN status = 'read' AND p_status IN ('sent', 'delivered') THEN status
+        WHEN status = 'delivered' AND p_status = 'sent' THEN status
+        ELSE p_status
+      END,
+      delivered_at = CASE
+        WHEN p_status = 'delivered' AND status NOT IN ('read') THEN p_ts
+        ELSE delivered_at
+      END,
       read_at = CASE WHEN p_status = 'read' THEN p_ts ELSE read_at END,
       failure_reason = CASE
-        WHEN p_status IN ('failed', 'invalid_number', 'blocked') AND p_reason <> ''
+        WHEN p_status IN ('failed', 'no_valid_number', 'blocked') AND p_reason <> ''
+             AND status NOT IN ('delivered', 'read')
         THEN p_reason ELSE failure_reason
-      END
+      END,
+      failure_code = COALESCE(p_failure_code, failure_code),
+      provider_status = COALESCE(p_provider_status, provider_status)
   WHERE provider_message_id = p_provider_message_id
   RETURNING *
 $$;
@@ -341,7 +367,7 @@ GRANT EXECUTE ON FUNCTION
   app_has_any_event_permission(bigint, text[]),
   app_find_guest_by_phone(text),
   app_record_guest_rsvp_reply(bigint, text, text, text),
-  app_update_message_status(text, text, timestamptz, text),
+  app_update_message_status(text, text, timestamptz, text, integer, text),
   app_register_user(text, text, text, text, boolean, text),
   app_create_event(bigint, text, text, text, text),
   app_count_users(),

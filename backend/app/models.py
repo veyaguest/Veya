@@ -338,8 +338,12 @@ class Message(Base):
     # מקור אמת יחיד לערכים: ``app/message_status.py``. להודעה יוצאת:
     # pending/queued (טרם נשלחה בפועל — עתידי, לתור אסינכרוני) · sent
     # (התקבלה ע"י הספק) · delivered/read (webhook חי) · failed (השליחה
-    # נכשלה) · invalid_number (מספר לא תקין/חסר) · blocked (המוזמן חסם את
-    # העסק, webhook). להודעה נכנסת: ``received`` בלבד.
+    # נכשלה — כולל כל כשל שהספק לא סיווג בנפרד) · blocked (המוזמן חסם את
+    # העסק, webhook — [לאימות], ראו message_status.py). שימו לב:
+    # no_valid_number (טלפון חסר/פורמט לא תקין) הוא ידע *מקומי בלבד* ולעולם
+    # לא נכתב לעמודה הזו — מוזמן כזה לא מקבל שורת Message בכלל, הסטטוס
+    # נגזר חי בזמן קריאה (ראו message_status.py: guest_effective_status).
+    # להודעה נכנסת: ``received`` בלבד.
     status: Mapped[str] = mapped_column(String, default="sent")
     provider: Mapped[str] = mapped_column(String, default="mock")  # mock/meta
     # ערוץ ההודעה — היום רק whatsapp (mock/live). מכין את הקרקע ל-SMS/טלפון/AI
@@ -357,9 +361,11 @@ class Message(Base):
     )
     # מזהה ההודעה אצל הספק (למשל wamid של Meta) — המפתח שדרכו webhook עתידי
     # מעדכן סטטוס (נמסרה/נקראה/נכשלה) להודעה הנכונה. ריק במצב mock.
-    provider_message_id: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True, index=True
-    )
+    # בלי ``index=True`` כאן בכוונה: האינדקס עליה חייב להיות ייחודי (כדי
+    # שהתאמת webhook לעולם לא תדלוף לעדכן הודעה של מוזמן אחר) — מנוהל
+    # במפורש דרך ``_EXTRA_UNIQUE_INDEXES``/``_ensure_unique_indexes`` ב-
+    # main.py, לא דרך הדגל הרגיל (שהיה יוצר גם אינדקס לא-ייחודי מיותר).
+    provider_message_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     # חותמות זמן לפי שלב במחזור החיים של ההודעה. ``created_at`` הוא זמן
     # היצירה ביומן; ``sent_at`` הוא זמן הקבלה בפועל ע"י הספק (יכול לחפוף
     # ל-created_at היום כי השליחה סינכרונית) — delivered_at/read_at מגיעים
@@ -367,8 +373,19 @@ class Message(Base):
     sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     delivered_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     read_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    # סיבת כשל/אי-מסירה — מהספק (mock/Meta) או מוולידציה מקומית (טלפון לא תקין).
+    # סיבת כשל/אי-מסירה — טקסט קריא לבני אדם, מהספק (mock/Meta) או מוולידציה
+    # מקומית (טלפון לא תקין).
     failure_reason: Mapped[str] = mapped_column(String, default="")
+    # קוד השגיאה הגולמי כפי שה-webhook/תגובת השליחה של הספק מחזירים (למשל
+    # errors[].code של Meta — 131026/131050/...). לא מתפרש/מנוקה — נשמר
+    # כמו שהוא כדי שאפשר יהיה לחקור בעתיד גם מה שהמיפוי שלנו (message_status.py)
+    # עוד לא יודע לסווג. None כשאין שגיאה (sent/delivered/read תקינים).
+    failure_code: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # מחרוזת הסטטוס הגולמית שהספק שלח (למשל "failed" מ-webhook Meta), *לפני*
+    # המיפוי הפנימי שלנו. לרוב זהה ל-status, אבל יכול להיות שונה כשאנחנו
+    # ממפים קוד שגיאה ספציפי לסטטוס מדויק יותר משלנו (למשל blocked) —
+    # כך אפשר תמיד לשחזר בדיוק מה הספק אמר, גם אם המיפוי שלנו ישתנה בעתיד.
+    provider_status: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

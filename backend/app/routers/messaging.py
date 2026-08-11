@@ -395,7 +395,9 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
                     if guest:
                         _record_reply(db, guest, status, provider="meta")
                 for st in value.get("statuses", []):
-                    mapped = message_status.map_meta_status(st.get("status", ""))
+                    raw_status = st.get("status", "")
+                    errors = st.get("errors") or []
+                    mapped = message_status.map_meta_status(raw_status, errors)
                     provider_message_id = st.get("id", "")
                     if not mapped or not provider_message_id:
                         continue
@@ -407,7 +409,6 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
                             ts = _dt.utcfromtimestamp(int(raw_ts))
                         except (TypeError, ValueError):
                             ts = None
-                    errors = st.get("errors") or []
                     reason = (errors[0].get("title") or errors[0].get("message") or "") if errors else ""
                     message_status.apply_status_update(
                         db,
@@ -415,6 +416,8 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
                         status=mapped,
                         timestamp=ts,
                         reason=reason,
+                        failure_code=message_status.first_error_code(errors),
+                        provider_status=raw_status or None,
                     )
         db.commit()
     except Exception:

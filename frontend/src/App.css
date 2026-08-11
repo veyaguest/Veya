@@ -8296,6 +8296,23 @@ td.notes.seating {
 }
 .msg-status-tile .stat-label {
   font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: default;
+}
+.msg-status-icon {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+/* אייקוני ה-וי של WhatsApp — צבעים קבועים בכוונה (לא טוקן עיצוב של VEYA),
+   כמו .wa-bubble/.ph-screen: ייצוג מדויק של ממשק חיצוני, לא צבע מותג. */
+.wa-check-icon {
+  color: #8696a0; /* אפור — נשלח/נמסר, זהה לצבע ה-tick האפור של WhatsApp */
+}
+.wa-check-icon-read {
+  color: #53bdeb; /* כחול — נקרא, זהה לצבע ה-tick הכחול של WhatsApp */
 }
 .track-status-note {
   margin: -10px 0 0;

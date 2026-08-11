@@ -1273,17 +1273,21 @@ class MessageStatusSummary(BaseModel):
     """סיכום מצב ההודעות שנשלחו למוזמנים — לכרטיס "מעקב אחרי המוזמנים"
     במסך ניהול ההודעות. כל מוזמן נספר פעם אחת, לפי ההודעה היוצאת האחרונה
     שנשלחה אליו (ראו ``app/message_status.py: summarize``). לא נתוני RSVP —
-    רק מה קרה להודעה עצמה."""
+    רק מה קרה להודעה עצמה.
 
-    mode: str            # mock / live
+    כל שדה מייצג *רק* מה שהמערכת באמת יודעת (ראו "כלל הברזל" בראש
+    ``message_status.py``): ``no_valid_number`` הוא ידע מקומי (טלפון חסר/
+    בפורמט לא תקין), לא אישור מ-WhatsApp שהמספר לא קיים שם."""
+
+    mode: str              # mock / live
     total_guests: int
-    sent: int             # ✓ נשלחו
-    delivered: int         # ✓✓ נמסרו למכשיר (webhook — 0 עד חיבור חי)
-    read: int              # 👁 נקראו (webhook, לא תמיד זמין)
-    failed: int            # ⚠️ לא נמסרו
-    invalid_number: int    # 📵 מספר לא זמין
-    blocked: int           # 🔒 חסומים (webhook — 0 עד חיבור חי)
-    queued: int             # ⏳ ממתינים לשליחה
+    sent: int               # ✓ נשלחו
+    delivered: int          # ✓✓ נמסרו למכשיר (webhook — 0 עד חיבור חי)
+    read: int               # 👁 נקראו (webhook, לא תמיד זמין)
+    failed: int             # ⚠️ לא נמסרו (כולל כשל שהספק לא סיווג בנפרד)
+    no_valid_number: int    # 📵 אין מספר תקין (ידע מקומי בלבד — חסר/פורמט שגוי)
+    blocked: int            # 🔒 חסומים — ‏[לאימות] ייתכן שלא ניתן לאישור כלל מול Meta
+    queued: int              # ⏳ ממתינים לשליחה
 
 
 class InvitationSendPreview(BaseModel):

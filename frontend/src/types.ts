@@ -1028,6 +1028,8 @@ export interface RsvpTrackActivateResult extends RsvpTrackStatus {
 // סיכום מצב ההודעות שנשלחו למוזמנים (נמסרו/נקראו/נכשלו/...) — כרטיס
 // "מעקב אחרי המוזמנים" במסך ניהול ההודעות. נפרד מ-RsvpTrackStatus: זה סטטוס
 // ההודעה עצמה, לא תשובת ה-RSVP.
+// חשוב: no_valid_number הוא ידע מקומי בלבד (טלפון חסר/פורמט לא תקין) —
+// לא אישור מ-WhatsApp שהמספר לא קיים שם (ראו backend/app/message_status.py).
 export interface MessageStatusSummary {
   mode: string
   total_guests: number
@@ -1035,7 +1037,7 @@ export interface MessageStatusSummary {
   delivered: number
   read: number
   failed: number
-  invalid_number: number
+  no_valid_number: number
   blocked: number
   queued: number
 }

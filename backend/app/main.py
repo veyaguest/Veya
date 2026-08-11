@@ -106,6 +106,8 @@ _EXTRA_COLUMNS = {
         "delivered_at": "DATETIME",
         "read_at": "DATETIME",
         "failure_reason": "TEXT DEFAULT ''",
+        "failure_code": "INTEGER",
+        "provider_status": "TEXT",
     },
     "automation_rules": {
         "action_kind": "TEXT DEFAULT 'send'",
@@ -227,7 +229,6 @@ _EXTRA_INDEXES = {
     "ix_messages_event_id": ("messages", "event_id"),
     "ix_messages_guest_id": ("messages", "guest_id"),
     "ix_messages_rule_id": ("messages", "rule_id"),
-    "ix_messages_provider_message_id": ("messages", "provider_message_id"),
     "ix_clarifications_event_id": ("clarifications", "event_id"),
     "ix_message_templates_event_id": ("message_templates", "event_id"),
     "ix_automation_rules_event_id": ("automation_rules", "event_id"),
@@ -250,6 +251,29 @@ def _ensure_indexes() -> None:
             cols = columns if isinstance(columns, str) else ", ".join(columns)
             conn.execute(
                 text(f"CREATE INDEX IF NOT EXISTS {name} ON {table} ({cols})")
+            )
+
+
+# אינדקסים ייחודיים (בנפרד מ-_EXTRA_INDEXES הרגיל, שאינו UNIQUE). NULL רבים
+# מותרים תחת אינדקס ייחודי (SQLite ו-Postgres כאחד — כל NULL נחשב שונה
+# מהאחר) — לכן זה לא פוגע בהודעות בלי provider_message_id (תשובות נכנסות,
+# שליחות שנכשלו לפני שהוקצה מזהה).
+_EXTRA_UNIQUE_INDEXES = {
+    # מבטיח שהתאמת webhook לפי provider_message_id (app/message_status.py:
+    # apply_status_update) לעולם לא תוכל "לדלוף" ולעדכן הודעה של מוזמן אחר
+    # — גם אם באג עתידי ייצור בטעות שני מזהים זהים.
+    "ux_messages_provider_message_id": ("messages", "provider_message_id"),
+}
+
+
+def _ensure_unique_indexes() -> None:
+    inspector = inspect(migrations_engine)
+    with migrations_engine.begin() as conn:
+        for name, (table, column) in _EXTRA_UNIQUE_INDEXES.items():
+            if not inspector.has_table(table):
+                continue
+            conn.execute(
+                text(f"CREATE UNIQUE INDEX IF NOT EXISTS {name} ON {table} ({column})")
             )
 
 
@@ -619,6 +643,8 @@ def on_startup() -> None:
     _ensure_columns()
     # מוסיף אינדקסים על מפתחות זרים (לביצועים) אם עדיין אין.
     _ensure_indexes()
+    # אינדקסים ייחודיים (מונעים התאמת webhook כפולה/מדליפה) אם עדיין אין.
+    _ensure_unique_indexes()
     # מוציא תמונות base64 ישנות מה-DB לקבצים (חד-פעמי, בטוח לחזרה).
     _migrate_images()
     # מוודא שיש בעלים (אדמין) אחד לפחות.

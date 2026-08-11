@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
+from typing import Optional
 from uuid import uuid4
 
 from app import event_terms
@@ -575,6 +576,11 @@ class SendResult:
     # נשמר על Message.provider_message_id כדי ש-webhook עתידי ידע לעדכן
     # בדיוק את השורה הנכונה (ראו app/message_status.py: outbound_fields).
     provider_message_id: str = ""
+    # קוד השגיאה הגולמי מתגובת Meta (error.code), כשהשליחה נכשלת באופן
+    # סינכרוני (למשל טוקן לא תקין, תבנית לא מאושרת). None כשאין כשל, או
+    # כשלא הצלחנו לפרסר את גוף התגובה. נשמר גולמי על Message.failure_code
+    # — לא מפורש כאן, ראו app/message_status.py למיפוי.
+    error_code: Optional[int] = None
 
 
 class MockProvider:
@@ -647,9 +653,19 @@ class MetaProvider:
                     ok=True, provider=self.name, status="sent",
                     provider_message_id=wamid,
                 )
+            # תגובת שגיאה של Meta היא {"error": {"message":..., "code":..., ...}}
+            # (מתועד ב-Cloud API). מפרסרים בעדינות — כשל בפרסור לא אמור
+            # להפיל את הטיפול בשגיאה המקורית.
+            error_code = None
+            try:
+                error_code = resp.json().get("error", {}).get("code")
+                error_code = int(error_code) if error_code is not None else None
+            except Exception:
+                error_code = None
             return SendResult(
                 ok=False, provider=self.name, status="failed",
                 detail=f"Meta {resp.status_code}: {resp.text[:200]}",
+                error_code=error_code,
             )
         except Exception as exc:  # רשת/תלות חסרה — לא מפילים את הבקשה
             return SendResult(ok=False, provider=self.name, status="failed", detail=str(exc))

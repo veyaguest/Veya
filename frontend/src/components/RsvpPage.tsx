@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import {
   activateRsvpTrack,
   advanceRsvpTrack,
@@ -1016,13 +1017,54 @@ function TrackStatusCard({
       {statusError && <p className="form-error">{statusError}</p>}
 
       <div className="msg-status-grid">
-        <MessageStatusTile num={status?.sent} label={t.sent} />
-        <MessageStatusTile num={status?.delivered} label={t.delivered} tone="ok" />
-        <MessageStatusTile num={status?.read} label={t.read} tone="ok" />
-        <MessageStatusTile num={status?.failed} label={t.failed} tone="err" />
-        <MessageStatusTile num={status?.invalid_number} label={t.invalidNumber} tone="err" />
-        <MessageStatusTile num={status?.blocked} label={t.blocked} tone="err" />
-        <MessageStatusTile num={status?.queued} label={t.queued} tone="wait" />
+        <MessageStatusTile
+          icon={<WhatsAppCheck />}
+          num={status?.sent}
+          label={t.sent}
+          hint={t.sentHint}
+        />
+        <MessageStatusTile
+          icon={<WhatsAppCheck double />}
+          num={status?.delivered}
+          label={t.delivered}
+          hint={t.deliveredHint}
+          tone="ok"
+        />
+        <MessageStatusTile
+          icon={<WhatsAppCheck double blue />}
+          num={status?.read}
+          label={t.read}
+          hint={t.readHint}
+          tone="ok"
+        />
+        <MessageStatusTile
+          icon="⚠️"
+          num={status?.failed}
+          label={t.failed}
+          hint={t.failedHint}
+          tone="err"
+        />
+        <MessageStatusTile
+          icon="📵"
+          num={status?.no_valid_number}
+          label={t.noValidNumber}
+          hint={t.noValidNumberHint}
+          tone="err"
+        />
+        <MessageStatusTile
+          icon="🚫"
+          num={status?.blocked}
+          label={t.blocked}
+          hint={t.blockedHint}
+          tone="err"
+        />
+        <MessageStatusTile
+          icon="⏳"
+          num={status?.queued}
+          label={t.queued}
+          hint={t.queuedHint}
+          tone="wait"
+        />
       </div>
       <p className="track-status-note">{t.readNote}</p>
 
@@ -1183,21 +1225,71 @@ function StatCard({
   )
 }
 
-/** כמו StatCard, אבל התווית כוללת סמל מוביל (✓/✓✓/👁/⚠️/📵/🔒/⏳) — לכן
- * שורת התווית קצת יותר גדולה מ-stat-label הרגיל כדי שהסמל יישאר קריא. */
+/**
+ * הוי-ים של WhatsApp — צוירים כ-SVG (לא תווי ✓ טקסטואליים, שנראים שונה
+ * בכל גופן/מערכת הפעלה) כדי שיזוהו מיד כ"שפת WhatsApp": קו אחד = נשלח,
+ * שני קווים אפורים = נמסר, שני קווים כחולים = נקרא. הצבעים קבועים בכוונה
+ * (לא טוקן עיצוב של VEYA) — כמו .wa-bubble/.ph-screen הקיימים במסך הזה,
+ * זה ייצוג מדויק של ממשק חיצוני, לא צבע מותג.
+ */
+function WhatsAppCheck({ double, blue }: { double?: boolean; blue?: boolean }) {
+  return (
+    <svg
+      className={`wa-check-icon ${blue ? 'wa-check-icon-read' : ''}`}
+      viewBox="0 0 20 12"
+      width="20"
+      height="12"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {double && (
+        <path
+          d="M1 6.6L4.4 10L11 3"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
+      <path
+        d="M5 6.6L8.4 10L19 1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/** כמו StatCard, אבל עם סמל בתחילת התווית — אייקון WhatsApp אמיתי (✓/✓✓
+ * אפור/✓✓ כחול) לשלושת סטטוסי המסירה, ואמוג'י לשאר (⚠️/📵/🚫/⏳, שאינם
+ * חלק משפת העיצוב של WhatsApp אלא תוצרים פנימיים של VEYA). ``hint`` הוא
+ * הסבר בשפה פשוטה שמופיע כ-tooltip במעבר עכבר/החזקה במובייל. */
 function MessageStatusTile({
+  icon,
   num,
   label,
+  hint,
   tone,
 }: {
+  icon: ReactNode
   num: number | undefined | null
   label: string
+  hint: string
   tone?: 'ok' | 'err' | 'wait'
 }) {
   return (
-    <div className={`stat-card msg-status-tile ${tone ?? ''}`}>
+    <div className={`stat-card msg-status-tile ${tone ?? ''}`} title={hint}>
       <span className="stat-num">{num ?? '—'}</span>
-      <span className="stat-label">{label}</span>
+      <span className="stat-label">
+        <span className="msg-status-icon" aria-hidden="true">
+          {icon}
+        </span>{' '}
+        {label}
+      </span>
     </div>
   )
 }
