@@ -22,9 +22,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   henna: 'חינה',
   brit: 'ברית',
   brita: 'בריתה',
-  family: 'אירוע משפחתי',
   business: 'אירוע עסקי',
-  other: 'אירוע אחר',
 }
 const EVENT_TYPE_ORDER = Object.keys(EVENT_TYPE_LABELS)
 

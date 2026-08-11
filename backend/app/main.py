@@ -365,8 +365,8 @@ def _migrate_brita_split() -> None:
 
 
 def seed_message_defaults() -> None:
-    """זורע פעם אחת את קטלוג ברירות המחדל הגלובלי לרצף התקשורת: 9 סוגי
-    אירוע × 6 סוגי הודעה = 54 שורות, כולן ``content=""`` (הבעלים יזין את
+    """זורע פעם אחת את קטלוג ברירות המחדל הגלובלי לרצף התקשורת: 7 סוגי
+    אירוע × 6 סוגי הודעה = 42 שורות, כולן ``content=""`` (הבעלים יזין את
     הטקסטים הסופיים דרך ``/admin/message-defaults``). רץ רק אם הטבלה ריקה,
     כך שעריכה של האדמין לא נדרסת בהפעלה הבאה."""
     from sqlalchemy import func, select
@@ -381,7 +381,7 @@ def seed_message_defaults() -> None:
         if have == 0:
             event_types = [
                 "wedding", "bar_mitzvah", "bat_mitzvah", "henna",
-                "brit", "brita", "family", "business", "other",
+                "brit", "brita", "business",
             ]
             defaults = [
                 models.MessageDefault(
@@ -622,7 +622,7 @@ def on_startup() -> None:
     # "בריתה" כ-event_type עצמאי משלה (2026-08-10) — מתקנת שיירי דאטה
     # משני תיקוני הכיוון הקודמים. חייבת לרוץ לפני הזריעה למטה.
     _migrate_brita_split()
-    # זורע את קטלוג ברירות המחדל הגלובלי לרצף התקשורת (9 סוגי אירוע × 6
+    # זורע את קטלוג ברירות המחדל הגלובלי לרצף התקשורת (7 סוגי אירוע × 6
     # סוגי הודעה, ריק) אם ריק.
     seed_message_defaults()
     # זורע את ספריית הנוסחים לבחירה (עד 12 לכל event_type×message_type),

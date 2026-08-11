@@ -8,9 +8,7 @@ export type EventType =
   | 'henna'
   | 'brit'
   | 'brita'
-  | 'family'
   | 'business'
-  | 'other'
 // קבוצה יכולה להיות אחת מהמוכרות, או קבוצה מותאמת אישית (טקסט חופשי בעברית).
 // המפתחות תלויי-סוג-אירוע — ראו EventTerms.groupOptions ב-eventTypes.ts.
 export type KnownGroupType =

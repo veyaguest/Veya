@@ -221,25 +221,6 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     giftLabel: 'מתנה למשפחה',
     groupOptions: FAMILY_EVENT_GROUP_OPTIONS,
   },
-  family: {
-    type: 'family',
-    label: 'אירוע משפחתי',
-    icon: '🎈',
-    hasTwoHosts: false,
-    hostsLabel: 'המשפחה',
-    hostAField: 'שם בעל/ת השמחה',
-    hostBField: '',
-    sideLabels: { groom: 'צד א׳', bride: 'צד ב׳', shared: 'משותף' },
-    eventNoun: 'האירוע המשפחתי',
-    celebration: 'אירוע משפחתי',
-    celebrationConstruct: 'אירוע של',
-    inviteLabel: 'הזמנה לאירוע',
-    defaultTitle: 'האירוע שלנו',
-    celebrationOf: (names) => `האירוע של ${names}`,
-    guestsLabel: 'מוזמנים',
-    giftLabel: 'מתנה למשפחה',
-    groupOptions: FAMILY_EVENT_GROUP_OPTIONS,
-  },
   business: {
     type: 'business',
     label: 'אירוע עסקי',
@@ -259,25 +240,6 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     giftLabel: 'מתנה לאירוע',
     groupOptions: BUSINESS_GROUP_OPTIONS,
   },
-  other: {
-    type: 'other',
-    label: 'אחר',
-    icon: '✨',
-    hasTwoHosts: false,
-    hostsLabel: 'מארגני האירוע',
-    hostAField: 'שם האירוע',
-    hostBField: '',
-    sideLabels: { groom: 'צד א׳', bride: 'צד ב׳', shared: 'משותף' },
-    eventNoun: 'האירוע',
-    celebration: 'אירוע',
-    celebrationConstruct: 'אירוע של',
-    inviteLabel: 'הזמנה לאירוע',
-    defaultTitle: 'האירוע שלנו',
-    celebrationOf: (names) => `האירוע של ${names}`,
-    guestsLabel: 'מוזמנים',
-    giftLabel: 'מתנה לאירוע',
-    groupOptions: FAMILY_EVENT_GROUP_OPTIONS,
-  },
 }
 
 /** רשימת סוגי האירוע לבורר, בסדר התצוגה הרצוי (חתונה ראשונה — Wedding-first). */
@@ -288,9 +250,7 @@ export const EVENT_TYPE_OPTIONS: { type: EventType; label: string; icon: string 
   'henna',
   'brit',
   'brita',
-  'family',
   'business',
-  'other',
 ].map((t) => {
   const terms = EVENT_TERMS[t as EventType]
   return { type: terms.type, label: terms.label, icon: terms.icon }

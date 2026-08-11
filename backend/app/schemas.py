@@ -12,8 +12,7 @@ from app.validators import normalize_israeli_phone
 Side = Literal["groom", "bride", "shared"]
 # סוג האירוע — קובע את השפה הדינמית. חתונה היא ברירת המחדל (תאימות אחורה).
 EventType = Literal[
-    "wedding", "bar_mitzvah", "bat_mitzvah", "henna", "brit", "brita",
-    "family", "business", "other",
+    "wedding", "bar_mitzvah", "bat_mitzvah", "henna", "brit", "brita", "business",
 ]
 # קבוצה: אחת מהמוכרות, או קבוצה מותאמת אישית (טקסט חופשי) — לכן str ולא Literal
 GroupType = str
