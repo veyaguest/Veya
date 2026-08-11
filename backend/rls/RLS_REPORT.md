@@ -54,8 +54,10 @@ STAGING_TEST_REPORT.md. תוכנית הפעלה בייצור: [PRODUCTION_ROLLOU
 
 ### א. שינויים נדרשים ב-Supabase (SQL Editor, כמחוברים כ-postgres)
 1. הרצת `backend/rls/01_helpers_and_grants.sql` — יוצר תפקיד `veya_app`,
-   הרשאות בסיסיות, וכל פונקציות העזר (כולל שתי הפונקציות החדשות
-   ל-webhook: `app_find_guest_by_phone`, `app_record_guest_rsvp_reply`).
+   הרשאות בסיסיות, וכל פונקציות העזר (כולל פונקציות ה-webhook:
+   `app_find_guest_by_phone`, `app_record_guest_rsvp_reply`,
+   `app_update_message_status` — עדכון סטטוס הודעה יוצאת לפי מזהה ספק,
+   ראו `app/message_status.py`).
    **לפני ההרצה: להחליף את `'CHANGE_ME_STRONG_PASSWORD'` בסיסמה חזקה
    ואקראית אמיתית** (שורה 30) ולשמור אותה בצד — היא תיכנס ל-`DATABASE_URL`
    החדש.

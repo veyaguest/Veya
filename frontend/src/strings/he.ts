@@ -202,6 +202,22 @@ export const strings = {
     libraryUse: 'שימוש בנוסח הזה',
     libraryPreviewOf: (name: string) => `תצוגה מקדימה — ${name}`,
     close: 'סגירה',
+
+    // ---- כרטיס "מעקב אחרי המוזמנים" — מצב ההודעות שנשלחו (לא RSVP) ----
+    statusCard: {
+      title: 'מעקב אחרי המוזמנים',
+      subtitle:
+        'אנחנו עוקבים אחרי מצב ההודעות שנשלחו ומעדכנים אתכם מי קיבל ומי דורש טיפול.',
+      loadError: 'לא הצלחנו לטעון את מצב ההודעות כרגע. ננסה שוב',
+      sent: '✓ נשלחו',
+      delivered: '✓✓ נמסרו למכשיר',
+      read: '👁 נקראו',
+      failed: '⚠️ לא נמסרו',
+      invalidNumber: '📵 מספר לא זמין',
+      blocked: '🔒 חסומים',
+      queued: '⏳ ממתינים לשליחה',
+      readNote: 'סטטוס "נקראו" מגיע רק כשהמוזמן לא כיבה אישורי קריאה בוואטסאפ.',
+    },
   },
 
   // ========================================================================
@@ -314,9 +330,9 @@ export const strings = {
     invitePlaceholder: 'העלו תמונת הזמנה',
     // ---- באנר "יש מוזמנים בלי הזמנה" — מעל עדכוני אישורי ההגעה ----
     inviteBannerTitle: (count: number) =>
-      `⚠️ יש לכם ${count} מוזמנים שעדיין לא קיבלו הזמנה`,
+      `💌 עוד ${count} מוזמנים נשארו ללא הזמנה`,
     inviteBannerDesc:
-      'ככל שתשלחו את ההזמנות מוקדם יותר, כך תקבלו את אישורי ההגעה מוקדם יותר ותוכלו להתחיל את סידור ההושבה בראש שקט.',
+      'זה הזמן להשלים את השליחה ולהמשיך להתקדם עם הכנות האירוע.',
     inviteBannerCta: 'שליחת הזמנות',
     // ---- Feed עדכוני אישורי הגעה — במקום כרטיסי הסטטיסטיקה הכפולים ----
     feedTitle: 'עדכוני אישורי הגעה',
@@ -515,6 +531,7 @@ export const strings = {
     rowIssueNoName: 'חסר שם',
     rowIssueNoPhone: 'חסר טלפון',
     rowIssueBadPhone: 'טלפון לא תקין',
+    rowIssueNoCount: 'חסרה כמות',
     rowIssueDuplicate: 'כפילות',
     pasteParseError: 'לא הצלחנו לפענח את הרשימה. נסו שוב.',
     pasteImportError: 'לא הצלחנו להוסיף את הרשימה, נסו שוב',
@@ -532,6 +549,8 @@ export const strings = {
     selectAll: 'סמן הכל',
     clearAll: 'נקה בחירה',
     colImport: 'ייבוא',
+    colCountDetected: 'כמות שהוזנה',
+    colCountTotal: 'סה"כ אנשים',
     backToEdit: 'חזרה לעריכת הטקסט',
 
     // ContactsImportDialog

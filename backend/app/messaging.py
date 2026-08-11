@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
+from uuid import uuid4
 
 from app import event_terms
 
@@ -568,8 +569,12 @@ def render_automation_template(
 class SendResult:
     ok: bool
     provider: str
-    status: str          # sent / failed
+    status: str          # sent / failed — ראו app/message_status.py לאוצר המלים המלא
     detail: str = ""
+    # מזהה ההודעה אצל הספק (wamid ב-Meta) — ריק כשאין (mock/כשל לפני שליחה).
+    # נשמר על Message.provider_message_id כדי ש-webhook עתידי ידע לעדכן
+    # בדיוק את השורה הנכונה (ראו app/message_status.py: outbound_fields).
+    provider_message_id: str = ""
 
 
 class MockProvider:
@@ -578,7 +583,12 @@ class MockProvider:
     name = "mock"
 
     def send_invitation(self, phone: str, text: str) -> SendResult:
-        return SendResult(ok=True, provider=self.name, status="sent")
+        # מזהה מדומה (לא אמיתי) — כדי שזרימת ה-provider_message_id תיבדק
+        # גם במצב mock, בלי לחכות לחיבור Meta אמיתי.
+        return SendResult(
+            ok=True, provider=self.name, status="sent",
+            provider_message_id=f"mock-{uuid4().hex[:16]}",
+        )
 
 
 class MetaProvider:
@@ -626,7 +636,17 @@ class MetaProvider:
             headers = {"Authorization": f"Bearer {self.token}"}
             resp = httpx.post(url, json=payload, headers=headers, timeout=15.0)
             if resp.status_code // 100 == 2:
-                return SendResult(ok=True, provider=self.name, status="sent")
+                # תגובת Meta כוללת messages: [{"id": "wamid...."}] — המזהה
+                # שדרכו יגיע webhook עתידי עם עדכון נמסרה/נקראה/נכשלה.
+                wamid = ""
+                try:
+                    wamid = (resp.json().get("messages") or [{}])[0].get("id", "")
+                except Exception:
+                    wamid = ""
+                return SendResult(
+                    ok=True, provider=self.name, status="sent",
+                    provider_message_id=wamid,
+                )
             return SendResult(
                 ok=False, provider=self.name, status="failed",
                 detail=f"Meta {resp.status_code}: {resp.text[:200]}",

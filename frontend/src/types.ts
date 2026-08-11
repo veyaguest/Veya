@@ -215,13 +215,18 @@ export interface ImportPreviewRow {
   phone: string
   side: Side
   group_type: GroupType
+  // party_size: 0 = טרם זוהתה כמות בטקסט (לא כמות אפס בפועל — יש להשלים
+  // לפני ייבוא). מגיע רק מייבוא הדבקת טקסט חופשי; בייבוא Excel/CSV תמיד ≥1.
   party_size: number
+  // guest_count_text: בדיוק מה שהמשתמש כתב לגבי כמות ("זוג", "שני ילדים"),
+  // או null אם לא זוהתה כמות בשורה. מגיע רק מייבוא הדבקת טקסט חופשי.
+  guest_count_text?: string | null
   notes_raw: string | null
   seating_notes: string | null
   valid: boolean
   errors: string[]
   // אזהרות רכות (לא חוסמות) — מגיע רק מייבוא הדבקת טקסט חופשי: "חסר טלפון",
-  // "טלפון לא תקין", "כפילות". ריק/חסר בייבוא Excel/CSV הרגיל.
+  // "טלפון לא תקין", "כפילות", "חסרה כמות" (חוסמת ייבוא, ראו rowIssues).
   warnings?: string[]
   // האם זוהתה כפילות (מול הרשימה המודבקת עצמה או מול מוזמני האירוע).
   duplicate?: boolean
@@ -1018,6 +1023,21 @@ export interface RsvpTrackActivateResult extends RsvpTrackStatus {
   failed: number
   failed_ids: number[]
   newly_activated: boolean
+}
+
+// סיכום מצב ההודעות שנשלחו למוזמנים (נמסרו/נקראו/נכשלו/...) — כרטיס
+// "מעקב אחרי המוזמנים" במסך ניהול ההודעות. נפרד מ-RsvpTrackStatus: זה סטטוס
+// ההודעה עצמה, לא תשובת ה-RSVP.
+export interface MessageStatusSummary {
+  mode: string
+  total_guests: number
+  sent: number
+  delivered: number
+  read: number
+  failed: number
+  invalid_number: number
+  blocked: number
+  queued: number
 }
 
 // ספירה מקדימה לדיאלוג האישור לפני שליחת הזמנות ידנית.

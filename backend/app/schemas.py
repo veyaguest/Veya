@@ -1269,6 +1269,23 @@ class RsvpTrackStatus(BaseModel):
     due_now: int            # כמה פעולות במסלול הבשילו וממתינות כרגע
 
 
+class MessageStatusSummary(BaseModel):
+    """סיכום מצב ההודעות שנשלחו למוזמנים — לכרטיס "מעקב אחרי המוזמנים"
+    במסך ניהול ההודעות. כל מוזמן נספר פעם אחת, לפי ההודעה היוצאת האחרונה
+    שנשלחה אליו (ראו ``app/message_status.py: summarize``). לא נתוני RSVP —
+    רק מה קרה להודעה עצמה."""
+
+    mode: str            # mock / live
+    total_guests: int
+    sent: int             # ✓ נשלחו
+    delivered: int         # ✓✓ נמסרו למכשיר (webhook — 0 עד חיבור חי)
+    read: int              # 👁 נקראו (webhook, לא תמיד זמין)
+    failed: int            # ⚠️ לא נמסרו
+    invalid_number: int    # 📵 מספר לא זמין
+    blocked: int           # 🔒 חסומים (webhook — 0 עד חיבור חי)
+    queued: int             # ⏳ ממתינים לשליחה
+
+
 class InvitationSendPreview(BaseModel):
     """ספירה מקדימה לדיאלוג האישור לפני שליחת הזמנות ידנית."""
 

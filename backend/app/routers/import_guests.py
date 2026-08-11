@@ -70,6 +70,10 @@ async def preview_import(
 
 class ImportPaste(BaseModel):
     text: str = ""
+    # True רק בזרימת ייבוא אנשי קשר (ContactsImportDialog): שם איש קשר הוא
+    # תמיד אדם בודד בוודאות, אז 1 היא עובדה נתונה ולא ניחוש. בהדבקת רשימה
+    # חופשית רגילה (ברירת המחדל) — כמות חסרה נשארת ריקה ומסומנת לבדיקה.
+    assume_single_if_no_count: bool = False
 
 
 @router.post("/paste")
@@ -102,7 +106,11 @@ def paste_import(
         elif name:
             keys.add(name.strip().lower())
 
-    result = parse_freeform_text(payload.text, existing_keys=keys)
+    result = parse_freeform_text(
+        payload.text,
+        existing_keys=keys,
+        assume_single_if_no_count=payload.assume_single_if_no_count,
+    )
     if result["total"] > MAX_IMPORT_ROWS:
         raise HTTPException(
             status_code=400,

@@ -20,7 +20,7 @@ import re
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import automation, event_terms, messaging, models
+from app import automation, event_terms, message_status, messaging, models
 
 # ---- סדר קבוע וכינויים ----
 
@@ -313,10 +313,9 @@ def send_due_messages(
             direction="outbound",
             kind=a.event_message.message_type,
             body=a.preview,
-            status=res.status,
-            provider=res.provider,
             channel="whatsapp",
             event_message_id=a.event_message.id,
+            **message_status.outbound_fields(res),
         ))
         if res.ok:
             sent += 1

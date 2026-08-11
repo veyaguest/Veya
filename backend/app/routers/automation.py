@@ -24,6 +24,7 @@ from app import (
     automation,
     communication,
     invitations,
+    message_status,
     messaging,
     models,
     permissions,
@@ -125,6 +126,23 @@ def get_track(
     return _track_status(db, event)
 
 
+@router.get("/message-status", response_model=schemas.MessageStatusSummary)
+def message_status_summary(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+):
+    """סיכום מצב ההודעות שנשלחו למוזמנים (נמסרו/נקראו/נכשלו/...) — לכרטיס
+    "מעקב אחרי המוזמנים". נפרד לגמרי מסטטוס ה-RSVP (``/track``)."""
+    guests = _guests(db, event.id)
+    messages = _messages(db, event.id)
+    counts = message_status.summarize(guests, messages)
+    return schemas.MessageStatusSummary(
+        mode=messaging.current_mode(),
+        total_guests=len(guests),
+        **counts,
+    )
+
+
 @router.get("/track/preview", response_model=schemas.InvitationSendPreview)
 def preview_send(
     db: Session = Depends(get_db),
@@ -223,10 +241,9 @@ def activate_track(
             direction="outbound",
             kind="invitation",
             body=text,
-            status=res.status,
-            provider=res.provider,
             channel="whatsapp",
             event_message_id=invitation_msg.id if invitation_msg else None,
+            **message_status.outbound_fields(res),
         ))
         if res.ok:
             invitations_sent += 1

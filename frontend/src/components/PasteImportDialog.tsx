@@ -35,6 +35,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
           side: r.side,
           group_type: r.group_type,
           party_size: r.party_size,
+          guest_count_text: r.guest_count_text ?? null,
           duplicate: dup,
           // ברירת מחדל: מסמנים לייבוא רק שורות תקינות שאינן כפילות.
           include: r.valid && normalizePhone(r.phone) !== null && !dup,
@@ -184,7 +185,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
             </div>
 
             <div className="preview-wrap">
-              <table className="guests-table paste-table">
+              <table className="guests-table paste-table paste-table-quantity">
                 <thead>
                   <tr>
                     <th className="center">{t.colImport}</th>
@@ -192,7 +193,8 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                     <th>{t.colPhone}</th>
                     <th>{t.colSide}</th>
                     <th>{t.colGroup}</th>
-                    <th className="center">{t.colCount}</th>
+                    <th className="center">{t.colCountDetected}</th>
+                    <th className="center">{t.colCountTotal}</th>
                     <th>{t.colNotes}</th>
                   </tr>
                 </thead>
@@ -269,17 +271,22 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                             ))}
                           </select>
                         </td>
+                        <td className="center count-detected">
+                          {r.guest_count_text || '—'}
+                        </td>
                         <td className="center">
                           <input
                             className="cell-input count-input"
                             type="number"
                             min={1}
-                            value={r.party_size}
-                            onChange={(e) =>
+                            placeholder="?"
+                            value={r.party_size || ''}
+                            onChange={(e) => {
+                              const raw = e.target.value
                               updateRow(r.key, {
-                                party_size: Math.max(1, Number(e.target.value)),
+                                party_size: raw === '' ? 0 : Math.max(1, Number(raw)),
                               })
-                            }
+                            }}
                           />
                         </td>
                         <td>

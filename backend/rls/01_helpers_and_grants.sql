@@ -210,6 +210,30 @@ AS $$
   SELECT event_id, id, 'inbound', 'reply', p_label, 'received', p_provider, 'whatsapp' FROM updated
 $$;
 
+-- עדכון סטטוס הודעה יוצאת לפי מזהה הספק (wamid) — נקרא מ-webhook עדכוני
+-- מסירה של Meta (messaging.py::receive_webhook, statuses[]). אותה בעיה כמו
+-- הפונקציות למעלה: אין זהות מחוברת, ולכן UPDATE...RETURNING רגיל תחת RLS
+-- היה נחסם ע"י מדיניות ה-SELECT. SECURITY DEFINER מוגבל בכוונה: רק עדכון
+-- status/delivered_at/read_at/failure_reason לפי provider_message_id מדויק
+-- — לא חשיפה/כתיבה כלליים על messages. ראו app/message_status.py: apply_status_update.
+CREATE OR REPLACE FUNCTION app_update_message_status(
+  p_provider_message_id text, p_status text, p_ts timestamptz, p_reason text
+)
+RETURNS messages
+LANGUAGE sql SECURITY DEFINER SET search_path = public
+AS $$
+  UPDATE messages
+  SET status = p_status,
+      delivered_at = CASE WHEN p_status = 'delivered' THEN p_ts ELSE delivered_at END,
+      read_at = CASE WHEN p_status = 'read' THEN p_ts ELSE read_at END,
+      failure_reason = CASE
+        WHEN p_status IN ('failed', 'invalid_number', 'blocked') AND p_reason <> ''
+        THEN p_reason ELSE failure_reason
+      END
+  WHERE provider_message_id = p_provider_message_id
+  RETURNING *
+$$;
+
 -- ── 7. פונקציות עזר ל-INSERT ...RETURNING לפני/בלי זהות מספיקה ──────────────
 -- התגלה בבדיקת Staging אמיתית (לא ניתן היה לגלות מול SQLite): Postgres
 -- דורש, בכל INSERT עם RETURNING (וזה מה שכל ORM INSERT של SQLAlchemy עושה
@@ -317,6 +341,7 @@ GRANT EXECUTE ON FUNCTION
   app_has_any_event_permission(bigint, text[]),
   app_find_guest_by_phone(text),
   app_record_guest_rsvp_reply(bigint, text, text, text),
+  app_update_message_status(text, text, timestamptz, text),
   app_register_user(text, text, text, text, boolean, text),
   app_create_event(bigint, text, text, text, text),
   app_count_users(),

@@ -8276,6 +8276,33 @@ td.notes.seating {
   color: var(--body);
 }
 
+.track-status-sub {
+  margin: -8px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* --- כרטיס "מעקב אחרי המוזמנים" — מצב הודעות, לא RSVP --- */
+.msg-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 700px) {
+  .msg-status-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.msg-status-tile .stat-label {
+  font-size: 13px;
+}
+.track-status-note {
+  margin: -10px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .track-phone {
   border-top: 1px solid var(--line-2);
   padding-top: 16px;

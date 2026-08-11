@@ -262,10 +262,12 @@ def build_preview(headers: list[str], rows: list[list], mapping: dict) -> dict:
 # פענוח טקסט חופשי (הדבקת רשימה מ-WhatsApp / אקסל / כל מקור)
 # ---------------------------------------------------------------------------
 
-# רצף שנראה כמו טלפון ישראלי: מתחיל ב-0 (מקומי) או +972/972 (בינ"ל), ואז
-# ספרות/רווחים/מקפים, ומסתיים בספרה. העיגון ל-0/972 מונע תפיסה בטעות של מספרי
-# כמות ("x2", "5 אנשים") שנמצאים לפני הטלפון באותה שורה.
-_PHONE_RE = re.compile(r"(?:\+?972|0)[\d\s\-]{7,}\d")
+# רצף שנראה כמו טלפון ישראלי: מתחיל ב-0 (מקומי) או +972/972 (בינ"ל), עם עד
+# ספרה אחת בין כל שתי ספרות (רווח/מקף מותרים כמפרידים). מספר תקין הוא 9-10
+# ספרות מקומי (אחרי הסרת 972 והחלפתו ב-0) — ולכן חוזרים על "ספרה נוספת" 8-9
+# פעמים בדיוק, לא ללא הגבלה. ה-bound הזה קריטי: בלעדיו רצף כמו "...1234567 5"
+# (טלפון ואז כמות בשורה) היה "בולע" את ה-5 כאילו הוא הספרה ה-11 של הטלפון.
+_PHONE_RE = re.compile(r"(?:\+?972(?:[\s\-]?\d){8,9}|0(?:[\s\-]?\d){8,9})")
 
 # כמות מפורשת: "5 אנשים", "5 מוזמנים", "5 נפשות", "5 איש/אורחים"
 _COUNT_WORD_RE = re.compile(r"(\d+)\s*(?:אנשים|מוזמנים|נפשות|איש|אורחים)")
@@ -276,8 +278,113 @@ _COUNT_X_RE = re.compile(r"(?:^|\s)[xX*×]\s*(\d+)\b")
 # מספר בודד בקצה השורה (אחרי שהוסר הטלפון): "דנה 2"
 _COUNT_TRAIL_RE = re.compile(r"(?:^|\s)(\d+)\s*$")
 
-# רמז "משפחת …" / "משפחה של …" → קבוצת משפחה קרובה + כמות ברירת מחדל ≥ 2
+# רמז "משפחת …" / "משפחה של …" → קבוצת משפחה קרובה. זה רק תיוג group_type —
+# **לא** משפיע על הכמות (ראה _parse_quantity): "משפחת לוי" בלי כמות מפורשת
+# נשארת עם כמות לא-ידועה, בדיוק כמו כל שורה אחרת בלי כמות.
 _FAMILY_RE = re.compile(r"^\s*משפח[הת]\b")
+
+# ---------------------------------------------------------------------------
+# זיהוי כמות בעברית — מילים ומספרים
+# ---------------------------------------------------------------------------
+# ממיר מילת-מספר עברית (זכר/נקבה) לערך שלה. משמש גם למספר "כמות ישירה"
+# (למשל "שלושה" לבד = 3 אנשים) וגם כמספר ילדים ("שני ילדים" = 2 ילדים).
+_NUMBER_WORDS: dict[str, int] = {
+    "אחד": 1, "אחת": 1,
+    "שניים": 2, "שתיים": 2, "שני": 2, "שתי": 2,
+    "שלושה": 3, "שלוש": 3,
+    "ארבעה": 4, "ארבע": 4,
+    "חמישה": 5, "חמש": 5,
+    "שישה": 6, "שש": 6,
+    "שבעה": 7, "שבע": 7,
+    "שמונה": 8,
+    "תשעה": 9, "תשע": 9,
+    "עשרה": 10, "עשר": 10,
+}
+# ממוינות מהארוך לקצר כדי שההתאמה לא תיעצר על תת-מחרוזת ("שני" בתוך "שניים").
+_NUM_WORD_ALT = "|".join(sorted(_NUMBER_WORDS, key=len, reverse=True))
+_NUM_TOKEN_RE = rf"(?:\d+|{_NUM_WORD_ALT})"
+
+_CHILD_WORD_RE = r"ילד(?:ים|ה|ות)?"
+_COUPLE_WORD_RE = r"(?:זוג|זוגי|שני\s+מבוגרים)"
+
+# "זוג + ילד" / "זוג עם שני ילדים" — שני מבוגרים ועוד ילדים, מחוברים ב-+/עם/ו.
+_COMBINED_QTY_RE = re.compile(
+    rf"{_COUPLE_WORD_RE}\s*(?:\+|עם|ו-?)\s*"
+    rf"(?:(?P<before>{_NUM_TOKEN_RE})\s+)?{_CHILD_WORD_RE}(?:\s+(?P<after>{_NUM_TOKEN_RE}))?"
+)
+# ילד/ה בודד/ים, עם מספר לפני או אחרי או בלי (ילד בודד = ילד אחד).
+_CHILD_QTY_RE = re.compile(
+    rf"(?:(?P<before>{_NUM_TOKEN_RE})\s+)?{_CHILD_WORD_RE}(?:\s+(?P<after>{_NUM_TOKEN_RE}))?"
+)
+_COUPLE_ALONE_RE = re.compile(rf"\b{_COUPLE_WORD_RE}\b")
+_SINGLE_ALONE_RE = re.compile(r"\b(?:יחיד|בודד|אח[דת](?:\s+מגיע\w*)?)\b")
+# מילת-מספר עברית עצמאית (לא צמודה ל"ילד") = כמות אנשים ישירה: "שלושה" -> 3.
+_BARE_NUM_WORD_RE = re.compile(rf"(?:^|\s)(?P<w>{_NUM_WORD_ALT})(?:\s|$)")
+
+
+def _num_token_value(token: Optional[str]) -> Optional[int]:
+    if not token:
+        return None
+    token = token.strip()
+    if token.isdigit():
+        return int(token)
+    return _NUMBER_WORDS.get(token)
+
+
+def _parse_quantity(working: str) -> tuple[Optional[str], Optional[int], str]:
+    """מזהה ביטוי כמות בשורה ומסירה אותו ממנה.
+
+    מחזיר (guest_count_text, party_size, working_without_quantity):
+    guest_count_text = בדיוק מה שהמשתמש כתב (או None אם לא זוהתה כמות),
+    party_size = מספר האנשים בפועל שחושב מהביטוי (או None — ולא 1! — אם
+    לא זוהתה כמות; חל איסור לנחש "יחיד" כברירת מחדל, ראה `parse_freeform_text`).
+
+    סדר הניסיונות הוא לפי ספציפיות: קודם צירוף "זוג+ילדים", אחר כך "ילדים"
+    לבד (מוזמן ראשי + הילדים), רק אז כמויות ישירות (מספר/זוג/יחיד/מילת-מספר).
+    """
+    m = _COMBINED_QTY_RE.search(working)
+    if m:
+        children = _num_token_value(m.group("before")) or _num_token_value(m.group("after")) or 1
+        text = m.group(0).strip()
+        rest = working[: m.start()] + " " + working[m.end():]
+        return text, 2 + children, rest
+
+    m = _CHILD_QTY_RE.search(working)
+    if m:
+        children = _num_token_value(m.group("before")) or _num_token_value(m.group("after")) or 1
+        text = m.group(0).strip()
+        rest = working[: m.start()] + " " + working[m.end():]
+        return text, 1 + children, rest
+
+    for rx in (_COUNT_WORD_RE, _COUNT_PAREN_RE, _COUNT_X_RE):
+        m = rx.search(working)
+        if m:
+            text = m.group(0).strip()
+            rest = working[: m.start()] + " " + working[m.end():]
+            return text, int(m.group(1)), rest
+
+    m = _COUPLE_ALONE_RE.search(working)
+    if m:
+        rest = working[: m.start()] + " " + working[m.end():]
+        return m.group(0).strip(), 2, rest
+
+    m = _SINGLE_ALONE_RE.search(working)
+    if m:
+        rest = working[: m.start()] + " " + working[m.end():]
+        return m.group(0).strip(), 1, rest
+
+    m = _BARE_NUM_WORD_RE.search(working)
+    if m:
+        value = _num_token_value(m.group("w"))
+        rest = working[: m.start()] + " " + working[m.end():]
+        return m.group("w").strip(), value, rest
+
+    m = _COUNT_TRAIL_RE.search(working)
+    if m:
+        rest = working[: m.start()] + " " + working[m.end():]
+        return m.group(1).strip(), int(m.group(1)), rest
+
+    return None, None, working
 
 
 def _clean_name(text: str) -> str:
@@ -287,13 +394,28 @@ def _clean_name(text: str) -> str:
     return text.strip(" -–—,:;|\t")
 
 
-def parse_freeform_text(text: str, existing_keys: Optional[set] = None) -> dict:
+def parse_freeform_text(
+    text: str,
+    existing_keys: Optional[set] = None,
+    assume_single_if_no_count: bool = False,
+) -> dict:
     """מפענח רשימת טקסט חופשי לשורות מוזמנים — מבנה זהה ל-`build_preview`.
 
-    לכל שורה לא-ריקה: מזהה טלפון ומסירו, מזהה כמות אנשים ומסירה, מזהה רמז
-    "משפחת…", ומשאיר את השם. ולידציה רכה: `errors` חוסמים (חסר שם) לעומת
-    `warnings` שלא חוסמים (חסר טלפון / טלפון לא תקין / כפילות). `duplicate`
-    מסומן מול הרשימה המודבקת עצמה וגם מול מוזמני האירוע (`existing_keys`).
+    לכל שורה לא-ריקה: מזהה טלפון ומסירו, מזהה כמות (מילים/מספרים בעברית,
+    כולל "זוג"/"ילדים"/צירופים כמו "זוג עם שני ילדים") ומסירה, מזהה רמז
+    "משפחת…" (**רק** לשיוך group_type — לא משפיע על הכמות ולא יוצר קשר בין
+    שורות), ומשאיר את השם.
+
+    כלל ברזל: **לא מנחשים כמות שלא נכתבה.** אם לא זוהה בשורה שום ביטוי כמות,
+    `guest_count_text`/`party_size` נשארים None ומתווספת אזהרה חוסמת ("חסרה
+    כמות") — לא ברירת מחדל שקטה ל"יחיד". היוצא מהכלל היחיד: כש-
+    `assume_single_if_no_count=True` (משמש לזרימת ייבוא אנשי קשר, ששם כל
+    שורה היא כבר איש קשר בודד בוודאות — 1 הוא עובדה נתונה, לא ניחוש).
+
+    ולידציה: `errors` חוסמים (חסר שם) לעומת `warnings` חוסמי-ברירת-מחדל
+    (חסרה כמות) או לא-חוסמים (חסר טלפון / טלפון לא תקין / כפילות).
+    `duplicate` מסומן מול הרשימה המודבקת עצמה וגם מול מוזמני האירוע
+    (`existing_keys`).
     """
     existing_keys = existing_keys or set()
     preview_rows = []
@@ -320,37 +442,27 @@ def parse_freeform_text(text: str, existing_keys: Optional[set] = None) -> dict:
             except ValueError:
                 phone_warn = "טלפון לא תקין"
 
-        # 2) כמות — סורקים לפי סדר עדיפויות ומסירים מהשורה
-        party_size: Optional[int] = None
-        for rx in (_COUNT_WORD_RE, _COUNT_PAREN_RE, _COUNT_X_RE):
-            cm = rx.search(working)
-            if cm:
-                party_size = int(cm.group(1))
-                working = working[: cm.start()] + " " + working[cm.end():]
-                break
-        if party_size is None:
-            cm = _COUNT_TRAIL_RE.search(working)
-            if cm:
-                party_size = int(cm.group(1))
-                working = working[: cm.start()] + " " + working[cm.end():]
+        # 2) כמות — מזהים ומסירים מהשורה (ראו _parse_quantity)
+        guest_count_text, party_size, working = _parse_quantity(working)
 
-        # 3) רמז משפחה
+        # 3) רמז משפחה — תיוג group_type בלבד, לא כמות ולא קשר בין שורות
         is_family = bool(_FAMILY_RE.search(line))
         group_type = "close_family" if is_family else "other"
 
         # 4) שם — מה שנשאר
         full_name = _clean_name(working)
 
-        if party_size is None:
-            party_size = 2 if is_family else 1
-        if party_size < 1:
+        count_missing = party_size is None
+        if count_missing and assume_single_if_no_count:
             party_size = 1
 
-        # ולידציה רכה
+        # ולידציה
         errors: list[str] = []
         warnings: list[str] = []
         if not full_name:
             errors.append("חסר שם")
+        if count_missing and not assume_single_if_no_count:
+            warnings.append("חסרה כמות")
         if phone_warn:
             warnings.append(phone_warn)
         elif not phone:
@@ -364,7 +476,7 @@ def parse_freeform_text(text: str, existing_keys: Optional[set] = None) -> dict:
         if key:
             seen_keys.add(key)
 
-        is_valid = len(errors) == 0
+        is_valid = len(errors) == 0 and party_size is not None
         if is_valid:
             valid_count += 1
 
@@ -375,7 +487,10 @@ def parse_freeform_text(text: str, existing_keys: Optional[set] = None) -> dict:
                 "phone": phone,
                 "side": "shared",
                 "group_type": group_type,
-                "party_size": party_size,
+                "guest_count_text": guest_count_text,
+                # 0 = כמות טרם זוהתה (לא כמות אפס בפועל — כמות אמיתית תמיד ≥1).
+                # sentinel ולא None כדי לשמור על party_size:int יציב בחוזה ה-API.
+                "party_size": party_size if party_size is not None else 0,
                 "notes_raw": None,
                 "seating_notes": None,
                 "valid": is_valid,

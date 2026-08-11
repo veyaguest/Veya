@@ -61,7 +61,9 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
         .map((c) => `${(c.name?.[0] ?? '').trim()} ${(c.tel?.[0] ?? '').trim()}`.trim())
         .filter((line) => line.length > 0)
         .join('\n')
-      const preview = await pasteImportPreview(text)
+      // אנשי קשר תמיד יחידים בוודאות (לא רשימה חופשית עם כמויות אפשריות) —
+      // אז 1 היא עובדה ידועה, לא ניחוש. ראו assume_single_if_no_count בבקאנד.
+      const preview = await pasteImportPreview(text, { assumeSingleIfNoCount: true })
       let hidden = 0
       const edit: EditRow[] = []
       preview.rows.forEach((r, i) => {
@@ -78,6 +80,7 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
           side: r.side,
           group_type: r.group_type,
           party_size: r.party_size,
+          guest_count_text: null,
           duplicate: false,
           include: r.valid && normalizePhone(r.phone) !== null,
         })

@@ -101,6 +101,11 @@ _EXTRA_COLUMNS = {
     "messages": {
         "channel": "TEXT DEFAULT 'whatsapp'",
         "rule_id": "INTEGER",
+        "provider_message_id": "TEXT",
+        "sent_at": "DATETIME",
+        "delivered_at": "DATETIME",
+        "read_at": "DATETIME",
+        "failure_reason": "TEXT DEFAULT ''",
     },
     "automation_rules": {
         "action_kind": "TEXT DEFAULT 'send'",
@@ -222,6 +227,7 @@ _EXTRA_INDEXES = {
     "ix_messages_event_id": ("messages", "event_id"),
     "ix_messages_guest_id": ("messages", "guest_id"),
     "ix_messages_rule_id": ("messages", "rule_id"),
+    "ix_messages_provider_message_id": ("messages", "provider_message_id"),
     "ix_clarifications_event_id": ("clarifications", "event_id"),
     "ix_message_templates_event_id": ("message_templates", "event_id"),
     "ix_automation_rules_event_id": ("automation_rules", "event_id"),

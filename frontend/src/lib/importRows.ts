@@ -14,7 +14,11 @@ export interface EditRow {
   phone: string
   side: Side
   group_type: GroupType
+  // 0 = כמות טרם זוהתה/הושלמה (סנטינל, לא כמות אפס אמיתית) — ראו rowIssues.
   party_size: number
+  // בדיוק מה שהמשתמש כתב לגבי כמות ("זוג", "שני ילדים") — לתצוגה בלבד,
+  // כדי שאפשר יהיה לוודא שהפענוח נכון. null כשלא זוהתה כמות בטקסט.
+  guest_count_text: string | null
   duplicate: boolean
   include: boolean
 }
@@ -33,9 +37,11 @@ export function rowIssues(r: EditRow): { canImport: boolean; badges: string[] } 
   const badges: string[] = []
   const hasName = r.full_name.trim().length > 0
   const phoneOk = normalizePhone(r.phone) !== null
+  const hasCount = r.party_size > 0
   if (!hasName) badges.push(t.rowIssueNoName)
   if (!r.phone.trim()) badges.push(t.rowIssueNoPhone)
   else if (!phoneOk) badges.push(t.rowIssueBadPhone)
+  if (!hasCount) badges.push(t.rowIssueNoCount)
   if (r.duplicate) badges.push(t.rowIssueDuplicate)
-  return { canImport: hasName && phoneOk, badges }
+  return { canImport: hasName && phoneOk && hasCount, badges }
 }

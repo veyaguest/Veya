@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from app import audit, messaging, models, permissions, schemas
+from app import audit, message_status, messaging, models, permissions, schemas
 from app.auth import get_current_user
 from app.database import IS_POSTGRES, get_db
 from app.deps import EventAccess
@@ -139,8 +139,7 @@ def send_invitations(
             direction="outbound",
             kind="invitation",
             body=text,
-            status=res.status,
-            provider=res.provider,
+            **message_status.outbound_fields(res),
         ))
         if res.ok:
             sent += 1
@@ -230,8 +229,7 @@ def send_reminders(
             direction="outbound",
             kind="reminder",
             body=text,
-            status=res.status,
-            provider=res.provider,
+            **message_status.outbound_fields(res),
         ))
         if res.ok:
             sent += 1
@@ -370,7 +368,10 @@ def _verify_signature(body: bytes, signature_header: Optional[str]) -> bool:
 
 @router.post("/webhook")
 async def receive_webhook(request: Request, db: Session = Depends(get_db)):
-    """קבלת תשובות RSVP מ-Meta. מזהה את המוזמן לפי מספר הטלפון ומעדכן סטטוס."""
+    """Webhook יחיד מ-Meta — כמו בפועל אצל Meta, אותה קריאה נושאת גם תשובות
+    RSVP נכנסות (``messages[]``, מזהה מוזמן לפי טלפון) וגם עדכוני מסירה
+    להודעות יוצאות (``statuses[]``: נשלחה/נמסרה/נקראה/נכשלה, מזהה הודעה
+    לפי provider_message_id — ראו ``app/message_status.py``)."""
     # קוראים את הגוף הגולמי (bytes) לפני הפענוח — נדרש לאימות החתימה בדיוק.
     raw_body = await request.body()
     if not _verify_signature(raw_body, request.headers.get("X-Hub-Signature-256")):
@@ -393,6 +394,28 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
                     guest = _match_guest_by_phone(db, from_phone)
                     if guest:
                         _record_reply(db, guest, status, provider="meta")
+                for st in value.get("statuses", []):
+                    mapped = message_status.map_meta_status(st.get("status", ""))
+                    provider_message_id = st.get("id", "")
+                    if not mapped or not provider_message_id:
+                        continue
+                    ts = None
+                    raw_ts = st.get("timestamp")
+                    if raw_ts:
+                        try:
+                            from datetime import datetime as _dt
+                            ts = _dt.utcfromtimestamp(int(raw_ts))
+                        except (TypeError, ValueError):
+                            ts = None
+                    errors = st.get("errors") or []
+                    reason = (errors[0].get("title") or errors[0].get("message") or "") if errors else ""
+                    message_status.apply_status_update(
+                        db,
+                        provider_message_id=provider_message_id,
+                        status=mapped,
+                        timestamp=ts,
+                        reason=reason,
+                    )
         db.commit()
     except Exception:
         # לעולם לא מחזירים שגיאה ל-Meta — אחרת היא תנסה שוב ושוב.

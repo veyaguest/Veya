@@ -335,7 +335,12 @@ class Message(Base):
     # invitation/reply/reminder/pre_event/thank_you/custom — מסע התקשורת המלא
     kind: Mapped[str] = mapped_column(String, default="invitation")
     body: Mapped[str] = mapped_column(Text, default="")
-    status: Mapped[str] = mapped_column(String, default="sent")  # sent/delivered/failed/received
+    # מקור אמת יחיד לערכים: ``app/message_status.py``. להודעה יוצאת:
+    # pending/queued (טרם נשלחה בפועל — עתידי, לתור אסינכרוני) · sent
+    # (התקבלה ע"י הספק) · delivered/read (webhook חי) · failed (השליחה
+    # נכשלה) · invalid_number (מספר לא תקין/חסר) · blocked (המוזמן חסם את
+    # העסק, webhook). להודעה נכנסת: ``received`` בלבד.
+    status: Mapped[str] = mapped_column(String, default="sent")
     provider: Mapped[str] = mapped_column(String, default="mock")  # mock/meta
     # ערוץ ההודעה — היום רק whatsapp (mock/live). מכין את הקרקע ל-SMS/טלפון/AI
     # בעתיד: פעולה יודעת דרך איזה ערוץ נשלחה, בלי לשנות את המבנה בהמשך.
@@ -350,6 +355,20 @@ class Message(Base):
     event_message_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("event_messages.id"), nullable=True, index=True
     )
+    # מזהה ההודעה אצל הספק (למשל wamid של Meta) — המפתח שדרכו webhook עתידי
+    # מעדכן סטטוס (נמסרה/נקראה/נכשלה) להודעה הנכונה. ריק במצב mock.
+    provider_message_id: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, index=True
+    )
+    # חותמות זמן לפי שלב במחזור החיים של ההודעה. ``created_at`` הוא זמן
+    # היצירה ביומן; ``sent_at`` הוא זמן הקבלה בפועל ע"י הספק (יכול לחפוף
+    # ל-created_at היום כי השליחה סינכרונית) — delivered_at/read_at מגיעים
+    # רק מ-webhook חי, ולכן None עד שיש חיבור WhatsApp אמיתי.
+    sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    delivered_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    read_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # סיבת כשל/אי-מסירה — מהספק (mock/Meta) או מוולידציה מקומית (טלפון לא תקין).
+    failure_reason: Mapped[str] = mapped_column(String, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

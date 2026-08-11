@@ -59,6 +59,7 @@ import type {
   RsvpTrackActivateResult,
   RsvpTrackAdvanceResult,
   RsvpTrackStatus,
+  MessageStatusSummary,
   InvitationSendPreview,
   SendScope,
   TokenResponse,
@@ -621,12 +622,23 @@ export async function previewImport(file: File): Promise<ImportPreview> {
   return res.json()
 }
 
-/** ייבוא חכם: שולח רשימת טקסט חופשי (הדבקה) ומקבל תצוגה מקדימה מפוענחת. */
-export async function pasteImportPreview(text: string): Promise<ImportPreview> {
+/** ייבוא חכם: שולח רשימת טקסט חופשי (הדבקה) ומקבל תצוגה מקדימה מפוענחת.
+ *
+ * assumeSingleIfNoCount: true רק בזרימת ייבוא אנשי קשר (ContactsImportDialog)
+ * — שם כל שורה היא כבר איש קשר בודד בוודאות, אז 1 היא עובדה ולא ניחוש.
+ * בהדבקת רשימה חופשית רגילה (ברירת המחדל) כמות חסרה נשארת ריקה לבדיקה.
+ */
+export async function pasteImportPreview(
+  text: string,
+  opts?: { assumeSingleIfNoCount?: boolean },
+): Promise<ImportPreview> {
   const res = await apiFetch('/guests/import/paste', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({
+      text,
+      assume_single_if_no_count: opts?.assumeSingleIfNoCount ?? false,
+    }),
   })
   if (!res.ok) throw await toError(res)
   return res.json()
@@ -954,6 +966,13 @@ export async function getRsvpTimeline(): Promise<RsvpTimelineView> {
 /** סטטוס המסלול למסך הזוג — פעיל/לא, ספירות, רשימת מעקב טלפוני, שלבים. */
 export async function getRsvpTrack(): Promise<RsvpTrackStatus> {
   const res = await apiFetch('/automation/track')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** סיכום מצב ההודעות שנשלחו למוזמנים (נמסרו/נקראו/נכשלו/...) — נפרד מ-RSVP. */
+export async function getMessageStatus(): Promise<MessageStatusSummary> {
+  const res = await apiFetch('/automation/message-status')
   if (!res.ok) throw await toError(res)
   return res.json()
 }

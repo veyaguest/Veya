@@ -4,6 +4,7 @@ import {
   advanceRsvpTrack,
   getAutomationDashboard,
   getEvent,
+  getMessageStatus,
   getRsvpTrack,
   listGuests,
   mediaUrl,
@@ -15,6 +16,7 @@ import type {
   EventDetails,
   Guest,
   InvitationSendPreview,
+  MessageStatusSummary,
   RsvpTrackActivateResult,
   RsvpTrackStatus,
   SendScope,
@@ -966,6 +968,11 @@ function NewGuestsBanner({ count, onSend }: { count: number; onSend: () => void 
   )
 }
 
+/**
+ * כרטיס "מעקב אחרי המוזמנים" — מצב ההודעות שנשלחו (נמסרו/נקראו/נכשלו/...),
+ * לא אישורי הגעה. אישורי ההגעה (RSVP) נשארים במסך "תמונת מצב" של הדשבורד —
+ * הכרטיס הזה עונה רק על "מה קרה להודעה שנשלחה למוזמן?".
+ */
 function TrackStatusCard({
   track,
   onResend,
@@ -973,38 +980,51 @@ function TrackStatusCard({
   track: RsvpTrackStatus
   onResend: () => void
 }) {
-  const answered = track.confirmed + track.declined
-  const total = track.total_guests || 1
-  const pct = Math.round((answered / total) * 100)
+  const [status, setStatus] = useState<MessageStatusSummary | null>(null)
+  const [statusError, setStatusError] = useState('')
+  const t = strings.messages.statusCard
+
+  useEffect(() => {
+    let cancelled = false
+    getMessageStatus()
+      .then((s) => {
+        if (!cancelled) setStatus(s)
+      })
+      .catch(() => {
+        if (!cancelled) setStatusError(t.loadError)
+      })
+    return () => {
+      cancelled = true
+    }
+    // מתרענן גם כשמספר המוזמנים שקיבלו הזמנה משתנה (למשל אחרי שליחה נוספת).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [track.invited])
+
   return (
     <div className="track-status">
       <div className="track-status-head">
         <div>
           <span className="track-hero-badge ok">פעיל</span>
-          <h2 className="track-hero-title">עוקבים אחרי אישורי ההגעה בשבילכם</h2>
+          <h2 className="track-hero-title">{t.title}</h2>
         </div>
         {track.mode === 'mock' && (
           <span className="mode-badge mock">עדיין לא נשלחות הודעות אמיתיות</span>
         )}
       </div>
 
-      <div className="track-progress">
-        <div className="track-progress-bar">
-          <span className="track-progress-fill" style={{ width: `${pct}%` }} />
-        </div>
-        <span className="track-progress-label">
-          {answered} מתוך {track.total_guests} מוזמנים כבר ענו ({pct}%)
-        </span>
-      </div>
+      <p className="track-status-sub">{t.subtitle}</p>
+      {statusError && <p className="form-error">{statusError}</p>}
 
-      <div className="auto-stat-grid">
-        <StatCard num={track.total_guests} label="סה״כ מוזמנים" />
-        <StatCard num={track.invited} label="קיבלו הזמנה" />
-        <StatCard num={track.confirmed} label="אישרו הגעה" tone="ok" />
-        <StatCard num={track.pending} label="ממתינים לתשובה" tone="wait" />
-        <StatCard num={track.declined} label="לא מגיעים" tone="err" />
-        <StatCard num={track.in_phone_followup} label="במעקב טלפוני" />
+      <div className="msg-status-grid">
+        <MessageStatusTile num={status?.sent} label={t.sent} />
+        <MessageStatusTile num={status?.delivered} label={t.delivered} tone="ok" />
+        <MessageStatusTile num={status?.read} label={t.read} tone="ok" />
+        <MessageStatusTile num={status?.failed} label={t.failed} tone="err" />
+        <MessageStatusTile num={status?.invalid_number} label={t.invalidNumber} tone="err" />
+        <MessageStatusTile num={status?.blocked} label={t.blocked} tone="err" />
+        <MessageStatusTile num={status?.queued} label={t.queued} tone="wait" />
       </div>
+      <p className="track-status-note">{t.readNote}</p>
 
       <div className="track-resend">
         <button className="btn-ghost" onClick={onResend}>
@@ -1157,6 +1177,25 @@ function StatCard({
 }) {
   return (
     <div className={`stat-card ${tone ?? ''}`}>
+      <span className="stat-num">{num ?? '—'}</span>
+      <span className="stat-label">{label}</span>
+    </div>
+  )
+}
+
+/** כמו StatCard, אבל התווית כוללת סמל מוביל (✓/✓✓/👁/⚠️/📵/🔒/⏳) — לכן
+ * שורת התווית קצת יותר גדולה מ-stat-label הרגיל כדי שהסמל יישאר קריא. */
+function MessageStatusTile({
+  num,
+  label,
+  tone,
+}: {
+  num: number | undefined | null
+  label: string
+  tone?: 'ok' | 'err' | 'wait'
+}) {
+  return (
+    <div className={`stat-card msg-status-tile ${tone ?? ''}`}>
       <span className="stat-num">{num ?? '—'}</span>
       <span className="stat-label">{label}</span>
     </div>
