@@ -8896,8 +8896,9 @@ td.notes.seating {
   padding: 20px 18px 28px;
   width: 100%;
   max-width: 560px;
-  max-height: 88vh;
-  overflow-y: auto;
+  height: 88vh;
+  display: flex;
+  flex-direction: column;
   box-shadow: var(--shadow-dialog);
 }
 @media (min-width: 720px) {
@@ -8915,6 +8916,28 @@ td.notes.seating {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
+  flex: none;
+}
+/* המקום הפנוי לטלפון. min-height:0 הכרחי כדי ש-flex יוכל לכווץ, ולכן
+   clientHeight כאן הוא באמת הגובה הזמין שלפיו מחושבת ההקטנה. */
+.gm2-fit {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  /* נדרש רק לנוסח חריג באורכו, שההקטנה נעצרה לפני שהספיק להיכנס. הפס
+     עצמו מוסתר — אחרת נשמר לו מקום קבוע והוא נראה כקו לצד הטלפון. */
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.gm2-fit::-webkit-scrollbar {
+  display: none;
+}
+.gm2-fit-inner {
+  transform-origin: top center;
+  flex: none;
 }
 
 /* ---- מוקאפ הטלפון ----
@@ -8931,12 +8954,20 @@ td.notes.seating {
   padding: 8px;
   box-shadow: 0 10px 30px rgba(28, 26, 25, 0.22), 0 1px 0 rgba(255, 255, 255, 0.14) inset;
 }
-.ph-big {
-  --ph-w: 290px;
-  --ph-chat-h: 56vh;
+/* בתצוגה המקדימה הצ'אט אינו מוגבל בגובה — הטלפון גדל לפי אורך ההודעה,
+   ו-.gm2-fit מקטין אותו כדי שהכל ייכנס בבת אחת בלי גלילה. */
+.ph-fit {
+  --ph-w: 300px;
+  --ph-chat-h: none;
 }
+.ph-fit .ph-chat {
+  overflow: visible;
+}
+/* הטלפון הקבוע שלצד הכרטיס גדל במסך רחב. :not(.ph-fit) חיוני — אחרת
+   הכלל הזה, שבא אחרי .ph-fit, היה מחזיר לו תקרת גובה והתצוגה המקדימה
+   הייתה נגללת בפנים במקום להיכנס כולה. */
 @media (min-width: 1040px) {
-  .ph {
+  .ph:not(.ph-fit) {
     --ph-w: 300px;
     --ph-chat-h: 430px;
   }
@@ -9031,7 +9062,7 @@ td.notes.seating {
   margin-bottom: 6px;
   display: block;
 }
-.ph-big .ph-image {
+.ph-fit .ph-image {
   max-height: 260px;
 }
 .ph-text {

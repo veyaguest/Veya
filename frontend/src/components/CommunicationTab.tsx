@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   getCommunicationSequence,
   getEvent,
@@ -262,6 +262,13 @@ function MessagePanel({
               >
                 ✏️ עריכה
               </button>
+              <button
+                type="button"
+                className="gm2-btn gm2-btn-quiet"
+                onClick={() => setShowPreview(true)}
+              >
+                👀 תצוגה מקדימה
+              </button>
             </div>
           </>
         )}
@@ -344,7 +351,7 @@ function MessagePanel({
           onClick={() => setShowPreview(true)}
           aria-label="הגדלת התצוגה"
         >
-          <PhonePreview message={message} event={event} />
+          <SidePhone message={message} event={event} />
         </button>
         <p className="gm2-side-cap">👀 כך האורחים יראו את ההודעה</p>
       </aside>
@@ -362,7 +369,7 @@ function MessagePanel({
                 סגירה
               </button>
             </div>
-            <PhonePreview message={message} event={event} big />
+            <FittedPhone message={message} event={event} />
           </div>
         </div>
       )}
@@ -461,23 +468,94 @@ function Editor({
   )
 }
 
+/** גבול ההקטנה של התצוגה המקדימה: מתחת לזה הטקסט כבר קטן מכדי לקרוא. */
+const MIN_PREVIEW_SCALE = 0.72
+
 /**
- * ההודעה בתוך מוקאפ טלפון — בדיוק מה שהאורח יקבל: הנוסח מגיע מהשרת עם
- * הנתונים האמיתיים של האירוע (ולכן אין בו שום משתנה), תמונת ההזמנה נלווית
- * לפי ``STEPS_WITH_INVITE_IMAGE``, וכפתורי הפעולה מוצגים לפי מה שההודעה
- * באמת כוללת.
+ * הטלפון בתצוגה המקדימה, מוקטן עד שההודעה כולה נכנסת בבת אחת — בלי גלילה.
+ * הטלפון מצויר בגודלו הטבעי (הצ'אט גדל לפי אורך ההודעה), נמדד, ואז מוקטן
+ * בעזרת transform לפי המקום הפנוי; כך היחסים נשמרים והכל נראה חד.
+ *
+ * ההקטנה נעצרת ב-``MIN_PREVIEW_SCALE``. הודעות באורך רגיל (גם הארוכות
+ * שבספרייה) נכנסות הרבה לפני הגבול הזה; רק נוסח חריג באורכו יגיע אליו,
+ * ואז עדיף לתת לגלול מאשר להציג טקסט שאי אפשר לקרוא.
  */
-function PhonePreview({
+function FittedPhone({
   message,
   event,
-  big = false,
 }: {
   message: EventMessage
   event: EventDetails | null
-  big?: boolean
 }) {
-  const [text, setText] = useState<string | null>(null)
+  const areaRef = useRef<HTMLDivElement>(null)
+  const phoneRef = useRef<HTMLDivElement>(null)
+  const [fitted, setFitted] = useState({ scale: 0, height: 0 })
+  const text = usePreviewText(message)
 
+  const measure = useCallback(() => {
+    const area = areaRef.current
+    const phone = phoneRef.current
+    if (!area || !phone) return
+    const h = phone.offsetHeight
+    const w = phone.offsetWidth
+    if (!h || !w) return
+    const k = Math.min(1, area.clientHeight / h, area.clientWidth / w)
+    setFitted({ scale: Math.max(k, MIN_PREVIEW_SCALE), height: h })
+  }, [])
+
+  // הגובה נקבע ברגע שהנוסח מוצג, ומשתנה שוב כשתמונת ההזמנה נטענת (onLoad
+  // למטה) או כשמסובבים את המכשיר. ה-rAF תופס את הפריים שאחרי הפריסה, שבו
+  // הגובה כבר סופי.
+  useLayoutEffect(() => {
+    measure()
+    const raf = requestAnimationFrame(measure)
+    window.addEventListener('resize', measure)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', measure)
+    }
+  }, [measure, text])
+
+  const { scale, height } = fitted
+  return (
+    <div className="gm2-fit" ref={areaRef}>
+      <div
+        className="gm2-fit-inner"
+        ref={phoneRef}
+        style={{
+          transform: `scale(${scale || 1})`,
+          visibility: scale ? 'visible' : 'hidden',
+          // ההקטנה היא ויזואלית בלבד — בלי זה נשאר בפריסה חלל ריק בגובה
+          // ההפרש, והגלילה (במקרה החריג) הייתה מחושבת לפי הגובה המקורי.
+          marginBottom: scale ? -(height * (1 - scale)) : 0,
+        }}
+      >
+        <PhonePreview
+          message={message}
+          event={event}
+          fit
+          text={text}
+          onImageLoad={measure}
+        />
+      </div>
+    </div>
+  )
+}
+
+/** הטלפון הקבוע שלצד הכרטיס — גובה הצ'אט מוגבל, ולכן אין צורך בהתאמה. */
+function SidePhone({
+  message,
+  event,
+}: {
+  message: EventMessage
+  event: EventDetails | null
+}) {
+  return <PhonePreview message={message} event={event} text={usePreviewText(message)} />
+}
+
+/** הנוסח המוגמר של ההודעה כפי שהשרת מרנדר אותו עבור מוזמן לדוגמה. */
+function usePreviewText(message: EventMessage): string | null {
+  const [text, setText] = useState<string | null>(null)
   useEffect(() => {
     let alive = true
     previewCommunicationMessage(message.message_type)
@@ -487,7 +565,29 @@ function PhonePreview({
       alive = false
     }
   }, [message.message_type, message.content])
+  return text
+}
 
+/**
+ * ההודעה בתוך מוקאפ טלפון — בדיוק מה שהאורח יקבל: הנוסח מגיע מהשרת עם
+ * הנתונים האמיתיים של האירוע (ולכן אין בו שום משתנה), תמונת ההזמנה נלווית
+ * לפי ``STEPS_WITH_INVITE_IMAGE``, וכפתורי הפעולה מוצגים לפי מה שההודעה
+ * באמת כוללת.
+ */
+function PhonePreview({
+  message,
+  event,
+  fit = false,
+  text,
+  onImageLoad,
+}: {
+  message: EventMessage
+  event: EventDetails | null
+  /** ללא תקרת גובה לצ'אט — הטלפון גדל לפי ההודעה, ו-FittedPhone מקטין אותו. */
+  fit?: boolean
+  text: string | null
+  onImageLoad?: () => void
+}) {
   const showImage =
     STEPS_WITH_INVITE_IMAGE.has(message.message_type) && !!event?.invite_image
   const showRsvp = message.content.includes('{{rsvp_link}}')
@@ -501,7 +601,7 @@ function PhonePreview({
     'האירוע'
 
   return (
-    <div className={`ph ${big ? 'ph-big' : ''}`} dir="rtl">
+    <div className={`ph ${fit ? 'ph-fit' : ''}`} dir="rtl">
       <div className="ph-screen">
         <div className="ph-status">
           <span>9:41</span>
@@ -516,7 +616,14 @@ function PhonePreview({
         </div>
         <div className="ph-chat">
           <div className="ph-bubble">
-            {showImage && <img className="ph-image" src={mediaUrl(event!.invite_image)} alt="" />}
+            {showImage && (
+              <img
+                className="ph-image"
+                src={mediaUrl(event!.invite_image)}
+                alt=""
+                onLoad={onImageLoad}
+              />
+            )}
             <div className="ph-text">
               {text && text.trim() ? (
                 text.split('\n').map((line, i) => (
