@@ -1251,6 +1251,11 @@ td.notes.seating {
   min-width: 60px;
   text-align: center;
 }
+.count-detected {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
 .row-excluded td {
   opacity: 0.5;
 }
@@ -8563,125 +8568,290 @@ td.notes.seating {
   border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-/* ============ הודעות לאורחים (עיצוב מינימליסטי — CommunicationTab) ============ */
-.gm-grid {
+/* ============ הודעות לאורחים (כרטיס אחד בכל פעם — CommunicationTab) ============
+   מובייל-פירסט: עמודה אחת, כפתורים בגובה אצבע, בלי טבלאות ובלי גלילה
+   אופקית. בדסקטופ רחב נפתחת עמודה שנייה עם התצוגה כפי שהאורח יקבל. */
+.gm2-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.gm2-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gm2-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--charcoal);
+  margin: 0;
+}
+
+/* --- ניווט בין 6 שלבי ההודעות --- */
+.gm2-steps {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.gm2-steps::-webkit-scrollbar {
+  display: none;
+}
+.gm2-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: var(--body);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.gm2-step:hover {
+  border-color: var(--gold);
+}
+.gm2-step.active {
+  background: var(--surface-hi);
+  border-color: var(--gold);
+  color: var(--charcoal);
+  font-weight: 600;
+}
+.gm2-step-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* --- הבמה: כרטיס ההודעה, ולצדו בדסקטופ התצוגה לאורח --- */
+.gm2-stage {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 20px;
+  align-items: start;
 }
-@media (min-width: 760px) {
-  .gm-grid {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
+.gm2-side {
+  display: none;
+}
+@media (min-width: 1040px) {
+  .gm2-stage {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  }
+  .gm2-side {
+    display: block;
+    position: sticky;
+    top: 16px;
   }
 }
-.gm-card {
+
+.gm2-card {
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
-  padding: 22px 24px;
+  padding: 28px 30px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 18px;
+  min-width: 0;
   box-shadow: var(--shadow-card);
 }
-@media (max-width: 940px) {
-  .gm-card {
-    padding: 16px;
+@media (max-width: 720px) {
+  .gm2-card {
+    padding: 20px 18px;
     border-radius: var(--radius-l);
+    gap: 16px;
   }
 }
-.gm-card-off {
-  opacity: 0.55;
-}
-.gm-card-top {
+.gm2-card-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
 }
-.gm-card-heading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.gm-icon {
-  font-size: 20px;
+.gm2-card-icon {
+  font-size: 22px;
   line-height: 1;
-  flex: none;
 }
-.gm-card-title {
-  font-size: 16px;
+.gm2-card-title {
+  font-size: 17px;
   font-weight: 700;
   color: var(--charcoal);
   margin: 0;
 }
-.gm-toggle {
+.gm2-invite-img {
+  width: 100%;
+  max-width: 340px;
+  border-radius: var(--radius-l);
+  display: block;
+}
+.gm2-text {
+  font-size: 16px;
+  line-height: 1.85;
+  color: var(--charcoal);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+.gm2-text-empty {
+  color: var(--faint);
+}
+
+/* --- מעבר בין ההודעות המוכנות --- */
+.gm2-nav {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--muted);
-  cursor: pointer;
-  flex: none;
+  justify-content: center;
+  gap: 18px;
 }
-.gm-toggle input {
-  accent-color: var(--gold);
-  width: 15px;
-  height: 15px;
-  cursor: pointer;
-}
-.gm-preview-text {
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--body);
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.gm-preview-empty {
-  color: var(--faint);
-  font-style: italic;
-  -webkit-line-clamp: 2;
-}
-.gm-preview-link {
-  align-self: flex-start;
-  background: none;
-  border: 0;
-  padding: 0;
-  font-size: 12.5px;
-  color: var(--muted);
-  cursor: pointer;
-}
-.gm-preview-link:hover {
-  color: var(--gold-deep);
-}
-.gm-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 2px;
-}
-.gm-picker-option {
-  font: inherit;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  width: 100%;
-  text-align: right;
-  cursor: pointer;
-}
-.gm-picker-selected {
-  border-color: var(--gold);
+.gm2-arrow {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
   background: var(--surface-hi);
+  color: var(--charcoal);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s ease, opacity 0.15s ease;
 }
-.gm-picker-check {
-  flex: none;
+.gm2-arrow:hover:not(:disabled) {
+  border-color: var(--gold);
+}
+.gm2-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.gm2-counter {
+  font-size: 13.5px;
+  color: var(--muted);
+  min-width: 82px;
+  text-align: center;
+}
+
+/* --- פעולות --- */
+.gm2-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.gm2-btn {
+  flex: 1 1 auto;
+  min-height: 48px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-hi);
+  color: var(--charcoal);
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+.gm2-btn:hover:not(:disabled) {
+  border-color: var(--gold);
+}
+.gm2-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.gm2-btn-main {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--ink, #2b2620);
+  font-weight: 600;
+}
+.gm2-btn-quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+  flex: 0 1 auto;
+}
+.gm2-btn-quiet:hover:not(:disabled) {
   color: var(--gold-deep);
-  font-weight: 700;
+  border-color: transparent;
+}
+.gm2-note {
+  font-size: 13px;
+  color: var(--gold-deep);
+  margin: 0;
+}
+
+/* --- העורך: תיבת טקסט רגילה. הפרטים שהמערכת ממלאת לבד מוצגים כגלולה
+       עדינה עם הערך האמיתי, כדי שלא ייראה כאן שום תחביר טכני. --- */
+.gm2-editor {
+  min-height: 240px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--surface-hi);
+  font-size: 16px;
+  line-height: 1.85;
+  color: var(--charcoal);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.gm2-editor:focus {
+  border-color: var(--gold);
+  background: var(--cream);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.1);
+}
+.gm2-chip {
+  display: inline-block;
+  background: rgba(201, 162, 39, 0.13);
+  border-radius: 7px;
+  padding: 1px 7px;
+  color: var(--gold-deep);
+  white-space: nowrap;
+  user-select: all;
+}
+
+/* --- תצוגה מקדימה במובייל: יריעה שנפתחת מלמטה --- */
+.gm2-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 10, 12, 0.42);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+}
+.gm2-sheet {
+  background: var(--ivory);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 20px 18px 28px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-dialog);
+}
+@media (min-width: 720px) {
+  .gm2-sheet-backdrop {
+    align-items: center;
+  }
+  .gm2-sheet {
+    border-radius: var(--radius-xl);
+    padding: 24px 26px;
+  }
+}
+.gm2-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 /* ============ תקשורת עם אורחים (רצף קבוע — CommunicationTab) ============ */

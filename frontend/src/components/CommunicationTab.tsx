@@ -1,15 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   getCommunicationSequence,
   getEvent,
   getMessageOptions,
   mediaUrl,
   previewCommunicationMessage,
-  testSendCommunicationMessage,
   updateCommunicationMessage,
 } from '../api'
 import type { EventDetails, EventMessage, MessageDefaultOption, MessageType } from '../types'
-import { COMMUNICATION_VARIABLES } from '../types'
+import { EVENT_TERMS } from '../strings/eventTypes'
 
 const STEP_ICON: Record<MessageType, string> = {
   invitation: '💌',
@@ -20,47 +19,91 @@ const STEP_ICON: Record<MessageType, string> = {
   thank_you: '❤️',
 }
 
+/** מילה טבעית לכל פרט משתנה — מוצגת כשעדיין אין ערך אמיתי לאירוע. */
+const FIELD_WORD: Record<string, string> = {
+  guest_name: 'שם האורח',
+  guest_names: 'שם האורח',
+  host_names: 'השמות שלכם',
+  groom_name: 'שם החתן',
+  bride_name: 'שם הכלה',
+  event_type: 'סוג האירוע',
+  event_date: 'תאריך',
+  event_time: 'שעה',
+  venue_name: 'שם המקום',
+  address: 'כתובת',
+  navigation_link: 'ניווט',
+  rsvp_link: 'אישור הגעה',
+  table_number: 'מספר שולחן',
+  gift_link: 'מתנה',
+}
+
+const VAR_RE = /\{\{\s*(\w+)\s*\}\}/g
+
 /**
- * המרה דו-כיוונית בין תחביר המשתנים הטכני ({{guest_name}}) לתווית עברית
- * ידידותית בעורך ([שם האורח]) — כדי שהזוג לא יראה syntax. מה שנשמר בפועל
- * דרך ה-API הוא תמיד ה-{{...}} המקורי; ההמרה קיימת רק בתצוגת העורך.
+ * הפרטים האמיתיים של האירוע, לפי שם הפרט בתוך ההודעה. ריק במקום שעדיין אין
+ * בו נתון — ואז מוצגת המילה הטבעית מ-FIELD_WORD במקום.
+ *
+ * הקישורים (אישור הגעה/ניווט/מתנה) נשארים תמיד כמילה ולא ככתובת: הכתובת
+ * שונה לכל אורח, ואין שום סיבה שהזוג יראה אותה בזמן הכתיבה.
  */
-function toDisplay(content: string): string {
-  let out = content
-  for (const v of COMMUNICATION_VARIABLES) {
-    out = out.split(`{{${v.key}}}`).join(`[${v.label}]`)
+function eventFieldValues(event: EventDetails | null): Record<string, string> {
+  if (!event) return {}
+  const terms = EVENT_TERMS[event.event_type] ?? EVENT_TERMS.wedding
+  const a = (event.groom_name || '').trim()
+  const b = (event.bride_name || '').trim()
+  const hosts = terms.hasTwoHosts ? [a, b].filter(Boolean).join(' ו') : a || b
+  return {
+    host_names: hosts,
+    groom_name: a,
+    bride_name: b,
+    event_type: terms.celebration,
+    event_date: event.event_date || '',
+    event_time: event.event_time || '',
+    venue_name: event.venue_name || '',
+    address: event.venue_address || '',
   }
+}
+
+type Segment =
+  | { kind: 'text'; text: string }
+  | { kind: 'field'; key: string; shown: string }
+
+/** מפרק תוכן הודעה לקטעי טקסט חופשי ולפרטים שהמערכת ממלאת בעצמה. */
+function splitToSegments(content: string, values: Record<string, string>): Segment[] {
+  const out: Segment[] = []
+  let last = 0
+  for (const m of content.matchAll(VAR_RE)) {
+    const at = m.index ?? 0
+    if (at > last) out.push({ kind: 'text', text: content.slice(last, at) })
+    const key = m[1]
+    out.push({ kind: 'field', key, shown: values[key] || FIELD_WORD[key] || key })
+    last = at + m[0].length
+  }
+  if (last < content.length) out.push({ kind: 'text', text: content.slice(last) })
   return out
 }
-function toRaw(display: string): string {
-  let out = display
-  for (const v of COMMUNICATION_VARIABLES) {
-    out = out.split(`[${v.label}]`).join(`{{${v.key}}}`)
-  }
-  return out
+
+/** ההודעה כטקסט קריא לתצוגה בכרטיס — בלי שום סימון טכני. */
+function asReadableText(content: string, values: Record<string, string>): string {
+  return splitToSegments(content, values)
+    .map((s) => (s.kind === 'text' ? s.text : s.shown))
+    .join('')
 }
 
 export function CommunicationTab() {
   const [messages, setMessages] = useState<EventMessage[] | null>(null)
   const [event, setEvent] = useState<EventDetails | null>(null)
-  const [previews, setPreviews] = useState<Record<string, string>>({})
+  const [activeType, setActiveType] = useState<MessageType>('invitation')
   const [error, setError] = useState('')
 
   const refresh = async () => {
     try {
-      const [seq, ev] = await Promise.all([getCommunicationSequence(), getEvent().catch(() => null)])
+      const [seq, ev] = await Promise.all([
+        getCommunicationSequence(),
+        getEvent().catch(() => null),
+      ])
       setMessages(seq)
       if (ev) setEvent(ev)
-      const entries = await Promise.all(
-        seq.map(async (m) => {
-          try {
-            return [m.message_type, await previewCommunicationMessage(m.message_type)] as const
-          } catch {
-            return [m.message_type, ''] as const
-          }
-        }),
-      )
-      setPreviews(Object.fromEntries(entries))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'טעינת ההודעות נכשלה')
     }
@@ -70,291 +113,364 @@ export function CommunicationTab() {
     refresh()
   }, [])
 
+  const active = messages?.find((m) => m.message_type === activeType) ?? null
+
   return (
-    <div className="mb-wrap">
-      <div className="mb-head">
-        <h2 className="mb-title">💬 הודעות לאורחים</h2>
-        <p className="mb-sub">כאן תוכלו לבחור ולערוך את ההודעות שהאורחים יקבלו לאורך הדרך.</p>
+    <div className="gm2-wrap">
+      <div className="gm2-head">
+        <h2 className="gm2-title">💬 הודעות לאורחים</h2>
       </div>
 
       {error && <p className="form-error">{error}</p>}
       {messages === null && !error && <p className="mb-empty">טוענים…</p>}
 
       {messages && (
-        <div className="gm-grid">
-          {messages.map((m) => (
-            <MessageCard
-              key={m.message_type}
-              message={m}
+        <>
+          <nav className="gm2-steps" aria-label="שלבי ההודעות">
+            {messages.map((m) => (
+              <button
+                key={m.message_type}
+                type="button"
+                className={`gm2-step ${m.message_type === activeType ? 'active' : ''}`}
+                onClick={() => setActiveType(m.message_type)}
+              >
+                <span className="gm2-step-icon" aria-hidden="true">
+                  {STEP_ICON[m.message_type]}
+                </span>
+                <span className="gm2-step-name">{m.title}</span>
+              </button>
+            ))}
+          </nav>
+
+          {active && (
+            <MessagePanel
+              key={active.message_type}
+              message={active}
               event={event}
-              previewText={previews[m.message_type] ?? ''}
               onSaved={refresh}
             />
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   )
 }
 
-function MessageCard({
+type Mode = 'view' | 'browse' | 'edit'
+
+function MessagePanel({
   message,
   event,
-  previewText,
   onSaved,
 }: {
   message: EventMessage
   event: EventDetails | null
-  previewText: string
   onSaved: () => void
 }) {
-  const [showPicker, setShowPicker] = useState(false)
+  const [mode, setMode] = useState<Mode>('view')
   const [options, setOptions] = useState<MessageDefaultOption[] | null>(null)
-  const [optionsLoading, setOptionsLoading] = useState(false)
-  const [showEdit, setShowEdit] = useState(false)
+  const [loadingOptions, setLoadingOptions] = useState(false)
+  const [index, setIndex] = useState(0)
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
-  const [note, setNote] = useState('')
-  const [togglingActive, setTogglingActive] = useState(false)
 
-  async function toggleActive() {
-    setTogglingActive(true)
-    try {
-      await updateCommunicationMessage(message.message_type, { is_active: !message.is_active })
-      onSaved()
-    } catch (err) {
-      setNote(err instanceof Error ? err.message : 'העדכון נכשל')
-    } finally {
-      setTogglingActive(false)
-    }
-  }
+  const values = useMemo(() => eventFieldValues(event), [event])
+  const readable = asReadableText(message.content, values)
+  const showImage = message.message_type === 'invitation' && !!event?.invite_image
 
-  async function openPicker() {
-    const next = !showPicker
-    setShowPicker(next)
-    if (next && options === null) {
-      setOptionsLoading(true)
+  async function startBrowsing() {
+    setMode('browse')
+    setNote('')
+    if (options === null) {
+      setLoadingOptions(true)
       try {
-        setOptions(await getMessageOptions(message.message_type))
+        const rows = await getMessageOptions(message.message_type)
+        setOptions(rows)
+        const at = rows.findIndex((o) => o.content === message.content)
+        setIndex(at >= 0 ? at : 0)
       } catch (err) {
-        setNote(err instanceof Error ? err.message : 'טעינת ההודעות המוכנות נכשלה')
+        setNote(err instanceof Error ? err.message : 'טעינת ההודעות נכשלה')
       } finally {
-        setOptionsLoading(false)
+        setLoadingOptions(false)
       }
+    } else {
+      const at = options.findIndex((o) => o.content === message.content)
+      setIndex(at >= 0 ? at : 0)
     }
   }
 
-  async function chooseOption(opt: MessageDefaultOption) {
-    if (opt.content === message.content) {
-      setShowPicker(false)
-      return
-    }
-    try {
-      await updateCommunicationMessage(message.message_type, { content: opt.content })
-      setShowPicker(false)
-      onSaved()
-    } catch (err) {
-      setNote(err instanceof Error ? err.message : 'הבחירה נכשלה')
-    }
-  }
-
-  const shortPreview = previewText.replace(/\n+/g, ' ').trim()
-
-  return (
-    <div className={`gm-card ${message.is_active ? '' : 'gm-card-off'}`}>
-      <div className="gm-card-top">
-        <div className="gm-card-heading">
-          <span className="gm-icon" aria-hidden="true">{STEP_ICON[message.message_type]}</span>
-          <h3 className="gm-card-title">{message.title}</h3>
-        </div>
-        <label className="gm-toggle" title="פעיל">
-          <input
-            type="checkbox"
-            checked={message.is_active}
-            disabled={togglingActive}
-            onChange={toggleActive}
-          />
-          <span>פעיל</span>
-        </label>
-      </div>
-
-      {shortPreview ? (
-        <p className="gm-preview-text">{shortPreview}</p>
-      ) : (
-        <p className="gm-preview-text gm-preview-empty">עדיין לא נבחרה הודעה לשלב הזה.</p>
-      )}
-
-      <button type="button" className="gm-preview-link" onClick={() => setShowPreview(true)}>
-        👀 תצוגה מקדימה
-      </button>
-
-      <div className="gm-actions">
-        <button type="button" className="btn-ghost" onClick={openPicker}>
-          {showPicker ? 'סגירה' : 'בחירת הודעה'}
-        </button>
-        <button type="button" className="btn-ghost" onClick={() => setShowEdit(true)}>
-          עריכת הודעה
-        </button>
-      </div>
-
-      {note && <span className="mb-dirty">{note}</span>}
-
-      {showPicker && (
-        <div className="comm-picker">
-          {optionsLoading && <p className="mb-empty">טוענים…</p>}
-          {!optionsLoading && options !== null && options.length === 0 && (
-            <p className="mb-card-hint">עדיין אין הודעות מוכנות לשלב הזה.</p>
-          )}
-          {!optionsLoading && options && options.length > 0 && (
-            <div className="comm-picker-list">
-              {options.map((opt) => {
-                const selected = opt.content === message.content
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    className={`comm-picker-option gm-picker-option ${selected ? 'gm-picker-selected' : ''}`}
-                    onClick={() => chooseOption(opt)}
-                  >
-                    {selected && <span className="gm-picker-check" aria-hidden="true">✓</span>}
-                    <p className="comm-picker-text">{opt.content}</p>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {showEdit && (
-        <EditModal message={message} onClose={() => setShowEdit(false)} onSaved={onSaved} />
-      )}
-
-      {showPreview && (
-        <PreviewModal
-          message={message}
-          event={event}
-          onClose={() => setShowPreview(false)}
-        />
-      )}
-    </div>
-  )
-}
-
-function EditModal({
-  message,
-  onClose,
-  onSaved,
-}: {
-  message: EventMessage
-  onClose: () => void
-  onSaved: () => void
-}) {
-  const [draft, setDraft] = useState(toDisplay(message.content))
-  const [saving, setSaving] = useState(false)
-  const [testSending, setTestSending] = useState(false)
-  const [note, setNote] = useState('')
-
-  const dirty = draft !== toDisplay(message.content)
-
-  function insertPlaceholder(label: string) {
-    setDraft((d) => `${d}[${label}]`)
-  }
-
-  async function save() {
-    setSaving(true)
+  async function save(content: string) {
+    setBusy(true)
     setNote('')
     try {
-      await updateCommunicationMessage(message.message_type, { content: toRaw(draft) })
-      setNote('נשמר')
+      await updateCommunicationMessage(message.message_type, { content })
+      setMode('view')
       onSaved()
-      onClose()
     } catch (err) {
       setNote(err instanceof Error ? err.message : 'השמירה נכשלה')
     } finally {
-      setSaving(false)
+      setBusy(false)
     }
   }
 
-  async function testSend() {
-    setTestSending(true)
-    setNote('')
-    try {
-      const res = await testSendCommunicationMessage(message.message_type)
-      setNote(res.sent ? 'נשלחה הודעת בדיקה לטלפון שלכם' : (res.detail || 'השליחה נכשלה'))
-    } catch (err) {
-      setNote(err instanceof Error ? err.message : 'השליחה נכשלה')
-    } finally {
-      setTestSending(false)
-    }
-  }
+  const current = options && options.length > 0 ? options[index] : null
+  const isCurrentChosen = !!current && current.content === message.content
 
   return (
-    <div className="auto-modal-backdrop" onClick={onClose}>
-      <div className="auto-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="auto-modal-head">
-          <h3 className="clar-title">{message.title}</h3>
-          <button className="btn-text" onClick={onClose}>סגירה ✕</button>
-        </div>
+    <div className="gm2-stage">
+      <section className="gm2-card">
+        <header className="gm2-card-head">
+          <span className="gm2-card-icon" aria-hidden="true">
+            {STEP_ICON[message.message_type]}
+          </span>
+          <h3 className="gm2-card-title">{message.title}</h3>
+        </header>
 
-        <textarea
-          className="mb-textarea"
-          rows={7}
-          value={draft}
-          placeholder="כתבו כאן את ההודעה…"
-          onChange={(e) => setDraft(e.target.value)}
-        />
+        {mode === 'view' && (
+          <>
+            {showImage && (
+              <img className="gm2-invite-img" src={mediaUrl(event!.invite_image)} alt="" />
+            )}
+            {readable.trim() ? (
+              <p className="gm2-text">{readable}</p>
+            ) : (
+              <p className="gm2-text gm2-text-empty">
+                עדיין לא בחרתם הודעה לשלב הזה.
+              </p>
+            )}
 
-        <div className="comm-var-row">
-          {COMMUNICATION_VARIABLES.map((v) => (
-            <button
-              key={v.key}
-              type="button"
-              className="comm-var-btn"
-              onClick={() => insertPlaceholder(v.label)}
-            >
-              + {v.label}
-            </button>
-          ))}
-        </div>
+            <div className="gm2-actions">
+              <button type="button" className="gm2-btn gm2-btn-main" onClick={startBrowsing}>
+                {readable.trim() ? 'בחירת הודעה אחרת' : 'בחירת הודעה'}
+              </button>
+              <button
+                type="button"
+                className="gm2-btn"
+                onClick={() => {
+                  setNote('')
+                  setMode('edit')
+                }}
+              >
+                ✏️ עריכה
+              </button>
+              <button
+                type="button"
+                className="gm2-btn gm2-btn-quiet"
+                onClick={() => setShowPreview(true)}
+              >
+                👀 תצוגה מקדימה
+              </button>
+            </div>
+          </>
+        )}
 
-        <div className="mb-actions">
-          <button className="btn-primary" disabled={!dirty || saving} onClick={save}>
-            {saving ? 'שומר…' : 'שמירת שינויים'}
-          </button>
-          <button className="btn-text" disabled={testSending} onClick={testSend}>
-            {testSending ? 'שולח…' : 'שליחת הודעת בדיקה אליי'}
-          </button>
-          {note && <span className="mb-dirty">{note}</span>}
+        {mode === 'browse' && (
+          <>
+            {loadingOptions && <p className="mb-empty">טוענים…</p>}
+            {!loadingOptions && options !== null && options.length === 0 && (
+              <p className="gm2-text gm2-text-empty">
+                עדיין אין הודעות מוכנות לשלב הזה.
+              </p>
+            )}
+            {current && (
+              <>
+                <p className="gm2-text">{asReadableText(current.content, values)}</p>
+
+                <div className="gm2-nav">
+                  <button
+                    type="button"
+                    className="gm2-arrow"
+                    disabled={index === 0}
+                    onClick={() => setIndex((i) => Math.max(0, i - 1))}
+                    aria-label="הקודמת"
+                  >
+                    →
+                  </button>
+                  <span className="gm2-counter">
+                    {index + 1} מתוך {options!.length}
+                  </span>
+                  <button
+                    type="button"
+                    className="gm2-arrow"
+                    disabled={index >= options!.length - 1}
+                    onClick={() => setIndex((i) => Math.min(options!.length - 1, i + 1))}
+                    aria-label="הבאה"
+                  >
+                    ←
+                  </button>
+                </div>
+
+                <div className="gm2-actions">
+                  <button
+                    type="button"
+                    className="gm2-btn gm2-btn-main"
+                    disabled={busy || isCurrentChosen}
+                    onClick={() => save(current.content)}
+                  >
+                    {isCurrentChosen ? '✓ ההודעה שבחרתם' : '✓ בחירת ההודעה הזו'}
+                  </button>
+                  <button
+                    type="button"
+                    className="gm2-btn gm2-btn-quiet"
+                    onClick={() => setMode('view')}
+                  >
+                    חזרה
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {mode === 'edit' && (
+          <Editor
+            content={message.content}
+            values={values}
+            busy={busy}
+            onCancel={() => setMode('view')}
+            onSave={save}
+          />
+        )}
+
+        {note && <p className="gm2-note">{note}</p>}
+      </section>
+
+      <aside className="gm2-side">
+        <WhatsAppPreview message={message} event={event} />
+      </aside>
+
+      {showPreview && (
+        <div className="gm2-sheet-backdrop" onClick={() => setShowPreview(false)}>
+          <div className="gm2-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="gm2-sheet-head">
+              <h3 className="gm2-card-title">כך האורחים יראו את ההודעה</h3>
+              <button
+                type="button"
+                className="gm2-btn gm2-btn-quiet"
+                onClick={() => setShowPreview(false)}
+              >
+                סגירה
+              </button>
+            </div>
+            <WhatsAppPreview message={message} event={event} />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
 
-function PreviewModal({
+/**
+ * עריכת ההודעה. הזוג כותב טקסט רגיל לגמרי; הפרטים שהמערכת ממלאת לבד (שם
+ * האורח, התאריך, קישור אישור ההגעה) מוצגים כגלולה קטנה עם הערך האמיתי,
+ * ולא כקוד. הגלולה נשמרת כיחידה אחת — כך ההודעה נשארת אישית לכל אורח גם
+ * אחרי שהזוג שינה את הניסוח סביבה.
+ */
+function Editor({
+  content,
+  values,
+  busy,
+  onCancel,
+  onSave,
+}: {
+  content: string
+  values: Record<string, string>
+  busy: boolean
+  onCancel: () => void
+  onSave: (content: string) => void
+}) {
+  const boxRef = useRef<HTMLDivElement>(null)
+  const [dirty, setDirty] = useState(false)
+
+  useEffect(() => {
+    const box = boxRef.current
+    if (!box) return
+    box.textContent = ''
+    for (const seg of splitToSegments(content, values)) {
+      if (seg.kind === 'text') {
+        box.appendChild(document.createTextNode(seg.text))
+      } else {
+        const chip = document.createElement('span')
+        chip.className = 'gm2-chip'
+        chip.contentEditable = 'false'
+        chip.dataset.field = seg.key
+        chip.textContent = seg.shown
+        box.appendChild(chip)
+      }
+    }
+  }, [content, values])
+
+  function readBack(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? ''
+    if (node.nodeType !== Node.ELEMENT_NODE) return ''
+    const el = node as HTMLElement
+    if (el.dataset.field) return `{{${el.dataset.field}}}`
+    if (el.tagName === 'BR') return '\n'
+    let out = ''
+    for (const child of Array.from(el.childNodes)) out += readBack(child)
+    // כל בלוק שהדפדפן יוצר בלחיצת Enter מסתיים בשורה חדשה.
+    if (['DIV', 'P'].includes(el.tagName)) out += '\n'
+    return out
+  }
+
+  function submit() {
+    const box = boxRef.current
+    if (!box) return
+    let out = ''
+    for (const child of Array.from(box.childNodes)) out += readBack(child)
+    onSave(out.replace(/\n$/, ''))
+  }
+
+  return (
+    <>
+      <div
+        ref={boxRef}
+        className="gm2-editor"
+        contentEditable
+        role="textbox"
+        aria-multiline="true"
+        aria-label="נוסח ההודעה"
+        dir="rtl"
+        onInput={() => setDirty(true)}
+        suppressContentEditableWarning
+      />
+      <div className="gm2-actions">
+        <button
+          type="button"
+          className="gm2-btn gm2-btn-main"
+          disabled={busy || !dirty}
+          onClick={submit}
+        >
+          {busy ? 'שומר…' : 'שמירת שינויים'}
+        </button>
+        <button type="button" className="gm2-btn gm2-btn-quiet" onClick={onCancel}>
+          ביטול
+        </button>
+      </div>
+    </>
+  )
+}
+
+/** ההודעה כפי שהאורח יקבל אותה בפועל — נוסח מהשרת, על רקע שיחה. */
+function WhatsAppPreview({
   message,
   event,
-  onClose,
 }: {
   message: EventMessage
   event: EventDetails | null
-  onClose: () => void
 }) {
   const [text, setText] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [note, setNote] = useState('')
 
   useEffect(() => {
     let alive = true
-    setLoading(true)
     previewCommunicationMessage(message.message_type)
       .then((t) => alive && setText(t))
-      .catch((err) => alive && setNote(err instanceof Error ? err.message : 'התצוגה המקדימה נכשלה'))
-      .finally(() => alive && setLoading(false))
+      .catch(() => alive && setText(''))
     return () => {
       alive = false
     }
-  }, [message.message_type])
+  }, [message.message_type, message.content])
 
   const showImage = message.message_type === 'invitation' && !!event?.invite_image
   const showRsvp = message.content.includes('{{rsvp_link}}')
@@ -362,42 +478,28 @@ function PreviewModal({
   const showGift = message.content.includes('{{gift_link}}')
 
   return (
-    <div className="auto-modal-backdrop" onClick={onClose}>
-      <div className="auto-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="auto-modal-head">
-          <h3 className="clar-title">{message.title} — תצוגה מקדימה</h3>
-          <button className="btn-text" onClick={onClose}>סגירה ✕</button>
-        </div>
-
-        {note && <p className="form-error">{note}</p>}
-        {loading && <p className="mb-empty">טוענים…</p>}
-
-        {!loading && (
-          <div className="wa-screen" dir="rtl">
-            <div className="wa-bubble">
-              {showImage && (
-                <img className="wa-image" src={mediaUrl(event!.invite_image)} alt="" />
-              )}
-              <div className="wa-text">
-                {text && text.trim() ? (
-                  text.split('\n').map((line, i) => (
-                    <div key={i} className="wa-line">{line || ' '}</div>
-                  ))
-                ) : (
-                  <span className="wa-empty">אין עדיין הודעה להצגה</span>
-                )}
+    <div className="wa-screen" dir="rtl">
+      <div className="wa-bubble">
+        {showImage && <img className="wa-image" src={mediaUrl(event!.invite_image)} alt="" />}
+        <div className="wa-text">
+          {text && text.trim() ? (
+            text.split('\n').map((line, i) => (
+              <div key={i} className="wa-line">
+                {line || ' '}
               </div>
-              {(showRsvp || showNav || showGift) && (
-                <div className="wa-actions">
-                  {showRsvp && <span className="wa-action-btn">✅ אישור הגעה</span>}
-                  {showNav && <span className="wa-action-btn">🧭 ניווט</span>}
-                  {showGift && <span className="wa-action-btn">🎁 מתנה באשראי</span>}
-                </div>
-              )}
-              <span className="wa-meta">12:30 ✓✓</span>
-            </div>
+            ))
+          ) : (
+            <span className="wa-empty">אין עדיין הודעה להצגה</span>
+          )}
+        </div>
+        {(showRsvp || showNav || showGift) && (
+          <div className="wa-actions">
+            {showRsvp && <span className="wa-action-btn">✅ אישור הגעה</span>}
+            {showNav && <span className="wa-action-btn">🧭 ניווט</span>}
+            {showGift && <span className="wa-action-btn">🎁 מתנה באשראי</span>}
           </div>
         )}
+        <span className="wa-meta">12:30 ✓✓</span>
       </div>
     </div>
   )
