@@ -751,11 +751,18 @@
   gap: 6px;
   align-items: center;
   white-space: nowrap;
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-}
-.guests-table tbody tr:hover .row-actions {
   opacity: 1;
+}
+/* מסתירים עד hover רק כשיש עכבר אמיתי — במגע (טלפון/טאבלט/מחשב היברידי)
+   הכפתורים חייבים להישאר גלויים תמיד, אחרת אין דרך להפעיל אותם. */
+@media (hover: hover) and (pointer: fine) {
+  .row-actions {
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+  }
+  .guests-table tbody tr:hover .row-actions {
+    opacity: 1;
+  }
 }
 .btn-edit {
   background: transparent;
@@ -1047,17 +1054,6 @@ td.notes.seating {
   font-size: 12.5px;
   line-height: 1.4;
 }
-.guests-table th:nth-child(7),
-.guests-table td:nth-child(7),
-.guests-table th:nth-child(8),
-.guests-table td:nth-child(8),
-.guests-table th:nth-child(9),
-.guests-table td:nth-child(9),
-.guests-table th:nth-child(10),
-.guests-table td:nth-child(10) {
-  display: none;
-}
-
 .badge {
   display: inline-flex;
   align-items: center;
@@ -1116,6 +1112,16 @@ td.notes.seating {
   overflow: auto;
   box-shadow: var(--shadow-dialog);
   border-top: 3px solid var(--gold);
+  /* כניסה עדינה משותפת לכל ה-modals באפליקציה (ראו גם auto-modal/gm2-sheet
+     למטה) — במקום ה-teleport המיידי שהיה עד כה בכל דיאלוג. */
+  animation: dialog-pop-in 250ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes dialog-pop-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialog, .auto-modal, .gm2-sheet { animation: none; }
 }
 .dialog-head {
   display: flex;
@@ -1128,7 +1134,10 @@ td.notes.seating {
   margin: 0;
   font-size: 22px;
 }
-.dialog .x {
+/* כפתור סגירה עגול אחיד לכל משפחות ה-modal באפליקציה (overlay/dialog הרגיל,
+   auto-modal, gm2-sheet) — במקום 3 סגנונות שונים ("✕" עגול / "סגירה ✕" /
+   "סגירה" כטקסט). */
+.dialog .x, .auto-modal .x, .gm2-sheet .x {
   background: none;
   border: none;
   font-size: 18px;
@@ -1142,7 +1151,7 @@ td.notes.seating {
   justify-content: center;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.dialog .x:hover {
+.dialog .x:hover, .auto-modal .x:hover, .gm2-sheet .x:hover {
   background: var(--surface-hi);
   color: var(--charcoal);
 }
@@ -4020,6 +4029,14 @@ td.notes.seating {
 }
 .hall-world {
   position: relative;
+  /* מעבר עדין רק כשה-Auto-Fit מחשב מחדש קנה-מידה/מיקום (הוספת/מחיקת שולחן,
+     שינוי גודל חלון, כפתור "התאם למסך") — כפי שמדריך העורך מבטיח למשתמש
+     ("המפה תתכווץ בעדינות"). גרירת שולחן בפועל לא עוברת דרך הטרנספורם הזה
+     (מזיזה כל שולחן ישירות ב-DOM), ולכן נשארת מיידית לגמרי, כנדרש. */
+  transition: transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hall-world { transition: none; }
 }
 /* סקיצת האולם שהזוג העלה — רקע עדין מתחת לשולחנות. גודלו נקבע דינמית
    (width/height inline = גודל ה"עולם"), ממורכז ומותאם בלי מתיחה (contain).
@@ -6800,10 +6817,13 @@ td.notes.seating {
 /* ===== דף אישור הגעה ציבורי (קישור אישי) ===== */
 .confirm-wrap {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  /* כפתור השליחה לא יידבק לפס הבית באייפונים עם notch */
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
   box-sizing: border-box;
   background:
     radial-gradient(circle at 50% 0%, rgba(201, 162, 39, 0.1), transparent 55%),
@@ -6818,6 +6838,16 @@ td.notes.seating {
   padding: 44px 36px 38px;
   box-shadow: 0 16px 60px -8px rgba(0, 0, 0, 0.35);
   text-align: center;
+  /* המעברים בין טעינה/טופס/תודה/שגיאה הם רכיבים נפרדים שמתחלפים — לכן
+     אנימציית "כניסה" (לא transition) שרצה מחדש בכל mount, בלי JS. */
+  animation: confirm-card-in 320ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@keyframes confirm-card-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confirm-card { animation: none; }
 }
 /* כשיש תמונת הזמנה — הכרטיס רחב יותר כדי לתת לתמונה במה */
 .confirm-card.has-invite {
@@ -7762,6 +7792,7 @@ td.notes.seating {
   max-height: calc(100vh - 40px);
   overflow-y: auto;
   box-shadow: var(--shadow-dialog);
+  animation: dialog-pop-in 250ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 .auto-modal-head {
   display: flex;
@@ -8318,6 +8349,134 @@ td.notes.seating {
   margin: -10px 0 0;
   font-size: 12px;
   color: var(--muted);
+}
+
+/* --- בורר "מעקב אחר: X" --- */
+.msg-type-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: -8px 0 0;
+}
+.msg-type-select-label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.msg-type-select {
+  padding: 9px 12px;
+  border: 1px solid rgba(120, 110, 95, 0.28);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #fff;
+  color: var(--charcoal);
+  cursor: pointer;
+}
+
+.msg-summary-line {
+  margin: 0;
+  font-size: 14px;
+  color: var(--body);
+}
+.msg-summary-line bdi {
+  font-weight: 700;
+  color: var(--charcoal);
+}
+
+.msg-empty-state {
+  padding: 22px 20px;
+  text-align: center;
+  background: var(--surface-hi);
+  border: 1px dashed var(--line-2);
+  border-radius: var(--radius-l);
+  color: var(--muted);
+  font-size: 14px;
+}
+.msg-empty-state p {
+  margin: 0;
+}
+.msg-empty-state p + p {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+/* --- "מי קיבל את ההודעה" --- */
+.msg-guest-section {
+  border-top: 1px solid var(--line-2);
+  padding-top: 16px;
+}
+.msg-guest-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+.msg-guest-controls .send-recipients-search {
+  flex: 1;
+  min-width: 160px;
+  margin-bottom: 0;
+}
+.msg-guest-filter {
+  padding: 9px 12px;
+  border: 1px solid rgba(120, 110, 95, 0.28);
+  border-radius: 10px;
+  font-size: 14px;
+  background: #fff;
+  color: var(--charcoal);
+}
+.msg-guest-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.msg-guest-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-s);
+}
+.msg-guest-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.msg-guest-phone {
+  color: var(--muted);
+  font-size: 13px;
+  direction: ltr;
+}
+.msg-guest-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.msg-guest-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+@media (max-width: 560px) {
+  .msg-guest-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
 }
 
 .track-phone {
@@ -8940,6 +9099,9 @@ td.notes.seating {
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-dialog);
+  /* אותה עקומת "הרמת גיליון" שכבר משמשת ב-Bottom Sheet של עורך ההושבה
+     (hmSheetUp) — כדי לא להוסיף עוד עקומה שלישית לאפליקציה. */
+  animation: hmSheetUp 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @media (min-width: 720px) {
   .gm2-sheet-backdrop {
@@ -8958,63 +9120,36 @@ td.notes.seating {
   margin-bottom: 16px;
   flex: none;
 }
-/* המקום הפנוי לטלפון. min-height:0 הכרחי כדי ש-flex יוכל לכווץ, ולכן
-   clientHeight כאן הוא באמת הגובה הזמין שלפיו מחושבת ההקטנה. */
+/* ---- מוקאפ הטלפון ----
+   המכשיר שומר על יחס של טלפון אמיתי (9:19) וממלא את הגובה הפנוי — הרוחב
+   נגזר מהגובה, ולא להפך. הודעה ארוכה *לא* מותחת את המכשיר; במקום זה
+   הבועה שבתוכו מוקטנת (ראו FittedPhone). כך המוקאפ תמיד נראה כמו טלפון. */
 .gm2-fit {
   flex: 1;
   min-height: 0;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  /* נדרש רק לנוסח חריג באורכו, שההקטנה נעצרה לפני שהספיק להיכנס. הפס
-     עצמו מוסתר — אחרת נשמר לו מקום קבוע והוא נראה כקו לצד הטלפון. */
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  min-width: 0;
 }
-.gm2-fit::-webkit-scrollbar {
-  display: none;
-}
-.gm2-fit-inner {
-  transform-origin: top center;
-  flex: none;
-}
-
-/* ---- מוקאפ הטלפון ----
-   קטן ומרכזי במובייל כדי שגם אזור הבחירה/עריכה יישאר על המסך, אבל הטקסט
-   שבתוכו נשאר בגודל קריא (13.5px) ולא מוקטן יחד עם המכשיר. --ph-w הוא
-   הידית היחידה לשינוי גודל. */
 .ph {
-  --ph-w: 236px;
-  --ph-chat-h: 300px;
-  width: var(--ph-w);
-  margin: 0 auto;
+  height: 100%;
+  aspect-ratio: 9 / 19;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
   background: #1c1a19;
   border-radius: 34px;
-  padding: 8px;
+  padding: 7px;
   box-shadow: 0 10px 30px rgba(28, 26, 25, 0.22), 0 1px 0 rgba(255, 255, 255, 0.14) inset;
 }
-/* בתצוגה המקדימה הצ'אט אינו מוגבל בגובה — הטלפון גדל לפי אורך ההודעה,
-   ו-.gm2-fit מקטין אותו כדי שהכל ייכנס בבת אחת בלי גלילה. */
-.ph-fit {
-  --ph-w: 300px;
-  --ph-chat-h: none;
-}
-.ph-fit .ph-chat {
-  overflow: visible;
-}
-/* הטלפון הקבוע שלצד הכרטיס גדל במסך רחב. :not(.ph-fit) חיוני — אחרת
-   הכלל הזה, שבא אחרי .ph-fit, היה מחזיר לו תקרת גובה והתצוגה המקדימה
-   הייתה נגללת בפנים במקום להיכנס כולה. */
-@media (min-width: 1040px) {
-  .ph:not(.ph-fit) {
-    --ph-w: 300px;
-    --ph-chat-h: 430px;
-  }
-}
 .ph-screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   background: #ece5dd;
-  border-radius: 27px;
+  border-radius: 28px;
   overflow: hidden;
   position: relative;
 }
@@ -9022,16 +9157,17 @@ td.notes.seating {
 .ph-screen::before {
   content: '';
   position: absolute;
-  top: 6px;
+  top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 42%;
+  width: 40%;
   height: 15px;
   background: #1c1a19;
   border-radius: 0 0 11px 11px;
   z-index: 2;
 }
 .ph-status {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -9045,6 +9181,7 @@ td.notes.seating {
   opacity: 0.85;
 }
 .ph-bar {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -9077,33 +9214,37 @@ td.notes.seating {
   text-overflow: ellipsis;
 }
 .ph-chat {
+  flex: 1;
+  min-height: 0;
   background:
     linear-gradient(rgba(229, 221, 213, 0.5), rgba(229, 221, 213, 0.5)),
     repeating-linear-gradient(45deg, #ece5dd 0 12px, #e7dfd4 12px 24px);
-  padding: 12px 10px 16px;
-  max-height: var(--ph-chat-h);
+  padding: 12px 10px;
+  /* גלילה נדרשת רק לנוסח חריג, שההקטנה נעצרה לפני שהספיק להיכנס. */
   overflow-y: auto;
-  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.ph-chat::-webkit-scrollbar {
+  display: none;
 }
 .ph-bubble {
   background: #dcf8c6;
   border-radius: 10px 10px 10px 3px;
   padding: 8px 9px 6px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.13);
+  /* ההקטנה יוצאת מפינת ההתחלה, כך שהבועה נשארת צמודה לראש הצ'אט ולצד
+     הנכון ב-RTL — בדיוק כמו בועה של הודעה קצרה יותר. */
+  transform-origin: top right;
 }
-/* הזמנות הן לרוב תמונות לאורך. בלי תקרה הן ממלאות את כל המסך הקטן ולא
-   נשאר מקום לטקסט — ולכן כאן היא נחתכת מעט, ובהגדלה נראית כמעט במלואה. */
 .ph-image {
   width: 100%;
-  max-height: 150px;
+  max-height: 190px;
   object-fit: cover;
   object-position: center top;
   border-radius: 6px;
   margin-bottom: 6px;
   display: block;
-}
-.ph-fit .ph-image {
-  max-height: 260px;
 }
 .ph-text {
   font-size: 13.5px;
@@ -9139,81 +9280,6 @@ td.notes.seating {
   font-size: 10px;
   color: #5b7052;
   margin-top: 3px;
-}
-
-/* ============ תקשורת עם אורחים (רצף קבוע — CommunicationTab) ============ */
-.comm-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mb-gap);
-}
-.comm-card-off {
-  opacity: 0.6;
-}
-.comm-active-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--muted);
-  cursor: pointer;
-}
-.comm-var-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.comm-var-btn {
-  font-size: 12px;
-  color: var(--body);
-  background: var(--surface-hi);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 4px 10px;
-  cursor: pointer;
-  transition: border-color 0.12s ease;
-}
-.comm-var-btn:hover {
-  border-color: var(--gold);
-}
-.comm-picker-toggle {
-  align-self: flex-start;
-  margin-bottom: 8px;
-}
-.comm-picker {
-  margin-bottom: 12px;
-}
-.comm-picker-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 360px;
-  overflow-y: auto;
-  padding-inline-end: 4px;
-}
-.comm-picker-option {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md, 12px);
-  padding: 10px 12px;
-  background: var(--surface-hi);
-}
-.comm-picker-option-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.comm-picker-tone {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--gold-deep, var(--gold));
-}
-.comm-picker-text {
-  font-size: 13px;
-  color: var(--body);
-  white-space: pre-wrap;
-  margin: 0;
 }
 
 /* ============ ספריית הודעות מוכנות (MessageLibrary, קריאה בלבד) ============ */
@@ -10224,6 +10290,26 @@ td.notes.seating {
   }
 
   /* פאנל חכם */
+  /* יחס שיבוץ ברור ומינימלי — "86 / 120 שובצו" — במקום להשאיר את המשתמש
+     להרכיב את זה בעצמו מארבעת המספרים הגולמיים למטה. */
+  .hm-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 0 14px;
+    text-align: center;
+  }
+  .hm-progress-num {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--charcoal);
+    font-variant-numeric: tabular-nums;
+  }
+  .hm-progress-lbl {
+    font-size: 12.5px;
+    color: var(--muted);
+  }
   .hm-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;

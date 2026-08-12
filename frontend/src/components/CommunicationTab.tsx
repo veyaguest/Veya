@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   getCommunicationSequence,
   getEvent,
@@ -8,16 +9,10 @@ import {
   updateCommunicationMessage,
 } from '../api'
 import type { EventDetails, EventMessage, MessageDefaultOption, MessageType } from '../types'
+import { MESSAGE_TYPE_ICONS } from '../types'
 import { EVENT_TERMS } from '../strings/eventTypes'
 
-const STEP_ICON: Record<MessageType, string> = {
-  invitation: '💌',
-  reminder_1: '👋',
-  reminder_2: '🔔',
-  final_reminder: '⏰',
-  event_day: '🎉',
-  thank_you: '❤️',
-}
+const STEP_ICON = MESSAGE_TYPE_ICONS
 
 /**
  * באילו שלבים תמונת ההזמנה נלווית להודעה — מקור אמת יחיד לכלל הזה.
@@ -356,23 +351,28 @@ function MessagePanel({
         </aside>
       )}
 
-      {!wide && showPreview && (
-        <div className="gm2-sheet-backdrop" onClick={() => setShowPreview(false)}>
-          <div className="gm2-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="gm2-sheet-head">
-              <h3 className="gm2-card-title">כך האורחים יראו את ההודעה</h3>
-              <button
-                type="button"
-                className="gm2-btn gm2-btn-quiet"
-                onClick={() => setShowPreview(false)}
-              >
-                סגירה
-              </button>
+      {/* מוגש ישירות ל-body: אב עם transform (כמו .wiz-panel של אשף
+          ההזמנה הראשונה) הופך להיות מסגרת הייחוס של position:fixed, והיריעה
+          הייתה נפתחת הרחק מתחת למסך במקום למרכזו. */}
+      {!wide && showPreview &&
+        createPortal(
+          <div className="gm2-sheet-backdrop" onClick={() => setShowPreview(false)}>
+            <div className="gm2-sheet" onClick={(e) => e.stopPropagation()}>
+              <div className="gm2-sheet-head">
+                <h3 className="gm2-card-title">כך האורחים יראו את ההודעה</h3>
+                <button
+                  type="button"
+                  className="gm2-btn gm2-btn-quiet"
+                  onClick={() => setShowPreview(false)}
+                >
+                  סגירה
+                </button>
+              </div>
+              <FittedPhone message={message} event={event} />
             </div>
-            <FittedPhone message={message} event={event} />
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }
@@ -475,13 +475,15 @@ const MIN_PREVIEW_SCALE = 0.72
 const WIDE_QUERY = '(min-width: 1040px)'
 
 /**
- * הטלפון בתצוגה המקדימה, מוקטן עד שההודעה כולה נכנסת בבת אחת — בלי גלילה.
- * הטלפון מצויר בגודלו הטבעי (הצ'אט גדל לפי אורך ההודעה), נמדד, ואז מוקטן
- * בעזרת transform לפי המקום הפנוי; כך היחסים נשמרים והכל נראה חד.
+ * מוקאפ הטלפון עם ההודעה כפי שהאורח יקבל אותה.
  *
- * ההקטנה נעצרת ב-``MIN_PREVIEW_SCALE``. הודעות באורך רגיל (גם הארוכות
- * שבספרייה) נכנסות הרבה לפני הגבול הזה; רק נוסח חריג באורכו יגיע אליו,
- * ואז עדיף לתת לגלול מאשר להציג טקסט שאי אפשר לקרוא.
+ * המכשיר שומר על פרופורציות של טלפון אמיתי (``PHONE_ASPECT``) וממלא את
+ * הגובה הפנוי — הוא לעולם לא נמתח לפי אורך ההודעה. כשההודעה ארוכה מדי
+ * למסך, מה שמוקטן הוא *התוכן* בתוך הבועה ולא המכשיר: כך הכל עדיין נכנס
+ * בלי גלילה, אבל הטלפון ממשיך להיראות כמו טלפון.
+ *
+ * ההקטנה נעצרת ב-``MIN_PREVIEW_SCALE``; מתחת לזה עדיף לתת לגלול בתוך
+ * הצ'אט, בדיוק כמו במכשיר אמיתי, מאשר להציג טקסט שאי אפשר לקרוא.
  */
 function FittedPhone({
   message,
@@ -490,35 +492,41 @@ function FittedPhone({
   message: EventMessage
   event: EventDetails | null
 }) {
-  const areaRef = useRef<HTMLDivElement>(null)
-  const phoneRef = useRef<HTMLDivElement>(null)
+  const chatRef = useRef<HTMLDivElement>(null)
+  const bubbleRef = useRef<HTMLDivElement>(null)
   const [fitted, setFitted] = useState({ scale: 0, height: 0 })
   const text = usePreviewText(message)
 
   const measure = useCallback(() => {
-    const area = areaRef.current
-    const phone = phoneRef.current
-    if (!area || !phone) return
-    const h = phone.offsetHeight
-    const w = phone.offsetWidth
-    if (!h || !w) return
-    const k = Math.min(1, area.clientHeight / h, area.clientWidth / w)
-    setFitted({ scale: Math.max(k, MIN_PREVIEW_SCALE), height: h })
+    const chat = chatRef.current
+    const bubble = bubbleRef.current
+    if (!chat || !bubble) return
+    // clientHeight כולל את ה-padding של הצ'אט; המקום שהבועה באמת מקבלת הוא
+    // תיבת התוכן בלבד, אחרת נשאר עודף בגובה ה-padding והצ'אט עדיין נגלל.
+    const cs = getComputedStyle(chat)
+    const available =
+      chat.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+    // הבועה נמדדת תמיד בגודלה המלא — transform אינו משפיע על offsetHeight.
+    const needed = bubble.offsetHeight
+    if (!available || !needed) return
+    setFitted({
+      scale: Math.max(Math.min(1, available / needed), MIN_PREVIEW_SCALE),
+      height: needed,
+    })
   }, [])
 
-  // הגובה נקבע ברגע שהנוסח מוצג, ומשתנה שוב כשתמונת ההזמנה נטענת (onLoad
-  // למטה) או כשמסובבים את המכשיר. ה-rAF תופס את הפריים שאחרי הפריסה, שבו
-  // הגובה כבר סופי.
+  // המידה משתנה כשהנוסח מגיע מהשרת, כשתמונת ההזמנה נטענת (onLoad למטה),
+  // וכששטח התצוגה עצמו משתנה. ה-rAF תופס את הפריים שאחרי הפריסה, שבו
+  // הגבהים כבר סופיים.
   useLayoutEffect(() => {
     measure()
     const raf = requestAnimationFrame(measure)
     window.addEventListener('resize', measure)
-    // תוספת ליתר ביטחון, לשינויי גובה שאינם מגיעים עם אירוע resize (למשל
-    // כשהתוכן שמעל העמודה זז). לא כל סביבה מפעילה אותו — ולכן הוא תוספת
-    // בלבד, והמדידה לא נשענת עליו.
+    // תוספת ליתר ביטחון לשינויי גובה שאינם מגיעים עם אירוע resize. לא כל
+    // סביבה מפעילה אותו, ולכן המדידה לא נשענת עליו.
     const ro =
       typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
-    if (ro && areaRef.current) ro.observe(areaRef.current)
+    if (ro && chatRef.current) ro.observe(chatRef.current)
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', measure)
@@ -526,27 +534,77 @@ function FittedPhone({
     }
   }, [measure, text])
 
-  const { scale, height } = fitted
+  const showImage =
+    STEPS_WITH_INVITE_IMAGE.has(message.message_type) && !!event?.invite_image
+  const showRsvp = message.content.includes('{{rsvp_link}}')
+  const showNav = message.content.includes('{{navigation_link}}')
+  const showGift = message.content.includes('{{gift_link}}')
+
+  const terms = event ? EVENT_TERMS[event.event_type] ?? EVENT_TERMS.wedding : null
+  const chatName =
+    [event?.groom_name, event?.bride_name].filter(Boolean).join(' ו') ||
+    terms?.celebration ||
+    'האירוע'
+
   return (
-    <div className="gm2-fit" ref={areaRef}>
-      <div
-        className="gm2-fit-inner"
-        ref={phoneRef}
-        style={{
-          transform: `scale(${scale || 1})`,
-          visibility: scale ? 'visible' : 'hidden',
-          // ההקטנה היא ויזואלית בלבד — בלי זה נשאר בפריסה חלל ריק בגובה
-          // ההפרש, והגלילה (במקרה החריג) הייתה מחושבת לפי הגובה המקורי.
-          marginBottom: scale ? -(height * (1 - scale)) : 0,
-        }}
-      >
-        <PhonePreview
-          message={message}
-          event={event}
-          fit
-          text={text}
-          onImageLoad={measure}
-        />
+    <div className="gm2-fit">
+      <div className="ph" dir="rtl">
+        <div className="ph-screen">
+          <div className="ph-status">
+            <span>9:41</span>
+            <span className="ph-status-icons" aria-hidden="true">▮▮ ⌁</span>
+          </div>
+          <div className="ph-bar">
+            <span className="ph-back" aria-hidden="true">›</span>
+            <span className="ph-avatar" aria-hidden="true">
+              {chatName.trim().charAt(0) || '♡'}
+            </span>
+            <span className="ph-chat-name">{chatName}</span>
+          </div>
+          <div className="ph-chat" ref={chatRef}>
+            <div
+              className="ph-bubble"
+              ref={bubbleRef}
+              style={{
+                transform: `scale(${fitted.scale || 1})`,
+                visibility: fitted.scale ? 'visible' : 'hidden',
+                // ההקטנה ויזואלית בלבד — בלי הקיזוז הזה הצ'אט חושב שהתוכן
+                // עדיין בגובה המקורי ומאפשר גלילה מיותרת.
+                marginBottom: fitted.scale
+                  ? -(fitted.height * (1 - fitted.scale))
+                  : 0,
+              }}
+            >
+              {showImage && (
+                <img
+                  className="ph-image"
+                  src={mediaUrl(event!.invite_image)}
+                  alt=""
+                  onLoad={measure}
+                />
+              )}
+              <div className="ph-text">
+                {text && text.trim() ? (
+                  text.split('\n').map((line, i) => (
+                    <div key={i} className="ph-line">
+                      {line || ' '}
+                    </div>
+                  ))
+                ) : (
+                  <span className="ph-empty">אין עדיין הודעה להצגה</span>
+                )}
+              </div>
+              {(showRsvp || showNav || showGift) && (
+                <div className="ph-btns">
+                  {showRsvp && <span className="ph-btn">✅ אישור הגעה</span>}
+                  {showNav && <span className="ph-btn">🧭 ניווט</span>}
+                  {showGift && <span className="ph-btn">🎁 מתנה באשראי</span>}
+                </div>
+              )}
+              <span className="ph-meta">12:30 ✓✓</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -580,86 +638,4 @@ function usePreviewText(message: EventMessage): string | null {
     }
   }, [message.message_type, message.content])
   return text
-}
-
-/**
- * ההודעה בתוך מוקאפ טלפון — בדיוק מה שהאורח יקבל: הנוסח מגיע מהשרת עם
- * הנתונים האמיתיים של האירוע (ולכן אין בו שום משתנה), תמונת ההזמנה נלווית
- * לפי ``STEPS_WITH_INVITE_IMAGE``, וכפתורי הפעולה מוצגים לפי מה שההודעה
- * באמת כוללת.
- */
-function PhonePreview({
-  message,
-  event,
-  fit = false,
-  text,
-  onImageLoad,
-}: {
-  message: EventMessage
-  event: EventDetails | null
-  /** ללא תקרת גובה לצ'אט — הטלפון גדל לפי ההודעה, ו-FittedPhone מקטין אותו. */
-  fit?: boolean
-  text: string | null
-  onImageLoad?: () => void
-}) {
-  const showImage =
-    STEPS_WITH_INVITE_IMAGE.has(message.message_type) && !!event?.invite_image
-  const showRsvp = message.content.includes('{{rsvp_link}}')
-  const showNav = message.content.includes('{{navigation_link}}')
-  const showGift = message.content.includes('{{gift_link}}')
-
-  const terms = event ? EVENT_TERMS[event.event_type] ?? EVENT_TERMS.wedding : null
-  const chatName =
-    [event?.groom_name, event?.bride_name].filter(Boolean).join(' ו') ||
-    terms?.celebration ||
-    'האירוע'
-
-  return (
-    <div className={`ph ${fit ? 'ph-fit' : ''}`} dir="rtl">
-      <div className="ph-screen">
-        <div className="ph-status">
-          <span>9:41</span>
-          <span className="ph-status-icons" aria-hidden="true">▮▮ ⌁</span>
-        </div>
-        <div className="ph-bar">
-          <span className="ph-back" aria-hidden="true">›</span>
-          <span className="ph-avatar" aria-hidden="true">
-            {chatName.trim().charAt(0) || '♡'}
-          </span>
-          <span className="ph-chat-name">{chatName}</span>
-        </div>
-        <div className="ph-chat">
-          <div className="ph-bubble">
-            {showImage && (
-              <img
-                className="ph-image"
-                src={mediaUrl(event!.invite_image)}
-                alt=""
-                onLoad={onImageLoad}
-              />
-            )}
-            <div className="ph-text">
-              {text && text.trim() ? (
-                text.split('\n').map((line, i) => (
-                  <div key={i} className="ph-line">
-                    {line || ' '}
-                  </div>
-                ))
-              ) : (
-                <span className="ph-empty">אין עדיין הודעה להצגה</span>
-              )}
-            </div>
-            {(showRsvp || showNav || showGift) && (
-              <div className="ph-btns">
-                {showRsvp && <span className="ph-btn">✅ אישור הגעה</span>}
-                {showNav && <span className="ph-btn">🧭 ניווט</span>}
-                {showGift && <span className="ph-btn">🎁 מתנה באשראי</span>}
-              </div>
-            )}
-            <span className="ph-meta">12:30 ✓✓</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 }
