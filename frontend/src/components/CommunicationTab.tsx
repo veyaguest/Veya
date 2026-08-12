@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   getCommunicationSequence,
@@ -357,7 +357,7 @@ function MessagePanel({
           במובייל אין מקום לזה לצד הכרטיס, ושם היא נפתחת מהכפתור. */}
       {wide && (
         <aside className="gm2-side">
-          <FittedPhone message={message} event={event} />
+          <PhonePreview message={message} event={event} />
           <p className="gm2-side-cap">👀 כך האורחים יראו את ההודעה</p>
         </aside>
       )}
@@ -380,7 +380,7 @@ function MessagePanel({
                   ✕
                 </button>
               </div>
-              <FittedPhone message={message} event={event} />
+              <PhonePreview message={message} event={event} />
             </div>
           </div>,
           document.body,
@@ -480,80 +480,26 @@ function Editor({
   )
 }
 
-/** גבול ההקטנה של התצוגה המקדימה: מתחת לזה הטקסט כבר קטן מכדי לקרוא. */
-const MIN_PREVIEW_SCALE = 0.72
-
 /** רוחב שממנו התצוגה נכנסת לעמודה שלצד הכרטיס. תואם ל-CSS. */
 const WIDE_QUERY = '(min-width: 1040px)'
 
 /**
  * מוקאפ הטלפון עם ההודעה כפי שהאורח יקבל אותה.
  *
- * המכשיר שומר על פרופורציות של טלפון אמיתי (``PHONE_ASPECT``) וממלא את
- * הגובה הפנוי — הוא לעולם לא נמתח לפי אורך ההודעה. כשההודעה ארוכה מדי
- * למסך, מה שמוקטן הוא *התוכן* בתוך הבועה ולא המכשיר: כך הכל עדיין נכנס
- * בלי גלילה, אבל הטלפון ממשיך להיראות כמו טלפון.
- *
- * ההקטנה נעצרת ב-``MIN_PREVIEW_SCALE``; מתחת לזה עדיף לתת לגלול בתוך
- * הצ'אט, בדיוק כמו במכשיר אמיתי, מאשר להציג טקסט שאי אפשר לקרוא.
+ * הגודל נקבע כולו ב-CSS דרך פרופורציית מכשיר קבועה (ראו .ph ב-App.css) —
+ * בלי שום מדידת JavaScript, ResizeObserver או transform. זה נבחר בכוונה
+ * אחרי שגרסה קודמת שכן חישבה הקטנה ב-JS נתקעה בפועל בדפדפן במובייל
+ * (לולאת מדידה-רינדור) ויצאה לא פרופורציונלית בדסקטופ. הודעה ארוכה
+ * במיוחד פשוט גוללת בתוך הצ'אט, בדיוק כמו אפליקציית WhatsApp אמיתית.
  */
-function FittedPhone({
+function PhonePreview({
   message,
   event,
 }: {
   message: EventMessage
   event: EventDetails | null
 }) {
-  const chatRef = useRef<HTMLDivElement>(null)
-  const bubbleRef = useRef<HTMLDivElement>(null)
-  const [fitted, setFitted] = useState({ scale: 0, height: 0 })
   const text = usePreviewText(message)
-
-  const measure = useCallback(() => {
-    const chat = chatRef.current
-    const bubble = bubbleRef.current
-    if (!chat || !bubble) return
-    // clientHeight כולל את ה-padding של הצ'אט; המקום שהבועה באמת מקבלת הוא
-    // תיבת התוכן בלבד, אחרת נשאר עודף בגובה ה-padding והצ'אט עדיין נגלל.
-    const cs = getComputedStyle(chat)
-    const available =
-      chat.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
-    // הבועה נמדדת תמיד בגודלה המלא — transform אינו משפיע על offsetHeight.
-    const needed = bubble.offsetHeight
-    if (!available || !needed) return
-    const next = {
-      scale: Math.max(Math.min(1, available / needed), MIN_PREVIEW_SCALE),
-      height: needed,
-    }
-    // חובה לצאת כשאין שינוי אמיתי: העדכון משנה את הפריסה של הבועה, מה
-    // שמעיר שוב את המשקיף — ואובייקט חדש בכל פעם היה סוגר לולאת רינדור
-    // אינסופית שמקפיאה את המסך.
-    setFitted((prev) =>
-      Math.abs(prev.scale - next.scale) < 0.001 &&
-      Math.abs(prev.height - next.height) < 0.5
-        ? prev
-        : next,
-    )
-  }, [])
-
-  // המידה משתנה כשהנוסח מגיע מהשרת, כשתמונת ההזמנה נטענת (onLoad למטה),
-  // וכששטח התצוגה עצמו משתנה. ה-rAF תופס את הפריים שאחרי הפריסה, שבו
-  // הגבהים כבר סופיים.
-  useLayoutEffect(() => {
-    measure()
-    const raf = requestAnimationFrame(measure)
-    window.addEventListener('resize', measure)
-    // תוספת ליתר ביטחון לשינויי גובה שאינם מגיעים עם אירוע resize. לא כל
-    // סביבה מפעילה אותו, ולכן המדידה לא נשענת עליו.
-    const ro =
-      typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
-    if (ro && chatRef.current) ro.observe(chatRef.current)
-    return () => {
-      cancelAnimationFrame(raf)
-      window.removeEventListener('resize', measure)
-      ro?.disconnect()
-    }
-  }, [measure, text])
 
   const showImage =
     STEPS_WITH_INVITE_IMAGE.has(message.message_type) && !!event?.invite_image
@@ -582,27 +528,10 @@ function FittedPhone({
             </span>
             <span className="ph-chat-name">{chatName}</span>
           </div>
-          <div className="ph-chat" ref={chatRef}>
-            <div
-              className="ph-bubble"
-              ref={bubbleRef}
-              style={{
-                transform: `scale(${fitted.scale || 1})`,
-                visibility: fitted.scale ? 'visible' : 'hidden',
-                // ההקטנה ויזואלית בלבד — בלי הקיזוז הזה הצ'אט חושב שהתוכן
-                // עדיין בגובה המקורי ומאפשר גלילה מיותרת.
-                marginBottom: fitted.scale
-                  ? -(fitted.height * (1 - fitted.scale))
-                  : 0,
-              }}
-            >
+          <div className="ph-chat">
+            <div className="ph-bubble">
               {showImage && (
-                <img
-                  className="ph-image"
-                  src={mediaUrl(event!.invite_image)}
-                  alt=""
-                  onLoad={measure}
-                />
+                <img className="ph-image" src={mediaUrl(event!.invite_image)} alt="" />
               )}
               <div className="ph-text">
                 {text && text.trim() ? (
@@ -631,7 +560,6 @@ function FittedPhone({
   )
 }
 
-/** האם יש מקום להציג את התצוגה לצד הכרטיס (תואם ל-breakpoint ב-CSS). */
 function useWideScreen(): boolean {
   const [wide, setWide] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(WIDE_QUERY).matches,

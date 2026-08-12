@@ -9136,7 +9136,8 @@ td.notes.seating {
   padding: 20px 18px 28px;
   width: 100%;
   max-width: 560px;
-  height: 88vh;
+  max-height: 88vh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-dialog);
@@ -9179,36 +9180,37 @@ td.notes.seating {
   color: var(--charcoal);
 }
 /* ---- מוקאפ הטלפון ----
-   המכשיר שומר על יחס של טלפון אמיתי (9:19) וממלא את הגובה הפנוי — הרוחב
-   נגזר מהגובה, ולא להפך. הודעה ארוכה *לא* מותחת את המכשיר; במקום זה
-   הבועה שבתוכו מוקטנת (ראו FittedPhone). כך המוקאפ תמיד נראה כמו טלפון. */
+   הגודל נקבע כולו כאן, ברוחב קבוע (--ph-w); הגובה נגזר ממנו ביחס מכשיר
+   אמיתי (9:19) דרך aspect-ratio. בכוונה *לא* להפך (גובה→רוחב): רוחב ידוע
+   מראש הוא הכיוון היציב בכל דפדפן, בלי תלות בגובה של אב עם flex/גריד —
+   וכך אין שום חישוב JavaScript, ResizeObserver או transform לגודל. הודעה
+   ארוכה לא מותחת ולא מקטינה את המכשיר; היא גוללת בתוך הצ'אט, בדיוק כמו
+   ב-WhatsApp אמיתי (ראו overflow-y ב-.ph-chat למטה). */
 .gm2-fit {
-  flex: 1;
-  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: 0;
 }
-/* בעמודה שלצד הכרטיס הגובה קצוב. בלי זה המכשיר נמתח לגובה החלון, יוצא
-   גבוה מהכרטיס שלצדו ומאריך את העמוד לגלילה מיותרת. חייב לבוא *אחרי*
-   כלל הבסיס שמעל, אחרת flex:1 גובר עליו. */
-@media (min-width: 1040px) {
-  .gm2-side .gm2-fit {
-    flex: none;
-    height: min(600px, calc(100vh - 190px));
-  }
-}
 .ph {
-  height: 100%;
-  aspect-ratio: 9 / 19;
+  --ph-w: 240px;
+  width: var(--ph-w);
   max-width: 100%;
+  aspect-ratio: 9 / 19;
   display: flex;
   flex-direction: column;
   background: #1c1a19;
   border-radius: 34px;
   padding: 7px;
   box-shadow: 0 10px 30px rgba(28, 26, 25, 0.22), 0 1px 0 rgba(255, 255, 255, 0.14) inset;
+}
+.gm2-sheet .ph {
+  --ph-w: 260px;
+}
+@media (min-width: 1040px) {
+  .gm2-side .ph {
+    --ph-w: 300px;
+  }
 }
 .ph-screen {
   flex: 1;
@@ -9287,7 +9289,7 @@ td.notes.seating {
     linear-gradient(rgba(229, 221, 213, 0.5), rgba(229, 221, 213, 0.5)),
     repeating-linear-gradient(45deg, #ece5dd 0 12px, #e7dfd4 12px 24px);
   padding: 12px 10px;
-  /* גלילה נדרשת רק לנוסח חריג, שההקטנה נעצרה לפני שהספיק להיכנס. */
+  /* הודעה שארוכה מגובה המכשיר גוללת כאן, בדיוק כמו צ'אט אמיתי. */
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -9300,9 +9302,6 @@ td.notes.seating {
   border-radius: 10px 10px 10px 3px;
   padding: 8px 9px 6px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.13);
-  /* ההקטנה יוצאת מפינת ההתחלה, כך שהבועה נשארת צמודה לראש הצ'אט ולצד
-     הנכון ב-RTL — בדיוק כמו בועה של הודעה קצרה יותר. */
-  transform-origin: top right;
 }
 .ph-image {
   width: 100%;
