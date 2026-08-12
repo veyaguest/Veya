@@ -12,6 +12,7 @@
   --line: #e5dec9;         /* מסגרת כרטיס/סקשן (spec: #E5DEC9) */
   --line-2: #ede4d3;       /* מפריד שורות (spec: #EDE4D3) */
   --gold: #c9a227;         /* זהב ראשי */
+  --gold-rgb: 201, 162, 39; /* אותו --gold, כרכיבי RGB — לשימוש בתוך rgba() כשצריך שקיפות חלקית */
   --gold-light: #e4c96b;   /* זהב בהיר — הדגשה/hover */
   --gold-deep: #9a7b2e;    /* זהב מעומעם — טקסט/מסגרות זהב על בהיר */
   --charcoal: #2b2620;     /* טקסט ראשי/כותרות (spec: #2B2620) */
@@ -59,6 +60,23 @@
   --muted: #8b8578;
   --faint: #6b6355;
   --gold-deep: #e4c96b;    /* על כהה — זהב בהיר קריא יותר */
+}
+
+/* ---- נגישות: טבעת פוקוס גלויה לניווט מקלדת ----
+   רשת ביטחון גלובלית: רוב האלמנטים האינטראקטיביים באפליקציה מסתמכים על
+   :focus הרגיל (שמניב שינוי צבע/מסגרת גם בלחיצת עכבר), ורק מעטים מגדירים
+   טבעת focus-visible ייעודית. הכלל כאן מוסיף טבעת ברורה שמופיעה רק בניווט
+   מקלדת (:focus-visible כבר מסנן לחיצות עכבר בדפדפנים תומכים), בלי לגעת
+   באף כלל :focus קיים — תוספת בלבד, לא שינוי. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
 
 /* ---- גלילה עדינה — scrollbar מותאם ---- */
@@ -649,17 +667,17 @@
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(201, 162, 39, 0.18), 0 0 0 0 rgba(201, 162, 39, 0);
+  box-shadow: 0 1px 3px rgba(var(--gold-rgb), 0.18), 0 0 0 0 rgba(var(--gold-rgb), 0);
   transition: box-shadow var(--transition-fast), transform var(--transition-fast), filter var(--transition-fast);
 }
 .btn-primary:hover {
   filter: brightness(1.04);
-  box-shadow: 0 2px 8px rgba(201, 162, 39, 0.3), 0 0 0 0 rgba(201, 162, 39, 0);
+  box-shadow: 0 2px 8px rgba(var(--gold-rgb), 0.3), 0 0 0 0 rgba(var(--gold-rgb), 0);
   transform: translateY(-0.5px);
 }
 .btn-primary:active {
   transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(201, 162, 39, 0.2);
+  box-shadow: 0 1px 2px rgba(var(--gold-rgb), 0.2);
 }
 .btn-primary:focus-visible {
   outline: 2px solid var(--gold);
@@ -997,6 +1015,24 @@ td.notes.seating {
   border-radius: var(--radius-xl);
   overflow-x: auto;
   box-shadow: var(--shadow-card);
+}
+/* שלד טעינה (skeleton) — במקום מסך ריק עם "טוען…" בלבד, מציג צורת שורות
+   קרובה לתוכן האמיתי כדי שהמעבר לנתונים לא יורגש כקפיצה. שימוש חוזר: כל
+   מסך שמציג היום רק טקסט "טוען…" יכול להשתמש ב-.skeleton-bar. */
+.skeleton-bar {
+  display: block;
+  height: 12px;
+  border-radius: var(--radius-s);
+  background: linear-gradient(90deg, var(--surface-hi) 25%, var(--line-2) 50%, var(--surface-hi) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-bar { animation: none; background: var(--surface-hi); }
 }
 .guests-table {
   width: 100%;
@@ -1600,6 +1636,12 @@ td.notes.seating {
   font-weight: 600;
   font-size: 14px;
   box-shadow: 0 2px 8px rgba(201, 162, 39, 0.08);
+  /* כניסה עדינה במקום הופעה מיידית — אותה עקומה שכבר משמשת לכניסת כרטיסי
+     הדשבורד (fadeInUp), כדי לא להוסיף עוד וריאציה. */
+  animation: fadeInUp 0.35s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
 }
 
 /* ---- Seating ---- */

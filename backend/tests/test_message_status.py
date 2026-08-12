@@ -289,6 +289,68 @@ def test_unique_index_prevents_duplicate_provider_message_id() -> None:
     print("✓ בונוס: אינדקס ייחודי ב-DB חוסם provider_message_id כפול ברמת המסד עצמו")
 
 
+def test_11_summarize_by_type_keeps_message_types_independent() -> None:
+    """סטטוס ההזמנה של מוזמן לא משפיע על סטטוס התזכורת שלו — שני סוגי הודעה
+    לאותו מוזמן נספרים בנפרד לגמרי (כרטיס "מעקב אחר: X")."""
+    db = _fresh_session()
+    ev = _make_event(db)
+    g = _make_guest(db, ev.id, "0501234567")
+    invitation = models.Message(
+        event_id=ev.id, guest_id=g.id, direction="outbound", kind="invitation",
+        body="hi", status=ms.READ, provider="meta", provider_message_id="wamid-inv",
+    )
+    reminder = models.Message(
+        event_id=ev.id, guest_id=g.id, direction="outbound", kind="reminder_1",
+        body="hi", status=ms.SENT, provider="meta", provider_message_id="wamid-r1",
+    )
+    db.add_all([invitation, reminder])
+    db.commit()
+    messages = [invitation, reminder]
+
+    inv_counts, inv_rows = ms.summarize_by_type([g], messages, "invitation", "all")
+    assert inv_counts[ms.READ] == 1 and inv_counts[ms.SENT] == 0
+    assert inv_rows[0][1] == ms.READ
+
+    r1_counts, r1_rows = ms.summarize_by_type([g], messages, "reminder_1", "pending")
+    assert r1_counts[ms.SENT] == 1 and r1_counts[ms.READ] == 0
+    assert r1_rows[0][1] == ms.SENT
+    print("✓ 11: summarize_by_type מפריד לגמרי בין סוגי הודעה לאותו מוזמן")
+
+
+def test_12_summarize_by_type_excludes_guests_outside_audience() -> None:
+    """מוזמן שכבר ענה (confirmed) ולא קיבל עדיין תזכורת שמיועדת ל'pending'
+    בלבד — לא נספר בכלל, לא כ-queued ולא באף מדד אחר (הוא פשוט לא רלוונטי)."""
+    db = _fresh_session()
+    ev = _make_event(db)
+    confirmed = _make_guest(db, ev.id, "0501234567", "אישר הגעה")
+    confirmed.rsvp_status = "confirmed"
+    pending = _make_guest(db, ev.id, "0521234567", "ממתין לתשובה")
+    db.commit()
+
+    counts, rows = ms.summarize_by_type([confirmed, pending], [], "reminder_1", "pending")
+    assert counts[ms.QUEUED] == 1
+    assert sum(counts.values()) == 1
+    assert len(rows) == 1 and rows[0][0].id == pending.id
+    print("✓ 12: מוזמן מחוץ לקהל היעד הנוכחי לא נכלל כלל בסטטוס סוג ההודעה")
+
+
+def test_13_summarize_by_type_local_no_valid_number_scoped_to_audience() -> None:
+    """מספר לא תקין נגזר לכל סוג הודעה בנפרד, ורק כשהמוזמן בקהל היעד שלה."""
+    db = _fresh_session()
+    ev = _make_event(db)
+    bad_phone_pending = _make_guest(db, ev.id, "123", "טלפון שגוי, ממתין")
+    bad_phone_confirmed = _make_guest(db, ev.id, "456", "טלפון שגוי, אישר")
+    bad_phone_confirmed.rsvp_status = "confirmed"
+    db.commit()
+
+    counts, rows = ms.summarize_by_type(
+        [bad_phone_pending, bad_phone_confirmed], [], "reminder_1", "pending",
+    )
+    assert counts[ms.NO_VALID_NUMBER] == 1
+    assert len(rows) == 1 and rows[0][0].id == bad_phone_pending.id
+    print("✓ 13: no_valid_number לכל סוג הודעה מוגבל לקהל היעד הנוכחי שלה")
+
+
 if __name__ == "__main__":
     test_1_queued_guest_with_valid_phone_and_no_message()
     test_2_sent_message()
@@ -301,5 +363,8 @@ if __name__ == "__main__":
     test_9_duplicate_webhook_is_idempotent()
     test_10_webhook_does_not_leak_to_other_message()
     test_unique_index_prevents_duplicate_provider_message_id()
+    test_11_summarize_by_type_keeps_message_types_independent()
+    test_12_summarize_by_type_excludes_guests_outside_audience()
+    test_13_summarize_by_type_local_no_valid_number_scoped_to_audience()
     print()
-    print("=== כל 10 התרחישים + הגנת ה-DB עברו ===")
+    print("=== כל 10 התרחישים + הגנת ה-DB + 3 תרחישי summarize_by_type עברו ===")

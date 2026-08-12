@@ -143,6 +143,64 @@ def message_status_summary(
     )
 
 
+@router.get("/message-status/{message_type}", response_model=schemas.MessageTypeStatus)
+def message_status_by_type(
+    message_type: str,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+):
+    """סטטוס ההודעות לפי סוג הודעה נבחר (הזמנה/תזכורת ראשונה/.../תודה) —
+    לכרטיס "מעקב אחרי המוזמנים" כשהזוג בוחר "מעקב אחר: X". בכוונה נפרד
+    מ-``/message-status`` הכללי (שנשאר כפי שהוא): כאן כל סוג הודעה נספר
+    לגמרי בנפרד, כדי שסטטוס ההזמנה של מוזמן לא ישפיע על סטטוס התזכורת שלו.
+    """
+    if message_type not in communication.MESSAGE_TYPES:
+        raise HTTPException(status_code=404, detail="סוג הודעה לא קיים")
+
+    guests = _guests(db, event.id)
+    messages = _messages(db, event.id)
+
+    has_any = any(
+        m.direction == "outbound" and m.kind == message_type for m in messages
+    )
+    if not has_any:
+        # שום הודעה מהסוג הזה עוד לא נשלחה לאף מוזמן — לא מציגים "0 נשלחו"
+        # כאילו הייתה שליחה (ראו schemas.MessageTypeStatus).
+        return schemas.MessageTypeStatus(
+            message_type=message_type,
+            not_sent_yet=True,
+            total=0, sent=0, delivered=0, read=0, failed=0,
+            no_valid_number=0, blocked=0, queued=0,
+            guests=[],
+        )
+
+    em = communication.event_messages_by_type(db, event.id).get(message_type)
+    audience = (
+        em.target_audience if em is not None
+        else communication.DEFAULT_TARGET_AUDIENCE.get(message_type, "all")
+    )
+    counts, rows = message_status.summarize_by_type(guests, messages, message_type, audience)
+    return schemas.MessageTypeStatus(
+        message_type=message_type,
+        not_sent_yet=False,
+        total=len(rows),
+        **counts,
+        guests=[
+            schemas.MessageTypeGuestRow(
+                guest_id=g.id,
+                guest_name=g.full_name,
+                phone=g.phone or "",
+                status=status,
+                updated_at=(
+                    (msg.read_at or msg.delivered_at or msg.sent_at or msg.created_at)
+                    if msg is not None else None
+                ),
+            )
+            for g, status, msg in rows
+        ],
+    )
+
+
 @router.get("/track/preview", response_model=schemas.InvitationSendPreview)
 def preview_send(
     db: Session = Depends(get_db),

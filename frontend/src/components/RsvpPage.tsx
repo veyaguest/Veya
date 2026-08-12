@@ -4,8 +4,9 @@ import {
   activateRsvpTrack,
   advanceRsvpTrack,
   getAutomationDashboard,
+  getCommunicationSequence,
   getEvent,
-  getMessageStatus,
+  getMessageStatusByType,
   getRsvpTrack,
   listGuests,
   mediaUrl,
@@ -15,14 +16,16 @@ import {
 import type {
   AutomationDashboard,
   EventDetails,
+  EventMessage,
   Guest,
   InvitationSendPreview,
-  MessageStatusSummary,
+  MessageType,
+  MessageTypeStatus,
   RsvpTrackActivateResult,
   RsvpTrackStatus,
   SendScope,
 } from '../types'
-import { RSVP_LABELS } from '../types'
+import { MESSAGE_TYPE_ICONS, RSVP_LABELS } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { AddGuestForm } from './AddGuestForm'
@@ -973,6 +976,11 @@ function NewGuestsBanner({ count, onSend }: { count: number; onSend: () => void 
  * כרטיס "מעקב אחרי המוזמנים" — מצב ההודעות שנשלחו (נמסרו/נקראו/נכשלו/...),
  * לא אישורי הגעה. אישורי ההגעה (RSVP) נשארים במסך "תמונת מצב" של הדשבורד —
  * הכרטיס הזה עונה רק על "מה קרה להודעה שנשלחה למוזמן?".
+ *
+ * מציג הודעה אחת בכל פעם (בורר "מעקב אחר: X", בדיוק אותם שלבים וכינויים
+ * שמנוהלים ב"תקשורת עם אורחים" — ``getCommunicationSequence``, לא רשימה
+ * מקבילה) — הסטטוס של ההזמנה של מוזמן לעולם לא מתערבב עם הסטטוס של
+ * התזכורת שלו (ראו backend: message_status.summarize_by_type).
  */
 function TrackStatusCard({
   track,
@@ -981,25 +989,64 @@ function TrackStatusCard({
   track: RsvpTrackStatus
   onResend: () => void
 }) {
-  const [status, setStatus] = useState<MessageStatusSummary | null>(null)
-  const [statusError, setStatusError] = useState('')
+  const [sequence, setSequence] = useState<EventMessage[] | null>(null)
+  const [activeType, setActiveType] = useState<MessageType>('invitation')
+  const [typeStatus, setTypeStatus] = useState<MessageTypeStatus | null>(null)
+  const [typeStatusError, setTypeStatusError] = useState('')
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('all')
   const t = strings.messages.statusCard
 
+  // בורר "מעקב אחר" — אותן הודעות/כינויים בדיוק כמו לשונית "תקשורת עם אורחים".
   useEffect(() => {
     let cancelled = false
-    getMessageStatus()
-      .then((s) => {
-        if (!cancelled) setStatus(s)
+    getCommunicationSequence()
+      .then((seq) => {
+        if (!cancelled) setSequence(seq)
       })
       .catch(() => {
-        if (!cancelled) setStatusError(t.loadError)
+        /* שקט — הבורר פשוט לא יוצג; שאר הכרטיס עדיין עובד */
       })
     return () => {
       cancelled = true
     }
-    // מתרענן גם כשמספר המוזמנים שקיבלו הזמנה משתנה (למשל אחרי שליחה נוספת).
+  }, [])
+
+  // בכל החלפת הודעה נבחרת (או שינוי במספר המוזמנים שקיבלו הזמנה) — טוענים
+  // מחדש וגם מאפסים חיפוש/סינון, כי הם שייכים להודעה הקודמת שנבחרה.
+  useEffect(() => {
+    let cancelled = false
+    setTypeStatus(null)
+    setTypeStatusError('')
+    setSearch('')
+    setFilter('all')
+    getMessageStatusByType(activeType)
+      .then((s) => {
+        if (!cancelled) setTypeStatus(s)
+      })
+      .catch(() => {
+        if (!cancelled) setTypeStatusError(t.loadError)
+      })
+    return () => {
+      cancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [track.invited])
+  }, [activeType, track.invited])
+
+  const filteredGuests = useMemo(() => {
+    if (!typeStatus) return []
+    const q = search.trim()
+    return typeStatus.guests.filter((g) => {
+      if (filter !== 'all' && g.status !== filter) return false
+      if (!q) return true
+      return g.guest_name.includes(q) || (g.phone || '').includes(q)
+    })
+  }, [typeStatus, search, filter])
+
+  const reached = typeStatus ? typeStatus.sent + typeStatus.delivered + typeStatus.read : 0
+  const problems = typeStatus
+    ? typeStatus.failed + typeStatus.no_valid_number + typeStatus.blocked
+    : 0
 
   return (
     <div className="track-status">
@@ -1014,59 +1061,161 @@ function TrackStatusCard({
       </div>
 
       <p className="track-status-sub">{t.subtitle}</p>
-      {statusError && <p className="form-error">{statusError}</p>}
 
-      <div className="msg-status-grid">
-        <MessageStatusTile
-          icon={<WhatsAppCheck />}
-          num={status?.sent}
-          label={t.sent}
-          hint={t.sentHint}
-        />
-        <MessageStatusTile
-          icon={<WhatsAppCheck double />}
-          num={status?.delivered}
-          label={t.delivered}
-          hint={t.deliveredHint}
-          tone="ok"
-        />
-        <MessageStatusTile
-          icon={<WhatsAppCheck double blue />}
-          num={status?.read}
-          label={t.read}
-          hint={t.readHint}
-          tone="ok"
-        />
-        <MessageStatusTile
-          icon="⚠️"
-          num={status?.failed}
-          label={t.failed}
-          hint={t.failedHint}
-          tone="err"
-        />
-        <MessageStatusTile
-          icon="📵"
-          num={status?.no_valid_number}
-          label={t.noValidNumber}
-          hint={t.noValidNumberHint}
-          tone="err"
-        />
-        <MessageStatusTile
-          icon="🚫"
-          num={status?.blocked}
-          label={t.blocked}
-          hint={t.blockedHint}
-          tone="err"
-        />
-        <MessageStatusTile
-          icon="⏳"
-          num={status?.queued}
-          label={t.queued}
-          hint={t.queuedHint}
-          tone="wait"
-        />
-      </div>
-      <p className="track-status-note">{t.readNote}</p>
+      {sequence && sequence.length > 0 && (
+        <div className="msg-type-select-wrap">
+          <label className="msg-type-select-label" htmlFor="msg-type-select">
+            {t.selectorLabel}
+          </label>
+          <select
+            id="msg-type-select"
+            className="msg-type-select"
+            value={activeType}
+            onChange={(e) => setActiveType(e.target.value as MessageType)}
+          >
+            {sequence.map((m) => (
+              <option key={m.message_type} value={m.message_type}>
+                {MESSAGE_TYPE_ICONS[m.message_type]} {m.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {typeStatusError && <p className="form-error">{typeStatusError}</p>}
+
+      {typeStatus?.not_sent_yet && (
+        <div className="msg-empty-state">
+          <p>{t.notSentYet[activeType] ?? t.notSentYet.invitation}</p>
+          <p>{t.notSentYetNote}</p>
+        </div>
+      )}
+
+      {typeStatus && !typeStatus.not_sent_yet && (
+        <>
+          <p className="msg-summary-line">
+            <bdi>{typeStatus.total}</bdi> {t.guestsWord} · <bdi>{reached}</bdi>{' '}
+            {t.reachedWord}
+            {problems > 0 && (
+              <>
+                {' '}
+                · <bdi>{problems}</bdi> {t.needsAttentionWord}
+              </>
+            )}
+          </p>
+
+          {/* לא חייבים להציג מדד שהוא 0 — הדגש נשאר על מה שדורש תשומת לב. */}
+          <div className="msg-status-grid">
+            {typeStatus.sent > 0 && (
+              <MessageStatusTile
+                icon={<WhatsAppCheck />}
+                num={typeStatus.sent}
+                label={t.sent}
+                hint={t.sentHint}
+              />
+            )}
+            {typeStatus.delivered > 0 && (
+              <MessageStatusTile
+                icon={<WhatsAppCheck double />}
+                num={typeStatus.delivered}
+                label={t.delivered}
+                hint={t.deliveredHint}
+                tone="ok"
+              />
+            )}
+            {typeStatus.read > 0 && (
+              <MessageStatusTile
+                icon={<WhatsAppCheck double blue />}
+                num={typeStatus.read}
+                label={t.read}
+                hint={t.readHint}
+                tone="ok"
+              />
+            )}
+            {typeStatus.failed > 0 && (
+              <MessageStatusTile
+                icon="⚠️"
+                num={typeStatus.failed}
+                label={t.failed}
+                hint={t.failedHint}
+                tone="err"
+              />
+            )}
+            {typeStatus.no_valid_number > 0 && (
+              <MessageStatusTile
+                icon="📵"
+                num={typeStatus.no_valid_number}
+                label={t.noValidNumber}
+                hint={t.noValidNumberHint}
+                tone="err"
+              />
+            )}
+            {typeStatus.blocked > 0 && (
+              <MessageStatusTile
+                icon="🚫"
+                num={typeStatus.blocked}
+                label={t.blocked}
+                hint={t.blockedHint}
+                tone="err"
+              />
+            )}
+            {typeStatus.queued > 0 && (
+              <MessageStatusTile
+                icon="⏳"
+                num={typeStatus.queued}
+                label={t.queued}
+                hint={t.queuedHint}
+                tone="wait"
+              />
+            )}
+          </div>
+          {typeStatus.read > 0 && <p className="track-status-note">{t.readNote}</p>}
+
+          {/* "מי קיבל את ההודעה" — נפרד לחלוטין מסטטוס ה-RSVP (מסך "תמונת מצב"). */}
+          <div className="msg-guest-section">
+            <h3 className="clar-title">{t.guestListTitle}</h3>
+            <div className="msg-guest-controls">
+              <input
+                className="send-recipients-search"
+                type="search"
+                dir="rtl"
+                placeholder={t.searchPlaceholder}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <select
+                className="msg-guest-filter"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+              >
+                <option value="all">{t.filterAll}</option>
+                <option value="sent">✓ {t.sent}</option>
+                <option value="delivered">✓✓ {t.delivered}</option>
+                <option value="read">✓✓ {t.read}</option>
+                <option value="failed">⚠️ {t.failed}</option>
+                <option value="no_valid_number">📵 {t.noValidNumber}</option>
+                <option value="blocked">🚫 {t.blocked}</option>
+                <option value="queued">⏳ {t.queued}</option>
+              </select>
+            </div>
+
+            <ul className="msg-guest-list">
+              {filteredGuests.map((g) => (
+                <li key={g.guest_id} className="msg-guest-row">
+                  <span className="msg-guest-who">
+                    <span className="rsvp-name">{g.guest_name}</span>
+                    <span className="msg-guest-phone">{g.phone || '—'}</span>
+                  </span>
+                  <GuestStatusBadge status={g.status} t={t} />
+                </li>
+              ))}
+              {filteredGuests.length === 0 && (
+                <li className="msg-guest-empty">{t.guestListEmpty}</li>
+              )}
+            </ul>
+          </div>
+        </>
+      )}
 
       <div className="track-resend">
         <button className="btn-ghost" onClick={onResend}>
@@ -1261,6 +1410,44 @@ function WhatsAppCheck({ double, blue }: { double?: boolean; blue?: boolean }) {
         strokeLinejoin="round"
       />
     </svg>
+  )
+}
+
+/** תג הסטטוס של מוזמן בודד ברשימת "מי קיבל את ההודעה" — אותה שפת אייקונים
+ * בדיוק כמו כרטיסי הסיכום למעלה (WhatsAppCheck לשלושת סטטוסי המסירה, אמוג'י
+ * לשאר), רק בשורה אחת קטנה עם התווית לצידה. */
+function GuestStatusBadge({
+  status,
+  t,
+}: {
+  status: string
+  t: typeof strings.messages.statusCard
+}) {
+  const content = (() => {
+    switch (status) {
+      case 'sent':
+        return { icon: <WhatsAppCheck />, label: t.sent }
+      case 'delivered':
+        return { icon: <WhatsAppCheck double />, label: t.delivered }
+      case 'read':
+        return { icon: <WhatsAppCheck double blue />, label: t.read }
+      case 'failed':
+        return { icon: '⚠️', label: t.failed }
+      case 'no_valid_number':
+        return { icon: '📵', label: t.noValidNumber }
+      case 'blocked':
+        return { icon: '🚫', label: t.blocked }
+      default:
+        return { icon: '⏳', label: t.queued }
+    }
+  })()
+  return (
+    <span className="msg-guest-status">
+      <span className="msg-status-icon" aria-hidden="true">
+        {content.icon}
+      </span>
+      {content.label}
+    </span>
   )
 }
 

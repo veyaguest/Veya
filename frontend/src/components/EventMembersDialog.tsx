@@ -3,6 +3,7 @@ import { addEventMember, listEventMembers, removeEventMember, updateEventMember 
 import type { EventMemberRead } from '../types'
 import { PERMISSION_LABELS, PLANNER_PERMISSIONS, VENUE_PERMISSIONS } from '../types'
 import { strings } from '../strings/he'
+import { ConfirmDialog } from './ConfirmDialog'
 
 const ROLE_LABELS: Record<string, string> = { planner: 'מפיק', venue: 'אולם' }
 
@@ -22,6 +23,7 @@ function MemberRow({
 }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState(false)
   const options = permissionsForRole(member.role)
 
   async function togglePermission(perm: string) {
@@ -41,7 +43,7 @@ function MemberRow({
   }
 
   async function remove() {
-    if (!window.confirm(`להסיר את הגישה של ${member.display_name || member.email}?`)) return
+    setConfirming(false)
     setBusy(true)
     setError(null)
     try {
@@ -55,12 +57,23 @@ function MemberRow({
 
   return (
     <div className="member-row">
+      {confirming && (
+        <ConfirmDialog
+          title="הסרת גישה"
+          message={`להסיר את הגישה של ${member.display_name || member.email}?`}
+          confirmLabel="כן, להסיר"
+          danger
+          busy={busy}
+          onConfirm={remove}
+          onCancel={() => setConfirming(false)}
+        />
+      )}
       <div className="member-row-head">
         <div>
           <strong>{member.display_name || member.email}</strong>{' '}
           <span className="badge">{ROLE_LABELS[member.role] ?? member.role}</span>
         </div>
-        <button type="button" className="btn-ghost" onClick={remove} disabled={busy}>
+        <button type="button" className="btn-ghost" onClick={() => setConfirming(true)} disabled={busy}>
           הסרה
         </button>
       </div>

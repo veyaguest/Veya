@@ -1290,6 +1290,43 @@ class MessageStatusSummary(BaseModel):
     queued: int              # ⏳ ממתינים לשליחה
 
 
+class MessageTypeGuestRow(BaseModel):
+    """שורת מוזמן ברשימת "מי קיבל את ההודעה" — לכרטיס "מעקב אחרי המוזמנים"
+    כשמסננים לפי סוג הודעה נבחר. ``status`` הוא אחד מערכי אוצר המילים של
+    ``app/message_status.py``. ``updated_at`` הוא חותמת הזמן האחרונה הידועה
+    (נקראה/נמסרה/נשלחה/נוצרה, לפי הזמינה) — None למוזמן שעדיין לא קיבל הודעה
+    מהסוג הזה (queued/no_valid_number)."""
+
+    guest_id: int
+    guest_name: str
+    phone: str
+    status: str
+    updated_at: Optional[datetime] = None
+
+
+class MessageTypeStatus(BaseModel):
+    """סטטוס ההודעות לפי סוג הודעה נבחר (הזמנה/תזכורת.../תודה) — הכרטיס
+    מציג הודעה אחת בכל פעם, לא סיכום מצטבר על פני כל הרצף (ראו
+    ``app/message_status.py: summarize_by_type``).
+
+    ``not_sent_yet=True`` אומר שאף הודעה מהסוג הזה עוד לא נשלחה לאף מוזמן —
+    במצב הזה שאר השדות מוצגים כ-0 אך אינם משמעותיים; ה-frontend מציג הודעת
+    "עדיין לא נשלחה X" במקום רשת סטטיסטיקה, כדי לא לרמוז על שליחה שלא הייתה.
+    """
+
+    message_type: str
+    not_sent_yet: bool
+    total: int               # כמה מוזמנים רלוונטיים (קיבלו + עוד בקהל היעד)
+    sent: int
+    delivered: int
+    read: int
+    failed: int
+    no_valid_number: int
+    blocked: int
+    queued: int
+    guests: list[MessageTypeGuestRow]
+
+
 class InvitationSendPreview(BaseModel):
     """ספירה מקדימה לדיאלוג האישור לפני שליחת הזמנות ידנית."""
 

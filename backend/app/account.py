@@ -13,15 +13,45 @@ def delete_event_cascade(db: Session, event: "models.Event") -> None:
 
     ``guests`` נמחקים ע"י ה-relationship cascade של SQLAlchemy (ראו
     ``Event.guests`` ב-models.py) — לא נוגעים בהם כאן. שאר הטבלאות התלויות
-    (הודעות, הבהרות, יומן אבטחה, חוקי אוטומציה, תבניות הודעה, חברי-אירוע)
-    אין להן ON DELETE CASCADE ברמת ה-DB, ולכן דורשות ניקוי ידני מפורש —
-    אחרת הן נשארות "מידע יתום" (או גורמות לשגיאת foreign-key ב-Postgres).
+    (הודעות, רצף "תקשורת עם אורחים", הבהרות, יומן אבטחה, חוקי אוטומציה,
+    תבניות הודעה, חברי-אירוע) אין להן ON DELETE CASCADE ברמת ה-DB, ולכן
+    דורשות ניקוי ידני מפורש — אחרת הן נשארות "מידע יתום" (או גורמות לשגיאת
+    foreign-key גם ב-SQLite וגם ב-Postgres, כמו שקרה בפועל עם event_messages
+    לפני שהתווסף לכאן: כל אירוע שהופעל בו מסלול אישורי הגעה יצר שורות
+    event_messages, וללא הניקוי הזה מחיקת האירוע/החשבון נכשלה).
+
+    כל המחיקות כאן פועלות בתוך הטרנזקציה של הקורא (אין ``db.commit()``
+    בפונקציה הזו) — אם שלב כלשהו נכשל, שום דבר לא נשמר: ``get_db`` (ראו
+    database.py) סוגר את ה-session ללא commit, וה-DB מבטל את כל הטרנזקציה
+    הפתוחה. לא נשאר מצב "חצי מחוק".
+
+    שים לב: זו מחיקת הרשומה שלנו ב-DB בלבד. אין כאן (ולא צריכה להיות) שום
+    קריאה לספק WhatsApp כדי "לבטל" הודעה שכבר נשלחה בפועל — Meta לא חושפת
+    פעולה כזו, וגם אם הייתה חושפת, מחיקת האירוע אצלנו לא אמורה לגעת בהודעה
+    שכבר הגיעה למכשיר של מוזמן.
     """
     event_id = event.id
     for msg in db.scalars(
         select(models.Message).where(models.Message.event_id == event_id)
     ).all():
         db.delete(msg)
+    # flush מפורש: Message.event_message_id הוא FK רגיל (בלי relationship()
+    # ל-EventMessage), ולכן ה-unit-of-work של SQLAlchemy לא בהכרח מזהה את
+    # תלות ה-FK בין שתי המחיקות ועלול לשלוח את ה-DELETE-ים בסדר ההפוך (נבדק
+    # בפועל: בלי ה-flush הזה, DELETE FROM event_messages רץ *לפני* שה-
+    # messages שמצביעות אליו נמחקו, ונכשל עם FOREIGN KEY constraint failed).
+    # flush (לא commit) — עדיין באותה טרנזקציה, עדיין מתבטל כולו יחד אם
+    # שלב מאוחר יותר נכשל.
+    db.flush()
+    # event_messages (רצף "תקשורת עם אורחים") — נמחק אחרי messages בכוונה:
+    # Message.event_message_id מצביע לכאן, אז ה-children (ההודעות שנשלחו
+    # בפועל) חייבים להיעלם קודם. זו הרשומה שהייתה חסרה כאן עד עכשיו וגרמה
+    # ל-IntegrityError במחיקת אירוע/חשבון ברגע שכבר הופעל מסלול אישורי הגעה
+    # (provision_event_messages יוצר שורות event_messages בהפעלה הראשונה).
+    for event_msg in db.scalars(
+        select(models.EventMessage).where(models.EventMessage.event_id == event_id)
+    ).all():
+        db.delete(event_msg)
     for clar in db.scalars(
         select(models.Clarification).where(models.Clarification.event_id == event_id)
     ).all():

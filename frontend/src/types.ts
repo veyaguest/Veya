@@ -1042,6 +1042,44 @@ export interface MessageStatusSummary {
   queued: number
 }
 
+// שורת מוזמן ברשימת "מי קיבל את ההודעה" (סינון לפי סוג הודעה נבחר).
+export interface MessageTypeGuestRow {
+  guest_id: number
+  guest_name: string
+  phone: string
+  status: string
+  updated_at: string | null
+}
+
+// סטטוס ההודעות לפי סוג הודעה נבחר — הכרטיס "מעקב אחרי המוזמנים" מציג
+// הודעה אחת בכל פעם (invitation/reminder_1/.../thank_you), לא סיכום מצטבר.
+// not_sent_yet=true → אף הודעה מהסוג הזה עוד לא נשלחה לאף מוזמן.
+export interface MessageTypeStatus {
+  message_type: MessageType
+  not_sent_yet: boolean
+  total: number
+  sent: number
+  delivered: number
+  read: number
+  failed: number
+  no_valid_number: number
+  blocked: number
+  queued: number
+  guests: MessageTypeGuestRow[]
+}
+
+// מקור אמת יחיד לאייקון של כל סוג הודעה — משותף לבורר "מעקב אחר" (RsvpPage)
+// ולשלבי "תקשורת עם אורחים" (CommunicationTab), כדי שאותו סוג הודעה תמיד
+// יזוהה באותו סמל בכל מסך.
+export const MESSAGE_TYPE_ICONS: Record<MessageType, string> = {
+  invitation: '💌',
+  reminder_1: '👋',
+  reminder_2: '🔔',
+  final_reminder: '⏰',
+  event_day: '🎉',
+  thank_you: '❤️',
+}
+
 // ספירה מקדימה לדיאלוג האישור לפני שליחת הזמנות ידנית.
 export interface InvitationSendPreview {
   total_guests: number

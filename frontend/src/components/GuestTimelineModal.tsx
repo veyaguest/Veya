@@ -49,8 +49,8 @@ export function GuestTimelineModal({
           <h3 className="clar-title">
             {t.timelineTitle(data?.guest_name ?? '…')}
           </h3>
-          <button className="btn-text" onClick={onClose}>
-            {t.closeX}
+          <button type="button" className="x" onClick={onClose} aria-label={t.closeX}>
+            ✕
           </button>
         </div>
 

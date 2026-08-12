@@ -2996,6 +2996,14 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                 המלצות המערכת מבוססות AI ונועדו לסיוע בלבד. האחריות לקבלת
                 החלטות נשארת בידי המשתמש.
               </p>
+              <div className="hm-progress">
+                <span className="hm-progress-num">
+                  {smartStats.seatedPeople} / {smartStats.totalPeople}
+                </span>
+                <span className="hm-progress-lbl">
+                  {activeEventTerms().guestsLabel} שובצו
+                </span>
+              </div>
               <div className="hm-stats">
                 <div className="hm-stat">
                   <span className="hm-stat-num">{smartStats.seatedPeople}</span>

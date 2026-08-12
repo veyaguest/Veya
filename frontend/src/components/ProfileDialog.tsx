@@ -3,6 +3,7 @@ import { changePassword, deleteMyAccount, exportMyData, logoutAll, updateProfile
 import { setToken } from '../authStore'
 import type { User } from '../types'
 import { strings } from '../strings/he'
+import { ConfirmDialog } from './ConfirmDialog'
 
 /**
  * מודל "החשבון שלי": עריכת שם תצוגה, שינוי סיסמה, ויציאה מכל המכשירים.
@@ -32,6 +33,7 @@ export function ProfileDialog({
   const [deleteStage, setDeleteStage] = useState<'idle' | 'confirming'>('idle')
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [confirmingLogoutAll, setConfirmingLogoutAll] = useState(false)
 
   async function saveName(e: React.FormEvent) {
     e.preventDefault()
@@ -102,12 +104,7 @@ export function ProfileDialog({
   }
 
   async function doLogoutAll() {
-    if (
-      !window.confirm(
-        'לצאת מכל המכשירים? תצטרכו להתחבר מחדש בכל מקום, כולל כאן.',
-      )
-    )
-      return
+    setConfirmingLogoutAll(false)
     setBusy(true)
     try {
       await logoutAll()
@@ -233,11 +230,22 @@ export function ProfileDialog({
         <button
           type="button"
           className="auth-secondary"
-          onClick={doLogoutAll}
+          onClick={() => setConfirmingLogoutAll(true)}
           disabled={busy}
         >
           יציאה מכל המכשירים
         </button>
+        {confirmingLogoutAll && (
+          <ConfirmDialog
+            title="יציאה מכל המכשירים"
+            message="לצאת מכל המכשירים? תצטרכו להתחבר מחדש בכל מקום, כולל כאן."
+            confirmLabel="כן, לצאת מהכול"
+            danger
+            busy={busy}
+            onConfirm={doLogoutAll}
+            onCancel={() => setConfirmingLogoutAll(false)}
+          />
+        )}
 
         <div className="auth-divider">
           <span className="auth-divider-line" />

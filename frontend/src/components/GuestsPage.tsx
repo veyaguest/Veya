@@ -368,6 +368,14 @@ export function GuestsPage() {
             </tr>
           </thead>
           <tbody>
+            {loading && guests.length === 0 &&
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={`sk-${i}`} className="skeleton-row" aria-hidden="true">
+                  {Array.from({ length: 11 }).map((__, j) => (
+                    <td key={j}><span className="skeleton-bar" /></td>
+                  ))}
+                </tr>
+              ))}
             {guests.map((g) => (
               <tr key={g.id}>
                 <td>{g.full_name}</td>

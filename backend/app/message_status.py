@@ -118,6 +118,55 @@ def summarize(guests: list, messages: list) -> dict[str, int]:
     return counts
 
 
+def _matches_audience(guest, audience: str) -> bool:
+    """קהל היעד הנוכחי של הודעה (all/pending/confirmed/declined) — מראה
+    ``communication._matches_audience``, כפולה קטנה כאן כדי לא ליצור תלות
+    מעגלית (communication.py כבר מייבא את המודול הזה)."""
+    if audience == "all":
+        return True
+    return guest.rsvp_status == audience
+
+
+def summarize_by_type(
+    guests: list, messages: list, message_type: str, target_audience: str,
+) -> tuple[dict[str, int], list[tuple]]:
+    """כמו ``summarize``, אבל מוגבל לסוג הודעה אחד (``kind == message_type``)
+    — לכרטיס "מעקב אחרי המוזמנים" שמציג הודעה נבחרת אחת בכל פעם, לא סיכום
+    מצטבר על פני כל הרצף. הסטטוס של ההזמנה של מוזמן לעולם לא משפיע כאן על
+    הסטטוס של תזכורת 1 שלו — כל סוג הודעה נספר בנפרד לגמרי.
+
+    מוזמן שלא קיבל הודעה מהסוג הזה *וגם* לא נמצא בקהל היעד הנוכחי שלה
+    (``target_audience``) לא נכלל בכלל — הוא פשוט לא רלוונטי היום להודעה הזו
+    (למשל כבר אישר הגעה, וההודעה מיועדת רק ל"ממתינים לתשובה").
+
+    מחזיר גם רשימת ``(guest, status, message|None)`` לכל מוזמן רלוונטי —
+    הבסיס לרשימת "מי קיבל את ההודעה" בכרטיס (חיפוש/סינון בצד הלקוח).
+    """
+    latest_by_guest: dict[int, models.Message] = {}
+    for m in messages:
+        if m.direction != "outbound" or m.guest_id is None or m.kind != message_type:
+            continue
+        prev = latest_by_guest.get(m.guest_id)
+        if prev is None or m.created_at > prev.created_at:
+            latest_by_guest[m.guest_id] = m
+
+    counts = {s: 0 for s in (SENT, DELIVERED, READ, FAILED, NO_VALID_NUMBER, BLOCKED, QUEUED)}
+    rows: list = []
+    for g in guests:
+        msg = latest_by_guest.get(g.id)
+        if msg is not None:
+            status = msg.status if msg.status in OUTBOUND_STATUSES else SENT
+        elif _matches_audience(g, target_audience):
+            status = QUEUED if classify_phone(g.phone) == "valid" else NO_VALID_NUMBER
+        else:
+            continue
+        if status == PENDING:
+            status = QUEUED
+        counts[status] = counts.get(status, 0) + 1
+        rows.append((g, status, msg))
+    return counts, rows
+
+
 def _should_skip_regression(current_status: str, new_status: str) -> bool:
     """מונע "נסיגה" כשעדכוני webhook מגיעים לא-לפי-סדר — Meta לא מבטיחה
     סדר הגעה בין statuses[] שונים. לדוגמה: אם כבר קיבלנו "נקראה", עדכון

@@ -60,6 +60,7 @@ import type {
   RsvpTrackAdvanceResult,
   RsvpTrackStatus,
   MessageStatusSummary,
+  MessageTypeStatus,
   InvitationSendPreview,
   SendScope,
   TokenResponse,
@@ -973,6 +974,14 @@ export async function getRsvpTrack(): Promise<RsvpTrackStatus> {
 /** סיכום מצב ההודעות שנשלחו למוזמנים (נמסרו/נקראו/נכשלו/...) — נפרד מ-RSVP. */
 export async function getMessageStatus(): Promise<MessageStatusSummary> {
   const res = await apiFetch('/automation/message-status')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** סטטוס ההודעות לפי סוג הודעה נבחר (הזמנה/תזכורת.../תודה) — לכרטיס
+ * "מעקב אחרי המוזמנים" כשבוחרים "מעקב אחר: X". כולל רשימת מוזמנים מלאה. */
+export async function getMessageStatusByType(messageType: string): Promise<MessageTypeStatus> {
+  const res = await apiFetch(`/automation/message-status/${messageType}`)
   if (!res.ok) throw await toError(res)
   return res.json()
 }
