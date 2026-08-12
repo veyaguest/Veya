@@ -8957,7 +8957,6 @@ td.notes.seating {
   .gm2-side {
     position: sticky;
     top: 16px;
-    height: calc(100vh - 52px);
   }
 }
 
@@ -9162,6 +9161,23 @@ td.notes.seating {
   margin-bottom: 16px;
   flex: none;
 }
+/* יעד גדול ונוח לאצבע לסגירת התצוגה — לצד הרקע ומקש Escape. */
+.gm2-sheet-close {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--surface-hi);
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.gm2-sheet-close:hover {
+  background: var(--line);
+  color: var(--charcoal);
+}
 /* ---- מוקאפ הטלפון ----
    המכשיר שומר על יחס של טלפון אמיתי (9:19) וממלא את הגובה הפנוי — הרוחב
    נגזר מהגובה, ולא להפך. הודעה ארוכה *לא* מותחת את המכשיר; במקום זה
@@ -9173,6 +9189,15 @@ td.notes.seating {
   align-items: center;
   justify-content: center;
   min-width: 0;
+}
+/* בעמודה שלצד הכרטיס הגובה קצוב. בלי זה המכשיר נמתח לגובה החלון, יוצא
+   גבוה מהכרטיס שלצדו ומאריך את העמוד לגלילה מיותרת. חייב לבוא *אחרי*
+   כלל הבסיס שמעל, אחרת flex:1 גובר עליו. */
+@media (min-width: 1040px) {
+  .gm2-side .gm2-fit {
+    flex: none;
+    height: min(600px, calc(100vh - 190px));
+  }
 }
 .ph {
   height: 100%;

@@ -181,6 +181,17 @@ function MessagePanel({
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+
+  // דרך מילוט נוספת מהתצוגה המקדימה, מעבר לרקע ולכפתור הסגירה.
+  useEffect(() => {
+    if (!showPreview) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowPreview(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showPreview])
+
   const wide = useWideScreen()
 
   const values = useMemo(() => eventFieldValues(event), [event])
@@ -362,10 +373,11 @@ function MessagePanel({
                 <h3 className="gm2-card-title">כך האורחים יראו את ההודעה</h3>
                 <button
                   type="button"
-                  className="gm2-btn gm2-btn-quiet"
+                  className="gm2-sheet-close"
                   onClick={() => setShowPreview(false)}
+                  aria-label="סגירה"
                 >
-                  סגירה
+                  ✕
                 </button>
               </div>
               <FittedPhone message={message} event={event} />
@@ -509,10 +521,19 @@ function FittedPhone({
     // הבועה נמדדת תמיד בגודלה המלא — transform אינו משפיע על offsetHeight.
     const needed = bubble.offsetHeight
     if (!available || !needed) return
-    setFitted({
+    const next = {
       scale: Math.max(Math.min(1, available / needed), MIN_PREVIEW_SCALE),
       height: needed,
-    })
+    }
+    // חובה לצאת כשאין שינוי אמיתי: העדכון משנה את הפריסה של הבועה, מה
+    // שמעיר שוב את המשקיף — ואובייקט חדש בכל פעם היה סוגר לולאת רינדור
+    // אינסופית שמקפיאה את המסך.
+    setFitted((prev) =>
+      Math.abs(prev.scale - next.scale) < 0.001 &&
+      Math.abs(prev.height - next.height) < 0.5
+        ? prev
+        : next,
+    )
   }, [])
 
   // המידה משתנה כשהנוסח מגיע מהשרת, כשתמונת ההזמנה נטענת (onLoad למטה),
