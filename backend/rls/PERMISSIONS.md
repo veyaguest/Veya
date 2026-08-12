@@ -80,6 +80,8 @@ python tests/test_permission_alignment.py
 | כל `automation.py` (תבניות/חוקים/תור/מסלול RSVP) | ניהול אוטומציה | `send_messages` בלבד | `AUTOMATION` |
 | `GET /messaging/summary`, `/template`, `/log`, תצוגה מקדימה | צפייה בהודעות/RSVP | `send_messages`/`view_reports`/`view_event` | `MESSAGES_VIEW` |
 | `POST /messaging/invitations/send`, `/reminders/send`, `PUT /template`, סימולציית תשובה | שליחת הודעות | `send_messages` בלבד | `MESSAGES_WRITE` |
+| `GET /communication/sequence`, `/sequence/{type}/options`, `/due` | צפייה ברצף "תקשורת עם אורחים" (`event_messages`) — כולל provisioning אוטומטי בקריאה ראשונה | `send_messages`/`view_reports`/`view_event` | `MESSAGES_VIEW` |
+| `PUT /communication/sequence/{type}`, `/due/send`, `/sequence/{type}/test-send` | עריכת/שליחת "תקשורת עם אורחים" | `send_messages` בלבד | `MESSAGES_WRITE` |
 | `GET /stats` (דשבורד) | סיכום כללי | כל הרשאה מוכרת (רשימה מלאה) | `EVENTS_VIEW` |
 | `GET /event` | צפייה בפרטי האירוע | כל חבר-אירוע פעיל (בלי בדיקת הרשאה ספציפית) | — (בכוונה, ראו למטה) |
 | `PATCH /event` (שם/תאריך/אולם/תמונה) | **עריכת ליבת האירוע** | **בעלים/אדמין בלבד — אין הרשאת חבר שפותחת זאת** | `owner_only=True` |

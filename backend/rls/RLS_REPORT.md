@@ -8,6 +8,15 @@
 endpoint→הרשאה וטסט יישור אוטומטי בין הקוד ל-SQL, נמצא ב-
 [PERMISSIONS.md](PERMISSIONS.md).
 
+**עדכון 3 (2026-08-12) — טבלה שנוספה אחרי סבב ה-RLS המקורי חסרה הגנה:**
+`event_messages` (רצף "תקשורת עם אורחים", נוסף לפרויקט אחרי `02_policies.sql`)
+לא קיבלה מעולם RLS. תוקן בקובץ נפרד — [05_event_messages_rls.sql](05_event_messages_rls.sql),
+לפי אותו מודל הרשאות מדויק שכבר מגן על `messages` (MESSAGES_VIEW/MESSAGES_WRITE,
+ראו PERMISSIONS.md). נבדק סטטית (`tests/test_permission_alignment.py`,
+`tests/test_event_messages_rls_logic.py`) — **לא נבדק מול Postgres/Supabase
+חי** (אין Docker/Supabase staging בסביבת הפיתוח כרגע); דורש מעבר ב-
+STAGING_PLAN.md לפני הפעלה בייצור, כמו כל שאר קבצי ה-RLS כאן.
+
 **עדכון 2 — בדיקת Staging הושלמה בהצלחה:** כל התוכנית הזו נבדקה בפועל מול
 Supabase staging אמיתי (לא SQLite, לא סימולציה) — ראו
 [STAGING_PLAN.md](STAGING_PLAN.md) לתהליך ו-[STAGING_TEST_REPORT.md](STAGING_TEST_REPORT.md)

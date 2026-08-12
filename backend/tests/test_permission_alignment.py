@@ -1,6 +1,5 @@
 """בודק שהרשימות ב-app/permissions.py זהות (כקבוצה) ל-ARRAY[...] המקביל
-ב-backend/rls/02_policies.sql, לכל מדיניות שמבוססת על
-app_has_any_event_permission(...).
+ב-backend/rls/*.sql, לכל מדיניות שמבוססת על app_has_any_event_permission(...).
 
 זו לא בדיקת אינטגרציה מול Postgres אמיתי (אין כזה בסביבת הפיתוח) — רק בדיקה
 סטטית שמונעת מהשכבה האפליקטיבית (EventAccess) ומהמדיניות ב-DB לסטות זו מזו
@@ -15,7 +14,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app import permissions  # noqa: E402
 
-SQL_PATH = Path(__file__).resolve().parent.parent / "rls" / "02_policies.sql"
+RLS_DIR = Path(__file__).resolve().parent.parent / "rls"
+SQL_PATH = RLS_DIR / "02_policies.sql"
+# event_messages קיבל RLS בקובץ נפרד (05_event_messages_rls.sql) — נוסף אחרי
+# 02_policies.sql המקורי, ראו שם את הסבר ה-root cause. נבדק כאן יחד עם השאר.
+EVENT_MESSAGES_SQL_PATH = RLS_DIR / "05_event_messages_rls.sql"
 
 # שם המדיניות ב-SQL -> הקבוע המקביל ב-app/permissions.py.
 POLICY_TO_CONSTANT = {
@@ -30,11 +33,22 @@ POLICY_TO_CONSTANT = {
     "message_templates_rw": permissions.AUTOMATION,
 }
 
+# event_messages: SELECT/INSERT תחת MESSAGES_VIEW (ה-INSERT מכסה את ה-
+# provisioning האוטומטי שקורה בתוך GET /communication/sequence — ראו
+# 05_event_messages_rls.sql), UPDATE/DELETE תחת MESSAGES_WRITE (בדיוק כמו
+# routers/communication.py: _view/_write).
+EVENT_MESSAGES_POLICY_TO_CONSTANT = {
+    "event_messages_select": permissions.MESSAGES_VIEW,
+    "event_messages_insert": permissions.MESSAGES_VIEW,
+    "event_messages_update": permissions.MESSAGES_WRITE,
+    "event_messages_delete": permissions.MESSAGES_WRITE,
+}
+
 
 def _extract_array(sql: str, policy_name: str) -> list[str]:
     """מוצא את ה-ARRAY[...] הראשון אחרי ``CREATE POLICY <policy_name>``."""
     marker = re.search(rf"CREATE POLICY {re.escape(policy_name)}\b", sql)
-    assert marker, f"לא נמצאה מדיניות {policy_name} ב-02_policies.sql"
+    assert marker, f"לא נמצאה מדיניות {policy_name}"
     start = sql.index("ARRAY[", marker.end())
     end = sql.index("]", start)
     body = sql[start + len("ARRAY[") : end]
@@ -43,9 +57,16 @@ def _extract_array(sql: str, policy_name: str) -> list[str]:
 
 def main() -> None:
     sql = SQL_PATH.read_text(encoding="utf-8")
+    event_messages_sql = EVENT_MESSAGES_SQL_PATH.read_text(encoding="utf-8")
     failures = []
     for policy_name, expected in POLICY_TO_CONSTANT.items():
         actual = set(_extract_array(sql, policy_name))
+        if actual != set(expected):
+            failures.append(
+                f"{policy_name}: SQL={sorted(actual)} != permissions.py={sorted(expected)}"
+            )
+    for policy_name, expected in EVENT_MESSAGES_POLICY_TO_CONSTANT.items():
+        actual = set(_extract_array(event_messages_sql, policy_name))
         if actual != set(expected):
             failures.append(
                 f"{policy_name}: SQL={sorted(actual)} != permissions.py={sorted(expected)}"
@@ -68,7 +89,8 @@ def main() -> None:
             print(" -", f)
         sys.exit(1)
 
-    print(f"OK — {len(POLICY_TO_CONSTANT)} policies aligned, {len(containments)} containments verified.")
+    total_policies = len(POLICY_TO_CONSTANT) + len(EVENT_MESSAGES_POLICY_TO_CONSTANT)
+    print(f"OK — {total_policies} policies aligned, {len(containments)} containments verified.")
 
 
 if __name__ == "__main__":
