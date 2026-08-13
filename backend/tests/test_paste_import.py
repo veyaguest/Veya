@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.importer import parse_freeform_text  # noqa: E402
+from app.importer import parse_freeform_text, parse_line  # noqa: E402
 
 
 def _row(text: str, **kwargs):
@@ -252,6 +252,181 @@ def test_assume_single_if_no_count_flag_for_contacts_flow():
     assert r["party_size"] == 1
     assert r["valid"] is True
     assert "חסרה כמות" not in r["warnings"]
+
+
+# ---------------------------------------------------------------------------
+# 7) בדיקות ל-parse_line — יחידת הפענוח האטומית (מפרט הבעלים, 2026-08-13)
+# ---------------------------------------------------------------------------
+# שני באגים דווחו: (1) מילות כמות נכנסות לתוך השם, (2) כמות של מוזמן אחד
+# משויכת בטעות למוזמן אחר. הבדיקות כאן בודקות ישירות את parse_line (יחידת
+# הפענוח לשורה בודדת) כדי שההפרדה תהיה מוכחת ברמת היחידה, לא רק ברמת
+# האינטגרציה של parse_freeform_text.
+
+def test_couple_word_not_in_name():
+    r = parse_line("יוסי כהן 0501234567 זוג")
+    assert r["full_name"] == "יוסי כהן"
+    assert "זוג" not in r["full_name"]
+    assert r["guest_count_text"] == "זוג"
+    assert r["party_size"] == 2
+
+
+def test_child_word_not_in_name():
+    r = parse_line("יוסי כהן 0501234567 ילד")
+    assert r["full_name"] == "יוסי כהן"
+    assert "ילד" not in r["full_name"]
+    assert r["party_size"] == 2
+
+
+def test_number_word_not_in_name():
+    r = parse_line("יוסי כהן 0501234567 שלושה")
+    assert r["full_name"] == "יוסי כהן"
+    assert "שלושה" not in r["full_name"]
+    assert r["party_size"] == 3
+
+
+def test_two_children_phrase_not_in_name():
+    r = parse_line("יוסי כהן 0501234567 שני ילדים")
+    assert r["full_name"] == "יוסי כהן"
+    assert "ילדים" not in r["full_name"] and "שני" not in r["full_name"]
+    assert r["party_size"] == 3
+
+
+def test_couple_with_two_children_phrase_not_in_name():
+    r = parse_line("יוסי כהן 0501234567 זוג עם שני ילדים")
+    assert r["full_name"] == "יוסי כהן"
+    assert "זוג" not in r["full_name"]
+    assert r["guest_count_text"] == "זוג עם שני ילדים"
+    assert r["party_size"] == 4
+
+
+def test_bare_digit_not_in_name():
+    r = parse_line("תומר אדרי 0533333333 2")
+    assert r["full_name"] == "תומר אדרי"
+    assert "2" not in r["full_name"]
+    assert r["party_size"] == 2
+
+
+def test_phone_not_in_name_via_parse_line():
+    r = parse_line("יוסי כהן 0501234567 זוג")
+    assert "0501234567" not in r["full_name"]
+    assert r["phone"] == "0501234567"
+
+
+def test_parse_line_has_no_cross_line_state():
+    """קריאה חוזרת ל-parse_line על שורה בלי כמות, אחרי שורה *עם* כמות,
+    לא מקבלת "שאריות" מהקריאה הקודמת — אין state גלובלי/מודול שמצטבר."""
+    r1 = parse_line("תומר אדרי 0533333333 2")
+    assert r1["party_size"] == 2
+    r2 = parse_line("משפחת אדרי 0522222222")
+    assert r2["party_size"] is None
+    assert r2["guest_count_text"] is None
+    # קריאה שלישית שוב עם כמות — מוודאת שאין "נעילה" על המצב הקודם בכיוון ההפוך
+    r3 = parse_line("דני לוי 0555555555 זוג")
+    assert r3["party_size"] == 2
+
+
+# ---------------------------------------------------------------------------
+# 8) התרחיש המרכזי מהבעלים: "משפחת אדרי" + תומר/רוני/דני, סדרים הפוכים
+# ---------------------------------------------------------------------------
+
+_ADRI_TEXT = (
+    "משפחת אדרי 0522222222\n"
+    "תומר אדרי 0533333333 2\n"
+    "רוני אדרי 0544444444 שלושה ילדים\n"
+    "דני לוי 0555555555 זוג"
+)
+
+
+def test_central_edge_case_adri_family():
+    result = parse_freeform_text(_ADRI_TEXT)
+    rows = {r["full_name"]: r for r in result["rows"]}
+    assert len(rows) == 4
+
+    family = rows["משפחת אדרי"]
+    assert family["guest_count_text"] is None
+    assert family["party_size"] == 0  # sentinel ל"טרם זוהתה"
+    assert family["valid"] is False
+    assert "חסרה כמות" in family["warnings"]
+    assert family["group_type"] == "close_family"  # מהטקסט המפורש בלבד
+
+    tomer = rows["תומר אדרי"]
+    assert tomer["guest_count_text"] == "2"
+    assert tomer["party_size"] == 2
+    assert tomer["group_type"] == "other"
+
+    roni = rows["רוני אדרי"]
+    assert roni["guest_count_text"] == "שלושה ילדים"
+    assert roni["party_size"] == 4
+    assert roni["group_type"] == "other"
+
+    dani = rows["דני לוי"]
+    assert dani["guest_count_text"] == "זוג"
+    assert dani["party_size"] == 2
+    assert dani["group_type"] == "other"
+
+
+def test_quantity_does_not_move_to_previous_line():
+    # אם "2" של תומר היה "נופל אחורה" לשורה הקודמת, למשפחת אדרי היה יוצא 2.
+    result = parse_freeform_text(_ADRI_TEXT)
+    family = next(r for r in result["rows"] if r["full_name"] == "משפחת אדרי")
+    assert family["party_size"] != 2
+    assert family["party_size"] == 0
+
+
+def test_quantity_does_not_move_to_next_line():
+    # הכיוון ההפוך: "משפחת אדרי" (בלי כמות) מיד לפני שורה עם כמות אמיתית —
+    # הכמות של השורה הבאה לא "זולגת אחורה" לשורה חסרת-הכמות.
+    text = "משפחת אדרי 0522222222\nתומר אדרי 0533333333 2"
+    result = parse_freeform_text(text)
+    family, tomer = result["rows"]
+    assert family["party_size"] == 0
+    assert tomer["party_size"] == 2
+
+
+def test_row_order_does_not_affect_result():
+    """מקרה א (משפחת אדרי לפני תומר) מול מקרה ב (תומר לפני משפחת אדרי) —
+    התוצאה חייבת להיות זהה: סדר השורות לא משפיע על שיוך הכמות."""
+    order_a = "משפחת אדרי 0522222222\nתומר אדרי 0533333333 2"
+    order_b = "תומר אדרי 0533333333 2\nמשפחת אדרי 0522222222"
+
+    rows_a = {r["full_name"]: r["party_size"] for r in parse_freeform_text(order_a)["rows"]}
+    rows_b = {r["full_name"]: r["party_size"] for r in parse_freeform_text(order_b)["rows"]}
+
+    assert rows_a == rows_b == {"משפחת אדרי": 0, "תומר אדרי": 2}
+
+
+def test_same_surname_does_not_affect_quantity_assignment():
+    # שלושה "אדרי" ברצף, כל אחד עם כמות אחרת — שם משפחה זהה לא גורם לערבוב.
+    text = (
+        "תומר אדרי 0533333333 2\n"
+        "משפחת אדרי 0522222222\n"
+        "רוני אדרי 0544444444 שלושה ילדים"
+    )
+    result = parse_freeform_text(text)
+    rows = {r["full_name"]: r["party_size"] for r in result["rows"]}
+    assert rows == {
+        "תומר אדרי": 2,
+        "משפחת אדרי": 0,
+        "רוני אדרי": 4,
+    }
+    # ואף אחד לא קיבל group_type מלבד השורה שכתבה "משפחת" במפורש.
+    groups = {r["full_name"]: r["group_type"] for r in result["rows"]}
+    assert groups["תומר אדרי"] == "other"
+    assert groups["רוני אדרי"] == "other"
+    assert groups["משפחת אדרי"] == "close_family"
+
+
+def test_no_grouping_side_effect_within_paste_import():
+    """שוב מוודא (ברמת ה-regression suite הזו) שאין grouping/family-matching
+    בתוך paste import: כל השורות מקבלות group_type עצמאי, ואין שום מפתח
+    בפלט שמצביע על "קבוצה" שנוצרה בין שורות."""
+    result = parse_freeform_text(_ADRI_TEXT)
+    for r in result["rows"]:
+        assert set(r.keys()) <= {
+            "row_number", "full_name", "phone", "side", "group_type",
+            "guest_count_text", "party_size", "notes_raw", "seating_notes",
+            "valid", "errors", "warnings", "duplicate",
+        }
 
 
 if __name__ == "__main__":

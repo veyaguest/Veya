@@ -394,6 +394,55 @@ def _clean_name(text: str) -> str:
     return text.strip(" -–—,:;|\t")
 
 
+def parse_line(line: str) -> dict:
+    """מפענחת **שורה אחת בלבד** — יחידת הפענוח האטומית של הדבקת רשימה.
+
+    זו הערבות המבנית לבידוד בין שורות: הפונקציה מקבלת ``str`` בודד ומחזירה
+    רק מידע שנמצא בתוך אותה מחרוזת. אין לה גישה לשורות אחרות, אין לה
+    state שמצטבר בין קריאות (כל משתנה מקומי לפונקציה), ואין לה שום דרך
+    "לדעת" שקיימת שורה קודמת/הבאה — ולכן טלפון/כמות של שורה אחת פיזית
+    לא יכולים "לדלוף" לשורה אחרת. `parse_freeform_text` קורא לה בלולאה
+    ומוסיף מעליה רק דברים שמטבעם חוצי-שורות (מספור, זיהוי כפילות מול
+    שורות אחרות/מוזמנים קיימים) — לא מידע על השורה עצמה.
+
+    מחזירה: full_name, phone, phone_warn, guest_count_text, party_size
+    (None אם לא זוהתה כמות בשורה — לעולם לא מוחלף בברירת מחדל כאן), group_type.
+    """
+    working = line
+
+    # 1) טלפון — מזהים, מנרמלים, ומסירים מהשורה
+    phone = ""
+    phone_warn: Optional[str] = None
+    m = _PHONE_RE.search(working)
+    if m:
+        candidate = m.group(0)
+        working = working[: m.start()] + " " + working[m.end():]
+        try:
+            phone = normalize_israeli_phone(candidate)
+        except ValueError:
+            phone_warn = "טלפון לא תקין"
+
+    # 2) כמות — מזהים ומסירים מהשורה (ראו _parse_quantity). קורא ל-working
+    # הנוכחי בלבד — לא לשום דבר שהצטבר משורה קודמת.
+    guest_count_text, party_size, working = _parse_quantity(working)
+
+    # 3) רמז משפחה — תיוג group_type בלבד, לא כמות ולא קשר לשורות אחרות
+    is_family = bool(_FAMILY_RE.search(line))
+    group_type = "close_family" if is_family else "other"
+
+    # 4) שם — מה שנשאר אחרי הסרת טלפון+כמות
+    full_name = _clean_name(working)
+
+    return {
+        "full_name": full_name,
+        "phone": phone,
+        "phone_warn": phone_warn,
+        "guest_count_text": guest_count_text,
+        "party_size": party_size,
+        "group_type": group_type,
+    }
+
+
 def parse_freeform_text(
     text: str,
     existing_keys: Optional[set] = None,
@@ -401,21 +450,20 @@ def parse_freeform_text(
 ) -> dict:
     """מפענח רשימת טקסט חופשי לשורות מוזמנים — מבנה זהה ל-`build_preview`.
 
-    לכל שורה לא-ריקה: מזהה טלפון ומסירו, מזהה כמות (מילים/מספרים בעברית,
-    כולל "זוג"/"ילדים"/צירופים כמו "זוג עם שני ילדים") ומסירה, מזהה רמז
-    "משפחת…" (**רק** לשיוך group_type — לא משפיע על הכמות ולא יוצר קשר בין
-    שורות), ומשאיר את השם.
+    כל שורה עוברת דרך `parse_line` בבידוד מוחלט (ראו התיעוד שם). הפונקציה
+    הזו מוסיפה מעליה **רק** את מה שמטבעו חוצה-שורות: מספור (`row_number`),
+    וזיהוי כפילות (`duplicate`) מול שורות אחרות באותה הדבקה ומול מוזמני
+    האירוע (`existing_keys`) — שני הדברים היחידים שבאמת אמורים להשוות בין
+    שורות. שום מידע אחר (שם/טלפון/כמות) לא זולג בין שורות.
 
-    כלל ברזל: **לא מנחשים כמות שלא נכתבה.** אם לא זוהה בשורה שום ביטוי כמות,
-    `guest_count_text`/`party_size` נשארים None ומתווספת אזהרה חוסמת ("חסרה
-    כמות") — לא ברירת מחדל שקטה ל"יחיד". היוצא מהכלל היחיד: כש-
+    כלל ברזל: **לא מנחשים כמות שלא נכתבה.** אם `parse_line` לא זיהה ביטוי
+    כמות, `guest_count_text`/`party_size` נשארים None ומתווספת אזהרה חוסמת
+    ("חסרה כמות") — לא ברירת מחדל שקטה ל"יחיד". היוצא מהכלל היחיד: כש-
     `assume_single_if_no_count=True` (משמש לזרימת ייבוא אנשי קשר, ששם כל
     שורה היא כבר איש קשר בודד בוודאות — 1 הוא עובדה נתונה, לא ניחוש).
 
     ולידציה: `errors` חוסמים (חסר שם) לעומת `warnings` חוסמי-ברירת-מחדל
     (חסרה כמות) או לא-חוסמים (חסר טלפון / טלפון לא תקין / כפילות).
-    `duplicate` מסומן מול הרשימה המודבקת עצמה וגם מול מוזמני האירוע
-    (`existing_keys`).
     """
     existing_keys = existing_keys or set()
     preview_rows = []
@@ -428,29 +476,14 @@ def parse_freeform_text(
         if not line:
             continue
         row_no += 1
-        working = line
 
-        # 1) טלפון — מזהים, מנרמלים, ומסירים מהשורה
-        phone = ""
-        phone_warn: Optional[str] = None
-        m = _PHONE_RE.search(working)
-        if m:
-            candidate = m.group(0)
-            working = working[: m.start()] + " " + working[m.end():]
-            try:
-                phone = normalize_israeli_phone(candidate)
-            except ValueError:
-                phone_warn = "טלפון לא תקין"
-
-        # 2) כמות — מזהים ומסירים מהשורה (ראו _parse_quantity)
-        guest_count_text, party_size, working = _parse_quantity(working)
-
-        # 3) רמז משפחה — תיוג group_type בלבד, לא כמות ולא קשר בין שורות
-        is_family = bool(_FAMILY_RE.search(line))
-        group_type = "close_family" if is_family else "other"
-
-        # 4) שם — מה שנשאר
-        full_name = _clean_name(working)
+        parsed = parse_line(line)
+        full_name = parsed["full_name"]
+        phone = parsed["phone"]
+        phone_warn = parsed["phone_warn"]
+        guest_count_text = parsed["guest_count_text"]
+        party_size = parsed["party_size"]
+        group_type = parsed["group_type"]
 
         count_missing = party_size is None
         if count_missing and assume_single_if_no_count:
@@ -468,7 +501,8 @@ def parse_freeform_text(
         elif not phone:
             warnings.append("חסר טלפון")
 
-        # כפילות — מפתח לפי טלפון (מדויק) או שם (fallback)
+        # כפילות — מפתח לפי טלפון (מדויק) או שם (fallback). זה היחיד שמותר
+        # לו להשוות בין שורות (השוואה, לא העברת מידע).
         key = phone or (full_name.lower() if full_name else "")
         duplicate = bool(key and (key in seen_keys or key in existing_keys))
         if duplicate:
