@@ -9,7 +9,11 @@ import { strings } from '../strings/he'
 
 /** מסך התחברות / הרשמה — פריסת split-screen: פאנל שיווקי + טופס כניסה. */
 export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
-  const [mode, setMode] = useState<'login' | 'register'>('login')
+  // דף הנחיתה מקשר לכאן עם ?auth=register עבור כפתורי "התחילו/בואו נתחיל",
+  // כדי לפתוח ישר בטופס הרשמה במקום בהתחברות.
+  const [mode, setMode] = useState<'login' | 'register'>(() =>
+    new URLSearchParams(window.location.search).get('auth') === 'register' ? 'register' : 'login',
+  )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
