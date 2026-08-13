@@ -639,6 +639,26 @@ export function smartSearch(
     }
   }
 
+  // התאמת מספר שולחן: השדה מבטיח "חיפוש מוזמן או מספר שולחן", אז הקלדת "5"
+  // צריכה לקפוץ ישירות לשולחן 5 גם כשאין מוזמן בשם הזה. guestId שלילי כדי
+  // שלעולם לא יתנגש עם מזהה מוזמן אמיתי (תמיד חיובי).
+  const tableNumMatch = norm.match(/\d+/)
+  if (tableNumMatch) {
+    const num = Number(tableNumMatch[0])
+    const t = tables.find((x) => x.table_number === num)
+    if (t) {
+      results.push({
+        guestId: -t.table_number,
+        fullName: `שולחן ${t.table_number}`,
+        side: 'shared',
+        tableNumber: t.table_number,
+        seatIndex: null,
+        companions: t.guests.map((g) => g.full_name),
+        freeSeatsAtTable: tableFreeCapacity(t),
+      })
+    }
+  }
+
   return results.sort((a, b) => a.fullName.localeCompare(b.fullName, 'he'))
 }
 

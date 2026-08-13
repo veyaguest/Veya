@@ -2521,6 +2521,14 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
               <path d="M20 15v4a1 1 0 0 1-1 1h-4" />
             </svg>
           </button>
+          {/* סטטוס שמירה — גלוי כאן רק בזמן פעילות (שומר/שינויים ממתינים/נשמר עכשיו),
+              כדי לא להוסיף רעש קבוע כשהכול כבר שמור. הפירוט המלא נשאר בלשונית "כלים". */}
+          {(saving || dirty || savedTick) && (
+            <span className={`hm-topbar-save ${saving ? 'saving' : ''}`} role="status">
+              <HmIcon name="save" size={14} />
+              {saving ? 'שומר…' : dirty ? 'שינויים ממתינים' : 'נשמר ✓'}
+            </span>
+          )}
           <div className="hm-search">
             <span className="hm-search-icon" aria-hidden="true">
               <HmIcon name="search" size={18} />
@@ -2541,7 +2549,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
           {q && (
             <div className="hm-search-results">
               {searchResults.length === 0 ? (
-                <p className="hm-search-empty">לא נמצא מוזמן בשם הזה.</p>
+                <p className="hm-search-empty">לא נמצא מוזמן או שולחן כאלה.</p>
               ) : (
                 searchResults.slice(0, 8).map((r) => (
                   <button

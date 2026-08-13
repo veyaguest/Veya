@@ -399,10 +399,14 @@
         50% { transform: translateY(-9px) perspective(900px) rotateY(-3deg); }
       }
       @media (max-width: 767px) {
-        .hero-devices { max-width: 260px; margin-top: 40px; }
+        /* שני המוקאפים נשארים גלויים — רק מוקטנים יחד, באותה קומפוזיציה
+           (מחשב + טלפון חופף בפינה) כמו בדסקטופ, כדי ש"VEYA עובדת גם
+           במחשב וגם בטלפון" יהיה ברור במבט אחד, בלי horizontal overflow. */
+        .hero-devices { max-width: 300px; margin-top: 40px; }
         .hero-devices::before { inset: -10% -14% -6%; }
-        .device-mac { display: none; }
-        .device-phone { position: static; width: 100%; max-width: 260px; margin: 0 auto; animation: none; transform: none; }
+        .device-mac { margin-inline-start: 7%; transform: none; }
+        .hero-devices:hover .device-mac { transform: none; }
+        .device-phone { width: 34%; max-width: 132px; bottom: -9%; inset-inline-start: -5%; animation: none; }
       }
       @media (prefers-reduced-motion: reduce) {
         .hero-devices::before { animation: none; }
@@ -435,7 +439,7 @@
       @media (max-width: 860px) {
         .sc-layout { grid-template-columns: 1fr; align-items: start; }
         .sc-tabs { flex-direction: row; justify-content: flex-start; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
-        .sc-tab { flex: 0 0 auto; white-space: nowrap; }
+        .sc-tab { width: auto; flex: 0 0 auto; white-space: nowrap; }
         .sc-tab .sc-tab-sub { display: none; }
       }
 
@@ -544,8 +548,8 @@
               <div class="device-mac-cam" aria-hidden="true"></div>
               <div class="device-mac-screen">
                 <img
-                  src="/product/hero-dashboard.png"
-                  alt="לוח הבקרה של VEYA במחשב, עם מספר המוזמנים שאישרו הגעה וגרף התקדמות בזמן אמת"
+                  src="/product/hero-seating.png"
+                  alt="עורך סידור ההושבה של VEYA במחשב, עם אולם מלא ומוזמנים משובצים לשולחנות"
                   width="1400" height="875"
                   fetchpriority="high" decoding="async"
                   onerror="this.style.display='none'"
@@ -557,8 +561,8 @@
               <div class="device-phone-notch" aria-hidden="true"></div>
               <div class="device-phone-screen">
                 <img
-                  src="/product/hero-mobile.png"
-                  alt="מסך VEYA בטלפון, עם רשימת המוזמנים וסטטוס אישורי ההגעה"
+                  src="/product/hero-dashboard-mobile.png"
+                  alt="תמונת המצב של VEYA בטלפון, עם ספירה לאחור וסטטוס אישורי הגעה"
                   width="390" height="844"
                   loading="eager" decoding="async"
                   onerror="this.style.display='none'"
@@ -664,12 +668,17 @@
                 <h3>לא רודפים אחרי אף אחד</h3>
                 <p>שולחים הזמנה בוואטסאפ עם כפתור תשובה מהירה, ואנחנו אוספים את התשובות בשבילכם.</p>
               </div>
-              <div class="sc-panel" id="sc-panel-seating" role="tabpanel" aria-labelledby="sc-tab-seating" tabindex="0">
+              <div class="sc-panel sc-panel-seating" id="sc-panel-seating" role="tabpanel" aria-labelledby="sc-tab-seating" tabindex="0">
                 <div class="sc-shot">
                   <img src="/product/seating.png" alt="עורך מפת האולם של VEYA, עם שולחנות מסודרים וסידור הושבה" width="1400" height="875" loading="lazy" decoding="async" onerror="this.style.display='none'" />
                 </div>
                 <h3>מסיימים את ההושבה בערב אחד</h3>
                 <p>אנחנו מציעים סידור הושבה, ואתם גוררים ומדייקים על מפת האולם.</p>
+                <ul class="mini-list sc-seating-list">
+                  <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>גוררים מוזמן לשולחן, והוא כבר שם</li>
+                  <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>המערכת מציעה סידור, ההחלטה נשארת שלכם</li>
+                  <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>כל שינוי נשמר לבד, בלי ללחוץ שום כפתור</li>
+                </ul>
               </div>
             </div>
           </div>
@@ -920,6 +929,25 @@
           });
         }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
         els.forEach(function (el) { io.observe(el); });
+
+        // רשת ביטחון: כשמגיעים ל-section ישירות (טעינת URL עם #hash, קפיצת
+        // עוגן, ניווט לא-הדרגתי) הדפדפן קופץ מיד למיקום — לפעמים לפני שה-
+        // IntersectionObserver הספיק לתפוס את המעבר, והתוכן נשאר opacity:0
+        // לצמיתות. חושפים מיד כל reveal שכבר בתוך המסך בפועל.
+        function revealVisible() {
+          els.forEach(function (el) {
+            if (el.classList.contains('in')) return;
+            var r = el.getBoundingClientRect();
+            if (r.top < window.innerHeight && r.bottom > 0) {
+              el.classList.add('in');
+              io.unobserve(el);
+            }
+          });
+        }
+        revealVisible();
+        window.addEventListener('load', revealVisible);
+        window.addEventListener('hashchange', revealVisible);
+        if (location.hash) setTimeout(revealVisible, 350);
       })();
 
       // Product Showcase — טאבים נגישים (role="tablist"), בלי ספריית JS חיצונית
