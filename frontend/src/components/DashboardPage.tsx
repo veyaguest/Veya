@@ -636,7 +636,7 @@ export function DashboardPage({ onNavigate }: Props) {
               <div className="dash-col-left">
                 <InviteBanner
                   count={stats.total_guests - stats.invitations_sent}
-                  onSend={() => onNavigate?.('rsvp')}
+                  onSend={() => onNavigate?.('messages')}
                 />
                 <RsvpUpdatesFeed rows={auditRows} />
               </div>

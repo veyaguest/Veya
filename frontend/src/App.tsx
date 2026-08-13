@@ -21,6 +21,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { EventMembersDialog } from './components/EventMembersDialog'
 import { Footer } from './components/Footer'
 import { GuestsPage } from './components/GuestsPage'
+import { MessagesPage } from './components/MessagesPage'
 import { OnboardingWizard } from './components/OnboardingWizard'
 import { ProfileDialog } from './components/ProfileDialog'
 import { ReconsentModal } from './components/ReconsentModal'
@@ -47,24 +48,27 @@ const bootFallback = (
   </div>
 )
 
-type Page = 'dashboard' | 'guests' | 'rsvp' | 'hall'
+type Page = 'dashboard' | 'guests' | 'messages' | 'rsvp' | 'hall'
 
 // כותרות/ניווט תלויי-סוג-אירוע: "מוזמנים" הופך ל"משתתפים" באירוע עסקי וכו'.
 function pageTitles(terms: EventTerms): Record<Page, string> {
   return {
     dashboard: 'האירוע שלנו',
     guests: `ניהול ${terms.guestsLabel}`,
-    rsvp: 'ניהול הודעות',
+    messages: 'ניהול הודעות',
+    rsvp: 'אישורי הגעה',
     hall: 'סידור הושבה',
   }
 }
 
 // label — הטקסט המלא בסרגל הצד (דסקטופ); short — טקסט קצר לניווט התחתון בטלפון.
+// הסדר תואם את זרימת העבודה: מה לשלוח? (ניהול הודעות) → מה המצב? (אישורי הגעה).
 function navItemsFor(terms: EventTerms): { key: Page; label: string; short: string }[] {
   return [
     { key: 'dashboard', label: 'תמונת מצב', short: 'בית' },
     { key: 'guests', label: `ניהול ${terms.guestsLabel}`, short: terms.guestsLabel },
-    { key: 'rsvp', label: 'ניהול הודעות', short: 'הודעות' },
+    { key: 'messages', label: 'ניהול הודעות', short: 'הודעות' },
+    { key: 'rsvp', label: 'אישורי הגעה', short: 'אישורים' },
     { key: 'hall', label: 'סידור הושבה', short: 'הושבה' },
   ]
 }
@@ -101,11 +105,19 @@ function NavIcon({ page }: { page: Page }) {
           <path d="M17.5 20a5.5 5.5 0 0 0-2.5-4.6" />
         </svg>
       )
-    case 'rsvp':
+    case 'messages':
       return (
         <svg {...common}>
           <path d="M4 5h16v11H8l-4 3z" />
           <path d="m9 10 2 2 4-4" />
+        </svg>
+      )
+    case 'rsvp':
+      return (
+        <svg {...common}>
+          <rect x="5" y="3.5" width="14" height="17" rx="2" />
+          <path d="M9 3.5V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v.5" />
+          <path d="M8.5 12.5 11 15l4.5-5" />
         </svg>
       )
     case 'hall':
@@ -407,6 +419,9 @@ function App() {
               <DashboardPage onNavigate={(p) => setPage(p)} />
             )}
             {page === 'guests' && <GuestsPage />}
+            {page === 'messages' && (
+              <MessagesPage isAdmin={user.is_admin} onNavigate={(p) => setPage(p)} />
+            )}
             {page === 'rsvp' && (
               <RsvpPage isAdmin={user.is_admin} onNavigate={(p) => setPage(p)} />
             )}

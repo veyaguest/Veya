@@ -11920,6 +11920,50 @@ td.notes.seating {
   margin-top: 4px;
 }
 
+/* טקסט הסבר קצר בראש עמוד (למשל "ניהול הודעות"). */
+.page-intro {
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 60ch;
+  margin: 0 0 20px;
+}
+
+/* כפתור פעולה במצב-ריק שמבוסס על .tl-empty (למשל "אישורי הגעה" לפני שליחה). */
+.tl-empty-cta {
+  margin-top: 18px;
+}
+
+/* ---- שאלות נפוצות (FAQ) בתחתית עמוד אישורי הגעה ---- */
+.rsvp-faq {
+  margin-top: 8px;
+}
+.rsvp-faq-title {
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 20px;
+  color: var(--charcoal);
+  margin: 0 0 14px;
+}
+.rsvp-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rsvp-faq-item {
+  padding: 16px 18px;
+  gap: 0;
+}
+.rsvp-faq-q-text {
+  font-weight: 600;
+  color: var(--charcoal);
+  font-size: 15px;
+}
+.rsvp-faq-a {
+  margin: 12px 0 0;
+  color: var(--body);
+  line-height: 1.7;
+  font-size: 14px;
+}
+
 /* ---- Error Boundary — רשת ביטחון גלובלית לקריסת רינדור ---- */
 .error-boundary {
   min-height: 100vh;

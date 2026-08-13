@@ -1,2 +1,2 @@
-// יעד ניווט מהדשבורד — מסך קיים באפליקציה (מוזמנים / הושבה / הודעות).
-export type ReadinessPage = 'guests' | 'hall' | 'rsvp'
+// יעד ניווט מהדשבורד — מסך קיים באפליקציה (מוזמנים / הושבה / הודעות / אישורי הגעה).
+export type ReadinessPage = 'guests' | 'hall' | 'messages' | 'rsvp'

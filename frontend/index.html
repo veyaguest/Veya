@@ -426,7 +426,12 @@
          פינות טלפון. עם תחביר ה-slash (אופקי / אנכי) שני הרדיוסים יוצאים
          דומים בפיקסלים בפועל, כמו פינה מעוגלת אמיתית ולא קפסולה. ---- */
       .device-phone {
-        position: absolute; width: 23%; max-width: 200px; bottom: -8%; inset-inline-start: 1%;
+        /* בגלל שהטלפון צר וגבוה (9:19.5), הגובה שלו מתקרב לגובה המחשב גם
+           כשהוא הרבה יותר צר — אם מרימים אותו נמוך מדי הוא "עומד" לצד
+           המחשב באותו גובה, לא נראה כמו מכשיר קטן יותר. גם מקטינים אותו
+           וגם מרימים אותו (bottom חיובי) כך שרוב הגובה שלו חופף את פני
+           המחשב במקום לבלוט מתחתיו. */
+        position: absolute; width: 18%; max-width: 165px; bottom: 4%; inset-inline-start: 2%;
         padding: 5px;
         background: linear-gradient(160deg, #3c3c3f 0%, #201f22 55%, #0f0e10 100%);
         border-radius: 22% / 10%;
@@ -466,15 +471,16 @@
         /* שני המכשירים נשארים גלויים ושומרים על perspective/tilt — בלי זה
            הם קורסים לשני מלבנים שטוחים זה מעל זה ("שתי תמונות מודבקות"),
            בדיוק מה שרצינו למנוע. אותה קומפוזיציה כמו בדסקטופ (מחשב מאחור,
-           טלפון חופף מלפנים-למטה), רק מוקטנת כיחידה אחת ועם טלפון קצת
-           גדול יותר יחסית כדי שיישאר קריא. */
+           טלפון חופף מלפנים-למטה), רק מוקטנת כיחידה אחת. הטלפון מוקטן
+           ומורם (bottom חיובי) כדי שהגובה הטבעי-גבוה שלו (יחס 9:19.5) לא
+           יתחרה בגובה המחשב — אחרת גם טלפון "צר" נראה גבוה כמו המחשב. */
         .hero-devices { max-width: 320px; margin-top: 40px; }
         .hero-devices::before { inset: -10% -14% -6%; }
         .hero-devices::after { inset-inline: 6%; bottom: -4%; height: 20%; }
         .device-mac { margin-inline-start: 6%; transform: perspective(1100px) rotateX(2deg); }
         .hero-devices:hover .device-mac { transform: perspective(1100px) rotateX(2deg); }
         .device-phone {
-          width: 38%; max-width: 150px; bottom: -7%; inset-inline-start: -7%;
+          width: 26%; max-width: 110px; bottom: 8%; inset-inline-start: -4%;
           animation: none; transform: perspective(700px) rotateY(-9deg) rotateX(1.5deg);
         }
       }
@@ -612,16 +618,6 @@
             <a href="/app" class="btn btn-primary">בואו נתחיל <span class="arw" aria-hidden="true">←</span></a>
             <a href="#how" class="btn btn-ghost">איך זה עובד</a>
           </div>
-          <div class="hero-trust reveal d3">
-            <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <span>חתונות, בר/בת מצווה, חינה, ברית ואירועים עסקיים</span>
-            <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <span>פחות לחץ, יותר שליטה</span>
-            <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <span>אישורי הגעה בוואטסאפ</span>
-            <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <span>הושבה חכמה שנגמרת בערב אחד</span>
-          </div>
 
           <div class="hero-devices reveal d3">
             <div class="device-mac">
@@ -653,6 +649,17 @@
                 />
               </div>
             </div>
+          </div>
+
+          <div class="hero-trust reveal d3">
+            <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <span>חתונות, בר/בת מצווה, חינה, ברית ואירועים עסקיים</span>
+            <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <span>פחות לחץ, יותר שליטה</span>
+            <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <span>אישורי הגעה בוואטסאפ</span>
+            <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <span>הושבה חכמה שנגמרת בערב אחד</span>
           </div>
         </div>
       </section>
