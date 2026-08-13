@@ -366,6 +366,14 @@
         animation: veya-glow-breathe 6s ease-in-out infinite;
       }
       @keyframes veya-glow-breathe { 0%, 100% { opacity: 0.65; } 50% { opacity: 1; } }
+      /* צל הצבה על "משטח" — בלי זה שני המכשירים מרחפים בריק ומרגישים כמו
+         איורים שטוחים. עוגן חזותי פשוט שהופך את הקומפוזיציה לתמונת מוצר. */
+      .hero-devices::after {
+        content: ""; position: absolute; z-index: 0; pointer-events: none;
+        inset-inline: 10%; bottom: -3%; height: 18%;
+        background: radial-gradient(50% 100% at 50% 50%, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 75%);
+        filter: blur(3px);
+      }
 
       /* ---- MacBook: גוף אלומיניום (lid+base) שונה בבירור מהמסגרת השחורה
          שצמודה למסך עצמו — כמו במחשב אמיתי. חריץ מצלמה חתוך בתוך המסך
@@ -399,7 +407,9 @@
       .device-mac-screen::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.06; background: url('/favicon.svg') center / 64px no-repeat; }
       .device-mac-screen::after {
         content: ""; position: absolute; inset: 0; pointer-events: none;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0) 70%, rgba(228, 201, 107, 0.04) 100%);
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0) 70%, rgba(228, 201, 107, 0.04) 100%),
+          radial-gradient(120% 100% at 50% 50%, rgba(0, 0, 0, 0) 62%, rgba(0, 0, 0, 0.2) 100%);
       }
       .device-mac-hinge { height: 4px; background: linear-gradient(180deg, #100f11 0%, #08080a 100%); }
       .device-mac-base {
@@ -418,6 +428,8 @@
         background: linear-gradient(160deg, #3c3c3f 0%, #201f22 55%, #0f0e10 100%);
         border-radius: 22%;
         box-shadow:
+          /* צל מגע צמוד — "נוחת" על משטח המחשב שמאחוריו, לא רק צל רחוק */
+          0 14px 22px -8px rgba(0, 0, 0, 0.5),
           0 30px 60px -14px rgba(0, 0, 0, 0.55),
           inset 0 1px 0 rgba(255, 255, 255, 0.14),
           0 0 0 1px rgba(0, 0, 0, 0.5),
@@ -434,7 +446,9 @@
       .device-phone-screen::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.06; background: url('/favicon.svg') center / 32px no-repeat; }
       .device-phone-screen::after {
         content: ""; position: absolute; inset: 0; pointer-events: none;
-        background: linear-gradient(150deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 24%);
+        background:
+          linear-gradient(150deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 24%),
+          radial-gradient(120% 90% at 50% 50%, rgba(0, 0, 0, 0) 64%, rgba(0, 0, 0, 0.22) 100%);
       }
       .device-phone-notch {
         position: absolute; top: 7%; inset-inline-start: 50%; transform: translateX(-50%);
@@ -446,14 +460,20 @@
         50% { transform: translateY(-9px) perspective(900px) rotateY(-3deg); }
       }
       @media (max-width: 767px) {
-        /* שני המוקאפים נשארים גלויים — רק מוקטנים יחד, באותה קומפוזיציה
-           (מחשב + טלפון חופף בפינה) כמו בדסקטופ, כדי ש"VEYA עובדת גם
-           במחשב וגם בטלפון" יהיה ברור במבט אחד, בלי horizontal overflow. */
-        .hero-devices { max-width: 300px; margin-top: 40px; }
+        /* שני המכשירים נשארים גלויים ושומרים על perspective/tilt — בלי זה
+           הם קורסים לשני מלבנים שטוחים זה מעל זה ("שתי תמונות מודבקות"),
+           בדיוק מה שרצינו למנוע. אותה קומפוזיציה כמו בדסקטופ (מחשב מאחור,
+           טלפון חופף מלפנים-למטה), רק מוקטנת כיחידה אחת ועם טלפון קצת
+           גדול יותר יחסית כדי שיישאר קריא. */
+        .hero-devices { max-width: 320px; margin-top: 40px; }
         .hero-devices::before { inset: -10% -14% -6%; }
-        .device-mac { margin-inline-start: 7%; transform: none; }
-        .hero-devices:hover .device-mac { transform: none; }
-        .device-phone { width: 34%; max-width: 132px; bottom: -9%; inset-inline-start: -5%; animation: none; }
+        .hero-devices::after { inset-inline: 6%; bottom: -4%; height: 20%; }
+        .device-mac { margin-inline-start: 6%; transform: perspective(1100px) rotateX(2deg); }
+        .hero-devices:hover .device-mac { transform: perspective(1100px) rotateX(2deg); }
+        .device-phone {
+          width: 38%; max-width: 150px; bottom: -7%; inset-inline-start: -7%;
+          animation: none; transform: perspective(700px) rotateY(-9deg) rotateX(1.5deg);
+        }
       }
       @media (prefers-reduced-motion: reduce) {
         .hero-devices::before { animation: none; }
