@@ -1173,7 +1173,7 @@ td.notes.seating {
 /* כפתור סגירה עגול אחיד לכל משפחות ה-modal באפליקציה (overlay/dialog הרגיל,
    auto-modal, gm2-sheet) — במקום 3 סגנונות שונים ("✕" עגול / "סגירה ✕" /
    "סגירה" כטקסט). */
-.dialog .x, .auto-modal .x, .gm2-sheet .x {
+.dialog .x, .auto-modal .x, .gm2-sheet .x, .msg-drawer .x {
   background: none;
   border: none;
   font-size: 18px;
@@ -1187,7 +1187,7 @@ td.notes.seating {
   justify-content: center;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.dialog .x:hover, .auto-modal .x:hover, .gm2-sheet .x:hover {
+.dialog .x:hover, .auto-modal .x:hover, .gm2-sheet .x:hover, .msg-drawer .x:hover {
   background: var(--surface-hi);
   color: var(--charcoal);
 }
@@ -8976,6 +8976,53 @@ td.notes.seating {
   position: relative;
   font-size: 16px;
   line-height: 1;
+}
+
+/* --- המעטפת של MessageEditDrawer (בחירת/עריכת נוסח) — עד עכשיו לא הייתה
+   מוגדרת בכלל, אז ה-backdrop/drawer נפלו ל-position:static והציפו את
+   הדף למטה בלי שום מודל נראה לעין. אותו דפוס בדיוק כמו .auto-modal. */
+.msg-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 10, 12, 0.42);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.msg-drawer {
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-dialog);
+  width: 100%;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  animation: dialog-pop-in 250ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.msg-drawer-side { max-width: 920px; padding: 26px 28px; }
+.msg-drawer-full { max-width: 560px; padding: 22px 20px; }
+.msg-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+@media (max-width: 640px) {
+  .msg-drawer-backdrop { padding: 0; align-items: flex-end; }
+  .msg-drawer-full {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    animation: hmSheetUp 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .msg-drawer { animation: none; }
 }
 
 /* --- הבמה: כרטיס ההודעה, ולצדו בדסקטופ התצוגה לאורח --- */
