@@ -420,13 +420,16 @@
       }
       .device-mac-base::before { content: ""; position: absolute; inset-inline-start: 50%; top: 0; transform: translateX(-50%); width: 110px; height: 7px; border-radius: 0 0 6px 6px; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5); }
 
-      /* ---- iPhone: מסגרת טיטניום דקה, Dynamic Island, פינות squircle
-         (רדיוס באחוזים כדי שיישאר פרופורציונלי גם כשהמכשיר מוקטן במובייל). ---- */
+      /* ---- iPhone: מסגרת טיטניום דקה, Dynamic Island, פינות squircle.
+         חשוב: הגוף צר וגבוה מאוד (יחס 9:19.5), אז border-radius באחוז יחיד
+         היה יוצר רדיוס אנכי ענק מול רדיוס אופקי קטן — פינות אליפסה, לא
+         פינות טלפון. עם תחביר ה-slash (אופקי / אנכי) שני הרדיוסים יוצאים
+         דומים בפיקסלים בפועל, כמו פינה מעוגלת אמיתית ולא קפסולה. ---- */
       .device-phone {
         position: absolute; width: 23%; max-width: 200px; bottom: -8%; inset-inline-start: 1%;
         padding: 5px;
         background: linear-gradient(160deg, #3c3c3f 0%, #201f22 55%, #0f0e10 100%);
-        border-radius: 22%;
+        border-radius: 22% / 10%;
         box-shadow:
           /* צל מגע צמוד — "נוחת" על משטח המחשב שמאחוריו, לא רק צל רחוק */
           0 14px 22px -8px rgba(0, 0, 0, 0.5),
@@ -441,7 +444,7 @@
       .device-phone::before { inset-inline-end: -2px; top: 22%; height: 9%; }
       .device-phone::after { inset-inline-start: -2px; top: 18%; height: 6%; }
       .device-phone-mute { position: absolute; inset-inline-start: -2px; top: 13%; width: 2.5px; height: 3.5%; border-radius: 2px 0 0 2px; background: #0a0908; }
-      .device-phone-screen { position: relative; aspect-ratio: 9 / 19.5; border-radius: 19%; overflow: hidden; background: #171310; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45); }
+      .device-phone-screen { position: relative; aspect-ratio: 9 / 19.5; border-radius: 19% / 9%; overflow: hidden; background: #171310; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45); }
       .device-phone-screen img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
       .device-phone-screen::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.06; background: url('/favicon.svg') center / 32px no-repeat; }
       .device-phone-screen::after {
