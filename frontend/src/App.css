@@ -1173,7 +1173,7 @@ td.notes.seating {
 /* כפתור סגירה עגול אחיד לכל משפחות ה-modal באפליקציה (overlay/dialog הרגיל,
    auto-modal, gm2-sheet) — במקום 3 סגנונות שונים ("✕" עגול / "סגירה ✕" /
    "סגירה" כטקסט). */
-.dialog .x, .auto-modal .x, .gm2-sheet .x, .msg-drawer .x {
+.dialog .x, .auto-modal .x, .gm2-sheet .x {
   background: none;
   border: none;
   font-size: 18px;
@@ -1187,7 +1187,7 @@ td.notes.seating {
   justify-content: center;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.dialog .x:hover, .auto-modal .x:hover, .gm2-sheet .x:hover, .msg-drawer .x:hover {
+.dialog .x:hover, .auto-modal .x:hover, .gm2-sheet .x:hover {
   background: var(--surface-hi);
   color: var(--charcoal);
 }
@@ -4283,16 +4283,6 @@ td.notes.seating {
   outline: 2px dashed var(--gold);
   outline-offset: 4px;
   cursor: copy;
-  transition: outline-color 0.12s ease, box-shadow 0.12s ease;
-}
-/* בזמן שמוזמן נבחר להעברה, השולחן שהעכבר ממש מעליו מקבל חיווי חזק יותר —
-   "לאן זה עומד להגיע" ברור בזמן אמת, לא רק "כאן אפשר לשבץ" באופן כללי. */
-@media (hover: hover) and (pointer: fine) {
-  .hall-table.droppable:hover .table-graphic {
-    outline: 2px solid var(--gold);
-    outline-offset: 4px;
-    box-shadow: 0 0 0 6px rgba(201, 162, 39, 0.18);
-  }
 }
 /* חיווי יעד גרירה פעיל (drag & drop של מוזמן) */
 .hall-table.drag-over .table-graphic {
@@ -7930,46 +7920,6 @@ td.notes.seating {
   flex-direction: column;
   gap: 20px;
 }
-.rsvp-layer {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-/* פירוט מעקב מקופל — progressive disclosure במקום שרשימה מלאה תמיד תופסת
-   מקום. אותו רעיון כמו ה-FAQ בדף הנחיתה, בשפה הוויזואלית של האפליקציה. */
-.track-detail {
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
-  margin-top: 4px;
-}
-.track-detail-summary {
-  cursor: pointer;
-  list-style: none;
-  font-size: 14.5px;
-  font-weight: 700;
-  color: var(--gold-deep);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.track-detail-summary::-webkit-details-marker { display: none; }
-.track-detail-summary::before {
-  content: '▸';
-  display: inline-block;
-  transition: transform 0.15s ease;
-}
-.track-detail[open] .track-detail-summary::before {
-  transform: rotate(90deg);
-}
-.track-detail-summary:focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 3px;
-  border-radius: 6px;
-}
-.track-detail > .msg-guest-section,
-.track-detail > .track-phone {
-  margin-top: 16px;
-}
 
 /* --- כרטיס הפעלה (המסלול עוד לא פעיל) --- */
 .track-hero {
@@ -8973,56 +8923,8 @@ td.notes.seating {
   font-weight: 600;
 }
 .gm2-step-icon {
-  position: relative;
   font-size: 16px;
   line-height: 1;
-}
-
-/* --- המעטפת של MessageEditDrawer (בחירת/עריכת נוסח) — עד עכשיו לא הייתה
-   מוגדרת בכלל, אז ה-backdrop/drawer נפלו ל-position:static והציפו את
-   הדף למטה בלי שום מודל נראה לעין. אותו דפוס בדיוק כמו .auto-modal. */
-.msg-drawer-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(11, 10, 12, 0.42);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-.msg-drawer {
-  background: var(--ivory);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-dialog);
-  width: 100%;
-  max-height: calc(100vh - 40px);
-  overflow-y: auto;
-  animation: dialog-pop-in 250ms cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-.msg-drawer-side { max-width: 920px; padding: 26px 28px; }
-.msg-drawer-full { max-width: 560px; padding: 22px 20px; }
-.msg-drawer-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-@media (max-width: 640px) {
-  .msg-drawer-backdrop { padding: 0; align-items: flex-end; }
-  .msg-drawer-full {
-    max-width: 100%;
-    max-height: 92vh;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    animation: hmSheetUp 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .msg-drawer { animation: none; }
 }
 
 /* --- הבמה: כרטיס ההודעה, ולצדו בדסקטופ התצוגה לאורח --- */
@@ -9103,61 +9005,7 @@ td.notes.seating {
   color: var(--faint);
 }
 
-/* --- רשימת הודעות מוכנות לבחירה: כרטיסים, לא דפדוף אחד-אחד --- */
-.gm2-option-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.gm2-option-card {
-  width: 100%;
-  text-align: start;
-  background: var(--surface-hi);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-l);
-  padding: 14px 16px;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
-}
-.gm2-option-card:hover:not(:disabled) {
-  border-color: var(--gold);
-}
-.gm2-option-card:active:not(:disabled) {
-  transform: scale(0.99);
-}
-.gm2-option-card:disabled {
-  cursor: default;
-}
-.gm2-option-card.chosen {
-  background: rgba(52, 199, 89, 0.06);
-  border-color: var(--green);
-}
-.gm2-option-preview {
-  margin: 0 0 8px;
-  font-size: 14.5px;
-  line-height: 1.6;
-  color: var(--charcoal);
-  white-space: pre-wrap;
-  word-break: break-word;
-  /* שלוש שורות תקציר — מספיק כדי להשוות בין אפשרויות בלי לפתוח כל אחת. */
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.gm2-option-cta {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--gold-deep);
-}
-.gm2-option-card.chosen .gm2-option-cta {
-  color: var(--green);
-}
-
-/* --- מעבר בין ההודעות המוכנות (ראו גם messageShared.tsx) --- */
+/* --- מעבר בין ההודעות המוכנות --- */
 .gm2-nav {
   display: flex;
   align-items: center;
@@ -10156,34 +10004,6 @@ td.notes.seating {
     height: 32px;
     cursor: pointer;
   }
-  /* סטטוס שמירה קטן ב-topbar עצמו — כדי שיהיה גלוי בזמן עריכה בפועל,
-     לא רק בלשונית "כלים" (ראו .hm-autosave). מופיע רק בזמן פעילות. */
-  .hm-topbar-save {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    height: 32px;
-    padding: 0 10px;
-    border-radius: 999px;
-    background: #eef3ec;
-    color: #5a7a52;
-    font-size: 12.5px;
-    font-weight: 600;
-    white-space: nowrap;
-    animation: hm-topbar-save-in 0.2s ease-out both;
-  }
-  .hm-topbar-save.saving {
-    background: #fbf6e8;
-    color: var(--gold-dark, #9a7b2e);
-  }
-  @keyframes hm-topbar-save-in {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: none; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .hm-topbar-save { animation: none; }
-  }
   .hm-search-results {
     position: absolute;
     inset-inline: 12px;
@@ -10383,22 +10203,7 @@ td.notes.seating {
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-  /* כל פריט נכנס בנפרד עם דיליי קצר (stagger) במקום שהתפריט "יידלק" כגוש
-     אחד — ומעט רווח נוסף בין קבוצת "שולחנות" לקבוצת "אלמנטים" כדי שהרשימה
-     תיקרא כשתי משפחות, לא 7 שורות שטוחות. */
-  .hm-fab-menu button {
-    animation: hmFabIn 0.16s ease both;
-  }
-  .hm-fab-menu button:nth-child(1) { animation-delay: 0ms; }
-  .hm-fab-menu button:nth-child(2) { animation-delay: 30ms; }
-  .hm-fab-menu button:nth-child(3) { animation-delay: 60ms; }
-  .hm-fab-menu button:nth-child(4) { animation-delay: 90ms; margin-top: 6px; }
-  .hm-fab-menu button:nth-child(5) { animation-delay: 110ms; }
-  .hm-fab-menu button:nth-child(6) { animation-delay: 130ms; }
-  .hm-fab-menu button:nth-child(7) { animation-delay: 150ms; }
-  @media (prefers-reduced-motion: reduce) {
-    .hm-fab-menu button { animation: none; }
+    animation: hmFabIn 0.16s ease;
   }
   .hm-fab-menu button {
     display: flex;
