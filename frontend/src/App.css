@@ -10354,6 +10354,10 @@ td.notes.seating {
     font-weight: 700;
     color: var(--gold-deep);
   }
+  .hm-gr-cta-empty {
+    color: var(--muted);
+    font-weight: 600;
+  }
 
   /* פאנל חכם */
   /* יחס שיבוץ ברור ומינימלי — "86 / 120 שובצו" — במקום להשאיר את המשתמש

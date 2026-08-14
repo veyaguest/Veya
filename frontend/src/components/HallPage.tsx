@@ -2349,6 +2349,22 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     a.full_name.localeCompare(b.full_name, 'he'),
   )
 
+  // כל המוזמנים באירוע ללשונית "מוזמנים": קודם כל מי שללא שולחן, אחר כך
+  // המשובצים — בכל קבוצה מיון א'-ב'. נגזר מ-tables/unassigned בכל רינדור,
+  // כך שהרשימה מתעדכנת מיד עם כל שיבוץ/הסרת שיבוץ בלי לוגיקה נוספת.
+  const allGuestsSorted = useMemo(() => {
+    const assignedEntries = tables.flatMap((t) =>
+      t.guests.map((g) => ({ guest: g, tableNumber: t.table_number as number | null })),
+    )
+    const unassignedEntries = unassigned.map((g) => ({ guest: g, tableNumber: null as number | null }))
+    return [...unassignedEntries, ...assignedEntries].sort((a, b) => {
+      if ((a.tableNumber === null) !== (b.tableNumber === null)) {
+        return a.tableNumber === null ? -1 : 1
+      }
+      return a.guest.full_name.localeCompare(b.guest.full_name, 'he')
+    })
+  }, [tables, unassigned])
+
   // ---- עוזר הושבה חכם: חישובים נגזרים (טהורים, בלי קריאת רשת) ----
   // כל הפונקציות מ-seatingAdvisor.ts הן O(n) — מחושבות מחדש רק כשמשהו
   // רלוונטי משתנה (useMemo), לא בכל רינדור/כל פיקסל גרירה.
@@ -2958,22 +2974,24 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
             </div>
           )}
 
-          {/* ===== לשונית: מוזמנים (ללא שולחן) ===== */}
+          {/* ===== לשונית: מוזמנים (כולם — משובצים וללא שולחן) ===== */}
           {mobileTab === 'guests' && (
             <div className="hm-panel">
               <p className="hm-panel-head">
-                ללא שולחן: {visibleUnassigned.length}
-                {assignTarget !== null ? ` · הקישו לשיבוץ לשולחן ${assignTarget}` : ' · הקישו כדי לשבץ'}
+                {allGuestsSorted.length} {activeEventTerms().guestsLabel} · ללא שולחן: {visibleUnassigned.length}
+                {assignTarget !== null
+                  ? ` · הקישו על מוזמן ללא שולחן לשיבוץ לשולחן ${assignTarget}`
+                  : ''}
               </p>
-              {visibleUnassigned.length === 0 ? (
-                <p className="hm-empty">כל ה{activeEventTerms().guestsLabel} כבר משובצים.</p>
+              {allGuestsSorted.length === 0 ? (
+                <p className="hm-empty">עדיין אין {activeEventTerms().guestsLabel} באירוע.</p>
               ) : (
-                visibleUnassigned.map((g) => (
+                allGuestsSorted.map(({ guest: g, tableNumber }) => (
                   <button
                     key={g.id}
                     className={`hm-guest-row ${selected === g.id ? 'sel' : ''}`}
                     onClick={() => {
-                      if (assignTarget !== null) {
+                      if (tableNumber === null && assignTarget !== null) {
                         moveGuestToTable(g.id, assignTarget)
                         setAssignTarget(null)
                         setMobileTab('hall')
@@ -2990,7 +3008,9 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                         {g.seats > 1 ? ` · ${g.seats} מקומות` : ''}
                       </span>
                     </span>
-                    <span className="hm-gr-cta">שיבוץ ›</span>
+                    <span className={`hm-gr-cta ${tableNumber === null ? 'hm-gr-cta-empty' : ''}`}>
+                      {tableNumber === null ? 'ללא שולחן' : `שולחן ${tableNumber}`}
+                    </span>
                   </button>
                 ))
               )}
