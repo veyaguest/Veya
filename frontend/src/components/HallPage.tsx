@@ -51,6 +51,13 @@ import {
   type SmartMove,
   type SmartSuggestion,
 } from '../seatingAdvisor'
+import {
+  clampCenterWithMargin,
+  clampItemSize,
+  rectOverlapFraction,
+  sketchBuildCanvasSize,
+  type AxisRect,
+} from '../hallSketchGeometry'
 
 interface TableView {
   table_number: number
@@ -142,6 +149,25 @@ const FIT_SAFETY = 0.95
 // ריפוד (ביחידות-עולם) שנוסף סביב גבולות התוכן בחישוב ה-fit, כדי שכיסאות/תוויות
 // שבולטים מעט מעבר לקופסת השולחן לא ייגעו בקצה המסך.
 const FIT_CONTENT_PAD = 16
+
+// ---- שלב D: זום/פאן ידניים בנגיעה (Pinch/Pan) ----
+// טווח זום ידני רחב יותר מ-FIT_MIN/MAX_SCALE: המשתמש מבקש בפירוש להתקרב/
+// להתרחק, בניגוד ל-Auto-Fit שרק בוחר קנה-מידה "יפה" כברירת מחדל.
+const MANUAL_ZOOM_MIN = FIT_MIN_SCALE
+const MANUAL_ZOOM_MAX = 4
+// כמה פיקסלים מתיבת-התוכן חייבים תמיד להישאר בתוך אזור-התצוגה בזמן פאן —
+// כדי שאי אפשר "לאבד" את המפה לגמרי מחוץ למסך.
+const PAN_CLAMP_MIN_VISIBLE = 80
+
+function touchDist(t: React.TouchList): number {
+  return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+}
+function touchMid(t: React.TouchList): { x: number; y: number } {
+  return { x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 }
+}
+function touchAngle(t: React.TouchList): number {
+  return (Math.atan2(t[1].clientY - t[0].clientY, t[1].clientX - t[0].clientX) * 180) / Math.PI
+}
 
 // ---- פרופיל צפיפות: גודל אלמנטים קבוע לפי מספר השולחנות המתוכנן ----
 // במקום להקטין את כל המפה בכל שינוי, מחליטים מראש על גודל האלמנטים לפי כמות
@@ -252,6 +278,34 @@ function elementSizeFor(type: HallElementType, preset: DensityPreset): { w: numb
   // המקרה הזה היא נוספה תמיד בגודל קבוע ולא הצטמצמה יחד עם שאר האולם.
   if (type === 'entrance') return { w: preset.dj.w, h: Math.round(preset.dj.h * 0.8) }
   return null
+}
+
+// ---- בניית אולם מסקיצה (AI Vision): כיול "קנבס הבנייה" ----
+// המתמטיקה הטהורה (שימור יחס-ממדים, הגבלת גדלים, שוליים, חפיפות) יושבת ב-
+// hallSketchGeometry.ts כדי שאפשר לבדוק אותה אוטומטית; הקבועים כאן הם
+// מדיניות VEYA-ספציפית (כמה שוליים, אילו טווחים סבירים).
+const SKETCH_BUILD_MARGIN = 44 // ריפוד פנימי (world units) — כלום לא נצמד לקצה האולם
+const SKETCH_BUILD_LONG_EDGE_MIN = 900
+const SKETCH_BUILD_LONG_EDGE_MAX = 3200
+// טווח סביר סביב הגודל הרגיל של VEYA לסוג האובייקט — bbox שהתגלה קטן/גדול
+// בהרבה עדיין מוגבל לטווח הזה, כדי שזיהוי רועש לא ייצר אובייקט זעיר/ענק.
+const SKETCH_ITEM_SIZE_MIN_RATIO = 0.45
+const SKETCH_ITEM_SIZE_MAX_RATIO = 2.2
+// חפיפה (יחסית לשטח הקטן מבין השניים) שנחשבת "משמעותית" לצורך תגית אזהרה
+// במסך ה-Review — לא מזיזים כלום אוטומטית, רק מסמנים לבדיקה.
+const SKETCH_OVERLAP_WARN_THRESHOLD = 0.35
+
+// ---- שלב C: שכבת הסקיצה כאובייקט עצמאי (הזזה/שינוי-גודל/סיבוב/שקיפות/נעילה/הצגה) ----
+// גודל מינימלי (world units) לשינוי-גודל בגרירה — כדי שאי אפשר לכווץ את
+// הסקיצה לנקודה בטעות ולאבד אותה.
+const SKETCH_MIN_SIZE = 80
+
+// ברירת המחדל כשמריחים/גוררים סקיצה שעדיין אין לה sketchTransform משלה
+// (אירוע ישן, או סקיצה שהועלתה ידנית בלי בניית אולם מ-AI) — בדיוק ההתנהגות
+// החזותית הקיימת עד כה (רקע מלא בגודל worldSize, שקיפות 0.42 מה-CSS), רק
+// "אפויה" ל-state אמיתי כדי שאפשר יהיה לגרור/לסובב/לשנות גודל אותה בפועל.
+function defaultSketchTransform(worldSize: { w: number; h: number }): HallSketchTransform {
+  return { x: 0, y: 0, width: worldSize.w, height: worldSize.h, rotation: 0, opacity: 0.42, locked: false, hidden: false }
 }
 
 export type HallOrientation = 'landscape' | 'portrait'
@@ -997,18 +1051,46 @@ const DETECTED_TYPE_OPTIONS = Object.keys(DETECTED_TYPE_LABELS) as DetectedHallE
 
 const LOW_CONFIDENCE_THRESHOLD = 0.85
 
+// ממיר item (מרכז+גודל, מנורמל) למלבן פינה-שמאלית-עליונה — הפורמט ש-
+// rectOverlapFraction מצפה לו. עובד ישירות על קואורדינטות מנורמלות [0,1]
+// (בלי לדעת עדיין את קנבס-הבנייה) כי הפונקציה scale-invariant.
+function itemAsAxisRect(it: DetectedHallElement): AxisRect {
+  return { x: it.x - it.width / 2, y: it.y - it.height / 2, w: it.width, h: it.height }
+}
+
 // מסך "בדיקה ואישור" — מוצג אחרי שה-AI סיים לנתח את הסקיצה. ברירת המחדל היא
 // שהמפה כבר בנויה (שלב 16, Zero Manual Setup); המשתמש רק מתקן/מוחק/מוסיף.
 function SketchReviewPanel(props: {
   items: DetectedHallElement[]
+  sketchSrc: string | null
   onCancel: () => void
   onConfirm: (items: DetectedHallElement[]) => void
 }) {
   const [items, setItems] = useState<DetectedHallElement[]>(props.items)
+  // מצב דיבאג (req 10): הסקיצה כרקע + הריבועים שה-AI החזיר, כדי לבודד אם
+  // בעיית דיוק מקורה בזיהוי עצמו או בהמרת הקואורדינטות בהמשך. כבוי כברירת
+  // מחדל — לא משנה את מסך ה-Review הרגיל.
+  const [debugMode, setDebugMode] = useState(false)
 
   const tableCount = items.filter((it) => it.type.endsWith('_table')).length
   const otherCount = items.length - tableCount
   const needsCheckCount = items.filter((it) => it.confidence < LOW_CONFIDENCE_THRESHOLD).length
+
+  // חפיפה משמעותית בין פריטים (req 6) — מחושב על הקואורדינטות המנורמלות
+  // הגולמיות (scale-invariant, ראה rectOverlapFraction), רק לתגית אזהרה;
+  // לא מזיז שום דבר אוטומטית.
+  const overlapFlags = useMemo(() => {
+    const flags = new Array(items.length).fill(false)
+    for (let a = 0; a < items.length; a++) {
+      for (let b = a + 1; b < items.length; b++) {
+        if (rectOverlapFraction(itemAsAxisRect(items[a]), itemAsAxisRect(items[b])) > SKETCH_OVERLAP_WARN_THRESHOLD) {
+          flags[a] = true
+          flags[b] = true
+        }
+      }
+    }
+    return flags
+  }, [items])
 
   function updateItem(i: number, patch: Partial<DetectedHallElement>) {
     setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, ...patch } : it)))
@@ -1033,7 +1115,34 @@ function SketchReviewPanel(props: {
             {hallSketchT.summary(tableCount, otherCount)}
             {needsCheckCount > 0 ? ` · ${hallSketchT.needsCheck(needsCheckCount)}` : ''}
           </p>
+          {props.sketchSrc && (
+            <button type="button" className="hm-ghost-btn sk-review-debug-toggle" onClick={() => setDebugMode((v) => !v)}>
+              {debugMode ? hallSketchT.debugHide : hallSketchT.debugShow}
+            </button>
+          )}
         </div>
+
+        {debugMode && props.sketchSrc && (
+          <div className="sk-debug-overlay-wrap">
+            {/* אותן קואורדינטות מנורמלות [0,1] שחזרו מ-AI Vision, מוצגות ישירות על
+                גבי הסקיצה המקורית — כלי אבחון: אם התיבות כאן כבר לא תואמות
+                לסקיצה, הבעיה בזיהוי עצמו; אם כן תואמות, הבעיה בהמרה להמשך. */}
+            <img src={props.sketchSrc} alt="" className="sk-debug-img" />
+            {items.map((it, i) => (
+              <div
+                key={i}
+                className={overlapFlags[i] ? 'sk-debug-box sk-debug-box-overlap' : 'sk-debug-box'}
+                style={{
+                  left: `${(it.x - it.width / 2) * 100}%`,
+                  top: `${(it.y - it.height / 2) * 100}%`,
+                  width: `${it.width * 100}%`,
+                  height: `${it.height * 100}%`,
+                }}
+                title={`${DETECTED_TYPE_LABELS[it.type]} · ${Math.round(it.confidence * 100)}%`}
+              />
+            ))}
+          </div>
+        )}
 
         <div className="sk-review-list">
           {items.map((it, i) => {
@@ -1044,6 +1153,11 @@ function SketchReviewPanel(props: {
                 <span className={low ? 'sk-review-badge sk-review-badge-low' : 'sk-review-badge sk-review-badge-high'}>
                   {low ? '🟡' : '🟢'} {Math.round(it.confidence * 100)}%
                 </span>
+                {overlapFlags[i] && (
+                  <span className="sk-review-badge sk-review-badge-overlap" title={hallSketchT.overlapWarningHint}>
+                    ⚠️ {hallSketchT.overlapWarning}
+                  </span>
+                )}
                 <select
                   value={it.type}
                   onChange={(e) => updateItem(i, { type: e.target.value as DetectedHallElement['type'] })}
@@ -1203,6 +1317,10 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // לתרגם נקודת-מגע חזרה לקואורדינטת-לוח לפי קנה-המידה וההיסט.
   const scaleRef = useRef(1)
   const offsetRef = useRef({ x: 0, y: 0 })
+  // שלב D: true אחרי שהמשתמש זימם/הזיז ידנית בנגיעה (Pinch/Pan) — עוצר את
+  // ה-Auto-Fit האוטומטי-על-שינוי-תוכן (למטה) כדי שגרירת שולחן לא "תבטל" זום
+  // ידני שהמשתמש בחר. "התאם למסך" מאפס את הדגל וחוזר להתנהגות האוטומטית.
+  const manualViewRef = useRef(false)
 
   // מראה עדכנית של השולחנות/האלמנטים ל-recomputeFit — כדי שההתאמה-למסך תוכל
   // לקרוא את המיקומים הנוכחיים בלי לתלות את עצמה ב-tables/elements. כך גרירה
@@ -1238,14 +1356,22 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // מהמקור ולא מהתמונה שכבר נחתכה). לא נשמר בשרת — רק לנוחות הסשן.
   const [sketchEditSrc, setSketchEditSrc] = useState<string | null>(null)
   const sketchOriginalRef = useRef<string | null>(null)
-  // מיקום/גודל/סיבוב/שקיפות/נעילה של שכבת הסקיצה (בניית אולם אוטומטית, שלב C).
-  // null = תאימות אחורה — הסקיצה מוצגת כרקע מלא בדיוק כמו תמיד.
+  // מיקום/גודל/סיבוב/שקיפות/נעילה/הצגה של שכבת הסקיצה (שלב C — עצמאית
+  // לגמרי מהשולחנות/אלמנטים: הזזה שלה לא נוגעת בהם, והזזתם לא נוגעת בה).
+  // null = תאימות אחורה — הסקיצה מוצגת כרקע מלא בדיוק כמו תמיד (ראה
+  // defaultSketchTransform, שממלא ערך אמיתי רק ברגע שנוגעים בה בפועל).
   const [sketchTransform, setSketchTransform] = useState<HallSketchTransform | null>(null)
+  // בחירה על הלוח (מציגה ידיות סיבוב/שינוי-גודל + סרגל צף) — נפרדת מ-
+  // selectedTable/selectedEl, בדיוק כמו שהם נפרדים זה מזה.
+  const [sketchSelected, setSketchSelected] = useState(false)
 
   // ---- בניית אולם אוטומטית מסקיצה (AI Vision) ----
   const [sketchAnalyzing, setSketchAnalyzing] = useState(false)
   const [sketchAnalyzeError, setSketchAnalyzeError] = useState('')
   const [sketchReview, setSketchReview] = useState<DetectedHallElement[] | null>(null)
+  // מידות התמונה המקורית (פיקסלים) — נטענות פעם אחת יחד עם ניתוח ה-AI,
+  // כדי ש-applySketchReview יוכל לשמר את יחס-הממדים שלה (ראה sketchBuildCanvasSize).
+  const sketchImgSizeRef = useRef<{ w: number; h: number } | null>(null)
 
   // ---- עוזר הושבה חכם (Dock) ----
   // זוגות אילוצים שכבר מחושבים בשרת מהערות חופשיות — נשמרים כאן כדי
@@ -1285,7 +1411,19 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
         rotation: number
       }
     | { kind: 'rotate'; id: string; cx: number; cy: number }
+    | { kind: 'sketch-move'; dx: number; dy: number }
+    | { kind: 'sketch-resize'; startX: number; startY: number; startW: number; startH: number; aspect: number; rotation: number }
+    | { kind: 'sketch-rotate'; cx: number; cy: number }
   const dragRef = useRef<DragState | null>(null)
+  // שלב D: מצב מחווה דו-אצבעית פעילה (Pinch/Pan ללוח, או צביטה/twist לסקיצה
+  // הנבחרת) — ראה onCanvasTouchStart/Move/End.
+  type TwoFingerGesture =
+    | { kind: 'canvas-pan-zoom'; startDist: number; startMid: { x: number; y: number }; startScale: number; startOffset: { x: number; y: number } }
+    | { kind: 'sketch-pinch'; startDist: number; startAngle: number; startW: number; startH: number; startRotation: number; aspect: number }
+  const twoFingerRef = useRef<TwoFingerGesture | null>(null)
+  // ערך "בהמתנה" בזמן צביטת-הסקיצה — נכתב ל-DOM ישירות בכל touchmove (ביצועים),
+  // ונשמר ל-state האמיתי (sketchTransform) פעם אחת בלבד ב-touchend.
+  const sketchPinchPendingRef = useRef<{ width: number; height: number; rotation: number } | null>(null)
   // ביצועים בגרירת שולחנות: במקום לעדכן state בכל תזוזה (שמרנדר מחדש את כל
   // השולחנות), מזיזים את צמתי ה-DOM ישירות דרך transform בתוך requestAnimationFrame,
   // ומעדכנים את ה-state פעם אחת בסיום הגרירה (pointerup). כך גרירה חלקה גם עם
@@ -1380,6 +1518,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     setWarnings(h.warnings)
     setSketch(h.sketch ?? null)
     setSketchTransform(h.sketch_transform ?? null)
+    setSketchSelected(false)
     setForbiddenPairs(h.forbidden_pairs ?? [])
     setTogetherPairs(h.together_pairs ?? [])
     setDirty(false)
@@ -1425,17 +1564,10 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // אותו. זה רץ *פעם אחת* בכניסה, אחרי בניית אולם, ובשינוי גודל מסך/סיבוב — אבל
   // *לא* בהוספת שולחן/כיסא או בגרירה, כדי שלא יהיו קפיצות-גודל תוך כדי עבודה.
   // הידיות והתוויות נשארות בגודל-מסך דרך המשתנה --hm-s (counter-scale ב-CSS).
-  const recomputeFit = useCallback(() => {
-    const vp = viewportRef.current
-    if (!vp) return
-    const vpW = vp.clientWidth
-    const vpH = vp.clientHeight
-    if (!vpW || !vpH) return
-    // ---- Fit Bounds אמיתי (כמו Figma / Google Maps) ----
-    // מחשבים את *גבולות התוכן האמיתיים* (bbox של כל השולחנות והאלמנטים), מתאימים
-    // קנה-מידה שממלא את היעד (~85%), וממרכזים את מרכז-התוכן בדיוק במרכז המסך.
-    // זה מתעלם לחלוטין מגודל "קופסת העולם"/מינימום/ריפוד — כך התוכן תמיד ממורכז
-    // ומלא, בין אם יש 2 שולחנות ובין אם 80.
+  // גבולות התוכן האמיתיים (bbox של כל השולחנות/אלמנטים, כולל סיבוב) — הבסיס
+  // המשותף ל-recomputeFit, centerContent, ולהצמדת-פאן (clampPanOffset) בשלב D.
+  // מופרד מ-recomputeFit כדי שאפשר יהיה להשתמש בו גם ב"מרכז" בלי לשכפל לוגיקה.
+  const computeContentBounds = useCallback((): { minX: number; minY: number; maxX: number; maxY: number } | null => {
     let minX = Infinity
     let minY = Infinity
     let maxX = -Infinity
@@ -1455,8 +1587,24 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       maxX = Math.max(maxX, b.maxX)
       maxY = Math.max(maxY, b.maxY)
     }
+    return isFinite(minX) ? { minX, minY, maxX, maxY } : null
+  }, [])
+
+  const recomputeFit = useCallback(() => {
+    const vp = viewportRef.current
+    if (!vp) return
+    const vpW = vp.clientWidth
+    const vpH = vp.clientHeight
+    if (!vpW || !vpH) return
+    // ---- Fit Bounds אמיתי (כמו Figma / Google Maps) ----
+    // מחשבים את *גבולות התוכן האמיתיים* (bbox של כל השולחנות והאלמנטים), מתאימים
+    // קנה-מידה שממלא את היעד (~85%), וממרכזים את מרכז-התוכן בדיוק במרכז המסך.
+    // זה מתעלם לחלוטין מגודל "קופסת העולם"/מינימום/ריפוד — כך התוכן תמיד ממורכז
+    // ומלא, בין אם יש 2 שולחנות ובין אם 80.
+    const bounds = computeContentBounds()
     // אין תוכן עדיין — לא משנים כלום (נחכה שהתוכן ייטען ואז נריץ שוב).
-    if (!isFinite(minX)) return
+    if (!bounds) return
+    const { minX, minY, maxX, maxY } = bounds
     // ריפוד קטן (ביחידות-עולם) סביב התוכן כדי שכיסאות/תוויות שבולטים לא ייגעו
     // בקצה. זה חלק מחישוב ה-fit בלבד.
     const pad = FIT_CONTENT_PAD
@@ -1475,9 +1623,32 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     const offY = vpH / 2 - centerY * s
     scaleRef.current = s
     offsetRef.current = { x: offX, y: offY }
+    // "התאם למסך" הוא איפוס מלא לתצוגה האוטומטית — מבטל כל זום/פאן ידני
+    // שהמשתמש עשה (שלב D), כדי ש-Auto-Fit יחזור לפעול על שינויי תוכן עתידיים.
+    manualViewRef.current = false
     setViewScale(s)
     setViewTransform(`translate(${offX}px, ${offY}px) scale(${s})`)
-  }, [])
+  }, [computeContentBounds])
+
+  // "מרכז את האולם" (שלב D): ממרכז את התוכן הנוכחי בלי לגעת בקנה-המידה —
+  // שימושי אחרי פאן שאיבד את הלוח מהתצוגה, בלי "לקפוץ" גם בזום כמו Fit.
+  const centerContent = useCallback(() => {
+    const vp = viewportRef.current
+    if (!vp) return
+    const vpW = vp.clientWidth
+    const vpH = vp.clientHeight
+    if (!vpW || !vpH) return
+    const bounds = computeContentBounds()
+    if (!bounds) return
+    const s = scaleRef.current || 1
+    const centerX = (bounds.minX + bounds.maxX) / 2
+    const centerY = (bounds.minY + bounds.maxY) / 2
+    const offX = vpW / 2 - centerX * s
+    const offY = vpH / 2 - centerY * s
+    scaleRef.current = s
+    offsetRef.current = { x: offX, y: offY }
+    setViewTransform(`translate(${offX}px, ${offY}px) scale(${s})`)
+  }, [computeContentBounds])
 
   // Auto-Fit: מתאימים מחדש בכל פעם שגודל התוכן (worldSize) משתנה — טעינה, הוספת
   // שולחן/אלמנט, בנייה מחדש — כך תמיד רואים את *כל* האולם ואף פעם לא נחתך חצי.
@@ -1487,6 +1658,9 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   useEffect(() => {
     if (loading) return
     if (dragRef.current) return
+    // שלב D: אחרי זום/פאן ידני בנגיעה, שינוי תוכן (גרירת שולחן) לא אמור
+    // "לבטל" את הבחירה של המשתמש — רק "התאם למסך" עושה זאת במפורש.
+    if (manualViewRef.current) return
     const id = requestAnimationFrame(() => recomputeFit())
     return () => cancelAnimationFrame(id)
   }, [worldSize, loading, recomputeFit])
@@ -1700,13 +1874,94 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
   }
 
+  // ---- שכבת הסקיצה: הזזה/שינוי-גודל/סיבוב/שקיפות/נעילה/הצגה (שלב C) ----
+  // כל הפעולות עצמאיות לגמרי משולחנות/אלמנטים — פועלות רק על sketchTransform.
+  function patchSketchTransform(
+    patch: Partial<HallSketchTransform> | ((cur: HallSketchTransform) => Partial<HallSketchTransform>),
+  ) {
+    setSketchTransform((cur) => {
+      const base = cur ?? defaultSketchTransform(worldSize)
+      const p = typeof patch === 'function' ? patch(base) : patch
+      return { ...base, ...p }
+    })
+    setDirty(true)
+  }
+
+  function toggleSketchLock() {
+    patchSketchTransform((cur) => ({ locked: !cur.locked }))
+  }
+
+  function toggleSketchHidden() {
+    patchSketchTransform((cur) => ({ hidden: !cur.hidden }))
+  }
+
+  function resetSketchTransform() {
+    setSketchTransform(defaultSketchTransform(worldSize))
+    setDirty(true)
+  }
+
+  // גרירה להזזה — זהה לחלוטין לתבנית onElementPointerDown, רק שמפעילה על
+  // sketchTransform. אם עדיין אין transform משלה (סקיצה ישנה/ידנית) — "אופים"
+  // אותו עכשיו לערך שמזהה בדיוק את מה שכבר מוצג (ראה defaultSketchTransform),
+  // כדי שהגרירה תתחיל מהמיקום הנכון ותישמר בפועל.
+  function onSketchPointerDown(e: React.PointerEvent) {
+    e.stopPropagation()
+    movedRef.current = false
+    dragStartRef.current = { x: e.clientX, y: e.clientY }
+    const st = sketchTransform ?? defaultSketchTransform(worldSize)
+    if (sketchTransform === null) setSketchTransform(st)
+    if (st.locked) return
+    const w = toWorld(e.clientX, e.clientY)
+    dragRef.current = { kind: 'sketch-move', dx: w.x - st.x, dy: w.y - st.y }
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  // הקשה (בלי גרירה) → בחירה. אותה הגנה כמו onElementClick.
+  function onSketchClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (movedRef.current) return
+    setSketchSelected(true)
+    setSelectedTable(null)
+    setSelectedEl(null)
+    setSheetTable(null)
+  }
+
+  function onSketchResizePointerDown(e: React.PointerEvent) {
+    e.stopPropagation()
+    movedRef.current = false
+    const st = sketchTransform
+    if (!st || st.locked) return
+    dragRef.current = {
+      kind: 'sketch-resize',
+      startX: e.clientX,
+      startY: e.clientY,
+      startW: st.width,
+      startH: st.height,
+      // יחס-הממדים נלכד ברגע ההתחלה ונשמר תמיד — שינוי גודל אף פעם לא מותח
+      // את הסקיצה (דרישה מפורשת של שלב C).
+      aspect: st.height > 0 ? st.width / st.height : 1,
+      rotation: st.rotation || 0,
+    }
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
+  function onSketchRotatePointerDown(e: React.PointerEvent) {
+    e.stopPropagation()
+    movedRef.current = false
+    const node = (e.currentTarget as HTMLElement).parentElement
+    if (!node) return
+    const r = node.getBoundingClientRect()
+    dragRef.current = { kind: 'sketch-rotate', cx: r.left + r.width / 2, cy: r.top + r.height / 2 }
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  }
+
   function onCanvasPointerMove(e: React.PointerEvent) {
     const drag = dragRef.current
     if (!drag) return
     // סף-תזוזה: רק להזזת אלמנט/שולחן. עד שהאצבע לא זזה ~6px זו עדיין הקשה
     // (בחירה) ולא גרירה — כדי שרעד קטן לא יזיז ולא יבטל את הבחירה. ידיות
     // סיבוב/שינוי-גודל לא מוגבלות בסף (שם כל תזוזה קטנה חשובה).
-    if (!movedRef.current && (drag.kind === 'element' || drag.kind === 'table-group')) {
+    if (!movedRef.current && (drag.kind === 'element' || drag.kind === 'table-group' || drag.kind === 'sketch-move')) {
       const st = dragStartRef.current
       if (st && Math.hypot(e.clientX - st.x, e.clientY - st.y) < 6) return
     }
@@ -1768,6 +2023,31 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       const deg = (Math.atan2(e.clientY - drag.cy, e.clientX - drag.cx) * 180) / Math.PI + 90
       const next = normalizeRotation(deg)
       setElements((prev) => prev.map((el) => (el.id === drag.id ? { ...el, rotation: next } : el)))
+    } else if (drag.kind === 'sketch-move') {
+      const w = toWorld(e.clientX, e.clientY)
+      const x = snapVal(w.x - drag.dx)
+      const y = snapVal(w.y - drag.dy)
+      setSketchTransform((cur) => (cur ? { ...cur, x, y } : cur))
+    } else if (drag.kind === 'sketch-resize') {
+      // אותה תבנית בדיוק כמו שינוי-גודל לאלמנט (מסובב את הדלתא לצירים
+      // המקומיים), אבל כאן הגובה תמיד נגזר מהרוחב לפי היחס שנלכד בתחילת
+      // הגרירה — לעולם לא מותחים את הסקיצה (דרישה מפורשת).
+      const s = scaleRef.current || 1
+      const rawX = (e.clientX - drag.startX) / s
+      const rawY = (e.clientY - drag.startY) / s
+      const rad = ((drag.rotation || 0) * Math.PI) / 180
+      const cos = Math.cos(-rad)
+      const sin = Math.sin(-rad)
+      const dx = rawX * cos - rawY * sin
+      const dy = rawX * sin + rawY * cos
+      // ממוצע X/Y: גרירה לכל כיוון (לא רק אלכסון מדויק) משנה גודל בצורה חלקה.
+      const w = Math.max(SKETCH_MIN_SIZE, drag.startW + (dx + dy * drag.aspect) / 2)
+      const h = w / drag.aspect
+      setSketchTransform((cur) => (cur ? { ...cur, width: w, height: h } : cur))
+    } else if (drag.kind === 'sketch-rotate') {
+      const deg = (Math.atan2(e.clientY - drag.cy, e.clientX - drag.cx) * 180) / Math.PI + 90
+      const next = normalizeRotation(deg)
+      setSketchTransform((cur) => (cur ? { ...cur, rotation: next } : cur))
     }
     setDirty(true)
   }
@@ -1833,6 +2113,141 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     // ייפתח חלון עריכה/פרטים. זו שכבת הגנה ראשית; movedRef ב-onTableClick הוא
     // שכבה שנייה (הוא מתאפס רק בתחילת האינטראקציה הבאה, לא כאן).
     if (wasDrag) suppressNextClick()
+  }
+
+  // ---- שלב D: מחוות מגע דו-אצבעיות (Pinch-Zoom / Pan / סיבוב-סקיצה) ----
+  // עצמאי לגמרי מ-Vision/coordinate-mapping/HallSketchGeometry — UI/מחוות בלבד,
+  // פועל מעל אותם scaleRef/offsetRef/sketchTransform שכבר קיימים.
+  //
+  // ביצועים (דרישה מפורשת): לא קוראים ל-setState בכל touchmove — מזיזים ישירות
+  // את ה-DOM (transform על .hall-world או .hall-sketch-bg), בדיוק כמו שגרירת
+  // קבוצת-שולחנות כבר עושה, ומתחייבים ל-state (setViewScale/patchSketchTransform)
+  // פעם אחת בלבד ב-touchend. כך אין רינדור-מלא של HallPage באמצע המחווה.
+  function clampPanOffset(offX: number, offY: number, s: number, vpW: number, vpH: number): { x: number; y: number } {
+    const bounds = computeContentBounds()
+    if (!bounds) return { x: offX, y: offY }
+    // לפחות PAN_CLAMP_MIN_VISIBLE פיקסלים מתיבת-התוכן חייבים להישאר באזור-
+    // התצוגה בכל ציר — כדי שאי אפשר "לאבד" את המפה לגמרי מחוץ למסך (דרישה 4).
+    const contentLeft = bounds.minX * s + offX
+    const contentRight = bounds.maxX * s + offX
+    const contentTop = bounds.minY * s + offY
+    const contentBottom = bounds.maxY * s + offY
+    let x = offX
+    let y = offY
+    if (contentRight < PAN_CLAMP_MIN_VISIBLE) x += PAN_CLAMP_MIN_VISIBLE - contentRight
+    if (contentLeft > vpW - PAN_CLAMP_MIN_VISIBLE) x -= contentLeft - (vpW - PAN_CLAMP_MIN_VISIBLE)
+    if (contentBottom < PAN_CLAMP_MIN_VISIBLE) y += PAN_CLAMP_MIN_VISIBLE - contentBottom
+    if (contentTop > vpH - PAN_CLAMP_MIN_VISIBLE) y -= contentTop - (vpH - PAN_CLAMP_MIN_VISIBLE)
+    return { x, y }
+  }
+
+  // שתי אצבעות יורדות: אם הסקיצה נבחרה, פתוחה (לא נעולה), ושתי הנגיעות בתוך
+  // התיבה שלה — המחווה שולטת בה (צביטה=גודל, twist=סיבוב). אחרת — פאן/זום
+  // ללוח כולו. אם אצבע ראשונה כבר התחילה גרירת אובייקט (Pointer Events), היא
+  // מבוטלת נקייה כאן כדי שלא "תילחם" עם המחווה הדו-אצבעית על אותו state.
+  function onCanvasTouchStart(e: React.TouchEvent) {
+    if (e.touches.length < 2) return
+    if (dragRafRef.current != null) {
+      cancelAnimationFrame(dragRafRef.current)
+      dragRafRef.current = null
+    }
+    for (const node of dragNodesRef.current.values()) node.style.transform = ''
+    dragNodesRef.current.clear()
+    dragPendingRef.current = null
+    dragRef.current = null
+    movedRef.current = false
+
+    const touches = e.touches
+    const dist = touchDist(touches)
+
+    const sk = sketchTransform
+    if (sketchSelected && sk && !sk.locked) {
+      const skEl = worldRef.current?.querySelector<HTMLElement>('.hall-sketch-bg')
+      if (skEl) {
+        const r = skEl.getBoundingClientRect()
+        const within = (t: React.Touch) =>
+          t.clientX >= r.left && t.clientX <= r.right && t.clientY >= r.top && t.clientY <= r.bottom
+        if (within(touches[0]) && within(touches[1])) {
+          twoFingerRef.current = {
+            kind: 'sketch-pinch',
+            startDist: dist,
+            startAngle: touchAngle(touches),
+            startW: sk.width,
+            startH: sk.height,
+            startRotation: sk.rotation || 0,
+            aspect: sk.height > 0 ? sk.width / sk.height : 1,
+          }
+          return
+        }
+      }
+    }
+
+    twoFingerRef.current = {
+      kind: 'canvas-pan-zoom',
+      startDist: dist,
+      startMid: touchMid(touches),
+      startScale: scaleRef.current || 1,
+      startOffset: { ...offsetRef.current },
+    }
+  }
+
+  function onCanvasTouchMove(e: React.TouchEvent) {
+    const g = twoFingerRef.current
+    if (!g || e.touches.length < 2) return
+    const touches = e.touches
+    if (g.kind === 'canvas-pan-zoom') {
+      const vp = viewportRef.current
+      const world = worldRef.current
+      if (!vp || !world) return
+      const rect = vp.getBoundingClientRect()
+      const dist = touchDist(touches)
+      const mid = touchMid(touches)
+      const scaleFactor = g.startDist > 0 ? dist / g.startDist : 1
+      const s = clamp(g.startScale * scaleFactor, MANUAL_ZOOM_MIN, MANUAL_ZOOM_MAX)
+      // נקודת-העולם שהייתה מתחת למרכז-שתי-האצבעות **בתחילת** המחווה נשארת
+      // "תפוסה" מתחת לאצבעות לאורך כל הגרירה (בדיוק כמו pinch-zoom של מפות) —
+      // כך גם זום וגם פאן קורים בטבעיות במחווה אחת.
+      const worldX = (g.startMid.x - rect.left - g.startOffset.x) / g.startScale
+      const worldY = (g.startMid.y - rect.top - g.startOffset.y) / g.startScale
+      let offX = mid.x - rect.left - worldX * s
+      let offY = mid.y - rect.top - worldY * s
+      ;({ x: offX, y: offY } = clampPanOffset(offX, offY, s, vp.clientWidth, vp.clientHeight))
+      scaleRef.current = s
+      offsetRef.current = { x: offX, y: offY }
+      manualViewRef.current = true
+      world.style.transform = `translate(${offX}px, ${offY}px) scale(${s})`
+      world.style.setProperty('--hm-s', String(s))
+    } else if (g.kind === 'sketch-pinch') {
+      const dist = touchDist(touches)
+      const angle = touchAngle(touches)
+      const scaleFactor = g.startDist > 0 ? dist / g.startDist : 1
+      const w = Math.max(SKETCH_MIN_SIZE, g.startW * scaleFactor)
+      const h = w / g.aspect
+      const rotation = normalizeRotation(g.startRotation + (angle - g.startAngle))
+      sketchPinchPendingRef.current = { width: w, height: h, rotation }
+      const skEl = worldRef.current?.querySelector<HTMLElement>('.hall-sketch-bg')
+      if (skEl) {
+        skEl.style.width = `${w}px`
+        skEl.style.height = `${h}px`
+        skEl.style.transform = rotation ? `rotate(${rotation}deg)` : ''
+      }
+    }
+  }
+
+  function onCanvasTouchEnd(e: React.TouchEvent) {
+    if (e.touches.length >= 2) return // עדיין שתי אצבעות (או יותר) — ממשיכים
+    const g = twoFingerRef.current
+    twoFingerRef.current = null
+    if (!g) return
+    if (g.kind === 'canvas-pan-zoom') {
+      // מסנכרנים ל-state פעם אחת בסיום (לא בכל touchmove) — ראה הערת ביצועים למעלה.
+      setViewScale(scaleRef.current)
+      setViewTransform(`translate(${offsetRef.current.x}px, ${offsetRef.current.y}px) scale(${scaleRef.current})`)
+    } else if (g.kind === 'sketch-pinch') {
+      const pending = sketchPinchPendingRef.current
+      sketchPinchPendingRef.current = null
+      if (pending) patchSketchTransform(pending)
+    }
   }
 
   // ---- שולחנות: הוספה / שכפול / מחיקה / עדכון שדה ----
@@ -1911,6 +2326,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     setSheetTable(null)
     setSelectedTable(null)
     setSelectedEl(null)
+    setSketchSelected(false)
     setWizardOpen(false)
     setDirty(true)
     setMobileTab('hall')
@@ -2320,8 +2736,21 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   function removeSketch() {
     setSketch(null)
     setSketchTransform(null)
+    setSketchSelected(false)
     sketchOriginalRef.current = null
     setDirty(true)
+  }
+
+  // טוען תמונה כדי לקרוא את מידותיה המקוריות (פיקסלים) — נחוץ כדי לשמר את
+  // יחס-הממדים של הסקיצה בבניית האולם (ראה sketchBuildCanvasSize). כישלון
+  // (תמונה פגומה וכו') נופל לברירת מחדל 4:3 סבירה, לא חוסם את הזרימה.
+  function loadImageSize(dataUrl: string): Promise<{ w: number; h: number }> {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => resolve({ w: img.naturalWidth || 4, h: img.naturalHeight || 3 })
+      img.onerror = () => resolve({ w: 4, h: 3 })
+      img.src = dataUrl
+    })
   }
 
   // שולח את הסקיצה ל-AI Vision (שרת) ומקבל רשימת אלמנטים מוצעים לבדיקה.
@@ -2331,7 +2760,8 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     setSketchAnalyzeError('')
     setSketchReview(null)
     try {
-      const els = await analyzeHallSketch(dataUrl)
+      const [els, imgSize] = await Promise.all([analyzeHallSketch(dataUrl), loadImageSize(dataUrl)])
+      sketchImgSizeRef.current = imgSize
       if (els.length === 0) {
         setSketchAnalyzeError(hallT.sketchReview.emptyTitle)
       } else {
@@ -2355,24 +2785,50 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // לקואורדינטות world בפעם אחת בלבד (שלב 8/9): אחרי זה השולחנות/האלמנטים
   // עצמאיים לגמרי מהסקיצה — הזזת הסקיצה לא גוררת אותם, וגם הסתרתה לא שוברת
   // את המפה.
+  //
+  // חשוב: הממופה **לא** ל-worldSize (זה מעגלי — worldSize עצמו נגזר מהשולחנות
+  // הקיימים, שלפני הבנייה הזו כמעט תמיד ריקים, ולכן היה מתכווץ לגודל-מינימום
+  // קבוע שלא קשור לצורת הסקיצה בכלל — זה מה שגרם לתוצאה "צפופה ומעוותת").
+  // במקום זה בונים "קנבס" ייעודי ששומר על יחס-הממדים המקורי של התמונה
+  // ומכויל לפי פרופיל הצפיפות, ואת אותו קנבס בדיוק שומרים ב-sketchTransform
+  // כדי שהרקע המוצג יתיישר תמיד עם האובייקטים שמופו ממנו (שלב 8).
   function applySketchReview(items: DetectedHallElement[]) {
-    const w = worldSize.w
-    const h = worldSize.h
+    const imgSize = sketchImgSizeRef.current ?? { w: 4, h: 3 }
+    const tableItems = items.filter((it) => DETECTED_TABLE_TYPES[it.type])
+    // חשוב: לשולחנות אין שדה גודל פר-מופע בסכימה בכלל (schemas.HallTable) —
+    // כל שולחן מאותו table_type תמיד באותו גודל, נגזר מפרופיל-הצפיפות היחיד
+    // של כל האולם (בדיוק כמו שולחן שנוסף ידנית). לכן ה-bbox לא יכול לקבוע
+    // גודל *פר-שולחן* — הוא כן קובע איזה פרופיל-צפיפות הכי הגיוני לכל
+    // האולם שנבנה כאן (req 4, ברמת האולם ולא ברמת האובייקט הבודד), ואת זה
+    // נועלים ל-hallLayout בדיוק כמו "בניית אולם מחדש" הידנית.
+    const totalTablesAfterBuild = tables.length + tableItems.length
+    const buildDensityKey = densityKeyForCount(totalTablesAfterBuild)
+    const buildPreset = DENSITY_PRESETS[buildDensityKey]
+    const canvas = sketchBuildCanvasSize(
+      tableItems.map((it) => it.width),
+      imgSize.w,
+      imgSize.h,
+      buildPreset.round,
+      SKETCH_BUILD_LONG_EDGE_MIN,
+      SKETCH_BUILD_LONG_EDGE_MAX,
+    )
     let nextNum = nextTableNumRef.current
     const newTables: TableView[] = []
     const newElements: HallElement[] = []
     items.forEach((it, i) => {
-      const cx = it.x * w
-      const cy = it.y * h
-      const ew = Math.max(20, it.width * w)
-      const eh = Math.max(20, it.height * h)
       const tableType = DETECTED_TABLE_TYPES[it.type]
       if (tableType) {
+        // גודל אחיד ל-buildPreset (אותו קנה-מידה שכל שאר שולחני האולם יקבלו
+        // בפועל בזמן רינדור — ראה tableSize) — ה-bbox כבר השפיע דרך בחירת
+        // buildDensityKey/canvas למעלה, כאן רק ממקמים במרכז הנכון.
+        const base = tableSize(tableType, buildPreset)
+        const cx = clampCenterWithMargin(it.x * canvas.w, base.w / 2, canvas.w, SKETCH_BUILD_MARGIN)
+        const cy = clampCenterWithMargin(it.y * canvas.h, base.h / 2, canvas.h, SKETCH_BUILD_MARGIN)
         const num = nextNum++
         newTables.push({
           table_number: num,
-          x: Math.round(cx - ew / 2),
-          y: Math.round(cy - eh / 2),
+          x: Math.round(cx - base.w / 2),
+          y: Math.round(cy - base.h / 2),
           guests: [],
           table_type: tableType,
           capacity: snapCapacity(it.capacity ?? defaultCapacityForType(tableType)),
@@ -2384,8 +2840,17 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
           is_reserve: false,
         })
       } else {
+        // אלמנטים (בר/רחבה/וכו') כן שומרים width/height פר-מופע (HallElement) —
+        // כאן ה-bbox שזוהה כן קובע גודל בפועל, מוגבל לטווח סביר (req 4).
         const elType = it.type as HallElementType
         const def = ELEMENT_DEFS[elType]
+        const base = elementSizeFor(elType, buildPreset) ?? { w: def?.width ?? 100, h: def?.height ?? 100 }
+        const ew = clampItemSize(it.width * canvas.w, base.w, SKETCH_ITEM_SIZE_MIN_RATIO, SKETCH_ITEM_SIZE_MAX_RATIO)
+        const eh = clampItemSize(it.height * canvas.h, base.h, SKETCH_ITEM_SIZE_MIN_RATIO, SKETCH_ITEM_SIZE_MAX_RATIO)
+        // מיקום יחסי נשמר במדויק (req 5) — השוליים רק דוחפים אובייקטים שנוגעים
+        // ממש בקצה הקנבס פנימה, לא מסדרים-מחדש שום דבר (req 7).
+        const cx = clampCenterWithMargin(it.x * canvas.w, ew / 2, canvas.w, SKETCH_BUILD_MARGIN)
+        const cy = clampCenterWithMargin(it.y * canvas.h, eh / 2, canvas.h, SKETCH_BUILD_MARGIN)
         newElements.push({
           id: `${elType}-ai-${Date.now()}-${i}`,
           type: elType,
@@ -2404,12 +2869,14 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     nextTableNumRef.current = nextNum
     setTables((prev) => [...prev, ...newTables])
     setElements((prev) => [...prev, ...newElements])
-    // ברירת מחדל: הסקיצה ממלאה את הלוח בדיוק כמו רקע רגיל — המשתמש יכול
-    // אחר כך להזיז/לסובב/לשקף אותה בנפרד (שלב C).
-    setSketchTransform((cur) => cur ?? { x: 0, y: 0, width: w, height: h, rotation: 0, opacity: 0.5, locked: false })
+    setHallLayout({ density: buildDensityKey, planned_tables: totalTablesAfterBuild })
+    // הרקע מוצב בדיוק על תיבת הקנבס שממנה מופו האובייקטים (לא worldSize,
+    // שגדל אחר-כך סביב התוכן) — כך התמונה תמיד מיושרת עם מה שנבנה ממנה.
+    setSketchTransform((cur) => cur ?? { x: 0, y: 0, width: canvas.w, height: canvas.h, rotation: 0, opacity: 0.5, locked: false, hidden: false })
     setSketchReview(null)
     setSelectedTable(null)
     setSelectedEl(null)
+    setSketchSelected(false)
     setDirty(true)
   }
 
@@ -2801,6 +3268,17 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
           </button>
           <button
             className="hm-fit-btn"
+            onClick={centerContent}
+            aria-label="מרכז את האולם"
+            title="מרכז את האולם"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+              <path d="M12 3v3.5M12 17.5V21M3 12h3.5M17.5 12H21" />
+            </svg>
+          </button>
+          <button
+            className="hm-fit-btn"
             onClick={() => recomputeFit()}
             aria-label="התאמת האולם למסך"
             title="התאם למסך"
@@ -2903,6 +3381,10 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
               onPointerMove={onCanvasPointerMove}
               onPointerUp={onCanvasPointerUp}
               onPointerLeave={onCanvasPointerUp}
+              onTouchStart={onCanvasTouchStart}
+              onTouchMove={onCanvasTouchMove}
+              onTouchEnd={onCanvasTouchEnd}
+              onTouchCancel={onCanvasTouchEnd}
             >
               <div
                 className="hall-world"
@@ -2918,6 +3400,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                   if (movedRef.current) return
                   setSelectedTable(null)
                   setSelectedEl(null)
+                  setSketchSelected(false)
                 }}
                 style={
                   {
@@ -2929,12 +3412,53 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                   } as React.CSSProperties
                 }
               >
-                {sketch && (
+                {/* שכבת הסקיצה (שלב C): עצמאית לגמרי משולחנות/אלמנטים — הזזה/שינוי-
+                    גודל/סיבוב שלה לא נוגעים בהם, ולהפך. hidden מדלג על הרינדור
+                    כליל (הצגה/הסתרה תמיד זמינה דרך "רקע האולם" בהגדרות ההושבה,
+                    גם כשהשכבה מוסתרת ואי אפשר ללחוץ עליה כאן). */}
+                {sketch && !sketchTransform?.hidden && (
                   <div
-                    className="hall-sketch-bg"
-                    style={{ backgroundImage: `url(${mediaUrl(sketch)})`, width: worldSize.w, height: worldSize.h }}
-                    aria-hidden="true"
-                  />
+                    className={`hall-sketch-bg ${sketchSelected ? 'selected' : ''} ${
+                      sketchTransform?.locked ? 'locked' : ''
+                    }`}
+                    style={{
+                      backgroundImage: `url(${mediaUrl(sketch)})`,
+                      // ללא sketchTransform (אירועים ישנים) — בדיוק ההתנהגות הקודמת:
+                      // רקע מלא בגודל worldSize, פינה 0,0, שקיפות מה-CSS (0.42).
+                      // עם sketchTransform (בנייה אוטומטית מ-AI, או אחרי גרירה
+                      // ידנית) — אותה תיבה בדיוק ששימשה למיפוי האובייקטים (ראה
+                      // applySketchReview), כדי שהתמונה תמיד תתיישר עם מה שנבנה
+                      // ממנה (שלב 8).
+                      left: sketchTransform?.x ?? 0,
+                      top: sketchTransform?.y ?? 0,
+                      width: sketchTransform?.width ?? worldSize.w,
+                      height: sketchTransform?.height ?? worldSize.h,
+                      ...(sketchTransform ? { opacity: sketchTransform.opacity } : {}),
+                      ...(sketchTransform?.rotation ? { transform: `rotate(${sketchTransform.rotation}deg)` } : {}),
+                    }}
+                    onPointerDown={onSketchPointerDown}
+                    onClick={onSketchClick}
+                  >
+                    {sketchTransform?.locked && (
+                      <span className="element-lock-badge" title="נעולה">
+                        🔒
+                      </span>
+                    )}
+                    {sketchSelected && !sketchTransform?.locked && (
+                      <>
+                        <span
+                          className="handle handle-rotate"
+                          title="סובב"
+                          onPointerDown={onSketchRotatePointerDown}
+                        />
+                        <span
+                          className="handle handle-resize"
+                          title="שנה גודל (שומר על יחס-הממדים)"
+                          onPointerDown={onSketchResizePointerDown}
+                        />
+                      </>
+                    )}
+                  </div>
                 )}
                 {tables.length === 0 && elements.length === 0 && (
                   <p className="hall-empty">אין עדיין שולחנות. הקישו על ➕ כדי להוסיף שולחן.</p>
@@ -3169,6 +3693,46 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                   )
                 })}
               </div>
+
+              {/* סרגל הכלים הצף של הסקיצה — כ-sibling של .hall-world (לא בתוכו),
+                  כדי שיישאר קריא במקום קבוע במסך גם כשהשכבה מסובבת/מוקטנת/
+                  ממוקמת בקצה (ראה הערה ב-CSS: .sketch-toolbar). */}
+              {sketch && !sketchTransform?.hidden && sketchSelected && (
+                <div className="element-toolbar sketch-toolbar" onPointerDown={(e) => e.stopPropagation()}>
+                  <span className="sketch-opacity-row" title="שקיפות">
+                    🔅
+                    <input
+                      type="range"
+                      min={0.1}
+                      max={1}
+                      step={0.05}
+                      value={sketchTransform?.opacity ?? 0.42}
+                      onChange={(e) => patchSketchTransform({ opacity: Number(e.target.value) })}
+                    />
+                  </span>
+                  <button type="button" title={sketchTransform?.locked ? 'שחרר נעילה' : 'נעל'} onClick={toggleSketchLock}>
+                    {sketchTransform?.locked ? '🔓' : '🔒'}
+                  </button>
+                  <button type="button" title="הסתרה" onClick={toggleSketchHidden}>
+                    🙈
+                  </button>
+                  <button type="button" title="איפוס מיקום/גודל/סיבוב" onClick={resetSketchTransform}>
+                    ↺
+                  </button>
+                  <button
+                    type="button"
+                    title="הסרת הסקיצה"
+                    onClick={() => {
+                      removeSketch()
+                    }}
+                  >
+                    🗑
+                  </button>
+                  <button type="button" title="סגירה" onClick={() => setSketchSelected(false)}>
+                    ×
+                  </button>
+                </div>
+              )}
 
               {/* FAB — הוספה מהירה */}
               <div className={`hm-fab-wrap ${fabOpen ? 'open' : ''}`}>
@@ -3565,6 +4129,12 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                     </button>
                     <button className="hm-ghost-btn" onClick={() => sketchInputRef.current?.click()}>
                       החלפת תמונה
+                    </button>
+                    {/* הצגה/הסתרה תמיד זמינה כאן (בניגוד לנעילה/שקיפות, שנשלטות
+                        מהסרגל הצף על הלוח) — כי כשהשכבה מוסתרת אין דרך אחרת
+                        להגיע אליה כדי להחזיר אותה. */}
+                    <button className="hm-ghost-btn" onClick={toggleSketchHidden}>
+                      {sketchTransform?.hidden ? '👁️ הצגת הסקיצה' : '🙈 הסתרת הסקיצה'}
                     </button>
                     <button className="hm-ghost-btn" onClick={removeSketch}>
                       הסרת הסקיצה
@@ -4110,6 +4680,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
         {sketchReview && (
           <SketchReviewPanel
             items={sketchReview}
+            sketchSrc={sketch}
             onCancel={() => setSketchReview(null)}
             onConfirm={applySketchReview}
           />

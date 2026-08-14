@@ -4091,8 +4091,49 @@ td.notes.seating {
   background-position: center;
   background-repeat: no-repeat;
   opacity: 0.42;
-  pointer-events: none;
   z-index: 0;
+  /* שלב C: שכבה עצמאית ניתנת לגרירה/בחירה — לא רק רקע דקורטיבי. */
+  cursor: grab;
+  touch-action: none;
+}
+.hall-sketch-bg:active {
+  cursor: grabbing;
+}
+.hall-sketch-bg.selected {
+  box-shadow:
+    0 0 0 2px var(--gold-light),
+    0 8px 22px rgba(20, 18, 14, 0.16);
+  z-index: 1;
+}
+.hall-sketch-bg.locked {
+  cursor: default;
+}
+.hall-sketch-bg.locked:active {
+  cursor: default;
+}
+/* סרגל הכלים הצף של הסקיצה: מעוגן ל-.hm-canvas (אזור-התצוגה עצמו, ה-
+   "מסך"), לא ל-.hall-sketch-bg שבתוך .hall-world המסובב/מוקטן/מוזז — לכן
+   מרונדר כ-sibling של .hall-world (לא כילד שלו), אחרת transform על אב היה
+   הופך את .hall-world לבסיס המיקום גם עבור position:fixed (containing
+   block חדש), והסרגל היה "נתקע" בתוך הריבוע המסובב במקום להישאר קריא
+   במקום קבוע. */
+.sketch-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+}
+.sketch-opacity-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-inline-end: 6px;
+  border-inline-end: 1px solid var(--line-2);
+  font-size: 13px;
+}
+.sketch-opacity-row input[type='range'] {
+  width: 80px;
 }
 
 /* ─── עורך הסקיצה (חיתוך/זום/סיבוב לפני שמירה) ─────────────────────── */
@@ -4386,6 +4427,38 @@ td.notes.seating {
 }
 .sk-review-add {
   align-self: flex-start;
+}
+.sk-review-badge-overlap {
+  color: #b23a3a;
+}
+.sk-review-debug-toggle {
+  align-self: flex-start;
+  font-size: 12px;
+  padding: 4px 10px;
+  margin-top: 4px;
+}
+.sk-debug-overlay-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border, #e5ded2);
+}
+.sk-debug-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.sk-debug-box {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid #2f9e5c;
+  background: rgba(47, 158, 92, 0.14);
+  pointer-events: none;
+}
+.sk-debug-box-overlap {
+  border-color: #b23a3a;
+  background: rgba(178, 58, 58, 0.18);
 }
 .hall-empty {
   position: absolute;
@@ -11771,6 +11844,38 @@ td.notes.seating {
     border: 1px solid var(--line);
     color: var(--muted);
     font-size: 16px;
+  }
+}
+
+/* ==========================================================================
+   שלב D — יעדי-מגע גדולים יותר למכשירי מגע בלבד (pointer: coarse), לא לפי
+   רוחב-מסך: המטרה לא "מובייל מול דסקטופ" אלא "עכבר מדויק מול אצבע". כך
+   עכבר בדסקטופ (גם בחלון צר) לא מושפע כלל, בדיוק לפי דרישה 9 (אל תשבור
+   דסקטופ) — רק מכשיר עם מגע בפועל מקבל ידיות/כפתורים גדולים יותר.
+   ========================================================================== */
+@media (pointer: coarse) {
+  /* 40px קרוב לסטנדרט המומלץ למגע (~44px) — 22px/14px קל לפספס באצבע. */
+  .hm-canvas .handle {
+    width: 40px;
+    height: 40px;
+  }
+  .hm-canvas .handle-resize {
+    bottom: -20px;
+    inset-inline-end: -20px;
+  }
+  .hm-canvas .handle-rotate {
+    top: calc(-46px / var(--hm-s, 1));
+  }
+  /* כפתורי הסרגל הצף של הסקיצה — אותו עיקרון, כדי שלא יהיה קל ללחוץ בטעות
+     על הכפתור הלא-נכון (מחיקה ליד נעילה למשל). */
+  .sketch-toolbar button {
+    width: 40px;
+    height: 40px;
+    font-size: 17px;
+  }
+  .sketch-opacity-row input[type='range'] {
+    width: 100px;
+    height: 32px;
   }
 }
 

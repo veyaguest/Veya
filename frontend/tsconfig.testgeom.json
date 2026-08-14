@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": ".tmp-test"
+  },
+  "include": ["src/hallSketchGeometry.ts", "src/hallSketchGeometry.test.ts"]
+}

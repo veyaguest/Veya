@@ -611,6 +611,7 @@ class HallSketchTransform(BaseModel):
     rotation: float = 0
     opacity: float = Field(default=0.5, ge=0, le=1)
     locked: bool = False
+    hidden: bool = False
 
 
 class DetectedHallElement(BaseModel):

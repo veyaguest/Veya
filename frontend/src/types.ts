@@ -566,6 +566,7 @@ export interface HallSketchTransform {
   rotation: number
   opacity: number
   locked: boolean
+  hidden: boolean
 }
 
 export interface HallState {

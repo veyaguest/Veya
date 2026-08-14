@@ -687,32 +687,62 @@ export const strings = {
     // כדי שידית הסיבוב וסרגל הפעולות יופיעו מיד.
     selectOnMap: 'בחירה על המפה לסיבוב',
 
-    // בניית אולם אוטומטית מסקיצה (AI Vision) — ניתוח + מסך "בדיקה ואישור".
+    // בניית אולם אוטומטית מסקיצה (AI Vision) — העלאה → ניתוח → "בדיקה ואישור" → בנייה.
     sketchReview: {
-      analyzingTitle: 'בונים לכם את האולם…',
-      analyzingHint: 'מזהים שולחנות ואזורים מהסקיצה. זה לוקח כמה שניות.',
-      failedTitle: 'לא הצלחנו לנתח את הסקיצה הזו הפעם',
-      failedHint: 'אפשר לנסות שוב, או להמשיך ולבנות את האולם ידנית עם הכלים הרגילים.',
+      // שלב 1: פאנל ההעלאה (SketchUploadDialog).
+      uploadTitle: 'בנו את האולם מהסקיצה',
+      uploadLead:
+        'העלו סקיצה של האולם ו-VEYA תזהה את השולחנות, הרחבה, הבר והאלמנטים המרכזיים ותבנה אותם עבורכם על המפה.',
+      uploadDropHint: 'גררו תמונה לכאן, או',
+      uploadBrowse: 'בחירת קובץ',
+      uploadReplace: 'החלפת קובץ',
+      uploadCancel: 'ביטול',
+      uploadNext: 'ניתוח ובניית האולם',
+      fileSize: (bytes: number) => (bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)}KB` : `${(bytes / (1024 * 1024)).toFixed(1)}MB`),
+
+      // שלב 2: מסך ניתוח (SketchAnalyzingOverlay) — שלוש שורות, לא ספינר גנרי.
+      analyzingTitle: 'VEYA מנתחת את הסקיצה…',
+      analyzingStep: 'מזהה שולחנות ואלמנטים באולם',
+      analyzingHint: 'זה עשוי לקחת כמה שניות',
+
+      // כשל בניתוח — לעולם לא טכני (סטטוס/traceback); ראה api.ts:toError.
+      failedTitle: 'לא הצלחנו לנתח את הסקיצה',
+      failedHint: 'אפשר להעלות תמונה ברורה יותר, או להמשיך בבנייה ידנית.',
       retry: 'ניסיון נוסף',
-      continueManually: 'בניה ידנית',
+      continueManually: 'בנייה ידנית',
       emptyTitle: 'לא זיהינו אובייקטים ברורים בסקיצה הזו',
-      emptyHint: 'אפשר לנסות סקיצה ברורה יותר, או להמשיך ולבנות את האולם ידנית.',
+      emptyHint: 'אפשר לנסות סקיצה ברורה יותר, או להמשיך בבנייה ידנית.',
+
+      // שלב 3: מסך "בדיקה ואישור".
       reviewTitle: 'הסקיצה מוכנה 🎉',
       summary: (tables: number, other: number) => {
         const tablesPart = tables === 1 ? 'שולחן אחד' : `${tables} שולחנות`
-        if (other === 0) return `זיהינו ${tablesPart}. בדקו ותקנו במידת הצורך.`
+        if (other === 0) return `זיהינו ${tablesPart}.`
         const otherPart = other === 1 ? 'אזור נוסף' : `${other} אזורים נוספים`
-        return `זיהינו ${tablesPart} ו-${otherPart}. בדקו ותקנו במידת הצורך.`
+        return `זיהינו ${tablesPart} ו-${otherPart}.`
       },
       needsCheck: (n: number) => (n === 1 ? '1 לבדיקה' : `${n} לבדיקה`),
+      // שלוש רמות ודאות — בלי המילה "confidence" מול המשתמש (req 4).
       confidenceHigh: 'זיהוי בטוח',
-      confidenceLow: 'כדאי לבדוק',
-      addMissingTable: '＋ הוסף שולחן',
+      confidenceMid: 'כדאי לבדוק',
+      confidenceLow: 'זיהוי לא בטוח',
+      // הסבר בשפה פשוטה ליד פריטים שכדאי לבדוק — לא אחוז/מספר.
+      confidenceHintMid: (typeLabel: string) => `נראה שזה ${typeLabel}. כדאי לבדוק שזה נכון.`,
+      confidenceHintLow: 'לא הצלחנו לזהות את זה בבירור — בדקו, תקנו או מחקו.',
+      addMissingTable: '＋ הוספת אובייקט',
+      addMissingHint: 'לא מצאתם פריט? ה-AI עלול לפספס כמה — אפשר להוסיף ידנית.',
       removeItem: 'הסרה',
       rotateItem: 'סיבוב',
-      cancel: 'ביטול',
-      confirm: '✨ הפוך למפת הושבה',
+      cancel: 'בנייה ידנית',
+      confirm: 'בניית האולם',
+      confirmHint: 'VEYA תיצור את האובייקטים שאישרתם על המפה. תמיד אפשר להזיז ולערוך אחר כך.',
       confirming: 'בונים…',
+      overlapWarning: 'חופף עם פריט אחר',
+      overlapWarningHint: 'שני האובייקטים האלה חופפים במיקום שזוהה בסקיצה — כדאי לבדוק ולתקן ידנית אם צריך',
+
+      // שלב 4: אישור בנייה (SketchBuildSuccess).
+      builtTitle: 'האולם נבנה בהצלחה',
+      builtOpen: 'פתיחת האולם',
     },
   },
 }

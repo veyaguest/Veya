@@ -8,7 +8,8 @@
     "prebuild": "npm run build:legal",
     "build": "tsc -b && vite build",
     "build:legal": "node scripts/build-legal-pages.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:hall-sketch-geometry": "tsc --project tsconfig.testgeom.json && echo '{\"type\":\"commonjs\"}' > .tmp-test/package.json && node .tmp-test/hallSketchGeometry.test.js && rm -rf .tmp-test"
   },
   "dependencies": {
     "@react-oauth/google": "^0.12.1",
