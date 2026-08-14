@@ -4261,6 +4261,132 @@ td.notes.seating {
   font-size: 15px;
   cursor: pointer;
 }
+
+/* בניית אולם אוטומטית מסקיצה (AI Vision) — מסך טעינה + מסך בדיקה ואישור */
+.sk-analyzing {
+  position: fixed;
+  z-index: 1201;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, 90vw);
+  background: var(--card, #fff);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(20, 18, 14, 0.28);
+  padding: 32px 24px;
+  text-align: center;
+  direction: rtl;
+}
+.sk-analyzing h2 {
+  margin: 14px 0 6px;
+  font-size: 18px;
+}
+.sk-analyzing p {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--muted, #7a7266);
+  line-height: 1.5;
+}
+.sk-analyzing .sk-editor-actions {
+  margin-top: 16px;
+  justify-content: center;
+}
+.sk-analyzing-spinner {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 3px solid var(--border, #e5ded2);
+  border-top-color: var(--accent, #c9a35b);
+  animation: sk-spin 0.9s linear infinite;
+}
+@keyframes sk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.sk-review {
+  position: fixed;
+  z-index: 1201;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(560px, 94vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--card, #fff);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(20, 18, 14, 0.28);
+  padding: 18px;
+  gap: 12px;
+  direction: rtl;
+}
+.sk-review-list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 48vh;
+  padding-inline-end: 4px;
+}
+.sk-review-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border, #e5ded2);
+  border-radius: 10px;
+  background: var(--hover, #f4efe6);
+}
+.sk-review-row select {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5ded2);
+  background: var(--card, #fff);
+  font-size: 13px;
+}
+.sk-review-badge {
+  font-size: 12px;
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--card, #fff);
+}
+.sk-review-badge-low {
+  color: #a06b1f;
+}
+.sk-review-badge-high {
+  color: #3f7a4a;
+}
+.sk-review-capacity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.sk-review-capacity button {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border, #e5ded2);
+  background: var(--card, #fff);
+  cursor: pointer;
+}
+.sk-review-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5ded2);
+  background: var(--card, #fff);
+  cursor: pointer;
+  font-size: 14px;
+}
+.sk-review-add {
+  align-self: flex-start;
+}
 .hall-empty {
   position: absolute;
   top: 120px;

@@ -32,8 +32,10 @@ import type {
   Guest,
   GuestCreate,
   GuestUpdate,
+  DetectedHallElement,
   HallElement,
   HallLayout,
+  HallSketchTransform,
   HallState,
   HallTableSave,
   ImportPreview,
@@ -864,6 +866,7 @@ export async function saveHall(
   sketch?: string | null,
   hallLayout?: HallLayout | null,
   reserveSeats?: number | null,
+  sketchTransform?: HallSketchTransform | null,
 ): Promise<HallState> {
   const res = await apiFetch('/hall', {
     method: 'PUT',
@@ -875,10 +878,24 @@ export async function saveHall(
       sketch,
       hall_layout: hallLayout,
       reserve_seats: reserveSeats,
+      sketch_transform: sketchTransform,
     }),
   })
   if (!res.ok) throw await toError(res)
   return res.json()
+}
+
+// שלב 1 של בניית אולם אוטומטית: שולח סקיצה (data URL) ל-AI Vision, מקבל
+// רשימת אלמנטים מוצעים. תצוגה מקדימה בלבד — שום דבר לא נשמר בשרת כאן.
+export async function analyzeHallSketch(imageDataUrl: string): Promise<DetectedHallElement[]> {
+  const res = await apiFetch('/hall/sketch/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: imageDataUrl }),
+  })
+  if (!res.ok) throw await toError(res)
+  const data = await res.json()
+  return data.elements as DetectedHallElement[]
 }
 
 // ---- ניהול רזרבה חכם (מצב יום האירוע) ----

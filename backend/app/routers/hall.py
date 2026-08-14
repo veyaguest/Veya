@@ -13,9 +13,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import constraints as parser
-from app import media, models, permissions, schemas
+from app import hall_vision, media, models, permissions, schemas
 from app.database import get_db
 from app.deps import EventAccess
+from app.ratelimit import hall_sketch_limiter
 
 _view = EventAccess(permissions.HALL_VIEW)
 _write = EventAccess(permissions.HALL_WRITE)
@@ -177,6 +178,11 @@ def get_hall(
         warnings=warnings,
         sketch=media.to_url(event.hall_sketch),
         hall_layout=schemas.HallLayout(**event.hall_layout) if event.hall_layout else None,
+        sketch_transform=(
+            schemas.HallSketchTransform(**event.hall_sketch_transform)
+            if event.hall_sketch_transform
+            else None
+        ),
         forbidden_pairs=forbidden_pairs,
         together_pairs=together_pairs,
     )
@@ -230,6 +236,8 @@ def save_hall(
         event.reserve_seats = payload.reserve_seats
     if payload.hall_layout is not None:
         event.hall_layout = payload.hall_layout.model_dump()
+    if payload.sketch_transform is not None:
+        event.hall_sketch_transform = payload.sketch_transform.model_dump()
     # סקיצת האולם: None => לא נגענו; "" => מחיקה; data URL => בלוב חדש;
     # URL קיים => ללא שינוי. הטיפול מרוכז ב-media.resolve_incoming.
     if payload.sketch is not None:
@@ -239,3 +247,29 @@ def save_hall(
     db.commit()
 
     return get_hall(db=db, event=event)
+
+
+@router.post("/sketch/analyze", response_model=schemas.SketchAnalyzeResponse)
+def analyze_sketch(
+    payload: schemas.SketchAnalyzeRequest,
+    event: models.Event = Depends(_write),
+):
+    """שלב 1 של בניית אולם אוטומטית: מנתח סקיצה, מחזיר אלמנטים מוצעים.
+
+    תצוגה מקדימה בלבד — כמו ``/guests/import/preview``, שום דבר לא נכתב
+    ל-``Event`` כאן. השמירה בפועל קורית דרך ``PUT /hall`` הרגיל, אחרי
+    שהמשתמש אישר/תיקן במסך ה-Review.
+    """
+    hall_sketch_limiter.check(str(event.id))
+    hall_sketch_limiter.record_fail(str(event.id))
+    content_type, raw = media._parse_data_url(payload.image)
+    try:
+        elements = hall_vision.analyze_sketch(raw, content_type)
+    except hall_vision.HallVisionError as exc:
+        # קוד 4xx (לא 5xx) בכוונה: api.ts מציג ללקוח את detail רק מתחת ל-500 —
+        # מעל זה כל ההודעות מוחלפות בהודעה גנרית כדי לא לדלוף traceback/HTML.
+        # כאן ההודעה כן בטוחה ומדויקת (עברית ידידותית), ורוצים שהיא תגיע.
+        raise HTTPException(status_code=422, detail=str(exc))
+    return schemas.SketchAnalyzeResponse(
+        elements=[schemas.DetectedHallElement(**el) for el in elements]
+    )

@@ -514,6 +514,8 @@ export interface HallTable {
 
 // רק האלמנטים הגלויים בסרגל הכלים כרגע. שאר הסוגים (head_table, gift_table,
 // restroom, stage) עדיין נתמכים בקוד לתאימות לאחור — רק הוסתרו מהממשק.
+// pillar/wall/obstacle/other_area: לא מוצעים ידנית בסרגל — מגיעים רק מבניית
+// אולם אוטומטית מ-AI Vision (עמוד/קיר/מכשול/אזור שזוהה בסקיצה).
 export type HallElementType =
   | 'head_table'
   | 'dance_floor'
@@ -523,6 +525,10 @@ export type HallElementType =
   | 'dj'
   | 'gift_table'
   | 'restroom'
+  | 'pillar'
+  | 'wall'
+  | 'obstacle'
+  | 'other_area'
 
 // צורה גאומטרית של אלמנט (רלוונטי לרחבת ריקודים / בר / DJ)
 export type ElementShape = 'rectangle' | 'square' | 'circle' | 'ellipse'
@@ -550,6 +556,18 @@ export interface HallLayout {
   planned_tables: number
 }
 
+// מיקום/גודל/סיבוב/שקיפות/נעילה של שכבת הסקיצה על הלוח (world coordinates).
+// null בכל המקומות = תאימות אחורה: הסקיצה מוצגת כרקע מלא, כמו שהייתה תמיד.
+export interface HallSketchTransform {
+  x: number
+  y: number
+  width: number
+  height: number
+  rotation: number
+  opacity: number
+  locked: boolean
+}
+
 export interface HallState {
   seats_per_table: number
   reserve_seats: number
@@ -559,10 +577,33 @@ export interface HallState {
   warnings: string[]
   sketch: string | null
   hall_layout: HallLayout | null
+  sketch_transform: HallSketchTransform | null
   // זוגות אילוצים שכבר מחושבים היום מהערות חופשיות — לשימוש עוזר ההושבה
   // החכם בצד הלקוח (בדיקות מיידיות כולל בזמן גרירה, בלי קריאת רשת נוספת).
   forbidden_pairs: [number, number][]
   together_pairs: [number, number][]
+}
+
+// אלמנט אחד שזוהה ע"י ניתוח AI Vision לסקיצה — לפני שהמשתמש אישר. קואורדינטות
+// מנורמלות [0,1] יחסית לתמונת הסקיצה, לא לפיקסלים של הלוח (ראה HallPage.tsx).
+export type DetectedHallElementType =
+  | 'round_table' | 'rectangle_table' | 'knights_table'
+  | 'bar' | 'dance_floor' | 'stage' | 'entrance' | 'pillar' | 'wall' | 'obstacle' | 'other_area'
+
+export interface DetectedHallElement {
+  type: DetectedHallElementType
+  x: number
+  y: number
+  width: number
+  height: number
+  rotation: number
+  capacity: number | null
+  confidence: number
+  label: string
+}
+
+export interface SketchAnalyzeResponse {
+  elements: DetectedHallElement[]
 }
 
 export interface HallTableSave {

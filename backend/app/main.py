@@ -97,6 +97,8 @@ _EXTRA_COLUMNS = {
         "bride_parents_line": "TEXT DEFAULT ''",
         # תצלום מצב ההושבה שלפני ההרצה האחרונה — ל"החזרת הסידור הקודם".
         "seating_snapshot": "JSON",
+        # transform שכבת הסקיצה (בניית אולם אוטומטית מ-AI Vision).
+        "hall_sketch_transform": "JSON",
     },
     "messages": {
         "channel": "TEXT DEFAULT 'whatsapp'",

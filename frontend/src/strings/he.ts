@@ -686,5 +686,33 @@ export const strings = {
     // המפה), עדיין אין שולחן "נבחר" על המפה. סוגר את הגיליון ובוחר אותו,
     // כדי שידית הסיבוב וסרגל הפעולות יופיעו מיד.
     selectOnMap: 'בחירה על המפה לסיבוב',
+
+    // בניית אולם אוטומטית מסקיצה (AI Vision) — ניתוח + מסך "בדיקה ואישור".
+    sketchReview: {
+      analyzingTitle: 'בונים לכם את האולם…',
+      analyzingHint: 'מזהים שולחנות ואזורים מהסקיצה. זה לוקח כמה שניות.',
+      failedTitle: 'לא הצלחנו לנתח את הסקיצה הזו הפעם',
+      failedHint: 'אפשר לנסות שוב, או להמשיך ולבנות את האולם ידנית עם הכלים הרגילים.',
+      retry: 'ניסיון נוסף',
+      continueManually: 'בניה ידנית',
+      emptyTitle: 'לא זיהינו אובייקטים ברורים בסקיצה הזו',
+      emptyHint: 'אפשר לנסות סקיצה ברורה יותר, או להמשיך ולבנות את האולם ידנית.',
+      reviewTitle: 'הסקיצה מוכנה 🎉',
+      summary: (tables: number, other: number) => {
+        const tablesPart = tables === 1 ? 'שולחן אחד' : `${tables} שולחנות`
+        if (other === 0) return `זיהינו ${tablesPart}. בדקו ותקנו במידת הצורך.`
+        const otherPart = other === 1 ? 'אזור נוסף' : `${other} אזורים נוספים`
+        return `זיהינו ${tablesPart} ו-${otherPart}. בדקו ותקנו במידת הצורך.`
+      },
+      needsCheck: (n: number) => (n === 1 ? '1 לבדיקה' : `${n} לבדיקה`),
+      confidenceHigh: 'זיהוי בטוח',
+      confidenceLow: 'כדאי לבדוק',
+      addMissingTable: '＋ הוסף שולחן',
+      removeItem: 'הסרה',
+      rotateItem: 'סיבוב',
+      cancel: 'ביטול',
+      confirm: '✨ הפוך למפת הושבה',
+      confirming: 'בונים…',
+    },
   },
 }

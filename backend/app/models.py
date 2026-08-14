@@ -119,6 +119,9 @@ class Event(Base):
     invite_image: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     # סקיצה/תמונה של האולם למפת ההושבה (data URL). מוצגת כרקע עדין מתחת לשולחנות.
     hall_sketch: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # מיקום/גודל/סיבוב/שקיפות/נעילה של שכבת הסקיצה על הלוח (world coordinates).
+    # None => תאימות אחורה: הסקיצה מוצגת כרקע מלא כמו שהייתה תמיד (ראה hall.py).
+    hall_sketch_transform: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     # מסלול אישורי-ההגעה האוטומטי של VEYA — האם הופעל לאירוע הזה (provision בוצע).
     rsvp_track_active: Mapped[bool] = mapped_column(Boolean, default=False)
     # מתי הופעל המסלול — עוגן לחישוב מועדי השלבים (offset_days מהיום הזה).

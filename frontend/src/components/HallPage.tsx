@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   analyzeConstraints,
+  analyzeHallSketch,
   assignSeat,
   generateSeating,
   getSeatingUndoState,
@@ -16,11 +17,13 @@ import {
 import type {
   AnalyzeResult,
   Clarification,
+  DetectedHallElement,
   ElementShape,
   HallElement,
   HallElementType,
   HallGuest,
   HallLayout,
+  HallSketchTransform,
   HallState,
   ReserveSummary,
   SeatRecommendation,
@@ -105,6 +108,11 @@ const ELEMENT_DEFS: Record<
   entrance: { label: '🚪 כניסה', width: 150, height: 46, shape: 'rectangle', color: '#9a7b2e' },
   gift_table: { label: '🎁 שולחן מתנות', width: 90, height: 34, shape: 'rectangle', color: '#c9a227' },
   restroom: { label: '🚻 שירותים', width: 68, height: 34, shape: 'rectangle', color: '#8c8375' },
+  // מגיעים רק מבניית אולם אוטומטית (AI Vision) — לא מוצעים ידנית בסרגל הכלים.
+  pillar: { label: '🔘 עמוד', width: 40, height: 40, shape: 'circle', color: '#6b6355' },
+  wall: { label: '▬ קיר', width: 160, height: 16, shape: 'rectangle', color: '#3f4756' },
+  obstacle: { label: '⚠️ מכשול', width: 60, height: 60, shape: 'square', color: '#8c8375' },
+  other_area: { label: '⬛ אזור', width: 140, height: 100, shape: 'rectangle', color: '#8a6bc9' },
 }
 
 const ELEMENT_SHAPES: { key: ElementShape; label: string }[] = [
@@ -956,6 +964,145 @@ function SketchEditor(props: {
   )
 }
 
+const hallSketchT = strings.hall.sketchReview
+
+// מסך "טוענים" בזמן ניתוח ה-AI לסקיצה — מוצג אוטומטית אחרי אישור עריכת הסקיצה.
+function SketchAnalyzingOverlay() {
+  return (
+    <div className="sk-editor-backdrop">
+      <div className="sk-analyzing" role="status" aria-live="polite">
+        <div className="sk-analyzing-spinner" aria-hidden="true" />
+        <h2>{hallSketchT.analyzingTitle}</h2>
+        <p>{hallSketchT.analyzingHint}</p>
+      </div>
+    </div>
+  )
+}
+
+const DETECTED_TYPE_LABELS: Record<DetectedHallElement['type'], string> = {
+  round_table: TABLE_TYPE_LABELS.round,
+  rectangle_table: TABLE_TYPE_LABELS.rectangle,
+  knights_table: TABLE_TYPE_LABELS.knights,
+  bar: ELEMENT_DEFS.bar.label,
+  dance_floor: ELEMENT_DEFS.dance_floor.label,
+  stage: ELEMENT_DEFS.stage.label,
+  entrance: ELEMENT_DEFS.entrance.label,
+  pillar: ELEMENT_DEFS.pillar.label,
+  wall: ELEMENT_DEFS.wall.label,
+  obstacle: ELEMENT_DEFS.obstacle.label,
+  other_area: ELEMENT_DEFS.other_area.label,
+}
+
+const DETECTED_TYPE_OPTIONS = Object.keys(DETECTED_TYPE_LABELS) as DetectedHallElement['type'][]
+
+const LOW_CONFIDENCE_THRESHOLD = 0.85
+
+// מסך "בדיקה ואישור" — מוצג אחרי שה-AI סיים לנתח את הסקיצה. ברירת המחדל היא
+// שהמפה כבר בנויה (שלב 16, Zero Manual Setup); המשתמש רק מתקן/מוחק/מוסיף.
+function SketchReviewPanel(props: {
+  items: DetectedHallElement[]
+  onCancel: () => void
+  onConfirm: (items: DetectedHallElement[]) => void
+}) {
+  const [items, setItems] = useState<DetectedHallElement[]>(props.items)
+
+  const tableCount = items.filter((it) => it.type.endsWith('_table')).length
+  const otherCount = items.length - tableCount
+  const needsCheckCount = items.filter((it) => it.confidence < LOW_CONFIDENCE_THRESHOLD).length
+
+  function updateItem(i: number, patch: Partial<DetectedHallElement>) {
+    setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, ...patch } : it)))
+  }
+  function removeItem(i: number) {
+    setItems((prev) => prev.filter((_, idx) => idx !== i))
+  }
+  function addTableItem() {
+    setItems((prev) => [
+      ...prev,
+      { type: 'round_table', x: 0.5, y: 0.5, width: 0.08, height: 0.08, rotation: 0, capacity: 12, confidence: 1, label: '' },
+    ])
+  }
+
+  return (
+    <>
+      <div className="sk-editor-backdrop" onClick={props.onCancel} />
+      <div className="sk-review" role="dialog" aria-label={hallSketchT.reviewTitle}>
+        <div className="sk-editor-head">
+          <h2>{hallSketchT.reviewTitle}</h2>
+          <p>
+            {hallSketchT.summary(tableCount, otherCount)}
+            {needsCheckCount > 0 ? ` · ${hallSketchT.needsCheck(needsCheckCount)}` : ''}
+          </p>
+        </div>
+
+        <div className="sk-review-list">
+          {items.map((it, i) => {
+            const low = it.confidence < LOW_CONFIDENCE_THRESHOLD
+            const isTable = it.type.endsWith('_table')
+            return (
+              <div key={i} className="sk-review-row">
+                <span className={low ? 'sk-review-badge sk-review-badge-low' : 'sk-review-badge sk-review-badge-high'}>
+                  {low ? '🟡' : '🟢'} {Math.round(it.confidence * 100)}%
+                </span>
+                <select
+                  value={it.type}
+                  onChange={(e) => updateItem(i, { type: e.target.value as DetectedHallElement['type'] })}
+                >
+                  {DETECTED_TYPE_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {DETECTED_TYPE_LABELS[t]}
+                    </option>
+                  ))}
+                </select>
+                {isTable && (
+                  <span className="sk-review-capacity">
+                    <button type="button" onClick={() => updateItem(i, { capacity: Math.max(2, (it.capacity ?? 12) - 2) })}>
+                      −
+                    </button>
+                    {it.capacity ?? 12}
+                    <button type="button" onClick={() => updateItem(i, { capacity: Math.min(24, (it.capacity ?? 12) + 2) })}>
+                      +
+                    </button>
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="sk-review-icon-btn"
+                  title={hallSketchT.rotateItem}
+                  onClick={() => updateItem(i, { rotation: ((it.rotation ?? 0) + 90) % 360 })}
+                >
+                  ↻
+                </button>
+                <button
+                  type="button"
+                  className="sk-review-icon-btn"
+                  title={hallSketchT.removeItem}
+                  onClick={() => removeItem(i)}
+                >
+                  ✕
+                </button>
+              </div>
+            )
+          })}
+        </div>
+
+        <button type="button" className="hm-ghost-btn sk-review-add" onClick={addTableItem}>
+          {hallSketchT.addMissingTable}
+        </button>
+
+        <div className="sk-editor-actions">
+          <button className="sk-confirm" onClick={() => props.onConfirm(items)} disabled={items.length === 0}>
+            {hallSketchT.confirm}
+          </button>
+          <button className="sk-cancel" onClick={props.onCancel}>
+            {hallSketchT.cancel}
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => void } = {}) {
   const [tables, setTables] = useState<TableView[]>([])
   const [unassigned, setUnassigned] = useState<HallGuest[]>([])
@@ -1091,6 +1238,14 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // מהמקור ולא מהתמונה שכבר נחתכה). לא נשמר בשרת — רק לנוחות הסשן.
   const [sketchEditSrc, setSketchEditSrc] = useState<string | null>(null)
   const sketchOriginalRef = useRef<string | null>(null)
+  // מיקום/גודל/סיבוב/שקיפות/נעילה של שכבת הסקיצה (בניית אולם אוטומטית, שלב C).
+  // null = תאימות אחורה — הסקיצה מוצגת כרקע מלא בדיוק כמו תמיד.
+  const [sketchTransform, setSketchTransform] = useState<HallSketchTransform | null>(null)
+
+  // ---- בניית אולם אוטומטית מסקיצה (AI Vision) ----
+  const [sketchAnalyzing, setSketchAnalyzing] = useState(false)
+  const [sketchAnalyzeError, setSketchAnalyzeError] = useState('')
+  const [sketchReview, setSketchReview] = useState<DetectedHallElement[] | null>(null)
 
   // ---- עוזר הושבה חכם (Dock) ----
   // זוגות אילוצים שכבר מחושבים בשרת מהערות חופשיות — נשמרים כאן כדי
@@ -1224,6 +1379,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     setHallLayout(h.hall_layout ?? null)
     setWarnings(h.warnings)
     setSketch(h.sketch ?? null)
+    setSketchTransform(h.sketch_transform ?? null)
     setForbiddenPairs(h.forbidden_pairs ?? [])
     setTogetherPairs(h.together_pairs ?? [])
     setDirty(false)
@@ -2156,11 +2312,104 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       setHallOrientation(orientation)
       rearrangeForOrientation(orientation)
     }
+    // העלאת סקיצה מפעילה ניתוח AI אוטומטי — "Zero Manual Setup": המשתמש לא
+    // אמור להתחיל להוסיף שולחנות ידנית אחרי שהעלה סקיצה.
+    void runSketchAnalysis(dataUrl)
   }
 
   function removeSketch() {
     setSketch(null)
+    setSketchTransform(null)
     sketchOriginalRef.current = null
+    setDirty(true)
+  }
+
+  // שולח את הסקיצה ל-AI Vision (שרת) ומקבל רשימת אלמנטים מוצעים לבדיקה.
+  // כשל לא חוסם כלום — הכלים הידניים הרגילים תמיד זמינים (Fallback ידני, שלב 17).
+  async function runSketchAnalysis(dataUrl: string) {
+    setSketchAnalyzing(true)
+    setSketchAnalyzeError('')
+    setSketchReview(null)
+    try {
+      const els = await analyzeHallSketch(dataUrl)
+      if (els.length === 0) {
+        setSketchAnalyzeError(hallT.sketchReview.emptyTitle)
+      } else {
+        setSketchReview(els)
+      }
+    } catch (err) {
+      setSketchAnalyzeError(err instanceof Error ? err.message : hallT.sketchReview.failedTitle)
+    } finally {
+      setSketchAnalyzing(false)
+    }
+  }
+
+  // ממיר סוג שזוהה ע"י ה-AI לסוג שולחן, אם רלוונטי.
+  const DETECTED_TABLE_TYPES: Partial<Record<DetectedHallElement['type'], TableType>> = {
+    round_table: 'round',
+    rectangle_table: 'rectangle',
+    knights_table: 'knights',
+  }
+
+  // "✨ הפוך למפת הושבה" — ממיר קואורדינטות מנורמלות [0,1] (יחסית לסקיצה)
+  // לקואורדינטות world בפעם אחת בלבד (שלב 8/9): אחרי זה השולחנות/האלמנטים
+  // עצמאיים לגמרי מהסקיצה — הזזת הסקיצה לא גוררת אותם, וגם הסתרתה לא שוברת
+  // את המפה.
+  function applySketchReview(items: DetectedHallElement[]) {
+    const w = worldSize.w
+    const h = worldSize.h
+    let nextNum = nextTableNumRef.current
+    const newTables: TableView[] = []
+    const newElements: HallElement[] = []
+    items.forEach((it, i) => {
+      const cx = it.x * w
+      const cy = it.y * h
+      const ew = Math.max(20, it.width * w)
+      const eh = Math.max(20, it.height * h)
+      const tableType = DETECTED_TABLE_TYPES[it.type]
+      if (tableType) {
+        const num = nextNum++
+        newTables.push({
+          table_number: num,
+          x: Math.round(cx - ew / 2),
+          y: Math.round(cy - eh / 2),
+          guests: [],
+          table_type: tableType,
+          capacity: snapCapacity(it.capacity ?? defaultCapacityForType(tableType)),
+          rotation: it.rotation ?? 0,
+          name: '',
+          color: '',
+          notes: '',
+          locked: false,
+          is_reserve: false,
+        })
+      } else {
+        const elType = it.type as HallElementType
+        const def = ELEMENT_DEFS[elType]
+        newElements.push({
+          id: `${elType}-ai-${Date.now()}-${i}`,
+          type: elType,
+          x: Math.round(cx - ew / 2),
+          y: Math.round(cy - eh / 2),
+          width: Math.round(ew),
+          height: Math.round(eh),
+          rotation: it.rotation ?? 0,
+          locked: false,
+          label: it.label || def?.label || '',
+          shape: def?.shape ?? 'rectangle',
+          color: '',
+        })
+      }
+    })
+    nextTableNumRef.current = nextNum
+    setTables((prev) => [...prev, ...newTables])
+    setElements((prev) => [...prev, ...newElements])
+    // ברירת מחדל: הסקיצה ממלאה את הלוח בדיוק כמו רקע רגיל — המשתמש יכול
+    // אחר כך להזיז/לסובב/לשקף אותה בנפרד (שלב C).
+    setSketchTransform((cur) => cur ?? { x: 0, y: 0, width: w, height: h, rotation: 0, opacity: 0.5, locked: false })
+    setSketchReview(null)
+    setSelectedTable(null)
+    setSelectedEl(null)
     setDirty(true)
   }
 
@@ -2203,7 +2452,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
           density: densityKeyForCount(tables.length),
           planned_tables: tables.length,
         }
-        const res = await saveHall(payload, seats, elements, sketch ?? '', layoutToSave, reserveSeats)
+        const res = await saveHall(payload, seats, elements, sketch ?? '', layoutToSave, reserveSeats, sketchTransform)
         setWarnings(res.warnings)
         setUnassigned(res.unassigned)
         // מנקים dirty רק אם לא נעשה שינוי נוסף בזמן השמירה; אחרת שומרים שוב.
@@ -2226,7 +2475,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     }, 900)
     return () => window.clearTimeout(timer)
     // saveRetry בכוונה בתלויות — מאלץ בדיקת-שמירה חוזרת אחרי סבב שהסתיים עם שינויים.
-  }, [dirty, tables, elements, sketch, seats, hallLayout, reserveSeats, saveRetry])
+  }, [dirty, tables, elements, sketch, seats, hallLayout, reserveSeats, sketchTransform, saveRetry])
 
   // "הושבה בקליק" — הפעולה המרכזית של המסך. onlyUnassigned=true משבץ רק את
   // מי שאין לו שולחן (אף אחד מהמשובצים לא זז). שני המצבים רצים על **אותו**
@@ -3833,6 +4082,36 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
             orientation={hallOrientation}
             onCancel={() => setSketchEditSrc(null)}
             onConfirm={onSketchConfirm}
+          />
+        )}
+
+        {sketchAnalyzing && <SketchAnalyzingOverlay />}
+
+        {!sketchAnalyzing && sketchAnalyzeError && (
+          <div className="sk-editor-backdrop" onClick={() => setSketchAnalyzeError('')}>
+            <div className="sk-analyzing" role="alertdialog" onClick={(e) => e.stopPropagation()}>
+              <h2>{hallSketchT.failedTitle}</h2>
+              <p>{sketchAnalyzeError}</p>
+              <p>{hallSketchT.failedHint}</p>
+              <div className="sk-editor-actions">
+                {sketch && /^data:/i.test(sketch) && (
+                  <button className="sk-confirm" onClick={() => { setSketchAnalyzeError(''); void runSketchAnalysis(sketch) }}>
+                    {hallSketchT.retry}
+                  </button>
+                )}
+                <button className="sk-cancel" onClick={() => setSketchAnalyzeError('')}>
+                  {hallSketchT.continueManually}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {sketchReview && (
+          <SketchReviewPanel
+            items={sketchReview}
+            onCancel={() => setSketchReview(null)}
+            onConfirm={applySketchReview}
           />
         )}
 

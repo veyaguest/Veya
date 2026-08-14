@@ -596,6 +596,53 @@ class HallLayout(BaseModel):
     planned_tables: int = 0
 
 
+class HallSketchTransform(BaseModel):
+    """מיקום/גודל/סיבוב/שקיפות/נעילה של שכבת הסקיצה על הלוח (world coords).
+
+    None ברמת ``HallState``/``SaveHallRequest`` => תאימות אחורה: מפות ישנות
+    ממשיכות להיראות בדיוק כמו היום (רקע מלא, ללא transform עצמאי) — ראה
+    ``routers/hall.py: get_hall`` שממלא ברירת מחדל תואמת.
+    """
+
+    x: float = 0
+    y: float = 0
+    width: float = 0
+    height: float = 0
+    rotation: float = 0
+    opacity: float = Field(default=0.5, ge=0, le=1)
+    locked: bool = False
+
+
+class DetectedHallElement(BaseModel):
+    """אלמנט אחד שזוהה ע"י ניתוח AI Vision לסקיצה — לפני שהמשתמש אישר.
+
+    קואורדינטות מנורמלות [0,1] יחסית לתמונת הסקיצה (לא לפיקסלים של הלוח) —
+    הצד הלקוח ממפה אותן לקואורדינטות world לפי ``hall_sketch_transform``
+    ברגע האישור בלבד (לא לפני).
+    """
+
+    type: str            # round_table|rectangle_table|knights_table|bar|dance_floor|
+                          # stage|entrance|pillar|wall|obstacle|other_area
+    x: float = Field(ge=0, le=1)
+    y: float = Field(ge=0, le=1)
+    width: float = Field(gt=0, le=1)
+    height: float = Field(gt=0, le=1)
+    rotation: float = 0
+    capacity: Optional[int] = Field(default=None, ge=1, le=60)
+    confidence: float = Field(ge=0, le=1)
+    label: str = ""
+
+
+class SketchAnalyzeResponse(BaseModel):
+    """תשובת ``POST /hall/sketch/analyze`` — תצוגה מקדימה בלבד, שום דבר לא נשמר."""
+
+    elements: list[DetectedHallElement]
+
+
+class SketchAnalyzeRequest(BaseModel):
+    image: str  # data URL (base64) — תמונה או PDF
+
+
 class HallState(BaseModel):
     seats_per_table: int
     # רזרבה מפוזרת: כמה מקומות סה"כ להשאיר פנויים בשיבוץ האוטומטי (0 = ללא).
@@ -606,6 +653,7 @@ class HallState(BaseModel):
     warnings: list[str]                  # חריגות (קיבולת/זוג אסור באותו שולחן)
     sketch: Optional[str] = None         # סקיצת האולם (data URL) — רקע עדין
     hall_layout: Optional[HallLayout] = None  # פרופיל צפיפות + מספר מתוכנן
+    sketch_transform: Optional[HallSketchTransform] = None  # מיקום שכבת הסקיצה
     # זוגות אילוצים שכבר מחושבים היום מהערות חופשיות (constraints.py) — נחשפים
     # כאן כדי שעוזר ההושבה החכם בצד הלקוח יוכל לבדוק אותם מיידית (כולל בזמן
     # גרירה) בלי קריאת רשת נוספת. אין כאן לוגיקה חדשה, רק חשיפה.
@@ -635,6 +683,7 @@ class SaveHallRequest(BaseModel):
     sketch: Optional[str] = None         # None => לא לשנות; מחרוזת ריקה => למחוק
     hall_layout: Optional[HallLayout] = None  # None => לא לשנות
     reserve_seats: Optional[int] = None  # None => לא לשנות; 0 = ללא רזרבה מפוזרת
+    sketch_transform: Optional[HallSketchTransform] = None  # None => לא לשנות
 
     @field_validator("reserve_seats")
     @classmethod
