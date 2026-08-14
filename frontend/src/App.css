@@ -10359,6 +10359,31 @@ td.notes.seating {
     font-weight: 600;
   }
 
+  /* בורר מיון ברשימת "מוזמנים" — שיבוץ / א-ב / מספר שולחן */
+  .hm-sort-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    overflow-x: auto;
+  }
+  .hm-sort-btn {
+    flex: 0 0 auto;
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--cream);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .hm-sort-btn.active {
+    border-color: var(--gold);
+    background: var(--gold);
+    color: var(--charcoal);
+  }
+
   /* פאנל חכם */
   /* יחס שיבוץ ברור ומינימלי — "86 / 120 שובצו" — במקום להשאיר את המשתמש
      להרכיב את זה בעצמו מארבעת המספרים הגולמיים למטה. */

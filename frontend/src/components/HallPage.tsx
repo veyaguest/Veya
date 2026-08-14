@@ -1002,6 +1002,9 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // Bottom Sheet, וניווט תחתון עם 5 מדורים. במחשב הלוח ממלא את אזור התוכן
   // שלצד סרגל הצד (המיקום נקבע ב-CSS לפי רוחב המסך).
   const [mobileTab, setMobileTab] = useState<'hall' | 'tables' | 'guests' | 'smart' | 'tools'>('hall')
+  // מיון רשימת "מוזמנים": ברירת מחדל לפי סטטוס שיבוץ (ללא שולחן קודם), או
+  // א'-ב'/מספר שולחן — לבחירת המשתמש, נשמר רק בזיכרון המסך הנוכחי.
+  const [guestSortMode, setGuestSortMode] = useState<'status' | 'name' | 'table'>('status')
   const [sheetTable, setSheetTable] = useState<number | null>(null)
   const [sheetEdit, setSheetEdit] = useState(false)
   // השולחן שנבחר **על המפה** — נפרד מ-sheetTable בכוונה.
@@ -2349,21 +2352,44 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     a.full_name.localeCompare(b.full_name, 'he'),
   )
 
-  // כל המוזמנים באירוע ללשונית "מוזמנים": קודם כל מי שללא שולחן, אחר כך
-  // המשובצים — בכל קבוצה מיון א'-ב'. נגזר מ-tables/unassigned בכל רינדור,
-  // כך שהרשימה מתעדכנת מיד עם כל שיבוץ/הסרת שיבוץ בלי לוגיקה נוספת.
+  // כל המוזמנים באירוע ללשונית "מוזמנים", לפי מצב המיון שנבחר (guestSortMode):
+  // - 'status' (ברירת מחדל): קודם כל מי שללא שולחן, אחר כך המשובצים — בכל
+  //   קבוצה מיון א'-ב'.
+  // - 'name': כולם יחד, מיון א'-ב' בלבד (בלי הפרדה לפי שיבוץ).
+  // - 'table': מיון לפי מספר שולחן עולה; מי שללא שולחן בסוף הרשימה, כי אין
+  //   להם מיקום טבעי בסדר מספרי.
+  // נגזר מ-tables/unassigned בכל רינדור, כך שהרשימה מתעדכנת מיד עם כל
+  // שיבוץ/הסרת שיבוץ בלי לוגיקה נוספת.
   const allGuestsSorted = useMemo(() => {
     const assignedEntries = tables.flatMap((t) =>
       t.guests.map((g) => ({ guest: g, tableNumber: t.table_number as number | null })),
     )
     const unassignedEntries = unassigned.map((g) => ({ guest: g, tableNumber: null as number | null }))
+    const byName = (a: { guest: HallGuest }, b: { guest: HallGuest }) =>
+      a.guest.full_name.localeCompare(b.guest.full_name, 'he')
+
+    if (guestSortMode === 'name') {
+      return [...unassignedEntries, ...assignedEntries].sort(byName)
+    }
+    if (guestSortMode === 'table') {
+      return [...unassignedEntries, ...assignedEntries].sort((a, b) => {
+        if ((a.tableNumber === null) !== (b.tableNumber === null)) {
+          return a.tableNumber === null ? 1 : -1
+        }
+        if (a.tableNumber !== null && b.tableNumber !== null && a.tableNumber !== b.tableNumber) {
+          return a.tableNumber - b.tableNumber
+        }
+        return byName(a, b)
+      })
+    }
+    // 'status' — ברירת המחדל
     return [...unassignedEntries, ...assignedEntries].sort((a, b) => {
       if ((a.tableNumber === null) !== (b.tableNumber === null)) {
         return a.tableNumber === null ? -1 : 1
       }
-      return a.guest.full_name.localeCompare(b.guest.full_name, 'he')
+      return byName(a, b)
     })
-  }, [tables, unassigned])
+  }, [tables, unassigned, guestSortMode])
 
   // ---- עוזר הושבה חכם: חישובים נגזרים (טהורים, בלי קריאת רשת) ----
   // כל הפונקציות מ-seatingAdvisor.ts הן O(n) — מחושבות מחדש רק כשמשהו
@@ -2983,6 +3009,29 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                   ? ` · הקישו על מוזמן ללא שולחן לשיבוץ לשולחן ${assignTarget}`
                   : ''}
               </p>
+              <div className="hm-sort-row" role="group" aria-label="מיון רשימת המוזמנים">
+                <button
+                  type="button"
+                  className={`hm-sort-btn ${guestSortMode === 'status' ? 'active' : ''}`}
+                  onClick={() => setGuestSortMode('status')}
+                >
+                  לפי שיבוץ
+                </button>
+                <button
+                  type="button"
+                  className={`hm-sort-btn ${guestSortMode === 'name' ? 'active' : ''}`}
+                  onClick={() => setGuestSortMode('name')}
+                >
+                  שם (א-ב)
+                </button>
+                <button
+                  type="button"
+                  className={`hm-sort-btn ${guestSortMode === 'table' ? 'active' : ''}`}
+                  onClick={() => setGuestSortMode('table')}
+                >
+                  מספר שולחן
+                </button>
+              </div>
               {allGuestsSorted.length === 0 ? (
                 <p className="hm-empty">עדיין אין {activeEventTerms().guestsLabel} באירוע.</p>
               ) : (
