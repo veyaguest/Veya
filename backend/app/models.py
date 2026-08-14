@@ -124,7 +124,7 @@ class Event(Base):
     # מתי הופעל המסלול — עוגן לחישוב מועדי השלבים (offset_days מהיום הזה).
     rsvp_track_started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     # כמה ימים לפני האירוע הזוג חייב למסור לאולם מספר סופי (1–10). זהו העוגן
-    # ל-Timeline של אישורי-ההגעה: כל הסבב מחושב *לאחור* מיום ההתחייבות
+    # ל-Timeline של אישורי-ההגעה: כל הסבב מחושב *לאחור* ממועד סגירת הרשימה
     # (event_date − venue_commit_days_before). None = טרם נבחר. הבחירה
     # בלתי-הפיכה מרגע שנקבעה — כל לוח הזמנים נבנה סביבה (נאכף ב-router).
     venue_commit_days_before: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)

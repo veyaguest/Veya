@@ -4,8 +4,8 @@ import type { RsvpTimelineView, TimelineAction, TimelineDay } from '../types'
 import { strings } from '../strings/he'
 
 /**
- * יומן המשימות של אישורי-ההגעה — לוח זמנים יומי לזוג, שנבנה *לאחור* מיום
- * ההתחייבות לאולם. מרגיש כמו יומן משימות אישי: היום, מחר, וכל מה שמתוכנן
+ * יומן המשימות של אישורי-ההגעה — לוח זמנים יומי לזוג, שנבנה *לאחור*
+ * ממועד סגירת הרשימה. מרגיש כמו יומן משימות אישי: היום, מחר, וכל מה שמתוכנן
  * עד שהרשימה סופית. תצוגה בלבד (Phase 1) — עדיין לא שולחים בפועל.
  */
 export function RsvpTimeline() {
@@ -36,7 +36,7 @@ export function RsvpTimeline() {
     return <p className="form-error">{error}</p>
   }
 
-  // עדיין לא בחרו יום התחייבות — מזמינים אותם להגדיר במסך הפרטים.
+  // עדיין לא בחרו מועד סגירת רשימה — מזמינים אותם להגדיר במסך הפרטים.
   if (!view || !view.configured) {
     return (
       <div className="tl-empty">
@@ -63,7 +63,7 @@ export function RsvpTimeline() {
   )
 }
 
-/** כותרת עליונה — ספירה ליום ההתחייבות + מצב מסלול מקוצר. */
+/** כותרת עליונה — ספירה למועד סגירת הרשימה + מצב מסלול מקוצר. */
 function TimelineHeader({ view }: { view: RsvpTimelineView }) {
   const days = view.days_to_commitment
   return (
@@ -71,14 +71,14 @@ function TimelineHeader({ view }: { view: RsvpTimelineView }) {
       <span className="track-hero-badge">יומן אישורי ההגעה</span>
       <h2 className="tl-header-title">לוח הזמנים האישי שלכם</h2>
       <p className="tl-header-sub">
-        בנינו לכם לוח זמנים שמסתיים ביום ההתחייבות לאולם ({view.commitment_date})
+        בנינו לכם לוח זמנים שמסתיים במועד סגירת הרשימה ({view.commitment_date})
         — היום שבו נדע בדיוק מי מגיע ומי לא.
       </p>
 
       <div className="tl-header-stats">
         <TlStat
           num={days != null && days >= 0 ? days : '—'}
-          label="ימים ליום ההתחייבות"
+          label="ימים למועד סגירת הרשימה"
         />
         <TlStat num={view.confirmed_count} label="אישרו הגעה" tone="ok" />
         <TlStat num={view.pending_count} label="עדיין לא ענו" tone="wait" />
@@ -87,7 +87,7 @@ function TimelineHeader({ view }: { view: RsvpTimelineView }) {
 
       {view.compressed && (
         <p className="tl-compressed">
-          ⏳ נשאר מעט זמן עד יום ההתחייבות, אז בנינו עבורכם מסלול מקוצר וחכם
+          ⏳ נשאר מעט זמן עד מועד סגירת הרשימה, אז בנינו עבורכם מסלול מקוצר וחכם
           שמספיק כמה שיותר אישורים בזמן שנותר.
         </p>
       )}
@@ -150,7 +150,7 @@ function DayRow({ day }: { day: TimelineDay }) {
           {day.is_today && <span className="tl-tag now">היום</span>}
           {day.is_tomorrow && <span className="tl-tag soon">מחר</span>}
           {day.is_commitment && (
-            <span className="tl-tag commit">יום ההתחייבות</span>
+            <span className="tl-tag commit">מועד סגירת הרשימה</span>
           )}
         </div>
 

@@ -286,7 +286,7 @@ export function DashboardPage({ onNavigate }: Props) {
     event_date: '',
     event_time: '',
     invite_image: '' as string | null,
-    // יום ההתחייבות לאולם — כמה ימים לפני האירוע (1–10). '' = טרם נבחר.
+    // מועד סגירת הרשימה — כמה ימים לפני האירוע (1–10). '' = טרם נבחר.
     venue_commit_days_before: '' as number | '',
   })
   // האם הבחירה כבר ננעלה (בלתי-הפיכה) — נטען מהשרת.
@@ -333,7 +333,7 @@ export function DashboardPage({ onNavigate }: Props) {
         event_time: form.event_time,
         invite_image: form.invite_image,
       }
-      // את יום ההתחייבות שולחים רק כשנבחר וטרם ננעל — הבחירה חד-פעמית ובלתי-הפיכה.
+      // את מועד סגירת הרשימה שולחים רק כשנבחר וטרם ננעל — הבחירה חד-פעמית ובלתי-הפיכה.
       if (!commitLocked && form.venue_commit_days_before !== '') {
         payload.venue_commit_days_before = form.venue_commit_days_before
       }
@@ -441,7 +441,7 @@ export function DashboardPage({ onNavigate }: Props) {
               </label>
             </div>
 
-            {/* ---- יום ההתחייבות לאולם — בחירה חד-פעמית ובלתי-הפיכה ---- */}
+            {/* ---- מועד סגירת הרשימה — בחירה חד-פעמית ובלתי-הפיכה ---- */}
             <div className="commit-field">
               <span className="field-label">{t.commitLabel}</span>
               <p className="commit-explain">{t.commitExplain}</p>

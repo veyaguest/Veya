@@ -438,7 +438,7 @@ def guest_timeline(
     )
 
 
-# ---- Timeline יומי של אישורי-ההגעה (חישוב לאחור מיום ההתחייבות) ----
+# ---- Timeline יומי של אישורי-ההגעה (חישוב לאחור ממועד סגירת הרשימה) ----
 
 
 @router.get("/timeline", response_model=schemas.RsvpTimelineView)
@@ -446,10 +446,10 @@ def rsvp_timeline_view(
     db: Session = Depends(get_db),
     event: models.Event = Depends(_access),
 ):
-    """לוח הזמנים המלא לזוג — מה קורה היום, מה מחר, ומה עד יום ההתחייבות לאולם.
+    """לוח הזמנים המלא לזוג — מה קורה היום, מה מחר, ומה עד מועד סגירת הרשימה.
 
     מחושב חי ודטרמיניסטית (``app/rsvp_timeline.py``) — קריאה טהורה, בלי שליחה
-    ובלי כתיבה. אם אין עדיין תאריך אירוע או יום התחייבות, מוחזר מצב 'לא הוגדר'.
+    ובלי כתיבה. אם אין עדיין תאריך אירוע או מועד סגירת רשימה, מוחזר מצב 'לא הוגדר'.
     """
     guests = _guests(db, event.id)
     return schemas.RsvpTimelineView(**rsvp_timeline.compute_timeline(event, guests))

@@ -311,7 +311,7 @@ export const strings = {
     venueAddressPlaceholder: 'כתובת האולם (לניווט בהזמנות)',
     dateLabel: 'תאריך האירוע',
     timeLabel: 'שעת האירוע',
-    commitLabel: 'יום ההתחייבות לאולם',
+    commitLabel: 'מועד סגירת הרשימה',
     commitExplain:
       'כמה ימים לפני האירוע צריך למסור לאולם מספר סופי? ביום הזה כל אישורי ההגעה נסגרים, ולוח הזמנים שלהם נבנה לאחור סביבו.',
     commitLockedValue: (n: number | string) => `${n} ימים לפני האירוע`,

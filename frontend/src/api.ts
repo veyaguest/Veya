@@ -955,7 +955,7 @@ export async function getAutomationDashboard(): Promise<AutomationDashboard> {
   return res.json()
 }
 
-/** יומן המשימות של אישורי-ההגעה — לוח הזמנים היומי שנבנה לאחור מיום ההתחייבות. */
+/** יומן המשימות של אישורי-ההגעה — לוח הזמנים היומי שנבנה לאחור ממועד סגירת הרשימה. */
 export async function getRsvpTimeline(): Promise<RsvpTimelineView> {
   const res = await apiFetch('/automation/timeline')
   if (!res.ok) throw await toError(res)

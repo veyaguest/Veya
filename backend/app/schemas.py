@@ -515,7 +515,7 @@ class EventRead(BaseModel):
     event_date: str = ""
     event_time: str = ""
     invite_image: Optional[str] = None
-    # יום ההתחייבות לאולם: כמה ימים לפני האירוע (1–10). None = טרם נבחר.
+    # מועד סגירת הרשימה: כמה ימים לפני האירוע (1–10). None = טרם נבחר.
     venue_commit_days_before: Optional[int] = None
     # האם הבחירה כבר ננעלה (נבחרה בעבר) — הפרונט מציג אותה כקריאה-בלבד.
     venue_commit_locked: bool = False
@@ -1369,7 +1369,7 @@ class RsvpTrackAdvanceResult(RsvpTrackStatus):
     failed: int
 
 
-# ---- Timeline של אישורי-ההגעה (חישוב לאחור מיום ההתחייבות) ----
+# ---- Timeline של אישורי-ההגעה (חישוב לאחור ממועד סגירת הרשימה) ----
 
 
 class TimelineAction(BaseModel):
@@ -1397,9 +1397,9 @@ class TimelineDay(BaseModel):
 
 
 class RsvpTimelineView(BaseModel):
-    """תצוגת לוח הזמנים המלאה לזוג — 'מה קורה היום/מחר ועד יום ההתחייבות'."""
+    """תצוגת לוח הזמנים המלאה לזוג — 'מה קורה היום/מחר ועד מועד סגירת הרשימה'."""
 
-    configured: bool                        # האם יש תאריך אירוע + יום התחייבות
+    configured: bool                        # האם יש תאריך אירוע + מועד סגירת רשימה
     event_date: str = ""
     commit_days_before: Optional[int] = None
     commitment_date: Optional[str] = None

@@ -1,4 +1,4 @@
-"""לוח הזמנים של אישורי-ההגעה — חישוב *לאחור* מיום ההתחייבות לאולם.
+"""לוח הזמנים של אישורי-ההגעה — חישוב *לאחור* ממועד סגירת הרשימה.
 
 עיקרון מנחה (כמו שאר מנועי ה-RSVP): מודול טהור ודטרמיניסטי. הוא רק *מחשב*
 מתי כל שלב במסלול אישורי-ההגעה אמור לקרות, ומחזיר תצוגת "יומן משימות" לזוג.
@@ -6,14 +6,14 @@
 
 הרעיון:
 - הזוג בוחר כמה ימים לפני האירוע הוא חייב למסור לאולם מספר סופי
-  (``Event.venue_commit_days_before``, 1–10). מכאן נגזר **יום ההתחייבות**
-  = תאריך האירוע פחות אותם ימים.
-- כל סבב אישורי-ההגעה מחושב *לאחור* מיום ההתחייבות, כך שהסבב האחרון מסתיים
-  ממש לפניו — ואז הרשימה סופית ומדויקת.
+  (``Event.venue_commit_days_before``, 1–10). מכאן נגזר **מועד סגירת
+  הרשימה** = תאריך האירוע פחות אותם ימים.
+- כל סבב אישורי-ההגעה מחושב *לאחור* ממועד סגירת הרשימה, כך שהסבב האחרון
+  מסתיים ממש לפניו — ואז הרשימה סופית ומדויקת.
 - שישי/שבת: לא מתזמנים בהם פעולות. פעולה שנופלת על סוף שבוע מוזזת ליום
   הפעיל הקרוב (ראשון), עם דגל ``moved_from_weekend``.
 - זמן קצר: אם אין מספיק ימים לסבב המלא, המסלול מתכווץ בצורה חכמה
-  (``compressed=true``) כדי להספיק כמה שיותר אישורים לפני יום ההתחייבות.
+  (``compressed=true``) כדי להספיק כמה שיותר אישורים לפני מועד סגירת הרשימה.
 
 שלב Phase 1: **הגדרה + תצוגה בלבד** — המודול לא שולח כלום. חיבור השליחה
 בפועל לשלבים המתוזמנים יתווסף בשלב הבא.
@@ -27,8 +27,8 @@ from app import models
 from app.automation import parse_event_date
 
 # ---- הסבב הקבוע של אישורי-ההגעה ----
-# כל שלב עם היסט יחסי (בימים) בתוך סבב *אידיאלי* מלא, שנפרס לאחור מיום
-# ההתחייבות. audience: all = כל המוזמנים ; pending = מי שעדיין לא אישר.
+# כל שלב עם היסט יחסי (בימים) בתוך סבב *אידיאלי* מלא, שנפרס לאחור ממועד
+# סגירת הרשימה. audience: all = כל המוזמנים ; pending = מי שעדיין לא אישר.
 # (השלבים כאן לתצוגה בלבד ב-Phase 1; בעתיד ניתן לגזור אותם מ-VeyaWorkflowStep.)
 CYCLE: list[dict] = [
     {"type": "whatsapp_first", "offset": 0,  "icon": "✅", "label": "בקשת אישור ראשונה ב-WhatsApp", "audience": "all"},
@@ -82,7 +82,7 @@ def _audience_label(audience: str) -> str:
 
 
 def _empty_view(event: models.Event) -> dict:
-    """מצב 'עדיין לא הוגדר' — אין תאריך אירוע או שלא נבחר יום התחייבות."""
+    """מצב 'עדיין לא הוגדר' — אין תאריך אירוע או שלא נבחר מועד סגירת רשימה."""
     ed = parse_event_date(event.event_date)
     return {
         "configured": False,
@@ -119,7 +119,7 @@ def compute_timeline(
     event_date = parse_event_date(event.event_date)
     commit_days = event.venue_commit_days_before
 
-    # בלי תאריך אירוע או בלי בחירת יום התחייבות — אין מה לחשב.
+    # בלי תאריך אירוע או בלי בחירת מועד סגירת רשימה — אין מה לחשב.
     if event_date is None or commit_days is None:
         return _empty_view(event)
 
@@ -137,7 +137,7 @@ def compute_timeline(
         return 0
 
     commitment_date = event_date - timedelta(days=commit_days)
-    # עוגן הסיום: היום הפעיל האחרון *לפני* יום ההתחייבות (יום מרווח לסגירה).
+    # עוגן הסיום: היום הפעיל האחרון *לפני* מועד סגירת הרשימה (יום מרווח לסגירה).
     anchor_end = _prev_active_day(commitment_date - timedelta(days=1))
     ideal_start = anchor_end - timedelta(days=FULL_SPAN)
     # לא מתחילים בעבר — VEYA ממתינה ומתחילה את הסבב בזמן.
@@ -179,11 +179,11 @@ def compute_timeline(
     rsvp_start_date = min((v["date"] for v in by_iso.values()), default=effective_start)
 
     # ---- ציוני דרך אחרי הסבב ----
-    # יום ההתחייבות עצמו.
+    # מועד סגירת הרשימה עצמו.
     ensure_day(commitment_date)["actions"].append({
         "type": "commitment",
         "icon": "🏢",
-        "label": "יום ההתחייבות לאולם — הרשימה הסופית מוכנה",
+        "label": "מועד סגירת הרשימה — הרשימה הסופית מוכנה",
         "audience": _audience_label("confirmed"),
         "audience_count": confirmed,
         "moved_from_weekend": False,

@@ -33,7 +33,7 @@ def _describe_changed_fields(changed: dict) -> str:
         (("venue_name", "venue_address"), "פרטי האולם"),
         (("event_date", "event_time"), "תאריך ושעת האירוע"),
         (("invite_image",), "תמונת ההזמנה"),
-        (("venue_commit_days_before",), "יום ההתחייבות לאולם"),
+        (("venue_commit_days_before",), "מועד סגירת הרשימה"),
     ]
     labels = [label for keys, label in categories if any(k in changed for k in keys)]
     if not labels:
@@ -81,7 +81,7 @@ def update_event(
                 db, value, event.invite_image, prefix=f"invite-{event.id}", optimize=True
             )
         elif key == "venue_commit_days_before":
-            # יום ההתחייבות — בחירה חד-פעמית ובלתי-הפיכה. אפשר להגדיר רק פעם
+            # מועד סגירת הרשימה — בחירה חד-פעמית ובלתי-הפיכה. אפשר להגדיר רק פעם
             # אחת; ניסיון לשנות ערך שכבר נקבע נדחה, כי כל לוח הזמנים של אישורי
             # ההגעה נבנה סביבו. None בגוף הבקשה => התעלמות (לא מאפס בטעות).
             if value is None:
@@ -95,7 +95,7 @@ def update_event(
                 if event.venue_commit_days_before != value:
                     raise HTTPException(
                         status_code=400,
-                        detail="יום ההתחייבות כבר נקבע ואי אפשר לשנות אותו — כל לוח הזמנים של אישורי ההגעה נבנה סביבו.",
+                        detail="מועד סגירת הרשימה כבר נקבע ואי אפשר לשנות אותו — כל לוח הזמנים של אישורי ההגעה נבנה סביבו.",
                     )
                 continue
             event.venue_commit_days_before = value

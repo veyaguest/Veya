@@ -226,7 +226,7 @@ export function OnboardingWizard({ onCreated }: Props) {
             </div>
 
             <div className="commit-field">
-              <span className="field-label">יום ההתחייבות לאולם</span>
+              <span className="field-label">מועד סגירת הרשימה</span>
               <p className="commit-explain">
                 כמה ימים לפני האירוע אתם צריכים למסור לאולם מספר סופי? זה היום
                 שבו כל אישורי ההגעה נסגרים. אפשר גם להשלים את זה מאוחר יותר.
