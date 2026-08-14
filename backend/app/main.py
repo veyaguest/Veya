@@ -86,8 +86,8 @@ _EXTRA_COLUMNS = {
         "event_time": "TEXT DEFAULT ''",
         "venue_address": "TEXT DEFAULT ''",
         "owner_id": "INTEGER",
-        "rsvp_track_active": "BOOLEAN DEFAULT 0",
-        "rsvp_track_started_at": "DATETIME",
+        "rsvp_track_active": "BOOLEAN DEFAULT FALSE",
+        "rsvp_track_started_at": "TIMESTAMP",
         "venue_commit_days_before": "INTEGER",
         # שורת ההורים כמזמינים (רגיסטרים דתי/חב"ד/חרדי). נוספו למודל בסבב
         # "3ח" בלי רשומה כאן — ולכן כל DB קיים נשבר בכל שאילתת events
@@ -104,9 +104,9 @@ _EXTRA_COLUMNS = {
         "channel": "TEXT DEFAULT 'whatsapp'",
         "rule_id": "INTEGER",
         "provider_message_id": "TEXT",
-        "sent_at": "DATETIME",
-        "delivered_at": "DATETIME",
-        "read_at": "DATETIME",
+        "sent_at": "TIMESTAMP",
+        "delivered_at": "TIMESTAMP",
+        "read_at": "TIMESTAMP",
         "failure_reason": "TEXT DEFAULT ''",
         "failure_code": "INTEGER",
         "provider_status": "TEXT",
@@ -115,18 +115,18 @@ _EXTRA_COLUMNS = {
         "action_kind": "TEXT DEFAULT 'send'",
     },
     "users": {
-        "is_admin": "BOOLEAN DEFAULT 0",
+        "is_admin": "BOOLEAN DEFAULT FALSE",
         "token_version": "INTEGER DEFAULT 1",
         "account_type": "TEXT DEFAULT 'couple'",
         "phone": "TEXT DEFAULT ''",
-        "disabled": "BOOLEAN DEFAULT 0",
+        "disabled": "BOOLEAN DEFAULT FALSE",
         "avatar_url": "TEXT DEFAULT ''",
     },
     "guests": {
         "guest_token": "TEXT",
         "confirmed_count": "INTEGER",
         "guest_note": "TEXT",
-        "is_child": "BOOLEAN DEFAULT 0",
+        "is_child": "BOOLEAN DEFAULT FALSE",
         # הערות הושבה — נפרד מ-notes_raw (שהפך להערה פנימית בלבד). מתווסף
         # ריק בכוונה: הערות ישנות לא מועתקות אוטומטית, כדי לא להפוך הערה
         # תפעולית לאילוץ ישיבה. במסך המוזמנים יש הצעה להעביר ידנית.
@@ -157,7 +157,10 @@ def derive_column_ddl(column) -> str:
     if default is not None and not getattr(default, "is_callable", False):
         value = getattr(default, "arg", None)
         if isinstance(value, bool):
-            ddl += f" DEFAULT {1 if value else 0}"
+            # TRUE/FALSE (לא 1/0): Postgres לא מקבל ליטרל שלם כברירת מחדל
+            # לעמודת BOOLEAN ("column is of type boolean but default
+            # expression is of type integer") — תקין גם ב-SQLite.
+            ddl += f" DEFAULT {'TRUE' if value else 'FALSE'}"
         elif isinstance(value, (int, float)):
             ddl += f" DEFAULT {value}"
         elif isinstance(value, str):

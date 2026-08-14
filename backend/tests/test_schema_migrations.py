@@ -50,6 +50,54 @@ def test_derive_column_ddl_is_safe() -> None:
     print("✓ derive_column_ddl בטוח לכל עמודות המודל")
 
 
+def test_derive_column_ddl_is_postgres_safe() -> None:
+    """כל DDL שנגזר אוטומטית תקין גם מול דיאלקט Postgres, לא רק SQLite.
+
+    הבאג שקרה בפרודקשן: ``DATETIME`` ו-``DEFAULT 0``/``DEFAULT 1`` לעמודת
+    BOOLEAN הם תחביר SQLite בלבד — Postgres דוחה אותם עם "type \"datetime\"
+    does not exist" / "column is of type boolean but default expression is
+    of type integer", והשרת נופל ב-startup. בונה מנוע Postgres שלא מתחבר
+    בפועל (משתמשים רק ב-dialect שלו לקומפילציה) כדי לתפוס את זה כאן,
+    ולא רק כשמישהו מפעיל מול Postgres אמיתי.
+    """
+    pg_engine = create_engine("postgresql+psycopg2://u:p@localhost/db")
+    original = main.migrations_engine
+    try:
+        main.migrations_engine = pg_engine
+        for table in Base.metadata.tables.values():
+            for column in table.columns:
+                ddl = main.derive_column_ddl(column)
+                upper = ddl.upper()
+                assert "DATETIME" not in upper, (
+                    f"{table.name}.{column.name}: DATETIME לא תקין ב-Postgres — {ddl}"
+                )
+                if upper.startswith("BOOLEAN") and "DEFAULT" in upper:
+                    assert "DEFAULT TRUE" in upper or "DEFAULT FALSE" in upper, (
+                        f"{table.name}.{column.name}: ברירת מחדל בוליאנית "
+                        f"ב-Postgres חייבת TRUE/FALSE, לא 0/1 — {ddl}"
+                    )
+    finally:
+        main.migrations_engine = original
+    print("✓ derive_column_ddl תקין גם מול דיאלקט Postgres")
+
+
+def test_extra_columns_ddl_is_postgres_safe() -> None:
+    """אותה בדיקה עבור המחרוזות הידניות ב-``_EXTRA_COLUMNS`` (לא הנגזרות אוטומטית)."""
+    for table_name, columns in main._EXTRA_COLUMNS.items():
+        for name, ddl in columns.items():
+            upper = ddl.upper()
+            assert "DATETIME" not in upper, (
+                f"{table_name}.{name}: DATETIME הוא טיפוס SQLite בלבד — "
+                f"ב-Postgres צריך TIMESTAMP — {ddl}"
+            )
+            if upper.startswith("BOOLEAN") and "DEFAULT" in upper:
+                assert "DEFAULT TRUE" in upper or "DEFAULT FALSE" in upper, (
+                    f"{table_name}.{name}: ברירת מחדל בוליאנית ב-Postgres "
+                    f"חייבת TRUE/FALSE, לא 0/1 — {ddl}"
+                )
+    print("✓ _EXTRA_COLUMNS תקין גם מול Postgres (DATETIME/BOOLEAN)")
+
+
 def test_every_model_column_survives_migration() -> None:
     """DB 'ישן' שחסרות בו עמודות — מנגנון המיגרציה משלים את כולן.
 
@@ -145,6 +193,8 @@ def test_seating_notes_is_migrated() -> None:
 
 if __name__ == "__main__":
     test_derive_column_ddl_is_safe()
+    test_derive_column_ddl_is_postgres_safe()
+    test_extra_columns_ddl_is_postgres_safe()
     test_every_model_column_survives_migration()
     test_safety_net_covers_a_forgotten_entry()
     test_seating_notes_is_migrated()
