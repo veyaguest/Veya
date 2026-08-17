@@ -5,7 +5,7 @@
  *
  * הרצה: npm run test:hall-sketch-geometry (ראה package.json)
  */
-import { clampCenterWithMargin, clampItemSize, clampNum, rectOverlapFraction, sketchBuildCanvasSize } from './hallSketchGeometry'
+import { clampCenterWithMargin, clampItemSize, clampNum, orientedAspect, rectOverlapFraction, sketchBuildCanvasSize, tableWorldSize } from './hallSketchGeometry'
 
 function assert(cond: boolean, msg: string): void {
   if (!cond) throw new Error(`✗ ${msg}`)
@@ -130,6 +130,88 @@ function testRectOverlapFractionIsScaleInvariant(): void {
   console.log('✓ rectOverlapFraction זהה גם על קואורדינטות מנורמלות וגם על world (scale-invariant)')
 }
 
+function testTableWorldSizeRoundAndSquareAlwaysEqualWH(): void {
+  const base = { w: 200, h: 200 }
+  // bbox מעוות מאוד (לא ריבועי בכלל) — התוצאה עדיין חייבת לצאת w===h תמיד,
+  // אף פעם לא אליפסה/מלבן, גם אם ה-AI זיהה bbox לא-מדויק סביב עיגול.
+  const round = tableWorldSize('round', 0.05, 0.09, 1000, 1000, base, 0.45, 2.2)
+  assert(round.w === round.h, `שולחן עגול חייב w===h, קיבלנו ${round.w}x${round.h}`)
+
+  const square = tableWorldSize('square', 0.05, 0.09, 1000, 1000, base, 0.45, 2.2)
+  assert(square.w === square.h, `שולחן ריבועי חייב w===h, קיבלנו ${square.w}x${square.h}`)
+
+  console.log('✓ tableWorldSize: round/square תמיד יוצאים ריבוע-אמת (w===h), לא אליפסה/מלבן')
+}
+
+function testTableWorldSizeRectanglePreservesRatio(): void {
+  const base = { w: 200, h: 200 }
+  // רוחב:גובה מזוהה 3:1 (בתוך טווח ה-clamp) — היחס חייב להישמר בדיוק, לא
+  // להתעגל לגודל אחיד קבוע (הבאג המקורי).
+  const rect = tableWorldSize('rectangle', 0.3, 0.1, 1000, 1000, base, 0.45, 2.2)
+  assert(approxEqual(rect.w / rect.h, 3, 0.01), `יחס-ממדים של מלבן לא נשמר: ${rect.w}x${rect.h}`)
+  assert(approxEqual(rect.w, 300, 0.01) && approxEqual(rect.h, 100, 0.01), `גודל מלבן שגוי: ${rect.w}x${rect.h}`)
+
+  console.log('✓ tableWorldSize: שולחן מלבני שומר על יחס-הממדים שזוהה (160×80 לא הופך ל-120×120)')
+}
+
+function testTableWorldSizeOrientationNotFixed(): void {
+  const base = { w: 200, h: 200 }
+  // אופקי: רוחב > גובה.
+  const horizontal = tableWorldSize('rectangle', 0.3, 0.1, 1000, 1000, base, 0.45, 2.2)
+  assert(horizontal.w > horizontal.h, `שולחן אופקי חייב width>height, קיבלנו ${horizontal.w}x${horizontal.h}`)
+
+  // אנכי: גובה > רוחב — לא "נעול" תמיד לתיבה ארוכה-אופקית קבועה (הבאג המקורי:
+  // כל שולחן מלבני יצא באותו knightsW×knightsH ללא תלות בכיוון שזוהה).
+  const vertical = tableWorldSize('rectangle', 0.1, 0.3, 1000, 1000, base, 0.45, 2.2)
+  assert(vertical.h > vertical.w, `שולחן אנכי חייב height>width, קיבלנו ${vertical.w}x${vertical.h}`)
+
+  console.log('✓ tableWorldSize: כיוון (אופקי/אנכי) של שולחן מלבני לא נעול לתיבה קבועה אחת')
+}
+
+function testTableWorldSizeClampsExtremesWithoutCrashing(): void {
+  const base = { w: 200, h: 200 }
+  // bbox זעיר קיצוני (זיהוי רועש) — לא קורס, לא יוצא בגודל מיקרוסקופי.
+  const tiny = tableWorldSize('round', 0.001, 0.001, 5000, 5000, base, 0.45, 2.2)
+  assert(approxEqual(tiny.w, base.w * 0.45, 0.01), `bbox זעיר לא הוגבל נכון: ${tiny.w}`)
+  assert(tiny.w === tiny.h, 'גם אחרי הגבלה, עיגול חייב להישאר w===h')
+
+  // bbox ענק קיצוני — לא קורס, לא יוצא בגודל אבסורדי.
+  const huge = tableWorldSize('knights', 5, 5, 1000, 1000, base, 0.45, 2.2)
+  assert(approxEqual(huge.w, base.w * 2.2, 0.01) && approxEqual(huge.h, base.h * 2.2, 0.01), `bbox ענק לא הוגבל נכון: ${huge.w}x${huge.h}`)
+
+  console.log('✓ tableWorldSize מגביל גדלים קיצוניים בלי לקרוס')
+}
+
+function testOrientedAspectPreservesSourceRatios(): void {
+  // 16:9 רחב.
+  assert(approxEqual(orientedAspect(1920, 1080, 0), 16 / 9, 0.001), `16:9 לא נשמר: ${orientedAspect(1920, 1080, 0)}`)
+  // 4:3 רחב.
+  assert(approxEqual(orientedAspect(1200, 900, 0), 4 / 3, 0.001), `4:3 לא נשמר: ${orientedAspect(1200, 900, 0)}`)
+  // סקיצה גבוהה/אנכית.
+  assert(approxEqual(orientedAspect(800, 1600, 0), 0.5, 0.001), `סקיצה אנכית לא נשמרה: ${orientedAspect(800, 1600, 0)}`)
+  // סקיצה מלבנית מאוד (פנורמה) ומקבילתה האנכית — שתיהן חייבות להישמר במדויק,
+  // לא להיחתך לטווח "סביר" (זה בדיוק הבאג המקורי: SketchEditor כפה יחס
+  // מ-1.2 עד 2.4 לפי המסך, בלי קשר לסקיצה עצמה).
+  assert(approxEqual(orientedAspect(3500, 1000, 0), 3.5, 0.001), `פנורמה לא נשמרה: ${orientedAspect(3500, 1000, 0)}`)
+  assert(approxEqual(orientedAspect(1000, 3500, 0), 1000 / 3500, 0.001), `פנורמה אנכית לא נשמרה: ${orientedAspect(1000, 3500, 0)}`)
+
+  console.log('✓ orientedAspect שומר על יחס-הממדים האמיתי של הסקיצה בכל טווח (רחב/גבוה/פנורמי), לא כופה טווח מהמסך')
+}
+
+function testOrientedAspectSwapsOnRotation(): void {
+  // 0°/180° — לא משנה רוחב/גובה.
+  assert(approxEqual(orientedAspect(1600, 900, 0), 1600 / 900, 0.001), 'סיבוב 0° לא אמור להחליף צירים')
+  assert(approxEqual(orientedAspect(1600, 900, 180), 1600 / 900, 0.001), 'סיבוב 180° לא אמור להחליף צירים')
+  // 90°/270° — מחליף רוחב/גובה (תמונה ששוכבת הופכת לעומדת).
+  assert(approxEqual(orientedAspect(1600, 900, 90), 900 / 1600, 0.001), `סיבוב 90° לא החליף צירים: ${orientedAspect(1600, 900, 90)}`)
+  assert(approxEqual(orientedAspect(1600, 900, 270), 900 / 1600, 0.001), `סיבוב 270° לא החליף צירים: ${orientedAspect(1600, 900, 270)}`)
+  // סיבוב שלילי/מעבר 360° — מתנהג כמו הזווית המקבילה בטווח [0,360).
+  assert(approxEqual(orientedAspect(1600, 900, -90), 900 / 1600, 0.001), 'סיבוב שלילי (-90°) לא טופל נכון')
+  assert(approxEqual(orientedAspect(1600, 900, 450), 900 / 1600, 0.001), 'סיבוב מעל 360° (450°) לא טופל נכון')
+
+  console.log('✓ orientedAspect מחליף רוחב/גובה נכון בסיבוב 90/270, לא ב-0/180 (Crop/Zoom/Rotate שומרים על היחסים)')
+}
+
 testClampNum()
 testAspectRatioPreserved()
 testCanvasCalibratedToTablePreset()
@@ -139,4 +221,10 @@ testClampCenterWithMarginKeepsInteriorUnchanged()
 testClampCenterWithMarginPushesOffEdge()
 testRectOverlapFractionBasics()
 testRectOverlapFractionIsScaleInvariant()
+testTableWorldSizeRoundAndSquareAlwaysEqualWH()
+testTableWorldSizeRectanglePreservesRatio()
+testTableWorldSizeOrientationNotFixed()
+testTableWorldSizeClampsExtremesWithoutCrashing()
+testOrientedAspectPreservesSourceRatios()
+testOrientedAspectSwapsOnRotation()
 console.log('OK — מתמטיקת בניית אולם מסקיצה תקינה.')

@@ -22,7 +22,7 @@ _ANTHROPIC_VERSION = "2023-06-01"
 _MAX_VISION_DIMENSION = 1568  # יעד עלות/דיוק מומלץ לניתוח Vision
 
 _ELEMENT_TYPES = [
-    "round_table", "rectangle_table", "knights_table",
+    "round_table", "square_table", "rectangle_table", "knights_table",
     "bar", "dance_floor", "stage", "entrance", "pillar", "wall", "obstacle", "other_area",
 ]
 
@@ -37,17 +37,21 @@ _TOOL_SCHEMA = {
                 "items": {
                     "type": "object",
                     "properties": {
-                        "type": {"type": "string", "enum": _ELEMENT_TYPES},
+                        "type": {
+                            "type": "string",
+                            "enum": _ELEMENT_TYPES,
+                            "description": "round_table=עגול, square_table=ריבועי (width≈height ממש), rectangle_table=מלבני ארוך (width≠height)",
+                        },
                         "x": {"type": "number", "description": "מרכז האלמנט, 0-1, יחסית לרוחב התמונה"},
                         "y": {"type": "number", "description": "מרכז האלמנט, 0-1, יחסית לגובה התמונה"},
-                        "width": {"type": "number", "description": "רוחב, 0-1, יחסית לרוחב התמונה"},
-                        "height": {"type": "number", "description": "גובה, 0-1, יחסית לגובה התמונה"},
-                        "rotation": {"type": "number", "description": "מעלות, 0 = ללא סיבוב"},
+                        "width": {"type": "number", "description": "רוחב האלמנט כפי שהוא נראה בסקיצה (הציר האופקי של האובייקט, לפני סיבוב), 0-1, יחסית לרוחב התמונה"},
+                        "height": {"type": "number", "description": "גובה האלמנט כפי שהוא נראה בסקיצה (הציר האנכי של האובייקט, לפני סיבוב), 0-1, יחסית לגובה התמונה"},
+                        "rotation": {"type": "number", "description": "זווית הסיבוב של האובייקט במעלות, לפי הכיוון הנראה בפועל בסקיצה — 0 אם האובייקט ניצב ישר (לא מוטה), חובה לתת ערך תמיד (0 אם אין סיבוב)"},
                         "capacity": {"type": "integer", "description": "מספר מקומות, רק לשולחנות, אם ניתן להסיק בבירור"},
                         "confidence": {"type": "number", "description": "0 עד 1 — עד כמה בטוח הזיהוי"},
                         "label": {"type": "string", "description": "תיאור קצר אופציונלי"},
                     },
-                    "required": ["type", "x", "y", "width", "height", "confidence"],
+                    "required": ["type", "x", "y", "width", "height", "rotation", "confidence"],
                 },
             },
         },
@@ -58,13 +62,21 @@ _TOOL_SCHEMA = {
 _SYSTEM_PROMPT = """אתה מנתח סקיצות/שרטוטים של אולמות אירועים. המטרה: לזהות שולחנות \
 ואזורים פונקציונליים כדי לבנות מפת הושבה דיגיטלית אוטומטית.
 
-זהה רק אובייקטים שרלוונטיים לסידור הושבה: שולחנות (עגול/מלבני/אבירים), בר, \
-רחבת ריקודים, במה, כניסה, עמודים, מכשולים משמעותיים, מחיצות/קירות. \
+זהה רק אובייקטים שרלוונטיים לסידור הושבה: שולחנות (עגול/ריבועי/מלבני/אבירים), \
+בר, רחבת ריקודים, במה, כניסה, עמודים, מכשולים משמעותיים, מחיצות/קירות. \
 אל תהפוך כל פרט קטן בסקיצה לאובייקט — התמקד באובייקטים שימושיים בלבד.
+
+חשוב להבדיל נכון בין שולחן ריבועי (square_table, width≈height) לבין שולחן \
+מלבני ארוך (rectangle_table, width שונה משמעותית מ-height) — אל תסווג שולחן \
+ריבועי כמלבני רק כי הוא לא עגול.
 
 לכל אובייקט תן קואורדינטות מנורמלות [0,1] של המרכז (x,y) וגודל (width,height) \
 יחסית למידות התמונה כולה, וכן confidence כן ואמיתי (לא תמיד גבוה) — 0.9+ רק \
 כשאתה בטוח מאוד, נמוך יותר כשיש עמימות. אל תמציא ודאות שאין לך.
+
+תן rotation אמיתי לפי הכיוון הנראה של כל אובייקט בסקיצה (0 אם הוא ניצב ישר, \
+ללא הטיה) — אל תשאיר rotation ריק, ואל תניח שכל השולחנות המלבניים באותו כיוון: \
+שולחן אחד יכול להיות אופקי ואחר אנכי או מוטה, גם באותה סקיצה.
 
 דווח דרך הכלי report_hall_elements בלבד."""
 

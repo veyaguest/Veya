@@ -98,6 +98,51 @@ def test_analyze_endpoint_is_preview_only() -> None:
         teardown()
 
 
+def test_validate_elements_accepts_square_table() -> None:
+    """square_table (תיקון נאמנות-גיאומטריה לסקיצה) מזוהה כטיפוס תקין, לא נדחה
+    כמו טיפוס לא-מוכר — בלי זה שולחן ריבועי בסקיצה לא יכול להיות מדווח כריבוע."""
+    raw = [
+        {"type": "square_table", "x": 0.3, "y": 0.4, "width": 0.05, "height": 0.05,
+         "rotation": 0, "confidence": 0.9},
+    ]
+    out = hall_vision._validate_elements(raw)
+    assert len(out) == 1, f"square_table נדחה בטעות: {out}"
+    assert out[0]["type"] == "square_table"
+    print("✓ _validate_elements מקבל square_table כטיפוס תקין")
+
+
+def test_table_width_height_round_trip() -> None:
+    """שולחן עם width/height עצמאיים (יובא מסקיצת AI) נשמר ונטען חזרה נכון דרך
+    PUT/GET /hall; שולחן בלי (מפה ידנית/ישנה) ממשיך לחזור None — תאימות אחורה,
+    בלי מיגרציה (table_positions הוא JSON blob, לא עמודות DB)."""
+    api, teardown = bootstrap()
+    try:
+        api.save_hall([
+            {
+                "table_number": 1, "x": 100, "y": 100, "guest_ids": [],
+                "table_type": "rectangle", "capacity": 8, "rotation": 30,
+                "width": 160, "height": 80,
+                "name": "", "color": "", "notes": "", "locked": False, "is_reserve": False,
+            },
+            {
+                "table_number": 2, "x": 400, "y": 100, "guest_ids": [],
+                "table_type": "round", "capacity": 12, "rotation": 0,
+                "name": "", "color": "", "notes": "", "locked": False, "is_reserve": False,
+            },
+        ])
+        hall = api.get_hall()
+        by_num = {t["table_number"]: t for t in hall["tables"]}
+        assert by_num[1]["width"] == 160 and by_num[1]["height"] == 80, (
+            f"width/height לא חזרו נכון: {by_num[1]}"
+        )
+        assert by_num[2].get("width") is None and by_num[2].get("height") is None, (
+            f"שולחן בלי width/height אמור לחזור None (תאימות אחורה): {by_num[2]}"
+        )
+        print("✓ width/height עוברים round-trip דרך PUT/GET /hall; חסר => None (תאימות אחורה)")
+    finally:
+        teardown()
+
+
 def test_analyze_endpoint_rate_limited() -> None:
     original = hall_vision.analyze_sketch
     hall_vision.analyze_sketch = lambda raw, ct: []
@@ -122,6 +167,8 @@ def test_analyze_endpoint_rate_limited() -> None:
 if __name__ == "__main__":
     try:
         test_validate_elements_rejects_garbage()
+        test_validate_elements_accepts_square_table()
+        test_table_width_height_round_trip()
         test_analyze_missing_api_key_gives_clean_error()
         test_analyze_endpoint_is_preview_only()
         test_analyze_endpoint_rate_limited()

@@ -4303,6 +4303,83 @@ td.notes.seating {
   cursor: pointer;
 }
 
+/* בניית אולם אוטומטית מסקיצה (AI Vision) — פאנל העלאה (שלב 1) */
+.sk-upload {
+  position: fixed;
+  z-index: 1201;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(480px, 94vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--card, #fff);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(20, 18, 14, 0.28);
+  padding: 20px;
+  gap: 16px;
+  direction: rtl;
+}
+.sk-upload-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 16px;
+  border: 2px dashed var(--border, #e5ded2);
+  border-radius: 14px;
+  background: var(--hover, #f4efe6);
+  text-align: center;
+  cursor: pointer;
+}
+.sk-upload-drop.drag-over {
+  border-color: var(--accent, #c9a35b);
+  background: rgba(201, 163, 91, 0.14);
+}
+.sk-upload-drop-icon {
+  font-size: 30px;
+}
+.sk-upload-drop-hint {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted, #7a7266);
+}
+.sk-upload-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--border, #e5ded2);
+  border-radius: 12px;
+  background: var(--hover, #f4efe6);
+}
+.sk-upload-preview-img {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.sk-upload-file-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sk-upload-file-name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #2c2a25);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sk-upload-file-size {
+  font-size: 12px;
+  color: var(--muted, #7a7266);
+}
+
 /* בניית אולם אוטומטית מסקיצה (AI Vision) — מסך טעינה + מסך בדיקה ואישור */
 .sk-analyzing {
   position: fixed;
@@ -4328,6 +4405,27 @@ td.notes.seating {
   color: var(--muted, #7a7266);
   line-height: 1.5;
 }
+.sk-analyzing p.sk-analyzing-sub {
+  font-size: 12px;
+  font-style: italic;
+  opacity: 0.85;
+}
+.sk-build-success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 4px;
+  border-radius: 50%;
+  background: rgba(63, 122, 74, 0.14);
+  color: #3f7a4a;
+  font-size: 22px;
+  font-weight: 700;
+}
+.sk-build-success-summary {
+  margin: 0 0 4px;
+}
 .sk-analyzing .sk-editor-actions {
   margin-top: 16px;
   justify-content: center;
@@ -4352,7 +4450,7 @@ td.notes.seating {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(560px, 94vw);
+  width: min(920px, 96vw);
   max-height: 88vh;
   display: flex;
   flex-direction: column;
@@ -4396,6 +4494,9 @@ td.notes.seating {
   background: var(--card, #fff);
 }
 .sk-review-badge-low {
+  color: #b23a3a;
+}
+.sk-review-badge-mid {
   color: #a06b1f;
 }
 .sk-review-badge-high {
@@ -4431,34 +4532,130 @@ td.notes.seating {
 .sk-review-badge-overlap {
   color: #b23a3a;
 }
-.sk-review-debug-toggle {
-  align-self: flex-start;
-  font-size: 12px;
-  padding: 4px 10px;
-  margin-top: 4px;
+.sk-review-body {
+  display: flex;
+  gap: 14px;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
 }
-.sk-debug-overlay-wrap {
+.sk-review-body .sk-review-list {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sk-review-preview-wrap {
   position: relative;
-  width: 100%;
-  border-radius: 10px;
+  flex: 1 1 42%;
+  max-width: 42%;
+  align-self: flex-start;
+  border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border, #e5ded2);
 }
-.sk-debug-img {
+.sk-review-preview-img {
   display: block;
   width: 100%;
   height: auto;
 }
-.sk-debug-box {
+.sk-review-box {
   position: absolute;
   box-sizing: border-box;
-  border: 2px solid #2f9e5c;
-  background: rgba(47, 158, 92, 0.14);
-  pointer-events: none;
+  border: 2px solid;
+  border-radius: 3px;
 }
-.sk-debug-box-overlap {
+.sk-review-box-high {
+  border-color: #3f7a4a;
+  background: rgba(63, 158, 92, 0.14);
+}
+.sk-review-box-mid {
+  border-color: #a06b1f;
+  background: rgba(160, 107, 31, 0.16);
+}
+.sk-review-box-low {
   border-color: #b23a3a;
   background: rgba(178, 58, 58, 0.18);
+}
+.sk-review-box-overlap {
+  outline: 2px dashed #b23a3a;
+  outline-offset: 1px;
+}
+.sk-review-box-num {
+  display: inline-block;
+  margin: 2px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink, #2c2a25);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.sk-review-row-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sk-review-row-hint {
+  margin: 0;
+  padding: 0 10px;
+  font-size: 12px;
+  color: var(--muted, #7a7266);
+  line-height: 1.4;
+}
+.sk-review-add-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sk-review-add-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted, #7a7266);
+}
+.sk-review-confirm-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted, #7a7266);
+  text-align: center;
+}
+/* מובייל (שלב E, דרישה 11): מוערם, preview למעלה, כפתור פעולה קבוע למטה,
+   יעדי-מגע גדולים יותר לכפתורים בתוך השורה (סיבוב/הסרה/כמות). */
+@media (max-width: 620px) {
+  .sk-review,
+  .sk-upload {
+    width: 96vw;
+    max-height: 94vh;
+    padding: 14px;
+  }
+  .sk-review-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .sk-review-preview-wrap {
+    max-width: 100%;
+    flex: 0 0 auto;
+    max-height: 34vh;
+  }
+  .sk-review-body .sk-review-list {
+    max-height: none;
+  }
+  /* כפתור "בניית האולם" נשאר גלוי בתחתית גם כשגוללים רשימה ארוכה של זיהויים. */
+  .sk-review > .sk-editor-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--card, #fff);
+    padding-top: 8px;
+    margin-top: -4px;
+  }
+  .sk-review-icon-btn,
+  .sk-review-capacity button {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+  .sk-review-row select {
+    min-height: 38px;
+  }
 }
 .hall-empty {
   position: absolute;

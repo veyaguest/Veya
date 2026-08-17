@@ -504,6 +504,11 @@ export interface HallTable {
   table_type: TableType
   capacity: number
   rotation: number
+  // גודל עצמאי (פיקסלים) — undefined = ללא override, גודל נגזר מ-table_type+density
+  // כרגיל (התנהגות היסטורית). מוגדר רק לשולחנות שיובאו מסקיצת AI, כדי לשמר את
+  // הגודל/הפרופורציה שזוהו בסקיצה במקום גודל אחיד לכל השולחנות מאותו סוג.
+  width?: number
+  height?: number
   name: string
   color: string
   notes: string
@@ -588,7 +593,7 @@ export interface HallState {
 // אלמנט אחד שזוהה ע"י ניתוח AI Vision לסקיצה — לפני שהמשתמש אישר. קואורדינטות
 // מנורמלות [0,1] יחסית לתמונת הסקיצה, לא לפיקסלים של הלוח (ראה HallPage.tsx).
 export type DetectedHallElementType =
-  | 'round_table' | 'rectangle_table' | 'knights_table'
+  | 'round_table' | 'square_table' | 'rectangle_table' | 'knights_table'
   | 'bar' | 'dance_floor' | 'stage' | 'entrance' | 'pillar' | 'wall' | 'obstacle' | 'other_area'
 
 export interface DetectedHallElement {
@@ -615,6 +620,8 @@ export interface HallTableSave {
   table_type: TableType
   capacity: number
   rotation: number
+  width?: number
+  height?: number
   name: string
   color: string
   notes: string

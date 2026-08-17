@@ -60,6 +60,49 @@ export function clampCenterWithMargin(center: number, halfSize: number, canvasLe
   return clampNum(center, lo, hi)
 }
 
+/**
+ * גודל שולחן (world units) שנשמר נאמן לצורה שזוהתה בסקיצה — לא לגודל אחיד
+ * לכל השולחנות מאותו table_type (ראה tableSize ב-HallPage). עגול/מרובע
+ * תמיד יוצאים width===height (אף פעם לא אליפסה, אף פעם לא מלבן) — הממוצע בין
+ * ה-bbox הרוחב/גובה שזוהו נלקח כסקלר יחיד ומוגבל לטווח סביר. מלבני/אבירים
+ * שומרים על הרוחב והגובה שזוהו בנפרד (יחס-ממדים נשמר), כל אחד מוגבל בנפרד.
+ */
+export function tableWorldSize(
+  shape: 'round' | 'square' | 'rectangle' | 'knights',
+  detectedWNorm: number,
+  detectedHNorm: number,
+  canvasW: number,
+  canvasH: number,
+  base: { w: number; h: number },
+  minRatio: number,
+  maxRatio: number,
+): { w: number; h: number } {
+  const rawW = detectedWNorm * canvasW
+  const rawH = detectedHNorm * canvasH
+  if (shape === 'round' || shape === 'square') {
+    const size = clampItemSize((rawW + rawH) / 2, base.w, minRatio, maxRatio)
+    return { w: size, h: size }
+  }
+  return {
+    w: clampItemSize(rawW, base.w, minRatio, maxRatio),
+    h: clampItemSize(rawH, base.h, minRatio, maxRatio),
+  }
+}
+
+/**
+ * יחס-הממדים (רוחב/גובה) של תמונה, בהתחשב בסיבוב נוכחי (90/270 מחליפים
+ * רוחב וגובה) — קובע את צורת מסגרת החיתוך ב-SketchEditor כברירת מחדל, כדי
+ * שהסקיצה כולה תוצג ללא חיתוך (contain, לא cover) בלי תלות ביחס-הממדים של
+ * המסך/החלון. נופל בבטחה ל-1 אם הגובה 0 (קלט לא תקין).
+ */
+export function orientedAspect(naturalW: number, naturalH: number, rotationDeg: number): number {
+  const rot = ((rotationDeg % 360) + 360) % 360
+  const swap = rot === 90 || rot === 270
+  const w = swap ? naturalH : naturalW
+  const h = swap ? naturalW : naturalH
+  return h > 0 ? w / h : 1
+}
+
 export interface AxisRect {
   x: number
   y: number

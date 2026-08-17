@@ -560,6 +560,11 @@ class HallTable(BaseModel):
     table_type: str = "round"
     capacity: int = 12        # מספר מקומות בשולחן הזה — עצמאי לכל שולחן
     rotation: float = 0       # זווית סיבוב במעלות
+    # גודל עצמאי (פיקסלים) — None = ללא override, גודל נגזר מ-table_type+density
+    # כרגיל. מוגדר רק לשולחנות שיובאו מסקיצת AI, כדי לשמר את הגודל/הפרופורציה
+    # שזוהו בסקיצה במקום גודל אחיד לכל השולחנות מאותו סוג.
+    width: Optional[float] = Field(default=None, gt=0)
+    height: Optional[float] = Field(default=None, gt=0)
     name: str = ""            # שם אופציונלי לשולחן (למשל "משפחת כהן")
     color: str = ""           # צבע מותאם (hex); ריק = ברירת מחדל לפי סוג
     notes: str = ""
@@ -622,8 +627,8 @@ class DetectedHallElement(BaseModel):
     ברגע האישור בלבד (לא לפני).
     """
 
-    type: str            # round_table|rectangle_table|knights_table|bar|dance_floor|
-                          # stage|entrance|pillar|wall|obstacle|other_area
+    type: str            # round_table|square_table|rectangle_table|knights_table|bar|
+                          # dance_floor|stage|entrance|pillar|wall|obstacle|other_area
     x: float = Field(ge=0, le=1)
     y: float = Field(ge=0, le=1)
     width: float = Field(gt=0, le=1)
@@ -670,6 +675,8 @@ class HallTableSave(BaseModel):
     table_type: str = "round"
     capacity: int = Field(default=12, ge=1, le=60)
     rotation: float = 0
+    width: Optional[float] = Field(default=None, gt=0)
+    height: Optional[float] = Field(default=None, gt=0)
     name: str = Field(default="", max_length=60)
     color: str = Field(default="", max_length=20)
     notes: str = Field(default="", max_length=400)
