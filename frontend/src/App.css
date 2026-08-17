@@ -6021,14 +6021,14 @@ td.notes.seating {
   content: '';
   position: absolute;
   inset: 0;
-  border: 1.5px solid var(--gold);
+  border: 1px solid var(--gold);
   border-radius: 50%;
 }
 .auth-monogram::after {
   content: '';
   position: absolute;
-  inset: 5px;
-  border: 0.5px solid rgba(201, 162, 39, 0.45);
+  inset: 2.5px;
+  border: 1px solid rgba(201, 162, 39, 0.45);
   border-radius: 50%;
 }
 .auth-monogram-v {
@@ -6041,16 +6041,16 @@ td.notes.seating {
 }
 .auth-monogram-diamond {
   position: absolute;
-  top: -4px;
+  top: -2px;
   left: 50%;
   transform: translateX(-50%) rotate(45deg);
-  width: 7px;
-  height: 7px;
+  width: 4px;
+  height: 4px;
   /* ללא מילוי — קודם הייתה כאן var(--black) שהתמזגה עם רקע העמוד הכהה
      בדף ההתחברות, אבל נראתה כנקודה שחורה על רקע בהיר (סרגל הצד). שקוף
      נראה זהה בהקשר הכהה ונכון גם בהקשר הבהיר. */
   background: transparent;
-  border: 1.5px solid var(--gold);
+  border: 1px solid var(--gold);
 }
 .auth-logo-divider {
   width: 1px;

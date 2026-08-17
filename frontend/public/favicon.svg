@@ -1,8 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="VEYA">
-  <rect width="64" height="64" rx="14" fill="#0B0A0C"/>
-  <circle cx="32" cy="33" r="20" fill="none" stroke="#C9A227" stroke-width="2"/>
-  <circle cx="32" cy="33" r="16" fill="none" stroke="#C9A227" stroke-width="1" stroke-opacity="0.45"/>
-  <path d="M32 7.5 L35.5 13 L32 18.5 L28.5 13 Z" fill="#C9A227"/>
-  <text x="32" y="44" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif"
-        font-size="28" font-weight="600" fill="#E4C96B" text-anchor="middle">V</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="VEYA">
+  <defs>
+    <radialGradient id="sidebarGlow" cx="15%" cy="0%" r="55%">
+      <stop offset="0%" stop-color="#C9A227" stop-opacity="0.09"/>
+      <stop offset="100%" stop-color="#C9A227" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- רקע: ריבוע פינות מעוגלות, בדיוק כמו רקע סרגל הצד במערכת (charcoal חם + זוהר זהב עדין) -->
+  <rect width="512" height="512" rx="112" fill="#2B2620"/>
+  <rect width="512" height="512" rx="112" fill="url(#sidebarGlow)"/>
+
+  <!-- טבעת חיצונית + טבעת פנימית דקה — שיחזור מדויק של .auth-monogram מ-App.css -->
+  <circle cx="256" cy="256" r="190" fill="none" stroke="#C9A227" stroke-width="2.5"/>
+  <circle cx="256" cy="256" r="172" fill="none" stroke="#C9A227" stroke-width="2.5" stroke-opacity="0.45"/>
+
+  <!-- יהלום יחיד בשעה 12, מתאר בלבד (לא מלא) -->
+  <path d="M256 46.5 L275.5 66 L256 85.5 L236.5 66 Z" fill="none" stroke="#C9A227" stroke-width="2.5"/>
+
+  <!-- האות V, גופן סריפי תואם למותג -->
+  <text x="256" y="256" dy="-8" text-anchor="middle" dominant-baseline="central"
+        font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif"
+        font-size="209" font-weight="500" fill="#E4C96B">V</text>
 </svg>
