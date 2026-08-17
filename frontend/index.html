@@ -520,21 +520,25 @@
       }
 
       /* ===== Sketch → Hall (בניית סידור שולחנות מסקיצת האולם) =====
-         שני כרטיסים זהים בגודלם — סקיצה מימין, האולם ב-VEYA משמאל (כיוון
-         הקריאה RTL), עם חץ ביניהם. הגיאומטריה בשתי ההמחשות זהה בכוונה:
-         אותם מרכזי שולחנות ואותם מספרים — זה בדיוק מה שהפיצ'ר עושה.
+         שני כרטיסים זהים בגודלם — הסקיצה האמיתית מהאולם מימין, אותו אולם
+         בתוך VEYA משמאל (כיוון הקריאה RTL), עם חץ ביניהם. שתי התמונות הן
+         צילומי מסך אמיתיים של אותו אולם, חתוכים לאותו אזור שולחנות, כדי
+         שההשוואה תהיה כנה ולא "המחשה".
+         aspect-ratio קבוע (5/7) לשתי המסגרות: מקורות התמונה שונים מעט
+         ביחס (0.724 מול 0.698), ובלי זה שני הכרטיסים יוצאים בגבהים שונים.
          פלטה נייטרלית בלבד (דיו/פחם/שנהב + נגיעת ירוק אחת), בלי זהב. */
       .s2h { background: var(--ivory); }
       .s2h-lead { font-family: 'Frank Ruhl Libre', serif; font-size: clamp(19px, 2.5vw, 25px); color: var(--charcoal); line-height: 1.45; margin-bottom: 12px; }
       .s2h-flow { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; }
       .s2h-card { background: var(--cream); border: 1px solid var(--line); border-radius: 20px; padding: 18px; box-shadow: 0 18px 40px rgba(43, 38, 32, 0.06); transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease; }
       .s2h-card:hover { transform: translateY(-4px); box-shadow: 0 24px 50px rgba(43, 38, 32, 0.10); border-color: rgba(43, 38, 32, 0.16); }
-      .s2h-cap { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+      /* flex-wrap: במסך צר מאוד התגית יורדת לשורה משלה במקום לדחוס את הכותרת */
+      .s2h-cap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; margin-bottom: 14px; }
       .s2h-cap h3 { font-size: 16.5px; }
       .s2h-tag { font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; white-space: nowrap; }
       .s2h-card-out .s2h-tag { color: #23794a; border-color: rgba(47, 158, 95, 0.34); background: rgba(47, 158, 95, 0.07); }
-      .s2h-frame { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-      .s2h-frame svg { display: block; width: 100%; height: auto; }
+      .s2h-frame { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--ivory-2); aspect-ratio: 5 / 7; }
+      .s2h-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
       .s2h-arrow { width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: var(--cream-text); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 12px 26px rgba(23, 19, 13, 0.22); animation: s2h-nudge 2.8s ease-in-out infinite; }
       @keyframes s2h-nudge { 0%, 100% { translate: 0 0; } 50% { translate: -5px 0; } }
       @keyframes s2h-nudge-v { 0%, 100% { translate: 0 0; } 50% { translate: 0 5px; } }
@@ -833,36 +837,12 @@
                 <span class="s2h-tag">תמונה או צילום</span>
               </figcaption>
               <div class="s2h-frame">
-                <svg viewBox="0 0 300 190" role="img" aria-label="סקיצה מצוירת של אולם: במה, רחבת ריקודים ושמונה שולחנות עגולים עם מספרים כתובים ביד — 31, 5, 12, 27, 8, 9, 40 ו-3">
-                  <rect width="300" height="190" fill="#f3efe4" />
-                  <g transform="rotate(-0.7 150 95)" fill="none" stroke="#8d8778" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
-                    <path d="M10 12 L292 8 L289 182 L12 179 Z" />
-                    <path d="M127 19 L174 17 L175 38 L126 39 Z" />
-                    <path d="M119 67 L182 65 L183 123 L118 122 Z" />
-                    <circle cx="40" cy="48" r="15.2" />
-                    <circle cx="92" cy="48" r="14.6" />
-                    <circle cx="208" cy="48" r="15.4" />
-                    <circle cx="260" cy="48" r="14.9" />
-                    <circle cx="40" cy="142" r="15.1" />
-                    <circle cx="92" cy="142" r="14.7" />
-                    <circle cx="208" cy="142" r="15.3" />
-                    <circle cx="260" cy="142" r="15" />
-                  </g>
-                  <g font-family="'Assistant', sans-serif" fill="#6a6252" text-anchor="middle">
-                    <text x="150" y="32" font-size="8.5">במה</text>
-                    <text x="150" y="98" font-size="9.5">רחבה</text>
-                    <g font-size="11.5" font-weight="600">
-                      <text x="40" y="52" transform="rotate(-5 40 48)">31</text>
-                      <text x="92" y="52" transform="rotate(4 92 48)">5</text>
-                      <text x="208" y="52" transform="rotate(-3 208 48)">12</text>
-                      <text x="260" y="52" transform="rotate(5 260 48)">27</text>
-                      <text x="40" y="146" transform="rotate(3 40 142)">8</text>
-                      <text x="92" y="146" transform="rotate(-4 92 142)">9</text>
-                      <text x="208" y="146" transform="rotate(4 208 142)">40</text>
-                      <text x="260" y="146" transform="rotate(-3 260 142)">3</text>
-                    </g>
-                  </g>
-                </svg>
+                <img
+                  src="/product/hall-sketch-before.jpg"
+                  alt="הסקיצה שהתקבלה מהאולם: 36 שולחנות בשש שורות, כל שולחן עם המספר שלו ומספר המקומות"
+                  width="565" height="780" loading="lazy" decoding="async"
+                  onerror="this.style.display='none'"
+                />
               </div>
             </figure>
 
@@ -877,48 +857,12 @@
                 <span class="s2h-tag">מוכן לסידור הושבה</span>
               </figcaption>
               <div class="s2h-frame">
-                <svg viewBox="0 0 300 190" role="img" aria-label="אותו אולם בתוך VEYA: שמונה שולחנות דיגיטליים עם מקומות ישיבה, באותם מיקומים ועם אותם מספרים שהופיעו בסקיצה">
-                  <rect width="300" height="190" fill="var(--ivory)" />
-                  <rect x="9" y="9" width="282" height="172" rx="9" fill="none" stroke="var(--line)" stroke-width="1.4" />
-                  <rect x="126" y="18" width="48" height="21" rx="4" fill="#ece5d6" />
-                  <rect x="118" y="66" width="64" height="58" rx="6" fill="#ece5d6" />
-                  <g font-family="'Assistant', sans-serif" fill="var(--muted)" text-anchor="middle">
-                    <text x="150" y="32" font-size="8.5">במה</text>
-                    <text x="150" y="98" font-size="9.5">רחבה</text>
-                  </g>
-                  <g>
-                    <g fill="none" stroke="var(--charcoal)" stroke-opacity="0.38" stroke-width="3" stroke-linecap="round" stroke-dasharray="0.1 10.6">
-                      <circle cx="40" cy="48" r="20.5" />
-                      <circle cx="92" cy="48" r="20.5" />
-                      <circle cx="208" cy="48" r="20.5" />
-                      <circle cx="260" cy="48" r="20.5" />
-                      <circle cx="40" cy="142" r="20.5" />
-                      <circle cx="92" cy="142" r="20.5" />
-                      <circle cx="208" cy="142" r="20.5" />
-                      <circle cx="260" cy="142" r="20.5" />
-                    </g>
-                    <g fill="var(--cream)" stroke="var(--charcoal)" stroke-opacity="0.26" stroke-width="1.2">
-                      <circle cx="40" cy="48" r="15" />
-                      <circle cx="92" cy="48" r="15" />
-                      <circle cx="208" cy="48" r="15" />
-                      <circle cx="260" cy="48" r="15" />
-                      <circle cx="40" cy="142" r="15" />
-                      <circle cx="92" cy="142" r="15" />
-                      <circle cx="208" cy="142" r="15" />
-                      <circle cx="260" cy="142" r="15" />
-                    </g>
-                    <g font-family="'Assistant', sans-serif" font-size="11.5" font-weight="700" fill="var(--charcoal)" text-anchor="middle">
-                      <text x="40" y="52">31</text>
-                      <text x="92" y="52">5</text>
-                      <text x="208" y="52">12</text>
-                      <text x="260" y="52">27</text>
-                      <text x="40" y="146">8</text>
-                      <text x="92" y="146">9</text>
-                      <text x="208" y="146">40</text>
-                      <text x="260" y="146">3</text>
-                    </g>
-                  </g>
-                </svg>
+                <img
+                  src="/product/hall-sketch-after.jpg"
+                  alt="אותו אולם אחרי הבנייה ב-VEYA: אותם שולחנות באותם מיקומים, כל אחד עם מקומות ישיבה ומצב תפוסה"
+                  width="775" height="1110" loading="lazy" decoding="async"
+                  onerror="this.style.display='none'"
+                />
               </div>
             </figure>
           </div>

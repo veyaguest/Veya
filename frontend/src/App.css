@@ -6041,7 +6041,7 @@ td.notes.seating {
 }
 .auth-monogram-diamond {
   position: absolute;
-  top: -2px;
+  top: -2.5px;
   left: 50%;
   transform: translateX(-50%) rotate(45deg);
   width: 4px;
