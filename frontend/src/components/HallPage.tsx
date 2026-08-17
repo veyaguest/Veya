@@ -52,13 +52,13 @@ import {
   type SmartSuggestion,
 } from '../seatingAdvisor'
 import {
-  clampCenterWithMargin,
-  clampItemSize,
   orientedAspect,
+  placeSketchItems,
   rectOverlapFraction,
-  sketchBuildCanvasSize,
-  tableWorldSize,
+  sketchWorldCanvas,
+  spatialOrder,
   type AxisRect,
+  type SketchItemInput,
 } from '../hallSketchGeometry'
 
 interface TableView {
@@ -280,6 +280,16 @@ function tableRenderSize(t: { table_type: TableType; width?: number; height?: nu
   return tableSize(t.table_type, preset)
 }
 
+// קנה-מידה לקישוטי השולחן (כיסאות, מספר, "0/24", טבעת העיגול) יחסית לגודל
+// הרגיל של הסוג הזה. שולחן שנוסף ידנית מקבל תמיד 1 — כלומר רינדור זהה
+// לחלוטין להיום. שולחן שיובא מסקיצה וקטן מהרגיל מקבל פחות מ-1, כדי שכיסא
+// בגודל קבוע (11×15px) לא ייצא גדול מהשולחן עצמו. לא מגדילים מעל 1.
+function tableUiScale(w: number, h: number, base: { w: number; h: number }): number {
+  const ref = Math.min(base.w, base.h)
+  const cur = Math.min(w, h)
+  return ref > 0 ? clamp(cur / ref, 0.35, 1) : 1
+}
+
 // גודל אלמנט מיוחד (רחבה/בר/DJ) לפי פרופיל הצפיפות. שאר הסוגים → null (גודל
 // ברירת המחדל מ-ELEMENT_DEFS).
 function elementSizeFor(type: HallElementType, preset: DensityPreset): { w: number; h: number } | null {
@@ -292,17 +302,24 @@ function elementSizeFor(type: HallElementType, preset: DensityPreset): { w: numb
   return null
 }
 
-// ---- בניית אולם מסקיצה (AI Vision): כיול "קנבס הבנייה" ----
-// המתמטיקה הטהורה (שימור יחס-ממדים, הגבלת גדלים, שוליים, חפיפות) יושבת ב-
+// ---- בניית אולם מסקיצה (AI Vision): קנבס הסקיצה ----
+// המתמטיקה הטהורה (יחס-ממדים, מיפוי, סדר מרחבי, חפיפות) יושבת ב-
 // hallSketchGeometry.ts כדי שאפשר לבדוק אותה אוטומטית; הקבועים כאן הם
-// מדיניות VEYA-ספציפית (כמה שוליים, אילו טווחים סבירים).
-const SKETCH_BUILD_MARGIN = 44 // ריפוד פנימי (world units) — כלום לא נצמד לקצה האולם
-const SKETCH_BUILD_LONG_EDGE_MIN = 900
-const SKETCH_BUILD_LONG_EDGE_MAX = 3200
-// טווח סביר סביב הגודל הרגיל של VEYA לסוג האובייקט — bbox שהתגלה קטן/גדול
-// בהרבה עדיין מוגבל לטווח הזה, כדי שזיהוי רועש לא ייצר אובייקט זעיר/ענק.
-const SKETCH_ITEM_SIZE_MIN_RATIO = 0.45
-const SKETCH_ITEM_SIZE_MAX_RATIO = 2.2
+// מדיניות VEYA-ספציפית.
+//
+// חשוב: הצלע הארוכה היא **בחירת זום גלובלית בלבד** — כל ערך נותן בדיוק אותה
+// נאמנות לסקיצה (מכפיל אחיד על שני הצירים). היא קבועה בכוונה ולא נגזרת ממספר
+// השולחנות / מגודל חציוני / מפרופיל צפיפות, כדי שאותה סקיצה תמיד תיתן אותה
+// תוצאה. 1900 נבחר כך ששולחן טיפוסי (6 בשורה) יוצא סביב הגודל המוכר של VEYA.
+const SKETCH_WORLD_LONG_EDGE = 1900
+// ריפוד אחיד (הזזה בלבד, לא שינוי גודל) כדי שהאולם לא ייצמד לפינה 0,0.
+const SKETCH_WORLD_PAD = 60
+// רצפת גודל לזיהוי מנוון בלבד — מוחלת אחיד על שני הצירים (יחס-הממדים נשמר).
+const SKETCH_MIN_ITEM_PX = 10
+// פער אנכי בין מרכזי שולחנות שעדיין נחשב "אותה שורה" למספור מרחבי.
+const SKETCH_ROW_TOLERANCE = 40
+// בנייה מסקיצה כשכבר יש אולם על הלוח: להחליף אותו, או להוסיף לצדו.
+type SketchBuildMode = 'replace' | 'add'
 // חפיפה (יחסית לשטח הקטן מבין השניים) שנחשבת "משמעותית" לצורך תגית אזהרה
 // במסך ה-Review — לא מזיזים כלום אוטומטית, רק מסמנים לבדיקה.
 const SKETCH_OVERLAP_WARN_THRESHOLD = 0.35
@@ -436,8 +453,9 @@ interface SeatPoint {
 }
 
 // מיקום כל כיסא סביב גוף השולחן, יחסית לקופסת השולחן (0,0 עד w,h).
-function seatPositions(type: TableType, capacity: number, w: number, h: number): SeatPoint[] {
-  const gap = 12
+// gap מוקטן יחד עם השולחן (ראה tableUiScale) — אחרת בשולחן קטן שיובא מסקיצה
+// הכיסאות "מתעופפים" רחוק מגוף השולחן.
+function seatPositions(type: TableType, capacity: number, w: number, h: number, gap = 12): SeatPoint[] {
   if (type === 'round' || type === 'square') {
     const radius = Math.max(w, h) / 2 + gap
     const cx = w / 2
@@ -1531,6 +1549,13 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // אישור "האולם נבנה בהצלחה" (שלב E) — null = לא מוצג; אחרת מחזיק את
   // הפריטים שאושרו כדי לחשב את שורת הסיכום (X שולחנות · רחבה · בר...).
   const [sketchBuildResult, setSketchBuildResult] = useState<DetectedHallElement[] | null>(null)
+  // ממתין להכרעה "להחליף או להוסיף?" כשכבר יש אולם על הלוח בזמן בנייה מסקיצה.
+  const [sketchBuildPending, setSketchBuildPending] = useState<DetectedHallElement[] | null>(null)
+  // כמה מוזמנים משובצים כרגע — מוצג באזהרת ההחלפה (בהחלפה הם חוזרים ל"ללא שולחן").
+  const seatedGuestCount = useMemo(
+    () => tables.reduce((sum, t) => sum + t.guests.length, 0),
+    [tables],
+  )
   // מידות התמונה המקורית (פיקסלים) — נטענות פעם אחת יחד עם ניתוח ה-AI,
   // כדי ש-applySketchReview יוכל לשמר את יחס-הממדים שלה (ראה sketchBuildCanvasSize).
   const sketchImgSizeRef = useRef<{ w: number; h: number } | null>(null)
@@ -2968,66 +2993,73 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     knights_table: 'knights',
   }
 
-  // "✨ הפוך למפת הושבה" — ממיר קואורדינטות מנורמלות [0,1] (יחסית לסקיצה)
-  // לקואורדינטות world בפעם אחת בלבד (שלב 8/9): אחרי זה השולחנות/האלמנטים
-  // עצמאיים לגמרי מהסקיצה — הזזת הסקיצה לא גוררת אותם, וגם הסתרתה לא שוברת
-  // את המפה.
+  // "בניית האולם" — ממיר את מה שה-AI זיהה לאובייקטים חיים על הקנבס.
   //
-  // חשוב: הממופה **לא** ל-worldSize (זה מעגלי — worldSize עצמו נגזר מהשולחנות
-  // הקיימים, שלפני הבנייה הזו כמעט תמיד ריקים, ולכן היה מתכווץ לגודל-מינימום
-  // קבוע שלא קשור לצורת הסקיצה בכלל — זה מה שגרם לתוצאה "צפופה ומעוותת").
-  // במקום זה בונים "קנבס" ייעודי ששומר על יחס-הממדים המקורי של התמונה
-  // ומכויל לפי פרופיל הצפיפות, ואת אותו קנבס בדיוק שומרים ב-sketchTransform
-  // כדי שהרקע המוצג יתיישר תמיד עם האובייקטים שמופו ממנו (שלב 8).
-  function applySketchReview(items: DetectedHallElement[]) {
+  // ── הסקיצה היא מקור האמת לפריסה ────────────────────────────────────────
+  // ההמרה היא similarity transform טהור: קנה-מידה אחיד אחד (canvas) + הזזה
+  // אחת (origin), זהים לכל האובייקטים **וגם לרקע הסקיצה עצמו**. לכן המיקום,
+  // הגודל, יחס-הממדים, הסיבוב והמרווחים בין האובייקטים נשמרים בדיוק כפי
+  // שזוהו — וה-overlay בין הרקע לאובייקטים מדויק מעצם הבנייה.
+  //
+  // במפורש אין כאן: density preset, גודל ברירת-מחדל לפי סוג שולחן, ממוצע,
+  // clamp פר-ציר, auto-layout, grid, מרווח אוטומטי או פתרון-התנגשויות. אלה
+  // בדיוק הדברים שקודם החזירו את הגיאומטריה של VEYA במקום זו של הסקיצה
+  // (שולחן אנכי היה מתנפח לרוחב ומתקצר לגובה, ולכן שורות "נדחסו").
+  //
+  // הממופה לא ל-worldSize (זה מעגלי — worldSize נגזר מהאובייקטים הקיימים,
+  // שלפני הבנייה כמעט תמיד ריקים); worldSize גדל אחר-כך סביב התוצאה.
+  function applySketchReview(items: DetectedHallElement[], mode: SketchBuildMode = 'add') {
     const imgSize = sketchImgSizeRef.current ?? { w: 4, h: 3 }
-    const tableItems = items.filter((it) => DETECTED_TABLE_TYPES[it.type])
-    // שולחן שיובא מסקיצה מקבל width/height פר-מופע (schemas.HallTable, שדה
-    // אופציונלי) כדי לשמר את הגודל/הפרופורציה שזוהו — לא את הגודל האחיד של
-    // tableSize. שולחן שנוסף ידנית ממשיך בלי override (ראה tableRenderSize),
-    // כדי שהוא ימשיך להשתנות דינמית עם פרופיל-הצפיפות בדיוק כמו היום.
-    // ה-bbox גם קובע איזה פרופיל-צפיפות הכי הגיוני לכל האולם שנבנה כאן
-    // (req 4, ברמת האולם — קנה-המידה הכללי), ואת זה נועלים ל-hallLayout
-    // בדיוק כמו "בניית אולם מחדש" הידנית.
-    const totalTablesAfterBuild = tables.length + tableItems.length
-    const buildDensityKey = densityKeyForCount(totalTablesAfterBuild)
-    const buildPreset = DENSITY_PRESETS[buildDensityKey]
-    const canvas = sketchBuildCanvasSize(
-      tableItems.map((it) => it.width),
-      imgSize.w,
-      imgSize.h,
-      buildPreset.round,
-      SKETCH_BUILD_LONG_EDGE_MIN,
-      SKETCH_BUILD_LONG_EDGE_MAX,
-    )
-    let nextNum = nextTableNumRef.current
+    // קנבס הסקיצה: יחס-הממדים של התמונה, בזום גלובלי קבוע.
+    const canvas = sketchWorldCanvas(imgSize.w, imgSize.h, SKETCH_WORLD_LONG_EDGE)
+    // הכלל היחיד על צורה: **שולחן** עגול/מרובע יוצא ריבוע אמת, כי הוא מצויר עם
+    // border-radius:50% על קופסה w×h — קופסה לא-ריבועית הייתה נראית אליפסה.
+    // הגודל עדיין נגזר רק מה-bbox שזוהה (ממוצע שני הצירים), בלי שום preset.
+    //
+    // אלמנטים (רחבת ריקודים/בר/במה) **לא** נעולים לריבוע — הם שומרים על הגודל
+    // שזוהה במדויק, וסוג הצורה שלהם מותאם אליו (רחבה רחבה שזוהתה כמלבן תיווצר
+    // אליפסה, לא עיגול מכווץ — VEYA תומכת ב-ellipse ומציירת אותה באותו
+    // border-radius:50%).
+    const inputs: SketchItemInput[] = items.map((it) => {
+      const tableType = DETECTED_TABLE_TYPES[it.type]
+      return {
+        x: it.x,
+        y: it.y,
+        width: it.width,
+        height: it.height,
+        rotation: it.rotation ?? 0,
+        squareLock: tableType === 'round' || tableType === 'square',
+      }
+    })
+    const { placed, origin } = placeSketchItems(inputs, canvas, SKETCH_WORLD_PAD, SKETCH_MIN_ITEM_PX)
+
+    // מספור מרחבי: שורות מלמעלה למטה, ובכל שורה משמאל לימין — לא לפי סדר
+    // ה-JSON שה-AI החזיר. חל רק על השולחנות החדשים; שולחנות קיימים שומרים על
+    // מספרם, כי table_number הוא המזהה שלפיו מוזמנים משובצים.
+    const tableIdx = items.map((it, i) => (DETECTED_TABLE_TYPES[it.type] ? i : -1)).filter((i) => i >= 0)
+    const order = spatialOrder(tableIdx.map((i) => placed[i]), SKETCH_ROW_TOLERANCE)
+    const numberByItemIdx = new Map<number, number>()
+    const startNum = mode === 'replace' ? 1 : nextTableNumRef.current
+    order.forEach((posInTableIdx, seq) => {
+      numberByItemIdx.set(tableIdx[posInTableIdx], startNum + seq)
+    })
+
     const newTables: TableView[] = []
     const newElements: HallElement[] = []
     items.forEach((it, i) => {
+      const r = placed[i]
       const tableType = DETECTED_TABLE_TYPES[it.type]
       if (tableType) {
-        // base = קנה-המידה הרגיל של VEYA לסוג הזה (עוגן לטווח clamp סביר).
-        // size = הגודל בפועל של השולחן הזה, נאמן לצורה/פרופורציה שזוהו
-        // בסקיצה (round/square תמיד יוצאים ריבוע-אמת; rectangle/knights
-        // שומרים על יחס-הממדים שזוהה) — ראה tableWorldSize.
-        const base = tableSize(tableType, buildPreset)
-        const size = tableWorldSize(
-          tableType, it.width, it.height, canvas.w, canvas.h,
-          base, SKETCH_ITEM_SIZE_MIN_RATIO, SKETCH_ITEM_SIZE_MAX_RATIO,
-        )
-        const cx = clampCenterWithMargin(it.x * canvas.w, size.w / 2, canvas.w, SKETCH_BUILD_MARGIN)
-        const cy = clampCenterWithMargin(it.y * canvas.h, size.h / 2, canvas.h, SKETCH_BUILD_MARGIN)
-        const num = nextNum++
         newTables.push({
-          table_number: num,
-          x: Math.round(cx - size.w / 2),
-          y: Math.round(cy - size.h / 2),
+          table_number: numberByItemIdx.get(i) ?? startNum + newTables.length,
+          x: Math.round(r.x),
+          y: Math.round(r.y),
           guests: [],
           table_type: tableType,
           capacity: snapCapacity(it.capacity ?? defaultCapacityForType(tableType)),
-          rotation: it.rotation ?? 0,
-          width: Math.round(size.w),
-          height: Math.round(size.h),
+          rotation: r.rotation,
+          width: Math.round(r.w),
+          height: Math.round(r.h),
           name: '',
           color: '',
           notes: '',
@@ -3035,39 +3067,57 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
           is_reserve: false,
         })
       } else {
-        // אלמנטים (בר/רחבה/וכו') כן שומרים width/height פר-מופע (HallElement) —
-        // כאן ה-bbox שזוהה כן קובע גודל בפועל, מוגבל לטווח סביר (req 4).
         const elType = it.type as HallElementType
         const def = ELEMENT_DEFS[elType]
-        const base = elementSizeFor(elType, buildPreset) ?? { w: def?.width ?? 100, h: def?.height ?? 100 }
-        const ew = clampItemSize(it.width * canvas.w, base.w, SKETCH_ITEM_SIZE_MIN_RATIO, SKETCH_ITEM_SIZE_MAX_RATIO)
-        const eh = clampItemSize(it.height * canvas.h, base.h, SKETCH_ITEM_SIZE_MIN_RATIO, SKETCH_ITEM_SIZE_MAX_RATIO)
-        // מיקום יחסי נשמר במדויק (req 5) — השוליים רק דוחפים אובייקטים שנוגעים
-        // ממש בקצה הקנבס פנימה, לא מסדרים-מחדש שום דבר (req 7).
-        const cx = clampCenterWithMargin(it.x * canvas.w, ew / 2, canvas.w, SKETCH_BUILD_MARGIN)
-        const cy = clampCenterWithMargin(it.y * canvas.h, eh / 2, canvas.h, SKETCH_BUILD_MARGIN)
+        // צורה עגולה כברירת מחדל (רחבת ריקודים) נשארת עגולה רק אם ה-bbox שזוהה
+        // אכן ~ריבועי; אחרת אליפסה, כדי לא לעוות את הגודל שזוהה.
+        const baseShape = def?.shape ?? 'rectangle'
+        const isRounded = baseShape === 'circle' || baseShape === 'ellipse'
+        const nearSquare = Math.abs(r.w - r.h) <= Math.max(r.w, r.h) * 0.12
         newElements.push({
           id: `${elType}-ai-${Date.now()}-${i}`,
           type: elType,
-          x: Math.round(cx - ew / 2),
-          y: Math.round(cy - eh / 2),
-          width: Math.round(ew),
-          height: Math.round(eh),
-          rotation: it.rotation ?? 0,
+          x: Math.round(r.x),
+          y: Math.round(r.y),
+          width: Math.round(r.w),
+          height: Math.round(r.h),
+          rotation: r.rotation,
           locked: false,
           label: it.label || def?.label || '',
-          shape: def?.shape ?? 'rectangle',
+          shape: isRounded ? (nearSquare ? 'circle' : 'ellipse') : baseShape,
           color: '',
         })
       }
     })
-    nextTableNumRef.current = nextNum
-    setTables((prev) => [...prev, ...newTables])
-    setElements((prev) => [...prev, ...newElements])
-    setHallLayout({ density: buildDensityKey, planned_tables: totalTablesAfterBuild })
-    // הרקע מוצב בדיוק על תיבת הקנבס שממנה מופו האובייקטים (לא worldSize,
-    // שגדל אחר-כך סביב התוכן) — כך התמונה תמיד מיושרת עם מה שנבנה ממנה.
-    setSketchTransform((cur) => cur ?? { x: 0, y: 0, width: canvas.w, height: canvas.h, rotation: 0, opacity: 0.5, locked: false, hidden: false })
+
+    newTables.sort((a, b) => a.table_number - b.table_number)
+    if (mode === 'replace') {
+      setTables(newTables)
+      setElements(newElements)
+      nextTableNumRef.current = startNum + newTables.length
+    } else {
+      setTables((prev) => [...prev, ...newTables])
+      setElements((prev) => [...prev, ...newElements])
+      nextTableNumRef.current = startNum + newTables.length
+    }
+    // פרופיל הצפיפות ממשיך לשלוט על שולחנות שיתווספו **ידנית** בהמשך. הוא לא
+    // נוגע יותר בשולחנות שיובאו מהסקיצה — להם יש width/height משלהם
+    // (ראה tableRenderSize).
+    const totalTables = (mode === 'replace' ? 0 : tables.length) + newTables.length
+    setHallLayout({ density: densityKeyForCount(totalTables), planned_tables: totalTables })
+    // הרקע מוצב על אותו origin ואותו canvas שמהם מופו האובייקטים — זה מה
+    // שהופך את ה-overlay למדויק. נכתב תמיד (לא ??), אחרת בנייה חוזרת הייתה
+    // משאירה את הרקע בקנבס הקודם והתמונה הייתה מוסטת מהאובייקטים.
+    setSketchTransform((cur) => ({
+      x: origin.x,
+      y: origin.y,
+      width: canvas.w,
+      height: canvas.h,
+      rotation: 0,
+      opacity: cur?.opacity ?? 0.5,
+      locked: false,
+      hidden: cur?.hidden ?? false,
+    }))
     setSketchReview(null)
     setSelectedTable(null)
     setSelectedEl(null)
@@ -3076,6 +3126,23 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     // אישור קצר (שלב E, דרישה 8) — האולם כבר בנוי ב-state למעלה; זה רק
     // מציג "נבנה בהצלחה" עד שלוחצים "פתיחת האולם".
     setSketchBuildResult(items)
+  }
+
+  // "בניית האולם" מתוך מסך ה-Review. אם הלוח כבר לא ריק — שואלים קודם אם
+  // להחליף את הקיים או להוסיף אליו, כדי שבנייה חוזרת לא תערים שולחנות חדשים
+  // על הקודמים בשקט (זה מה שיצר מספור מבולגן וכפילויות).
+  function requestSketchBuild(items: DetectedHallElement[]) {
+    if (tables.length > 0 || elements.length > 0) {
+      setSketchBuildPending(items)
+      return
+    }
+    applySketchReview(items, 'add')
+  }
+
+  function resolveSketchBuild(mode: SketchBuildMode) {
+    const items = sketchBuildPending
+    setSketchBuildPending(null)
+    if (items) applySketchReview(items, mode)
   }
 
   // ---- שמירה אוטומטית (בלי כפתור "שמירה") ----
@@ -3766,9 +3833,12 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                   const used = t.guests.reduce((s, g) => s + g.seats, 0)
                   const over = used > t.capacity
                   const { w, h } = tableRenderSize(t, preset)
+                  // קישוטי השולחן (כיסאות/מספר/טבעת) מוקטנים יחד איתו — 1 בדיוק
+                  // לשולחן שנוסף ידנית, ולכן אין שינוי במפות קיימות.
+                  const tScale = tableUiScale(w, h, tableSize(t.table_type, preset))
                   const color = t.color || TABLE_TYPE_DEFAULT_COLOR[t.table_type]
                   const seatCount = Math.max(t.capacity, used, 1)
-                  const pts = seatPositions(t.table_type, seatCount, w, h)
+                  const pts = seatPositions(t.table_type, seatCount, w, h, 12 * tScale)
                   const occupiedPoints = new Set<number>()
                   {
                     let idx = 0
@@ -3812,7 +3882,8 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                           transform: `rotate(${t.rotation}deg)`,
                           background: bodyBg,
                           borderColor: bodyBorder,
-                        }}
+                          '--t-s': tScale,
+                        } as React.CSSProperties}
                         onPointerDown={(e) => onTablePointerDown(e, t.table_number)}
                       >
                         <span className="seat-layer" aria-hidden="true">
@@ -4890,8 +4961,34 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
             items={sketchReview}
             sketchSrc={sketch}
             onCancel={() => setSketchReview(null)}
-            onConfirm={applySketchReview}
+            onConfirm={requestSketchBuild}
           />
+        )}
+
+        {sketchBuildPending && (
+          <>
+            <div className="sk-editor-backdrop" onClick={() => setSketchBuildPending(null)} />
+            <div className="sk-upload" role="dialog" aria-label={hallSketchT.existingTitle}>
+              <div className="sk-editor-head">
+                <h2>{hallSketchT.existingTitle}</h2>
+                <p>{hallSketchT.existingBody(tables.length)}</p>
+                {seatedGuestCount > 0 && (
+                  <p className="sk-analyzing-sub">{hallSketchT.existingSeated(seatedGuestCount)}</p>
+                )}
+              </div>
+              <div className="sk-editor-actions">
+                <button className="sk-confirm" onClick={() => resolveSketchBuild('replace')}>
+                  {hallSketchT.existingReplace}
+                </button>
+                <button className="sk-confirm sk-secondary" onClick={() => resolveSketchBuild('add')}>
+                  {hallSketchT.existingAdd}
+                </button>
+                <button className="sk-cancel" onClick={() => setSketchBuildPending(null)}>
+                  {hallSketchT.uploadCancel}
+                </button>
+              </div>
+            </div>
+          </>
         )}
 
         {sketchBuildResult && (

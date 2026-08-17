@@ -740,6 +740,16 @@ export const strings = {
       overlapWarning: 'חופף עם פריט אחר',
       overlapWarningHint: 'שני האובייקטים האלה חופפים במיקום שזוהה בסקיצה — כדאי לבדוק ולתקן ידנית אם צריך',
 
+      // בנייה כשכבר יש אולם על הלוח — נשאל לפני, כדי שבנייה חוזרת לא תערים
+      // שולחנות חדשים על הקיימים בשקט.
+      existingTitle: 'כבר יש אולם על הלוח',
+      existingBody: (tableCount: number) =>
+        `על הלוח יש כבר ${tableCount} שולחנות. אפשר להחליף אותם באולם שנבנה מהסקיצה, או להוסיף את החדשים לצד הקיימים.`,
+      existingSeated: (guestCount: number) =>
+        `${guestCount} מוזמנים משובצים כרגע — בהחלפה הם יחזרו לרשימת "ללא שולחן".`,
+      existingReplace: 'החלפת האולם',
+      existingAdd: 'הוספה לקיים',
+
       // שלב 4: אישור בנייה (SketchBuildSuccess).
       builtTitle: 'האולם נבנה בהצלחה',
       builtOpen: 'פתיחת האולם',

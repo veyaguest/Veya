@@ -6,11 +6,22 @@
  * הופרד מ-HallPage.tsx כדי לאפשר בדיקה אוטומטית (hallSketchGeometry.test.ts)
  * בלי סביבת דפדפן, בדיוק כמו seatingAdvisor.ts.
  *
+ * ── עקרון-על: הסקיצה היא מקור האמת לפריסה ──────────────────────────────
+ * ההמרה כאן היא **similarity transform טהור**: קנה-מידה אחיד אחד + הזזה אחת,
+ * זהה לכל האובייקטים. אין שום נרמול-מחדש פר-אובייקט, אין density preset, אין
+ * "גודל ברירת מחדל" לפי סוג שולחן, אין ממוצע, ואין auto-layout מכל סוג
+ * (grid/spacing/collision/centering). כל מה שה-AI זיהה — מרכז, רוחב, גובה,
+ * סיבוב — נשמר ביחסים מדויקים, ולכן גם המרווחים בין האובייקטים נשמרים.
+ *
+ * זו בדיוק אותה נוסחה שמסך ה-Review מצייר בה את ה-Bounding Boxes על התמונה
+ * (ראה SketchReviewPanel ב-HallPage: left=(x-w/2)*100%, width=w*100%) — ולכן
+ * מה שנראה נכון ב-Review יוצא נכון גם על הקנבס.
+ *
  * זרימת הקואורדינטות: image (פיקסלים) → normalized [0,1] (מה שה-AI מחזיר,
- * ראה hall_vision.py) → world (מה שהמפה מציגה). "קנבס הבנייה" (ראה
- * sketchBuildCanvasSize) הוא הגשר: תיבה ביחידות-world ששומרת בדיוק על יחס-
- * הממדים של תמונת הסקיצה, כדי שמכפלה פשוטה של הקואורדינטות המנורמלות בגודל
- * הקנבס לא תעוות אותן (contain, לא stretch).
+ * ראה hall_vision.py) → world (מה שהמפה מציגה). "קנבס הסקיצה" (ראה
+ * sketchWorldCanvas) הוא הגשר: תיבה ביחידות-world ששומרת בדיוק על יחס-הממדים
+ * של תמונת הסקיצה, כך שמכפלה פשוטה של הקואורדינטות המנורמלות בגודל הקנבס לא
+ * מעוותת אותן (contain, לא stretch).
  */
 
 export function clampNum(v: number, min: number, max: number): number {
@@ -18,75 +29,143 @@ export function clampNum(v: number, min: number, max: number): number {
 }
 
 /**
- * גודל "קנבס בנייה" ששומר על יחס-הממדים המקורי של הסקיצה (imgW×imgH), מכויל
- * כך ששולחן טיפוסי (רוחב-bbox חציוני מתוך tableBboxWidths, כל אחד ב-[0,1])
- * ייצא בערך בגודל roundTableTargetPx — אותו קנה-מידה שמשמש שולחנות שנוספו
- * ידנית (ראה DENSITY_PRESETS ב-HallPage) — כדי שהתוצאה תיראה עקבית עם שאר
- * המערכת, לא ריבוע שרירותי. minLongEdge/maxLongEdge מונעים קנבס זעיר (סקיצה
- * עם שולחנות "גדולים" יחסית לתמונה) או ענק (שולחנות "קטנטנים").
+ * תיבת "קנבס הסקיצה" ביחידות world — שומרת בדיוק על יחס-הממדים של התמונה
+ * (imgW×imgH), עם longEdge כצלע הארוכה.
+ *
+ * longEdge הוא **בחירת זום גלובלית בלבד**: כל ערך נותן בדיוק אותה נאמנות
+ * גיאומטרית (כי הוא מכפיל אחיד על שני הצירים), הוא רק קובע כמה גדול האולם
+ * ביחידות world. במפורש: הוא לא נגזר ממספר השולחנות, מגודל חציוני/ממוצע או
+ * מפרופיל צפיפות — כדי שאותה סקיצה תמיד תיתן אותה תוצאה.
  */
-export function sketchBuildCanvasSize(
-  tableBboxWidths: number[],
-  imgW: number,
-  imgH: number,
-  roundTableTargetPx: number,
-  minLongEdge: number,
-  maxLongEdge: number,
-): { w: number; h: number } {
+export function sketchWorldCanvas(imgW: number, imgH: number, longEdge: number): { w: number; h: number } {
   const aspect = imgW > 0 && imgH > 0 ? imgW / imgH : 4 / 3
-  const sorted = tableBboxWidths.filter((w) => w > 0.001).sort((a, b) => a - b)
-  const medianW = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0.06
-  const longEdge = clampNum(roundTableTargetPx / medianW, minLongEdge, maxLongEdge)
   return aspect >= 1 ? { w: longEdge, h: longEdge / aspect } : { w: longEdge * aspect, h: longEdge }
 }
 
-/**
- * מגביל גודל אלמנט שחושב מה-bbox לטווח סביר סביב הגודל הרגיל של VEYA לסוג
- * הזה (basePx) — כדי שזיהוי רועש לא ייצר אובייקט זעיר או ענק, בלי לבטל
- * לגמרי את ההבדל היחסי שה-AI זיהה בין אובייקטים.
- */
-export function clampItemSize(rawPx: number, basePx: number, minRatio: number, maxRatio: number): number {
-  return clampNum(rawPx, basePx * minRatio, basePx * maxRatio)
+/** אובייקט שזוהה, בקואורדינטות מנורמלות [0,1] (מרכז + גודל) — הקלט להמרה. */
+export interface SketchItemInput {
+  /** מרכז האובייקט, 0-1, יחסית לרוחב התמונה */
+  x: number
+  /** מרכז האובייקט, 0-1, יחסית לגובה התמונה */
+  y: number
+  width: number
+  height: number
+  rotation?: number
+  /**
+   * צורה שחייבת להישאר ריבועית (עיגול/מרובע) — width===height תמיד, כדי
+   * שעיגול לא ייצא אליפסה. הגודל עדיין נגזר **רק** מה-bbox שזוהה (ממוצע שני
+   * הצירים), בלי שום preset.
+   */
+  squareLock?: boolean
+}
+
+/** מלבן ממוקם ביחידות world. x,y = פינה שמאלית-עליונה (כמו ב-DOM). */
+export interface PlacedRect {
+  x: number
+  y: number
+  w: number
+  h: number
+  rotation: number
+}
+
+export interface PlacedSketch {
+  placed: PlacedRect[]
+  /** נקודת המקור המשותפת לאובייקטים **ולרקע הסקיצה** — ראה applySketchReview. */
+  origin: { x: number; y: number }
 }
 
 /**
- * מצמיד את מרכז האובייקט כך שהאובייקט (כולל גודלו) יישאר בתוך הקנבס עם
- * שוליים פנימיים קבועים (margin) — בלי להזיז אובייקטים שכבר בתוך התחום,
- * ובלי להצמיד אף פעם לקצה ממש.
+ * ממפה את כל האובייקטים שזוהו לקואורדינטות world בטרנספורם אחיד אחד.
+ *
+ * ``origin`` מוחזר כדי שהקורא יציב את **רקע הסקיצה** בדיוק על
+ * ``{x: origin.x, y: origin.y, width: canvas.w, height: canvas.h}``. מכיוון
+ * שהאובייקטים והרקע חולקים אותו origin ואותו canvas, החפיפה ביניהם מדויקת
+ * *מעצם הבנייה* — לא צריך לכייל אותה.
+ *
+ * ``pad`` הוא ריפוד אחיד (הזזה בלבד, לא שינוי גודל) כדי שהאולם לא ייצמד לפינה
+ * 0,0. אם אובייקט חורג לקואורדינטה שלילית (bbox שנוגע בקצה התמונה), כל
+ * הסצנה — כולל הרקע — מוזזת באותה הזזה בדיוק, כי ``worldSize`` ב-HallPage
+ * סופר רק מקסימומים ואובייקט בקואורדינטה שלילית היה יוצא מחוץ לתיבת העולם.
+ *
+ * ``minSizePx`` הוא רשת ביטחון לזיהוי מנוון בלבד, ומוחל **אחיד על שני הצירים**
+ * (מכפיל אחד) כדי שיחס-הממדים לא ישתנה גם במקרה הזה.
  */
-export function clampCenterWithMargin(center: number, halfSize: number, canvasLen: number, margin: number): number {
-  const lo = margin + halfSize
-  const hi = Math.max(lo, canvasLen - margin - halfSize)
-  return clampNum(center, lo, hi)
-}
+export function placeSketchItems(
+  items: SketchItemInput[],
+  canvas: { w: number; h: number },
+  pad: number,
+  minSizePx: number,
+): PlacedSketch {
+  // שלב 1: גודל + מרכז ביחידות world, בלי הזזה — scale טהור.
+  const raw = items.map((it) => {
+    let w = it.width * canvas.w
+    let h = it.height * canvas.h
+    if (it.squareLock) {
+      const size = (w + h) / 2
+      w = size
+      h = size
+    }
+    // רצפת גודל אחידה: מכפילים את שני הצירים באותו מכפיל, כך שהיחס נשמר.
+    const smallest = Math.min(w, h)
+    if (smallest > 0 && smallest < minSizePx) {
+      const k = minSizePx / smallest
+      w *= k
+      h *= k
+    }
+    return { cx: it.x * canvas.w, cy: it.y * canvas.h, w, h, rotation: it.rotation ?? 0 }
+  })
 
-/**
- * גודל שולחן (world units) שנשמר נאמן לצורה שזוהתה בסקיצה — לא לגודל אחיד
- * לכל השולחנות מאותו table_type (ראה tableSize ב-HallPage). עגול/מרובע
- * תמיד יוצאים width===height (אף פעם לא אליפסה, אף פעם לא מלבן) — הממוצע בין
- * ה-bbox הרוחב/גובה שזוהו נלקח כסקלר יחיד ומוגבל לטווח סביר. מלבני/אבירים
- * שומרים על הרוחב והגובה שזוהו בנפרד (יחס-ממדים נשמר), כל אחד מוגבל בנפרד.
- */
-export function tableWorldSize(
-  shape: 'round' | 'square' | 'rectangle' | 'knights',
-  detectedWNorm: number,
-  detectedHNorm: number,
-  canvasW: number,
-  canvasH: number,
-  base: { w: number; h: number },
-  minRatio: number,
-  maxRatio: number,
-): { w: number; h: number } {
-  const rawW = detectedWNorm * canvasW
-  const rawH = detectedHNorm * canvasH
-  if (shape === 'round' || shape === 'square') {
-    const size = clampItemSize((rawW + rawH) / 2, base.w, minRatio, maxRatio)
-    return { w: size, h: size }
+  // שלב 2: הזזה אחת ומשותפת לכולם (כולל הרקע) — מבטיחה שאין קואורדינטה שלילית.
+  let minX = 0
+  let minY = 0
+  for (const r of raw) {
+    minX = Math.min(minX, r.cx - r.w / 2)
+    minY = Math.min(minY, r.cy - r.h / 2)
   }
+  const origin = { x: pad + Math.max(0, -minX), y: pad + Math.max(0, -minY) }
+
   return {
-    w: clampItemSize(rawW, base.w, minRatio, maxRatio),
-    h: clampItemSize(rawH, base.h, minRatio, maxRatio),
+    origin,
+    placed: raw.map((r) => ({
+      x: origin.x + r.cx - r.w / 2,
+      y: origin.y + r.cy - r.h / 2,
+      w: r.w,
+      h: r.h,
+      rotation: r.rotation,
+    })),
   }
+}
+
+/**
+ * סדר מרחבי למספור שולחנות: שורות מלמעלה למטה, ובתוך כל שורה משמאל לימין.
+ * מחזיר את האינדקסים בסדר הזה (לא ממספר בעצמו).
+ *
+ * ``rowTolerance`` — פער אנכי בין מרכזים שעדיין נחשב "אותה שורה", כדי ששולחנות
+ * שלא מיושרים פרפקט בסקיצה לא יתפצלו לשורות מדומות.
+ *
+ * הכיוון (משמאל לימין) תואם לפריסה האוטומטית הקיימת (buildBandLayout, row-major)
+ * ולעובדה שהקנבס עצמו מוגדר LTR בקוד — לא ל-RTL של הממשק.
+ */
+export function spatialOrder(rects: { x: number; y: number; w: number; h: number }[], rowTolerance: number): number[] {
+  const withCenters = rects.map((r, i) => ({ i, cx: r.x + r.w / 2, cy: r.y + r.h / 2 }))
+  // מקבצים לשורות לפי מרכז אנכי: עוברים מלמעלה למטה ופותחים שורה חדשה רק
+  // כשהפער מהשורה הנוכחית גדול מהסבילות.
+  const byY = [...withCenters].sort((a, b) => a.cy - b.cy)
+  const rows: (typeof byY)[] = []
+  let current: typeof byY = []
+  let rowAnchor = Number.NaN
+  for (const item of byY) {
+    if (current.length === 0 || Math.abs(item.cy - rowAnchor) <= rowTolerance) {
+      if (current.length === 0) rowAnchor = item.cy
+      current.push(item)
+    } else {
+      rows.push(current)
+      current = [item]
+      rowAnchor = item.cy
+    }
+  }
+  if (current.length > 0) rows.push(current)
+  return rows.flatMap((row) => row.sort((a, b) => a.cx - b.cx).map((item) => item.i))
 }
 
 /**
