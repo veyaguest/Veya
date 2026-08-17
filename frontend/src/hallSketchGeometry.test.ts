@@ -11,6 +11,7 @@
  * נשארת מקור האמת: גודל, יחס-ממדים, סיבוב, מיקום והמרווחים בין האובייקטים.
  */
 import {
+  assignTableNumbers,
   clampNum,
   orientedAspect,
   placeSketchItems,
@@ -412,6 +413,117 @@ function testSketchImportRegressionLayout(): void {
   console.log(`✓ פריסת רגרסיה מלאה (6+6 שולחנות, אופקי/אנכי/45°/90°/מרובע/עגול, מרווחים לא אחידים) נאמנה בכל ${aspects.length} יחסי התמונה`)
 }
 
+// ─── מספור שולחנות: הסקיצה מנצחת, מרחבי רק כ-fallback ───────────────────
+
+function testSketchNumbersWin(): void {
+  // 3 שולחנות בסדר מרחבי 0,1,2 — לאמצעי כתוב 27 בסקיצה.
+  const nums = assignTableNumbers([null, 27, null], [0, 1, 2], 1, () => false)
+  assert(nums[1] === 27, `שולחן שמסומן 27 בסקיצה לא קיבל 27 (${nums[1]})`)
+  assert(nums[0] === 1 && nums[2] === 2, `ה-fallback לא מילא את הפנויים (${nums.join(',')})`)
+  console.log('✓ מספר שכתוב בסקיצה מנצח את המספור המרחבי')
+}
+
+function testFallbackIsSpatialWhenNoNumbers(): void {
+  // אין מספרים בסקיצה כלל → בדיוק ההתנהגות הקודמת: 1..n בסדר מרחבי.
+  const order = [2, 0, 3, 1] // סדר מרחבי מבולגן ביחס לסדר ה-JSON
+  const nums = assignTableNumbers([null, null, undefined, null], order, 1, () => false)
+  assert(nums[2] === 1 && nums[0] === 2 && nums[3] === 3 && nums[1] === 4, `fallback לא לפי סדר מרחבי (${nums.join(',')})`)
+  console.log('✓ בלי מספרים בסקיצה — נשמר ה-fallback המרחבי הקיים')
+}
+
+function testNoRenumberingAndNoGuessing(): void {
+  // מספר שכבר תפוס על הלוח, וכפילות בזיהוי — אף אחד מהם לא "מתקן" מספר אחר.
+  const taken = new Set([5])
+  const nums = assignTableNumbers([12, 12, 5, null], [0, 1, 2, 3], 1, (n) => taken.has(n))
+  assert(nums[0] === 12, 'הראשון בסדר מרחבי לא שמר על המספר שזוהה')
+  assert(nums[1] !== 12 && nums[2] !== 5, 'התנגשות יצרה מספר כפול')
+  assert(new Set(nums).size === nums.length, `יש מספרים כפולים (${nums.join(',')})`)
+  assert(!nums.includes(5), 'מספר שכבר תפוס על הלוח נלקח')
+  // ערכים לא-חוקיים מהמודל נופלים ל-fallback במקום להיכתב כמו שהם.
+  const bad = assignTableNumbers([0, -3, 1000, 4.5], [0, 1, 2, 3], 1, () => false)
+  assert(bad.every((n) => Number.isInteger(n) && n >= 1), `מספר לא חוקי עבר (${bad.join(',')})`)
+  console.log('✓ התנגשויות וערכים לא-חוקיים נופלים ל-fallback, בלי ניחוש ובלי renumbering')
+}
+
+function testNumbersAreStableAcrossRebuild(): void {
+  // אותה סקיצה, שתי בניות → אותו מספור בדיוק (Rebuild/Replace לא משנים מספרים).
+  const detected = [27, null, 3, null, 12]
+  const order = [2, 0, 4, 1, 3]
+  const a = assignTableNumbers(detected, order, 1, () => false)
+  const b = assignTableNumbers(detected, order, 1, () => false)
+  assert(a.join(',') === b.join(','), `בנייה חוזרת נתנה מספור אחר (${a.join(',')} / ${b.join(',')})`)
+  assert(a[0] === 27 && a[2] === 3 && a[4] === 12, `מספרי הסקיצה לא נשמרו (${a.join(',')})`)
+  console.log('✓ Rebuild/Replace מחזירים בדיוק את אותם מספרים')
+}
+
+// ─── חוק השכבות: הסקיצה תמיד מתחת לאובייקטים ────────────────────────────
+// נבדק על הקוד עצמו (App.css + HallPage.tsx) ולא על DOM חי, כי זהו invariant
+// מבני: אף מצב UI (בחירה/גרירה/סקייל/סיבוב) לא אמור להיות מסוגל להרים את
+// שכבת הסקיצה. אם מישהו יחזיר z-index לסקיצה — הבדיקה הזו תיפול.
+
+declare function require(name: string): { readFileSync(p: string, enc: string): string }
+declare const __dirname: string
+
+// ה-JS המהודר יושב ב-frontend/.tmp-test/ (ראה package.json), ולכן המקור
+// נמצא צעד אחד למעלה ב-src/.
+function readSrc(name: string): string {
+  return require('fs').readFileSync(`${__dirname}/../src/${name}`, 'utf8')
+}
+
+/** z-index מקסימלי בכל כלל CSS שהסלקטור שלו נוגע ב-selector הנתון. */
+function maxZIndexFor(css: string, selector: string): number {
+  let max = Number.NEGATIVE_INFINITY
+  const ruleRe = /([^{}]+)\{([^{}]*)\}/g
+  let m: RegExpExecArray | null
+  while ((m = ruleRe.exec(css)) !== null) {
+    const sel = m[1]
+    if (!sel.includes(selector)) continue
+    // רק כללים שה-selector עצמו הוא היעד (למשל .hall-table.selected), לא
+    // צאצא שלו (.hall-table .seat-pip) — לצאצא מותר z-index גבוה.
+    const targets = sel
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => new RegExp(`${selector.replace('.', '\\.')}(?![\\w-])[^\\s>+~]*$`).test(s))
+    if (targets.length === 0) continue
+    const z = /(?:^|[;{\s])z-index:\s*(-?\d+)/.exec(m[2])
+    if (z) max = Math.max(max, Number(z[1]))
+  }
+  return max
+}
+
+function testSketchLayerAlwaysBelowObjects(): void {
+  // מסירים הערות — הן מזכירות z-index בטקסט חופשי ואינן כללים.
+  const css = readSrc('App.css').replace(/\/\*[\s\S]*?\*\//g, '')
+  const sketchZ = maxZIndexFor(css, '.hall-sketch-bg')
+  const tableZ = maxZIndexFor(css, '.hall-table')
+  const elementZ = maxZIndexFor(css, '.hall-element')
+  assert(sketchZ === 0, `לשכבת הסקיצה יש z-index ${sketchZ} — חייב להיות 0 בכל מצב (כולל .selected)`)
+  assert(tableZ > sketchZ, `שולחן (z=${tableZ}) לא מעל הסקיצה (z=${sketchZ})`)
+  assert(elementZ > sketchZ, `אלמנט (z=${elementZ}) לא מעל הסקיצה (z=${sketchZ})`)
+  // גם בסיס האובייקט (לא רק מצב "נבחר") חייב להיות מעל הסקיצה — אחרת שולחן
+  // שלא נבחר היה נופל מתחת לסקיצה נבחרת.
+  for (const base of ['.hall-table {', '.hall-element {']) {
+    const at = css.indexOf(base)
+    assert(at >= 0, `לא נמצא כלל הבסיס ${base}`)
+    const body = css.slice(at, css.indexOf('}', at))
+    const z = /z-index:\s*(-?\d+)/.exec(body)
+    assert(z !== null && Number(z[1]) > sketchZ, `${base} — לכלל הבסיס אין z-index מעל הסקיצה`)
+  }
+  console.log(`✓ חוק השכבות ב-CSS: סקיצה z=${sketchZ} < אובייקטים z=${Math.min(tableZ, elementZ)} (בכל מצב)`)
+}
+
+function testSketchDragNeverTouchesZIndex(): void {
+  const tsx = readSrc('components/HallPage.tsx')
+  // גרירה/צביטה של הסקיצה נוגעות ב-DOM ישירות (skEl.style.*) — מותר להן
+  // לשנות מיקום/גודל/סיבוב בלבד, אף פעם לא z-index ולא סדר DOM.
+  const props = Array.from(tsx.matchAll(/skEl\.style\.([A-Za-z]+)/g)).map((m) => m[1])
+  assert(props.length > 0, 'לא נמצאו כתיבות ל-skEl.style — הבדיקה איבדה את היעד שלה')
+  const allowed = new Set(['width', 'height', 'transform', 'left', 'top'])
+  for (const p of props) assert(allowed.has(p), `גרירת הסקיצה משנה skEl.style.${p} — מותר רק מיקום/גודל/סיבוב`)
+  assert(!/zIndex/.test(tsx.slice(tsx.indexOf('hall-sketch-bg'))), 'נמצא zIndex inline באזור שכבת הסקיצה')
+  console.log(`✓ גרירת הסקיצה משנה רק ${props.join('/')} — לא z-index ולא סדר DOM`)
+}
+
 testClampNum()
 testSketchWorldCanvasPreservesAspect()
 testExactScaleAndAspect()
@@ -427,4 +539,10 @@ testOrientedAspectSwapsOnRotation()
 testRectOverlapFractionBasics()
 testRectOverlapFractionIsScaleInvariant()
 testSketchImportRegressionLayout()
+testSketchNumbersWin()
+testFallbackIsSpatialWhenNoNumbers()
+testNoRenumberingAndNoGuessing()
+testNumbersAreStableAcrossRebuild()
+testSketchLayerAlwaysBelowObjects()
+testSketchDragNeverTouchesZIndex()
 console.log('OK — מתמטיקת בניית אולם מסקיצה תקינה.')

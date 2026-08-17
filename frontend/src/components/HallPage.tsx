@@ -52,6 +52,7 @@ import {
   type SmartSuggestion,
 } from '../seatingAdvisor'
 import {
+  assignTableNumbers,
   orientedAspect,
   placeSketchItems,
   rectOverlapFraction,
@@ -1265,7 +1266,9 @@ function SketchReviewPanel(props: {
                       tier === 'high' ? hallSketchT.confidenceHigh : tier === 'mid' ? hallSketchT.confidenceMid : hallSketchT.confidenceLow
                     }`}
                   >
-                    <span className="sk-review-box-num">{it.label || i + 1}</span>
+                    {/* מספר שנקרא מהסקיצה מוצג כמו שהוא — זה בדיוק המספר
+                        שהשולחן יקבל במפה (ראה assignTableNumbers). */}
+                    <span className="sk-review-box-num">{it.table_number ?? (it.label || i + 1)}</span>
                   </div>
                 )
               })}
@@ -1283,6 +1286,12 @@ function SketchReviewPanel(props: {
                       {CONFIDENCE_EMOJI[tier]}{' '}
                       {tier === 'high' ? hallSketchT.confidenceHigh : tier === 'mid' ? hallSketchT.confidenceMid : hallSketchT.confidenceLow}
                     </span>
+                    {isTable && it.table_number != null && (
+                      <span className="sk-review-badge sk-review-badge-num" title={hallSketchT.numberFromSketchHint}>
+                        #{' '}
+                        {hallSketchT.numberFromSketch(it.table_number)}
+                      </span>
+                    )}
                     {overlapFlags[i] && (
                       <span className="sk-review-badge sk-review-badge-overlap" title={hallSketchT.overlapWarningHint}>
                         ⚠️ {hallSketchT.overlapWarning}
@@ -3033,16 +3042,23 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     })
     const { placed, origin } = placeSketchItems(inputs, canvas, SKETCH_WORLD_PAD, SKETCH_MIN_ITEM_PX)
 
-    // מספור מרחבי: שורות מלמעלה למטה, ובכל שורה משמאל לימין — לא לפי סדר
-    // ה-JSON שה-AI החזיר. חל רק על השולחנות החדשים; שולחנות קיימים שומרים על
-    // מספרם, כי table_number הוא המזהה שלפיו מוזמנים משובצים.
+    // מספור: מספר שכתוב בסקיצה עצמה מנצח (it.table_number מ-AI Vision). רק
+    // שולחן שאין לו מספר כתוב מקבל מספור מרחבי — שורות מלמעלה למטה, ובכל
+    // שורה משמאל לימין — ולא לפי סדר ה-JSON שה-AI החזיר. שולחנות קיימים
+    // שומרים על מספרם (isTaken), כי table_number הוא המזהה שלפיו מוזמנים
+    // משובצים. כל ההיגיון ב-assignTableNumbers, כדי שיהיה ניתן לבדיקה.
     const tableIdx = items.map((it, i) => (DETECTED_TABLE_TYPES[it.type] ? i : -1)).filter((i) => i >= 0)
     const order = spatialOrder(tableIdx.map((i) => placed[i]), SKETCH_ROW_TOLERANCE)
-    const numberByItemIdx = new Map<number, number>()
     const startNum = mode === 'replace' ? 1 : nextTableNumRef.current
-    order.forEach((posInTableIdx, seq) => {
-      numberByItemIdx.set(tableIdx[posInTableIdx], startNum + seq)
-    })
+    const takenNums = new Set<number>(mode === 'replace' ? [] : tables.map((t) => t.table_number))
+    const assigned = assignTableNumbers(
+      tableIdx.map((i) => items[i].table_number ?? null),
+      order,
+      startNum,
+      (n) => takenNums.has(n),
+    )
+    const numberByItemIdx = new Map<number, number>()
+    tableIdx.forEach((itemIdx, k) => numberByItemIdx.set(itemIdx, assigned[k]))
 
     const newTables: TableView[] = []
     const newElements: HallElement[] = []
@@ -3052,6 +3068,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       if (tableType) {
         newTables.push({
           table_number: numberByItemIdx.get(i) ?? startNum + newTables.length,
+          // (הערך אחרי ?? הוא רשת ביטחון בלבד — כל שולחן נמצא ב-numberByItemIdx)
           x: Math.round(r.x),
           y: Math.round(r.y),
           guests: [],
@@ -3091,15 +3108,21 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     })
 
     newTables.sort((a, b) => a.table_number - b.table_number)
+    // המספר הפנוי הבא לשולחן שיתווסף ידנית — מעל הגבוה שבשימוש בפועל, כי
+    // מספרים שנקראו מהסקיצה יכולים "לקפוץ" (למשל 27) ואינם רצף מ-startNum.
+    const highest = Math.max(
+      startNum - 1,
+      ...newTables.map((t) => t.table_number),
+      ...(mode === 'replace' ? [] : tables.map((t) => t.table_number)),
+    )
     if (mode === 'replace') {
       setTables(newTables)
       setElements(newElements)
-      nextTableNumRef.current = startNum + newTables.length
     } else {
       setTables((prev) => [...prev, ...newTables])
       setElements((prev) => [...prev, ...newElements])
-      nextTableNumRef.current = startNum + newTables.length
     }
+    nextTableNumRef.current = highest + 1
     // פרופיל הצפיפות ממשיך לשלוט על שולחנות שיתווספו **ידנית** בהמשך. הוא לא
     // נוגע יותר בשולחנות שיובאו מהסקיצה — להם יש width/height משלהם
     // (ראה tableRenderSize).

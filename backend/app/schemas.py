@@ -635,6 +635,9 @@ class DetectedHallElement(BaseModel):
     height: float = Field(gt=0, le=1)
     rotation: float = 0
     capacity: Optional[int] = Field(default=None, ge=1, le=60)
+    # מספר השולחן כפי שהוא כתוב בסקיצה עצמה (None = לא זוהה מספר, ואז הלקוח
+    # ממספר מרחבית — ראה assignTableNumbers ב-hallSketchGeometry.ts).
+    table_number: Optional[int] = Field(default=None, ge=1, le=999)
     confidence: float = Field(ge=0, le=1)
     label: str = ""
 

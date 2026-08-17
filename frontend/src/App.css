@@ -3485,6 +3485,9 @@ td.notes.seating {
    הצבע/הצורה נקבעים inline (per-element), ה-CSS רק מגדיר את המבנה. */
 .hall-element {
   position: absolute;
+  /* שכבת האובייקטים — תמיד מעל שכבת הסקיצה (0). ראה "חוק השכבות" ליד
+     .hall-sketch-bg. מפורש ולא מסתמך על סדר ה-DOM. */
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4080,9 +4083,27 @@ td.notes.seating {
 @media (prefers-reduced-motion: reduce) {
   .hall-world { transition: none; }
 }
-/* סקיצת האולם שהזוג העלה — רקע עדין מתחת לשולחנות. גודלו נקבע דינמית
-   (width/height inline = גודל ה"עולם"), ממורכז ומותאם בלי מתיחה (contain).
-   pointer-events:none → אי אפשר להזיז אותו בטעות בזמן גרירת אלמנטים. */
+/* ─── חוק השכבות של עורך האולם (invariant מבני) ────────────────────────
+   סדר קבוע, מלמטה למעלה, ואף אינטראקציה לא משנה אותו:
+
+     0  שכבת הסקיצה (.hall-sketch-bg)          ← תמיד התחתונה
+     1  אובייקטים: שולחנות ואלמנטים            ← תמיד מעל הסקיצה
+     4-6 קישוטים בתוך אובייקט (כיסאות, תגיות, נקודת-סטטוס)
+     6-7 אובייקט נבחר
+     8-9 ידיות, סרגל פעולות, tooltip
+
+   הכלל: **לשכבת הסקיצה אסור z-index גדול מ-0, בשום מצב** — לא כשהיא נבחרת,
+   לא בזמן גרירה ולא בזמן שינוי-גודל. גרירת הסקיצה משנה רק left/top (state),
+   לא את סדר ה-DOM ולא z-index, ולכן החוק מתקיים גם אחרי הזזה/סקייל/סיבוב/
+   זום/רענון/בנייה מחדש.
+
+   כאן הייתה תקלה: ‎.hall-sketch-bg.selected‎ העלה את הסקיצה ל-z-index:1, ואז
+   עצם הלחיצה עליה הקפיצה אותה מעל כל השולחנות והם "נעלמו" מתחתיה. הבחירה
+   מסומנת עכשיו בהילה בלבד. הבדיקה שמגינה על זה: hallSketchGeometry.test.ts
+   → testSketchLayerAlwaysBelowObjects (קוראת את הקובץ הזה ממש).
+
+   סקיצת האולם עצמה: גודלה נקבע דינמית (width/height inline), מותאמת בלי
+   מתיחה (contain). */
 .hall-sketch-bg {
   position: absolute;
   top: 0;
@@ -4103,7 +4124,6 @@ td.notes.seating {
   box-shadow:
     0 0 0 2px var(--gold-light),
     0 8px 22px rgba(20, 18, 14, 0.16);
-  z-index: 1;
 }
 .hall-sketch-bg.locked {
   cursor: default;
@@ -4539,6 +4559,12 @@ td.notes.seating {
 .sk-review-badge-overlap {
   color: #b23a3a;
 }
+/* מספר שולחן שנקרא מהסקיצה עצמה — עובדה, לא אזהרה: זהב שקט. */
+.sk-review-badge-num {
+  color: var(--gold-deep);
+  font-weight: 600;
+  white-space: nowrap;
+}
 .sk-review-body {
   display: flex;
   gap: 14px;
@@ -4676,6 +4702,11 @@ td.notes.seating {
 }
 .hall-table {
   position: absolute;
+  /* שכבת האובייקטים — תמיד מעל שכבת הסקיצה (0). ראה "חוק השכבות" ליד
+     .hall-sketch-bg. מפורש ולא מסתמך על סדר ה-DOM. בונוס: זה גם מכניס את
+     טבעת ה"מפיות" (.type-round::before, z-index:-1) לתוך השולחן — קודם היא
+     "ברחה" למעלה ונצבעה מתחת לסקיצה. */
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -169,6 +169,59 @@ export function spatialOrder(rects: { x: number; y: number; w: number; h: number
 }
 
 /**
+ * קובע את ``table_number`` הסופי לכל שולחן שיובא מסקיצה.
+ *
+ * ── סדר העדיפויות ──────────────────────────────────────────────────────
+ * 1. **מספר שכתוב בסקיצה עצמה מנצח.** אם ה-AI קרא "27" ליד שולחן מסוים, זה
+ *    יהיה שולחן 27 במפה — גם אם לפי מיקומו הוא היה מקבל מספר אחר. זה המספר
+ *    שהמשתמש כבר עובד לפיו מול האולם/הקייטרינג.
+ * 2. **fallback מרחבי** רק לשולחנות שאין להם מספר כתוב: שורות מלמעלה למטה,
+ *    ובכל שורה משמאל לימין (``order``), כל אחד מקבל את המספר הפנוי הקטן
+ *    ביותר מ-``startNum`` ומעלה.
+ *
+ * אין כאן שום renumbering: מספר שזוהה לא "מתוקן" לפי מיקום, ומספרים קיימים
+ * על הלוח (``isTaken``) לא נוגעים בהם — ``table_number`` הוא המזהה שלפיו
+ * מוזמנים משובצים, ושינוי שלו היה מזיז אנשים בין שולחנות.
+ *
+ * התנגשות (אותו מספר זוהה פעמיים, או שהמספר כבר תפוס על הלוח) לא נפתרת
+ * בניחוש: הראשון בסדר המרחבי שומר על המספר שזוהה, והשני נופל ל-fallback.
+ * הפונקציה דטרמיניסטית לחלוטין — אותה סקיצה תמיד מניבה אותו מספור, ולכן
+ * Rebuild/Replace/Refresh לא משנים מספרים.
+ *
+ * ``detected`` — מקביל למערך השולחנות; ``order`` — אינדקסים לתוכו בסדר מרחבי.
+ */
+export function assignTableNumbers(
+  detected: (number | null | undefined)[],
+  order: number[],
+  startNum: number,
+  isTaken: (n: number) => boolean,
+): number[] {
+  const isValid = (n: number | null | undefined): n is number =>
+    typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 999
+  const claimed = new Set<number>()
+  const out = new Array<number>(detected.length).fill(0)
+
+  // מעבר 1 — מספרים שזוהו בסקיצה, לפי סדר מרחבי (קובע מי זוכה בהתנגשות).
+  for (const i of order) {
+    const n = detected[i]
+    if (isValid(n) && !claimed.has(n) && !isTaken(n)) {
+      claimed.add(n)
+      out[i] = n
+    }
+  }
+
+  // מעבר 2 — כל השאר: המספר הפנוי הבא, בסדר מרחבי.
+  let next = Math.max(1, Math.floor(startNum))
+  for (const i of order) {
+    if (out[i] !== 0) continue
+    while (claimed.has(next) || isTaken(next)) next++
+    claimed.add(next)
+    out[i] = next
+  }
+  return out
+}
+
+/**
  * יחס-הממדים (רוחב/גובה) של תמונה, בהתחשב בסיבוב נוכחי (90/270 מחליפים
  * רוחב וגובה) — קובע את צורת מסגרת החיתוך ב-SketchEditor כברירת מחדל, כדי
  * שהסקיצה כולה תוצג ללא חיתוך (contain, לא cover) בלי תלות ביחס-הממדים של

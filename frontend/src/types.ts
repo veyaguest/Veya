@@ -604,6 +604,9 @@ export interface DetectedHallElement {
   height: number
   rotation: number
   capacity: number | null
+  // מספר השולחן כפי שהוא כתוב בסקיצה עצמה. null = לא זוהה מספר (ואז ממספרים
+  // מרחבית — ראה assignTableNumbers). רלוונטי לשולחנות בלבד.
+  table_number?: number | null
   confidence: number
   label: string
 }

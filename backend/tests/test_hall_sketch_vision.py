@@ -111,6 +111,26 @@ def test_validate_elements_accepts_square_table() -> None:
     print("✓ _validate_elements מקבל square_table כטיפוס תקין")
 
 
+def test_validate_elements_table_number_from_sketch() -> None:
+    """מספר שולחן שנקרא מהסקיצה עצמה עובר כמו שהוא (הוא מנצח את המספור המרחבי
+    בצד הלקוח), אבל כל מה שאינו מספר-שולחן אמין נמחק ל-None — עדיף בלי מספר,
+    כי אז יש fallback דטרמיניסטי, מאשר תווית שגויה על שולחן."""
+    base = {"x": 0.3, "y": 0.4, "width": 0.05, "height": 0.05, "rotation": 0, "confidence": 0.9}
+    raw = [
+        {**base, "type": "round_table", "table_number": 27},      # תקין → נשמר
+        {**base, "type": "round_table", "table_number": "12"},     # מחרוזת ספרתית → 12
+        {**base, "type": "round_table"},                            # אין מספר בסקיצה
+        {**base, "type": "round_table", "table_number": 0},         # מחוץ לטווח
+        {**base, "type": "round_table", "table_number": 1500},      # מחוץ לטווח
+        {**base, "type": "round_table", "table_number": "שולחן"},   # לא מספר
+        {**base, "type": "bar", "table_number": 5},                 # אזור, לא שולחן
+    ]
+    out = hall_vision._validate_elements(raw)
+    got = [el["table_number"] for el in out]
+    assert got == [27, 12, None, None, None, None, None], f"סינון מספרי שולחן שגוי: {got}"
+    print("✓ _validate_elements מעביר מספר שולחן אמיתי מהסקיצה ומנקה כל השאר")
+
+
 def test_table_width_height_round_trip() -> None:
     """שולחן עם width/height עצמאיים (יובא מסקיצת AI) נשמר ונטען חזרה נכון דרך
     PUT/GET /hall; שולחן בלי (מפה ידנית/ישנה) ממשיך לחזור None — תאימות אחורה,
@@ -168,6 +188,7 @@ if __name__ == "__main__":
     try:
         test_validate_elements_rejects_garbage()
         test_validate_elements_accepts_square_table()
+        test_validate_elements_table_number_from_sketch()
         test_table_width_height_round_trip()
         test_analyze_missing_api_key_gives_clean_error()
         test_analyze_endpoint_is_preview_only()
