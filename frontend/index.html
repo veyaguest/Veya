@@ -25,7 +25,7 @@
       content="מערכת חכמה לניהול אירועים: מוזמנים, אישורי הגעה בוואטסאפ, הזמנות וסידורי הושבה אוטומטיים. חתונה, בר/בת מצווה, חינה, ברית או אירוע עסקי — הכול במקום אחד."
     />
     <meta property="og:url" content="https://veya-snowy.vercel.app/" />
-    <meta property="og:image" content="https://veya-snowy.vercel.app/og-image.png?v=2" />
+    <meta property="og:image" content="https://veya-snowy.vercel.app/og-image.png?v=3" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="VEYA — מערכת חכמה לניהול אירועים" />
@@ -38,7 +38,7 @@
       name="twitter:description"
       content="מערכת חכמה לניהול אירועים: מוזמנים, אישורי הגעה בוואטסאפ, הזמנות וסידורי הושבה אוטומטיים — לכל סוג אירוע."
     />
-    <meta name="twitter:image" content="https://veya-snowy.vercel.app/og-image.png?v=2" />
+    <meta name="twitter:image" content="https://veya-snowy.vercel.app/og-image.png?v=3" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -519,6 +519,36 @@
         .sc-tab .sc-tab-sub { display: none; }
       }
 
+      /* ===== Sketch → Hall (בניית סידור שולחנות מסקיצת האולם) =====
+         שני כרטיסים זהים בגודלם — סקיצה מימין, האולם ב-VEYA משמאל (כיוון
+         הקריאה RTL), עם חץ ביניהם. הגיאומטריה בשתי ההמחשות זהה בכוונה:
+         אותם מרכזי שולחנות ואותם מספרים — זה בדיוק מה שהפיצ'ר עושה.
+         פלטה נייטרלית בלבד (דיו/פחם/שנהב + נגיעת ירוק אחת), בלי זהב. */
+      .s2h { background: var(--ivory); }
+      .s2h-lead { font-family: 'Frank Ruhl Libre', serif; font-size: clamp(19px, 2.5vw, 25px); color: var(--charcoal); line-height: 1.45; margin-bottom: 12px; }
+      .s2h-flow { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; }
+      .s2h-card { background: var(--cream); border: 1px solid var(--line); border-radius: 20px; padding: 18px; box-shadow: 0 18px 40px rgba(43, 38, 32, 0.06); transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease; }
+      .s2h-card:hover { transform: translateY(-4px); box-shadow: 0 24px 50px rgba(43, 38, 32, 0.10); border-color: rgba(43, 38, 32, 0.16); }
+      .s2h-cap { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+      .s2h-cap h3 { font-size: 16.5px; }
+      .s2h-tag { font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; white-space: nowrap; }
+      .s2h-card-out .s2h-tag { color: #23794a; border-color: rgba(47, 158, 95, 0.34); background: rgba(47, 158, 95, 0.07); }
+      .s2h-frame { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+      .s2h-frame svg { display: block; width: 100%; height: auto; }
+      .s2h-arrow { width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: var(--cream-text); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 12px 26px rgba(23, 19, 13, 0.22); animation: s2h-nudge 2.8s ease-in-out infinite; }
+      @keyframes s2h-nudge { 0%, 100% { translate: 0 0; } 50% { translate: -5px 0; } }
+      @keyframes s2h-nudge-v { 0%, 100% { translate: 0 0; } 50% { translate: 0 5px; } }
+      .s2h-cta { text-align: center; margin-top: 34px; }
+      @media (max-width: 780px) {
+        .s2h-flow { grid-template-columns: 1fr; gap: 16px; }
+        /* החץ מסתובב כדי להצביע מטה — סדר הקריאה במובייל הוא סקיצה מעל, תוצאה מתחת */
+        .s2h-arrow { transform: rotate(-90deg); margin: 0 auto; animation-name: s2h-nudge-v; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .s2h-arrow { animation: none; }
+        .s2h-card { transition: none; }
+      }
+
       /* ===== Supporting features (compact) ===== */
       .supporting-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; }
       .supporting-item .ic { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(145deg, rgba(201, 162, 39, 0.14), rgba(201, 162, 39, 0.05)); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; color: var(--gold-deep); }
@@ -778,6 +808,123 @@
 
           <div class="sc-cta reveal">
             <a href="/app?auth=register" class="btn btn-ghost">זה בדיוק מה שמחכה לכם אחרי ההרשמה <span class="arw" aria-hidden="true">←</span></a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== SKETCH → HALL ===== -->
+      <section class="s2h" id="sketch" aria-labelledby="s2h-title">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="kicker">מהסקיצה לאולם דיגיטלי</span>
+            <h2 id="s2h-title" class="section-title">קיבלתם סקיצה מהאולם?</h2>
+            <p class="s2h-lead">נהדר. פשוט מעלים אותה — ו-VEYA כבר תבנה לכם את סידור השולחנות.</p>
+            <p class="section-sub">
+              ה-AI של VEYA מזהה את השולחנות, המספרים והמיקום שלהם והופך את
+              הסקיצה לאולם דיגיטלי מוכן לסידור הושבה.
+            </p>
+          </div>
+
+          <div class="s2h-flow reveal d1">
+            <!-- לפני: הסקיצה שקיבלתם מהאולם -->
+            <figure class="s2h-card">
+              <figcaption class="s2h-cap">
+                <h3>הסקיצה מהאולם</h3>
+                <span class="s2h-tag">תמונה או צילום</span>
+              </figcaption>
+              <div class="s2h-frame">
+                <svg viewBox="0 0 300 190" role="img" aria-label="סקיצה מצוירת של אולם: במה, רחבת ריקודים ושמונה שולחנות עגולים עם מספרים כתובים ביד — 31, 5, 12, 27, 8, 9, 40 ו-3">
+                  <rect width="300" height="190" fill="#f3efe4" />
+                  <g transform="rotate(-0.7 150 95)" fill="none" stroke="#8d8778" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+                    <path d="M10 12 L292 8 L289 182 L12 179 Z" />
+                    <path d="M127 19 L174 17 L175 38 L126 39 Z" />
+                    <path d="M119 67 L182 65 L183 123 L118 122 Z" />
+                    <circle cx="40" cy="48" r="15.2" />
+                    <circle cx="92" cy="48" r="14.6" />
+                    <circle cx="208" cy="48" r="15.4" />
+                    <circle cx="260" cy="48" r="14.9" />
+                    <circle cx="40" cy="142" r="15.1" />
+                    <circle cx="92" cy="142" r="14.7" />
+                    <circle cx="208" cy="142" r="15.3" />
+                    <circle cx="260" cy="142" r="15" />
+                  </g>
+                  <g font-family="'Assistant', sans-serif" fill="#6a6252" text-anchor="middle">
+                    <text x="150" y="32" font-size="8.5">במה</text>
+                    <text x="150" y="98" font-size="9.5">רחבה</text>
+                    <g font-size="11.5" font-weight="600">
+                      <text x="40" y="52" transform="rotate(-5 40 48)">31</text>
+                      <text x="92" y="52" transform="rotate(4 92 48)">5</text>
+                      <text x="208" y="52" transform="rotate(-3 208 48)">12</text>
+                      <text x="260" y="52" transform="rotate(5 260 48)">27</text>
+                      <text x="40" y="146" transform="rotate(3 40 142)">8</text>
+                      <text x="92" y="146" transform="rotate(-4 92 142)">9</text>
+                      <text x="208" y="146" transform="rotate(4 208 142)">40</text>
+                      <text x="260" y="146" transform="rotate(-3 260 142)">3</text>
+                    </g>
+                  </g>
+                </svg>
+              </div>
+            </figure>
+
+            <div class="s2h-arrow" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
+            </div>
+
+            <!-- אחרי: אותו אולם בתוך VEYA — אותם מיקומים, אותם מספרים -->
+            <figure class="s2h-card s2h-card-out">
+              <figcaption class="s2h-cap">
+                <h3>האולם שלכם ב-VEYA</h3>
+                <span class="s2h-tag">מוכן לסידור הושבה</span>
+              </figcaption>
+              <div class="s2h-frame">
+                <svg viewBox="0 0 300 190" role="img" aria-label="אותו אולם בתוך VEYA: שמונה שולחנות דיגיטליים עם מקומות ישיבה, באותם מיקומים ועם אותם מספרים שהופיעו בסקיצה">
+                  <rect width="300" height="190" fill="var(--ivory)" />
+                  <rect x="9" y="9" width="282" height="172" rx="9" fill="none" stroke="var(--line)" stroke-width="1.4" />
+                  <rect x="126" y="18" width="48" height="21" rx="4" fill="#ece5d6" />
+                  <rect x="118" y="66" width="64" height="58" rx="6" fill="#ece5d6" />
+                  <g font-family="'Assistant', sans-serif" fill="var(--muted)" text-anchor="middle">
+                    <text x="150" y="32" font-size="8.5">במה</text>
+                    <text x="150" y="98" font-size="9.5">רחבה</text>
+                  </g>
+                  <g>
+                    <g fill="none" stroke="var(--charcoal)" stroke-opacity="0.38" stroke-width="3" stroke-linecap="round" stroke-dasharray="0.1 10.6">
+                      <circle cx="40" cy="48" r="20.5" />
+                      <circle cx="92" cy="48" r="20.5" />
+                      <circle cx="208" cy="48" r="20.5" />
+                      <circle cx="260" cy="48" r="20.5" />
+                      <circle cx="40" cy="142" r="20.5" />
+                      <circle cx="92" cy="142" r="20.5" />
+                      <circle cx="208" cy="142" r="20.5" />
+                      <circle cx="260" cy="142" r="20.5" />
+                    </g>
+                    <g fill="var(--cream)" stroke="var(--charcoal)" stroke-opacity="0.26" stroke-width="1.2">
+                      <circle cx="40" cy="48" r="15" />
+                      <circle cx="92" cy="48" r="15" />
+                      <circle cx="208" cy="48" r="15" />
+                      <circle cx="260" cy="48" r="15" />
+                      <circle cx="40" cy="142" r="15" />
+                      <circle cx="92" cy="142" r="15" />
+                      <circle cx="208" cy="142" r="15" />
+                      <circle cx="260" cy="142" r="15" />
+                    </g>
+                    <g font-family="'Assistant', sans-serif" font-size="11.5" font-weight="700" fill="var(--charcoal)" text-anchor="middle">
+                      <text x="40" y="52">31</text>
+                      <text x="92" y="52">5</text>
+                      <text x="208" y="52">12</text>
+                      <text x="260" y="52">27</text>
+                      <text x="40" y="146">8</text>
+                      <text x="92" y="146">9</text>
+                      <text x="208" y="146">40</text>
+                      <text x="260" y="146">3</text>
+                    </g>
+                  </g>
+                </svg>
+              </div>
+            </figure>
+          </div>
+
+          <div class="s2h-cta reveal">
+            <a href="/app?auth=register" class="btn btn-primary">נסו את VEYA <span class="arw" aria-hidden="true">←</span></a>
           </div>
         </div>
       </section>
