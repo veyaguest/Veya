@@ -1101,10 +1101,17 @@ td.notes.seating {
   border: 1px solid transparent;
   line-height: 1.5;
 }
+/* צבעי אישור הגעה — אותה משמעות כמו במד בתמונת המצב (--gauge-*):
+   ירוק = מגיע, אדום = לא מגיע, צהוב/זהב = מתלבט. טרם השיב נשאר ניטרלי. */
 .badge.confirmed {
-  background: rgba(201, 162, 39, 0.1);
+  background: color-mix(in srgb, var(--gauge-confirmed) 14%, transparent);
+  color: #1f7a3d;
+  border-color: color-mix(in srgb, var(--gauge-confirmed) 40%, transparent);
+}
+.badge.maybe {
+  background: color-mix(in srgb, var(--gauge-maybe) 20%, transparent);
   color: #8a6d1f;
-  border-color: rgba(201, 162, 39, 0.25);
+  border-color: color-mix(in srgb, var(--gauge-maybe) 45%, transparent);
 }
 .badge.pending {
   background: rgba(139, 133, 120, 0.08);
@@ -1112,9 +1119,9 @@ td.notes.seating {
   border-color: rgba(139, 133, 120, 0.2);
 }
 .badge.declined {
-  background: rgba(120, 60, 60, 0.08);
+  background: color-mix(in srgb, var(--gauge-declined) 16%, transparent);
   color: #a5453b;
-  border-color: rgba(160, 90, 90, 0.2);
+  border-color: color-mix(in srgb, var(--gauge-declined) 40%, transparent);
 }
 
 .empty {
@@ -12377,14 +12384,14 @@ td.notes.seating {
   border-color: rgba(72, 160, 120, 0.35);
 }
 .badge.invite-confirmed {
-  background: rgba(201, 162, 39, 0.14);
-  color: #8a6d1f;
-  border-color: rgba(201, 162, 39, 0.4);
+  background: color-mix(in srgb, var(--gauge-confirmed) 18%, transparent);
+  color: #1f7a3d;
+  border-color: color-mix(in srgb, var(--gauge-confirmed) 45%, transparent);
 }
 .badge.invite-declined {
-  background: rgba(120, 60, 60, 0.14);
+  background: color-mix(in srgb, var(--gauge-declined) 18%, transparent);
   color: #a5453b;
-  border-color: rgba(160, 90, 90, 0.35);
+  border-color: color-mix(in srgb, var(--gauge-declined) 45%, transparent);
 }
 
 /* ---- דיאלוג שליחת הזמנות ---- */
