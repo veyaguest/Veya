@@ -493,7 +493,11 @@ def parse_line(line: str) -> dict:
 def parse_freeform_text(
     text: str,
     existing_keys: Optional[set] = None,
-    assume_single_if_no_count: bool = False,
+    # מיותר מאז שברירת המחדל לכמות חסרה היא 1 עבור כל הזרימות (2026-08-13):
+    # הוא נשאר רק כדי לא לשבור קוראים קיימים (ה-endpoint וייבוא אנשי הקשר
+    # עדיין שולחים אותו), ואין לו יותר שום השפעה על הפלט. אפשר להסיר אותו
+    # בניקוי נפרד יחד עם השולחים שלו.
+    assume_single_if_no_count: bool = False,  # noqa: ARG001 — no-op, ראו לעיל
 ) -> dict:
     """מפענח רשימת טקסט חופשי לשורות מוזמנים — מבנה זהה ל-`build_preview`.
 
@@ -503,14 +507,18 @@ def parse_freeform_text(
     האירוע (`existing_keys`) — שני הדברים היחידים שבאמת אמורים להשוות בין
     שורות. שום מידע אחר (שם/טלפון/כמות) לא זולג בין שורות.
 
-    כלל ברזל: **לא מנחשים כמות שלא נכתבה.** אם `parse_line` לא זיהה ביטוי
-    כמות, `guest_count_text`/`party_size` נשארים None ומתווספת אזהרה חוסמת
-    ("חסרה כמות") — לא ברירת מחדל שקטה ל"יחיד". היוצא מהכלל היחיד: כש-
-    `assume_single_if_no_count=True` (משמש לזרימת ייבוא אנשי קשר, ששם כל
-    שורה היא כבר איש קשר בודד בוודאות — 1 הוא עובדה נתונה, לא ניחוש).
+    כמות חסרה → 1 (החלטת בעלים, 2026-08-13): כששורה לא מכילה שום ביטוי
+    כמות, `party_size` מקבל 1 והשורה תקינה לייבוא. `guest_count_text` נשאר
+    **None** במכוון — הוא מייצג "מה שהמשתמש כתב בפועל", ולא נכתב שם כלום;
+    כך התצוגה המקדימה מבדילה בין "כתבתי 1" לבין "לא כתבתי, קיבלתי ברירת
+    מחדל", ובלי להמציא טקסט שהמשתמש לא הקליד.
 
-    ולידציה: `errors` חוסמים (חסר שם) לעומת `warnings` חוסמי-ברירת-מחדל
-    (חסרה כמות) או לא-חוסמים (חסר טלפון / טלפון לא תקין / כפילות).
+    שימו לב שזה שינוי מכוון של הכלל הקודם ("לא מנחשים כמות"), שהחזיק את
+    השורה כלא-תקינה עם אזהרת "חסרה כמות". הניחוש היחיד שמותר הוא ברירת
+    המחדל הזו; כל שאר סוגי המידע (שם/טלפון/קבוצה) עדיין לעולם לא מומצאים.
+
+    ולידציה: `errors` חוסמים (חסר שם) לעומת `warnings` לא-חוסמים (חסר
+    טלפון / טלפון לא תקין / כפילות).
     """
     existing_keys = existing_keys or set()
     preview_rows = []
@@ -532,8 +540,9 @@ def parse_freeform_text(
         party_size = parsed["party_size"]
         group_type = parsed["group_type"]
 
-        count_missing = party_size is None
-        if count_missing and assume_single_if_no_count:
+        # לא זוהתה כמות בשורה → ברירת מחדל 1 (ראו docstring). `guest_count_text`
+        # נשאר None בכוונה — לא נכתב שום ביטוי כמות, ואנחנו לא ממציאים אחד.
+        if party_size is None:
             party_size = 1
 
         # ולידציה
@@ -541,8 +550,6 @@ def parse_freeform_text(
         warnings: list[str] = []
         if not full_name:
             errors.append("חסר שם")
-        if count_missing and not assume_single_if_no_count:
-            warnings.append("חסרה כמות")
         if phone_warn:
             warnings.append(phone_warn)
         elif not phone:
@@ -557,7 +564,7 @@ def parse_freeform_text(
         if key:
             seen_keys.add(key)
 
-        is_valid = len(errors) == 0 and party_size is not None
+        is_valid = len(errors) == 0
         if is_valid:
             valid_count += 1
 
@@ -568,10 +575,10 @@ def parse_freeform_text(
                 "phone": phone,
                 "side": "shared",
                 "group_type": group_type,
+                # guest_count_text = מה שנכתב בפועל (None כשלא נכתבה כמות).
+                # party_size = תמיד ≥1 — או מחושב מהביטוי, או ברירת המחדל 1.
                 "guest_count_text": guest_count_text,
-                # 0 = כמות טרם זוהתה (לא כמות אפס בפועל — כמות אמיתית תמיד ≥1).
-                # sentinel ולא None כדי לשמור על party_size:int יציב בחוזה ה-API.
-                "party_size": party_size if party_size is not None else 0,
+                "party_size": party_size,
                 "notes_raw": None,
                 "seating_notes": None,
                 "valid": is_valid,

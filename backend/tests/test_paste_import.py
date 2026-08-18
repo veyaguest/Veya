@@ -3,9 +3,11 @@
 הרקע: מפרט מפורט מהבעלים (2026-08-11) שקבע כלל ברזל — "המערכת לא מנחשת
 ולא ממציאה מידע שלא מופיע בטקסט". הבדיקות כאן מכסות את כל הדוגמאות
 מהמפרט (זיהוי כמות במילים ובמספרים בעברית, "ילד" = אדם נוסף, איסור על
-יצירת קשרי משפחה בין שורות, איסור על ניחוש כמות שלא נכתבה) ואת המקרה
-של ContactsImportDialog (`assume_single_if_no_count=True`), שמשתמש באותו
-מנוע פענוח בלי לשבור אותו.
+יצירת קשרי משפחה בין שורות).
+
+עדכון (2026-08-13): הכלל רוכך **רק** לגבי כמות חסרה — שורה בלי ביטוי כמות
+מקבלת ברירת מחדל 1 ותקינה לייבוא (`guest_count_text` נשאר None, כדי לא
+להמציא טקסט שלא נכתב). שם/טלפון/קבוצה עדיין לעולם לא מנוחשים.
 
 הרצה: ``python tests/test_paste_import.py``
 (עובד גם בלי pytest מותקן — סקריפט עצמאי עם ``assert``).
@@ -225,33 +227,54 @@ def test_shared_surname_across_three_guests_stays_fully_independent():
 
 
 # ---------------------------------------------------------------------------
-# 6) אין ניחוש כמות שלא נכתבה — הכלל המרכזי במפרט
+# 6) כמות שלא נכתבה → ברירת מחדל 1 (החלטת בעלים, 2026-08-13)
 # ---------------------------------------------------------------------------
+# עד לתאריך הזה השורה נשארה בלי כמות, סומנה "חסרה כמות" ונחסמה לייבוא.
+# ההחלטה שונתה: שורה בלי ביטוי כמות מקבלת 1 ותקינה לייבוא. `guest_count_text`
+# נשאר None — כדי שהתצוגה תבדיל בין "כתבתי 1" לבין "לא כתבתי ולכן ברירת מחדל".
 
-def test_missing_count_is_not_guessed_as_single():
-    r = _row("יואב כהן 0501234567")
-    assert r["guest_count_text"] is None
-    assert r["party_size"] == 0  # sentinel: "טרם זוהתה כמות", לא כמות אמיתית
-    assert r["valid"] is False
-    assert "חסרה כמות" in r["warnings"]
-
-
-def test_missing_count_not_guessed_as_family_default_either():
-    # "משפחת לוי" בלי כמות מפורשת — לפני התיקון זה היה מקבל בברירת מחדל 2.
-    # עכשיו: לא מנחשים גם כשיש רמז משפחה, בדיוק כמו שהמפרט דורש.
-    r = _row("משפחת לוי 0501234567")
-    assert r["party_size"] == 0
-    assert r["valid"] is False
-    assert "חסרה כמות" in r["warnings"]
-
-
-def test_assume_single_if_no_count_flag_for_contacts_flow():
-    # הדגל הזה קיים רק כדי לא לשבור את ContactsImportDialog, ששולח שורות
-    # "שם טלפון" בלי אפשרות לכמות מלכתחילה — שם 1 היא עובדה ידועה, לא ניחוש.
-    r = _row("יואב כהן 0501234567", assume_single_if_no_count=True)
+def test_missing_count_defaults_to_one():
+    r = _row("תמר לוי 0589012345")
+    assert r["full_name"] == "תמר לוי"
+    assert r["phone"] == "0589012345"
+    assert r["guest_count_text"] is None  # לא נכתב כלום — לא ממציאים טקסט
     assert r["party_size"] == 1
     assert r["valid"] is True
     assert "חסרה כמות" not in r["warnings"]
+
+
+def test_missing_count_defaults_to_one_for_family_prefix_too():
+    """גם כשיש רמז "משפחת…" — ברירת המחדל היא 1, לא 2. הרמז משפיע רק על
+    שיוך הקבוצה, אף פעם לא על הכמות."""
+    r = _row("משפחת לוי 0501234567")
+    assert r["party_size"] == 1
+    assert r["guest_count_text"] is None
+    assert r["valid"] is True
+    assert r["group_type"] == "close_family"
+
+
+def test_explicit_quantity_still_wins_over_default():
+    """ברירת המחדל חלה **רק** כשלא זוהתה כמות — ביטוי מפורש גובר תמיד."""
+    for text, qty, size in [
+        ("א ב 0501234567 ילד", "ילד", 2),
+        ("א ב 0501234567 זוג", "זוג", 2),
+        ("א ב 0501234567 שני ילדים", "שני ילדים", 3),
+        ("א ב 0501234567 שלושה ילדים", "שלושה ילדים", 4),
+        ("א ב 0501234567 1", "1", 1),
+    ]:
+        r = _row(text)
+        assert r["guest_count_text"] == qty, f"{text!r} -> {r['guest_count_text']!r}"
+        assert r["party_size"] == size, f"{text!r} -> {r['party_size']}"
+
+
+def test_written_one_is_distinguishable_from_defaulted_one():
+    """שתי שורות מגיעות ל-party_size=1, אבל רק באחת המשתמש באמת כתב "1".
+    ההבחנה נשמרת ב-guest_count_text כדי שהתצוגה המקדימה תוכל להראות אותה."""
+    written = _row("א ב 0501234567 1")
+    defaulted = _row("ג ד 0501234567")
+    assert written["party_size"] == defaulted["party_size"] == 1
+    assert written["guest_count_text"] == "1"
+    assert defaulted["guest_count_text"] is None
 
 
 # ---------------------------------------------------------------------------
@@ -343,10 +366,9 @@ def test_central_edge_case_adri_family():
     assert len(rows) == 4
 
     family = rows["משפחת אדרי"]
-    assert family["guest_count_text"] is None
-    assert family["party_size"] == 0  # sentinel ל"טרם זוהתה"
-    assert family["valid"] is False
-    assert "חסרה כמות" in family["warnings"]
+    assert family["guest_count_text"] is None  # לא נכתבה כמות בשורה
+    assert family["party_size"] == 1           # ברירת המחדל, לא 2 של תומר
+    assert family["valid"] is True
     assert family["group_type"] == "close_family"  # מהטקסט המפורש בלבד
 
     tomer = rows["תומר אדרי"]
@@ -370,7 +392,8 @@ def test_quantity_does_not_move_to_previous_line():
     result = parse_freeform_text(_ADRI_TEXT)
     family = next(r for r in result["rows"] if r["full_name"] == "משפחת אדרי")
     assert family["party_size"] != 2
-    assert family["party_size"] == 0
+    assert family["party_size"] == 1  # ברירת המחדל שלה עצמה, לא של שורה אחרת
+    assert family["guest_count_text"] is None
 
 
 def test_quantity_does_not_move_to_next_line():
@@ -379,7 +402,8 @@ def test_quantity_does_not_move_to_next_line():
     text = "משפחת אדרי 0522222222\nתומר אדרי 0533333333 2"
     result = parse_freeform_text(text)
     family, tomer = result["rows"]
-    assert family["party_size"] == 0
+    assert family["party_size"] == 1  # ברירת מחדל, לא ה-2 של השורה הבאה
+    assert family["guest_count_text"] is None
     assert tomer["party_size"] == 2
 
 
@@ -392,7 +416,7 @@ def test_row_order_does_not_affect_result():
     rows_a = {r["full_name"]: r["party_size"] for r in parse_freeform_text(order_a)["rows"]}
     rows_b = {r["full_name"]: r["party_size"] for r in parse_freeform_text(order_b)["rows"]}
 
-    assert rows_a == rows_b == {"משפחת אדרי": 0, "תומר אדרי": 2}
+    assert rows_a == rows_b == {"משפחת אדרי": 1, "תומר אדרי": 2}
 
 
 def test_same_surname_does_not_affect_quantity_assignment():
@@ -406,7 +430,7 @@ def test_same_surname_does_not_affect_quantity_assignment():
     rows = {r["full_name"]: r["party_size"] for r in result["rows"]}
     assert rows == {
         "תומר אדרי": 2,
-        "משפחת אדרי": 0,
+        "משפחת אדרי": 1,
         "רוני אדרי": 4,
     }
     # ואף אחד לא קיבל group_type מלבד השורה שכתבה "משפחת" במפורש.
@@ -489,7 +513,9 @@ def test_leading_rtl_mark_still_detects_family_prefix():
     r = parse_line(RLM + "משפחת אדרי 0522222222")
     assert r["full_name"] == "משפחת אדרי"
     assert r["group_type"] == "close_family"
-    assert r["party_size"] is None  # עדיין: לא מנחשים כמות שלא נכתבה
+    # `parse_line` מדווחת מה **נמצא** בשורה — None = לא נמצא ביטוי כמות.
+    # ברירת המחדל (1) מוחלת שכבה מעל, ב-`parse_freeform_text`.
+    assert r["party_size"] is None
 
 
 def test_name_never_keeps_invisible_residue():
@@ -589,7 +615,7 @@ def test_full_spec_list_end_to_end():
         "קרן לוי 0556789012"
     )
     expected = [
-        ("משפחת אדרי", "0522222222", None, 0),
+        ("משפחת אדרי", "0522222222", None, 1),
         ("תומר אדרי", "0533333333", "2", 2),
         ("רוני אדרי", "0544444444", "שלושה ילדים", 4),
         ("דני לוי", "0555555555", "זוג", 2),
@@ -598,7 +624,7 @@ def test_full_spec_list_end_to_end():
         ("איתי פרץ", "0523456789", "5", 5),
         ("מאיה פרץ", "0534567890", "שלושה", 3),
         ("אורן כהן", "0545678901", "זוג עם ילד", 3),
-        ("קרן לוי", "0556789012", None, 0),
+        ("קרן לוי", "0556789012", None, 1),
     ]
     rows = parse_freeform_text(text)["rows"]
     assert len(rows) == len(expected)
@@ -625,7 +651,7 @@ def test_full_spec_list_survives_realistic_rtl_marks():
         "אורן כהן 0545678901 זוג עם ילד",
         "קרן לוי 0556789012" + RLM,
     ]
-    expected_sizes = [0, 2, 4, 2, 2, 3, 5, 3, 3, 0]
+    expected_sizes = [1, 2, 4, 2, 2, 3, 5, 3, 3, 1]
     expected_names = [
         "משפחת אדרי", "תומר אדרי", "רוני אדרי", "דני לוי", "יוסי כהן",
         "נועה לוי", "איתי פרץ", "מאיה פרץ", "אורן כהן", "קרן לוי",
