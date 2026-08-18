@@ -98,9 +98,15 @@ function InviteBanner({ count, onSend }: { count: number; onSend: () => void }) 
 }
 
 /** מפענח שורת יומן ביקורת של אישור/ביטול/"אולי" מהקישור הציבורי (action
- * "confirm_submit", detail בפורמט "שם: תווית") לפריט Feed קריא. מתעלם
- * מכל שורה אחרת ביומן — ה-Feed הזה מוקדש לעדכוני RSVP בלבד. */
+ * "confirm_submit", detail בפורמט "שם: תווית"), וגם שינוי סטטוס ידני
+ * מעריכת מוזמן (action "guest_rsvp_manual_update") — לפריט Feed קריא.
+ * מתעלם מכל שורה אחרת ביומן — ה-Feed הזה מוקדש לעדכוני RSVP בלבד. */
 function parseRsvpEvent(row: AuditLogRow): { icon: string; text: string } | null {
+  if (row.action === 'guest_rsvp_manual_update') {
+    // ה-detail כבר משפט עברי שלם ("שם: אישור הגעה השתנה מ'X' ל'Y'") —
+    // מוצג כמו שהוא, בלי לפרק אותו מחדש.
+    return { icon: '✎', text: row.detail }
+  }
   if (row.action !== 'confirm_submit') return null
   const sep = row.detail.indexOf(': ')
   if (sep < 0) return null

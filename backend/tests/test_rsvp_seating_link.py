@@ -172,12 +172,65 @@ def test_dashboard_shows_guests_and_people_per_status() -> None:
         teardown()
 
 
+# ---- 5. שינוי סטטוס ידני מעריכת מוזמן נרשם ביומן הפעילות — בלי כפילויות ----
+
+def _audit_action_rows(api, action: str) -> list[dict]:
+    """שורות היומן לפעולה נתונה, מהחדשה לישנה — ממוין לפי id (לא created_at,
+    שברזולוציית שנייה ב-SQLite עלול להיות זהה לשתי רשומות שנוצרו סמוך זו לזו)."""
+    r = api.client.get("/event/audit", headers=api.headers)
+    assert r.status_code == 200, r.text
+    rows = [row for row in r.json() if row["action"] == action]
+    return sorted(rows, key=lambda row: row["id"], reverse=True)
+
+
+def test_manual_status_change_creates_audit_event_for_dashboard_feed() -> None:
+    api, teardown = bootstrap()
+    try:
+        g = api.add_guest("ישראל כהן", "0507654321", party_size=1)
+        gid = g["id"]
+
+        r = api.client.patch(f"/guests/{gid}", headers=api.headers,
+                              json={"rsvp_status": "confirmed"})
+        assert r.status_code == 200, r.text
+
+        rows = _audit_action_rows(api, "guest_rsvp_manual_update")
+        assert len(rows) == 1, f"ציפינו לרשומת יומן אחת: {rows}"
+        assert rows[0]["detail"] == "ישראל כהן: אישור הגעה השתנה מ'טרם השיב' ל'מגיע'", rows[0]
+
+        # PATCH עם אותו ערך — לא אמור ליצור רשומה כפולה.
+        r = api.client.patch(f"/guests/{gid}", headers=api.headers,
+                              json={"rsvp_status": "confirmed"})
+        assert r.status_code == 200, r.text
+        rows = _audit_action_rows(api, "guest_rsvp_manual_update")
+        assert len(rows) == 1, "PATCH עם אותו ערך יצר רשומה כפולה"
+
+        # עריכה שלא נגעה בסטטוס — גם לא אמורה ליצור רשומה.
+        r = api.client.patch(f"/guests/{gid}", headers=api.headers,
+                              json={"party_size": 3})
+        assert r.status_code == 200, r.text
+        rows = _audit_action_rows(api, "guest_rsvp_manual_update")
+        assert len(rows) == 1, "עריכה שלא נגעה בסטטוס יצרה רשומה"
+
+        # שינוי אמיתי נוסף — רשומה שנייה, עם הסטטוס הקודם הנכון.
+        r = api.client.patch(f"/guests/{gid}", headers=api.headers,
+                              json={"rsvp_status": "maybe"})
+        assert r.status_code == 200, r.text
+        rows = _audit_action_rows(api, "guest_rsvp_manual_update")
+        assert len(rows) == 2, rows
+        assert rows[0]["detail"] == "ישראל כהן: אישור הגעה השתנה מ'מגיע' ל'מתלבט'", rows[0]
+
+        print("✓ שינוי סטטוס ידני יוצר רשומת יומן פעילות אחת, בלי כפילויות")
+    finally:
+        teardown()
+
+
 if __name__ == "__main__":
     try:
         test_effective_seats_only_confirmed_counts()
         test_manual_status_change_via_api_updates_active_seats()
         test_status_change_never_unseats_guest()
         test_dashboard_shows_guests_and_people_per_status()
+        test_manual_status_change_creates_audit_event_for_dashboard_feed()
         print("OK — חיבור RSVP↔הושבה↔תמונת מצב עובד כמפרט.")
     finally:
         shutdown()

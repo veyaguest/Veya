@@ -2,12 +2,13 @@
 from collections import defaultdict
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session
 
-from app import invitations, models, permissions, schemas
+from app import audit, invitations, models, permissions, schemas
+from app.auth import get_current_user
 from app.database import get_db
 from app.deps import EventAccess
 
@@ -15,6 +16,15 @@ _view = EventAccess(permissions.GUESTS_VIEW)
 _write = EventAccess(permissions.GUESTS_WRITE)
 
 router = APIRouter(prefix="/guests", tags=["guests"])
+
+# תוויות עברית לסטטוס אישור הגעה — עקביות עם RSVP_LABELS בצד הלקוח
+# (frontend/src/types.ts). משמשות רק לניסוח שורת יומן הפעילות.
+_RSVP_STATUS_LABELS_HE = {
+    "pending": "טרם השיב",
+    "confirmed": "מגיע",
+    "declined": "לא מגיע",
+    "maybe": "מתלבט",
+}
 
 # תקרת גודל עמוד — מונעת שליפה ענקית אחת שתעמיס על השרת/דפדפן.
 MAX_PAGE_LIMIT = 200
@@ -264,14 +274,34 @@ def set_group_note(
 def update_guest(
     guest_id: int,
     payload: schemas.GuestUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     event: models.Event = Depends(_write),
+    user: models.User = Depends(get_current_user),
 ):
     guest = db.get(models.Guest, guest_id)
     if guest is None or guest.event_id != event.id:
         raise HTTPException(status_code=404, detail="מוזמן לא נמצא")
-    for key, value in payload.model_dump(exclude_unset=True).items():
+    changed = payload.model_dump(exclude_unset=True)
+    prev_rsvp_status = guest.rsvp_status
+    for key, value in changed.items():
         setattr(guest, key, value)
+
+    # יומן פעילות: עריכה ידנית של אישור הגעה (ניהול מוזמנים → עריכת מוזמן)
+    # נרשמת באותו מנגנון יומן פעילות ובאותה עוגן (event_id) כמו שינוי שמגיע
+    # ממנגנון אישורי ההגעה עצמו (routers/confirm.py) — כדי שתופיע יחד איתם
+    # ב"עדכוני אישורי הגעה" בתמונת המצב. נכתבת רק כשהסטטוס באמת השתנה, כדי
+    # שלא ייווצר אירוע כפול על שינוי לא-שינוי (למשל עריכה שלא נגעה בסטטוס).
+    if "rsvp_status" in changed and guest.rsvp_status != prev_rsvp_status:
+        prev_label = _RSVP_STATUS_LABELS_HE.get(prev_rsvp_status, prev_rsvp_status)
+        new_label = _RSVP_STATUS_LABELS_HE.get(guest.rsvp_status, guest.rsvp_status)
+        audit.record(
+            db, "guest_rsvp_manual_update",
+            event_id=event.id, user_id=user.id,
+            detail=f"{guest.full_name}: אישור הגעה השתנה מ'{prev_label}' ל'{new_label}'",
+            ip=request.client.host if request.client else None,
+        )
+
     db.commit()
     return guest
 
