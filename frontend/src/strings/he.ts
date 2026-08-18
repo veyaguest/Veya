@@ -360,7 +360,6 @@ export const strings = {
     rsvpSummary: (confirmed: number, total: number) =>
       `${confirmed} מתוך ${total} מוזמנים אישרו הגעה`,
     donutCardTitle: 'סטטוס אישורי הגעה',
-    donutResponseBadge: (pct: number) => `${pct}% ענו`,
     // ---- מד ההושבה החצי-עגול (Gauge) — מחליף את הדונאט המלא ----
     gaugeLabel: 'אישורי הגעה',
     gaugeStatusMaybe: 'מתלבטים',

@@ -2782,7 +2782,7 @@ td.notes.seating {
   align-items: center;
   text-align: center;
 }
-/* ---- כותרת הסקשן + Badge שיעור מענה — ממורכזים, לא בקצוות ---- */
+/* ---- כותרת הסקשן — ממורכזת ---- */
 .gauge-section-head {
   display: flex;
   align-items: center;
@@ -2795,18 +2795,6 @@ td.notes.seating {
   font-size: 18px;
   font-weight: 700;
   color: var(--charcoal);
-}
-.gauge-section-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--gold-deep);
-  background: color-mix(in srgb, var(--gold) 14%, transparent);
-  border-radius: 999px;
-  white-space: nowrap;
-  font-feature-settings: 'tnum' 1, 'lnum' 1;
 }
 /* ============================================================
    מד ההגעה (RSVP Gauge) — לוח מחוונים חצי-עגול, פרימיום ורגשי.

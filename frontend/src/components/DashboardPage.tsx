@@ -618,9 +618,6 @@ export function DashboardPage({ onNavigate }: Props) {
             <section className="gauge-section">
               <div className="gauge-section-head">
                 <h3 className="gauge-section-title">{t.donutCardTitle}</h3>
-                <span className="gauge-section-badge">
-                  {t.donutResponseBadge(Math.round(stats.response_rate))}
-                </span>
               </div>
               <RsvpGauge
                 segments={rsvpSegments}
