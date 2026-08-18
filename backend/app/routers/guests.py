@@ -75,9 +75,21 @@ class GroupNoteUpdate(BaseModel):
     note: str = ""
 
 
+# סדר הסטטוסים למיון "לפי סטטוס" — תואם לסדר שבו הם מוצגים באפשרויות הסינון.
+_STATUS_SORT_RANK = case(
+    (models.Guest.rsvp_status == "confirmed", 0),
+    (models.Guest.rsvp_status == "declined", 1),
+    (models.Guest.rsvp_status == "maybe", 2),
+    (models.Guest.rsvp_status == "pending", 3),
+    else_=4,
+)
+
+
 @router.get("", response_model=schemas.GuestListPage)
 def list_guests(
     q: Optional[str] = None,
+    sort: Optional[str] = None,
+    filter_status: Optional[str] = None,
     limit: int = DEFAULT_PAGE_LIMIT,
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -85,9 +97,11 @@ def list_guests(
 ):
     """עמוד מתוך רשימת המוזמנים של האירוע הפעיל.
 
-    תומך בחיפוש חופשי (``q`` לפי שם/טלפון) ובדפדוף (``limit``/``offset``).
-    הסכומים (total/total_people/confirmed_people) מחושבים על *כל* הרשומות
-    התואמות ולא רק על העמוד — כדי שסיכום המסך יישאר מדויק גם עם דפדוף.
+    תומך בחיפוש חופשי (``q`` לפי שם/טלפון), בדפדוף (``limit``/``offset``),
+    ובמיון/סינון תצוגתיים (``sort``/``filter_status``) — לא משנים שום נתון,
+    רק את סדר/היקף התוצאות המוחזרות. הסכומים (total/total_people/
+    confirmed_people) מחושבים על *כל* הרשומות התואמות (כולל הסינון) ולא רק
+    על העמוד — כדי שסיכום המסך יישאר מדויק גם עם דפדוף.
     """
     limit = max(1, min(limit, MAX_PAGE_LIMIT))
     offset = max(0, offset)
@@ -98,6 +112,25 @@ def list_guests(
         filters.append(
             or_(models.Guest.full_name.ilike(like), models.Guest.phone.ilike(like))
         )
+    if filter_status == "no_table":
+        filters.append(models.Guest.table_number.is_(None))
+    elif filter_status in ("confirmed", "declined", "maybe", "pending"):
+        filters.append(models.Guest.rsvp_status == filter_status)
+
+    if sort == "status":
+        order_by = (_STATUS_SORT_RANK, models.Guest.full_name.asc())
+    elif sort == "table":
+        order_by = (
+            models.Guest.table_number.is_(None),
+            models.Guest.table_number.asc(),
+            models.Guest.full_name.asc(),
+        )
+    elif sort == "party_size":
+        order_by = (models.Guest.party_size.desc(), models.Guest.full_name.asc())
+    elif sort == "recent":
+        order_by = (models.Guest.created_at.desc(),)
+    else:
+        order_by = (models.Guest.full_name.asc(),)
 
     # סכומים על כל הרשימה המסוננת (שאילתת אגרגציה אחת).
     confirmed_seats = case(
@@ -118,7 +151,7 @@ def list_guests(
     items = db.scalars(
         select(models.Guest)
         .where(*filters)
-        .order_by(models.Guest.created_at.desc())
+        .order_by(*order_by)
         .limit(limit)
         .offset(offset)
     ).all()

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { applyNoteSplit, deleteGuest, getNoteSplitSuggestions, listGuests } from '../api'
+import type { GuestFilter, GuestSort } from '../api'
 import type { Guest, NoteSplitCandidate } from '../types'
 import { groupLabel, INVITE_STATUS_LABELS, RSVP_LABELS } from '../types'
 import { activeEventTerms, sideLabel } from '../strings/eventTypes'
@@ -25,12 +26,25 @@ const ONBOARDING_KEY = 'veya_guests_onboarding_seen'
 
 const PAGE_SIZE = 50
 
+const FILTER_LABELS: Record<GuestFilter, string> = {
+  all: t.filterLabelAll,
+  confirmed: t.filterLabelConfirmed,
+  declined: t.filterLabelDeclined,
+  maybe: t.filterLabelMaybe,
+  pending: t.filterLabelPending,
+  no_table: t.filterLabelNoTable,
+}
+
 export function GuestsPage() {
   const [guests, setGuests] = useState<Guest[]>([])
   const [total, setTotal] = useState(0)
   const [totalPeople, setTotalPeople] = useState(0)
   const [confirmedPeople, setConfirmedPeople] = useState(0)
   const [search, setSearch] = useState('')
+  // מיון/סינון תצוגתיים בלבד — לא נשמרים ל-localStorage, כך שרענון דף
+  // מחזיר אוטומטית לברירת המחדל (א-ב, כל המוזמנים).
+  const [sort, setSort] = useState<GuestSort>('name')
+  const [filterStatus, setFilterStatus] = useState<GuestFilter>('all')
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -62,7 +76,7 @@ export function GuestsPage() {
     setLoading(true)
     setError('')
     try {
-      const page = await listGuests(q, PAGE_SIZE, 0)
+      const page = await listGuests(q, PAGE_SIZE, 0, sort, filterStatus)
       setGuests(page.items)
       setTotal(page.total)
       setTotalPeople(page.total_people)
@@ -73,13 +87,13 @@ export function GuestsPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [sort, filterStatus])
 
-  // טעינת עוד עמוד (מוסיף לרשימה הקיימת).
+  // טעינת עוד עמוד (מוסיף לרשימה הקיימת), באותו מיון/סינון פעיל.
   async function loadMore() {
     setLoadingMore(true)
     try {
-      const page = await listGuests(search, PAGE_SIZE, guests.length)
+      const page = await listGuests(search, PAGE_SIZE, guests.length, sort, filterStatus)
       setGuests((prev) => [...prev, ...page.items])
       setTotal(page.total)
     } catch (err) {
@@ -89,7 +103,7 @@ export function GuestsPage() {
     }
   }
 
-  // טעינה ראשונית + חיפוש עם השהיה קלה (debounce)
+  // טעינה ראשונית + חיפוש עם השהיה קלה (debounce) — גם על שינוי מיון/סינון.
   useEffect(() => {
     const t = setTimeout(() => load(search), 250)
     return () => clearTimeout(t)
@@ -156,6 +170,31 @@ export function GuestsPage() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t.searchPlaceholder}
         />
+        <select
+          className="toolbar-select"
+          aria-label={t.sortButton}
+          value={sort}
+          onChange={(e) => setSort(e.target.value as GuestSort)}
+        >
+          <option value="name">{t.sortButton}: {t.sortLabelName}</option>
+          <option value="status">{t.sortButton}: {t.sortLabelStatus}</option>
+          <option value="table">{t.sortButton}: {t.sortLabelTable}</option>
+          <option value="party_size">{t.sortButton}: {t.sortLabelPartySize}</option>
+          <option value="recent">{t.sortButton}: {t.sortLabelRecent}</option>
+        </select>
+        <select
+          className="toolbar-select"
+          aria-label={t.filterButton}
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value as GuestFilter)}
+        >
+          <option value="all">{t.filterButton}: {t.filterLabelAll}</option>
+          <option value="confirmed">{t.filterButton}: {t.filterLabelConfirmed}</option>
+          <option value="declined">{t.filterButton}: {t.filterLabelDeclined}</option>
+          <option value="maybe">{t.filterButton}: {t.filterLabelMaybe}</option>
+          <option value="pending">{t.filterButton}: {t.filterLabelPending}</option>
+          <option value="no_table">{t.filterButton}: {t.filterLabelNoTable}</option>
+        </select>
         <ImportMenu
           onExcel={() => fileInput.current?.click()}
           onPaste={() => setShowPaste(true)}
@@ -182,6 +221,15 @@ export function GuestsPage() {
           }}
         />
       </div>
+
+      {filterStatus !== 'all' && (
+        <div className="filter-notice">
+          <span>{t.filteredNotice(FILTER_LABELS[filterStatus])}</span>
+          <button className="btn-text" onClick={() => setFilterStatus('all')}>
+            {t.clearFilter}
+          </button>
+        </div>
+      )}
 
       {toast && <div className="toast">{toast}</div>}
 

@@ -532,15 +532,22 @@ export interface GuestListPage {
   offset: number
 }
 
+export type GuestSort = 'name' | 'status' | 'table' | 'party_size' | 'recent'
+export type GuestFilter = 'all' | 'confirmed' | 'declined' | 'maybe' | 'pending' | 'no_table'
+
 export async function listGuests(
   q?: string,
   limit = 50,
   offset = 0,
+  sort?: GuestSort,
+  filterStatus?: GuestFilter,
 ): Promise<GuestListPage> {
   const params = new URLSearchParams()
   if (q) params.set('q', q)
   params.set('limit', String(limit))
   params.set('offset', String(offset))
+  if (sort) params.set('sort', sort)
+  if (filterStatus && filterStatus !== 'all') params.set('filter_status', filterStatus)
   const res = await apiFetch(`/guests?${params.toString()}`)
   if (!res.ok) throw await toError(res)
   return res.json()

@@ -455,6 +455,23 @@ export const strings = {
     loadingRows: 'טוען…',
     loadMore: (shown: number, total: number) => `טעינת עוד (${shown} מתוך ${total})`,
 
+    // מיון וסינון (תצוגתי בלבד, לא משנה נתונים)
+    sortButton: 'מיון',
+    sortLabelName: 'א-ב',
+    sortLabelStatus: 'סטטוס אישור הגעה',
+    sortLabelTable: 'מספר שולחן',
+    sortLabelPartySize: 'כמות אנשים — מהגדול לקטן',
+    sortLabelRecent: 'נוספו לאחרונה',
+    filterButton: 'סינון',
+    filterLabelAll: 'כל המוזמנים',
+    filterLabelConfirmed: 'מגיעים',
+    filterLabelDeclined: 'לא מגיעים',
+    filterLabelMaybe: 'מתלבטים',
+    filterLabelPending: 'טרם השיבו',
+    filterLabelNoTable: 'ללא שולחן',
+    filteredNotice: (label: string) => `הרשימה מסוננת: ${label}`,
+    clearFilter: 'ניקוי סינון',
+
     // AddGuestForm
     saveErrorGeneric: 'לא הצלחנו לשמור, נסו שוב',
     fullNameLabel: 'שם מלא *',
