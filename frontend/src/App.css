@@ -6023,6 +6023,9 @@ td.notes.seating {
   inset: 0;
   border: 1px solid var(--gold);
   border-radius: 50%;
+  /* חריץ קטן בשעה 12: קו הטבעת נקטע בדיוק לאורך הצלעות התחתונות של
+     היהלום, כך שפנים היהלום נשאר ריק — בדיוק כמו בלוגו המלא. */
+  clip-path: polygon(0 0, calc(50% - 2.8px) 0, 50% 3.3px, calc(50% + 2.8px) 0, 100% 0, 100% 100%, 0 100%);
 }
 .auth-monogram::after {
   content: '';
@@ -6041,7 +6044,8 @@ td.notes.seating {
 }
 .auth-monogram-diamond {
   position: absolute;
-  top: -2.5px;
+  /* ממורכז בדיוק על קו הטבעת החיצונית (שמרכזה 0.5px מלמעלה), כמו בלוגו המלא */
+  top: -1.5px;
   left: 50%;
   transform: translateX(-50%) rotate(45deg);
   width: 4px;
