@@ -775,6 +775,48 @@ function HallWizard(props: {
   )
 }
 
+/** מסך הבחירה שנפתח לפני בניית אולם — בחירה ברורה בין שתי דרכים:
+ *  בנייה ידנית מאפס (HallWizard, בלי שינוי), או בנייה מסקיצה קיימת (Sketch
+ *  Upload Flow — AI Vision + Review + Build, בלי שינוי). נפתח אוטומטית
+ *  כשהאולם ריק, וגם מכפתור "בניית אולם מחדש". שתי הבחירות רק פותחות את
+ *  המנגנון הקיים המתאים — אין כאן שום לוגיקת בנייה חדשה, ואם כבר יש אולם
+ *  על הלוח, דיאלוג ההחלפה/הוספה/ביטול הקיים ב-Sketch Upload Flow ממשיך
+ *  לפעול בדיוק כמו קודם, ללא תלות באיך המשתמש הגיע לכאן. */
+function HallStartChoice(props: { hasContent: boolean; onBuildNew: () => void; onBuildFromSketch: () => void; onClose: () => void }) {
+  return (
+    <>
+      <div className="hm-wizard-backdrop" onClick={props.onClose} />
+      <div className="hm-start-choice" role="dialog" aria-label="בניית אולם">
+        <h2 className="hm-wizard-title">איך בונים את האולם?</h2>
+        <p className="hm-wizard-lead">בחרו את הדרך הנוחה לכם — אפשר תמיד לערוך הכול אחר כך.</p>
+
+        <div className="hm-start-options">
+          <button type="button" className="hm-start-card" onClick={props.onBuildNew}>
+            <span className="hm-start-card-ic" aria-hidden="true">
+              <HmIcon name="hall" size={26} />
+            </span>
+            <span className="hm-start-card-title">בניית אולם חדש</span>
+            <span className="hm-start-card-sub">בנו את האולם שלכם מאפס והוסיפו שולחנות, רחבה ואובייקטים לפי הצורך.</span>
+          </button>
+          <button type="button" className="hm-start-card" onClick={props.onBuildFromSketch}>
+            <span className="hm-start-card-ic" aria-hidden="true">🖼️</span>
+            <span className="hm-start-card-title">בניית אולם מסקיצה</span>
+            <span className="hm-start-card-sub">
+              יש לכם סקיצה מהאולם? העלו אותה ו-VEYA תזהה את השולחנות, המספרים והפריסה ותבנה עבורכם את האולם.
+            </span>
+          </button>
+        </div>
+
+        <div className="hm-wizard-actions">
+          <button className="hm-wizard-cancel hm-start-choice-cancel" onClick={props.onClose}>
+            {props.hasContent ? 'ביטול' : 'התחלה ממסך ריק'}
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
 // ─── עורך הסקיצה ─────────────────────────────────────────────────────────
 // חלון עריכה שנפתח מיד אחרי בחירת קובץ, לפני שמירה. הזוג יכול להזיז, לזום,
 // לסובב ולחתוך את התמונה בתוך מסגרת חיתוך ביחס-ממדים של הקנבס — ורק ב"אישור"
@@ -1470,6 +1512,11 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // בכל רגע מכפתור "בניית אולם מחדש". שואל כמה שולחנות רגילים (12) ואבירים,
   // ואילו אלמנטים לכלול (רחבה/DJ/בר), ואז מייצר סקיצה התחלתית מסודרת.
   const [wizardOpen, setWizardOpen] = useState(false)
+  // מסך הבחירה שקודם לאשף: "בניית אולם חדש" (ידני) מול "בניית אולם מסקיצה"
+  // (Sketch Upload Flow). נפתח אוטומטית כשהאולם ריק, וגם מכפתור "בניית אולם
+  // מחדש" — שתי הבחירות רק פותחות מנגנון קיים (wizardOpen / sketchUploadOpen),
+  // בלי שום שינוי בהם.
+  const [startChoiceOpen, setStartChoiceOpen] = useState(false)
   const [wzRegular, setWzRegular] = useState(0)
   const [wzKnights, setWzKnights] = useState(0)
   const [wzDance, setWzDance] = useState(true)
@@ -1730,7 +1777,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       // אולם ריק לגמרי (בלי שולחנות ובלי אלמנטים) => פותחים את אשף הבנייה
       // אוטומטית, כדי שהזוג יתחיל מסקיצה מסודרת ולא ממסך ריק.
       if (h.tables.length === 0 && (h.elements?.length ?? 0) === 0) {
-        setWizardOpen(true)
+        setStartChoiceOpen(true)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : strings.errors.hallLoadFailed)
@@ -4410,7 +4457,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
               >
                 <HmIcon name="check" size={18} /> מצב יום האירוע
               </button>
-              <button className="hm-ghost-btn" onClick={() => setWizardOpen(true)}>
+              <button className="hm-ghost-btn" onClick={() => setStartChoiceOpen(true)}>
                 <HmIcon name="hall" size={18} /> בניית אולם מחדש
               </button>
 
@@ -4879,10 +4926,140 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                   <div>
                     <h3>סקיצת האולם כרקע</h3>
                     <p>
-                      יש לכם תמונה או סקיצה של האולם? בלשונית "כלים" אפשר להעלות אותה כרקע,
-                      ולסדר את השולחנות בדיוק לפי המבנה האמיתי.
+                      יש לכם תמונה או סקיצה של האולם? בלשונית "כלים" אפשר להעלות אותה, ו-VEYA
+                      תבנה לבד את סידור השולחנות לפי המבנה האמיתי — פירוט מלא למטה.
                     </p>
                   </div>
+                </div>
+
+                <div className="hm-guide-divider">
+                  <span>בניית אולם מסקיצה</span>
+                </div>
+
+                <div className="hm-guide-sketch">
+                  <p className="hm-guide-lead">
+                    קיבלתם סקיצה מהאולם? נהדר — פשוט מעלים אותה ו-VEYA כבר תבנה לכם את סידור
+                    השולחנות.
+                  </p>
+                  <p className="hm-guide-sketch-intro">
+                    במקום לבנות את האולם ידנית שולחן־שולחן, אפשר להעלות את הסקיצה שקיבלתם
+                    מהאולם ולתת ל-VEYA להפוך אותה לאולם דיגיטלי.
+                  </p>
+
+                  <div className="hm-guide-sketch-shots">
+                    <div className="hm-guide-sketch-shot">
+                      <img src="/product/hall-sketch-before.jpg" alt="הסקיצה שהתקבלה מהאולם" loading="lazy" />
+                      <span>הסקיצה מהאולם</span>
+                    </div>
+                    <span className="hm-guide-sketch-arrow" aria-hidden="true">←</span>
+                    <div className="hm-guide-sketch-shot">
+                      <img src="/product/hall-sketch-after.jpg" alt="אותו אולם אחרי הבנייה ב-VEYA" loading="lazy" />
+                      <span>האולם ב-VEYA</span>
+                    </div>
+                  </div>
+
+                  <h3>איך זה עובד?</h3>
+                  <ol className="hm-guide-sketch-steps">
+                    <li>
+                      <span className="hm-guide-sketch-num">1</span>
+                      <div>
+                        <h4>מעלים את הסקיצה</h4>
+                        <p>העלו צילום, תמונה או קובץ של הסקיצה שקיבלתם מהאולם.</p>
+                      </div>
+                    </li>
+                    <li>
+                      <span className="hm-guide-sketch-num">2</span>
+                      <div>
+                        <h4>VEYA מנתחת את הסקיצה</h4>
+                        <p>
+                          ה-AI מזהה את השולחנות ואת הפריסה שלהם, ומזהה — כשניתן — גם את מספרי
+                          השולחנות שמופיעים בסקיצה.
+                        </p>
+                      </div>
+                    </li>
+                    <li>
+                      <span className="hm-guide-sketch-num">3</span>
+                      <div>
+                        <h4>מתקבלת תצוגת בדיקה</h4>
+                        <p>לפני שהאולם נבנה, תוכלו לראות מה VEYA זיהתה ולוודא שהפריסה תואמת לסקיצה.</p>
+                      </div>
+                    </li>
+                    <li>
+                      <span className="hm-guide-sketch-num">4</span>
+                      <div>
+                        <h4>האולם נבנה אוטומטית</h4>
+                        <p>
+                          לאחר האישור, השולחנות והאובייקטים עוברים למפת האולם תוך שמירה על
+                          המיקום, הגודל והכיוון שלהם בהתאם לסקיצה.
+                        </p>
+                      </div>
+                    </li>
+                    <li>
+                      <span className="hm-guide-sketch-num">5</span>
+                      <div>
+                        <h4>ממשיכים לערוך כרגיל</h4>
+                        <p>
+                          אחרי שהאולם נבנה אפשר להזיז שולחנות, לשנות פרטים, לבצע סידור הושבה
+                          ולנהל אותו כמו כל אולם שנבנה ידנית.
+                        </p>
+                      </div>
+                    </li>
+                  </ol>
+
+                  <div className="hm-guide-smart">
+                    <h3>מה VEYA יכולה לזהות?</h3>
+                    <ul>
+                      <li>שולחנות</li>
+                      <li>מספרי שולחנות שמופיעים בסקיצה</li>
+                      <li>מיקום השולחנות</li>
+                      <li>גודל וצורה</li>
+                      <li>כיוון השולחן</li>
+                      <li>פריסת השולחנות והמרווחים ביניהם</li>
+                      <li>אובייקטים נוספים שמופיעים בסקיצה כאשר הם מזוהים</li>
+                    </ul>
+                  </div>
+
+                  <div className="hm-guide-note">
+                    <p>
+                      <b>חשוב לדעת:</b> ככל שהסקיצה ברורה ואיכותית יותר, כך קל יותר ל-VEYA
+                      לזהות את הפרטים שבה. מומלץ להעלות סקיצה שבה:
+                    </p>
+                    <ul>
+                      <li>השולחנות ברורים</li>
+                      <li>מספרי השולחנות קריאים</li>
+                      <li>רוב האולם מופיע בתמונה</li>
+                      <li>אין חיתוך של אזורים משמעותיים</li>
+                    </ul>
+                    <p>אם מספר שולחן אינו ברור, VEYA לא תנחש אותו.</p>
+                  </div>
+
+                  <div className="hm-guide-note">
+                    <p>
+                      <b>אם כבר בניתם אולם:</b> אם כבר קיים אולם על הלוח ואתם מעלים סקיצה
+                      חדשה, VEYA תציג לכם אפשרויות לפני הבנייה:
+                    </p>
+                    <ul>
+                      <li><b>{hallSketchT.existingReplace}</b> — מחליפה את פריסת האולם הקיימת בתוצאה מהסקיצה.</li>
+                      <li><b>{hallSketchT.existingAdd}</b> — מוסיפה את התוצאה לאולם הקיים.</li>
+                      <li><b>ביטול</b> — חוזרים לאולם בלי לבצע שינוי.</li>
+                    </ul>
+                  </div>
+
+                  <p className="hm-guide-hint">
+                    💡 <b>טיפ:</b> אם קיבלתם מהאולם סקיצה מוכנה — אין צורך לבנות הכול מחדש
+                    ידנית. פשוט מעלים אותה ונותנים ל-VEYA להתחיל משם.
+                  </p>
+
+                  <button
+                    type="button"
+                    className="hm-guide-sketch-cta"
+                    onClick={() => {
+                      setGuideOpen(false)
+                      setSketchUploadOpen(true)
+                    }}
+                  >
+                    יש לכם סקיצה? נסו לבנות ממנה את האולם
+                  </button>
                 </div>
 
                 <div className="hm-guide-tabs">
@@ -4915,6 +5092,21 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
               </button>
             </div>
           </>
+        )}
+
+        {startChoiceOpen && (
+          <HallStartChoice
+            hasContent={tables.length > 0 || elements.length > 0}
+            onBuildNew={() => {
+              setStartChoiceOpen(false)
+              setWizardOpen(true)
+            }}
+            onBuildFromSketch={() => {
+              setStartChoiceOpen(false)
+              setSketchUploadOpen(true)
+            }}
+            onClose={() => setStartChoiceOpen(false)}
+          />
         )}
 
         {wizardOpen && (

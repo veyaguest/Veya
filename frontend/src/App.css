@@ -11672,6 +11672,148 @@ td.notes.seating {
     background: var(--line);
   }
 
+  /* ---- מדריך: בניית אולם מסקיצה ---- */
+  .hm-guide-sketch {
+    margin: 4px 0 2px;
+  }
+  .hm-guide-sketch .hm-guide-lead {
+    margin-bottom: 6px;
+  }
+  .hm-guide-sketch-intro {
+    margin: 0 0 16px;
+    font-size: 13.5px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.55;
+  }
+  .hm-guide-sketch-shots {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 18px;
+  }
+  .hm-guide-sketch-shot {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+  }
+  .hm-guide-sketch-shot img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--ivory-2);
+  }
+  .hm-guide-sketch-shot span {
+    display: block;
+    margin-top: 6px;
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+  .hm-guide-sketch-arrow {
+    flex: 0 0 auto;
+    color: var(--gold-deep);
+    font-size: 18px;
+  }
+  .hm-guide-sketch h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+    color: var(--charcoal);
+    text-align: center;
+  }
+  .hm-guide-sketch-steps {
+    list-style: none;
+    margin: 0 0 18px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .hm-guide-sketch-steps li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .hm-guide-sketch-num {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid var(--gold);
+    color: var(--gold-deep);
+    font-size: 13px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hm-guide-sketch-steps h4 {
+    margin: 0 0 2px;
+    font-size: 14.5px;
+    color: var(--charcoal);
+  }
+  .hm-guide-sketch-steps p {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .hm-guide-note {
+    margin: 14px 0;
+    padding: 12px 14px;
+    background: var(--ivory-2, #f6efe2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .hm-guide-note p {
+    margin: 0 0 6px;
+    font-size: 13.5px;
+    color: var(--charcoal);
+    line-height: 1.55;
+  }
+  .hm-guide-note p:last-child {
+    margin-bottom: 0;
+  }
+  .hm-guide-note ul {
+    margin: 6px 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .hm-guide-note li {
+    position: relative;
+    padding-inline-start: 18px;
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .hm-guide-note li::before {
+    content: "–";
+    position: absolute;
+    inset-inline-start: 0;
+    color: var(--gold-deep);
+  }
+  .hm-guide-note li b {
+    color: var(--charcoal);
+  }
+  .hm-guide-sketch-cta {
+    display: block;
+    width: 100%;
+    margin: 4px 0 6px;
+    height: 48px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(160deg, var(--gold-light), var(--gold));
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
   /* ---- אשף בניית האולם (שלב 2) ---- */
   .hm-wizard-backdrop {
     position: fixed;
@@ -11833,6 +11975,76 @@ td.notes.seating {
     color: var(--charcoal);
     font-size: 15px;
     cursor: pointer;
+  }
+
+  /* ---- מסך בחירה: בניית אולם חדש / מסקיצה (קודם לאשף) ---- */
+  .hm-start-choice {
+    position: fixed;
+    inset-inline: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-inline: auto;
+    max-width: 460px;
+    max-height: 88dvh;
+    overflow-y: auto;
+    z-index: 83;
+    background: var(--ivory);
+    border-radius: 22px;
+    box-shadow: 0 20px 60px -16px rgba(20, 18, 14, 0.5);
+    direction: rtl;
+    padding: 24px 20px 20px;
+    animation: hmGuideIn 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .hm-start-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .hm-start-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    text-align: start;
+    padding: 16px 16px 18px;
+    border: 1.5px solid var(--sand, #e5dec9);
+    border-radius: 16px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.15s;
+    font-family: inherit;
+  }
+  .hm-start-card:hover,
+  .hm-start-card:focus-visible {
+    border-color: var(--gold);
+    background: linear-gradient(160deg, #fbf6e8, #f4ecd7);
+    transform: translateY(-1px);
+  }
+  .hm-start-card-ic {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(201, 162, 39, 0.12);
+    color: var(--gold-deep);
+    font-size: 22px;
+    margin-bottom: 2px;
+  }
+  .hm-start-card-title {
+    font-size: 16.5px;
+    font-weight: 700;
+    color: var(--charcoal);
+  }
+  .hm-start-card-sub {
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .hm-start-choice-cancel {
+    width: 100%;
   }
 
   /* חיווי שמירה אוטומטית (במקום כפתור שמירה) */
