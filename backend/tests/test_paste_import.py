@@ -429,6 +429,213 @@ def test_no_grouping_side_effect_within_paste_import():
         }
 
 
+# ---------------------------------------------------------------------------
+# תווים בלתי-נראים בהדבקה אמיתית — הבאג שנצפה בפועל אצל המשתמש (2026-08-13)
+# ---------------------------------------------------------------------------
+# רקע: כל הבדיקות למעלה עברו, אבל במערכת האמיתית מספרים ומילות-כמות עדיין
+# "נדבקו" לשם. הסיבה: הדבקה אמיתית מ-WhatsApp / מקלדת עברית בנייד / אקסל
+# RTL מזריקה תווי כיווניות בלתי-נראים (RLM/LRM וכו') **דווקא סביב מספרים**.
+# הם אינם רווח ואינם סוף-מחרוזת, ולכן שברו את עוגני הסוף של הביטויים
+# הרגולריים. הבדיקות כאן משתמשות בתווים האמיתיים כדי שהרגרסיה לא תחזור.
+
+RLM = "‏"   # Right-To-Left Mark
+LRM = "‎"   # Left-To-Right Mark
+NBSP = " "  # Non-Breaking Space
+RLE = "‫"   # Right-To-Left Embedding
+PDF_ = "‬"  # Pop Directional Formatting
+ZWSP = "​"  # Zero Width Space
+
+
+def test_trailing_rtl_mark_does_not_push_digit_into_name():
+    """"תומר אדרי 0533333333 2‏" — RLM אחרי הספרה. לפני התיקון: הכמות לא
+    זוהתה כלל והספרה נפלה לתוך השם ("תומר אדרי 2")."""
+    r = parse_line("תומר אדרי 0533333333 2" + RLM)
+    assert r["full_name"] == "תומר אדרי", f"השם התלכלך: {r['full_name']!r}"
+    assert r["guest_count_text"] == "2"
+    assert r["party_size"] == 2
+
+
+def test_trailing_rtl_mark_does_not_push_number_word_into_name():
+    """אותו באג בדיוק, עם מילת-מספר עברית במקום ספרה."""
+    r = parse_line("מאיה פרץ 0534567890 שלושה" + RLM)
+    assert r["full_name"] == "מאיה פרץ", f"השם התלכלך: {r['full_name']!r}"
+    assert r["guest_count_text"] == "שלושה"
+    assert r["party_size"] == 3
+
+
+def test_invisible_marks_in_every_position_are_neutralised():
+    """סימני כיווניות בכל מיקום אפשרי בשורה — לפני/אחרי הטלפון, לפני הכמות,
+    עוטפים את כל השורה — וגם רווחים חריגים (NBSP). בכולם התוצאה חייבת להיות
+    זהה לשורה נקייה, והשם חייב לצאת בלי שאריות בלתי-נראות."""
+    cases = [
+        "תומר אדרי 0533333333 זוג" + RLM,
+        "תומר אדרי " + LRM + "0533333333" + LRM + " זוג",
+        "תומר אדרי 0533333333 " + RLM + "זוג",
+        "תומר אדרי" + NBSP + "0533333333" + NBSP + "זוג",
+        RLE + "תומר אדרי 0533333333 זוג" + PDF_,
+        "תומר אדרי 0533333333 זוג" + ZWSP,
+    ]
+    for line in cases:
+        r = parse_line(line)
+        assert r["full_name"] == "תומר אדרי", f"{line!r} -> name={r['full_name']!r}"
+        assert r["phone"] == "0533333333", f"{line!r} -> phone={r['phone']!r}"
+        assert r["guest_count_text"] == "זוג"
+        assert r["party_size"] == 2
+
+
+def test_leading_rtl_mark_still_detects_family_prefix():
+    """RLM בתחילת השורה שבר את "^\\s*משפח[הת]" — ולכן "משפחת אדרי" איבדה את
+    תיוג הקבוצה שנכתב במפורש בטקסט."""
+    r = parse_line(RLM + "משפחת אדרי 0522222222")
+    assert r["full_name"] == "משפחת אדרי"
+    assert r["group_type"] == "close_family"
+    assert r["party_size"] is None  # עדיין: לא מנחשים כמות שלא נכתבה
+
+
+def test_name_never_keeps_invisible_residue():
+    """גם כשהפענוח 'הצליח', שאריות בלתי-נראות נשארו בתוך השם ונשמרו למסד
+    הנתונים. השם חייב לצאת נקי מכל תו מקטגוריית Cf."""
+    import unicodedata
+    r = parse_line("רוני אדרי 0544444444 שלושה ילדים" + RLM)
+    assert r["full_name"] == "רוני אדרי"
+    assert not [c for c in r["full_name"] if unicodedata.category(c) == "Cf"]
+
+
+# ---------------------------------------------------------------------------
+# שם-עצם מונה אחרי מילת-מספר ("שלושה אנשים")
+# ---------------------------------------------------------------------------
+
+def test_counted_noun_with_hebrew_number_word_leaves_clean_name():
+    """באג שהוסתר ע"י בדיקה חלשה: `test_couple_forms` בדק רק את party_size
+    ולכן לא גילה ש"שני אנשים" השאיר את המילה "אנשים" בתוך השם. כאן נבדק
+    **גם השם וגם הכמות** לכל צורות "מספר + שם-עצם מונה"."""
+    for text, name, qty, size in [
+        ("דן לוי 0501234567 שלושה אנשים", "דן לוי", "שלושה אנשים", 3),
+        ("רן כהן 0501234567 ארבעה אנשים", "רן כהן", "ארבעה אנשים", 4),
+        ("דנה לוי 0501234567 שני אנשים", "דנה לוי", "שני אנשים", 2),
+        ("דנה לוי 0501234567 שתי אנשים", "דנה לוי", "שתי אנשים", 2),
+        ("עוז כהן 0501234567 שני מוזמנים", "עוז כהן", "שני מוזמנים", 2),
+        ("אבי כהן 0501234567 5 אנשים", "אבי כהן", "5 אנשים", 5),
+        ("גיל לוי 0501234567 4 נפשות", "גיל לוי", "4 נפשות", 4),
+    ]:
+        r = parse_line(text)
+        assert r["full_name"] == name, f"{text!r} -> name={r['full_name']!r}"
+        assert r["guest_count_text"] == qty, f"{text!r} -> qty={r['guest_count_text']!r}"
+        assert r["party_size"] == size, f"{text!r} -> size={r['party_size']}"
+
+
+# ---------------------------------------------------------------------------
+# סעיף 11 במפרט: שורה ללא טלפון
+# ---------------------------------------------------------------------------
+
+def test_line_without_phone_still_splits_name_and_quantity():
+    """שורה בלי טלפון חייבת עדיין להתפצל לשם + כמות — אסור שכל השורה תהפוך
+    לשם, והטלפון פשוט מסומן כחסר."""
+    for text, name, qty, size in [
+        ("יוסי כהן זוג", "יוסי כהן", "זוג", 2),
+        ("דנה לוי שני ילדים", "דנה לוי", "שני ילדים", 3),
+        ("אבי מזרחי 3", "אבי מזרחי", "3", 3),
+    ]:
+        r = parse_line(text)
+        assert r["full_name"] == name, f"{text!r} -> name={r['full_name']!r}"
+        assert r["guest_count_text"] == qty
+        assert r["party_size"] == size
+        assert r["phone"] == ""
+    row = _row("יוסי כהן זוג")
+    assert "חסר טלפון" in row["warnings"]
+
+
+# ---------------------------------------------------------------------------
+# סעיף 3 במפרט: כל קידומות הסלולר + כל פורמטי הכתיבה
+# ---------------------------------------------------------------------------
+
+def test_all_mobile_prefixes_and_formats_are_extracted():
+    for prefix in ("050", "052", "053", "054", "055", "056", "057", "058", "059"):
+        r = parse_line(f"יוסי כהן {prefix}1234567 זוג")
+        assert r["full_name"] == "יוסי כהן"
+        assert r["phone"] == f"{prefix}1234567"
+    for text in (
+        "יוסי כהן 050-1234567 זוג",
+        "יוסי כהן 050 1234567 זוג",
+        "יוסי כהן +972501234567 זוג",
+        "יוסי כהן +972 50 1234567 זוג",
+    ):
+        r = parse_line(text)
+        assert r["full_name"] == "יוסי כהן", f"{text!r} -> {r['full_name']!r}"
+        assert r["phone"] == "0501234567", f"{text!r} -> {r['phone']!r}"
+        assert r["guest_count_text"] == "זוג"
+
+
+def test_couple_with_three_children_combo():
+    r = parse_line("אורן כהן 0545678901 זוג עם שלושה ילדים")
+    assert r["full_name"] == "אורן כהן"
+    assert r["guest_count_text"] == "זוג עם שלושה ילדים"
+    assert r["party_size"] == 5  # 2 מבוגרים + 3 ילדים
+
+
+def test_full_spec_list_end_to_end():
+    """הרשימה המלאה מסעיף 16 במפרט — כל 10 השורות, כולל השם, הטלפון,
+    טקסט הכמות והסכום המחושב."""
+    text = (
+        "משפחת אדרי 0522222222\n"
+        "תומר אדרי 0533333333 2\n"
+        "רוני אדרי 0544444444 שלושה ילדים\n"
+        "דני לוי 0555555555 זוג\n"
+        "יוסי כהן 0501234567 ילד\n"
+        "נועה לוי 0512345678 שני ילדים\n"
+        "איתי פרץ 0523456789 5\n"
+        "מאיה פרץ 0534567890 שלושה\n"
+        "אורן כהן 0545678901 זוג עם ילד\n"
+        "קרן לוי 0556789012"
+    )
+    expected = [
+        ("משפחת אדרי", "0522222222", None, 0),
+        ("תומר אדרי", "0533333333", "2", 2),
+        ("רוני אדרי", "0544444444", "שלושה ילדים", 4),
+        ("דני לוי", "0555555555", "זוג", 2),
+        ("יוסי כהן", "0501234567", "ילד", 2),
+        ("נועה לוי", "0512345678", "שני ילדים", 3),
+        ("איתי פרץ", "0523456789", "5", 5),
+        ("מאיה פרץ", "0534567890", "שלושה", 3),
+        ("אורן כהן", "0545678901", "זוג עם ילד", 3),
+        ("קרן לוי", "0556789012", None, 0),
+    ]
+    rows = parse_freeform_text(text)["rows"]
+    assert len(rows) == len(expected)
+    for r, (name, phone, qty, size) in zip(rows, expected):
+        assert r["full_name"] == name, f"{r['row_number']}: name={r['full_name']!r}"
+        assert r["phone"] == phone, f"{r['row_number']}: phone={r['phone']!r}"
+        assert r["guest_count_text"] == qty, f"{r['row_number']}: qty={r['guest_count_text']!r}"
+        assert r["party_size"] == size, f"{r['row_number']}: size={r['party_size']}"
+
+
+def test_full_spec_list_survives_realistic_rtl_marks():
+    """אותה רשימה בדיוק, אבל כפי שהיא באמת מגיעה מהדבקה בעברית: כל שורה
+    שמסתיימת במספר עטופה בסימני כיווניות. זו הבדיקה שמדמה את מה שהמשתמש
+    חווה בפועל."""
+    lines = [
+        "משפחת אדרי 0522222222",
+        "תומר אדרי 0533333333 " + LRM + "2" + RLM,
+        "רוני אדרי 0544444444 שלושה ילדים" + RLM,
+        "דני לוי 0555555555 זוג" + RLM,
+        "יוסי כהן 0501234567 ילד",
+        "נועה לוי 0512345678 שני ילדים" + RLM,
+        "איתי פרץ 0523456789 " + LRM + "5" + RLM,
+        "מאיה פרץ 0534567890 שלושה" + RLM,
+        "אורן כהן 0545678901 זוג עם ילד",
+        "קרן לוי 0556789012" + RLM,
+    ]
+    expected_sizes = [0, 2, 4, 2, 2, 3, 5, 3, 3, 0]
+    expected_names = [
+        "משפחת אדרי", "תומר אדרי", "רוני אדרי", "דני לוי", "יוסי כהן",
+        "נועה לוי", "איתי פרץ", "מאיה פרץ", "אורן כהן", "קרן לוי",
+    ]
+    rows = parse_freeform_text("\n".join(lines))["rows"]
+    for r, name, size in zip(rows, expected_names, expected_sizes):
+        assert r["full_name"] == name, f"{r['row_number']}: name={r['full_name']!r}"
+        assert r["party_size"] == size, f"{r['row_number']}: size={r['party_size']}"
+
+
 if __name__ == "__main__":
     tests = [obj for name, obj in list(globals().items()) if name.startswith("test_")]
     for fn in tests:
