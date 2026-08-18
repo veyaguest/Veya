@@ -595,11 +595,14 @@ export function DashboardPage({ onNavigate }: Props) {
       )}
 
       {stats && stats.total_guests > 0 && (() => {
+        // "תמונת מצב" סופרת אנשים (SUM party_size), לא רשומות מוזמן — מוזמן
+        // אחד עם party_size=4 שאישר מייצג 4, לא 1. חל רק כאן (העוגה + הכרטיסים);
+        // שאר המערכת (למשל סיכום "ניהול מוזמנים") ממשיכה לספור מוזמנים כרגיל.
         const rsvpSegments = [
-          { key: 'confirmed', label: t.kpiConfirmed, value: stats.confirmed, people: stats.confirmed_people, color: 'var(--gauge-confirmed)' },
-          { key: 'maybe', label: t.gaugeStatusMaybe, value: stats.maybe, people: stats.maybe_people, color: 'var(--gauge-maybe)' },
-          { key: 'declined', label: t.gaugeStatusDeclined, value: stats.declined, people: stats.declined_people, color: 'var(--gauge-declined)' },
-          { key: 'pending', label: t.kpiPending, value: stats.pending, people: stats.pending_people, color: 'var(--gauge-pending)' },
+          { key: 'confirmed', label: t.kpiConfirmed, value: stats.confirmed_people, color: 'var(--gauge-confirmed)' },
+          { key: 'maybe', label: t.gaugeStatusMaybe, value: stats.maybe_people, color: 'var(--gauge-maybe)' },
+          { key: 'declined', label: t.gaugeStatusDeclined, value: stats.declined_people, color: 'var(--gauge-declined)' },
+          { key: 'pending', label: t.kpiPending, value: stats.pending_people, color: 'var(--gauge-pending)' },
         ]
         return (
           <>
@@ -615,7 +618,7 @@ export function DashboardPage({ onNavigate }: Props) {
               </div>
               <RsvpGauge
                 segments={rsvpSegments}
-                centerValue={stats.confirmed}
+                centerValue={stats.confirmed_people}
                 centerLabel={t.gaugeLabel}
               />
               <ul className="gauge-status-grid">
@@ -624,7 +627,6 @@ export function DashboardPage({ onNavigate }: Props) {
                     <span className="gauge-status-dot" style={{ background: seg.color }} />
                     <span className="gauge-status-num">{seg.value}</span>
                     <span className="gauge-status-label">{seg.label}</span>
-                    <span className="gauge-status-people">{t.gaugeStatusPeople(seg.people)}</span>
                   </li>
                 ))}
               </ul>

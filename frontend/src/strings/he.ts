@@ -367,7 +367,6 @@ export const strings = {
     gaugeStatusDeclined: 'לא מגיעים',
     kpiConfirmed: 'מגיעים',
     kpiPending: 'ממתינים',
-    gaugeStatusPeople: (n: number) => `${n} אנשים`,
     invitePlaceholder: 'העלו תמונת הזמנה',
     // ---- באנר "יש מוזמנים בלי הזמנה" — מעל עדכוני אישורי ההגעה ----
     inviteBannerTitle: (count: number) =>
