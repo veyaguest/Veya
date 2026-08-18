@@ -39,6 +39,11 @@ def dashboard(
         for g in guests
         if g.rsvp_status == "confirmed"
     )
+    # לתצוגה בכרטיסי הסטטוס בדשבורד — כמה אנשים מיוצגים בכל קבוצה (party_size,
+    # לא הכמות הפעילה בהושבה — ראו Guest.effective_seats).
+    declined_people = sum(g.party_size for g in guests if g.rsvp_status == "declined")
+    maybe_people = sum(g.party_size for g in guests if g.rsvp_status == "maybe")
+    pending_people = sum(g.party_size for g in guests if g.rsvp_status == "pending")
     responded = confirmed + declined
     response_rate = round(responded / total_guests * 100) if total_guests else 0
 
@@ -83,6 +88,9 @@ def dashboard(
         declined=declined,
         maybe=maybe,
         pending=pending,
+        declined_people=declined_people,
+        maybe_people=maybe_people,
+        pending_people=pending_people,
         response_rate=response_rate,
         invitations_sent=invitations_sent,
         by_side=by_side,

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createGuest, updateGuest } from '../api'
-import type { GroupType, Guest, GuestCreate, Side } from '../types'
-import { GROUP_LABELS } from '../types'
+import type { GroupType, Guest, GuestCreate, RsvpStatus, Side } from '../types'
+import { GROUP_LABELS, RSVP_LABELS } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 
@@ -51,6 +51,9 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
   const [customGroup, setCustomGroup] = useState(
     guest ? isCustomGroup(guest.group_type) : false,
   )
+  // סטטוס אישור הגעה — ניתן לשינוי רק בעריכת מוזמן קיים; מוזמן חדש תמיד
+  // מתחיל "טרם השיב" בשרת, ולכן אין צורך בשדה הזה בטופס ההוספה.
+  const [rsvpStatus, setRsvpStatus] = useState<RsvpStatus>(guest?.rsvp_status ?? 'pending')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -80,6 +83,7 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
           group_type: group,
           notes_raw: form.notes_raw || null,
           seating_notes: form.seating_notes || null,
+          rsvp_status: rsvpStatus,
         })
       } else {
         await createGuest({
@@ -164,6 +168,21 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
             onChange={(e) => update('party_size', Number(e.target.value))}
           />
         </label>
+        {editing && (
+          <label>
+            {t.rsvpStatusLabel}
+            <select
+              value={rsvpStatus}
+              onChange={(e) => setRsvpStatus(e.target.value as RsvpStatus)}
+            >
+              {(Object.keys(RSVP_LABELS) as RsvpStatus[]).map((status) => (
+                <option key={status} value={status}>
+                  {RSVP_LABELS[status]}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="checkbox-field">
           <input
             type="checkbox"

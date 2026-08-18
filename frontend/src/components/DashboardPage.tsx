@@ -596,10 +596,10 @@ export function DashboardPage({ onNavigate }: Props) {
 
       {stats && stats.total_guests > 0 && (() => {
         const rsvpSegments = [
-          { key: 'confirmed', label: t.kpiConfirmed, value: stats.confirmed, color: 'var(--gauge-confirmed)' },
-          { key: 'maybe', label: t.gaugeStatusMaybe, value: stats.maybe, color: 'var(--gauge-maybe)' },
-          { key: 'declined', label: t.gaugeStatusDeclined, value: stats.declined, color: 'var(--gauge-declined)' },
-          { key: 'pending', label: t.kpiPending, value: stats.pending, color: 'var(--gauge-pending)' },
+          { key: 'confirmed', label: t.kpiConfirmed, value: stats.confirmed, people: stats.confirmed_people, color: 'var(--gauge-confirmed)' },
+          { key: 'maybe', label: t.gaugeStatusMaybe, value: stats.maybe, people: stats.maybe_people, color: 'var(--gauge-maybe)' },
+          { key: 'declined', label: t.gaugeStatusDeclined, value: stats.declined, people: stats.declined_people, color: 'var(--gauge-declined)' },
+          { key: 'pending', label: t.kpiPending, value: stats.pending, people: stats.pending_people, color: 'var(--gauge-pending)' },
         ]
         return (
           <>
@@ -624,6 +624,7 @@ export function DashboardPage({ onNavigate }: Props) {
                     <span className="gauge-status-dot" style={{ background: seg.color }} />
                     <span className="gauge-status-num">{seg.value}</span>
                     <span className="gauge-status-label">{seg.label}</span>
+                    <span className="gauge-status-people">{t.gaugeStatusPeople(seg.people)}</span>
                   </li>
                 ))}
               </ul>

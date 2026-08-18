@@ -367,6 +367,7 @@ export const strings = {
     gaugeStatusDeclined: 'לא מגיעים',
     kpiConfirmed: 'מגיעים',
     kpiPending: 'ממתינים',
+    gaugeStatusPeople: (n: number) => `${n} אנשים`,
     invitePlaceholder: 'העלו תמונת הזמנה',
     // ---- באנר "יש מוזמנים בלי הזמנה" — מעל עדכוני אישורי ההגעה ----
     inviteBannerTitle: (count: number) =>
@@ -467,6 +468,7 @@ export const strings = {
     newGroupOption: '➕ קבוצה חדשה…',
     newGroupPlaceholder: 'שם הקבוצה, למשל: חברים מהצבא',
     partySizeLabel: 'כמות אנשים',
+    rsvpStatusLabel: 'סטטוס אישור הגעה',
     isChildLabel: 'ילד/ה',
     // שני שדות הערות נפרדים. ההפרדה קיימת כדי שהערה תפעולית ("צריך לחזור
     // אליו") לא תתפרש בטעות כאילוץ ישיבה — רק השדה השני מגיע למנוע.

@@ -475,12 +475,17 @@ class DashboardStats(BaseModel):
     # מוזמנים
     total_guests: int
     total_people: int          # סכום party_size (כולל בני/בנות זוג וילדים)
-    confirmed_people: int      # סכום party_size של מי שאישר
+    confirmed_people: int      # כמה שאישרו בפועל (confirmed_count אם קיים, אחרת party_size)
     # RSVP
     confirmed: int
     declined: int
     maybe: int                 # סימנו "עדיין לא בטוחים"
     pending: int
+    # כמה אנשים מיוצגים בכל קבוצת סטטוס (סכום party_size) — לתצוגה בלבד
+    # ("לא מגיעים: 3 מוזמנים, 7 אנשים"), לא חלק מהספירה הפעילה בהושבה.
+    declined_people: int = 0
+    maybe_people: int = 0
+    pending_people: int = 0
     response_rate: int         # אחוז מי שענה (אישר/ביטל) מכלל המוזמנים
     invitations_sent: int
     # פילוחים

@@ -184,10 +184,10 @@ export function groupLabel(group: string): string {
 }
 
 export const RSVP_LABELS: Record<RsvpStatus, string> = {
-  pending: 'ממתין לתשובה',
+  pending: 'טרם השיב',
   confirmed: 'מגיע',
   declined: 'לא מגיע',
-  maybe: 'אולי',
+  maybe: 'מתלבט',
 }
 
 // ---- תבנית הודעת הזמנה (שלב RSVP 2) ----
@@ -431,6 +431,9 @@ export interface DashboardStats {
   declined: number
   maybe: number
   pending: number
+  declined_people: number
+  maybe_people: number
+  pending_people: number
   response_rate: number
   invitations_sent: number
   by_side: Record<Side, number>

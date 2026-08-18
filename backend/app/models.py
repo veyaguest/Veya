@@ -185,19 +185,21 @@ class Guest(Base):
 
     @property
     def effective_seats(self) -> int:
-        """כמות המקומות שהמוזמן הזה באמת תופס — הבסיס לכל ספירת אנשים במערכת.
+        """כמות המקומות שהמוזמן הזה באמת תופס — הבסיס לכל ספירת אנשים במערכת
+        (תמונת המצב וסידורי ההושבה כאחד).
 
-        אחרי שהמוזמן ענה, סופרים לפי מה שאישר (``confirmed_count``) ולא לפי כמה
-        שהוזמן (``party_size``):
-        - ביטל הגעה → 0 (לא תופס מקום).
-        - אישר → הכמות שהזין (ואם משום מה חסרה — נופלים ל-``party_size``).
-        - עדיין לא ענה / "אולי" → ``party_size`` (מתכננים לפי ההזמנה).
+        החלטת בעלים (2026-08-18): רק "מגיע" נספר כפעיל בהושבה. כל השאר —
+        כולל "טרם השיב" ו"מתלבט" — נספרים כ-0 מקומות, גם אם הוזמנו. זה לא
+        מוחק שיבוץ קיים (``table_number`` לא נוגע כאן): אם מוזמן כבר משובץ
+        לשולחן והסטטוס שלו משתנה, הוא נשאר על השולחן אבל מפסיק להיספר
+        כתופס מקום עד שיחזרו ויסמנו אותו "מגיע" — ואז זה חוזר אוטומטית.
+        - ביטל הגעה → 0.
+        - אישר → הכמות שהזין (``confirmed_count``); אם חסרה — נופלים ל-``party_size``.
+        - "אולי" / טרם השיב → 0.
         """
-        if self.rsvp_status == "declined":
-            return 0
-        if self.rsvp_status == "confirmed" and self.confirmed_count is not None:
-            return self.confirmed_count
-        return self.party_size
+        if self.rsvp_status == "confirmed":
+            return self.confirmed_count if self.confirmed_count is not None else self.party_size
+        return 0
 
 
 class LoginEvent(Base):
