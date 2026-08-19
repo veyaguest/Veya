@@ -243,10 +243,29 @@ def consume_email_verification(db: Session, token: str) -> Optional["models.User
     """מאמת טוקן ומסמן את המייל כמאומת. מחזיר את המשתמש, או None אם לא תקף.
 
     חד-פעמי: הטוקן נמחק מהשורה ברגע המימוש, כך שקישור שכבר נוצל לא עובד שוב.
+
+    ב-Postgres דרך ``app_consume_email_verification`` (SECURITY DEFINER):
+    זהו endpoint **ציבורי במכוון** (המשתמש עשוי ללחוץ על הקישור בלי להיות
+    מחובר בכלל) — ``app_current_user_id()`` הוא NULL, ומדיניות
+    ``users_select`` ("אני רואה רק את עצמי") הייתה מסננת כל שאילתת ORM
+    ישירה ל-0 שורות, בלי קשר אם הטוקן תקין. בדיוק אותה סיבה כמו
+    ``register_user_row``/``find_user_by_email`` (login/register) ו-
+    ``app_accept_partner_invitation`` (הצטרפות לאירוע) — ראו שם להסבר המלא.
+    נתפס בפועל בייצור: קישור אימות תקין החזיר תמיד "לא תקף" (ראו
+    backend/rls/09_email_verification_rls_fix.sql).
     """
     if not (token or "").strip():
         return None
     token_hash = hash_email_token(token.strip())
+
+    if IS_POSTGRES:
+        row = db.execute(
+            text("SELECT * FROM app_consume_email_verification(:h)"), {"h": token_hash}
+        ).mappings().first()
+        if row is None or row.get("id") is None:
+            return None
+        return models.User(**dict(row))
+
     user = db.scalars(
         select(models.User).where(models.User.email_verification_hash == token_hash)
     ).first()
