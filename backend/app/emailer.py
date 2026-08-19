@@ -29,9 +29,20 @@ def current_mode() -> str:
     return "live" if api_key() else "mock"
 
 
+# הדומיין המאומת ב-Resend. **veyaguest.co.il ולא veya.co.il** — זו הייתה
+# התקלה: ברירת המחדל הקודמת הצביעה על veya.co.il, שאינו מוגדר ב-Resend כלל
+# (ה-SPF שלו מפנה ל-Hostinger, ואין לו רשומת resend._domainkey). Resend דחתה
+# כל שליחה ב-403 עוד לפני שנוצר מייל — ולכן ה-Emails/Logs נשארו ריקים לגמרי,
+# והמשתמש קיבל "משהו השתבש" (ה-502 שנגזר מכך).
+# האימות בפועל של veyaguest.co.il מאומת ב-DNS: resend._domainkey (DKIM),
+# send.veyaguest.co.il עם include:amazonses.com (התשתית של Resend), ורשומת
+# MX ל-feedback-smtp של SES.
+_VERIFIED_SENDER = "VEYA <invite@veyaguest.co.il>"
+
+
 def from_address() -> str:
-    """כתובת השולח — חייבת להיות בדומיין מאומת ב-Resend."""
-    return os.getenv("RESEND_FROM", "VEYA <invite@veya.co.il>")
+    """כתובת השולח — חייבת להיות בדומיין מאומת ב-Resend (ראו ההערה למעלה)."""
+    return os.getenv("RESEND_FROM", _VERIFIED_SENDER)
 
 
 def public_base_url() -> str:
