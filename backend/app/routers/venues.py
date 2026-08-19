@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app import messaging, models, schemas, venues
-from app.auth import get_current_user
+from app.auth import get_current_owner
 from app.database import get_db
 
 router = APIRouter(prefix="/venues", tags=["venues"])
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/venues", tags=["venues"])
 def search(
     q: str = "",
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """מחזיר הצעות אולמות שהשם שלהם מכיל את מחרוזת החיפוש, עם כתובת וקישורי ניווט."""
     results = venues.search_venues(db, q)

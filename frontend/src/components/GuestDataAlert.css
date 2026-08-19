@@ -1,0 +1,78 @@
+/* ==========================================================================
+   התראת איכות-דאטה במסך ניהול המוזמנים — "נדרש תיקון מספר טלפון"
+   נפרד מ-App.css בכוונה: כל ה-CSS של Call Center חי בקבצים משלו, כדי
+   שאפשר יהיה לעקוב אחרי הפיצ'ר (ולמזג אותו) בלי להתנגש בקובץ הראשי.
+   נשען רק על טוקני המותג, ולכן מתלבש אוטומטית על ערכת הנושא.
+   ========================================================================== */
+
+.data-alert {
+  background: var(--cream);
+  border: 1px solid var(--gold-light);
+  border-inline-start: 4px solid var(--gold);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.data-alert-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: var(--charcoal);
+  margin-bottom: 8px;
+}
+
+.data-alert-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.data-alert-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line-2);
+}
+
+.data-alert-list li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.data-alert-text {
+  font-size: 14px;
+  color: var(--body);
+  line-height: 1.5;
+}
+
+.data-alert-btn {
+  align-self: flex-start;
+  min-height: 40px;
+  padding: 8px 18px;
+}
+
+.data-alert-foot {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+@media (min-width: 700px) {
+  .data-alert-list li {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .data-alert-btn {
+    align-self: auto;
+    flex: none;
+  }
+}

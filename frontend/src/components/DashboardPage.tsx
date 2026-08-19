@@ -5,6 +5,7 @@ import type { ReadinessPage } from '../readiness'
 import { VenueAutocomplete } from './VenueAutocomplete'
 import { getEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
+import './CallFeed.css'
 
 interface Props {
   // ניווט למסך אחר (מוזמנים / מפת אולם) — עבור הבאנר וכרטיס ההושבה.
@@ -97,11 +98,35 @@ function InviteBanner({ count, onSend }: { count: number; onSend: () => void }) 
   )
 }
 
+/** אייקון לכל פעולה שנרשמה בעקבות שיחת טלפון עם מוזמן. ה-detail עצמו כבר
+ * מגיע מהשרת כמשפט עברי מוכן (ראו backend/app/call_center.py: feed_message),
+ * ולכן כאן נדרש רק האייקון — בלי לנתח את הטקסט. */
+const CALL_FEED_ICONS: Record<string, string> = {
+  guest_call_confirmed: '✅',
+  guest_call_declined: '❌',
+  guest_call_no_answer: '📞',
+  guest_call_busy: '📞',
+  guest_call_wrong_number: '⚠️',
+  guest_call_callback: '📅',
+  guest_call_followup: '📞',
+}
+
 /** מפענח שורת יומן ביקורת של אישור/ביטול/"אולי" מהקישור הציבורי (action
- * "confirm_submit", detail בפורמט "שם: תווית"), וגם שינוי סטטוס ידני
- * מעריכת מוזמן (action "guest_rsvp_manual_update") — לפריט Feed קריא.
- * מתעלם מכל שורה אחרת ביומן — ה-Feed הזה מוקדש לעדכוני RSVP בלבד. */
-function parseRsvpEvent(row: AuditLogRow): { icon: string; text: string } | null {
+ * "confirm_submit", detail בפורמט "שם: תווית"), שינוי סטטוס ידני מעריכת
+ * מוזמן (action "guest_rsvp_manual_update"), ועדכונים שהגיעו משיחת טלפון
+ * עם המוזמן — לפריט Feed קריא.
+ * מתעלם מכל שורה אחרת ביומן — ה-Feed הזה מוקדש לעדכוני מוזמנים בלבד. */
+function parseRsvpEvent(
+  row: AuditLogRow,
+): { icon: string; text: string; note?: string } | null {
+  const callIcon = CALL_FEED_ICONS[row.action]
+  if (callIcon) {
+    // ה-detail הוא כבר משפט אנושי מוכן ("לא התקבלה תשובה מישראל כהן"),
+    // ללא מונחים טכניים ובלי רמז לכך שהפעולה הגיעה ממודול פנימי.
+    // שורה שנייה (אם קיימת) היא הערה מהשיחה, ומוצגת מתחת בשורה נפרדת.
+    const [text, ...rest] = row.detail.split('\n')
+    return { icon: callIcon, text, note: rest.join(' ').trim() || undefined }
+  }
   if (row.action === 'guest_rsvp_manual_update') {
     // ה-detail כבר משפט עברי שלם ("שם: אישור הגעה השתנה מ'X' ל'Y'") —
     // מוצג כמו שהוא, בלי לפרק אותו מחדש.
@@ -142,8 +167,16 @@ function RsvpUpdatesFeed({ rows }: { rows: AuditLogRow[] }) {
       const parsed = parseRsvpEvent(r)
       return parsed ? { ...parsed, id: r.id, created_at: r.created_at } : null
     })
-    .filter((x): x is { icon: string; text: string; id: number; created_at: string } => x !== null)
-    .slice(0, 6)
+    .filter(
+      (x): x is {
+        icon: string
+        text: string
+        note?: string
+        id: number
+        created_at: string
+      } => x !== null,
+    )
+    .slice(0, 10)
 
   return (
     <div className="rsvp-feed-card">
@@ -155,7 +188,10 @@ function RsvpUpdatesFeed({ rows }: { rows: AuditLogRow[] }) {
           {items.map((it) => (
             <li key={it.id} className="rsvp-feed-item">
               <span className="rsvp-feed-icon" aria-hidden="true">{it.icon}</span>
-              <span className="rsvp-feed-text">{it.text}</span>
+              <span className={`rsvp-feed-text${it.note ? ' has-note' : ''}`}>
+                {it.text}
+                {it.note && <span className="rsvp-feed-note">{it.note}</span>}
+              </span>
               <span className="rsvp-feed-time">{timeAgo(it.created_at)}</span>
             </li>
           ))}
@@ -635,20 +671,18 @@ export function DashboardPage({ onNavigate }: Props) {
               </ul>
             </section>
 
-            {/* ---- שתי עמודות: עדכוני אישורי הגעה (Feed) + סידורי הושבה
-                 (הפיצ'ר הדגל). מחליפות את כרטיס "הצעד הבא" וכרטיסי הסטטיסטיקה
-                 הכפולים — כל המידע שהיה בהם כבר מופיע במד שלמעלה. ---- */}
-            <div className="dash-two-col">
-              <div className="dash-col-left">
-                <InviteBanner
-                  count={stats.total_guests - stats.invitations_sent}
-                  onSend={() => onNavigate?.('messages')}
-                />
-                <RsvpUpdatesFeed rows={auditRows} />
-              </div>
-              <div className="dash-col-right">
-                <SeatingHelperCard stats={stats} onNavigate={onNavigate} />
-              </div>
+            {/* ---- עדכוני אישורי הגעה — סקשן עצמאי במלוא הרוחב, מיד מתחת
+                 למד, כחלק משמעותי מתמונת המצב (לא כרטיס צדדי קטן). ---- */}
+            <section className="rsvp-feed-section">
+              <RsvpUpdatesFeed rows={auditRows} />
+            </section>
+
+            <div className="dash-stack">
+              <InviteBanner
+                count={stats.total_guests - stats.invitations_sent}
+                onSend={() => onNavigate?.('messages')}
+              />
+              <SeatingHelperCard stats={stats} onNavigate={onNavigate} />
             </div>
           </>
         )

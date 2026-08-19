@@ -5,7 +5,7 @@ from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import models
+from app import models, roles
 from app.auth import get_current_user
 from app.database import get_db
 
@@ -60,6 +60,17 @@ class EventAccess:
         not_found = HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="האירוע לא נמצא"
         )
+
+        # (0) טלפן — נדחה לפני כל בדיקה אחרת, כולל בדיקת הבעלות. תפקידו מוגבל
+        # למסך השיחות בלבד (``/admin/call-center``), ואין לו שום גישה לניהול
+        # מוזמנים, הושבה, אולם, הודעות, אוטומציה או הגדרות. הבדיקה כאן, ולא
+        # ב-routers, כי זו נקודת הצוואר שכל endpoint תלוי-אירוע עובר בה —
+        # כך אין סיכוי לשכוח endpoint אחד. ראו app/roles.py.
+        if roles.is_phone_agent(user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="אין לך הרשאה לפעולה הזו",
+            )
 
         if x_event_id is not None:
             event = db.get(models.Event, x_event_id)

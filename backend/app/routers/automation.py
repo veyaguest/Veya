@@ -31,7 +31,7 @@ from app import (
     rsvp_timeline,
     schemas,
 )
-from app.auth import get_current_user
+from app.auth import get_current_owner
 from app.database import get_db
 from app.deps import EventAccess
 
@@ -226,7 +226,7 @@ def activate_track(
     payload: Optional[schemas.RsvpTrackActivateRequest] = None,
     db: Session = Depends(get_db),
     event: models.Event = Depends(_access),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """שולח הזמנות ומפעיל את מסלול אישורי-ההגעה (מקצה את רצף ההודעות, idempotent).
 
@@ -364,7 +364,7 @@ def advance_track(
     request: Request,
     db: Session = Depends(get_db),
     event: models.Event = Depends(_access),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """מקדם את המסלול אוטומטית: תזכורות/יום-אירוע/תודה שהגיע זמנן נשלחות
     (mock/live). רק ממתינים/מאושרים לפי קהל היעד של כל הודעה; מי שכבר ענה

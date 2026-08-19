@@ -20,6 +20,7 @@
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Optional
 
@@ -81,6 +82,114 @@ def _audience_label(audience: str) -> str:
     return ""
 
 
+# ---- פריסת הסבב לתאריכים (מקור אמת יחיד) ----
+# גם מסך אישורי-ההגעה של בעל האירוע וגם ה-Call Center של האדמין קוראים מכאן,
+# כדי ששניהם ידברו על *אותם* תאריכים בדיוק ולא ייווצרו שני לוחות זמנים.
+
+
+@dataclass(frozen=True)
+class Placement:
+    """שלב אחד בסבב, אחרי שקיבל תאריך בפועל."""
+
+    step: dict
+    date: date
+    moved_from_weekend: bool
+    # סידורי סבב השיחות (1, 2, 3...) — רק לשלבי ``call_round``, אחרת None.
+    round_number: Optional[int]
+
+
+@dataclass(frozen=True)
+class Schedule:
+    """פריסת הסבב המלאה לאירוע אחד."""
+
+    commitment_date: date
+    anchor_end: date
+    start_date: date
+    compressed: bool
+    placements: list[Placement]
+
+
+def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Optional[Schedule]:
+    """פורס את שלבי ``CYCLE`` לתאריכים עבור אירוע. ``None`` = אין מה לחשב
+    (חסר תאריך אירוע או שלא נבחר מועד סגירת רשימה).
+
+    עוגן ההתחלה: היום שבו מסלול אישורי-ההגעה הופעל בפועל
+    (``rsvp_track_started_at`` — כלומר היום שבו נשלחו ההזמנות, שהוא בדיוק
+    המשמעות של השלב הראשון בסבב). כך התאריכים יציבים ולא "בורחים" קדימה
+    בכל יום שעובר. לפני ההפעלה אין עדיין עוגן אמיתי, ולכן מוצג לוח הזמנים
+    הצפוי מהיום — בדיוק כמו קודם.
+    """
+    now = now or datetime.utcnow()
+    today = now.date()
+    event_date = parse_event_date(event.event_date)
+    commit_days = event.venue_commit_days_before
+    if event_date is None or commit_days is None:
+        return None
+
+    commitment_date = event_date - timedelta(days=commit_days)
+    # עוגן הסיום: היום הפעיל האחרון *לפני* מועד סגירת הרשימה (יום מרווח לסגירה).
+    anchor_end = _prev_active_day(commitment_date - timedelta(days=1))
+    ideal_start = anchor_end - timedelta(days=FULL_SPAN)
+    started_on = (
+        event.rsvp_track_started_at.date() if event.rsvp_track_started_at else None
+    )
+    # לא מתחילים מוקדם מהסבב האידיאלי (אין טעם לפרוס 12 יום על פני חודשיים),
+    # ולא בעבר כשעוד לא הופעל המסלול.
+    effective_start = max(ideal_start, started_on or today)
+    available = (anchor_end - effective_start).days
+    compressed = available < FULL_SPAN
+    if available < 0:
+        available = 0
+    scale = 1.0 if not compressed else (available / FULL_SPAN if FULL_SPAN else 1.0)
+
+    placements: list[Placement] = []
+    round_number = 0
+    for step in CYCLE:
+        off = round(step["offset"] * scale)
+        natural = effective_start + timedelta(days=off)
+        placed = _next_active_day(natural)
+        if placed > anchor_end:
+            placed = _prev_active_day(anchor_end)
+        if step["type"] == "call_round":
+            round_number += 1
+        placements.append(Placement(
+            step=step,
+            date=placed,
+            moved_from_weekend=_is_weekend(natural) and placed != natural,
+            round_number=round_number if step["type"] == "call_round" else None,
+        ))
+
+    return Schedule(
+        commitment_date=commitment_date,
+        anchor_end=anchor_end,
+        start_date=min((p.date for p in placements), default=effective_start),
+        compressed=compressed,
+        placements=placements,
+    )
+
+
+def call_rounds(event: models.Event, now: Optional[datetime] = None) -> list[Placement]:
+    """סבבי השיחות של האירוע בלבד, לפי הסדר (סבב 1, 2, 3...)."""
+    schedule = compute_schedule(event, now)
+    if schedule is None:
+        return []
+    return [p for p in schedule.placements if p.round_number is not None]
+
+
+def due_call_round(
+    event: models.Event, now: Optional[datetime] = None
+) -> Optional[Placement]:
+    """סבב השיחות הפעיל כרגע — האחרון שתאריכו כבר הגיע. ``None`` אם אף סבב
+    עדיין לא הגיע (או שאין לוח זמנים לאירוע).
+
+    "האחרון שהגיע" ולא "זה שהיום בדיוק": מוזמן שלא הספיקו להתקשר אליו בסבב
+    הקודם עדיין מופיע ברשימה עד שמגיע הסבב הבא — כי הוא עדיין צריך שיחה.
+    """
+    today = (now or datetime.utcnow()).date()
+    due = [p for p in call_rounds(event, now) if p.date <= today]
+    return due[-1] if due else None
+
+
 def _empty_view(event: models.Event) -> dict:
     """מצב 'עדיין לא הוגדר' — אין תאריך אירוע או שלא נבחר מועד סגירת רשימה."""
     ed = parse_event_date(event.event_date)
@@ -120,7 +229,8 @@ def compute_timeline(
     commit_days = event.venue_commit_days_before
 
     # בלי תאריך אירוע או בלי בחירת מועד סגירת רשימה — אין מה לחשב.
-    if event_date is None or commit_days is None:
+    schedule = compute_schedule(event, now)
+    if schedule is None or event_date is None or commit_days is None:
         return _empty_view(event)
 
     total = len(guests)
@@ -136,17 +246,8 @@ def compute_timeline(
             return confirmed
         return 0
 
-    commitment_date = event_date - timedelta(days=commit_days)
-    # עוגן הסיום: היום הפעיל האחרון *לפני* מועד סגירת הרשימה (יום מרווח לסגירה).
-    anchor_end = _prev_active_day(commitment_date - timedelta(days=1))
-    ideal_start = anchor_end - timedelta(days=FULL_SPAN)
-    # לא מתחילים בעבר — VEYA ממתינה ומתחילה את הסבב בזמן.
-    effective_start = max(ideal_start, today)
-    available = (anchor_end - effective_start).days
-    compressed = available < FULL_SPAN
-    if available < 0:
-        available = 0
-    scale = 1.0 if not compressed else (available / FULL_SPAN if FULL_SPAN else 1.0)
+    commitment_date = schedule.commitment_date
+    compressed = schedule.compressed
 
     # ---- פריסת שלבי הסבב לתאריכים ----
     # מפה iso -> {"date":.., "actions":[...]}. יום אחד יכול לשאת כמה פעולות
@@ -159,24 +260,18 @@ def compute_timeline(
             by_iso[iso] = {"date": d, "actions": []}
         return by_iso[iso]
 
-    for step in CYCLE:
-        off = round(step["offset"] * scale)
-        natural = effective_start + timedelta(days=off)
-        placed = _next_active_day(natural)
-        if placed > anchor_end:
-            placed = _prev_active_day(anchor_end)
-        moved = _is_weekend(natural) and placed != natural
-        cnt = count_for(step["audience"])
-        ensure_day(placed)["actions"].append({
+    for placement in schedule.placements:
+        step = placement.step
+        ensure_day(placement.date)["actions"].append({
             "type": step["type"],
             "icon": step["icon"],
             "label": step["label"],
             "audience": _audience_label(step["audience"]),
-            "audience_count": cnt,
-            "moved_from_weekend": moved,
+            "audience_count": count_for(step["audience"]),
+            "moved_from_weekend": placement.moved_from_weekend,
         })
 
-    rsvp_start_date = min((v["date"] for v in by_iso.values()), default=effective_start)
+    rsvp_start_date = schedule.start_date
 
     # ---- ציוני דרך אחרי הסבב ----
     # מועד סגירת הרשימה עצמו.

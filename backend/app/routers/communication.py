@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import audit, communication, messaging, models, permissions, schemas
-from app.auth import get_current_user
+from app.auth import get_current_owner
 from app.database import get_db
 from app.deps import EventAccess
 
@@ -104,7 +104,7 @@ def test_send_message(
     message_type: str,
     db: Session = Depends(get_db),
     event: models.Event = Depends(_write),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """שולח תצוגה מקדימה לטלפון הבעלים עצמו — לא נספר בסטטיסטיקות אמיתיות
     ולא נרשם ביומן ההודעות (אינו חלק מה-Timeline של אף מוזמן)."""
@@ -130,7 +130,7 @@ def test_send_message(
 @router.get("/library", response_model=list[schemas.MessageDefaultRead])
 def get_library(
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """ספריית הודעות מוכנות — קריאה בלבד: כל ברירות המחדל (8 סוגי אירוע ×
     6 סוגי הודעה) לצפייה מתוך אזור האירוע. אינו תלוי-אירוע ספציפי (לכן אין
@@ -171,7 +171,7 @@ def send_due(
     request: Request,
     db: Session = Depends(get_db),
     event: models.Event = Depends(_write),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """שולח בפועל את מה שנבחר מהתור — רק אחרי לחיצת אישור של הבעלים."""
     actions = communication.compute_due_messages(db, event)

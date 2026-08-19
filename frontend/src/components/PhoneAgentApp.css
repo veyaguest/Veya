@@ -1,0 +1,630 @@
+/* ==========================================================================
+   מסך הטלפן — "שיחות להיום"
+   מובייל-פירסט במכוון: הטלפן עובד מהטלפן, לרוב בעמידה ובין שיחה לשיחה.
+   כל שטח מגע ≥44px, כל הצבעים דרך טוקני המותג (ולכן גם מצב כהה עובד).
+   ========================================================================== */
+
+.pa-app {
+  min-height: 100vh;
+  background: var(--ivory);
+  color: var(--charcoal);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- סרגל עליון מינימלי (אין sidebar של אדמין) ---- */
+.pa-top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--cream);
+  border-bottom: 1px solid var(--line);
+}
+
+.pa-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.pa-brand-mark {
+  font-size: 20px;
+}
+
+.pa-brand-name {
+  font-size: 15px;
+  color: var(--charcoal);
+}
+
+.pa-top-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pa-top-btn {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--body);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.pa-top-btn:hover {
+  background: var(--surface-hi);
+  border-color: var(--gold-light);
+}
+
+/* ---- גוף ---- */
+.pa-main {
+  flex: 1;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pa-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+
+.pa-sub {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ---- מונים ---- */
+.pa-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pa-stat {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-card);
+  padding: 14px 12px;
+  text-align: center;
+}
+
+.pa-stat-value {
+  display: block;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pa-stat-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pa-stat-good .pa-stat-value {
+  color: var(--green);
+}
+
+.pa-stat-warn .pa-stat-value {
+  color: var(--gold-deep);
+}
+
+/* ---- סרגל פעולה ---- */
+.pa-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pa-start {
+  min-height: 52px;
+  border: none;
+  border-radius: var(--radius-l);
+  background: var(--charcoal);
+  color: var(--ivory);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
+}
+
+.pa-start:hover {
+  opacity: 0.92;
+}
+
+.pa-start:active {
+  transform: scale(0.99);
+}
+
+.pa-search {
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--cream);
+  color: var(--charcoal);
+  font: inherit;
+  font-size: 15px;
+}
+
+.pa-search:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+/* ---- רשימת המשימות ---- */
+.pa-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pa-card {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.pa-card-followup {
+  border-color: var(--gold);
+}
+
+.pa-card-main {
+  display: block;
+  width: 100%;
+  padding: 14px 16px 10px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pa-card-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+
+.pa-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(var(--gold-rgb), 0.16);
+  color: var(--gold-deep);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.pa-card-phone {
+  margin-top: 2px;
+  font-size: 15px;
+  color: var(--body);
+  font-variant-numeric: tabular-nums;
+}
+
+.pa-card-meta {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--body);
+}
+
+.pa-card-sub {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.pa-dot {
+  color: var(--faint);
+}
+
+.pa-card-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 14px;
+}
+
+.pa-dial,
+.pa-open {
+  flex: 1;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius-m);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pa-dial {
+  border: 1px solid var(--line);
+  background: var(--surface-hi);
+  color: var(--charcoal);
+}
+
+.pa-open {
+  border: none;
+  background: var(--gold);
+  color: #1c1a14;
+}
+
+.pa-open:active,
+.pa-dial:active {
+  transform: scale(0.99);
+}
+
+/* ---- מצבי ריק/טעינה/שגיאה ---- */
+.pa-loading,
+.pa-empty-inline {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.pa-empty {
+  padding: 40px 20px;
+  text-align: center;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+}
+
+.pa-empty-icon {
+  font-size: 36px;
+}
+
+.pa-empty h2 {
+  margin: 10px 0 6px;
+  font-size: 19px;
+}
+
+.pa-empty p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.pa-error {
+  padding: 12px 14px;
+  border-radius: var(--radius-m);
+  background: rgba(166, 96, 90, 0.1);
+  border: 1px solid var(--error);
+  color: var(--error);
+  font-size: 14px;
+}
+
+/* ---- גיליון ביצוע השיחה ---- */
+.pa-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(11, 10, 12, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.pa-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ivory);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-dialog);
+}
+
+.pa-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pa-sheet-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.pa-streak {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--gold-deep);
+}
+
+.pa-x {
+  min-width: 40px;
+  min-height: 40px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pa-sheet-body {
+  padding: 16px 18px 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pa-dial-big {
+  min-height: 54px;
+  font-size: 19px;
+  font-weight: 700;
+  border-color: var(--gold);
+}
+
+.pa-facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.pa-facts dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pa-facts dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: var(--charcoal);
+}
+
+.pa-notes {
+  padding: 10px 12px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-m);
+  font-size: 14px;
+  color: var(--body);
+}
+
+.pa-notes p {
+  margin: 0 0 4px;
+}
+
+.pa-notes p:last-child {
+  margin-bottom: 0;
+}
+
+.pa-section {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.pa-outcomes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pa-outcome {
+  min-height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--cream);
+  color: var(--charcoal);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+/* "לחזור מאוחר יותר" — האחרון ברשת, נפרש לרוחב כדי לא להשאיר חור. */
+.pa-outcome:last-child {
+  grid-column: 1 / -1;
+}
+
+.pa-outcome:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.pa-outcome.open {
+  border-color: var(--gold);
+  background: rgba(var(--gold-rgb), 0.1);
+}
+
+.pa-outcome-good {
+  border-color: rgba(47, 158, 95, 0.4);
+}
+
+.pa-outcome-bad {
+  border-color: rgba(166, 96, 90, 0.4);
+}
+
+.pa-extra {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--cream);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-m);
+}
+
+.pa-extra-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+.pa-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pa-count {
+  min-width: 48px;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface-hi);
+  color: var(--charcoal);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pa-count.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #1c1a14;
+}
+
+.pa-presets {
+  display: flex;
+  gap: 8px;
+}
+
+.pa-preset {
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface-hi);
+  color: var(--charcoal);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.pa-input {
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface-hi);
+  color: var(--charcoal);
+  font: inherit;
+  font-size: 15px;
+}
+
+.pa-save {
+  min-height: 50px;
+  border: none;
+  border-radius: var(--radius-m);
+  background: var(--charcoal);
+  color: var(--ivory);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pa-save:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ---- דסקטופ: הגיליון הופך לחלון ממורכז, הרשימה מתפרשת ---- */
+@media (min-width: 768px) {
+  .pa-main {
+    padding: 28px 24px 56px;
+  }
+
+  .pa-toolbar {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .pa-start {
+    flex: 0 0 200px;
+  }
+
+  .pa-search {
+    flex: 1;
+  }
+
+  .pa-card {
+    display: flex;
+    align-items: center;
+  }
+
+  .pa-card-main {
+    flex: 1;
+    padding: 16px 18px;
+  }
+
+  .pa-card-actions {
+    padding: 0 18px;
+    flex: 0 0 260px;
+  }
+
+  .pa-overlay {
+    align-items: center;
+  }
+
+  .pa-sheet {
+    border-radius: var(--radius-xl);
+    max-height: 88vh;
+  }
+
+  .pa-outcomes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pa-outcome:last-child {
+    grid-column: auto;
+  }
+}

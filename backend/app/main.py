@@ -14,6 +14,7 @@ from app.routers import (
     admin,
     auth,
     automation,
+    call_center,
     communication,
     confirm,
     constraints,
@@ -47,6 +48,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(call_center.router)
 app.include_router(events.router)
 app.include_router(event_members.router)
 app.include_router(guests.router)
@@ -134,6 +136,11 @@ _EXTRA_COLUMNS = {
     },
     "venues": {
         "city": "VARCHAR DEFAULT ''",
+    },
+    "call_logs": {
+        # נוסף אחרי הטבלה עצמה — מאפשר ל"מספר שגוי" להיסגר אוטומטית כשהמספר
+        # מתעדכן (ראו models.CallLog.phone_at_call).
+        "phone_at_call": "TEXT DEFAULT ''",
     },
 }
 
@@ -244,6 +251,13 @@ _EXTRA_INDEXES = {
         "messages", ("event_id", "direction", "kind", "status")
     ),
     "ix_audit_logs_user_id": ("audit_logs", "user_id"),
+    # Call Center — התור נשלף לפי (אירוע, סבב) ולפי מוזמן.
+    "ix_call_logs_event_id": ("call_logs", "event_id"),
+    "ix_call_logs_guest_id": ("call_logs", "guest_id"),
+    "ix_call_logs_event_round": ("call_logs", ("event_id", "round_number")),
+    # הקצאת אירועים לטלפנים — נשלפת תמיד לפי המשתמש המחובר.
+    "ix_call_assignments_user_id": ("call_assignments", "user_id"),
+    "ix_call_assignments_event_id": ("call_assignments", "event_id"),
 }
 
 

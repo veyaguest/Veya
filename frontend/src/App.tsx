@@ -39,6 +39,10 @@ const AdminApp = lazy(() =>
 const HallPage = lazy(() =>
   import('./components/HallPage').then((m) => ({ default: m.HallPage })),
 )
+// מסך הטלפן — רלוונטי לחלק זעיר מהמשתמשים, ולכן גם הוא בצ'אנק נפרד.
+const PhoneAgentApp = lazy(() =>
+  import('./components/PhoneAgentApp').then((m) => ({ default: m.PhoneAgentApp })),
+)
 
 // אותו מסך "טוען…" שכבר קיים לבדיקת ההתחברות הראשונית (boot-screen) — משתמשים
 // בו גם כ-fallback ל-Suspense, כדי שלא תיווסף שפת טעינה חדשה לאפליקציה.
@@ -159,8 +163,13 @@ function App() {
     }
   }, [])
 
-  // טעינת האירועים של המשתמש ובחירת האירוע הפעיל.
-  async function loadEvents() {
+  // טעינת האירועים של המשתמש ובחירת האירוע הפעיל. לטלפן אין אירועים משלו
+  // ואין לו הרשאה ל-/events (השרת מחזיר 403) — אז לא יורים את הבקשה בכלל.
+  async function loadEvents(u?: User) {
+    if ((u ?? user)?.account_type === 'phone_agent') {
+      setEvents([])
+      return [] as EventSummary[]
+    }
     const evs = await listMyEvents().catch(() => [] as EventSummary[])
     setEvents(evs)
     const stored = getEventId()
@@ -180,7 +189,7 @@ function App() {
     getMe()
       .then(async (u) => {
         setUser(u)
-        await loadEvents()
+        await loadEvents(u)
       })
       .catch(() => {
         /* 401 כבר טופל — נשאר לא מחובר */
@@ -214,7 +223,7 @@ function App() {
     setPage('dashboard')
     const u = await getMe()
     setUser(u)
-    await loadEvents()
+    await loadEvents(u)
   }
 
   // חזרה מהתחזות למצב אדמין: משחזר את טוקן האדמין ומרענן את המשתמש.
@@ -240,7 +249,7 @@ function App() {
 
   async function handleAuth(u: User) {
     setUser(u)
-    await loadEvents()
+    await loadEvents(u)
   }
 
   async function handleEventCreated(ev: EventSummary) {
@@ -284,6 +293,17 @@ function App() {
     return (
       <Suspense fallback={bootFallback}>
         <AdminApp user={user} onLogout={handleLogout} onImpersonate={handleImpersonate} />
+      </Suspense>
+    )
+  }
+
+  // טלפן → מסך "שיחות להיום" בלבד. לא Dashboard, לא מסלול יצירת אירוע, ולא
+  // סרגל האדמין. ההסתרה כאן היא נוחות בלבד — ההרשאה נאכפת בשרת
+  // (backend/app/roles.py), כך שגם קריאה ישירה ל-API תיחסם.
+  if (user.account_type === 'phone_agent') {
+    return (
+      <Suspense fallback={bootFallback}>
+        <PhoneAgentApp user={user} onLogout={handleLogout} onUserUpdated={setUser} />
       </Suspense>
     )
   }

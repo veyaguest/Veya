@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app import audit, media, messaging, models, schemas
+from app import audit, media, messaging, models, rsvp_response, schemas
 from app.database import IS_POSTGRES, get_db, set_guest_token
 
 router = APIRouter(prefix="/confirm", tags=["confirm"])
@@ -96,25 +96,13 @@ def submit_confirm(
         db.commit()
         raise HTTPException(status_code=404, detail="הקישור כבר לא פעיל — בקשו ממארגני האירוע קישור חדש.")
 
-    if payload.maybe:
-        guest.rsvp_status = "maybe"
-        guest.confirmed_count = None
-        label = "סימן/ה 'אולי'"
-    elif payload.coming:
-        # כמות: ברירת מחדל = כמה שהוזמנו. המוזמן יכול להוסיף כמות בפועל,
-        # גם מעבר למה שהוזמן (למשל משפחה שגדלה), עד תקרה סבירה נגד שימוש לרעה.
-        count = payload.count if payload.count is not None else guest.party_size
-        count = max(1, min(count, 30))
-        guest.rsvp_status = "confirmed"
-        guest.confirmed_count = count
-        label = f"אישר/ה הגעה ({count})"
-    else:
-        guest.rsvp_status = "declined"
-        guest.confirmed_count = 0
-        label = "ביטל/ה הגעה"
-
+    # אותה לוגיקה בדיוק שרצה כשהאדמין מסמן במקום המוזמן בשיחת טלפון
+    # (Call Center) — ראו app/rsvp_response.py.
     note = (payload.note or "").strip()
-    guest.guest_note = note or None
+    decision = "maybe" if payload.maybe else ("confirmed" if payload.coming else "declined")
+    label = rsvp_response.apply_response(
+        guest, decision, count=payload.count, note=note
+    )
 
     body = label + (f" · הערה: {note}" if note else "")
     # מוזמן אנונימי (רק guest_token, בלי משתמש) — messages_select דורש הרשאת

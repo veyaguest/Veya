@@ -338,6 +338,66 @@ def main() -> int:
         check_status("messages: planner-full reads summary", http.get("/messaging/summary", headers=pf_h), 200)
 
         # ============================================================
+        # 9b. Call Center + call_logs RLS (06_call_logs_rls.sql)
+        # ============================================================
+        # דורש שהקובץ backend/rls/06_call_logs_rls.sql כבר הורץ על ה-DB.
+        # אם הטבלה לא קיימת — מדלגים בבירור במקום להיכשל בבלבול.
+        cur.execute("select to_regclass('public.call_logs')")
+        call_logs_exists = cur.fetchone()[0] is not None
+        check("call_logs: table exists on staging", call_logs_exists,
+              "הרץ create_all/deploy לפני בדיקת ה-RLS")
+        if call_logs_exists:
+            cur.execute("""
+                select relrowsecurity, relforcerowsecurity
+                from pg_class where relname = 'call_logs'
+            """)
+            rls_row = cur.fetchone()
+            check("call_logs: RLS enabled + forced",
+                  bool(rls_row) and rls_row["relrowsecurity"] and rls_row["relforcerowsecurity"],
+                  f"enabled={rls_row['relrowsecurity'] if rls_row else None} "
+                  f"forced={rls_row['relforcerowsecurity'] if rls_row else None}")
+            cur.execute("select policyname from pg_policies where tablename='call_logs'")
+            policies = {r["policyname"] for r in cur.fetchall()}
+            expected_policies = {
+                "call_logs_select", "call_logs_insert",
+                "call_logs_update", "call_logs_delete",
+            }
+            check("call_logs: all four policies present",
+                  expected_policies <= policies,
+                  f"missing={sorted(expected_policies - policies)}")
+
+            # --- הרשאות API: אדמין בלבד ---
+            check_status("call center: admin reads overview",
+                         http.get("/admin/call-center", headers=ah), 200)
+            check_status("call center: admin reads queue",
+                         http.get("/admin/call-center/queue", headers=ah), 200)
+            check_status("call center: owner A blocked",
+                         http.get("/admin/call-center", headers=oh_a), 403)
+            check_status("call center: owner B blocked",
+                         http.get("/admin/call-center/queue", headers=oh_b), 403)
+            check_status("call center: planner (full) blocked",
+                         http.get("/admin/call-center", headers=pf_h), 403)
+            check_status("call center: unauthenticated blocked",
+                         http.get("/admin/call-center"), 401)
+            check_status("call center: owner cannot read another guest's call card",
+                         http.get(f"/admin/call-center/guests/{guest_id}", headers=oh_b), 403)
+            check_status("call center: owner cannot record an outcome",
+                         http.post(f"/admin/call-center/guests/{guest_id}/outcome",
+                                   json={"outcome": "no_answer"}, headers=oh_a), 403)
+
+            # --- אין דליפה בין אירועים: שורה של אירוע A לא נראית תחת אירוע B ---
+            cur.execute(
+                "insert into call_logs (event_id, guest_id, round_number, outcome, note)"
+                " values (%s, %s, 1, 'no_answer', 'rls probe') returning id",
+                (event_a, guest_id),
+            )
+            probe_id = cur.fetchone()["id"]
+            cur.execute("select event_id from call_logs where id=%s", (probe_id,))
+            check("call_logs: probe row is bound to event A",
+                  cur.fetchone()["event_id"] == event_a)
+            cur.execute("delete from call_logs where id=%s", (probe_id,))
+
+        # ============================================================
         # 10. Media access
         # ============================================================
         tiny_png_data_uri = (
@@ -362,6 +422,9 @@ def main() -> int:
         cur.execute("select id from events where id = any(%s) or owner_id = any(%s)",
                     (created_event_ids, created_user_ids))
         all_event_ids = [r["id"] for r in cur.fetchall()] or created_event_ids
+        # call_logs מצביע גם על events וגם על guests ואין לו ON DELETE CASCADE —
+        # חייב להימחק לפני שניהם, אחרת הניקוי נופל על foreign key.
+        cur.execute("delete from call_logs where event_id = any(%s)", (all_event_ids,))
         cur.execute("delete from messages where event_id = any(%s)", (all_event_ids,))
         cur.execute("delete from clarifications where event_id = any(%s)", (all_event_ids,))
         cur.execute("delete from audit_logs where event_id = any(%s)", (all_event_ids,))

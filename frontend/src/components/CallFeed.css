@@ -1,0 +1,24 @@
+/* ==========================================================================
+   שורת יומן פעילות שהגיעה משיחת טלפון עם מוזמן, כשיש לה הערה נלווית.
+   בקובץ נפרד (ולא ב-App.css) כדי לשמור את כל ה-CSS של הפיצ'ר במקום אחד.
+
+   ברירת המחדל של ‎.rsvp-feed-text היא שורה אחת עם חיתוך (nowrap + ellipsis).
+   כאן היא נפתחת לשתי שורות **רק** כשקיימת הערה — הסלקטור הכפול
+   (‎.rsvp-feed-text.has-note) גובר על הכלל הבסיסי בלי לגעת בו ובלי להשפיע
+   על שאר שורות ה-Feed.
+   ========================================================================== */
+
+.rsvp-feed-text.has-note {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.rsvp-feed-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}

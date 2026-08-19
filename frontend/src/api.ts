@@ -1,5 +1,7 @@
 import type {
   AdminAccountCreateResult,
+  AdminCallerRow,
+  AdminCallersPage,
   AdminAuditRow,
   AdminDashboard,
   AdminEventRow,
@@ -15,6 +17,11 @@ import type {
   AnalyzeResult,
   AuditLogRow,
   AutomationDashboard,
+  CallCenterGuestDetail,
+  CallCenterOverview,
+  CallCenterQueue,
+  CallOutcomeRequest,
+  CallOutcomeResult,
   Clarification,
   CommunicationDueQueue,
   CommunicationSendResult,
@@ -28,6 +35,7 @@ import type {
   EventSummary,
   GroupNotes,
   GroupSuggestion,
+  GuestDataAlerts,
   GuestTimeline,
   Guest,
   GuestCreate,
@@ -426,16 +434,39 @@ export async function adminImpersonate(userId: number): Promise<AdminImpersonate
   return res.json()
 }
 
-/** יצירת חשבון מפיק/אולם ע"י אדמין (אין הרשמה עצמאית לתפקידים אלו). */
+/** יצירת חשבון מפיק/אולם/טלפן ע"י אדמין (אין הרשמה עצמאית לתפקידים אלו). */
 export async function adminCreateAccount(data: {
   email: string
   display_name: string
-  account_type: 'planner' | 'venue'
+  account_type: 'planner' | 'venue' | 'phone_agent'
 }): Promise<AdminAccountCreateResult> {
   const res = await apiFetch('/admin/accounts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- ניהול טלפנים (אדמין) ----
+
+/** מסך ניהול הטלפנים: הטלפנים + האירועים להקצאה, בבקשה אחת. */
+export async function adminListCallers(): Promise<AdminCallersPage> {
+  const res = await apiFetch('/admin/callers')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** מחליף את רשימת האירועים המוקצים לטלפן. רשימה ריקה = תור משותף. */
+export async function adminSetCallerAssignments(
+  userId: number,
+  eventIds: number[],
+): Promise<AdminCallerRow> {
+  const res = await apiFetch(`/admin/callers/${userId}/assignments`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event_ids: eventIds }),
   })
   if (!res.ok) throw await toError(res)
   return res.json()
@@ -1192,6 +1223,66 @@ export async function adminMessageStats(): Promise<AdminMessageStats> {
 export async function adminAuditLog(action?: string): Promise<AdminAuditRow[]> {
   const qs = action ? `?action=${encodeURIComponent(action)}` : ''
   const res = await apiFetch(`/admin/audit-log${qs}`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- Call Center (אדמין) ----
+// כל הנתונים כאן נגזרים ב-Backend מ-Workflow אישורי ההגעה הקיים — אין כאן
+// לוח זמנים או סטטוסים נפרדים (ראו backend/app/call_center.py).
+
+/** מסך ה-Call Center הראשי: מונים + האירועים שיש בהם שיחות היום. */
+export async function callCenterOverview(): Promise<CallCenterOverview> {
+  const res = await apiFetch('/admin/call-center')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** תור המוזמנים שצריכים שיחה, עם חיפוש/סינון/דפדוף. */
+export async function callCenterQueue(params: {
+  eventId?: number | null
+  q?: string
+  status?: string
+  roundNumber?: number | null
+  limit?: number
+  offset?: number
+} = {}): Promise<CallCenterQueue> {
+  const qs = new URLSearchParams()
+  if (params.eventId != null) qs.set('event_id', String(params.eventId))
+  if (params.q) qs.set('q', params.q)
+  if (params.status) qs.set('status', params.status)
+  if (params.roundNumber != null) qs.set('round_number', String(params.roundNumber))
+  if (params.limit != null) qs.set('limit', String(params.limit))
+  if (params.offset != null) qs.set('offset', String(params.offset))
+  const res = await apiFetch(`/admin/call-center/queue?${qs.toString()}`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** כרטיס ביצוע שיחה: פרטי האירוע, פרטי המוזמן ויומן הפעילות המלא. */
+export async function callCenterGuest(guestId: number): Promise<CallCenterGuestDetail> {
+  const res = await apiFetch(`/admin/call-center/guests/${guestId}`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** תיעוד תוצאת שיחה (ועדכון אישור ההגעה כשצריך). */
+export async function callCenterRecordOutcome(
+  guestId: number,
+  data: CallOutcomeRequest,
+): Promise<CallOutcomeResult> {
+  const res = await apiFetch(`/admin/call-center/guests/${guestId}/outcome`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** התראות איכות-דאטה על מוזמני האירוע (כרגע: מספר טלפון שדווח כשגוי). */
+export async function guestDataAlerts(): Promise<GuestDataAlerts> {
+  const res = await apiFetch('/guests/data-alerts')
   if (!res.ok) throw await toError(res)
   return res.json()
 }

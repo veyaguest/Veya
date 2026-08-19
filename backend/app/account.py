@@ -31,6 +31,17 @@ def delete_event_cascade(db: Session, event: "models.Event") -> None:
     שכבר הגיעה למכשיר של מוזמן.
     """
     event_id = event.id
+    # יומן השיחות (Call Center) — קודם כול: הוא מצביע גם על guests, שנמחקים
+    # בסוף דרך ה-relationship cascade של Event.guests.
+    for call in db.scalars(
+        select(models.CallLog).where(models.CallLog.event_id == event_id)
+    ).all():
+        db.delete(call)
+    # הקצאות הטלפנים לאירוע — נמחקות איתו (אין אירוע, אין למי להתקשר).
+    for assignment in db.scalars(
+        select(models.CallAssignment).where(models.CallAssignment.event_id == event_id)
+    ).all():
+        db.delete(assignment)
     for msg in db.scalars(
         select(models.Message).where(models.Message.event_id == event_id)
     ).all():

@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { applyNoteSplit, deleteGuest, getNoteSplitSuggestions, listGuests } from '../api'
+import {
+  applyNoteSplit,
+  deleteGuest,
+  getNoteSplitSuggestions,
+  guestDataAlerts,
+  listGuests,
+} from '../api'
 import type { GuestFilter, GuestSort } from '../api'
-import type { Guest, NoteSplitCandidate } from '../types'
+import type { Guest, GuestDataAlert, NoteSplitCandidate } from '../types'
 import { groupLabel, INVITE_STATUS_LABELS, RSVP_LABELS } from '../types'
 import { activeEventTerms, sideLabel } from '../strings/eventTypes'
 import { strings } from '../strings/he'
@@ -15,6 +21,7 @@ import { ImportDialog } from './ImportDialog'
 import { ImportMenu } from './ImportMenu'
 import { OnboardingDialog } from './OnboardingDialog'
 import { PasteImportDialog } from './PasteImportDialog'
+import './GuestDataAlert.css'
 
 // נבדק פעם אחת בטעינת המודול — תמיכת הדפדפן בבחירת אנשי קשר לא משתנה תוך כדי שימוש.
 const contactsSupported = isContactPickerSupported()
@@ -61,6 +68,8 @@ export function GuestsPage() {
   const [showNotes, setShowNotes] = useState(false)
   const [showCreateGroup, setShowCreateGroup] = useState(false)
   const [editGuest, setEditGuest] = useState<Guest | null>(null)
+  // מוזמנים שמספר הטלפון שלהם נמצא שגוי בשיחה — דורש תיקון של בעל/ת האירוע.
+  const [phoneAlerts, setPhoneAlerts] = useState<GuestDataAlert[]>([])
   const [showOnboarding, setShowOnboarding] = useState(
     () => localStorage.getItem(ONBOARDING_KEY) !== '1',
   )
@@ -108,6 +117,21 @@ export function GuestsPage() {
     const t = setTimeout(() => load(search), 250)
     return () => clearTimeout(t)
   }, [search, load])
+
+  // התראות איכות-דאטה (מספר טלפון שדווח כשגוי בשיחת טלפון של VEYA).
+  // נטענות מחדש אחרי כל עריכת מוזמן, כך שההתראה נסגרת ברגע שהמספר תוקן.
+  const loadDataAlerts = useCallback(async () => {
+    try {
+      const res = await guestDataAlerts()
+      setPhoneAlerts(res.phone_fix)
+    } catch {
+      /* שקט — התראה, לא פעולה קריטית */
+    }
+  }, [])
+
+  useEffect(() => {
+    loadDataAlerts()
+  }, [loadDataAlerts])
 
   // בדיקת "הערות שנראות כמו העדפות ישיבה" — פעם אחת בטעינה ואחרי כל העברה.
   const loadNoteSplit = useCallback(async () => {
@@ -161,8 +185,61 @@ export function GuestsPage() {
 
   const hasMore = guests.length < total
 
+  /** פותח את עריכת המוזמן ישירות מתוך ההתראה, כדי לתקן את המספר במקום. */
+  function openPhoneFix(alert: GuestDataAlert) {
+    const inList = guests.find((g) => g.id === alert.guest_id)
+    // המוזמן לא בהכרח בעמוד הנוכחי (חיפוש/סינון/דפדוף) — בונים ממנו רשומה
+    // מינימלית כדי שהטופס ייפתח תמיד, גם כשהוא מחוץ לתצוגה.
+    setEditGuest(
+      inList ?? ({
+        id: alert.guest_id,
+        full_name: alert.full_name,
+        phone: alert.phone,
+        rsvp_status: alert.rsvp_status,
+        side: 'shared',
+        group_type: 'other',
+        party_size: 1,
+        notes_raw: null,
+        seating_notes: null,
+        table_number: null,
+        is_child: false,
+        invite_status: 'not_sent',
+        created_at: alert.reported_at,
+      } as Guest),
+    )
+  }
+
   return (
     <div className="guests-page">
+      {phoneAlerts.length > 0 && (
+        <section className="data-alert" role="status">
+          <div className="data-alert-head">
+            <span aria-hidden>⚠️</span>
+            <strong>נדרש תיקון מספר טלפון</strong>
+          </div>
+          <ul className="data-alert-list">
+            {phoneAlerts.map((a) => (
+              <li key={a.guest_id}>
+                <div className="data-alert-text">
+                  ל{a.full_name} יש מספר טלפון שגוי (<span dir="ltr">{a.phone}</span>).
+                  לא הצלחנו ליצור איתו קשר — יש לעדכן את המספר.
+                </div>
+                <button
+                  type="button"
+                  className="btn-primary data-alert-btn"
+                  onClick={() => openPhoneFix(a)}
+                >
+                  תיקון מספר
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="data-alert-foot">
+            אישור ההגעה של המוזמנים האלה לא השתנה — זו בעיה בפרטי הקשר בלבד.
+          </p>
+        </section>
+      )}
+
       <div className="toolbar">
         <input
           className="search"
@@ -366,6 +443,8 @@ export function GuestsPage() {
               onAdded={() => {
                 setEditGuest(null)
                 load(search)
+                // אם המספר תוקן — ההתראה נסגרת מעצמה בטעינה הזו.
+                loadDataAlerts()
               }}
               onCancel={() => setEditGuest(null)}
             />

@@ -24,6 +24,8 @@ import type {
   AdminVenueRow,
   User,
 } from '../types'
+import { AdminCallCenter } from './AdminCallCenter'
+import { AdminCallers } from './AdminCallers'
 import { CreateAccountForm, MessageDefaultOptionsManager, MessageDefaultsManager } from './AdminPage'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 import { Footer } from './Footer'
@@ -31,6 +33,7 @@ import { strings } from '../strings/he'
 
 type AdminPage =
   | 'dashboard'
+  | 'callcenter'
   | 'users'
   | 'events'
   | 'venues'
@@ -39,6 +42,7 @@ type AdminPage =
 
 const ADMIN_PAGE_TITLES: Record<AdminPage, string> = {
   dashboard: 'לוח בקרה',
+  callcenter: 'Call Center',
   users: 'ניהול משתמשים',
   events: 'ניהול אירועים',
   venues: 'מאגר האולמות',
@@ -48,6 +52,7 @@ const ADMIN_PAGE_TITLES: Record<AdminPage, string> = {
 
 const ADMIN_NAV: { key: AdminPage; label: string }[] = [
   { key: 'dashboard', label: 'לוח בקרה' },
+  { key: 'callcenter', label: 'Call Center' },
   { key: 'users', label: 'משתמשים' },
   { key: 'events', label: 'אירועים' },
   { key: 'venues', label: 'אולמות' },
@@ -72,6 +77,15 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
   send_reminders: 'שליחת תזכורות',
   automation_run_due: 'הרצת אוטומציה',
   confirm_submit: 'אישור/ה הגעה',
+  // פעולות שנרשמו בעקבות שיחת טלפון עם מוזמן (Call Center). כאן, ביומן
+  // הפנימי, מותר לקרוא לילד בשמו — בניגוד ל-Feed של בעל/ת האירוע.
+  guest_call_confirmed: 'שיחה: אישר/ה הגעה',
+  guest_call_declined: 'שיחה: לא מגיע/ה',
+  guest_call_no_answer: 'שיחה: לא ענה/תה',
+  guest_call_busy: 'שיחה: תפוס',
+  guest_call_wrong_number: 'שיחה: מספר שגוי',
+  guest_call_callback: 'שיחה: נקבע מועד לחזור',
+  guest_call_followup: 'שיחת המשך',
   confirm_invalid_token: 'ניסיון גישה עם קישור לא תקין',
   rsvp_track_activate: 'הפעלת מסלול אישורי הגעה',
   rsvp_track_advance: 'התקדמות במסלול אישורי הגעה',
@@ -81,7 +95,16 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   couple: 'בעל/ת אירוע',
   planner: 'מפיק',
   venue: 'אולם',
+  phone_agent: 'טלפן',
 }
+
+/** סוגי החשבון שאדמין יכול להגדיר במסך המשתמש. */
+const ACCOUNT_TYPE_OPTIONS: { value: 'couple' | 'planner' | 'venue' | 'phone_agent'; label: string }[] = [
+  { value: 'couple', label: 'בעל/ת אירוע' },
+  { value: 'planner', label: 'מפיק' },
+  { value: 'venue', label: 'אולם' },
+  { value: 'phone_agent', label: 'טלפן — שיחות אישורי הגעה בלבד' },
+]
 
 /** אייקון קווי לכל פריט בניווט האדמין. */
 function AdminNavIcon({ page }: { page: AdminPage }) {
@@ -105,6 +128,12 @@ function AdminNavIcon({ page }: { page: AdminPage }) {
           <rect x="14" y="3" width="7" height="5" rx="1.5" />
           <rect x="14" y="12" width="7" height="9" rx="1.5" />
           <rect x="3" y="16" width="7" height="5" rx="1.5" />
+        </svg>
+      )
+    case 'callcenter':
+      return (
+        <svg {...common}>
+          <path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5Z" />
         </svg>
       )
     case 'users':
@@ -359,6 +388,8 @@ function AdminUserDialog({
   const [editing, setEditing] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [phone, setPhone] = useState('')
+  const [accountType, setAccountType] =
+    useState<'couple' | 'planner' | 'venue' | 'phone_agent'>('couple')
 
   // תוצאת איפוס סיסמה + דיאלוגי אישור
   const [tempPassword, setTempPassword] = useState<string | null>(null)
@@ -370,6 +401,7 @@ function AdminUserDialog({
         setDetail(d)
         setDisplayName(d.display_name)
         setPhone(d.phone)
+        setAccountType((d.account_type as typeof accountType) ?? 'couple')
       })
       .catch((err) =>
         setError(err instanceof Error ? err.message : strings.errors.adminUserLoadFailed),
@@ -389,6 +421,8 @@ function AdminUserDialog({
       await adminUpdateUser(detail.id, {
         display_name: displayName.trim(),
         phone: phone.trim(),
+        // סוג חשבון של אדמין לא נשלח כלל — השרת דוחה שילוב אדמין+טלפן.
+        ...(detail.is_admin ? {} : { account_type: accountType }),
       })
       setEditing(false)
       setNotice(strings.toasts.adminUserDetailsSaved)
@@ -523,6 +557,34 @@ function AdminUserDialog({
                       dir="ltr"
                     />
                   </label>
+                  <label className="adm-field">
+                    <span className="adm-field-label">סוג חשבון</span>
+                    <select
+                      className="adm-field-input"
+                      value={accountType}
+                      onChange={(e) =>
+                        setAccountType(e.target.value as typeof accountType)
+                      }
+                      disabled={detail.is_admin}
+                    >
+                      {ACCOUNT_TYPE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {accountType === 'phone_agent' && (
+                    <p className="adm-field-hint">
+                      טלפן רואה אך ורק את מסך "שיחות להיום". אין לו גישה לניהול
+                      מוזמנים, להושבה, להודעות או להגדרות — גם לא דרך קישור ישיר.
+                    </p>
+                  )}
+                  {detail.is_admin && (
+                    <p className="adm-field-hint">
+                      אי אפשר לשנות סוג חשבון של אדמין. יש להסיר קודם את הרשאת האדמין.
+                    </p>
+                  )}
                   <div className="adm-user-edit-actions">
                     <button
                       type="button"
@@ -531,6 +593,9 @@ function AdminUserDialog({
                         setEditing(false)
                         setDisplayName(detail.display_name)
                         setPhone(detail.phone)
+                        setAccountType(
+                          (detail.account_type as typeof accountType) ?? 'couple',
+                        )
                       }}
                       disabled={busy}
                     >
@@ -744,6 +809,11 @@ function AdminUsersView({
 
   return (
     <div className="admin-page">
+      {/* ניהול טלפנים — סעיף נפרד בראש מסך המשתמשים, כי זו העבודה השוטפת
+          של המוקד (יצירה, השבתה והקצאת אירועים), בעוד שאר המסך הוא רשימת
+          כלל המשתמשים. */}
+      <AdminCallers />
+
       <CreateAccountForm onCreated={reload} />
 
       <div className="adm-users-head">
@@ -1458,6 +1528,7 @@ export function AdminApp({
         </header>
         <main className="content" key={page}>
           {page === 'dashboard' && <AdminDashboardView />}
+          {page === 'callcenter' && <AdminCallCenter />}
           {page === 'users' && <AdminUsersView onImpersonate={onImpersonate} />}
           {page === 'events' && <AdminEventsView onImpersonate={onImpersonate} />}
           {page === 'venues' && <AdminVenuesView />}

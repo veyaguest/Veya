@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.auth import get_current_user
+from app.auth import get_current_owner
 from app.database import get_db
 from app.schemas import PLANNER_PERMISSIONS, VENUE_PERMISSIONS
 
@@ -56,7 +56,7 @@ def _member_read(
 def list_members(
     event_id: int,
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """כל חברי-האירוע (מפיקים/אולמות) שיש להם גישה לאירוע הזה."""
     _require_owner(event_id, db, user)
@@ -78,7 +78,7 @@ def add_member(
     event_id: int,
     payload: schemas.EventMemberCreate,
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """הוספת מפיק/אולם לאירוע, לפי אימייל מדויק (רק חשבונות מפיק/אולם קיימים)."""
     _require_owner(event_id, db, user)
@@ -127,7 +127,7 @@ def update_member(
     member_id: int,
     payload: schemas.EventMemberUpdate,
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """עדכון רשימת ההרשאות של חבר-אירוע קיים."""
     _require_owner(event_id, db, user)
@@ -146,7 +146,7 @@ def remove_member(
     event_id: int,
     member_id: int,
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """הסרת גישה של מפיק/אולם לאירוע."""
     _require_owner(event_id, db, user)

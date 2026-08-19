@@ -937,7 +937,9 @@ class AdminUserUpdate(BaseModel):
 
     display_name: Optional[str] = None
     phone: Optional[str] = None
-    account_type: Optional[Literal["couple", "planner", "venue"]] = None
+    # phone_agent = "טלפן": איש צוות שמבצע שיחות אישורי הגעה בלבד. תפקיד
+    # מגביל — ראו app/roles.py לרשימת מה שהוא חסום ממנו.
+    account_type: Optional[Literal["couple", "planner", "venue", "phone_agent"]] = None
     is_admin: Optional[bool] = None
 
 
@@ -1018,7 +1020,10 @@ class AdminAccountCreate(BaseModel):
 
     email: str
     display_name: str
-    account_type: Literal["planner", "venue"]
+    # phone_agent (טלפן) נוסף לאותו מסלול בדיוק: גם לו אין הרשמה עצמאית,
+    # והאדמין הוא שיוצר לו חשבון עם סיסמה זמנית. אין כאן מנגנון משתמשים
+    # או אימות חדש — אותה שורת ``users`` ואותו ``create_access_token``.
+    account_type: Literal["planner", "venue", "phone_agent"]
     new_password: Optional[str] = None
 
     @field_validator("email")
@@ -1052,6 +1057,52 @@ class AdminAccountCreateResult(BaseModel):
     email: str
     account_type: str
     temporary_password: str
+
+
+# ---- ניהול טלפנים (phone_agent) בפאנל האדמין ----
+# אין כאן שום מודל נתונים חדש: המשתמש הוא שורת ``users`` רגילה, ההקצאה היא
+# ``call_assignments`` שכבר נבנתה, והמונים נגזרים מ-``call_logs`` ומתור
+# השיחות הקיים (``app/call_center.py``) — לא מטבלת סטטיסטיקות חדשה.
+
+class AdminCallerRow(BaseModel):
+    """שורת טלפן במסך ניהול הטלפנים."""
+
+    id: int
+    email: str
+    display_name: str
+    phone: str = ""
+    disabled: bool = False
+    # כמה שיחות תיעד בפועל — ספירה ישירה מ-call_logs.created_by_id.
+    calls_made: int = 0
+    # כמה שיחות ממתינות לו *עכשיו*, לפי אותו חישוב שמזין את מסך השיחות שלו.
+    waiting_tasks: int = 0
+    assigned_event_ids: list[int] = []
+    created_at: datetime
+
+
+class AdminCallerEventOption(BaseModel):
+    """אירוע שניתן להקצות לטלפן — רק מה שדרוש לבחירה ברשימה."""
+
+    event_id: int
+    event_type: EventType = "wedding"
+    hosts: str
+    venue_name: str = ""
+    event_date: str = ""
+    # כמה שיחות ממתינות באירוע הזה כרגע (0 = אין סבב פתוח / הכול טופל).
+    waiting: int = 0
+
+
+class AdminCallersPage(BaseModel):
+    """כל מה שמסך "ניהול טלפנים" צריך, בבקשה אחת."""
+
+    callers: list[AdminCallerRow] = []
+    events: list[AdminCallerEventOption] = []
+
+
+class AdminCallerAssignmentUpdate(BaseModel):
+    """החלפת רשימת האירועים המוקצים לטלפן (רשימה ריקה = תור משותף)."""
+
+    event_ids: list[int] = []
 
 
 class AdminVenueRow(BaseModel):
@@ -1481,3 +1532,150 @@ class RsvpTimelineView(BaseModel):
     next_action_date: Optional[str] = None
     next_action_label: Optional[str] = None
     days: list[TimelineDay] = []
+
+
+# ---------------------------------------------------------------------------
+# Call Center (אדמין) — תור השיחות, נגזר מ-Workflow אישורי ההגעה
+# ראו app/call_center.py: אין כאן תאריכים או סטטוסים חדשים, רק תצוגה.
+# ---------------------------------------------------------------------------
+
+
+class CallCenterEventRow(BaseModel):
+    """אירוע אחד בתור השיחות של היום."""
+
+    event_id: int
+    event_type: str
+    hosts: str                  # שמות בעלי האירוע (לפי סוג האירוע)
+    venue_name: str = ""
+    event_date: str = ""
+    event_time: str = ""
+    days_until: Optional[int] = None
+    round_number: int           # סבב השיחות הפעיל (1, 2, 3...)
+    round_label: str            # "סבב שיחות ראשון" וכו' — מ-rsvp_timeline.CYCLE
+    round_date: str             # DD/MM/YYYY — התאריך שנקבע ב-Workflow
+    waiting: int                # כמה שיחות עוד ממתינות
+    done: int                   # כמה כבר טופלו בסבב הזה
+
+
+class CallCenterOverview(BaseModel):
+    """מסך ה-Call Center הראשי: מונים + רשימת האירועים."""
+
+    total: int                  # סך כל השיחות בסבבים הפעילים
+    done: int
+    waiting: int
+    events_needing_attention: int
+    events: list[CallCenterEventRow] = []
+
+
+class CallCenterGuestRow(BaseModel):
+    """שורת מוזמן בתור השיחות."""
+
+    guest_id: int
+    event_id: int
+    event_type: str
+    event_hosts: str
+    # תאריך האירוע (YYYY-MM-DD כפי שנשמר) — כדי שהמוקדן ידע על מה הוא מדבר
+    # בלי לפתוח את כרטיס המוזמן.
+    event_date: str = ""
+    full_name: str
+    phone: str = ""
+    party_size: int
+    side: str                   # groom/bride/shared
+    # הערת המוזמן (למשל "מגיע עם תינוק") — רלוונטית לשיחה עצמה. ההערה
+    # הפנימית (``notes_raw``) לא נחשפת כאן, רק בכרטיס המוזמן.
+    guest_note: Optional[str] = None
+    rsvp_status: str            # pending/maybe בלבד (מי שסגר כבר לא בתור)
+    round_number: int
+    round_date: str             # DD/MM/YYYY — מתי נוצרה משימת השיחה
+    last_outcome: Optional[str] = None       # תוצאת השיחה האחרונה שבוצעה
+    last_outcome_label: Optional[str] = None
+    callback_at: Optional[datetime] = None   # אם ביקש שיחזרו אליו
+    # המוזמן חזר לתור כי הגיע מועד ה-Follow-up שהוא ביקש (ולא כי נפתח סבב
+    # חדש) — מסומן בנפרד כדי שהמוקדן ידע שהוא *מחזיר שיחה שהובטחה*.
+    is_followup: bool = False
+    # כמה פעמים כבר ביקש שנחזור אליו (Follow-up חוזר לאורך זמן).
+    followup_count: int = 0
+
+
+class CallCenterQueue(BaseModel):
+    items: list[CallCenterGuestRow]
+    total: int
+    limit: int
+    offset: int
+
+
+class CallCenterTimelineItem(BaseModel):
+    """שורה ביומן הפעילות של מוזמן — הודעת WhatsApp או שיחת טלפון."""
+
+    kind: str                   # invitation/reminder_1/.../reply/call
+    channel: str                # whatsapp/phone/web
+    label: str                  # תיאור עברי מוכן לתצוגה
+    text: str = ""
+    status: str = ""
+    round_number: Optional[int] = None
+    actor: Optional[str] = None  # מי ביצע (בשיחות טלפון)
+    created_at: datetime
+
+
+class CallCenterGuestDetail(BaseModel):
+    """מסך ביצוע שיחה — כל מה שצריך כדי לדבר עם המוזמן."""
+
+    guest_id: int
+    full_name: str
+    phone: str = ""
+    side: str
+    party_size: int
+    rsvp_status: str
+    confirmed_count: Optional[int] = None
+    guest_note: Optional[str] = None      # הערה שהמוזמן מסר
+    notes_raw: Optional[str] = None       # הערה פנימית של בעל האירוע
+    event_id: int
+    event_type: str
+    hosts: str
+    event_date: str = ""
+    event_time: str = ""
+    venue_name: str = ""
+    venue_address: str = ""
+    round_number: Optional[int] = None
+    round_date: Optional[str] = None
+    timeline: list[CallCenterTimelineItem] = []
+
+
+class CallOutcomeRequest(BaseModel):
+    """תוצאת שיחה שהאדמין מדווח. ערכי ``outcome``: ראו call_center.OUTCOMES."""
+
+    outcome: str
+    count: Optional[int] = None        # מספר מאשרים (רק ב-outcome="confirmed")
+    guest_note: Optional[str] = None   # הערה שהמוזמן מסר — נשמרת אצל המוזמן
+    note: str = ""                     # הערת המוקדן על השיחה עצמה
+    callback_at: Optional[datetime] = None  # רק ב-outcome="callback"
+
+
+class CallOutcomeResult(BaseModel):
+    guest_id: int
+    outcome: str
+    outcome_label: str
+    rsvp_status: str
+    confirmed_count: Optional[int] = None
+    callback_at: Optional[datetime] = None
+
+
+class GuestDataAlert(BaseModel):
+    """התראת איכות-דאטה על מוזמן — כרגע רק "מספר טלפון שגוי".
+
+    **לא** סטטוס RSVP: סטטוס אישור ההגעה של המוזמן לא השתנה. זו בעיה בפרטי
+    הקשר בלבד, שנפתרת בעדכון המספר (ראו app/call_center.py: phone_fix_alerts).
+    """
+
+    kind: str = "phone_fix"      # מזהה סוג ההתראה (מקום להתראות דאטה נוספות)
+    guest_id: int
+    full_name: str
+    phone: str = ""              # המספר השגוי שעליו דווח
+    rsvp_status: str             # מוצג כדי להבהיר שהסטטוס *לא* השתנה
+    attempts: int                # כמה פעמים כבר דווח מספר שגוי
+    reported_at: datetime
+
+
+class GuestDataAlerts(BaseModel):
+    phone_fix: list[GuestDataAlert] = []
+    total: int = 0

@@ -577,6 +577,87 @@ class EventMessage(Base):
     )
 
 
+class CallLog(Base):
+    """תיעוד ניסיון שיחת טלפון אחת מ-Call Center של האדמין.
+
+    זו המידע היחיד בכל המודול שאין לו בית קיים במערכת: **מה קרה בשיחה**.
+    כל השאר ממשיך לחיות במקום שלו ואינו משוכפל לכאן —
+    - מועדי סבבי השיחות: מחושבים חי מ-``app/rsvp_timeline.py`` (אותו מנוע
+      שמזין את מסך אישורי-ההגעה של בעל האירוע). אין כאן עמודת תאריך-סבב.
+    - סטטוס ההגעה: נשאר על ``Guest.rsvp_status``/``confirmed_count``.
+    - הודעות WhatsApp: נשארות ב-``Message``.
+
+    ``round_number`` הוא סידורי הסבב (1, 2, 3...) לפי סדר שלבי ה-``call_round``
+    ב-``rsvp_timeline.CYCLE`` — ולא תאריך, כדי שהרשומה תישאר נכונה גם אם
+    לוח הזמנים יחושב מחדש (למשל אחרי שינוי תאריך האירוע).
+    """
+
+    __tablename__ = "call_logs"
+    __table_args__ = (
+        Index("ix_call_logs_event_round", "event_id", "round_number"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
+    guest_id: Mapped[int] = mapped_column(ForeignKey("guests.id"), index=True)
+    round_number: Mapped[int] = mapped_column(Integer, default=1)
+    # confirmed / declined / no_answer / busy / wrong_number / callback —
+    # מקור אמת יחיד לערכים: ``app/call_center.py: OUTCOMES``.
+    outcome: Mapped[str] = mapped_column(String, index=True)
+    # מה שהאדמין רשם בשיחה. לא נכתב אוטומטית ל-``Guest.guest_note`` —
+    # הערת המוזמן נשארת שלו; זו הערת המוקדן.
+    note: Mapped[str] = mapped_column(Text, default="")
+    # מתי לחזור אל המוזמן (רק ב-outcome="callback"). עד המועד הזה הוא לא
+    # מוצג בתור, גם אם הסבב הנוכחי עדיין פתוח.
+    callback_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # מספר הטלפון כפי שהיה בזמן השיחה. קיים כדי ש"מספר שגוי" ייסגר **מעצמו**:
+    # ההתראה לבעל האירוע וההסתרה מתור השיחות נגזרות מהשוואה בין המספר הזה
+    # למספר הנוכחי של המוזמן. ברגע שהמספר עודכן — השוואה נכשלת, ההתראה
+    # נעלמת והמוזמן חוזר להיות מועמד לסבב הבא. בלי דגל "טופל" נפרד שצריך
+    # לתחזק ושיכול לצאת מסנכרון מול הנתון האמיתי.
+    phone_at_call: Mapped[str] = mapped_column(String, default="")
+    # מי ביצע את השיחה (אדמין או טלפן). nullable כדי שמחיקת משתמש לא תפיל
+    # רשומות — היומן מתעד מה קרה מול המוזמן, גם אחרי שהמוקדן עזב.
+    created_by_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class CallAssignment(Base):
+    """הקצאת אירוע לטלפן — "הטלפן הזה עובד על האירוע הזה".
+
+    למה ברמת אירוע ולא ברמת "משימת שיחה": במודול הזה **אין ישות משימה**. תור
+    השיחות מחושב חי בכל בקשה מ-Workflow אישורי ההגעה + סטטוס המוזמנים (ראו
+    ``app/call_center.py``), ואין שורה בטבלה שמייצגת "שיחה שצריך לבצע". לכן
+    ההקצאה נתלית על היחידה היציבה היחידה — האירוע.
+
+    התנהגות (מתועדת ונבדקת ב-tests/test_phone_agent_scope.py):
+    - אדמין                      → רואה את כל האירועים, תמיד.
+    - טלפן עם הקצאה אחת לפחות    → רואה **רק** את האירועים שהוקצו לו.
+    - טלפן בלי אף הקצאה          → תור משותף (כל האירועים שסבב שלהם נפתח).
+
+    השורה האחרונה היא התנהגות **שלב א' מכוונת**: היום אין עדיין מסך הקצאה
+    בפאנל האדמין, ובלעדיה טלפן ללא הקצאות היה מקבל מסך ריק ולא יכול לעבוד.
+    ברגע שנוצרת ההקצאה הראשונה עבורו, הצמצום נכנס לתוקף אוטומטית — בלי לשנות
+    שורה אחת ב-Call Center.
+    """
+
+    __tablename__ = "call_assignments"
+    __table_args__ = (
+        UniqueConstraint("event_id", "user_id", name="uq_call_assignment"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    # מי הקצה (אדמין). nullable כדי שמחיקת אדמין לא תפיל הקצאות פעילות.
+    assigned_by_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class Venue(Base):
     """מאגר אולמות משותף — נבנה אוטומטית מכל אירוע ששומר שם+כתובת אולם.
 

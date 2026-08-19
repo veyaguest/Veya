@@ -1,0 +1,368 @@
+
+/* ==========================================================================
+   Call Center (אדמין) — תור השיחות היומי
+   כל הצבעים דרך טוקני המותג, כדי שהמסך יתלבש אוטומטית על ערכת הנושא.
+   מובייל-פירסט: כרטיסים בעמודה אחת, ומתפרשים לרשת במסכים רחבים.
+   ========================================================================== */
+
+.cc-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ---- מוני הראש ---- */
+.cc-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cc-stat {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px;
+}
+
+.cc-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--charcoal);
+  font-variant-numeric: tabular-nums;
+}
+
+.cc-stat-label {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.cc-stat-good .cc-stat-value { color: var(--green); }
+.cc-stat-warn .cc-stat-value { color: var(--gold-deep); }
+
+/* ---- כרטיסי האירועים ---- */
+.cc-events {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.cc-event {
+  display: block;
+  width: 100%;
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px;
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.cc-event:hover { box-shadow: var(--shadow-card-hover); }
+.cc-event.active { border-color: var(--gold); }
+
+.cc-event-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cc-event-hosts {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--charcoal);
+}
+
+.cc-event-count {
+  min-width: 30px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.cc-event-meta {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--body);
+}
+
+.cc-event-sub { color: var(--muted); font-size: 12px; }
+.cc-dot { color: var(--faint); }
+
+/* ---- כותרת הרשימה + סינונים ---- */
+.cc-list-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cc-filters {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.cc-select {
+  font: inherit;
+  color: var(--body);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  padding: 9px 10px;
+  min-height: 40px;
+}
+
+/* ---- שורות המוזמנים ---- */
+.cc-guests {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cc-guest {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.cc-guest-main {
+  flex: 1;
+  min-width: 0;
+  text-align: start;
+  font: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 12px 14px;
+}
+
+.cc-guest-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--charcoal);
+}
+
+.cc-guest-meta {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--body);
+}
+
+.cc-guest-sub { font-size: 12px; color: var(--muted); }
+.cc-last { color: var(--gold-deep); }
+
+.cc-chip {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--surface-hi);
+}
+
+.cc-chip-maybe { color: var(--gold-deep); border-color: var(--gold-light); }
+
+/* כפתור החיוג — יעד מגע נדיב, חשוב במיוחד במובייל. */
+.cc-call-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  font-size: 20px;
+  text-decoration: none;
+  border-inline-start: 1px solid var(--line);
+  background: var(--surface-hi);
+}
+
+.cc-call-btn:hover { background: var(--line-2); }
+
+.cc-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.cc-pager-info { font-size: 13px; color: var(--muted); }
+
+/* ---- מצבים ריקים ---- */
+.cc-empty {
+  text-align: center;
+  padding: 40px 20px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+}
+
+.cc-empty-icon { font-size: 34px; }
+.cc-empty h3 { margin: 10px 0 6px; color: var(--charcoal); }
+.cc-empty p { margin: 0 auto; max-width: 42ch; color: var(--muted); font-size: 14px; }
+.cc-empty-inline { padding: 16px; color: var(--muted); font-size: 14px; }
+
+/* ---- חלון ביצוע השיחה ---- */
+.cc-dialog { max-width: 720px; width: 100%; }
+
+.cc-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 72vh;
+  overflow-y: auto;
+}
+
+.cc-card {
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 12px 14px;
+}
+
+.cc-card-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.cc-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+  margin: 0;
+}
+
+.cc-facts dt { font-size: 12px; color: var(--muted); }
+.cc-facts dd { margin: 2px 0 0; font-size: 14px; color: var(--charcoal); }
+
+.cc-notes {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-2);
+  font-size: 13px;
+  color: var(--body);
+}
+
+.cc-notes p { margin: 0 0 4px; }
+
+/* פעולות מהירות — כפתור גדול לכל תוצאה, נוח בלחיצה אחת גם בטלפון. */
+.cc-outcomes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cc-outcome {
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 46px;
+  padding: 10px 12px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--line);
+  background: var(--cream);
+  color: var(--charcoal);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.cc-outcome:hover { border-color: var(--gold-light); }
+.cc-outcome.open { border-color: var(--gold); background: var(--surface-hi); }
+.cc-outcome-good { color: var(--green); }
+.cc-outcome-bad { color: var(--error); }
+.cc-outcome:disabled { opacity: 0.55; cursor: default; }
+
+.cc-extra {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cc-presets { display: flex; gap: 8px; }
+.cc-call-note { margin-top: 10px; display: block; }
+
+/* ---- יומן הפעילות ---- */
+.cc-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cc-tl-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.cc-tl-icon {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.cc-tl-body { min-width: 0; }
+.cc-tl-label { font-size: 13px; font-weight: 650; color: var(--charcoal); }
+.cc-tl-text {
+  font-size: 13px;
+  color: var(--body);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.cc-tl-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ---- דסקטופ ---- */
+@media (min-width: 760px) {
+  .cc-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .cc-events { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .cc-filters { grid-template-columns: minmax(200px, 1.6fr) repeat(3, minmax(0, 1fr)); }
+  .cc-list-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cc-list-head .cc-filters { flex: 1; max-width: 620px; }
+  .cc-outcomes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cc-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

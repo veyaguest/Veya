@@ -7,8 +7,8 @@ from pydantic import BaseModel
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session
 
-from app import audit, invitations, models, permissions, schemas
-from app.auth import get_current_user
+from app import audit, call_center, invitations, models, permissions, schemas
+from app.auth import get_current_owner
 from app.database import get_db
 from app.deps import EventAccess
 
@@ -185,6 +185,32 @@ def create_guest(
     return guest
 
 
+@router.get("/data-alerts", response_model=schemas.GuestDataAlerts)
+def data_alerts(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_view),
+):
+    """התראות איכות-דאטה על מוזמני האירוע — כרגע "נדרש תיקון מספר טלפון".
+
+    נוצרות כשצוות VEYA מסמן "מספר שגוי" בשיחת טלפון (Call Center). זו התראה
+    על **פרטי הקשר בלבד** — סטטוס אישור ההגעה של המוזמן לא השתנה, והוא לא
+    סומן "לא מגיע". ההתראה נסגרת מעצמה ברגע שמספר הטלפון מתעדכן.
+    """
+    alerts = call_center.phone_fix_alerts(db, event.id)
+    rows = [
+        schemas.GuestDataAlert(
+            guest_id=a.guest.id,
+            full_name=a.guest.full_name,
+            phone=a.guest.phone or "",
+            rsvp_status=a.guest.rsvp_status,
+            attempts=a.attempts,
+            reported_at=a.reported_at,
+        )
+        for a in alerts
+    ]
+    return schemas.GuestDataAlerts(phone_fix=rows, total=len(rows))
+
+
 @router.get("/group-suggestions", response_model=list[GroupSuggestion])
 def group_suggestions(
     db: Session = Depends(get_db),
@@ -310,7 +336,7 @@ def update_guest(
     request: Request,
     db: Session = Depends(get_db),
     event: models.Event = Depends(_write),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     guest = db.get(models.Guest, guest_id)
     if guest is None or guest.event_id != event.id:
@@ -348,5 +374,11 @@ def delete_guest(
     guest = db.get(models.Guest, guest_id)
     if guest is None or guest.event_id != event.id:
         raise HTTPException(status_code=404, detail="מוזמן לא נמצא")
+    # יומן השיחות מצביע על המוזמן ואין לו ON DELETE CASCADE — בלי הניקוי הזה
+    # מחיקת מוזמן שכבר התקשרו אליו הייתה נכשלת ב-foreign key.
+    for call in db.scalars(
+        select(models.CallLog).where(models.CallLog.guest_id == guest_id)
+    ).all():
+        db.delete(call)
     db.delete(guest)
     db.commit()

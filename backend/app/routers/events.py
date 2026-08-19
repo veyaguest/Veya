@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app import communication, models, schemas
 from app.account import delete_event_cascade
-from app.auth import get_current_user
+from app.auth import get_current_owner
 from app.database import IS_POSTGRES, get_db
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/events", tags=["events"])
 @router.get("", response_model=list[schemas.EventSummary])
 def list_events(
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """אירועים בבעלות המשתמש + אירועים ששותפו איתו כחבר-אירוע פעיל, מהחדש לישן."""
     owned = set(
@@ -49,7 +49,7 @@ def list_events(
 def create_event(
     payload: schemas.EventCreate,
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """יוצר אירוע חדש בבעלות המשתמש.
 
@@ -91,7 +91,7 @@ def create_event(
 def delete_event(
     event_id: int,
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """מוחק אירוע (רק אם הוא בבעלות המשתמש) — כולל כל המוזמנים שלו."""
     event = db.get(models.Event, event_id)

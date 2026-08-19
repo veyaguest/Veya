@@ -16,7 +16,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app import audit, message_status, messaging, models, permissions, schemas
-from app.auth import get_current_user
+from app.auth import get_current_owner
 from app.database import IS_POSTGRES, get_db
 from app.deps import EventAccess
 
@@ -102,7 +102,7 @@ def send_invitations(
     request: Request,
     db: Session = Depends(get_db),
     event: models.Event = Depends(_write),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     stmt = select(models.Guest).where(models.Guest.event_id == event.id)
     if payload.guest_id is not None:
@@ -166,7 +166,7 @@ def send_reminders(
     request: Request,
     db: Session = Depends(get_db),
     event: models.Event = Depends(_write),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     """שולח תזכורת עדינה רק למוזמנים שכבר קיבלו הזמנה אך עדיין לא ענו (pending).
 

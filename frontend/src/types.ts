@@ -682,7 +682,7 @@ export interface AdminUserRow {
 export interface AdminUserUpdate {
   display_name?: string
   phone?: string
-  account_type?: 'couple' | 'planner' | 'venue'
+  account_type?: 'couple' | 'planner' | 'venue' | 'phone_agent'
   is_admin?: boolean
 }
 
@@ -724,6 +724,38 @@ export interface AdminAccountCreateResult {
   email: string
   account_type: string
   temporary_password: string
+}
+
+// ---- ניהול טלפנים (phone_agent) בפאנל האדמין ----
+// אין כאן מודל נתונים חדש: המשתמש הוא שורת users רגילה, ההקצאה היא
+// call_assignments הקיימת, והמונים נגזרים מ-call_logs ומתור השיחות.
+
+export interface AdminCallerRow {
+  id: number
+  email: string
+  display_name: string
+  phone: string
+  disabled: boolean
+  /** כמה שיחות תיעד בפועל (מתוך יומן השיחות הקיים). */
+  calls_made: number
+  /** כמה שיחות ממתינות לו עכשיו, לפי אותו חישוב שמזין את מסך השיחות שלו. */
+  waiting_tasks: number
+  assigned_event_ids: number[]
+  created_at: string
+}
+
+export interface AdminCallerEventOption {
+  event_id: number
+  event_type: string
+  hosts: string
+  venue_name: string
+  event_date: string
+  waiting: number
+}
+
+export interface AdminCallersPage {
+  callers: AdminCallerRow[]
+  events: AdminCallerEventOption[]
 }
 
 export interface AdminPasswordResetResult {
@@ -1220,4 +1252,136 @@ export interface SeatingUndoResult {
 export interface SeatingUndoState {
   can_undo: boolean
   at: string | null
+}
+
+// ---- Call Center (אדמין) — תור השיחות, נגזר מ-Workflow אישורי ההגעה ----
+// אין כאן תאריכים או סטטוסים חדשים: המועדים מגיעים ממסלול אישורי ההגעה
+// והסטטוסים הם אותם סטטוסי RSVP של המערכת (ראו backend/app/call_center.py).
+
+export type CallOutcome =
+  | 'confirmed'
+  | 'declined'
+  | 'no_answer'
+  | 'busy'
+  | 'wrong_number'
+  | 'callback'
+
+export interface CallCenterEventRow {
+  event_id: number
+  event_type: string
+  hosts: string
+  venue_name: string
+  event_date: string
+  event_time: string
+  days_until: number | null
+  round_number: number
+  round_label: string
+  round_date: string
+  waiting: number
+  done: number
+}
+
+export interface CallCenterOverview {
+  total: number
+  done: number
+  waiting: number
+  events_needing_attention: number
+  events: CallCenterEventRow[]
+}
+
+export interface CallCenterGuestRow {
+  guest_id: number
+  event_id: number
+  event_type: string
+  event_hosts: string
+  event_date: string
+  full_name: string
+  phone: string
+  party_size: number
+  side: string
+  guest_note: string | null
+  rsvp_status: string
+  round_number: number
+  round_date: string
+  last_outcome: CallOutcome | null
+  last_outcome_label: string | null
+  callback_at: string | null
+  /** חזר לתור כי הגיע מועד ה"חזרו אליי" שהוא ביקש — ולא כי נפתח סבב חדש. */
+  is_followup: boolean
+  followup_count: number
+}
+
+export interface CallCenterQueue {
+  items: CallCenterGuestRow[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface CallCenterTimelineItem {
+  kind: string
+  channel: string
+  label: string
+  text: string
+  status: string
+  round_number: number | null
+  actor: string | null
+  created_at: string
+}
+
+export interface CallCenterGuestDetail {
+  guest_id: number
+  full_name: string
+  phone: string
+  side: string
+  party_size: number
+  rsvp_status: string
+  confirmed_count: number | null
+  guest_note: string | null
+  notes_raw: string | null
+  event_id: number
+  event_type: string
+  hosts: string
+  event_date: string
+  event_time: string
+  venue_name: string
+  venue_address: string
+  round_number: number | null
+  round_date: string | null
+  timeline: CallCenterTimelineItem[]
+}
+
+export interface CallOutcomeRequest {
+  outcome: CallOutcome
+  count?: number | null
+  guest_note?: string | null
+  note?: string
+  callback_at?: string | null
+}
+
+export interface CallOutcomeResult {
+  guest_id: number
+  outcome: CallOutcome
+  outcome_label: string
+  rsvp_status: string
+  confirmed_count: number | null
+  callback_at: string | null
+}
+
+// ---- התראות איכות-דאטה על מוזמנים ----
+// נפרד לחלוטין מסטטוס אישור ההגעה: זו בעיה בפרטי הקשר, לא תשובה של המוזמן.
+
+export interface GuestDataAlert {
+  kind: 'phone_fix'
+  guest_id: number
+  full_name: string
+  phone: string
+  rsvp_status: string
+  attempts: number
+  reported_at: string
+}
+
+export interface GuestDataAlerts {
+  phone_fix: GuestDataAlert[]
+  total: number
 }

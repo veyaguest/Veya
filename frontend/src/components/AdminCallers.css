@@ -1,0 +1,294 @@
+/* ==========================================================================
+   ניהול טלפנים (אדמין) — רשימת הטלפנים, יצירה והקצאת אירועים.
+   מובייל-פירסט; כל הצבעים דרך טוקני המותג.
+   ========================================================================== */
+
+.ac-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.ac-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ac-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 62ch;
+}
+
+.ac-notice {
+  padding: 10px 12px;
+  border-radius: var(--radius-m);
+  background: rgba(var(--gold-rgb), 0.12);
+  border: 1px solid var(--gold);
+  color: var(--gold-deep);
+  font-size: 14px;
+}
+
+.ac-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--surface-hi);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-m);
+  font-size: 14px;
+}
+
+/* ---- כרטיס טלפן ---- */
+.ac-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ac-card {
+  padding: 14px 16px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ac-card-off {
+  opacity: 0.72;
+  border-style: dashed;
+}
+
+.ac-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ac-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ac-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+
+.ac-status {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ac-status.on {
+  background: rgba(47, 158, 95, 0.14);
+  color: var(--green);
+}
+
+.ac-status.off {
+  background: rgba(166, 96, 90, 0.12);
+  color: var(--error);
+}
+
+.ac-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ac-contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--body);
+}
+
+.ac-dot {
+  color: var(--faint);
+}
+
+.ac-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.ac-metric strong {
+  font-size: 16px;
+  color: var(--charcoal);
+  font-variant-numeric: tabular-nums;
+}
+
+.ac-assigned {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line-2);
+}
+
+.ac-shared {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ac-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--body);
+}
+
+/* ---- דיאלוגים ---- */
+.ac-dialog {
+  max-width: 560px;
+  width: 100%;
+}
+
+.ac-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ac-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.ac-search {
+  width: 100%;
+}
+
+.ac-events {
+  max-height: 46vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+  padding: 4px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-m);
+}
+
+.ac-event {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  min-height: 44px;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+
+.ac-event:hover {
+  background: var(--surface-hi);
+}
+
+.ac-event input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gold);
+  flex: 0 0 auto;
+}
+
+.ac-event-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ac-event-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+.ac-event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ac-waiting {
+  color: var(--gold-deep);
+  font-weight: 600;
+}
+
+.ac-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .ac-head {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+/* ---- שורת חיפוש/מונה מעל הרשימה ---- */
+.ac-listhead {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ac-count {
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 768px) {
+  .ac-listhead {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .ac-listhead .adm-search {
+    max-width: 320px;
+  }
+}
+
+/* במובייל הכפתורים האלה נלחצים באצבע — btn-sm הגלובלי נותן 30px, שזה מתחת
+   לשטח מגע נוח. מגדילים כאן בלבד, בלי לגעת ב-btn-sm של שאר המערכת. */
+@media (max-width: 767px) {
+  .ac-actions {
+    width: 100%;
+  }
+
+  .ac-actions .btn-sm {
+    flex: 1;
+    min-height: 44px;
+  }
+}

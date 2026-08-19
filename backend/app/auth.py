@@ -21,7 +21,7 @@ from jwt import PyJWKClient
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from app import models
+from app import models, roles
 from app.database import IS_POSTGRES, get_db, set_request_identity
 
 # מפתח חתימת הטוקנים. בפרודקשן חובה להגדיר JWT_SECRET אמיתי במשתני הסביבה;
@@ -255,10 +255,47 @@ def get_current_admin(
     user: models.User = Depends(get_current_user),
 ) -> models.User:
     """Dependency: מוודא שהמשתמש המחובר הוא אדמין (הבעלים), אחרת 403."""
-    if not user.is_admin:
+    # טלפן נדחה במפורש, עוד לפני בדיקת is_admin — הגנה בשכבות: גם אם משתמש
+    # יסומן בטעות גם כאדמין וגם כטלפן, הוא לא יקבל את פאנל הניהול.
+    if roles.is_phone_agent(user) or not user.is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="נדרשת הרשאת מנהל",
+        )
+    return user
+
+
+def get_current_caller(
+    user: models.User = Depends(get_current_user),
+) -> models.User:
+    """Dependency של מסך השיחות: אדמין-על **או** טלפן, אחרת 403.
+
+    זו נקודת הכניסה היחידה במערכת שטלפן עובר בה. כל שאר ה-endpoints מוגנים
+    ב-``get_current_admin`` (נדחה), ב-``EventAccess`` (נדחה) או ב-
+    ``get_current_owner`` (נדחה).
+    """
+    if not roles.can_make_calls(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="אין לך הרשאה למסך השיחות",
+        )
+    return user
+
+
+def get_current_owner(
+    user: models.User = Depends(get_current_user),
+) -> models.User:
+    """Dependency למשתמש "רגיל" (בעל אירוע/מפיק/אולם) — טלפן נדחה ב-403.
+
+    משמש את מעט ה-endpoints שאינם תלויי-אירוע ולכן אינם עוברים דרך
+    ``EventAccess``: רשימת/יצירת/מחיקת אירועים, חיפוש אולמות, ספריית
+    ההודעות וניהול חברי-אירוע. בלי זה היה נפער חור בגדר: טלפן היה יכול
+    ליצור אירוע משלו ולהיכנס דרכו לממשק הבעלים.
+    """
+    if roles.is_phone_agent(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="אין לך הרשאה לפעולה הזו",
         )
     return user
 

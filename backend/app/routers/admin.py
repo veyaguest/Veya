@@ -12,7 +12,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import audit, auth, cache, communication, event_terms, messaging, models, schemas, venues
+from app import (
+    audit, auth, cache, call_center, communication, event_terms, messaging, models, roles,
+    schemas, venues,
+)
 from app.auth import get_current_admin
 from app.database import get_db
 
@@ -433,6 +436,16 @@ def update_user(
         changes.append(f"אדמין: {target.is_admin}→{payload.is_admin}")
         target.is_admin = payload.is_admin
 
+    # "טלפן" הוא תפקיד מגביל (גישה למסך השיחות בלבד) ו"אדמין" הוא גישה מלאה
+    # — השילוב חסר משמעות ומסוכן. נחסם כאן, ולא רק ב-UI, כדי שגם קריאת API
+    # ישירה לא תיצור משתמש-כלאיים. הבדיקה על המצב *הסופי*, כך שאין חשיבות
+    # לסדר שבו נשלחו שני השדות באותה בקשה.
+    if target.is_admin and roles.is_phone_agent(target):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="לא ניתן להגדיר משתמש גם כאדמין וגם כטלפן",
+        )
+
     if changes:
         audit.record(
             db, "admin_update_user",
@@ -561,6 +574,23 @@ def delete_user(
         select(models.AuditLog).where(models.AuditLog.user_id == user_id)
     ).all():
         al.user_id = None
+    # יומן שיחות ה-Call Center נשאר (הוא מתעד מה קרה מול המוזמן), רק מנותק
+    # מהמשתמש שנמחק — כמו יומן האבטחה.
+    for cl in db.scalars(
+        select(models.CallLog).where(models.CallLog.created_by_id == user_id)
+    ).all():
+        cl.created_by_id = None
+    # הקצאות שיחה: אלה *שלו* נמחקות (הוא כבר לא עובד כאן), ואלה שהוא הקצה
+    # לאחרים נשארות ורק מתנתקות ממנו — כדי שמחיקת אדמין לא תבטל את העבודה
+    # של הטלפנים שהוא שיבץ.
+    for ca in db.scalars(
+        select(models.CallAssignment).where(models.CallAssignment.user_id == user_id)
+    ).all():
+        db.delete(ca)
+    for ca in db.scalars(
+        select(models.CallAssignment).where(models.CallAssignment.assigned_by_id == user_id)
+    ).all():
+        ca.assigned_by_id = None
 
     email = target.email
     audit.record(
@@ -663,6 +693,167 @@ def create_account(
         email=user.email,
         account_type=user.account_type,
         temporary_password=temp_password,
+    )
+
+
+# --- ניהול טלפנים (phone_agent) ---
+# שני endpoints בלבד, שניהם ``get_current_admin``. אין כאן מנגנון חדש:
+# היצירה עוברת ב-``create_account`` שכבר קיים, ההשבתה/הפעלה ב-``disable_user``/
+# ``enable_user`` שכבר קיימים (ומאפסים טוקנים בעצמם), וההקצאה נשמרת בטבלת
+# ``call_assignments`` שנבנתה בשלב הקודם.
+
+
+@router.get("/callers", response_model=schemas.AdminCallersPage)
+def list_callers(
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """מסך ניהול הטלפנים: כל משתמשי ``phone_agent`` + האירועים להקצאה.
+
+    המונים אינם מטבלת סטטיסטיקות חדשה — "שיחות שביצע" נספר ישירות מ-
+    ``call_logs``, ו"משימות ממתינות" מגיע מאותו ``build_queues`` שמזין את מסך
+    השיחות עצמו. התור נבנה **פעם אחת** (בהיקף אדמין = כל האירועים), ומחולק
+    לטלפנים לפי ההקצאות שלהם — כדי לא להריץ את החישוב מחדש לכל טלפן.
+    """
+    callers = db.scalars(
+        select(models.User)
+        .where(models.User.account_type == roles.PHONE_AGENT)
+        .order_by(models.User.display_name, models.User.id)
+    ).all()
+    caller_ids = [c.id for c in callers]
+
+    calls_by_user = dict(
+        db.execute(
+            select(models.CallLog.created_by_id, func.count(models.CallLog.id))
+            .where(models.CallLog.created_by_id.in_(caller_ids))
+            .group_by(models.CallLog.created_by_id)
+        ).all()
+    ) if caller_ids else {}
+
+    assigned_by_user: dict[int, list[int]] = {cid: [] for cid in caller_ids}
+    if caller_ids:
+        for user_id, event_id in db.execute(
+            select(models.CallAssignment.user_id, models.CallAssignment.event_id)
+            .where(models.CallAssignment.user_id.in_(caller_ids))
+        ).all():
+            assigned_by_user[user_id].append(event_id)
+
+    queues = call_center.build_queues(db)
+    waiting_by_event = {q.event.id: len(q.guests) for q in queues}
+    shared_total = sum(waiting_by_event.values())
+
+    rows = []
+    for c in callers:
+        assigned = sorted(assigned_by_user.get(c.id, []))
+        # בדיוק הסמנטיקה של call_center.visible_event_ids: בלי הקצאות —
+        # התור המשותף המלא; עם הקצאות — רק מה שהוקצה.
+        waiting = (
+            sum(waiting_by_event.get(eid, 0) for eid in assigned)
+            if assigned else shared_total
+        )
+        rows.append(schemas.AdminCallerRow(
+            id=c.id,
+            email=c.email,
+            display_name=c.display_name or "",
+            phone=c.phone or "",
+            disabled=bool(c.disabled),
+            calls_made=calls_by_user.get(c.id, 0),
+            waiting_tasks=waiting,
+            assigned_event_ids=assigned,
+            created_at=c.created_at,
+        ))
+
+    events = db.scalars(select(models.Event).order_by(models.Event.id.desc())).all()
+    options = [
+        schemas.AdminCallerEventOption(
+            event_id=e.id,
+            event_type=e.event_type,
+            hosts=event_terms.hosts_names(e.event_type, e.groom_name, e.bride_name),
+            venue_name=e.venue_name or "",
+            event_date=e.event_date or "",
+            waiting=waiting_by_event.get(e.id, 0),
+        )
+        for e in events
+    ]
+    return schemas.AdminCallersPage(callers=rows, events=options)
+
+
+@router.put("/callers/{user_id}/assignments", response_model=schemas.AdminCallerRow)
+def set_caller_assignments(
+    user_id: int,
+    payload: schemas.AdminCallerAssignmentUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """מחליף את רשימת האירועים המוקצים לטלפן.
+
+    רשימה ריקה = הסרת כל ההקצאות, כלומר חזרה לתור המשותף (זו ההתנהגות
+    המוגדרת של שלב א', ראו ``models.CallAssignment``). ההקצאה משנה **רק** מה
+    הטלפן רואה — היא לא נוגעת בחישוב סבבי השיחות ולא בסטטוס אף מוזמן.
+    """
+    target = db.get(models.User, user_id)
+    if target is None or not roles.is_phone_agent(target):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="הטלפן לא נמצא"
+        )
+
+    wanted = set(payload.event_ids)
+    if wanted:
+        found = set(db.scalars(
+            select(models.Event.id).where(models.Event.id.in_(wanted))
+        ).all())
+        missing = wanted - found
+        if missing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="אחד האירועים שנבחרו לא קיים",
+            )
+
+    current = {
+        a.event_id: a for a in db.scalars(
+            select(models.CallAssignment).where(
+                models.CallAssignment.user_id == user_id
+            )
+        ).all()
+    }
+    for event_id, row in current.items():
+        if event_id not in wanted:
+            db.delete(row)
+    for event_id in wanted - set(current):
+        db.add(models.CallAssignment(
+            event_id=event_id, user_id=user_id, assigned_by_id=admin.id,
+        ))
+
+    audit.record(
+        db, "admin_caller_assignments",
+        user_id=admin.id,
+        detail=(
+            f"הקצאת אירועים לטלפן {target.email} (#{target.id}): "
+            + (", ".join(f"#{e}" for e in sorted(wanted)) if wanted else "תור משותף")
+        ),
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+
+    calls_made = db.scalar(
+        select(func.count(models.CallLog.id)).where(
+            models.CallLog.created_by_id == user_id
+        )
+    ) or 0
+    queues = call_center.build_queues(
+        db, allowed_event_ids=call_center.visible_event_ids(db, target)
+    )
+    return schemas.AdminCallerRow(
+        id=target.id,
+        email=target.email,
+        display_name=target.display_name or "",
+        phone=target.phone or "",
+        disabled=bool(target.disabled),
+        calls_made=calls_made,
+        waiting_tasks=sum(len(q.guests) for q in queues),
+        assigned_event_ids=sorted(wanted),
+        created_at=target.created_at,
     )
 
 

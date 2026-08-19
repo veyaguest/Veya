@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import audit, media, models, schemas, venues
-from app.auth import get_current_user
+from app.auth import get_current_owner
 from app.database import get_db
 from app.deps import EventAccess, get_current_event
 
@@ -71,7 +71,7 @@ def update_event(
     request: Request,
     db: Session = Depends(get_db),
     event: models.Event = Depends(_owner_only),
-    user: models.User = Depends(get_current_user),
+    user: models.User = Depends(get_current_owner),
 ):
     changed = payload.model_dump(exclude_unset=True)
     for key, value in changed.items():

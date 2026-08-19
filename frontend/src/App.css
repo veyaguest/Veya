@@ -2288,7 +2288,7 @@ td.notes.seating {
   display: block;
   width: 100%;
   aspect-ratio: 3 / 4;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 5px;
 }
 /* כיתוב ההזמנה מתחת לתמונה — כמו הודעת תמונה+טקסט אמיתית ב-WhatsApp */
@@ -2983,27 +2983,19 @@ td.notes.seating {
   font-weight: 500;
 }
 /* ============================================================
-   שתי העמודות מתחת למד: "עדכוני אישורי הגעה" (Feed חי) ו-"סידורי הושבה
-   בלי כאב הראש" (הפיצ'ר הדגל). מחליפות את "הצעד הבא" וכרטיסי הסטטיסטיקה
-   הכפולים שהיו כאן — בלי מידע כפול עם המד שלמעלה.
+   "עדכוני אישורי הגעה" (Feed חי) — סקשן עצמאי במלוא הרוחב, מיד מתחת
+   למד, כחלק משמעותי מתמונת המצב. מתחתיו: באנר "מוזמנים בלי הזמנה"
+   (אם רלוונטי) ו"סידורי הושבה בלי כאב הראש" (הפיצ'ר הדגל), זה מתחת לזה.
    ============================================================ */
-.dash-two-col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: stretch;
-  gap: 20px;
-  padding: 0 20px;
+.rsvp-feed-section {
+  box-sizing: border-box;
+  margin: 0 20px;
 }
-.dash-col-left,
-.dash-col-right {
+.dash-stack {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-.dash-col-left .rsvp-feed-card,
-.dash-col-right .seating-helper-card {
-  flex: 1;
+  gap: 20px;
+  padding: 0 20px;
 }
 
 /* ---- באנר "מוזמנים בלי הזמנה" — בולט אך אלגנטי, לא אזהרה אדומה. ---- */
@@ -3050,20 +3042,22 @@ td.notes.seating {
   transform: translateY(-1px);
 }
 
-/* ---- "עדכוני אישורי הגעה" — Feed חי, נקי ומודרני. ---- */
+/* ---- "עדכוני אישורי הגעה" — Feed חי, נקי ומודרני. סקשן עצמאי במלוא
+   הרוחב (לא כרטיס צדדי) — לכן כותרת גדולה יותר ורשימה בשתי עמודות
+   במסכים רחבים, כדי לנצל את הרוחב ולהישאר חלק משמעותי מתמונת המצב. ---- */
 .rsvp-feed-card {
   box-sizing: border-box;
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
-  padding: 22px 22px 18px;
+  padding: 28px 28px 22px;
   display: flex;
   flex-direction: column;
 }
 .rsvp-feed-title {
-  margin: 0 0 12px;
-  font-size: 15px;
+  margin: 0 0 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--charcoal);
 }
@@ -3081,6 +3075,18 @@ td.notes.seating {
   padding: 0;
   display: flex;
   flex-direction: column;
+}
+@media (min-width: 760px) {
+  .rsvp-feed-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 28px;
+  }
+  /* בגריד דו-טורי, "השורה האחרונה" היא שני הפריטים האחרונים (לא רק אחד) */
+  .rsvp-feed-item:nth-last-child(-n+2) {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
 }
 .rsvp-feed-item {
   display: flex;
@@ -3338,11 +3344,13 @@ td.notes.seating {
 }
 .dash-page .dash-hero-section { animation: fadeInUp 0.4s ease-out both; }
 .dash-page .gauge-section { animation: fadeInUp 0.4s ease-out 0.08s both; }
-.dash-page .dash-two-col { animation: fadeInUp 0.4s ease-out 0.12s both; }
+.dash-page .rsvp-feed-section { animation: fadeInUp 0.4s ease-out 0.12s both; }
+.dash-page .dash-stack { animation: fadeInUp 0.4s ease-out 0.16s both; }
 @media (prefers-reduced-motion: reduce) {
   .dash-page .dash-hero-section,
   .dash-page .gauge-section,
-  .dash-page .dash-two-col {
+  .dash-page .rsvp-feed-section,
+  .dash-page .dash-stack {
     animation: none;
     transition: none;
   }
@@ -3405,8 +3413,10 @@ td.notes.seating {
     gap: 20px;
     padding-bottom: 32px;
   }
-  .dash-two-col {
-    grid-template-columns: 1fr;
+  .rsvp-feed-section {
+    margin: 0 16px;
+  }
+  .dash-stack {
     padding: 0 16px;
     gap: 14px;
   }
@@ -9774,8 +9784,7 @@ td.notes.seating {
 .ph-image {
   width: 100%;
   max-height: 190px;
-  object-fit: cover;
-  object-position: center top;
+  object-fit: contain;
   border-radius: 6px;
   margin-bottom: 6px;
   display: block;
