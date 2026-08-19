@@ -1,7 +1,13 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
 import './App.css'
-import { adminImpersonate, getMe, healthCheck, listMyEvents } from './api'
+import {
+  adminImpersonate,
+  confirmEmailVerification,
+  getMe,
+  healthCheck,
+  listMyEvents,
+} from './api'
 import {
   clearAdminToken,
   clearAuth,
@@ -15,15 +21,18 @@ import {
   setToken,
 } from './authStore'
 import { getEventTerms, hostNames } from './strings/eventTypes'
+import { AccountCenter } from './components/AccountCenter'
 import { AuthPage } from './components/AuthPage'
+import { CompleteProfilePage } from './components/CompleteProfilePage'
 import { DashboardPage } from './components/DashboardPage'
+import { JoinEventPage } from './components/JoinEventPage'
+import { VerifyEmailPage } from './components/VerifyEmailPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { EventMembersDialog } from './components/EventMembersDialog'
 import { Footer } from './components/Footer'
 import { GuestsPage } from './components/GuestsPage'
 import { MessagesPage } from './components/MessagesPage'
 import { OnboardingWizard } from './components/OnboardingWizard'
-import { ProfileDialog } from './components/ProfileDialog'
 import { ReconsentModal } from './components/ReconsentModal'
 import { RsvpPage } from './components/RsvpPage'
 import type { EventSummary, User } from './types'
@@ -144,6 +153,26 @@ function App() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [membersOpen, setMembersOpen] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
+
+  // ---- שני נתיבים מיוחדים שמגיעים מקישור במייל ----
+  // /app/join?token=...          — הזמנה לניהול משותף של אירוע
+  // /app/verify-email?token=...  — אימות כתובת המייל
+  // נקראים פעם אחת בטעינה (אין router בפרויקט — הניווט הוא state פנימי).
+  // נקרא פעם אחת בטעינה ולא משתנה אחר כך: יציאה מדף ההצטרפות נעשית ע"י
+  // ניווט אמיתי (window.location.assign) ולא ע"י שינוי state.
+  const [joinToken] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search)
+    return window.location.pathname === '/app/join' ? params.get('token') : null
+  })
+  const [verifyToken, setVerifyToken] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search)
+    return window.location.pathname === '/app/verify-email' ? params.get('token') : null
+  })
+  const [verifyError, setVerifyError] = useState<string | null>(null)
+  // כשמגיעים להזמנה בלי להיות מחוברים, שולחים למסך הכניסה ואז חוזרים לכאן.
+  const [authIntent, setAuthIntent] = useState<
+    { mode: 'login' | 'register'; email: string } | null
+  >(null)
   const [events, setEvents] = useState<EventSummary[]>([])
   const [activeEventId, setActiveEventId] = useState<number | null>(getEventId())
   // מצב התחזות: אדמין שמחובר כרגע כמשתמש (טוקן האדמין שמור בצד).
@@ -179,8 +208,38 @@ function App() {
     return evs
   }
 
+  // מימוש קישור אימות המייל (/verify-email?token=...). רץ **לפני** בדיקת
+  // הטוקן הרגילה כי הקישור עשוי להיפתח בדפדפן שבו המשתמש כלל לא מחובר —
+  // האימות עצמו מחזיר טוקן כניסה, וזה מה שמכניס אותו פנימה.
+  useEffect(() => {
+    if (!verifyToken) return
+    let alive = true
+    confirmEmailVerification(verifyToken)
+      .then(async (res) => {
+        if (!alive) return
+        setToken(res.access_token)
+        setUser(res.user)
+        await loadEvents(res.user)
+        // מנקים את הטוקן מה-URL כדי שלא יישאר בהיסטוריה/בשיתוף.
+        // מנקים את טוקן האימות מה-URL; אם הגענו גם עם הזמנה לאירוע,
+        // משאירים אותה כדי שנמשיך ישר להצטרפות. ה-React מוגש תחת /app.
+        window.history.replaceState({}, '', joinToken ? `/app/join?token=${joinToken}` : '/app')
+        setVerifyToken(null)
+      })
+      .catch((err) => {
+        if (alive) setVerifyError(err instanceof Error ? err.message : 'האימות נכשל')
+      })
+      .finally(() => alive && setAuthChecked(true))
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verifyToken])
+
   // בדיקת טוקן קיים בעת טעינת האפליקציה.
   useEffect(() => {
+    // כשיש טוקן אימות ב-URL, ה-effect שלמעלה אחראי על הכניסה — לא רצים פעמיים.
+    if (verifyToken) return
     const token = getToken()
     if (!token) {
       setAuthChecked(true)
@@ -195,6 +254,7 @@ function App() {
         /* 401 כבר טופל — נשאר לא מחובר */
       })
       .finally(() => setAuthChecked(true))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // האזנה ל-401 גלובלי (טוקן פג) — מחזיר למסך התחברות.
@@ -276,15 +336,72 @@ function App() {
     )
   }
 
-  // לא מחובר → מסך התחברות/הרשמה.
+  // שגיאת אימות מייל (קישור פג/לא תקין) — מסך הסבר במקום מסך לבן.
+  if (verifyError) {
+    return (
+      <div className="join-page" dir="rtl">
+        <div className="join-card">
+          <div className="join-logo" dir="ltr">VEYA</div>
+          <h1 className="join-title">הקישור לאימות כבר לא תקף</h1>
+          <p className="join-text">{verifyError}</p>
+          <button
+            type="button"
+            className="join-btn join-btn-primary"
+            onClick={() => {
+              setVerifyError(null)
+              setVerifyToken(null)
+              window.history.replaceState({}, '', '/app')
+            }}
+          >
+            להתחברות
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // לא מחובר → מסך התחברות/הרשמה. אם הגיעו דרך הזמנה לאירוע, קודם מציגים
+  // את ההזמנה עצמה (מי הזמין ולאיזה אירוע) — ורק אז שולחים להתחברות, כדי
+  // שהמשתמש יידע למה הוא מתבקש להתחבר.
   if (!user) {
-    return <AuthPage onAuth={handleAuth} />
+    if (joinToken && !authIntent) {
+      return (
+        <JoinEventPage
+          token={joinToken}
+          onJoined={() => window.location.assign('/app')}
+          onNeedAuth={(mode, email) => setAuthIntent({ mode, email })}
+        />
+      )
+    }
+    return (
+      <AuthPage
+        onAuth={handleAuth}
+        initialMode={authIntent?.mode}
+        lockedEmail={authIntent?.email}
+      />
+    )
   }
 
   // תנאים/פרטיות עודכנו מאז שהמשתמש אישר לאחרונה → חוסמים גישה עד אישור מחדש.
   if (user.needs_reconsent) {
     return (
       <ReconsentModal onAccepted={() => setUser({ ...user, needs_reconsent: false })} />
+    )
+  }
+
+  // הגענו דרך קישור הזמנה ואנחנו מחוברים → מסך ההצטרפות, לפני כל דבר אחר.
+  // אחרי הצטרפות מוצלחת טוענים מחדש מ-/ כדי שכל המצב (אירועים, הרשאות)
+  // ייבנה נקי סביב האירוע המשותף.
+  if (joinToken) {
+    return (
+      <JoinEventPage
+        token={joinToken}
+        onJoined={() => window.location.assign('/app')}
+        onNeedAuth={(mode, email) => {
+          handleLogout()
+          setAuthIntent({ mode, email })
+        }}
+      />
     )
   }
 
@@ -334,6 +451,33 @@ function App() {
 
   // מחובר אבל אין עדיין אירוע.
   if (events.length === 0) {
+    // הזרימה המחייבת לפני יצירת אירוע: אימות מייל → פרטים מלאים → יצירה.
+    // שני השערים האלה חלים רק על מי שעתיד ליצור אירוע (זוג), ולא על
+    // מפיק/אולם שממתינים לשיתוף. אותם כללים נאכפים גם בשרת
+    // (backend/app/routers/events.py::create_event) — כאן זו רק החוויה.
+    const isCouple = user.account_type !== 'planner' && user.account_type !== 'venue'
+
+    if (isCouple && user.email_verified === false) {
+      return withImpersonation(
+        <VerifyEmailPage
+          user={user}
+          onUpdated={setUser}
+          onRefresh={async () => {
+            const u = await getMe()
+            setUser(u)
+            await loadEvents(u)
+          }}
+          onLogout={handleLogout}
+        />,
+      )
+    }
+
+    if (isCouple && user.profile_complete === false) {
+      return withImpersonation(
+        <CompleteProfilePage user={user} onUpdated={setUser} onLogout={handleLogout} />,
+      )
+    }
+
     // מפיק/אולם לא יוצרים אירוע בעצמם — הם מחכים שבעל אירוע יזמין אותם.
     if (user.account_type === 'planner' || user.account_type === 'venue') {
       return withImpersonation(
@@ -456,7 +600,7 @@ function App() {
       </div>
 
       {profileOpen && (
-        <ProfileDialog
+        <AccountCenter
           user={user}
           onClose={() => setProfileOpen(false)}
           onUpdated={(u) => setUser(u)}
@@ -464,14 +608,6 @@ function App() {
             setProfileOpen(false)
             handleLogout()
           }}
-          onManageAccess={
-            user.account_type === 'couple' && activeEventId != null
-              ? () => {
-                  setProfileOpen(false)
-                  setMembersOpen(true)
-                }
-              : undefined
-          }
         />
       )}
 

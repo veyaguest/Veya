@@ -95,7 +95,14 @@ def main() -> int:
         for key, email in e.items():
             r = http.post(
                 "/auth/register",
-                json={"email": email, "password": "StagingTest123!", "display_name": key},
+                json={
+                    "email": email,
+                    "password": "StagingTest123!",
+                    "display_name": key,
+                    # שדות חובה בהרשמה: טלפון ואישור תנאים.
+                    "phone": "0501234567",
+                    "accepted_terms": True,
+                },
             )
             check(f"setup: register {key}", r.status_code == 201, f"status={r.status_code}")
             if r.status_code == 201:

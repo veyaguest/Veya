@@ -8,7 +8,7 @@ import secrets
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -16,6 +16,7 @@ from app import (
     audit, auth, cache, call_center, communication, event_terms, messaging, models, roles,
     schemas, venues,
 )
+from app.account import delete_event_cascade
 from app.auth import get_current_admin
 from app.database import get_db
 
@@ -527,25 +528,60 @@ def enable_user(
         db.commit()
 
 
-@router.delete("/users/{user_id}", status_code=204)
-def delete_user(
-    user_id: int,
-    request: Request,
-    db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
-):
-    """מחיקת משתמש — פעולה בלתי-הפיכה, עם שמירות בטיחות מחמירות.
+# מחיקת משתמש בפאנל האדמין: שני מצבים אפשריים (ראו delete_user למטה).
+_DELETE_USER_MODES = {"user_only", "user_and_events"}
 
-    חסום אם: זה החשבון שלך, זה האדמין האחרון, או שיש למשתמש אירועים משויכים
-    (כדי לא ליצור אירועים יתומים ולא למחוק נתונים בטעות).
+# חשבון-מערכת קבוע שמחזיק בעלות על אירועים של משתמשים שנמחקו במצב
+# "user_only". למה לא owner_id=NULL: ``auth.adopt_orphan_events`` (נקרא בכל
+# הרשמה חדשה — מיגרציה חד-פעמית מהמצב הישן החד-משתמשי, ראו
+# app/auth.py) מאמצת אוטומטית *כל* אירוע עם owner_id=NULL למי שנרשם הבא.
+# NULL כאן היה גורם לנתוני החתונה (מוזמנים, טלפונים, הודעות) "לקפוץ" בטעות
+# לחשבון זר הבא שנרשם — דליפת מידע, לא רק באג. חשבון ייעודי ונעול (disabled,
+# בלי סיסמה שאף אחד מכיר) שומר על FK תקין בלי הסיכון הזה.
+_ORPHANED_EVENTS_HOLDER_EMAIL = "system.deleted-users@veya.internal"
+
+
+def _get_or_create_orphaned_events_holder(db: Session) -> models.User:
+    """מחזיר את חשבון-המערכת שמחזיק אירועים של משתמשים שנמחקו (יוצר בפעם הראשונה)."""
+    holder = db.scalar(
+        select(models.User).where(models.User.email == _ORPHANED_EVENTS_HOLDER_EMAIL)
+    )
+    if holder is not None:
+        return holder
+    holder = models.User(
+        email=_ORPHANED_EVENTS_HOLDER_EMAIL,
+        # סיסמה אקראית שאף אחד לא מכיר ולעולם לא נמסרת — יחד עם disabled=True
+        # (הגנה כפולה: גם מי שיידע את הגיבוב לא יתחבר, כי disabled חוסם login).
+        password_hash=auth.hash_password(secrets.token_urlsafe(32)),
+        display_name="⚠️ אירועים ממשתמשים שנמחקו (חשבון מערכת)",
+        is_admin=False,
+        account_type="couple",
+        disabled=True,
+    )
+    db.add(holder)
+    db.flush()  # צריך holder.id לפני שמשייכים אליו אירועים
+    return holder
+
+
+def _delete_user_impl(db: Session, admin: models.User, target: models.User, mode: str) -> int:
+    """הלוגיקה המלאה של מחיקת משתמש — ללא HTTP, כדי לאפשר בדיקה ישירה
+    (tests/test_admin_delete_user.py) בלי לעבור דרך FastAPI.
+
+    לא עושה commit — הקורא (delete_user למטה) אחראי לכך יחד עם רישום
+    audit.record, בדיוק כמו delete_event_cascade: אם שלב כלשהו נכשל (למשל
+    HTTPException על שמירת בטיחות), שום דבר לא נשמר. מחזירה כמה אירועים היו
+    בבעלות המשתמש (לפירוט ביומן האבטחה).
     """
-    target = db.get(models.User, user_id)
-    if target is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש לא נמצא")
+    if mode not in _DELETE_USER_MODES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="מצב מחיקה לא תקין")
     if target.id == admin.id:
         raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="אי אפשר למחוק את החשבון שלך",
+        )
+    if target.email == _ORPHANED_EVENTS_HOLDER_EMAIL:
+        raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="אי אפשר למחוק את החשבון שלך",
+            detail="זהו חשבון מערכת שמחזיק אירועים של משתמשים שנמחקו — אי אפשר למחוק אותו",
         )
     if target.is_admin:
         admin_count = db.scalar(
@@ -556,20 +592,62 @@ def delete_user(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="לא ניתן למחוק את האדמין האחרון במערכת",
             )
-    owned_events = db.scalar(
-        select(func.count()).select_from(models.Event).where(models.Event.owner_id == user_id)
-    ) or 0
-    if owned_events:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"למשתמש יש {owned_events} אירועים. יש להעביר בעלות או למחוק אותם קודם",
-        )
 
-    # ניקוי הפניות לפני המחיקה כדי לא להפר מפתחות זרים.
+    user_id = target.id
+    owned_events = db.scalars(select(models.Event).where(models.Event.owner_id == user_id)).all()
+
+    if mode == "user_and_events":
+        # מצב 2: מוחקים גם את כל האירועים בבעלותו וכל הנתונים התלויים בהם
+        # (מוזמנים/RSVP, הודעות, הבהרות, יומן שיחות...) — אותו cascade
+        # שמשמש למחיקת חשבון עצמית (routers/auth.py::delete_my_account).
+        for event in owned_events:
+            delete_event_cascade(db, event)
+    else:
+        # מצב 1 ("user_only"): האירועים נשארים בשלמותם — רק הבעלות עוברת
+        # לחשבון-המערכת (לא ל-NULL, ראו הסבר ב-_ORPHANED_EVENTS_HOLDER_EMAIL).
+        if owned_events:
+            holder = _get_or_create_orphaned_events_holder(db)
+            for event in owned_events:
+                event.owner_id = holder.id
+
+    # ── ניקוי משותף לשני המצבים: כל מה שקושר את *המשתמש עצמו* (לא את
+    # האירועים בבעלותו, שכבר טופלו למעלה) ────────────────────────────────
+    # חברות שלו באירועים של אחרים (מפיק/אולם/שותף שהוזמן) — נמחקת, אין יותר
+    # גישה (המשתמש כבר לא קיים).
+    for member in db.scalars(
+        select(models.EventMember).where(models.EventMember.user_id == user_id)
+    ).all():
+        db.delete(member)
+    # חברות של *אחרים* שהוא הזמין נשארת פעילה — רק מתנתקת ממנו. לא מוחקים
+    # גישה תקינה של מישהו אחר רק כי מי שהזמין אותו נמחק.
+    for member in db.scalars(
+        select(models.EventMember).where(models.EventMember.invited_by_id == user_id)
+    ).all():
+        member.invited_by_id = None
+    # הזמנות שיתוף-אירוע ששלח/קיבל (event_invitations) — נשארות לתיעוד, רק
+    # מתנתקות ממנו.
+    for inv in db.scalars(
+        select(models.EventInvitation).where(
+            (models.EventInvitation.invited_by == user_id)
+            | (models.EventInvitation.accepted_by == user_id)
+        )
+    ).all():
+        if inv.invited_by == user_id:
+            inv.invited_by = None
+        if inv.accepted_by == user_id:
+            inv.accepted_by = None
+    # אישורי הסכמה (תנאי שימוש/פרטיות) — נשארים לצורך שקיפות/רגולציה, רק
+    # מתנתקים מהמשתמש שנמחק (כמו ב-routers/auth.py::delete_my_account).
+    for consent in db.scalars(
+        select(models.ConsentRecord).where(models.ConsentRecord.user_id == user_id)
+    ).all():
+        consent.user_id = None
+    # היסטוריית התחברות — נמחקת (אין טעם לשמר בלי המשתמש עצמו).
     for lg in db.scalars(
         select(models.LoginEvent).where(models.LoginEvent.user_id == user_id)
     ).all():
         db.delete(lg)
+    # יומן אבטחה — נשאר לצורך שקיפות/תיעוד, רק מתנתק מהמשתמש שנמחק.
     for al in db.scalars(
         select(models.AuditLog).where(models.AuditLog.user_id == user_id)
     ).all():
@@ -592,14 +670,51 @@ def delete_user(
     ).all():
         ca.assigned_by_id = None
 
+    db.delete(target)
+    return len(owned_events)
+
+
+@router.delete("/users/{user_id}", status_code=204)
+def delete_user(
+    user_id: int,
+    request: Request,
+    mode: str = Query(
+        "user_only",
+        description=(
+            "user_only = מחיקת החשבון בלבד, האירועים נשארים · "
+            "user_and_events = מחיקת החשבון וכל האירועים בבעלותו"
+        ),
+    ),
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """מחיקת משתמש — פעולה בלתי-הפיכה, בשני מצבים אפשריים (ראו ``mode``):
+
+    - ``user_only`` (ברירת מחדל): מוחק רק את החשבון. האירועים בבעלותו וכל
+      הנתונים שלהם (מוזמנים, הודעות, סידורי הושבה...) נשארים בשלמותם.
+    - ``user_and_events``: מוחק את החשבון **וגם** את כל האירועים בבעלותו,
+      כולל כל הנתונים התלויים בהם — בלתי הפיך.
+
+    בשני המצבים: חסום אם זה החשבון שלך או האדמין האחרון במערכת. כל הלוגיקה
+    בפועל ב-``_delete_user_impl`` — טרנזקציה אחת, בלי commit ביניים, כך
+    שכשל בכל שלב מבטל את הכול (אטומי, אין מצב "חצי מחוק").
+    """
+    target = db.get(models.User, user_id)
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש לא נמצא")
+
     email = target.email
+    events_count = _delete_user_impl(db, admin, target, mode)
+
     audit.record(
         db, "admin_delete_user",
         user_id=admin.id,
-        detail=f"מחיקת משתמש {email} (#{user_id})",
+        detail=(
+            f"מחיקת משתמש {email} (#{user_id}), מצב: {mode}"
+            + (f", {events_count} אירועים" if events_count else "")
+        ),
         ip=request.client.host if request.client else None,
     )
-    db.delete(target)
     db.commit()
 
 

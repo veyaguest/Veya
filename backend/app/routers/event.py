@@ -121,11 +121,32 @@ def read_audit(
     db: Session = Depends(get_db),
     event: models.Event = Depends(get_current_event),
 ):
-    """יומן האבטחה של האירוע — הפעולות הרגישות האחרונות (למנהל האירוע בלבד)."""
+    """יומן הפעילות של האירוע — מי עשה מה ומתי (למנהלי האירוע בלבד).
+
+    שני המנהלים (בעלים ובן/בת זוג) רואים את אותו יומן בדיוק — הוא תלוי
+    אירוע, לא משתמש.
+    """
     stmt = (
         select(models.AuditLog)
         .where(models.AuditLog.event_id == event.id)
         .order_by(models.AuditLog.created_at.desc())
         .limit(max(1, min(limit, 100)))
     )
-    return db.scalars(stmt).all()
+    rows = db.scalars(stmt).all()
+
+    # שם המבצע בשאילתה אחת לכל השורות (ולא db.get בלולאה — N+1), באותה
+    # תבנית שכבר קיימת ב-routers/event_members.py.
+    actor_ids = {r.user_id for r in rows if r.user_id is not None}
+    names: dict[int, str] = {}
+    if actor_ids:
+        for u in db.scalars(
+            select(models.User).where(models.User.id.in_(actor_ids))
+        ).all():
+            names[u.id] = u.display_name or u.email.split("@")[0]
+
+    result = []
+    for row in rows:
+        item = schemas.AuditLogRow.model_validate(row)
+        item.actor_name = names.get(row.user_id, "") if row.user_id else ""
+        result.append(item)
+    return result

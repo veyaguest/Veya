@@ -1,5 +1,6 @@
 """נקודת הכניסה ל-Backend של VEYA (FastAPI)."""
 import os
+from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,6 +27,7 @@ from app.routers import (
     import_guests,
     media_serve,
     messaging,
+    partner,
     seating,
     stats,
     venues,
@@ -51,6 +53,7 @@ app.include_router(admin.router)
 app.include_router(call_center.router)
 app.include_router(events.router)
 app.include_router(event_members.router)
+app.include_router(partner.router)
 app.include_router(guests.router)
 app.include_router(import_guests.router)
 app.include_router(seating.router)
@@ -123,6 +126,11 @@ _EXTRA_COLUMNS = {
         "phone": "TEXT DEFAULT ''",
         "disabled": "BOOLEAN DEFAULT FALSE",
         "avatar_url": "TEXT DEFAULT ''",
+        # אימות כתובת המייל. משתמשים קיימים מסומנים כמאומתים ב-
+        # ``_migrate_verify_existing_emails`` כדי שלא ייחסמו רטרואקטיבית.
+        "email_verified_at": "TIMESTAMP",
+        "email_verification_hash": "TEXT",
+        "email_verification_expires_at": "TIMESTAMP",
     },
     "guests": {
         "guest_token": "TEXT",
@@ -196,10 +204,18 @@ def missing_migrations() -> dict[str, list[str]]:
     return gaps
 
 
-def _ensure_columns() -> None:
+def _ensure_columns() -> set:
+    """מוסיף עמודות חסרות, ומחזיר את קבוצת ``(table, column)`` שנוספו בפועל.
+
+    ערך ההחזרה משמש מיגרציות-נתונים שצריכות לרוץ **בדיוק פעם אחת** — ברגע
+    שהעמודה נולדה, ולא בכל עלייה מחדש של השרת (ראו
+    ``_migrate_verify_existing_emails``: אם היא הייתה רצה בכל עלייה, היא
+    הייתה מאמתת אוטומטית גם משתמשים חדשים שטרם אימתו את המייל).
+    """
     # DDL (ALTER TABLE) דורש בעלות על הטבלה — לכן תמיד דרך migrations_engine
     # (בפרודקשן עם RLS זה חיבור postgres נפרד מ-DATABASE_URL הרגיל; היום,
     # לפני שההפרדה מופעלת, שני המשתנים מצביעים על אותו חיבור בדיוק).
+    added: set = set()
     inspector = inspect(migrations_engine)
     with migrations_engine.begin() as conn:
         for table, columns in _EXTRA_COLUMNS.items():
@@ -209,6 +225,7 @@ def _ensure_columns() -> None:
             for name, ddl in columns.items():
                 if name not in existing:
                     conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
+                    added.add((table, name))
 
         # רשת ביטחון: עמודות שבמודל אך לא ב-DB ולא ברשימה הידנית. בלי זה,
         # שכחה של רשומה אחת שוברת כל שאילתה על הטבלה (כפי שקרה עם
@@ -229,6 +246,26 @@ def _ensure_columns() -> None:
                 conn.execute(
                     text(f"ALTER TABLE {table_name} ADD COLUMN {column.name} {ddl}")
                 )
+                added.add((table_name, column.name))
+    return added
+
+
+def _migrate_verify_existing_emails(added_columns: set) -> None:
+    """מסמן משתמשים שכבר היו במערכת כ"מייל מאומת" — פעם אחת, בעת הוספת העמודה.
+
+    בלי זה, כל מי שנרשם לפני שאימות המייל הוצג היה נחסם פתאום ונדרש לאמת
+    כתובת — משתמשים קיימים לא נשברים (זו דרישה מפורשת). רץ **רק** ברגע
+    שהעמודה ``email_verified_at`` נוצרה; מהרגע הזה והלאה כל משתמש חדש עובר
+    את זרימת האימות הרגילה.
+    """
+    if ("users", "email_verified_at") not in added_columns:
+        return
+    with migrations_engine.begin() as conn:
+        conn.execute(
+            text("UPDATE users SET email_verified_at = :now WHERE email_verified_at IS NULL"),
+            {"now": datetime.utcnow()},
+        )
+    print("[migrations] משתמשים קיימים סומנו כבעלי מייל מאומת (חד-פעמי)")
 
 
 # אינדקסים על מפתחות זרים לביצועים. create_all לא מוסיף אותם לטבלאות שכבר
@@ -659,7 +696,10 @@ def on_startup() -> None:
     # יוצר את קובץ מסד הנתונים ואת הטבלאות (DDL — דרך חיבור המיגרציות).
     Base.metadata.create_all(bind=migrations_engine)
     # מוסיף עמודות חדשות לטבלאות קיימות (מיגרציה קלה).
-    _ensure_columns()
+    added_columns = _ensure_columns()
+    # פעם אחת בלבד, ברגע שעמודת האימות נולדה: משתמשים קיימים מסומנים
+    # כמאומתים כדי שלא ייחסמו רטרואקטיבית.
+    _migrate_verify_existing_emails(added_columns)
     # מוסיף אינדקסים על מפתחות זרים (לביצועים) אם עדיין אין.
     _ensure_indexes()
     # אינדקסים ייחודיים (מונעים התאמת webhook כפולה/מדליפה) אם עדיין אין.

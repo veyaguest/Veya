@@ -8,13 +8,26 @@ import type { User } from '../types'
 import { strings } from '../strings/he'
 
 /** מסך התחברות / הרשמה — פריסת split-screen: פאנל שיווקי + טופס כניסה. */
-export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
+export function AuthPage({
+  onAuth,
+  initialMode,
+  lockedEmail,
+}: {
+  onAuth: (user: User) => void
+  /** פותח ישר בטופס הנכון — למשל כשמגיעים מהזמנה לאירוע. */
+  initialMode?: 'login' | 'register'
+  /** כשמגיעים מהזמנה: הכתובת שאליה נשלחה, ממולאת מראש (אפשר לשנות). */
+  lockedEmail?: string
+}) {
   // דף הנחיתה מקשר לכאן עם ?auth=register עבור כפתורי "התחילו/בואו נתחיל",
   // כדי לפתוח ישר בטופס הרשמה במקום בהתחברות.
-  const [mode, setMode] = useState<'login' | 'register'>(() =>
-    new URLSearchParams(window.location.search).get('auth') === 'register' ? 'register' : 'login',
-  )
-  const [email, setEmail] = useState('')
+  const [mode, setMode] = useState<'login' | 'register'>(() => {
+    if (initialMode) return initialMode
+    return new URLSearchParams(window.location.search).get('auth') === 'register'
+      ? 'register'
+      : 'login'
+  })
+  const [email, setEmail] = useState(lockedEmail ?? '')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [phone, setPhone] = useState('')
@@ -69,10 +82,32 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
     }
   }
 
+  /** ולידציה בצד הלקוח לפני שליחה — משוב מיידי בלי סיבוב לשרת.
+   * זו **אינה** שכבת האכיפה: אותם כללים בדיוק נאכפים ב-schemas.UserCreate
+   * בשרת, כך שגם קריאת API ישירה נחסמת. */
+  function localValidationError(): string | null {
+    if (mode === 'login') return null
+    if (!displayName.trim()) return 'צריך למלא שם מלא'
+    if (displayName.trim().length < 2) return 'השם קצר מדי — אפשר למלא שם מלא'
+    if (!phone.trim()) return 'צריך למלא מספר טלפון'
+    // אותה בדיקה כמו normalize_israeli_phone בשרת: 9-10 ספרות שמתחילות ב-0
+    // (או +972 שמומר לזה). הודעה בשפה טבעית, לא "פורמט לא תקין".
+    const digits = phone.replace(/\D/g, '').replace(/^972/, '0')
+    if (!/^0\d{8,9}$/.test(digits)) {
+      return 'מספר הטלפון לא נראה תקין. אפשר לכתוב אותו כך: 050-1234567'
+    }
+    return null
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setNote(null)
+    const localError = localValidationError()
+    if (localError) {
+      setError(localError)
+      return
+    }
     setBusy(true)
     try {
       const res =
@@ -181,6 +216,7 @@ export function AuthPage({ onAuth }: { onAuth: (user: User) => void }) {
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="דנה כהן"
                   autoComplete="name"
+                  required
                 />
               </div>
             )}

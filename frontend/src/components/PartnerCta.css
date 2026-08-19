@@ -1,0 +1,137 @@
+/* כרטיס "מנהלים את האירוע יחד?" בדשבורד — הזמנה עדינה, לא באנר צועק. */
+
+.pcta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 18px;
+  margin-bottom: 16px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-card);
+}
+
+.pcta-title {
+  margin: 0 0 4px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+.pcta-text {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.pcta-btn {
+  align-self: flex-start;
+  flex-shrink: 0;
+  padding: 10px 18px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--ivory);
+  background: var(--charcoal);
+  border: 1px solid transparent;
+  border-radius: var(--radius-m);
+  cursor: pointer;
+  transition: background var(--transition-fast), opacity var(--transition-fast);
+}
+
+.pcta-btn:hover:not(:disabled) {
+  background: var(--black-soft);
+}
+
+.pcta-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pcta-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pcta-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--body);
+}
+
+.pcta-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pcta-row input {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 10px 13px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+}
+
+.pcta-row input:focus {
+  outline: none;
+  background: var(--cream);
+  border-color: var(--gold-deep);
+  box-shadow: 0 0 0 3px rgba(var(--gold-rgb), 0.12);
+}
+
+.pcta-error {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  color: var(--error);
+}
+
+/* מצב "נשלח" */
+.pcta-done {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.pcta-check {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(47, 158, 95, 0.12);
+  color: var(--green);
+  font-size: 0.9375rem;
+}
+
+.pcta-done-text {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--body);
+}
+
+@media (min-width: 700px) {
+  .pcta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+  }
+
+  .pcta-form {
+    flex: 0 1 380px;
+  }
+
+  .pcta-done {
+    align-items: center;
+  }
+}

@@ -343,6 +343,7 @@ def update_guest(
         raise HTTPException(status_code=404, detail="מוזמן לא נמצא")
     changed = payload.model_dump(exclude_unset=True)
     prev_rsvp_status = guest.rsvp_status
+    prev_party_size = guest.party_size
     for key, value in changed.items():
         setattr(guest, key, value)
 
@@ -351,6 +352,21 @@ def update_guest(
     # ממנגנון אישורי ההגעה עצמו (routers/confirm.py) — כדי שתופיע יחד איתם
     # ב"עדכוני אישורי הגעה" בתמונת המצב. נכתבת רק כשהסטטוס באמת השתנה, כדי
     # שלא ייווצר אירוע כפול על שינוי לא-שינוי (למשל עריכה שלא נגעה בסטטוס).
+    # יומן פעילות: שינוי כמות המוזמנים ("אביב שינה את כמות המוזמנים של
+    # משפחת כהן מ-2 ל-4"). זו אחת הפעולות שהכי חשוב לדעת מי עשה, כי היא
+    # משפיעה ישירות על המספר שנמסר לאולם — ובניהול משותף שני הצדדים
+    # משנים אותה.
+    if "party_size" in changed and guest.party_size != prev_party_size:
+        audit.record(
+            db, "guest_party_size_update",
+            event_id=event.id, user_id=user.id,
+            detail=(
+                f"כמות המוזמנים של {guest.full_name} השתנתה "
+                f"מ-{prev_party_size} ל-{guest.party_size}"
+            ),
+            ip=request.client.host if request.client else None,
+        )
+
     if "rsvp_status" in changed and guest.rsvp_status != prev_rsvp_status:
         prev_label = _RSVP_STATUS_LABELS_HE.get(prev_rsvp_status, prev_rsvp_status)
         new_label = _RSVP_STATUS_LABELS_HE.get(guest.rsvp_status, guest.rsvp_status)

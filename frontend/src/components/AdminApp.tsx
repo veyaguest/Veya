@@ -14,6 +14,7 @@ import {
   adminResetPassword,
   adminUpdateUser,
   adminUpdateVenue,
+  type AdminDeleteUserMode,
 } from '../api'
 import type {
   AdminAuditRow,
@@ -367,6 +368,103 @@ function ConfirmDialog({
   )
 }
 
+/** דיאלוג מחיקת משתמש — שתי אפשרויות: מחיקת החשבון בלבד (האירועים נשארים),
+ * או מחיקת החשבון וכל האירועים בבעלותו (בלתי הפיך, דורש אישור מפורש). */
+function DeleteUserDialog({
+  userLabel,
+  eventsCount,
+  busy,
+  onConfirm,
+  onCancel,
+}: {
+  userLabel: string
+  eventsCount: number
+  busy?: boolean
+  onConfirm: (mode: AdminDeleteUserMode) => void
+  onCancel: () => void
+}) {
+  const [mode, setMode] = useState<AdminDeleteUserMode>('user_only')
+  const [ack, setAck] = useState(false)
+  const isDestructive = mode === 'user_and_events'
+  const canConfirm = !isDestructive || ack
+
+  return (
+    <div className="overlay" onClick={onCancel}>
+      <div className="dialog adm-confirm adm-delete-user" onClick={(e) => e.stopPropagation()}>
+        <h3 className="adm-confirm-title">מחיקת {userLabel}</h3>
+        <p className="adm-confirm-body">
+          {eventsCount > 0
+            ? `למשתמש הזה יש ${eventsCount} אירועים. בחרו מה קורה להם:`
+            : 'למשתמש הזה אין אירועים משויכים.'}
+        </p>
+
+        <label className="adm-delete-option">
+          <input
+            type="radio"
+            name="delete-mode"
+            checked={mode === 'user_only'}
+            onChange={() => {
+              setMode('user_only')
+              setAck(false)
+            }}
+          />
+          <span>
+            <strong>משתמש בלבד</strong>
+            <small>מחיקת החשבון בלבד. כל האירועים והנתונים שלהם (מוזמנים, הודעות, סידור הושבה) נשארים בשלמותם.</small>
+          </span>
+        </label>
+
+        <label className="adm-delete-option">
+          <input
+            type="radio"
+            name="delete-mode"
+            checked={mode === 'user_and_events'}
+            onChange={() => setMode('user_and_events')}
+          />
+          <span>
+            <strong>משתמש + כל האירועים</strong>
+            <small>
+              מחיקת המשתמש{eventsCount > 0 ? ` וכל ${eventsCount} האירועים בבעלותו` : ''} — כולל
+              מוזמנים, RSVP, הודעות, סידורי הושבה וכל נתון תלוי אחר.
+            </small>
+          </span>
+        </label>
+
+        {isDestructive && (
+          <div className="adm-delete-warning">
+            <p>
+              ⚠️ פעולה בלתי הפיכה. {eventsCount > 0 ? `${eventsCount} האירועים` : 'האירועים'} וכל
+              הנתונים התלויים בהם יימחקו לצמיתות ולא ניתן יהיה לשחזר אותם.
+            </p>
+            <label className="adm-delete-ack">
+              <input
+                type="checkbox"
+                checked={ack}
+                onChange={(e) => setAck(e.target.checked)}
+              />
+              <span>אני מבין/ה שהפעולה בלתי הפיכה ומאשר/ת מחיקה מלאה</span>
+            </label>
+          </div>
+        )}
+
+        <div className="adm-confirm-actions">
+          <button type="button" className="btn-ghost" onClick={onCancel} disabled={busy}>
+            ביטול
+          </button>
+          <button
+            type="button"
+            className="btn-danger"
+            onClick={() => onConfirm(mode)}
+            disabled={busy || !canConfirm}
+          >
+            {busy ? 'רגע…' : 'מחיקה סופית'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** כרטיס משתמש מלא — פרופיל, עריכה, אירועים, היסטוריית התחברות, ופעולות אדמין. */
 function AdminUserDialog({
   userId,
@@ -473,12 +571,12 @@ function AdminUserDialog({
     }
   }
 
-  async function deleteUser() {
+  async function deleteUser(mode: AdminDeleteUserMode) {
     if (!detail) return
     setBusy(true)
     setError(null)
     try {
-      await adminDeleteUser(detail.id)
+      await adminDeleteUser(detail.id, mode)
       onChanged()
       onClose()
     } catch (err) {
@@ -754,11 +852,9 @@ function AdminUserDialog({
           />
         )}
         {confirm === 'delete' && detail && (
-          <ConfirmDialog
-            title="למחוק את המשתמש?"
-            body={`פעולה בלתי-הפיכה: ${detail.display_name || detail.email} יימחק לצמיתות. אם יש למשתמש אירועים, המחיקה תיחסם.`}
-            confirmLabel="מחיקה סופית"
-            danger
+          <DeleteUserDialog
+            userLabel={detail.display_name || detail.email}
+            eventsCount={detail.events.length}
             busy={busy}
             onConfirm={deleteUser}
             onCancel={() => setConfirm(null)}

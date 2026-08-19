@@ -5,12 +5,26 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import audit, auth, legal, models, schemas
+from app import audit, auth, legal, models, partners, schemas
 from app.account import delete_event_cascade
 from app.database import get_db, set_request_identity
 from app.ratelimit import auth_limiter, client_ip
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _user_read(db: Session, user: models.User) -> schemas.UserRead:
+    """``UserRead`` מלא — כולל שלושת השדות המחושבים שאינם על ה-ORM.
+
+    מרוכז כאן כדי שכל מסלול שמחזיר משתמש (הרשמה, כניסה, גוגל, /me, עדכון
+    פרופיל) יחזיר בדיוק את אותה תמונת מצב — אחרת הפרונט היה מקבל
+    ``email_verified`` נכון במסך אחד ושגוי באחר.
+    """
+    data = schemas.UserRead.model_validate(user)
+    data.needs_reconsent = legal.needs_reconsent(db, user.id)
+    data.email_verified = auth.is_email_verified(user)
+    data.profile_complete = auth.profile_complete(user)
+    return data
 
 
 @router.post("/register", response_model=schemas.TokenResponse, status_code=201)
@@ -75,11 +89,15 @@ def register(payload: schemas.UserCreate, request: Request, db: Session = Depend
         ip=ip,
     )
 
+    # מנפיק טוקן אימות ושולח את מייל האימות. נשמר באותה טרנזקציה עם
+    # ההסכמות, ולכן ה-commit שלמטה מכסה גם אותו.
+    auth.send_verification_email(db, user)
+
     db.commit()
     # אין צורך ב-refresh: expire_on_commit=False (ראו app/database.py) — האובייקט
     # כבר מכיל את כל הערכים מה-INSERT (id/created_at), בלי שאילתה נוספת אחרי commit.
     token = auth.create_access_token(user)
-    return schemas.TokenResponse(access_token=token, user=user)
+    return schemas.TokenResponse(access_token=token, user=_user_read(db, user))
 
 
 @router.post("/login", response_model=schemas.TokenResponse)
@@ -108,7 +126,7 @@ def login(payload: schemas.LoginRequest, request: Request, db: Session = Depends
     except Exception:
         db.rollback()
     token = auth.create_access_token(user)
-    return schemas.TokenResponse(access_token=token, user=user)
+    return schemas.TokenResponse(access_token=token, user=_user_read(db, user))
 
 
 @router.post("/google/exchange", response_model=schemas.TokenResponse)
@@ -203,7 +221,7 @@ def google_exchange(
         db.rollback()
 
     token = auth.create_access_token(user)
-    return schemas.TokenResponse(access_token=token, user=user)
+    return schemas.TokenResponse(access_token=token, user=_user_read(db, user))
 
 
 @router.get("/me", response_model=schemas.UserRead)
@@ -211,10 +229,8 @@ def me(
     db: Session = Depends(get_db),
     user: models.User = Depends(auth.get_current_user),
 ):
-    """מחזיר את פרטי המשתמש המחובר (בדיקת תקינות טוקן) + needs_reconsent."""
-    data = schemas.UserRead.model_validate(user)
-    data.needs_reconsent = legal.needs_reconsent(db, user.id)
-    return data
+    """פרטי המשתמש המחובר + מצב ההסכמות, אימות המייל ושלמות הפרטים."""
+    return _user_read(db, user)
 
 
 @router.post("/consent", status_code=204)
@@ -236,6 +252,108 @@ def accept_consent(
         detail=f"אישור מחדש: {', '.join(payload.types)}", ip=ip,
     )
     db.commit()
+
+
+# ---------------------------------------------------------------------------
+# אימות כתובת המייל
+# ---------------------------------------------------------------------------
+
+
+@router.post("/verify-email/resend", status_code=200)
+def resend_verification(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(auth.get_current_user),
+):
+    """שולח מחדש את מייל האימות למשתמש המחובר."""
+    if auth.is_email_verified(user):
+        return {"already_verified": True, "sent": False}
+    sent = auth.send_verification_email(db, user)
+    db.commit()
+    if not sent:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="לא הצלחנו לשלוח את המייל כרגע. אפשר לנסות שוב עוד רגע",
+        )
+    return {"already_verified": False, "sent": True}
+
+
+@router.post("/verify-email/change", response_model=schemas.UserRead)
+def change_unverified_email(
+    payload: schemas.EmailChangeRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(auth.get_current_user),
+):
+    """מתקן כתובת מייל שגויה **לפני** שאומתה, ושולח אליה אימות חדש.
+
+    מוגבל בכוונה לחשבון שטרם אומת: אחרי שהכתובת אומתה, החלפתה היא פעולה
+    רגישה יותר (היא מזהה הכניסה לחשבון) ודורשת תהליך משלה — לא נפתח כאן
+    דלת אחורית לשינוי כתובת מאומתת.
+    """
+    if auth.is_email_verified(user):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="כתובת המייל הזו כבר מאומתת",
+        )
+    if payload.email == user.email:
+        # אותה כתובת — פשוט שולחים שוב, בלי להיכשל.
+        auth.send_verification_email(db, user)
+        db.commit()
+        return _user_read(db, user)
+
+    taken = auth.find_user_by_email(db, payload.email)
+    if taken is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="כתובת האימייל כבר רשומה במערכת",
+        )
+
+    tracked = db.get(models.User, user.id) or user
+    tracked.email = payload.email
+    auth.send_verification_email(db, tracked)
+    audit.record(
+        db, "email_changed", user_id=tracked.id,
+        detail=f"החלפת כתובת מייל לפני אימות ל-{payload.email}",
+        ip=client_ip(request),
+    )
+    db.commit()
+    return _user_read(db, tracked)
+
+
+@router.post("/verify-email/confirm", response_model=schemas.TokenResponse)
+def confirm_verification(
+    payload: schemas.VerifyEmailRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """מאמת את כתובת המייל לפי הטוקן מהקישור, ומחזיר טוקן התחברות.
+
+    נתיב **ציבורי** במכוון (בלי ``get_current_user``): המשתמש עשוי ללחוץ על
+    הקישור בדפדפן אחר או במכשיר אחר, שבו הוא לא מחובר. הטוקן החד-פעמי הוא
+    ההוכחה, ולכן הוא גם מספיק כדי להנפיק כניסה — בדיוק כמו קישור אימות
+    בכל מוצר אחר. ראו ``auth.consume_email_verification``: הטוקן נמחק
+    ברגע המימוש, כך שאי אפשר להשתמש בו שוב.
+    """
+    user = auth.consume_email_verification(db, payload.token)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="הקישור לאימות כבר לא תקף. אפשר לבקש קישור חדש",
+        )
+    if user.disabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="החשבון הזה הושבת. אפשר לפנות אלינו כדי לברר למה",
+        )
+    set_request_identity(user.id)
+    audit.record(
+        db, "email_verified", user_id=user.id,
+        detail=f"אימות כתובת מייל: {user.email}", ip=client_ip(request),
+    )
+    db.commit()
+    return schemas.TokenResponse(
+        access_token=auth.create_access_token(user), user=_user_read(db, user)
+    )
 
 
 @router.get("/me/export")
@@ -354,7 +472,45 @@ def delete_my_account(
         select(models.Event).where(models.Event.owner_id == user.id)
     ).all()
     for event in owned_events:
+        # אירוע בניהול משותף לא נמחק כשאחד המנהלים עוזב — הוא עובר לבעלות
+        # המנהל/ת שנשאר/ת. אחרת מחיקת חשבון אחד הייתה מוחקת לבן/בת הזוג את
+        # כל המוזמנים, אישורי ההגעה וההושבה, בלי שהוא/היא ביקשו דבר.
+        remaining = [
+            m for m in partners.managers_of(db, event) if m.id != user.id
+        ]
+        if remaining:
+            heir = remaining[0]
+            # קריטי: מעבירים בעלות דרך ה-relationship ולא ע"י השמה ישירה
+            # ל-owner_id. ל-``User.events`` יש relationship, ולכן מחיקת
+            # המשתמש למטה גורמת ל-SQLAlchemy לאפס (NULL) את ה-FK של כל
+            # אירוע שעדיין נמצא באוסף שלו בזיכרון — וזה היה דורס את ההשמה
+            # הישירה ומשאיר את האירוע בלי בעלים בכלל (נתפס בבדיקה 20).
+            # השמה דרך ``event.owner`` מעדכנת את שני צדדי הקשר, כך שהאירוע
+            # יוצא מהאוסף של הנמחק ונכנס לזה של היורש.
+            event.owner = db.get(models.User, heir.id)
+            # שורת החברות של היורש מיותרת עכשיו — הוא הבעלים, והבעלים לעולם
+            # אינו מיוצג ב-event_members (ראו models.EventMember).
+            leftover = partners.partner_member(db, event.id, heir.id)
+            if leftover is not None:
+                db.delete(leftover)
+            audit.record(
+                db, "event_ownership_transferred", event_id=event.id,
+                detail=f"האירוע עבר לניהול {heir.display_name or heir.email} "
+                       f"לאחר מחיקת חשבון של {user.email}",
+                ip=ip,
+            )
+            continue
         delete_event_cascade(db, event)
+
+    # הזמנות ששלח/קיבל — נמחקות איתו. הן נושאות FK למשתמש, ואין להן ערך
+    # אחרי שהחשבון נעלם (אפשר תמיד לשלוח הזמנה חדשה).
+    for invitation in db.scalars(
+        select(models.EventInvitation).where(
+            (models.EventInvitation.invited_by == user.id)
+            | (models.EventInvitation.accepted_by == user.id)
+        )
+    ).all():
+        db.delete(invitation)
 
     for member in db.scalars(
         select(models.EventMember).where(
@@ -408,7 +564,7 @@ def update_profile(
     if payload.phone is not None:
         user.phone = payload.phone
     db.commit()
-    return user
+    return _user_read(db, user)
 
 
 @router.post("/change-password", response_model=schemas.TokenResponse)
@@ -431,4 +587,4 @@ def change_password(
     user.token_version = (user.token_version or 1) + 1
     db.commit()
     token = auth.create_access_token(user)
-    return schemas.TokenResponse(access_token=token, user=user)
+    return schemas.TokenResponse(access_token=token, user=_user_read(db, user))

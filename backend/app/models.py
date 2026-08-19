@@ -43,6 +43,16 @@ class User(Base):
     # תמונת פרופיל — כרגע מגיעה רק ממשתמשי גוגל (Supabase user_metadata.picture).
     # משתמשי אימייל+סיסמה נשארים עם מחרוזת ריקה; אין העלאת תמונה ידנית עדיין.
     avatar_url: Mapped[str] = mapped_column(String, default="")
+    # מתי כתובת המייל אומתה. None = טרם אומתה. משתמשי גוגל מסומנים כמאומתים
+    # מיד (גוגל כבר אימתה את הכתובת מולם), ומשתמשים שנרשמו לפני שהאימות
+    # הוצג במערכת מסומנים כמאומתים במיגרציה — כדי לא לנעול חשבונות קיימים.
+    email_verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # ה-hash של טוקן האימות הפעיל (אף פעם לא הטוקן עצמו — אותו עיקרון כמו
+    # ההזמנות: מי שמשיג גישה ל-DB לא יכול להתחזות לבעל הכתובת).
+    email_verification_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    email_verification_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
     # אדמין = הבעלים של המערכת, רואה ומנהל את כל המשתמשים והאירועים.
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     # סוג החשבון: couple (זוג, ברירת מחדל) / planner (מפיק) / venue (אולם).
@@ -218,14 +228,51 @@ class LoginEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class EventInvitation(Base):
+    """הזמנה לניהול משותף של אירוע — נשלחת במייל לבן/בת הזוג.
+
+    למה טבלה נפרדת מ-``EventMember``: חברות היא מצב קיים ("יש לך גישה"),
+    והזמנה היא תהליך ("שלחנו קישור, אולי יתקבל"). ההזמנה חייבת להיות תקפה
+    לפני שקיים בכלל משתמש בצד השני — מי שמקבל את המייל אולי עדיין לא נרשם.
+
+    אבטחה: הטוקן עצמו לא נשמר — רק ה-hash שלו (``token_hash``). הטוקן המלא
+    קיים רק בקישור שנשלח במייל. כך גם למי שיש גישת קריאה ל-DB אין דרך לייצר
+    קישור הצטרפות תקף. מזהה האירוע לעולם אינו משמש כהרשאה בפני עצמו.
+    """
+
+    __tablename__ = "event_invitations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
+    # הכתובת שאליה נשלחה ההזמנה — רק חשבון עם הכתובת הזו יוכל לממש אותה.
+    invited_email: Mapped[str] = mapped_column(String, index=True)
+    invited_by: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String, index=True)
+    # pending / accepted / expired / cancelled
+    status: Mapped[str] = mapped_column(String, default="pending", index=True)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # מי מימש בפועל את ההזמנה (לתיעוד — לא בהכרח זהה ל-invited_email אם
+    # בעתיד נאפשר מימוש גמיש יותר; היום זו תמיד התאמה מדויקת).
+    accepted_by: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class EventMember(Base):
-    """שיתוף גישה לאירוע — מפיק/אולם שקיבלו הרשאה לאירוע של זוג מסוים.
+    """שיתוף גישה לאירוע — מי שאינו הבעלים אך יש לו גישה לאירוע.
 
-    הבעלים (``Event.owner_id``) תמיד עם גישה מלאה ואינו מיוצג כאן. שורה בטבלה
-    הזו מייצגת גישה *חלקית* שניתנה במפורש למשתמש אחר, לפי רשימת ``permissions``.
+    הבעלים (``Event.owner_id``) תמיד עם גישה מלאה ואינו מיוצג כאן.
 
-    שלב 1 בלבד: הטבלה קיימת אך אין עדיין שום קוד שיוצר/קורא ממנה — לא נוגעת
-    בהתנהגות הקיימת.
+    שני סוגי חברות שונים במהותם:
+    - ``partner`` — בן/בת הזוג. מנהל/ת שווה לכל דבר: אותה גישה בדיוק כמו
+      הבעלים, לאותו אירוע, בלי שכפול נתונים. זה הבסיס ל"מנהלים את האירוע
+      יחד" (שני חשבונות, אירוע אחד).
+    - ``planner`` / ``venue`` — מפיק או אולם. גישה *חלקית* לפי רשימת
+      ``permissions``, בדיוק כפי שהייתה עד היום.
     """
 
     __tablename__ = "event_members"
@@ -233,7 +280,7 @@ class EventMember(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    role: Mapped[str] = mapped_column(String)  # planner/venue
+    role: Mapped[str] = mapped_column(String)  # partner/planner/venue
     # רשימת מחרוזות הרשאה, למשל ["view_guests", "manage_seating"].
     permissions: Mapped[list] = mapped_column(JSON, default=list)
     invited_by_id: Mapped[Optional[int]] = mapped_column(

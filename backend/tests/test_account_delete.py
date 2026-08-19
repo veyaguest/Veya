@@ -98,6 +98,9 @@ def _assert_event_fully_gone(db: Session, event_id: int) -> None:
     assert db.scalars(select(models.AutomationRule).where(models.AutomationRule.event_id == event_id)).first() is None
     assert db.scalars(select(models.MessageTemplate).where(models.MessageTemplate.event_id == event_id)).first() is None
     assert db.scalars(select(models.EventMember).where(models.EventMember.event_id == event_id)).first() is None
+    assert db.scalars(
+        select(models.EventInvitation).where(models.EventInvitation.event_id == event_id)
+    ).first() is None
 
 
 def test_1_event_without_messages() -> None:
@@ -265,6 +268,25 @@ def test_13_deleting_one_event_does_not_touch_another() -> None:
     print("✓ 13: מחיקת אירוע אחד לא נוגעת בנתונים של אירוע אחר")
 
 
+def test_14_event_with_open_invitation() -> None:
+    """event_invitations (הזמנת שיתוף-אירוע, ראו models.EventInvitation) הוא FK
+    רגיל בלי cascade — בדיוק כמו event_messages בזמנו. בלי הניקוי הזה, מחיקת
+    אירוע עם הזמנת שיתוף פתוחה הייתה נכשלת עם IntegrityError."""
+    db = _fresh_session()
+    u = _make_user(db)
+    ev = _make_event(db, u.id)
+    db.add(models.EventInvitation(
+        event_id=ev.id, invited_email="partner@example.com",
+        invited_by=u.id, token_hash="hash123",
+    ))
+    db.commit()
+    delete_event_cascade(db, ev)
+    db.commit()
+    _assert_event_fully_gone(db, ev.id)
+    assert db.query(models.EventInvitation).count() == 0
+    print("✓ 14: אירוע עם הזמנת שיתוף פתוחה נמחק בהצלחה, בלי הזמנה יתומה")
+
+
 if __name__ == "__main__":
     test_1_event_without_messages()
     test_2_event_with_one_message()
@@ -276,5 +298,6 @@ if __name__ == "__main__":
     test_11_account_deletion_with_events_and_messages()
     test_12_no_orphaned_data_left()
     test_13_deleting_one_event_does_not_touch_another()
+    test_14_event_with_open_invitation()
     print()
-    print("=== כל 13 תרחישי מחיקת אירוע/חשבון עברו ===")
+    print("=== כל 14 תרחישי מחיקת אירוע/חשבון עברו ===")

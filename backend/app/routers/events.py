@@ -1,14 +1,19 @@
 """Router לניהול אירועים של המשתמש (שלב 8): רשימה, יצירה, מחיקה.
 
-כל משתמש רואה את האירועים שבבעלותו, ובנוסף (שלב multi-tenant) אירועים
-שבהם הוא חבר-אירוע פעיל (מפיק/אולם שהוזמנו). ניהול (יצירה/מחיקה) עדיין
-מוגבל לבעלים בלבד.
+**אירוע אחד למשתמש.** לזוג יש אירוע אחד שהוא מנהל — בבעלותו, או כבן/בת זוג
+שהצטרפו לאירוע קיים. ניסיון ליצור אירוע שני נחסם כאן (409). מי שרוצה לנהל
+את האירוע יחד עם בן/בת הזוג לא יוצר אירוע נוסף אלא מוזמן לאותו אירוע —
+ראו ``app/partners.py`` ו-``app/routers/partner.py``.
+
+מפיק/אולם הם סיפור אחר: אין להם אירוע בבעלות, והם רואים אירועים ששותפו
+איתם כחברי-אירוע. הרשימה כאן משרתת גם אותם.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app import communication, models, schemas
+from app import auth as auth_module
+from app import communication, models, partners, schemas
 from app.account import delete_event_cascade
 from app.auth import get_current_owner
 from app.database import IS_POSTGRES, get_db
@@ -51,13 +56,38 @@ def create_event(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_owner),
 ):
-    """יוצר אירוע חדש בבעלות המשתמש.
+    """יוצר אירוע חדש בבעלות המשתמש — אחד בלבד, ורק לחשבון שהושלם ואומת.
+
+    שלוש הבדיקות שלפני היצירה, לפי הסדר:
+    1. **אירוע אחד למשתמש** — אם המשתמש כבר מנהל אירוע (בבעלות או כבן/בת
+       זוג), אין ליצור עוד אחד.
+    2. **פרטים מלאים** — שם מלא וטלפון תקין. משתמשים ותיקים שנרשמו לפני
+       שהשדות האלה היו חובה לא נשברים: הם מתבקשים להשלים פרטים כאן.
+    3. **מייל מאומת** — כדי שנוכל להגיע לזוג, ושמי שהזמינו אותו יידע שהוא
+       אכן בעל הכתובת.
 
     ב-Postgres דרך app_create_event (SECURITY DEFINER): INSERT ...RETURNING
     (ברירת המחדל של SQLAlchemy) דורש שהשורה תעבור גם את events_select, לא
     רק את ה-WITH CHECK של events_insert — עוקפים זאת כמו בשאר מקומות ה-
     INSERT הרגישים (ראו app/auth.py::register_user_row להסבר המלא).
     """
+    existing = partners.my_event(db, user)
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="כבר יש לך אירוע. אפשר לנהל אירוע אחד בכל חשבון",
+        )
+    if not auth_module.profile_complete(user):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="לפני שיוצרים אירוע צריך להשלים שם מלא ומספר טלפון",
+        )
+    if not auth_module.is_email_verified(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="צריך לאמת את כתובת המייל לפני יצירת האירוע",
+        )
+
     if IS_POSTGRES:
         row = db.execute(
             text("SELECT * FROM app_create_event(:owner_id, :event_type, :groom_name, :bride_name, :venue_name)"),

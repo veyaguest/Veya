@@ -480,6 +480,9 @@ export interface AuditLogRow {
   detail: string
   ip: string | null
   created_at: string
+  // שם מי שביצע את הפעולה. ריק בפעולות מערכת/אנונימיות (למשל אישור הגעה
+  // שהגיע ממוזמן דרך הקישור האישי, בלי משתמש מחובר).
+  actor_name?: string
 }
 
 // ---- מפת אולם (שלב 7) ----
@@ -649,6 +652,71 @@ export interface User {
   // True אם המשתמש אישר גרסה ישנה של תנאי השימוש/מדיניות הפרטיות —
   // ראו legal.py::needs_reconsent (backend) ו-ReconsentModal (frontend).
   needs_reconsent?: boolean
+  // האם כתובת המייל אומתה. false ⇒ מציגים את מסך "אימות כתובת המייל"
+  // ואי אפשר ליצור אירוע.
+  email_verified?: boolean
+  // האם יש למשתמש שם מלא + טלפון תקין. false ⇒ מציגים השלמת פרטים לפני
+  // יצירת אירוע (משתמשים ותיקים שנרשמו לפני שהשדות היו חובה).
+  profile_complete?: boolean
+}
+
+// ---- ניהול משותף של האירוע (בן/בת זוג) ----
+
+/** מנהל/ת אירוע כפי שמוצג במסך "ניהול משותף". */
+export interface EventManager {
+  user_id: number
+  display_name: string
+  email: string
+  role_label: string
+  is_me: boolean
+}
+
+/** האירוע היחיד של המשתמש. */
+export interface MyEvent {
+  id: number
+  title: string
+  event_type: EventType
+  event_date: string
+  venue_name: string
+}
+
+/** הזמנה ממתינה לניהול משותף (ללא הטוקן — הוא קיים רק במייל). */
+export interface PartnerInvite {
+  id: number
+  invited_email: string
+  status: string
+  created_at: string
+  expires_at?: string | null
+  email_sent: boolean
+}
+
+/** כל מה שמסך "החשבון שלי" צריך, בקריאה אחת. */
+export interface AccountOverview {
+  user: User
+  event?: MyEvent | null
+  managers: EventManager[]
+  pending_invite?: PartnerInvite | null
+  can_invite_partner: boolean
+}
+
+/** מצב ההזמנה בדף ההצטרפות — כל ערך מקבל מסך משלו. */
+export type InvitationState =
+  | 'ready'
+  | 'needs_login'
+  | 'wrong_account'
+  | 'expired'
+  | 'used'
+  | 'cancelled'
+  | 'invalid'
+  | 'already_member'
+  | 'joined'
+
+export interface InvitationPreview {
+  state: InvitationState
+  event_title: string
+  inviter_name: string
+  invited_email: string
+  message: string
 }
 
 export interface TokenResponse {

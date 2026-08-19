@@ -77,6 +77,9 @@ import type {
   TokenResponse,
   User,
   VenueSuggestion,
+  AccountOverview,
+  InvitationPreview,
+  PartnerInvite,
 } from './types'
 import {
   clearAuth,
@@ -254,13 +257,6 @@ export async function deleteMyAccount(): Promise<void> {
   if (!res.ok) throw await toError(res)
 }
 
-/** מייצא את כל המידע האישי של המשתמש המחובר כאובייקט JSON. */
-export async function exportMyData(): Promise<Record<string, unknown>> {
-  const res = await apiFetch('/auth/me/export')
-  if (!res.ok) throw await toError(res)
-  return res.json()
-}
-
 export async function login(
   email: string,
   password: string,
@@ -423,8 +419,11 @@ export async function adminEnableUser(userId: number): Promise<void> {
   if (!res.ok) throw await toError(res)
 }
 
-export async function adminDeleteUser(userId: number): Promise<void> {
-  const res = await apiFetch(`/admin/users/${userId}`, { method: 'DELETE' })
+/** מצב מחיקת משתמש: user_only = החשבון בלבד (האירועים נשארים) · user_and_events = החשבון + כל האירועים שלו. */
+export type AdminDeleteUserMode = 'user_only' | 'user_and_events'
+
+export async function adminDeleteUser(userId: number, mode: AdminDeleteUserMode): Promise<void> {
+  const res = await apiFetch(`/admin/users/${userId}?mode=${mode}`, { method: 'DELETE' })
   if (!res.ok) throw await toError(res)
 }
 
@@ -1289,6 +1288,84 @@ export async function callCenterRecordOutcome(
 /** התראות איכות-דאטה על מוזמני האירוע (כרגע: מספר טלפון שדווח כשגוי). */
 export async function guestDataAlerts(): Promise<GuestDataAlerts> {
   const res = await apiFetch('/guests/data-alerts')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- אימות כתובת המייל ----------------------------------------------------
+
+/** שולח מחדש את מייל האימות למשתמש המחובר. */
+export async function resendVerificationEmail(): Promise<{ sent: boolean }> {
+  const res = await apiFetch('/auth/verify-email/resend', { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** מתקן כתובת מייל שגויה **לפני** שאומתה, ושולח אליה אימות חדש. */
+export async function changeUnverifiedEmail(email: string): Promise<User> {
+  const res = await apiFetch('/auth/verify-email/change', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** מאמת את כתובת המייל לפי הטוקן מהקישור, ומחזיר טוקן התחברות.
+ * ציבורי בכוונה: הקישור עשוי להיפתח בדפדפן/מכשיר שבו המשתמש לא מחובר. */
+export async function confirmEmailVerification(token: string): Promise<TokenResponse> {
+  const res = await publicFetch('/auth/verify-email/confirm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- ניהול משותף של האירוע ------------------------------------------------
+
+/** כל מה שמסך "החשבון שלי" צריך, בקריאה אחת. */
+export async function getAccountOverview(): Promise<AccountOverview> {
+  const res = await apiFetch('/partner/overview')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** שולח לבן/בת הזוג הזמנה לנהל יחד את האירוע. שליחה חוזרת מבטלת קישור קודם. */
+export async function invitePartner(email: string): Promise<PartnerInvite> {
+  const res = await apiFetch('/partner/invite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** מבטל את ההזמנה הפתוחה — הקישור שנשלח מפסיק לעבוד. */
+export async function cancelPartnerInvite(): Promise<void> {
+  const res = await apiFetch('/partner/invite', { method: 'DELETE' })
+  if (!res.ok) throw await toError(res)
+}
+
+/** מה מצב ההזמנה — עובד גם כשלא מחוברים (משמש את דף ההצטרפות). */
+export async function previewInvitation(token: string): Promise<InvitationPreview> {
+  // מחובר → נשלח טוקן ונקבל מצב מדויק (ready/wrong_account); לא מחובר →
+  // publicFetch, והשרת יחזיר needs_login. אותו endpoint לשני המקרים.
+  const path = `/partner/invitations/${encodeURIComponent(token)}`
+  const res = getToken() ? await apiFetch(path) : await publicFetch(path)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** מצרף את המשתמש המחובר לאירוע הקיים כמנהל/ת שווה. */
+export async function acceptInvitation(token: string): Promise<InvitationPreview> {
+  const res = await apiFetch(
+    `/partner/invitations/${encodeURIComponent(token)}/accept`,
+    { method: 'POST' },
+  )
   if (!res.ok) throw await toError(res)
   return res.json()
 }

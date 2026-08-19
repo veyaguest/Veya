@@ -88,6 +88,10 @@ class EventTerms:
     side_bride: str = "כלה"     # תווית צד bride
     guests_label: str = "מוזמנים"  # תואם ל-guestsLabel ב-eventTypes.ts
     gift_label: str = "מתנה לזוג"  # תואם ל-giftLabel ב-eventTypes.ts
+    # כותרת האירוע לתצוגה ("החתונה של אביב ודנה"). ``{hosts}`` מוחלף בשמות
+    # בעלי האירוע. ברירת המחדל גנרית בכוונה — סוג שלא הוגדר לו ניסוח משלו
+    # יקבל "האירוע של ..." ולא ניסוח שבור.
+    display_title: str = "האירוע של {hosts}"
     group_options: list[tuple[str, str]] = field(default_factory=lambda: WEDDING_GROUP_OPTIONS)
 
 
@@ -99,6 +103,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration="חתונה",
         celebration_construct="חתונת",
         hosts="בני הזוג",
+        display_title="החתונה של {hosts}",
         emoji="💍",
     ),
     "bar_mitzvah": EventTerms(
@@ -107,6 +112,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration="אירוע בר המצווה",
         celebration_construct="בר המצווה של",
         hosts="החוגג",
+        display_title="בר המצווה של {hosts}",
         emoji="🕯️",
         has_two_hosts=False,
         host_field_label="שם החוגג",
@@ -122,6 +128,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration="אירוע בת המצווה",
         celebration_construct="בת המצווה של",
         hosts="החוגגת",
+        display_title="בת המצווה של {hosts}",
         emoji="🕯️",
         has_two_hosts=False,
         host_field_label="שם החוגגת",
@@ -137,6 +144,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration="חינה",
         celebration_construct="חינת",
         hosts="בני הזוג",
+        display_title="החינה של {hosts}",
         emoji="🌿",
         group_options=HENNA_GROUP_OPTIONS,
     ),
@@ -146,6 +154,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration="אירוע ברית",
         celebration_construct="ברית של",
         hosts="המשפחה",
+        display_title="הברית של {hosts}",
         emoji="🍼",
         has_two_hosts=False,
         host_field_label="שם המשפחה",
@@ -161,6 +170,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration="אירוע בריתה",
         celebration_construct="בריתה של",
         hosts="המשפחה",
+        display_title="הבריתה של {hosts}",
         emoji="🎀",
         has_two_hosts=False,
         host_field_label="שם המשפחה",
@@ -176,6 +186,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         celebration="אירוע",
         celebration_construct="אירוע של",
         hosts="המארגנים",
+        display_title="האירוע של {hosts}",
         emoji="✨",
         has_two_hosts=False,
         host_field_label="שם האירוע / החברה",
@@ -228,3 +239,21 @@ def side_axis_label(event_type: str | None) -> str:
         return raw[len("צד "):] if raw.startswith("צד ") else raw
 
     return f"{bare(terms.side_groom)}/{bare(terms.side_bride)}"
+
+
+def event_display_title(event_type: str | None, groom: str, bride: str) -> str:
+    """כותרת האירוע לתצוגה — "החתונה של אביב ודנה", "בר המצווה של יונתן".
+
+    משמשת בכל מקום שבו מוצג "האירוע שלי" למשתמש: מסך החשבון, מייל ההזמנה
+    לניהול משותף ומסך ההצטרפות. מרוכז כאן (ולא בכל קורא בנפרד) כדי שסוג
+    אירוע חדש יקבל את הניסוח הנכון בכל המסכים בבת אחת.
+
+    בלי שמות כלל מוחזרת כותרת הסוג בלבד ("חתונה") — לא "החתונה של בני הזוג",
+    שנשמע כמו תקלה.
+    """
+    terms = get_event_terms(event_type)
+    a = (groom or "").strip()
+    b = (bride or "").strip()
+    if not a and not b:
+        return terms.celebration
+    return terms.display_title.format(hosts=hosts_names(event_type, groom, bride))

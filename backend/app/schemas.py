@@ -766,9 +766,43 @@ class AssignSeatResult(BaseModel):
 # ---- משתמשים והתחברות (שלב 8) ----
 
 
+# ── ולידציה של פרטי חשבון (שם + טלפון) ──────────────────────────────────────
+# מקור אמת יחיד: אותם כללים בדיוק חלים בהרשמה (``UserCreate``), בהשלמת פרטים
+# ובעדכון פרופיל (``ProfileUpdate``) — כדי שלא ייווצר מצב שבו אפשר "להתחמק"
+# דרך מסך אחד. ההודעות בעברית טבעית, לא טכנית: המשתמש צריך להבין מה לתקן,
+# לא לקרוא את שם השדה בקוד.
+
+
+def validate_account_name(v: str) -> str:
+    """שם מלא של בעל/ת החשבון — חובה, ולא רווחים בלבד."""
+    v = (v or "").strip()
+    if not v:
+        raise ValueError("צריך למלא שם מלא")
+    if len(v) < 2:
+        raise ValueError("השם קצר מדי — אפשר למלא שם מלא")
+    return v
+
+
+def validate_account_phone(v: str) -> str:
+    """טלפון של בעל/ת החשבון — חובה, ובפורמט ישראלי תקין.
+
+    עוטף את ``normalize_israeli_phone`` (מקור האמת לפורמט, משותף עם טלפוני
+    המוזמנים) ומחליף את הודעת השגיאה הטכנית שלו בניסוח שאפשר לפעול לפיו.
+    """
+    raw = (v or "").strip()
+    if not raw:
+        raise ValueError("צריך למלא מספר טלפון")
+    try:
+        return normalize_israeli_phone(raw)
+    except ValueError:
+        raise ValueError("מספר הטלפון לא נראה תקין. אפשר לכתוב אותו כך: 050-1234567")
+
+
 class UserCreate(BaseModel):
     email: str
     password: str
+    # שם וטלפון הם שדות חובה: בלעדיהם אי אפשר לפנות לזוג, ובלעדיהם גם
+    # ההזמנה לניהול משותף לא יודעת בשם מי היא נשלחת. נאכף כאן ולא רק ב-UI.
     display_name: str = ""
     phone: str = ""
     # חובה: תיבת "אני מאשר/ת את תנאי השימוש ואת מדיניות הפרטיות" בהרשמה —
@@ -792,10 +826,15 @@ class UserCreate(BaseModel):
     def _password_valid(cls, v: str) -> str:
         return validate_password_strength(v)
 
+    @field_validator("display_name")
+    @classmethod
+    def _name_required(cls, v: str) -> str:
+        return validate_account_name(v)
+
     @field_validator("phone")
     @classmethod
     def _phone_valid(cls, v: str) -> str:
-        return normalize_israeli_phone(v)
+        return validate_account_phone(v)
 
     @field_validator("accepted_terms")
     @classmethod
@@ -834,17 +873,16 @@ class ProfileUpdate(BaseModel):
     @field_validator("display_name")
     @classmethod
     def _name_not_empty(cls, v: str) -> str:
-        v = (v or "").strip()
-        if not v:
-            raise ValueError("שם התצוגה לא יכול להיות ריק")
-        return v
+        return validate_account_name(v)
 
     @field_validator("phone")
     @classmethod
     def _phone_valid(cls, v: Optional[str]) -> Optional[str]:
+        # None = "לא נשלח שדה טלפון בבקשה" (עדכון חלקי) ולכן לא נבדק. ערך
+        # שכן נשלח חייב להיות תקין — כולל מחרוזת ריקה, שנחסמת.
         if v is None:
             return v
-        return normalize_israeli_phone(v)
+        return validate_account_phone(v)
 
 
 class PasswordChange(BaseModel):
@@ -874,6 +912,13 @@ class UserRead(BaseModel):
     # (app/legal.py::needs_reconsent) — לא שדה על ה-ORM, מחושב בזמן קריאה
     # ב-routers/auth.py::me, לכן ברירת המחדל כאן היא False בלבד.
     needs_reconsent: bool = False
+    # האם כתובת המייל אומתה. נגזר מ-``User.email_verified_at`` (ראו
+    # routers/auth.py) — הפרונט צריך רק "כן/לא" כדי להציג "✓ מאומת" ולחסום
+    # יצירת אירוע, לא את החותמת עצמה.
+    email_verified: bool = True
+    # האם חסרים פרטים שחובה למלא לפני יצירת אירוע (שם/טלפון). מאפשר לפרונט
+    # להציג השלמת פרטים למשתמשים קיימים בלי לנחש.
+    profile_complete: bool = True
 
 
 class ConsentAccept(BaseModel):
@@ -1270,7 +1315,12 @@ class ConfirmSubmit(BaseModel):
 
 
 class AuditLogRow(BaseModel):
-    """שורת יומן אבטחה לתצוגה בדשבורד המנהל."""
+    """שורת יומן פעילות לתצוגה בדשבורד המנהל.
+
+    ``actor_name`` נגזר ב-router (לא שדה על ה-ORM) כדי שיומן של אירוע
+    בניהול משותף יראה **מי** ביצע כל שינוי — "אביב שינה..." מול "דנה
+    שיבצה...". שני המנהלים רואים בדיוק את אותו יומן.
+    """
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -1279,6 +1329,7 @@ class AuditLogRow(BaseModel):
     detail: str
     ip: Optional[str] = None
     created_at: datetime
+    actor_name: str = ""
 
 
 # ---- Timeline של אישורי-ההגעה (המנוע החופשי הישן — כללי/תבניות/תור —
@@ -1686,3 +1737,102 @@ class GuestDataAlert(BaseModel):
 class GuestDataAlerts(BaseModel):
     phone_fix: list[GuestDataAlert] = []
     total: int = 0
+
+
+# ---- ניהול משותף של האירוע (בן/בת זוג) ----------------------------------
+
+
+class PartnerInviteCreate(BaseModel):
+    """הזמנת בן/בת זוג לניהול משותף — כתובת המייל שלהם בלבד."""
+
+    email: str
+
+    @field_validator("email")
+    @classmethod
+    def _email_valid(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("כתובת האימייל לא נראית תקינה")
+        return v
+
+
+class PartnerInviteRead(BaseModel):
+    """הזמנה ממתינה כפי שהיא מוצגת לשולח (בלי הטוקן — הוא רק במייל)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    invited_email: str
+    status: str
+    created_at: datetime
+    expires_at: Optional[datetime] = None
+    # False כשהמייל עצמו לא יצא (תקלת ספק) — ההזמנה נשמרה ואפשר לשלוח שוב.
+    email_sent: bool = True
+
+
+class InvitationPreview(BaseModel):
+    """מה שרואים בדף ההצטרפות, לפני ההצטרפות בפועל.
+
+    ``state`` מתאר מה לעשות עם ההזמנה, וכל ערך מקבל מסך משלו בפרונט:
+    ``ready`` (אפשר להצטרף) / ``needs_login`` (צריך להתחבר או להירשם) /
+    ``wrong_account`` (מחובר עם חשבון אחר) / ``expired`` / ``used`` /
+    ``cancelled`` / ``invalid`` (טוקן לא מוכר) / ``already_member``.
+    """
+
+    state: str
+    event_title: str = ""
+    inviter_name: str = ""
+    invited_email: str = ""
+    message: str = ""
+
+
+class EventManagerRead(BaseModel):
+    """מנהל/ת אירוע לתצוגה במסך "ניהול משותף"."""
+
+    user_id: int
+    display_name: str
+    email: str
+    # "מנהל האירוע" — מוצג לשני הצדדים באותה צורה: אין "בעלים" ו"משני".
+    role_label: str = "מנהל האירוע"
+    is_me: bool = False
+
+
+class MyEventRead(BaseModel):
+    """האירוע היחיד של המשתמש, כפי שהוא מוצג במסך החשבון."""
+
+    id: int
+    title: str
+    event_type: str = "wedding"
+    event_date: str = ""
+    venue_name: str = ""
+
+
+class AccountOverview(BaseModel):
+    """כל מה שמסך "החשבון שלי" צריך, בקריאה אחת."""
+
+    user: UserRead
+    event: Optional[MyEventRead] = None
+    managers: list[EventManagerRead] = []
+    pending_invite: Optional[PartnerInviteRead] = None
+    # האם המשתמש רשאי להזמין בן/בת זוג (יש אירוע, ואין עדיין שותף/ה).
+    can_invite_partner: bool = False
+
+
+class VerifyEmailRequest(BaseModel):
+    """מימוש קישור אימות המייל — הטוקן החד-פעמי מתוך הקישור."""
+
+    token: str
+
+
+class EmailChangeRequest(BaseModel):
+    """שינוי כתובת המייל לפני שהיא אומתה (טעות הקלדה בהרשמה)."""
+
+    email: str
+
+    @field_validator("email")
+    @classmethod
+    def _email_valid(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("כתובת האימייל לא נראית תקינה")
+        return v

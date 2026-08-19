@@ -2,6 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { getEvent, getStats, mediaUrl, readAudit, updateEvent } from '../api'
 import type { AuditLogRow, DashboardStats, EventDetails } from '../types'
 import type { ReadinessPage } from '../readiness'
+import { ActivityLog } from './ActivityLog'
+import { PartnerCta } from './PartnerCta'
 import { VenueAutocomplete } from './VenueAutocomplete'
 import { getEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
@@ -619,6 +621,10 @@ export function DashboardPage({ onNavigate }: Props) {
 
       {error && <p className="form-error">{error}</p>}
 
+      {/* "מנהלים את האירוע יחד?" — מוצג רק כשאין עדיין בן/בת זוג ואין הזמנה
+          פתוחה. הרכיב מחליט על עצמו ונעלם לבד ברגע שיש שותף/ה. */}
+      <PartnerCta />
+
       {!stats && <p className="dash-loading">{t.loadingData}</p>}
 
       {stats && stats.total_guests === 0 && (
@@ -675,6 +681,12 @@ export function DashboardPage({ onNavigate }: Props) {
                  למד, כחלק משמעותי מתמונת המצב (לא כרטיס צדדי קטן). ---- */}
             <section className="rsvp-feed-section">
               <RsvpUpdatesFeed rows={auditRows} />
+            </section>
+
+            {/* ---- יומן פעילות: מי שינה מה ומתי. מקבל משמעות אמיתית
+                 כשמנהלים את האירוע בשניים — שני המנהלים רואים אותו יומן. ---- */}
+            <section className="rsvp-feed-section">
+              <ActivityLog />
             </section>
 
             <div className="dash-stack">

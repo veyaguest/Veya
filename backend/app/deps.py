@@ -5,7 +5,7 @@ from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import models, roles
+from app import models, partners, roles
 from app.auth import get_current_user
 from app.database import get_db
 
@@ -25,9 +25,12 @@ class EventAccess:
     """דיפנדנסי גישה לאירוע — עם בדיקת הרשאה אופציונלית לחברי-אירוע.
 
     סדר הבדיקה: (1) בעלים — תמיד עובר. (2) אדמין-על (``is_admin``) — תמיד
-    עובר. (3) ``owner_only=True`` — אף חבר-אירוע לא עובר, בלי קשר להרשאות
-    (למשל עריכת פרטי הליבה של האירוע — שם/תאריך/סוג — נשארת רק לבעלים).
-    (4) חבר-אירוע פעיל (``EventMember`` עם ``status='active'``) — עובר רק אם
+    עובר. (3) בן/בת זוג (``EventMember`` עם ``role='partner'`` פעיל) — עובר
+    בדיוק כמו הבעלים, כולל ב-``owner_only``: שני בני הזוג מנהלים את אותו
+    אירוע באופן שווה, אין "בעלים ראשי" מבחינת המשתמש (ראו app/partners.py).
+    (4) ``owner_only=True`` — אף חבר-אירוע *אחר* (מפיק/אולם) לא עובר, בלי
+    קשר להרשאות (למשל עריכת פרטי הליבה של האירוע — שם/תאריך/סוג).
+    (5) חבר-אירוע פעיל (``EventMember`` עם ``status='active'``) — עובר רק אם
     ``permission`` לא התבקש, או שיש חפיפה בינו לבין רשימת ההרשאות שלו. אחרת
     404 (לא חושפים למשתמש שאירוע כלשהו קיים) או 403 (האירוע קיים אך חסרה
     הרשאה).
@@ -78,6 +81,12 @@ class EventAccess:
                 raise not_found
             if event.owner_id == user.id or user.is_admin:
                 return event
+            # בן/בת זוג = מנהל/ת שווה לבעלים. נבדק *לפני* owner_only ולפני
+            # בדיקת ההרשאות, בדיוק כמו הבעלים — אחרת השותף/ה היה נחסם
+            # מעריכת פרטי האירוע ומההגדרות, וזה בדיוק מה שהניהול המשותף
+            # אמור לאפשר.
+            if partners.partner_member(db, event.id, user.id) is not None:
+                return event
             if self.owner_only:
                 # פעולה ששמורה לבעלים/אדמין בלבד — חבר-אירוע לא עובר, בלי
                 # קשר לאילו הרשאות הוענקו לו (למשל שינוי שם בני הזוג/תאריך).
@@ -104,15 +113,12 @@ class EventAccess:
                     )
             return event
 
-        # בלי כותרת אירוע: ברירת המחדל היא האירוע הראשון בבעלות המשתמש
-        # (נוחות לזוג עם אירוע יחיד). למפיק/אולם אין אירוע בבעלות — הם
-        # יידרשו לבחור אירוע מפורש דרך X-Event-Id, כמו שהפרונט כבר עושה
-        # היום לכל אירוע פרט לראשון (ראו EventControls / App.tsx).
-        event = db.scalars(
-            select(models.Event)
-            .where(models.Event.owner_id == user.id)
-            .order_by(models.Event.id)
-        ).first()
+        # בלי כותרת אירוע: האירוע היחיד שהמשתמש מנהל — בבעלותו, ואם אין,
+        # האירוע שהוא הצטרף אליו כבן/בת זוג. כך מי שהוזמן לניהול משותף נכנס
+        # ישר לאירוע המשותף בלי לבחור אותו ידנית, בדיוק כמו הבעלים.
+        # למפיק/אולם אין אירוע כזה — הם יידרשו לבחור אירוע מפורש דרך
+        # X-Event-Id, כמו שהפרונט כבר עושה היום (ראו EventControls / App.tsx).
+        event = partners.my_event(db, user)
         if event is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

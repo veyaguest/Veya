@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createMyEvent, updateEvent } from '../api'
+import { createMyEvent, invitePartner, updateEvent } from '../api'
 import { setActiveEventType, setEventId } from '../authStore'
 import type { EventSummary, EventType } from '../types'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
@@ -11,10 +11,11 @@ interface Props {
   onCreated: (ev: EventSummary) => void
 }
 
-type StepKey = 'details' | 'guests'
+type StepKey = 'details' | 'partner' | 'guests'
 
 const STEPS: { key: StepKey; label: string; desc: string }[] = [
   { key: 'details', label: 'פרטי האירוע', desc: 'שמות, אולם, תאריך ותמונת ההזמנה' },
+  { key: 'partner', label: 'ניהול משותף', desc: 'להזמין את בן/בת הזוג' },
   { key: 'guests', label: 'הוספת מוזמנים', desc: 'אפשר להוסיף עוד בהמשך' },
 ]
 
@@ -31,6 +32,9 @@ export function OnboardingWizard({ onCreated }: Props) {
   const [guestCount, setGuestCount] = useState(0)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // שלב ההזמנה לניהול משותף — לעולם לא חוסם: אפשר לדלג ולחזור לזה מהדשבורד.
+  const [partnerEmail, setPartnerEmail] = useState('')
+  const [partnerSentTo, setPartnerSentTo] = useState<string | null>(null)
 
   const [form, setForm] = useState({
     event_type: 'wedding' as EventType,
@@ -106,9 +110,23 @@ export function OnboardingWizard({ onCreated }: Props) {
       }
 
       setEvent(ev)
-      setStep('guests')
+      setStep('partner')
     } catch (err) {
       setError(err instanceof Error ? err.message : strings.errors.eventCreateFailed)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function sendPartnerInvite(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setBusy(true)
+    try {
+      const invite = await invitePartner(partnerEmail)
+      setPartnerSentTo(invite.invited_email)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'לא הצלחנו לשלוח את ההזמנה')
     } finally {
       setBusy(false)
     }
@@ -295,6 +313,61 @@ export function OnboardingWizard({ onCreated }: Props) {
               </button>
             </div>
           </form>
+        ) : step === 'partner' ? (
+          <div className="onboard-guest-step">
+            {partnerSentTo ? (
+              <>
+                <p className="onboard-guest-count">
+                  שלחנו הזמנה ל-<span dir="ltr">{partnerSentTo}</span> ✓
+                </p>
+                <p className="onboard-subtitle onboard-guest-intro">
+                  ברגע שההזמנה תאושר, תנהלו את האירוע יחד — אותם מוזמנים, אותם
+                  אישורי הגעה, אותה הושבה.
+                </p>
+                <div className="onboard-actions">
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => setStep('guests')}
+                  >
+                    להמשך
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="onboard-subtitle onboard-guest-intro">
+                  VEYA נועדה לעזור לשניכם לנהל את האירוע. הזמינו את בן/בת הזוג
+                  כדי שתוכלו לעבוד יחד על אותו אירוע.
+                </p>
+                <form className="event-edit" onSubmit={sendPartnerInvite}>
+                  <label className="field-group">
+                    <span className="field-label">האימייל של בן/בת הזוג</span>
+                    <input
+                      type="email"
+                      dir="ltr"
+                      value={partnerEmail}
+                      onChange={(e) => setPartnerEmail(e.target.value)}
+                      placeholder="partner@example.com"
+                      required
+                    />
+                  </label>
+                  <div className="onboard-actions">
+                    <button type="submit" className="btn-primary" disabled={busy}>
+                      {busy ? 'שולח…' : 'שליחת הזמנה'}
+                    </button>
+                    <button
+                      type="button"
+                      className="onboard-skip"
+                      onClick={() => setStep('guests')}
+                    >
+                      אעשה זאת מאוחר יותר
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+          </div>
         ) : (
           <div className="onboard-guest-step">
             <p className="onboard-subtitle onboard-guest-intro">

@@ -83,4 +83,12 @@ def delete_event_cascade(db: Session, event: "models.Event") -> None:
         select(models.EventMember).where(models.EventMember.event_id == event_id)
     ).all():
         db.delete(member)
+    # הזמנות שיתוף-אירוע (event_invitations, שלב "מנהלים ביחד") — לא היו כאן
+    # עד עכשיו כי הטבלה נוספה אחרי delete_event_cascade. FK רגיל בלי cascade,
+    # אותה בעיה בדיוק כמו event_messages בזמנו: בלי הניקוי הזה, מחיקת אירוע
+    # שנשלחה בו הזמנת שיתוף נכשלת עם IntegrityError.
+    for invite in db.scalars(
+        select(models.EventInvitation).where(models.EventInvitation.event_id == event_id)
+    ).all():
+        db.delete(invite)
     db.delete(event)

@@ -11,7 +11,7 @@ import type {
   CallOutcome,
   User,
 } from '../types'
-import { ProfileDialog } from './ProfileDialog'
+import { AccountCenter } from './AccountCenter'
 import './PhoneAgentApp.css'
 
 /**
@@ -237,7 +237,7 @@ export function PhoneAgentApp({
       )}
 
       {profileOpen && (
-        <ProfileDialog
+        <AccountCenter
           user={user}
           onClose={() => setProfileOpen(false)}
           onUpdated={onUserUpdated}

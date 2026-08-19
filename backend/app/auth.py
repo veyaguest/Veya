@@ -8,6 +8,7 @@
   ממשיכה לעבוד עם הטוקן הפנימי הרגיל (create_access_token) כרגיל — RLS,
   token_version, disabled וכו' לא משתנים.
 """
+import hashlib
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -23,6 +24,7 @@ from sqlalchemy.orm import Session
 
 from app import models, roles
 from app.database import IS_POSTGRES, get_db, set_request_identity
+from app.validators import normalize_israeli_phone
 
 # מפתח חתימת הטוקנים. בפרודקשן חובה להגדיר JWT_SECRET אמיתי במשתני הסביבה;
 # בפיתוח יש ברירת-מחדל כדי שהמערכת תרוץ מיד.
@@ -182,6 +184,99 @@ def adopt_orphan_events(db: Session, user_id: int) -> None:
         ev.owner_id = user_id
 
 
+# ---------------------------------------------------------------------------
+# אימות כתובת המייל
+# ---------------------------------------------------------------------------
+# בנוי **על מערכת ההתחברות הקיימת** (משתמש פנימי + JWT), ולא כמערכת Auth
+# שנייה: אותה שורת ``users``, אותו טוקן, אותו RLS. מה שנוסף הוא חותמת
+# ``email_verified_at`` וטוקן חד-פעמי שנשלח במייל דרך Resend
+# (``app/emailer.py``). משתמשי גוגל מסומנים כמאומתים מיד — גוגל כבר אימתה
+# את הכתובת מולם, ואין טעם לבקש מהם לאמת שוב.
+
+EMAIL_VERIFY_TTL_HOURS = 24
+
+
+def is_email_verified(user: "models.User") -> bool:
+    return getattr(user, "email_verified_at", None) is not None
+
+
+def profile_complete(user: "models.User") -> bool:
+    """האם יש למשתמש את פרטי החובה (שם + טלפון) הדרושים ליצירת אירוע.
+
+    משתמשים ותיקים (וכל מי שנרשם דרך גוגל, שלא נשאל לטלפון) עשויים להגיע
+    לכאן בלי טלפון — הם לא נשברים, אלא מתבקשים להשלים פרטים לפני יצירת
+    האירוע. ראו routers/events.py::create_event.
+    """
+    if not (getattr(user, "display_name", "") or "").strip():
+        return False
+    phone = (getattr(user, "phone", "") or "").strip()
+    if not phone:
+        return False
+    try:
+        normalize_israeli_phone(phone)
+    except ValueError:
+        return False
+    return True
+
+
+def hash_email_token(token: str) -> str:
+    """ה-hash של טוקן האימות — רק הוא נשמר ב-DB (הטוקן עצמו רק במייל)."""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def issue_email_verification(db: Session, user: "models.User") -> str:
+    """מנפיק טוקן אימות חדש למשתמש ומחזיר אותו (הגולמי — לשליחה במייל בלבד).
+
+    הנפקה חדשה מבטלת את הקודמת (עמודה אחת, לא רשימה): הקישור האחרון שנשלח
+    הוא היחיד שעובד. אינו מבצע commit — הקורא אחראי לכך.
+    """
+    token = secrets.token_urlsafe(32)
+    tracked = db.get(models.User, user.id) or user
+    tracked.email_verification_hash = hash_email_token(token)
+    tracked.email_verification_expires_at = datetime.utcnow() + timedelta(
+        hours=EMAIL_VERIFY_TTL_HOURS
+    )
+    return token
+
+
+def consume_email_verification(db: Session, token: str) -> Optional["models.User"]:
+    """מאמת טוקן ומסמן את המייל כמאומת. מחזיר את המשתמש, או None אם לא תקף.
+
+    חד-פעמי: הטוקן נמחק מהשורה ברגע המימוש, כך שקישור שכבר נוצל לא עובד שוב.
+    """
+    if not (token or "").strip():
+        return None
+    token_hash = hash_email_token(token.strip())
+    user = db.scalars(
+        select(models.User).where(models.User.email_verification_hash == token_hash)
+    ).first()
+    if user is None:
+        return None
+    expires = user.email_verification_expires_at
+    if expires is not None and expires <= datetime.utcnow():
+        return None
+    user.email_verified_at = datetime.utcnow()
+    user.email_verification_hash = None
+    user.email_verification_expires_at = None
+    return user
+
+
+def send_verification_email(db: Session, user: "models.User") -> bool:
+    """מנפיק טוקן ושולח את מייל האימות. מחזיר האם המייל יצא בפועל.
+
+    אינו מפיל את הבקשה בכישלון שליחה — המשתמש יכול תמיד לבקש שליחה מחדש.
+    """
+    from app import emailer
+
+    token = issue_email_verification(db, user)
+    result = emailer.send_email_verification(
+        to=user.email,
+        # תחת /app — ראו ההערה המקבילה ב-app/partners.py::invite_url.
+        verify_url=f"{emailer.public_base_url()}/app/verify-email?token={token}",
+    )
+    return result.ok
+
+
 def hash_password(password: str) -> str:
     """מגבב סיסמה עם bcrypt ומחזיר מחרוזת לשמירה ב-DB."""
     salt = bcrypt.gensalt()
@@ -249,6 +344,22 @@ def get_current_user(
     if user.disabled:
         raise err
     return user
+
+
+def get_optional_user(
+    creds: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+    db: Session = Depends(get_db),
+) -> Optional[models.User]:
+    """כמו ``get_current_user``, אבל מחזיר ``None`` במקום 401 כשאין טוקן תקין.
+
+    נועד לנתיבים שצריכים להתנהג אחרת למחובר ולא-מחובר, בלי לחסום אף אחד —
+    היום זהו דף ההצטרפות לאירוע (``routers/partner.py``): מי שלא מחובר צריך
+    לראות "התחברו כדי להצטרף", ולא שגיאת 401 חשופה.
+    """
+    try:
+        return get_current_user(creds=creds, db=db)
+    except HTTPException:
+        return None
 
 
 def get_current_admin(
@@ -376,10 +487,16 @@ def find_or_create_google_user(
     existing = find_user_by_email(db, email)
     if existing is not None:
         set_request_identity(existing.id)
-        if avatar_url and existing.avatar_url != avatar_url:
+        needs_avatar = bool(avatar_url) and existing.avatar_url != avatar_url
+        needs_verify = not is_email_verified(existing)
+        if needs_avatar or needs_verify:
             tracked = db.get(models.User, existing.id)
             if tracked is not None:
-                tracked.avatar_url = avatar_url
+                if needs_avatar:
+                    tracked.avatar_url = avatar_url
+                if needs_verify:
+                    # התחברות מוצלחת דרך גוגל היא הוכחה לבעלות על הכתובת.
+                    tracked.email_verified_at = datetime.utcnow()
                 existing = tracked
         return existing, False
 
@@ -396,10 +513,14 @@ def find_or_create_google_user(
         account_type="couple",
     )
     set_request_identity(user.id)
-    if avatar_url:
-        tracked = db.get(models.User, user.id)
-        if tracked is not None:
+    # גוגל כבר אימתה את כתובת המייל מול הבעלים שלה — אין טעם לבקש אימות שוב.
+    # נעשה כ-UPDATE נפרד על השורה ה"מנוטרת" (ולא כפרמטר ל-app_register_user)
+    # מאותה סיבה בדיוק שתועדה למעלה עבור avatar_url.
+    tracked = db.get(models.User, user.id)
+    if tracked is not None:
+        tracked.email_verified_at = datetime.utcnow()
+        if avatar_url:
             tracked.avatar_url = avatar_url
-            user = tracked
+        user = tracked
     adopt_orphan_events(db, user.id)
     return user, True

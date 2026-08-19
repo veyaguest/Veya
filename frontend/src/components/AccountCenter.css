@@ -1,0 +1,452 @@
+/* "החשבון שלי" — מסך חשבון בשפת VEYA: בהיר, נקי, הרבה אוויר.
+   מכוון במפורש *נגד* מראה של Admin Panel: אין שדות כהים, אין טבלאות
+   הרשאות, ואין גרדיאנטים זהובים כבדים. הזהב מופיע במינון נמוך בלבד.
+   Mobile-first: הגיליון נפתח כיריעה מלאה בטלפון, וכמודל ממורכז בדסקטופ. */
+
+.acc-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(43, 38, 32, 0.32);
+  backdrop-filter: blur(2px);
+  padding: 0;
+}
+
+.acc-sheet {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 94vh;
+  background: var(--ivory);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-dialog);
+  overflow: hidden;
+}
+
+/* ---- כותרת דביקה ---- */
+.acc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  background: var(--cream);
+  border-bottom: 1px solid var(--line);
+}
+
+.acc-head h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--charcoal);
+}
+
+.acc-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--cream);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.acc-close:hover {
+  color: var(--charcoal);
+  border-color: var(--faint);
+}
+
+/* ---- גוף גליל ---- */
+.acc-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 18px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---- כרטיס ---- */
+.acc-card {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  padding: 20px 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.acc-card-title {
+  margin: 0 0 16px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--charcoal);
+  letter-spacing: -0.01em;
+}
+
+.acc-divider {
+  height: 1px;
+  background: var(--line-2);
+  margin: 18px 0;
+}
+
+/* ---- טפסים ושדות ---- */
+.acc-form,
+.acc-invite-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.acc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.acc-field label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--body);
+}
+
+/* שדות בהירים — לא שחורים. מסגרת עדינה, פינות מעוגלות. */
+.acc-field input {
+  width: 100%;
+  padding: 11px 13px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.acc-field input::placeholder {
+  color: var(--faint);
+}
+
+.acc-field input:focus {
+  outline: none;
+  background: var(--cream);
+  border-color: var(--gold-deep);
+  box-shadow: 0 0 0 3px rgba(var(--gold-rgb), 0.12);
+}
+
+/* שדה לקריאה בלבד (אימייל) — נראה כשדה, אבל שטוח ובלי מסגרת פעילה. */
+.acc-readonly {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 11px 13px;
+  font-size: 0.9375rem;
+  color: var(--body);
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-m);
+}
+
+.acc-badge {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.acc-badge-ok {
+  color: var(--green);
+  background: rgba(47, 158, 95, 0.1);
+}
+
+.acc-badge-wait {
+  color: var(--gold-deep);
+  background: rgba(var(--gold-rgb), 0.12);
+}
+
+/* ---- כפתורים ---- */
+.acc-btn {
+  padding: 11px 20px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  font-weight: 500;
+  border-radius: var(--radius-m);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast),
+    color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.acc-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.acc-btn-block {
+  width: 100%;
+}
+
+.acc-btn-primary {
+  align-self: flex-start;
+  color: var(--ivory);
+  background: var(--charcoal);
+}
+
+.acc-btn-primary:hover:not(:disabled) {
+  background: var(--black-soft);
+}
+
+.acc-btn-ghost {
+  color: var(--body);
+  background: var(--cream);
+  border-color: var(--line);
+}
+
+.acc-btn-ghost:hover:not(:disabled) {
+  border-color: var(--faint);
+  background: var(--surface-hi);
+}
+
+.acc-btn-danger {
+  color: #fff;
+  background: var(--error);
+}
+
+.acc-btn-danger:hover:not(:disabled) {
+  background: #8f4f4a;
+}
+
+/* ---- האירוע שלי ---- */
+.acc-event-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--charcoal);
+  letter-spacing: -0.01em;
+}
+
+.acc-event-meta {
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+/* ---- ניהול משותף ---- */
+.acc-people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.acc-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-m);
+}
+
+.acc-avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  color: var(--gold-deep);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.acc-person-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.acc-person-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--charcoal);
+}
+
+.acc-you {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(var(--gold-rgb), 0.12);
+  color: var(--gold-deep);
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.acc-person-role {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+/* הזמנה ממתינה */
+.acc-pending {
+  margin-top: 14px;
+  padding: 14px;
+  background: var(--surface-hi);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-m);
+}
+
+.acc-pending-text {
+  margin: 0 0 12px;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--body);
+}
+
+.acc-pending-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.acc-pending-actions .acc-btn {
+  padding: 8px 14px;
+  font-size: 0.875rem;
+}
+
+/* הזמנת בן/בת זוג */
+.acc-invite-lead {
+  margin: 0 0 4px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+.acc-invite-sub {
+  margin: 0 0 16px;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* ---- מחיקת חשבון ---- */
+.acc-card-danger {
+  border-color: rgba(166, 96, 90, 0.28);
+}
+
+.acc-danger-text {
+  margin: 0 0 16px;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: var(--body);
+}
+
+.acc-danger-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.acc-danger-confirm label {
+  font-size: 0.8125rem;
+  color: var(--body);
+}
+
+.acc-danger-confirm input {
+  width: 100%;
+  padding: 11px 13px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+}
+
+.acc-danger-confirm input:focus {
+  outline: none;
+  border-color: var(--error);
+  box-shadow: 0 0 0 3px rgba(166, 96, 90, 0.12);
+}
+
+.acc-danger-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+/* ---- הודעות מצב ---- */
+.acc-alert {
+  padding: 12px 14px;
+  border-radius: var(--radius-m);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.acc-alert-error {
+  color: var(--error);
+  background: rgba(166, 96, 90, 0.09);
+  border: 1px solid rgba(166, 96, 90, 0.22);
+}
+
+.acc-alert-ok {
+  color: var(--gold-deep);
+  background: rgba(var(--gold-rgb), 0.1);
+  border: 1px solid rgba(var(--gold-rgb), 0.24);
+}
+
+.acc-loading {
+  margin: 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+/* ---- דסקטופ: מודל ממורכז במקום יריעה תחתונה ---- */
+@media (min-width: 700px) {
+  .acc-overlay {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .acc-sheet {
+    max-width: 560px;
+    max-height: 88vh;
+    border-radius: var(--radius-xl);
+  }
+
+  .acc-head {
+    padding: 20px 26px 16px;
+  }
+
+  .acc-body {
+    padding: 20px 26px 28px;
+    gap: 16px;
+  }
+
+  .acc-card {
+    padding: 22px 24px;
+  }
+}

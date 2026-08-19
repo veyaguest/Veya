@@ -46,6 +46,24 @@ def make_client():
 
     _CLIENT = TestClient(app)
     _CLIENT.__enter__()  # מפעיל את אירוע ה-startup (create_all + מיגרציות)
+
+    # עליית השרת יוצרת "אירוע ברירת מחדל" בלי בעלים (``deps.get_default_event``
+    # — שריד מהתקופה שבה הייתה במערכת חתונה אחת בלבד). המשתמש הראשון שנרשם
+    # "מאמץ" אותו (``auth.adopt_orphan_events``), וכך היה מגיע לבדיקות עם
+    # אירוע קיים — ואז יצירת האירוע שלו נחסמת בכלל "אירוע אחד למשתמש".
+    # מוחקים אותו כאן כדי שכל בדיקה תתחיל ממשתמש נקי באמת.
+    from sqlalchemy import delete
+
+    from app import models
+    from app.database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        db.execute(delete(models.Event).where(models.Event.owner_id.is_(None)))
+        db.commit()
+    finally:
+        db.close()
+
     return _CLIENT, lambda: None
 
 
@@ -71,6 +89,9 @@ def register(client) -> str:
         json={
             "email": email,
             "password": "Test12345!",
+            # שם מלא הוא שדה חובה בהרשמה (schemas.UserCreate) — בדיוק כמו
+            # טלפון. בלעדיו ההרשמה נדחית ב-422, וזו התנהגות מכוונת.
+            "display_name": "בודק אוטומטי",
             "phone": "0501234567",
             "accepted_terms": True,
         },
@@ -79,7 +100,36 @@ def register(client) -> str:
     return r.json()["access_token"]
 
 
+def verify_email(client, token: str) -> None:
+    """מסמן את המייל של המשתמש כמאומת — תנאי ליצירת אירוע.
+
+    בבדיקות אין תיבת מייל, ובמצב ``mock`` המייל לא נשלח בכלל, ולכן אין דרך
+    להגיע לטוקן שבקישור (ב-DB נשמר רק ה-hash שלו — בכוונה). לכן מסמנים
+    ישירות ב-DB, בדיוק כמו שהמשתמש היה מגיע למצב הזה בייצור אחרי לחיצה על
+    הקישור. זו קיצור-דרך של הבדיקה בלבד — קוד הייצור לא נחלש בשביל זה.
+    """
+    from datetime import datetime
+
+    from app import auth as auth_module
+    from app.database import SessionLocal, set_request_identity
+    from app import models
+
+    payload = auth_module._decode_token(token)
+    user_id = int(payload["sub"])
+    set_request_identity(user_id)
+    db = SessionLocal()
+    try:
+        user = db.get(models.User, user_id)
+        user.email_verified_at = datetime.utcnow()
+        db.commit()
+    finally:
+        db.close()
+
+
 def create_event(client, token: str, event_type: str = "wedding") -> int:
+    # אימות המייל הוא תנאי מקדים ליצירת אירוע (routers/events.py) — עוברים
+    # אותו כאן כדי שכל בדיקה שצריכה אירוע תמשיך לעבוד.
+    verify_email(client, token)
     r = client.post(
         "/events",
         headers={"Authorization": f"Bearer {token}"},

@@ -7004,6 +7004,67 @@ td.notes.seating {
   margin: 0 0 18px;
 }
 
+.adm-delete-user {
+  max-width: 460px;
+}
+.adm-delete-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line, #e4ddd0);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+.adm-delete-option:has(input:checked) {
+  border-color: var(--gold-deep, #a8823c);
+  background: rgba(168, 130, 60, 0.06);
+}
+.adm-delete-option input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.adm-delete-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.adm-delete-option strong {
+  color: var(--charcoal);
+  font-size: 14.5px;
+}
+.adm-delete-option small {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.adm-delete-warning {
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.35);
+  border-radius: 10px;
+  padding: 12px;
+  margin: 4px 0 16px;
+}
+.adm-delete-warning p {
+  margin: 0 0 10px;
+  color: var(--error, #c0392b);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.adm-delete-ack {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--charcoal);
+  cursor: pointer;
+}
+.adm-delete-ack input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
 @media (max-width: 560px) {
   .adm-user-facts {
     grid-template-columns: 1fr;
