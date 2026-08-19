@@ -45,9 +45,30 @@ def from_address() -> str:
     return os.getenv("RESEND_FROM", _VERIFIED_SENDER)
 
 
+# הכתובת הידועה של ה-Frontend בייצור — משמשת רק כברירת מחדל כש-PUBLIC_BASE_URL
+# לא הוגדר בסביבת הריצה. זו הייתה בדיוק התקלה: PUBLIC_BASE_URL הוא משתנה
+# sync:false ב-render.yaml (ממולא ידנית ב-Render Dashboard) שמעולם לא הוגדר
+# בפועל, ולכן כל קישור שנבנה — מייל אימות, הזמנת שותף, קישור RSVP — נפל
+# חזרה ל-http://localhost:5173 גם בייצור החי.
+_PRODUCTION_FRONTEND_URL = "https://veyaguest.co.il"
+
+
 def public_base_url() -> str:
-    """כתובת הבסיס של האפליקציה — לבניית קישורים במיילים."""
-    return os.getenv("PUBLIC_BASE_URL", "http://localhost:5173").rstrip("/")
+    """כתובת הבסיס של האפליקציה — לבניית קישורים במיילים ובהודעות WhatsApp.
+
+    מקור אמת יחיד (גם messaging.py מייבא מכאן, לא משכפל). סדר עדיפויות:
+    1. ``PUBLIC_BASE_URL`` — אם הוגדר במפורש, הוא תמיד מנצח (מאפשר גם
+       staging/preview environments בעתיד בלי לגעת בקוד).
+    2. ``VEYA_ENV=production`` בלי ``PUBLIC_BASE_URL`` מוגדר — נופלים בעדינות
+       לכתובת הייצור הידועה, כדי שלא ניפול ל-localhost בייצור החי כמו שקרה.
+    3. אחרת (פיתוח מקומי) — שרת הפיתוח הרגיל של Vite.
+    """
+    explicit = os.getenv("PUBLIC_BASE_URL", "").strip()
+    if explicit:
+        return explicit.rstrip("/")
+    if os.getenv("VEYA_ENV", "").strip().lower() == "production":
+        return _PRODUCTION_FRONTEND_URL
+    return "http://localhost:5173"
 
 
 # ── DEBUG זמני (tracing ייצור) ──────────────────────────────────────────────

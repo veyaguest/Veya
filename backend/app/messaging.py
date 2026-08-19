@@ -86,9 +86,10 @@ PLACEHOLDERS = [
 ]
 
 
-def public_base_url() -> str:
-    """כתובת הבסיס של דף האישור הציבורי (ניתן לקבוע דרך משתנה סביבה)."""
-    return os.getenv("PUBLIC_BASE_URL", "http://localhost:5173").rstrip("/")
+# מקור אמת יחיד ל-public_base_url הוא app/emailer.py — לא לשכפל כאן. זה בדיוק
+# מה שהיה לפני התיקון: שני עותקים זהים של אותה פונקציה, ושניהם נפלו בשקט
+# ל-localhost בייצור כי אף אחד מהם לא הכיר את VEYA_ENV.
+from app.emailer import public_base_url
 
 
 def confirm_link(token: str | None) -> str:
