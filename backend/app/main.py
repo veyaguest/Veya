@@ -727,6 +727,14 @@ def on_startup() -> None:
         db.close()
 
 
+    # DEBUG זמני: מדפיס בעליית השרת האם תצורת המייל קיימת (קיום בלבד,
+    # לעולם לא ערך המפתח). זו הדרך לענות על "האם RESEND_API_KEY קיים
+    # ב-Runtime של Render" בלי לחשוף אותו ובלי endpoint ציבורי.
+    from app import emailer as _emailer
+
+    print(f"[veya:startup] email config → {_emailer.config_summary()}", flush=True)
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "service": "veya-api"}

@@ -268,11 +268,19 @@ def send_verification_email(db: Session, user: "models.User") -> bool:
     """
     from app import emailer
 
+    emailer.debug_log(
+        f"verification email requested | user_id={user.id} | "
+        f"to={emailer._mask_email(user.email)}"
+    )
     token = issue_email_verification(db, user)
     result = emailer.send_email_verification(
         to=user.email,
         # תחת /app — ראו ההערה המקבילה ב-app/partners.py::invite_url.
         verify_url=f"{emailer.public_base_url()}/app/verify-email?token={token}",
+    )
+    emailer.debug_log(
+        f"verification email result | ok={result.ok} | mode={result.mode} | "
+        f"provider_id={result.provider_id or '(none)'} | error={result.error or '(none)'}"
     )
     return result.ok
 

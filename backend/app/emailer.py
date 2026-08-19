@@ -39,6 +39,36 @@ def public_base_url() -> str:
     return os.getenv("PUBLIC_BASE_URL", "http://localhost:5173").rstrip("/")
 
 
+# ── DEBUG זמני (tracing ייצור) ──────────────────────────────────────────────
+# נוסף כדי לאתר למה לא יוצאות בקשות ל-Resend. לא מדפיס אף פעם מפתח API,
+# טוקן, או כתובת מייל מלאה. להסרה אחרי שהתקלה תאותר.
+def _mask_email(addr: str) -> str:
+    """מסתיר את רוב הכתובת ומשאיר רק מספיק כדי לזהות התאמה בין שורות לוג."""
+    addr = (addr or "").strip()
+    if "@" not in addr:
+        return "***"
+    local, _, domain = addr.partition("@")
+    keep = local[:2] if len(local) > 2 else local[:1]
+    return f"{keep}***@{domain}"
+
+
+def debug_log(message: str) -> None:
+    """שורת trace אחת. flush מפורש — אחרת Render עלול לא להציג אותה בזמן אמת."""
+    print(f"[veya:email-trace] {message}", flush=True)
+
+
+def config_summary() -> str:
+    """תצורת המייל — **קיום** בלבד, אף פעם לא ערך המפתח."""
+    return (
+        f"RESEND_API_KEY present={bool(api_key())} "
+        f"(len={len(api_key())}) | "
+        f"RESEND_FROM env_set={'RESEND_FROM' in os.environ} "
+        f"effective_from={from_address()!r} | "
+        f"PUBLIC_BASE_URL={public_base_url()!r} | "
+        f"mode={current_mode()}"
+    )
+
+
 @dataclass
 class SendResult:
     """תוצאת שליחה — ``ok`` מציין הצלחה, ``error`` מכיל סיבה כשנכשל."""
@@ -57,10 +87,19 @@ def send_email(*, to: str, subject: str, html_body: str, text_body: str = "") ->
     "נשמר אבל המייל לא יצא" מאשר לאבד את ההזמנה.
     """
     mode = current_mode()
+    debug_log(f"emailer called | to={_mask_email(to)} | mode={mode}")
     if mode == "mock":
+        # ⚠️ נקודת כשל אפשרית #1: אין RESEND_API_KEY ב-runtime של Render.
+        # במצב הזה **לא נשלחת שום בקשת HTTP** ל-Resend — ולכן ה-Logs של
+        # Resend יישארו ריקים לגמרי, בדיוק כמו שדווח.
+        debug_log(
+            "resend SKIPPED — mock mode. RESEND_API_KEY חסר/ריק בסביבת הריצה. "
+            "לא נשלחה בקשת HTTP כלשהי."
+        )
         print(f"[emailer:mock] אל: {to} | נושא: {subject}")
         return SendResult(ok=True, mode="mock", provider_id="mock")
 
+    debug_log(f"resend live mode | from={from_address()!r} | POST {RESEND_API_URL}")
     try:
         import httpx  # נטען רק כשצריך — לא נדרש במצב mock
 
@@ -79,7 +118,11 @@ def send_email(*, to: str, subject: str, html_body: str, text_body: str = "") ->
             },
             timeout=15.0,
         )
+        debug_log(f"resend response status={response.status_code}")
         if response.status_code >= 400:
+            # ⚠️ נקודת כשל אפשרית #2: Resend דחתה את הבקשה (מפתח לא תקין,
+            # דומיין לא מאומת, from לא מורשה). זה כן יופיע ב-Resend Logs.
+            debug_log(f"resend REJECTED | body={response.text[:200]}")
             return SendResult(
                 ok=False, mode="live", error=f"Resend {response.status_code}: {response.text[:200]}"
             )
@@ -88,8 +131,16 @@ def send_email(*, to: str, subject: str, html_body: str, text_body: str = "") ->
             provider_id = str(response.json().get("id", ""))
         except Exception:
             pass
+        debug_log(f"resend message id={provider_id or '(none)'}")
         return SendResult(ok=True, mode="live", provider_id=provider_id)
     except Exception as exc:  # רשת/תצורה — לא מפילים את הבקשה של המשתמש
+        # ⚠️ נקודת כשל אפשרית #3: הבקשה מעולם לא הגיעה ל-Resend (DNS/רשת/
+        # timeout). גם כאן ה-Logs של Resend יישארו ריקים — והשגיאה נבלעה עד
+        # עכשיו בשקט מוחלט, כי הקוראים לא בדקו את ערך ההחזרה.
+        debug_log(
+            f"resend REQUEST FAILED — no HTTP response reached Resend | "
+            f"{type(exc).__name__}: {str(exc)[:200]}"
+        )
         return SendResult(ok=False, mode="live", error=str(exc)[:200])
 
 

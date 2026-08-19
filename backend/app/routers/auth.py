@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import audit, auth, legal, models, partners, schemas
+from app import audit, auth, emailer, legal, models, partners, schemas
 from app.account import delete_event_cascade
 from app.database import get_db, set_request_identity
 from app.ratelimit import auth_limiter, client_ip
@@ -91,7 +91,11 @@ def register(payload: schemas.UserCreate, request: Request, db: Session = Depend
 
     # מנפיק טוקן אימות ושולח את מייל האימות. נשמר באותה טרנזקציה עם
     # ההסכמות, ולכן ה-commit שלמטה מכסה גם אותו.
-    auth.send_verification_email(db, user)
+    emailer.debug_log(f"ENDPOINT /auth/register reached | new user_id={user.id}")
+    _sent_ok = auth.send_verification_email(db, user)
+    # עד עכשיו ערך ההחזרה נזרק בשקט — כישלון שליחה לא הותיר שום עקבה.
+    if not _sent_ok:
+        emailer.debug_log("⚠️ register: verification email did NOT go out (result ok=False)")
 
     db.commit()
     # אין צורך ב-refresh: expire_on_commit=False (ראו app/database.py) — האובייקט
@@ -265,7 +269,15 @@ def resend_verification(
     user: models.User = Depends(auth.get_current_user),
 ):
     """שולח מחדש את מייל האימות למשתמש המחובר."""
+    emailer.debug_log(
+        f"ENDPOINT /auth/verify-email/resend reached | user_id={user.id} | "
+        f"already_verified={auth.is_email_verified(user)}"
+    )
     if auth.is_email_verified(user):
+        # ⚠️ נקודת כשל אפשרית #4: המשתמש כבר מסומן כמאומת, ולכן **לא נקרא
+        # בכלל** שירות המייל. כל 15 המשתמשים הקיימים סומנו כמאומתים
+        # במיגרציה החד-פעמית — אז חשבון ותיק לעולם לא ישלח מייל אימות.
+        emailer.debug_log("resend SKIPPED — user already verified; emailer NOT called")
         return {"already_verified": True, "sent": False}
     sent = auth.send_verification_email(db, user)
     db.commit()
