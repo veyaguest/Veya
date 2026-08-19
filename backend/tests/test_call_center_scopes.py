@@ -1,10 +1,14 @@
-""""שיחות להיום" — טווחי תצוגה (היום / מחר / בהמשך) במסך ה-Call Center.
+""""שיחות להיום" — טווחי תצוגה (היום / מחר / בהמשך / לא טופל) במסך ה-Call Center.
 
 עיקרון מנחה: **אין כאן מנוע תאריכים חדש.** כל טווח מחושב ע"י הרצה חוזרת של
 ``call_center.build_queues`` הקיים עם ``now`` וירטואלי אחר (בדיוק אותו פרמטר
 שהפונקציה כבר תומכת בו — ראו ``app/rsvp_timeline.py::due_call_round``),
-והפרש-קבוצות בין ההרצות (ראו ``call_center.build_queues_for_scope``).
+והפרש-קבוצות/פיצול בין ההרצות (ראו ``call_center.build_queues_for_scope``).
 לא נוצר סבב/תאריך/סטטוס חדש; ה-Workflow הקיים נשאר יחיד ולא נגוע.
+
+"אירוע שהסתיים" נגזר מ-``Event.event_date`` הקיים בלבד (``event_date <
+היום``) — אין שדה/דגל "סגור" נפרד. אירוע כזה יוצא לגמרי מכל הטווחים, כולל
+"לא טופל", גם אם נשארו לו שיחות שלא בוצעו מעולם (ראו ``event_has_ended``).
 
 לבניית תרחישי "סבב שנפתח בדיוק מחר" בלי לנחש תאריכים, הבדיקות כאן משתמשות
 ב-``_days_ago_for_first_round_on`` — פונקציית עזר שמריצה את המנוע האמיתי
@@ -20,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tests.e2e_seating import bootstrap  # noqa: E402
 from tests.call_center_helpers import (  # noqa: E402
+    assign_events,
     call_logs_of,
     configure_track,
     guest_of,
@@ -54,6 +59,35 @@ def _days_ago_for_first_round_on(target: date, *, days_to_event=DAYS_TO_EVENT, c
         if rounds and rounds[0].date == target:
             return started_days_ago
     raise AssertionError(f"לא נמצא started_days_ago שמעמיד סבב 1 בתאריך {target}")
+
+
+def _days_to_event_pair_with_backlog(
+    *, commit_days=COMMIT_DAYS, started_days_ago=12, search_from=5, search_to=25,
+) -> tuple[int, int]:
+    """מוצא שני ערכי ``days_to_event`` ששניהם מניבים סבב 1 שכבר עבר (backlog),
+    כדי לבדוק מיון-לפי-קרבה בין שני אירועים ב"לא טופל" גם ביום שבו הריצה
+    היחידה עם started_days_ago גדול לא מספיקה (ראו ``configure_track``: מעבר
+    לנקודה מסוימת ``days_to_event`` גדול "מציף" את הסבב לעתיד, בלי קשר
+    ל-started_days_ago). מריץ את המנוע האמיתי בזיכרון, לא נוסחה עצמאית.
+    """
+    from app import models, rsvp_timeline
+
+    today = date.today()
+    hits: list[int] = []
+    for dte in range(search_from, search_to):
+        probe = models.Event(
+            event_date=(today + timedelta(days=dte)).isoformat(),
+            event_time="19:00",
+            venue_commit_days_before=commit_days,
+            rsvp_track_active=True,
+            rsvp_track_started_at=datetime.utcnow() - timedelta(days=started_days_ago),
+        )
+        rounds = rsvp_timeline.call_rounds(probe)
+        if rounds and rounds[0].date < today:
+            hits.append(dte)
+        if len(hits) >= 2:
+            return hits[0], hits[1]
+    raise AssertionError("לא נמצאו שני תרחישי backlog מתאימים למיון")
 
 
 def _overview(api, headers, scope="today") -> dict:
@@ -264,20 +298,27 @@ def test_event_with_no_calls_today_is_absent_from_overview() -> None:
 # ── 8. חלוקה ומיון לפי אירועים ───────────────────────────────────────────
 
 def test_events_sorted_by_call_count_first() -> None:
-    """(8) מיון ראשי: האירוע עם יותר שיחות ממתינות מופיע קודם."""
+    """(8) מיון ראשי: האירוע עם יותר שיחות ממתינות מופיע קודם.
+
+    המיון (``_event_sort_key``) חל באופן זהה על כל הטווחים — נבדק כאן דרך
+    "לא טופל" (``started_days_ago=12`` מפורש = סבב שנפתח לפני היום), כדי
+    לבודד את בדיקת המיון עצמה מהשאלה "איזה טווח זה בדיוק".
+    """
     api_a, teardown_a = bootstrap()
     api_b, teardown_b = bootstrap()
     try:
         admin = standalone_admin(api_a)
-        # שני האירועים באותם פרמטרים בדיוק (סבב פעיל ודאי) — רק כמות
-        # המוזמנים הממתינים שונה, כדי לבודד את המיון הראשי.
+        # שני האירועים באותם פרמטרים בדיוק (סבב פעיל ודאי, שנפתח לפני היום —
+        # מחושב דינמית) — רק כמות המוזמנים הממתינים שונה, כדי לבודד את המיון
+        # הראשי מהתאריך המדויק.
+        dte, _ = _days_to_event_pair_with_backlog(commit_days=3, started_days_ago=12)
         api_a.add_guest("A1", "0509400010", party_size=1)
         api_a.add_guest("A2", "0509400011", party_size=1)
-        configure_track(api_a, days_to_event=8, commit_days=3, started_days_ago=12)
+        configure_track(api_a, days_to_event=dte, commit_days=3, started_days_ago=12)
         api_b.add_guest("B1", "0509400012", party_size=1)
-        configure_track(api_b, days_to_event=8, commit_days=3, started_days_ago=12)
+        configure_track(api_b, days_to_event=dte, commit_days=3, started_days_ago=12)
 
-        overview = _overview(api_a, admin, "today")
+        overview = _overview(api_a, admin, "not_handled")
         ids_in_order = [e["event_id"] for e in overview["events"]
                         if e["event_id"] in (api_a.event_id, api_b.event_id)]
         assert ids_in_order == [api_a.event_id, api_b.event_id], (
@@ -290,22 +331,29 @@ def test_events_sorted_by_call_count_first() -> None:
 
 
 def test_events_tie_break_by_nearest_event_date() -> None:
-    """(8) בשוויון מספר שיחות — האירוע הקרוב יותר בתאריך מופיע קודם."""
+    """(8) בשוויון מספר שיחות — האירוע הקרוב יותר בתאריך מופיע קודם.
+
+    נבדק דרך "לא טופל" מאותה סיבה כמו בבדיקה הקודמת.
+    """
     api_a, teardown_a = bootstrap()
     api_b, teardown_b = bootstrap()
     try:
         admin = standalone_admin(api_a)
-        # אותה כמות שיחות ממתינות (1) בשני האירועים — רק המרחק שונה.
+        # אותה כמות שיחות ממתינות (1) בשני האירועים — רק המרחק שונה. שני
+        # ה-days_to_event (מחושבים דינמית) מניבים שניהם סבב שכבר עבר
+        # (backlog) — אחרת הם היו נופלים לטווחים שונים (היום/לא טופל)
+        # ולא רק במיקום שונה בתוך אותו טווח.
+        closer, farther = _days_to_event_pair_with_backlog(commit_days=3, started_days_ago=12)
         api_a.add_guest("A1", "0509400013", party_size=1)
-        configure_track(api_a, days_to_event=8, commit_days=3, started_days_ago=12)
+        configure_track(api_a, days_to_event=closer, commit_days=3, started_days_ago=12)
         api_b.add_guest("B1", "0509400014", party_size=1)
-        configure_track(api_b, days_to_event=10, commit_days=3, started_days_ago=12)
+        configure_track(api_b, days_to_event=farther, commit_days=3, started_days_ago=12)
 
-        overview = _overview(api_a, admin, "today")
+        overview = _overview(api_a, admin, "not_handled")
         ids_in_order = [e["event_id"] for e in overview["events"]
                         if e["event_id"] in (api_a.event_id, api_b.event_id)]
         assert ids_in_order == [api_a.event_id, api_b.event_id], (
-            "בשוויון שיחות, האירוע הקרוב יותר (A, בעוד 8 ימים) אמור להופיע ראשון"
+            f"בשוויון שיחות, האירוע הקרוב יותר (A, בעוד {closer} ימים) אמור להופיע ראשון"
         )
         print("✓ בשוויון מספר שיחות — האירוע הקרוב יותר מופיע ראשון")
     finally:
@@ -341,7 +389,15 @@ def test_within_event_followups_come_first_then_alphabetical() -> None:
 # ── 9. חיפוש בתוך הטווח הנבחר ─────────────────────────────────────────────
 
 def test_search_is_scoped_to_the_selected_range() -> None:
-    """(9) חיפוש לפי שם/טלפון פועל בתוך הטווח שנבחר בלבד."""
+    """(9) חיפוש לפי שם/טלפון פועל בתוך הטווח שנבחר בלבד.
+
+    מסונן ל-``event_id`` של הבדיקה עצמה: ``admin`` הוא אדמין-על שרואה את כל
+    המערכת, וה-DB בסביבת הריצה הזו משותף בין כל קובצי הבדיקה (ולפעמים אף עם
+    ה-DB האמיתי — ראו הערה בדוח המסירה). בדיקת שוויון-רשימה גלובלית בלי
+    סינון אירוע היא שברירה במשותף כזה; סינון לפי event_id הוא הדרך הנכונה
+    לבודד את מה שהבדיקה הזו באמת בודקת (החיפוש בתוך טווח), לא כמה עוד
+    "רוני"-ים יש במערכת.
+    """
     api, teardown = bootstrap()
     try:
         admin = standalone_admin(api)
@@ -350,11 +406,11 @@ def test_search_is_scoped_to_the_selected_range() -> None:
         configure_track(api, days_to_event=DAYS_TO_EVENT, commit_days=COMMIT_DAYS,
                         started_days_ago=started)
 
-        today_hit = _queue(api, admin, scope="today", q="רוני")["items"]
+        today_hit = _queue(api, admin, scope="today", q="רוני", event_id=api.event_id)["items"]
         assert [g["full_name"] for g in today_hit] == ["רוני שני"]
 
         # אותו חיפוש בטווח "מחר" — האירוע לא רלוונטי שם, אין תוצאה.
-        tomorrow_hit = _queue(api, admin, scope="tomorrow", q="רוני")["items"]
+        tomorrow_hit = _queue(api, admin, scope="tomorrow", q="רוני", event_id=api.event_id)["items"]
         assert tomorrow_hit == []
         print("✓ החיפוש פועל בתוך הטווח הנבחר בלבד")
     finally:
@@ -449,3 +505,171 @@ def test_invalid_scope_is_rejected() -> None:
         print("✓ טווח לא מוכר נדחה עם 400")
     finally:
         teardown()
+
+
+# ── סטטוס האירוע: אירוע שהסתיים / "לא טופל" ──────────────────────────────
+# "הסתיים" = event_date כבר עבר. אין דגל/סטטוס נפרד — ראו call_center.py::
+# event_has_ended. סגירה כזו קורית מעצמה כשהתאריך חולף, ואינה נוגעת ב-RSVP
+# או ב-CallLog בשום צורה.
+
+def _set_event_date(event_id: int, iso: str) -> None:
+    """מזיז את תאריך האירוע — מדמה "האירוע כבר קרה" בלי שום דגל/מנגנון חדש."""
+    from app import models
+    from app.database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        db.get(models.Event, event_id).event_date = iso
+        db.commit()
+    finally:
+        db.close()
+
+
+def test_ended_event_disappears_from_every_scope_even_unhandled() -> None:
+    """אירוע שהסתיים ויש לו שיחה ישנה שלא טופלה — לא מופיע בשום תור,
+    לא ב'לא טופל' ולא בשום טווח אחר, למרות שהשיחה מעולם לא בוצעה."""
+    api, teardown = bootstrap()
+    try:
+        admin = standalone_admin(api)
+        api.add_guest("לא נענה מעולם", "0509400022", party_size=1)
+        # סבב פעיל שכבר עבר (backlog) — לפני שהאירוע "מסתיים".
+        configure_track(api, days_to_event=8, commit_days=3, started_days_ago=12)
+        assert _queue(api, admin, scope="not_handled", event_id=api.event_id)["items"], (
+            "הבדיקה מצפה שהשיחה תופיע ב'לא טופל' לפני שהאירוע מסתיים"
+        )
+
+        # "סיום" האירוע: תאריך שכבר עבר — בלי שום פעולה נוספת.
+        _set_event_date(api.event_id, (date.today() - timedelta(days=1)).isoformat())
+
+        for scope in ("today", "tomorrow", "later", "not_handled"):
+            ids = [e["event_id"] for e in _overview(api, admin, scope)["events"]]
+            assert api.event_id not in ids, f"אירוע שהסתיים מופיע עדיין תחת scope={scope}"
+        print("✓ אירוע שהסתיים נעלם מכל הטווחים, כולל 'לא טופל'")
+    finally:
+        teardown()
+
+
+def test_active_event_with_old_unhandled_call_appears_in_not_handled_only() -> None:
+    """אירוע פעיל + שיחה ישנה שלא טופלה → מופיעה ב'לא טופל' בלבד, לא ב'היום'."""
+    api, teardown = bootstrap()
+    try:
+        admin = standalone_admin(api)
+        api.add_guest("ממתין הרבה זמן", "0509400023", party_size=1)
+        configure_track(api, days_to_event=8, commit_days=3, started_days_ago=12)
+
+        not_handled = _queue(api, admin, scope="not_handled", event_id=api.event_id)["items"]
+        assert [g["full_name"] for g in not_handled] == ["ממתין הרבה זמן"]
+
+        today_items = _queue(api, admin, scope="today", event_id=api.event_id)["items"]
+        assert today_items == [], "שיחה ישנה שלא טופלה לא אמורה להופיע ב'היום'"
+        print("✓ אירוע פעיל עם שיחה ישנה — מופיע רק ב'לא טופל'")
+    finally:
+        teardown()
+
+
+def test_not_handled_hidden_for_events_without_backlog() -> None:
+    """אירוע פעיל עם שיחה של היום (לא backlog) — לא מופיע ב'לא טופל'."""
+    api, teardown = bootstrap()
+    try:
+        admin = standalone_admin(api)
+        api.add_guest("ישראל כהן", "0509400024", party_size=1)
+        configure_track(api)  # ברירת המחדל: סבב שנפתח בדיוק היום
+
+        not_handled_ids = [e["event_id"] for e in _overview(api, admin, "not_handled")["events"]]
+        assert api.event_id not in not_handled_ids
+        print("✓ אירוע בלי backlog לא מופיע ב'לא טופל'")
+    finally:
+        teardown()
+
+
+def test_active_event_future_followup_appears_only_at_its_own_time() -> None:
+    """(4) Follow-up עתידי באירוע פעיל — לא 'לא טופל', גם אם הסבב עצמו הוא
+    backlog; חוזר לתור רק במועד ה-Follow-up (כאן: 'מחר', לא 'היום' ולא
+    'לא טופל')."""
+    api, teardown = bootstrap()
+    try:
+        admin = standalone_admin(api)
+        guest = api.add_guest("יחזרו אליו מחר", "0509400025", party_size=1)
+        # הסבב עצמו כבר backlog (started_days_ago=12) — כדי לוודא שה-Follow-up
+        # העתידי לא "נדבק" ל'לא טופל' בגלל זה.
+        configure_track(api, days_to_event=8, commit_days=3, started_days_ago=12)
+        soon = datetime.utcnow() + timedelta(hours=20)  # עוד לא עבר יממה — "מחר"
+        r = api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
+                            headers=admin,
+                            json={"outcome": "callback", "callback_at": soon.isoformat() + "Z"})
+        assert r.status_code == 200, r.text
+
+        assert _queue(api, admin, scope="not_handled", event_id=api.event_id)["items"] == [], (
+            "Follow-up עתידי לא אמור להופיע ב'לא טופל'"
+        )
+        assert _queue(api, admin, scope="today", event_id=api.event_id)["items"] == []
+        tomorrow_items = _queue(api, admin, scope="tomorrow", event_id=api.event_id)["items"]
+        assert [g["full_name"] for g in tomorrow_items] == ["יחזרו אליו מחר"]
+        print("✓ Follow-up עתידי לא נחשב 'לא טופל' — חוזר רק במועד שלו")
+    finally:
+        teardown()
+
+
+def test_closing_event_preserves_rsvp_and_call_history() -> None:
+    """(5) 'סגירת' אירוע (הזזת תאריך לעבר) לא נוגעת ב-RSVP ולא מוחקת
+    היסטוריית CallLog — היא רק מוציאה אותו מתור השיחות."""
+    api, teardown = bootstrap()
+    try:
+        admin = standalone_admin(api)
+        guest = api.add_guest("ישראל כהן", "0509400026", party_size=3)
+        configure_track(api, days_to_event=8, commit_days=3, started_days_ago=12)
+        r = api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
+                            headers=admin, json={"outcome": "confirmed", "count": 2})
+        assert r.status_code == 200, r.text
+        before_logs = call_logs_of(api, guest["id"])
+        assert len(before_logs) == 1
+
+        _set_event_date(api.event_id, (date.today() - timedelta(days=1)).isoformat())
+
+        after = guest_of(api, guest["id"])
+        assert (after.rsvp_status, after.confirmed_count) == ("confirmed", 2), (
+            "סגירת אירוע לא אמורה לשנות RSVP"
+        )
+        after_logs = call_logs_of(api, guest["id"])
+        assert len(after_logs) == 1 and after_logs[0].outcome == "confirmed", (
+            "סגירת אירוע לא אמורה למחוק היסטוריית שיחות"
+        )
+        for scope in ("today", "not_handled"):
+            ids = [e["event_id"] for e in _overview(api, admin, scope)["events"]]
+            assert api.event_id not in ids
+        print("✓ סגירת אירוע לא נוגעת ב-RSVP ולא מוחקת CallLog — רק מוציאה מהתור")
+    finally:
+        teardown()
+
+
+def test_phone_agent_and_admin_get_the_same_event_status_filtering() -> None:
+    """טלפן ואדמין מקבלים את אותו סינון לפי סטטוס האירוע: אירוע שהסתיים
+    נעלם משניהם, ואירוע פעיל עם backlog מופיע לשניהם תחת 'לא טופל'."""
+    api_a, teardown_a = bootstrap()
+    api_b, teardown_b = bootstrap()
+    try:
+        admin = standalone_admin(api_a)
+
+        # אירוע A: פעיל, עם backlog — אמור להופיע לשניהם ב'לא טופל'.
+        api_a.add_guest("פעיל עם עבר", "0509400027", party_size=1)
+        configure_track(api_a, days_to_event=8, commit_days=3, started_days_ago=12)
+
+        # אירוע B: הסתיים — לא אמור להופיע לאף אחד, גם עם backlog.
+        api_b.add_guest("אירוע שנגמר", "0509400028", party_size=1)
+        configure_track(api_b, days_to_event=8, commit_days=3, started_days_ago=12)
+        _set_event_date(api_b.event_id, (date.today() - timedelta(days=3)).isoformat())
+
+        agent_id, agent = phone_agent(api_a)
+        assign_events(agent_id, [api_a.event_id, api_b.event_id])
+
+        for headers, label in ((admin, "אדמין"), (agent, "טלפן")):
+            not_handled_ids = [e["event_id"] for e in _overview(api_a, headers, "not_handled")["events"]]
+            assert api_a.event_id in not_handled_ids, f"{label}: אירוע פעיל לא מופיע ב'לא טופל'"
+            assert api_b.event_id not in not_handled_ids, f"{label}: אירוע שהסתיים לא הוסתר"
+            for scope in ("today", "tomorrow", "later"):
+                ids = [e["event_id"] for e in _overview(api_a, headers, scope)["events"]]
+                assert api_b.event_id not in ids, f"{label}: אירוע שהסתיים דלף תחת scope={scope}"
+        print("✓ טלפן ואדמין מקבלים בדיוק אותו סינון לפי סטטוס האירוע")
+    finally:
+        teardown_a()
+        teardown_b()

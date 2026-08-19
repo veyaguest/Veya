@@ -57,17 +57,23 @@ OPEN_STATUSES = ("pending", "maybe")
 # האירועים מתקיימים בשעון המקומי — האחסון נשאר UTC, רק התצוגה מומרת.
 LOCAL_TIMEZONE = "Asia/Jerusalem"
 
-# ── טווחי תצוגה: היום / מחר / בהמשך ──────────────────────────────────────
-# שלושה "חלונות זמן" למסך השיחות. **אין כאן מנוע תאריכים חדש** — כל טווח
+# ── טווחי תצוגה: היום / מחר / בהמשך / לא טופל ────────────────────────────
+# ארבעה "חלונות זמן" למסך השיחות. **אין כאן מנוע תאריכים חדש** — כל טווח
 # מחושב ע"י הרצת ``build_queues`` הקיים עם ``now`` וירטואלי אחר (בדיוק אותו
 # פרמטר ש-``due_call_round``/``build_queues`` כבר תומכים בו), ואז החסרת
 # קבוצות: "מחר" = מי שיהיה חייב שיחה עד מחר, פחות מי שכבר חייב שיחה היום;
 # "בהמשך" = מי שחייב שיחה אי-פעם בעתיד הנראה-לעין, פחות מי שכבר חייב עד מחר.
-# כך שני אירועים לעולם לא מסתירים זה את זה, וכל מוזמן מופיע בדיוק בטווח אחד.
+# "היום"/"לא טופל" הם פיצול של אותה קבוצה בסיסית (מי שכבר חייב שיחה **עכשיו**,
+# ``build_queues`` הרגיל) לפי תאריך-היעד *של כל מוזמן בנפרד*: מוזמן עם
+# Follow-up פתוח נשפט לפי תאריך ה-Follow-up שלו; אחרת לפי תאריך הסבב הפעיל
+# של האירוע (משותף לכל שאר המוזמנים הפתוחים שלו). תאריך-היעד = היום → "היום";
+# לפני היום → "לא טופל". כך שני אירועים לעולם לא מסתירים זה את זה, וכל
+# מוזמן מופיע בדיוק בטווח אחד.
 SCOPE_TODAY = "today"
 SCOPE_TOMORROW = "tomorrow"
 SCOPE_LATER = "later"
-SCOPES = (SCOPE_TODAY, SCOPE_TOMORROW, SCOPE_LATER)
+NOT_HANDLED = "not_handled"
+SCOPES = (SCOPE_TODAY, SCOPE_TOMORROW, SCOPE_LATER, NOT_HANDLED)
 
 # האופק ל"בהמשך": מספיק רחוק כדי לתפוס גם את הסבב האחרון האפשרי (מוגבל תמיד
 # ל-anchor_end, ראו rsvp_timeline.compute_schedule) וגם Follow-up שנקבע
@@ -287,6 +293,80 @@ def _event_sort_key(q: EventQueue) -> tuple:
     return (-len(q.guests), event_date or date.max)
 
 
+def event_has_ended(event: models.Event, today: date) -> bool:
+    """האם תאריך האירוע כבר עבר.
+
+    שימוש בשדה הקיים ``Event.event_date`` בלבד — **אין** כאן סטטוס/דגל "סגור"
+    נפרד, וזו גם ההגדרה היחידה ל"סגירת אירוע" במערכת: היא קורית מעצמה כשהתאריך
+    חולף, לא דורשת פעולה ידנית, ולא נוגעת ב-RSVP או ב-CallLog. אירוע ש"הסתיים"
+    כך יוצא לגמרי מתור השיחות בכל הטווחים — גם אם נשארו לו שיחות שלא טופלו
+    (ראו ``_drop_ended_events``) — כי אין עוד טעם להתקשר למוזמנים על אירוע שכבר קרה.
+    """
+    d = parse_event_date(event.event_date)
+    return d is not None and d < today
+
+
+def _drop_ended_events(queues: list[EventQueue], today: date) -> list[EventQueue]:
+    return [q for q in queues if not event_has_ended(q.event, today)]
+
+
+def _pending_followup_dates(db: Session, guest_ids: list[int]) -> dict[int, date]:
+    """לכל מוזמן מהרשימה שה-CallLog האחרון שלו הוא ``callback`` (יש לו
+    Follow-up פתוח) — תאריך היעד שביקש שנחזור אליו. שימוש פנימי לסיווג
+    לטווחים בלבד (היום/מחר/בהמשך/לא טופל) — לא משנה ולא כפול למנגנון
+    ``has_pending_followup`` הקיים (אותה סמנטיקה בדיוק: "האחרון מנצח")."""
+    if not guest_ids:
+        return {}
+    logs = db.scalars(
+        select(models.CallLog)
+        .where(models.CallLog.guest_id.in_(guest_ids))
+        .order_by(models.CallLog.guest_id, models.CallLog.created_at, models.CallLog.id)
+    ).all()
+    latest: dict[int, models.CallLog] = {}
+    for log in logs:
+        latest[log.guest_id] = log  # הרשימה ממוינת עולה לפי זמן — האחרון מנצח
+    return {
+        gid: log.callback_at.date()
+        for gid, log in latest.items()
+        if log.outcome == "callback" and log.callback_at is not None
+    }
+
+
+def _split_today_and_not_handled(
+    db: Session, queues: list[EventQueue], today: date,
+) -> tuple[list[EventQueue], list[EventQueue]]:
+    """מפצל תור "חייב שיחה עכשיו" (``build_queues`` הרגיל) לשני טווחים, לפי
+    תאריך-היעד *של כל מוזמן בנפרד*: מוזמן עם Follow-up פתוח נשפט לפי תאריך
+    ה-Follow-up שלו; אחרת לפי תאריך הסבב הפעיל של האירוע (משותף לכל שאר
+    המוזמנים הפתוחים שלו, כי סבב הוא תכונה של אירוע, לא של מוזמן בודד).
+
+    תאריך-היעד לא יכול להיות אחרי ``today``: מוזמן עם Follow-up עתידי כבר
+    מוסתר ע"י ``build_queues`` עצמו (``callback_at > now``), ורק אירוע עם
+    סבב שכבר הגיע (``date <= today``) בכלל מגיע לכאן — ולכן הפיצול תמיד
+    ממצה: תאריך-היעד == today → "היום"; לפני today → "לא טופל".
+    """
+    guest_ids = [g.id for q in queues for g in q.guests]
+    followup_dates = _pending_followup_dates(db, guest_ids)
+
+    today_out: list[EventQueue] = []
+    not_handled_out: list[EventQueue] = []
+    for q in queues:
+        today_guests: list[models.Guest] = []
+        overdue_guests: list[models.Guest] = []
+        for guest in q.guests:
+            due_date = followup_dates.get(guest.id, q.round_date)
+            (today_guests if due_date >= today else overdue_guests).append(guest)
+        today_out.append(EventQueue(
+            event=q.event, round_number=q.round_number, round_date=q.round_date,
+            guests=today_guests, done_count=q.done_count,
+        ))
+        not_handled_out.append(EventQueue(
+            event=q.event, round_number=q.round_number, round_date=q.round_date,
+            guests=overdue_guests, done_count=q.done_count,
+        ))
+    return today_out, not_handled_out
+
+
 def build_queues_for_scope(
     db: Session,
     scope: str,
@@ -297,12 +377,19 @@ def build_queues_for_scope(
     status: Optional[str] = None,
     allowed_event_ids: Optional[set[int]] = None,
 ) -> list[EventQueue]:
-    """תור השיחות מסונן לטווח זמן: "היום" / "מחר" / "בהמשך".
+    """תור השיחות מסונן לטווח זמן: "היום" / "מחר" / "בהמשך" / "לא טופל".
 
     בונה על ``build_queues`` הקיים בלבד, בהרצה חוזרת עם ``now`` וירטואלי
     (בדיוק אותו פרמטר שהפונקציה כבר תומכת בו) — לא נוצר כאן שום חישוב
-    תאריכים/סבבים חדש. "היום" = ``build_queues`` הרגיל (ללא שינוי התנהגות).
-    "מחר"/"בהמשך" הם הפרש קבוצות בין הרצה עתידית להרצה נוכחית (ראו ``_exclusive``).
+    תאריכים/סבבים חדש. "מחר"/"בהמשך" הם הפרש קבוצות בין הרצה עתידית להרצה
+    נוכחית (ראו ``_exclusive``); "היום"/"לא טופל" הם פיצול לפי מוזמן של אותה
+    הרצה נוכחית (ראו ``_split_today_and_not_handled``).
+
+    אירוע שתאריכו כבר עבר (``event_has_ended``) מוסר **מכל** הטווחים, כולל
+    "לא טופל" — גם אם נשארו לו שיחות שלא בוצעו מעולם. זה קורה בכל שלושת
+    ה-``build_queues`` הפנימיים, ביחס ל-``today`` **האמיתי** (לא ה-``now``
+    הוירטואלי של תצוגת "מחר"/"בהמשך") — אחרת אירוע רחוק היה נראה "מסתיים"
+    מוקדם מדי בתצוגה המקדימה.
 
     מסנן גם אירועים בלי אף מוזמן בטווח (אירוע "ריק" לא אמור להציג כותרת).
     """
@@ -310,18 +397,25 @@ def build_queues_for_scope(
         raise ValueError(f"טווח לא מוכר: {scope}")
 
     now = now or datetime.utcnow()
+    today = now.date()
     kwargs = dict(event_id=event_id, query=query, status=status, allowed_event_ids=allowed_event_ids)
 
-    today_queues = build_queues(db, now=now, **kwargs)
-    if scope == SCOPE_TODAY:
-        result = today_queues
+    today_queues_raw = _drop_ended_events(build_queues(db, now=now, **kwargs), today)
+
+    if scope in (SCOPE_TODAY, NOT_HANDLED):
+        today_bucket, not_handled_bucket = _split_today_and_not_handled(db, today_queues_raw, today)
+        result = today_bucket if scope == SCOPE_TODAY else not_handled_bucket
     else:
-        tomorrow_queues = build_queues(db, now=now + timedelta(days=1), **kwargs)
+        tomorrow_queues_raw = _drop_ended_events(
+            build_queues(db, now=now + timedelta(days=1), **kwargs), today,
+        )
         if scope == SCOPE_TOMORROW:
-            result = _exclusive(tomorrow_queues, _guest_ids_by_event(today_queues))
+            result = _exclusive(tomorrow_queues_raw, _guest_ids_by_event(today_queues_raw))
         else:  # SCOPE_LATER
-            later_queues = build_queues(db, now=now + timedelta(days=_FAR_FUTURE_DAYS), **kwargs)
-            result = _exclusive(later_queues, _guest_ids_by_event(tomorrow_queues))
+            later_queues_raw = _drop_ended_events(
+                build_queues(db, now=now + timedelta(days=_FAR_FUTURE_DAYS), **kwargs), today,
+            )
+            result = _exclusive(later_queues_raw, _guest_ids_by_event(tomorrow_queues_raw))
 
     result = [q for q in result if q.guests]
     result.sort(key=_event_sort_key)

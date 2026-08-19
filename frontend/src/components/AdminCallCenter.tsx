@@ -31,7 +31,11 @@ import './AdminCallCenter.css'
 // באמצע (ה-Backend מגביל ל-200 בכל מקרה, ראו MAX_PAGE_LIMIT ב-router).
 const PAGE_SIZE = 200
 
+// "לא טופל" ראשון בכוונה: שיחות שכבר איחרו דורשות תשומת לב לפני שיחות
+// "טריות" של היום. אירוע שכבר הסתיים לא מופיע כאן ולא בשום טאב אחר —
+// ראו event_has_ended ב-Backend.
 const SCOPE_TABS: { key: CallCenterScope; label: string }[] = [
+  { key: 'not_handled', label: 'לא טופל' },
   { key: 'today', label: 'היום' },
   { key: 'tomorrow', label: 'מחר' },
   { key: 'later', label: 'בהמשך' },
@@ -41,12 +45,14 @@ const SCOPE_NOUN: Record<CallCenterScope, string> = {
   today: 'שיחות להיום',
   tomorrow: 'שיחות למחר',
   later: 'שיחות בהמשך',
+  not_handled: 'שיחות שלא טופלו',
 }
 
 const SCOPE_EMPTY_TITLE: Record<CallCenterScope, string> = {
   today: 'אין שיחות היום',
   tomorrow: 'אין שיחות צפויות למחר',
   later: 'אין שיחות צפויות בהמשך',
+  not_handled: 'אין שיחות שלא טופלו',
 }
 
 /** תוצאות השיחה, בסדר שבו הן מוצגות למוקדן. */

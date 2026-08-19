@@ -16,6 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tests.e2e_seating import bootstrap, shutdown  # noqa: E402
+from tests.call_center_helpers import days_ago_for_round_due_today  # noqa: E402
 
 
 def _admin_headers(api) -> dict:
@@ -95,8 +96,11 @@ def test_due_round_lists_only_open_guests() -> None:
         api.client.patch(f"/guests/{declined['id']}", headers=api.headers,
                          json={"rsvp_status": "declined"})
 
-        # המסלול התחיל לפני 10 ימים — סבב שיחות כבר נפתח.
-        _configure_track(api, days_to_event=8, commit_days=3, started_days_ago=12)
+        # המסלול מתוזמן כך שהסבב הראשון ייפתח בדיוק היום — כדי שהמוזמן יופיע
+        # תחת scope=today (ברירת המחדל של /admin/call-center/queue), ולא
+        # תחת "לא טופל" (סבב שנפתח בעבר, ראו app/call_center.py::NOT_HANDLED).
+        _configure_track(api, days_to_event=8, commit_days=3,
+                         started_days_ago=days_ago_for_round_due_today(8, 3))
         assert any(p.date <= date.today() for p in _rounds(api)), "הבדיקה מצפה לסבב פעיל"
 
         r = api.client.get("/admin/call-center/queue", headers=headers,

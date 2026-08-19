@@ -1266,8 +1266,10 @@ export type CallOutcome =
   | 'wrong_number'
   | 'callback'
 
-/** טווח התצוגה במסך השיחות — היום (ברירת המחדל) / מחר / בהמשך. */
-export type CallCenterScope = 'today' | 'tomorrow' | 'later'
+/** טווח התצוגה במסך השיחות — היום (ברירת המחדל) / מחר / בהמשך / לא טופל
+ * (שיחה מתאריך שעבר, באירוע פעיל, שעדיין לא בוצעה). אירוע שתאריכו כבר עבר
+ * לא מופיע באף אחד מהטווחים, כולל 'לא טופל' — ראו backend/app/call_center.py. */
+export type CallCenterScope = 'today' | 'tomorrow' | 'later' | 'not_handled'
 
 export interface CallCenterEventRow {
   event_id: number

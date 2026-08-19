@@ -97,16 +97,23 @@ export function PhoneAgentApp({
   const [streak, setStreak] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
 
+  // "שיחות להיום" בעיני הטלפן = שיחות של היום ממש + שיחות ישנות שעדיין לא
+  // טופלו ("לא טופל", ראו backend/app/call_center.py). היא לא צריכה לדעת
+  // על החלוקה הזו — שתי הבקשות ממוזגות לרשימת עבודה אחת, ישנות קודם (הכי
+  // דחוף), כדי שאף מוזמן לא ייעלם לה רק כי scope=today הפך למחמיר יותר.
   const load = useCallback(async () => {
     try {
-      const [overview, page] = await Promise.all([
-        callCenterOverview(),
-        callCenterQueue({ q: query, limit: PAGE_SIZE, offset: 0 }),
+      const [todayOverview, overdueOverview, todayPage, overduePage] = await Promise.all([
+        callCenterOverview('today'),
+        callCenterOverview('not_handled'),
+        callCenterQueue({ scope: 'today', q: query, limit: PAGE_SIZE, offset: 0 }),
+        callCenterQueue({ scope: 'not_handled', q: query, limit: PAGE_SIZE, offset: 0 }),
       ])
-      setDone(overview.done)
-      setRows(page.items)
+      const merged = [...overduePage.items, ...todayPage.items]
+      setDone(todayOverview.done + overdueOverview.done)
+      setRows(merged)
       setError(null)
-      return page.items
+      return merged
     } catch (err) {
       setError(err instanceof Error ? err.message : 'טעינת רשימת השיחות נכשלה')
       return null
