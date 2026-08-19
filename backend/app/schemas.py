@@ -132,7 +132,11 @@ class GuestListPage(BaseModel):
 class SeatingRequest(BaseModel):
     seats_per_table: int = 12
     num_tables: Optional[int] = None          # None => חישוב אוטומטי
-    only_confirmed: bool = False              # לשבץ רק מי שאישר הגעה
+    # היסטורי — Deprecated. עד 2026-08-19 שלט האם לסנן למי שאישר הגעה; מאז
+    # ה-Audit RSVP↔הושבה ``/seating/generate`` תמיד מסנן ל"מגיע" בלבד (ראו
+    # ``routers/seating.py::generate``), בלי קשר לערך הזה. נשאר בסכמה רק כדי
+    # שלא לשבור קריאות ישנות ששולחות אותו.
+    only_confirmed: bool = False
     persist: bool = False                     # לשמור table_number חזרה על המוזמנים
     # מצב "השלמת מקומות": מי שכבר משובץ נשאר בדיוק במקומו, והמנוע רק מוצא
     # שולחן למי שאין לו. מחליף את מנוע ה"מילוי" הנפרד שהיה בצד הלקוח, כך
@@ -1558,9 +1562,11 @@ class CallCenterEventRow(BaseModel):
 
 
 class CallCenterOverview(BaseModel):
-    """מסך ה-Call Center הראשי: מונים + רשימת האירועים."""
+    """מסך ה-Call Center הראשי: מונים + רשימת האירועים, לטווח נבחר."""
 
-    total: int                  # סך כל השיחות בסבבים הפעילים
+    # today / tomorrow / later — ראו app/call_center.py: SCOPES.
+    scope: str = "today"
+    total: int                  # סך כל השיחות בטווח הנבחר
     done: int
     waiting: int
     events_needing_attention: int
@@ -1598,6 +1604,7 @@ class CallCenterGuestRow(BaseModel):
 
 
 class CallCenterQueue(BaseModel):
+    scope: str = "today"
     items: list[CallCenterGuestRow]
     total: int
     limit: int

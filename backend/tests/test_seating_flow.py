@@ -27,6 +27,17 @@ def _table_of(hall: dict, guest_name: str):
     return None
 
 
+def _add_confirmed(api, full_name: str, phone: str, **kwargs) -> dict:
+    """יוצר מוזמן ומיד מסמן אותו "מגיע". הבדיקות בקובץ הזה בודקות את
+    **מנוע ההושבה** (אילוצים/אזורים/undo וכו'), לא את ה-RSVP עצמו — ומאז
+    ה-Audit RSVP↔הושבה (2026-08-19) ``/seating/generate`` משבץ רק "מגיע",
+    אז כל מוזמן שאמור להיות מועמד לשיבוץ חייב אישור מפורש (ראו
+    ``Api.confirm`` ב-``e2e_seating.py``)."""
+    g = api.add_guest(full_name, phone, **kwargs)
+    api.confirm(g["id"])
+    return g
+
+
 def test_internal_note_does_not_affect_seating() -> None:
     """הערה פנימית עם ניסוח שנראה כמו אילוץ — לא יוצרת אילוץ."""
     api, teardown = bootstrap()
@@ -74,11 +85,11 @@ def test_hard_constraint_is_never_broken() -> None:
     """
     api, teardown = bootstrap()
     try:
-        api.add_guest("דני כהן", "0501111111",
-                      seating_notes="לא לשבת ליד משה לוי")
-        api.add_guest("משה לוי", "0502222222")
+        _add_confirmed(api, "דני כהן", "0501111111",
+                       seating_notes="לא לשבת ליד משה לוי")
+        _add_confirmed(api, "משה לוי", "0502222222")
         for i in range(6):
-            api.add_guest(f"אורח {i}", f"05055500{i:02d}")
+            _add_confirmed(api, f"אורח {i}", f"05055500{i:02d}")
 
         api.save_hall(
             [
@@ -121,9 +132,9 @@ def test_internal_note_cannot_break_seating() -> None:
     """
     api, teardown = bootstrap()
     try:
-        api.add_guest("דני כהן", "0501111111",
-                      notes_raw="לא לשבת ליד משה לוי")
-        api.add_guest("משה לוי", "0502222222")
+        _add_confirmed(api, "דני כהן", "0501111111",
+                       notes_raw="לא לשבת ליד משה לוי")
+        _add_confirmed(api, "משה לוי", "0502222222")
         api.save_hall(
             [
                 {"table_number": 1, "x": 100, "y": 100, "guest_ids": [],
@@ -147,9 +158,9 @@ def test_zone_preference_from_seating_note() -> None:
     """"קרוב לבר" מהערת הושבה מזיז את המוזמן לשולחן שליד הבר."""
     api, teardown = bootstrap()
     try:
-        api.add_guest("דני כהן", "0501111111", seating_notes="קרוב לבר")
+        _add_confirmed(api, "דני כהן", "0501111111", seating_notes="קרוב לבר")
         for i in range(3):
-            api.add_guest(f"אורח {i}", f"05055500{i:02d}")
+            _add_confirmed(api, f"אורח {i}", f"05055500{i:02d}")
 
         api.save_hall(
             [
@@ -205,10 +216,10 @@ def test_locked_table_is_not_touched() -> None:
     """
     api, teardown = bootstrap()
     try:
-        keep_a = api.add_guest("אורח נעול א", "0501000001")
-        keep_b = api.add_guest("אורח נעול ב", "0501000002")
+        keep_a = _add_confirmed(api, "אורח נעול א", "0501000001")
+        keep_b = _add_confirmed(api, "אורח נעול ב", "0501000002")
         for i in range(8):
-            api.add_guest(f"אורח חופשי {i}", f"05020000{i:02d}")
+            _add_confirmed(api, f"אורח חופשי {i}", f"05020000{i:02d}")
 
         api.save_hall([
             _table(1, 100, 100, capacity=6, locked=True,
@@ -233,14 +244,14 @@ def test_only_unassigned_keeps_everyone_in_place() -> None:
     """מצב "השלמת מקומות": מי שכבר משובץ לא זז, ומי שלא — מקבל שולחן."""
     api, teardown = bootstrap()
     try:
-        seated = [api.add_guest(f"יושב {i}", f"05030000{i:02d}") for i in range(4)]
+        seated = [_add_confirmed(api, f"יושב {i}", f"05030000{i:02d}") for i in range(4)]
         api.save_hall([
             _table(1, 100, 100, capacity=6, guest_ids=[g["id"] for g in seated]),
             _table(2, 400, 100, capacity=6),
         ], seats_per_table=6)
 
         before = {g["full_name"]: 1 for g in seated}
-        newcomer = api.add_guest("מאחר לארוחה", "0504000001")
+        newcomer = _add_confirmed(api, "מאחר לארוחה", "0504000001")
 
         r = api.generate(seats_per_table=6, persist=True, only_unassigned=True)
         assert r.status_code == 200, r.text
@@ -259,12 +270,12 @@ def test_group_constraint_applies_to_whole_group() -> None:
     """"לא לשבת ליד עובדים" באירוע עסקי חל על **כל** בני הקבוצה."""
     api, teardown = bootstrap(event_type="business")
     try:
-        api.add_guest("מנכ\"לית", "0505000001", group_type="management",
-                      seating_notes="לא לשבת ליד עובדים")
+        _add_confirmed(api, "מנכ\"לית", "0505000001", group_type="management",
+                       seating_notes="לא לשבת ליד עובדים")
         for i in range(3):
-            api.add_guest(f"עובד {i}", f"05060000{i:02d}", group_type="employees")
+            _add_confirmed(api, f"עובד {i}", f"05060000{i:02d}", group_type="employees")
         for i in range(2):
-            api.add_guest(f"לקוח {i}", f"05070000{i:02d}", group_type="clients")
+            _add_confirmed(api, f"לקוח {i}", f"05070000{i:02d}", group_type="clients")
 
         hall = api.get_hall()
         assert len(hall["forbidden_pairs"]) == 3, (
@@ -295,9 +306,9 @@ def test_violations_are_reported_when_unsolvable() -> None:
     api, teardown = bootstrap()
     try:
         # שני אנשים שאסור להם יחד, ורק שולחן אחד באולם => בהכרח הפרה.
-        api.add_guest("דני כהן", "0508000001",
-                      seating_notes="לא לשבת ליד משה לוי")
-        api.add_guest("משה לוי", "0508000002")
+        _add_confirmed(api, "דני כהן", "0508000001",
+                       seating_notes="לא לשבת ליד משה לוי")
+        _add_confirmed(api, "משה לוי", "0508000002")
         api.save_hall([_table(1, 100, 100, capacity=12)])
 
         r = api.generate(persist=True)
@@ -340,8 +351,8 @@ def test_undo_restores_previous_arrangement() -> None:
     """
     api, teardown = bootstrap()
     try:
-        manual = api.add_guest("שובץ ידנית", "0510000001")
-        others = [api.add_guest(f"אורח {i}", f"05110000{i:02d}") for i in range(5)]
+        manual = _add_confirmed(api, "שובץ ידנית", "0510000001")
+        others = [_add_confirmed(api, f"אורח {i}", f"05110000{i:02d}") for i in range(5)]
 
         # סידור ידני: המוזמן הראשון בשולחן 2, השאר ללא שולחן.
         api.save_hall([
@@ -403,10 +414,10 @@ def test_natural_hebrew_negations_separate_guests() -> None:
     for note in phrasings:
         api, teardown = bootstrap()
         try:
-            api.add_guest("גדי אבן", "0509990001", seating_notes=note)
-            api.add_guest("משה לוי", "0509990002")
+            _add_confirmed(api, "גדי אבן", "0509990001", seating_notes=note)
+            _add_confirmed(api, "משה לוי", "0509990002")
             for i in range(6):
-                api.add_guest(f"אורח {i}", f"05099910{i:02d}")
+                _add_confirmed(api, f"אורח {i}", f"05099910{i:02d}")
 
             hall = api.get_hall()
             assert len(hall["forbidden_pairs"]) == 1, (

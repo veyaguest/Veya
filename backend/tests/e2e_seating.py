@@ -116,6 +116,21 @@ class Api:
         assert r.status_code == 201, f"הוספת מוזמן נכשלה: {r.status_code} {r.text}"
         return r.json()
 
+    def confirm(self, guest_id: int, count: int | None = None):
+        """מסמן מוזמן כ'מגיע' — נוחות לבדיקות איכות ההושבה (אילוצים/אזורים/
+        undo וכו'), שבודקות את **המנוע**, לא את ה-RSVP עצמו. מאז ה-Audit
+        RSVP↔הושבה (2026-08-19) ``/seating/generate`` משבץ רק "מגיע"
+        (ראו ``routers/seating.py::generate``), אז כל מוזמן שבדיקת-הושבה
+        מצפה שהמנוע יזיז חייב להיות מאושר במפורש — ``add_guest`` לבדו
+        משאיר אותו "טרם השיב", בדיוק כמו בברירת המחדל האמיתית של המוצר.
+        """
+        body: dict = {"rsvp_status": "confirmed"}
+        if count is not None:
+            body["confirmed_count"] = count
+        r = self.client.patch(f"/guests/{guest_id}", headers=self.headers, json=body)
+        assert r.status_code == 200, f"אישור הגעה נכשל: {r.status_code} {r.text}"
+        return r.json()
+
     def save_hall(self, tables: list[dict], elements: list[dict] | None = None,
                   seats_per_table: int = 12):
         r = self.client.put(

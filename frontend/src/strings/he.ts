@@ -678,6 +678,24 @@ export const strings = {
       n === 1 ? 'מוזמן אחד הוחזר למקומו הקודם' : `${n} מוזמנים הוחזרו למקומות הקודמים`,
     undoError: 'לא הצלחנו להחזיר את הסידור הקודם. נסו שוב',
 
+    // אזהרה לפני הושבה ידנית של מי שלא "מגיע" (Audit RSVP↔הושבה,
+    // 2026-08-19) — גרירה/הקשה על שולחן, הקשה על מוזמן ברשימה, "שיבוץ
+    // מהיר", ואישור הצעה חכמה. לעולם לא חוסמת, ולעולם לא נוגעת ב-RSVP —
+    // רק שואלת. "לא מגיע" מקבל ניסוח חד יותר מ"עדיין לא אישר".
+    seatWarningTitle: (isDeclined: boolean) =>
+      isDeclined ? '⚠️ האורח מסומן כ"לא מגיע"' : '⚠️ האורח עדיין לא אישר הגעה',
+    seatWarningMessageSingle: (name: string, isDeclined: boolean) =>
+      isDeclined
+        ? `${name} מסומן/ת כ"לא מגיע/ה". האם בכל זאת להושיב אותו/ה?`
+        : `${name} עדיין לא אישר/ה את הגעתו/ה. האם בכל זאת להושיב אותו/ה?`,
+    seatWarningMessageMulti: (names: string[]) => {
+      const shown = names.slice(0, 3).join(', ')
+      const restCount = names.length - 3
+      const rest = restCount > 0 ? ` ועוד ${restCount}` : ''
+      return `${shown}${rest} לא אישרו הגעה (או סימנו שלא מגיעים). האם בכל זאת להושיב את כולם?`
+    },
+    seatWarningConfirm: 'כן, הושב בכל זאת',
+
     // דרישה 7 — לשונית ההגדרות.
     settingsTab: 'הגדרות הושבה',
     constraintsTitle: 'אילוצים והעדפות',

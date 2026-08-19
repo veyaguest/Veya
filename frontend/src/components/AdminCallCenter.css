@@ -43,67 +43,67 @@
 .cc-stat-good .cc-stat-value { color: var(--green); }
 .cc-stat-warn .cc-stat-value { color: var(--gold-deep); }
 
-/* ---- כרטיסי האירועים ---- */
-.cc-events {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-.cc-event {
-  display: block;
-  width: 100%;
-  text-align: start;
-  font: inherit;
-  cursor: pointer;
-  background: var(--cream);
+/* ---- מעבר טווח: היום / מחר / בהמשך ---- */
+.cc-scope-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: var(--surface-hi);
   border: 1px solid var(--line);
   border-radius: var(--radius-l);
-  box-shadow: var(--shadow-card);
-  padding: 14px 16px;
-  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+  width: fit-content;
 }
 
-.cc-event:hover { box-shadow: var(--shadow-card-hover); }
-.cc-event.active { border-color: var(--gold); }
-
-.cc-event-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.cc-event-hosts {
-  font-size: 16px;
+.cc-scope-tab {
+  font: inherit;
   font-weight: 650;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: 38px;
+  padding: 6px 18px;
+  border: none;
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--muted);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.cc-scope-tab:hover { color: var(--charcoal); }
+.cc-scope-tab.active { background: var(--cream); color: var(--charcoal); box-shadow: var(--shadow-card); }
+
+.cc-dot { color: var(--faint); }
+
+/* ---- קיבוץ המוזמנים לפי אירוע ---- */
+.cc-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cc-group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 0 2px 8px;
+  border-bottom: 1px solid var(--line-2);
+  margin-bottom: 8px;
+}
+
+.cc-group-hosts {
+  font-size: 17px;
+  font-weight: 700;
   color: var(--charcoal);
 }
 
-.cc-event-count {
-  min-width: 30px;
-  padding: 2px 9px;
-  border-radius: 999px;
-  background: var(--gold);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.cc-event-meta {
-  margin-top: 6px;
+.cc-group-meta {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: var(--body);
+  color: var(--muted);
 }
-
-.cc-event-sub { color: var(--muted); font-size: 12px; }
-.cc-dot { color: var(--faint); }
 
 /* ---- כותרת הרשימה + סינונים ---- */
 .cc-list-head {
@@ -179,6 +179,26 @@
 
 .cc-guest-sub { font-size: 12px; color: var(--muted); }
 .cc-last { color: var(--gold-deep); }
+
+/* מוזמן שחוזר בגלל Follow-up שהובטח — בולט מעל השאר, כדי שהמוקדן לא ישכח. */
+.cc-guest-followup { border-color: var(--gold); }
+
+.cc-followup-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold-deep);
+}
+
+.cc-followup-time {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-deep);
+}
 
 .cc-chip {
   padding: 1px 8px;
@@ -355,8 +375,7 @@
 /* ---- דסקטופ ---- */
 @media (min-width: 760px) {
   .cc-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .cc-events { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-  .cc-filters { grid-template-columns: minmax(200px, 1.6fr) repeat(3, minmax(0, 1fr)); }
+  .cc-filters { grid-template-columns: minmax(200px, 1.6fr) repeat(2, minmax(0, 1fr)); }
   .cc-list-head {
     flex-direction: row;
     align-items: center;

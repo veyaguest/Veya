@@ -10821,6 +10821,10 @@ td.notes.seating {
     font-weight: 600;
     color: var(--charcoal);
   }
+  .hm-gr-name .badge {
+    margin-inline-start: 6px;
+    vertical-align: 1px;
+  }
   .hm-gr-sub {
     font-size: 12px;
     color: var(--muted);

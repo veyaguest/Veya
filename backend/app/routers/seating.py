@@ -46,12 +46,27 @@ def generate(
     event: models.Event = Depends(_write),
 ):
     stmt = select(models.Guest).where(models.Guest.event_id == event.id)
-    if payload.only_confirmed:
-        stmt = stmt.where(models.Guest.rsvp_status == "confirmed")
-    guests = db.scalars(stmt).all()
+    all_guests = db.scalars(stmt).all()
 
-    if not guests:
+    if not all_guests:
         raise HTTPException(status_code=400, detail="אין מוזמנים לשיבוץ")
+
+    # רק "מגיע" יכול להיכנס כמועמד *חדש* להושבה אוטומטית (Audit RSVP↔הושבה,
+    # 2026-08-19) — תמיד, בלי תלות ב-``payload.only_confirmed`` (הדגל ההיסטורי
+    # שהלקוח לא תמיד שולח; אסור להסתמך על כך). מי שאינו "מגיע" פשוט לא נכנס
+    # לרשימת ``guests`` למטה, ולכן: (א) לעולם לא הופך למועמד אצל המנוע —
+    # כולל דרך ה-``max(1, ...)`` ב-``app/seating.py`` שמעגל party_size=0
+    # לאדם אחד, כי הוא כלל לא מגיע לשם; (ב) לעולם לא נכתב לו table_number
+    # מחדש (לולאת ה-persist למטה עוברת רק על ``guests``) — מי שכבר משובץ
+    # ואינו "מגיע" נשאר בדיוק במקום שהוא, גם אם ה-RSVP שלו השתנה אחרי שהוא
+    # כבר שובץ. שיבוץ ידני (assign/save_hall) לא עובר דרך ה-endpoint הזה
+    # בכלל, ולכן לא מושפע מהסינון — הוא ממשיך לאפשר הושבה ידנית של מי שלא
+    # אישר (עם אזהרה בצד הלקוח).
+    guests = [g for g in all_guests if g.rsvp_status == "confirmed"]
+    if not guests:
+        raise HTTPException(
+            status_code=400, detail="אין מוזמנים שאישרו הגעה לשיבוץ"
+        )
 
     # חבורה בודדת גדולה מקיבולת שולחן — לא ניתן לשבץ.
     # סופרים לפי הכמות שאושרה בפועל (effective_seats), לא לפי מה שהוזמן.
@@ -83,7 +98,9 @@ def generate(
     # התאמה *מכלילה*: שם פרטי בלבד → כל המוזמנים באותו שם (כל ה"דני" באולם);
     # "משפחת X" → כל בני המשפחה. build_pairs_from_guests מיישם זאת ישירות מתוך
     # ההערות הגולמיות, בלי resolve_name (שבוחר התאמה יחידה והופך שם עמום להבהרה).
-    guest_full = _seating_note_dicts(guests)
+    # מכל **המוזמנים** (``all_guests``, לא רק ``guests``) — כדי ש"לא לשבת ליד
+    # X" ימשיך להיפתר גם כש-X עצמו לא אישר הגעה עדיין ואינו מועמד להושבה.
+    guest_full = _seating_note_dicts(all_guests)
     fb, tg = parser.build_pairs_from_guests(guest_full, event.event_type)
     forbidden = set(fb)
     forbidden.update(tuple(p) for p in payload.forbidden_pairs)  # + מה שהמשתמש ביקש

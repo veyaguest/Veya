@@ -1266,6 +1266,9 @@ export type CallOutcome =
   | 'wrong_number'
   | 'callback'
 
+/** טווח התצוגה במסך השיחות — היום (ברירת המחדל) / מחר / בהמשך. */
+export type CallCenterScope = 'today' | 'tomorrow' | 'later'
+
 export interface CallCenterEventRow {
   event_id: number
   event_type: string
@@ -1282,6 +1285,7 @@ export interface CallCenterEventRow {
 }
 
 export interface CallCenterOverview {
+  scope: CallCenterScope
   total: number
   done: number
   waiting: number
@@ -1312,6 +1316,7 @@ export interface CallCenterGuestRow {
 }
 
 export interface CallCenterQueue {
+  scope: CallCenterScope
   items: CallCenterGuestRow[]
   total: number
   limit: number

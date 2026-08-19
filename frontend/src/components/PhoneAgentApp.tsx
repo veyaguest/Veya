@@ -57,12 +57,25 @@ function eventDateText(iso: string): string {
   return y && m && d ? `${d}/${m}/${y}` : iso
 }
 
+// VEYA היא מערכת ישראלית — מועדים תמיד מוצגים בשעון ישראל, לא בשעון
+// הדפדפן/המכשיר של הטלפן.
+const LOCAL_TIMEZONE = 'Asia/Jerusalem'
+
+/** מפרש ISO string שמגיע מה-Backend כ-UTC נאיבי (בלי Z/offset). בלי הסימון
+ * המפורש הזה, ``new Date()`` היה מפרש את המחרוזת כזמן מקומי של המכשיר
+ * במקום UTC (ראו ההסבר המלא ב-AdminCallCenter.tsx::parseNaiveUtc). */
+function parseNaiveUtc(iso: string): Date {
+  const hasZone = /[Zz]|[+-]\d{2}:?\d{2}$/.test(iso)
+  return new Date(hasZone ? iso : `${iso}Z`)
+}
+
 function formatDateTime(iso: string | null): string {
   if (!iso) return ''
-  const d = new Date(iso)
+  const d = parseNaiveUtc(iso)
   if (isNaN(d.getTime())) return ''
   return d.toLocaleString('he-IL', {
     day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit',
+    timeZone: LOCAL_TIMEZONE,
   })
 }
 

@@ -10,6 +10,7 @@ import type {
   CallCenterGuestDetail,
   CallCenterGuestRow,
   CallCenterOverview,
+  CallCenterScope,
   CallOutcome,
   Side,
 } from '../types'
@@ -20,12 +21,33 @@ import './AdminCallCenter.css'
  * Call Center — מסך השיחות של האדמין.
  *
  * המסך לא מנהל תאריכים משלו: הוא מציג בדיוק את מה שה-Backend גוזר מ-Workflow
- * אישורי ההגעה (backend/app/call_center.py). אירוע שסבב השיחות הבא שלו עוד
- * לא הגיע פשוט לא מופיע כאן, ומוזמן שכבר אישר או ביטל יורד מהתור מיד — בין
- * אם דרך WhatsApp, דרך בעל/ת האירוע, או דרך המסך הזה.
+ * אישורי ההגעה (backend/app/call_center.py). ברירת המחדל היא "היום" — רק
+ * שיחות שצריך לבצע עכשיו. "מחר"/"בהמשך" הם תצוגה מקדימה בלבד, לתכנון.
+ * מוזמן שכבר אישר או ביטל יורד מהתור מיד — בין אם דרך WhatsApp, דרך בעל/ת
+ * האירוע, או דרך המסך הזה.
  */
 
-const PAGE_SIZE = 50
+// גדול מספיק כדי לכסות יום עבודה שלם על פני כמה אירועים בלי לקטוע אירוע
+// באמצע (ה-Backend מגביל ל-200 בכל מקרה, ראו MAX_PAGE_LIMIT ב-router).
+const PAGE_SIZE = 200
+
+const SCOPE_TABS: { key: CallCenterScope; label: string }[] = [
+  { key: 'today', label: 'היום' },
+  { key: 'tomorrow', label: 'מחר' },
+  { key: 'later', label: 'בהמשך' },
+]
+
+const SCOPE_NOUN: Record<CallCenterScope, string> = {
+  today: 'שיחות להיום',
+  tomorrow: 'שיחות למחר',
+  later: 'שיחות בהמשך',
+}
+
+const SCOPE_EMPTY_TITLE: Record<CallCenterScope, string> = {
+  today: 'אין שיחות היום',
+  tomorrow: 'אין שיחות צפויות למחר',
+  later: 'אין שיחות צפויות בהמשך',
+}
 
 /** תוצאות השיחה, בסדר שבו הן מוצגות למוקדן. */
 const OUTCOME_BUTTONS: {
@@ -58,16 +80,48 @@ function sideText(side: string, eventType: string): string {
   return sidePhrase(side as Side, getEventTerms(eventType))
 }
 
+// VEYA היא מערכת ישראלית — מועדים תמיד מוצגים בשעון ישראל, לא בשעון
+// הדפדפן/המכשיר (ששניהם עשויים להיות שונים, למשל למוקדן שעובד מחו"ל).
+const LOCAL_TIMEZONE = 'Asia/Jerusalem'
+
+/** מפרש ISO string שמגיע מה-Backend כ-UTC נאיבי (בלי Z/offset — ראו
+ * ``call_center.py``: כל הזמנים במערכת נשמרים ``datetime.utcnow()``).
+ * בלי הסימון המפורש כאן, ``new Date()`` היה מפרש את המחרוזת כזמן *מקומי
+ * של המכשיר* במקום UTC — טעות שכבר תוקנה פעם אחת בצד ה-Backend
+ * (``_callback_phrase``); זו אותה טעות בדיוק, בצד ה-Frontend. */
+function parseNaiveUtc(iso: string): Date {
+  const hasZone = /[Zz]|[+-]\d{2}:?\d{2}$/.test(iso)
+  return new Date(hasZone ? iso : `${iso}Z`)
+}
+
 function formatDateTime(iso: string | null): string {
   if (!iso) return ''
-  const d = new Date(iso)
+  const d = parseNaiveUtc(iso)
   if (isNaN(d.getTime())) return ''
   return d.toLocaleString('he-IL', {
     day: 'numeric',
     month: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: LOCAL_TIMEZONE,
   })
+}
+
+/** "לחזור היום ב-10:00" / "לחזור ב-20/08 ב-10:00" — לפי אם המועד היום. */
+function followupPhrase(iso: string | null): string {
+  if (!iso) return ''
+  const d = parseNaiveUtc(iso)
+  if (isNaN(d.getTime())) return ''
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: LOCAL_TIMEZONE })
+  const dStr = d.toLocaleDateString('en-CA', { timeZone: LOCAL_TIMEZONE })
+  const time = d.toLocaleTimeString('he-IL', {
+    hour: '2-digit', minute: '2-digit', timeZone: LOCAL_TIMEZONE,
+  })
+  if (dStr === todayStr) return `לחזור היום ב-${time}`
+  const date = d.toLocaleDateString('he-IL', {
+    day: 'numeric', month: 'numeric', timeZone: LOCAL_TIMEZONE,
+  })
+  return `לחזור ב-${date} ב-${time}`
 }
 
 /** מספר טלפון לחיוג — הדפדפן/הטלפון פותח את החייגן. */
@@ -76,34 +130,44 @@ function telHref(phone: string): string {
 }
 
 export function AdminCallCenter() {
+  const [scope, setScope] = useState<CallCenterScope>('today')
   const [overview, setOverview] = useState<CallCenterOverview | null>(null)
   const [rows, setRows] = useState<CallCenterGuestRow[] | null>(null)
   const [total, setTotal] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
-  // סינונים — תצוגתיים בלבד, לא משנים מי צריך שיחה לפי ה-Workflow.
+  // סינונים — תצוגתיים בלבד, לא משנים מי צריך שיחה לפי ה-Workflow. החיפוש
+  // (query) עובר ל-Backend ומסונן שם *בתוך הטווח הנבחר בלבד*.
   const [eventId, setEventId] = useState<number | null>(null)
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
-  const [roundNumber, setRoundNumber] = useState<number | null>(null)
   const [offset, setOffset] = useState(0)
 
   const [openGuestId, setOpenGuestId] = useState<number | null>(null)
 
   const loadOverview = useCallback(() => {
-    callCenterOverview()
+    callCenterOverview(scope)
       .then(setOverview)
       .catch((err) => setError(err instanceof Error ? err.message : 'טעינת מסך השיחות נכשלה'))
-  }, [])
+  }, [scope])
 
   const loadQueue = useCallback(() => {
-    callCenterQueue({ eventId, q: query, status, roundNumber, limit: PAGE_SIZE, offset })
+    callCenterQueue({ scope, eventId, q: query, status, limit: PAGE_SIZE, offset })
       .then((page) => {
         setRows(page.items)
         setTotal(page.total)
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'טעינת רשימת השיחות נכשלה'))
-  }, [eventId, query, status, roundNumber, offset])
+  }, [scope, eventId, query, status, offset])
+
+  // מעבר טווח: מאפסים סינונים תלויי-מסך (אירוע/עמוד) כדי לא "לגרור" בחירה
+  // מ"היום" לתוך "מחר" בטעות, אבל משאירים את החיפוש (נוח, וממילא מסונן
+  // מחדש בתוך הטווח החדש).
+  function selectScope(next: CallCenterScope) {
+    setScope(next)
+    setEventId(null)
+    setOffset(0)
+  }
 
   useEffect(() => {
     loadOverview()
@@ -122,59 +186,63 @@ export function AdminCallCenter() {
     loadQueue()
   }
 
-  const selectedEvent = useMemo(
-    () => overview?.events.find((e) => e.event_id === eventId) ?? null,
-    [overview, eventId],
-  )
-
-  const availableRounds = useMemo(() => {
-    const set = new Set<number>()
-    overview?.events.forEach((e) => set.add(e.round_number))
-    return [...set].sort((a, b) => a - b)
-  }, [overview])
+  // קיבוץ המוזמנים לפי אירוע — סדר האירועים נקבע ב-Backend (הכי הרבה שיחות
+  // קודם, ובשוויון האירוע הקרוב יותר; ראו call_center.py::_event_sort_key),
+  // וסדר האורחים בתוך כל אירוע כבר מגיע ממוין (Follow-up קודם, ואז א-ב).
+  const groups = useMemo(() => {
+    if (!overview || !rows) return []
+    const byEvent = new Map<number, CallCenterGuestRow[]>()
+    for (const row of rows) {
+      const list = byEvent.get(row.event_id)
+      if (list) list.push(row)
+      else byEvent.set(row.event_id, [row])
+    }
+    return overview.events
+      .filter((ev) => byEvent.has(ev.event_id))
+      .map((ev) => ({ event: ev, guests: byEvent.get(ev.event_id) ?? [] }))
+  }, [overview, rows])
 
   if (error && !overview) return <div className="admin-error">{error}</div>
   if (!overview) return <div className="admin-loading">טוען…</div>
 
   return (
     <div className="admin-page cc-page">
+      <div className="cc-scope-tabs" role="tablist" aria-label="טווח תצוגה">
+        {SCOPE_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={scope === tab.key}
+            className={`cc-scope-tab ${scope === tab.key ? 'active' : ''}`}
+            onClick={() => selectScope(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <div className="cc-stats">
-        <StatCard label="שיחות בסבב הנוכחי" value={overview.total} />
+        <StatCard label={SCOPE_NOUN[scope]} value={overview.total} />
         <StatCard label="הושלמו" value={overview.done} tone="good" />
         <StatCard label="ממתינות" value={overview.waiting} tone="warn" />
-        <StatCard label="אירועים לטיפול" value={overview.events_needing_attention} />
+        <StatCard label="אירועים" value={overview.events_needing_attention} />
       </div>
 
       {overview.events.length === 0 ? (
         <div className="cc-empty">
           <div className="cc-empty-icon">☕</div>
-          <h3>אין שיחות היום</h3>
+          <h3>{SCOPE_EMPTY_TITLE[scope]}</h3>
           <p>
-            אין כרגע אירוע שסבב השיחות שלו הגיע לפי מסלול אישורי ההגעה.
-            כשיגיע מועד הסבב הבא, המוזמנים יופיעו כאן אוטומטית.
+            {scope === 'today'
+              ? 'אין כרגע אירוע שצריך שיחה היום לפי מסלול אישורי ההגעה. כשיגיע מועד הסבב הבא, המוזמנים יופיעו כאן אוטומטית.'
+              : 'אין כרגע אירוע עם שיחה צפויה בטווח הזה.'}
           </p>
         </div>
       ) : (
         <>
-          <h2 className="admin-section-title">אירועים עם שיחות</h2>
-          <div className="cc-events">
-            {overview.events.map((ev) => (
-              <EventCard
-                key={ev.event_id}
-                event={ev}
-                active={eventId === ev.event_id}
-                onSelect={() => {
-                  setEventId(eventId === ev.event_id ? null : ev.event_id)
-                  setOffset(0)
-                }}
-              />
-            ))}
-          </div>
-
           <div className="cc-list-head">
-            <h2 className="admin-section-title">
-              {selectedEvent ? `שיחות · ${selectedEvent.hosts}` : 'כל השיחות'} ({total})
-            </h2>
+            <h2 className="admin-section-title">{SCOPE_NOUN[scope]} ({total})</h2>
             <div className="cc-filters">
               <input
                 type="search"
@@ -215,22 +283,6 @@ export function AdminCallCenter() {
                 <option value="pending">טרם השיב</option>
                 <option value="maybe">מתלבט</option>
               </select>
-              <select
-                className="cc-select"
-                value={roundNumber ?? ''}
-                onChange={(e) => {
-                  setRoundNumber(e.target.value ? Number(e.target.value) : null)
-                  setOffset(0)
-                }}
-                aria-label="סינון לפי סבב שיחות"
-              >
-                <option value="">כל הסבבים</option>
-                {availableRounds.map((r) => (
-                  <option key={r} value={r}>
-                    סבב {r}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
 
@@ -238,13 +290,19 @@ export function AdminCallCenter() {
 
           {rows === null ? (
             <div className="admin-loading">טוען…</div>
-          ) : rows.length === 0 ? (
-            <div className="cc-empty-inline">אין שיחות שממתינות לפי הסינון הזה.</div>
+          ) : groups.length === 0 ? (
+            <div className="cc-empty-inline">אין שיחות שתואמות לסינון הזה.</div>
           ) : (
             <>
-              <div className="cc-guests">
-                {rows.map((row) => (
-                  <GuestRow key={row.guest_id} row={row} onOpen={() => setOpenGuestId(row.guest_id)} />
+              <div className="cc-groups">
+                {groups.map(({ event, guests }) => (
+                  <EventGroup
+                    key={event.event_id}
+                    event={event}
+                    guests={guests}
+                    scope={scope}
+                    onOpen={setOpenGuestId}
+                  />
                 ))}
               </div>
               {total > PAGE_SIZE && (
@@ -303,60 +361,57 @@ function StatCard({
   )
 }
 
-function EventCard({
+/** תאריך האירוע לתצוגת כותרת קבוצה — "19.09.2026" (YYYY-MM-DD → D.M.YYYY). */
+function eventDateDots(iso: string): string {
+  if (!iso) return ''
+  const [y, m, d] = iso.slice(0, 10).split('-')
+  return y && m && d ? `${d}.${m}.${y}` : iso
+}
+
+/** כותרת אירוע + רשימת המוזמנים שלו לטווח הנבחר (§2: קיבוץ לפי אירוע). */
+function EventGroup({
   event,
-  active,
-  onSelect,
+  guests,
+  scope,
+  onOpen,
 }: {
   event: CallCenterEventRow
-  active: boolean
-  onSelect: () => void
+  guests: CallCenterGuestRow[]
+  scope: CallCenterScope
+  onOpen: (guestId: number) => void
 }) {
   return (
-    <button
-      type="button"
-      className={`cc-event ${active ? 'active' : ''}`}
-      onClick={onSelect}
-      aria-pressed={active}
-    >
-      <div className="cc-event-top">
-        <span className="cc-event-hosts">{event.hosts}</span>
-        <span className="cc-event-count">{event.waiting}</span>
+    <section className="cc-group">
+      <header className="cc-group-head">
+        <span className="cc-group-hosts">{event.hosts}</span>
+        <span className="cc-group-meta">
+          {event.event_date && (
+            <>
+              <span>{eventDateDots(event.event_date)}</span>
+              <span className="cc-dot">·</span>
+            </>
+          )}
+          <span>{guests.length} {SCOPE_NOUN[scope]}</span>
+        </span>
+      </header>
+      <div className="cc-guests">
+        {guests.map((row) => (
+          <GuestRow key={row.guest_id} row={row} onOpen={() => onOpen(row.guest_id)} />
+        ))}
       </div>
-      <div className="cc-event-meta">
-        <span>{event.round_label}</span>
-        <span className="cc-dot">·</span>
-        <span>נפתח ב-{event.round_date}</span>
-      </div>
-      <div className="cc-event-meta cc-event-sub">
-        {event.venue_name && <span>{event.venue_name}</span>}
-        {event.days_until != null && (
-          <>
-            {event.venue_name && <span className="cc-dot">·</span>}
-            <span>
-              {event.days_until === 0
-                ? 'האירוע היום'
-                : event.days_until > 0
-                  ? `עוד ${event.days_until} ימים`
-                  : 'האירוע עבר'}
-            </span>
-          </>
-        )}
-        {event.done > 0 && (
-          <>
-            <span className="cc-dot">·</span>
-            <span>{event.done} טופלו</span>
-          </>
-        )}
-      </div>
-    </button>
+    </section>
   )
 }
 
 function GuestRow({ row, onOpen }: { row: CallCenterGuestRow; onOpen: () => void }) {
   return (
-    <div className="cc-guest">
+    <div className={`cc-guest ${row.is_followup ? 'cc-guest-followup' : ''}`}>
       <button type="button" className="cc-guest-main" onClick={onOpen}>
+        {row.is_followup && (
+          <div className="cc-followup-badge">
+            <span aria-hidden>🔁</span> חזרה למוזמן
+          </div>
+        )}
         <div className="cc-guest-name">
           {row.full_name}
           <span className={`cc-chip cc-chip-${row.rsvp_status}`}>
@@ -369,26 +424,21 @@ function GuestRow({ row, onOpen }: { row: CallCenterGuestRow; onOpen: () => void
           <span>{row.party_size} מוזמנים</span>
           <span className="cc-dot">·</span>
           <span>{sideText(row.side, row.event_type)}</span>
-          <span className="cc-dot">·</span>
-          <span>{row.event_hosts}</span>
         </div>
         <div className="cc-guest-meta cc-guest-sub">
           <span>סבב {row.round_number}</span>
           <span className="cc-dot">·</span>
           <span>מ-{row.round_date}</span>
-          {row.last_outcome_label && (
+          {row.last_outcome_label && !row.is_followup && (
             <>
               <span className="cc-dot">·</span>
               <span className="cc-last">אחרון: {row.last_outcome_label}</span>
             </>
           )}
-          {row.callback_at && (
-            <>
-              <span className="cc-dot">·</span>
-              <span className="cc-last">לחזור ב-{formatDateTime(row.callback_at)}</span>
-            </>
-          )}
         </div>
+        {row.is_followup && row.callback_at && (
+          <div className="cc-followup-time">{followupPhrase(row.callback_at)}</div>
+        )}
       </button>
       <a className="cc-call-btn" href={telHref(row.phone)} aria-label={`חיוג ל${row.full_name}`}>
         📞

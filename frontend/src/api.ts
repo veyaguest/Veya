@@ -20,6 +20,7 @@ import type {
   CallCenterGuestDetail,
   CallCenterOverview,
   CallCenterQueue,
+  CallCenterScope,
   CallOutcomeRequest,
   CallOutcomeResult,
   Clarification,
@@ -1231,15 +1232,19 @@ export async function adminAuditLog(action?: string): Promise<AdminAuditRow[]> {
 // כל הנתונים כאן נגזרים ב-Backend מ-Workflow אישורי ההגעה הקיים — אין כאן
 // לוח זמנים או סטטוסים נפרדים (ראו backend/app/call_center.py).
 
-/** מסך ה-Call Center הראשי: מונים + האירועים שיש בהם שיחות היום. */
-export async function callCenterOverview(): Promise<CallCenterOverview> {
-  const res = await apiFetch('/admin/call-center')
+/** מסך ה-Call Center הראשי: מונים + האירועים שיש בהם שיחות בטווח הנבחר.
+ * ברירת המחדל ``scope='today'`` — רק שיחות שצריך לבצע היום. */
+export async function callCenterOverview(
+  scope: CallCenterScope = 'today',
+): Promise<CallCenterOverview> {
+  const res = await apiFetch(`/admin/call-center?scope=${scope}`)
   if (!res.ok) throw await toError(res)
   return res.json()
 }
 
-/** תור המוזמנים שצריכים שיחה, עם חיפוש/סינון/דפדוף. */
+/** תור המוזמנים בטווח הנבחר, עם חיפוש/סינון/דפדוף. החיפוש פועל רק בתוך הטווח. */
 export async function callCenterQueue(params: {
+  scope?: CallCenterScope
   eventId?: number | null
   q?: string
   status?: string
@@ -1248,6 +1253,7 @@ export async function callCenterQueue(params: {
   offset?: number
 } = {}): Promise<CallCenterQueue> {
   const qs = new URLSearchParams()
+  qs.set('scope', params.scope ?? 'today')
   if (params.eventId != null) qs.set('event_id', String(params.eventId))
   if (params.q) qs.set('q', params.q)
   if (params.status) qs.set('status', params.status)

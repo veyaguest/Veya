@@ -31,10 +31,11 @@ import type {
   SeatingViolation,
   TableType,
 } from '../types'
-import { GROUP_LABELS } from '../types'
+import { GROUP_LABELS, RSVP_LABELS } from '../types'
 import { activeEventTerms, sideLabel } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { getEventId } from '../authStore'
+import { ConfirmDialog } from './ConfirmDialog'
 
 // טקסטי מסך ההושבה — כולם ב-strings/he.ts, אף פעם לא קשיחים בקומפוננטה.
 const hallT = strings.hall
@@ -1634,6 +1635,14 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     newTables?: { table_number: number; capacity: number }[]
   } | null>(null)
 
+  // אזהרת "הושבה ידנית של מי שלא אישר הגעה" (Audit RSVP↔הושבה, 2026-08-19)
+  // — בהמתנה לאישור, בדיוק כמו pendingProposal. ``onConfirm`` מבצע רק את
+  // ההושבה עצמה (table_number) ולעולם לא נוגע ב-RSVP.
+  const [seatWarning, setSeatWarning] = useState<{
+    guestIds: number[]
+    onConfirm: () => void
+  } | null>(null)
+
   // ---- אילוצים מההערות (לולאת הבהרות) ----
   const [clarifications, setClarifications] = useState<Clarification[]>([])
   const [analyzeSummary, setAnalyzeSummary] = useState<AnalyzeResult | null>(null)
@@ -2856,7 +2865,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     if (movedRef.current) return // זו הייתה גרירה, לא קליק לבחירה
     // מוזמן "נבחר להעברה" (הקשה עליו ברשימה) — הקשה על שולחן משבצת אותו לשם.
     if (selected !== null) {
-      moveGuestToTable(selected, tnum)
+      requestSeatGuest(selected, tnum)
       return
     }
     // אחרת: הקשה **בוחרת** את השולחן על המפה בלבד — בדיוק כמו אלמנט הבר.
@@ -3451,6 +3460,40 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     () => [...tables.flatMap((t) => t.guests), ...unassigned],
     [tables, unassigned],
   )
+
+  // מוזמן לפי id — לבדיקת rsvp_status לפני הושבה ידנית (למטה) ולעוד שימושים
+  // שצריכים חיפוש מהיר בלי לסרוק tables/unassigned בכל פעם.
+  const guestById = useMemo(
+    () => new Map(allGuestsForFamily.map((g) => [g.id, g] as const)),
+    [allGuestsForFamily],
+  )
+
+  // ---- אזהרה לפני הושבה ידנית של מי שלא "מגיע" (Audit RSVP↔הושבה, 2026-08-19) ----
+  // לא חוסמת — רק שואלת, ורק כשהאורח אינו "מגיע". מכסה את כל המסלולים שבהם
+  // אפשר להושיב מוזמן ידנית: הקשה על שולחן אחרי בחירת מוזמן (onTableClick),
+  // הקשה על מוזמן ברשימה אחרי בחירת שולחן (assignTarget), "שיבוץ מהיר" של
+  // מצב יום האירוע (doAssign), ואישור הצעה חכמה (applyMoves). הסרה משולחן
+  // (targetTable === null) לעולם לא מוזהרת.
+  function needsSeatWarning(guestId: number): boolean {
+    return guestById.get(guestId)?.rsvp_status !== 'confirmed'
+  }
+
+  function requestSeatGuest(guestId: number, targetTable: number | null) {
+    if (targetTable === null || !needsSeatWarning(guestId)) {
+      moveGuestToTable(guestId, targetTable)
+      return
+    }
+    setSeatWarning({ guestIds: [guestId], onConfirm: () => moveGuestToTable(guestId, targetTable) })
+  }
+
+  function requestDoAssign(guestId: number, tableNumber: number) {
+    if (!needsSeatWarning(guestId)) {
+      void doAssign(guestId, tableNumber)
+      return
+    }
+    setSeatWarning({ guestIds: [guestId], onConfirm: () => void doAssign(guestId, tableNumber) })
+  }
+
   const familyGroups = useMemo(() => detectFamilyGroups(allGuestsForFamily), [allGuestsForFamily])
   const splitGroups = useMemo(() => detectSplitGroups(tables), [tables])
   const childWarnings = useMemo(
@@ -3544,7 +3587,23 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
 
   function onConfirmProposal() {
     if (!pendingProposal) return
-    applyMoves(pendingProposal.moves, pendingProposal.newTables)
+    const proposal = pendingProposal
+    // אם ההצעה מזיזה מוזמן שלא "מגיע" — אותה אזהרה כמו בכל מסלול הושבה
+    // ידנית אחר (Audit RSVP↔הושבה, 2026-08-19), לפני שמפעילים את המהלכים.
+    const unconfirmedIds = [...new Set(proposal.moves.map((m) => m.guestId))].filter(
+      needsSeatWarning,
+    )
+    if (unconfirmedIds.length > 0) {
+      setSeatWarning({
+        guestIds: unconfirmedIds,
+        onConfirm: () => {
+          applyMoves(proposal.moves, proposal.newTables)
+          setPendingProposal(null)
+        },
+      })
+      return
+    }
+    applyMoves(proposal.moves, proposal.newTables)
     setPendingProposal(null)
   }
   function onCancelProposal() {
@@ -4195,7 +4254,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                     className={`hm-guest-row ${selected === g.id ? 'sel' : ''}`}
                     onClick={() => {
                       if (tableNumber === null && assignTarget !== null) {
-                        moveGuestToTable(g.id, assignTarget)
+                        requestSeatGuest(g.id, assignTarget)
                         setAssignTarget(null)
                         setMobileTab('hall')
                       } else {
@@ -4205,7 +4264,10 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                     }}
                   >
                     <span className="hm-gr-main">
-                      <span className="hm-gr-name">{g.full_name}</span>
+                      <span className="hm-gr-name">
+                        {g.full_name}
+                        <span className={`badge ${g.rsvp_status}`}>{RSVP_LABELS[g.rsvp_status]}</span>
+                      </span>
                       <span className="hm-gr-sub">
                         {GROUP_LABELS[g.group_type]} · {sideLabel(g.side)}
                         {g.seats > 1 ? ` · ${g.seats} מקומות` : ''}
@@ -5287,7 +5349,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                                 key={r.table_number}
                                 className={`dm-rec ${i === 0 ? 'best' : ''}`}
                                 disabled={assignBusy}
-                                onClick={() => doAssign(g.id, r.table_number)}
+                                onClick={() => requestDoAssign(g.id, r.table_number)}
                               >
                                 <span className="dm-rec-top">
                                   <span className="dm-rec-table">
@@ -5311,6 +5373,34 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
             </div>
           </div>
         )}
+
+        {/* ---- אזהרת הושבה ידנית של מי שלא "מגיע" (Audit RSVP↔הושבה) ---- */}
+        {seatWarning && (() => {
+          const names = seatWarning.guestIds
+            .map((id) => guestById.get(id)?.full_name)
+            .filter((n): n is string => !!n)
+          if (names.length === 0) return null
+          const isDeclined = seatWarning.guestIds.some(
+            (id) => guestById.get(id)?.rsvp_status === 'declined',
+          )
+          return (
+            <ConfirmDialog
+              title={hallT.seatWarningTitle(isDeclined)}
+              message={
+                names.length === 1
+                  ? hallT.seatWarningMessageSingle(names[0], isDeclined)
+                  : hallT.seatWarningMessageMulti(names)
+              }
+              confirmLabel={hallT.seatWarningConfirm}
+              danger={isDeclined}
+              onConfirm={() => {
+                seatWarning.onConfirm()
+                setSeatWarning(null)
+              }}
+              onCancel={() => setSeatWarning(null)}
+            />
+          )
+        })()}
       </div>
     )
   }

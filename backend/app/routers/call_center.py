@@ -73,19 +73,29 @@ def _round_label(round_number: int) -> str:
     return f"סבב שיחות {round_number}"
 
 
+def _validated_scope(scope: str) -> str:
+    if scope not in call_center.SCOPES:
+        raise HTTPException(status_code=400, detail="טווח לא מוכר")
+    return scope
+
+
 @router.get("", response_model=schemas.CallCenterOverview)
 def overview(
+    scope: str = "today",
     db: Session = Depends(get_db),
     agent: models.User = Depends(get_current_caller),
 ):
-    """מסך ה-Call Center הראשי — מונים וקיבוץ לפי אירוע.
+    """מסך ה-Call Center הראשי — מונים וקיבוץ לפי אירוע, לטווח נבחר.
 
-    מוצגים רק אירועים שסבב שיחות שלהם כבר הגיע לפי Workflow אישורי ההגעה.
-    אירוע שהסבב הבא שלו בעוד כמה ימים פשוט לא מופיע.
+    ברירת המחדל "היום" (``scope=today``): רק שיחות שצריך לבצע היום, לפי
+    Workflow אישורי ההגעה. ``scope=tomorrow``/``later`` מציגים תצוגה מקדימה
+    של מה שיהיה חייב שיחה מחר / בהמשך — לתכנון בלבד, לא משנה מי "צריך שיחה
+    עכשיו". אירוע בלי אף שיחה בטווח הנבחר פשוט לא מופיע (לא נטען עם 0).
     """
+    scope = _validated_scope(scope)
     today = date.today()
-    queues = call_center.build_queues(
-        db, allowed_event_ids=call_center.visible_event_ids(db, agent)
+    queues = call_center.build_queues_for_scope(
+        db, scope, allowed_event_ids=call_center.visible_event_ids(db, agent)
     )
     rows: list[schemas.CallCenterEventRow] = []
     for q in queues:
@@ -107,16 +117,18 @@ def overview(
     waiting = sum(r.waiting for r in rows)
     done = sum(r.done for r in rows)
     return schemas.CallCenterOverview(
+        scope=scope,
         total=waiting + done,
         done=done,
         waiting=waiting,
-        events_needing_attention=sum(1 for r in rows if r.waiting > 0),
+        events_needing_attention=len(rows),
         events=rows,
     )
 
 
 @router.get("/queue", response_model=schemas.CallCenterQueue)
 def queue(
+    scope: str = "today",
     event_id: Optional[int] = None,
     q: Optional[str] = None,
     status: Optional[str] = None,
@@ -126,15 +138,19 @@ def queue(
     db: Session = Depends(get_db),
     agent: models.User = Depends(get_current_caller),
 ):
-    """רשימת המוזמנים שצריכים שיחה עכשיו, עם חיפוש, סינון ודפדוף.
+    """רשימת המוזמנים לטווח נבחר (היום/מחר/בהמשך), עם חיפוש, סינון ודפדוף.
 
     הסינונים תצוגתיים בלבד — הם לא משנים מי "צריך שיחה" לפי ה-Workflow.
+    החיפוש (``q``) פועל **בתוך הטווח שנבחר בלבד**: הוא מועבר ל-Backend לפני
+    שהתור נבנה, ולא מסנן תוצאה שכבר נשלפה.
     """
+    scope = _validated_scope(scope)
     limit = max(1, min(limit, MAX_PAGE_LIMIT))
     offset = max(0, offset)
 
-    queues = call_center.build_queues(
+    queues = call_center.build_queues_for_scope(
         db,
+        scope,
         event_id=event_id,
         query=q,
         status=status,
@@ -156,10 +172,19 @@ def queue(
             if log.outcome == "callback":
                 followups[log.guest_id] = followups.get(log.guest_id, 0) + 1
 
+    def _is_followup(guest_id: int) -> bool:
+        log = last_log.get(guest_id)
+        return bool(log and log.outcome == "callback")
+
     rows: list[schemas.CallCenterGuestRow] = []
     for x in queues:
         hosts = _hosts(x.event)
-        for guest in x.guests:
+        # בתוך כל אירוע: קודם מי שמחכה לשיחת המשך שהובטחה, ואז שאר האורחים
+        # לפי א-ב — כדי שהמוקדן לא ישכח לחזור למי שכבר דיברו איתו.
+        ordered_guests = sorted(
+            x.guests, key=lambda g: (0 if _is_followup(g.id) else 1, g.full_name)
+        )
+        for guest in ordered_guests:
             log = last_log.get(guest.id)
             rows.append(schemas.CallCenterGuestRow(
                 guest_id=guest.id,
@@ -181,11 +206,12 @@ def queue(
                 ),
                 callback_at=log.callback_at if log and log.outcome == "callback" else None,
                 # חזר לתור בגלל מועד ה-Follow-up שהוא ביקש — לא בגלל סבב חדש.
-                is_followup=bool(log and log.outcome == "callback"),
+                is_followup=_is_followup(guest.id),
                 followup_count=followups.get(guest.id, 0),
             ))
 
     return schemas.CallCenterQueue(
+        scope=scope,
         items=rows[offset:offset + limit],
         total=len(rows),
         limit=limit,

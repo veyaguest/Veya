@@ -16,13 +16,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app import models, roles, rsvp_timeline
+from app.automation import parse_event_date
 
 # תוצאות שיחה אפשריות — מקור אמת יחיד לערכים ולתוויות שלהם.
 OUTCOMES: dict[str, str] = {
@@ -55,6 +56,23 @@ OPEN_STATUSES = ("pending", "maybe")
 # אזור הזמן שבו מוצגים מועדים לבעלי האירועים. VEYA היא מערכת ישראלית, וכל
 # האירועים מתקיימים בשעון המקומי — האחסון נשאר UTC, רק התצוגה מומרת.
 LOCAL_TIMEZONE = "Asia/Jerusalem"
+
+# ── טווחי תצוגה: היום / מחר / בהמשך ──────────────────────────────────────
+# שלושה "חלונות זמן" למסך השיחות. **אין כאן מנוע תאריכים חדש** — כל טווח
+# מחושב ע"י הרצת ``build_queues`` הקיים עם ``now`` וירטואלי אחר (בדיוק אותו
+# פרמטר ש-``due_call_round``/``build_queues`` כבר תומכים בו), ואז החסרת
+# קבוצות: "מחר" = מי שיהיה חייב שיחה עד מחר, פחות מי שכבר חייב שיחה היום;
+# "בהמשך" = מי שחייב שיחה אי-פעם בעתיד הנראה-לעין, פחות מי שכבר חייב עד מחר.
+# כך שני אירועים לעולם לא מסתירים זה את זה, וכל מוזמן מופיע בדיוק בטווח אחד.
+SCOPE_TODAY = "today"
+SCOPE_TOMORROW = "tomorrow"
+SCOPE_LATER = "later"
+SCOPES = (SCOPE_TODAY, SCOPE_TOMORROW, SCOPE_LATER)
+
+# האופק ל"בהמשך": מספיק רחוק כדי לתפוס גם את הסבב האחרון האפשרי (מוגבל תמיד
+# ל-anchor_end, ראו rsvp_timeline.compute_schedule) וגם Follow-up שנקבע
+# קדימה בזמן. לא "אינסוף" בכוונה — רק מספיק כדי שלא נפספס שום דבר אמיתי.
+_FAR_FUTURE_DAYS = 400
 
 
 @dataclass
@@ -240,6 +258,74 @@ def build_queues(
     # הכי דחוף קודם: מי שיש לו הכי הרבה שיחות פתוחות.
     queues.sort(key=lambda q: len(q.guests), reverse=True)
     return queues
+
+
+def _guest_ids_by_event(queues: list[EventQueue]) -> dict[int, set[int]]:
+    return {q.event.id: {g.id for g in q.guests} for q in queues}
+
+
+def _exclusive(queues: list[EventQueue], already_seen: dict[int, set[int]]) -> list[EventQueue]:
+    """מסנן מכל ``EventQueue`` את המוזמנים שכבר מופיעים בטווח מוקדם יותר.
+
+    ככה "מחר" לעולם לא חוזר על מי שכבר מוצג ב"היום", ו"בהמשך" לא חוזר על מי
+    שכבר מוצג ב"מחר" — כל מוזמן מופיע בדיוק בטווח אחד.
+    """
+    out: list[EventQueue] = []
+    for q in queues:
+        seen = already_seen.get(q.event.id, set())
+        remaining = [g for g in q.guests if g.id not in seen]
+        out.append(EventQueue(
+            event=q.event, round_number=q.round_number, round_date=q.round_date,
+            guests=remaining, done_count=q.done_count,
+        ))
+    return out
+
+
+def _event_sort_key(q: EventQueue) -> tuple:
+    """מיון האירועים: הכי הרבה שיחות קודם; בשוויון — האירוע הקרוב ביותר."""
+    event_date = parse_event_date(q.event.event_date)
+    return (-len(q.guests), event_date or date.max)
+
+
+def build_queues_for_scope(
+    db: Session,
+    scope: str,
+    *,
+    now: Optional[datetime] = None,
+    event_id: Optional[int] = None,
+    query: Optional[str] = None,
+    status: Optional[str] = None,
+    allowed_event_ids: Optional[set[int]] = None,
+) -> list[EventQueue]:
+    """תור השיחות מסונן לטווח זמן: "היום" / "מחר" / "בהמשך".
+
+    בונה על ``build_queues`` הקיים בלבד, בהרצה חוזרת עם ``now`` וירטואלי
+    (בדיוק אותו פרמטר שהפונקציה כבר תומכת בו) — לא נוצר כאן שום חישוב
+    תאריכים/סבבים חדש. "היום" = ``build_queues`` הרגיל (ללא שינוי התנהגות).
+    "מחר"/"בהמשך" הם הפרש קבוצות בין הרצה עתידית להרצה נוכחית (ראו ``_exclusive``).
+
+    מסנן גם אירועים בלי אף מוזמן בטווח (אירוע "ריק" לא אמור להציג כותרת).
+    """
+    if scope not in SCOPES:
+        raise ValueError(f"טווח לא מוכר: {scope}")
+
+    now = now or datetime.utcnow()
+    kwargs = dict(event_id=event_id, query=query, status=status, allowed_event_ids=allowed_event_ids)
+
+    today_queues = build_queues(db, now=now, **kwargs)
+    if scope == SCOPE_TODAY:
+        result = today_queues
+    else:
+        tomorrow_queues = build_queues(db, now=now + timedelta(days=1), **kwargs)
+        if scope == SCOPE_TOMORROW:
+            result = _exclusive(tomorrow_queues, _guest_ids_by_event(today_queues))
+        else:  # SCOPE_LATER
+            later_queues = build_queues(db, now=now + timedelta(days=_FAR_FUTURE_DAYS), **kwargs)
+            result = _exclusive(later_queues, _guest_ids_by_event(tomorrow_queues))
+
+    result = [q for q in result if q.guests]
+    result.sort(key=_event_sort_key)
+    return result
 
 
 # ---- יומן הפעילות של בעל/ת האירוע ----
