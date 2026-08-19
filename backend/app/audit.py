@@ -31,23 +31,34 @@ def record(
     audit_logs_select, ה-INSERT (שמשתמש ב-RETURNING כברירת מחדל ב-SQLAlchemy)
     היה נדחה ע"י RLS גם כש-audit_logs_insert עצמה פתוחה לגמרי. התגלה בבדיקת
     Staging אמיתית מול Postgres.
+
+    כל הפעולה עטופה ב-SAVEPOINT (``db.begin_nested()``), לא רק ב-try/except:
+    ב-Postgres, כל שגיאה בתוך טרנזקציה (כולל שגיאה שנתפסת ב-Python) משאירה את
+    כל הטרנזקציה במצב "aborted" עד ROLLBACK מפורש — גם אם התפיסה כאן שקטה,
+    ה-commit הבא של הקורא (שכולל את העבודה האמיתית: מחיקת משתמש/אירוע וכו')
+    היה נכשל בעקבותיה. ה-SAVEPOINT מבטיח שכשל בכתיבת היומן בלבד לא "מרעיל"
+    את שאר הטרנזקציה — בדיוק מה שהתיעוד למעלה כבר הבטיח ("לעולם לא מפיל את
+    הבקשה") אבל לא קיים בפועל.
     """
     try:
-        if IS_POSTGRES:
-            db.execute(
-                text("SELECT app_record_audit_log(:action, :event_id, :user_id, :detail, :ip)"),
-                {
-                    "action": action, "event_id": event_id, "user_id": user_id,
-                    "detail": detail[:500], "ip": ip,
-                },
-            )
-            return
-        db.add(models.AuditLog(
-            event_id=event_id,
-            user_id=user_id,
-            action=action,
-            detail=detail[:500],
-            ip=ip,
-        ))
+        with db.begin_nested():
+            if IS_POSTGRES:
+                db.execute(
+                    text(
+                        "SELECT app_record_audit_log(:action, :event_id, :user_id, :detail, :ip)"
+                    ),
+                    {
+                        "action": action, "event_id": event_id, "user_id": user_id,
+                        "detail": detail[:500], "ip": ip,
+                    },
+                )
+                return
+            db.add(models.AuditLog(
+                event_id=event_id,
+                user_id=user_id,
+                action=action,
+                detail=detail[:500],
+                ip=ip,
+            ))
     except Exception:
         pass

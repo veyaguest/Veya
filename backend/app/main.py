@@ -1,10 +1,14 @@
 """נקודת הכניסה ל-Backend של VEYA (FastAPI)."""
 import os
+import traceback
 from datetime import datetime
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from sqlalchemy import inspect, text
 
@@ -34,6 +38,37 @@ from app.routers import (
 )
 
 app = FastAPI(title="VEYA API", version="0.1.0")
+
+
+class _UnhandledErrorMiddleware(BaseHTTPMiddleware):
+    """תופס כל חריגה לא-מטופלת (לא HTTPException — למשל IntegrityError
+    מ-Postgres) ומחזירה תשובת 500 נקייה, **לפני** ש-CORSMiddleware עוטף
+    אותה (ראו סדר app.add_middleware למטה — הרשמה ראשונה = הכי פנימי).
+
+    בלי זה: Starlette מטפל בחריגה לא-מטופלת ב-ServerErrorMiddleware, שעוטף
+    את כל שאר ה-middleware מבחוץ — כולל CORSMiddleware. משמעות הדבר:
+    תגובת ה-500 יוצאת **בלי** כותרות CORS, הדפדפן חוסם אותה מסיבות אבטחה,
+    וה-JS רואה TypeError גולמי (לא תגובת HTTP בכלל) — בדיוק מה שה-frontend
+    (api.ts::apiFetch) מתרגם ל"החיבור לשרת נכשל", למרות שהשרת בכלל *ענה*
+    עם 500 אמיתי. זה בדיוק מה שקרה במחיקת "משתמש + כל האירועים": חריגה
+    לא-מטופלת באמצע ה-cascade הוצגה כתקלת רשת סתומה במקום שגיאת שרת אמיתית.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        try:
+            return await call_next(request)
+        except HTTPException:
+            raise
+        except Exception as exc:
+            print(
+                f"[veya:unhandled] {request.method} {request.url.path} → {exc!r}",
+                flush=True,
+            )
+            traceback.print_exc()
+            return JSONResponse({"detail": "שגיאת שרת פנימית, נסו שוב"}, status_code=500)
+
+
+app.add_middleware(_UnhandledErrorMiddleware)
 
 # מקורות ה-CORS ניתנים להגדרה ממשתנה סביבה (מופרד בפסיקים), כדי שבייצור
 # אפשר יהיה להתיר את הדומיין האמיתי. ברירת מחדל: כתובות הפיתוח המקומיות.
