@@ -53,6 +53,15 @@ export function VerifyEmailPage({
     inputsRef.current[index]?.select()
   }
 
+  // מאמת אוטומטית ברגע שכל 6 התיבות התמלאו. עובר דרך useEffect (ולא נקרא
+  // ישירות בתוך handleChange) כדי לא להסתמך על תזמון לא-מובטח של updater
+  // ל-setState — קריאת ה-state מיד אחרי setDigits() לא מובטחת להיות מעודכנת.
+  useEffect(() => {
+    const joined = digits.join('')
+    if (joined.length === CODE_LENGTH) submit(joined)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [digits])
+
   async function submit(code: string) {
     if (code.length !== CODE_LENGTH || busy) return
     setError(null)
@@ -81,6 +90,10 @@ export function VerifyEmailPage({
       return
     }
     // תמיכה בהדבקה/הקלדה מהירה שנוחתת כמה ספרות בתיבה אחת (למשל autofill).
+    // חשוב: הזזת הפוקוס מחושבת רק מ-index/chars.length (לא מ-prev בתוך
+    // ה-updater) — updater של setState חייב להישאר טהור בלי תופעות-לוואי;
+    // React (StrictMode) מריץ אותו פעמיים לבדיקת טוהר, ו-focus() בתוכו היה
+    // "קופץ" פעמיים ומאבד ספרות (נתפס בבדיקה ידנית).
     const chars = value.split('')
     setDigits((prev) => {
       const next = [...prev]
@@ -90,11 +103,9 @@ export function VerifyEmailPage({
         next[i] = ch
         i += 1
       }
-      const joined = next.join('')
-      if (joined.length === CODE_LENGTH) submit(joined)
-      else focusBox(Math.min(i, CODE_LENGTH - 1))
       return next
     })
+    focusBox(Math.min(index + chars.length, CODE_LENGTH - 1))
   }
 
   function handleKeyDown(index: number, e: KeyboardEvent<HTMLInputElement>) {

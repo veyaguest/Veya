@@ -594,6 +594,24 @@ def _delete_user_impl(db: Session, admin: models.User, target: models.User, mode
             )
 
     user_id = target.id
+
+    # נועלים את שורת המשתמש עצמה (FOR UPDATE) *לפני* שמתחילים לנקות טבלאות
+    # תלויות. זה סוגר מחלקה שלמה של race conditions — לא רק audit_logs
+    # (שכבר תוקן למעלה עם נעילה נקודתית) אלא **כל** טבלה עם FK ל-users.id
+    # (login_events, event_members, consent_records, call_logs...): Postgres
+    # נועל אוטומטית (FOR KEY SHARE) כל שורת הורה שמתווספת אליה שורת-בת עם FK
+    # — כך שכל INSERT מקביל שמצביע על user_id הזה (למשל login_events חדש,
+    # אם מישהו מתחבר לחשבון בדיוק תוך כדי המחיקה) חוסם עד שהטרנזקציה שלנו
+    # מסתיימת, במקום להיווצר "מתחת לרגליים" אחרי שהלולאות למטה כבר רצו.
+    # שוחזר בפועל בפרודקשן: DELETE FROM users נכשל עם ForeignKeyViolation
+    # על login_events_user_id_fkey בדיוק מהתרחיש הזה.
+    locked = db.execute(
+        select(models.User).where(models.User.id == user_id).with_for_update()
+    ).scalar_one_or_none()
+    if locked is None:
+        # נמחק כבר ע"י בקשה אחרת שרצה במקביל — אין מה למחוק יותר.
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש כבר נמחק")
+
     owned_events = db.scalars(select(models.Event).where(models.Event.owner_id == user_id)).all()
 
     # מזהי האירועים שנמחקו בפועל במצב user_and_events (ריק במצב user_only,

@@ -382,18 +382,24 @@ function App() {
     )
   }
 
-  // תנאים/פרטיות עודכנו מאז שהמשתמש אישר לאחרונה → חוסמים גישה עד אישור מחדש.
-  if (user.needs_reconsent) {
-    return (
-      <ReconsentModal onAccepted={() => setUser({ ...user, needs_reconsent: false })} />
+  // תנאים/פרטיות עודכנו מאז שהמשתמש אישר לאחרונה → מודל חוסם, אבל **מעל**
+  // המסך האמיתי שהמשתמש נמצא בו (לא מחליף אותו). לכן זו עטיפה שמופעלת על
+  // כל מסך שהיה מוצג בכל מקרה, ולא return מוקדם שמבטל את שאר הרנדור.
+  const withReconsent = (view: ReactElement): ReactElement =>
+    user.needs_reconsent ? (
+      <>
+        {view}
+        <ReconsentModal onAccepted={() => setUser({ ...user, needs_reconsent: false })} />
+      </>
+    ) : (
+      view
     )
-  }
 
   // הגענו דרך קישור הזמנה ואנחנו מחוברים → מסך ההצטרפות, לפני כל דבר אחר.
   // אחרי הצטרפות מוצלחת טוענים מחדש מ-/ כדי שכל המצב (אירועים, הרשאות)
   // ייבנה נקי סביב האירוע המשותף.
   if (joinToken) {
-    return (
+    return withReconsent(
       <JoinEventPage
         token={joinToken}
         onJoined={() => window.location.assign('/app')}
@@ -401,16 +407,16 @@ function App() {
           handleLogout()
           setAuthIntent({ mode, email })
         }}
-      />
+      />,
     )
   }
 
   // אדמין → פאנל ניהול מלא ונפרד (לא נכנס למסלול יצירת אירוע של זוג).
   if (user.is_admin) {
-    return (
+    return withReconsent(
       <Suspense fallback={bootFallback}>
         <AdminApp user={user} onLogout={handleLogout} onImpersonate={handleImpersonate} />
-      </Suspense>
+      </Suspense>,
     )
   }
 
@@ -418,10 +424,10 @@ function App() {
   // סרגל האדמין. ההסתרה כאן היא נוחות בלבד — ההרשאה נאכפת בשרת
   // (backend/app/roles.py), כך שגם קריאה ישירה ל-API תיחסם.
   if (user.account_type === 'phone_agent') {
-    return (
+    return withReconsent(
       <Suspense fallback={bootFallback}>
         <PhoneAgentApp user={user} onLogout={handleLogout} onUserUpdated={setUser} />
-      </Suspense>
+      </Suspense>,
     )
   }
 
@@ -458,48 +464,56 @@ function App() {
     const isCouple = user.account_type !== 'planner' && user.account_type !== 'venue'
 
     if (isCouple && user.email_verified === false) {
-      return withImpersonation(
-        <VerifyEmailPage
-          user={user}
-          onUpdated={setUser}
-          onRefresh={async () => {
-            const u = await getMe()
-            setUser(u)
-            await loadEvents(u)
-          }}
-          onLogout={handleLogout}
-        />,
+      return withReconsent(
+        withImpersonation(
+          <VerifyEmailPage
+            user={user}
+            onUpdated={setUser}
+            onRefresh={async () => {
+              const u = await getMe()
+              setUser(u)
+              await loadEvents(u)
+            }}
+            onLogout={handleLogout}
+          />,
+        ),
       )
     }
 
     if (isCouple && user.profile_complete === false) {
-      return withImpersonation(
-        <CompleteProfilePage user={user} onUpdated={setUser} onLogout={handleLogout} />,
+      return withReconsent(
+        withImpersonation(
+          <CompleteProfilePage user={user} onUpdated={setUser} onLogout={handleLogout} />,
+        ),
       )
     }
 
     // מפיק/אולם לא יוצרים אירוע בעצמם — הם מחכים שבעל אירוע יזמין אותם.
     if (user.account_type === 'planner' || user.account_type === 'venue') {
-      return withImpersonation(
-        <>
-          <div className="auth-wrap">
-            <div className="auth-card">
-              <h1 className="first-event-title">ברוכים הבאים ל-VEYA</h1>
-              <p className="auth-tagline">
-                עדיין לא שותפה איתכם גישה לאף אירוע. בקשו מבעל האירוע להוסיף
-                אתכם דרך האימייל שאיתו נרשמתם: <strong dir="ltr">{user.email}</strong>
-              </p>
+      return withReconsent(
+        withImpersonation(
+          <>
+            <div className="auth-wrap">
+              <div className="auth-card">
+                <h1 className="first-event-title">ברוכים הבאים ל-VEYA</h1>
+                <p className="auth-tagline">
+                  עדיין לא שותפה איתכם גישה לאף אירוע. בקשו מבעל האירוע להוסיף
+                  אתכם דרך האימייל שאיתו נרשמתם: <strong dir="ltr">{user.email}</strong>
+                </p>
+              </div>
             </div>
-          </div>
-          <Footer />
-        </>,
+            <Footer />
+          </>,
+        ),
       )
     }
-    return withImpersonation(
-      <>
-        <OnboardingWizard onCreated={handleEventCreated} />
-        <Footer />
-      </>,
+    return withReconsent(
+      withImpersonation(
+        <>
+          <OnboardingWizard onCreated={handleEventCreated} />
+          <Footer />
+        </>,
+      ),
     )
   }
 
@@ -515,7 +529,8 @@ function App() {
     : '—'
   const userInitial = (user.display_name || user.email || '?').trim().charAt(0).toUpperCase()
 
-  return withImpersonation(
+  return withReconsent(
+    withImpersonation(
     <div className="shell">
       <aside className="sidebar">
         <div className="sidebar-logo" dir="ltr">
@@ -615,6 +630,7 @@ function App() {
         <EventMembersDialog eventId={activeEventId} onClose={() => setMembersOpen(false)} />
       )}
     </div>,
+    ),
   )
 }
 

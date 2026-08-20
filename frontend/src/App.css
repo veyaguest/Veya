@@ -1232,9 +1232,11 @@ td.notes.seating {
   color: var(--charcoal);
 }
 /* ---- Reconsent modal (עדכון תנאי שימוש) ----
-   מכוון: קטן, שקט, עדין — לא "Alert". פלטה נייטרלית בכוונה (charcoal/ivory),
-   בלי זהב ובלי גרדיאנטים, כדי לא להישמע דחוף/מסחרי. עדיין חוסם את שאר
-   האפליקציה עד לאישור (needs_reconsent) — רק העיצוב השתנה, לא הלוגיקה. */
+   מכוון: קטן, שקט, עדין — לא "Alert". טוקנים קיימים בלבד, לקוחים מדפוסים
+   אמיתיים אחרים באפליקציה: כפתור = .join-btn-primary (פחם שטוח, לא גרדיאנט),
+   קישורי תנאים = .auth-consent-row a (gold-deep, בדיוק כמו בטופס ההרשמה).
+   עדיין חוסם את שאר האפליקציה עד לאישור (needs_reconsent) דרך withReconsent
+   ב-App.tsx — רק העיצוב והמנגנון החזותי השתנו, לא לוגיקת האישור. */
 .reconsent-overlay {
   position: fixed;
   inset: 0;
@@ -1283,12 +1285,14 @@ td.notes.seating {
   margin: 0 0 20px;
 }
 .reconsent-links a {
-  color: var(--charcoal);
+  /* אותו גוון בדיוק שהקישורים ל"תנאי שימוש"/"מדיניות פרטיות" משתמשים בו
+     בטופס ההרשמה (.auth-consent-row a) — לא צבע חדש. */
+  color: var(--gold-deep);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 .reconsent-links a:hover {
-  color: var(--body);
+  color: var(--gold-light);
 }
 .reconsent-error {
   color: var(--error);
@@ -1301,20 +1305,23 @@ td.notes.seating {
   margin-bottom: 14px;
 }
 .reconsent-submit {
+  /* אותו סגנון כפתור ראשי בדיוק כמו .join-btn-primary (מסך הצטרפות לאירוע) —
+     כפתור פחם שטוח, לא גרדיאנט זהב, זה כבר הדפוס הקיים במערכת ל-CTA שאינו
+     "מכירתי". */
   width: 100%;
   height: 46px;
   border: none;
-  border-radius: var(--radius-s);
+  border-radius: var(--radius-m);
   background: var(--charcoal);
-  color: var(--cream);
+  color: var(--ivory);
   font-weight: 600;
   font-size: 15px;
   font-family: 'Assistant', sans-serif;
   cursor: pointer;
-  transition: filter var(--transition-fast);
+  transition: background var(--transition-fast);
 }
 .reconsent-submit:hover:not(:disabled) {
-  filter: brightness(1.15);
+  background: var(--black-soft);
 }
 .reconsent-submit:disabled {
   opacity: 0.6;

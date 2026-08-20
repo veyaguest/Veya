@@ -22,7 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sqlalchemy import create_engine, event, select  # noqa: E402
+from sqlalchemy import create_engine, delete, event, select  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from app import models  # noqa: E402
@@ -374,6 +374,35 @@ def test_13_audit_log_with_both_event_and_user_no_conflict() -> None:
     print("✓ 13: audit_logs עם event_id+user_id יחד — נמחק אחת, בלי התנגשות flush")
 
 
+def test_14_already_deleted_target_reports_404_not_crash() -> None:
+    """נעילת שורת המשתמש (with_for_update, ראו admin.py:_delete_user_impl)
+    שולפת אותה מחדש בתחילת הפונקציה. אם מישהו אחר כבר מחק את אותו משתמש
+    בדיוק (לדוגמה שתי בקשות מחיקה מקבילות) — היא לא אמורה למצוא שורה, ואז
+    הפונקציה חייבת לדווח 404 נקי ולא להמשיך ולנסות לנקות/למחוק משתמש
+    שכבר לא קיים (SQLite לא אוכף נעילות ברמת שורה בעצמו, אבל הענף הזה —
+    'לא נמצאה שורה' — בדיוק אותה התנהגות שReal race על Postgres מייצר,
+    ובמכוון ניתן לבדיקה בלי Postgres אמיתי)."""
+    db = _fresh_session_no_autoflush()
+    admin = _make_user(db, "admin@veya.test", is_admin=True)
+    target = _make_user(db, "couple@veya.test")
+    target_id = target.id
+
+    # מדמים "בקשה אחרת שכבר מחקה אותו" ע"י מחיקה ישירה מה-DB, בלי לעדכן את
+    # אובייקט ה-Python של target שעדיין מוחזק (בדיוק כמו שהיה קורה אם
+    # session אחר עשה commit על מחיקה בין הרגע שtarget נטען כאן לרגע
+    # שהפונקציה מנסה לנעול אותו).
+    db.execute(delete(models.User).where(models.User.id == target_id))
+    db.commit()
+
+    try:
+        _delete_user_impl(db, admin, target, "user_and_events")
+        raise AssertionError("הייתה אמורה להיזרק שגיאת 404")
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    db.rollback()
+    print("✓ 14: משתמש שכבר נמחק ע\"י בקשה אחרת מדווח 404 נקי, לא קורס")
+
+
 if __name__ == "__main__":
     test_1_user_only_keeps_event_and_guests_intact()
     test_2_user_only_owner_becomes_holder_not_null()
@@ -388,5 +417,6 @@ if __name__ == "__main__":
     test_11_invalid_mode_rejected()
     test_12_user_level_relations_cleaned_correctly()
     test_13_audit_log_with_both_event_and_user_no_conflict()
+    test_14_already_deleted_target_reports_404_not_crash()
     print()
-    print("=== כל 13 תרחישי מחיקת משתמש (אדמין) עברו ===")
+    print("=== כל 14 תרחישי מחיקת משתמש (אדמין) עברו ===")

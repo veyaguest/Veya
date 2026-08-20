@@ -526,6 +526,18 @@ def delete_my_account(
     מול SQLite, לפני שהגיע לייצור).
     """
     ip = client_ip(request)
+
+    # נועלים את שורת המשתמש עצמה (FOR UPDATE) לפני שמנקים טבלאות תלויות —
+    # סוגר race עם כל טבלה שיש לה FK ל-users.id (login_events, event_members
+    # וכו'): ראו הסבר מלא ב-admin.py::_delete_user_impl, אותה תבנית פגיעות
+    # בדיוק ואותו תיקון. כאן ה"נדיר" (מישהו נמחק בו-זמנית ע"י אדמין בזמן
+    # שהוא מוחק את עצמו) פשוט מדווח כ-404 במקום קריסה.
+    locked = db.execute(
+        select(models.User).where(models.User.id == user.id).with_for_update()
+    ).scalar_one_or_none()
+    if locked is None:
+        raise HTTPException(status_code=404, detail="החשבון כבר נמחק")
+
     audit.record(
         db, "account_delete_requested",
         detail=f"מחיקת חשבון עצמית: {user.email} (#{user.id})", ip=ip,
