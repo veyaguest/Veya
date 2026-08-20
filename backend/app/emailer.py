@@ -228,11 +228,14 @@ def logo_url() -> str:
 
 
 def _shell(*, title: str, preheader: str, body_html: str) -> str:
-    """מעטפת אחת לכל מיילי VEYA.
+    """מעטפת אחת לכל מיילי VEYA — נאמנה במדויק ל-VerifyEmailPage.
 
-    בלי כרטיס, בלי מסגרות ובלי פסי קישוט: טור אחד ממורכז ברוחב 600px על
-    המשטח הכהה של המותג, עם הרבה אוויר. ``preheader`` הוא שורת התצוגה
-    המקדימה בתיבת הדואר (מוסתרת בגוף המייל).
+    ה-Design Reference הוא מסך אימות המייל באפליקציה, לא "email best
+    practices" כלליים: בלי כרטיס, בלי מסגרת חיצונית, בלי הדר נפרד — טור אחד
+    ממורכז על **אותו** משטח כהה מקצה לקצה (=--cream בהקשר הכהה, זהה ל-
+    .verify-page), באותו רוחב-תוכן בערך של .verify-inner (max-width:380px):
+    460px מעטפת עם padding 36px נותנים ~388px תוכן בפועל. ``preheader`` הוא
+    שורת התצוגה המקדימה בתיבת הדואר (מוסתרת בגוף המייל).
     """
     return f"""<!doctype html>
 <html dir="rtl" lang="he">
@@ -250,8 +253,12 @@ def _shell(*, title: str, preheader: str, body_html: str) -> str:
   /* מובייל — לקוחות בלי תמיכה ב-@media נשארים עם ערכי ה-inline. */
   @media only screen and (max-width:480px) {{
     .veya-pad {{ padding-left:26px !important; padding-right:26px !important; }}
-    .veya-code {{ font-size:32px !important; letter-spacing:8px !important;
-                  padding-left:8px !important; }}
+    /* 6 תיבות ב-54px קבועות לא נכנסות לרוחב טלפון צר (₪320-375px) —
+       ה-CSS המקורי פותר את זה עם flex:1 1 0 שמתכווץ אוטומטית; בטבלת מייל
+       אין flex, אז מצמצמים ידנית גם את התיבות וגם את הרווח ביניהן. */
+    .veya-code-table {{ border-spacing:4px !important; }}
+    .veya-code-box {{ width:44px !important; height:50px !important;
+                       font-size:18px !important; line-height:50px !important; }}
     .veya-h1 {{ font-size:24px !important; }}
   }}
 </style>
@@ -264,15 +271,15 @@ def _shell(*, title: str, preheader: str, body_html: str) -> str:
   <tr>
     <td align="center" style="padding:48px 16px 40px;">
       <!--[if mso]>
-      <table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0"
+      <table role="presentation" width="460" align="center" cellpadding="0" cellspacing="0"
              border="0"><tr><td>
       <![endif]-->
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-             style="max-width:600px;">
+             style="max-width:460px;">
         <!-- Header: הלוגו בלבד. ה-alt מעוצב כך שגם כשלקוח המייל חוסם
              תמונות נשארת מילת המותג בשנהב ולא ריבוע שבור. -->
         <tr>
-          <td align="center" class="veya-pad" style="padding:0 44px 30px;text-align:center;">
+          <td align="center" class="veya-pad" style="padding:0 36px 30px;text-align:center;">
             <img src="{logo_url()}" alt="VEYA"
                  width="{_LOGO_WIDTH}" height="{_LOGO_HEIGHT}"
                  style="display:block;margin:0 auto;border:0;outline:none;
@@ -282,14 +289,14 @@ def _shell(*, title: str, preheader: str, body_html: str) -> str:
           </td>
         </tr>
         <tr>
-          <td class="veya-pad" style="padding:0 44px;font-family:{_FONT_SANS};
+          <td class="veya-pad" style="padding:0 36px;font-family:{_FONT_SANS};
                      direction:rtl;text-align:center;">
             {body_html}
           </td>
         </tr>
         <!-- Footer: קו שיער ושורה אחת. -->
         <tr>
-          <td class="veya-pad" style="padding:38px 44px 0;">
+          <td class="veya-pad" style="padding:30px 36px 0;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr><td height="1" bgcolor="{_LINE}"
                       style="height:1px;line-height:1px;font-size:0;
@@ -324,9 +331,9 @@ def _title(text_html: str) -> str:
 
 
 def _lead(text_html: str) -> str:
-    """המשפט שמתחת לכותרת — זהה ל-.verify-sub (14.5px, --muted)."""
+    """המשפט שמתחת לכותרת — זהה ל-.verify-sub: 14.5px, line-height 1.5, --muted."""
     return (
-        f'<p style="margin:12px 0 0;font:400 14.5px/1.6 {_FONT_SANS};'
+        f'<p style="margin:12px 0 0;font:400 14.5px/1.5 {_FONT_SANS};'
         f'color:{_MUTED};">{text_html}</p>'
     )
 
@@ -369,9 +376,10 @@ def _button(url: str, label: str) -> str:
 
 
 def _fallback_link(url: str) -> str:
-    """הקישור המלא כטקסט — למי שהכפתור לא עובד אצלו בלקוח המייל."""
+    """הקישור המלא כטקסט — צבוע כמו .auth-link-btn (var(--gold)), כי זה
+    בפועל קישור לחיץ, לא טקסט משני. למי שהכפתור לא עובד אצלו בלקוח המייל."""
     return (
-        f'<p style="margin:16px 0 0;font:400 11px/1.7 {_FONT_SANS};color:{_MUTED};'
+        f'<p style="margin:16px 0 0;font:400 11px/1.7 {_FONT_SANS};color:{_GOLD};'
         f'direction:ltr;text-align:center;word-break:break-all;">{html.escape(url)}</p>'
     )
 
@@ -385,29 +393,35 @@ def _fine_print(text: str) -> str:
 
 
 def _code_block(code: str) -> str:
-    """הקוד — ה-centerpiece, ובמכוון נראה כמו שדות הקוד במסך האימות:
-    אותו משטח כמעט-שחור (--black) ואותה מסגרת (--line-2 בהקשר כהה).
+    """הקוד — שש תיבות נפרדות, בדיוק ``.verify-code-box`` במצב ``.is-filled``
+    (המצב שהתיבה נמצאת בו ברגע שיש בה ספרה — הקוד במייל *תמיד* "מלא").
+
+    ערכים מהקובץ המקורי (VerifyEmailPage.css), לא קירוב:
+    - רקע ``var(--black)`` = {_INSET}, גובה 56px, רוחב 54px, ``border-radius:
+      var(--radius-m)`` = 12px.
+    - מסגרת מצב-מלא: ``rgba(201,162,39,0.45)`` — זהב מעומעם, לא ``--line-2``
+      הרגיל (זה המצב הריק/לא-פעיל, שלא רלוונטי כשהקוד כבר גלוי).
+    - טקסט: 24px/600 Assistant, ``var(--charcoal)`` בהקשר כהה = {_INK}.
+    - מרווח בין תיבות 8px, זהה לברירת המחדל (מובייל) של ``.verify-code-row``.
 
     פרטים שחשובים דווקא בלקוחות מייל:
-    - ``dir="ltr"`` על הספרות, אחרת הן מתהפכות בתוך מייל RTL.
-    - ``letter-spacing`` מוסיף רווח גם **אחרי** הספרה האחרונה ומזיז את הבלוק
-      שמאלה; ``padding-left`` בגודל זהה מחזיר אותו למרכז אופטי.
-    - בלי flex/grid — רק טבלה ו-``text-align``, שנתמכים בכל לקוח.
+    - ``dir="ltr"`` על השורה, אחרת שש התיבות מסתדרות בסדר הפוך בתוך מייל RTL.
+    - טבלה עם ``cellspacing`` למרווח בין התאים — לא flex/gap, שלא נתמכים
+      בכל לקוח.
     """
+    boxes = "".join(
+        f'<td class="veya-code-box" width="54" height="56" align="center" valign="middle" '
+        f'bgcolor="{_INSET}" style="width:54px;height:56px;background:{_INSET};'
+        f'border:1px solid rgba(201,162,39,0.45);border-radius:12px;'
+        f'font:600 24px/56px {_FONT_SANS};color:{_INK};">{html.escape(ch)}</td>'
+        for ch in code
+    )
     return f"""
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-       style="margin:30px 0 0;">
-  <tr>
-    <td align="center" bgcolor="{_INSET}"
-        style="background:{_INSET};border:1px solid {_LINE_2};border-radius:12px;
-               padding:24px 16px;text-align:center;">
-      <div class="veya-code" dir="ltr"
-           style="font:600 40px/1.1 {_FONT_SANS};letter-spacing:12px;
-                  padding-left:12px;color:{_INK};">{html.escape(code)}</div>
-    </td>
-  </tr>
+<table role="presentation" class="veya-code-table" cellpadding="0" cellspacing="8" border="0"
+       align="center" dir="ltr" style="margin:30px auto 0;">
+  <tr>{boxes}</tr>
 </table>
-<p style="margin:14px 0 0;font:400 12.5px/1.7 {_FONT_SANS};color:{_MUTED};">
+<p style="margin:16px 0 0;font:400 13.5px/1.6 {_FONT_SANS};color:{_BODY};">
   הקוד תקף ל־10 דקות
 </p>
 """

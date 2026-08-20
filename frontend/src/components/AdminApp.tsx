@@ -1042,9 +1042,12 @@ function AdminEventsView({
 }) {
   const [events, setEvents] = useState<AdminEventRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [busyOwner, setBusyOwner] = useState<number | null>(null)
+  const [eventToDelete, setEventToDelete] = useState<AdminEventRow | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
 
   useEffect(() => {
     adminListEvents()
@@ -1084,6 +1087,23 @@ function AdminEventsView({
     }
   }
 
+  async function deleteEvent() {
+    if (!eventToDelete) return
+    setDeleteBusy(true)
+    setError(null)
+    try {
+      await adminDeleteEvent(eventToDelete.id)
+      setEvents((prev) => (prev ? prev.filter((e) => e.id !== eventToDelete.id) : prev))
+      setNotice(`האירוע ${eventToDelete.hosts || `#${eventToDelete.id}`} נמחק בהצלחה`)
+      setEventToDelete(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : strings.errors.adminDeleteFailed)
+      setEventToDelete(null)
+    } finally {
+      setDeleteBusy(false)
+    }
+  }
+
   if (error && !events) return <div className="admin-error">{error}</div>
   if (!events) return <div className="admin-loading">טוען…</div>
 
@@ -1116,6 +1136,7 @@ function AdminEventsView({
       </div>
 
       {error && <div className="admin-error">{error}</div>}
+      {notice && <div className="adm-user-notice">{notice}</div>}
 
       <div className="table-wrap">
         <table className="guests-table">
@@ -1140,18 +1161,28 @@ function AdminEventsView({
                 <td dir="ltr">{e.owner_email || '—'}</td>
                 <td>{e.guests_count}</td>
                 <td>
-                  {e.owner_id ? (
+                  <div className="adm-row-actions">
+                    {e.owner_id ? (
+                      <button
+                        type="button"
+                        className="btn-ghost btn-sm"
+                        onClick={() => enterEvent(e.owner_id as number)}
+                        disabled={busyOwner != null}
+                      >
+                        {busyOwner === e.owner_id ? 'רגע…' : 'כניסה כבעלים'}
+                      </button>
+                    ) : (
+                      <span className="adm-event-noowner">ללא בעלים</span>
+                    )}
                     <button
                       type="button"
-                      className="btn-ghost btn-sm"
-                      onClick={() => enterEvent(e.owner_id as number)}
-                      disabled={busyOwner != null}
+                      className="btn-danger btn-sm"
+                      onClick={() => setEventToDelete(e)}
+                      disabled={busyOwner != null || deleteBusy}
                     >
-                      {busyOwner === e.owner_id ? 'רגע…' : 'כניסה כבעלים'}
+                      מחיקת אירוע
                     </button>
-                  ) : (
-                    <span className="adm-event-noowner">ללא בעלים</span>
-                  )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -1165,6 +1196,18 @@ function AdminEventsView({
           </tbody>
         </table>
       </div>
+
+      {eventToDelete && (
+        <ConfirmDialog
+          title="מחיקת האירוע לצמיתות?"
+          body={`${eventToDelete.hosts || `אירוע #${eventToDelete.id}`} (${eventToDelete.guests_count} מוזמנים) — כל המידע המשויך לאירוע (מוזמנים, הודעות, יומן שיחות, סידור הושבה) יימחק לצמיתות. לא ניתן לשחזר.`}
+          confirmLabel="מחיקת אירוע"
+          danger
+          busy={deleteBusy}
+          onConfirm={deleteEvent}
+          onCancel={() => setEventToDelete(null)}
+        />
+      )}
     </div>
   )
 }
