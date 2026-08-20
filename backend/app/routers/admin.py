@@ -9,7 +9,7 @@ from datetime import date, datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app import (
@@ -596,12 +596,18 @@ def _delete_user_impl(db: Session, admin: models.User, target: models.User, mode
     user_id = target.id
     owned_events = db.scalars(select(models.Event).where(models.Event.owner_id == user_id)).all()
 
+    # מזהי האירועים שנמחקו בפועל במצב user_and_events (ריק במצב user_only,
+    # שם האירועים לא נמחקים — רק עוברים בעלות). נדרש למטה כדי למנוע כפילות
+    # מגע בשורות audit_logs (ראו הסבר בלולאת יומן האבטחה).
+    deleted_event_ids: set[int] = set()
+
     if mode == "user_and_events":
         # מצב 2: מוחקים גם את כל האירועים בבעלותו וכל הנתונים התלויים בהם
         # (מוזמנים/RSVP, הודעות, הבהרות, יומן שיחות...) — אותו cascade
         # שמשמש למחיקת חשבון עצמית (routers/auth.py::delete_my_account).
         for event in owned_events:
             delete_event_cascade(db, event)
+        deleted_event_ids = {event.id for event in owned_events}
     else:
         # מצב 1 ("user_only"): האירועים נשארים בשלמותם — רק הבעלות עוברת
         # לחשבון-המערכת (לא ל-NULL, ראו הסבר ב-_ORPHANED_EVENTS_HOLDER_EMAIL).
@@ -647,10 +653,23 @@ def _delete_user_impl(db: Session, admin: models.User, target: models.User, mode
         select(models.LoginEvent).where(models.LoginEvent.user_id == user_id)
     ).all():
         db.delete(lg)
-    # יומן אבטחה — נשאר לצורך שקיפות/תיעוד, רק מתנתק מהמשתמש שנמחק.
-    for al in db.scalars(
-        select(models.AuditLog).where(models.AuditLog.user_id == user_id)
-    ).all():
+    # יומן אבטחה — נשאר לצורך שקיפות/תיעוד, רק מתנתק מהמשתמש שנמחק. שורות
+    # ששייכות לאירוע שכבר נמחק למעלה (delete_event_cascade, מצב
+    # user_and_events) מוחרגות בכוונה: אותן שורות בדיוק כבר סומנו למחיקה שם
+    # (audit_logs.event_id == האירוע), וניסיון לעדכן אותן כאן גם היה מתנגש
+    # איתה באותה טרנזקציה (שתי פעולות סותרות על אותו אובייקט — DELETE למעלה
+    # מול UPDATE כאן — ה-flush נכשל עם StaleDataError: "expected to update
+    # 1 row(s); 0 were matched"). ההחרגה כאן פותרת את זה במקור: שורה שכבר
+    # נמחקה לא אמורה לעבור גם דרך לולאת האיפוס.
+    audit_log_stmt = select(models.AuditLog).where(models.AuditLog.user_id == user_id)
+    if deleted_event_ids:
+        audit_log_stmt = audit_log_stmt.where(
+            or_(
+                models.AuditLog.event_id.is_(None),
+                models.AuditLog.event_id.not_in(deleted_event_ids),
+            )
+        )
+    for al in db.scalars(audit_log_stmt).all():
         al.user_id = None
     # יומן שיחות ה-Call Center נשאר (הוא מתעד מה קרה מול המוזמן), רק מנותק
     # מהמשתמש שנמחק — כמו יומן האבטחה.

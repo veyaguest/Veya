@@ -50,6 +50,26 @@ def _fresh_session() -> Session:
     return Session(engine)
 
 
+def _fresh_session_no_autoflush() -> Session:
+    """כמו ``_fresh_session``, אבל עם ``autoflush=False`` — בדיוק כמו
+    ``SessionLocal`` האמיתי (app/database.py). ``Session(engine)`` הרגיל
+    בברירת המחדל (autoflush=True) "מציל" באגי-flush מהסוג הזה בטעות: כל
+    SELECT מוחק אוטומטית שינויים ממתינים לפני שהוא רץ, כך שבאג שתלוי בסדר
+    flush (כמו test_13 למטה) לא היה נתפס בכלל תחת ברירת המחדל. חובה להשתמש
+    בזה לבדיקות שנוגעות בהתנהגות flush/autoflush עצמה.
+    """
+    engine = create_engine("sqlite://")
+
+    @event.listens_for(engine, "connect")
+    def _enable_fk(dbapi_conn, _record):  # noqa: ANN001
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    Base.metadata.create_all(bind=engine)
+    return Session(engine, autoflush=False, expire_on_commit=False)
+
+
 def _make_user(db: Session, email: str, is_admin: bool = False) -> models.User:
     u = models.User(email=email, password_hash="x", display_name="בדיקה", is_admin=is_admin)
     db.add(u)
@@ -319,6 +339,41 @@ def test_12_user_level_relations_cleaned_correctly() -> None:
     print("✓ 12: קשרי-משתמש (חברות/הזמנות/הסכמות) מנוקים נכון — לא נמחקת גישה תקינה של אחרים")
 
 
+def test_13_audit_log_with_both_event_and_user_no_conflict() -> None:
+    """רגרסיה לבאג שקרה בפועל בייצור: שורת audit_logs עם גם event_id (של
+    אירוע בבעלות target) וגם user_id (=target) — למשל תיעוד של פעולה
+    שtarget ביצע על האירוע שלו עצמו. במצב user_and_events, delete_event_cascade
+    מוחק אותה שורה בדיוק (לפי event_id), ואם הלולאה שמאפסת AuditLog.user_id
+    (_delete_user_impl) הייתה נוגעת בה שוב — היה מתרחש UPDATE על שורה
+    שכבר מסומנת/נמחקה, וה-flush היה נכשל עם StaleDataError
+    ("UPDATE statement on table 'audit_logs' expected to update 1 row(s);
+    0 were matched") → PendingRollbackError ב-commit, כפי שקרה בפועל.
+
+    משתמשים ב-``_fresh_session_no_autoflush`` (לא ``_fresh_session``) כי
+    הבאג תלוי סדר-flush: עם autoflush=True (ברירת המחדל של Session רגיל)
+    ה-SELECT השני היה מחיל את המחיקה הממתינה קודם ו"מסתיר" את הבאג.
+    """
+    db = _fresh_session_no_autoflush()
+    admin = _make_user(db, "admin@veya.test", is_admin=True)
+    target = _make_user(db, "couple@veya.test")
+    ev = _make_event(db, target.id)
+    db.add(models.AuditLog(
+        event_id=ev.id, user_id=target.id,
+        action="update_event", detail="עדכון פרטי אירוע",
+    ))
+    db.commit()
+
+    # לפני התיקון: השורה הבאה זרקה PendingRollbackError.
+    _delete_user_impl(db, admin, target, "user_and_events")
+    db.commit()
+
+    assert db.get(models.User, target.id) is None
+    assert db.get(models.Event, ev.id) is None
+    # השורה נמחקה (יחד עם האירוע) — לא נשארה עם user_id=None כ"יתומה".
+    assert db.query(models.AuditLog).count() == 0
+    print("✓ 13: audit_logs עם event_id+user_id יחד — נמחק אחת, בלי התנגשות flush")
+
+
 if __name__ == "__main__":
     test_1_user_only_keeps_event_and_guests_intact()
     test_2_user_only_owner_becomes_holder_not_null()
@@ -332,5 +387,6 @@ if __name__ == "__main__":
     test_10_cannot_delete_orphaned_events_holder()
     test_11_invalid_mode_rejected()
     test_12_user_level_relations_cleaned_correctly()
+    test_13_audit_log_with_both_event_and_user_no_conflict()
     print()
-    print("=== כל 12 תרחישי מחיקת משתמש (אדמין) עברו ===")
+    print("=== כל 13 תרחישי מחיקת משתמש (אדמין) עברו ===")
