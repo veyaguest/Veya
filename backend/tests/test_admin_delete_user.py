@@ -400,6 +400,33 @@ def test_14_already_deleted_target_reports_404_not_crash() -> None:
     except HTTPException as exc:
         assert exc.status_code == 404
     db.rollback()
+
+
+def test_15_user_only_owner_survives_flush_no_autoflush() -> None:
+    """רגרסיה ל-owner_id=NULL: admin.py היה עושה ``event.owner_id =
+    holder.id`` (השמה ישירה ל-FK). SQLAlchemy מאפס את זה בחזרה ל-NULL
+    כשה-relationship ``User.events`` מתעדכן על ``db.delete(target)`` בהמשך
+    אותה פונקציה — התיקון הוא השמה דרך ה-relationship עצמו
+    (``event.owner = holder``), בדיוק כמו ב-auth.py::delete_my_account.
+    חובה ``_fresh_session_no_autoflush`` (לא ``_fresh_session`` הרגיל):
+    עם autoflush=True (ברירת המחדל) כל SELECT מוחק אוטומטית שינויים
+    ממתינים לפני שהוא רץ, כך שהוא "מציל" את הבאג בטעות ולא באמת בודק אותו
+    — בדיוק כמו test_13 למטה.
+    """
+    db = _fresh_session_no_autoflush()
+    admin = _make_user(db, "admin@veya.test", is_admin=True)
+    target = _make_user(db, "couple@veya.test")
+    ev = _make_event(db, target.id)
+    ev_id = ev.id
+
+    _delete_user_impl(db, admin, target, "user_only")
+    db.commit()
+
+    holder = db.scalar(select(models.User).where(models.User.email == _ORPHANED_EVENTS_HOLDER_EMAIL))
+    owner_id = db.get(models.Event, ev_id).owner_id
+    assert owner_id is not None, "owner_id נשאר NULL — האירוע יתום, דליפת מידע להרשמה הבאה"
+    assert owner_id == holder.id
+    print("✓ 15: owner_id שרד את ה-flush/commit הבא (event.owner = holder, לא event.owner_id = holder.id)")
     print("✓ 14: משתמש שכבר נמחק ע\"י בקשה אחרת מדווח 404 נקי, לא קורס")
 
 
@@ -418,5 +445,6 @@ if __name__ == "__main__":
     test_12_user_level_relations_cleaned_correctly()
     test_13_audit_log_with_both_event_and_user_no_conflict()
     test_14_already_deleted_target_reports_404_not_crash()
+    test_15_user_only_owner_survives_flush_no_autoflush()
     print()
-    print("=== כל 14 תרחישי מחיקת משתמש (אדמין) עברו ===")
+    print("=== כל 15 תרחישי מחיקת משתמש (אדמין) עברו ===")

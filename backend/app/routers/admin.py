@@ -632,7 +632,15 @@ def _delete_user_impl(db: Session, admin: models.User, target: models.User, mode
         if owned_events:
             holder = _get_or_create_orphaned_events_holder(db)
             for event in owned_events:
-                event.owner_id = holder.id
+                # קריטי: מעבירים בעלות דרך ה-relationship ולא ע"י השמה
+                # ישירה ל-owner_id. SQLAlchemy מאפס אוטומטית את ה-FK של כל
+                # אירוע ב-collection של User.events כשה-owner (target) נמחק
+                # למטה (db.delete(target)) — השמה ישירה ל-owner_id הייתה
+                # נדרסת בחזרה ל-NULL, והאירוע היה נשאר יתום (owner_id=NULL)
+                # עד שהרשמה חדשה הייתה "מאמצת" אותו עם כל רשימת המוזמנים
+                # דרך adopt_orphan_events. אותו דפוס מתועד ב-
+                # routers/auth.py::delete_my_account.
+                event.owner = db.get(models.User, holder.id)
 
     # ── ניקוי משותף לשני המצבים: כל מה שקושר את *המשתמש עצמו* (לא את
     # האירועים בבעלותו, שכבר טופלו למעלה) ────────────────────────────────

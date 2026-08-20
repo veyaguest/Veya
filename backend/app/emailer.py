@@ -176,43 +176,50 @@ def send_email(*, to: str, subject: str, html_body: str, text_body: str = "") ->
         return SendResult(ok=False, mode="live", error=str(exc)[:200])
 
 
-# ── תבנית עיצוב משותפת ──────────────────────────────────────────────────────
-# עיצוב inline בלבד: לקוחות מייל (בעיקר Gmail ו-Outlook) מתעלמים מ-<style>
-# חיצוני ומ-classes, ולכן כל כלל CSS חייב לשבת על האלמנט עצמו. הפריסה בנויה
-# על טבלאות מאותה סיבה — זה מה שנשאר responsive בכל לקוח מייל.
+# ── מערכת העיצוב של מיילי VEYA ──────────────────────────────────────────────
+# העיקרון: המייל הוא ההמשך הישיר של מסך ההתחברות ומסך אימות המייל, ולכן הוא
+# יושב על **אותו משטח כהה** ומשתמש באותם טוקנים בדיוק. משתמש שפותח את המייל
+# ואז לוחץ ונוחת במסך האימות אמור להרגיש שהוא לא עזב את המוצר.
 #
-# הצבעים הם **בדיוק** טוקני המותג מ-frontend/src/App.css (:root), שטוחים
-# ל-HEX כי rgba() ו-gradient לא נתמכים ב-Outlook. אין כאן שום צבע שהומצא
-# למייל — כל ערך מופיע אחד-לאחד ב-design system של האפליקציה.
-_BRAND_INK = "#2b2620"        # --charcoal  · כותרות וטקסט ראשי
-_BRAND_BODY = "#4a4438"       # --body      · טקסט גוף
-_BRAND_MUTED = "#8c8375"      # --muted     · טקסט משני/פוטר
-_BRAND_LINE = "#e5dec9"       # --line      · מסגרות ומפרידים
-_BRAND_BG = "#fbf6ee"         # --ivory     · רקע העמוד + משטח מקונן
-_BRAND_CARD = "#ffffff"       # --cream     · משטח הכרטיס
-_BRAND_GOLD = "#c9a227"       # --gold      · הדגשה ראשית ו-CTA
-_BRAND_GOLD_DEEP = "#9a7b2e"  # --gold-deep · טקסט זהב קריא על רקע בהיר
-_BRAND_ON_GOLD = "#201a06"    # צבע הטקסט של .btn-primary על רקע זהב
-_BRAND_ON_DARK = "#f5efe2"    # הטקסט הבהיר על המשטח הכהה (fallback ללוגו)
+# מקורות האמת:
+#   רקע/טקסט/מסגרות → הבלוק ".auth-marketing, .auth-panel, .verify-page" ב-App.css
+#   הכפתור          → .auth-submit (כפתור ההתחברות)
+#   שדה הקוד        → .verify-code-box / .auth-field input
+#   הלוגו           → frontend/public/logo.png (קובץ המותג, לא שחזור)
+#
+# הצבעים שטוחים ל-HEX כי rgba(), gradient ו-CSS variables לא נתמכים ב-Outlook.
+# אין כאן אף צבע שהומצא למייל.
+_INK = "#f5efe2"        # --charcoal בהקשר כהה · כותרות וטקסט ראשי
+_BODY = "#cfc8b8"       # --body     בהקשר כהה · טקסט גוף
+_MUTED = "#8b8578"      # --muted    בהקשר כהה · טקסט משני
+_SURFACE = "#14120e"    # --cream    בהקשר כהה · רקע המייל (= רקע מסך האימות)
+_INSET = "#0b0a0c"      # --black             · משטח שדות הקוד במסך האימות
+_LINE = "#2a2620"       # --line     בהקשר כהה · קווי הפרדה
+_LINE_2 = "#3a3426"     # --line-2   בהקשר כהה · מסגרת שדה קלט
+_GOLD = "#c9a227"       # --gold
+_GOLD_LIGHT = "#e4c96b" # --gold-light · גם --gold-deep בהקשר כהה (זהב קריא על כהה)
+_ON_GOLD = "#14120e"    # צבע הטקסט של .auth-submit — --cream בהקשר כהה
 
-# הגופנים של VEYA — אותם שמות שנטענים ב-frontend/app.html: Assistant לגוף
-# ו-Frank Ruhl Libre לכותרות. ב-HTML של מייל אי אפשר לסמוך עליהם: חלק
-# מהלקוחות (Apple Mail, iOS, Gmail באנדרואיד) יטענו אותם דרך ה-<link>
-# שב-<head>, ואחרים (בעיקר Outlook ו-Gmail בדפדפן) יתעלמו לגמרי. לכן אחרי
-# כל שם מותג באה שרשרת web-safe אמיתית שתומכת בעברית: Tahoma הוא ברירת
-# המחדל העברית הבטוחה בווינדוס, Arial במק, ו-Times New Roman לסריף.
+# הגופנים של VEYA, בדיוק כפי שהם מוגדרים ב-frontend/app.html ו-App.css:
+#   לוגו     → Cormorant Garamond (רק ב-wordmark; במייל זו תמונה, לא טקסט)
+#   כותרות   → Frank Ruhl Libre  (.auth-panel-title, .verify-title)
+#   גוף/כפתור → Assistant         (index.css, .auth-submit, .auth-field input)
+# לקוחות מייל: Apple Mail/iOS ו-Gmail באנדרואיד יטענו אותם דרך ה-<link>;
+# Outlook ו-Gmail בדפדפן יתעלמו. לכן לכל אחד יש שרשרת web-safe שתומכת
+# בעברית — Tahoma היא ברירת המחדל העברית בווינדוס, Arial במק,
+# ו-Times New Roman/Georgia נותנים את תחושת הסריף של הכותרות.
 _FONTS_HREF = (
-    "https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700"
+    "https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700"
     "&family=Frank+Ruhl+Libre:wght@500;700&display=swap"
 )
 _FONT_SANS = "'Assistant','Segoe UI',Tahoma,Arial,sans-serif"
 _FONT_SERIF = "'Frank Ruhl Libre','Times New Roman',Georgia,serif"
 
-# לוגו המותג הרשמי — אותו קובץ שהאפליקציה ודף הנחיתה מציגים
-# (frontend/public/logo.png). לקוחות מייל לא תומכים ב-SVG, ולכן PNG.
-# הכתובת נבנית מ-public_base_url() הקיים — בלי שום הגדרה חדשה.
-_LOGO_WIDTH = 140
-_LOGO_HEIGHT = 122  # יחס הקובץ המקורי: 1224x1067
+# קובץ הלוגו הרשמי — אותו קובץ שמסך אימות המייל מציג ושדף הנחיתה משתמש בו
+# ב-hero. לקוחות מייל לא מרנדרים SVG, ולכן PNG (ו-logo.svg ממילא מרנדר את
+# מילת המותג כ-<text> בגופן חיצוני, שלא נטען בתוך <img>).
+_LOGO_WIDTH = 152   # == width במסך האימות (VerifyEmailPage.tsx)
+_LOGO_HEIGHT = 133  # == height במסך האימות — אותו קובץ, אותו גודל בדיוק
 
 
 def logo_url() -> str:
@@ -221,92 +228,81 @@ def logo_url() -> str:
 
 
 def _shell(*, title: str, preheader: str, body_html: str) -> str:
-    """מעטפת המייל — זהה לכל מיילי VEYA (אימות, הזמנת שותף וכל מה שיבוא).
+    """מעטפת אחת לכל מיילי VEYA.
 
-    המבנה מחקה את פריסת האפליקציה עצמה: **משטח כהה עם הלוגו למעלה, ותוכן
-    בהיר ואוורירי מתחתיו** — בדיוק כמו סרגל הצד הכהה מול אזור התוכן השנהבי.
-    בכוונה בלי מסגרות, בלי פס זהב ובלי כרטיסים מקוננים: לפי `brand.md`
-    "הפחתה תמיד עדיפה על הוספה", והזהב הוא accent (הלוגו, תווית הקוד,
-    הכפתור) ולא צבע ששוטף את המייל.
-
-    ``preheader`` הוא שורת התצוגה המקדימה בתיבת הדואר — מוסתרת בגוף המייל.
+    בלי כרטיס, בלי מסגרות ובלי פסי קישוט: טור אחד ממורכז ברוחב 600px על
+    המשטח הכהה של המותג, עם הרבה אוויר. ``preheader`` הוא שורת התצוגה
+    המקדימה בתיבת הדואר (מוסתרת בגוף המייל).
     """
     return f"""<!doctype html>
 <html dir="rtl" lang="he">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark">
+<!-- המייל כהה מלכתחילה. ההצהרה הזו מונעת מלקוחות שתומכים בה להפוך אותו
+     שוב במצב כהה (inversion), מה שהיה הורס את הניגודיות. -->
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
 <title>{html.escape(title)}</title>
 <link rel="stylesheet" href="{_FONTS_HREF}">
 <style>
-  /* מובייל: מקטינים ריווח פנימי כדי שהתוכן ינשום גם ב-360px.
-     לקוחות שלא תומכים ב-@media פשוט נשארים עם ערכי ה-inline. */
+  :root {{ color-scheme: dark; }}
+  /* מובייל — לקוחות בלי תמיכה ב-@media נשארים עם ערכי ה-inline. */
   @media only screen and (max-width:480px) {{
-    .veya-pad {{ padding-left:24px !important; padding-right:24px !important; }}
-    .veya-code {{ font-size:34px !important; letter-spacing:8px !important; }}
-    .veya-h1 {{ font-size:23px !important; }}
-  }}
-  /* מצב כהה — נתמך ב-Apple Mail/iOS ובחלק מהלקוחות. ‎!important‎ הכרחי
-     כדי לגבור על ה-inline styles. הערכים הם טוקני המצב הכהה של App.css. */
-  @media (prefers-color-scheme: dark) {{
-    .veya-bg {{ background:#14120e !important; }}
-    .veya-card {{ background:#1c1a14 !important; }}
-    .veya-soft {{ background:#14120e !important; }}
-    .veya-ink {{ color:#f5efe2 !important; }}
-    .veya-body {{ color:#cfc8b8 !important; }}
-    .veya-muted {{ color:#8b8578 !important; }}
-    /* --gold-deep הופך לזהב בהיר על רקע כהה, בדיוק כמו בהקשר הכהה ב-App.css */
-    .veya-gold {{ color:#e4c96b !important; }}
-    .veya-rule {{ background:#2a2620 !important; }}
+    .veya-pad {{ padding-left:26px !important; padding-right:26px !important; }}
+    .veya-code {{ font-size:32px !important; letter-spacing:8px !important;
+                  padding-left:8px !important; }}
+    .veya-h1 {{ font-size:24px !important; }}
   }}
 </style>
 </head>
-<body class="veya-bg" style="margin:0;padding:0;background:{_BRAND_BG};">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;
-            mso-hide:all;font-size:1px;line-height:1px;color:{_BRAND_BG};">
-  {html.escape(preheader)}
-</div>
+<body style="margin:0;padding:0;background:{_SURFACE};">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;
+            font-size:1px;line-height:1px;color:{_SURFACE};">{html.escape(preheader)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-       class="veya-bg" style="background:{_BRAND_BG};padding:40px 16px;">
+       bgcolor="{_SURFACE}" style="background:{_SURFACE};">
   <tr>
-    <td align="center">
+    <td align="center" style="padding:48px 16px 40px;">
       <!--[if mso]>
       <table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0"
              border="0"><tr><td>
       <![endif]-->
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-             style="max-width:600px;border-radius:16px;overflow:hidden;">
-        <!-- משטח כהה עם הלוגו הרשמי. הלוגו של VEYA בנוי למשטח כהה (מילת
-             המותג בשנהב), ולכן זה גם הרקע הנכון עבורו וגם ההד של סרגל הצד
-             באפליקציה. ה-alt מעוצב כדי שגם כשלקוח המייל חוסם תמונות תישאר
-             מילת המותג בשנהב על הרקע הכהה — ולא ריבוע שבור. -->
+             style="max-width:600px;">
+        <!-- Header: הלוגו בלבד. ה-alt מעוצב כך שגם כשלקוח המייל חוסם
+             תמונות נשארת מילת המותג בשנהב ולא ריבוע שבור. -->
         <tr>
-          <td bgcolor="{_BRAND_INK}" align="center"
-              style="background:{_BRAND_INK};padding:26px 24px 24px;text-align:center;">
+          <td align="center" class="veya-pad" style="padding:0 44px 30px;text-align:center;">
             <img src="{logo_url()}" alt="VEYA"
                  width="{_LOGO_WIDTH}" height="{_LOGO_HEIGHT}"
                  style="display:block;margin:0 auto;border:0;outline:none;
                         width:{_LOGO_WIDTH}px;height:{_LOGO_HEIGHT}px;
-                        color:{_BRAND_ON_DARK};font:500 24px/{_LOGO_HEIGHT}px {_FONT_SERIF};
+                        color:{_INK};font:500 24px/{_LOGO_HEIGHT}px {_FONT_SERIF};
                         letter-spacing:7px;text-align:center;">
           </td>
         </tr>
         <tr>
-          <td class="veya-card veya-pad" bgcolor="{_BRAND_CARD}"
-              style="background:{_BRAND_CARD};padding:44px 44px 40px;
-                     font-family:{_FONT_SANS};text-align:right;direction:rtl;">
+          <td class="veya-pad" style="padding:0 44px;font-family:{_FONT_SANS};
+                     direction:rtl;text-align:center;">
             {body_html}
+          </td>
+        </tr>
+        <!-- Footer: קו שיער ושורה אחת. -->
+        <tr>
+          <td class="veya-pad" style="padding:38px 44px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr><td height="1" bgcolor="{_LINE}"
+                      style="height:1px;line-height:1px;font-size:0;
+                             background:{_LINE};">&nbsp;</td></tr>
+            </table>
+            <p style="margin:18px 0 0;font:400 11.5px/1.8 {_FONT_SANS};color:{_MUTED};
+                      text-align:center;direction:rtl;">
+              VEYA · מערכת חכמה לניהול אירועים<br>veyaguest.co.il
+            </p>
           </td>
         </tr>
       </table>
       <!--[if mso]></td></tr></table><![endif]-->
-      <div class="veya-muted" style="max-width:600px;margin:22px auto 0;
-                  font:400 12px/1.8 {_FONT_SANS};color:{_BRAND_MUTED};
-                  text-align:center;direction:rtl;">
-        VEYA · מערכת חכמה לניהול אירועים<br>veyaguest.co.il
-      </div>
     </td>
   </tr>
 </table>
@@ -315,68 +311,106 @@ def _shell(*, title: str, preheader: str, body_html: str) -> str:
 
 
 # ── אבני הבניין של גוף המייל ────────────────────────────────────────────────
-# היררכיה קבועה בשני המיילים: eyebrow קטן → כותרת סריפית → גוף רגוע →
-# תוכן ראשי (קוד/אירוע) → CTA אחד → הערת סיום שקטה.
-
-
-def _eyebrow(text: str) -> str:
-    """תווית זעירה מעל הכותרת — הנגיעה היחידה של זהב בראש התוכן."""
-    return (
-        f'<p class="veya-gold" style="margin:0 0 12px;font:600 11px/1.5 {_FONT_SANS};'
-        f'letter-spacing:2px;color:{_BRAND_GOLD_DEEP};">{html.escape(text)}</p>'
-    )
+# היררכיה קבועה בשני המיילים, זהה לזו של מסך אימות המייל:
+# כותרת סריפית → משפט אחד רגוע → התוכן הראשי → CTA אחד → הערה שקטה.
 
 
 def _title(text_html: str) -> str:
-    """כותרת המייל — סריף, כמו כותרות המסכים באפליקציה (Frank Ruhl Libre)."""
+    """כותרת — Frank Ruhl Libre, בדיוק כמו .verify-title ו-.auth-panel-title."""
     return (
-        f'<h1 class="veya-ink veya-h1" style="margin:0 0 14px;font:500 26px/1.35 {_FONT_SERIF};'
-        f'color:{_BRAND_INK};">{text_html}</h1>'
+        f'<h1 class="veya-h1" style="margin:0;font:600 26px/1.35 {_FONT_SERIF};'
+        f'letter-spacing:-0.01em;color:{_INK};">{text_html}</h1>'
     )
 
 
-def _paragraph(text_html: str, *, size: int = 15, top: int = 0) -> str:
-    """פסקת גוף רגילה — תמיד מיושרת לימין, שורות נושמות."""
+def _lead(text_html: str) -> str:
+    """המשפט שמתחת לכותרת — זהה ל-.verify-sub (14.5px, --muted)."""
     return (
-        f'<p class="veya-body" style="margin:{top}px 0 0;font:400 {size}px/1.8 {_FONT_SANS};'
-        f'color:{_BRAND_BODY};">{text_html}</p>'
+        f'<p style="margin:12px 0 0;font:400 14.5px/1.6 {_FONT_SANS};'
+        f'color:{_MUTED};">{text_html}</p>'
+    )
+
+
+def _secondary(text_html: str) -> str:
+    """טקסט משני אחרי ה-CTA — אותו גודל של ``_lead`` עם מרווח עליון גדול יותר."""
+    return (
+        f'<p style="margin:28px 0 0;font:400 14.5px/1.7 {_FONT_SANS};'
+        f'color:{_MUTED};">{text_html}</p>'
+    )
+
+
+def _accent_line(text_html: str) -> str:
+    """שורת מידע מודגשת (למשל שם האירוע) — טקסט ראשי, בלי כרטיס ובלי מסגרת."""
+    return (
+        f'<p style="margin:14px 0 0;font:600 16px/1.5 {_FONT_SANS};'
+        f'color:{_INK};">{text_html}</p>'
     )
 
 
 def _button(url: str, label: str) -> str:
-    """ה-CTA היחיד — הגרסה השטוחה של ``.btn-primary``: זהב מלא, טקסט כהה,
-    פינות 12px. <a> ולא <button>, כי לקוחות מייל לא מריצים JS.
-    ``bgcolor`` על ה-<td> נשאר בשביל Outlook, שמתעלם מ-background ב-CSS."""
+    """ה-CTA היחיד — ``.auth-submit`` מתורגם למייל.
+
+    ``bgcolor`` + ``background`` מוצקים בזהב המותג הם מה ש-Outlook יראה;
+    לקוחות שתומכים ב-background-image יקבלו את אותו gradient בדיוק של
+    כפתור ההתחברות באפליקציה. הטקסט הכהה על הזהב הוא --cream בהקשר הכהה,
+    בדיוק כמו במסך.
+    """
     return (
         f'<table role="presentation" cellpadding="0" cellspacing="0" border="0" '
-        f'style="margin:30px 0 0;"><tr><td align="center" bgcolor="{_BRAND_GOLD}" '
-        f'style="background:{_BRAND_GOLD};border-radius:12px;">'
+        f'align="center" style="margin:32px auto 0;"><tr>'
+        f'<td align="center" bgcolor="{_GOLD}" style="background:{_GOLD};'
+        f'background-image:linear-gradient(150deg,{_GOLD_LIGHT},#b08d2a);'
+        f'border-radius:8px;">'
         f'<a href="{html.escape(url, quote=True)}" '
-        f'style="display:inline-block;padding:15px 40px;color:{_BRAND_ON_GOLD};'
-        f'text-decoration:none;border-radius:12px;font:700 15px/1 {_FONT_SANS};">'
+        f'style="display:inline-block;padding:16px 44px;color:{_ON_GOLD};'
+        f'text-decoration:none;border-radius:8px;font:700 16px/1 {_FONT_SANS};">'
         f"{html.escape(label)}</a></td></tr></table>"
     )
 
 
 def _fallback_link(url: str) -> str:
     """הקישור המלא כטקסט — למי שהכפתור לא עובד אצלו בלקוח המייל."""
-    safe = html.escape(url)
     return (
-        f'<p class="veya-muted" style="margin:14px 0 0;font:400 11px/1.7 {_FONT_SANS};'
-        f'color:{_BRAND_MUTED};direction:ltr;text-align:right;word-break:break-all;">{safe}</p>'
+        f'<p style="margin:16px 0 0;font:400 11px/1.7 {_FONT_SANS};color:{_MUTED};'
+        f'direction:ltr;text-align:center;word-break:break-all;">{html.escape(url)}</p>'
     )
 
 
 def _fine_print(text: str) -> str:
-    """הערת הסיום — מופרדת בקו שיער דק, לא במסגרת."""
+    """הערת הסיום — שורה שקטה, בלי מסגרת ובלי רקע."""
     return (
-        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
-        f'style="margin:34px 0 0;"><tr><td class="veya-rule" height="1" bgcolor="{_BRAND_LINE}" '
-        f'style="height:1px;line-height:1px;font-size:0;background:{_BRAND_LINE};">&nbsp;</td>'
-        f'</tr></table>'
-        f'<p class="veya-muted" style="margin:18px 0 0;font:400 12.5px/1.75 {_FONT_SANS};'
-        f'color:{_BRAND_MUTED};">{html.escape(text)}</p>'
+        f'<p style="margin:30px 0 0;font:400 12.5px/1.75 {_FONT_SANS};'
+        f'color:{_MUTED};">{html.escape(text)}</p>'
     )
+
+
+def _code_block(code: str) -> str:
+    """הקוד — ה-centerpiece, ובמכוון נראה כמו שדות הקוד במסך האימות:
+    אותו משטח כמעט-שחור (--black) ואותה מסגרת (--line-2 בהקשר כהה).
+
+    פרטים שחשובים דווקא בלקוחות מייל:
+    - ``dir="ltr"`` על הספרות, אחרת הן מתהפכות בתוך מייל RTL.
+    - ``letter-spacing`` מוסיף רווח גם **אחרי** הספרה האחרונה ומזיז את הבלוק
+      שמאלה; ``padding-left`` בגודל זהה מחזיר אותו למרכז אופטי.
+    - בלי flex/grid — רק טבלה ו-``text-align``, שנתמכים בכל לקוח.
+    """
+    return f"""
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="margin:30px 0 0;">
+  <tr>
+    <td align="center" bgcolor="{_INSET}"
+        style="background:{_INSET};border:1px solid {_LINE_2};border-radius:12px;
+               padding:24px 16px;text-align:center;">
+      <div class="veya-code" dir="ltr"
+           style="font:600 40px/1.1 {_FONT_SANS};letter-spacing:12px;
+                  padding-left:12px;color:{_INK};">{html.escape(code)}</div>
+    </td>
+  </tr>
+</table>
+<p style="margin:14px 0 0;font:400 12.5px/1.7 {_FONT_SANS};color:{_MUTED};">
+  הקוד תקף ל־10 דקות
+</p>
+"""
 
 
 # ── מייל 1: הזמנת בן/בת זוג לניהול משותף ────────────────────────────────────
@@ -386,72 +420,34 @@ def send_partner_invite(
     """מייל ההזמנה לניהול משותף של האירוע."""
     inviter = inviter_name.strip() or "בן/בת הזוג שלך"
     subject = f"{inviter} הזמין אותך לנהל את האירוע ב-VEYA"
-    # שם האירוע — שורה שקטה מתחת לכותרת, בלי כרטיס ובלי מסגרת: זה מידע
-    # מזהה, לא אלמנט שמתחרה על תשומת הלב עם ה-CTA.
-    event_line = (
-        f'<p class="veya-ink" style="margin:14px 0 0;font:600 16px/1.5 {_FONT_SANS};'
-        f'color:{_BRAND_INK};">{html.escape(event_title)}</p>'
-        if event_title
-        else ""
-    )
+    event_line = _accent_line(html.escape(event_title)) if event_title else ""
     body = f"""
-{_eyebrow("הזמנה לניהול משותף")}
 {_title("הוזמנת לנהל את האירוע ב־VEYA")}
-{_paragraph(f"{html.escape(inviter)} הזמין אותך להצטרף לניהול האירוע ב־VEYA.")}
+{_lead(f"{html.escape(inviter)} הזמין אותך להצטרף לניהול האירוע ב־VEYA.")}
 {event_line}
 {_button(invite_url, "הצטרפות לאירוע")}
 {_fallback_link(invite_url)}
-{_paragraph("נהלו יחד את המוזמנים, אישורי ההגעה, סידור ההושבה ועוד.", size=14, top=26)}
-{_fine_print("אם לא ציפיתם להזמנה הזו, אפשר פשוט להתעלם מהמייל הזה.")}
+{_secondary("נהלו יחד את המוזמנים, אישורי ההגעה, סידור ההושבה ועוד.")}
+{_fine_print("אם לא ציפיתם להזמנה הזו, אפשר להתעלם מהמייל הזה.")}
 """
     text = (
-        f"הוזמנת לנהל את האירוע ב-VEYA\n\n"
+        "הוזמנת לנהל את האירוע ב-VEYA\n\n"
         f"{inviter} הזמין אותך להצטרף לניהול האירוע ב-VEYA.\n"
         f"{event_title}\n\n"
         f"להצטרפות: {invite_url}\n\n"
-        "נהלו יחד את המוזמנים, אישורי ההגעה, סידור ההושבה ועוד.\n\n"
+        "נהלו יחד את המוזמנים, אישורי ההגעה, סידור ההושבה ועוד.\n"
         "אם לא ציפיתם להזמנה הזו, אפשר להתעלם מהמייל הזה."
     )
-    preheader = f"{inviter} הזמין אותך להצטרף לניהול האירוע ב-VEYA."
     return send_email(
         to=to,
         subject=subject,
-        html_body=_shell(title=subject, preheader=preheader, body_html=body),
+        html_body=_shell(
+            title=subject,
+            preheader=f"{inviter} הזמין אותך להצטרף לניהול האירוע ב-VEYA.",
+            body_html=body,
+        ),
         text_body=text,
     )
-
-
-def _code_block(code: str) -> str:
-    """קוד האימות — ה-centerpiece של המייל.
-
-    בכוונה **בלי** שש תיבות ובלי מסגרת זהב: משטח שנהב שקט אחד, תווית זעירה,
-    והספרות עצמן גדולות ומרוּוחות. זה קריא יותר, קל יותר להעתקה, ונאמן
-    לעיקרון "הפחתה תמיד עדיפה על הוספה" מ-brand.md.
-
-    פרטים שחשובים דווקא בלקוחות מייל:
-    - ``dir="ltr"`` על הספרות — אחרת הן מתהפכות בתוך מייל RTL.
-    - ``letter-spacing`` מוסיף רווח גם **אחרי** הספרה האחרונה, מה שמזיז את
-      הבלוק שמאלה; ``padding-left`` בגודל זהה מחזיר אותו למרכז אופטי.
-    - בלי flex/grid — רק טבלה ו-``text-align``, שנתמכים בכל לקוח.
-    """
-    return f"""
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-       style="margin:28px 0 0;">
-  <tr>
-    <td class="veya-soft" bgcolor="{_BRAND_BG}" align="center"
-        style="background:{_BRAND_BG};border-radius:14px;padding:26px 16px 24px;
-               text-align:center;">
-      <div class="veya-gold" style="font:600 11px/1.5 {_FONT_SANS};letter-spacing:2px;
-                  color:{_BRAND_GOLD_DEEP};">קוד האימות</div>
-      <div class="veya-ink veya-code" dir="ltr"
-           style="margin:14px 0 0;font:600 40px/1.1 {_FONT_SANS};letter-spacing:10px;
-                  padding-left:10px;color:{_BRAND_INK};">{html.escape(code)}</div>
-    </td>
-  </tr>
-</table>
-<p class="veya-muted" style="margin:14px 0 0;font:400 12.5px/1.7 {_FONT_SANS};
-          color:{_BRAND_MUTED};text-align:center;">הקוד תקף ל־10 דקות</p>
-"""
 
 
 # ── מייל 2: אימות כתובת המייל ───────────────────────────────────────────────
@@ -460,19 +456,18 @@ def send_email_verification(*, to: str, verify_url: str, code: str) -> SendResul
     10 דקות) + קישור כ-fallback (תקף 24 שעות) שממשיך לעבוד במקביל."""
     subject = "קוד האימות שלך ל-VEYA"
     body = f"""
-{_eyebrow("אימות חשבון")}
 {_title("אימות כתובת המייל")}
-{_paragraph("שלחנו לך קוד אימות כדי להשלים את ההרשמה ל־VEYA.")}
+{_lead("שלחנו לך קוד אימות כדי להשלים את ההרשמה ל־VEYA.")}
 {_code_block(code)}
 {_button(verify_url, "אימות המייל שלי")}
 {_fallback_link(verify_url)}
 {_fine_print("אם לא ביקשת להירשם ל־VEYA, אפשר להתעלם מהמייל הזה.")}
 """
     text = (
-        f"אימות כתובת המייל\n\n"
-        f"שלחנו לך קוד אימות כדי להשלים את ההרשמה ל-VEYA.\n\n"
+        "אימות כתובת המייל\n\n"
+        "שלחנו לך קוד אימות כדי להשלים את ההרשמה ל-VEYA.\n\n"
         f"קוד האימות: {code}\n"
-        f"הקוד תקף ל-10 דקות.\n\n"
+        "הקוד תקף ל-10 דקות.\n\n"
         f"אפשר גם לאמת בלחיצה אחת: {verify_url}\n\n"
         "אם לא ביקשת להירשם ל-VEYA, אפשר להתעלם מהמייל הזה."
     )
