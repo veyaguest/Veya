@@ -1232,9 +1232,13 @@ td.notes.seating {
   color: var(--charcoal);
 }
 /* ---- Reconsent modal (עדכון תנאי שימוש) ----
-   מכוון: קטן, שקט, עדין — לא "Alert". טוקנים קיימים בלבד, לקוחים מדפוסים
-   אמיתיים אחרים באפליקציה: כפתור = .join-btn-primary (פחם שטוח, לא גרדיאנט),
-   קישורי תנאים = .auth-consent-row a (gold-deep, בדיוק כמו בטופס ההרשמה).
+   קטן, שקט, עדין — לא "Alert" ולא מודל שיווקי/CTA. טוקנים קיימים בלבד,
+   מדפוסים אמיתיים באפליקציה. בכוונה **בלי זהב בכלל**: זהב (gold/gold-deep)
+   ב-VEYA שמור לפעולות "מכירתיות"/נודג'ים — invite-banner-btn, seating-helper-cta,
+   auth-consent-row (הרשמה). זה כאן מסך מנהלתי-חובה ("אשרו כדי להמשיך"), אז
+   הפלטה שלו נשענת על הדפוס הנייטרלי המקביל שכבר קיים במערכת בדיוק לאותו סוג
+   מסך: .join-btn-primary (כפתור פחם שטוח, לא גרדיאנט) ו-.dash-edit-link/
+   .dialog .x:hover (קישור/פעולה משנית ב-muted, hover ל-charcoal — לא gold).
    עדיין חוסם את שאר האפליקציה עד לאישור (needs_reconsent) דרך withReconsent
    ב-App.tsx — רק העיצוב והמנגנון החזותי השתנו, לא לוגיקת האישור. */
 .reconsent-overlay {
@@ -1285,14 +1289,15 @@ td.notes.seating {
   margin: 0 0 20px;
 }
 .reconsent-links a {
-  /* אותו גוון בדיוק שהקישורים ל"תנאי שימוש"/"מדיניות פרטיות" משתמשים בו
-     בטופס ההרשמה (.auth-consent-row a) — לא צבע חדש. */
-  color: var(--gold-deep);
+  /* קישור משני נייטרלי — אותו גוון וטיפול hover של .dash-edit-link ושל
+     .dialog .x:hover (muted → charcoal), לא הגוון השיווקי (gold-deep) של
+     .auth-consent-row בטופס ההרשמה. */
+  color: var(--muted);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 .reconsent-links a:hover {
-  color: var(--gold-light);
+  color: var(--charcoal);
 }
 .reconsent-error {
   color: var(--error);
