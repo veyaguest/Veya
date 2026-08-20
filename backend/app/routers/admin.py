@@ -287,6 +287,36 @@ def list_all_events(
     ]
 
 
+@router.delete("/events/{event_id}", status_code=204)
+def delete_single_event(
+    event_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_current_admin),
+):
+    """מחיקת אירוע בודד ע"י אדמין — בלתי הפיכה, כולל כל המידע התלוי בו
+    (מוזמנים, הודעות, יומן שיחות, סידור הושבה...).
+
+    משתמשת באותו ``delete_event_cascade`` בדיוק כמו מחיקה עצמית ע"י בעל
+    האירוע (``routers/events.py::delete_event``) ומחיקת משתמש עם
+    ``mode=user_and_events`` (למטה) — בלי מנגנון מקביל. בניגוד למחיקת
+    משתמש, כאן לא נוגעים בבעלים או בחשבון שלו כלל.
+    """
+    event = db.get(models.Event, event_id)
+    if event is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="האירוע לא נמצא")
+
+    detail = event_terms.hosts_names(event.event_type, event.groom_name, event.bride_name)
+    delete_event_cascade(db, event)
+    audit.record(
+        db, "admin_delete_event",
+        user_id=admin.id,
+        detail=f"מחיקת אירוע {detail} (#{event_id})",
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+
+
 @router.post(
     "/users/{user_id}/reset-password",
     response_model=schemas.AdminPasswordResetResult,

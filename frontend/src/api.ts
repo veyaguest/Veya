@@ -428,6 +428,12 @@ export async function adminDeleteUser(userId: number, mode: AdminDeleteUserMode)
 }
 
 /** "התחבר כמשתמש" — מנפיק טוקן זמני שמאפשר לראות את המערכת בעיני המשתמש. */
+/** מחיקת אירוע בודד ע"י אדמין — בלתי הפיכה, כולל כל המידע התלוי בו. */
+export async function adminDeleteEvent(eventId: number): Promise<void> {
+  const res = await apiFetch(`/admin/events/${eventId}`, { method: 'DELETE' })
+  if (!res.ok) throw await toError(res)
+}
+
 export async function adminImpersonate(userId: number): Promise<AdminImpersonateResult> {
   const res = await apiFetch(`/admin/users/${userId}/impersonate`, { method: 'POST' })
   if (!res.ok) throw await toError(res)

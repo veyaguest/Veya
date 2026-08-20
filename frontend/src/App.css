@@ -7067,6 +7067,10 @@ td.notes.seating {
   font-size: 13px;
   color: var(--muted);
 }
+.adm-user-events li .btn-danger {
+  align-self: flex-start;
+  margin-top: 4px;
+}
 .adm-user-logins li {
   display: flex;
   align-items: center;

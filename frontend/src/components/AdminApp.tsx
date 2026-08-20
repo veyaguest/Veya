@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   adminAuditLog,
   adminDashboard,
+  adminDeleteEvent,
   adminDeleteUser,
   adminDeleteVenue,
   adminDisableUser,
@@ -68,6 +69,7 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
   admin_disable_user: 'השבתת משתמש',
   admin_enable_user: 'הפעלת משתמש',
   admin_delete_user: 'מחיקת משתמש',
+  admin_delete_event: 'מחיקת אירוע',
   admin_reset_password: 'איפוס סיסמה',
   admin_create_account: 'יצירת חשבון',
   admin_update_venue: 'עדכון אולם',
@@ -492,6 +494,8 @@ function AdminUserDialog({
   // תוצאת איפוס סיסמה + דיאלוגי אישור
   const [tempPassword, setTempPassword] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<null | 'disable' | 'delete'>(null)
+  const [eventToDelete, setEventToDelete] = useState<AdminEventRow | null>(null)
+  const [eventDeleteBusy, setEventDeleteBusy] = useState(false)
 
   function load() {
     adminGetUser(userId)
@@ -584,6 +588,24 @@ function AdminUserDialog({
       setConfirm(null)
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function deleteEvent() {
+    if (!eventToDelete) return
+    setEventDeleteBusy(true)
+    setError(null)
+    try {
+      await adminDeleteEvent(eventToDelete.id)
+      setNotice(`האירוע ${eventToDelete.hosts || `#${eventToDelete.id}`} נמחק`)
+      setEventToDelete(null)
+      load()
+      onChanged()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : strings.errors.adminDeleteFailed)
+      setEventToDelete(null)
+    } finally {
+      setEventDeleteBusy(false)
     }
   }
 
@@ -758,6 +780,14 @@ function AdminUserDialog({
                       <span className="adm-user-event-meta">
                         {getEventTerms(e.event_type).label} · {e.venue_name || 'ללא אולם'} · {e.guests_count} מוזמנים
                       </span>
+                      <button
+                        type="button"
+                        className="btn-danger btn-sm"
+                        onClick={() => setEventToDelete(e)}
+                        disabled={busy}
+                      >
+                        מחיקת אירוע
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -840,6 +870,17 @@ function AdminUserDialog({
           </div>
         )}
 
+        {eventToDelete && (
+          <ConfirmDialog
+            title="למחוק את האירוע?"
+            body={`${eventToDelete.hosts || `אירוע #${eventToDelete.id}`} (${eventToDelete.guests_count} מוזמנים) יימחק לצמיתות — כולל כל המוזמנים, ההודעות, יומן השיחות וסידור ההושבה. אי אפשר לשחזר.`}
+            confirmLabel="מחיקת אירוע"
+            danger
+            busy={eventDeleteBusy}
+            onConfirm={deleteEvent}
+            onCancel={() => setEventToDelete(null)}
+          />
+        )}
         {confirm === 'disable' && detail && (
           <ConfirmDialog
             title="להשבית את החשבון?"
