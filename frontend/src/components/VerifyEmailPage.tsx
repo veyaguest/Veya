@@ -3,10 +3,21 @@ import type { KeyboardEvent, ClipboardEvent } from 'react'
 import { changeUnverifiedEmail, resendVerificationEmail, verifyEmailCode } from '../api'
 import type { User } from '../types'
 import { Footer } from './Footer'
-import './JoinEventPage.css'
+import './VerifyEmailPage.css'
 
 const CODE_LENGTH = 6
 const RESEND_COOLDOWN_SECONDS = 30
+
+/**
+ * לוגו VEYA — קובץ המותג הרשמי ``frontend/public/logo.png`` (אותו קובץ שדף
+ * הנחיתה מציג ב-hero ושמשמש כ-apple-touch-icon). בכוונה תמונה ולא שחזור
+ * ב-CSS ולא ה-SVG: ה-SVG מרנדר את המילה VEYA כ-<text> בגופן Cormorant
+ * Garamond, ובתוך <img> גופן חיצוני לא נטען — כלומר הלוגו היה נופל לגופן
+ * ברירת מחדל. ה-PNG הוא הלוגו האמיתי כפי שעוצב, בלי תלות בגופנים.
+ */
+function VeyaLogo() {
+  return <img className="verify-logo" src="/logo.png" alt="VEYA" width={152} height={133} />
+}
 
 /**
  * "אימות כתובת המייל" — המסך שמוצג מיד אחרי ההרשמה, לפני יצירת האירוע.
@@ -53,6 +64,13 @@ export function VerifyEmailPage({
     inputsRef.current[index]?.select()
   }
 
+  // פוקוס ראשוני על התיבה הראשונה. ``preventScroll`` — בלי זה הדפדפן גולל
+  // את העמוד כדי "להביא" את השדה, והלוגו בראש הכרטיס נחתך בטעינה. מחליף את
+  // autoFocus שהיה על ה-input עצמו (שם אי אפשר לבטל את הגלילה).
+  useEffect(() => {
+    if (!editing && !success) inputsRef.current[0]?.focus({ preventScroll: true })
+  }, [editing, success])
+
   // מאמת אוטומטית ברגע שכל 6 התיבות התמלאו. עובר דרך useEffect (ולא נקרא
   // ישירות בתוך handleChange) כדי לא להסתמך על תזמון לא-מובטח של updater
   // ל-setState — קריאת ה-state מיד אחרי setDigits() לא מובטחת להיות מעודכנת.
@@ -80,6 +98,9 @@ export function VerifyEmailPage({
   }
 
   function handleChange(index: number, raw: string) {
+    // ברגע שמתחילים להקליד קוד חדש, השגיאה הקודמת כבר לא רלוונטית — היא
+    // נעלמת מיד (יחד עם המסגרת האדומה על התיבות) במקום להישאר עד השליחה.
+    if (error) setError(null)
     const value = raw.replace(/\D/g, '')
     if (!value) {
       setDigits((prev) => {
@@ -139,7 +160,8 @@ export function VerifyEmailPage({
     setResending(true)
     try {
       await resendVerificationEmail()
-      setNote(`שלחנו קוד חדש ל-${user.email}`)
+      // "לכתובת" ולא "ל-": מקף לפני כתובת לטינית בתוך משפט עברי נשבר ב-bidi.
+      setNote(`שלחנו קוד חדש לכתובת ${user.email}`)
       setDigits(Array(CODE_LENGTH).fill(''))
       setCooldown(RESEND_COOLDOWN_SECONDS)
       focusBox(0)
@@ -161,7 +183,7 @@ export function VerifyEmailPage({
       setEditing(false)
       setDigits(Array(CODE_LENGTH).fill(''))
       setCooldown(RESEND_COOLDOWN_SECONDS)
-      setNote(`שלחנו קוד אימות חדש ל-${updated.email}`)
+      setNote(`שלחנו קוד אימות חדש לכתובת ${updated.email}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'לא הצלחנו לעדכן את הכתובת')
     } finally {
@@ -171,39 +193,40 @@ export function VerifyEmailPage({
 
   return (
     <>
-      <div className="join-page" dir="rtl">
-        <div className="join-card">
-          <div className="join-logo" dir="ltr" aria-label="VEYA">
-            VEYA
-          </div>
+      <div className="verify-page" dir="rtl">
+        <div className="verify-inner">
+          <VeyaLogo />
 
           {success ? (
             <>
-              <div className="join-check" aria-hidden="true">✓</div>
-              <h1 className="join-title">האימות הצליח</h1>
-              <p className="join-text">רגע, ממשיכים…</p>
+              <div className="verify-check" aria-hidden="true">✓</div>
+              <h1 className="verify-title">האימות הצליח</h1>
+              <p className="verify-sub">רגע, ממשיכים…</p>
             </>
           ) : !editing ? (
             <>
-              <h1 className="join-title">אימות כתובת המייל</h1>
-              <p className="join-text">
-                שלחנו קוד אימות ל-
-                <span dir="ltr" className="join-email">{user.email}</span>
+              <h1 className="verify-title">אימות כתובת המייל</h1>
+              {/* "לכתובת" ולא "ל־[מייל]": מקף מחבר שנצמד לכתובת לטינית בתוך
+                  פסקה בעברית נשבר ויזואלית בדפדפנים (ה-bidi מזיז אותו לקצה
+                  השורה). ככה הניסוח גם פשוט יותר לקריאה. */}
+              <p className="verify-sub">
+                שלחנו קוד אימות לכתובת
                 <br />
-                הזינו את הקוד שקיבלתם במייל.
+                <span dir="ltr" className="verify-email">{user.email}</span>
               </p>
 
-              {error && (
-                <p className="join-error" role="alert">{error}</p>
-              )}
-              {note && <p className="join-note">{note}</p>}
+              <p className="verify-hint">הזינו את הקוד כדי להמשיך</p>
 
-              <div className="code-input-row" dir="ltr" onPaste={handlePaste}>
+              <div className="verify-code-row" dir="ltr" onPaste={handlePaste}>
                 {digits.map((digit, i) => (
                   <input
                     key={i}
                     ref={(el) => { inputsRef.current[i] = el }}
-                    className="code-input-box"
+                    className={
+                      'verify-code-box' +
+                      (digit ? ' is-filled' : '') +
+                      (error ? ' has-error' : '')
+                    }
                     type="text"
                     inputMode="numeric"
                     autoComplete={i === 0 ? 'one-time-code' : 'off'}
@@ -215,55 +238,70 @@ export function VerifyEmailPage({
                     onChange={(e) => handleChange(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(i, e)}
                     onFocus={(e) => e.target.select()}
-                    autoFocus={i === 0}
                   />
                 ))}
               </div>
 
+              {error && (
+                <p className="auth-error verify-msg" role="alert">{error}</p>
+              )}
+              {note && <p className="auth-note verify-msg">{note}</p>}
+
               <button
                 type="button"
-                className="join-btn join-btn-primary"
+                className="auth-submit verify-submit"
                 onClick={() => submit(digits.join(''))}
                 disabled={busy || digits.join('').length !== CODE_LENGTH}
               >
-                {busy ? 'מאמת…' : 'אימות מייל'}
+                {busy ? 'מאמתים…' : 'אימות מייל'}
               </button>
 
-              <button
-                type="button"
-                className="join-linkbtn"
-                onClick={resend}
-                disabled={resending || cooldown > 0}
-              >
-                {resending
-                  ? 'שולח…'
-                  : cooldown > 0
-                    ? `לא קיבלתם את הקוד? אפשר לשלוח שוב בעוד ${cooldown} שניות`
-                    : 'לא קיבלתם את הקוד? שלחו לי שוב'}
-              </button>
+              <p className="verify-resend">
+                <span>לא קיבלתם את הקוד?</span>
+                <button
+                  type="button"
+                  className="auth-link-btn"
+                  onClick={resend}
+                  disabled={resending || cooldown > 0}
+                >
+                  {resending ? 'שולחים…' : 'שלחו לי קוד חדש'}
+                </button>
+              </p>
+              {cooldown > 0 && (
+                <p className="verify-countdown">
+                  אפשר לבקש קוד חדש בעוד {cooldown} שניות
+                </p>
+              )}
 
-              <button
-                type="button"
-                className="join-linkbtn"
-                onClick={() => {
-                  setEditing(true)
-                  setNote(null)
-                  setError(null)
-                }}
-              >
-                הכתובת שגויה? אפשר לשנות אותה
-              </button>
-
-              <button type="button" className="join-linkbtn" onClick={onRefresh}>
-                כבר אימתתם דרך הקישור במייל? לרענון
-              </button>
+              <div className="verify-secondary">
+                <button
+                  type="button"
+                  className="auth-link-btn"
+                  onClick={() => {
+                    setEditing(true)
+                    setNote(null)
+                    setError(null)
+                  }}
+                >
+                  הכתובת שגויה? אפשר לשנות אותה
+                </button>
+                <button type="button" className="auth-link-btn" onClick={onRefresh}>
+                  כבר אימתתם דרך הקישור במייל? לרענון
+                </button>
+                <button type="button" className="auth-link-btn" onClick={onLogout}>
+                  יציאה מהחשבון
+                </button>
+              </div>
             </>
           ) : (
             <>
-              <h1 className="join-title">עדכון כתובת המייל</h1>
-              {error && <p className="join-error" role="alert">{error}</p>}
-              <form onSubmit={saveEmail}>
-                <div className="join-field">
+              <h1 className="verify-title">עדכון כתובת המייל</h1>
+              <p className="verify-sub">נשלח קוד אימות חדש לכתובת שתזינו.</p>
+              {error && (
+                <p className="auth-error verify-msg" role="alert">{error}</p>
+              )}
+              <form className="verify-form" onSubmit={saveEmail}>
+                <div className="auth-field">
                   <label htmlFor="verify-email">כתובת המייל שלכם</label>
                   <input
                     id="verify-email"
@@ -277,14 +315,14 @@ export function VerifyEmailPage({
                 </div>
                 <button
                   type="submit"
-                  className="join-btn join-btn-primary"
+                  className="auth-submit verify-submit"
                   disabled={busy}
                 >
-                  {busy ? 'שומר…' : 'שמירה ושליחת קוד חדש'}
+                  {busy ? 'שומרים…' : 'שמירה ושליחת קוד חדש'}
                 </button>
                 <button
                   type="button"
-                  className="join-btn join-btn-secondary"
+                  className="verify-cancel"
                   onClick={() => {
                     setEditing(false)
                     setEmail(user.email)
@@ -296,12 +334,6 @@ export function VerifyEmailPage({
                 </button>
               </form>
             </>
-          )}
-
-          {!success && (
-            <button type="button" className="join-linkbtn" onClick={onLogout}>
-              יציאה מהחשבון
-            </button>
           )}
         </div>
       </div>

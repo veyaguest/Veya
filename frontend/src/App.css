@@ -50,6 +50,7 @@
    סרגל הצד הוצא מכאן — הוא בהיר (שנהב חם) בעיצוב ה-Premium החדש. */
 .auth-marketing,
 .auth-panel,
+.verify-page,
 .confirm-card {
   --cream: #14120e;
   --surface-hi: #1c1a14;
@@ -1232,13 +1233,15 @@ td.notes.seating {
   color: var(--charcoal);
 }
 /* ---- Reconsent modal (עדכון תנאי שימוש) ----
-   קטן, שקט, עדין — לא "Alert" ולא מודל שיווקי/CTA. טוקנים קיימים בלבד,
-   מדפוסים אמיתיים באפליקציה. בכוונה **בלי זהב בכלל**: זהב (gold/gold-deep)
-   ב-VEYA שמור לפעולות "מכירתיות"/נודג'ים — invite-banner-btn, seating-helper-cta,
-   auth-consent-row (הרשמה). זה כאן מסך מנהלתי-חובה ("אשרו כדי להמשיך"), אז
-   הפלטה שלו נשענת על הדפוס הנייטרלי המקביל שכבר קיים במערכת בדיוק לאותו סוג
-   מסך: .join-btn-primary (כפתור פחם שטוח, לא גרדיאנט) ו-.dash-edit-link/
-   .dialog .x:hover (קישור/פעולה משנית ב-muted, hover ל-charcoal — לא gold).
+   קטן, שקט, עדין — לא "Alert" ולא גרדיאנט כבד. אחרי audit מול המערכת *וגם*
+   דף הנחיתה (index.html): זהב הוא צבע ה-CTA האמיתי של VEYA בשני המקומות.
+   דף הנחיתה עושה זאת שטוח — `.btn-primary { background: var(--gold);
+   color: var(--charcoal) }` — וזה בדיוק מה שהכפתור כאן עושה: זהב מלא + טקסט
+   פחם, בלי הגרדיאנט של .btn-primary באפליקציה (כדי לשמור על מודל רגוע).
+   הקישורים ב-gold-deep, בדיוק כמו .auth-consent-row a בטופס ההרשמה.
+   שאר הכרטיס נייטרלי (cream/line/charcoal/body/muted) כמו כרטיסי המערכת.
+   טיפוגרפיה: כותרת Frank Ruhl Libre 500 (כמו h1-h3 בדף הנחיתה
+   ו-.dialog-head h2), גוף Assistant — אין פונט חדש.
    עדיין חוסם את שאר האפליקציה עד לאישור (needs_reconsent) דרך withReconsent
    ב-App.tsx — רק העיצוב והמנגנון החזותי השתנו, לא לוגיקת האישור. */
 .reconsent-overlay {
@@ -1267,37 +1270,41 @@ td.notes.seating {
   .reconsent-card { animation: none; }
 }
 .reconsent-title {
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  /* אותה כותרת serif של כל המערכת (.dialog-head h2 / כותרות דף הנחיתה) */
+  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-weight: 500;
   color: var(--charcoal);
   margin: 0 0 12px;
   font-size: 20px;
+  line-height: 1.35;
 }
 .reconsent-body {
+  font-family: 'Assistant', system-ui, sans-serif;
   color: var(--body);
   font-size: 14.5px;
   line-height: 1.6;
   margin: 0 0 8px;
 }
 .reconsent-hint {
+  font-family: 'Assistant', system-ui, sans-serif;
   color: var(--muted);
   font-size: 13.5px;
   line-height: 1.6;
   margin: 0 0 16px;
 }
 .reconsent-links {
+  font-family: 'Assistant', system-ui, sans-serif;
   font-size: 13.5px;
   margin: 0 0 20px;
 }
 .reconsent-links a {
-  /* קישור משני נייטרלי — אותו גוון וטיפול hover של .dash-edit-link ושל
-     .dialog .x:hover (muted → charcoal), לא הגוון השיווקי (gold-deep) של
-     .auth-consent-row בטופס ההרשמה. */
-  color: var(--muted);
+  /* אותו גוון בדיוק של קישורי התנאים בטופס ההרשמה (.auth-consent-row a) */
+  color: var(--gold-deep);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 .reconsent-links a:hover {
-  color: var(--charcoal);
+  color: var(--gold);
 }
 .reconsent-error {
   color: var(--error);
@@ -1310,23 +1317,26 @@ td.notes.seating {
   margin-bottom: 14px;
 }
 .reconsent-submit {
-  /* אותו סגנון כפתור ראשי בדיוק כמו .join-btn-primary (מסך הצטרפות לאירוע) —
-     כפתור פחם שטוח, לא גרדיאנט זהב, זה כבר הדפוס הקיים במערכת ל-CTA שאינו
-     "מכירתי". */
+  /* כפתור ה-CTA של VEYA: זהב מלא + טקסט פחם — בדיוק כמו .btn-primary של דף
+     הנחיתה (index.html), שהוא `background: var(--gold); color: var(--charcoal)`.
+     שטוח בכוונה, בלי הגרדיאנט של .btn-primary באפליקציה, כדי לשמור על מודל
+     רגוע ולא "Alert" — אבל זה אותו זהב ואותו טקסט כהה, לא גוון חדש.
+     רדיוס --radius-m זהה ל-.btn-primary באפליקציה. */
   width: 100%;
   height: 46px;
   border: none;
   border-radius: var(--radius-m);
-  background: var(--charcoal);
-  color: var(--ivory);
-  font-weight: 600;
+  background: var(--gold);
+  color: var(--charcoal);
+  font-weight: 700;
   font-size: 15px;
   font-family: 'Assistant', sans-serif;
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition: filter var(--transition-fast), transform var(--transition-fast);
 }
 .reconsent-submit:hover:not(:disabled) {
-  background: var(--black-soft);
+  filter: brightness(1.04);
+  transform: translateY(-1px);
 }
 .reconsent-submit:disabled {
   opacity: 0.6;

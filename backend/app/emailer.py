@@ -180,45 +180,132 @@ def send_email(*, to: str, subject: str, html_body: str, text_body: str = "") ->
 # עיצוב inline בלבד: לקוחות מייל (בעיקר Gmail ו-Outlook) מתעלמים מ-<style>
 # חיצוני ומ-classes, ולכן כל כלל CSS חייב לשבת על האלמנט עצמו. הפריסה בנויה
 # על טבלאות מאותה סיבה — זה מה שנשאר responsive בכל לקוח מייל.
-_BRAND_INK = "#1c1917"
-_BRAND_MUTED = "#6b6560"
-_BRAND_LINE = "#e7e3de"
-_BRAND_BG = "#faf8f6"
+#
+# הצבעים הם **בדיוק** טוקני המותג מ-frontend/src/App.css (:root), שטוחים
+# ל-HEX כי rgba() ו-gradient לא נתמכים ב-Outlook. אין כאן שום צבע שהומצא
+# למייל — כל ערך מופיע אחד-לאחד ב-design system של האפליקציה.
+_BRAND_INK = "#2b2620"        # --charcoal  · כותרות וטקסט ראשי
+_BRAND_BODY = "#4a4438"       # --body      · טקסט גוף
+_BRAND_MUTED = "#8c8375"      # --muted     · טקסט משני/פוטר
+_BRAND_LINE = "#e5dec9"       # --line      · מסגרות ומפרידים
+_BRAND_BG = "#fbf6ee"         # --ivory     · רקע העמוד + משטח מקונן
+_BRAND_CARD = "#ffffff"       # --cream     · משטח הכרטיס
+_BRAND_GOLD = "#c9a227"       # --gold      · הדגשה ראשית ו-CTA
+_BRAND_GOLD_DEEP = "#9a7b2e"  # --gold-deep · טקסט זהב קריא על רקע בהיר
+_BRAND_ON_GOLD = "#201a06"    # צבע הטקסט של .btn-primary על רקע זהב
+_BRAND_ON_DARK = "#f5efe2"    # הטקסט הבהיר על המשטח הכהה (fallback ללוגו)
+
+# הגופנים של VEYA — אותם שמות שנטענים ב-frontend/app.html: Assistant לגוף
+# ו-Frank Ruhl Libre לכותרות. ב-HTML של מייל אי אפשר לסמוך עליהם: חלק
+# מהלקוחות (Apple Mail, iOS, Gmail באנדרואיד) יטענו אותם דרך ה-<link>
+# שב-<head>, ואחרים (בעיקר Outlook ו-Gmail בדפדפן) יתעלמו לגמרי. לכן אחרי
+# כל שם מותג באה שרשרת web-safe אמיתית שתומכת בעברית: Tahoma הוא ברירת
+# המחדל העברית הבטוחה בווינדוס, Arial במק, ו-Times New Roman לסריף.
+_FONTS_HREF = (
+    "https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700"
+    "&family=Frank+Ruhl+Libre:wght@500;700&display=swap"
+)
+_FONT_SANS = "'Assistant','Segoe UI',Tahoma,Arial,sans-serif"
+_FONT_SERIF = "'Frank Ruhl Libre','Times New Roman',Georgia,serif"
+
+# לוגו המותג הרשמי — אותו קובץ שהאפליקציה ודף הנחיתה מציגים
+# (frontend/public/logo.png). לקוחות מייל לא תומכים ב-SVG, ולכן PNG.
+# הכתובת נבנית מ-public_base_url() הקיים — בלי שום הגדרה חדשה.
+_LOGO_WIDTH = 140
+_LOGO_HEIGHT = 122  # יחס הקובץ המקורי: 1224x1067
 
 
-def _shell(*, title: str, body_html: str) -> str:
-    """מעטפת המייל: רקע בהיר, כרטיס לבן ממורכז, לוגו VEYA, כיוון RTL."""
+def logo_url() -> str:
+    """כתובת מלאה ללוגו — במייל חייבת להיות אבסולוטית."""
+    return f"{public_base_url()}/logo.png"
+
+
+def _shell(*, title: str, preheader: str, body_html: str) -> str:
+    """מעטפת המייל — זהה לכל מיילי VEYA (אימות, הזמנת שותף וכל מה שיבוא).
+
+    המבנה מחקה את פריסת האפליקציה עצמה: **משטח כהה עם הלוגו למעלה, ותוכן
+    בהיר ואוורירי מתחתיו** — בדיוק כמו סרגל הצד הכהה מול אזור התוכן השנהבי.
+    בכוונה בלי מסגרות, בלי פס זהב ובלי כרטיסים מקוננים: לפי `brand.md`
+    "הפחתה תמיד עדיפה על הוספה", והזהב הוא accent (הלוגו, תווית הקוד,
+    הכפתור) ולא צבע ששוטף את המייל.
+
+    ``preheader`` הוא שורת התצוגה המקדימה בתיבת הדואר — מוסתרת בגוף המייל.
+    """
     return f"""<!doctype html>
 <html dir="rtl" lang="he">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
 <title>{html.escape(title)}</title>
+<link rel="stylesheet" href="{_FONTS_HREF}">
+<style>
+  /* מובייל: מקטינים ריווח פנימי כדי שהתוכן ינשום גם ב-360px.
+     לקוחות שלא תומכים ב-@media פשוט נשארים עם ערכי ה-inline. */
+  @media only screen and (max-width:480px) {{
+    .veya-pad {{ padding-left:24px !important; padding-right:24px !important; }}
+    .veya-code {{ font-size:34px !important; letter-spacing:8px !important; }}
+    .veya-h1 {{ font-size:23px !important; }}
+  }}
+  /* מצב כהה — נתמך ב-Apple Mail/iOS ובחלק מהלקוחות. ‎!important‎ הכרחי
+     כדי לגבור על ה-inline styles. הערכים הם טוקני המצב הכהה של App.css. */
+  @media (prefers-color-scheme: dark) {{
+    .veya-bg {{ background:#14120e !important; }}
+    .veya-card {{ background:#1c1a14 !important; }}
+    .veya-soft {{ background:#14120e !important; }}
+    .veya-ink {{ color:#f5efe2 !important; }}
+    .veya-body {{ color:#cfc8b8 !important; }}
+    .veya-muted {{ color:#8b8578 !important; }}
+    /* --gold-deep הופך לזהב בהיר על רקע כהה, בדיוק כמו בהקשר הכהה ב-App.css */
+    .veya-gold {{ color:#e4c96b !important; }}
+    .veya-rule {{ background:#2a2620 !important; }}
+  }}
+</style>
 </head>
-<body style="margin:0;padding:0;background:{_BRAND_BG};">
+<body class="veya-bg" style="margin:0;padding:0;background:{_BRAND_BG};">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;
+            mso-hide:all;font-size:1px;line-height:1px;color:{_BRAND_BG};">
+  {html.escape(preheader)}
+</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-       style="background:{_BRAND_BG};padding:32px 12px;">
+       class="veya-bg" style="background:{_BRAND_BG};padding:40px 16px;">
   <tr>
     <td align="center">
+      <!--[if mso]>
+      <table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0"
+             border="0"><tr><td>
+      <![endif]-->
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-             style="max-width:520px;background:#ffffff;border:1px solid {_BRAND_LINE};
-                    border-radius:18px;overflow:hidden;">
+             style="max-width:600px;border-radius:16px;overflow:hidden;">
+        <!-- משטח כהה עם הלוגו הרשמי. הלוגו של VEYA בנוי למשטח כהה (מילת
+             המותג בשנהב), ולכן זה גם הרקע הנכון עבורו וגם ההד של סרגל הצד
+             באפליקציה. ה-alt מעוצב כדי שגם כשלקוח המייל חוסם תמונות תישאר
+             מילת המותג בשנהב על הרקע הכהה — ולא ריבוע שבור. -->
         <tr>
-          <td style="padding:28px 32px 0 32px;text-align:center;">
-            <span style="display:inline-block;font:700 20px/1 -apple-system,'Segoe UI',Arial,sans-serif;
-                         letter-spacing:.14em;color:{_BRAND_INK};">VEYA</span>
+          <td bgcolor="{_BRAND_INK}" align="center"
+              style="background:{_BRAND_INK};padding:26px 24px 24px;text-align:center;">
+            <img src="{logo_url()}" alt="VEYA"
+                 width="{_LOGO_WIDTH}" height="{_LOGO_HEIGHT}"
+                 style="display:block;margin:0 auto;border:0;outline:none;
+                        width:{_LOGO_WIDTH}px;height:{_LOGO_HEIGHT}px;
+                        color:{_BRAND_ON_DARK};font:500 24px/{_LOGO_HEIGHT}px {_FONT_SERIF};
+                        letter-spacing:7px;text-align:center;">
           </td>
         </tr>
         <tr>
-          <td style="padding:24px 32px 32px 32px;font-family:-apple-system,'Segoe UI',Arial,sans-serif;
-                     color:{_BRAND_INK};text-align:right;direction:rtl;">
+          <td class="veya-card veya-pad" bgcolor="{_BRAND_CARD}"
+              style="background:{_BRAND_CARD};padding:44px 44px 40px;
+                     font-family:{_FONT_SANS};text-align:right;direction:rtl;">
             {body_html}
           </td>
         </tr>
       </table>
-      <div style="max-width:520px;margin:16px auto 0;font:400 12px/1.6 -apple-system,'Segoe UI',Arial,sans-serif;
-                  color:{_BRAND_MUTED};text-align:center;direction:rtl;">
-        נשלח מ-VEYA · הדרך הפשוטה לארגן אירוע
+      <!--[if mso]></td></tr></table><![endif]-->
+      <div class="veya-muted" style="max-width:600px;margin:22px auto 0;
+                  font:400 12px/1.8 {_FONT_SANS};color:{_BRAND_MUTED};
+                  text-align:center;direction:rtl;">
+        VEYA · מערכת חכמה לניהול אירועים<br>veyaguest.co.il
       </div>
     </td>
   </tr>
@@ -227,25 +314,68 @@ def _shell(*, title: str, body_html: str) -> str:
 </html>"""
 
 
+# ── אבני הבניין של גוף המייל ────────────────────────────────────────────────
+# היררכיה קבועה בשני המיילים: eyebrow קטן → כותרת סריפית → גוף רגוע →
+# תוכן ראשי (קוד/אירוע) → CTA אחד → הערת סיום שקטה.
+
+
+def _eyebrow(text: str) -> str:
+    """תווית זעירה מעל הכותרת — הנגיעה היחידה של זהב בראש התוכן."""
+    return (
+        f'<p class="veya-gold" style="margin:0 0 12px;font:600 11px/1.5 {_FONT_SANS};'
+        f'letter-spacing:2px;color:{_BRAND_GOLD_DEEP};">{html.escape(text)}</p>'
+    )
+
+
+def _title(text_html: str) -> str:
+    """כותרת המייל — סריף, כמו כותרות המסכים באפליקציה (Frank Ruhl Libre)."""
+    return (
+        f'<h1 class="veya-ink veya-h1" style="margin:0 0 14px;font:500 26px/1.35 {_FONT_SERIF};'
+        f'color:{_BRAND_INK};">{text_html}</h1>'
+    )
+
+
+def _paragraph(text_html: str, *, size: int = 15, top: int = 0) -> str:
+    """פסקת גוף רגילה — תמיד מיושרת לימין, שורות נושמות."""
+    return (
+        f'<p class="veya-body" style="margin:{top}px 0 0;font:400 {size}px/1.8 {_FONT_SANS};'
+        f'color:{_BRAND_BODY};">{text_html}</p>'
+    )
+
+
 def _button(url: str, label: str) -> str:
-    """כפתור ראשי — <a> מעוצב (לקוחות מייל לא מריצים JS ולא תומכים ב-<button>)."""
+    """ה-CTA היחיד — הגרסה השטוחה של ``.btn-primary``: זהב מלא, טקסט כהה,
+    פינות 12px. <a> ולא <button>, כי לקוחות מייל לא מריצים JS.
+    ``bgcolor`` על ה-<td> נשאר בשביל Outlook, שמתעלם מ-background ב-CSS."""
     return (
         f'<table role="presentation" cellpadding="0" cellspacing="0" border="0" '
-        f'style="margin:24px auto 8px;"><tr><td align="center" '
-        f'style="background:{_BRAND_INK};border-radius:999px;">'
+        f'style="margin:30px 0 0;"><tr><td align="center" bgcolor="{_BRAND_GOLD}" '
+        f'style="background:{_BRAND_GOLD};border-radius:12px;">'
         f'<a href="{html.escape(url, quote=True)}" '
-        f'style="display:inline-block;padding:13px 34px;color:#ffffff;text-decoration:none;'
-        f'font:600 15px/1 -apple-system,\'Segoe UI\',Arial,sans-serif;">'
+        f'style="display:inline-block;padding:15px 40px;color:{_BRAND_ON_GOLD};'
+        f'text-decoration:none;border-radius:12px;font:700 15px/1 {_FONT_SANS};">'
         f"{html.escape(label)}</a></td></tr></table>"
     )
 
 
 def _fallback_link(url: str) -> str:
-    """הקישור המלא כטקסט — לכל מי שהכפתור לא עובד אצלו בלקוח המייל."""
+    """הקישור המלא כטקסט — למי שהכפתור לא עובד אצלו בלקוח המייל."""
     safe = html.escape(url)
     return (
-        f'<p style="margin:16px 0 0;font:400 12px/1.7 -apple-system,\'Segoe UI\',Arial,sans-serif;'
-        f'color:{_BRAND_MUTED};direction:ltr;text-align:left;word-break:break-all;">{safe}</p>'
+        f'<p class="veya-muted" style="margin:14px 0 0;font:400 11px/1.7 {_FONT_SANS};'
+        f'color:{_BRAND_MUTED};direction:ltr;text-align:right;word-break:break-all;">{safe}</p>'
+    )
+
+
+def _fine_print(text: str) -> str:
+    """הערת הסיום — מופרדת בקו שיער דק, לא במסגרת."""
+    return (
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
+        f'style="margin:34px 0 0;"><tr><td class="veya-rule" height="1" bgcolor="{_BRAND_LINE}" '
+        f'style="height:1px;line-height:1px;font-size:0;background:{_BRAND_LINE};">&nbsp;</td>'
+        f'</tr></table>'
+        f'<p class="veya-muted" style="margin:18px 0 0;font:400 12.5px/1.75 {_FONT_SANS};'
+        f'color:{_BRAND_MUTED};">{html.escape(text)}</p>'
     )
 
 
@@ -255,54 +385,73 @@ def send_partner_invite(
 ) -> SendResult:
     """מייל ההזמנה לניהול משותף של האירוע."""
     inviter = inviter_name.strip() or "בן/בת הזוג שלך"
-    subject = f"{inviter} הזמין אותך לנהל יחד את האירוע שלכם ב-VEYA 💍"
-    title_line = f"{html.escape(inviter)} הזמין אותך לנהל יחד את האירוע שלכם"
+    subject = f"{inviter} הזמין אותך לנהל את האירוע ב-VEYA"
+    # שם האירוע — שורה שקטה מתחת לכותרת, בלי כרטיס ובלי מסגרת: זה מידע
+    # מזהה, לא אלמנט שמתחרה על תשומת הלב עם ה-CTA.
     event_line = (
-        f'<p style="margin:0 0 20px;font:600 16px/1.5 -apple-system,\'Segoe UI\',Arial,sans-serif;'
+        f'<p class="veya-ink" style="margin:14px 0 0;font:600 16px/1.5 {_FONT_SANS};'
         f'color:{_BRAND_INK};">{html.escape(event_title)}</p>'
         if event_title
         else ""
     )
     body = f"""
-<h1 style="margin:0 0 10px;font:700 22px/1.4 -apple-system,'Segoe UI',Arial,sans-serif;color:{_BRAND_INK};">
-  {title_line}
-</h1>
+{_eyebrow("הזמנה לניהול משותף")}
+{_title("הוזמנת לנהל את האירוע ב־VEYA")}
+{_paragraph(f"{html.escape(inviter)} הזמין אותך להצטרף לניהול האירוע ב־VEYA.")}
 {event_line}
-<p style="margin:0;font:400 15px/1.75 -apple-system,'Segoe UI',Arial,sans-serif;color:{_BRAND_MUTED};">
-  ב-VEYA תוכלו לנהל יחד את המוזמנים, אישורי ההגעה, סידור ההושבה וכל פרטי האירוע —
-  שניכם רואים את אותו מידע, בזמן אמת.
-</p>
 {_button(invite_url, "הצטרפות לאירוע")}
 {_fallback_link(invite_url)}
-<p style="margin:24px 0 0;padding-top:16px;border-top:1px solid {_BRAND_LINE};
-          font:400 13px/1.7 -apple-system,'Segoe UI',Arial,sans-serif;color:{_BRAND_MUTED};">
-  אם לא ציפיתם להזמנה הזו, אפשר פשוט להתעלם מהמייל.
-</p>
+{_paragraph("נהלו יחד את המוזמנים, אישורי ההגעה, סידור ההושבה ועוד.", size=14, top=26)}
+{_fine_print("אם לא ציפיתם להזמנה הזו, אפשר פשוט להתעלם מהמייל הזה.")}
 """
     text = (
-        f"{inviter} הזמין אותך לנהל יחד את האירוע שלכם ב-VEYA.\n"
-        f"{event_title}\n\nלהצטרפות: {invite_url}\n\n"
-        "אם לא ציפיתם להזמנה הזו, אפשר להתעלם מהמייל."
+        f"הוזמנת לנהל את האירוע ב-VEYA\n\n"
+        f"{inviter} הזמין אותך להצטרף לניהול האירוע ב-VEYA.\n"
+        f"{event_title}\n\n"
+        f"להצטרפות: {invite_url}\n\n"
+        "נהלו יחד את המוזמנים, אישורי ההגעה, סידור ההושבה ועוד.\n\n"
+        "אם לא ציפיתם להזמנה הזו, אפשר להתעלם מהמייל הזה."
     )
-    return send_email(to=to, subject=subject, html_body=_shell(title=subject, body_html=body), text_body=text)
+    preheader = f"{inviter} הזמין אותך להצטרף לניהול האירוע ב-VEYA."
+    return send_email(
+        to=to,
+        subject=subject,
+        html_body=_shell(title=subject, preheader=preheader, body_html=body),
+        text_body=text,
+    )
 
 
-def _code_boxes(code: str) -> str:
-    """מציג את קוד האימות כספרות נפרדות ב"תיבות" — קריא וברור גם למי שלא
-    מצפה לקוד, ובולט מספיק שלא יתבלבל עם שאר טקסט המייל. ``dir="ltr"``
-    כדי שהספרות יופיעו בסדר הנכון בתוך מייל RTL."""
-    digits = "".join(
-        f'<td style="padding:0 4px;"><div style="width:40px;height:48px;'
-        f'display:flex;align-items:center;justify-content:center;'
-        f'background:{_BRAND_BG};border:1px solid {_BRAND_LINE};border-radius:10px;'
-        f'font:700 22px/1 -apple-system,\'Segoe UI\',Arial,sans-serif;'
-        f'color:{_BRAND_INK};">{html.escape(ch)}</div></td>'
-        for ch in code
-    )
-    return (
-        f'<table role="presentation" cellpadding="0" cellspacing="0" border="0" '
-        f'dir="ltr" style="margin:22px auto;"><tr>{digits}</tr></table>'
-    )
+def _code_block(code: str) -> str:
+    """קוד האימות — ה-centerpiece של המייל.
+
+    בכוונה **בלי** שש תיבות ובלי מסגרת זהב: משטח שנהב שקט אחד, תווית זעירה,
+    והספרות עצמן גדולות ומרוּוחות. זה קריא יותר, קל יותר להעתקה, ונאמן
+    לעיקרון "הפחתה תמיד עדיפה על הוספה" מ-brand.md.
+
+    פרטים שחשובים דווקא בלקוחות מייל:
+    - ``dir="ltr"`` על הספרות — אחרת הן מתהפכות בתוך מייל RTL.
+    - ``letter-spacing`` מוסיף רווח גם **אחרי** הספרה האחרונה, מה שמזיז את
+      הבלוק שמאלה; ``padding-left`` בגודל זהה מחזיר אותו למרכז אופטי.
+    - בלי flex/grid — רק טבלה ו-``text-align``, שנתמכים בכל לקוח.
+    """
+    return f"""
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="margin:28px 0 0;">
+  <tr>
+    <td class="veya-soft" bgcolor="{_BRAND_BG}" align="center"
+        style="background:{_BRAND_BG};border-radius:14px;padding:26px 16px 24px;
+               text-align:center;">
+      <div class="veya-gold" style="font:600 11px/1.5 {_FONT_SANS};letter-spacing:2px;
+                  color:{_BRAND_GOLD_DEEP};">קוד האימות</div>
+      <div class="veya-ink veya-code" dir="ltr"
+           style="margin:14px 0 0;font:600 40px/1.1 {_FONT_SANS};letter-spacing:10px;
+                  padding-left:10px;color:{_BRAND_INK};">{html.escape(code)}</div>
+    </td>
+  </tr>
+</table>
+<p class="veya-muted" style="margin:14px 0 0;font:400 12.5px/1.7 {_FONT_SANS};
+          color:{_BRAND_MUTED};text-align:center;">הקוד תקף ל־10 דקות</p>
+"""
 
 
 # ── מייל 2: אימות כתובת המייל ───────────────────────────────────────────────
@@ -311,26 +460,27 @@ def send_email_verification(*, to: str, verify_url: str, code: str) -> SendResul
     10 דקות) + קישור כ-fallback (תקף 24 שעות) שממשיך לעבוד במקביל."""
     subject = "קוד האימות שלך ל-VEYA"
     body = f"""
-<h1 style="margin:0 0 10px;font:700 22px/1.4 -apple-system,'Segoe UI',Arial,sans-serif;color:{_BRAND_INK};">
-  עוד צעד אחד ואתם בפנים
-</h1>
-<p style="margin:0;font:400 15px/1.75 -apple-system,'Segoe UI',Arial,sans-serif;color:{_BRAND_MUTED};">
-  הזינו את הקוד הבא במסך האימות כדי להתחיל לנהל את האירוע ב-VEYA.
-  הקוד תקף ל-10 דקות.
-</p>
-{_code_boxes(code)}
-<p style="margin:0;font:400 13px/1.7 -apple-system,'Segoe UI',Arial,sans-serif;color:{_BRAND_MUTED};text-align:center;">
-  אפשר גם ללחוץ ישירות על הכפתור:
-</p>
+{_eyebrow("אימות חשבון")}
+{_title("אימות כתובת המייל")}
+{_paragraph("שלחנו לך קוד אימות כדי להשלים את ההרשמה ל־VEYA.")}
+{_code_block(code)}
 {_button(verify_url, "אימות המייל שלי")}
 {_fallback_link(verify_url)}
-<p style="margin:24px 0 0;padding-top:16px;border-top:1px solid {_BRAND_LINE};
-          font:400 13px/1.7 -apple-system,'Segoe UI',Arial,sans-serif;color:{_BRAND_MUTED};">
-  אם לא נרשמתם ל-VEYA, אפשר פשוט להתעלם מהמייל.
-</p>
+{_fine_print("אם לא ביקשת להירשם ל־VEYA, אפשר להתעלם מהמייל הזה.")}
 """
     text = (
-        f"קוד האימות שלך ל-VEYA: {code} (תקף ל-10 דקות)\n\n"
-        f"אפשר גם ללחוץ כאן לאימות: {verify_url}"
+        f"אימות כתובת המייל\n\n"
+        f"שלחנו לך קוד אימות כדי להשלים את ההרשמה ל-VEYA.\n\n"
+        f"קוד האימות: {code}\n"
+        f"הקוד תקף ל-10 דקות.\n\n"
+        f"אפשר גם לאמת בלחיצה אחת: {verify_url}\n\n"
+        "אם לא ביקשת להירשם ל-VEYA, אפשר להתעלם מהמייל הזה."
     )
-    return send_email(to=to, subject=subject, html_body=_shell(title=subject, body_html=body), text_body=text)
+    return send_email(
+        to=to,
+        subject=subject,
+        html_body=_shell(
+            title=subject, preheader="הקוד תקף ל־10 דקות", body_html=body
+        ),
+        text_body=text,
+    )
