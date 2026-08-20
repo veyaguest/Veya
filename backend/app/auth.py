@@ -194,6 +194,12 @@ def adopt_orphan_events(db: Session, user_id: int) -> None:
 # את הכתובת מולם, ואין טעם לבקש מהם לאמת שוב.
 
 EMAIL_VERIFY_TTL_HOURS = 24
+# קוד 6 ספרות — ערוץ מקביל לקישור, תוקף קצר בהרבה (עומד בדרישה: מסך אימות
+# שנפתח מיד אחרי הרשמה, לא קישור שיכול לחכות בתיבת הדואר).
+EMAIL_VERIFY_CODE_TTL_MINUTES = 10
+# 6 ספרות = מיליון אפשרויות — מספיק קטן שדורש הגבלת ניסיונות מפורשת, לא
+# רק את הגבלת הקצב הכללית לפי IP (auth_limiter).
+EMAIL_VERIFY_CODE_MAX_ATTEMPTS = 5
 
 
 def is_email_verified(user: "models.User") -> bool:
@@ -224,19 +230,39 @@ def hash_email_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
-def issue_email_verification(db: Session, user: "models.User") -> str:
-    """מנפיק טוקן אימות חדש למשתמש ומחזיר אותו (הגולמי — לשליחה במייל בלבד).
+def generate_verification_code() -> str:
+    """קוד בן 6 ספרות, אקראי קריפטוגרפית (``secrets``, לא ``random``)."""
+    return f"{secrets.randbelow(1_000_000):06d}"
 
-    הנפקה חדשה מבטלת את הקודמת (עמודה אחת, לא רשימה): הקישור האחרון שנשלח
-    הוא היחיד שעובד. אינו מבצע commit — הקורא אחראי לכך.
+
+def hash_verification_code(code: str) -> str:
+    """ה-hash של קוד האימות — אותו עיקרון בדיוק כמו ``hash_email_token``:
+    הקוד עצמו נשמר רק במייל, ה-DB מחזיק רק את ה-hash שלו."""
+    return hashlib.sha256(code.strip().encode("utf-8")).hexdigest()
+
+
+def issue_email_verification(db: Session, user: "models.User") -> tuple[str, str]:
+    """מנפיק טוקן+קוד אימות חדשים למשתמש ומחזיר (token, code) — הגולמיים,
+    לשליחה במייל בלבד (ה-DB מחזיק רק hash של כל אחד מהם).
+
+    שני הערוצים (קישור וקוד) מונפקים ביחד ומתבטלים ביחד: הנפקה חדשה
+    (למשל "שלחו שוב") מוחקת את הקודמים — הזוג האחרון שנשלח הוא היחיד שעובד.
+    מונה הניסיונות השגויים של הקוד מתאפס בכל הנפקה. אינו מבצע commit —
+    הקורא אחראי לכך.
     """
     token = secrets.token_urlsafe(32)
+    code = generate_verification_code()
     tracked = db.get(models.User, user.id) or user
     tracked.email_verification_hash = hash_email_token(token)
     tracked.email_verification_expires_at = datetime.utcnow() + timedelta(
         hours=EMAIL_VERIFY_TTL_HOURS
     )
-    return token
+    tracked.email_verification_code_hash = hash_verification_code(code)
+    tracked.email_verification_code_expires_at = datetime.utcnow() + timedelta(
+        minutes=EMAIL_VERIFY_CODE_TTL_MINUTES
+    )
+    tracked.email_verification_code_attempts = 0
+    return token, code
 
 
 def consume_email_verification(db: Session, token: str) -> Optional["models.User"]:
@@ -277,11 +303,50 @@ def consume_email_verification(db: Session, token: str) -> Optional["models.User
     user.email_verified_at = datetime.utcnow()
     user.email_verification_hash = None
     user.email_verification_expires_at = None
+    # אימות דרך הקישור מבטל גם קוד שעדיין ממתין — אותה "סשן אימות" בדיוק,
+    # שני הערוצים מובילים לאותה תוצאה (ראו consume_email_verification_code).
+    user.email_verification_code_hash = None
+    user.email_verification_code_expires_at = None
+    user.email_verification_code_attempts = 0
     return user
 
 
+def consume_email_verification_code(
+    db: Session, user: "models.User", code: str
+) -> str:
+    """מאמת קוד 6 ספרות עבור המשתמש **המחובר** (לא נתיב ציבורי — בניגוד
+    לקישור, המשתמש כבר מחזיק טוקן התחברות מרגע ההרשמה, אז אין צורך
+    לעקוף RLS: העדכון עובר תחת מדיניות "כל אחד רואה/מעדכן רק את עצמו"
+    הרגילה, בדיוק כמו update_profile).
+
+    מחזיר אחד מ: 'ok' | 'no_code' | 'expired' | 'locked' | 'wrong'.
+    אינו מבצע commit — הקורא אחראי לכך.
+    """
+    tracked = db.get(models.User, user.id) or user
+    if not tracked.email_verification_code_hash:
+        return "no_code"
+    if (tracked.email_verification_code_attempts or 0) >= EMAIL_VERIFY_CODE_MAX_ATTEMPTS:
+        return "locked"
+    expires = tracked.email_verification_code_expires_at
+    if expires is None or expires <= datetime.utcnow():
+        return "expired"
+    if hash_verification_code(code) != tracked.email_verification_code_hash:
+        tracked.email_verification_code_attempts = (
+            tracked.email_verification_code_attempts or 0
+        ) + 1
+        return "wrong"
+
+    tracked.email_verified_at = datetime.utcnow()
+    tracked.email_verification_hash = None
+    tracked.email_verification_expires_at = None
+    tracked.email_verification_code_hash = None
+    tracked.email_verification_code_expires_at = None
+    tracked.email_verification_code_attempts = 0
+    return "ok"
+
+
 def send_verification_email(db: Session, user: "models.User") -> bool:
-    """מנפיק טוקן ושולח את מייל האימות. מחזיר האם המייל יצא בפועל.
+    """מנפיק טוקן+קוד ושולח את מייל האימות. מחזיר האם המייל יצא בפועל.
 
     אינו מפיל את הבקשה בכישלון שליחה — המשתמש יכול תמיד לבקש שליחה מחדש.
     """
@@ -291,11 +356,12 @@ def send_verification_email(db: Session, user: "models.User") -> bool:
         f"verification email requested | user_id={user.id} | "
         f"to={emailer._mask_email(user.email)}"
     )
-    token = issue_email_verification(db, user)
+    token, code = issue_email_verification(db, user)
     result = emailer.send_email_verification(
         to=user.email,
         # תחת /app — ראו ההערה המקבילה ב-app/partners.py::invite_url.
         verify_url=f"{emailer.public_base_url()}/app/verify-email?token={token}",
+        code=code,
     )
     emailer.debug_log(
         f"verification email result | ok={result.ok} | mode={result.mode} | "

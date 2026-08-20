@@ -53,6 +53,16 @@ class User(Base):
     email_verification_expires_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True
     )
+    # קוד אימות בן 6 ספרות — ערוץ מקביל לקישור (אותו hash+expiry principle).
+    # תוקף קצר בהרבה מהקישור (10 דקות מול 24 שעות): קוד שמוקלד ידנית נועד
+    # להישאר רלוונטי רק לחלון ההרשמה המיידי, לא לשבת בתיבת דואר ליום.
+    email_verification_code_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    email_verification_code_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
+    # מונה ניסיונות שגויים — הגנה מפני ניחוש (6 ספרות = מיליון אפשרויות,
+    # קטן מספיק שדורש הגבלה מפורשת). מתאפס בכל הנפקת קוד חדש (resend).
+    email_verification_code_attempts: Mapped[int] = mapped_column(Integer, default=0)
     # אדמין = הבעלים של המערכת, רואה ומנהל את כל המשתמשים והאירועים.
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     # סוג החשבון: couple (זוג, ברירת מחדל) / planner (מפיק) / venue (אולם).

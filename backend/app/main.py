@@ -166,6 +166,10 @@ _EXTRA_COLUMNS = {
         "email_verified_at": "TIMESTAMP",
         "email_verification_hash": "TEXT",
         "email_verification_expires_at": "TIMESTAMP",
+        # קוד אימות בן 6 ספרות (ערוץ מקביל לקישור) — ראו models.User.
+        "email_verification_code_hash": "TEXT",
+        "email_verification_code_expires_at": "TIMESTAMP",
+        "email_verification_code_attempts": "INTEGER DEFAULT 0",
     },
     "guests": {
         "guest_token": "TEXT",

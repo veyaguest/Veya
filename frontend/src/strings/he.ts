@@ -278,12 +278,12 @@ export const strings = {
     cookieSavePrefs: 'שמירת ההעדפות',
     cookieBack: 'חזרה',
     // ReconsentModal
-    reconsentTitle: 'עדכנו את התנאים שלנו',
-    reconsentBody:
-      'תנאי השימוש ומדיניות הפרטיות של VEYA עודכנו מאז שאישרתם אותם לאחרונה.\n          כדי להמשיך להשתמש במערכת, יש לאשר את הגרסה העדכנית:',
+    reconsentTitle: 'עדכנו את תנאי השימוש',
+    reconsentBody: 'עדכנו את תנאי השימוש של VEYA כדי לשקף את השינויים והעדכונים במערכת.',
+    reconsentHint: 'מומלץ לעבור על התנאים המעודכנים לפני שממשיכים.',
     reconsentTermsLink: 'תנאי השימוש',
     reconsentPrivacyLink: 'מדיניות הפרטיות',
-    reconsentSubmit: 'אני מאשר/ת וממשיך/ה',
+    reconsentSubmit: 'קראתי ואני מאשר/ת',
     // Footer
     footerLinksLabel: 'קישורים משפטיים',
     footerTerms: 'תנאי שימוש',

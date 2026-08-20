@@ -289,6 +289,47 @@ def resend_verification(
     return {"already_verified": False, "sent": True}
 
 
+@router.post("/verify-email/verify-code", response_model=schemas.UserRead)
+def verify_email_code(
+    payload: schemas.VerifyEmailCodeRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(auth.get_current_user),
+):
+    """מאמת את כתובת המייל לפי קוד 6 הספרות שהוקלד במסך האימות.
+
+    בניגוד ל-``verify-email/confirm`` (הקישור, נתיב ציבורי), כאן המשתמש כבר
+    מחובר — הטוקן שהתקבל בהרשמה מספיק, אין צורך בעקיפת RLS: העדכון עובר
+    תחת מדיניות "כל אחד מעדכן רק את עצמו" הרגילה.
+    """
+    ip = client_ip(request)
+    auth_limiter.check(ip)
+    if auth.is_email_verified(user):
+        # כבר אומת (למשל דרך הקישור, בטאב אחר) — לא שגיאה, פשוט no-op.
+        return _user_read(db, user)
+
+    result = auth.consume_email_verification_code(db, user, payload.code)
+    if result == "ok":
+        audit.record(
+            db, "email_verified", user_id=user.id,
+            detail=f"אימות כתובת מייל בקוד: {user.email}", ip=ip,
+        )
+        db.commit()
+        return _user_read(db, user)
+
+    db.commit()  # שומר את מונה הניסיונות שהתעדכן (אם עודכן)
+    if result == "wrong":
+        auth_limiter.record_fail(ip)
+        raise HTTPException(status_code=400, detail="הקוד שהזנתם שגוי. אפשר לנסות שוב")
+    if result == "expired":
+        raise HTTPException(status_code=400, detail="הקוד פג תוקף. אפשר לבקש קוד חדש")
+    if result == "locked":
+        raise HTTPException(
+            status_code=429, detail="יותר מדי ניסיונות שגויים. אפשר לבקש קוד חדש",
+        )
+    raise HTTPException(status_code=400, detail="לא נמצא קוד פעיל. אפשר לבקש קוד חדש")
+
+
 @router.post("/verify-email/change", response_model=schemas.UserRead)
 def change_unverified_email(
     payload: schemas.EmailChangeRequest,
@@ -358,6 +399,16 @@ def confirm_verification(
             detail="החשבון הזה הושבת. אפשר לפנות אלינו כדי לברר למה",
         )
     set_request_identity(user.id)
+    # מנקה גם קוד אימות שעדיין ממתין (אם קיים) — אותה "סשן אימות", שני
+    # הערוצים מובילים לאותה תוצאה. ב-SQLite consume_email_verification כבר
+    # עשה זאת; ב-Postgres הפונקציה הציבורית (SECURITY DEFINER) לא נוגעת
+    # בעמודות הקוד, אז משלימים כאן — תחת RLS רגיל, כי הזהות כבר הוזרקה
+    # לשורה למעלה (בלי לגעת ב-RLS/SQL עצמם).
+    tracked = db.get(models.User, user.id)
+    if tracked is not None:
+        tracked.email_verification_code_hash = None
+        tracked.email_verification_code_expires_at = None
+        tracked.email_verification_code_attempts = 0
     audit.record(
         db, "email_verified", user_id=user.id,
         detail=f"אימות כתובת מייל: {user.email}", ip=client_ip(request),
@@ -543,8 +594,12 @@ def delete_my_account(
         select(models.ConsentRecord).where(models.ConsentRecord.user_id == user.id)
     ).all():
         consent.user_id = None
+    # .with_for_update(): מגן מפני race עם טרנזקציה נפרדת שמוחקת במקביל
+    # שורת audit_logs זהה דרך event_id (delete_event_cascade של אירוע-של-
+    # מישהו-אחר ש-user שיתף עליו פעולה) — ראו הסבר מלא ב-admin.py::
+    # _delete_user_impl (אותה תבנית פגיעות בדיוק, שוחזרה ותועדה שם).
     for log in db.scalars(
-        select(models.AuditLog).where(models.AuditLog.user_id == user.id)
+        select(models.AuditLog).where(models.AuditLog.user_id == user.id).with_for_update()
     ).all():
         log.user_id = None
 

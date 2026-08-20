@@ -287,24 +287,50 @@ def send_partner_invite(
     return send_email(to=to, subject=subject, html_body=_shell(title=subject, body_html=body), text_body=text)
 
 
+def _code_boxes(code: str) -> str:
+    """מציג את קוד האימות כספרות נפרדות ב"תיבות" — קריא וברור גם למי שלא
+    מצפה לקוד, ובולט מספיק שלא יתבלבל עם שאר טקסט המייל. ``dir="ltr"``
+    כדי שהספרות יופיעו בסדר הנכון בתוך מייל RTL."""
+    digits = "".join(
+        f'<td style="padding:0 4px;"><div style="width:40px;height:48px;'
+        f'display:flex;align-items:center;justify-content:center;'
+        f'background:{_BRAND_BG};border:1px solid {_BRAND_LINE};border-radius:10px;'
+        f'font:700 22px/1 -apple-system,\'Segoe UI\',Arial,sans-serif;'
+        f'color:{_BRAND_INK};">{html.escape(ch)}</div></td>'
+        for ch in code
+    )
+    return (
+        f'<table role="presentation" cellpadding="0" cellspacing="0" border="0" '
+        f'dir="ltr" style="margin:22px auto;"><tr>{digits}</tr></table>'
+    )
+
+
 # ── מייל 2: אימות כתובת המייל ───────────────────────────────────────────────
-def send_email_verification(*, to: str, verify_url: str) -> SendResult:
-    """מייל אימות כתובת המייל אחרי הרשמה."""
-    subject = "אימות כתובת המייל שלך ב-VEYA"
+def send_email_verification(*, to: str, verify_url: str, code: str) -> SendResult:
+    """מייל אימות כתובת המייל אחרי הרשמה — קוד 6 ספרות (ערוץ עיקרי, תקף
+    10 דקות) + קישור כ-fallback (תקף 24 שעות) שממשיך לעבוד במקביל."""
+    subject = "קוד האימות שלך ל-VEYA"
     body = f"""
 <h1 style="margin:0 0 10px;font:700 22px/1.4 -apple-system,'Segoe UI',Arial,sans-serif;color:{_BRAND_INK};">
   עוד צעד אחד ואתם בפנים
 </h1>
 <p style="margin:0;font:400 15px/1.75 -apple-system,'Segoe UI',Arial,sans-serif;color:{_BRAND_MUTED};">
-  לחצו על הכפתור כדי לאמת את כתובת המייל שלכם ולהתחיל לנהל את האירוע ב-VEYA.
-  הקישור תקף ל-24 שעות.
+  הזינו את הקוד הבא במסך האימות כדי להתחיל לנהל את האירוע ב-VEYA.
+  הקוד תקף ל-10 דקות.
 </p>
-{_button(verify_url, "אימות כתובת המייל")}
+{_code_boxes(code)}
+<p style="margin:0;font:400 13px/1.7 -apple-system,'Segoe UI',Arial,sans-serif;color:{_BRAND_MUTED};text-align:center;">
+  אפשר גם ללחוץ ישירות על הכפתור:
+</p>
+{_button(verify_url, "אימות המייל שלי")}
 {_fallback_link(verify_url)}
 <p style="margin:24px 0 0;padding-top:16px;border-top:1px solid {_BRAND_LINE};
           font:400 13px/1.7 -apple-system,'Segoe UI',Arial,sans-serif;color:{_BRAND_MUTED};">
   אם לא נרשמתם ל-VEYA, אפשר פשוט להתעלם מהמייל.
 </p>
 """
-    text = f"אימות כתובת המייל שלך ב-VEYA.\n\nלאימות: {verify_url}\n\nהקישור תקף ל-24 שעות."
+    text = (
+        f"קוד האימות שלך ל-VEYA: {code} (תקף ל-10 דקות)\n\n"
+        f"אפשר גם ללחוץ כאן לאימות: {verify_url}"
+    )
     return send_email(to=to, subject=subject, html_body=_shell(title=subject, body_html=body), text_body=text)

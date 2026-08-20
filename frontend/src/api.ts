@@ -1324,6 +1324,18 @@ export async function confirmEmailVerification(token: string): Promise<TokenResp
   return res.json()
 }
 
+/** מאמת את כתובת המייל לפי קוד 6 הספרות שהוקלד במסך האימות. המשתמש כבר
+ * מחובר בשלב הזה (הטוקן מתקבל מיד בהרשמה) — לכן נשלח עם כותרות אימות. */
+export async function verifyEmailCode(code: string): Promise<User> {
+  const res = await apiFetch('/auth/verify-email/verify-code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
 // ---- ניהול משותף של האירוע ------------------------------------------------
 
 /** כל מה שמסך "החשבון שלי" צריך, בקריאה אחת. */

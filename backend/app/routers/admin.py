@@ -653,15 +653,30 @@ def _delete_user_impl(db: Session, admin: models.User, target: models.User, mode
         select(models.LoginEvent).where(models.LoginEvent.user_id == user_id)
     ).all():
         db.delete(lg)
-    # יומן אבטחה — נשאר לצורך שקיפות/תיעוד, רק מתנתק מהמשתמש שנמחק. שורות
-    # ששייכות לאירוע שכבר נמחק למעלה (delete_event_cascade, מצב
-    # user_and_events) מוחרגות בכוונה: אותן שורות בדיוק כבר סומנו למחיקה שם
-    # (audit_logs.event_id == האירוע), וניסיון לעדכן אותן כאן גם היה מתנגש
-    # איתה באותה טרנזקציה (שתי פעולות סותרות על אותו אובייקט — DELETE למעלה
-    # מול UPDATE כאן — ה-flush נכשל עם StaleDataError: "expected to update
-    # 1 row(s); 0 were matched"). ההחרגה כאן פותרת את זה במקור: שורה שכבר
-    # נמחקה לא אמורה לעבור גם דרך לולאת האיפוס.
-    audit_log_stmt = select(models.AuditLog).where(models.AuditLog.user_id == user_id)
+    # יומן אבטחה — נשאר לצורך שקיפות/תיעוד, רק מתנתק מהמשתמש שנמחק.
+    #
+    # שורות ששייכות לאירוע שנמחק כאן למעלה (delete_event_cascade, מצב
+    # user_and_events) מוחרגות: כבר סומנו למחיקה באותה טרנזקציה, אין טעם
+    # לגעת בהן שוב (ובלי autoflush, ה-SELECT הבא עדיין "רואה" אותן ב-DB).
+    #
+    # .with_for_update(): מגן מפני race אמיתי בין *שתי טרנזקציות נפרדות* —
+    # שוחזר בפועל ותועד: אם target שיתף-פעולה על אירוע של מישהו אחר (למשל
+    # ערך אותו כ-co-manager), יש שורת audit_logs עם event_id של האירוע ההוא
+    # (לא בבעלות target, ולכן לא מוחרגת למעלה) ו-user_id=target. אם באותו
+    # רגע ממש הבעלים האמיתי של האירוע ההוא מוחק אותו (delete_event_cascade
+    # במקביל, בטרנזקציה נפרדת לגמרי) ומצליח לעשות commit לפני הטרנזקציה
+    # הזאת — ה-UPDATE כאן רץ נגד שורה שכבר לא קיימת ב-DB, ונכשל עם
+    # StaleDataError ("UPDATE statement... expected to update 1 row(s);
+    # 0 were matched") → PendingRollbackError בלתי-מטופל. FOR UPDATE נועל
+    # את השורות המתאימות לפני העדכון: אם טרנזקציה אחרת כבר מוחקת אותה
+    # שורה ממש (commit טרם בוצע), Postgres חוסם אותנו עד שהיא תסתיים —
+    # ואז ה-SELECT הזה פשוט כבר לא ימצא אותה (במקום להתנגש איתה). ב-SQLite
+    # (בדיקות) הביטוי מתעלם בשקט — אין בו נעילות ברמת שורה.
+    audit_log_stmt = (
+        select(models.AuditLog)
+        .where(models.AuditLog.user_id == user_id)
+        .with_for_update()
+    )
     if deleted_event_ids:
         audit_log_stmt = audit_log_stmt.where(
             or_(

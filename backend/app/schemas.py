@@ -1824,6 +1824,20 @@ class VerifyEmailRequest(BaseModel):
     token: str
 
 
+class VerifyEmailCodeRequest(BaseModel):
+    """מימוש קוד אימות המייל בן 6 הספרות (ערוץ מקביל לקישור)."""
+
+    code: str
+
+    @field_validator("code")
+    @classmethod
+    def _code_valid(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v.isdigit() or len(v) != 6:
+            raise ValueError("הקוד חייב להיות בן 6 ספרות")
+        return v
+
+
 class EmailChangeRequest(BaseModel):
     """שינוי כתובת המייל לפני שהיא אומתה (טעות הקלדה בהרשמה)."""
 

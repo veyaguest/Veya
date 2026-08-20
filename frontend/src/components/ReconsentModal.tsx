@@ -25,13 +25,12 @@ export function ReconsentModal({ onAccepted }: { onAccepted: () => void }) {
   }
 
   return (
-    <div className="overlay" dir="rtl">
-      <div className="dialog" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
-        <div className="dialog-head">
-          <h2>{strings.legal.reconsentTitle}</h2>
-        </div>
-        <p>{strings.legal.reconsentBody}</p>
-        <p>
+    <div className="reconsent-overlay" dir="rtl">
+      <div className="reconsent-card" onClick={(e) => e.stopPropagation()}>
+        <h2 className="reconsent-title">{strings.legal.reconsentTitle}</h2>
+        <p className="reconsent-body">{strings.legal.reconsentBody}</p>
+        <p className="reconsent-hint">{strings.legal.reconsentHint}</p>
+        <p className="reconsent-links">
           <a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">
             {strings.legal.reconsentTermsLink}
           </a>{' '}
@@ -40,8 +39,8 @@ export function ReconsentModal({ onAccepted }: { onAccepted: () => void }) {
             {strings.legal.reconsentPrivacyLink}
           </a>
         </p>
-        {error && <div className="auth-error">{error}</div>}
-        <button type="button" className="auth-submit" onClick={accept} disabled={busy}>
+        {error && <div className="reconsent-error">{error}</div>}
+        <button type="button" className="reconsent-submit" onClick={accept} disabled={busy}>
           {busy ? strings.common.working : strings.legal.reconsentSubmit}
         </button>
       </div>
