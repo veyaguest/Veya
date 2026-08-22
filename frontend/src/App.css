@@ -51,7 +51,8 @@
 .auth-marketing,
 .auth-panel,
 .verify-page,
-.confirm-card {
+.confirm-card,
+.onboard-card {
   --cream: #14120e;
   --surface-hi: #1c1a14;
   --line: #2a2620;
@@ -10430,7 +10431,10 @@ td.notes.seating {
    ─────────────────────────────────────────────────────────── */
 .onboard-wrap {
   min-height: 100vh;
-  background: var(--ivory);
+  min-height: 100dvh;
+  /* אותו קנבס כהה כמו מסך אימות המייל (--cream בהקשר הכהה = #14120e) —
+     הכרטיס יושב עליו כמו .auth-panel על .auth-split, לא כמו דף מסמך לבן. */
+  background: var(--black);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10442,29 +10446,28 @@ td.notes.seating {
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-dialog);
-  padding: 40px 44px 38px;
+  /* shadow-dialog חושב לרקע בהיר (rgba חום-כהה) ולכן בלתי-נראה על קנבס כהה —
+     כאן צל שחור עמוק ליצירת עומק, פלוס טבעת זהב עדינה מאוד לגימור פרימיום. */
+  box-shadow: 0 24px 70px -24px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(201, 162, 39, 0.05);
+  padding: 44px 48px 40px;
 }
 .onboard-logo {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
+  justify-content: center;
+  margin-bottom: 22px;
 }
-.onboard-logo-name {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 20px;
-  letter-spacing: 7px;
-  color: var(--charcoal);
-  font-weight: 600;
+.onboard-logo-img {
+  display: block;
+  width: 132px;
+  height: auto;
 }
 .onboard-title {
   text-align: center;
   font-family: 'Frank Ruhl Libre', 'Assistant', serif;
   color: var(--charcoal);
-  font-size: 24px;
-  margin: 0 0 8px;
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0 0 10px;
   letter-spacing: -0.01em;
 }
 .onboard-subtitle {
@@ -10552,9 +10555,45 @@ td.notes.seating {
   color: var(--gold-deep);
 }
 
+/* עדכון עיצובי: מסך "יצירת אירוע" מיושר לשפה הכהה/זהב של מסך אימות המייל.
+   שינוי ויזואלי בלבד — אותם טוקנים בדיוק (--black/--gold/--line), בלי
+   ליצור צבעים חדשים ובלי לגעת בכללי .event-fields/.event-type-chip/.add-grid
+   המשותפים למסכים אחרים (הפאנל הזה בלבד, לא הכללים הגלובליים). שדות הקלט
+   כאן כהים יותר מהכרטיס עצמו (var(--black) ולא var(--cream) הכהה) — בדיוק
+   כמו תיבות הקוד ב-.verify-code-box, כדי שהשדה יבלוט מהמשטח שסביבו. */
+.onboard-card .event-type-chip,
+.onboard-card .event-fields input,
+.onboard-card .event-datetime input,
+.onboard-card .commit-select,
+.onboard-card .venue-ac-list,
+.onboard-card .event-image-drop,
+.onboard-card .add-form,
+.onboard-card .add-grid input,
+.onboard-card .add-grid select {
+  background: var(--black);
+}
+.onboard-card .event-type-chip.active {
+  background: color-mix(in srgb, var(--gold) 14%, var(--black));
+}
+.onboard-card .add-form {
+  box-shadow: none;
+}
+.onboard-card .venue-ac-list {
+  box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.6);
+}
+.onboard-card .btn-primary {
+  height: 50px;
+  padding: 0 28px;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
 @media (max-width: 620px) {
   .onboard-card {
-    padding: 24px 18px 22px;
+    padding: 26px 20px 24px;
+  }
+  .onboard-logo-img {
+    width: 116px;
   }
   .onboard-steps {
     flex-direction: column;

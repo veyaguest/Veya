@@ -141,12 +141,8 @@ export function OnboardingWizard({ onCreated }: Props) {
   return (
     <div className="onboard-wrap" dir="rtl">
       <div className="onboard-card">
-        <div className="onboard-logo" dir="ltr">
-          <span className="auth-monogram">
-            <span className="auth-monogram-diamond" />
-            <span className="auth-monogram-v">V</span>
-          </span>
-          <span className="onboard-logo-name">VEYA</span>
+        <div className="onboard-logo">
+          <img className="onboard-logo-img" src="/logo.png" alt="VEYA" width={152} height={133} />
         </div>
 
         <h1 className="onboard-title">ברוכים הבאים ל-VEYA</h1>
