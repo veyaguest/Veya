@@ -493,3 +493,33 @@ def send_email_verification(*, to: str, verify_url: str, code: str) -> SendResul
         ),
         text_body=text,
     )
+
+
+# ── מייל 3: איפוס סיסמה ──────────────────────────────────────────────────────
+def send_password_reset(*, to: str, reset_url: str) -> SendResult:
+    """מייל איפוס סיסמה — אותה משפחת עיצוב בדיוק כמו מייל אימות המייל.
+    בלי קוד: איפוס סיסמה הוא תמיד לחיצה על קישור בדפדפן, לא הקלדה ידנית."""
+    subject = "איפוס הסיסמה שלך ל-VEYA"
+    body = f"""
+{_title("איפוס הסיסמה שלך")}
+{_lead("קיבלנו בקשה לאיפוס הסיסמה שלך ב־VEYA.")}
+{_lead("לחצו על הכפתור כדי לבחור סיסמה חדשה.")}
+{_button(reset_url, "איפוס הסיסמה")}
+{_secondary("הקישור תקף לשעה.")}
+{_fallback_link(reset_url)}
+{_fine_print("אם לא ביקשתם לאפס את הסיסמה, אפשר להתעלם מהמייל הזה.")}
+"""
+    text = (
+        "איפוס הסיסמה שלך\n\n"
+        "קיבלנו בקשה לאיפוס הסיסמה שלך ב-VEYA.\n"
+        "לחצו על הקישור כדי לבחור סיסמה חדשה:\n\n"
+        f"{reset_url}\n\n"
+        "הקישור תקף לשעה.\n"
+        "אם לא ביקשתם לאפס את הסיסמה, אפשר להתעלם מהמייל הזה."
+    )
+    return send_email(
+        to=to,
+        subject=subject,
+        html_body=_shell(title=subject, preheader="הקישור תקף לשעה", body_html=body),
+        text_body=text,
+    )

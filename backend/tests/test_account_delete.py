@@ -287,6 +287,35 @@ def test_14_event_with_open_invitation() -> None:
     print("✓ 14: אירוע עם הזמנת שיתוף פתוחה נמחק בהצלחה, בלי הזמנה יתומה")
 
 
+def test_15_event_with_only_event_messages_no_regular_messages() -> None:
+    """רגרסיה לשגיאת פרודקשן אמיתית (2026-08-21, admin.py::delete_single_event,
+    #23): ``ForeignKeyViolation`` על ``event_messages_event_id_fkey`` כש-
+    DELETE FROM events רץ לפני שכל שורות event_messages נמחקו בפועל.
+
+    מבודד בכוונה תרחיש ש**אף בדיקה קודמת כאן לא כיסתה**: אירוע עם שורות
+    event_messages בלי אף שורת Message נלווית (למשל event_message שנוצר
+    ע"י provision_event_messages אבל עוד לא הופעל בפועל — לא נשלחה אף הודעה
+    ממנו). כל שאר הבדיקות למעלה תמיד מזוגות event_messages עם message אחד
+    לפחות, כך שה-flush המפורש שקיים כבר בין Message ל-EventMessage (ראו
+    account.py) "מלווה" גם את הסדר מול Event בטעות — בלי לבודד את זה, אי
+    אפשר להוכיח שהסדר מול Event עצמו (לא רק מול Message) באמת מובטח.
+    """
+    db = _fresh_session()
+    u = _make_user(db)
+    ev = _make_event(db, u.id)
+    em1 = _add_event_message(db, ev.id, message_type="invitation")
+    em2 = _add_event_message(db, ev.id, message_type="reminder")
+    ev_id = ev.id
+
+    delete_event_cascade(db, ev)
+    db.commit()
+
+    _assert_event_fully_gone(db, ev_id)
+    assert db.get(models.EventMessage, em1.id) is None
+    assert db.get(models.EventMessage, em2.id) is None
+    print("✓ 15: אירוע עם event_messages בלבד (בלי אף Message) נמחק בהצלחה, האירוע לא נשאר עם ילדים יתומים")
+
+
 if __name__ == "__main__":
     test_1_event_without_messages()
     test_2_event_with_one_message()
@@ -299,5 +328,6 @@ if __name__ == "__main__":
     test_12_no_orphaned_data_left()
     test_13_deleting_one_event_does_not_touch_another()
     test_14_event_with_open_invitation()
+    test_15_event_with_only_event_messages_no_regular_messages()
     print()
     print("=== כל 14 תרחישי מחיקת אירוע/חשבון עברו ===")

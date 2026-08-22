@@ -370,6 +370,90 @@ def send_verification_email(db: Session, user: "models.User") -> bool:
     return result.ok
 
 
+# ---------------------------------------------------------------------------
+# איפוס סיסמה עצמאי ("שכחתי סיסמה")
+# ---------------------------------------------------------------------------
+# אותו עיקרון בדיוק כמו אימות כתובת המייל למעלה: טוקן חד-פעמי, ה-DB מחזיק
+# רק hash שלו, נשלח במייל דרך Resend. תוקף קצר בהרבה מקישור אימות המייל
+# (שעה, לא 24 שעות) — איפוס סיסמה הוא פעולה רגישה יותר מאימות כתובת, וקישור
+# ששוכח בתיבת דואר יום שלם הוא סיכון גדול יותר.
+
+PASSWORD_RESET_TTL_MINUTES = 60
+
+
+def issue_password_reset(db: Session, user: "models.User") -> str:
+    """מנפיק טוקן איפוס סיסמה חדש ומחזיר אותו (הגולמי, לשליחה במייל בלבד —
+    ה-DB מחזיק רק hash). הנפקה חדשה מבטלת כל טוקן קודם של אותו משתמש
+    (למשל אם ביקשו קישור פעמיים — רק האחרון עובד). אינו מבצע commit.
+    """
+    token = secrets.token_urlsafe(32)
+    tracked = db.get(models.User, user.id) or user
+    tracked.password_reset_hash = hash_email_token(token)
+    tracked.password_reset_expires_at = datetime.utcnow() + timedelta(
+        minutes=PASSWORD_RESET_TTL_MINUTES
+    )
+    return token
+
+
+def consume_password_reset(db: Session, token: str) -> Optional["models.User"]:
+    """מאמת טוקן איפוס סיסמה ומבטל אותו (חד-פעמי — לא ניתן לשימוש חוזר).
+    מחזיר את המשתמש, או None אם הטוקן לא נמצא/פג תוקף.
+
+    **לא** קובע סיסמה חדשה בעצמו — זו אחריות הקורא
+    (routers/auth.py::reset_password), בדיוק כמו ש-consume_email_verification
+    לא עושה יותר מלסמן "מאומת" ומשאיר לקורא שלה לטפל בהמשך.
+
+    ב-Postgres דרך ``app_consume_password_reset`` (SECURITY DEFINER): נתיב
+    ציבורי במכוון (המשתמש לוחץ על קישור במייל בלי להיות מחובר) —
+    ``app_current_user_id()`` הוא NULL, ומדיניות ``users_select`` הייתה
+    חוסמת כל שאילתת ORM ישירה. אותה סיבה בדיוק כמו
+    ``app_consume_email_verification`` (ראו שם + backend/rls/09_...).
+    """
+    if not (token or "").strip():
+        return None
+    token_hash = hash_email_token(token.strip())
+
+    if IS_POSTGRES:
+        row = db.execute(
+            text("SELECT * FROM app_consume_password_reset(:h)"), {"h": token_hash}
+        ).mappings().first()
+        if row is None or row.get("id") is None:
+            return None
+        return models.User(**dict(row))
+
+    user = db.scalars(
+        select(models.User).where(models.User.password_reset_hash == token_hash)
+    ).first()
+    if user is None:
+        return None
+    expires = user.password_reset_expires_at
+    if expires is not None and expires <= datetime.utcnow():
+        return None
+    user.password_reset_hash = None
+    user.password_reset_expires_at = None
+    return user
+
+
+def send_password_reset_email(db: Session, user: "models.User") -> bool:
+    """מנפיק טוקן איפוס ושולח את המייל. מחזיר האם המייל יצא בפועל.
+
+    אינו מפיל את הבקשה בכישלון שליחה — הקורא (routers/auth.py::forgot_password)
+    מחזיר תמיד את אותה תגובה כללית ללקוח, בלי קשר להצלחת השליחה בפועל.
+    """
+    from app import emailer
+
+    token = issue_password_reset(db, user)
+    result = emailer.send_password_reset(
+        to=user.email,
+        reset_url=f"{emailer.public_base_url()}/app/reset-password?token={token}",
+    )
+    emailer.debug_log(
+        f"password reset email result | ok={result.ok} | mode={result.mode} | "
+        f"provider_id={result.provider_id or '(none)'} | error={result.error or '(none)'}"
+    )
+    return result.ok
+
+
 def hash_password(password: str) -> str:
     """מגבב סיסמה עם bcrypt ומחזיר מחרוזת לשמירה ב-DB."""
     salt = bcrypt.gensalt()

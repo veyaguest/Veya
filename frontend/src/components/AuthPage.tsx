@@ -4,6 +4,7 @@ import { googleExchange, login, register } from '../api'
 import { setToken } from '../authStore'
 import { getSupabase, isGoogleAuthConfigured } from '../lib/supabase'
 import { Footer } from './Footer'
+import { ForgotPasswordPage } from './ForgotPasswordPage'
 import type { User } from '../types'
 import { strings } from '../strings/he'
 
@@ -20,8 +21,9 @@ export function AuthPage({
   lockedEmail?: string
 }) {
   // דף הנחיתה מקשר לכאן עם ?auth=register עבור כפתורי "התחילו/בואו נתחיל",
-  // כדי לפתוח ישר בטופס הרשמה במקום בהתחברות.
-  const [mode, setMode] = useState<'login' | 'register'>(() => {
+  // כדי לפתוח ישר בטופס הרשמה במקום בהתחברות. 'forgot' הוא מצב מקומי נוסף
+  // (לא נגיע אליו מ-URL) — "שכחתם סיסמה?" למטה עובר אליו ישירות.
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(() => {
     if (initialMode) return initialMode
     return new URLSearchParams(window.location.search).get('auth') === 'register'
       ? 'register'
@@ -123,13 +125,17 @@ export function AuthPage({
     }
   }
 
-  function switchMode(next: 'login' | 'register') {
+  function switchMode(next: 'login' | 'register' | 'forgot') {
     setMode(next)
     setError(null)
     setNote(null)
   }
 
   const isLogin = mode === 'login'
+
+  if (mode === 'forgot') {
+    return <ForgotPasswordPage onBack={() => switchMode('login')} />
+  }
 
   return (
     <>
@@ -273,9 +279,7 @@ export function AuthPage({
                 <button
                   type="button"
                   className="auth-link-btn"
-                  onClick={() =>
-                    setNote(strings.toasts.passwordResetNote)
-                  }
+                  onClick={() => switchMode('forgot')}
                 >
                   שכחתם סיסמה?
                 </button>

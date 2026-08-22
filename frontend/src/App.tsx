@@ -26,6 +26,7 @@ import { AuthPage } from './components/AuthPage'
 import { CompleteProfilePage } from './components/CompleteProfilePage'
 import { DashboardPage } from './components/DashboardPage'
 import { JoinEventPage } from './components/JoinEventPage'
+import { ResetPasswordPage } from './components/ResetPasswordPage'
 import { VerifyEmailPage } from './components/VerifyEmailPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { EventMembersDialog } from './components/EventMembersDialog'
@@ -154,9 +155,10 @@ function App() {
   const [membersOpen, setMembersOpen] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
 
-  // ---- שני נתיבים מיוחדים שמגיעים מקישור במייל ----
-  // /app/join?token=...          — הזמנה לניהול משותף של אירוע
-  // /app/verify-email?token=...  — אימות כתובת המייל
+  // ---- שלושה נתיבים מיוחדים שמגיעים מקישור במייל ----
+  // /app/join?token=...           — הזמנה לניהול משותף של אירוע
+  // /app/verify-email?token=...   — אימות כתובת המייל
+  // /app/reset-password?token=... — איפוס סיסמה עצמאי ("שכחתי סיסמה")
   // נקראים פעם אחת בטעינה (אין router בפרויקט — הניווט הוא state פנימי).
   // נקרא פעם אחת בטעינה ולא משתנה אחר כך: יציאה מדף ההצטרפות נעשית ע"י
   // ניווט אמיתי (window.location.assign) ולא ע"י שינוי state.
@@ -167,6 +169,10 @@ function App() {
   const [verifyToken, setVerifyToken] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search)
     return window.location.pathname === '/app/verify-email' ? params.get('token') : null
+  })
+  const [resetToken, setResetToken] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search)
+    return window.location.pathname === '/app/reset-password' ? params.get('token') : null
   })
   const [verifyError, setVerifyError] = useState<string | null>(null)
   // כשמגיעים להזמנה בלי להיות מחוברים, שולחים למסך הכניסה ואז חוזרים לכאן.
@@ -333,6 +339,26 @@ function App() {
       <div className="boot-screen">
         <span className="dot loading" /> טוען…
       </div>
+    )
+  }
+
+  // קישור איפוס סיסמה מהמייל — מסך עצמאי, בלי קשר למצב ההתחברות הנוכחי
+  // (המשתמש בדיוק כי שכח את הסיסמה, לא בהכרח מחובר בטאב הזה בכלל).
+  if (resetToken) {
+    return (
+      <ResetPasswordPage
+        token={resetToken}
+        onDone={async (u) => {
+          setUser(u)
+          await loadEvents(u)
+          window.history.replaceState({}, '', '/app')
+          setResetToken(null)
+        }}
+        onBack={() => {
+          window.history.replaceState({}, '', '/app')
+          setResetToken(null)
+        }}
+      />
     )
   }
 

@@ -170,6 +170,9 @@ _EXTRA_COLUMNS = {
         "email_verification_code_hash": "TEXT",
         "email_verification_code_expires_at": "TIMESTAMP",
         "email_verification_code_attempts": "INTEGER DEFAULT 0",
+        # איפוס סיסמה עצמאי ("שכחתי סיסמה") — ראו models.User.
+        "password_reset_hash": "TEXT",
+        "password_reset_expires_at": "TIMESTAMP",
     },
     "guests": {
         "guest_token": "TEXT",

@@ -63,6 +63,13 @@ class User(Base):
     # מונה ניסיונות שגויים — הגנה מפני ניחוש (6 ספרות = מיליון אפשרויות,
     # קטן מספיק שדורש הגבלה מפורשת). מתאפס בכל הנפקת קוד חדש (resend).
     email_verification_code_attempts: Mapped[int] = mapped_column(Integer, default=0)
+    # טוקן איפוס סיסמה עצמאי ("שכחתי סיסמה") — אותו עיקרון hash-only כמו
+    # אימות המייל למעלה (רק ה-hash נשמר, הטוקן עצמו רק במייל). תוקף קצר
+    # בהרבה (שעה, לא 24 שעות) — איפוס סיסמה הוא פעולה רגישה יותר מאימות כתובת.
+    password_reset_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    password_reset_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
     # אדמין = הבעלים של המערכת, רואה ומנהל את כל המשתמשים והאירועים.
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     # סוג החשבון: couple (זוג, ברירת מחדל) / planner (מפיק) / venue (אולם).

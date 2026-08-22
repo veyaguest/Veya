@@ -326,6 +326,31 @@ export async function logoutAll(): Promise<void> {
   if (!res.ok) throw await toError(res)
 }
 
+/** מבקש קישור לאיפוס סיסמה. התגובה זהה תמיד, בלי קשר אם הכתובת קיימת. */
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  const res = await publicFetch('/auth/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** מממש קישור איפוס סיסמה: קובע סיסמה חדשה ומחזיר טוקן כניסה. */
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<TokenResponse> {
+  const res = await publicFetch('/auth/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
 // ---- ניהול אירועים של המשתמש (שלב 8) ----
 
 export async function listMyEvents(): Promise<EventSummary[]> {

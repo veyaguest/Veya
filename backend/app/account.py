@@ -63,6 +63,19 @@ def delete_event_cascade(db: Session, event: "models.Event") -> None:
         select(models.EventMessage).where(models.EventMessage.event_id == event_id)
     ).all():
         db.delete(event_msg)
+    # flush מפורש נוסף: Event אין לו relationship() ל-EventMessage (בדיוק כמו
+    # Message->EventMessage למעלה) — ה-unit-of-work לא מובטח באופן פורמלי
+    # לשמור על הסדר בין שני mapper-ים בלי תלות מפורשת, אז הופך אותו כאן
+    # לוודאי במקום מוסתר. הערה לגבי מה זה כן/לא מוכיח: הסרתי את השורה הזו
+    # זמנית והרצתי את tests/test_account_delete.py (כולל test_15, שמבודד
+    # event_messages בלי אף Message) — כל הבדיקות עברו גם בלעדיה. כלומר סדר
+    # ה-DELETE ב-SQLite כבר תקין גם בלי ה-flush הזה, ובדיקות ה-SQLite כאן
+    # *לא* מסוגלות להוכיח שזה תיקן את שגיאת הפרודקשן האמיתית (ForeignKeyViolation
+    # על event_messages_event_id_fkey, admin.py::delete_single_event #23) —
+    # RLS הוא no-op לגמרי ב-SQLite, וזו הסיבה הסבירה ביותר לשגיאה עצמה (ראו
+    # rls/11_event_messages_delete_rls_fix.sql). נשאר כאן כהקשחה מפורשת
+    # וזולה, לא כ"התיקון המוכח".
+    db.flush()
     for clar in db.scalars(
         select(models.Clarification).where(models.Clarification.event_id == event_id)
     ).all():

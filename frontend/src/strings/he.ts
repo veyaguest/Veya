@@ -151,7 +151,6 @@ export const strings = {
     messageLoaded: 'הודעה נטענה מהספרייה — אפשר לערוך ואז לשמור',
     templateCreated: 'התבנית נוצרה ✓',
     templateSaved: 'התבנית נשמרה ✓',
-    passwordResetNote: 'איפוס סיסמה עצמאי בדרך — בינתיים כתבו לנו ונעזור.',
     adminUserDetailsSaved: 'הפרטים נשמרו',
     invitationsSent: 'ההזמנות נשלחו',
   },

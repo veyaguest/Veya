@@ -419,6 +419,72 @@ def confirm_verification(
     )
 
 
+@router.post("/forgot-password", status_code=200)
+def forgot_password(
+    payload: schemas.ForgotPasswordRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """מבקש קישור לאיפוס סיסמה. נתיב **ציבורי** במכוון (משתמש שלא זוכר את
+    הסיסמה, מטבע הדבר, לא מחובר).
+
+    התגובה זהה תמיד, בלי קשר אם הכתובת קיימת במערכת — כדי לא לחשוף אילו
+    כתובות מייל רשומות (email enumeration). לכן גם לא נקרא ``record_fail``
+    כאן: אין ללקוח דרך להבחין בין "נשלח" ל"לא נמצא", אז אין למה למדוד.
+    """
+    ip = client_ip(request)
+    auth_limiter.check(ip)
+    message = "אם קיימת כתובת עם החשבון הזה, שלחנו אליכם קישור לאיפוס הסיסמה."
+    user = auth.find_user_by_email(db, payload.email)
+    if user is not None and not user.disabled:
+        auth.send_password_reset_email(db, user)
+        db.commit()
+    return {"message": message}
+
+
+@router.post("/reset-password", response_model=schemas.TokenResponse)
+def reset_password(
+    payload: schemas.ResetPasswordRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """מממש קישור איפוס סיסמה: קובע סיסמה חדשה ופוסל את כל הטוקנים הישנים.
+
+    נתיב **ציבורי** במכוון (בלי ``get_current_user``) — בדיוק כמו
+    ``verify-email/confirm``: הטוקן החד-פעמי הוא ההוכחה, ולכן הוא גם מספיק
+    כדי להנפיק כניסה. מחזיר טוקן חדש כדי שהמכשיר שממנו בוצע האיפוס יישאר
+    מחובר מיד, בעוד שאר המכשירים (אם הסיסמה נגנבה) נדרשים להתחבר מחדש.
+    """
+    ip = client_ip(request)
+    auth_limiter.check(ip)
+    user = auth.consume_password_reset(db, payload.token)
+    if user is None:
+        auth_limiter.record_fail(ip)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="הקישור לאיפוס הסיסמה כבר לא תקף. אפשר לבקש קישור חדש",
+        )
+    if user.disabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="החשבון הזה הושבת. אפשר לפנות אלינו כדי לברר למה",
+        )
+    set_request_identity(user.id)
+    # תחת RLS רגיל מכאן (הזהות כבר הוזרקה לשורה למעלה) — אותה תבנית בדיוק
+    # כמו confirm_verification: consume_* מחזיר אובייקט "transient" ב-Postgres
+    # שמוטציה עליו לא נתפסת ב-commit, אז טוענים מחדש דרך db.get().
+    tracked = db.get(models.User, user.id) or user
+    tracked.password_hash = auth.hash_password(payload.new_password)
+    tracked.token_version = (tracked.token_version or 1) + 1
+    audit.record(
+        db, "password_reset", user_id=tracked.id,
+        detail=f"איפוס סיסמה עצמאי: {tracked.email}", ip=ip,
+    )
+    db.commit()
+    token = auth.create_access_token(tracked)
+    return schemas.TokenResponse(access_token=token, user=_user_read(db, tracked))
+
+
 @router.get("/me/export")
 def export_my_data(
     db: Session = Depends(get_db),

@@ -1850,3 +1850,29 @@ class EmailChangeRequest(BaseModel):
         if "@" not in v or "." not in v.split("@")[-1]:
             raise ValueError("כתובת האימייל לא נראית תקינה")
         return v
+
+
+class ForgotPasswordRequest(BaseModel):
+    """בקשת קישור לאיפוס סיסמה. התגובה בשרת זהה תמיד, בלי קשר אם הכתובת
+    קיימת במערכת — כדי לא לחשוף אילו כתובות מייל רשומות (email enumeration).
+    ראו routers/auth.py::forgot_password.
+    """
+
+    email: str
+
+    @field_validator("email")
+    @classmethod
+    def _email_lower(cls, v: str) -> str:
+        return (v or "").strip().lower()
+
+
+class ResetPasswordRequest(BaseModel):
+    """מימוש קישור איפוס הסיסמה: הטוקן החד-פעמי מהקישור + הסיסמה החדשה."""
+
+    token: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def _new_password_valid(cls, v: str) -> str:
+        return validate_password_strength(v)
