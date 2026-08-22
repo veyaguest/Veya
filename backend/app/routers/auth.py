@@ -437,6 +437,26 @@ def forgot_password(
     message = "אם קיימת כתובת עם החשבון הזה, שלחנו אליכם קישור לאיפוס הסיסמה."
     user = auth.find_user_by_email(db, payload.email)
     if user is not None and not user.disabled:
+        # קריטי (ולא רק ניקיון): find_user_by_email רץ *לפני* שיש זהות מחוברת
+        # (אין עדיין app.current_user_id), אז הטרנזקציה שהיא פתחה כבר הוזרקה
+        # עם זהות ריקה. set_request_identity כאן מעדכן רק את ה-ContextVar
+        # בפייתון — לא את הטרנזקציה הפתוחה. בלי ה-commit הזה, issue_password_
+        # reset()'s db.get() היה ממשיך על אותה טרנזקציה עם זהות ריקה, ומדיניות
+        # RLS users_select (id = app_current_user_id()) הייתה מסננת אותו ל-0
+        # שורות — בדיוק כמו שהיה קורה אם המשתמש לא נמצא בכלל. db.get() היה
+        # מחזיר None, והקוד היה נופל חזרה על tracked = db.get(...) or user —
+        # האובייקט ה"זמני" שהחזירה find_user_by_email ב-Postgres (נבנה ידנית
+        # מתוצאת ה-RPC של app_user_by_email, לא מחובר ל-session בכלל).
+        # מוטציה על אובייקט כזה לא נתפסת ב-commit, אז הקוד "עבד" (המייל אכן
+        # נשלח, עם הטוקן הגולמי בקישור) אבל ה-hash שלו מעולם לא נשמר בפועל
+        # ב-DB — ולכן כל טוקן איפוס תמיד חזר "לא תקף" ב-Postgres (ולא נתפס
+        # מקומית: SQLite אין בו RLS בכלל, אז find_user_by_email שם מחזירה
+        # אובייקט ORM אמיתי, לא זמני). אותה תבנית בדיוק כמו register()/
+        # google_exchange() למעלה: set_request_identity + commit לפני כל
+        # פעולה שתלויה בזהות המחוברת, כדי שהטרנזקציה הבאה תיפתח עם ההזרקה
+        # הנכונה.
+        set_request_identity(user.id)
+        db.commit()
         auth.send_password_reset_email(db, user)
         db.commit()
     return {"message": message}
