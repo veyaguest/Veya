@@ -667,6 +667,17 @@ def find_or_create_google_user(
         needs_avatar = bool(avatar_url) and existing.avatar_url != avatar_url
         needs_verify = not is_email_verified(existing)
         if needs_avatar or needs_verify:
+            # קריטי, בדיוק כמו ב-register()/google_exchange (ראו שם התיעוד
+            # המלא): set_request_identity לעיל מעדכן רק את ה-ContextVar
+            # בפייתון, לא את הזהות שכבר הוזרקה לטרנזקציה הנוכחית (שנפתחה
+            # אנונימית ע"י ה-SELECT האנונימי של find_user_by_email למעלה).
+            # בלי commit כאן, ה-db.get() הבא היה חוסם ע"י RLS (users_select:
+            # id = app_current_user_id(), וזה עדיין '') ומחזיר None — בדיוק
+            # מה שקרה בפועל: משתמש גוגל קיים ולא-מאומת נשאר "לא מאומת"
+            # לנצח כי tracked יצא None ובלוק הסימון דולג בשקט, בלי שאף מייל
+            # אימות נשלח לו (google_exchange לא קורא send_verification_email
+            # בכלל — זה מסתמך לחלוטין על הסימון האוטומטי כאן).
+            db.commit()
             tracked = db.get(models.User, existing.id)
             if tracked is not None:
                 if needs_avatar:
@@ -693,6 +704,14 @@ def find_or_create_google_user(
     # גוגל כבר אימתה את כתובת המייל מול הבעלים שלה — אין טעם לבקש אימות שוב.
     # נעשה כ-UPDATE נפרד על השורה ה"מנוטרת" (ולא כפרמטר ל-app_register_user)
     # מאותה סיבה בדיוק שתועדה למעלה עבור avatar_url.
+    # ה-commit כאן הכרחי מאותה סיבה בדיוק כמו בבלוק "משתמש קיים" למעלה: בלי
+    # אותו, db.get() הבא רץ עדיין בטרנזקציה שהוזרקה עם זהות ריקה (מ-
+    # register_user_row), RLS חוסם אותו, ו-tracked יוצא None — משתמש גוגל
+    # *חדש* נשאר "לא מאומת" בפועל, בלי שנשלח לו אף פעם מייל אימות (אין
+    # קריאה ל-send_verification_email בכל המסלול הזה — זה מסתמך על הסימון
+    # האוטומטי כאן בלבד). נתפס בפועל: משתמש שנרשם/התחבר עם גוגל נוחת על
+    # מסך "אימות מייל" בלי שום קוד שהגיע, עד שהוא לוחץ "שלחו לי קוד חדש".
+    db.commit()
     tracked = db.get(models.User, user.id)
     if tracked is not None:
         tracked.email_verified_at = datetime.utcnow()
