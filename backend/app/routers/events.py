@@ -99,7 +99,14 @@ def create_event(
             },
         ).mappings().first()
         db.commit()
-        event = models.Event(**dict(row))
+        # app_create_event עושה RETURNING * — כלומר השורה כוללת כל עמודה
+        # שקיימת היום בפועל בטבלת events ב-DB, גם אם היא נוספה ישירות ל-DB
+        # ועדיין לא קיימת במודל ה-ORM כאן (כפי שקרה בפועל: עמודה event_subtype
+        # שגרמה ל-TypeError בקונסטרוקטור וקרסה את הבקשה **אחרי** שהשורה כבר
+        # נשמרה ב-commit למעלה). מסננים לפי מה שה-ORM באמת ממפה, כדי שפער
+        # עתידי בין סכימת ה-DB בפועל למודל לא יפיל את הבקשה שוב.
+        known_columns = {c.name for c in models.Event.__table__.columns}
+        event = models.Event(**{k: v for k, v in dict(row).items() if k in known_columns})
     else:
         event = models.Event(
             owner_id=user.id,
