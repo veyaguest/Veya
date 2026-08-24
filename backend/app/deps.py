@@ -10,17 +10,6 @@ from app.auth import get_current_user
 from app.database import get_db
 
 
-def get_default_event(db: Session = Depends(get_db)) -> models.Event:
-    """מחזיר אירוע ברירת-מחדל (משמש רק באתחול המערכת / תאימות לאחור)."""
-    event = db.scalars(select(models.Event)).first()
-    if event is None:
-        event = models.Event()
-        db.add(event)
-        db.commit()
-        db.refresh(event)
-    return event
-
-
 class EventAccess:
     """דיפנדנסי גישה לאירוע — עם בדיקת הרשאה אופציונלית לחברי-אירוע.
 

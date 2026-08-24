@@ -1,109 +1,129 @@
-/* דף ההצטרפות לאירוע (/join) והשלמת הפרופיל — אותה שפה עיצובית:
-   כרטיס בהיר ממורכז על רקע שנהב, הרבה אוויר, בלי כרום מיותר.
-   מסך אימות המייל עבר לקובץ משלו: VerifyEmailPage.css. */
+/* דף ההצטרפות לאירוע (/join) והשלמת הפרופיל — ממשיכים ישירות את מסך אימות
+   המייל ומסך יצירת האירוע: אותו קנבס כהה, אותו לוגו, אותה טיפוגרפיה ואותם
+   כפתורים. הטוקנים הכהים מגיעים מהבלוק המשותף
+   ".auth-marketing, .auth-panel, .verify-page, .confirm-card, .onboard-card,
+   .join-card" ב-App.css — לא מוגדרים כאן מחדש.
+
+   Mobile first: ברירת המחדל היא הטלפון; ה-media query מרחיב לדסקטופ. */
 
 .join-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
-  background: var(--ivory);
+  padding: 32px 16px;
+  /* --black לא מוחלף בהקשר כהה — נשאר #0b0a0c קבוע, בדיוק כמו .onboard-wrap */
+  background: var(--black);
 }
 
 .join-card {
   width: 100%;
-  max-width: 460px;
-  padding: 36px 26px 32px;
+  max-width: 440px;
+  padding: 40px 32px 36px;
   text-align: center;
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-card);
+  /* shadow-card חושב לרקע בהיר ובלתי-נראה על קנבס כהה — אותו צל עמוק +
+     טבעת זהב עדינה שנקבעו ב-.onboard-card. */
+  box-shadow: 0 24px 70px -24px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(201, 162, 39, 0.05);
 }
 
+/* ---- לוגו VEYA האמיתי — אותו treatment בדיוק כמו .verify-logo ---- */
 .join-logo {
-  margin-bottom: 26px;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: var(--charcoal);
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.join-logo-img {
+  display: block;
+  width: 140px;
+  height: auto;
 }
 
 .join-kicker {
   margin: 0 0 8px;
-  font-size: 0.875rem;
+  font-size: 13.5px;
   color: var(--muted);
 }
 
 .join-title {
-  margin: 0 0 14px;
-  font-size: 1.375rem;
+  margin: 0 0 12px;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 24px;
   font-weight: 600;
   line-height: 1.35;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
   color: var(--charcoal);
 }
 
 .join-text {
   margin: 0 0 12px;
-  font-size: 0.9375rem;
-  line-height: 1.7;
+  font-size: 14.5px;
+  line-height: 1.65;
   color: var(--body);
 }
 
 .join-text-muted {
   color: var(--muted);
-  font-size: 0.875rem;
+  font-size: 13px;
 }
 
 .join-email {
   display: inline-block;
-  font-weight: 500;
-  color: var(--charcoal);
+  font-weight: 600;
+  color: var(--gold-light);
 }
 
+/* ---- מצב "הצטרפתם בהצלחה" — אותו טיפול מעגלי כמו .verify-check,
+   בגוון ירוק כדי לסמן "כבר בפנים" ולא "רק אומת" ---- */
 .join-check {
-  width: 52px;
-  height: 52px;
-  margin: 0 auto 18px;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 20px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(47, 158, 95, 0.12);
+  font-size: 26px;
   color: var(--green);
-  font-size: 1.5rem;
+  background: rgba(47, 158, 95, 0.1);
+  border: 1px solid rgba(47, 158, 95, 0.3);
 }
 
 .join-actions {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 22px;
+  margin-top: 24px;
 }
 
+/* ---- כפתורים — אותה משפחה בדיוק כמו .auth-submit / .verify-cancel ---- */
 .join-btn {
   width: 100%;
-  padding: 13px 20px;
-  font-size: 0.9375rem;
-  font-family: inherit;
-  font-weight: 500;
-  border-radius: var(--radius-m);
+  height: 50px;
+  padding: 0 20px;
+  font-size: 15.5px;
+  font-family: 'Assistant', sans-serif;
+  font-weight: 600;
+  border-radius: 8px;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast),
-    opacity var(--transition-fast);
+  transition: filter var(--transition-fast), border-color var(--transition-fast),
+    color var(--transition-fast), opacity var(--transition-fast);
 }
 
 .join-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+  opacity: 0.6;
+  cursor: default;
 }
 
 .join-btn-primary {
-  margin-top: 22px;
-  color: var(--ivory);
-  background: var(--charcoal);
+  margin-top: 24px;
+  font-weight: 700;
+  color: var(--cream);
+  background: linear-gradient(150deg, var(--gold-light), #b08d2a);
 }
 
 .join-actions .join-btn-primary {
@@ -111,13 +131,13 @@
 }
 
 .join-btn-primary:hover:not(:disabled) {
-  background: var(--black-soft);
+  filter: brightness(1.08);
 }
 
 .join-btn-secondary {
   margin-top: 10px;
   color: var(--body);
-  background: var(--cream);
+  background: transparent;
   border-color: var(--line);
 }
 
@@ -126,91 +146,102 @@
 }
 
 .join-btn-secondary:hover:not(:disabled) {
-  border-color: var(--faint);
-  background: var(--surface-hi);
+  border-color: var(--gold-light);
+  color: var(--gold-light);
 }
 
 .join-loading {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: 14.5px;
   color: var(--muted);
 }
 
+/* ---- שגיאה/הודעה — זהות ל-.auth-error / .auth-note ---- */
 .join-error {
   margin: 0 0 4px;
-  padding: 11px 14px;
-  font-size: 0.875rem;
-  line-height: 1.6;
-  text-align: right;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-align: start;
   color: var(--error);
-  background: rgba(166, 96, 90, 0.09);
-  border: 1px solid rgba(166, 96, 90, 0.22);
-  border-radius: var(--radius-m);
+  background: rgba(224, 133, 122, 0.08);
+  border: 1px solid rgba(224, 133, 122, 0.25);
+  border-radius: var(--radius-s);
 }
 
-/* ---- מסך אימות המייל ---- */
+/* ---- שדות (מסך השלמת פרטים) — אותו שדה של .auth-field input ---- */
 .join-field {
-  margin-top: 20px;
-  text-align: right;
+  margin-top: 18px;
+  text-align: start;
 }
 
 .join-field label {
   display: block;
-  margin-bottom: 6px;
-  font-size: 0.8125rem;
-  font-weight: 500;
+  margin-bottom: 8px;
+  font-size: 13px;
   color: var(--body);
 }
 
 .join-field input {
   width: 100%;
-  padding: 11px 13px;
-  font-size: 0.9375rem;
-  font-family: inherit;
+  height: 48px;
+  padding: 0 14px;
+  font-size: 15px;
+  font-family: 'Assistant', sans-serif;
   color: var(--charcoal);
-  background: var(--surface-hi);
-  border: 1px solid var(--line);
+  background: var(--black);
+  border: 1px solid var(--line-2);
   border-radius: var(--radius-m);
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .join-field input:focus {
   outline: none;
-  background: var(--cream);
-  border-color: var(--gold-deep);
-  box-shadow: 0 0 0 3px rgba(var(--gold-rgb), 0.12);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.12);
 }
 
 .join-linkbtn {
-  margin-top: 16px;
+  margin-top: 18px;
   padding: 0;
   border: none;
   background: none;
-  font-family: inherit;
-  font-size: 0.875rem;
-  color: var(--gold-deep);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  font-family: 'Assistant', sans-serif;
+  font-size: 13px;
+  color: var(--gold);
   cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.join-linkbtn:hover:not(:disabled) {
+  color: var(--gold-light);
 }
 
 .join-linkbtn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+  opacity: 0.6;
+  cursor: default;
 }
 
 .join-note {
-  margin: 16px 0 0;
-  padding: 11px 14px;
-  font-size: 0.875rem;
-  line-height: 1.6;
-  color: var(--gold-deep);
-  background: rgba(var(--gold-rgb), 0.1);
-  border: 1px solid rgba(var(--gold-rgb), 0.24);
-  border-radius: var(--radius-m);
+  margin: 18px 0 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--gold-light);
+  background: rgba(201, 162, 39, 0.08);
+  border: 1px solid rgba(201, 162, 39, 0.25);
+  border-radius: 8px;
+}
+
+@media (min-width: 480px) {
+  .join-logo-img {
+    width: 152px;
+  }
 }
 
 @media (min-width: 700px) {
   .join-card {
-    padding: 42px 38px 36px;
+    padding: 48px 44px 40px;
   }
 }

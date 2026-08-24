@@ -14,7 +14,6 @@ from sqlalchemy import inspect, text
 
 from app import models  # noqa: F401  — נדרש כדי לרשום את הטבלאות
 from app.database import Base, MigrationSessionLocal, migrations_engine
-from app.deps import get_default_event
 from app.routers import (
     admin,
     auth,
@@ -761,13 +760,15 @@ def on_startup() -> None:
     # זורע את ספריית הנוסחים לבחירה (עד 12 לכל event_type×message_type),
     # חתונה בלבד בשלב הזה — ראו seed_message_default_options.
     seed_message_default_options()
-    # מוודא שקיים אירוע ברירת-מחדל אחד (תחזוקת עלייה — בלי זהות משתמש).
-    db = MigrationSessionLocal()
-    try:
-        get_default_event(db)
-    finally:
-        db.close()
-
+    # הוסר (2026-08-24): קריאה ל-get_default_event שיצרה אירוע "ברירת מחדל"
+    # בלי owner_id בכל פעם שטבלת האירועים הייתה ריקה. זה בדיוק המנגנון
+    # שגרם לבאג 409 בייצור — auth.adopt_orphan_events (רץ בכל הרשמה חדשה)
+    # "מאמצת" אוטומטית כל אירוע עם owner_id=NULL למי שנרשם הבא, כך שמשתמש
+    # חדש לגמרי קיבל בעלות על אירוע-רפאים הזה בלי לדעת, ואז נחסם ב-409
+    # ("כבר יש לך אירוע") בניסיון הראשון שלו ליצור אירוע אמיתי משלו. הפונקציה
+    # get_default_event() לא משמשת יותר אף מקום אחר במערכת — ראו גם ההערה
+    # המפורשת ב-routers/admin.py::_ORPHANED_EVENTS_HOLDER_EMAIL שמסבירה למה
+    # אסור להשאיר אירועים עם owner_id=NULL בסביבה הזו.
 
     # DEBUG זמני: מדפיס בעליית השרת האם תצורת המייל קיימת (קיום בלבד,
     # לעולם לא ערך המפתח). זו הדרך לענות על "האם RESEND_API_KEY קיים

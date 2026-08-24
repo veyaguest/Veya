@@ -52,7 +52,8 @@
 .auth-panel,
 .verify-page,
 .confirm-card,
-.onboard-card {
+.onboard-card,
+.join-card {
   --cream: #14120e;
   --surface-hi: #1c1a14;
   --line: #2a2620;
