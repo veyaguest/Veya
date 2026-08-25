@@ -38,6 +38,10 @@ export interface EventTerms {
   eventNoun: string
   /** שם האירוע הסתמי — בטוח אחרי ל/ב: "חתונה" / "אירוע בר המצווה" / "אירוע" (טוקן [האירוע]) */
   celebration: string
+  /** צורה מיודעת ("החתונה") — לשימוש כנושא במשפט: "החתונה שלנו נדחתה".
+   *  לא נגזרת מ-celebration בהוספת ה', כי ב"אירוע בר המצווה" הידוע כבר
+   *  בפנים. מקביל ל-celebration_definite ב-backend/app/event_terms.py. */
+  celebrationDefinite: string
   /** צורת סמיכות לפני שמות: "חתונת" / "בר המצווה של" / "אירוע של" (טוקן [שמחת]) */
   celebrationConstruct: string
   /** תווית ההזמנה: "הזמנה לחתונה" / "הזמנה לאירוע" */
@@ -118,6 +122,7 @@ const WEDDING: EventTerms = {
   sideLabels: { groom: 'חתן', bride: 'כלה', shared: 'משותף' },
   eventNoun: 'החתונה',
   celebration: 'חתונה',
+  celebrationDefinite: 'החתונה',
   celebrationConstruct: 'חתונת',
   inviteLabel: 'הזמנה לחתונה',
   defaultTitle: 'החתונה שלנו',
@@ -140,6 +145,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     sideLabels: { groom: 'חתן', bride: 'כלה', shared: 'משותף' },
     eventNoun: 'החינה',
     celebration: 'חינה',
+    celebrationDefinite: 'החינה',
     celebrationConstruct: 'חינת',
     inviteLabel: 'הזמנה לחינה',
     defaultTitle: 'החינה שלנו',
@@ -159,6 +165,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     sideLabels: { groom: 'צד משפחת האב', bride: 'צד משפחת האם', shared: 'משותף' },
     eventNoun: 'אירוע בר המצווה',
     celebration: 'אירוע בר המצווה',
+    celebrationDefinite: 'אירוע בר המצווה',
     celebrationConstruct: 'בר המצווה של',
     inviteLabel: 'הזמנה לבר מצווה',
     defaultTitle: 'אירוע בר המצווה',
@@ -178,6 +185,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     sideLabels: { groom: 'צד משפחת האב', bride: 'צד משפחת האם', shared: 'משותף' },
     eventNoun: 'אירוע בת המצווה',
     celebration: 'אירוע בת המצווה',
+    celebrationDefinite: 'אירוע בת המצווה',
     celebrationConstruct: 'בת המצווה של',
     inviteLabel: 'הזמנה לבת מצווה',
     defaultTitle: 'אירוע בת המצווה',
@@ -197,6 +205,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     sideLabels: { groom: 'צד משפחת האב', bride: 'צד משפחת האם', shared: 'משותף' },
     eventNoun: 'הברית',
     celebration: 'אירוע ברית',
+    celebrationDefinite: 'אירוע הברית',
     celebrationConstruct: 'ברית של',
     inviteLabel: 'הזמנה לברית',
     defaultTitle: 'הברית שלנו',
@@ -216,6 +225,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     sideLabels: { groom: 'צד משפחת האב', bride: 'צד משפחת האם', shared: 'משותף' },
     eventNoun: 'הבריתה',
     celebration: 'אירוע בריתה',
+    celebrationDefinite: 'אירוע הבריתה',
     celebrationConstruct: 'בריתה של',
     inviteLabel: 'הזמנה לבריתה',
     defaultTitle: 'הבריתה שלנו',
@@ -235,6 +245,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     sideLabels: { groom: 'צד א׳', bride: 'צד ב׳', shared: 'משותף' },
     eventNoun: 'האירוע',
     celebration: 'אירוע',
+    celebrationDefinite: 'האירוע',
     celebrationConstruct: 'אירוע של',
     inviteLabel: 'הזמנה לאירוע',
     defaultTitle: 'האירוע שלנו',

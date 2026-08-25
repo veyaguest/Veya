@@ -22,7 +22,11 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from contextlib import contextmanager
+
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import ObjectDeletedError, StaleDataError
 
 from app import audit, banks, models, payout_status
 
@@ -39,6 +43,18 @@ class PayoutLocked(PayoutError):
 
     נפרד מ-``PayoutError`` כדי שהנתיב יחזיר 409 (התנגשות מצב) ולא 422
     (קלט שגוי): הקלט היה תקין לגמרי, פשוט אסור לשנות עכשיו.
+    """
+
+
+class PayoutWriteFailed(PayoutError):
+    """המסד לא קיבל את הכתיבה, ולא בגלל הקלט.
+
+    בפועל זה קורה כששורה שה-ORM חושב שהיא קיימת אינה נגישה לכתיבה —
+    למשל מדיניות RLS שחוסמת ``UPDATE`` (ואז Postgres מעדכן 0 שורות בשקט),
+    או שורה שנעלמה מתחת לידיים.
+
+    **קיים כדי שהמצב הזה יהפוך לשגיאה מפורשת ולא ל-``StaleDataError``
+    שמרעיל את הטרנזקציה** ומתגלגל לבקשה הבאה כ-``PendingRollbackError``.
     """
 
 
@@ -182,6 +198,108 @@ def _set_provider_status(
     )
 
 
+def _flush(db: Session, what: str) -> None:
+    """מוציא את השינויים הממתינים למסד **עכשיו**, ומתרגם כשל לשגיאה ברורה.
+
+    **למה במפורש ולא להשאיר ל-commit:** כל עוד ה-INSERT/UPDATE ממתין,
+    הוא ייפלט ב-autoflush הראשון שיקרה — ובמסלול הזה ה-autoflush הראשון
+    קורה בתוך ה-SAVEPOINT של ``audit.record``. אם משהו שם נכשל, ה-SAVEPOINT
+    מתגלגל אחורה ומבטל גם את הכתיבה שלנו, בעוד ה-ORM ממשיך להחזיק אובייקט
+    "persistent" עם מזהה שכבר אין לו שורה. ה-``UPDATE`` הבא על האובייקט
+    הזה מוצא 0 שורות, וזו בדיוק התקלה שנצפתה בייצור:
+
+        UPDATE statement on table 'payout_accounts'
+        expected to update 1 row(s); 0 were matched
+        → PendingRollbackError
+
+    ב-SQLite הבאג אינו מתרחש כי SAVEPOINT שם כמעט חסר-משמעות (מגבלה ידועה
+    של pysqlite), ולכן הוא נראה רק בייצור מול Postgres.
+
+    ``flush`` מפורש כאן פותר את שני הצדדים: הכתיבה יוצאת בטרנזקציה
+    החיצונית ולא בתוך SAVEPOINT זר, וכשל בה **צף מיד** במקום להיבלע.
+    """
+    with _guard_write(what):
+        db.flush()
+
+
+#: שתי הצורות שבהן SQLAlchemy מדווח "השורה שאתה מחזיק כבר לא שם":
+#:
+#:   ``StaleDataError``    — ה-``UPDATE`` רץ והתאים 0 שורות.
+#:   ``ObjectDeletedError`` — טעינה עצלה של שדה לא מצאה את השורה.
+#:
+#: שתיהן אותו מצב מבחינת המשתמש, ושתיהן מרעילות את הטרנזקציה אם לא תופסים
+#: אותן — ומשם הן מתגלגלות לבקשה הבאה כ-``PendingRollbackError``.
+_ROW_VANISHED = (StaleDataError, ObjectDeletedError)
+
+
+@contextmanager
+def _guard_write(what: str):
+    """הופך "השורה נעלמה" לשגיאה מפורשת עם נוסח עברי."""
+    try:
+        yield
+    except _ROW_VANISHED as exc:
+        raise PayoutWriteFailed(
+            f"לא הצלחנו לשמור את {what}. נסו שוב, ואם זה חוזר — פנו לתמיכה."
+        ) from exc
+
+
+def _get_or_create(
+    db: Session,
+    event_id: int,
+    *,
+    bank_code: int,
+    branch_number: str,
+    account_number: str,
+) -> tuple[models.PayoutAccount, bool]:
+    """מחזיר את שורת החשבון של האירוע, ויוצר אותה אם אין. ``(שורה, נוצרה)``.
+
+    היצירה **נכתבת למסד מיד**, ולא נשארת ממתינה — ראו ``_flush``.
+
+    הפרטים המנורמלים מתקבלים כפרמטרים ונכתבים כבר ב-INSERT עצמו. זה לא
+    נוחות: שלוש העמודות האלה הן ``NOT NULL``, ושורה שנוצרת בלעדיהן נופלת
+    על אילוץ המסד ברגע שמנסים לכתוב אותה.
+
+    **מרוץ:** שתי בקשות שמגיעות יחד יראו שתיהן "אין שורה" וינסו ליצור.
+    ה-``UNIQUE`` על ``event_id`` יעצור את השנייה, וכאן היא נופלת בחזרה
+    לשורה שהראשונה יצרה במקום להיכשל. ה-INSERT עטוף ב-SAVEPOINT משלנו
+    כדי שהכשל הצפוי הזה לא יפיל את כל הטרנזקציה.
+    """
+    row = get(db, event_id)
+    if row is not None:
+        return row, False
+
+    savepoint = db.begin_nested()
+    row = models.PayoutAccount(
+        event_id=event_id,
+        status=payout_status.MISSING,
+        # מפורש ולא בהסתמך על ברירת המחדל של העמודה: שורה שנוצרת חייבת
+        # ערך תקין גם אם העמודה נוספה בדיעבד ל-DB קיים.
+        provider_status=payout_status.REVIEW_PENDING,
+        bank_code=bank_code,
+        branch_number=branch_number,
+        account_number=account_number,
+    )
+    db.add(row)
+    try:
+        db.flush()
+    except IntegrityError:
+        # מישהו הקדים אותנו. מגלגלים רק את ה-INSERT שלנו ולוקחים את שלו.
+        savepoint.rollback()
+        if row in db:
+            # אחרי rollback ל-SAVEPOINT ה-ORM כבר מנקה בעצמו את מה שהוכנס
+            # בתוכו; הבדיקה כאן היא כדי לא להיכשל על ניקוי כפול.
+            db.expunge(row)
+        existing = get(db, event_id)
+        if existing is None:
+            # אין שורה ואי אפשר ליצור — לא מצב שהקלט יכול לגרום לו.
+            raise PayoutWriteFailed(
+                "לא הצלחנו ליצור את פרטי החשבון. נסו שוב, ואם זה חוזר — פנו לתמיכה."
+            ) from None
+        return existing, False
+    savepoint.commit()
+    return row, True
+
+
 def save_details(
     db: Session,
     event_id: int,
@@ -210,10 +328,18 @@ def save_details(
     except banks.BranchError as exc:
         raise PayoutError(str(exc)) from exc
 
-    creating = row is None
+    # היצירה נכתבת למסד מיד (``_get_or_create``), עוד לפני שנוגעים בשדות
+    # ובוודאי לפני ``audit.record`` — אחרת ה-INSERT היה נפלט ב-autoflush
+    # בתוך ה-SAVEPOINT של היומן, וכשל שם היה מבטל אותו בשקט.
     if row is None:
-        row = models.PayoutAccount(event_id=event_id, status=payout_status.MISSING)
-        db.add(row)
+        row, creating = _get_or_create(
+            db, event_id,
+            bank_code=code, branch_number=branch, account_number=account,
+        )
+        # ייתכן שהפסדנו במרוץ לשורה שכבר קיימת — ואולי אפילו מאושרת.
+        assert_unlocked(row)
+    else:
+        creating = False
 
     changed = creating or any(
         getattr(row, f) != v
@@ -238,6 +364,10 @@ def save_details(
                 user_id=user_id, ip=ip,
                 detail="פרטי החשבון שונו — בדיקת ספק הסליקה אופסה",
             )
+
+    # השינויים יוצאים למסד **לפני** כתיבת היומן, ולא נגררים לתוך
+    # ה-SAVEPOINT שלה. ראו ``_flush``.
+    _flush(db, "פרטי החשבון")
 
     audit.record(
         db,
@@ -271,12 +401,17 @@ def attach_certificate(
     כתיבה נפרד — ומי שיוסיף בעתיד נתיב שמעלה מסמך בלבד יקבל את ההגנה
     מאליה.
     """
-    assert_unlocked(row)
-    row.certificate_data = data
-    row.certificate_content_type = content_type
-    row.certificate_filename = filename
-    row.certificate_size = len(data)
-    row.certificate_uploaded_at = datetime.utcnow()
+    # **הכול בתוך השומר, כולל בדיקת הנעילה.** קריאת ``row.status`` היא
+    # עצמה גישה לשדה, ואם השורה נעלמה היא מפילה ``ObjectDeletedError``
+    # עוד לפני שהגענו לכתיבה — כך שגם היא צריכה נוסח ברור ולא חריגה גולמית.
+    with _guard_write("אישור ניהול החשבון"):
+        assert_unlocked(row)
+        row.certificate_data = data
+        row.certificate_content_type = content_type
+        row.certificate_filename = filename
+        row.certificate_size = len(data)
+        row.certificate_uploaded_at = datetime.utcnow()
+        db.flush()
     audit.record(
         db, "payout_certificate_uploaded",
         event_id=row.event_id, user_id=user_id,

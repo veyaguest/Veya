@@ -183,6 +183,15 @@ def save_payout_account(
     את הטופס בכמה פעימות בלי שכל שמירה תפתח בדיקה חדשה.
     """
     ip = request.client.host if request.client else None
+
+    # אישור ניהול חשבון הוא שדה חובה בשמירה **הראשונה**. הבדיקה נעשית
+    # כאן, לפני כל כתיבה, ולא אחריה: מאז ששורת החשבון נכתבת למסד מיד
+    # (ראו payout_service._get_or_create), דחייה מאוחרת הייתה עלולה
+    # להשאיר אחריה שורה חלקית. בעדכון של חשבון קיים אפשר כמובן לשנות
+    # מספר בלי להעלות מחדש את אותו אישור.
+    if not payload.certificate and payout_service.get(db, event.id) is None:
+        raise HTTPException(status_code=422, detail="צריך לצרף אישור ניהול חשבון")
+
     try:
         row, creating = payout_service.save_details(
             db, event.id,
@@ -194,22 +203,26 @@ def save_payout_account(
     except payout_service.PayoutLocked as exc:
         # קלט תקין, מצב שאינו מאפשר — 409 ולא 422.
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except payout_service.PayoutWriteFailed as exc:
+        # לא הקלט אשם: המסד לא קיבל את הכתיבה. 500 עם נוסח ברור, ולא
+        # שגיאת ולידציה שתשלח את הזוג לחפש טעות בטופס שאין בו טעות.
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     except payout_service.PayoutError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     if payload.certificate:
         raw, content_type = _parse_certificate(payload.certificate)
-        payout_service.attach_certificate(
-            db, row,
-            data=raw, content_type=content_type,
-            filename=_certificate_filename(content_type),
-            user_id=user.id, ip=ip,
-        )
-    elif creating:
-        # אישור ניהול חשבון הוא שדה חובה בטופס. בעדכון של חשבון קיים אפשר
-        # לשנות מספר בלי להעלות מחדש את אותו אישור — אבל שמירה ראשונה בלי
-        # אישור כלל אינה תקינה.
-        raise HTTPException(status_code=422, detail="צריך לצרף אישור ניהול חשבון")
+        try:
+            payout_service.attach_certificate(
+                db, row,
+                data=raw, content_type=content_type,
+                filename=_certificate_filename(content_type),
+                user_id=user.id, ip=ip,
+            )
+        except payout_service.PayoutLocked as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except payout_service.PayoutWriteFailed as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     db.flush()
     db.commit()

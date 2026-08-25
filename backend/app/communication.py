@@ -144,6 +144,7 @@ def _scheduled_moment(day: date, send_time: str) -> datetime:
 # היום — אין פיצ'ר מתנות באשראי בנוי (roadmap.md).
 VARIABLE_KEYS: list[str] = [
     "guest_name", "guest_names", "host_names", "event_type",
+    "event_type_definite",
     "event_date", "event_time", "venue_name", "address",
     "navigation_link", "rsvp_link", "table_number", "gift_link",
 ]
@@ -174,7 +175,10 @@ DEFAULT_VARIABLES_SUPPORTED: dict[str, list[str]] = {
     # · בלי ``event_date``: בשלב הזה התאריך שבאירוע יכול להיות עדיין הישן
     #   *או* כבר החדש, תלוי מתי הזוג שולח. משתנה שמשמעותו משתנה לפי תזמון
     #   הוא בדיוק הדרך לשלוח לאורחים תאריך שגוי.
-    POSTPONEMENT: ["guest_name", "guest_names", "host_names", "event_type", "venue_name"],
+    POSTPONEMENT: [
+        "guest_name", "guest_names", "host_names",
+        "event_type", "event_type_definite", "venue_name",
+    ],
 }
 
 
@@ -208,6 +212,9 @@ def communication_values(event: models.Event, guest: Optional[models.Guest] = No
         "groom_name": event.groom_name or "",
         "bride_name": event.bride_name or "",
         "event_type": terms.celebration,
+        # צורה מיודעת, לשימוש כנושא: "החתונה שלנו נדחתה". ``event_type``
+        # הסתמי נשאר כפי שהוא — הוא בטוח אחרי ל/ב ("לחתונה", "בחתונה").
+        "event_type_definite": terms.celebration_definite or terms.celebration,
         "event_date": automation.event_date_display(event),
         "event_time": event.event_time or "",
         "venue_name": event.venue_name or "",

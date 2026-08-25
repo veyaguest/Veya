@@ -39,9 +39,22 @@ def record(
     היה נכשל בעקבותיה. ה-SAVEPOINT מבטיח שכשל בכתיבת היומן בלבד לא "מרעיל"
     את שאר הטרנזקציה — בדיוק מה שהתיעוד למעלה כבר הבטיח ("לעולם לא מפיל את
     הבקשה") אבל לא קיים בפועל.
+
+    ‼️ **ה-SAVEPOINT חייב להכיל את כתיבת היומן ותו לא.** ה-``db.execute``
+    שלמטה מפעיל autoflush, וללא ``no_autoflush`` הוא היה גורר לתוך
+    ה-SAVEPOINT כל שינוי ORM ממתין של הקורא. אז כשל בכתיבת היומן היה
+    מגלגל אחורה גם את העבודה האמיתית — בשקט, כי היא נבלעת כאן — וה-ORM
+    היה נשאר עם אובייקט "persistent" שאין לו שורה במסד. ה-``UPDATE`` הבא
+    עליו מוצא 0 שורות, וזו הייתה התקלה בייצור:
+
+        UPDATE statement ... expected to update 1 row(s); 0 were matched
+        → PendingRollbackError בבקשה שאחריה
+
+    ב-SQLite זה לא נראה, כי SAVEPOINT שם כמעט חסר-משמעות (מגבלה ידועה של
+    pysqlite) — ולכן הבאג התגלה רק מול Postgres.
     """
     try:
-        with db.begin_nested():
+        with db.begin_nested(), db.no_autoflush:
             if IS_POSTGRES:
                 db.execute(
                     text(

@@ -81,6 +81,11 @@ class EventTerms:
     celebration_construct: str  # "חתונת" / "בר המצווה של"
     hosts: str                  # "בני הזוג"
     emoji: str
+    # צורה מיודעת ("החתונה", "אירוע בר המצווה") — לשימוש כנושא במשפט:
+    # "החתונה שלנו נדחתה". **לא** נגזרת מ-``celebration`` בהוספת ה' אוטומטית:
+    # ב"אירוע בר המצווה" הידוע כבר בפנים, ו"האירוע בר המצווה" הוא עברית שבורה.
+    # לכן כל סוג מצהיר על הצורה שלו במפורש.
+    celebration_definite: str = ""
     has_two_hosts: bool = True  # שני בעלי אירוע (חתן+כלה) — תואם ל-hasTwoHosts ב-eventTypes.ts
     host_field_label: str = "שם החתן"      # תווית שדה השם הראשון — תואם ל-hostAField
     host_b_field_label: str = "שם הכלה"    # תווית שדה השם השני — תואם ל-hostBField
@@ -104,6 +109,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         type="wedding",
         label="חתונה",
         celebration="חתונה",
+        celebration_definite="החתונה",
         celebration_construct="חתונת",
         hosts="בני הזוג",
         display_title="החתונה של {hosts}",
@@ -113,6 +119,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         type="bar_mitzvah",
         label="בר מצווה",
         celebration="אירוע בר המצווה",
+        celebration_definite="אירוע בר המצווה",
         celebration_construct="בר המצווה של",
         hosts="החוגג",
         display_title="בר המצווה של {hosts}",
@@ -129,6 +136,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         type="bat_mitzvah",
         label="בת מצווה",
         celebration="אירוע בת המצווה",
+        celebration_definite="אירוע בת המצווה",
         celebration_construct="בת המצווה של",
         hosts="החוגגת",
         display_title="בת המצווה של {hosts}",
@@ -145,6 +153,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         type="henna",
         label="חינה",
         celebration="חינה",
+        celebration_definite="החינה",
         celebration_construct="חינת",
         hosts="בני הזוג",
         display_title="החינה של {hosts}",
@@ -155,6 +164,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         type="brit",
         label="ברית",
         celebration="אירוע ברית",
+        celebration_definite="אירוע הברית",
         celebration_construct="ברית של",
         hosts="המשפחה",
         display_title="הברית של {hosts}",
@@ -171,6 +181,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         type="brita",
         label="בריתה",
         celebration="אירוע בריתה",
+        celebration_definite="אירוע הבריתה",
         celebration_construct="בריתה של",
         hosts="המשפחה",
         display_title="הבריתה של {hosts}",
@@ -187,6 +198,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         type="business",
         label="אירוע עסקי",
         celebration="אירוע",
+        celebration_definite="האירוע",
         celebration_construct="אירוע של",
         hosts="המארגנים",
         display_title="האירוע של {hosts}",

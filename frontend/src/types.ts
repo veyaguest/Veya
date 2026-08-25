@@ -1123,6 +1123,7 @@ export const COMMUNICATION_VARIABLES: { key: string; label: string }[] = [
   { key: 'guest_names', label: 'שמות האורחים' },
   { key: 'host_names', label: 'שמות בעלי האירוע' },
   { key: 'event_type', label: 'סוג האירוע' },
+  { key: 'event_type_definite', label: 'סוג האירוע (מיודע)' },
   { key: 'event_date', label: 'תאריך האירוע' },
   { key: 'event_time', label: 'שעת האירוע' },
   { key: 'venue_name', label: 'שם האולם' },
