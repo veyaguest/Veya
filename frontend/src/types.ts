@@ -557,6 +557,62 @@ export interface EventDetails {
   rsvp_send_time: string
   // שעת שליחה נפרדת להודעת התודה — אותו טווח, עצמאית מהמסלול.
   thank_you_send_time: string
+  // ---- נוהל דחייה ----
+  // מחזור האירוע. 1 = האירוע המקורי; 2 ומעלה = אחרי דחייה.
+  cycle_number: number
+  // באיזה שלב האירוע נמצא. מחושב בשרת (app/postponement_service.py) —
+  // המסך מציג את מה שהשרת אומר ואינו מסיק מצב בעצמו.
+  event_stage: EventStage
+  // האם פרטי הליבה נעולים כרגע לעריכה.
+  edit_locked: boolean
+  // אילו שדות נעולים — המסך מציג בדיוק אותם כקריאה-בלבד ולא מנחש.
+  locked_fields: string[]
+}
+
+// חמשת מצבי האירוע (מקור: app/postponement_service.py, STAGE_*).
+export type EventStage =
+  | 'normal'          // אירוע פעיל, פרטי הליבה נעולים
+  | 'requested'       // בקשת דחייה ממתינה לאישור
+  | 'open'            // נוהל דחייה פעיל, עדיין בלי תאריך חדש
+  | 'new_date_set'    // נוהל דחייה פעיל, התאריך החדש כבר עודכן
+  | 'rsvp_reopened'   // מחזור חדש נפתח, טרם נשלחה הזמנה חדשה
+
+export type PostponementStatus = 'pending' | 'approved' | 'completed' | 'rejected'
+
+/** מצב נוהל הדחייה של האירוע. אין כאן תאריך חדש — הבקשה אינה מבקשת אותו. */
+export interface Postponement {
+  status: PostponementStatus | null
+  cycle_number: number
+  requested_at: string | null
+  reviewed_at: string | null
+  completed_at: string | null
+  rejection_reason: string | null
+  previous_event_date: string
+  previous_event_time: string
+  can_request: boolean
+  can_complete: boolean
+}
+
+/** בקשת דחייה אחת בתור של האדמין. */
+export interface PostponementReviewRow {
+  request_id: number
+  event_id: number
+  event_title: string
+  event_type: EventType
+  cycle_number: number
+  owner_name: string
+  owner_email: string
+  requested_by_name: string
+  event_date: string
+  event_time: string
+  venue_name: string
+  guests_total: number
+  guests_confirmed: number
+  status: PostponementStatus
+  requested_at: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
+  rejection_reason: string | null
 }
 
 export interface VenueSuggestion {
@@ -1042,6 +1098,9 @@ export type MessageType =
   | 'final_reminder'
   | 'event_day'
   | 'thank_you'
+  // מותנה: מופיע רק בזמן נוהל דחייה פעיל, ולכן **אינו** ב-MESSAGE_TYPES
+  // למטה (שהוא הרצף הקבוע). ראו backend/app/communication.py.
+  | 'postponement'
 
 // הסדר הקבוע להצגה (תואם ל-backend/app/communication.py: MESSAGE_TYPES).
 export const MESSAGE_TYPES: MessageType[] = [
@@ -1106,6 +1165,16 @@ export interface CommunicationDue {
 export interface CommunicationDueQueue {
   actions: CommunicationDue[]
   mode: string
+}
+
+/** תוצאת שליחה ידנית — כולל מי דולג ולמה, כדי שהזוג יידע מה קרה בפועל. */
+export interface ManualSendResult {
+  mode: string
+  sent: number
+  failed: number
+  /** מוזמנים ללא מספר טלפון תקין — לא נשלחה אליהם הודעה. */
+  skipped_no_phone: number
+  detail: string | null
 }
 
 export interface CommunicationSendResult {
@@ -1325,7 +1394,11 @@ export const MESSAGE_TYPE_ICONS: Record<MessageType, string> = {
   final_reminder: '⏰',
   event_day: '🎉',
   thank_you: '❤️',
+  postponement: '🟠',
 }
+
+/** סוגי הודעה שהזוג שולח ידנית (ולא לפי לוח זמנים). */
+export const MANUAL_SEND_TYPES: MessageType[] = ['postponement']
 
 // ספירה מקדימה לדיאלוג האישור לפני שליחת הזמנות ידנית.
 export interface InvitationSendPreview {

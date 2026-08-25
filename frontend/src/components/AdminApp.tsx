@@ -29,6 +29,7 @@ import type {
 import { AdminCallCenter } from './AdminCallCenter'
 import { AdminCallers } from './AdminCallers'
 import { AdminPayoutReview } from './AdminPayoutReview'
+import { AdminPostponements } from './AdminPostponements'
 import { CreateAccountForm, MessageDefaultOptionsManager, MessageDefaultsManager } from './AdminPage'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 import { Footer } from './Footer'
@@ -41,6 +42,7 @@ type AdminPage =
   | 'events'
   | 'venues'
   | 'payout'
+  | 'postpone'
   | 'messages'
   | 'audit'
 
@@ -51,6 +53,7 @@ const ADMIN_PAGE_TITLES: Record<AdminPage, string> = {
   events: 'ניהול אירועים',
   venues: 'מאגר האולמות',
   payout: 'בדיקת פרטי קבלת מתנות',
+  postpone: 'נוהל דחייה',
   messages: 'הודעות ומסלול אישורים',
   audit: 'יומן פעולות',
 }
@@ -62,6 +65,7 @@ const ADMIN_NAV: { key: AdminPage; label: string }[] = [
   { key: 'events', label: 'אירועים' },
   { key: 'venues', label: 'אולמות' },
   { key: 'payout', label: 'קבלת מתנות' },
+  { key: 'postpone', label: 'נוהל דחייה' },
   { key: 'messages', label: 'הודעות ומסלול' },
   { key: 'audit', label: 'יומן פעולות' },
 ]
@@ -1730,6 +1734,7 @@ export function AdminApp({
           {page === 'events' && <AdminEventsView onImpersonate={onImpersonate} />}
           {page === 'venues' && <AdminVenuesView />}
           {page === 'payout' && <AdminPayoutReview />}
+          {page === 'postpone' && <AdminPostponements />}
           {page === 'messages' && (
             <>
               <MessageDefaultsManager />

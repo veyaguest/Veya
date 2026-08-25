@@ -20,6 +20,7 @@ import type {
 import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { AddGuestForm } from './AddGuestForm'
+import './PostponeDialog.css'
 import { CommunicationTab } from './CommunicationTab'
 import { ImportDialog } from './ImportDialog'
 import { MessageLibrary } from './MessageLibrary'
@@ -113,6 +114,8 @@ type SendPhase = 'idle' | 'confirm' | 'sending' | 'summary'
 
 function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => void }) {
   const [track, setTrack] = useState<RsvpTrackStatus | null>(null)
+  // נטען רק כדי לדעת אם זו הזמנה ראשונה או הזמנה חדשה אחרי דחייה.
+  const [event, setEvent] = useState<EventDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   // כמה מוזמנים חדשים (עם טלפון תקין) עדיין לא קיבלו הזמנה — מזין את הבאנר.
@@ -130,6 +133,7 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
   const load = useCallback(async () => {
     setError('')
     try {
+      getEvent().then(setEvent).catch(() => undefined)
       const status = await getRsvpTrack()
       if (status.active) {
         const [, p] = await Promise.all([advanceRsvpTrack(), previewSend()])
@@ -237,6 +241,17 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
       </p>
 
       {error && <p className="form-error">{error}</p>}
+
+      {/* אחרי דחייה: אותו אשף בדיוק, אבל הזוג צריך לדעת שההזמנה שתצא היא
+          החדשה — עם התאריך המעודכן — ולא הזמנה ראשונה. */}
+      {!active && (event?.cycle_number ?? 1) > 1 && (
+        <div className="postpone-send">
+          <strong className="postpone-send-title">
+            💌 {strings.postpone.newInviteTitle}
+          </strong>
+          <p className="postpone-send-body">{strings.postpone.newInviteBody}</p>
+        </div>
+      )}
 
       {!active ? (
         /* לפני שליחה ראשונה — אשף מודרך: עיצוב → מוזמנים → שליחה. */

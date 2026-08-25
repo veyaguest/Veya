@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { getEvent, getPayoutAccount, getStats, mediaUrl, updateEvent } from '../api'
-import type { DashboardStats, EventDetails, PayoutAccount } from '../types'
+import {
+  getEvent,
+  getPayoutAccount,
+  getPostponement,
+  getStats,
+  mediaUrl,
+  updateEvent,
+} from '../api'
+import type {
+  DashboardStats,
+  EventDetails,
+  PayoutAccount,
+  Postponement,
+} from '../types'
 import type { ReadinessPage } from '../readiness'
 import {
   payoutDisplayStatus,
@@ -8,11 +20,15 @@ import {
   type PayoutDisplayStatus,
 } from '../payoutState'
 import { ActivityLog } from './ActivityLog'
+import { EventStateBanner } from './EventStateBanner'
 import { PartnerCta } from './PartnerCta'
+import { PostponeFinishDialog, PostponeRequestDialog } from './PostponeDialog'
 import { VenueAutocomplete } from './VenueAutocomplete'
+import { TimePicker } from './TimePicker'
 import { getEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import './CallFeed.css'
+import './PostponeDialog.css'
 
 interface Props {
   // ניווט למסך אחר (מוזמנים / מפת אולם) — עבור הבאנר וכרטיס ההושבה.
@@ -20,6 +36,7 @@ interface Props {
 }
 
 const t = strings.dashboard
+const tp = strings.postpone
 
 /** מקטין את font-size של הרכיב עד שהטקסט (בשורה אחת) נכנס בדיוק ברוחב
  * הזמין לו — כדי שהשם המלא תמיד יוצג (אף פעם לא נחתך ב-"…"), גם באייפון
@@ -274,6 +291,42 @@ function CountdownTimer({ date, time }: { date?: string; time?: string }) {
   )
 }
 
+/**
+ * שדה שנעול או פתוח לפי מצב האירוע.
+ *
+ * כשהוא נעול הוא מוצג כערך ולא כתיבה — לא input מושבת. שדה אפור שאי אפשר
+ * להקליד בו נראה כמו תקלה; ערך עם מנעול לצידו נראה כמו החלטה.
+ */
+function LockableInput({
+  locked,
+  placeholder,
+  value,
+  onChange,
+}: {
+  locked: boolean
+  placeholder: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  if (locked) return <LockedValue text={value} />
+  return (
+    <input
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  )
+}
+
+function LockedValue({ text }: { text: string }) {
+  return (
+    <span className="locked-value" title={strings.postpone.lockedFieldHint}>
+      <span className="locked-value-icon" aria-hidden="true">🔒</span>
+      <span className="locked-value-text">{text || '—'}</span>
+    </span>
+  )
+}
+
 export function DashboardPage({ onNavigate }: Props) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [event, setEvent] = useState<EventDetails | null>(null)
@@ -295,12 +348,25 @@ export function DashboardPage({ onNavigate }: Props) {
   // פרטי קבלת המתנות — עבור התזכורת בלבד. ``null`` כשאין הרשאה (הנתיב
   // פתוח לבעלים בלבד) או כשהקריאה נכשלה, ואז פשוט אין תזכורת.
   const [payout, setPayout] = useState<PayoutAccount | null>(null)
+  // ---- נוהל דחייה ----
+  // ``postpone`` נטען לצד האירוע ומשמש רק להצגת סיבת דחייה ולכפתור "פתיחת
+  // מחזור חדש". **מצב האירוע עצמו מגיע מ-``event.event_stage``** — מקור
+  // אמת אחד בשרת, לא הרכבה מחדש כאן.
+  const [postpone, setPostpone] = useState<Postponement | null>(null)
+  const [postponeDialog, setPostponeDialog] = useState<'request' | 'finish' | null>(null)
 
   const refresh = useCallback(async () => {
     try {
-      const [s, e] = await Promise.all([getStats(), getEvent()])
+      const [s, e, p] = await Promise.all([
+        getStats(),
+        getEvent(),
+        // נכשל בשקט למי שאינו בעלים (הנתיב owner-only) — ואז פשוט אין
+        // אזור נוהל דחייה, בלי לשבור את הדשבורד.
+        getPostponement().catch(() => null),
+      ])
       setStats(s)
       setEvent(e)
+      setPostpone(p)
       setForm({
         groom_name: e.groom_name,
         bride_name: e.bride_name,
@@ -338,15 +404,28 @@ export function DashboardPage({ onNavigate }: Props) {
     setError('')
     try {
       const payload: Parameters<typeof updateEvent>[0] = {
-        groom_name: form.groom_name,
-        bride_name: form.bride_name,
         venue_name: form.venue_name,
         venue_address: form.venue_address,
-        event_date: form.event_date,
-        event_time: form.event_time,
         invite_image: form.invite_image,
       }
-      // את מועד סגירת הרשימה שולחים רק כשנבחר וטרם ננעל — הבחירה חד-פעמית ובלתי-הפיכה.
+      // שדות הליבה נשלחים רק כשמותר לגעת בהם: כשהאירוע פתוח לעריכה, או
+      // כשהשדה עדיין ריק (כתיבה ראשונה). השרת אוכף את אותו כלל בעצמו —
+      // כאן זה רק כדי לא לשלוח בקשה שידוע מראש שתיכשל.
+      const canEdit = (key: string, current: string) =>
+        !locked || !current.trim() || !lockedFields.has(key)
+      if (canEdit('groom_name', event?.groom_name ?? '')) {
+        payload.groom_name = form.groom_name
+      }
+      if (canEdit('bride_name', event?.bride_name ?? '')) {
+        payload.bride_name = form.bride_name
+      }
+      if (canEdit('event_date', event?.event_date ?? '')) {
+        payload.event_date = form.event_date
+      }
+      if (canEdit('event_time', event?.event_time ?? '')) {
+        payload.event_time = form.event_time
+      }
+      // את מועד סגירת הרשימה שולחים רק כשנבחר וטרם ננעל — הבחירה חד-פעמית.
       if (!commitLocked && form.venue_commit_days_before !== '') {
         payload.venue_commit_days_before = form.venue_commit_days_before
       }
@@ -378,6 +457,21 @@ export function DashboardPage({ onNavigate }: Props) {
     reader.readAsDataURL(file)
   }
 
+  // ---- נעילת פרטי האירוע ----
+  // שתי השורות האלה הן כל מה שהמסך יודע על הנעילה. הן מגיעות מהשרת
+  // (``GET /event``) ולא מחושבות כאן — האכיפה האמיתית ממילא ב-``PATCH /event``,
+  // וזה רק מה שמוצג.
+  const locked = event?.edit_locked !== false
+  const lockedFields = useMemo(
+    () => new Set(event?.locked_fields ?? []),
+    [event?.locked_fields],
+  )
+  /** האם השדה הזה נעול *עכשיו* — שדה ריק תמיד ניתן למילוי ראשון. */
+  const isLocked = (key: string, current: string | undefined) =>
+    locked && lockedFields.has(key) && !!(current || '').trim()
+
+  const stage = event?.event_stage ?? 'normal'
+
   // מנוע המונחים לפי סוג האירוע — קובע תוויות שדות, כותרת ותווית ההזמנה.
   const terms = getEventTerms(event?.event_type)
 
@@ -396,17 +490,21 @@ export function DashboardPage({ onNavigate }: Props) {
       <div className="dash-hero-section">
         {editing ? (
           <div className="event-edit">
+            {locked && <p className="locked-note">{tp.lockedNote}</p>}
+
             <div className="event-fields">
-              <input
+              <LockableInput
+                locked={isLocked('groom_name', event?.groom_name)}
                 placeholder={terms.hostAField}
                 value={form.groom_name}
-                onChange={(e) => setForm({ ...form, groom_name: e.target.value })}
+                onChange={(v) => setForm({ ...form, groom_name: v })}
               />
               {terms.hasTwoHosts && (
-                <input
+                <LockableInput
+                  locked={isLocked('bride_name', event?.bride_name)}
                   placeholder={terms.hostBField}
                   value={form.bride_name}
-                  onChange={(e) => setForm({ ...form, bride_name: e.target.value })}
+                  onChange={(v) => setForm({ ...form, bride_name: v })}
                 />
               )}
               <VenueAutocomplete
@@ -434,26 +532,31 @@ export function DashboardPage({ onNavigate }: Props) {
             <div className="event-datetime">
               <label className="field-group">
                 <span className="field-label">{t.dateLabel}</span>
-                <input
-                  type="date"
-                  value={form.event_date}
-                  onChange={(e) =>
-                    setForm({ ...form, event_date: e.target.value })
-                  }
-                  onClick={(e) => e.currentTarget.showPicker?.()}
-                />
+                {isLocked('event_date', event?.event_date) ? (
+                  <LockedValue text={form.event_date} />
+                ) : (
+                  <input
+                    type="date"
+                    value={form.event_date}
+                    onChange={(e) =>
+                      setForm({ ...form, event_date: e.target.value })
+                    }
+                    onClick={(e) => e.currentTarget.showPicker?.()}
+                  />
+                )}
               </label>
-              <label className="field-group">
+              <div className="field-group">
                 <span className="field-label">{t.timeLabel}</span>
-                <input
-                  type="time"
-                  value={form.event_time}
-                  onChange={(e) =>
-                    setForm({ ...form, event_time: e.target.value })
-                  }
-                  onClick={(e) => e.currentTarget.showPicker?.()}
-                />
-              </label>
+                {isLocked('event_time', event?.event_time) ? (
+                  <LockedValue text={form.event_time} />
+                ) : (
+                  <TimePicker
+                    value={form.event_time}
+                    onChange={(time) => setForm({ ...form, event_time: time })}
+                    ariaLabel={t.timeLabel}
+                  />
+                )}
+              </div>
             </div>
 
             {/* ---- מועד סגירת הרשימה — בחירה חד-פעמית ובלתי-הפיכה ---- */}
@@ -536,6 +639,23 @@ export function DashboardPage({ onNavigate }: Props) {
                 {strings.common.cancel}
               </button>
             </div>
+
+            {/* "האירוע נדחה?" — הדרך היחידה לפתוח את פרטי הליבה. מוצג רק
+                כשהאירוע באמת נעול וכשאין כבר בקשה פתוחה, כדי שלא יציע
+                לזוג לעשות משהו שהוא כבר עשה. */}
+            {locked && postpone?.can_request && (
+              <div className="postpone-entry">
+                <strong className="postpone-entry-title">{tp.entryTitle}</strong>
+                <p className="postpone-entry-body">{tp.entryBody}</p>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => setPostponeDialog('request')}
+                >
+                  {tp.entryCta}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="dash-hero-bento">
@@ -601,6 +721,45 @@ export function DashboardPage({ onNavigate }: Props) {
       </div>
 
       {error && <p className="form-error">{error}</p>}
+
+      {/* מצב האירוע — מוצג רק כשיש מה לומר (אירוע רגיל לא מקבל באנר).
+          הפעולה הבאה נשלחת פנימה, כדי שהמשתמש תמיד יראה "מה עכשיו". */}
+      <EventStateBanner
+        stage={stage}
+        postponement={postpone}
+        action={
+          postpone?.can_complete ? (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => setPostponeDialog('finish')}
+            >
+              {tp.finishCta}
+            </button>
+          ) : stage === 'open' ? (
+            <span className="ev-state-hint">{tp.finishNeedsDate}</span>
+          ) : null
+        }
+      />
+
+      {postponeDialog === 'request' && (
+        <PostponeRequestDialog
+          onDone={(p) => setPostpone(p)}
+          onClose={() => {
+            setPostponeDialog(null)
+            refresh()
+          }}
+        />
+      )}
+      {postponeDialog === 'finish' && (
+        <PostponeFinishDialog
+          onDone={(p) => setPostpone(p)}
+          onClose={() => {
+            setPostponeDialog(null)
+            refresh()
+          }}
+        />
+      )}
 
       {/* "מנהלים את האירוע יחד?" — מוצג רק כשאין עדיין בן/בת זוג ואין הזמנה
           פתוחה. הרכיב מחליט על עצמו ונעלם לבד ברגע שיש שותף/ה. */}

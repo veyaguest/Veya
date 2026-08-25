@@ -1,0 +1,213 @@
+/* ============================================================================
+   נוהל דחייה — באנר המצב, שדות נעולים, והדיאלוגים.
+
+   טון ויזואלי: **רגוע, לא אזהרה.** אירוע שנדחה זה מצב לחוץ ממילא, ולכן אין
+   כאן אדום, אין משולשי אזהרה, ואין מסגרות עבות. כתום מאופק אחד (הכתום של
+   "אירוע נדחה" בניהול ההודעות) מסמן "משהו פתוח", וזהו.
+   ========================================================================= */
+
+:root {
+  /* כתום חם ומאופק — נגזר מפלטת הזהב של VEYA כדי שלא ייראה כמו התראת מערכת. */
+  --postpone: #c47f2a;
+  --postpone-soft: #fdf3e6;
+}
+
+/* ---- באנר מצב האירוע ---- */
+
+.ev-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin: 0 0 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--cream);
+  box-shadow: var(--shadow-card);
+}
+.ev-state-open {
+  border-color: rgba(196, 127, 42, 0.32);
+  background: var(--postpone-soft);
+}
+.ev-state-wait {
+  border-color: var(--line);
+  background: var(--surface-hi);
+}
+.ev-state-done {
+  border-color: rgba(47, 158, 95, 0.28);
+  background: var(--cream);
+}
+.ev-state-quiet {
+  background: var(--surface-hi);
+}
+
+.ev-state-icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1.4;
+}
+.ev-state-text {
+  flex: 1;
+  min-width: 0;
+}
+.ev-state-title {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.ev-state-body {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--body);
+}
+.ev-state-action {
+  flex: 0 0 auto;
+  align-self: center;
+}
+.ev-state-hint {
+  display: block;
+  max-width: 220px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .ev-state {
+    flex-wrap: wrap;
+  }
+  .ev-state-action,
+  .ev-state-hint {
+    flex-basis: 100%;
+    max-width: none;
+    margin-top: 4px;
+  }
+}
+
+/* ---- שדה נעול ---- */
+
+/* הערה אחת מעל הטופס, לא חזרה על עצמה ליד כל שדה. */
+.locked-note {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--body);
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-s);
+}
+
+/* ערך מוצג, לא input מושבת — ראו ההערה ב-DashboardPage.tsx. */
+.locked-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  font-size: 15px;
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-s);
+}
+.locked-value-icon {
+  font-size: 12px;
+  opacity: 0.6;
+}
+.locked-value-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- הכניסה לנוהל, בתחתית טופס פרטי האירוע ---- */
+
+.postpone-entry {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-2);
+}
+.postpone-entry-title {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.postpone-entry-body {
+  margin: 6px 0 12px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--body);
+  max-width: 52ch;
+}
+
+/* ---- הדיאלוגים ---- */
+
+.postpone-dialog {
+  max-width: 460px;
+}
+.postpone-body {
+  margin: 0 0 14px;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--body);
+}
+.postpone-note {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--postpone-soft);
+  border: 1px solid rgba(196, 127, 42, 0.24);
+  border-radius: var(--radius-s);
+}
+.postpone-note strong {
+  font-size: 13.5px;
+  color: var(--charcoal);
+}
+.postpone-note span {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--body);
+}
+
+/* ---- שליחת הודעת דחייה (בניהול ההודעות) ---- */
+
+.postpone-send {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--postpone-soft);
+  border: 1px solid rgba(196, 127, 42, 0.24);
+  border-radius: var(--radius-m);
+}
+.postpone-send-title {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.postpone-send-body {
+  margin: 5px 0 12px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--body);
+}
+.postpone-send-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.postpone-send-row label {
+  font-size: 13px;
+  color: var(--muted);
+}
+.postpone-send-result {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--body);
+}

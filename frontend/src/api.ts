@@ -26,6 +26,11 @@ import type {
   Clarification,
   CommunicationDueQueue,
   CommunicationSendResult,
+  ManualSendResult,
+  MessageType,
+  Postponement,
+  PostponementReviewRow,
+  TargetAudience,
   ConfirmGuestPublic,
   ConfirmSubmit,
   GiftCheckoutResult,
@@ -1031,6 +1036,8 @@ export async function updateEvent(
       | 'venue_commit_days_before'
       | 'rsvp_send_time'
       | 'thank_you_send_time'
+      | 'groom_parents_line'
+      | 'bride_parents_line'
     >
   >,
 ): Promise<EventDetails> {
@@ -1038,6 +1045,81 @@ export async function updateEvent(
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- נוהל דחייה ----
+//
+// הבקשה עצמה **אינה מקבלת גוף** — אין תאריך חדש ואין מועד סגירת רשימה.
+// בשלב שבו זוג מבקש לדחות אירוע הוא לרוב עדיין לא יודע מתי הוא יתקיים.
+
+export async function getPostponement(): Promise<Postponement> {
+  const res = await apiFetch('/postpone')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function requestPostponement(): Promise<Postponement> {
+  const res = await apiFetch('/postpone', { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** סוגר את הנוהל ופותח מחזור אישורי-הגעה חדש. התשובות הקודמות עוברות לארכיון. */
+export async function completePostponement(): Promise<Postponement> {
+  const res = await apiFetch('/postpone/complete', { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function adminListPostponements(
+  scope: 'pending' | 'approved' = 'pending',
+): Promise<PostponementReviewRow[]> {
+  const res = await apiFetch(`/admin/postpone?scope=${scope}`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function adminApprovePostponement(
+  eventId: number,
+): Promise<PostponementReviewRow> {
+  const res = await apiFetch(`/admin/postpone/${eventId}/approve`, { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function adminRejectPostponement(
+  eventId: number,
+  reason: string,
+): Promise<PostponementReviewRow> {
+  const res = await apiFetch(`/admin/postpone/${eventId}/reject`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/**
+ * שליחה ידנית של הודעה לקהל נבחר (היום: "אירוע נדחה").
+ *
+ * ההזמנה **אינה** עוברת כאן — היא נשלחת דרך ``activateRsvpTrack``, שאוכף
+ * "הזמנה אחת בלבד לכל אורח".
+ */
+export async function sendMessageToGuests(
+  messageType: MessageType,
+  opts: { audience?: TargetAudience; guestIds?: number[] } = {},
+): Promise<ManualSendResult> {
+  const res = await apiFetch(`/communication/sequence/${messageType}/send`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      audience: opts.audience ?? 'all',
+      guest_ids: opts.guestIds ?? null,
+    }),
   })
   if (!res.ok) throw await toError(res)
   return res.json()

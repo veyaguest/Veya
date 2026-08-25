@@ -6,11 +6,20 @@ import {
   getMessageOptions,
   mediaUrl,
   previewCommunicationMessage,
+  sendMessageToGuests,
   updateCommunicationMessage,
 } from '../api'
-import type { EventDetails, EventMessage, MessageDefaultOption, MessageType } from '../types'
-import { MESSAGE_TYPE_ICONS } from '../types'
+import type {
+  EventDetails,
+  EventMessage,
+  MessageDefaultOption,
+  MessageType,
+  TargetAudience,
+} from '../types'
+import { MANUAL_SEND_TYPES, MESSAGE_TYPE_ICONS, TARGET_AUDIENCE_LABELS } from '../types'
 import { EVENT_TERMS } from '../strings/eventTypes'
+import { strings } from '../strings/he'
+import './PostponeDialog.css'
 
 const STEP_ICON = MESSAGE_TYPE_ICONS
 
@@ -351,6 +360,13 @@ function MessagePanel({
         )}
 
         {note && <p className="gm2-note">{note}</p>}
+
+        {/* הודעות שנשלחות ידנית (היום: "אירוע נדחה") מקבלות כאן את פעולת
+            השליחה. הודעות הרצף לא — הן יוצאות לפי לוח הזמנים, ואין להן
+            כפתור "שלח עכשיו". */}
+        {MANUAL_SEND_TYPES.includes(message.message_type) && (
+          <ManualSendPanel message={message} />
+        )}
       </section>
 
       {/* במסך רחב התצוגה פשוט נמצאת שם, בגובה מלא — ולכן אין בה צורך בכפתור.
@@ -385,6 +401,72 @@ function MessagePanel({
           </div>,
           document.body,
         )}
+    </div>
+  )
+}
+
+/**
+ * שליחה ידנית של ההודעה לקהל נבחר.
+ *
+ * מוצג רק להודעות מ-``MANUAL_SEND_TYPES``. אין כאן dedup ואין "כבר נשלח":
+ * אם הזוג בחר לשלוח שוב הודעת דחייה — למשל אחרי שתיקן את הנוסח — זו
+ * הכוונה שלו. ההגנה מפני הזמנה כפולה שייכת למסלול ההזמנות, לא לכאן.
+ */
+function ManualSendPanel({ message }: { message: EventMessage }) {
+  const tp = strings.postpone
+  const [audience, setAudience] = useState<TargetAudience>('all')
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState('')
+  const [error, setError] = useState('')
+
+  const empty = !message.content.trim()
+
+  async function send() {
+    setBusy(true)
+    setError('')
+    setResult('')
+    try {
+      const r = await sendMessageToGuests(message.message_type, { audience })
+      const parts = [tp.messageSent(r.sent)]
+      if (r.skipped_no_phone > 0) parts.push(tp.messageSkipped(r.skipped_no_phone))
+      setResult(parts.join(' · '))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tp.messageError)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="postpone-send">
+      <strong className="postpone-send-title">{tp.messageTitle}</strong>
+      <p className="postpone-send-body">{tp.messageBody}</p>
+      <div className="postpone-send-row">
+        <label htmlFor="postpone-audience">{tp.messageAudience}</label>
+        <select
+          id="postpone-audience"
+          className="commit-select"
+          value={audience}
+          onChange={(e) => setAudience(e.target.value as TargetAudience)}
+        >
+          {(Object.keys(TARGET_AUDIENCE_LABELS) as TargetAudience[]).map((a) => (
+            <option key={a} value={a}>
+              {TARGET_AUDIENCE_LABELS[a]}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="gm2-btn gm2-btn-main"
+          disabled={busy || empty}
+          onClick={send}
+        >
+          {busy ? tp.messageSending : tp.messageSend}
+        </button>
+      </div>
+      {empty && <p className="postpone-send-result">{tp.messageNoContent}</p>}
+      {result && <p className="postpone-send-result">{result}</p>}
+      {error && <p className="form-error">{error}</p>}
     </div>
   )
 }
