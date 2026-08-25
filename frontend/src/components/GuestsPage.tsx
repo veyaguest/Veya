@@ -78,6 +78,9 @@ export function GuestsPage() {
   const [deleteBusy, setDeleteBusy] = useState(false)
   // עולה בכל טעינה מוצלחת — מפעיל טעינה מחדש של הצעות הקבוצה החכמות.
   const [refreshTick, setRefreshTick] = useState(0)
+  // אזור "הצעות לאיחוד" נפתח רק לפי דרישה — לא אוטומטית בכניסה לעמוד.
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [suggestionsCount, setSuggestionsCount] = useState(0)
   const fileInput = useRef<HTMLInputElement>(null)
 
   // טעינת העמוד הראשון (וגם רענון אחרי שינוי/חיפוש).
@@ -283,6 +286,9 @@ export function GuestsPage() {
         <button className="btn-ghost" onClick={() => setShowNotes(true)}>
           {t.notesButton}
         </button>
+        <button className="btn-ghost" onClick={() => setShowSuggestions(true)}>
+          {t.suggestionsButton(suggestionsCount)}
+        </button>
         <button className="btn-primary" onClick={() => setShowForm((s) => !s)}>
           {showForm ? t.closeForm : t.addGuestButton}
         </button>
@@ -468,6 +474,9 @@ export function GuestsPage() {
 
       <GroupSuggestions
         refreshToken={refreshTick}
+        open={showSuggestions}
+        onClose={() => setShowSuggestions(false)}
+        onCountChange={setSuggestionsCount}
         onApplied={(message) => {
           setToast(message)
           setTimeout(() => setToast(''), 4000)

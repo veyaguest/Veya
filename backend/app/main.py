@@ -199,6 +199,19 @@ _EXTRA_COLUMNS = {
         # מתעדכן (ראו models.CallLog.phone_at_call).
         "phone_at_call": "TEXT DEFAULT ''",
     },
+    "payout_accounts": {
+        # הטבלה נפרסה לייצור לפני שנוסף לה מסלול הסטטוסים. ברירת המחדל
+        # 'missing' רשומה כאן במפורש (ולא נסמכת על רשת הביטחון האוטומטית)
+        # כדי ששורות שכבר קיימות יקבלו סטטוס תקין ולא NULL — סטטוס NULL
+        # לא היה עובר את מכונת המצבים ב-payout_status.
+        "status": "TEXT DEFAULT 'missing'",
+        "submitted_at": "TIMESTAMP",
+        "status_changed_at": "TIMESTAMP",
+        "rejection_reason": "TEXT",
+        # שדות לספק עתידי — נוצרים ריקים ואין להם כותב היום.
+        "provider": "TEXT",
+        "provider_account_id": "TEXT",
+    },
 }
 
 

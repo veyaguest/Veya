@@ -12,13 +12,12 @@ from __future__ import annotations
 
 import base64
 import binascii
-from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session, undefer
 
-from app import audit, banks, models, schemas
+from app import banks, models, payout_service, payout_status, schemas
 from app.auth import get_current_owner
 from app.database import get_db
 from app.deps import EventAccess
@@ -53,9 +52,14 @@ def _mask(account_number: str) -> str:
 
 
 def _read(row: models.PayoutAccount | None) -> schemas.PayoutAccountRead:
-    """בונה את התשובה למסך. מספר החשבון המלא לעולם לא חוזר מכאן."""
+    """בונה את התשובה למסך. מספר החשבון המלא לעולם לא חוזר מכאן.
+
+    השדות ``provider``/``provider_account_id`` אינם מועתקים לתשובה
+    במכוון — ראו ``schemas.PayoutAccountRead``. המיפוי כאן מפורש
+    שדה-שדה, כך שעמודה חדשה בטבלה לא תזלוג אוטומטית ל-API.
+    """
     if row is None:
-        return schemas.PayoutAccountRead(configured=False)
+        return schemas.PayoutAccountRead(configured=False, status=payout_status.MISSING)
     bank = banks.BY_CODE.get(row.bank_code)
     cert = None
     if row.certificate_filename or row.certificate_size:
@@ -65,8 +69,16 @@ def _read(row: models.PayoutAccount | None) -> schemas.PayoutAccountRead:
             size=row.certificate_size,
             uploaded_at=row.certificate_uploaded_at,
         )
+    status = payout_service.current_status(row)
     return schemas.PayoutAccountRead(
         configured=True,
+        status=status,
+        # אפשר להגיש רק כשיש אישור, ורק מסטטוס שממנו ההגשה חוקית
+        # (``missing`` או ``rejected``) — אותו כלל שהשירות אוכף בפועל.
+        can_submit=bool(row.certificate_size)
+        and status in (payout_status.MISSING, payout_status.REJECTED),
+        rejection_reason=row.rejection_reason,
+        submitted_at=row.submitted_at,
         bank_code=row.bank_code,
         # אם קוד הבנק כבר לא ברשימה (בנק שהתמזג אחרי שהפרטים נשמרו) עדיין
         # מציגים את הקוד עצמו, ולא "לא ידוע" — הנתון תקף, רק השם חסר.
@@ -76,12 +88,6 @@ def _read(row: models.PayoutAccount | None) -> schemas.PayoutAccountRead:
         certificate=cert,
         updated_at=row.updated_at or row.created_at,
     )
-
-
-def _load(db: Session, event_id: int) -> models.PayoutAccount | None:
-    return db.scalars(
-        select(models.PayoutAccount).where(models.PayoutAccount.event_id == event_id)
-    ).first()
 
 
 def _parse_certificate(data_url: str) -> tuple[bytes, str]:
@@ -125,7 +131,7 @@ def get_payout_account(
     event: models.Event = Depends(_owner_only),
 ):
     """פרטי החשבון השמורים. מספר החשבון חוזר מוסתר בלבד."""
-    return _read(_load(db, event.id))
+    return _read(payout_service.get(db, event.id))
 
 
 @router.put("", response_model=schemas.PayoutAccountRead)
@@ -138,51 +144,71 @@ def save_payout_account(
 ):
     """שומר או מעדכן את פרטי החשבון.
 
-    כל השדות עוברים נרמול וולידציה בשרת (``app/banks.py``) — הבדיקות
-    בדפדפן הן נוחות למשתמש, לא שכבת אמת.
+    כל הכתיבה עוברת דרך ``payout_service`` — שם נאכפים הנרמול, ביטול
+    האימות בעת שינוי זהות החשבון, וכתיבת היומן. הנתיב עצמו לא נוגע
+    בשדות ישירות.
+
+    **שמירה אינה הגשה.** הפרטים נשמרים בסטטוס ``missing`` עד שבעלי
+    האירוע מגישים אותם במפורש (``POST /payout/submit``) — כך אפשר למלא
+    את הטופס בכמה פעימות בלי שכל שמירה תפתח בדיקה חדשה.
     """
+    ip = request.client.host if request.client else None
     try:
-        bank_code = banks.normalize_bank_code(payload.bank_code)
-        branch = banks.normalize_branch(payload.branch_number)
-        account = banks.normalize_account(payload.account_number)
-    except banks.BranchError as exc:
+        row, creating = payout_service.save_details(
+            db, event.id,
+            bank_code=payload.bank_code,
+            branch_number=payload.branch_number,
+            account_number=payload.account_number,
+            user_id=user.id, ip=ip,
+        )
+    except payout_service.PayoutError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    row = _load(db, event.id)
-    creating = row is None
-    if row is None:
-        row = models.PayoutAccount(event_id=event.id)
-        db.add(row)
-
-    row.bank_code = bank_code
-    row.branch_number = branch
-    row.account_number = account
 
     if payload.certificate:
         raw, content_type = _parse_certificate(payload.certificate)
-        row.certificate_data = raw
-        row.certificate_content_type = content_type
-        row.certificate_filename = _certificate_filename(content_type)
-        row.certificate_size = len(raw)
-        row.certificate_uploaded_at = datetime.utcnow()
+        payout_service.attach_certificate(
+            db, row,
+            data=raw, content_type=content_type,
+            filename=_certificate_filename(content_type),
+            user_id=user.id, ip=ip,
+        )
     elif creating:
         # אישור ניהול חשבון הוא שדה חובה בטופס. בעדכון של חשבון קיים אפשר
         # לשנות מספר בלי להעלות מחדש את אותו אישור — אבל שמירה ראשונה בלי
         # אישור כלל אינה תקינה.
         raise HTTPException(status_code=422, detail="צריך לצרף אישור ניהול חשבון")
 
-    if creating:
-        db.flush()  # כדי ש-updated_at/created_at יהיו זמינים לתשובה
+    db.flush()
+    db.commit()
+    db.refresh(row)
+    return _read(row)
 
-    # ביומן נשמר רק שהפרטים עודכנו — לא הפרטים עצמם.
-    audit.record(
-        db,
-        "update_payout_account",
-        event_id=event.id,
-        user_id=user.id,
-        detail="עודכנו פרטי קבלת המתנות" if not creating else "נשמרו פרטי קבלת המתנות",
-        ip=request.client.host if request.client else None,
-    )
+
+@router.post("/submit", response_model=schemas.PayoutAccountRead)
+def submit_payout_account(
+    request: Request,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_owner_only),
+    user: models.User = Depends(get_current_owner),
+):
+    """מגיש את הפרטים לבדיקה: ``missing``/``rejected`` → ``submitted``.
+
+    **לא נשלח כאן מידע לשום גורם חיצוני.** אין פנייה לספק סליקה, אין KYC
+    ואין אימות בנק — ההגשה רק מסמנת שהפרטים מוכנים. הבדיקה עצמה ידנית
+    היום; חיבור ספק עתידי ייכנס ב-``payout_service`` בלבד, בלי לשנות את
+    הנתיב הזה.
+
+    המעבר ל-``verified`` **אינו** נגיש מכאן ולא מאף נתיב של בעלי האירוע —
+    מי שמזין את פרטי החשבון אינו מי שמאשר אותם.
+    """
+    try:
+        row = payout_service.submit(
+            db, event.id,
+            user_id=user.id,
+            ip=request.client.host if request.client else None,
+        )
+    except payout_service.PayoutError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     db.commit()
     db.refresh(row)
     return _read(row)

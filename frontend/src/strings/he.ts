@@ -604,6 +604,23 @@ export const strings = {
       openFailed: 'לא הצלחנו לפתוח את הקובץ, נסו שוב',
     },
 
+    // מסלול האימות: missing → submitted → under_review → verified/rejected.
+    // הנושא הדקדוקי הוא "הפרטים" (רבים, זכר).
+    statusLabels: {
+      missing: 'טרם הוגשו לאימות',
+      submitted: 'הוגשו — ממתינים לבדיקה',
+      under_review: 'בבדיקה',
+      verified: 'אומתו',
+      rejected: 'נדחו',
+    },
+    submitCta: 'הגשה לאימות',
+    submitHint: 'נבדוק את הפרטים ונעדכן אתכם. אפשר להמשיך לערוך עד ההגשה.',
+    submitting: 'שולח…',
+    submitted: 'הפרטים הוגשו לבדיקה',
+    submitError: 'לא הצלחנו להגיש את הפרטים, נסו שוב',
+    rejectedTitle: 'הפרטים נדחו',
+    underReviewNote: 'הפרטים אצלנו לבדיקה. עריכה תדרוש הגשה מחדש.',
+
     // בורר הבנק.
     bank: {
       placeholder: 'בחירת בנק',
@@ -764,6 +781,12 @@ export const strings = {
     suggestionCreating: 'יוצר…',
     suggestionCreateGroup: 'צור קבוצה',
     suggestionNotNow: 'לא עכשיו',
+    suggestionsButton: (count: number) =>
+      count > 0 ? `✨ הצעות לאיחוד · ${count}` : '✨ הצעות לאיחוד',
+    suggestionsTitle: '✨ הצעות לאיחוד',
+    suggestionsHint:
+      'מצאנו מוזמנים שעשויים להיות מאותה משפחה או כפילות ברשימה. כדאי לעבור על ההצעות ולאשר רק את האיחודים שמתאימים לך.',
+    suggestionsEmpty: 'אין כרגע הצעות לאיחוד.',
 
     // PasteImportDialog
     rowIssueNoName: 'חסר שם',

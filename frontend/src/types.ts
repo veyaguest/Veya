@@ -1561,8 +1561,16 @@ export type PayoutCertificate = {
  * ``account_number_masked`` בלבד — מספר החשבון המלא לעולם לא חוזר לדפדפן
  * (ראו backend/app/routers/payout.py). מי שרוצה לשנות מקליד מחדש.
  */
+/** missing → submitted → under_review → verified / rejected. */
+export type PayoutStatus = 'missing' | 'submitted' | 'under_review' | 'verified' | 'rejected'
+
 export type PayoutAccount = {
   configured: boolean
+  status: PayoutStatus
+  /** האם אפשר להגיש לבדיקה עכשיו — נקבע בשרת, לא מחושב כאן. */
+  can_submit: boolean
+  rejection_reason: string | null
+  submitted_at: string | null
   bank_code: number | null
   bank_name: string | null
   branch_number: string | null

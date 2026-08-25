@@ -1638,6 +1638,9 @@ td.notes.seating {
 .notes-dialog {
   max-width: 560px;
 }
+.suggestions-dialog {
+  max-width: 640px;
+}
 .confirm-dialog {
   max-width: 420px;
 }

@@ -272,3 +272,55 @@
   color: var(--body);
 }
 .payout-cancel:hover:not(:disabled) { border-color: var(--muted); }
+
+/* ---- סטטוס האימות ------------------------------------------------------
+   התג נשאר שקט בכוונה: זה מסך פיננסי, לא לוח בקרה. רק "נדחו" מקבל צבע
+   מתריע, כי הוא היחיד שדורש פעולה מיידית. */
+.payout-head-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.payout-badge {
+  flex: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-hi);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.payout-badge-submitted,
+.payout-badge-under_review {
+  border-color: rgba(var(--gold-rgb), 0.4);
+  color: var(--gold-deep);
+}
+.payout-badge-verified {
+  border-color: var(--green);
+  color: var(--green);
+}
+.payout-badge-rejected {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.payout-submit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+.payout-submit-inline {
+  flex: none;
+  align-self: flex-start;
+}
+.payout-submit-row .payout-hint { margin: 0; }
+.payout-review-note { margin-top: 14px; }
+
+/* במובייל הכפתור נפרש לכל הרוחב — יעד מגע, לא כפתור קטן בפינה. */
+@media (max-width: 559px) {
+  .payout-submit-inline { align-self: stretch; width: 100%; }
+}

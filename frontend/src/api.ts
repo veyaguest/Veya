@@ -905,6 +905,17 @@ export async function savePayoutAccount(input: PayoutAccountInput): Promise<Payo
 }
 
 /**
+ * מגיש את פרטי החשבון לבדיקה (missing/rejected → submitted).
+ *
+ * לא נשלח כאן מידע לאף גורם חיצוני — ההגשה רק מסמנת שהפרטים מוכנים.
+ */
+export async function submitPayoutAccount(): Promise<PayoutAccount> {
+  const res = await apiFetch('/payout/submit', { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/**
  * מוריד את אישור ניהול החשבון כ-Blob.
  *
  * למה לא פשוט ``<a href>``: הנתיב מאומת ודורש כותרת Authorization, שקישור

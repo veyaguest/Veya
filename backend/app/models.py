@@ -875,5 +875,24 @@ class PayoutAccount(Base):
     certificate_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     certificate_uploaded_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
+    # ── סטטוס האימות ─────────────────────────────────────────────────────
+    # missing → submitted → under_review → verified / rejected.
+    # המעברים המותרים מוגדרים ב-``app/payout_status.py`` ונאכפים אך ורק
+    # דרך ``payout_service`` — לא בהשמה ישירה לעמודה.
+    status: Mapped[str] = mapped_column(String(20), default="missing", nullable=False)
+    #: מתי הפרטים הוגשו לבדיקה בפעם האחרונה.
+    submitted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    #: מתי הסטטוס השתנה לאחרונה (לכל מעבר, לא רק להגשה).
+    status_changed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    #: סיבת הדחייה, כשהסטטוס ``rejected``. מוצג לבעלי האירוע.
+    rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # ── שדות לספק Payout עתידי ───────────────────────────────────────────
+    # **אינם בשימוש היום.** אף קוד לא כותב אליהם — הם קיימים כדי שחיבור
+    # ספק אמיתי בעתיד (ראו ``app/payout_provider.py``) לא ידרוש שינוי
+    # סכמה על טבלה שכבר יש בה נתונים אמיתיים.
+    provider: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    provider_account_id: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, onupdate=func.now())

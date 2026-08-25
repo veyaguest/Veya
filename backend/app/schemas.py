@@ -2046,9 +2046,20 @@ class PayoutAccountRead(BaseModel):
     ``account_number_masked`` הוא מה שמוצג אחרי שמירה: אין סיבה להחזיר
     לדפדפן את מספר החשבון המלא בכל טעינת מסך רק כדי להראות "שמור". מי
     שרוצה לשנות — מקליד מחדש.
+
+    **מה שבמפורש לא נמצא כאן:** ``provider`` ו-``provider_account_id``.
+    הם מידע תפעולי פנימי של VEYA מול ספק עתידי, ואינם עניינם של בעלי
+    האירוע — בדיוק כמו שעמלת השירות אינה מוחזרת במסך המתנות.
     """
 
     configured: bool
+    #: missing / submitted / under_review / verified / rejected
+    status: str
+    #: האם אפשר להגיש לבדיקה עכשיו (יש פרטים ואישור, והסטטוס מאפשר).
+    can_submit: bool = False
+    #: סיבת הדחייה, כשהסטטוס ``rejected``.
+    rejection_reason: Optional[str] = None
+    submitted_at: Optional[datetime] = None
     bank_code: Optional[int] = None
     bank_name: Optional[str] = None
     branch_number: Optional[str] = None

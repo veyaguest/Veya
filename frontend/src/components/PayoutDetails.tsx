@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { fetchPayoutCertificate, getPayoutAccount, savePayoutAccount } from '../api'
+import {
+  fetchPayoutCertificate,
+  getPayoutAccount,
+  savePayoutAccount,
+  submitPayoutAccount,
+} from '../api'
 import type { PayoutAccount } from '../types'
 import { strings } from '../strings/he'
 import { BankMark, BankSelect } from './BankSelect'
@@ -51,6 +56,7 @@ export function PayoutDetails() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [errors, setErrors] = useState<Errors>({})
 
@@ -148,6 +154,21 @@ export function PayoutDetails() {
     }
   }
 
+  /** הגשה לבדיקה. הכלל מי-רשאי-להגיש נאכף בשרת; כאן רק הפעולה. */
+  async function submitForReview() {
+    setNote(null)
+    setErrors({})
+    setSubmitting(true)
+    try {
+      setAccount(await submitPayoutAccount())
+      setNote(t.submitted)
+    } catch (err) {
+      setErrors({ form: err instanceof Error ? err.message : t.submitError })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   async function openCertificate() {
     // הלשונית נפתחת **מיד**, בתוך אירוע הלחיצה עצמו, ורק אחר כך מקבלת את
     // הכתובת. פתיחה אחרי ה-await הייתה מאבדת את הקשר לפעולת המשתמש, ורוב
@@ -182,11 +203,19 @@ export function PayoutDetails() {
           <h2 className="payout-title" id="payout-title">{t.title}</h2>
           <p className="payout-subtitle">{t.subtitle}</p>
         </div>
-        {!editing && (
-          <button type="button" className="payout-action" onClick={startEdit}>
-            {account?.configured ? t.editCta : t.addCta}
-          </button>
-        )}
+        <div className="payout-head-side">
+          {/* הסטטוס מגיע מהשרת ואינו מחושב כאן — ראו PayoutAccountRead. */}
+          {account && (
+            <span className={`payout-badge payout-badge-${account.status}`}>
+              {t.statusLabels[account.status]}
+            </span>
+          )}
+          {!editing && (
+            <button type="button" className="payout-action" onClick={startEdit}>
+              {account?.configured ? t.editCta : t.addCta}
+            </button>
+          )}
+        </div>
       </header>
 
       {note && <p className="payout-note" role="status">{note}</p>}
@@ -230,6 +259,27 @@ export function PayoutDetails() {
             <p className="payout-updated">{t.updatedAt(formatDate(account.updated_at))}</p>
           )}
         </dl>
+      )}
+
+      {/* הגשה לאימות — מוצגת רק כשהשרת אומר שאפשר. */}
+      {!editing && account?.can_submit && (
+        <div className="payout-submit-row">
+          <button type="button" className="payout-submit payout-submit-inline"
+                  onClick={submitForReview} disabled={submitting}>
+            {submitting ? t.submitting : t.submitCta}
+          </button>
+          <p className="payout-hint">{t.submitHint}</p>
+        </div>
+      )}
+
+      {!editing && account?.status === 'rejected' && account.rejection_reason && (
+        <p className="payout-error" role="alert">
+          <strong>{t.rejectedTitle}:</strong> {account.rejection_reason}
+        </p>
+      )}
+
+      {!editing && (account?.status === 'submitted' || account?.status === 'under_review') && (
+        <p className="payout-hint payout-review-note">{t.underReviewNote}</p>
       )}
 
       {editing && (
