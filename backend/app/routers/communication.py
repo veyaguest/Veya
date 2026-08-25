@@ -105,7 +105,13 @@ def get_message_options(
 ):
     """נוסחים מוכנים לבחירה עבור ההודעה הזו וסוג האירוע — לקריאה בלבד. הבחירה
     בפועל (שימוש בנוסח) מתבצעת בצד הלקוח: מעתיקים את ``content`` הנבחר לתוך
-    הטקסטרה של ``PUT /sequence/{message_type}``, בדיוק כמו עריכה חופשית."""
+    הטקסטרה של ``PUT /sequence/{message_type}``, בדיוק כמו עריכה חופשית.
+
+    הגישה נבדקת גם כאן, ולא רק בעריכה ובשליחה: נוסחי "אירוע נדחה" נפתחים רק
+    כשנוהל הדחייה אושר. בלי הבדיקה הזו כל זוג היה יכול לשלוף אותם בקריאה
+    ישירה, גם בלי שהאירוע שלו נדחה בכלל.
+    """
+    _assert_known_type(db, event, message_type)
     rows = db.scalars(
         select(models.MessageDefaultOption)
         .where(models.MessageDefaultOption.event_type == event.event_type)

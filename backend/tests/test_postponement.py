@@ -474,6 +474,99 @@ def test_second_postponement_works() -> None:
     print("✓ המערכת תומכת ביותר מדחייה אחת — מחזור 1 → 2 → 3")
 
 
+def test_postponement_options_available_only_after_approval() -> None:
+    """נוסחי הדחייה: זמינים לזוג רק אחרי אישור, ואפשר לבחור/לערוך/לתצפת/לשלוח."""
+    from app.main import _seed_postponement_options
+
+    _seed_postponement_options()  # idempotent — משלים חסר בלבד
+
+    api, _ = bootstrap()
+    _seed_event(api)
+    api.add_guest("אורח א", "0501234567")
+    admin = _admin(api)
+
+    # לפני אישור — אין נוסחים, ואין מה לערוך: הסוג עצמו עוד לא מוכר לאירוע.
+    r = api.client.get(
+        "/communication/sequence/postponement/options", headers=api.headers
+    )
+    assert r.status_code == 409, f"נוסחים נחשפו לפני אישור: {r.status_code} {r.text[:200]}"
+    blocked = api.client.put(
+        "/communication/sequence/postponement",
+        headers=api.headers, json={"content": "נסיון"},
+    )
+    assert blocked.status_code == 409, f"עריכה נפתחה לפני אישור: {blocked.status_code}"
+
+    _open_and_approve(api, admin)
+
+    # אחרי אישור — חמשת הנוסחים זמינים, עם תוכן ועם תווית בחירה.
+    rows = api.client.get(
+        "/communication/sequence/postponement/options", headers=api.headers
+    ).json()
+    assert len(rows) == 5, f"ציפינו ל-5 נוסחים, יש {len(rows)}"
+    assert all(o["content"].strip() for o in rows), "יש נוסח ריק"
+    assert all(o["title"] and o["tone"] for o in rows), "חסרה תווית בחירה"
+
+    # בחירת נוסח = העתקת התוכן להודעה של האירוע (כמו בשאר השלבים).
+    chosen = rows[1]["content"]
+    r = api.client.put(
+        "/communication/sequence/postponement",
+        headers=api.headers, json={"content": chosen},
+    )
+    assert r.status_code == 200, r.text
+
+    # תצוגה מקדימה — עם הפרטים האמיתיים, בלי סימני תבנית שנשארו מאחור.
+    prev = api.client.post(
+        "/communication/sequence/postponement/preview", headers=api.headers
+    )
+    assert prev.status_code == 200, prev.text
+    body = prev.json()["preview"]
+    assert body.strip(), "התצוגה המקדימה ריקה"
+    assert "{{" not in body, f"נשארו משתנים לא ממולאים: {body}"
+    assert "דני" in body, f"שמות בעלי האירוע לא הופיעו: {body}"
+
+    # ועריכה חופשית אחרי הבחירה עדיין אפשרית.
+    r = api.client.put(
+        "/communication/sequence/postponement",
+        headers=api.headers, json={"content": chosen + "\nנ.ב. נעדכן בקרוב."},
+    )
+    assert r.status_code == 200, r.text
+
+    sent = api.client.post(
+        "/communication/sequence/postponement/send",
+        headers=api.headers, json={"audience": "all"},
+    )
+    assert sent.status_code == 200 and sent.json()["sent"] == 1, sent.text
+    print("✓ נוסחי הדחייה נפתחים רק אחרי אישור — בחירה, עריכה, תצוגה ושליחה")
+
+
+def test_postponement_options_have_no_unsupported_placeholders() -> None:
+    """כל משתנה בנוסחים באמת קיים במערכת וממולא בפועל.
+
+    זו הבדיקה שמונעת את התקלה השקטה ביותר: נוסח שנראה תקין במסך האדמין,
+    אבל מגיע לאורח עם ``{{משהו}}`` גולמי בתוכו.
+    """
+    from app import communication, models
+    from app.postponement_messages import OPTIONS, VARIABLES
+
+    supported = set(communication.DEFAULT_VARIABLES_SUPPORTED[communication.POSTPONEMENT])
+    assert set(VARIABLES) <= supported, f"משתנה לא נתמך: {set(VARIABLES) - supported}"
+
+    event = models.Event(
+        id=1, event_type="wedding", groom_name="דנה", bride_name="איתי",
+        venue_name="אולם", venue_address="הרצל 5",
+        event_date="2027-05-20", event_time="19:30",
+    )
+    guest = models.Guest(id=1, full_name="שרה", phone="0501111111", guest_token="t")
+    values = communication.communication_values(event, guest)
+    for option in OPTIONS:
+        rendered = communication.render_message(option["content"], values)
+        assert "{{" not in rendered and "}}" not in rendered, (
+            f"נוסח {option['option_number']} נשאר עם משתנה גולמי: {rendered}"
+        )
+        assert rendered.strip(), f"נוסח {option['option_number']} רונדר ריק"
+    print("✓ כל המשתנים בנוסחים קיימים במערכת ומתמלאים בפועל")
+
+
 def test_event_delete_removes_postponement_data() -> None:
     """מחיקת אירוע לא נופלת על נתוני נוהל הדחייה, ולא משאירה אותם יתומים."""
     api, _ = bootstrap()
@@ -516,6 +609,8 @@ if __name__ == "__main__":
         test_new_cycle_resets_rsvp_without_losing_history()
         test_new_cycle_reopens_invitations_and_relocks()
         test_second_postponement_works()
+        test_postponement_options_available_only_after_approval()
+        test_postponement_options_have_no_unsupported_placeholders()
         test_event_delete_removes_postponement_data()
         print("\nכל בדיקות נוהל הדחייה עברו ✓")
     finally:

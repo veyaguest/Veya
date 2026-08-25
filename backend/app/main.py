@@ -875,6 +875,23 @@ def _ensure_rls_policies() -> None:
         print(f"[veya:rls] נכשל (השרת ממשיך לעלות): {exc!r}", flush=True)
 
 
+def _seed_postponement_options() -> None:
+    """זורע את נוסחי הודעת הדחייה. לעולם לא מפיל את עליית השרת."""
+    from app.postponement_messages import seed_postponement_options
+
+    db = MigrationSessionLocal()
+    try:
+        created = seed_postponement_options(db)
+        db.commit()
+        if created:
+            print(f"[veya:seed] נוצרו {created} נוסחי 'אירוע נדחה'", flush=True)
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        print(f"[veya:seed] זריעת נוסחי הדחייה נכשלה: {exc!r}", flush=True)
+    finally:
+        db.close()
+
+
 @app.on_event("startup")
 def on_startup() -> None:
     # גיבוי מתוארך של ה-DB לפני כל שינוי (רק אם הקובץ כבר קיים).
@@ -911,6 +928,9 @@ def on_startup() -> None:
     # זורע את ספריית הנוסחים לבחירה (עד 12 לכל event_type×message_type),
     # חתונה בלבד בשלב הזה — ראו seed_message_default_options.
     seed_message_default_options()
+    # נוסחי "אירוע נדחה". בנפרד מהזריעה שמעל, כי היא רצה רק על טבלה ריקה —
+    # ובייצור הטבלה מלאה מזמן. הזריעה כאן משלימה חסר ולעולם לא דורסת.
+    _seed_postponement_options()
     # הוסר (2026-08-24): קריאה ל-get_default_event שיצרה אירוע "ברירת מחדל"
     # בלי owner_id בכל פעם שטבלת האירועים הייתה ריקה. זה בדיוק המנגנון
     # שגרם לבאג 409 בייצור — auth.adopt_orphan_events (רץ בכל הרשמה חדשה)
