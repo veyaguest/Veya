@@ -178,16 +178,24 @@ export interface GiftRow {
   id: number
   sender_name: string
   message: string | null
-  /** מה שהאירוע מקבל (אגורות) — במלואו, בלי ניכוי. */
-  gift_amount_agorot: number
+  /**
+   * מה שהאירוע מקבל (אגורות) — במלואו, בלי ניכוי.
+   *
+   * ``null`` כל עוד חשבון קבלת המתנות לא עבר את **שתי** הבדיקות (VEYA
+   * וספק הסליקה). זו החלטה של השרת: הסכום כלל לא נשלח, ולא משהו שהמסך
+   * בוחר להסתיר. ראו ``GiftsSummary.amounts_visible``.
+   */
+  gift_amount_agorot: number | null
   status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded'
   created_at: string
 }
 
 /** מסך "מתנות באשראי" — סיכום + רשימה. הסיכום נספר רק מ-paid, בשרת. */
 export interface GiftsSummary {
-  total_received_agorot: number
-  total_received_display: string
+  /** האם השרת החזיר סכומים. ``false`` ⇒ כל שדות הסכום כאן הם ``null``. */
+  amounts_visible: boolean
+  total_received_agorot: number | null
+  total_received_display: string | null
   paid_count: number
   /** כמה עסקאות קיימות בסך הכול (כולל שנכשלו). */
   total_count: number
@@ -1564,12 +1572,36 @@ export type PayoutCertificate = {
 /** missing → submitted → under_review → verified / rejected. */
 export type PayoutStatus = 'missing' | 'submitted' | 'under_review' | 'verified' | 'rejected'
 
+/** תשובת בדיקה — אותן שלוש מילים לשני המסלולים. */
+export type ReviewStatus = 'pending' | 'approved' | 'rejected'
+
 export type PayoutAccount = {
   configured: boolean
+  /** מסלול הבדיקה של VEYA, בפירוט מלא. */
   status: PayoutStatus
+  /** אותו מסלול, מקוצר: pending / approved / rejected. */
+  veya_status: ReviewStatus
+  /** בדיקת ספק הסליקה — **מסלול נפרד**. אישור VEYA אינו מזיז אותו. */
+  provider_status: ReviewStatus
+  /**
+   * שתי הבדיקות אושרו. **נגזר בשרת בלבד** ולא נשלח בשום קלט — המסך רק
+   * מציג אותו. רק כשהוא ``true`` השרת מחזיר סכומי מתנות.
+   */
+  fully_verified: boolean
+  /**
+   * הפרטים אושרו ולכן **נעולים לשינוי**.
+   *
+   * מגיע מהשרת ואינו נגזר בדפדפן: השרת הוא שחוסם את הכתיבה בפועל
+   * (``payout_service.assert_unlocked``), והמסך רק מציית. חישוב מקביל
+   * כאן היה רק הזדמנות לשתי האמיתות לסטות זו מזו.
+   */
+  locked: boolean
   /** האם אפשר להגיש לבדיקה עכשיו — נקבע בשרת, לא מחושב כאן. */
   can_submit: boolean
+  /** סיבת הדחייה של VEYA. */
   rejection_reason: string | null
+  /** סיבת הדחייה של ספק הסליקה, אם סיפק אותה. */
+  provider_rejection_reason: string | null
   submitted_at: string | null
   bank_code: number | null
   bank_name: string | null
@@ -1585,4 +1617,34 @@ export type PayoutAccountInput = {
   branch_number: string
   account_number: string
   certificate: string | null
+}
+
+/**
+ * שורה בתור הבדיקה של האדמין — חשבון אחד שממתין להכרעת VEYA.
+ *
+ * **אין כאן מספר חשבון מלא.** מי שבודק פותח את אישור ניהול החשבון
+ * ומשווה מולו; ארבע הספרות האחרונות מספיקות כדי להצליב.
+ */
+export type PayoutReviewRow = {
+  event_id: number
+  event_title: string
+  owner_name: string
+  owner_email: string
+
+  bank_code: number | null
+  bank_name: string | null
+  branch_number: string | null
+  account_number_masked: string | null
+  certificate: PayoutCertificate | null
+
+  status: PayoutStatus
+  veya_status: ReviewStatus
+  provider_status: ReviewStatus
+  fully_verified: boolean
+  rejection_reason: string | null
+  provider_rejection_reason: string | null
+  submitted_at: string | null
+  /** מי ב-VEYA הכריע בבדיקה האחרונה, ומתי. */
+  reviewed_by: string | null
+  reviewed_at: string | null
 }

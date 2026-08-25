@@ -28,6 +28,7 @@ import type {
 } from '../types'
 import { AdminCallCenter } from './AdminCallCenter'
 import { AdminCallers } from './AdminCallers'
+import { AdminPayoutReview } from './AdminPayoutReview'
 import { CreateAccountForm, MessageDefaultOptionsManager, MessageDefaultsManager } from './AdminPage'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 import { Footer } from './Footer'
@@ -39,6 +40,7 @@ type AdminPage =
   | 'users'
   | 'events'
   | 'venues'
+  | 'payout'
   | 'messages'
   | 'audit'
 
@@ -48,6 +50,7 @@ const ADMIN_PAGE_TITLES: Record<AdminPage, string> = {
   users: 'ניהול משתמשים',
   events: 'ניהול אירועים',
   venues: 'מאגר האולמות',
+  payout: 'בדיקת פרטי קבלת מתנות',
   messages: 'הודעות ומסלול אישורים',
   audit: 'יומן פעולות',
 }
@@ -58,12 +61,18 @@ const ADMIN_NAV: { key: AdminPage; label: string }[] = [
   { key: 'users', label: 'משתמשים' },
   { key: 'events', label: 'אירועים' },
   { key: 'venues', label: 'אולמות' },
+  { key: 'payout', label: 'קבלת מתנות' },
   { key: 'messages', label: 'הודעות ומסלול' },
   { key: 'audit', label: 'יומן פעולות' },
 ]
 
 /** תוויות עבריות לסוגי פעולות ביומן. */
 const AUDIT_ACTION_LABELS: Record<string, string> = {
+  payout_details_saved: 'פרטי קבלת מתנות נשמרו',
+  payout_details_updated: 'פרטי קבלת מתנות עודכנו',
+  payout_certificate_uploaded: 'הועלה אישור ניהול חשבון',
+  payout_status_changed: 'בדיקת VEYA — שינוי סטטוס',
+  payout_provider_status_changed: 'ספק סליקה — שינוי סטטוס',
   admin_impersonate: 'התחברות כמשתמש',
   admin_update_user: 'עדכון משתמש',
   admin_disable_user: 'השבתת משתמש',
@@ -174,6 +183,14 @@ function AdminNavIcon({ page }: { page: AdminPage }) {
         <svg {...common}>
           <path d="M9 3h6l2 2v14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
           <path d="M9.5 9h5M9.5 12h5M9.5 15h3" />
+        </svg>
+      )
+    case 'payout':
+      // מגן עם וי — בדיקה ואישור, לא כסף. הכסף עצמו לא עובר במסך הזה.
+      return (
+        <svg {...common}>
+          <path d="M12 3.5 19 6v5.5c0 4-2.9 7.4-7 8.5-4.1-1.1-7-4.5-7-8.5V6l7-2.5Z" />
+          <path d="M9.2 11.8 11.3 14l3.6-3.8" />
         </svg>
       )
   }
@@ -1712,6 +1729,7 @@ export function AdminApp({
           {page === 'users' && <AdminUsersView onImpersonate={onImpersonate} />}
           {page === 'events' && <AdminEventsView onImpersonate={onImpersonate} />}
           {page === 'venues' && <AdminVenuesView />}
+          {page === 'payout' && <AdminPayoutReview />}
           {page === 'messages' && (
             <>
               <MessageDefaultsManager />

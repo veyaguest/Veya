@@ -49,10 +49,37 @@ def _guest_with_token(api, name: str, phone: str):
     return g, tok
 
 
-def _ready_event(days: int = 1):
+def verify_payout(event_id: int) -> None:
+    """מסמן את חשבון קבלת המתנות של האירוע כמאומת בשתי הבדיקות.
+
+    **בלי זה השרת לא מחזיר סכומים בכלל** — לא בסיכום ולא בשורות (ראו
+    ``routers/gifts.py``). הבדיקות כאן עוסקות בחישוב הסכומים ובהרשאות,
+    ולכן הן מתחילות מחשבון מאומת; השער עצמו נבדק בקובץ נפרד,
+    ``test_gift_amount_gating.py``.
+
+    הכתיבה כאן ישירה למסד ולא דרך ה-API בכוונה: אין — ולא צריך להיות —
+    נתיב שבו בעלי האירוע מאשרים את עצמם.
+    """
+    set_request_identity(None)
+    db = SessionLocal()
+    try:
+        row = models.PayoutAccount(
+            event_id=event_id, bank_code=12, branch_number="045",
+            account_number="123456",
+            status="verified", provider_status="approved",
+        )
+        db.add(row)
+        db.commit()
+    finally:
+        db.close()
+
+
+def _ready_event(days: int = 1, *, payout_verified: bool = True):
     api, _ = bootstrap()
     _set_event(api, event_date=_event_date_in(days), event_time="19:30",
                venue_address="הרצל 5, תל אביב")
+    if payout_verified:
+        verify_payout(api.event_id)
     return api
 
 
@@ -212,6 +239,7 @@ def test_summary_has_no_fee_information() -> None:
 
     data = api.client.get("/gifts", headers=api.headers).json()
     assert set(data) == {
+        "amounts_visible",
         "total_received_agorot", "total_received_display",
         "paid_count", "total_count", "gifts",
     }, f"שדות סיכום לא צפויים: {set(data)}"
@@ -434,6 +462,7 @@ def test_no_cross_event_access() -> None:
     r = api_b.client.get("/gifts", headers=api_b.headers)
     assert r.status_code == 200
     assert r.json() == {
+        "amounts_visible": True,
         "total_received_agorot": 0, "total_received_display": "₪0",
         "paid_count": 0, "total_count": 0, "gifts": [],
     }

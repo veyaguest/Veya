@@ -15,15 +15,26 @@
 השדות ``provider`` ו-``provider_account_id`` בטבלה קיימים ונשמרים, אבל
 **אף אחד לא כותב אליהם היום** — הם ממתינים לספק הראשון.
 
+## הגבול בין הספק לבין הסטטוס שלנו
+
+הספק עונה על שאלה אחת: "אישרתי את המוטב הזה?" — ``pending`` / ``approved``
+/ ``rejected``. התשובה נשמרת **בעמודה משלו** (``provider_status``) ואינה
+נוגעת ב-``payout_accounts.status``, שהוא מסלול הבדיקה של VEYA בלבד.
+
+זו הסיבה שאין כאן יותר מילון שממפה תשובת ספק אל חמשת הסטטוסים שלנו:
+מיפוי כזה היה מכריז "הספק אישר ⇒ החשבון verified", כלומר נותן לספק לעקוף
+את בדיקת VEYA. שתי הבדיקות נשארות בלתי תלויות, ורק
+``payout_status.is_fully_verified`` מחבר ביניהן.
+
 ## איך מחברים ספק אמיתי בעתיד
 
 1. לממש את ``PayoutProvider`` (שתי מתודות).
 2. לרשום ב-``_PROVIDERS``.
 3. להגדיר ``VEYA_PAYOUT_PROVIDER=<name>``.
 
-ואז ``payout_service`` יקרא ל-``register_recipient`` בעת ההגשה, ישמור את
-``provider_account_id`` שחזר, וימפה את תשובת הספק לסטטוס שלנו דרך
-``PROVIDER_TO_PAYOUT_STATUS``. שום דבר אחר במערכת לא משתנה.
+ואז ``payout_service`` יקרא ל-``submit_account`` בעת ההגשה, ישמור את
+``provider_account_id`` שחזר, ויעדכן את ``provider_status`` דרך
+``payout_service.set_provider_status``. שום דבר אחר במערכת לא משתנה.
 """
 from __future__ import annotations
 
@@ -34,23 +45,19 @@ from typing import Optional
 
 from app import payout_status
 
-# סטטוסים שספק Payout יכול לדווח עליהם.
-PROVIDER_PENDING = "pending"
-PROVIDER_APPROVED = "approved"
-PROVIDER_REJECTED = "rejected"
+# סטטוסים שספק Payout יכול לדווח עליהם. אותן שלוש מילים שבהן מדברת גם
+# בדיקת VEYA — מוגדרות פעם אחת ב-``payout_status`` ומיובאות לכאן בשם
+# המקומי, כדי ששני המסלולים לא יתפצלו לשתי מוסכמות.
+PROVIDER_PENDING = payout_status.REVIEW_PENDING
+PROVIDER_APPROVED = payout_status.REVIEW_APPROVED
+PROVIDER_REJECTED = payout_status.REVIEW_REJECTED
 
-# מיפוי מתשובת ספק לסטטוס שלנו. מרוכז כאן כדי שספק חדש יתאים את עצמו
-# למילון אחד, ולא יפזר תרגומים בקוד.
-PROVIDER_TO_PAYOUT_STATUS = {
-    PROVIDER_PENDING: payout_status.UNDER_REVIEW,
-    PROVIDER_APPROVED: payout_status.VERIFIED,
-    PROVIDER_REJECTED: payout_status.REJECTED,
-}
+PROVIDER_STATUSES = payout_status.REVIEW_ALL
 
 
 @dataclass(frozen=True)
-class RecipientRegistration:
-    """תשובת הספק על רישום מוטב אחד — הצורה שכל ספק יחזיר."""
+class AccountSubmission:
+    """תשובת הספק על הגשת חשבון אחד — הצורה שכל ספק יחזיר."""
 
     provider_account_id: str
     status: str                        # אחד מ-PROVIDER_* למעלה
@@ -71,7 +78,7 @@ class PayoutProvider(ABC):
     name: str = "abstract"
 
     @abstractmethod
-    def register_recipient(
+    def submit_account(
         self,
         *,
         event_id: int,
@@ -79,11 +86,11 @@ class PayoutProvider(ABC):
         branch_number: str,
         account_number: str,
         holder_name: str,
-    ) -> RecipientRegistration:
-        """רושם את בעלי האירוע כמוטב אצל הספק."""
+    ) -> AccountSubmission:
+        """מגיש את חשבון בעלי האירוע לבדיקת הספק."""
 
     @abstractmethod
-    def get_recipient_status(self, provider_account_id: str) -> str:
+    def get_account_status(self, provider_account_id: str) -> str:
         """מחזיר את הסטטוס הנוכחי אצל הספק (אחד מ-PROVIDER_*)."""
 
 
@@ -93,16 +100,19 @@ class ManualProvider(PayoutProvider):
     **אינו מבצע שום קריאת רשת ואינו שולח מידע לאף גורם חיצוני.** הוא קיים
     כדי שהקוד שסביבו (שירות, סטטוסים, נתיבים) ייכתב וייבדק מול ממשק אמיתי
     ולא מול ``None`` — וכדי שהחלפתו בספק אמיתי לא תדרוש שינוי מבני.
+
+    הוא מחזיר תמיד ``pending``, וזו התשובה הנכונה: כל עוד לא נבחר ספק,
+    אף ספק לא אישר דבר. חשבון לא הופך ל"כשיר" רק מפני שאין ספק.
     """
 
     name = "manual"
 
-    def register_recipient(self, **kwargs) -> RecipientRegistration:
+    def submit_account(self, **kwargs) -> AccountSubmission:
         # אין מזהה חיצוני, כי אין גורם חיצוני. הסטטוס נשאר "ממתין" —
-        # כלומר: מחכה שאדם יסתכל.
-        return RecipientRegistration(provider_account_id="", status=PROVIDER_PENDING)
+        # כלומר: מחכה שייבחר ספק ושיאמר את דברו.
+        return AccountSubmission(provider_account_id="", status=PROVIDER_PENDING)
 
-    def get_recipient_status(self, provider_account_id: str) -> str:
+    def get_account_status(self, provider_account_id: str) -> str:
         return PROVIDER_PENDING
 
 

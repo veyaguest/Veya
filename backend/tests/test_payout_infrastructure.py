@@ -62,7 +62,9 @@ def test_status_machine_allows_the_documented_path() -> None:
     s = payout_status
     for a, b in [(s.MISSING, s.SUBMITTED), (s.SUBMITTED, s.UNDER_REVIEW),
                  (s.UNDER_REVIEW, s.VERIFIED), (s.UNDER_REVIEW, s.REJECTED),
-                 (s.REJECTED, s.SUBMITTED), (s.VERIFIED, s.MISSING)]:
+                 (s.REJECTED, s.SUBMITTED), (s.VERIFIED, s.MISSING),
+                 # ביטול אישור שניתן — ראו התיעוד ב-payout_status.TRANSITIONS.
+                 (s.VERIFIED, s.REJECTED)]:
         assert s.can_transition(a, b), f"מעבר חוקי נחסם: {a} → {b}"
     print("✓ המסלול המתועד מותר במלואו")
 
@@ -172,7 +174,32 @@ def test_owner_has_no_api_path_to_verified() -> None:
     print("✓ אין דרך לבעלי האירוע להגיע ל-verified")
 
 
-def test_editing_details_cancels_verification() -> None:
+def test_editing_details_cancels_a_review_in_progress() -> None:
+    """שינוי זהות החשבון **בזמן בדיקה** מאפס אותה ודורש הגשה מחדש."""
+    api, _ = bootstrap()
+    _save(api)
+    api.client.post("/payout/submit", headers=api.headers)
+    _review(api, payout_status.UNDER_REVIEW)
+
+    # מחליפים את מספר החשבון — הבדיקה שבתהליך חייבת להתבטל.
+    _save(api, account_number="99887766", certificate=None)
+    body = _get(api)
+    assert body["status"] == payout_status.MISSING, \
+        "חשבון שהוחלף באמצע בדיקה נשאר בבדיקה — פרצה"
+    assert body["can_submit"] is True
+    print("✓ שינוי זהות החשבון מבטל בדיקה שבתהליך")
+
+
+def test_editing_a_verified_account_is_refused_outright() -> None:
+    """**אחרי אישור אין ביטול-אימות — יש סירוב.**
+
+    קודם, עריכה של חשבון מאושר הייתה מותרת ומחזירה את הסטטוס ל-``missing``.
+    זו הייתה הגנה סבירה, אבל חלשה מהנדרש: היא הרשתה לחשבון מאושר להשתנות,
+    וסמכה על כך שהסטטוס יתאפס בעקבות זאת. היום הכתיבה עצמה נדחית, ולכן אין
+    בכלל רגע שבו חשבון מאושר מצביע למקום אחר.
+
+    ביטול הנעילה הוא פעולת אדמין בלבד (``payout_service.veya_reopen``).
+    """
     api, _ = bootstrap()
     _save(api)
     api.client.post("/payout/submit", headers=api.headers)
@@ -180,13 +207,14 @@ def test_editing_details_cancels_verification() -> None:
     _review(api, payout_status.VERIFIED)
     assert _get(api)["status"] == payout_status.VERIFIED
 
-    # מחליפים את מספר החשבון — האימות חייב להתבטל.
-    _save(api, account_number="99887766", certificate=None)
+    r = _save(api, account_number="99887766", certificate=None)
+    assert r.status_code == 409, f"עריכת חשבון מאושר החזירה {r.status_code}"
+
     body = _get(api)
-    assert body["status"] == payout_status.MISSING, \
-        "חשבון שאומת והוחלף נשאר מאומת — פרצה"
-    assert body["can_submit"] is True
-    print("✓ שינוי זהות החשבון מבטל אימות קיים")
+    assert body["status"] == payout_status.VERIFIED, "הסטטוס זז בעקבות בקשה שנדחתה"
+    assert body["locked"] is True
+    assert body["account_number_masked"].endswith("3456"), "מספר החשבון הוחלף"
+    print("✓ עריכת חשבון מאושר נדחית — לא מתקבלת ומאפסת")
 
 
 def test_resaving_same_details_keeps_status() -> None:
@@ -242,14 +270,17 @@ def test_changes_are_audited_without_account_number() -> None:
 def test_provider_layer_is_present_and_inert() -> None:
     assert payout_provider.DEFAULT_PROVIDER == "manual"
     prov = payout_provider.get_provider()
-    reg = prov.register_recipient(
+    reg = prov.submit_account(
         event_id=1, bank_code=12, branch_number="045",
         account_number="123456", holder_name="בדיקה",
     )
-    # ידני = אין גורם חיצוני: אין מזהה, והסטטוס "ממתין לבדיקה".
+    # ידני = אין גורם חיצוני: אין מזהה, והסטטוס "ממתין".
     assert reg.provider_account_id == ""
     assert reg.status == payout_provider.PROVIDER_PENDING
-    assert payout_provider.PROVIDER_TO_PAYOUT_STATUS[reg.status] == payout_status.UNDER_REVIEW
+    assert prov.get_account_status("") == payout_provider.PROVIDER_PENDING
+    # **אין יותר מיפוי מתשובת ספק אל חמשת הסטטוסים שלנו.** מיפוי כזה היה
+    # נותן לספק לקבוע ``verified`` ולעקוף את בדיקת VEYA.
+    assert not hasattr(payout_provider, "PROVIDER_TO_PAYOUT_STATUS")
     print("✓ שכבת הספק קיימת, ברירת המחדל ידנית ואינה שולחת דבר")
 
 
@@ -281,8 +312,14 @@ def test_provider_fields_exist_but_unused() -> None:
         db.close()
 
     # והם גם לא דולפים ל-API של בעלי האירוע.
-    raw = api.client.get("/payout", headers=api.headers).text
-    assert "provider" not in raw, "שדות הספק דלפו לתשובת ה-API"
+    #
+    # הבדיקה על **שמות השדות**, ולא על המחרוזת "provider": מאז הפרדת שני
+    # האימותים, התשובה כן כוללת ``provider_status`` — וזה מכוון. מה שאסור
+    # שיחזור הוא זהות הספק והמזהה שהוא הקצה, שהם מידע תפעולי של VEYA.
+    body = api.client.get("/payout", headers=api.headers).json()
+    assert "provider" not in body, "שם הספק דלף לתשובת ה-API"
+    assert "provider_account_id" not in body, "מזהה הספק דלף לתשובת ה-API"
+    assert body["provider_status"] == "pending", "בלי ספק מחובר — אין אישור ספק"
     print("✓ שדות הספק קיימים, ריקים, ולא נחשפים ב-API")
 
 
@@ -313,7 +350,8 @@ if __name__ == "__main__":
         test_full_review_path_to_verified()
         test_rejection_carries_reason_and_allows_resubmit()
         test_owner_has_no_api_path_to_verified()
-        test_editing_details_cancels_verification()
+        test_editing_details_cancels_a_review_in_progress()
+        test_editing_a_verified_account_is_refused_outright()
         test_resaving_same_details_keeps_status()
         test_replacing_certificate_keeps_status()
         test_changes_are_audited_without_account_number()

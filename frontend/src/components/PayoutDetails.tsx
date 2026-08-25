@@ -1,23 +1,36 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   fetchPayoutCertificate,
-  getPayoutAccount,
   savePayoutAccount,
   submitPayoutAccount,
 } from '../api'
 import type { PayoutAccount } from '../types'
 import { strings } from '../strings/he'
+import { payoutDisplayStatus, payoutStage, type PayoutStage } from '../payoutState'
 import { BankMark, BankSelect } from './BankSelect'
 import './PayoutDetails.css'
 
 const t = strings.payout
 
 /**
- * "פרטי קבלת מתנות" — חשבון הבנק של בעלי האירוע.
+ * "פרטי קבלת מתנות" — **כרטיס אחד** שמחזיק גם את מצב האימות וגם את פרטי
+ * החשבון עצמם.
  *
- * שני מצבים: **תצוגה** (מה שמור, מספר חשבון מוסתר) ו**עריכה** (הטופס).
- * הזוג ממלא את זה פעם אחת, ולכן ברירת המחדל היא תצוגה מכווצת ולא טופס
- * פתוח שתופס חצי מסך בכל כניסה למתנות.
+ * למה אחד ולא שניים: קודם היו כאן באנר סטטוס *וגם* כרטיס פרטים, ושניהם
+ * דיברו על אותו דבר — כולל שני כפתורים מתחרים באותו מסך. איחוד לכרטיס
+ * אחד הוא מה שמייצר את הכלל שהמסך בנוי עליו:
+ *
+ *     **פעולה ראשית אחת בכל מצב.**
+ *
+ * מה שאינו הפעולה של עכשיו יורד לקישור משני שקט (``payout-secondary``),
+ * ומה שאין בו פעולה כלל — פשוט אין לו כפתור.
+ *
+ * שלושה מצבי תצוגה: **סטטוס בלבד** (אין עדיין פרטים), **סטטוס + פרטים
+ * שמורים**, ו**עריכה** (הטופס). הזוג ממלא את זה פעם אחת, ולכן ברירת
+ * המחדל היא תצוגה מכווצת ולא טופס פתוח בכל כניסה למסך.
+ *
+ * הרכיב **מבוקר**: הוא לא טוען את החשבון בעצמו אלא מקבל אותו, כדי שהמסך
+ * כולו — סטטוס, סיכום ורשימה — יעבוד על אותה תשובה אחת מהשרת.
  *
  * **הולידציה כאן היא נוחות, לא אבטחה.** אותם כללים בדיוק נאכפים בשרת
  * (``backend/app/banks.py``), והוא מקור האמת. הבדיקות בדפדפן קיימות רק
@@ -31,19 +44,13 @@ const ACCEPTED = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'im
 
 type Errors = Partial<Record<'bank' | 'branch' | 'account' | 'certificate' | 'form', string>>
 
-/** "24.08.26" — אותו טיפול ב-UTC נאיבי כמו בשאר המסכים. */
-function formatDate(iso: string | null): string {
-  if (!iso) return ''
-  const hasZone = /[Zz]|[+-]\d{2}:?\d{2}$/.test(iso)
-  const d = new Date(hasZone ? iso : `${iso}Z`)
-  if (isNaN(d.getTime())) return ''
-  return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getFullYear()).slice(-2)}`
-}
-
 function formatSize(bytes: number | null): string {
   if (!bytes) return ''
   const kb = bytes / 1024
-  return kb < 1024 ? `${Math.round(kb)} KB` : `${(kb / 1024).toFixed(1)} MB`
+  // רצפה של 1KB: קובץ קטן מ-512 בייט היה מתעגל ל-"0 KB", שנקרא כמו קובץ
+  // פגום. עדיף לעגל כלפי מעלה מאשר להציג אפס על קובץ שקיים.
+  if (kb < 1024) return `${Math.max(1, Math.round(kb))} KB`
+  return `${(kb / 1024).toFixed(1)} MB`
 }
 
 /** משאיר ספרות בלבד — כך שדות המספרים לא מקבלים תווים לא רלוונטיים כבר בהקלדה. */
@@ -51,9 +58,21 @@ function digitsOnly(value: string): string {
   return value.replace(/\D/g, '')
 }
 
-export function PayoutDetails() {
-  const [account, setAccount] = useState<PayoutAccount | null>(null)
-  const [loading, setLoading] = useState(true)
+/** סיבת הדחייה הרלוונטית למצב — של VEYA או של חברת הסליקה, לא שתיהן. */
+function rejectionReason(stage: PayoutStage, account: PayoutAccount | null): string | null {
+  if (stage === 'rejected') return account?.rejection_reason ?? null
+  if (stage === 'providerRejected') return account?.provider_rejection_reason ?? null
+  return null
+}
+
+export function PayoutDetails({
+  account,
+  onChange,
+}: {
+  account: PayoutAccount | null
+  /** מדווח על חשבון מעודכן — המסך כולו נשען עליו. */
+  onChange: (account: PayoutAccount) => void
+}) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -68,15 +87,6 @@ export function PayoutDetails() {
 
   const fileRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
-
-  useEffect(() => {
-    let alive = true
-    getPayoutAccount()
-      .then((d) => alive && setAccount(d))
-      .catch(() => alive && setErrors({ form: t.errors.loadFailed }))
-      .finally(() => alive && setLoading(false))
-    return () => { alive = false }
-  }, [])
 
   function startEdit() {
     setErrors({})
@@ -144,7 +154,7 @@ export function PayoutDetails() {
         account_number: accountNumber,
         certificate,
       })
-      setAccount(saved)
+      onChange(saved)
       setEditing(false)
       setNote(t.saved)
     } catch (err) {
@@ -160,7 +170,7 @@ export function PayoutDetails() {
     setErrors({})
     setSubmitting(true)
     try {
-      setAccount(await submitPayoutAccount())
+      onChange(await submitPayoutAccount())
       setNote(t.submitted)
     } catch (err) {
       setErrors({ form: err instanceof Error ? err.message : t.submitError })
@@ -194,92 +204,126 @@ export function PayoutDetails() {
     }
   }
 
-  if (loading) return <div className="payout-state">{strings.common.loading}</div>
+  const stage = payoutStage(account)
+  // מה שמוצג לזוג: ארבעה מצבים בלבד. ההבחנה בין שתי הבדיקות נשארת בשרת.
+  const display = payoutDisplayStatus(stage)
+  const reason = rejectionReason(stage, account)
+  const configured = !!account?.configured
+  // הנעילה מגיעה **מהשרת** ואינה נגזרת כאן מהסטטוס: השרת הוא שאוכף
+  // אותה בפועל, וחישוב מקביל בדפדפן היה רק הזדמנות לשתי האמיתות לסטות.
+  const locked = !!account?.locked
+  const needsFix = display === 'fix'
+  const inReview = display === 'review' && !locked
 
   return (
     <section className="payout-card" aria-labelledby="payout-title">
+      {/* ── ראש הכרטיס: מה המצב ──────────────────────────────────────
+          כותרת + תווית מצב שקטה. התווית נושאת צבע, אבל **לעולם לא לבדה**
+          — לצידה תמיד יש משפט שאומר את אותו דבר במילים. */}
       <header className="payout-head">
-        <div>
-          <h2 className="payout-title" id="payout-title">{t.title}</h2>
-          <p className="payout-subtitle">{t.subtitle}</p>
-        </div>
-        <div className="payout-head-side">
-          {/* הסטטוס מגיע מהשרת ואינו מחושב כאן — ראו PayoutAccountRead. */}
-          {account && (
-            <span className={`payout-badge payout-badge-${account.status}`}>
-              {t.statusLabels[account.status]}
-            </span>
-          )}
-          {!editing && (
-            <button type="button" className="payout-action" onClick={startEdit}>
-              {account?.configured ? t.editCta : t.addCta}
-            </button>
-          )}
-        </div>
+        <h2 className="payout-title" id="payout-title">{t.title}</h2>
+        <span className={`payout-pill payout-pill-${display}`}>
+          {t.status.pill[display]}
+        </span>
       </header>
+      <p className="payout-line">{t.status.line[display]}</p>
+
+      {reason && (
+        <p className="payout-reason">
+          <span className="payout-reason-label">{t.status.reasonLabel}:</span> {reason}
+        </p>
+      )}
 
       {note && <p className="payout-note" role="status">{note}</p>}
       {errors.form && !editing && <p className="payout-error" role="alert">{errors.form}</p>}
 
-      {!editing && !account?.configured && (
-        <div className="payout-empty">
-          <p className="payout-empty-title">{t.emptyTitle}</p>
-          <p>{t.emptyBody}</p>
-        </div>
-      )}
-
-      {!editing && account?.configured && (
-        <dl className="payout-summary">
-          <div className="payout-summary-bank">
+      {/* ── גוף הכרטיס: הפרטים השמורים ────────────────────────────────
+          שורות על אותו משטח, בלי תיבה מקוננת. הכרטיס הזה כבר משטח אחד —
+          משטח שני בתוכו רק היה מוסיף מסגרת בלי להוסיף מידע. */}
+      {!editing && configured && account && (
+        <dl className="payout-facts">
+          <div className="payout-fact payout-fact-bank">
             <dt>{t.bankLabel}</dt>
             <dd>
               <BankMark code={account.bank_code as number} size="sm" />
               <span>{account.bank_name}</span>
             </dd>
           </div>
-          <div>
+          <div className="payout-fact">
             <dt>{t.branchLabel}</dt>
             <dd className="payout-num">{account.branch_number}</dd>
           </div>
-          <div>
+          <div className="payout-fact">
             <dt>{t.accountLabel}</dt>
-            <dd className="payout-num" title={t.savedAccountNote}>{account.account_number_masked}</dd>
+            <dd className="payout-num" title={t.savedAccountNote}>
+              {account.account_number_masked}
+            </dd>
           </div>
-          <div className="payout-summary-file">
+          <div className="payout-fact">
             <dt>{t.certificateLabel}</dt>
             <dd>
               {account.certificate ? (
                 <button type="button" className="payout-link" onClick={openCertificate}>
                   {t.viewFile}
                 </button>
-              ) : '—'}
+              ) : (
+                <span className="payout-fact-missing">{t.certificateMissingShort}</span>
+              )}
             </dd>
           </div>
-          {account.updated_at && (
-            <p className="payout-updated">{t.updatedAt(formatDate(account.updated_at))}</p>
-          )}
         </dl>
       )}
 
-      {/* הגשה לאימות — מוצגת רק כשהשרת אומר שאפשר. */}
-      {!editing && account?.can_submit && (
-        <div className="payout-submit-row">
-          <button type="button" className="payout-submit payout-submit-inline"
-                  onClick={submitForReview} disabled={submitting}>
-            {submitting ? t.submitting : t.submitCta}
-          </button>
-          <p className="payout-hint">{t.submitHint}</p>
+      {/* ── רגל הכרטיס: פעולה אחת ─────────────────────────────────────
+          בכל מצב יש **כפתור ראשי אחד לכל היותר**, ומה שמסביבו הוא קישור
+          משני שקט. הסדר קבוע: פעולה, ואז ההסבר שמתחתיה. */}
+      {!editing && (
+        <div className="payout-foot">
+          <div className="payout-foot-actions">
+          {!configured && (
+            <button type="button" className="payout-cta" onClick={startEdit}>
+              {t.addCta}
+            </button>
+          )}
+
+          {configured && needsFix && (
+            <button type="button" className="payout-cta" onClick={startEdit}>
+              {t.fixCta}
+            </button>
+          )}
+
+          {/* השרת הוא שמחליט אם אפשר לשלוח (יש אישור, והסטטוס מאפשר) —
+              המסך רק מציית ל-``can_submit``. */}
+          {configured && !needsFix && account?.can_submit && (
+            <button type="button" className="payout-cta" onClick={submitForReview}
+                    disabled={submitting}>
+              {submitting ? t.submitting : t.submitCta}
+            </button>
+          )}
+
+          {/* עריכה: משנית כשכבר יש פרטים, כי הפעולה של "עכשיו" היא אף
+              פעם לא לערוך מחדש מה שכבר מלא — **ולא קיימת כלל אחרי
+              אישור.** ההסתרה כאן היא נוחות; האכיפה היא בשרת
+              (``payout_service.assert_unlocked``). */}
+          {configured && !needsFix && !locked && (
+            <button type="button" className="payout-secondary" onClick={startEdit}>
+              {t.editCta}
+            </button>
+          )}
+          </div>
+
+          {configured && !needsFix && account?.can_submit && (
+            <p className="payout-foot-note">{t.submitHint}</p>
+          )}
+          {/* עריכה **לפני** אישור אינה חסומה — חסימה הייתה לוכדת זוג
+              שהקליד ספרה שגויה עד שנדחה. במקום זה נאמר מראש מה יקרה. */}
+          {inReview && <p className="payout-foot-note">{t.editDuringReviewNote}</p>}
+          {/* ואחרי אישור מסבירים למה אין כפתור, לפני שמחפשים אותו. */}
+          {locked && <p className="payout-foot-note">{t.status.lockedNote}</p>}
+          {configured && !account?.certificate && !inReview && !locked && (
+            <p className="payout-foot-note">{t.certificateHint}</p>
+          )}
         </div>
-      )}
-
-      {!editing && account?.status === 'rejected' && account.rejection_reason && (
-        <p className="payout-error" role="alert">
-          <strong>{t.rejectedTitle}:</strong> {account.rejection_reason}
-        </p>
-      )}
-
-      {!editing && (account?.status === 'submitted' || account?.status === 'under_review') && (
-        <p className="payout-hint payout-review-note">{t.underReviewNote}</p>
       )}
 
       {editing && (
@@ -360,7 +404,8 @@ export function PayoutDetails() {
                 {certificateName
                   ? `${certificateName} · ${t.fileReady}`
                   : account?.certificate
-                    ? `${account.certificate.filename ?? ''} ${formatSize(account.certificate.size)}`.trim()
+                    ? [account.certificate.filename, formatSize(account.certificate.size)]
+                        .filter(Boolean).join(' · ')
                     : ''}
               </span>
             </div>

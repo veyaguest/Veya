@@ -33,6 +33,7 @@ from app.routers import (
     messaging,
     partner,
     payout,
+    payout_admin,
     seating,
     stats,
     venues,)
@@ -104,6 +105,7 @@ app.include_router(communication.router)
 app.include_router(venues.router)
 app.include_router(media_serve.router)
 app.include_router(payout.router)
+app.include_router(payout_admin.router)
 
 # הגשת קבצי תמונות שהועלו (הזמנה/סקיצת אולם) מתוך backend/uploads.
 from app.media import UPLOADS_DIR  # noqa: E402
@@ -208,6 +210,15 @@ _EXTRA_COLUMNS = {
         "submitted_at": "TIMESTAMP",
         "status_changed_at": "TIMESTAMP",
         "rejection_reason": "TEXT",
+        # מי ב-VEYA הכריע בבדיקה האחרונה, ומתי.
+        "veya_reviewed_by_user_id": "INTEGER",
+        "veya_reviewed_at": "TIMESTAMP",
+        # בדיקת ספק הסליקה — עמודה נפרדת מ-status. ברירת המחדל 'pending'
+        # רשומה במפורש כדי ששורות שכבר קיימות בייצור יקבלו ערך תקין ולא
+        # NULL: חשבון בלי תשובת ספק אינו חשבון שהספק אישר.
+        "provider_status": "TEXT DEFAULT 'pending'",
+        "provider_status_changed_at": "TIMESTAMP",
+        "provider_rejection_reason": "TEXT",
         # שדות לספק עתידי — נוצרים ריקים ואין להם כותב היום.
         "provider": "TEXT",
         "provider_account_id": "TEXT",

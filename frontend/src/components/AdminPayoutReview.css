@@ -1,0 +1,290 @@
+/* מסך בדיקת פרטי קבלת מתנות (אדמין).
+
+   אותה שפה של שאר אזור האדמין: משטח לבן, מסגרת עדינה, טיפוגרפיה שקטה.
+   ההבדל היחיד מהמסכים של הזוג הוא הצפיפות — כאן יושב אדם שעובר על
+   רשימה, ולכן המידע צפוף יותר והפעולות מיידיות. רק טוקנים קיימים. */
+
+.apr-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 20px 24px;
+}
+
+.apr-state {
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.apr-state-error { color: var(--error); }
+
+/* ---- שתי הרשימות --------------------------------------------------------
+   לשוניות טקסט ולא כפתורים מלאים: זו החלפת תצוגה, לא פעולה. */
+.apr-scopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--line-2);
+}
+.apr-scope {
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.apr-scope:hover { color: var(--charcoal); }
+.apr-scope--on {
+  color: var(--charcoal);
+  font-weight: 600;
+  border-bottom-color: var(--gold);
+}
+
+.apr-intro {
+  max-width: 68ch;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.apr-empty {
+  padding: 34px 20px;
+  margin: 0;
+  text-align: center;
+  background: var(--surface-hi);
+  border: 1px dashed var(--line-2);
+  border-radius: var(--radius-l);
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* ---- כרטיס בדיקה ------------------------------------------------------- */
+.apr-card {
+  padding: 18px 20px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-card);
+}
+
+.apr-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.apr-who { min-width: 0; }
+.apr-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--charcoal);
+  overflow-wrap: anywhere;
+}
+.apr-owner {
+  margin: 3px 0 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* שני המסלולים — זה לצד זה, כדי שיהיה ברור שאישור אחד אינו השני. */
+.apr-tracks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.apr-track {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.apr-track strong { font-weight: 600; }
+.apr-track-approved { border-color: var(--green); color: var(--green); }
+.apr-track-rejected { border-color: var(--error); color: var(--error); }
+
+/* ---- פרטי החשבון ------------------------------------------------------- */
+.apr-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 14px;
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  background: var(--surface-hi);
+  border-radius: var(--radius-m);
+}
+.apr-details > div { min-width: 0; }
+.apr-details dt {
+  margin-bottom: 3px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.apr-details dd {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--charcoal);
+  overflow-wrap: anywhere;
+}
+.apr-code { color: var(--faint); }
+/* מספרי סניף/חשבון תמיד LTR — אחרת הם מוצגים הפוך בהקשר עברי. */
+.apr-num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: start;
+  font-variant-numeric: tabular-nums;
+}
+
+.apr-reason,
+.apr-trail,
+.apr-error {
+  margin: 12px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.apr-reason { color: var(--body); }
+.apr-trail  { color: var(--faint); }
+.apr-error  { color: var(--error); }
+
+/* ---- פעולות ------------------------------------------------------------ */
+.apr-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.apr-actions-spacer { flex: 1 1 auto; }
+
+.apr-btn {
+  min-height: 40px;
+  padding: 9px 18px;
+  border-radius: var(--radius-m);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.apr-btn:disabled { opacity: 0.5; cursor: default; }
+
+.apr-btn-ghost {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--body);
+}
+.apr-btn-ghost:hover:not(:disabled) { border-color: var(--gold); }
+
+.apr-btn-approve {
+  background: var(--charcoal);
+  border: 1px solid var(--charcoal);
+  color: var(--ivory);
+}
+.apr-btn-approve:hover:not(:disabled) { background: var(--black-soft); }
+
+.apr-btn-reject {
+  background: none;
+  border: 1px solid var(--error);
+  color: var(--error);
+}
+.apr-btn-reject:hover:not(:disabled) { background: rgba(166, 96, 90, 0.08); }
+
+/* ---- תיבת הדחייה ------------------------------------------------------- */
+.apr-reject-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--surface-hi);
+  border-radius: var(--radius-m);
+}
+.apr-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--charcoal);
+}
+.apr-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  color: var(--charcoal);
+  font-family: inherit;
+  /* 16px — מתחת לזה ספארי במובייל מזום-אין על השדה בפוקוס. */
+  font-size: 1rem;
+  resize: vertical;
+}
+.apr-textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(var(--gold-rgb), 0.18);
+}
+
+/* ---- כלי בדיקה (מקופל) --------------------------------------------------
+   אינו חלק מהעבודה השוטפת, ולכן הוא סגור כברירת מחדל ובצבע מעומעם —
+   נוכח למי שמחפש אותו, בלי להתחרות בפעולות האמיתיות שמעליו. */
+.apr-tools {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-2);
+}
+.apr-tools-summary {
+  font-size: 0.75rem;
+  color: var(--faint);
+  cursor: pointer;
+  /* יעד הקשה סביר במובייל, בלי להזיז את היישור של שאר הכרטיס. */
+  padding: 6px 2px;
+  margin: -6px -2px;
+  list-style-position: inside;
+}
+.apr-tools-summary:hover { color: var(--muted); }
+.apr-tools-note {
+  margin: 8px 0 10px;
+  max-width: 60ch;
+  font-size: 0.75rem;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.apr-tools-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.apr-chip {
+  min-height: 34px;
+  padding: 6px 14px;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--body);
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.apr-chip:hover:not(:disabled) { border-color: var(--gold); }
+.apr-chip:disabled { opacity: 0.5; cursor: default; }
+
+/* ---- מובייל ------------------------------------------------------------ */
+@media (max-width: 559px) {
+  .apr-page { padding: 0 12px 20px; }
+  .apr-card { padding: 16px 14px; }
+  .apr-actions-spacer { display: none; }
+  .apr-btn { flex: 1 1 100%; }
+}

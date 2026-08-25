@@ -9,6 +9,9 @@
 2. **עריכת פרטי בנק מבטלת אימות** — חשבון שאומת והוחלף אינו מאומת.
 3. **כל שינוי נרשם ליומן, בלי הנתונים עצמם** — מספר חשבון לא נכתב ליומן.
 
+4. **שתי הבדיקות נשארות בלתי תלויות** — בדיקת VEYA כותבת ל-``status``,
+   תשובת הספק כותבת ל-``provider_status``, ואף אחת לא נוגעת בשנייה.
+
 **מה שאין כאן:** העברת כספים, פנייה לספק סליקה, KYC ואימות בנק אמיתי.
 ``submit`` רק מסמן שהפרטים מוכנים לבדיקה. הבדיקה עצמה היא היום אדם
 ב-VEYA; בעתיד תגיע דרך ``payout_provider`` בלי לשנות את הקובץ הזה.
@@ -31,6 +34,14 @@ class PayoutError(ValueError):
     """שגיאת שימוש עם נוסח עברי מוכן להצגה."""
 
 
+class PayoutLocked(PayoutError):
+    """ניסיון לשנות חשבון שכבר אושר.
+
+    נפרד מ-``PayoutError`` כדי שהנתיב יחזיר 409 (התנגשות מצב) ולא 422
+    (קלט שגוי): הקלט היה תקין לגמרי, פשוט אסור לשנות עכשיו.
+    """
+
+
 def get(db: Session, event_id: int) -> Optional[models.PayoutAccount]:
     return db.scalars(
         select(models.PayoutAccount).where(models.PayoutAccount.event_id == event_id)
@@ -42,6 +53,65 @@ def current_status(row: Optional[models.PayoutAccount]) -> str:
     if row is None:
         return payout_status.MISSING
     return row.status or payout_status.MISSING
+
+
+def veya_status(row: Optional[models.PayoutAccount]) -> str:
+    """תשובת בדיקת VEYA: ``pending`` / ``approved`` / ``rejected``."""
+    return payout_status.veya_review(current_status(row))
+
+
+def provider_status(row: Optional[models.PayoutAccount]) -> str:
+    """תשובת בדיקת ספק הסליקה. אין שורה, או שורה ישנה עם NULL = ``pending``."""
+    if row is None:
+        return payout_status.REVIEW_PENDING
+    return payout_status.normalize_review(row.provider_status)
+
+
+def is_locked(row: Optional[models.PayoutAccount]) -> bool:
+    """האם החשבון נעול לשינוי.
+
+    **הנעילה נכנסת לתוקף ברגע ש-VEYA אישרה** (``status == verified``) —
+    לא כשהאימות המלא הושלם. זו הנקודה שבה אדם הסתכל על אישור ניהול
+    החשבון והצהיר שהוא תקין; אילו הזוג היה יכול להחליף מספר חשבון אחריה,
+    ההצהרה הזו הייתה חסרת ערך — אפשר היה לעבור בדיקה עם חשבון אחד
+    ולהחליף אותו בחשבון אחר.
+
+    זו הסיבה שהנעילה **אינה** מחכה לאישור ספק הסליקה: הסיכון קיים כבר
+    מהרגע הראשון, ולא רק בסוף.
+
+    **חריג אחד: דחייה של ספק הסליקה מבטלת את הנעילה.** אם הספק דחה את
+    החשבון, הוא לא יוכל לקבל דרכו כסף לעולם — כלומר אין יותר מה להגן
+    עליו, ויש מה לתקן. נעילה במצב הזה הייתה לוכדת את בעלי האירוע: המסך
+    אומר להם "נדרש תיקון", וכל ניסיון לתקן היה נדחה. שתי הבדיקות נשארות
+    בלתי תלויות — תשובת הספק לא משנה את ``status``, רק את השאלה אם יש
+    בכלל מה לנעול.
+
+    פתיחה מחדש (במצב מאושר רגיל) היא פעולת אדמין בלבד — ``veya_reopen``.
+    """
+    if current_status(row) != payout_status.VERIFIED:
+        return False
+    return provider_status(row) != payout_status.REVIEW_REJECTED
+
+
+def assert_unlocked(row: Optional[models.PayoutAccount]) -> None:
+    """שער הכתיבה. נקרא בכל מסלול שמשנה פרטי חשבון או מסמך."""
+    if is_locked(row):
+        raise PayoutLocked(
+            "פרטי החשבון אושרו ונעולים לשינוי. לפתיחה מחדש יש לפנות לתמיכה."
+        )
+
+
+def is_fully_verified(row: Optional[models.PayoutAccount]) -> bool:
+    """**הפונקציה שכל המערכת שואלת** — האם החשבון כשיר לקבל כסף.
+
+    זו העטיפה היחידה מעל ``payout_status.is_fully_verified``: היא מקבלת
+    שורה (או ``None``) ופותרת ממנה את שתי התשובות. התנאי עצמו — ששתי
+    הבדיקות ``approved`` — כתוב במקום אחד בלבד, ב-``payout_status``.
+
+    ``None`` (אין בכלל פרטי חשבון) מחזיר ``False`` באופן טבעי: אין מה
+    לאמת. כך לקורא לא צריך להיות ענף מיוחד ל"אין חשבון".
+    """
+    return payout_status.is_fully_verified(veya_status(row), provider_status(row))
 
 
 def _set_status(
@@ -64,12 +134,50 @@ def _set_status(
     row.status = target
     row.status_changed_at = datetime.utcnow()
     row.rejection_reason = reason or None
+    # המעבר עצמו (``לפני → אחרי``) **תמיד** נכתב, גם כשיש נוסח עברי משלו.
+    # הנוסח קיים בשביל אדם שקורא את היומן; המעבר קיים כדי שיהיה אפשר
+    # לשחזר מהיומן את מסלול החיים המלא של החשבון בלי לנחש מהמילים.
     audit.record(
         db,
         "payout_status_changed",
         event_id=event_id,
         user_id=user_id,
-        detail=detail or f"סטטוס פרטי קבלת המתנות: {before} → {target}",
+        detail=f"{detail or 'סטטוס פרטי קבלת המתנות'} · {before} → {target}",
+        ip=ip,
+    )
+
+
+def _set_provider_status(
+    db: Session,
+    row: models.PayoutAccount,
+    target: str,
+    *,
+    user_id: Optional[int] = None,
+    reason: str = "",
+    detail: str = "",
+    ip: Optional[str] = None,
+) -> None:
+    """מעדכן את תשובת ספק הסליקה. **הפונקציה היחידה שנוגעת בעמודה הזו.**
+
+    אין כאן מכונת מצבים כמו במסלול ה-VEYA, ובכוונה: הסטטוס הזה אינו שלנו.
+    הוא שיקוף של מה שהספק אומר, והספק רשאי לשנות את דעתו לכל כיוון (לאשר,
+    לדחות, ולהחזיר לבדיקה) בלי שנחסום אותו. מה שכן נאכף — שהערך הוא אחת
+    משלוש המילים המוכרות.
+    """
+    before = provider_status(row)
+    target = payout_status.normalize_review(target)
+    if before == target:
+        return
+    row.provider_status = target
+    row.provider_status_changed_at = datetime.utcnow()
+    row.provider_rejection_reason = reason or None
+    audit.record(
+        db,
+        "payout_provider_status_changed",
+        event_id=row.event_id,
+        user_id=user_id,
+        detail=detail or f"בדיקת ספק הסליקה: {before} → {target}"
+        + (f" · סיבה: {reason}" if reason else ""),
         ip=ip,
     )
 
@@ -89,6 +197,12 @@ def save_details(
     הנרמול והוולידציה עוברים דרך ``app/banks.py`` — מקור אמת אחד לכללים
     ולנוסח השגיאות, כך שאותה בדיקה חלה על כל נתיב שכותב פרטי חשבון.
     """
+    row = get(db, event_id)
+
+    # **לפני הנרמול, לא אחריו.** חשבון נעול לא אמור לקבל אפילו הודעת
+    # ולידציה על הקלט — התשובה היחידה הנכונה לו היא "אי אפשר לשנות".
+    assert_unlocked(row)
+
     try:
         code = banks.normalize_bank_code(bank_code)
         branch = banks.normalize_branch(branch_number)
@@ -96,7 +210,6 @@ def save_details(
     except banks.BranchError as exc:
         raise PayoutError(str(exc)) from exc
 
-    row = get(db, event_id)
     creating = row is None
     if row is None:
         row = models.PayoutAccount(event_id=event_id, status=payout_status.MISSING)
@@ -108,13 +221,23 @@ def save_details(
     )
     row.bank_code, row.branch_number, row.account_number = code, branch, account
 
-    # כלל 2: זהות החשבון השתנתה → כל אימות או בדיקה שבתהליך בטלים.
-    if changed and current_status(row) != payout_status.MISSING:
-        _set_status(
-            db, row, payout_status.MISSING,
-            event_id=event_id, user_id=user_id, ip=ip,
-            detail="פרטי החשבון שונו — האימות בוטל ונדרשת הגשה מחדש",
-        )
+    # כלל 2: זהות החשבון השתנתה → **שתי** הבדיקות בטלות. גם זו של VEYA
+    # וגם זו של הספק: שתיהן אישרו חשבון מסוים, וזה כבר לא אותו חשבון.
+    if changed:
+        if current_status(row) != payout_status.MISSING:
+            _set_status(
+                db, row, payout_status.MISSING,
+                event_id=event_id, user_id=user_id, ip=ip,
+                detail="פרטי החשבון שונו — האימות בוטל ונדרשת הגשה מחדש",
+            )
+        row.veya_reviewed_by_user_id = None
+        row.veya_reviewed_at = None
+        if provider_status(row) != payout_status.REVIEW_PENDING:
+            _set_provider_status(
+                db, row, payout_status.REVIEW_PENDING,
+                user_id=user_id, ip=ip,
+                detail="פרטי החשבון שונו — בדיקת ספק הסליקה אופסה",
+            )
 
     audit.record(
         db,
@@ -142,7 +265,13 @@ def attach_certificate(
 
     החלפת האישור **אינה** מבטלת אימות: זהות החשבון לא השתנתה, ורק המסמך
     שמוכיח אותה הוחלף (למשל סריקה קריאה יותר אחרי דחייה).
+
+    אבל **אחרי אישור אי אפשר להחליף גם אותו**: המסמך הוא הראיה שעליה
+    האישור נשען. השער נבדק כאן שוב ולא רק ב-``save_details``, כי זה מסלול
+    כתיבה נפרד — ומי שיוסיף בעתיד נתיב שמעלה מסמך בלבד יקבל את ההגנה
+    מאליה.
     """
+    assert_unlocked(row)
     row.certificate_data = data
     row.certificate_content_type = content_type
     row.certificate_filename = filename
@@ -198,13 +327,15 @@ def set_status(
     *,
     reason: str = "",
     reviewer_user_id: Optional[int] = None,
+    ip: Optional[str] = None,
 ) -> models.PayoutAccount:
-    """מעבר סטטוס מצד הבודק — ``under_review`` / ``verified`` / ``rejected``.
+    """מעבר במסלול ה-VEYA — ``under_review`` / ``verified`` / ``rejected``.
 
     **בכוונה אין לזה נתיב API של בעלי האירוע.** מי שמזין את פרטי החשבון
-    אינו מי שמאשר אותם; הפונקציה הזו מיועדת לצד הבודק — אדם ב-VEYA היום,
-    adapter של ספק מחר (``payout_provider.PROVIDER_TO_PAYOUT_STATUS``
-    ממפה תשובת ספק אל אותם סטטוסים בדיוק).
+    אינו מי שמאשר אותם; הפונקציה הזו מיועדת לצד הבודק בלבד, ובפועל נקראת
+    דרך ``veya_approve``/``veya_reject`` מנתיבי האדמין.
+
+    היא **אינה** נוגעת ב-``provider_status`` — תשובת הספק היא מסלול נפרד.
     """
     row = get(db, event_id)
     if row is None:
@@ -212,8 +343,210 @@ def set_status(
     try:
         _set_status(
             db, row, target,
-            event_id=event_id, user_id=reviewer_user_id, reason=reason,
+            event_id=event_id, user_id=reviewer_user_id, reason=reason, ip=ip,
         )
     except payout_status.InvalidStatusTransition as exc:
         raise PayoutError(str(exc)) from exc
     return row
+
+
+# ── בדיקה 1: VEYA ────────────────────────────────────────────────────────
+# שתי הפעולות שאדם ב-VEYA מבצע. הן החוליה בין נתיבי האדמין למכונת המצבים,
+# והן היחידות שכותבות ``veya_reviewed_by_user_id``.
+
+
+def veya_approve(
+    db: Session,
+    event_id: int,
+    *,
+    reviewer_user_id: int,
+    ip: Optional[str] = None,
+) -> models.PayoutAccount:
+    """VEYA מאשרת את פרטי החשבון.
+
+    **האישור הזה לבדו אינו הופך את החשבון לכשיר.** ``provider_status``
+    נשאר בדיוק כפי שהיה — ברירת המחדל ``pending`` — עד שספק אמיתי יאמר
+    את דברו. זו בדיוק ההפרדה שכל המנגנון קיים בשבילה.
+
+    חשבון שהוגש עובר בדרך דרך ``under_review``: מכונת המצבים אוסרת קפיצה
+    ישירה מ-``submitted`` ל-``verified``, כדי שביומן תמיד יישאר תיעוד של
+    "נפתחה בדיקה" ולא רק של תוצאתה. שני המעברים נרשמים.
+    """
+    row = get(db, event_id)
+    if row is None:
+        raise PayoutError("אין פרטי חשבון לאירוע הזה")
+    status = current_status(row)
+    if status == payout_status.MISSING:
+        raise PayoutError("הפרטים טרם הוגשו לבדיקה")
+    if status == payout_status.REJECTED:
+        raise PayoutError("הפרטים נדחו — נדרשת הגשה מחדש לפני אישור")
+
+    try:
+        if status == payout_status.SUBMITTED:
+            _set_status(
+                db, row, payout_status.UNDER_REVIEW,
+                event_id=event_id, user_id=reviewer_user_id, ip=ip,
+                detail="נפתחה בדיקת VEYA לפרטי קבלת המתנות",
+            )
+        _set_status(
+            db, row, payout_status.VERIFIED,
+            event_id=event_id, user_id=reviewer_user_id, ip=ip,
+            detail="בדיקת VEYA: פרטי קבלת המתנות אושרו",
+        )
+    except payout_status.InvalidStatusTransition as exc:
+        raise PayoutError(str(exc)) from exc
+
+    row.veya_reviewed_by_user_id = reviewer_user_id
+    row.veya_reviewed_at = datetime.utcnow()
+    return row
+
+
+def veya_reject(
+    db: Session,
+    event_id: int,
+    *,
+    reason: str,
+    reviewer_user_id: int,
+    ip: Optional[str] = None,
+) -> models.PayoutAccount:
+    """VEYA דוחה את פרטי החשבון. **סיבת דחייה היא חובה.**
+
+    בלי סיבה, בעלי האירוע מקבלים "נדחה" ולא יודעים מה לתקן — וזו דחייה
+    שתחזור. הכלל נאכף כאן, בשירות, ולא רק בטופס האדמין.
+    """
+    reason = (reason or "").strip()
+    if not reason:
+        raise PayoutError("צריך להזין סיבת דחייה")
+
+    row = get(db, event_id)
+    if row is None:
+        raise PayoutError("אין פרטי חשבון לאירוע הזה")
+    if current_status(row) == payout_status.MISSING:
+        raise PayoutError("הפרטים טרם הוגשו לבדיקה")
+
+    try:
+        _set_status(
+            db, row, payout_status.REJECTED,
+            event_id=event_id, user_id=reviewer_user_id, reason=reason, ip=ip,
+            detail=f"בדיקת VEYA: פרטי קבלת המתנות נדחו · סיבה: {reason}",
+        )
+    except payout_status.InvalidStatusTransition as exc:
+        raise PayoutError(str(exc)) from exc
+
+    row.veya_reviewed_by_user_id = reviewer_user_id
+    row.veya_reviewed_at = datetime.utcnow()
+    return row
+
+
+def veya_reopen(
+    db: Session,
+    event_id: int,
+    *,
+    reviewer_user_id: int,
+    ip: Optional[str] = None,
+) -> models.PayoutAccount:
+    """פותח מחדש חשבון מאושר, כדי שבעלי האירוע יוכלו לתקן ולהגיש שוב.
+
+    **זו הדרך היחידה לבטל את הנעילה**, והיא פעולת אדמין בלבד. החשבון חוזר
+    ל-``missing``: לא ל"בבדיקה" ולא ל"נדחה", כי לא נמצאה בו בעיה — הוא
+    פשוט אינו מאושר יותר עד שיוגש שוב.
+
+    הפרטים עצמם (בנק, סניף, חשבון, אישור) **נשארים בטבלה** — הזוג לא
+    צריך להקליד הכול מחדש, רק לתקן ולשלוח. וגם ``provider_status`` מתאפס:
+    אישור ספק שניתן לחשבון שכבר אינו מאושר אצלנו אינו תקף.
+    """
+    row = get(db, event_id)
+    if row is None:
+        raise PayoutError("אין פרטי חשבון לאירוע הזה")
+    if current_status(row) != payout_status.VERIFIED:
+        raise PayoutError("הפרטים אינם מאושרים — אין מה לפתוח מחדש")
+
+    try:
+        _set_status(
+            db, row, payout_status.MISSING,
+            event_id=event_id, user_id=reviewer_user_id, ip=ip,
+            detail="בדיקת VEYA: האישור בוטל והפרטים נפתחו לעריכה מחדש",
+        )
+    except payout_status.InvalidStatusTransition as exc:
+        raise PayoutError(str(exc)) from exc
+
+    row.veya_reviewed_by_user_id = None
+    row.veya_reviewed_at = None
+    if provider_status(row) != payout_status.REVIEW_PENDING:
+        _set_provider_status(
+            db, row, payout_status.REVIEW_PENDING,
+            user_id=reviewer_user_id, ip=ip,
+            detail="האישור נפתח מחדש — בדיקת ספק הסליקה אופסה",
+        )
+    return row
+
+
+# ── בדיקה 2: ספק הסליקה ──────────────────────────────────────────────────
+
+
+def set_provider_status(
+    db: Session,
+    event_id: int,
+    target: str,
+    *,
+    reason: str = "",
+    actor_user_id: Optional[int] = None,
+    ip: Optional[str] = None,
+) -> models.PayoutAccount:
+    """רושם את תשובת ספק הסליקה.
+
+    **זו רשומה, לא פנייה.** הפונקציה לא מדברת עם אף ספק ולא שולחת לשום
+    מקום מידע — היא רק שומרת מה הספק ענה. היום אין ספק, ולכן היחיד שקורא
+    לה הוא אדמין ב-VEYA שמזין ידנית את התשובה; כשיחובר ספק אמיתי, ה-adapter
+    שלו יקרא לאותה פונקציה בדיוק עם מה שהחזיר ``PayoutProvider``.
+
+    היא **אינה** נוגעת במסלול ה-VEYA: דחיית ספק לא הופכת חשבון ל-``rejected``
+    אצלנו, ואישור ספק לא הופך אותו ל-``verified``.
+    """
+    row = get(db, event_id)
+    if row is None:
+        raise PayoutError("אין פרטי חשבון לאירוע הזה")
+    try:
+        _set_provider_status(
+            db, row, target, user_id=actor_user_id, reason=reason, ip=ip,
+        )
+    except payout_status.InvalidStatusTransition as exc:
+        raise PayoutError(str(exc)) from exc
+    return row
+
+
+def awaiting_veya_review(db: Session) -> list[models.PayoutAccount]:
+    """כל החשבונות שממתינים להכרעת VEYA — ``submitted`` או ``under_review``.
+
+    התור של מסך האדמין. הוותיק ביותר ראשון: מי שמחכה הכי הרבה זמן נבדק
+    ראשון, ולא נדחק לתחתית הרשימה בכל הגשה חדשה.
+    """
+    return list(
+        db.scalars(
+            select(models.PayoutAccount)
+            .where(models.PayoutAccount.status.in_(payout_status.PENDING_REVIEW))
+            .order_by(
+                models.PayoutAccount.submitted_at.asc(),
+                models.PayoutAccount.id.asc(),
+            )
+        ).all()
+    )
+
+
+def approved_accounts(db: Session) -> list[models.PayoutAccount]:
+    """חשבונות שכבר אושרו ולכן נעולים לבעלי האירוע.
+
+    **בלי הרשימה הזו, "פתיחה מחדש" לא הייתה נגישה מהמסך בכלל**: חשבון
+    שאושר יוצא מתור הבדיקה, ואז אין דרך להגיע אליו. החדש ביותר ראשון —
+    בקשה לשינוי מגיעה בדרך כלל סמוך לאישור.
+    """
+    return list(
+        db.scalars(
+            select(models.PayoutAccount)
+            .where(models.PayoutAccount.status == payout_status.VERIFIED)
+            .order_by(
+                models.PayoutAccount.veya_reviewed_at.desc(),
+                models.PayoutAccount.id.desc(),
+            )
+        ).all()
+    )

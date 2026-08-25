@@ -875,10 +875,13 @@ class PayoutAccount(Base):
     certificate_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     certificate_uploaded_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
-    # ── סטטוס האימות ─────────────────────────────────────────────────────
+    # ── בדיקה 1: VEYA ────────────────────────────────────────────────────
     # missing → submitted → under_review → verified / rejected.
     # המעברים המותרים מוגדרים ב-``app/payout_status.py`` ונאכפים אך ורק
     # דרך ``payout_service`` — לא בהשמה ישירה לעמודה.
+    #
+    # **העמודה הזו היא מסלול ה-VEYA בלבד.** היא לא יודעת דבר על ספק
+    # הסליקה, ותשובת הספק לעולם לא נכתבת אליה — לספק יש עמודה משלו למטה.
     status: Mapped[str] = mapped_column(String(20), default="missing", nullable=False)
     #: מתי הפרטים הוגשו לבדיקה בפעם האחרונה.
     submitted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
@@ -887,10 +890,32 @@ class PayoutAccount(Base):
     #: סיבת הדחייה, כשהסטטוס ``rejected``. מוצג לבעלי האירוע.
     rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    # ── שדות לספק Payout עתידי ───────────────────────────────────────────
-    # **אינם בשימוש היום.** אף קוד לא כותב אליהם — הם קיימים כדי שחיבור
-    # ספק אמיתי בעתיד (ראו ``app/payout_provider.py``) לא ידרוש שינוי
-    # סכמה על טבלה שכבר יש בה נתונים אמיתיים.
+    #: מי ב-VEYA הכריע בבדיקה האחרונה, ומתי. נשמר בנפרד מ-``status_changed_at``
+    #: כי זה משתנה גם כשבעלי האירוע עורכים פרטים — ואז אין "בודק".
+    veya_reviewed_by_user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    veya_reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # ── בדיקה 2: ספק הסליקה ──────────────────────────────────────────────
+    # pending / approved / rejected — התשובה של הספק שיעביר את הכסף בפועל.
+    #
+    # **עמודה נפרדת, ובכוונה.** אילו תשובת הספק הייתה נכתבת ל-``status``,
+    # "הספק אישר" היה הופך אוטומטית ל-``verified`` ועוקף את בדיקת VEYA.
+    # שתי הבדיקות בלתי תלויות, ורק ``payout_status.is_fully_verified``
+    # מחבר ביניהן.
+    #
+    # ברירת המחדל ``pending`` היא המצב האמיתי היום: טרם נבחר ספק, ולכן
+    # אף ספק לא אישר דבר. חשבון אינו הופך כשיר מפני שאין ספק.
+    provider_status: Mapped[str] = mapped_column(
+        String(20), default="pending", nullable=False
+    )
+    provider_status_changed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    #: נימוק הדחייה כפי שהגיע מהספק, אם סיפק. מוצג לבעלי האירוע.
+    provider_rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # שם הספק והמזהה שהוא הקצה. **אינם בשימוש היום** — אף קוד לא כותב
+    # אליהם, כי טרם נבחר ספק. הם קיימים כדי שחיבור ספק אמיתי בעתיד (ראו
+    # ``app/payout_provider.py``) לא ידרוש שינוי סכמה על טבלה שכבר יש בה
+    # נתונים אמיתיים.
     provider: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
     provider_account_id: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
 

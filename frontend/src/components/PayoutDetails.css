@@ -1,113 +1,156 @@
-/* "פרטי קבלת מתנות" — כרטיס באותו אופי של GiftsPage/ActivityLog:
-   משטח שקט, מסגרת עדינה, טיפוגרפיה רגועה. רק טוקנים קיימים. */
+/* "פרטי קבלת מתנות" — כרטיס אחד: מצב, פרטים, ופעולה אחת.
 
-.payout-state {
-  padding: 28px 16px;
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.875rem;
-}
+   הכרטיס בנוי בשלוש שכבות, מלמעלה למטה:
+
+     ראש   כותרת + תווית מצב + משפט אחד      "מה קורה"
+     גוף   הפרטים השמורים, או הטופס           "מה יש"
+     רגל   פעולה ראשית אחת + קישור משני       "מה עכשיו"
+
+   **בלי כרטיס בתוך כרטיס.** הפרטים השמורים הם שורות על אותו משטח, לא
+   תיבה מקוננת — הכרטיס כבר משטח אחד, ומשטח שני בתוכו מוסיף מסגרת בלי
+   להוסיף מידע. היחיד שכן מקבל משטח משלו הוא הטופס בעריכה, כי שם באמת
+   מתחלף ההקשר.
+
+   הצבע כאן הוא **סימון, לא קישוט**: תווית המצב היא הדבר היחיד שנושא
+   גוון, ולעולם לא לבדה — לצידה תמיד יש משפט שאומר את אותו דבר במילים.
+   רק טוקנים קיימים של VEYA. */
 
 .payout-card {
-  margin-bottom: 18px;
-  padding: 20px;
+  padding: 24px;
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: var(--radius-l);
   box-shadow: var(--shadow-card);
 }
 
+/* ---- ראש: מה קורה ------------------------------------------------------ */
 .payout-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
 }
 .payout-title {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: var(--charcoal);
 }
-.payout-subtitle {
-  margin: 2px 0 0;
-  font-size: 0.8125rem;
-  color: var(--muted);
-}
 
-.payout-action {
+/* תווית המצב — שקטה: מסגרת דקה, בלי רקע רווי, בלי אותיות גדולות.
+   היא מסמנת, לא מכריזה. */
+.payout-pill {
   flex: none;
-  padding: 8px 16px;
-  min-height: 40px;
-  background: none;
-  border: 1px solid var(--gold);
-  border-radius: var(--radius-m);
-  color: var(--gold-deep);
-  font-family: inherit;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background var(--transition-fast);
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-hi);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
-.payout-action:hover { background: rgba(var(--gold-rgb), 0.08); }
+/* ארבעה מצבים, שלושה גוונים: חסר (זהב), נדרש תיקון (שגיאה), אושר (ירוק).
+   "בבדיקה" נשאר בברירת המחדל הניטרלית — אין מה לעשות, ולכן אין למה
+   למשוך את העין. */
+.payout-pill-missing {
+  border-color: rgba(var(--gold-rgb), 0.45);
+  background: rgba(var(--gold-rgb), 0.08);
+  color: var(--gold-deep);
+}
+.payout-pill-fix {
+  border-color: rgba(166, 96, 90, 0.4);
+  background: rgba(166, 96, 90, 0.08);
+  color: var(--error);
+}
+.payout-pill-approved {
+  border-color: rgba(47, 158, 95, 0.4);
+  background: rgba(47, 158, 95, 0.1);
+  color: var(--green);
+}
 
-.payout-note,
-.payout-error {
+.payout-line {
+  margin: 10px 0 0;
+  max-width: 56ch;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: var(--body);
+}
+
+/* סיבת הדחייה — הטקסט היחיד בכרטיס שנכתב בידי אדם ולא בידי המערכת,
+   ולכן הוא מסומן כציטוט: משטח משלו, כדי שלא ייקרא כהמשך המשפט. */
+.payout-reason {
   margin: 14px 0 0;
-  padding: 10px 12px;
+  padding: 12px 14px;
+  background: var(--surface-hi);
+  border-inline-start: 2px solid var(--error);
   border-radius: var(--radius-s);
   font-size: 0.8125rem;
-}
-.payout-note  { background: rgba(var(--gold-rgb), 0.1); color: var(--gold-deep); }
-.payout-error { background: rgba(166, 96, 90, 0.1);     color: var(--error); }
-
-/* ---- מצב ריק ---------------------------------------------------------- */
-.payout-empty {
-  margin-top: 16px;
-  padding: 18px;
-  background: var(--surface-hi);
-  border: 1px dashed var(--line);
-  border-radius: var(--radius-m);
+  line-height: 1.65;
   color: var(--body);
-  font-size: 0.875rem;
+  overflow-wrap: anywhere;
 }
-.payout-empty p { margin: 0; }
-.payout-empty-title {
-  margin-bottom: 4px !important;
+.payout-reason-label {
   font-weight: 600;
   color: var(--charcoal);
 }
 
-/* ---- תצוגת הפרטים השמורים -------------------------------------------- */
-.payout-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 16px;
-  margin: 18px 0 0;
-  padding: 16px;
+/* ---- הודעות הצלחה/שגיאה ------------------------------------------------
+   קו בקצה ולא רקע מלא: הודעה זמנית לא צריכה להיות הדבר הצבעוני ביותר
+   במסך שיש בו כסף. */
+.payout-note,
+.payout-error {
+  margin: 16px 0 0;
+  padding: 11px 14px;
+  border-radius: var(--radius-s);
   background: var(--surface-hi);
-  border-radius: var(--radius-m);
+  font-size: 0.8125rem;
+  line-height: 1.6;
 }
-.payout-summary > div { min-width: 0; }
-.payout-summary dt {
-  margin-bottom: 4px;
+.payout-note {
+  border-inline-start: 2px solid var(--green);
+  color: var(--body);
+}
+.payout-error {
+  border-inline-start: 2px solid var(--error);
+  color: var(--error);
+}
+
+/* ---- גוף: הפרטים השמורים ----------------------------------------------
+   שורות על משטח הכרטיס עצמו. תווית קטנה מעל ערך — נקרא בסריקה מהירה,
+   ולא דורש עמודות שמתקמטות במובייל. */
+.payout-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 18px 24px;
+  margin: 20px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid var(--line-2);
+}
+.payout-fact { min-width: 0; }
+.payout-facts dt {
+  margin-bottom: 5px;
   font-size: 0.75rem;
   color: var(--muted);
 }
-.payout-summary dd {
+.payout-facts dd {
   margin: 0;
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   font-size: 0.9375rem;
   color: var(--charcoal);
-  min-width: 0;
 }
-.payout-summary-bank dd span {
+.payout-fact-bank dd span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.payout-fact-missing {
+  color: var(--gold-deep);
+  font-size: 0.875rem;
 }
 /* מספרי סניף/חשבון תמיד LTR — אחרת הם מוצגים הפוך בהקשר עברי. */
 .payout-num {
@@ -116,15 +159,13 @@
   font-variant-numeric: tabular-nums;
   justify-content: flex-start;
 }
-.payout-updated {
-  grid-column: 1 / -1;
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--faint);
-}
 
+/* קישור-כפתור לצפייה באישור. הריפוד האנכי קיים בשביל יעד המגע במובייל:
+   בלעדיו זה קו טקסט בגובה 19px, שקשה לפגוע בו באגודל. ה-margin השלילי
+   מחזיר את היישור לשאר השורות, כך שהמרווח נוסף רק לאזור ההקשה. */
 .payout-link {
-  padding: 0;
+  padding: 10px 4px;
+  margin: -10px -4px;
   background: none;
   border: none;
   color: var(--gold-deep);
@@ -135,19 +176,84 @@
   cursor: pointer;
 }
 
-/* ---- הטופס ------------------------------------------------------------ */
+/* ---- רגל: פעולה אחת ----------------------------------------------------
+   כפתור ראשי אחד לכל היותר, קישור משני לצידו, וההסבר מתחת לשניהם. */
+/* שתי שכבות ולא flex אחד: שורת הפעולות, ומתחתיה ההסברים.
+   ניסיון לדחוף את ההסבר לשורה משלו בתוך אותו flex (``flex-basis: 100%``)
+   לא עבד — ``max-width`` שמגביל את רוחב הקריאה מקטין את הגודל ההיפותטי,
+   והפריט חוזר להיצמד לשורת הכפתורים. הפרדה מבנית פשוטה יותר ויציבה. */
+.payout-foot {
+  margin-top: 22px;
+}
+.payout-foot-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+}
+.payout-cta {
+  min-height: 46px;
+  padding: 12px 26px;
+  background: var(--charcoal);
+  border: 1px solid var(--charcoal);
+  border-radius: var(--radius-m);
+  color: var(--ivory);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.payout-cta:hover:not(:disabled) { background: var(--black-soft); }
+.payout-cta:disabled { opacity: 0.6; cursor: default; }
+
+/* משני — קישור, לא כפתור שני. כך אין שתי מסגרות שמתחרות על אותה לחיצה. */
+.payout-secondary {
+  padding: 10px 2px;
+  margin: -10px 0;
+  background: none;
+  border: none;
+  color: var(--body);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.payout-secondary:hover { color: var(--charcoal); }
+
+/* ההסבר תמיד מתחת לפעולות, ולא נדחק לצידן. */
+.payout-foot-note {
+  margin: 12px 0 0;
+  max-width: 56ch;
+  font-size: 0.75rem;
+  line-height: 1.65;
+  color: var(--muted);
+}
+/* בלי פעולות בכלל (בבדיקה, או אחרי אישור) ההסבר הוא הדבר היחיד ברגל —
+   ואז אין מה להרחיק אותו ממנו. */
+.payout-foot-actions:empty + .payout-foot-note {
+  margin-top: 0;
+}
+
+/* ---- הטופס ------------------------------------------------------------
+   המשטח המקונן היחיד בכרטיס, ובכוונה: בעריכה מתחלף ההקשר, והרקע העדין
+   מסמן "אתם בתוך טופס עכשיו" בלי להוסיף מסגרת נוספת. */
 .payout-form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  margin-top: 18px;
+  gap: 20px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line-2);
 }
 .payout-field { min-width: 0; }
 .payout-label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 7px;
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--charcoal);
 }
 
@@ -155,16 +261,16 @@
 .payout-row {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 18px;
+  gap: 20px;
 }
 @media (min-width: 560px) {
-  .payout-row { grid-template-columns: 140px 1fr; }
+  .payout-row { grid-template-columns: 150px 1fr; }
 }
 
 .payout-input {
   width: 100%;
   min-height: 48px;
-  padding: 11px 14px;
+  padding: 12px 14px;
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: var(--radius-m);
@@ -172,7 +278,9 @@
   font-family: inherit;
   /* 16px — מתחת לזה ספארי במובייל מזום-אין על השדה בפוקוס */
   font-size: 1rem;
+  transition: border-color var(--transition-fast);
 }
+.payout-input:hover { border-color: var(--faint); }
 .payout-input:focus {
   outline: none;
   border-color: var(--gold);
@@ -189,11 +297,12 @@
 
 .payout-hint,
 .payout-field-error {
-  margin: 6px 0 0;
+  margin: 7px 0 0;
   font-size: 0.75rem;
+  line-height: 1.6;
 }
 .payout-hint { color: var(--muted); }
-.payout-hint-why { margin: -2px 0 8px; }
+.payout-hint-why { margin: -3px 0 10px; }
 .payout-field-error { color: var(--error); }
 
 /* ---- העלאת הקובץ ------------------------------------------------------ */
@@ -217,16 +326,20 @@
 }
 .payout-file-btn {
   flex: none;
-  min-height: 44px;
-  padding: 10px 16px;
+  min-height: 46px;
+  padding: 12px 18px;
   background: var(--surface-hi);
-  border: 1px solid var(--line);
+  border: 1px dashed var(--line);
   border-radius: var(--radius-m);
   color: var(--charcoal);
   font-family: inherit;
   font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: border-color var(--transition-fast);
 }
+/* מקווקו כאן **כן** נכון: זה השדה היחיד במסך שמקבל קובץ, וזו המוסכמה
+   שאומרת "מכניסים לכאן משהו" בלי מילה נוספת. */
 .payout-file-btn:hover { border-color: var(--gold); }
 .payout-file-input:focus-visible + .payout-file-row .payout-file-btn {
   outline: 2px solid var(--gold);
@@ -241,25 +354,25 @@
   white-space: nowrap;
 }
 
-/* ---- כפתורי פעולה ----------------------------------------------------- */
+/* ---- כפתורי הטופס ----------------------------------------------------- */
 .payout-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 .payout-submit,
 .payout-cancel {
   min-height: 48px;
-  padding: 12px 24px;
+  padding: 12px 26px;
   border-radius: var(--radius-m);
   font-family: inherit;
   font-size: 0.9375rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
 }
 .payout-submit {
   flex: 1;
-  min-width: 160px;
+  min-width: 170px;
   background: var(--charcoal);
   border: 1px solid var(--charcoal);
   color: var(--ivory);
@@ -270,57 +383,17 @@
   background: none;
   border: 1px solid var(--line);
   color: var(--body);
+  font-weight: 500;
 }
 .payout-cancel:hover:not(:disabled) { border-color: var(--muted); }
 
-/* ---- סטטוס האימות ------------------------------------------------------
-   התג נשאר שקט בכוונה: זה מסך פיננסי, לא לוח בקרה. רק "נדחו" מקבל צבע
-   מתריע, כי הוא היחיד שדורש פעולה מיידית. */
-.payout-head-side {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.payout-badge {
-  flex: none;
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--surface-hi);
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.payout-badge-submitted,
-.payout-badge-under_review {
-  border-color: rgba(var(--gold-rgb), 0.4);
-  color: var(--gold-deep);
-}
-.payout-badge-verified {
-  border-color: var(--green);
-  color: var(--green);
-}
-.payout-badge-rejected {
-  border-color: var(--error);
-  color: var(--error);
-}
-
-.payout-submit-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
-}
-.payout-submit-inline {
-  flex: none;
-  align-self: flex-start;
-}
-.payout-submit-row .payout-hint { margin: 0; }
-.payout-review-note { margin-top: 14px; }
-
-/* במובייל הכפתור נפרש לכל הרוחב — יעד מגע, לא כפתור קטן בפינה. */
+/* ---- מובייל -----------------------------------------------------------
+   ב-320px הפעולה הראשית נפרשת לכל הרוחב, והמשנית מתיישרת מתחתיה — יעד
+   מגע מלא במקום שני כפתורים שנדחסים לשורה אחת. */
 @media (max-width: 559px) {
-  .payout-submit-inline { align-self: stretch; width: 100%; }
+  .payout-card { padding: 20px 16px; }
+  .payout-foot-actions { gap: 14px; }
+  .payout-cta { width: 100%; }
+  .payout-secondary { align-self: flex-start; }
+  .payout-facts { gap: 16px; }
 }

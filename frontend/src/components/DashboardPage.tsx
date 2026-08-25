@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { getEvent, getStats, mediaUrl, readAudit, updateEvent } from '../api'
-import type { AuditLogRow, DashboardStats, EventDetails } from '../types'
+import { getEvent, getPayoutAccount, getStats, mediaUrl, readAudit, updateEvent } from '../api'
+import type { AuditLogRow, DashboardStats, EventDetails, PayoutAccount } from '../types'
 import type { ReadinessPage } from '../readiness'
+import {
+  payoutDisplayStatus,
+  payoutStage,
+  type PayoutDisplayStatus,
+} from '../payoutState'
 import { ActivityLog } from './ActivityLog'
 import { PartnerCta } from './PartnerCta'
 import { VenueAutocomplete } from './VenueAutocomplete'
@@ -95,6 +100,60 @@ function InviteBanner({ count, onSend }: { count: number; onSend: () => void }) 
       </div>
       <button type="button" className="invite-banner-btn" onClick={onSend}>
         {t.inviteBannerCta}
+      </button>
+    </div>
+  )
+}
+
+/**
+ * תזכורת "פרטי קבלת מתנות" בתמונת המצב.
+ *
+ * **מוצגת רק כשיש מה לעשות או מה לדעת.** ברגע ששתי הבדיקות אושרו היא
+ * נעלמת לגמרי: משימה שנגמרה לא צריכה להמשיך לתפוס מקום בדשבורד.
+ *
+ * הטון עדין ולא מלחיץ — זה סעיף פתוח ברשימה של הזוג, לא אזהרה. לכן יש
+ * כפתור רק במצבים שבהם באמת נדרשת פעולה; כשהפרטים בבדיקה, התזכורת רק
+ * מדווחת ומוסיפה קישור צפייה.
+ *
+ * הסיווג עצמו מגיע מ-``payoutDisplayStatus`` — אותה פונקציה שמזינה את
+ * הסטטוס במסך המתנות, כדי ששני המסכים לא יאמרו לזוג שני דברים שונים,
+ * ובלי אזכור של מי מבין שני הגורמים בודק.
+ */
+function PayoutReminder({
+  account,
+  onNavigate,
+}: {
+  account: PayoutAccount | null
+  onNavigate?: (page: ReadinessPage) => void
+}) {
+  const display = payoutDisplayStatus(payoutStage(account))
+  if (display === 'approved') return null
+
+  const r = t.payoutReminder
+  const copy: Record<Exclude<PayoutDisplayStatus, 'approved'>, {
+    title: string
+    desc: string
+    cta: string
+  }> = {
+    missing: { title: r.missingTitle, desc: r.missingDesc, cta: r.missingCta },
+    review: { title: r.reviewTitle, desc: r.reviewDesc, cta: r.viewCta },
+    fix: { title: r.fixTitle, desc: r.fixDesc, cta: r.fixCta },
+  }
+  const { title, desc, cta } = copy[display]
+  const urgent = display === 'fix'
+
+  return (
+    <div className={`payout-reminder${urgent ? ' payout-reminder--action' : ''}`}>
+      <div className="payout-reminder-text">
+        <p className="payout-reminder-title">{title}</p>
+        <p className="payout-reminder-desc">{desc}</p>
+      </div>
+      <button
+        type="button"
+        className="payout-reminder-btn"
+        onClick={() => onNavigate?.('gifts')}
+      >
+        {cta}
       </button>
     </div>
   )
@@ -338,6 +397,9 @@ export function DashboardPage({ onNavigate }: Props) {
   const [error, setError] = useState('')
   // יומן העדכונים — מקור ה-Feed "עדכוני אישורי הגעה" (מסונן ל-confirm_submit).
   const [auditRows, setAuditRows] = useState<AuditLogRow[]>([])
+  // פרטי קבלת המתנות — עבור התזכורת בלבד. ``null`` כשאין הרשאה (הנתיב
+  // פתוח לבעלים בלבד) או כשהקריאה נכשלה, ואז פשוט אין תזכורת.
+  const [payout, setPayout] = useState<PayoutAccount | null>(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -364,6 +426,19 @@ export function DashboardPage({ onNavigate }: Props) {
   useEffect(() => {
     refresh()
   }, [refresh])
+
+  // בקריאה נפרדת ולא בתוך ``refresh``: הנתיב פתוח לבעלים בלבד, ולכן מפיק
+  // שצופה בדשבורד יקבל כאן 403 — וזה תקין. כישלון שקט משמעו "בלי תזכורת",
+  // ולא דשבורד שנשבר בגלל אזור משני.
+  useEffect(() => {
+    let alive = true
+    getPayoutAccount()
+      .then((a) => alive && setPayout(a))
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [])
 
   async function onSaveEvent() {
     setError('')
@@ -696,6 +771,7 @@ export function DashboardPage({ onNavigate }: Props) {
                 count={stats.total_guests - stats.invitations_sent}
                 onSend={() => onNavigate?.('messages')}
               />
+              <PayoutReminder account={payout} onNavigate={onNavigate} />
               <SeatingHelperCard stats={stats} onNavigate={onNavigate} />
             </div>
           </>

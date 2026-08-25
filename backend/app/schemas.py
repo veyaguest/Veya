@@ -1418,7 +1418,13 @@ class OwnerGiftRead(BaseModel):
     id: int                    # למפתח רינדור ברשימה
     sender_name: str
     message: Optional[str] = None
-    gift_amount_agorot: int    # מה שהאירוע מקבל — במלואו, בלי ניכוי
+    #: מה שהאירוע מקבל — במלואו, בלי ניכוי.
+    #:
+    #: **``None`` כל עוד חשבון קבלת המתנות אינו מאומת במלואו.** זו הגנה
+    #: בשרת ולא הסתרה ב-UI: לפני ששתי הבדיקות (VEYA + ספק הסליקה) אושרו,
+    #: הסכום כלל אינו נכתב לתשובה — ראו ``routers/gifts.py``. הנתון נשאר
+    #: כמובן בטבלה; זו הגבלת *החזרה*, לא מחיקה.
+    gift_amount_agorot: Optional[int] = None
     status: str                # pending / paid / failed / cancelled / refunded
     created_at: datetime
 
@@ -1426,10 +1432,20 @@ class OwnerGiftRead(BaseModel):
 class GiftsSummary(BaseModel):
     """מסך "מתנות באשראי" של בעלי האירוע — סיכום + רשימה, בקריאה אחת."""
 
+    #: האם הסכומים מוחזרים בתשובה הזו. ``False`` ⇒ שדות הסכום כולם
+    #: ``None``, גם בסיכום וגם בכל שורה. השדה קיים כדי שהמסך ידע להציג
+    #: הסבר במקום סכום, ולא ינחש מדוע קיבל ``None``.
+    amounts_visible: bool = True
+
     # הסיכום נספר **רק** מעסקאות ``paid`` — לא ``pending``/``failed``/
     # ``cancelled``/``refunded``. נחשב בשרת (routers/gifts.py), לא בפרונט.
-    total_received_agorot: int
-    total_received_display: str    # "₪1,240" — מוכן לתצוגה, בלי חשבון בצד לקוח
+    #
+    # ``None`` כשהחשבון אינו מאומת במלואו — ראו ``OwnerGiftRead``.
+    total_received_agorot: Optional[int] = None
+    total_received_display: Optional[str] = None   # "₪1,240" — מוכן לתצוגה
+    #: **כמה** מתנות התקבלו — נתון תפעולי של האירוע, לא סכום כספי, ולכן
+    #: מוחזר תמיד. בעלי האירוע רשאים לדעת שמתנות מגיעות גם בזמן שהחשבון
+    #: עוד בבדיקה.
     paid_count: int
     # כמה עסקאות קיימות בסך הכול (כולל שנכשלו) — נתון של האירוע עצמו,
     # לא מידע מסחרי של VEYA. סכום העמלות שנגבו **אינו** מוחזר כאן.
@@ -2053,12 +2069,27 @@ class PayoutAccountRead(BaseModel):
     """
 
     configured: bool
+    #: מסלול הבדיקה של VEYA:
     #: missing / submitted / under_review / verified / rejected
     status: str
+    #: אותו מסלול, מקוצר לשלוש מילים: pending / approved / rejected.
+    veya_status: str = "pending"
+    #: בדיקת ספק הסליקה: pending / approved / rejected. **מסלול נפרד** —
+    #: אישור VEYA אינו משנה אותו.
+    provider_status: str = "pending"
+    #: שתי הבדיקות אושרו. **נגזר בשרת בלבד** (``payout_service.is_fully_verified``)
+    #: ולא מתקבל בשום קלט — אין שדה כזה ב-``PayoutAccountWrite``.
+    fully_verified: bool = False
+    #: הפרטים אושרו ע"י VEYA ולכן נעולים לשינוי. גם זה נגזר בשרת: הוא
+    #: מדווח על החלטה שכבר נאכפת ב-``payout_service``, ולא מבקש מהמסך
+    #: לאכוף משהו בעצמו.
+    locked: bool = False
     #: האם אפשר להגיש לבדיקה עכשיו (יש פרטים ואישור, והסטטוס מאפשר).
     can_submit: bool = False
-    #: סיבת הדחייה, כשהסטטוס ``rejected``.
+    #: סיבת הדחייה של VEYA, כשהסטטוס ``rejected``.
     rejection_reason: Optional[str] = None
+    #: סיבת הדחייה של ספק הסליקה, אם סיפק אותה.
+    provider_rejection_reason: Optional[str] = None
     submitted_at: Optional[datetime] = None
     bank_code: Optional[int] = None
     bank_name: Optional[str] = None
@@ -2066,3 +2097,58 @@ class PayoutAccountRead(BaseModel):
     account_number_masked: Optional[str] = None
     certificate: Optional[PayoutCertificateRead] = None
     updated_at: Optional[datetime] = None
+
+
+# ---- בדיקת פרטי קבלת המתנות בצד VEYA (מסך האדמין) ----
+
+
+class PayoutReviewRow(BaseModel):
+    """חשבון אחד בתור הבדיקה של האדמין.
+
+    **מה שיש כאן זה בדיוק מה שצריך כדי להכריע**: מי בעלי האירוע, לאיזה
+    בנק וסניף, ואילו ארבע ספרות אחרונות — מספיק כדי להצליב מול אישור
+    ניהול החשבון שמוצג לצידו.
+
+    **מה שאין כאן:** מספר החשבון המלא. גם לאדמין הוא לא מוחזר ב-JSON —
+    מי שבודק פותח את המסמך עצמו (``GET /admin/payout/{event_id}/certificate``)
+    ומשווה מולו. תשובת רשימה לא צריכה לשאת מספר חשבון של אף אחד.
+    """
+
+    event_id: int
+    event_title: str = ""
+    owner_name: str = ""
+    owner_email: str = ""
+
+    bank_code: Optional[int] = None
+    bank_name: Optional[str] = None
+    branch_number: Optional[str] = None
+    account_number_masked: Optional[str] = None
+    certificate: Optional[PayoutCertificateRead] = None
+
+    status: str
+    veya_status: str
+    provider_status: str
+    fully_verified: bool
+    rejection_reason: Optional[str] = None
+    provider_rejection_reason: Optional[str] = None
+    submitted_at: Optional[datetime] = None
+    #: מי ב-VEYA הכריע בבדיקה האחרונה, ומתי.
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+
+
+class PayoutRejectWrite(BaseModel):
+    """דחייה. הסיבה **חובה** — ראו ``payout_service.veya_reject``."""
+
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class PayoutProviderStatusWrite(BaseModel):
+    """רישום תשובת ספק הסליקה.
+
+    ``status`` הוא pending / approved / rejected. הערך נבדק שוב בשירות
+    (``payout_status.normalize_review``) — הבדיקה כאן היא נוחות בלבד.
+    """
+
+    status: str
+    reason: str = ""

@@ -60,6 +60,8 @@ import type {
   MessageDefaultOptionInput,
   PayoutAccount,
   PayoutAccountInput,
+  PayoutReviewRow,
+  ReviewStatus,
   MessageTemplate,
   RsvpSummary,
   ReserveSummary,
@@ -924,6 +926,86 @@ export async function submitPayoutAccount(): Promise<PayoutAccount> {
  */
 export async function fetchPayoutCertificate(): Promise<Blob> {
   const res = await apiFetch('/payout/certificate')
+  if (!res.ok) throw await toError(res)
+  return res.blob()
+}
+
+// ---- בדיקת פרטי קבלת מתנות בצד VEYA (אדמין בלבד) ----
+//
+// הנתיבים האלה מוגנים ב-``get_current_admin`` בשרת. בעל אירוע או מפיק
+// שיקרא להם יקבל 403 — ההסתרה במסך היא נוחות, לא הגנה.
+
+/**
+ * רשימת חשבונות לאדמין.
+ *
+ * ``pending`` — תור הבדיקה. ``approved`` — חשבונות שכבר אושרו ונעולים,
+ * והדרך היחידה להגיע אליהם כדי לפתוח אותם מחדש.
+ */
+export async function adminListPayoutReviews(
+  scope: 'pending' | 'approved' = 'pending',
+): Promise<PayoutReviewRow[]> {
+  const res = await apiFetch(`/admin/payout?scope=${scope}`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** VEYA מאשרת. **אינו** משנה את בדיקת ספק הסליקה — היא מסלול נפרד. */
+export async function adminApprovePayout(eventId: number): Promise<PayoutReviewRow> {
+  const res = await apiFetch(`/admin/payout/${eventId}/approve`, { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** VEYA דוחה. הסיבה חובה ומוצגת לבעלי האירוע. */
+export async function adminRejectPayout(
+  eventId: number,
+  reason: string,
+): Promise<PayoutReviewRow> {
+  const res = await apiFetch(`/admin/payout/${eventId}/reject`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/**
+ * פותח מחדש חשבון מאושר, כדי שבעלי האירוע יוכלו לתקן ולהגיש שוב.
+ *
+ * **הדרך היחידה לבטל את נעילת החשבון.** מרגע האישור אין לבעלי האירוע
+ * שום מסלול לשנות את הפרטים, לא ב-UI ולא ב-API.
+ */
+export async function adminReopenPayout(eventId: number): Promise<PayoutReviewRow> {
+  const res = await apiFetch(`/admin/payout/${eventId}/reopen`, { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/**
+ * מסמן ידנית את תוצאת בדיקת ספק הסליקה.
+ *
+ * **כלי בדיקה, לא חלק מהתהליך.** אין ספק מחובר, והפונקציה אינה פונה לאף
+ * גורם חיצוני ואינה מדמה אישור של ספק אמיתי. כשיחובר ספק, ה-adapter שלו
+ * יכתוב את השדה בעצמו והנתיב הזה ייסגר.
+ */
+export async function adminSetPayoutProviderStatus(
+  eventId: number,
+  status: ReviewStatus,
+  reason = '',
+): Promise<PayoutReviewRow> {
+  const res = await apiFetch(`/admin/payout/${eventId}/provider`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, reason }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** אישור ניהול החשבון, לצורך הבדיקה. אותו נימוק כמו ב-``fetchPayoutCertificate``. */
+export async function adminFetchPayoutCertificate(eventId: number): Promise<Blob> {
+  const res = await apiFetch(`/admin/payout/${eventId}/certificate`)
   if (!res.ok) throw await toError(res)
   return res.blob()
 }

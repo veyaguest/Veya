@@ -3234,6 +3234,64 @@ td.notes.seating {
   transform: translateY(-1px);
 }
 
+/* ---- תזכורת "פרטי קבלת מתנות" ------------------------------------------
+   שקטה יותר מבאנר ההזמנות: משטח לבן רגיל וקו דק בקצה, בלי רקע צבעוני.
+   ברוב הזמן היא רק מדווחת ("בבדיקה"), ואין סיבה שדיווח ימשוך את העין
+   כמו משימה. רק מצב שדורש פעולה (דחייה) מקבל קו בצבע שגיאה. */
+.payout-reminder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px 20px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-inline-start: 3px solid var(--line-2);
+  border-radius: var(--radius-l);
+}
+.payout-reminder--action {
+  border-inline-start-color: var(--error);
+}
+.payout-reminder-title {
+  margin: 0 0 3px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.payout-reminder-desc {
+  margin: 0;
+  max-width: 440px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--body);
+}
+/* כפתור מתאר ולא מלא — התזכורת אינה ה-CTA הראשי של הדשבורד. */
+.payout-reminder-btn {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 9px 20px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--charcoal);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.payout-reminder-btn:hover {
+  border-color: var(--gold);
+  background: var(--surface-hi);
+}
+
+/* ב-320px הכפתור נפרש לרוחב מלא ולא נדחק לשורה משלו בצד. */
+@media (max-width: 420px) {
+  .payout-reminder-btn { width: 100%; }
+}
+
 /* ---- "עדכוני אישורי הגעה" — Feed חי, נקי ומודרני. סקשן עצמאי במלוא
    הרוחב (לא כרטיס צדדי) — לכן כותרת גדולה יותר ורשימה בשתי עמודות
    במסכים רחבים, כדי לנצל את הרוחב ולהישאר חלק משמעותי מתמונת המצב. ---- */

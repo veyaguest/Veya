@@ -1,10 +1,25 @@
 /* "מתנות באשראי" — מסך בעלי האירוע.
-   באופיו קרוב ל-ActivityLog.css: כרטיס שקט, שורות מופרדות בקו שיער,
-   טיפוגרפיה רגועה. משתמש רק בטוקנים הקיימים של VEYA — אין כאן צבע,
-   רדיוס או צל חדשים. */
+
+   ┌ שלושה אזורים, ושלוש רמות של "כמה חומר" ─────────────────────────────
+   │  1. פרטי קבלת מתנות   כרטיס  — יש בו פעולה, ולכן יש לו משטח ומסגרת.
+   │  2. סה״כ שהתקבל       כלום   — טיפוגרפיה על רקע העמוד. עובדה, לא טופס.
+   │  3. המתנות שהתקבלו    כרטיס  — נתונים, ולכן משטח שמחזיק אותם.
+   └──────────────────────────────────────────────────────────────────────
+   האזור האמצעי חסר-הכרטיס הוא מה שמונע "שלושה מלבנים זהים": הוא נותן
+   למסך נשימה, ומייצר היררכיה אמיתית במקום שלוש מסגרות שוות משקל.
+
+   ההיררכיה כולה נשענת על **גודל, מרווח וצבע-טקסט** — לא על רקעים
+   צבעוניים, מסגרות עבות או צללים. מסך כסף צריך להרגיש יציב, לא חגיגי.
+   כל הערכים מטוקנים קיימים של VEYA; אין כאן צבע, רדיוס או צל חדשים. */
+
+/* קצב אנכי אחיד בין האזורים. 32px ולא 18: המרווח הוא מה שמפריד בין
+   שלושה אזורים לשלושה כרטיסים שנדבקו זה לזה. */
+.gifts-page > * + * {
+  margin-top: 32px;
+}
 
 .gifts-state {
-  padding: 40px 16px;
+  padding: 48px 16px;
   text-align: center;
   color: var(--muted);
   font-size: 0.875rem;
@@ -13,49 +28,64 @@
   color: var(--error);
 }
 
-/* ---- סיכום ------------------------------------------------------------
-   שתי עובדות בלבד. הסכום הוא הדבר היחיד שגדול על המסך — הוא מה שהזוג
-   בא לראות. אין כאן עמלות, אחוזים או פילוחים. */
-.gifts-summary {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 26px 20px;
-  margin-bottom: 18px;
-  background: var(--cream);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-l);
-  box-shadow: var(--shadow-card);
-  text-align: center;
+/* ==== 2. סה״כ שהתקבל ====================================================
+   ללא כרטיס, ללא מסגרת, ללא צל. שלוש שורות של טיפוגרפיה: תווית קטנה,
+   מספר גדול, ונספח קטן. יישור לימין (התחלה) ולא למרכז — כך הוא מתיישר
+   עם כותרות שאר המסך במקום לרחף באמצע. */
+.gifts-total {
+  padding: 4px 4px 0;
 }
-.gifts-summary-label {
+.gifts-total-label {
+  margin: 0;
   font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--muted);
 }
-.gifts-summary-total {
-  font-family: 'Cormorant Garamond', 'Assistant', serif;
-  font-size: 2.5rem;
-  font-weight: 600;
-  line-height: 1.1;
-  color: var(--gold-deep);
-  /* סכומים תמיד LTR, אחרת "₪680" מוצג הפוך בהקשר עברי */
+.gifts-total-value {
+  margin: 6px 0 0;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 2.75rem;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--charcoal);
+}
+/* בידוד ה-LTR חל על **המספר בלבד**. אילו הוא היה על הפסקה, "₪2,180" היה
+   נכון בסדר התווים — אבל הפסקה כולה הייתה נצמדת לשמאל, כלומר המספר הגדול
+   ביותר במסך היה יוצא מיישור עם התווית שמעליו ועם השורה שמתחתיו. */
+.gifts-total-figure {
+  display: inline-block;
   direction: ltr;
   unicode-bidi: isolate;
 }
-.gifts-summary-count {
-  font-size: 0.8125rem;
-  color: var(--body);
-  margin-top: 2px;
+/* כשאין סכום, במרכז יושבת הספירה — עובדה, לא כותרת-על, ולכן גודל אחד פחות. */
+.gifts-total-value-count {
+  font-size: 2rem;
 }
-.gifts-summary-count strong {
-  font-weight: 600;
+.gifts-total-sub {
+  margin: 8px 0 0;
+  font-size: 0.875rem;
+  color: var(--body);
+}
+.gifts-total-locked {
+  max-width: 44ch;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+/* ==== 3. המתנות שהתקבלו ================================================ */
+/* כותרת אזור — אותו טיפוס בדיוק כמו .gauge-section-title / .rsvp-feed-title
+   בתמונת המצב, כדי שהמסך הזה יישמע כמו אותה מערכת. */
+.gifts-log-title {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 700;
   color: var(--charcoal);
 }
 
-/* ---- הרשימה ----------------------------------------------------------- */
 .gifts-card {
-  padding: 6px 18px 14px;
+  padding: 4px 20px 16px;
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: var(--radius-l);
@@ -76,9 +106,11 @@
 }
 
 .gift-head {
-  padding: 10px 0;
+  padding: 14px 0 10px;
   border-bottom: 1px solid var(--line-2);
   font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--faint);
 }
 
@@ -89,12 +121,12 @@
 }
 
 .gift-row {
-  padding: 16px 0;
+  padding: 18px 0;
   border-bottom: 1px solid var(--line-2);
 }
 .gift-row:last-child {
   border-bottom: none;
-  padding-bottom: 4px;
+  padding-bottom: 6px;
 }
 
 /* שם המוזמן — בולט יותר מהמטא-דאטה שסביבו */
@@ -107,13 +139,24 @@
 
 /* הסכום — הדבר הבולט ביותר בשורה */
 .gift-cell-amount {
-  font-family: 'Cormorant Garamond', 'Assistant', serif;
-  font-size: 1.375rem;
-  font-weight: 600;
-  color: var(--gold-deep);
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--charcoal);
   white-space: nowrap;
   direction: ltr;
   unicode-bidi: isolate;
+}
+
+/* סכום שהשרת לא החזיר. שלוש נקודות בצבע חלש — נוכחות בלי תוכן, כך
+   שהשורה לא נראית שבורה ולא נראית כאילו הסכום הוא אפס. */
+.gift-amount-hidden {
+  color: var(--faint);
+  font-family: 'Assistant', sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  cursor: help;
 }
 
 /* הברכה — טקסט אנושי, לא שדה נתונים. נטוי ורגוע, במרכאות טיפוגרפיות. */
@@ -170,22 +213,30 @@
   color: var(--error);
 }
 
-/* ---- מצב ריק ---------------------------------------------------------- */
+/* ---- מצב ריק ----------------------------------------------------------
+   משטח רך ולא מסגרת מקווקוות: מקווקו קורא כ"אזור גרירה", וכאן אין מה
+   לגרור — פשוט עוד לא הגיעו מתנות. */
 .gifts-empty {
-  padding: 34px 20px;
+  padding: 44px 24px;
   text-align: center;
-  background: var(--surface-hi);
-  border: 1px dashed var(--line-2);
+  background: var(--cream);
+  border: 1px solid var(--line);
   border-radius: var(--radius-l);
-  color: var(--muted);
-  font-size: 0.875rem;
 }
 .gifts-empty p {
   margin: 0;
 }
-.gifts-empty p + p {
-  margin-top: 6px;
-  font-size: 0.8125rem;
+.gifts-empty-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+.gifts-empty-body {
+  max-width: 40ch;
+  margin: 8px auto 0 !important;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--muted);
 }
 
 /* ---- מובייל -----------------------------------------------------------
@@ -196,7 +247,7 @@
     display: none;
   }
   .gifts-card {
-    padding: 4px 16px 12px;
+    padding: 2px 16px 12px;
   }
   .gift-row {
     grid-template-columns: 1fr auto;
@@ -230,5 +281,22 @@
   .gift-cell-status {
     grid-area: status;
     justify-content: flex-end;
+  }
+}
+
+/* במסך צר המרווח בין האזורים מתקצר מעט, והמספר הגדול יורד גודל אחד —
+   ב-320px "₪12,480" ב-2.75rem היה נוגע בשוליים. */
+@media (max-width: 559px) {
+  .gifts-page > * + * {
+    margin-top: 26px;
+  }
+  .gifts-total-value {
+    font-size: 2.25rem;
+  }
+  .gifts-total-value-count {
+    font-size: 1.75rem;
+  }
+  .gifts-empty {
+    padding: 36px 18px;
   }
 }

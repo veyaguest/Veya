@@ -7,6 +7,14 @@
 
 **מה הקובץ הזה לא עושה:** הוא לא מעביר כסף, לא מדבר עם ספק סליקה ולא מייצר
 Payout. הוא שומר את הפרטים בלבד — כדי שיהיו מוכנים כשתיבנה ההעברה בפועל.
+
+**ואין כאן שום נתיב שמאשר.** בעלי האירוע יכולים לשמור ולהגיש, ותו לא.
+האישור נעשה בנתיבי האדמין (``routers/payout_admin.py``), ותשובת הספק
+נרשמת שם גם היא — מי שמזין את פרטי החשבון אינו מי שמאשר אותם.
+
+**ואחרי שאושר — אין כאן גם נתיב ששומר.** ``payout_service.assert_unlocked``
+חוסם כל כתיבה לחשבון מאושר, ולכן ההגנה אינה תלויה בכך שהמסך יסתיר כפתור.
+פתיחה מחדש היא פעולת אדמין (``POST /admin/payout/{event_id}/reopen``).
 """
 from __future__ import annotations
 
@@ -59,7 +67,14 @@ def _read(row: models.PayoutAccount | None) -> schemas.PayoutAccountRead:
     שדה-שדה, כך שעמודה חדשה בטבלה לא תזלוג אוטומטית ל-API.
     """
     if row is None:
-        return schemas.PayoutAccountRead(configured=False, status=payout_status.MISSING)
+        # אין פרטים כלל: שתי הבדיקות ``pending`` וברור שאין אימות מלא.
+        return schemas.PayoutAccountRead(
+            configured=False,
+            status=payout_status.MISSING,
+            veya_status=payout_status.REVIEW_PENDING,
+            provider_status=payout_status.REVIEW_PENDING,
+            fully_verified=False,
+        )
     bank = banks.BY_CODE.get(row.bank_code)
     cert = None
     if row.certificate_filename or row.certificate_size:
@@ -73,11 +88,26 @@ def _read(row: models.PayoutAccount | None) -> schemas.PayoutAccountRead:
     return schemas.PayoutAccountRead(
         configured=True,
         status=status,
+        # שלושת השדות האלה **נגזרים בשרת** ואינם מתקבלים בשום קלט:
+        # ``PayoutAccountWrite`` מכיל פרטי בנק בלבד, וכל שדה נוסף שיישלח
+        # בגוף הבקשה נזרק ע"י Pydantic ולא מגיע לשום מקום.
+        veya_status=payout_service.veya_status(row),
+        provider_status=payout_service.provider_status(row),
+        fully_verified=payout_service.is_fully_verified(row),
+        # נעילה: מרגע ש-VEYA אישרה אין יותר עריכה. השדה מוחזר כדי שהמסך
+        # לא יצטרך להסיק אותו מהסטטוס — ההסקה הזו היא בדיוק המקום שבו
+        # UI ושרת מתחילים לסטות זה מזה.
+        locked=payout_service.is_locked(row),
         # אפשר להגיש רק כשיש אישור, ורק מסטטוס שממנו ההגשה חוקית
         # (``missing`` או ``rejected``) — אותו כלל שהשירות אוכף בפועל.
         can_submit=bool(row.certificate_size)
         and status in (payout_status.MISSING, payout_status.REJECTED),
+        # הערה: אחרי דחיית ספק החשבון עדיין ``verified`` אצלנו, ולכן
+        # ``can_submit`` שקר — וזה נכון: אין מה להגיש מחדש בלי לשנות משהו.
+        # הזוג עורך את הפרטים, השמירה מחזירה את הסטטוס ל-``missing``,
+        # ורק אז ההגשה נפתחת.
         rejection_reason=row.rejection_reason,
+        provider_rejection_reason=row.provider_rejection_reason,
         submitted_at=row.submitted_at,
         bank_code=row.bank_code,
         # אם קוד הבנק כבר לא ברשימה (בנק שהתמזג אחרי שהפרטים נשמרו) עדיין
@@ -161,6 +191,9 @@ def save_payout_account(
             account_number=payload.account_number,
             user_id=user.id, ip=ip,
         )
+    except payout_service.PayoutLocked as exc:
+        # קלט תקין, מצב שאינו מאפשר — 409 ולא 422.
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except payout_service.PayoutError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
