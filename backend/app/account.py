@@ -104,4 +104,26 @@ def delete_event_cascade(db: Session, event: "models.Event") -> None:
         select(models.EventInvitation).where(models.EventInvitation.event_id == event_id)
     ).all():
         db.delete(invite)
+    # ---- נוהל דחייה ----
+    # שלוש הטבלאות מוגדרות עם ON DELETE CASCADE ברמת ה-FK, אבל הן נמחקות
+    # כאן במפורש מאותה סיבה שכל השאר נמחק כאן: ההסתמכות על cascade ברמת ה-DB
+    # שברירה (SQLite אוכף FK רק כש-PRAGMA foreign_keys דלוק), והקובץ הזה הוא
+    # המקום היחיד שיודע מה נמחק יחד עם אירוע.
+    #
+    # ``guest_cycle_rsvp`` ראשון: הוא מצביע גם על ``guests``, שנמחקים בסוף
+    # דרך ה-relationship cascade של ``Event.guests``.
+    for row in db.scalars(
+        select(models.GuestCycleRsvp).where(models.GuestCycleRsvp.event_id == event_id)
+    ).all():
+        db.delete(row)
+    db.flush()
+    for row in db.scalars(
+        select(models.EventCycle).where(models.EventCycle.event_id == event_id)
+    ).all():
+        db.delete(row)
+    for row in db.scalars(
+        select(models.PostponementRequest)
+        .where(models.PostponementRequest.event_id == event_id)
+    ).all():
+        db.delete(row)
     db.delete(event)

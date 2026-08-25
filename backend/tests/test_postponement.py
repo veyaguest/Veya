@@ -469,6 +469,34 @@ def test_second_postponement_works() -> None:
     print("✓ המערכת תומכת ביותר מדחייה אחת — מחזור 1 → 2 → 3")
 
 
+def test_event_delete_removes_postponement_data() -> None:
+    """מחיקת אירוע לא נופלת על נתוני נוהל הדחייה, ולא משאירה אותם יתומים."""
+    api, _ = bootstrap()
+    _seed_event(api)
+    api.add_guest("אורח", "0501111111")
+    admin = _admin(api)
+    _open_and_approve(api, admin)
+    _patch(api, event_date="2027-05-20")
+    api.client.post("/postpone/complete", headers=api.headers)
+
+    r = api.client.delete(f"/events/{api.event_id}", headers=api.headers)
+    assert r.status_code == 204, f"מחיקת אירוע נכשלה: {r.status_code} {r.text}"
+
+    set_request_identity(None)
+    db = SessionLocal()
+    try:
+        for model in (
+            models.PostponementRequest, models.EventCycle, models.GuestCycleRsvp,
+        ):
+            left = db.scalars(
+                select(model).where(model.event_id == api.event_id)
+            ).all()
+            assert not left, f"נשארו שורות יתומות ב-{model.__tablename__}: {left}"
+    finally:
+        db.close()
+    print("✓ מחיקת אירוע מנקה את כל נתוני נוהל הדחייה")
+
+
 if __name__ == "__main__":
     try:
         test_locked_fields_are_blocked()
@@ -484,6 +512,7 @@ if __name__ == "__main__":
         test_new_cycle_resets_rsvp_without_losing_history()
         test_new_cycle_reopens_invitations_and_relocks()
         test_second_postponement_works()
+        test_event_delete_removes_postponement_data()
         print("\nכל בדיקות נוהל הדחייה עברו ✓")
     finally:
         shutdown()
