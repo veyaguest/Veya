@@ -25,16 +25,17 @@ from app.routers import (
     event,
     event_members,
     events,
+    gifts,
     guests,
     hall,
     import_guests,
     media_serve,
     messaging,
     partner,
+    payout,
     seating,
     stats,
-    venues,
-)
+    venues,)
 
 app = FastAPI(title="VEYA API", version="0.1.0")
 
@@ -97,10 +98,12 @@ app.include_router(stats.router)
 app.include_router(event.router)
 app.include_router(hall.router)
 app.include_router(confirm.router)
+app.include_router(gifts.router)
 app.include_router(automation.router)
 app.include_router(communication.router)
 app.include_router(venues.router)
 app.include_router(media_serve.router)
+app.include_router(payout.router)
 
 # הגשת קבצי תמונות שהועלו (הזמנה/סקיצת אולם) מתוך backend/uploads.
 from app.media import UPLOADS_DIR  # noqa: E402
@@ -138,6 +141,11 @@ _EXTRA_COLUMNS = {
         "seating_snapshot": "JSON",
         # transform שכבת הסקיצה (בניית אולם אוטומטית מ-AI Vision).
         "hall_sketch_transform": "JSON",
+        # שעת שליחה (שעון ישראל, "HH:MM") למסלול אישורי-ההגעה ולהודעת התודה
+        # בנפרד — ראו models.Event. ברירת מחדל '16:00': בטוחה בתוך הטווח
+        # המותר (10:00–19:00) גם למשתמשים קיימים.
+        "rsvp_send_time": "TEXT DEFAULT '16:00'",
+        "thank_you_send_time": "TEXT DEFAULT '16:00'",
     },
     "messages": {
         "channel": "TEXT DEFAULT 'whatsapp'",
@@ -360,6 +368,10 @@ _EXTRA_UNIQUE_INDEXES = {
     # apply_status_update) לעולם לא תוכל "לדלוף" ולעדכן הודעה של מוזמן אחר
     # — גם אם באג עתידי ייצור בטעות שני מזהים זהים.
     "ux_messages_provider_message_id": ("messages", "provider_message_id"),
+    # מניעת כפילות בעסקאות מתנה. זו ההגנה **האמיתית** מפני לחיצה כפולה:
+    # הבדיקה ב-Python (gift_service.create_gift) היא רק קיצור דרך, ואילו
+    # שתי בקשות שרצות ממש במקביל נעצרות כאן, ברמת ה-DB.
+    "ux_gifts_idempotency_key": ("gifts", "idempotency_key"),
 }
 
 

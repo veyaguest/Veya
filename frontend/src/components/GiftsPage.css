@@ -1,0 +1,234 @@
+/* "מתנות באשראי" — מסך בעלי האירוע.
+   באופיו קרוב ל-ActivityLog.css: כרטיס שקט, שורות מופרדות בקו שיער,
+   טיפוגרפיה רגועה. משתמש רק בטוקנים הקיימים של VEYA — אין כאן צבע,
+   רדיוס או צל חדשים. */
+
+.gifts-state {
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.gifts-state-error {
+  color: var(--error);
+}
+
+/* ---- סיכום ------------------------------------------------------------
+   שתי עובדות בלבד. הסכום הוא הדבר היחיד שגדול על המסך — הוא מה שהזוג
+   בא לראות. אין כאן עמלות, אחוזים או פילוחים. */
+.gifts-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 26px 20px;
+  margin-bottom: 18px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+.gifts-summary-label {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.gifts-summary-total {
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  font-size: 2.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--gold-deep);
+  /* סכומים תמיד LTR, אחרת "₪680" מוצג הפוך בהקשר עברי */
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.gifts-summary-count {
+  font-size: 0.8125rem;
+  color: var(--body);
+  margin-top: 2px;
+}
+.gifts-summary-count strong {
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+/* ---- הרשימה ----------------------------------------------------------- */
+.gifts-card {
+  padding: 6px 18px 14px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-card);
+}
+
+/* פריסת השורה — אותן הגדרות עמודות לכותרת ולשורות.
+   העמודות בעלות הרוחב הקבוע מוגדרות ב-rem ולא ב-auto בכוונה: הכותרת
+   והשורות הן שני Grid *נפרדים*, ועמודת auto מחושבת בכל אחד מהם לפי
+   התוכן שלו — כך "תאריך" בכותרת יצא ברוחב אחר מ-"24.08.26" בשורה,
+   והכותרות לא ישבו מעל העמודות שלהן. רוחב קבוע מבטיח יישור מדויק. */
+.gift-head,
+.gift-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 1.2fr) 7rem minmax(0, 2fr) 4.5rem 5.5rem;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.gift-head {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-2);
+  font-size: 0.75rem;
+  color: var(--faint);
+}
+
+.gift-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gift-row {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.gift-row:last-child {
+  border-bottom: none;
+  padding-bottom: 4px;
+}
+
+/* שם המוזמן — בולט יותר מהמטא-דאטה שסביבו */
+.gift-cell-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--charcoal);
+  overflow-wrap: anywhere;
+}
+
+/* הסכום — הדבר הבולט ביותר בשורה */
+.gift-cell-amount {
+  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--gold-deep);
+  white-space: nowrap;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* הברכה — טקסט אנושי, לא שדה נתונים. נטוי ורגוע, במרכאות טיפוגרפיות. */
+.gift-cell-blessing {
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--body);
+  overflow-wrap: anywhere;
+}
+.gift-cell-blessing q {
+  font-style: italic;
+  quotes: '״' '״';
+}
+.gift-cell-blessing span {
+  color: var(--faint);
+}
+
+/* התאריך — קטן ועדין */
+.gift-cell-date {
+  font-size: 0.75rem;
+  color: var(--faint);
+  white-space: nowrap;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.gift-cell-status {
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* תג הסטטוס — ברור אך לא צעקני: רקע רך, בלי מסגרת עבה ובלי צבע רווי. */
+.gift-status {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--surface-hi);
+  color: var(--muted);
+}
+.gift-status-paid {
+  background: rgba(47, 158, 95, 0.12);
+  color: var(--green);
+}
+.gift-status-refunded {
+  background: rgba(201, 162, 39, 0.14);
+  color: var(--gold-deep);
+}
+.gift-status-failed,
+.gift-status-cancelled {
+  background: rgba(166, 96, 90, 0.1);
+  color: var(--error);
+}
+
+/* ---- מצב ריק ---------------------------------------------------------- */
+.gifts-empty {
+  padding: 34px 20px;
+  text-align: center;
+  background: var(--surface-hi);
+  border: 1px dashed var(--line-2);
+  border-radius: var(--radius-l);
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.gifts-empty p {
+  margin: 0;
+}
+.gifts-empty p + p {
+  margin-top: 6px;
+  font-size: 0.8125rem;
+}
+
+/* ---- מובייל -----------------------------------------------------------
+   הטבלה נפרקת לכרטיס: שם+סכום בשורה, ברכה מתחת, תאריך+סטטוס בתחתית.
+   בלי גלילה אופקית ובלי כיווץ טקסט. */
+@media (max-width: 700px) {
+  .gift-head {
+    display: none;
+  }
+  .gifts-card {
+    padding: 4px 16px 12px;
+  }
+  .gift-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'name   amount'
+      'bless  bless'
+      'date   status';
+    gap: 6px 12px;
+    padding: 18px 0;
+  }
+  .gift-cell-name {
+    grid-area: name;
+    align-self: center;
+  }
+  .gift-cell-amount {
+    grid-area: amount;
+    text-align: end;
+    align-self: center;
+  }
+  .gift-cell-blessing {
+    grid-area: bless;
+  }
+  /* אין ברכה — לא משאירים מקף בודד ששובר את הריתמוס של הכרטיס */
+  .gift-cell-blessing:has(span) {
+    display: none;
+  }
+  .gift-cell-date {
+    grid-area: date;
+    align-self: center;
+  }
+  .gift-cell-status {
+    grid-area: status;
+    justify-content: flex-end;
+  }
+}

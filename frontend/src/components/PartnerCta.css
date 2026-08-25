@@ -1,53 +1,39 @@
-/* כרטיס "מנהלים את האירוע יחד?" בדשבורד — הזמנה עדינה, לא באנר צועק. */
+/* כרטיס "מנהלים את האירוע יחד?" בדשבורד — סקשן מלא בתוך "תמונת מצב", לא
+   וידג'ט נספח: אותו radius/padding/shadow/מרווח-אופקי כמו שכניו
+   (.seating-helper-card/.rsvp-feed-card/.gauge-section), ואותו כפתור זהב
+   ראשי (.btn-primary) כמו בכל שאר הדשבורד — בלי צבע/כפתור ייחודיים. */
 
 .pcta {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 20px 18px;
-  margin-bottom: 16px;
+  padding: 26px 24px 24px;
+  margin: 0 20px;
   background: var(--cream);
   border: 1px solid var(--line);
-  border-radius: var(--radius-l);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
 }
 
 .pcta-title {
-  margin: 0 0 4px;
-  font-size: 0.9375rem;
-  font-weight: 600;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
   color: var(--charcoal);
 }
 
 .pcta-text {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 13.5px;
   line-height: 1.65;
-  color: var(--muted);
+  color: var(--body);
 }
 
+/* המראה (זהב/radius/צל) מגיע מ-.btn-primary עצמו — כאן רק מיקום בתוך הכרטיס. */
 .pcta-btn {
   align-self: flex-start;
   flex-shrink: 0;
-  padding: 10px 18px;
-  font-size: 0.875rem;
-  font-family: inherit;
-  font-weight: 500;
-  color: var(--ivory);
-  background: var(--charcoal);
-  border: 1px solid transparent;
-  border-radius: var(--radius-m);
-  cursor: pointer;
-  transition: background var(--transition-fast), opacity var(--transition-fast);
-}
-
-.pcta-btn:hover:not(:disabled) {
-  background: var(--black-soft);
-}
-
-.pcta-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
 }
 
 .pcta-form {
@@ -124,7 +110,7 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 24px;
+    padding: 24px 28px;
   }
 
   .pcta-form {

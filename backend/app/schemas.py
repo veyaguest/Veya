@@ -528,6 +528,10 @@ class EventRead(BaseModel):
     venue_commit_days_before: Optional[int] = None
     # האם הבחירה כבר ננעלה (נבחרה בעבר) — הפרונט מציג אותה כקריאה-בלבד.
     venue_commit_locked: bool = False
+    # שעת שליחה — "HH:MM", שעון ישראל, 10:00–19:00 (ראו app/communication.py).
+    # rsvp_send_time חל על כל מסלול אישורי ההגעה; thank_you_send_time נפרד.
+    rsvp_send_time: str = "16:00"
+    thank_you_send_time: str = "16:00"
 
 
 class EventUpdate(BaseModel):
@@ -543,6 +547,10 @@ class EventUpdate(BaseModel):
     invite_image: Optional[str] = None
     # בחירה חד-פעמית (1–10). ניתן להגדיר רק פעם אחת; ניסיון לשנות ערך קיים נדחה.
     venue_commit_days_before: Optional[int] = None
+    # ולידציית פורמט+טווח מתבצעת ב-router (app/communication.py:validate_send_time),
+    # לא כאן — בדיוק כמו venue_commit_days_before ממש למעלה.
+    rsvp_send_time: Optional[str] = None
+    thank_you_send_time: Optional[str] = None
 
 
 # ---- מפת אולם (שלב 7) ----
@@ -1276,6 +1284,35 @@ class EventMemberRead(BaseModel):
 # ---- דף אישור הגעה ציבורי (קישור אישי /confirm/{token}) ----
 
 
+class ConfirmCalendarLinks(BaseModel):
+    """שלוש הדרכים להוסיף את האירוע ליומן (ריקות כשאין תאריך לאירוע).
+
+    ``ics`` הוא **כתובת אמיתית בשרת** ולא קובץ שנבנה בדפדפן — זה מה שגורם
+    ל-iPhone לפתוח את מסך "הוספה ליומן" של אפל בלחיצה אחת.
+    """
+
+    google: str = ""
+    outlook: str = ""
+    ics: str = ""
+
+
+class ConfirmActions(BaseModel):
+    """אילו פעולות זמינות למוזמן בעמוד שלו — נקודת ההרחבה של ה-Guest Hub.
+
+    השרת מחליט, לא ה-Frontend: כך פעולה חדשה (מתנה) או פעולה שנפתחת בשלב
+    מסוים נדלקת במקום אחד בלבד, בלי לגעת בעמוד. פעולה שאין לה נתונים
+    (אירוע בלי כתובת → ניווט) פשוט לא מוצגת, במקום כפתור שלא עושה כלום.
+    """
+
+    invitation: bool = False    # יש תמונת הזמנה לצפייה
+    calendar: bool = False      # יש תאריך → אפשר להוסיף ליומן
+    navigation: bool = False    # יש כתובת → אפשר לנווט
+    rsvp: bool = True           # אישור הגעה — פתוח מרגע ההזמנה (ראו confirm.py)
+    # מתנה — נפתחת 3 ימי לוח לפני האירוע ונסגרת כשהאירוע מסתיים. החישוב
+    # כולו ב-``guest_journey.gift_is_open`` (שעון ישראל), ולא כאן.
+    gift: bool = False
+
+
 class ConfirmEventInfo(BaseModel):
     """פרטי האירוע שמוצגים למוזמן בדף האישור (מידע ציבורי בלבד)."""
 
@@ -1286,9 +1323,12 @@ class ConfirmEventInfo(BaseModel):
     venue_address: str = ""            # כתובת האולם — להצגה וניווט
     maps_link: str = ""               # קישור ניווט Google Maps (נגזר מהכתובת)
     waze_link: str = ""               # קישור ניווט Waze (נגזר מהכתובת)
+    apple_maps_link: str = ""         # קישור ניווט Apple Maps (נגזר מהכתובת)
     event_date: str = ""
     event_time: str = ""
     invite_image: Optional[str] = None  # תמונת ההזמנה שהזוג העלה (data URL / כתובת)
+    title: str = ""                    # "החתונה של אביב ודנה" — לפי סוג האירוע
+    calendar: ConfirmCalendarLinks = ConfirmCalendarLinks()
 
 
 class ConfirmGuestPublic(BaseModel):
@@ -1300,6 +1340,101 @@ class ConfirmGuestPublic(BaseModel):
     confirmed_count: Optional[int]
     guest_note: Optional[str]
     event: ConfirmEventInfo
+    actions: ConfirmActions = ConfirmActions()
+
+
+class GiftQuoteRequest(BaseModel):
+    """בקשת תמחור למתנה — **רק** הסכום שהזוג אמור לקבל.
+
+    שים לב למה שאין כאן: ``fee`` ו-``total``. הם לא שדות קלט בכלל, ולכן
+    אין דרך "לשלוח" אותם. השרת מחשב אותם מחדש בכל בקשה מ-
+    ``gift.quote_from_input``, ושדות מיותרים שיישלחו פשוט נזרקים ע"י
+    Pydantic. זו ההגנה מפני "לקוח שמחליט כמה הוא משלם".
+
+    הסכום מגיע כאגורות (``int``) ולא כשקלים עשרוניים — כדי שלא ייווצר
+    ``float`` בשום נקודה בדרך, כולל ב-JSON.
+    """
+
+    gift_amount_agorot: int
+
+
+class GiftQuoteRead(BaseModel):
+    """פירוט התשלום כפי שהאורח רואה אותו. כל הסכומים באגורות."""
+
+    gift_amount_agorot: int    # מה שהזוג יקבל — במלואו, בלי ניכוי
+    fee_agorot: int            # עמלת השירות, משולמת ע"י האורח
+    total_agorot: int          # מה שהאורח מחויב בפועל
+    fee_percent: int           # 4 — נשלח כדי שהטקסט במסך לא יקבע מספר משלו
+
+
+class GiftCheckoutRequest(BaseModel):
+    """שליחת מתנה. ``simulate`` קיים רק כל עוד אין סליקה אמיתית."""
+
+    gift_amount_agorot: int
+    giver_name: str = ""
+    blessing: Optional[str] = None
+    # מפתח למניעת כפילות. הלקוח מייצר אותו פעם אחת לכל ניסיון תשלום,
+    # והשרת ממרחב-שם אותו לפי המוזמן (gift_service.build_idempotency_key)
+    # כדי ששני מוזמנים לא יתנגשו על אותו ערך.
+    idempotency_key: Optional[str] = None
+    # בדיקת ה-Flow מקצה לקצה דורשת גם מסלול כישלון. כשתיכנס סליקה אמיתית
+    # השדה הזה נמחק — התוצאה תגיע מספק הסליקה, לא מהלקוח.
+    simulate: Literal["success", "failure"] = "success"
+
+
+class GiftCheckoutResult(BaseModel):
+    """תוצאת התשלום המדומה."""
+
+    status: Literal["success", "failure"]
+    quote: GiftQuoteRead
+    reference: str             # מזהה העסקה אצל הספק (מדומה בשלב הזה)
+    gift_id: int               # מזהה העסקה אצלנו
+    gift_status: str           # pending / paid / failed / cancelled / refunded
+    mock: bool = True          # תמיד True בשלב הזה — אין סליקה אמיתית
+    message: str = ""
+
+
+class OwnerGiftRead(BaseModel):
+    """שורת מתנה כפי שבעלי האירוע רואים אותה.
+
+    **סכמה ייעודית למסך בעלי האירוע** — השם כולל ``Owner`` בכוונה, כדי
+    שלא תיבחר בטעות לנתיב שפונה למוזמן. למוזמן יש סכמות משלו
+    (``GiftQuoteRead`` / ``GiftCheckoutResult``), והן *כן* כוללות עמלה —
+    כי נותן המתנה הוא זה שמשלם אותה וחייב לראות אותה לפני התשלום.
+
+    **מה שבמפורש לא נמצא כאן:**
+
+    - ``fee_agorot`` / ``total_agorot`` — כמה VEYA גבתה וכמה המוזמן שילם
+      בפועל. זה עניין שבין VEYA לנותן המתנה. בעלי האירוע מקבלים את מלוא
+      סכום המתנה ולא משלמים עמלה, ולכן אין להם מה לעשות עם המספרים האלה.
+    - ``currency`` — לא מוצג במסך (הסכומים מעוצבים ב-₪).
+    - ``provider`` / ``provider_transaction_id`` / ``idempotency_key`` /
+      ``event_id`` / ``guest_id`` — מידע תפעולי פנימי.
+
+    השדות נשארים כמובן בטבלה ובשימוש הפנימי — זו הגבלת *תצוגה*, לא
+    שינוי נתונים.
+    """
+
+    id: int                    # למפתח רינדור ברשימה
+    sender_name: str
+    message: Optional[str] = None
+    gift_amount_agorot: int    # מה שהאירוע מקבל — במלואו, בלי ניכוי
+    status: str                # pending / paid / failed / cancelled / refunded
+    created_at: datetime
+
+
+class GiftsSummary(BaseModel):
+    """מסך "מתנות באשראי" של בעלי האירוע — סיכום + רשימה, בקריאה אחת."""
+
+    # הסיכום נספר **רק** מעסקאות ``paid`` — לא ``pending``/``failed``/
+    # ``cancelled``/``refunded``. נחשב בשרת (routers/gifts.py), לא בפרונט.
+    total_received_agorot: int
+    total_received_display: str    # "₪1,240" — מוכן לתצוגה, בלי חשבון בצד לקוח
+    paid_count: int
+    # כמה עסקאות קיימות בסך הכול (כולל שנכשלו) — נתון של האירוע עצמו,
+    # לא מידע מסחרי של VEYA. סכום העמלות שנגבו **אינו** מוחזר כאן.
+    total_count: int
+    gifts: list[OwnerGiftRead]
 
 
 class ConfirmSubmit(BaseModel):
@@ -1876,3 +2011,47 @@ class ResetPasswordRequest(BaseModel):
     @classmethod
     def _new_password_valid(cls, v: str) -> str:
         return validate_password_strength(v)
+
+
+# ── פרטי קבלת מתנות (חשבון הבנק של בעלי האירוע) ──────────────────────────
+
+
+class PayoutAccountWrite(BaseModel):
+    """קלט הטופס. הערכים מתקבלים כמחרוזות ומנורמלים בשרת.
+
+    אין כאן ``Field(pattern=...)`` בכוונה: הולידציה כולה עוברת דרך
+    ``app/banks.py``, שהוא מקור אמת אחד לכללים ולנוסח השגיאות בעברית —
+    כך אותה בדיקה בדיוק חלה על כל נתיב שכותב פרטי חשבון.
+    """
+
+    bank_code: int
+    branch_number: str
+    account_number: str
+    # אישור ניהול חשבון כ-data URL. ``None`` = לא נגעו בקובץ הקיים.
+    certificate: Optional[str] = None
+
+
+class PayoutCertificateRead(BaseModel):
+    """תיאור הקובץ שהועלה — בלי הבייטים עצמם."""
+
+    filename: Optional[str] = None
+    content_type: Optional[str] = None
+    size: Optional[int] = None
+    uploaded_at: Optional[datetime] = None
+
+
+class PayoutAccountRead(BaseModel):
+    """פרטי החשבון כפי שהם חוזרים למסך.
+
+    ``account_number_masked`` הוא מה שמוצג אחרי שמירה: אין סיבה להחזיר
+    לדפדפן את מספר החשבון המלא בכל טעינת מסך רק כדי להראות "שמור". מי
+    שרוצה לשנות — מקליד מחדש.
+    """
+
+    configured: bool
+    bank_code: Optional[int] = None
+    bank_name: Optional[str] = None
+    branch_number: Optional[str] = None
+    account_number_masked: Optional[str] = None
+    certificate: Optional[PayoutCertificateRead] = None
+    updated_at: Optional[datetime] = None

@@ -93,6 +93,27 @@ export function effectiveSeats(g: {
 
 // ---- דף אישור הגעה ציבורי (קישור אישי) ----
 
+/** שלוש הדרכים להוסיף את האירוע ליומן. ריקות כשאין תאריך לאירוע. */
+export interface ConfirmCalendarLinks {
+  google: string
+  outlook: string
+  /** נתיב יחסי ל-API (``/confirm/{token}/calendar.ics``) — ראו confirmIcsUrl. */
+  ics: string
+}
+
+/**
+ * אילו פעולות זמינות למוזמן. **השרת מחליט, לא העמוד** — כך פעולה חדשה
+ * (מתנה באשראי) תידלק בעתיד בלי לגעת כאן, ופעולה שאין לה נתונים (אירוע בלי
+ * כתובת) פשוט לא מוצגת במקום כפתור שלא עושה כלום.
+ */
+export interface ConfirmActions {
+  invitation: boolean
+  calendar: boolean
+  navigation: boolean
+  rsvp: boolean
+  gift: boolean
+}
+
 export interface ConfirmEventInfo {
   event_type: EventType
   groom_name: string
@@ -101,9 +122,13 @@ export interface ConfirmEventInfo {
   venue_address: string
   maps_link: string
   waze_link: string
+  apple_maps_link: string
   event_date: string
   event_time: string
   invite_image: string | null
+  /** "החתונה של אביב ודנה" / "בר המצווה של יונתן" — לפי סוג האירוע. */
+  title: string
+  calendar: ConfirmCalendarLinks
 }
 
 export interface ConfirmGuestPublic {
@@ -113,6 +138,60 @@ export interface ConfirmGuestPublic {
   confirmed_count: number | null
   guest_note: string | null
   event: ConfirmEventInfo
+  actions: ConfirmActions
+}
+
+/** פירוט התשלום כפי שהשרת חישב אותו. כל הסכומים ב**אגורות** (₪1 = 100). */
+export interface GiftQuote {
+  /** מה שבעלי האירוע יקבלו — במלואו, בלי ניכוי עמלה. */
+  gift_amount_agorot: number
+  /** עמלת השירות, שמשולמת ע"י נותן המתנה ומתווספת מעל. */
+  fee_agorot: number
+  /** מה שנותן המתנה מחויב בפועל. */
+  total_agorot: number
+  /** 4 — מגיע מהשרת כדי שהטקסט במסך לא יקבע מספר משלו. */
+  fee_percent: number
+}
+
+export interface GiftCheckoutResult {
+  status: 'success' | 'failure'
+  quote: GiftQuote
+  /** מזהה העסקה אצל ספק הסליקה (מדומה בשלב הזה). */
+  reference: string
+  /** מזהה העסקה במערכת. */
+  gift_id: number
+  /** pending / paid / failed / cancelled / refunded — נקבע ע"י הספק. */
+  gift_status: string
+  /** תמיד true בשלב הזה — אין סליקה אמיתית. */
+  mock: boolean
+  message: string
+}
+
+/**
+ * שורת מתנה כפי שבעלי האירוע רואים אותה — קריאה בלבד.
+ *
+ * מכיל בדיוק את מה שהשרת מחזיר ל-``GET /gifts`` (``schemas.OwnerGiftRead``).
+ * עמלת השירות והסכום ששילם המוזמן **אינם חלק מהתשובה** — הם עניין שבין
+ * VEYA לנותן המתנה, ומוצגים לו במסך שלו לפני התשלום.
+ */
+export interface GiftRow {
+  id: number
+  sender_name: string
+  message: string | null
+  /** מה שהאירוע מקבל (אגורות) — במלואו, בלי ניכוי. */
+  gift_amount_agorot: number
+  status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded'
+  created_at: string
+}
+
+/** מסך "מתנות באשראי" — סיכום + רשימה. הסיכום נספר רק מ-paid, בשרת. */
+export interface GiftsSummary {
+  total_received_agorot: number
+  total_received_display: string
+  paid_count: number
+  /** כמה עסקאות קיימות בסך הכול (כולל שנכשלו). */
+  total_count: number
+  gifts: GiftRow[]
 }
 
 export interface ConfirmSubmit {
@@ -465,6 +544,11 @@ export interface EventDetails {
   venue_commit_days_before: number | null
   // האם הבחירה כבר ננעלה (בלתי-הפיכה מרגע שנקבעה).
   venue_commit_locked: boolean
+  // שעת שליחה — "HH:MM", שעון ישראל בלבד, בטווח 10:00–19:00.
+  // חלה על כל הודעות מסלול אישורי ההגעה (תזכורות/יום האירוע).
+  rsvp_send_time: string
+  // שעת שליחה נפרדת להודעת התודה — אותו טווח, עצמאית מהמסלול.
+  thank_you_send_time: string
 }
 
 export interface VenueSuggestion {
@@ -1459,4 +1543,38 @@ export interface GuestDataAlert {
 export interface GuestDataAlerts {
   phone_fix: GuestDataAlert[]
   total: number
+}
+
+// ── פרטי קבלת מתנות (חשבון הבנק של בעלי האירוע) ──────────────────────────
+
+/** תיאור אישור ניהול החשבון שהועלה — בלי הקובץ עצמו. */
+export type PayoutCertificate = {
+  filename: string | null
+  content_type: string | null
+  size: number | null
+  uploaded_at: string | null
+}
+
+/**
+ * פרטי החשבון כפי שהם חוזרים מהשרת.
+ *
+ * ``account_number_masked`` בלבד — מספר החשבון המלא לעולם לא חוזר לדפדפן
+ * (ראו backend/app/routers/payout.py). מי שרוצה לשנות מקליד מחדש.
+ */
+export type PayoutAccount = {
+  configured: boolean
+  bank_code: number | null
+  bank_name: string | null
+  branch_number: string | null
+  account_number_masked: string | null
+  certificate: PayoutCertificate | null
+  updated_at: string | null
+}
+
+/** קלט הטופס. ``certificate`` הוא data URL; null = לא נגעו בקובץ הקיים. */
+export type PayoutAccountInput = {
+  bank_code: number
+  branch_number: string
+  account_number: string
+  certificate: string | null
 }

@@ -10,3 +10,6 @@ cryptography==43.0.3
 psycopg2-binary==2.9.10
 httpx==0.28.1
 Pillow==11.3.0
+# מסד אזורי הזמן כרשת ביטחון ל-zoneinfo (הוספת האירוע ליומן, Asia/Jerusalem)
+# — כדי שקובץ ה-ICS לא ייפול לשעה צפה אם לתמונת ה-Docker אין tzdata מערכתי.
+tzdata==2025.2

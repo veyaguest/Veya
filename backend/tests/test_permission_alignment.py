@@ -27,6 +27,10 @@ CALL_LOGS_SQL_PATH = RLS_DIR / "06_call_logs_rls.sql"
 # ההרשאות עצמן חייבות להישאר זהות לאלה שבקובץ 6, אחרת שני הקבצים יסתרו זה
 # את זה בהתאם לסדר ההרצה. הבדיקה למטה נועלת בדיוק את זה.
 PHONE_AGENT_SQL_PATH = RLS_DIR / "07_phone_agent_rls.sql"
+# gifts (עסקאות מתנה) — גם היא נוצרת ע"י create_all ולכן קיבלה קובץ RLS
+# נפרד משלה. נבדקת כאן מאותה סיבה: כדי ש-GIFTS_VIEW ב-permissions.py
+# והמדיניות ב-DB לא יסטו זו מזו בעריכה עתידית.
+GIFTS_SQL_PATH = RLS_DIR / "13_gifts_rls.sql"
 
 # שם המדיניות ב-SQL -> הקבוע המקביל ב-app/permissions.py.
 POLICY_TO_CONSTANT = {
@@ -94,6 +98,14 @@ def main() -> None:
             failures.append(
                 f"{policy_name}: SQL={sorted(actual)} != permissions.py={sorted(expected)}"
             )
+
+    gifts_sql = GIFTS_SQL_PATH.read_text(encoding="utf-8")
+    gifts_actual = set(_extract_array(gifts_sql, "gifts_select"))
+    if gifts_actual != set(permissions.GIFTS_VIEW):
+        failures.append(
+            f"gifts_select: SQL={sorted(gifts_actual)} "
+            f"!= permissions.py={sorted(permissions.GIFTS_VIEW)}"
+        )
 
     call_logs_sql = CALL_LOGS_SQL_PATH.read_text(encoding="utf-8")
     for policy_name, expected in CALL_LOGS_POLICY_TO_CONSTANT.items():

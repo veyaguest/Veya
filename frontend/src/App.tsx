@@ -21,6 +21,7 @@ import {
   setToken,
 } from './authStore'
 import { getEventTerms, hostNames } from './strings/eventTypes'
+import { strings } from './strings/he'
 import { AccountCenter } from './components/AccountCenter'
 import { AuthPage } from './components/AuthPage'
 import { CompleteProfilePage } from './components/CompleteProfilePage'
@@ -31,6 +32,7 @@ import { VerifyEmailPage } from './components/VerifyEmailPage'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { EventMembersDialog } from './components/EventMembersDialog'
 import { Footer } from './components/Footer'
+import { GiftsPage } from './components/GiftsPage'
 import { GuestsPage } from './components/GuestsPage'
 import { MessagesPage } from './components/MessagesPage'
 import { OnboardingWizard } from './components/OnboardingWizard'
@@ -62,7 +64,7 @@ const bootFallback = (
   </div>
 )
 
-type Page = 'dashboard' | 'guests' | 'messages' | 'rsvp' | 'hall'
+type Page = 'dashboard' | 'guests' | 'messages' | 'rsvp' | 'hall' | 'gifts'
 
 // כותרות/ניווט תלויי-סוג-אירוע: "מוזמנים" הופך ל"משתתפים" באירוע עסקי וכו'.
 function pageTitles(terms: EventTerms): Record<Page, string> {
@@ -72,6 +74,7 @@ function pageTitles(terms: EventTerms): Record<Page, string> {
     messages: 'ניהול הודעות',
     rsvp: 'אישורי הגעה',
     hall: 'סידור הושבה',
+    gifts: strings.gifts.pageTitle,
   }
 }
 
@@ -84,6 +87,7 @@ function navItemsFor(terms: EventTerms): { key: Page; label: string; short: stri
     { key: 'messages', label: 'ניהול הודעות', short: 'הודעות' },
     { key: 'rsvp', label: 'אישורי הגעה', short: 'אישורים' },
     { key: 'hall', label: 'סידור הושבה', short: 'הושבה' },
+    { key: 'gifts', label: strings.gifts.title, short: strings.gifts.title },
   ]
 }
 
@@ -141,6 +145,15 @@ function NavIcon({ page }: { page: Page }) {
           <circle cx="17" cy="8" r="2.4" />
           <circle cx="12" cy="17" r="2.4" />
           <path d="M4 20h16" />
+        </svg>
+      )
+    case 'gifts':
+      return (
+        <svg {...common}>
+          <rect x="3.5" y="8" width="17" height="4" rx="1" />
+          <path d="M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12" />
+          <path d="M12 8v13" />
+          <path d="M12 8S10.5 3.5 8 3.5a2.5 2.5 0 0 0 0 5M12 8s1.5-4.5 4-4.5a2.5 2.5 0 0 1 0 5" />
         </svg>
       )
   }
@@ -322,7 +335,10 @@ function App() {
     setEvents((prev) => [ev, ...prev.filter((e) => e.id !== ev.id)])
     setActiveEventId(ev.id)
     setEventId(ev.id)
-    setPage('dashboard')
+    // ישר להוספת מוזמנים (לא לתמונת מצב) — ההמשך הטבעי של Onboarding מיד
+    // אחרי יצירת האירוע; GuestsPage מציג את OnboardingDialog (פעם ראשונה
+    // בלבד, דגל localStorage) עם אפשרויות הייבוא הקיימות.
+    setPage('guests')
   }
 
   function handleLogout() {
@@ -637,6 +653,7 @@ function App() {
                 <HallPage onNavigate={(p) => setPage(p)} />
               </Suspense>
             )}
+            {page === 'gifts' && <GiftsPage />}
           </ErrorBoundary>
         </main>
         <Footer />

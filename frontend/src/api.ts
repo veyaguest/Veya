@@ -28,6 +28,9 @@ import type {
   CommunicationSendResult,
   ConfirmGuestPublic,
   ConfirmSubmit,
+  GiftCheckoutResult,
+  GiftQuote,
+  GiftsSummary,
   DashboardStats,
   EventDetails,
   EventMemberRead,
@@ -55,6 +58,8 @@ import type {
   MessageDefaultOption,
   MessageDefaultOptionCreate,
   MessageDefaultOptionInput,
+  PayoutAccount,
+  PayoutAccountInput,
   MessageTemplate,
   RsvpSummary,
   ReserveSummary,
@@ -875,6 +880,43 @@ export async function getStats(): Promise<DashboardStats> {
   return res.json()
 }
 
+/** מסך "מתנות באשראי" של בעלי האירוע — קריאה בלבד. */
+export async function getGifts(): Promise<GiftsSummary> {
+  const res = await apiFetch('/gifts')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** פרטי קבלת מתנות — בעלי האירוע בלבד. */
+export async function getPayoutAccount(): Promise<PayoutAccount> {
+  const res = await apiFetch('/payout')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function savePayoutAccount(input: PayoutAccountInput): Promise<PayoutAccount> {
+  const res = await apiFetch('/payout', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/**
+ * מוריד את אישור ניהול החשבון כ-Blob.
+ *
+ * למה לא פשוט ``<a href>``: הנתיב מאומת ודורש כותרת Authorization, שקישור
+ * רגיל אינו שולח. לכן מושכים את הקובץ דרך fetch ופותחים אותו מהזיכרון —
+ * וכך גם אין לו כתובת ציבורית שאפשר לשתף בטעות.
+ */
+export async function fetchPayoutCertificate(): Promise<Blob> {
+  const res = await apiFetch('/payout/certificate')
+  if (!res.ok) throw await toError(res)
+  return res.blob()
+}
+
 export async function getEvent(): Promise<EventDetails> {
   const res = await apiFetch('/event')
   if (!res.ok) throw await toError(res)
@@ -894,6 +936,8 @@ export async function updateEvent(
       | 'event_time'
       | 'invite_image'
       | 'venue_commit_days_before'
+      | 'rsvp_send_time'
+      | 'thank_you_send_time'
     >
   >,
 ): Promise<EventDetails> {
@@ -1011,6 +1055,65 @@ export async function getConfirm(token: string): Promise<ConfirmGuestPublic> {
   const res = await publicFetch(`/confirm/${encodeURIComponent(token)}`)
   if (!res.ok) throw await toError(res)
   return res.json()
+}
+
+/**
+ * מבקש מהשרת את פירוט התשלום עבור סכום מתנה נתון.
+ *
+ * **כל חשבון הכסף נעשה בשרת.** העמוד לא מחשב עמלה ולא סכום כולל — הוא
+ * שולח את הסכום שהאורח הקליד ומציג את מה שחזר. כך המספר שמוצג על המסך
+ * הוא בדיוק המספר שהשרת יחייב בו, ואין דרך שהם ייפרדו.
+ */
+export async function fetchGiftQuote(
+  token: string,
+  giftAmountAgorot: number,
+): Promise<GiftQuote> {
+  const res = await publicFetch(`/confirm/${encodeURIComponent(token)}/gift/quote`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gift_amount_agorot: giftAmountAgorot }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/**
+ * תשלום **מדומה** — אין כאן סליקה, ספק תשלומים או תנועת כסף.
+ *
+ * שולח רק את הסכום, השם והברכה. עמלה וסכום כולל אינם נשלחים בכלל — השרת
+ * מחשב אותם מחדש (ראו backend/app/routers/confirm.py::gift_checkout).
+ */
+export async function submitGiftCheckout(
+  token: string,
+  payload: {
+    gift_amount_agorot: number
+    giver_name: string
+    blessing?: string | null
+    simulate?: 'success' | 'failure'
+    /** מונע חיוב כפול בלחיצה כפולה או בניסיון חוזר של הרשת. */
+    idempotency_key?: string
+  },
+): Promise<GiftCheckoutResult> {
+  const res = await publicFetch(`/confirm/${encodeURIComponent(token)}/gift/checkout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/**
+ * הכתובת המלאה לקובץ היומן (ICS) של המוזמן.
+ *
+ * השרת מחזיר נתיב יחסי בלבד, כי הוא יושב בדומיין אחר מהאתר ורק כאן ידועה
+ * כתובת ה-API (``VITE_API_URL``) — בדיוק כמו ב-``mediaUrl``. חשוב שזו תהיה
+ * **כתובת אמיתית ולא blob**: כך אייפון פותח ישירות את מסך "הוספה ליומן"
+ * של אפל, במקום להוריד קובץ שהמוזמן לא יודע מה לעשות איתו.
+ */
+export function confirmIcsUrl(path: string): string {
+  if (!path) return ''
+  return API_URL.replace(/\/$/, '') + (path.startsWith('/') ? path : '/' + path)
 }
 
 /** שולח את תשובת המוזמן (מגיע/לא/אולי + כמות + הערה). */

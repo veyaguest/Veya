@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import audit, media, models, schemas, venues
+from app import audit, communication, media, models, schemas, venues
 from app.auth import get_current_owner
 from app.database import get_db
 from app.deps import EventAccess, get_current_event
@@ -34,6 +34,7 @@ def _describe_changed_fields(changed: dict) -> str:
         (("event_date", "event_time"), "תאריך ושעת האירוע"),
         (("invite_image",), "תמונת ההזמנה"),
         (("venue_commit_days_before",), "מועד סגירת הרשימה"),
+        (("rsvp_send_time", "thank_you_send_time"), "שעת שליחת ההודעות"),
     ]
     labels = [label for keys, label in categories if any(k in changed for k in keys)]
     if not labels:
@@ -57,6 +58,8 @@ def _event_read(event: models.Event) -> schemas.EventRead:
         invite_image=media.to_url(event.invite_image),
         venue_commit_days_before=event.venue_commit_days_before,
         venue_commit_locked=event.venue_commit_days_before is not None,
+        rsvp_send_time=event.rsvp_send_time or communication.DEFAULT_SEND_TIME,
+        thank_you_send_time=event.thank_you_send_time or communication.DEFAULT_SEND_TIME,
     )
 
 
@@ -99,6 +102,14 @@ def update_event(
                     )
                 continue
             event.venue_commit_days_before = value
+        elif key in ("rsvp_send_time", "thank_you_send_time"):
+            # None בגוף הבקשה => התעלמות (לא מאפס בטעות) — כמו venue_commit_days_before.
+            if value is None:
+                continue
+            try:
+                setattr(event, key, communication.validate_send_time(value))
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc))
         else:
             setattr(event, key, (value or "").strip())
     # מאגר אולמות משותף: כל שם+כתובת שזוג שומר נרשם למאגר, כדי שזוגות אחרים

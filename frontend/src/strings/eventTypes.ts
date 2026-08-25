@@ -48,7 +48,10 @@ export interface EventTerms {
   celebrationOf: (names: string) => string
   /** כינוי המוזמנים בניווט/כותרות: "מוזמנים" (ברירת מחדל) / "משתתפים" (עסקי) */
   guestsLabel: string
-  /** תווית מתנה (לפיצ'ר מתנות באשראי העתידי): "מתנה לזוג" / "מתנה לחוגג" */
+  /** תווית פעולת המתנה. **אחיד בכל סוגי האירוע במכוון** (החלטת בעלים
+   * 2026-08-24) — "להעניק מתנה" בלי קשר לסוג האירוע, בניגוד לשאר שדות
+   * הלקסיקון. השדה נשאר כאן (ולא הועבר ל-strings/he.ts) כדי לא לשנות
+   * את נקודת הקריאה הקיימת ב-ConfirmPage.tsx. */
   giftLabel: string
   /**
    * אפשרויות קבוצה מוצעות לטופס הוספת/ייבוא מוזמנים, לפי סוג האירוע —
@@ -120,7 +123,7 @@ const WEDDING: EventTerms = {
   defaultTitle: 'החתונה שלנו',
   celebrationOf: (names) => `החתונה של ${names}`,
   guestsLabel: 'מוזמנים',
-  giftLabel: 'מתנה לזוג',
+  giftLabel: 'להעניק מתנה',
   groupOptions: WEDDING_GROUP_OPTIONS,
 }
 
@@ -142,7 +145,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     defaultTitle: 'החינה שלנו',
     celebrationOf: (names) => `החינה של ${names}`,
     guestsLabel: 'מוזמנים',
-    giftLabel: 'מתנה לזוג',
+    giftLabel: 'להעניק מתנה',
     groupOptions: HENNA_GROUP_OPTIONS,
   },
   bar_mitzvah: {
@@ -161,7 +164,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     defaultTitle: 'אירוע בר המצווה',
     celebrationOf: (names) => `אירוע בר המצווה של ${names}`,
     guestsLabel: 'מוזמנים',
-    giftLabel: 'מתנה לחוגג',
+    giftLabel: 'להעניק מתנה',
     groupOptions: MITZVAH_GROUP_OPTIONS,
   },
   bat_mitzvah: {
@@ -180,7 +183,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     defaultTitle: 'אירוע בת המצווה',
     celebrationOf: (names) => `אירוע בת המצווה של ${names}`,
     guestsLabel: 'מוזמנים',
-    giftLabel: 'מתנה לחוגגת',
+    giftLabel: 'להעניק מתנה',
     groupOptions: MITZVAH_GROUP_OPTIONS,
   },
   brit: {
@@ -199,7 +202,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     defaultTitle: 'הברית שלנו',
     celebrationOf: (names) => `הברית של ${names}`,
     guestsLabel: 'מוזמנים',
-    giftLabel: 'מתנה למשפחה',
+    giftLabel: 'להעניק מתנה',
     groupOptions: FAMILY_EVENT_GROUP_OPTIONS,
   },
   brita: {
@@ -218,7 +221,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     defaultTitle: 'הבריתה שלנו',
     celebrationOf: (names) => `הבריתה של ${names}`,
     guestsLabel: 'מוזמנים',
-    giftLabel: 'מתנה למשפחה',
+    giftLabel: 'להעניק מתנה',
     groupOptions: FAMILY_EVENT_GROUP_OPTIONS,
   },
   business: {
@@ -237,7 +240,7 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
     defaultTitle: 'האירוע שלנו',
     celebrationOf: (names) => `האירוע של ${names}`,
     guestsLabel: 'משתתפים',
-    giftLabel: 'מתנה לאירוע',
+    giftLabel: 'להעניק מתנה',
     groupOptions: BUSINESS_GROUP_OPTIONS,
   },
 }

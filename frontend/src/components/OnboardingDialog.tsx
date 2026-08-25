@@ -4,16 +4,33 @@ const t = strings.guests
 
 interface Props {
   onClose: () => void
+  /** ייבוא מהדבקת טקסט (וואטסאפ/כל מקור) — אותו מנגנון בדיוק כמו ב-ImportMenu. */
+  onPaste: () => void
+  /** ייבוא מקובץ Excel/CSV — אותו מנגנון בדיוק כמו ב-ImportMenu. */
+  onExcel: () => void
+  /** לא מועבר כלל כשהדפדפן הנוכחי לא תומך בבחירת אנשי קשר (בדיוק כמו ב-ImportMenu). */
+  onContacts?: () => void
+  /** פותח את טופס ההוספה הידנית הקיים (AddGuestForm). */
+  onManual: () => void
 }
 
-// שלושת היתרונות המרכזיים שמוצגים במסך הפתיחה — קצר, ברור, מרגיע.
-const POINTS = t.onboardingPoints
-
 /**
- * מסך פתיחה בכניסה הראשונה לאזור המוזמנים. מטרה: להרגיע ולהראות שהחלק
- * המלחיץ ביותר לפני האירוע הופך לפשוט. מוצג פעם אחת (דגל localStorage).
+ * מסך "הוסיפו את המוזמנים שלכם" — מוצג פעם אחת, מיד לאחר יצירת האירוע
+ * (App.tsx מנווט ישירות ל-guests, ולא לדשבורד). ממשיך טבעי מ-Onboarding
+ * יצירת האירוע, לא "מעבר פתאומי" למסך ניהול: שלוש דרכי הייבוא הקיימות
+ * מוצגות כאן כפעולה ראשית וברורה; הוספה ידנית נשארת זמינה כאפשרות משנית.
+ *
+ * חשוב: לא בונה שום מנגנון ייבוא חדש. שלוש הפעולות (onPaste/onExcel/
+ * onContacts) הן בדיוק אותן פונקציות שה-toolbar הרגיל ב-GuestsPage מעביר
+ * ל-ImportMenu — כאן הן רק מוצגות בפריסה בולטת יותר, עם התוצאה הזהה: אותם
+ * PasteImportDialog/ImportDialog/ContactsImportDialog נפתחים אחר כך.
  */
-export function OnboardingDialog({ onClose }: Props) {
+export function OnboardingDialog({ onClose, onPaste, onExcel, onContacts, onManual }: Props) {
+  function choose(action: () => void) {
+    onClose()
+    action()
+  }
+
   return (
     <div className="overlay" onClick={onClose}>
       <div
@@ -29,23 +46,35 @@ export function OnboardingDialog({ onClose }: Props) {
           <p className="onboarding-sub">{t.onboardingSub}</p>
         </div>
 
-        <div className="onboarding-points">
-          {POINTS.map((p) => (
-            <div key={p.title} className="onboarding-point">
-              <span className="onboarding-icon">{p.icon}</span>
-              <div>
-                <div className="onboarding-point-title">{p.title}</div>
-                <div className="onboarding-point-text">{p.text}</div>
-              </div>
-            </div>
-          ))}
+        <div className="onboarding-import-options">
+          <button
+            type="button"
+            className="onboarding-import-btn"
+            onClick={() => choose(onPaste)}
+          >
+            {t.pasteButton}
+          </button>
+          <button
+            type="button"
+            className="onboarding-import-btn"
+            onClick={() => choose(onExcel)}
+          >
+            {t.uploadButton}
+          </button>
+          {onContacts && (
+            <button
+              type="button"
+              className="onboarding-import-btn"
+              onClick={() => choose(onContacts)}
+            >
+              {t.contactsButton}
+            </button>
+          )}
         </div>
 
-        <div className="add-actions onboarding-actions">
-          <button className="btn-primary" onClick={onClose}>
-            {t.onboardingCta}
-          </button>
-        </div>
+        <button type="button" className="btn-text onboarding-manual" onClick={() => choose(onManual)}>
+          {t.onboardingManualCta}
+        </button>
       </div>
     </div>
   )

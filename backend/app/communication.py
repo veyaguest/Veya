@@ -12,7 +12,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Optional
 
 import re
@@ -20,7 +20,8 @@ import re
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import automation, event_terms, message_status, messaging, models
+from app import automation, event_terms, message_status, messaging, models, rsvp_timeline
+from app.guest_journey import israel_timezone, now_in_israel
 
 # ---- סדר קבוע וכינויים ----
 
@@ -59,6 +60,65 @@ DEFAULT_TARGET_AUDIENCE: dict[str, str] = {
     "event_day": "confirmed",
     "thank_you": "confirmed",
 }
+
+
+# ---- שעת שליחה (שעון ישראל, ללא תאריך/אזור-זמן) ----
+#
+# הזוג בוחר שעה אחת ("HH:MM") שחלה על כל הודעות מסלול אישורי-ההגעה
+# (reminder_1/reminder_2/final_reminder/event_day — invitation נשלחת ידנית
+# ולא דרך תור ה-due, ולכן אין לה שעה) — ``Event.rsvp_send_time``. הודעת
+# התודה מקבלת הגדרת שעה נפרדת משלה — ``Event.thank_you_send_time`` — כי
+# היא נשלחת יום אחרי האירוע, בהקשר שונה לגמרי מהתזכורות.
+#
+# הטווח המותר תואם לשעות סבירות לשליחת הודעות למוזמנים — לא לפנות בוקר
+# ולא בלילה.
+SEND_TIME_MIN = "10:00"
+SEND_TIME_MAX = "19:00"
+# ברירת מחדל בטוחה (גם למשתמשים קיימים, ראו _EXTRA_COLUMNS ב-main.py):
+# באמצע הטווח, כדי שלא תיפול בטעות על אחד מגבולותיו.
+DEFAULT_SEND_TIME = "16:00"
+
+_SEND_TIME_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
+
+
+def parse_send_time(value: str) -> time:
+    """הופך "HH:MM" ל-``time``. זורק ``ValueError`` אם הפורמט לא תקין."""
+    m = _SEND_TIME_RE.match((value or "").strip())
+    if not m:
+        raise ValueError(f"פורמט שעה לא תקין: '{value}' (נדרש HH:MM)")
+    return time(hour=int(m.group(1)), minute=int(m.group(2)))
+
+
+def validate_send_time(value: str) -> str:
+    """בדיקת תקינות שעת שליחה שהזוג בוחר: פורמט "HH:MM" בטווח
+    ``SEND_TIME_MIN``–``SEND_TIME_MAX`` בלבד (שעון ישראל; אין כאן תאריך
+    ואין אזור-זמן לבחירה — שניהם קבועים). זו נקודת האכיפה היחידה — כל שמירה
+    של שעת שליחה (RSVP או תודה) חייבת לעבור דרכה לפני שהיא נכתבת ל-DB.
+    """
+    t = parse_send_time(value)
+    if not (parse_send_time(SEND_TIME_MIN) <= t <= parse_send_time(SEND_TIME_MAX)):
+        raise ValueError(f"שעת השליחה חייבת להיות בין {SEND_TIME_MIN} ל-{SEND_TIME_MAX}")
+    return f"{t.hour:02d}:{t.minute:02d}"
+
+
+def _scheduled_moment(day: date, send_time: str) -> datetime:
+    """היום שחושב + שעת השליחה שנבחרה, בשעון ישראל — אחרי דחיית סוף שבוע.
+
+    דחיית סוף השבוע *אינה* לוגיקה חדשה: זהו בדיוק המנגנון הקיים שכבר מדלג
+    שישי/שבת ליום הפעיל הבא בתצוגת לוח הזמנים (``rsvp_timeline``) — כאן הוא
+    מופעל גם על התזמון בפועל של השליחה, כדי שהודעה לעולם לא תתוזמן בזמן
+    אסור. ``send_time`` לא תקין (ריק/פגום) נופל בעדינות ל-``DEFAULT_SEND_TIME``
+    במקום להפיל את תור ה-due כולו.
+    """
+    if rsvp_timeline.is_weekend(day):
+        day = rsvp_timeline.next_active_day(day)
+    try:
+        t = parse_send_time(send_time)
+    except ValueError:
+        t = parse_send_time(DEFAULT_SEND_TIME)
+    tz = israel_timezone()
+    return datetime.combine(day, t, tzinfo=tz)
+
 
 # המשתנים הדינמיים הנתמכים (הרשימה שנקבעה במפורש). "gift_link" תמיד ריק
 # היום — אין פיצ'ר מתנות באשראי בנוי (roadmap.md).
@@ -237,17 +297,33 @@ def _due_now(
     now: datetime,
     event_date,
     invited_at: dict[int, datetime],
+    event: models.Event,
 ) -> bool:
-    """האם ההודעה הגיע זמנה עבור המוזמן הזה — עוגן קבוע לפי סוג ההודעה."""
-    offset = timedelta(days=em.trigger_offset_days)
+    """האם ההודעה הגיע זמנה עבור המוזמן הזה — עוגן קבוע לפי סוג ההודעה, עד
+    היום; משם ואילך גם שעת השליחה שהזוג בחר (שעון ישראל, ראו
+    ``_scheduled_moment``). "תודה" משתמשת בשעה הנפרדת שלה
+    (``thank_you_send_time``); שאר סוגי ההודעה במסלול משתמשים באותה שעה
+    אחת (``rsvp_send_time``).
+    """
+    now_il = now_in_israel(now)
     if message_type in ("reminder_1", "reminder_2"):
         anchor = invited_at.get(guest.id)
-        return anchor is not None and now >= anchor + offset
-    if message_type in ("final_reminder", "event_day", "thank_you"):
+        if anchor is None:
+            return False
+        # יום ה"בסיס" נגזר מהיום (שעון ישראל) שבו נשלחה ההזמנה בפועל — לא
+        # מהרגע המדויק שלה — כי מה שהזוג בחר הוא שעה ביום, לא מרווח שעות.
+        trigger_day = now_in_israel(anchor).date() + timedelta(days=em.trigger_offset_days)
+        return now_il >= _scheduled_moment(trigger_day, event.rsvp_send_time)
+    if message_type in ("final_reminder", "event_day"):
         if event_date is None:
             return False
         trigger_day = event_date + timedelta(days=em.trigger_offset_days)
-        return now.date() >= trigger_day
+        return now_il >= _scheduled_moment(trigger_day, event.rsvp_send_time)
+    if message_type == "thank_you":
+        if event_date is None:
+            return False
+        trigger_day = event_date + timedelta(days=em.trigger_offset_days)
+        return now_il >= _scheduled_moment(trigger_day, event.thank_you_send_time)
     return False
 
 
@@ -289,7 +365,7 @@ def compute_due_messages(
                 continue
             if not _matches_audience(guest, em.target_audience):
                 continue
-            if not _due_now(message_type, em, guest, now, event_date, invited_at):
+            if not _due_now(message_type, em, guest, now, event_date, invited_at, event):
                 continue
             preview = render_message(em.content, communication_values(event, guest))
             if not preview:

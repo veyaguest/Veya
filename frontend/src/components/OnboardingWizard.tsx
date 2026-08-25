@@ -1,11 +1,18 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { createMyEvent, invitePartner, updateEvent } from '../api'
 import { setActiveEventType, setEventId } from '../authStore'
 import type { EventSummary, EventType } from '../types'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 import { VenueAutocomplete } from './VenueAutocomplete'
 import { AddGuestForm } from './AddGuestForm'
+import { ContactsImportDialog, isContactPickerSupported } from './ContactsImportDialog'
+import { ImportDialog } from './ImportDialog'
+import { PasteImportDialog } from './PasteImportDialog'
 import { strings } from '../strings/he'
+
+const t = strings.guests
+// נבדק פעם אחת בטעינת המודול — בדיוק כמו ב-GuestsPage.
+const contactsSupported = isContactPickerSupported()
 
 interface Props {
   onCreated: (ev: EventSummary) => void
@@ -35,6 +42,15 @@ export function OnboardingWizard({ onCreated }: Props) {
   // שלב ההזמנה לניהול משותף — לעולם לא חוסם: אפשר לדלג ולחזור לזה מהדשבורד.
   const [partnerEmail, setPartnerEmail] = useState('')
   const [partnerSentTo, setPartnerSentTo] = useState<string | null>(null)
+
+  // שלב 3 (הוספת מוזמנים): אותם מנגנוני ייבוא בדיוק כמו ב-GuestsPage — כאן
+  // רק בפריסה בולטת יותר. ההוספה הידנית נשארת זמינה אך מתחילה מקופלת,
+  // כדי שדרכי הייבוא (המהירות יותר לרשימה קיימת) יהיו הפעולה הראשית.
+  const fileInput = useRef<HTMLInputElement>(null)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [showPaste, setShowPaste] = useState(false)
+  const [showContacts, setShowContacts] = useState(false)
+  const [showManualForm, setShowManualForm] = useState(false)
 
   const [form, setForm] = useState({
     event_type: 'wedding' as EventType,
@@ -227,6 +243,7 @@ export function OnboardingWizard({ onCreated }: Props) {
                   type="date"
                   value={form.event_date}
                   onChange={(e) => setForm({ ...form, event_date: e.target.value })}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
                 />
               </label>
               <label className="field-group">
@@ -235,6 +252,7 @@ export function OnboardingWizard({ onCreated }: Props) {
                   type="time"
                   value={form.event_time}
                   onChange={(e) => setForm({ ...form, event_time: e.target.value })}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
                 />
               </label>
             </div>
@@ -366,14 +384,63 @@ export function OnboardingWizard({ onCreated }: Props) {
           </div>
         ) : (
           <div className="onboard-guest-step">
+            <h2 className="onboard-step-title">הוסיפו את המוזמנים שלכם</h2>
             <p className="onboard-subtitle onboard-guest-intro">
-              בואו נתחיל את הרשימה — אפשר להוסיף עוד מוזמנים ולסדר בקבוצות בכל
-              שלב, גם אחרי שממשיכים ללוח הבקרה.
+              יש לכם רשימה מוכנה? מייבאים אותה בלחיצה אחת — מוואטסאפ, מאקסל או
+              מאנשי הקשר. אפשר גם להוסיף מוזמנים אחד-אחד.
             </p>
             {guestCount > 0 && (
               <p className="onboard-guest-count">הוספתם {guestCount} מוזמנים ✓</p>
             )}
-            <AddGuestForm onAdded={() => setGuestCount((c) => c + 1)} onCancel={() => {}} />
+
+            <div className="onboarding-import-options">
+              <button
+                type="button"
+                className="onboarding-import-btn"
+                onClick={() => setShowPaste(true)}
+              >
+                {t.pasteButton}
+              </button>
+              <button
+                type="button"
+                className="onboarding-import-btn"
+                onClick={() => fileInput.current?.click()}
+              >
+                {t.uploadButton}
+              </button>
+              {contactsSupported && (
+                <button
+                  type="button"
+                  className="onboarding-import-btn"
+                  onClick={() => setShowContacts(true)}
+                >
+                  {t.contactsButton}
+                </button>
+              )}
+            </div>
+            <input
+              ref={fileInput}
+              type="file"
+              accept=".xlsx,.xlsm,.csv"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) setImportFile(f)
+                e.target.value = ''
+              }}
+            />
+
+            {!showManualForm ? (
+              <button
+                type="button"
+                className="btn-text onboarding-manual"
+                onClick={() => setShowManualForm(true)}
+              >
+                {t.onboardingManualCta}
+              </button>
+            ) : (
+              <AddGuestForm onAdded={() => setGuestCount((c) => c + 1)} onCancel={() => {}} />
+            )}
 
             <div className="onboard-actions">
               <button type="button" className="btn-primary" onClick={finish}>
@@ -386,6 +453,40 @@ export function OnboardingWizard({ onCreated }: Props) {
           </div>
         )}
       </div>
+
+      {/* שלושת דיאלוגי הייבוא מוצגים כאן, *מחוץ* ל-.onboard-card בכוונה:
+          .onboard-card חלק מרשימת ה-selector שהופכת --cream/--charcoal/--line
+          למצב כהה (ראו App.css). הדיאלוגים האלה מיובאים כמו שהם מ-GuestsPage
+          ומיועדים לרקע בהיר — קינון אותם בתוך .onboard-card היה גורם להם
+          לרשת צבעים כהים בטעות דרך ה-CSS variables, בלי לגעת בקוד שלהם. */}
+      {importFile && (
+        <ImportDialog
+          file={importFile}
+          onClose={() => setImportFile(null)}
+          onImported={(created) => {
+            setImportFile(null)
+            setGuestCount((c) => c + created)
+          }}
+        />
+      )}
+      {showPaste && (
+        <PasteImportDialog
+          onClose={() => setShowPaste(false)}
+          onImported={(created) => {
+            setShowPaste(false)
+            setGuestCount((c) => c + created)
+          }}
+        />
+      )}
+      {showContacts && (
+        <ContactsImportDialog
+          onClose={() => setShowContacts(false)}
+          onImported={(created) => {
+            setShowContacts(false)
+            setGuestCount((c) => c + created)
+          }}
+        />
+      )}
     </div>
   )
 }

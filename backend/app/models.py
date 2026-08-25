@@ -158,6 +158,14 @@ class Event(Base):
     # (event_date − venue_commit_days_before). None = טרם נבחר. הבחירה
     # בלתי-הפיכה מרגע שנקבעה — כל לוח הזמנים נבנה סביבה (נאכף ב-router).
     venue_commit_days_before: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # שעת שליחה למסלול אישורי-ההגעה (reminder_1/reminder_2/final_reminder/
+    # event_day) — "HH:MM" בלבד, שעון ישראל, בטווח 10:00–19:00 (נאכף ב-
+    # app/communication.py: validate_send_time). invitation נשלחת ידנית ולכן
+    # לא מושפעת. ברירת מחדל בטוחה גם למשתמשים קיימים — ראו _EXTRA_COLUMNS.
+    rsvp_send_time: Mapped[str] = mapped_column(String, default="16:00")
+    # שעת שליחה נפרדת להודעת התודה — אותו טווח ואותו עיקרון, אבל עצמאית
+    # מהמסלול (התודה נשלחת יום אחרי האירוע, בהקשר שונה לגמרי מהתזכורות).
+    thank_you_send_time: Mapped[str] = mapped_column(String, default="16:00")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     owner: Mapped[Optional["User"]] = relationship(back_populates="events")
@@ -227,6 +235,64 @@ class Guest(Base):
         if self.rsvp_status == "confirmed":
             return self.confirmed_count if self.confirmed_count is not None else self.party_size
         return 0
+
+
+class Gift(Base):
+    """עסקת מתנה — שכבת הרישום שמאפשרת לחבר ספק סליקה בעתיד.
+
+    **שלושת סכומי הכסף נשמרים בנפרד, באגורות, כמספרים שלמים:**
+
+        gift_amount_agorot  מה שבעלי האירוע אמורים לקבל — במלואו
+        fee_agorot          עמלת השירות (4%), משולמת ע"י נותן המתנה
+        total_agorot        מה שנותן המתנה מחויב בפועל
+
+    השלושה נשמרים ולא נגזרים בזמן קריאה בכוונה: שיעור העמלה עשוי להשתנות
+    בעתיד, ועסקה שנוצרה בעבר חייבת להישאר עם הסכומים שלפיהם היא בוצעה.
+    ``gift_amount_agorot`` לעולם אינו מנוכה — זו הבטחה ללקוח, לא פרט מימוש.
+
+    **מה שבמפורש לא נשמר כאן:** מספר כרטיס, CVV, תוקף, שם בעל הכרטיס או
+    כל נתון אשראי אחר. VEYA לא נוגעת בהם — ספק הסליקה יחזיק אותם, וכאן
+    יישמר רק ``provider_transaction_id`` להתאמה.
+    """
+
+    __tablename__ = "gifts"
+    __table_args__ = (
+        # שאילתת "כל המתנות של האירוע, לפי סטטוס" היא הגישה הצפויה למסך
+        # המתנות העתידי של הזוג.
+        Index("ix_gifts_event_status", "event_id", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
+    guest_id: Mapped[int] = mapped_column(ForeignKey("guests.id"), index=True)
+
+    gift_amount_agorot: Mapped[int] = mapped_column(Integer)
+    fee_agorot: Mapped[int] = mapped_column(Integer)
+    total_agorot: Mapped[int] = mapped_column(Integer)
+    # ISO-4217. שדה ולא קבוע, כדי שהמודל לא ייצור הנחה שקשה לפרק בעתיד.
+    currency: Mapped[str] = mapped_column(String, default="ILS")
+
+    # pending / paid / failed / cancelled / refunded — ראו app/gift_status.py
+    status: Mapped[str] = mapped_column(String, default="pending", index=True)
+
+    # מי סלק בפועל ("mock" כל עוד אין ספק אמיתי) והמזהה אצלו. המזהה הוא
+    # מה שיאפשר ל-webhook עתידי להתאים הודעת ספק לעסקה הנכונה.
+    provider: Mapped[str] = mapped_column(String, default="mock")
+    provider_transaction_id: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, index=True
+    )
+
+    # מפתח ייחודי למניעת כפילות (לחיצה כפולה / ניסיון חוזר של הרשת).
+    # מרחב-שם לפי מוזמן ב-``gift_service`` כדי ששני מוזמנים לא יתנגשו.
+    idempotency_key: Mapped[str] = mapped_column(String, unique=True, index=True)
+
+    sender_name: Mapped[str] = mapped_column(String, default="")
+    message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
 
 
 class LoginEvent(Base):
@@ -760,3 +826,54 @@ class MediaBlob(Base):
     content_type: Mapped[str] = mapped_column(String(100), default="application/octet-stream")
     data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class PayoutAccount(Base):
+    """פרטי חשבון הבנק של בעלי האירוע — לאן מעבירים את המתנות שהתקבלו.
+
+    **למה טבלה נפרדת ולא שדות על ``events``:** שורת האירוע נטענת כמעט בכל
+    בקשה במערכת (דשבורד, מוזמנים, הושבה, דף אישור ההגעה הציבורי). פרטי חשבון
+    בנק הם המידע הפיננסי הרגיש ביותר שהמערכת מחזיקה, ואין שום סיבה שהם
+    ייקראו מהמסד בכל אחת מהבקשות האלה. הפרדה לטבלה משלה נותנת גם גבול הרשאות
+    חד — מדיניות RLS נפרדת (``rls/14_payout_accounts_rls.sql``), שמצומצמת
+    לבעלים בלבד ואינה נפתחת לאף הרשאת חבר-אירוע.
+
+    **למה אישור ניהול החשבון נשמר כאן ולא ב-``media_blobs``:** בלובים מוגשים
+    דרך ``GET /media/<id>`` שהוא **ללא אימות** במכוון (תמונת ההזמנה ממילא
+    נשלחת לכל המוזמנים). אישור ניהול חשבון הוא ההפך הגמור — מסמך שמכיל שם,
+    מספר חשבון ולעיתים ת"ז. שמירה כאן, בעמודה משלו, מבטיחה שאין לו בכלל
+    נתיב ציבורי: הדרך היחידה לקרוא אותו היא נקודת קצה מאומתת של הבעלים.
+
+    יש **חשבון אחד לכל אירוע** (``event_id`` ייחודי) — לא מנהלים כאן היסטוריה
+    של חשבונות. עדכון דורס את הקודם.
+    """
+
+    __tablename__ = "payout_accounts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), unique=True, index=True, nullable=False
+    )
+
+    # קוד הבנק לפי בנק ישראל (12 = הפועלים). נשמר כמספר ולא כשם — השם הוא
+    # תצוגה בלבד ונגזר ממנו, כדי ששינוי שם מסחרי של בנק לא ייצור נתון סותר.
+    bank_code: Mapped[int] = mapped_column(Integer, nullable=False)
+    # מרופד לשלוש ספרות ("045"), כפי שמופיע באישור ניהול החשבון.
+    branch_number: Mapped[str] = mapped_column(String(8), nullable=False)
+    # ספרות בלבד. מחרוזת ולא מספר — אפסים מובילים הם חלק מהמספר.
+    account_number: Mapped[str] = mapped_column(String(20), nullable=False)
+
+    # ── אישור ניהול חשבון ────────────────────────────────────────────────
+    # ``deferred`` כדי שהבייטים לא ייטענו בשליפת הפרטים הרגילה — רק נקודת
+    # הקצה שמגישה את הקובץ בפועל מבקשת אותם במפורש.
+    certificate_data: Mapped[Optional[bytes]] = mapped_column(
+        LargeBinary, nullable=True, deferred=True
+    )
+    certificate_content_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    # שם הקובץ המקורי — כדי שהזוג יזהה מה הועלה ("אישור ניהול חשבון.pdf").
+    certificate_filename: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    certificate_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    certificate_uploaded_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, onupdate=func.now())

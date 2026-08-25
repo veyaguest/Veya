@@ -87,7 +87,10 @@ class EventTerms:
     side_groom: str = "חתן"     # תווית צד groom (תואם ל-sideLabels ב-eventTypes.ts)
     side_bride: str = "כלה"     # תווית צד bride
     guests_label: str = "מוזמנים"  # תואם ל-guestsLabel ב-eventTypes.ts
-    gift_label: str = "מתנה לזוג"  # תואם ל-giftLabel ב-eventTypes.ts
+    # תווית פעולת המתנה. אחיד בכל סוגי האירוע במכוון (החלטת בעלים
+    # 2026-08-24) — "להעניק מתנה" בלי קשר לסוג האירוע, בניגוד לשאר
+    # השדות כאן. תואם ל-giftLabel ב-eventTypes.ts.
+    gift_label: str = "להעניק מתנה"
     # כותרת האירוע לתצוגה ("החתונה של אביב ודנה"). ``{hosts}`` מוחלף בשמות
     # בעלי האירוע. ברירת המחדל גנרית בכוונה — סוג שלא הוגדר לו ניסוח משלו
     # יקבל "האירוע של ..." ולא ניסוח שבור.
@@ -119,7 +122,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         host_b_field_label="",
         side_groom="צד משפחת האב",
         side_bride="צד משפחת האם",
-        gift_label="מתנה לחוגג",
+        gift_label="להעניק מתנה",
         group_options=MITZVAH_GROUP_OPTIONS,
     ),
     "bat_mitzvah": EventTerms(
@@ -135,7 +138,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         host_b_field_label="",
         side_groom="צד משפחת האב",
         side_bride="צד משפחת האם",
-        gift_label="מתנה לחוגגת",
+        gift_label="להעניק מתנה",
         group_options=MITZVAH_GROUP_OPTIONS,
     ),
     "henna": EventTerms(
@@ -161,7 +164,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         host_b_field_label="",
         side_groom="צד משפחת האב",
         side_bride="צד משפחת האם",
-        gift_label="מתנה למשפחה",
+        gift_label="להעניק מתנה",
         group_options=FAMILY_EVENT_GROUP_OPTIONS,
     ),
     "brita": EventTerms(
@@ -177,7 +180,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         host_b_field_label="",
         side_groom="צד משפחת האב",
         side_bride="צד משפחת האם",
-        gift_label="מתנה למשפחה",
+        gift_label="להעניק מתנה",
         group_options=FAMILY_EVENT_GROUP_OPTIONS,
     ),
     "business": EventTerms(
@@ -194,7 +197,7 @@ EVENT_TERMS: dict[str, EventTerms] = {
         side_groom="צד א׳",
         side_bride="צד ב׳",
         guests_label="משתתפים",
-        gift_label="מתנה לאירוע",
+        gift_label="להעניק מתנה",
         group_options=BUSINESS_GROUP_OPTIONS,
     ),
 }

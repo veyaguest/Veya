@@ -1,0 +1,274 @@
+/* "פרטי קבלת מתנות" — כרטיס באותו אופי של GiftsPage/ActivityLog:
+   משטח שקט, מסגרת עדינה, טיפוגרפיה רגועה. רק טוקנים קיימים. */
+
+.payout-state {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.payout-card {
+  margin-bottom: 18px;
+  padding: 20px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-card);
+}
+
+.payout-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.payout-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+.payout-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.payout-action {
+  flex: none;
+  padding: 8px 16px;
+  min-height: 40px;
+  background: none;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-m);
+  color: var(--gold-deep);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.payout-action:hover { background: rgba(var(--gold-rgb), 0.08); }
+
+.payout-note,
+.payout-error {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-s);
+  font-size: 0.8125rem;
+}
+.payout-note  { background: rgba(var(--gold-rgb), 0.1); color: var(--gold-deep); }
+.payout-error { background: rgba(166, 96, 90, 0.1);     color: var(--error); }
+
+/* ---- מצב ריק ---------------------------------------------------------- */
+.payout-empty {
+  margin-top: 16px;
+  padding: 18px;
+  background: var(--surface-hi);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-m);
+  color: var(--body);
+  font-size: 0.875rem;
+}
+.payout-empty p { margin: 0; }
+.payout-empty-title {
+  margin-bottom: 4px !important;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+/* ---- תצוגת הפרטים השמורים -------------------------------------------- */
+.payout-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin: 18px 0 0;
+  padding: 16px;
+  background: var(--surface-hi);
+  border-radius: var(--radius-m);
+}
+.payout-summary > div { min-width: 0; }
+.payout-summary dt {
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.payout-summary dd {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9375rem;
+  color: var(--charcoal);
+  min-width: 0;
+}
+.payout-summary-bank dd span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* מספרי סניף/חשבון תמיד LTR — אחרת הם מוצגים הפוך בהקשר עברי. */
+.payout-num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+  justify-content: flex-start;
+}
+.payout-updated {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--faint);
+}
+
+.payout-link {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--gold-deep);
+  font-family: inherit;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ---- הטופס ------------------------------------------------------------ */
+.payout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 18px;
+}
+.payout-field { min-width: 0; }
+.payout-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--charcoal);
+}
+
+/* מובייל־פירסט: השדות אחד מתחת לשני, ונפרשים לשתי עמודות רק כשיש מקום. */
+.payout-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+@media (min-width: 560px) {
+  .payout-row { grid-template-columns: 140px 1fr; }
+}
+
+.payout-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 14px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  color: var(--charcoal);
+  font-family: inherit;
+  /* 16px — מתחת לזה ספארי במובייל מזום-אין על השדה בפוקוס */
+  font-size: 1rem;
+}
+.payout-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(var(--gold-rgb), 0.18);
+}
+.payout-input-invalid { border-color: var(--error); }
+.payout-input-num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: start;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.payout-hint,
+.payout-field-error {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+}
+.payout-hint { color: var(--muted); }
+.payout-hint-why { margin: -2px 0 8px; }
+.payout-field-error { color: var(--error); }
+
+/* ---- העלאת הקובץ ------------------------------------------------------ */
+/* ה-input עצמו מוסתר אך נשאר נגיש למקלדת ולקורא מסך (לא display:none). */
+.payout-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.payout-file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.payout-file-btn {
+  flex: none;
+  min-height: 44px;
+  padding: 10px 16px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  color: var(--charcoal);
+  font-family: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.payout-file-btn:hover { border-color: var(--gold); }
+.payout-file-input:focus-visible + .payout-file-row .payout-file-btn {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+.payout-file-name {
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- כפתורי פעולה ----------------------------------------------------- */
+.payout-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.payout-submit,
+.payout-cancel {
+  min-height: 48px;
+  padding: 12px 24px;
+  border-radius: var(--radius-m);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.payout-submit {
+  flex: 1;
+  min-width: 160px;
+  background: var(--charcoal);
+  border: 1px solid var(--charcoal);
+  color: var(--ivory);
+}
+.payout-submit:hover:not(:disabled) { background: var(--black-soft); }
+.payout-submit:disabled { opacity: 0.6; cursor: default; }
+.payout-cancel {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--body);
+}
+.payout-cancel:hover:not(:disabled) { border-color: var(--muted); }

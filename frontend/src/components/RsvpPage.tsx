@@ -4,12 +4,15 @@ import {
   advanceRsvpTrack,
   getAutomationDashboard,
   getCommunicationSequence,
+  getEvent,
   getMessageStatusByType,
   getRsvpTrack,
   listGuests,
+  updateEvent,
 } from '../api'
 import type {
   AutomationDashboard,
+  EventDetails,
   EventMessage,
   Guest,
   MessageType,
@@ -154,6 +157,10 @@ function CoupleRsvpView({
       {error && <p className="form-error">{error}</p>}
       {note && <p className="rsvp-note">{note}</p>}
 
+      {/* שעת שליחה — מתי ביום יוצאות הודעות המסלול והתודה. רלוונטי גם לפני
+          הפעלת המסלול, כדי שהזוג יוכל לקבוע אותה מראש. */}
+      <SendTimeSettings />
+
       {!active ? (
         <RsvpEmptyState
           onGoToMessages={onNavigate ? () => onNavigate('messages') : undefined}
@@ -172,6 +179,115 @@ function CoupleRsvpView({
       )}
 
       <RsvpFaq />
+    </div>
+  )
+}
+
+/**
+ * שעת שליחה — מתי ביום יוצאות הודעות מסלול אישורי ההגעה, ומתי יוצאת הודעת
+ * התודה (שעה נפרדת). הטווח (10:00–19:00) ולוגיקת שישי/שבת+שעון ישראל
+ * נאכפים בשרת (app/communication.py) — כאן רק שני שדות שעה ושמירה.
+ */
+function SendTimeSettings() {
+  const t = strings.messages.sendTime
+  const [event, setEvent] = useState<EventDetails | null>(null)
+  const [rsvpTime, setRsvpTime] = useState('')
+  const [thankYouTime, setThankYouTime] = useState('')
+  const [loadError, setLoadError] = useState('')
+  const [saveError, setSaveError] = useState('')
+  const [saved, setSaved] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    getEvent()
+      .then((e) => {
+        if (!alive) return
+        setEvent(e)
+        setRsvpTime(e.rsvp_send_time)
+        setThankYouTime(e.thank_you_send_time)
+      })
+      .catch((err) => {
+        if (alive) setLoadError(err instanceof Error ? err.message : t.loadError)
+      })
+    return () => {
+      alive = false
+    }
+  }, [t.loadError])
+
+  const dirty =
+    !!event && (rsvpTime !== event.rsvp_send_time || thankYouTime !== event.thank_you_send_time)
+
+  async function save() {
+    setBusy(true)
+    setSaveError('')
+    setSaved(false)
+    try {
+      const e = await updateEvent({
+        rsvp_send_time: rsvpTime,
+        thank_you_send_time: thankYouTime,
+      })
+      setEvent(e)
+      setRsvpTime(e.rsvp_send_time)
+      setThankYouTime(e.thank_you_send_time)
+      setSaved(true)
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : t.saveError)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (loadError) return <p className="form-error">{loadError}</p>
+  if (!event) return null
+
+  return (
+    <div className="commit-field">
+      <span className="field-label">{t.label}</span>
+      <p className="commit-explain">{t.explain}</p>
+      <div className="event-datetime">
+        <label className="field-group">
+          <span className="field-label">{t.trackLabel}</span>
+          <input
+            type="time"
+            min="10:00"
+            max="19:00"
+            value={rsvpTime}
+            onChange={(e) => {
+              setSaved(false)
+              setRsvpTime(e.target.value)
+            }}
+            onClick={(e) => e.currentTarget.showPicker?.()}
+          />
+        </label>
+        <label className="field-group">
+          <span className="field-label">{t.thankYouLabel}</span>
+          <input
+            type="time"
+            min="10:00"
+            max="19:00"
+            value={thankYouTime}
+            onChange={(e) => {
+              setSaved(false)
+              setThankYouTime(e.target.value)
+            }}
+            onClick={(e) => e.currentTarget.showPicker?.()}
+          />
+        </label>
+      </div>
+      <span className="commit-warn">{t.rangeHint}</span>
+      {saveError && <p className="form-error">{saveError}</p>}
+      {saved && !dirty && <p className="rsvp-note">{t.saved}</p>}
+      <div className="event-edit-actions">
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={!dirty || busy}
+          onClick={save}
+        >
+          {t.save}
+        </button>
+      </div>
     </div>
   )
 }

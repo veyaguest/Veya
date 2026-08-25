@@ -409,6 +409,10 @@ export function GuestsPage() {
             localStorage.setItem(ONBOARDING_KEY, '1')
             setShowOnboarding(false)
           }}
+          onPaste={() => setShowPaste(true)}
+          onExcel={() => fileInput.current?.click()}
+          onContacts={contactsSupported ? () => setShowContacts(true) : undefined}
+          onManual={() => setShowForm(true)}
         />
       )}
 

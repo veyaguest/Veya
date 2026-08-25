@@ -70,7 +70,7 @@ export function PartnerCta() {
       </div>
 
       {!open ? (
-        <button type="button" className="pcta-btn" onClick={() => setOpen(true)}>
+        <button type="button" className="btn-primary pcta-btn" onClick={() => setOpen(true)}>
           הזמנת בן/בת זוג
         </button>
       ) : (
@@ -88,7 +88,7 @@ export function PartnerCta() {
               placeholder="partner@example.com"
               required
             />
-            <button type="submit" className="pcta-btn" disabled={busy}>
+            <button type="submit" className="btn-primary pcta-btn" disabled={busy}>
               {busy ? 'שולח…' : 'שליחת הזמנה'}
             </button>
           </div>

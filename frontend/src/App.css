@@ -42,6 +42,11 @@
   --radius-xl: 20px;
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-medium: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* הגובה שבאנר ה-Cookies תופס בתחתית המסך. CookieBanner.tsx דורס את זה
+     בגובה האמיתי כשהבאנר מוצג, ומחזיר ל-0px ברגע שהמשתמש בוחר. מוצהר כאן
+     כדי שכל calc() שמסתמך עליו יעבוד גם כשהבאנר לא עלה בכלל. */
+  --cookie-banner-height: 0px;
 }
 
 /* ---- הקשרים כהים: הטוקנים הבהירים מוחלפים חזרה לערכים כהים ----
@@ -52,6 +57,10 @@
 .auth-panel,
 .verify-page,
 .confirm-card,
+/* מגירת הבחירה של עמוד המוזמן היא אח של הכרטיס ולא צאצא שלו (היא מרחפת
+   מעל כל המסך), ולכן היא חייבת להופיע כאן במפורש — אחרת היא יורשת את
+   הטוקנים הבהירים של :root ונראית כמו חלון לבן על עמוד כהה. */
+.hub-sheet,
 .onboard-card,
 .join-card {
   --cream: #14120e;
@@ -336,7 +345,9 @@ summary:focus-visible,
   max-width: 1100px;
   width: 100%;
   margin: 0 auto;
-  padding: 20px 36px 48px;
+  /* גם בדסקטופ הבאנר מרחף מעל סוף התוכן — פחות דרמטי מהמובייל (אין שם פס
+     ניווט תחתון), אבל בלי זה השורה האחרונה בעמוד נחתכת בגלילה עד הסוף. */
+  padding: 20px 36px calc(48px + var(--cookie-banner-height));
 }
 
 /* ---- Footer משפטי קבוע (בכל מסכי האפליקציה, לא רק בדף הנחיתה) ---- */
@@ -370,6 +381,11 @@ summary:focus-visible,
 }
 
 /* ---- Cookie Banner ---- */
+/* ---- באנר Cookies ----------------------------------------------------
+   הבאנר הוא **שכבת התחתית של האפליקציה**: הוא מרחף מעל התוכן, ולכן כל מה
+   שנשען על תחתית המסך חייב לפנות לו מקום דרך --cookie-banner-height
+   (מתפרסם ע"י CookieBanner.tsx, שווה 0px כשאין באנר). מודלים ומגירות
+   יושבים *מעליו* — ראו הערת השכבות ליד .hub-sheet-backdrop. */
 .cookie-banner {
   position: fixed;
   inset-inline: 0;
@@ -378,7 +394,14 @@ summary:focus-visible,
   background: var(--black);
   color: var(--ivory);
   border-top: 1px solid var(--gold-deep);
-  padding: env(safe-area-inset-bottom, 0px) 0 0;
+  /* התיקון: ה-safe-area שייך ל**תחתית**. קודם הוא ישב ב-padding-top (הערך
+     הראשון בקיצור), ולכן באייפון עם פס בית הכפתורים נחתכו מלמטה במקום
+     להתרומם מעליו. */
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
+  /* רשת ביטחון למסכים נמוכים (אייפון קטן לרוחב): הבאנר לא יבלע את המסך. */
+  max-height: 60dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .cookie-banner-inner {
   max-width: 1100px;
@@ -396,6 +419,33 @@ summary:focus-visible,
   line-height: 1.6;
   color: #cfc8b8;
   flex: 1 1 320px;
+}
+/* מובייל: מהדקים מרווחים כדי שהבאנר יגזול פחות מסך. הטקסט עצמו לא מתקצר
+   — הוא טקסט משפטי (strings.legal.cookieBody), לא קישוט. */
+@media (max-width: 560px) {
+  .cookie-banner-inner {
+    padding: 12px 16px;
+    gap: 10px 12px;
+  }
+  .cookie-banner-text {
+    font-size: 12.5px;
+    line-height: 1.5;
+    flex-basis: 100%;
+  }
+  .cookie-banner-actions {
+    width: 100%;
+  }
+  /* שני הכפתורים הראשיים חולקים שורה אחת, "הגדרות מותאמות" נשאר קישור.
+     אזור מגע 44px לפי כללי הנגישות ב-design-system.md. */
+  .cookie-banner-actions .btn-primary,
+  .cookie-banner-actions .btn-ghost {
+    flex: 1 1 0;
+    min-height: 44px;
+  }
+  .cookie-banner-actions .btn-link {
+    flex: 1 1 100%;
+    min-height: 44px;
+  }
 }
 .cookie-banner-text a {
   color: var(--gold-light);
@@ -514,7 +564,9 @@ summary:focus-visible,
      אחידה מלמעלה ומלמטה סביב התוכן הבהיר, להפרדה ברורה ויוקרתית. */
   .side-nav {
     position: fixed;
-    bottom: 0;
+    /* נשען על באנר ה-Cookies במקום להיעלם מתחתיו. כשאין באנר הערך 0px
+       והפס חוזר להיצמד לתחתית המסך — בלי שום התניה ב-JS. */
+    bottom: var(--cookie-banner-height);
     inset-inline: 0;
     z-index: 60;
     flex-direction: row;
@@ -605,9 +657,10 @@ summary:focus-visible,
   .page-header {
     padding: 18px 18px 0;
   }
-  /* מרווח תחתון כדי שהניווט הקבוע לא יכסה את סוף התוכן. */
+  /* מרווח תחתון כדי שהניווט הקבוע לא יכסה את סוף התוכן — ומעליו גם באנר
+     ה-Cookies, כל עוד הוא מוצג. */
   .content {
-    padding: 16px 18px calc(64px + env(safe-area-inset-bottom, 0px));
+    padding: 16px 18px calc(64px + env(safe-area-inset-bottom, 0px) + var(--cookie-banner-height));
   }
   .page-title {
     font-size: 24px;
@@ -1660,40 +1713,42 @@ td.notes.seating {
   margin: 0 auto 18px;
   max-width: 440px;
 }
-.onboarding-points {
+/* דרכי הייבוא הקיימות (בדיוק אותן פעולות כמו ב-ImportMenu) — מוצגות כאן
+   כבחירה ראשית וברורה, בסגנון .btn-ghost (אותם צבעי hover/focus) אבל
+   ברוחב מלא, כדי שיהיו הפעולה הבולטת במסך הזה. */
+.onboarding-import-options {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin: 4px 0 20px;
-  text-align: start;
+  gap: 10px;
+  margin: 4px 0 18px;
 }
-.onboarding-point {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 14px 16px;
+.onboarding-import-btn {
+  width: 100%;
+  padding: 14px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--charcoal);
+  background: var(--cream);
   border: 1px solid var(--line);
   border-radius: var(--radius-l);
-  background: var(--cream);
+  cursor: pointer;
+  text-align: center;
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
-.onboarding-icon {
-  font-size: 26px;
-  line-height: 1;
-  flex-shrink: 0;
+.onboarding-import-btn:hover {
+  background: rgba(201, 162, 39, 0.06);
+  border-color: var(--gold-light);
+  box-shadow: 0 1px 3px rgba(43, 38, 32, 0.04);
 }
-.onboarding-point-title {
-  font-weight: 700;
-  color: var(--charcoal);
-  margin-bottom: 3px;
+.onboarding-import-btn:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
-.onboarding-point-text {
-  font-size: 14px;
-  color: var(--charcoal);
-  opacity: 0.75;
-  line-height: 1.5;
-}
-.onboarding-actions {
-  justify-content: center;
+/* "הוספה ידנית" — פעולה משנית בכוונה: טקסט קטן וממורכז, לא כפתור מלא. */
+.onboarding-manual {
+  display: block;
+  margin: 0 auto;
 }
 
 .wizard-card {
@@ -2709,7 +2764,7 @@ td.notes.seating {
   letter-spacing: 0.2px;
 }
 .event-datetime input {
-  padding: 10px 14px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius-m);
   background: var(--cream);
@@ -2717,11 +2772,27 @@ td.notes.seating {
   font-size: 15px;
   font-family: inherit;
   color-scheme: light;
-  transition: border-color var(--transition-fast);
+  /* כל השדה לחיץ (לא רק האייקון הזעיר) — ראו onClick עם showPicker() ברכיבים */
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .event-datetime input:focus {
   outline: none;
   border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(var(--gold-rgb), 0.12);
+}
+/* אייקון הלוח-שנה/שעון הטבעי של הדפדפן — קטן ודהוי מדי כברירת מחדל,
+   בעיקר בדסקטופ. מגדילים אותו לאזור לחיצה ברור, עם ריפוד עגול ו-hover
+   בגוון הזהב של VEYA, כך שהוא מרגיש כמו כפתור ולא כפרט טכני שנשכח. */
+.event-datetime input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  padding: 5px;
+  margin-inline-start: 6px;
+  border-radius: var(--radius-s);
+  transition: background var(--transition-fast);
+}
+.event-datetime input::-webkit-calendar-picker-indicator:hover {
+  background: rgba(var(--gold-rgb), 0.14);
 }
 .event-edit-actions {
   display: flex;
@@ -7525,8 +7596,12 @@ td.notes.seating {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  /* כפתור השליחה לא יידבק לפס הבית באייפונים עם notch */
-  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
+  /* כפתור השליחה לא יידבק לפס הבית באייפונים עם notch — ולא ייעלם מתחת
+     לבאנר ה-Cookies. זו הייתה התקלה: הכרטיס ממורכז ב-100dvh, הבאנר כיסה
+     את 178 הפיקסלים התחתונים, ו"שליחת אישור" לא היה נגיש בכלל במובייל.
+     ה-padding נספר פנימה (box-sizing: border-box), ולכן הוא גם מזיז את
+     נקודת המרכז כלפי מעלה וגם מבטיח מרווח בגלילה. */
+  padding-bottom: calc(max(24px, env(safe-area-inset-bottom, 24px)) + var(--cookie-banner-height));
   box-sizing: border-box;
   background:
     radial-gradient(circle at 50% 0%, rgba(201, 162, 39, 0.1), transparent 55%),
@@ -7832,6 +7907,516 @@ td.notes.seating {
 }
 .confirm-change:hover {
   color: var(--gold-light);
+}
+
+/* ===== Guest Hub — עמוד המוזמן (/confirm/{token}) =====================
+   נבנה על גבי טוקני העיצוב הקיימים בלבד (--gold / --line / --surface-hi
+   וכו'), ולכן הוא יורש אוטומטית גם את המצב הכהה. אזורי המגע כאן 56px —
+   גדולים מהמינימום (44px), כי הקהל הוא אנשים שפותחים קישור בטלפון תוך
+   כדי משהו אחר, ולא משתמשים מיומנים של המערכת. */
+
+.hub-card {
+  text-align: center;
+}
+
+.hub-header {
+  margin: 4px 0 18px;
+}
+.hub-greeting {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 22px;
+  color: var(--charcoal);
+  margin: 0;
+}
+.hub-tagline {
+  font-size: 15px;
+  color: var(--body);
+  margin: 4px 0 0;
+}
+
+.hub-title {
+  font-family: 'Cormorant Garamond', 'Frank Ruhl Libre', serif;
+  font-size: 30px;
+  line-height: 1.25;
+  color: var(--charcoal);
+  margin: 0 0 14px;
+  font-weight: 600;
+}
+
+/* תמונת ההזמנה כאזור לחיץ — היא גם התצוגה המקדימה וגם הכניסה למסך המלא. */
+.hub-invite-preview {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: zoom-in;
+  border-radius: var(--radius-l);
+  transition: transform 0.15s ease;
+}
+.hub-invite-preview:active {
+  transform: scale(0.99);
+}
+.hub-invite-preview:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+/* תקרה נמוכה יותר מהתמונה ה"חשופה" (68vh): כשההזמנה תופסת את כל המסך,
+   המוזמן לא רואה שיש מתחתיה "הוספה ליומן" ו"ניווט" — ופשוט לא גולל.
+   כאן שורת הפעולה הראשונה מציצה מתחת לקפל ומסמנת שיש המשך. הצפייה
+   המלאה בהזמנה ממילא נמצאת במרחק לחיצה, במסך מלא. */
+.hub-invite-preview .confirm-invite-img {
+  max-height: 52vh;
+  margin: 0;
+}
+
+.hub-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 14px 0 20px;
+}
+.hub-when {
+  font-size: 16px;
+  color: var(--charcoal);
+  font-weight: 600;
+}
+.hub-venue {
+  font-size: 15px;
+  color: var(--body);
+}
+.hub-address {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ---- רשימת הפעולות ---- */
+.hub-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+.hub-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 14px;
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--charcoal);
+  font-family: 'Assistant', sans-serif;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.05s ease;
+}
+.hub-action:hover {
+  border-color: var(--gold-deep);
+  background: rgba(201, 162, 39, 0.06);
+}
+.hub-action:active {
+  transform: scale(0.99);
+}
+.hub-action:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+.hub-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 11px;
+  background: rgba(201, 162, 39, 0.12);
+  color: var(--gold-deep);
+}
+.hub-action-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.hub-action-label {
+  font-size: 16px;
+  font-weight: 600;
+}
+.hub-action-chevron {
+  flex: none;
+  color: var(--faint);
+}
+
+/* ---- אישור הגעה: מופרד מהפעולות בקו עדין, לא בכותרת נוספת ---- */
+.hub-rsvp {
+  border-top: 1px solid var(--line-2);
+  padding-top: 20px;
+}
+.hub-rsvp .confirm-question {
+  margin-top: 0;
+}
+.hub-answered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ---- מגירת בחירה (יומן / ניווט) ---- */
+.hub-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  /* חוק השכבות: דיאלוג חוסם (aria-modal) יושב **מעל** באנר ה-Cookies
+     (z-index 100), שהוא אזור-עמוד רגיל ולא דיאלוג. זה גם מה שכבר נהוג
+     בקוד — .auto-modal-backdrop ו-.gm2-sheet-backdrop יושבים על 1000.
+     קודם המגירה ישבה על 60 והבאנר חתך לה את האפשרות התחתונה. */
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  animation: hub-fade-in 160ms ease both;
+}
+.hub-sheet {
+  width: 100%;
+  max-width: 440px;
+  box-sizing: border-box;
+  background: var(--cream);
+  border-radius: 22px 22px 0 0;
+  padding: 10px 20px max(22px, env(safe-area-inset-bottom, 22px));
+  animation: hub-slide-up 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@media (min-width: 600px) {
+  /* בדסקטופ מגירה תחתונה נראית זרה — שם זה כרטיס ממורכז. */
+  .hub-sheet-backdrop {
+    align-items: center;
+  }
+  .hub-sheet {
+    border-radius: var(--radius-xl);
+    padding-bottom: 22px;
+  }
+  .hub-sheet-grip {
+    display: none;
+  }
+}
+@keyframes hub-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes hub-slide-up {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hub-sheet-backdrop,
+  .hub-sheet { animation: none; }
+}
+.hub-sheet-grip {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  margin: 2px auto 14px;
+}
+.hub-sheet-title {
+  font-size: 15px;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 12px;
+}
+.hub-sheet-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  margin-bottom: 8px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface-hi);
+  color: var(--charcoal);
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: filter 0.15s ease, transform 0.05s ease;
+}
+.hub-sheet-option:active {
+  transform: scale(0.99);
+}
+.hub-sheet-option:hover {
+  filter: brightness(0.97);
+}
+.hub-sheet-option:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+/* Waze מקבל את הצבע שלו — בישראל זה הכפתור שרוב המוזמנים מחפשים. */
+.hub-sheet-option.waze {
+  background: #33ccff;
+  border-color: #33ccff;
+  color: #06344a;
+}
+/* ===== אזור המתנה =====================================================
+   יושב על אותה מגירה של היומן/הניווט כדי שהחוויה תהיה זהה, אבל הוא ארוך
+   יותר ולכן מקבל גלילה פנימית. כל הצבעים מהטוקנים הקיימים — אין כאן
+   "צבע של כסף" חדש, כי המתנה היא חלק מאותה חוויה שקטה ולא מסך מסחרי. */
+.hub-gift {
+  max-height: 88dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  text-align: start;
+}
+/* סימון ההדמיה — נוכח בכל שלב. ענבר ולא אדום: זו אזהרה, לא שגיאה. */
+.hub-gift-mock-badge {
+  margin: 0 0 14px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--gold-deep);
+  background: rgba(201, 162, 39, 0.1);
+  color: var(--gold-deep);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+}
+.hub-gift-field {
+  display: block;
+  margin-bottom: 14px;
+}
+.hub-gift-label {
+  display: block;
+  font-size: 14px;
+  color: var(--body);
+  margin-bottom: 6px;
+}
+.hub-gift-hint {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+/* שדה הסכום — הגדול והבולט במסך, כי זו ההחלטה היחידה שהאורח באמת מקבל. */
+.hub-gift-amount-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* סימן השקל משמאל לספרות — הפורמט המוכר בישראל, וזהה לפירוט שמתחת. */
+  direction: ltr;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-hi);
+}
+.hub-gift-amount-wrap:focus-within {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.18);
+}
+.hub-gift-currency {
+  font-size: 22px;
+  color: var(--gold-deep);
+  font-weight: 600;
+}
+.hub-gift-amount {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  outline: none;
+  color: var(--charcoal);
+  font-family: 'Assistant', sans-serif;
+  /* 18px+ מונע מ-iOS לבצע zoom אוטומטי בפוקוס על שדה קלט */
+  font-size: 24px;
+  font-weight: 600;
+  text-align: start;
+  /* אזור מגע 44px לפי כללי הנגישות ב-design-system.md */
+  min-height: 44px;
+}
+.hub-gift-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-hi);
+  color: var(--charcoal);
+  font-family: 'Assistant', sans-serif;
+  font-size: 16px;   /* לא פחות מ-16px — אחרת iOS מזום פנימה */
+  resize: vertical;
+}
+.hub-gift-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.18);
+}
+
+/* פירוט התשלום — הלב של השקיפות. תמיד גלוי, אף פעם לא מקופל. */
+.hub-gift-breakdown {
+  margin: 4px 0 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-hi);
+}
+.hub-gift-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14.5px;
+  color: var(--body);
+  padding: 4px 0;
+}
+.hub-gift-row.total {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-2);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.hub-gift-row-value {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  /* מבודד את הסכום מכיוון הפסקה — אחרת "₪500" מוצג כ-"500₪". */
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.hub-gift-explainer {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+
+.hub-gift-total-big {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--charcoal);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 10px;
+}
+.hub-gift-checkout,
+.hub-gift-done {
+  text-align: center;
+}
+.hub-gift-reference {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 0 0 14px;
+  font-variant-numeric: tabular-nums;
+}
+/* כפתור הדמיית הכישלון — קיים רק לבדיקות, ולכן מאופק בכוונה. */
+.hub-gift-fail-btn {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  font-family: 'Assistant', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+}
+.hub-gift-fail-btn:hover:not(:disabled) {
+  border-color: var(--error);
+  color: var(--error);
+}
+.hub-gift-title {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 20px;
+  color: var(--charcoal);
+  text-align: center;
+  margin-bottom: 6px;
+}
+.hub-gift-body {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--body);
+  text-align: center;
+  margin: 0 0 14px;
+}
+.hub-sheet-close {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 4px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: 'Assistant', sans-serif;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+/* ---- ההזמנה במסך מלא ---- */
+.hub-viewer {
+  position: fixed;
+  inset: 0;
+  /* מעל המגירה, ומעל באנר ה-Cookies — ראו חוק השכבות למעלה. */
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.92);
+  animation: hub-fade-in 160ms ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hub-viewer { animation: none; }
+}
+.hub-viewer-img {
+  max-width: 100%;
+  max-height: 82vh;
+  object-fit: contain;
+  border-radius: 10px;
+}
+.hub-viewer-hint {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+}
+.hub-viewer-close {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top, 14px));
+  inset-inline-end: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.hub-viewer-close:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* מסכים צרים — הכרטיס נושם עד הקצה במקום להתכווץ למרכז */
+@media (max-width: 420px) {
+  .confirm-wrap {
+    padding: 14px;
+    /* חייב לחזור על תוספת הבאנר — אחרת ההתאמה למסך צר דורסת את המרווח
+       שנפתח למעלה, ודווקא במסכים הקטנים הבעיה הכי חמורה. */
+    padding-bottom: calc(max(14px, env(safe-area-inset-bottom, 14px)) + var(--cookie-banner-height));
+  }
+  .hub-card {
+    padding: 28px 20px 26px;
+  }
+  .hub-title {
+    font-size: 26px;
+  }
 }
 
 /* ===== עורך תבנית הודעה (RSVP שלב 2) ===== */
@@ -10520,6 +11105,14 @@ td.notes.seating {
 }
 
 /* ---- שלב 2: הוספת מוזמנים ---- */
+.onboard-step-title {
+  margin: 0 0 10px;
+  text-align: start;
+  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
 .onboard-guest-intro {
   margin-bottom: 16px;
   text-align: start;
@@ -10570,11 +11163,17 @@ td.notes.seating {
 .onboard-card .event-image-drop,
 .onboard-card .add-form,
 .onboard-card .add-grid input,
-.onboard-card .add-grid select {
+.onboard-card .add-grid select,
+.onboard-card .onboarding-import-btn {
   background: var(--black);
 }
 .onboard-card .event-type-chip.active {
   background: color-mix(in srgb, var(--gold) 14%, var(--black));
+}
+/* color-scheme: light (הגדרת הבסיס) הייתה מציירת את אייקון הלוח-שנה/שעון
+   הטבעי בגוון כהה — כמעט בלתי-נראה על רקע --black של השדות כאן. */
+.onboard-card .event-datetime input {
+  color-scheme: dark;
 }
 .onboard-card .add-form {
   box-shadow: none;

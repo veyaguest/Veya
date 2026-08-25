@@ -1,0 +1,224 @@
+"""פרטי קבלת מתנות — חשבון הבנק שאליו יועברו המתנות שהתקבלו.
+
+**גישה: בעלי האירוע בלבד.** לא נפתחה כאן שום הרשאת חבר-אירוע, גם לא
+``view_reports``. מפיק או אולם שמנהלים אירוע יכולים לראות שהתקבלו מתנות
+(``routers/gifts.py``), אבל חשבון הבנק של הזוג אינו מידע שלהם. אותו כלל
+בדיוק נאכף שוב ברמת ה-DB ב-``rls/14_payout_accounts_rls.sql``.
+
+**מה הקובץ הזה לא עושה:** הוא לא מעביר כסף, לא מדבר עם ספק סליקה ולא מייצר
+Payout. הוא שומר את הפרטים בלבד — כדי שיהיו מוכנים כשתיבנה ההעברה בפועל.
+"""
+from __future__ import annotations
+
+import base64
+import binascii
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from sqlalchemy import select
+from sqlalchemy.orm import Session, undefer
+
+from app import audit, banks, models, schemas
+from app.auth import get_current_owner
+from app.database import get_db
+from app.deps import EventAccess
+
+# בעלים/בן-זוג/אדמין בלבד — ראו EventAccess: ``owner_only`` חוסם כל חבר-אירוע
+# אחר, בלי קשר להרשאות שניתנו לו.
+_owner_only = EventAccess(owner_only=True)
+
+router = APIRouter(prefix="/payout", tags=["payout"])
+
+# אישור ניהול חשבון מגיע מהבנק כ-PDF, או כצילום/סריקה. אין כאן SVG במכוון
+# (SVG הוא מסמך שיכול להריץ סקריפט), ואין פורמטים אקזוטיים.
+ALLOWED_CERTIFICATE_TYPES = {
+    "application/pdf": "pdf",
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/webp": "webp",
+    "image/heic": "heic",
+}
+MAX_CERTIFICATE_BYTES = 10 * 1024 * 1024  # 10MB — אישור בנק סרוק לא מגיע לזה
+
+
+def _mask(account_number: str) -> str:
+    """מחזיר את מספר החשבון מוסתר, למעט ארבע הספרות האחרונות.
+
+    ארבע ספרות מספיקות לזוג כדי לזהות שזה החשבון הנכון, ולא מספיקות כדי
+    להעביר אליו כסף. חשבון קצר במיוחד מוסתר במלואו.
+    """
+    tail = account_number[-4:] if len(account_number) > 4 else ""
+    return "•" * (len(account_number) - len(tail)) + tail
+
+
+def _read(row: models.PayoutAccount | None) -> schemas.PayoutAccountRead:
+    """בונה את התשובה למסך. מספר החשבון המלא לעולם לא חוזר מכאן."""
+    if row is None:
+        return schemas.PayoutAccountRead(configured=False)
+    bank = banks.BY_CODE.get(row.bank_code)
+    cert = None
+    if row.certificate_filename or row.certificate_size:
+        cert = schemas.PayoutCertificateRead(
+            filename=row.certificate_filename,
+            content_type=row.certificate_content_type,
+            size=row.certificate_size,
+            uploaded_at=row.certificate_uploaded_at,
+        )
+    return schemas.PayoutAccountRead(
+        configured=True,
+        bank_code=row.bank_code,
+        # אם קוד הבנק כבר לא ברשימה (בנק שהתמזג אחרי שהפרטים נשמרו) עדיין
+        # מציגים את הקוד עצמו, ולא "לא ידוע" — הנתון תקף, רק השם חסר.
+        bank_name=bank.name if bank else f"קוד בנק {row.bank_code}",
+        branch_number=row.branch_number,
+        account_number_masked=_mask(row.account_number),
+        certificate=cert,
+        updated_at=row.updated_at or row.created_at,
+    )
+
+
+def _load(db: Session, event_id: int) -> models.PayoutAccount | None:
+    return db.scalars(
+        select(models.PayoutAccount).where(models.PayoutAccount.event_id == event_id)
+    ).first()
+
+
+def _parse_certificate(data_url: str) -> tuple[bytes, str]:
+    """מפרק data URL של אישור ניהול חשבון, ומאמת סוג וגודל.
+
+    הבדיקות כאן הן על מה שבאמת ייכתב למסד — לא על מה שהדפדפן הצהיר עליו.
+    """
+    header, _, b64 = data_url.partition(",")
+    if not header.startswith("data:") or not b64:
+        raise HTTPException(status_code=422, detail="הקובץ לא נקרא כראוי — נסו להעלות שוב")
+    content_type = header[5:].split(";")[0].strip().lower()
+    if content_type not in ALLOWED_CERTIFICATE_TYPES:
+        raise HTTPException(
+            status_code=422,
+            detail="אפשר להעלות קובץ PDF או תמונה (JPG, PNG)",
+        )
+    try:
+        raw = base64.b64decode(b64, validate=True)
+    except (binascii.Error, ValueError):
+        raise HTTPException(status_code=422, detail="הקובץ לא נקרא כראוי — נסו להעלות שוב") from None
+    if not raw:
+        raise HTTPException(status_code=422, detail="הקובץ ריק — נסו להעלות שוב")
+    if len(raw) > MAX_CERTIFICATE_BYTES:
+        raise HTTPException(status_code=413, detail="הקובץ גדול מדי — עד 10MB")
+    return raw, content_type
+
+
+def _certificate_filename(content_type: str) -> str:
+    """שם הקובץ לתצוגה ולהורדה.
+
+    בכוונה **לא** משתמשים בשם שהמשתמש העלה: "IMG_4821.pdf" לא אומר כלום
+    כשרואים אותו חצי שנה אחרי, ושם קובץ שמגיע מהלקוח הוא גם טקסט לא-מהימן
+    שנכנס לכותרת ``Content-Disposition``. שם קבוע ומתאר פותר את שניהם.
+    """
+    return f"אישור ניהול חשבון.{ALLOWED_CERTIFICATE_TYPES[content_type]}"
+
+
+@router.get("", response_model=schemas.PayoutAccountRead)
+def get_payout_account(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_owner_only),
+):
+    """פרטי החשבון השמורים. מספר החשבון חוזר מוסתר בלבד."""
+    return _read(_load(db, event.id))
+
+
+@router.put("", response_model=schemas.PayoutAccountRead)
+def save_payout_account(
+    payload: schemas.PayoutAccountWrite,
+    request: Request,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_owner_only),
+    user: models.User = Depends(get_current_owner),
+):
+    """שומר או מעדכן את פרטי החשבון.
+
+    כל השדות עוברים נרמול וולידציה בשרת (``app/banks.py``) — הבדיקות
+    בדפדפן הן נוחות למשתמש, לא שכבת אמת.
+    """
+    try:
+        bank_code = banks.normalize_bank_code(payload.bank_code)
+        branch = banks.normalize_branch(payload.branch_number)
+        account = banks.normalize_account(payload.account_number)
+    except banks.BranchError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    row = _load(db, event.id)
+    creating = row is None
+    if row is None:
+        row = models.PayoutAccount(event_id=event.id)
+        db.add(row)
+
+    row.bank_code = bank_code
+    row.branch_number = branch
+    row.account_number = account
+
+    if payload.certificate:
+        raw, content_type = _parse_certificate(payload.certificate)
+        row.certificate_data = raw
+        row.certificate_content_type = content_type
+        row.certificate_filename = _certificate_filename(content_type)
+        row.certificate_size = len(raw)
+        row.certificate_uploaded_at = datetime.utcnow()
+    elif creating:
+        # אישור ניהול חשבון הוא שדה חובה בטופס. בעדכון של חשבון קיים אפשר
+        # לשנות מספר בלי להעלות מחדש את אותו אישור — אבל שמירה ראשונה בלי
+        # אישור כלל אינה תקינה.
+        raise HTTPException(status_code=422, detail="צריך לצרף אישור ניהול חשבון")
+
+    if creating:
+        db.flush()  # כדי ש-updated_at/created_at יהיו זמינים לתשובה
+
+    # ביומן נשמר רק שהפרטים עודכנו — לא הפרטים עצמם.
+    audit.record(
+        db,
+        "update_payout_account",
+        event_id=event.id,
+        user_id=user.id,
+        detail="עודכנו פרטי קבלת המתנות" if not creating else "נשמרו פרטי קבלת המתנות",
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+    db.refresh(row)
+    return _read(row)
+
+
+@router.get("/certificate")
+def get_certificate(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_owner_only),
+):
+    """מגיש את אישור ניהול החשבון לבעלי האירוע בלבד.
+
+    זו הדרך **היחידה** לקרוא את הקובץ. בכוונה לא נעשה שימוש ב-``media_blobs``
+    ו-``GET /media/<id>``, שהם ללא אימות (ראו ``models.PayoutAccount``).
+    """
+    row = db.scalars(
+        select(models.PayoutAccount)
+        .where(models.PayoutAccount.event_id == event.id)
+        .options(undefer(models.PayoutAccount.certificate_data))
+    ).first()
+    if row is None or not row.certificate_data:
+        raise HTTPException(status_code=404, detail="לא נמצא אישור ניהול חשבון")
+    filename = row.certificate_filename or "certificate"
+    return Response(
+        content=row.certificate_data,
+        media_type=row.certificate_content_type or "application/octet-stream",
+        headers={
+            # RFC 5987 — שם הקובץ בעברית חייב להיות מקודד, אחרת הכותרת נשברת.
+            "Content-Disposition": f"inline; filename*=UTF-8''{_quote(filename)}",
+            # מסמך פיננסי: לא נשמר במטמון של דפדפן או פרוקסי.
+            "Cache-Control": "private, no-store",
+        },
+    )
+
+
+def _quote(value: str) -> str:
+    from urllib.parse import quote
+
+    return quote(value, safe="")

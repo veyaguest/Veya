@@ -471,6 +471,7 @@ export function DashboardPage({ onNavigate }: Props) {
                   onChange={(e) =>
                     setForm({ ...form, event_date: e.target.value })
                   }
+                  onClick={(e) => e.currentTarget.showPicker?.()}
                 />
               </label>
               <label className="field-group">
@@ -481,6 +482,7 @@ export function DashboardPage({ onNavigate }: Props) {
                   onChange={(e) =>
                     setForm({ ...form, event_time: e.target.value })
                   }
+                  onClick={(e) => e.currentTarget.showPicker?.()}
                 />
               </label>
             </div>

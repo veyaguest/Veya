@@ -324,6 +324,20 @@ def maps_link(address: str) -> str:
     return f"https://www.google.com/maps/search/?api=1&query={quote_plus(address)}"
 
 
+def apple_maps_link(address: str) -> str:
+    """קישור ניווט ל-Apple Maps מתוך כתובת חופשית (ריק אם אין כתובת).
+
+    מוצע למוזמן רק לצד Waze ו-Google Maps — בישראל Waze הוא ברירת המחדל
+    בפועל, ו-Apple Maps הוא ההשלמה למי שמשתמש ביומן ובמפות של אפל.
+    """
+    address = (address or "").strip()
+    if not address:
+        return ""
+    from urllib.parse import quote_plus
+
+    return f"https://maps.apple.com/?q={quote_plus(address)}"
+
+
 def waze_link(address: str) -> str:
     """קישור ניווט ל-Waze מתוך כתובת חופשית (ריק אם אין כתובת).
 

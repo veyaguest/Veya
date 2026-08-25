@@ -64,6 +64,19 @@ def _prev_active_day(d: date) -> date:
     return d
 
 
+# ---- גרסאות ציבוריות — לשימוש חוצה-מודולים (למשל תזמון שעת שליחה
+# ב-``communication.py``) בלי לגעת בלוגיקה הפנימית הקיימת כאן. ----
+
+def is_weekend(d: date) -> bool:
+    """גרסה ציבורית של ``_is_weekend``."""
+    return _is_weekend(d)
+
+
+def next_active_day(d: date) -> date:
+    """גרסה ציבורית של ``_next_active_day``."""
+    return _next_active_day(d)
+
+
 def _ddmm(d: date) -> str:
     return d.strftime("%d/%m/%Y")
 

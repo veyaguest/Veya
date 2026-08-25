@@ -16,7 +16,10 @@ function devAppRewrite(): Plugin {
     configureServer(server) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       server.middlewares.use((req: any, _res: any, next: () => void) => {
-        if (req.url && /^\/app(\/|$|\?)/.test(req.url) && !req.url.startsWith('/app.html')) {
+        // /confirm/{token} הוא עמוד המוזמן (Guest Hub) — גם הוא נטען מתוך
+        // app.html, וגם לו יש rewrite ב-vercel.json. בלי השורה הזו הוא היה
+        // נופל בפיתוח לדף הנחיתה, ואי אפשר היה לבדוק אותו מקומית בכלל.
+        if (req.url && /^\/(app|confirm)(\/|$|\?)/.test(req.url) && !req.url.startsWith('/app.html')) {
           req.url = '/app.html'
         }
         next()
