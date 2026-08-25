@@ -34,6 +34,8 @@ from app.routers import (
     partner,
     payout,
     payout_admin,
+    postpone,
+    postpone_admin,
     seating,
     stats,
     venues,)
@@ -106,6 +108,8 @@ app.include_router(venues.router)
 app.include_router(media_serve.router)
 app.include_router(payout.router)
 app.include_router(payout_admin.router)
+app.include_router(postpone.router)
+app.include_router(postpone_admin.router)
 
 # הגשת קבצי תמונות שהועלו (הזמנה/סקיצת אולם) מתוך backend/uploads.
 from app.media import UPLOADS_DIR  # noqa: E402

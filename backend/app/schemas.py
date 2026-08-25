@@ -533,6 +533,18 @@ class EventRead(BaseModel):
     rsvp_send_time: str = "16:00"
     thank_you_send_time: str = "16:00"
 
+    # ---- נוהל דחייה ----
+    # מחזור האירוע. 1 = האירוע המקורי; 2 ומעלה = אחרי דחייה.
+    cycle_number: int = 1
+    # באיזה שלב האירוע נמצא — הערך שמזין את באנר המצב במסך. הערכים מוגדרים
+    # ב-``app/postponement_service.py`` (STAGE_*). מחושב בשרת בכוונה: מקור
+    # אמת אחד, כדי שהמסך לא יסיק מצב בעצמו מתוך צירוף של דגלים.
+    event_stage: str = "normal"
+    # האם פרטי הליבה נעולים כרגע לעריכה.
+    edit_locked: bool = True
+    # אילו שדות נעולים — כדי שהמסך יציג בדיוק אותם כקריאה-בלבד ולא ינחש.
+    locked_fields: list[str] = []
+
 
 class EventUpdate(BaseModel):
     event_type: Optional[EventType] = None
@@ -2152,3 +2164,68 @@ class PayoutProviderStatusWrite(BaseModel):
 
     status: str
     reason: str = ""
+
+
+# ---- נוהל דחייה ----
+
+
+class PostponementRead(BaseModel):
+    """מצב נוהל הדחייה כפי שבעלי האירוע רואים אותו.
+
+    **אין כאן שדה תאריך חדש, ובמכוון.** הבקשה היא בקשת רשות לערוך, לא
+    הצהרה על מועד. התאריך החדש נכנס אחר כך דרך עריכת האירוע הרגילה.
+    """
+
+    #: ``None`` = מעולם לא נפתחה בקשה לאירוע הזה.
+    status: Optional[str] = None
+    cycle_number: int = 1
+    requested_at: Optional[datetime] = None
+    reviewed_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    #: סיבת הדחייה של הבקשה, כשמנהל VEYA דחה אותה. מוצגת לבעלי האירוע.
+    rejection_reason: Optional[str] = None
+    #: התאריך שהיה לפני הדחייה — כדי שהמסך יוכל להראות "היה X, עכשיו Y".
+    previous_event_date: str = ""
+    previous_event_time: str = ""
+    #: האם אפשר לפתוח בקשה חדשה עכשיו. נגזר בשרת כדי שהמסך לא ינחש.
+    can_request: bool = True
+    #: האם אפשר לסיים את הנוהל ולפתוח מחזור חדש (נוהל פתוח + תאריך חדש נקבע).
+    can_complete: bool = False
+
+
+class PostponementRejectWrite(BaseModel):
+    """דחיית בקשה על ידי מנהל VEYA. הסיבה חובה — בעלי האירוע רואים אותה."""
+
+    reason: str
+
+
+class PostponementReviewRow(BaseModel):
+    """בקשת דחייה אחת בתור של האדמין.
+
+    **מה שיש כאן זה בדיוק מה שצריך כדי להכריע**: איזה אירוע, מי ביקש, מתי,
+    ומה מצב האירוע בפועל (תאריך, אולם, כמה כבר אישרו הגעה) — כדי שהמאשר
+    יבין מה עומד להיפתח.
+    """
+
+    request_id: int
+    event_id: int
+    event_title: str = ""
+    event_type: str = "wedding"
+    cycle_number: int = 1
+
+    owner_name: str = ""
+    owner_email: str = ""
+    #: מי בפועל לחץ על "פתיחת נוהל דחייה" — לא בהכרח הבעלים הרשום.
+    requested_by_name: str = ""
+
+    event_date: str = ""
+    event_time: str = ""
+    venue_name: str = ""
+    guests_total: int = 0
+    guests_confirmed: int = 0
+
+    status: str
+    requested_at: Optional[datetime] = None
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    rejection_reason: Optional[str] = None
