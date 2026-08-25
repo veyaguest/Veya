@@ -30,6 +30,17 @@ MESSAGE_TYPES: list[str] = [
     "final_reminder", "event_day", "thank_you",
 ]
 
+# ---- הודעה מותנית: "אירוע נדחה" ----
+#
+# ``postponement`` **אינו** ברצף הקבוע למעלה, ובמכוון: אירוע שלא נדחה לא
+# אמור לראות כרטיס דחייה בכלל. השורה מוקצית לאירוע רק ברגע שמנהל VEYA מאשר
+# נוהל דחייה (``provision_postponement_message``, נקראת מ-
+# ``postponement_service.approve``), ומוסתרת שוב מהרצף כשהנוהל נסגר.
+#
+# היא גם אינה נכנסת לתור ה-due: הודעת דחייה נשלחת **ידנית**, כשהזוג מוכן,
+# בדיוק כמו ההזמנה — לא לפי לוח זמנים.
+POSTPONEMENT = "postponement"
+
 # אלה שמות השלבים עצמם (ניתנו במפורש ע"י הבעלים) — לא "תוכן הודעה".
 MESSAGE_TYPE_LABELS: dict[str, str] = {
     "invitation": "הזמנה",
@@ -38,6 +49,7 @@ MESSAGE_TYPE_LABELS: dict[str, str] = {
     "final_reminder": "תזכורת אחרונה",
     "event_day": "יום האירוע",
     "thank_you": "תודה",
+    POSTPONEMENT: "אירוע נדחה",
 }
 
 # עוגן תזמון ברירת מחדל לכל סוג (ימים ביחס לעוגן הקבוע של הסוג — ראו
@@ -147,6 +159,14 @@ DEFAULT_VARIABLES_SUPPORTED: dict[str, list[str]] = {
         "navigation_link", "table_number",
     ],
     "thank_you": ["guest_name", "guest_names", "host_names", "gift_link"],
+    # הודעת דחייה — רשימה מכוונת-מיעוט, משתי סיבות:
+    # · בלי ``rsvp_link``: המחזור החדש עוד לא נפתח, וקישור אישור הגעה היה
+    #   מוביל את האורח לאשר הגעה למועד שכבר לא קיים. האישור מחדש מגיע
+    #   בהזמנה החדשה.
+    # · בלי ``event_date``: בשלב הזה התאריך שבאירוע יכול להיות עדיין הישן
+    #   *או* כבר החדש, תלוי מתי הזוג שולח. משתנה שמשמעותו משתנה לפי תזמון
+    #   הוא בדיוק הדרך לשלוח לאורחים תאריך שגוי.
+    POSTPONEMENT: ["guest_name", "guest_names", "host_names", "event_type", "venue_name"],
 }
 
 
@@ -242,6 +262,49 @@ def provision_event_messages(db: Session, event: models.Event) -> int:
         created += 1
     db.flush()
     return created
+
+
+def provision_postponement_message(db: Session, event: models.Event) -> bool:
+    """מקצה לאירוע את שורת הודעת "אירוע נדחה". מחזיר האם נוצרה שורה חדשה.
+
+    נקראת **רק** מ-``postponement_service.approve`` — לא מיצירת אירוע ולא מ-
+    ``provision_event_messages``. אירוע שלא נדחה לעולם לא מקבל את השורה הזו.
+
+    idempotent: דחייה שנייה לאותו אירוע משתמשת בשורה שכבר קיימת, כולל
+    הנוסח שהזוג ערך בפעם הקודמת — לא דורסת אותו בברירת המחדל.
+    """
+    existing = db.scalars(
+        select(models.EventMessage)
+        .where(models.EventMessage.event_id == event.id)
+        .where(models.EventMessage.message_type == POSTPONEMENT)
+    ).first()
+    if existing is not None:
+        return False
+
+    default = db.scalars(
+        select(models.MessageDefault)
+        .where(models.MessageDefault.event_type == event.event_type)
+        .where(models.MessageDefault.message_type == POSTPONEMENT)
+    ).first()
+    db.add(models.EventMessage(
+        event_id=event.id,
+        message_type=POSTPONEMENT,
+        title=default.title if default else MESSAGE_TYPE_LABELS[POSTPONEMENT],
+        # ריק עד שהבעלים יזין נוסחים במסך האדמין — לא ממציאים תוכן כאן.
+        content=default.content if default else "",
+        variables_supported=(
+            list(default.variables_supported) if default and default.variables_supported
+            else list(DEFAULT_VARIABLES_SUPPORTED[POSTPONEMENT])
+        ),
+        is_active=True,
+        # אין עוגן תזמון: ההודעה נשלחת ידנית ואינה נכנסת לתור ה-due.
+        trigger_offset_days=0,
+        # ברירת מחדל "כולם": כשאירוע נדחה, גם מי שסירב וגם מי שטרם השיב
+        # צריכים לדעת. הזוג יכול לצמצם לפני השליחה.
+        target_audience="all",
+    ))
+    db.flush()
+    return True
 
 
 def event_messages_by_type(db: Session, event_id: int) -> dict[str, models.EventMessage]:
