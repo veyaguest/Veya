@@ -30,8 +30,28 @@ from tests.e2e_seating import bootstrap, shutdown  # noqa: E402
 
 
 def _set_event(api, **fields):
-    r = api.client.patch("/event", headers=api.headers, json=fields)
-    assert r.status_code == 200, f"עדכון אירוע נכשל: {r.status_code} {r.text}"
+    """מזיז את פרטי האירוע ישירות ב-DB, ולא דרך ``PATCH /event``.
+
+    תאריך האירוע נעול לעריכה מרגע שנקבע (ראו ``app/routers/postpone.py``:
+    שינוי אמיתי עובר בנוהל דחייה מאושר). הבדיקות כאן אינן על עריכת אירוע
+    אלא על **חלון הזמן** של המתנות, ולכן הן מזיזות את התאריך ישירות במסד —
+    בדיוק כמו שהיו מזיזות שעון. הנעילה בייצור נשארת שלמה ונבדקת בקובץ
+    ``tests/test_postponement.py``.
+    """
+    from app import models
+    from app.database import SessionLocal, set_request_identity
+
+    set_request_identity(None)
+    db = SessionLocal()
+    try:
+        event = db.get(models.Event, api.event_id)
+        for key, value in fields.items():
+            setattr(event, key, value)
+        db.commit()
+    finally:
+        db.close()
+    r = api.client.get("/event", headers=api.headers)
+    assert r.status_code == 200, f"קריאת אירוע נכשלה: {r.status_code} {r.text}"
     return r.json()
 
 

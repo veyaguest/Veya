@@ -23,6 +23,7 @@ from app import (
     audit,
     automation,
     communication,
+    event_cycle,
     invitations,
     message_status,
     messaging,
@@ -48,9 +49,18 @@ def _guests(db: Session, event_id: int) -> list[models.Guest]:
     ).all())
 
 
-def _messages(db: Session, event_id: int) -> list[models.Message]:
+def _messages(db: Session, event: models.Event) -> list[models.Message]:
+    """הודעות המחזור הנוכחי של האירוע.
+
+    כל הצרכנים של הרשימה הזו סופרים **שליחות** (``direction == "outbound"``)
+    — כמה קיבלו הזמנה, מי כבר קיבל תזכורת, מה מצב המסירה. אחרי דחייה כל
+    אלה צריכים להתחיל מאפס, ולכן הרשימה מצומצמת למחזור הנוכחי
+    (``app/event_cycle.py``).
+    """
     return list(db.scalars(
-        select(models.Message).where(models.Message.event_id == event_id)
+        select(models.Message)
+        .where(models.Message.event_id == event.id)
+        .where(event_cycle.current_sends(event))
     ).all())
 
 
@@ -67,7 +77,7 @@ def _track_status(
     if guests is None:
         guests = _guests(db, event.id)
     if messages is None:
-        messages = _messages(db, event.id)
+        messages = _messages(db, event)
 
     def count(status: str) -> int:
         return sum(1 for g in guests if g.rsvp_status == status)
@@ -134,7 +144,7 @@ def message_status_summary(
     """סיכום מצב ההודעות שנשלחו למוזמנים (נמסרו/נקראו/נכשלו/...) — לכרטיס
     "מעקב אחרי המוזמנים". נפרד לגמרי מסטטוס ה-RSVP (``/track``)."""
     guests = _guests(db, event.id)
-    messages = _messages(db, event.id)
+    messages = _messages(db, event)
     counts = message_status.summarize(guests, messages)
     return schemas.MessageStatusSummary(
         mode=messaging.current_mode(),
@@ -158,7 +168,7 @@ def message_status_by_type(
         raise HTTPException(status_code=404, detail="סוג הודעה לא קיים")
 
     guests = _guests(db, event.id)
-    messages = _messages(db, event.id)
+    messages = _messages(db, event)
 
     has_any = any(
         m.direction == "outbound" and m.kind == message_type for m in messages
@@ -247,7 +257,7 @@ def activate_track(
     if event.rsvp_track_started_at is None:
         event.rsvp_track_started_at = datetime.utcnow()
 
-    already_invited = invitations.invited_guest_ids(db, event.id)
+    already_invited = invitations.invited_guest_ids(db, event.id, event)
     guests = _guests(db, event.id)
 
     # קביעת קהל היעד לפי היקף הבקשה.
@@ -301,6 +311,7 @@ def activate_track(
             body=text,
             channel="whatsapp",
             event_message_id=invitation_msg.id if invitation_msg else None,
+            cycle_number=event_cycle.of(event),
             **message_status.outbound_fields(res),
         ))
         if res.ok:
@@ -464,7 +475,7 @@ def dashboard(
 ):
     """תמונת מצב מלאה של מסע אישורי ההגעה + המלצות מעקב חכם."""
     guests = _guests(db, event.id)
-    messages = _messages(db, event.id)
+    messages = _messages(db, event)
 
     def count(status: str) -> int:
         return sum(1 for g in guests if g.rsvp_status == status)

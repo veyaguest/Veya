@@ -15,7 +15,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from app import audit, message_status, messaging, models, permissions, schemas
+from app import (
+    audit, event_cycle, message_status, messaging, models, permissions, schemas,
+)
 from app.auth import get_current_owner
 from app.database import IS_POSTGRES, get_db
 from app.deps import EventAccess
@@ -81,6 +83,7 @@ def summary(
     sent = db.scalar(
         select(func.count()).select_from(models.Message)
         .where(models.Message.event_id == event.id)
+        .where(event_cycle.current_sends(event))
         .where(models.Message.direction == "outbound")
         .where(models.Message.kind == "invitation")
         .where(models.Message.status == "sent")
@@ -139,6 +142,7 @@ def send_invitations(
             direction="outbound",
             kind="invitation",
             body=text,
+            cycle_number=event_cycle.of(event),
             **message_status.outbound_fields(res),
         ))
         if res.ok:
@@ -229,6 +233,7 @@ def send_reminders(
             direction="outbound",
             kind="reminder",
             body=text,
+            cycle_number=event_cycle.of(event),
             **message_status.outbound_fields(res),
         ))
         if res.ok:

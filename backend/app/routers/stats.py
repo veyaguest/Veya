@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import event_terms, models, permissions, schemas
+from app import event_cycle, event_terms, models, permissions, schemas
 from app.database import get_db
 from app.deps import EventAccess
 
@@ -69,6 +69,7 @@ def dashboard(
     invitations_sent = db.scalar(
         select(func.count()).select_from(models.Message)
         .where(models.Message.event_id == event.id)
+        .where(event_cycle.current_sends(event))
         .where(models.Message.direction == "outbound")
         .where(models.Message.kind == "invitation")
         .where(models.Message.status == "sent")

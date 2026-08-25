@@ -11,7 +11,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import models
+from app import event_cycle, models
 from app.validators import normalize_israeli_phone
 
 # ערכי הסטטוס הנגזר לכל מוזמן (מקור אמת יחיד, נחשף גם ל-frontend).
@@ -40,11 +40,19 @@ def classify_phone(raw: str | None) -> str:
     return "valid"
 
 
-def invited_guest_ids(db: Session, event_id: int) -> set[int]:
-    """מזהי המוזמנים שכבר נשלחה אליהם הזמנה (הודעת invitation יוצאת שנשלחה)."""
+def invited_guest_ids(db: Session, event_id: int, event=None) -> set[int]:
+    """מזהי המוזמנים שכבר נשלחה אליהם הזמנה (הודעת invitation יוצאת שנשלחה).
+
+    **רק במחזור הנוכחי.** אחרי דחייה, הזמנה שנשלחה למועד הישן אינה נחשבת —
+    אחרת ההזמנה החדשה לא הייתה נשלחת לאיש. ``event`` אופציונלי לתאימות
+    אחורה עם קוראים ישנים; בלעדיו נטענת שורת האירוע כדי לדעת את המחזור.
+    """
+    if event is None:
+        event = db.get(models.Event, event_id)
     rows = db.scalars(
         select(models.Message.guest_id)
         .where(models.Message.event_id == event_id)
+        .where(event_cycle.current_sends(event))
         .where(models.Message.direction == "outbound")
         .where(models.Message.kind == "invitation")
         .where(models.Message.status == "sent")
@@ -95,7 +103,7 @@ def build_send_preview(db: Session, event: models.Event) -> SendPreview:
     guests = db.scalars(
         select(models.Guest).where(models.Guest.event_id == event.id)
     ).all()
-    invited = invited_guest_ids(db, event.id)
+    invited = invited_guest_ids(db, event.id, event)
 
     can_receive = not_yet_sent = already_sent = 0
     missing_phone = invalid_phone = 0

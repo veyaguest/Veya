@@ -20,7 +20,10 @@ import re
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import automation, event_terms, message_status, messaging, models, rsvp_timeline
+from app import (
+    automation, event_cycle, event_terms, message_status, messaging, models,
+    rsvp_timeline,
+)
 from app.guest_journey import israel_timezone, now_in_israel
 
 # ---- סדר קבוע וכינויים ----
@@ -40,6 +43,11 @@ MESSAGE_TYPES: list[str] = [
 # היא גם אינה נכנסת לתור ה-due: הודעת דחייה נשלחת **ידנית**, כשהזוג מוכן,
 # בדיוק כמו ההזמנה — לא לפי לוח זמנים.
 POSTPONEMENT = "postponement"
+
+#: סוגי הודעה שנשלחים **ידנית** דרך ``POST /communication/sequence/{type}/send``.
+#: ההזמנה אינה כאן במכוון: היא נשלחת דרך מסלול אישורי-ההגעה, שאוכף
+#: "הזמנה אחת בלבד לכל אורח". שני מסלולים לאותה שליחה = הזמנה כפולה.
+MANUAL_SEND_TYPES: frozenset[str] = frozenset({POSTPONEMENT})
 
 # אלה שמות השלבים עצמם (ניתנו במפורש ע"י הבעלים) — לא "תוכן הודעה".
 MESSAGE_TYPE_LABELS: dict[str, str] = {
@@ -347,7 +355,12 @@ def _already_sent(messages: list[models.Message]) -> set[tuple[int, int]]:
     }
 
 
-def _matches_audience(guest: models.Guest, audience: str) -> bool:
+def matches_audience(guest: models.Guest, audience: str) -> bool:
+    """האם המוזמן שייך לקהל היעד (``all``/``pending``/``confirmed``/``declined``).
+
+    ציבורית כי גם שליחה ידנית (``routers/communication.py``) בוחרת קהל באותו
+    אוצר מילים — ואין סיבה שיהיו שתי הגדרות ל"מי נכלל".
+    """
     if audience == "all":
         return True
     return guest.rsvp_status == audience
@@ -407,8 +420,12 @@ def compute_due_messages(
             select(models.Guest).where(models.Guest.event_id == event.id)
         ).all())
     if messages is None:
+        # רק שליחות של המחזור הנוכחי: אחרי דחייה, תזכורת שיצאה למועד
+        # הישן אינה "כבר נשלחה" — הסבב החדש מתחיל נקי.
         messages = list(db.scalars(
-            select(models.Message).where(models.Message.event_id == event.id)
+            select(models.Message)
+            .where(models.Message.event_id == event.id)
+            .where(event_cycle.current_sends(event))
         ).all())
 
     event_date = automation.parse_event_date(event.event_date)
@@ -426,7 +443,7 @@ def compute_due_messages(
         for guest in guests:
             if (em.id, guest.id) in sent or not guest.phone:
                 continue
-            if not _matches_audience(guest, em.target_audience):
+            if not matches_audience(guest, em.target_audience):
                 continue
             if not _due_now(message_type, em, guest, now, event_date, invited_at, event):
                 continue
@@ -454,6 +471,7 @@ def send_due_messages(
             body=a.preview,
             channel="whatsapp",
             event_message_id=a.event_message.id,
+            cycle_number=event_cycle.of(event),
             **message_status.outbound_fields(res),
         ))
         if res.ok:

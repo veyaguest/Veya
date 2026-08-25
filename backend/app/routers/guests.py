@@ -157,7 +157,7 @@ def list_guests(
     ).all()
 
     # סטטוס נגזר לכל מוזמן בעמוד (שאילתה אחת ל"מי כבר קיבל הזמנה").
-    invited = invitations.invited_guest_ids(db, event.id)
+    invited = invitations.invited_guest_ids(db, event.id, event)
     for g in items:
         g.invite_status = invitations.derive_invite_status(
             g.rsvp_status, g.id in invited

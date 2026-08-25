@@ -406,6 +406,29 @@ class CommunicationSendResult(BaseModel):
     detail: Optional[str] = None
 
 
+class CommunicationManualSend(BaseModel):
+    """שליחה ידנית של הודעה לקהל נבחר (היום: הודעת "אירוע נדחה").
+
+    ``guest_ids`` גובר על ``audience`` — כך אפשר גם "לכולם לפי סטטוס" וגם
+    "רק לאלה שסימנתי", בלי שני נתיבים.
+    """
+
+    # all / pending / confirmed / declined
+    audience: str = "all"
+    guest_ids: Optional[list[int]] = None
+
+
+class CommunicationManualSendResult(BaseModel):
+    """תוצאת שליחה ידנית — כולל מי דולג ולמה, כדי שהזוג יידע מה קרה בפועל."""
+
+    mode: str
+    sent: int
+    failed: int
+    #: מוזמנים ללא מספר טלפון או עם מספר שאינו תקין — לא נשלחה אליהם הודעה.
+    skipped_no_phone: int = 0
+    detail: Optional[str] = None
+
+
 class MessageDefaultRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
