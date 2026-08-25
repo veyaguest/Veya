@@ -414,6 +414,10 @@ export const strings = {
     imageRemove: 'הסרת התמונה',
     imageUpload: '⬆ העלאת תמונת הזמנה',
     imageUploadHint: 'זו התמונה שתישלח למוזמנים בהזמנה',
+    // ---- Empty state לתמונת ההזמנה בהירו — כשעוד לא הועלתה תמונה ----
+    inviteEmptyTitle: 'תמונת ההזמנה',
+    inviteEmptyDesc: 'התמונה שתופיע בהזמנה שנשלחת למוזמנים',
+    inviteEmptyCta: 'הוספת תמונה',
     venueFallback:
       'עוד לא הזנתם את פרטי האירוע — בואו נשלים את השמות, האולם והתאריך',
     editButton: '✎ עריכת פרטים',
@@ -455,7 +459,6 @@ export const strings = {
     gaugeStatusDeclined: 'לא מגיעים',
     kpiConfirmed: 'מגיעים',
     kpiPending: 'ממתינים',
-    invitePlaceholder: 'העלו תמונת הזמנה',
     // ---- באנר "יש מוזמנים בלי הזמנה" — מעל עדכוני אישורי ההגעה ----
     inviteBannerTitle: (count: number) =>
       `💌 עוד ${count} מוזמנים נשארו ללא הזמנה`,
@@ -487,12 +490,6 @@ export const strings = {
       viewCta: 'למסך המתנות',
     },
 
-    // ---- Feed עדכוני אישורי הגעה — במקום כרטיסי הסטטיסטיקה הכפולים ----
-    feedTitle: 'עדכוני אישורי הגעה',
-    feedEmpty: 'עדיין אין עדכונים — ברגע שמוזמנים יתחילו לענות, תראו כאן כל עדכון בזמן אמת.',
-    feedConfirmed: (name: string) => `${name} אישר/ה הגעה`,
-    feedDeclined: (name: string) => `${name} לא מגיע/ה`,
-    feedMaybe: (name: string) => `${name} מתלבט/ת`,
     // ---- "סידורי הושבה בלי כאב הראש" — הכרטיס המרכזי בעמודה הימנית ----
     seatingHelperTitle: 'סידורי הושבה בלי כאב הראש',
     seatingHelperDesc:

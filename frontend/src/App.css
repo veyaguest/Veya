@@ -2505,31 +2505,72 @@ td.notes.seating {
   opacity: 1;
   transform: translateY(0);
 }
-.dash-hero-image-placeholder {
+/* ---- Empty state לתמונת ההזמנה — כשעוד לא הועלתה תמונה. ממלא בדיוק
+   את אותו תא (dash-hero-image, 4:3) כמו המוקאפ עם תמונה, כדי שהקומפוזיציה
+   תישאר מאוזנת. רקע עדין + פינות מעוגלות + מסגרת דקה (לא מקווקוות) —
+   מרגיש כמו כרטיס טבעי בהירו, לא כמו שדה חסר/שגיאה. ---- */
+.invite-empty {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
-  height: 100%;
-  padding: 16px;
-  border: 2px dashed color-mix(in srgb, var(--muted) 40%, transparent);
-  background: transparent;
+  padding: 20px;
+  text-align: center;
+  background: linear-gradient(175deg, var(--surface-hi), var(--cream));
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-l);
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
-.dash-hero-image-placeholder:hover {
+.invite-empty:hover,
+.invite-empty:focus-visible {
   border-color: var(--gold);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
 }
-.dash-hero-image-placeholder-icon {
-  font-size: 28px;
-  opacity: 0.5;
+.invite-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  color: var(--gold-deep);
 }
-.dash-hero-image-placeholder-text {
+.invite-empty-icon svg {
+  width: 19px;
+  height: 19px;
+}
+.invite-empty-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+.invite-empty-desc {
+  max-width: 210px;
   font-size: 12.5px;
+  line-height: 1.5;
   color: var(--muted);
-  font-weight: 500;
+}
+.invite-empty-cta {
+  margin-top: 4px;
+  padding: 7px 18px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--charcoal);
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.invite-empty:hover .invite-empty-cta,
+.invite-empty:focus-visible .invite-empty-cta {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 8%, var(--cream));
 }
 /* ---- Live Countdown Timer — קוביות זכוכית עדינות (ימים/שעות/דקות/שניות) ---- */
 .countdown-timer {
@@ -2775,6 +2816,11 @@ td.notes.seating {
   font-size: 15px;
   font-family: inherit;
   color-scheme: light;
+  /* בעמוד RTL, ללא זה, הדפדפן (בעיקר בדסקטופ) הופך את סדר תת-השדות של
+     שעה/תאריך (שעה-דקה, יום-חודש) ואת מיקום אייקון השעון — מבלבל ולא
+     נוח לשימוש. נועלים ל-LTR כדי שהשדה יתנהג כמו שעון/תאריך רגיל. */
+  direction: ltr;
+  text-align: start;
   /* כל השדה לחיץ (לא רק האייקון הזעיר) — ראו onClick עם showPicker() ברכיבים */
   cursor: pointer;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);

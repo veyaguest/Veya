@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { getEvent, getPayoutAccount, getStats, mediaUrl, readAudit, updateEvent } from '../api'
-import type { AuditLogRow, DashboardStats, EventDetails, PayoutAccount } from '../types'
+import { getEvent, getPayoutAccount, getStats, mediaUrl, updateEvent } from '../api'
+import type { DashboardStats, EventDetails, PayoutAccount } from '../types'
 import type { ReadinessPage } from '../readiness'
 import {
   payoutDisplayStatus,
@@ -159,109 +159,6 @@ function PayoutReminder({
   )
 }
 
-/** אייקון לכל פעולה שנרשמה בעקבות שיחת טלפון עם מוזמן. ה-detail עצמו כבר
- * מגיע מהשרת כמשפט עברי מוכן (ראו backend/app/call_center.py: feed_message),
- * ולכן כאן נדרש רק האייקון — בלי לנתח את הטקסט. */
-const CALL_FEED_ICONS: Record<string, string> = {
-  guest_call_confirmed: '✅',
-  guest_call_declined: '❌',
-  guest_call_no_answer: '📞',
-  guest_call_busy: '📞',
-  guest_call_wrong_number: '⚠️',
-  guest_call_callback: '📅',
-  guest_call_followup: '📞',
-}
-
-/** מפענח שורת יומן ביקורת של אישור/ביטול/"אולי" מהקישור הציבורי (action
- * "confirm_submit", detail בפורמט "שם: תווית"), שינוי סטטוס ידני מעריכת
- * מוזמן (action "guest_rsvp_manual_update"), ועדכונים שהגיעו משיחת טלפון
- * עם המוזמן — לפריט Feed קריא.
- * מתעלם מכל שורה אחרת ביומן — ה-Feed הזה מוקדש לעדכוני מוזמנים בלבד. */
-function parseRsvpEvent(
-  row: AuditLogRow,
-): { icon: string; text: string; note?: string } | null {
-  const callIcon = CALL_FEED_ICONS[row.action]
-  if (callIcon) {
-    // ה-detail הוא כבר משפט אנושי מוכן ("לא התקבלה תשובה מישראל כהן"),
-    // ללא מונחים טכניים ובלי רמז לכך שהפעולה הגיעה ממודול פנימי.
-    // שורה שנייה (אם קיימת) היא הערה מהשיחה, ומוצגת מתחת בשורה נפרדת.
-    const [text, ...rest] = row.detail.split('\n')
-    return { icon: callIcon, text, note: rest.join(' ').trim() || undefined }
-  }
-  if (row.action === 'guest_rsvp_manual_update') {
-    // ה-detail כבר משפט עברי שלם ("שם: אישור הגעה השתנה מ'X' ל'Y'") —
-    // מוצג כמו שהוא, בלי לפרק אותו מחדש.
-    return { icon: '✎', text: row.detail }
-  }
-  if (row.action !== 'confirm_submit') return null
-  const sep = row.detail.indexOf(': ')
-  if (sep < 0) return null
-  const name = row.detail.slice(0, sep)
-  const label = row.detail.slice(sep + 2)
-  if (label.startsWith('אישר')) return { icon: '✅', text: t.feedConfirmed(name) }
-  if (label.startsWith('ביטל')) return { icon: '❌', text: t.feedDeclined(name) }
-  if (label.startsWith('סימן')) return { icon: '🟡', text: t.feedMaybe(name) }
-  return null
-}
-
-/** זמן יחסי קריא בעברית ("לפני 5 דק'" וכו') — לתדפיס שעת עדכון ב-Feed. */
-function timeAgo(iso: string): string {
-  const then = new Date(iso).getTime()
-  if (isNaN(then)) return ''
-  const diffSec = Math.max(0, Math.floor((Date.now() - then) / 1000))
-  if (diffSec < 60) return 'עכשיו'
-  const diffMin = Math.floor(diffSec / 60)
-  if (diffMin < 60) return `לפני ${diffMin} דק׳`
-  const diffHour = Math.floor(diffMin / 60)
-  if (diffHour < 24) return `לפני ${diffHour} שע׳`
-  const diffDay = Math.floor(diffHour / 24)
-  if (diffDay === 1) return 'אתמול'
-  if (diffDay < 7) return `לפני ${diffDay} ימים`
-  return new Date(iso).toLocaleDateString('he-IL', { day: 'numeric', month: 'short' })
-}
-
-/** "עדכוני אישורי הגעה" — Feed חי של תגובות מוזמנים בלבד (בלי מידע כפול
- * עם המד למעלה: כאן זו זרימת אירועים בזמן, לא סך-הכול). */
-function RsvpUpdatesFeed({ rows }: { rows: AuditLogRow[] }) {
-  const items = rows
-    .map((r) => {
-      const parsed = parseRsvpEvent(r)
-      return parsed ? { ...parsed, id: r.id, created_at: r.created_at } : null
-    })
-    .filter(
-      (x): x is {
-        icon: string
-        text: string
-        note?: string
-        id: number
-        created_at: string
-      } => x !== null,
-    )
-    .slice(0, 10)
-
-  return (
-    <div className="rsvp-feed-card">
-      <h3 className="rsvp-feed-title">{t.feedTitle}</h3>
-      {items.length === 0 ? (
-        <p className="rsvp-feed-empty">{t.feedEmpty}</p>
-      ) : (
-        <ul className="rsvp-feed-list">
-          {items.map((it) => (
-            <li key={it.id} className="rsvp-feed-item">
-              <span className="rsvp-feed-icon" aria-hidden="true">{it.icon}</span>
-              <span className={`rsvp-feed-text${it.note ? ' has-note' : ''}`}>
-                {it.text}
-                {it.note && <span className="rsvp-feed-note">{it.note}</span>}
-              </span>
-              <span className="rsvp-feed-time">{timeAgo(it.created_at)}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
-
 /** קובע איפה הזוג נמצא בתהליך ההכנה להושבה, לפי נתונים אמיתיים בלבד —
  * לא הנחה. שלב 4 (הושבה) פתוח רק אחרי שיש גם מוזמנים, גם קבוצות אמיתיות
  * (לא כולם "אחר") וגם הערה אחת לפחות (הושבה או קבוצה). */
@@ -395,18 +292,15 @@ export function DashboardPage({ onNavigate }: Props) {
   // האם הבחירה כבר ננעלה (בלתי-הפיכה) — נטען מהשרת.
   const [commitLocked, setCommitLocked] = useState(false)
   const [error, setError] = useState('')
-  // יומן העדכונים — מקור ה-Feed "עדכוני אישורי הגעה" (מסונן ל-confirm_submit).
-  const [auditRows, setAuditRows] = useState<AuditLogRow[]>([])
   // פרטי קבלת המתנות — עבור התזכורת בלבד. ``null`` כשאין הרשאה (הנתיב
   // פתוח לבעלים בלבד) או כשהקריאה נכשלה, ואז פשוט אין תזכורת.
   const [payout, setPayout] = useState<PayoutAccount | null>(null)
 
   const refresh = useCallback(async () => {
     try {
-      const [s, e, audit] = await Promise.all([getStats(), getEvent(), readAudit(20)])
+      const [s, e] = await Promise.all([getStats(), getEvent()])
       setStats(s)
       setEvent(e)
-      setAuditRows(audit)
       setForm({
         groom_name: e.groom_name,
         bride_name: e.bride_name,
@@ -645,7 +539,10 @@ export function DashboardPage({ onNavigate }: Props) {
           </div>
         ) : (
           <div className="dash-hero-bento">
-            {/* מימין (RTL): כרטיסיית תמונת הזוג */}
+            {/* מימין (RTL): כרטיסיית תמונת הזוג. יש תמונה → המוקאפ הקיים,
+                בלי שום שינוי. אין תמונה → empty state מעוצב באותו תא בדיוק
+                (לא כרטיס נפרד/גדול יותר), שלוחץ פותח את "פרטי האירוע"
+                (event-image-edit למעלה) — אותה לוגיקת העלאה קיימת. */}
             <div className="dash-hero-image">
               {event?.invite_image ? (
                 <>
@@ -670,11 +567,18 @@ export function DashboardPage({ onNavigate }: Props) {
               ) : (
                 <button
                   type="button"
-                  className="dash-hero-image-placeholder"
+                  className="invite-empty"
                   onClick={() => setEditing(true)}
                 >
-                  <span className="dash-hero-image-placeholder-icon">🖼</span>
-                  <span className="dash-hero-image-placeholder-text">{t.invitePlaceholder}</span>
+                  <span className="invite-empty-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+                      <path d="M3.5 7l8.5 6 8.5-6" />
+                    </svg>
+                  </span>
+                  <span className="invite-empty-title">{t.inviteEmptyTitle}</span>
+                  <span className="invite-empty-desc">{t.inviteEmptyDesc}</span>
+                  <span className="invite-empty-cta">{t.inviteEmptyCta}</span>
                 </button>
               )}
             </div>
@@ -752,12 +656,6 @@ export function DashboardPage({ onNavigate }: Props) {
                   </li>
                 ))}
               </ul>
-            </section>
-
-            {/* ---- עדכוני אישורי הגעה — סקשן עצמאי במלוא הרוחב, מיד מתחת
-                 למד, כחלק משמעותי מתמונת המצב (לא כרטיס צדדי קטן). ---- */}
-            <section className="rsvp-feed-section">
-              <RsvpUpdatesFeed rows={auditRows} />
             </section>
 
             {/* ---- יומן פעילות: מי שינה מה ומתי. מקבל משמעות אמיתית
