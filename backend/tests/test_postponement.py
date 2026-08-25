@@ -20,9 +20,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sqlalchemy import select  # noqa: E402
 
-from app import models  # noqa: E402
-from app.database import SessionLocal, set_request_identity  # noqa: E402
+# ``e2e_seating`` קובע ``DATABASE_URL`` ל-DB זמני **בזמן** ``bootstrap()``,
+# ו-``app.database`` קורא את המשתנה בזמן הייבוא שלו. ייבוא של ``app`` כאן,
+# בראש הקובץ, היה מקבע את הבדיקות ל-DB הפיתוח האמיתי — ומשאיר בו זבל.
+# לכן כל גישה ל-ORM כאן עוברת דרך ``_db()``, אחרי שהלקוח כבר קם.
 from tests.e2e_seating import bootstrap, register, shutdown  # noqa: E402
+
+
+def _db():
+    """(session, models) — ייבוא עצל של ה-ORM. ראו ההערה למעלה."""
+    from app import models
+    from app.database import SessionLocal, set_request_identity
+
+    set_request_identity(None)
+    return SessionLocal(), models
 
 
 # ── עזרים ────────────────────────────────────────────────────────────────
@@ -34,8 +45,7 @@ def _admin(api):
     עצמו כאדמין.
     """
     token = register(api.client)
-    set_request_identity(None)
-    db = SessionLocal()
+    db, models = _db()
     try:
         user = db.scalars(
             select(models.User).order_by(models.User.id.desc())
@@ -271,8 +281,7 @@ def test_postponement_message_can_be_sent() -> None:
     # מוזמן בלי טלפון — ה-API לא מאפשר להוסיף כזה, אבל רשימות מיובאות
     # מכילות כאלה בפועל. מרוקנים ישירות ב-DB כדי לבדוק את הדילוג.
     no_phone = api.add_guest("בלי טלפון", "0503333333")
-    set_request_identity(None)
-    db = SessionLocal()
+    db, models = _db()
     try:
         db.get(models.Guest, no_phone["id"]).phone = ""
         db.commit()
@@ -321,8 +330,7 @@ def test_new_cycle_resets_rsvp_without_losing_history() -> None:
     )
     # כמות המאשרים והערת המוזמן מגיעות בייצור מדף אישור ההגעה, לא מ-PATCH
     # של הבעלים — נכתבות כאן ישירות כדי לבדוק שהן מגיעות לארכיון ומתאפסות.
-    set_request_identity(None)
-    db = SessionLocal()
+    db, models = _db()
     try:
         row = db.get(models.Guest, g1["id"])
         row.confirmed_count = 3
@@ -351,8 +359,7 @@ def test_new_cycle_resets_rsvp_without_losing_history() -> None:
     assert by_name["אורח מאשר"]["table_number"] == 4, "השיבוץ נמחק — הוא אמור להישמר"
 
     # ההיסטוריה נשמרה, ואפשר לשייך אותה למחזור הקודם.
-    set_request_identity(None)
-    db = SessionLocal()
+    db, models = _db()
     try:
         rows = db.scalars(
             select(models.GuestCycleRsvp)
@@ -420,8 +427,7 @@ def test_new_cycle_reopens_invitations_and_relocks() -> None:
     assert "postponement" not in {m["message_type"] for m in seq}
 
     # ההודעות של המחזור הקודם לא נמחקו — רק יצאו מהתמונה הנוכחית.
-    set_request_identity(None)
-    db = SessionLocal()
+    db, models = _db()
     try:
         old = db.scalars(
             select(models.Message)
@@ -453,8 +459,7 @@ def test_second_postponement_works() -> None:
     assert ev["cycle_number"] == 3, f"מחזור שלישי לא נפתח: {ev['cycle_number']}"
     assert ev["edit_locked"] is True
 
-    set_request_identity(None)
-    db = SessionLocal()
+    db, models = _db()
     try:
         cycles = db.scalars(
             select(models.EventCycle)
@@ -482,8 +487,7 @@ def test_event_delete_removes_postponement_data() -> None:
     r = api.client.delete(f"/events/{api.event_id}", headers=api.headers)
     assert r.status_code == 204, f"מחיקת אירוע נכשלה: {r.status_code} {r.text}"
 
-    set_request_identity(None)
-    db = SessionLocal()
+    db, models = _db()
     try:
         for model in (
             models.PostponementRequest, models.EventCycle, models.GuestCycleRsvp,
