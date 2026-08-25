@@ -314,7 +314,17 @@ export function GuestsPage() {
         </div>
       )}
 
-      {toast && <div className="toast">{toast}</div>}
+      {toast && (
+        <div className="toast">
+          <span className="toast-brand" aria-hidden="true">
+            <span className="auth-monogram">
+              <span className="auth-monogram-diamond" />
+              <span className="auth-monogram-v">V</span>
+            </span>
+          </span>
+          <span className="toast-text">{toast}</span>
+        </div>
+      )}
 
       {/* הפרדת ההערות: שדה "הערות הושבה" מתחיל ריק בכוונה, כדי שהערה
           תפעולית לא תהפוך פתאום לאילוץ. כאן מציעים למשתמש להעביר את מה

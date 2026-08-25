@@ -1841,20 +1841,49 @@ td.notes.seating {
   opacity: 0.62;
 }
 
-/* ---- Toast ---- */
+/* ---- Toast — פופ-אפ קטן וממותג, עם המונוגרם של VEYA (אותו אלמנט CSS
+   בדיוק כמו .auth-monogram בסרגל הצד/מסך ההתחברות, רק מוקטן ומוצמד
+   לגוונים "על רקע בהיר" — לא לוגו חדש). ---- */
 .toast {
-  background: rgba(201, 162, 39, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(201, 162, 39, 0.08);
   color: var(--gold-deep);
   border: 1px solid rgba(201, 162, 39, 0.22);
-  border-radius: var(--radius-m);
-  padding: 12px 16px;
+  border-radius: var(--radius-l);
+  padding: 10px 14px;
   margin-bottom: 14px;
-  font-weight: 600;
-  font-size: 14px;
-  box-shadow: 0 2px 8px rgba(201, 162, 39, 0.08);
+  box-shadow: var(--shadow-card);
   /* כניסה עדינה במקום הופעה מיידית — אותה עקומה שכבר משמשת לכניסת כרטיסי
      הדשבורד (fadeInUp), כדי לא להוסיף עוד וריאציה. */
   animation: fadeInUp 0.35s ease-out both;
+}
+.toast-brand {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+/* מונוגרם הסרגל הצדדי גדול ומיועד לרקע כהה — כאן רק ממקדים אותו במרכז
+   תא קטן וממזערים אותו איתו יחד (טבעת+יהלום+V נשארים חדים כי הכול קנה-מידה
+   אחד, לא חישוב מחדש). */
+.toast-brand .auth-monogram {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.39);
+}
+/* על הרקע הבהיר של ה-Toast, ה-V בגוון --gold-light (מיועד לכהה) לא קריא
+   מספיק — --gold-deep הוא בדיוק הטוקן הקיים ל"זהב על בהיר", ומתחלף אוטומטית
+   בין ערכת יום/לילה כמו שאר הטקסט של הרכיב. */
+.toast-brand .auth-monogram-v {
+  color: var(--gold-deep);
+}
+.toast-text {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.4;
 }
 @media (prefers-reduced-motion: reduce) {
   .toast { animation: none; }
@@ -2807,7 +2836,8 @@ td.notes.seating {
   color: var(--gold-deep);
   letter-spacing: 0.2px;
 }
-.event-datetime input {
+.event-datetime input,
+.time-picker-trigger {
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius-m);
@@ -2825,14 +2855,17 @@ td.notes.seating {
   cursor: pointer;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
-.event-datetime input:focus {
+.event-datetime input:focus,
+.time-picker-trigger:focus {
   outline: none;
   border-color: var(--gold);
   box-shadow: 0 0 0 3px rgba(var(--gold-rgb), 0.12);
 }
-/* אייקון הלוח-שנה/שעון הטבעי של הדפדפן — קטן ודהוי מדי כברירת מחדל,
-   בעיקר בדסקטופ. מגדילים אותו לאזור לחיצה ברור, עם ריפוד עגול ו-hover
-   בגוון הזהב של VEYA, כך שהוא מרגיש כמו כפתור ולא כפרט טכני שנשכח. */
+/* אייקון הלוח-שנה הטבעי של הדפדפן — קטן ודהוי מדי כברירת מחדל, בעיקר
+   בדסקטופ. מגדילים אותו לאזור לחיצה ברור, עם ריפוד עגול ו-hover בגוון
+   הזהב של VEYA, כך שהוא מרגיש כמו כפתור ולא כפרט טכני שנשכח. (שדות שעה
+   כבר לא משתמשים ב-input הילידי — ראו TimePicker למטה — אז זה נשאר
+   רלוונטי רק לשדה התאריך.) */
 .event-datetime input::-webkit-calendar-picker-indicator {
   cursor: pointer;
   padding: 5px;
@@ -2842,6 +2875,98 @@ td.notes.seating {
 }
 .event-datetime input::-webkit-calendar-picker-indicator:hover {
   background: rgba(var(--gold-rgb), 0.14);
+}
+/* ---- TimePicker — בורר שעה ויזואלי (שעות/דקות בשתי עמודות גלילה), במקום
+   ה-picker הילידי של input type="time" שבמחשב דורש הקלדה ידנית. הכפתור
+   נראה בדיוק כמו שדה התאריך/שעה הרגיל (משתף איתו את הכללים למעלה); כאן
+   רק הפאנול הצף שנפתח מתחתיו. ---- */
+.time-picker {
+  position: relative;
+}
+.time-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.time-picker-value {
+  font-variant-numeric: tabular-nums;
+}
+.time-picker-icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: color var(--transition-fast);
+}
+.time-picker-icon svg {
+  width: 17px;
+  height: 17px;
+}
+.time-picker-trigger[aria-expanded='true'] .time-picker-icon {
+  color: var(--gold-deep);
+}
+.time-picker-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 6px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-card);
+  animation: fadeInUp 0.15s ease-out both;
+}
+.time-picker-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 46px;
+  max-height: 200px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+}
+.time-picker-sep {
+  align-self: center;
+  padding: 0 2px;
+  color: var(--faint);
+  font-weight: 600;
+}
+.time-picker-opt {
+  padding: 6px 0;
+  border: none;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--charcoal);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.time-picker-opt:hover:not(:disabled) {
+  background: rgba(var(--gold-rgb), 0.12);
+}
+.time-picker-opt.is-active {
+  background: var(--gold);
+  color: #fff;
+  font-weight: 700;
+}
+.time-picker-opt:disabled {
+  color: var(--faint);
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+@media (prefers-reduced-motion: reduce) {
+  .time-picker-panel { animation: none; }
 }
 .event-edit-actions {
   display: flex;
@@ -11265,6 +11390,7 @@ td.notes.seating {
 .onboard-card .event-type-chip,
 .onboard-card .event-fields input,
 .onboard-card .event-datetime input,
+.onboard-card .time-picker-trigger,
 .onboard-card .commit-select,
 .onboard-card .venue-ac-list,
 .onboard-card .event-image-drop,

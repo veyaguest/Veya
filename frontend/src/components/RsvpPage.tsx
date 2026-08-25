@@ -24,6 +24,7 @@ import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { GuestTimelineModal } from './GuestTimelineModal'
 import { RsvpTimeline } from './RsvpTimeline'
+import { TimePicker } from './TimePicker'
 
 /**
  * מסך אישורי ההגעה: "מה מצב המוזמנים שלי?" — מי אישר, מי לא ענה, מעקב
@@ -246,34 +247,32 @@ function SendTimeSettings() {
       <span className="field-label">{t.label}</span>
       <p className="commit-explain">{t.explain}</p>
       <div className="event-datetime">
-        <label className="field-group">
+        <div className="field-group">
           <span className="field-label">{t.trackLabel}</span>
-          <input
-            type="time"
-            min="10:00"
-            max="19:00"
+          <TimePicker
             value={rsvpTime}
-            onChange={(e) => {
-              setSaved(false)
-              setRsvpTime(e.target.value)
-            }}
-            onClick={(e) => e.currentTarget.showPicker?.()}
-          />
-        </label>
-        <label className="field-group">
-          <span className="field-label">{t.thankYouLabel}</span>
-          <input
-            type="time"
             min="10:00"
             max="19:00"
-            value={thankYouTime}
-            onChange={(e) => {
+            onChange={(time) => {
               setSaved(false)
-              setThankYouTime(e.target.value)
+              setRsvpTime(time)
             }}
-            onClick={(e) => e.currentTarget.showPicker?.()}
+            ariaLabel={t.trackLabel}
           />
-        </label>
+        </div>
+        <div className="field-group">
+          <span className="field-label">{t.thankYouLabel}</span>
+          <TimePicker
+            value={thankYouTime}
+            min="10:00"
+            max="19:00"
+            onChange={(time) => {
+              setSaved(false)
+              setThankYouTime(time)
+            }}
+            ariaLabel={t.thankYouLabel}
+          />
+        </div>
       </div>
       <span className="commit-warn">{t.rangeHint}</span>
       {saveError && <p className="form-error">{saveError}</p>}

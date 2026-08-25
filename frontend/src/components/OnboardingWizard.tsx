@@ -4,6 +4,7 @@ import { setActiveEventType, setEventId } from '../authStore'
 import type { EventSummary, EventType } from '../types'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 import { VenueAutocomplete } from './VenueAutocomplete'
+import { TimePicker } from './TimePicker'
 import { AddGuestForm } from './AddGuestForm'
 import { ContactsImportDialog, isContactPickerSupported } from './ContactsImportDialog'
 import { ImportDialog } from './ImportDialog'
@@ -246,15 +247,14 @@ export function OnboardingWizard({ onCreated }: Props) {
                   onClick={(e) => e.currentTarget.showPicker?.()}
                 />
               </label>
-              <label className="field-group">
+              <div className="field-group">
                 <span className="field-label">שעת האירוע</span>
-                <input
-                  type="time"
+                <TimePicker
                   value={form.event_time}
-                  onChange={(e) => setForm({ ...form, event_time: e.target.value })}
-                  onClick={(e) => e.currentTarget.showPicker?.()}
+                  onChange={(time) => setForm({ ...form, event_time: time })}
+                  ariaLabel="שעת האירוע"
                 />
-              </label>
+              </div>
             </div>
 
             <div className="commit-field">
