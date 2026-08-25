@@ -2,6 +2,7 @@
 import os
 import traceback
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +14,9 @@ from starlette.responses import JSONResponse
 from sqlalchemy import inspect, text
 
 from app import models  # noqa: F401  — נדרש כדי לרשום את הטבלאות
-from app.database import Base, MigrationSessionLocal, migrations_engine
+from app.database import (
+    Base, IS_POSTGRES, MigrationSessionLocal, migrations_engine,
+)
 from app.routers import (
     admin,
     auth,
@@ -775,6 +778,103 @@ def seed_message_default_options() -> None:
         db.close()
 
 
+# ---- הפעלת RLS לטבלאות נוהל הדחייה ----
+#
+# **למה זה כאן ולא בהרצה ידנית כמו שאר קובצי ה-RLS.** קובצי 01–14 מריצים
+# ידנית ובכוונה: הם נוגעים בכל טבלאות המערכת, והפעלתם היא אירוע תשתיתי
+# (ראו rls/PRODUCTION_ROLLOUT.md). קובץ 15 שונה בשלושה דברים:
+#
+# 1. הוא נוגע **רק בשלוש טבלאות חדשות** ששייכות לפיצ'ר אחד. אם משהו בו
+#    שגוי, מה שנשבר הוא נוהל הדחייה — לא ההתחברות, לא המוזמנים, לא ה-RSVP.
+# 2. הטבלאות נולדות מ-``create_all`` בעליית השרת, כלומר **אחרי** שקובצי
+#    ה-RLS הידניים כבר רצו. בלי צעד כאן, כל טבלה חדשה במערכת נולדת לנצח
+#    בלי מדיניות — וזה בדיוק הפער שהתגלה.
+# 3. הוא idempotent לחלוטין (DROP POLICY IF EXISTS + CREATE), ולכן הרצה
+#    חוזרת בכל עלייה אינה משנה דבר אחרי הפעם הראשונה.
+#
+# **מה זה לא עושה:** לא נוגע בנתונים. אין בקובץ INSERT/UPDATE/DELETE/DROP
+# TABLE — רק ALTER TABLE ... ENABLE RLS, CREATE POLICY ו-GRANT.
+#
+# **מתג כיבוי:** ``VEYA_SKIP_RLS_MIGRATIONS=1`` בסביבה. קיים כדי שאפשר
+# יהיה לכבות מיד מ-Render, בלי deploy של קוד, אם מתגלה בעיה.
+_RLS_MIGRATION_FILES = ("15_postponement_rls.sql",)
+
+#: הפונקציות שקובץ 15 נשען עליהן (קבצים 01 ו-08). בלעדיהן ``CREATE POLICY``
+#: ייכשל — ואז עדיף לדלג בקול מאשר להשאיר מדיניות חלקית.
+_RLS_REQUIRED_FUNCTIONS = ("app_manages_event", "app_is_admin")
+
+
+def _ensure_rls_policies() -> None:
+    """מחיל את מדיניות ה-RLS של הטבלאות שנוצרות ב-``create_all``.
+
+    שקט לגמרי ב-SQLite (אין שם RLS). לעולם לא מפיל את עליית השרת: כישלון
+    נרשם ללוג ותו לא — שרת שעולה בלי מדיניות עדיף על שרת שלא עולה, והפער
+    גלוי בלוג.
+    """
+    if not IS_POSTGRES:
+        return
+    if os.getenv("VEYA_SKIP_RLS_MIGRATIONS", "").strip() in ("1", "true", "yes"):
+        print("[veya:rls] דילוג לפי VEYA_SKIP_RLS_MIGRATIONS", flush=True)
+        return
+
+    rls_dir = Path(__file__).resolve().parent.parent / "rls"
+    try:
+        with migrations_engine.begin() as conn:
+            # תנאי מקדים: פונקציות העזר קיימות (כלומר קובצי 01/08 הורצו).
+            missing = [
+                fn for fn in _RLS_REQUIRED_FUNCTIONS
+                if not conn.exec_driver_sql(
+                    "SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace "
+                    "WHERE n.nspname = 'public' AND p.proname = %s",
+                    (fn,),
+                ).first()
+            ]
+            if missing:
+                print(
+                    "[veya:rls] דילוג — חסרות פונקציות עזר: "
+                    f"{', '.join(missing)}. הריצו קודם את rls/01 ו-rls/08.",
+                    flush=True,
+                )
+                return
+
+            for name in _RLS_MIGRATION_FILES:
+                path = rls_dir / name
+                if not path.exists():
+                    print(f"[veya:rls] קובץ חסר: {name}", flush=True)
+                    continue
+                # הקובץ כולו בטרנזקציה אחת — ALTER TABLE ו-CREATE POLICY
+                # טרנזקציוניים ב-Postgres, ולכן זה הכול-או-כלום.
+                # cursor גולמי ולא ``exec_driver_sql``: psycopg2 מפרש סימן
+                # אחוז בטקסט כ-placeholder ומפיל קובץ SQL שמכיל אותו.
+                # ``execute`` בלי פרמטרים כלל אינו עושה אינטרפולציה.
+                cur = conn.connection.cursor()
+                try:
+                    cur.execute(path.read_text(encoding="utf-8"))
+                finally:
+                    cur.close()
+                print(f"[veya:rls] הוחל: {name}", flush=True)
+
+        # אימות עצמי — נרשם ללוג כדי שאפשר יהיה לראות ב-Render מה בפועל
+        # קיים, בלי להתחבר ל-DB.
+        with migrations_engine.connect() as conn:
+            state = conn.exec_driver_sql(
+                "SELECT c.relname, c.relrowsecurity, "
+                "  (SELECT count(*) FROM pg_policies p "
+                "     WHERE p.schemaname = 'public' AND p.tablename = c.relname) "
+                "FROM pg_class c "
+                "WHERE c.relnamespace = 'public'::regnamespace AND c.relkind = 'r' "
+                "  AND c.relname IN "
+                "      ('postponement_requests', 'event_cycles', 'guest_cycle_rsvp') "
+                "ORDER BY 1"
+            ).all()
+            summary = " · ".join(
+                f"{t}: rls={'on' if on else 'OFF'} policies={n}" for t, on, n in state
+            ) or "לא נמצאו טבלאות"
+            print(f"[veya:rls] מצב → {summary}", flush=True)
+    except Exception as exc:  # noqa: BLE001 — לעולם לא מפיל את העלייה
+        print(f"[veya:rls] נכשל (השרת ממשיך לעלות): {exc!r}", flush=True)
+
+
 @app.on_event("startup")
 def on_startup() -> None:
     # גיבוי מתוארך של ה-DB לפני כל שינוי (רק אם הקובץ כבר קיים).
@@ -794,6 +894,10 @@ def on_startup() -> None:
     _ensure_unique_indexes()
     # מוציא תמונות base64 ישנות מה-DB לקבצים (חד-פעמי, בטוח לחזרה).
     _migrate_images()
+    # מחיל מדיניות RLS על טבלאות שנוצרו זה עתה ב-create_all (נוהל דחייה).
+    # אחרי create_all ו-_ensure_columns בכוונה: המדיניות מתייחסת לטבלאות
+    # שחייבות כבר להתקיים.
+    _ensure_rls_policies()
     # מוודא שיש בעלים (אדמין) אחד לפחות.
     _ensure_admin()
     # מוודא שלכל מוזמן קיים יש טוקן אישי לאישור הגעה.
