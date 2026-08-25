@@ -166,6 +166,12 @@ class Event(Base):
     # שעת שליחה נפרדת להודעת התודה — אותו טווח ואותו עיקרון, אבל עצמאית
     # מהמסלול (התודה נשלחת יום אחרי האירוע, בהקשר שונה לגמרי מהתזכורות).
     thank_you_send_time: Mapped[str] = mapped_column(String, default="16:00")
+    # מחזור האירוע הנוכחי. 1 = האירוע המקורי; כל דחייה שאושרה והושלמה מעלה
+    # את המספר ב-1. זהו העוגן של "נוהל דחייה": הודעות (``Message.cycle_number``)
+    # ותשובות הגעה מארכיון (``GuestCycleRsvp``) משויכות למחזור שבו נוצרו, כך
+    # שמחזור חדש מתחיל נקי בממשק **בלי שנמחק שום נתון** מהמחזור הקודם.
+    # ראו ``app/postponement_service.py`` ו-``app/event_cycle.py``.
+    cycle_number: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     owner: Mapped[Optional["User"]] = relationship(back_populates="events")
@@ -521,6 +527,12 @@ class Message(Base):
     # ממפים קוד שגיאה ספציפי לסטטוס מדויק יותר משלנו (למשל blocked) —
     # כך אפשר תמיד לשחזר בדיוק מה הספק אמר, גם אם המיפוי שלנו ישתנה בעתיד.
     provider_status: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    # מחזור האירוע שבו ההודעה נשלחה (ראו ``Event.cycle_number``). ברירת המחדל
+    # 1 נכונה לכל ההודעות שנשלחו לפני שנוהל הדחייה נכנס למערכת. השאילתות
+    # שמציגות לזוג "מה נשלח" מסננות למחזור הנוכחי (``app/event_cycle.py``),
+    # ולכן אחרי דחייה כל המוזמנים חוזרים להיות "טרם קיבלו הזמנה" — בלי
+    # שנמחקה ולו שורת הודעה אחת.
+    cycle_number: Mapped[int] = mapped_column(Integer, default=1, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
@@ -921,3 +933,124 @@ class PayoutAccount(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, onupdate=func.now())
+
+
+class PostponementRequest(Base):
+    """בקשה אחת של בעלי אירוע לפתוח "נוהל דחייה", והכרעת VEYA לגביה.
+
+    **מה אין כאן: תאריך חדש.** כשזוג מבקש לדחות אירוע הוא לרוב עדיין לא יודע
+    מתי הוא יתקיים — לכן הבקשה היא בקשת *רשות לערוך*, לא הצהרה על תאריך.
+    התאריך החדש נכנס אחר כך, דרך עריכת האירוע הרגילה, אחרי שהבקשה אושרה.
+
+    **למה טבלה ולא עמודת סטטוס על ``events``:** המערכת חייבת לתמוך ביותר
+    מדחייה אחת (מחזור 1 → 2 → 3). שורה לכל בקשה שומרת את ההיסטוריה המלאה —
+    מי ביקש, מי אישר, מתי, ומה היה התאריך *לפני* הדחייה — בלי לדרוס.
+
+    המעברים המותרים בין הסטטוסים מוגדרים ב-``app/postponement_status.py``
+    ונאכפים אך ורק דרך ``app/postponement_service.py``, לא בהשמה ישירה
+    לעמודה — אותה תבנית בדיוק כמו ``PayoutAccount.status``.
+    """
+
+    __tablename__ = "postponement_requests"
+    __table_args__ = (
+        Index("ix_postponement_event_status", "event_id", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    # המחזור שממנו הבקשה יצאה — כלומר ``Event.cycle_number`` בזמן הפתיחה.
+    cycle_number: Mapped[int] = mapped_column(Integer, default=1)
+
+    # pending → approved → completed · pending → rejected
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
+
+    requested_by_user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    requested_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    # מי ב-VEYA הכריע, ומתי. nullable כדי שמחיקת משתמש לא תפיל רשומות
+    # היסטוריות (אותו נימוק כמו ב-``CallLog.created_by_id``).
+    reviewed_by_user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    #: סיבת הדחייה של הבקשה (רק בסטטוס ``rejected``). מוצגת לבעלי האירוע.
+    rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    #: מתי הזוג סיים את הנוהל ופתח מחזור חדש (סטטוס ``completed``).
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # תאריך ושעת האירוע כפי שהיו **ברגע האישור**. זה מה שמאפשר להציג "התאריך
+    # החדש עודכן" בלי לנחש: אם התאריך הנוכחי שונה מהערך כאן — נקבע תאריך חדש.
+    previous_event_date: Mapped[str] = mapped_column(String, default="")
+    previous_event_time: Mapped[str] = mapped_column(String, default="")
+
+
+class EventCycle(Base):
+    """צילום של איך האירוע נראה במחזור שנסגר — ההקשר שהופך את הארכיון לקריא.
+
+    בלי השורה הזו, ``GuestCycleRsvp`` היה שומר "40 אישרו במחזור 1" בלי שאף
+    אחד יידע לאיזה תאריך הם אישרו.
+
+    נכתבת **רק ברגע סגירת מחזור** ולא מראש: כך אין צורך ב-backfill לאלפי
+    אירועים קיימים, ואירוע שמעולם לא נדחה פשוט אין לו שורות כאן.
+    """
+
+    __tablename__ = "event_cycles"
+    __table_args__ = (
+        UniqueConstraint("event_id", "cycle_number", name="uq_event_cycle_number"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    cycle_number: Mapped[int] = mapped_column(Integer)
+
+    event_date: Mapped[str] = mapped_column(String, default="")
+    event_time: Mapped[str] = mapped_column(String, default="")
+    venue_name: Mapped[str] = mapped_column(String, default="")
+    venue_address: Mapped[str] = mapped_column(String, default="")
+    venue_commit_days_before: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    #: מתי מסלול אישורי-ההגעה של המחזור הזה הופעל (``Event.rsvp_track_started_at``).
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    closed_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    #: למה המחזור נסגר. היום תמיד ``postponed`` — שדה ולא קבוע, כדי שסיבות
+    #: עתידיות (למשל שינוי אולם מהותי) לא ידרשו שינוי סכמה.
+    close_reason: Mapped[str] = mapped_column(String(30), default="postponed")
+
+
+class GuestCycleRsvp(Base):
+    """תשובת ההגעה של מוזמן אחד, כפי שהייתה בסוף מחזור שנסגר.
+
+    **זו הטבלה שמאפשרת "לאפס" RSVP בלי למחוק דבר.** לפני שהמערכת מאתחלת את
+    ``Guest.rsvp_status``, כל מוזמן מועתק לכאן. הזוג רואה מחזור נקי; הנתון
+    ההיסטורי נשאר במלואו וניתן לשיוך למחזור דרך ``cycle_number``.
+
+    מה שנשמר כאן הוא **התשובה**. *מתי* היא ניתנה ומה קרה סביבה ממשיך לחיות
+    במקומות הקיימים — ``messages`` (עם ``cycle_number`` משלהן),
+    ``audit_logs`` ו-``call_logs`` — ואינו משוכפל לכאן.
+    """
+
+    __tablename__ = "guest_cycle_rsvp"
+    __table_args__ = (
+        UniqueConstraint("guest_id", "cycle_number", name="uq_guest_cycle_rsvp"),
+        Index("ix_guest_cycle_rsvp_event", "event_id", "cycle_number"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    guest_id: Mapped[int] = mapped_column(
+        ForeignKey("guests.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    cycle_number: Mapped[int] = mapped_column(Integer)
+
+    rsvp_status: Mapped[str] = mapped_column(String, default="pending")
+    confirmed_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    guest_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    #: השיבוץ שהיה באותו מחזור. השיבוץ עצמו **אינו** מתאפס במחזור חדש
+    #: (החלטת בעלים) — נשמר כאן כדי שהארכיון יהיה תמונה מלאה של המחזור.
+    table_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    archived_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

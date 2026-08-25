@@ -148,6 +148,10 @@ _EXTRA_COLUMNS = {
         # המותר (10:00–19:00) גם למשתמשים קיימים.
         "rsvp_send_time": "TEXT DEFAULT '16:00'",
         "thank_you_send_time": "TEXT DEFAULT '16:00'",
+        # מחזור האירוע (נוהל דחייה). ברירת המחדל 1 רשומה במפורש — כל אירוע
+        # שכבר קיים בייצור הוא מחזור 1, ו-NULL היה שובר את השוואת המחזור
+        # בכל שאילתת הודעות.
+        "cycle_number": "INTEGER DEFAULT 1",
     },
     "messages": {
         "channel": "TEXT DEFAULT 'whatsapp'",
@@ -159,6 +163,9 @@ _EXTRA_COLUMNS = {
         "failure_reason": "TEXT DEFAULT ''",
         "failure_code": "INTEGER",
         "provider_status": "TEXT",
+        # לאיזה מחזור אירוע ההודעה שייכת. ברירת מחדל 1 — כל ההודעות שנשלחו
+        # לפני נוהל הדחייה הן של המחזור המקורי.
+        "cycle_number": "INTEGER DEFAULT 1",
     },
     "automation_rules": {
         "action_kind": "TEXT DEFAULT 'send'",
