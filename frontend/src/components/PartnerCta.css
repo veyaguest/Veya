@@ -25,7 +25,7 @@
 
 .pcta-text {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.65;
   color: var(--body);
 }
@@ -43,7 +43,7 @@
 }
 
 .pcta-label {
-  font-size: 0.8125rem;
+  font-size: 13px;
   font-weight: 500;
   color: var(--body);
 }
@@ -58,7 +58,7 @@
   flex: 1 1 200px;
   min-width: 0;
   padding: 10px 13px;
-  font-size: 0.9375rem;
+  font-size: 15px;
   font-family: inherit;
   color: var(--charcoal);
   background: var(--surface-hi);
@@ -75,7 +75,7 @@
 
 .pcta-error {
   margin: 4px 0 0;
-  font-size: 0.8125rem;
+  font-size: 13px;
   color: var(--error);
 }
 
@@ -95,12 +95,12 @@
   border-radius: 50%;
   background: rgba(47, 158, 95, 0.12);
   color: var(--green);
-  font-size: 0.9375rem;
+  font-size: 15px;
 }
 
 .pcta-done-text {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 14px;
   line-height: 1.6;
   color: var(--body);
 }

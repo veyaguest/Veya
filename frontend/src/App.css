@@ -202,7 +202,7 @@ summary:focus-visible,
 }
 *::-webkit-scrollbar-thumb {
   background: var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 *::-webkit-scrollbar-thumb:hover {
   background: var(--faint);
@@ -340,7 +340,7 @@ summary:focus-visible,
   border: none;
   padding: 4px;
   margin: -4px;
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   cursor: pointer;
   text-align: inherit;
   transition: background 0.15s ease;
@@ -478,7 +478,7 @@ summary:focus-visible,
 }
 .app-footer-copy {
   color: var(--faint);
-  font-size: 12.5px;
+  font-size: 13px;
 }
 
 /* ---- Cookie Banner ---- */
@@ -529,7 +529,7 @@ summary:focus-visible,
     gap: 10px 12px;
   }
   .cookie-banner-text {
-    font-size: 12.5px;
+    font-size: 13px;
     line-height: 1.5;
     flex-basis: 100%;
   }
@@ -692,7 +692,7 @@ summary:focus-visible,
     justify-content: center;
     gap: 1px;
     padding: 2px 2px;
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     font-size: 10px;
   }
   .side-nav .nav-item .nav-bullet {
@@ -774,15 +774,50 @@ summary:focus-visible,
 }
 
 /* ---- Toolbar ---- */
+/* ---- סרגל הפעולות של מסך המוזמנים ----
+   קודם היו כאן שבעה פקדים בשורה אחת בלי עטיפה: החיפוש דחס את
+   הכפתורים עד שהטקסט שלהם נשבר באמצע ("הצעות / לאיחוד"), ובמסך
+   צר הם פשוט גלשו מחוץ למסך. עכשיו השורה נשברת בצורה מסודרת,
+   לחיפוש יש רוחב מינימלי, והפעולות מקובצות ליחידה אחת שנשארת
+   שלמה — עם הפעולה הראשית בקצה. */
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
+/* מונה ההצעות כתג נפרד ולא כטקסט בתוך התווית — כך אורך הכפתור
+   לא משתנה כשהמספר גדל, והמספר עצמו קריא כמונה. */
+.toolbar-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--gold);
+  color: #201a06;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .search {
-  flex: 1;
+  flex: 1 1 240px;
+  min-width: 0;
+  min-height: var(--control-h-lg);
   padding: 10px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius-m);
@@ -796,12 +831,24 @@ summary:focus-visible,
   box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.1);
 }
 
+/* בורר עם חץ משלנו: ה-select הילידי מצייר חץ במקום ובצבע של מערכת
+   ההפעלה, ולכן שני הבוררים כאן נראו שונה מכל שאר הפקדים במערכת —
+   ובעברית (RTL) החץ אף נחת בצד ההפוך. מכבים את המראה הילידי
+   ומציירים chevron אחיד בצד ההתחלה הלוגי. */
 .toolbar-select {
-  padding: 10px 14px;
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: var(--control-h-lg);
+  padding: 10px 34px 10px 14px;
+  padding-inline: 14px 34px;
   border: 1px solid var(--line);
   border-radius: var(--radius-m);
-  font-size: 15px;
-  background: var(--cream);
+  font-size: var(--text-md);
+  background-color: var(--cream);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238c8375' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+  background-position: left 12px center;
   color: var(--charcoal);
   cursor: pointer;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -848,14 +895,57 @@ summary:focus-visible,
 }
 
 /* ---- Buttons ---- */
+/* ============================================================
+   מערכת הכפתורים — גיאומטריה אחת לכל המשפחות.
+   לפני כן היו במערכת עשר משפחות כפתורים שנבנו בנפרד (btn-*,
+   acc-btn, gm2-btn, apr-btn, join-btn, hm-*-btn ועוד) עם גבהים
+   40/48/50px, ארבעה ערכי radius ומשקלים שונים — אותה פעולה
+   נראתה אחרת בכל מסך. הבלוק כאן קובע בסיס משותף אחד; לכל משפחה
+   נשאר רק מה שבאמת ייחודי לה (צבע/רוחב/הקשר).
+   ============================================================ */
+.btn-primary,
+.btn-ghost,
+.btn-danger,
+.acc-btn,
+.gm2-btn,
+.apr-btn,
+.join-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-h-lg);
+  border-radius: var(--radius-m);
+  font-family: inherit;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* כפתור מושבת — מראה אחיד לכל המשפחות, כדי שברור תמיד שהוא לא לחיץ. */
+.btn-primary:disabled,
+.btn-ghost:disabled,
+.btn-danger:disabled,
+.acc-btn:disabled,
+.gm2-btn:disabled,
+.apr-btn:disabled,
+.join-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
 .btn-primary {
   background: linear-gradient(135deg, var(--gold-light), var(--gold));
   color: #201a06;
   border: none;
   border-radius: var(--radius-m);
   padding: 10px 20px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(var(--gold-rgb), 0.18), 0 0 0 0 rgba(var(--gold-rgb), 0);
   transition: box-shadow var(--transition-fast), transform var(--transition-fast), filter var(--transition-fast);
@@ -887,7 +977,7 @@ summary:focus-visible,
   border: 1px solid var(--line);
   border-radius: var(--radius-m);
   padding: 10px 20px;
-  font-size: 15px;
+  font-size: var(--text-md);
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -921,7 +1011,7 @@ summary:focus-visible,
   padding: 6px;
   background: var(--cream);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   box-shadow: var(--shadow-popover);
 }
 .import-menu-item {
@@ -1030,7 +1120,7 @@ summary:focus-visible,
   max-height: 320px;
   overflow-y: auto;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
 }
 .cg-guest-row {
   display: flex;
@@ -1104,7 +1194,7 @@ summary:focus-visible,
   margin: 0 0 4px;
   font-weight: 600;
   color: var(--charcoal);
-  font-size: 14.5px;
+  font-size: 15px;
 }
 .note-split-body {
   margin: 0;
@@ -1135,7 +1225,7 @@ td.notes.seating {
 /* הסבר קצר מתחת לשדה — מבדיל בין "הערה פנימית" ל"הערות הושבה", כדי שיהיה
    ברור מיד איזה שדה משפיע על סידור ההושבה ואיזה לא. */
 .field-hint {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--muted);
   opacity: 0.9;
   line-height: 1.45;
@@ -1144,7 +1234,7 @@ td.notes.seating {
 .add-grid select {
   padding: 9px 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   font-size: 15px;
   background: var(--cream);
 }
@@ -1182,17 +1272,17 @@ td.notes.seating {
 .import-consent-disclosure {
   margin: 14px 0 0;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: var(--surface-hi);
   border: 1px solid var(--line-2);
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.6;
   color: var(--muted);
 }
 
 /* ---- Summary ---- */
 .summary {
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--muted);
   margin: 4px 2px 14px;
   line-height: 1.5;
@@ -1251,7 +1341,7 @@ td.notes.seating {
   padding: 10px 14px;
   border-bottom: 1px solid var(--line-2);
   color: var(--body);
-  font-size: 13.5px;
+  font-size: 14px;
 }
 .guests-table td:first-child {
   font-weight: 600;
@@ -1277,15 +1367,15 @@ td.notes.seating {
 .guests-table .notes {
   max-width: 200px;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.4;
 }
 .badge {
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11.5px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.01em;
   border: 1px solid transparent;
@@ -1437,20 +1527,20 @@ td.notes.seating {
 .reconsent-body {
   font-family: var(--font-ui);
   color: var(--body);
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.6;
   margin: 0 0 8px;
 }
 .reconsent-hint {
   font-family: var(--font-ui);
   color: var(--muted);
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.6;
   margin: 0 0 16px;
 }
 .reconsent-links {
   font-family: var(--font-ui);
-  font-size: 13.5px;
+  font-size: 14px;
   margin: 0 0 20px;
 }
 .reconsent-links a {
@@ -1464,7 +1554,7 @@ td.notes.seating {
 }
 .reconsent-error {
   color: var(--error);
-  font-size: 13.5px;
+  font-size: 14px;
   background: rgba(224, 133, 122, 0.08);
   border: 1px solid rgba(224, 133, 122, 0.25);
   border-radius: var(--radius-s);
@@ -1529,7 +1619,7 @@ td.notes.seating {
   font-weight: 600;
   cursor: pointer;
   padding: 4px 6px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 .btn-link:hover:not(:disabled) {
   background: var(--cream);
@@ -1546,7 +1636,7 @@ td.notes.seating {
 }
 .preview-wrap {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   overflow: auto;
   max-height: 44vh;
 }
@@ -1625,7 +1715,7 @@ td.notes.seating {
   min-height: 200px;
   padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   background: var(--cream);
   font-size: 15px;
   line-height: 1.7;
@@ -1645,7 +1735,7 @@ td.notes.seating {
   min-width: 90px;
   padding: 6px 8px;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--radius-xs);
   background: var(--cream);
   font-size: 14px;
   font-family: inherit;
@@ -1672,7 +1762,7 @@ td.notes.seating {
   display: inline-block;
   padding: 2px 9px;
   margin: 2px 3px 2px 0;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: 600;
   background: rgba(201, 162, 39, 0.12);
@@ -1731,8 +1821,9 @@ td.notes.seating {
   flex-shrink: 0;
 }
 .btn-sm {
+  min-height: 34px;
   padding: 6px 14px;
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 /* ---- העדפות קבוצה ---- */
@@ -1764,7 +1855,7 @@ td.notes.seating {
   gap: 14px;
   padding: 10px 14px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   background: var(--cream);
 }
 .note-group {
@@ -1858,7 +1949,7 @@ td.notes.seating {
 .wizard-card {
   padding: 18px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius-l);
   background: var(--cream);
 }
 .wizard-head {
@@ -1889,7 +1980,7 @@ td.notes.seating {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   background: transparent;
   cursor: pointer;
   text-align: start;
@@ -2003,7 +2094,7 @@ td.notes.seating {
   width: 80px;
   padding: 9px 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   font-size: 15px;
   background: var(--cream);
   cursor: pointer;
@@ -2025,7 +2116,7 @@ td.notes.seating {
 .ok-badge {
   background: rgba(127, 181, 138, 0.15);
   color: var(--success);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 4px 12px;
   font-size: 13px;
   font-weight: 600;
@@ -2033,7 +2124,7 @@ td.notes.seating {
 .err-badge {
   background: rgba(224, 133, 122, 0.15);
   color: var(--error);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 4px 12px;
   font-size: 13px;
   font-weight: 600;
@@ -2138,7 +2229,7 @@ td.notes.seating {
   margin: 14px 0 0;
   padding: 8px 12px;
   background: rgba(201, 162, 39, 0.08);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   font-size: 13px;
   color: var(--gold-deep);
   font-weight: 600;
@@ -2151,7 +2242,7 @@ td.notes.seating {
 }
 .clar-card {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 14px 16px;
   background: var(--ivory);
 }
@@ -2261,7 +2352,7 @@ td.notes.seating {
 .mode-badge {
   font-size: 12px;
   padding: 5px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1px solid var(--line);
   color: var(--muted);
 }
@@ -2279,7 +2370,7 @@ td.notes.seating {
   margin: 0 0 16px;
   padding: 8px 12px;
   background: rgba(74, 122, 82, 0.08);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   font-size: 13px;
   color: var(--success);
   font-weight: 600;
@@ -2321,7 +2412,7 @@ td.notes.seating {
 .rsvp-badge {
   font-size: 12px;
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: rgba(201, 162, 39, 0.1);
   color: var(--gold-deep);
 }
@@ -2365,7 +2456,7 @@ td.notes.seating {
   align-items: center;
   font-size: 13px;
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: var(--ivory);
 }
 .log-dir {
@@ -2514,7 +2605,7 @@ td.notes.seating {
   width: 32%;
   height: 5.5px;
   background: #000;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   z-index: 3;
 }
 .invite-phone-screen {
@@ -2595,7 +2686,7 @@ td.notes.seating {
   width: 100%;
   aspect-ratio: 3 / 4;
   object-fit: contain;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
 }
 /* כיתוב ההזמנה מתחת לתמונה — כמו הודעת תמונה+טקסט אמיתית ב-WhatsApp */
 .invite-phone-bubble-caption {
@@ -2608,7 +2699,7 @@ td.notes.seating {
   display: block;
   margin: 0 3px 1px;
   text-align: end;
-  font-size: 6.5px;
+  font-size: 7px;
   color: #667781;
   direction: ltr;
 }
@@ -2617,14 +2708,14 @@ td.notes.seating {
   top: 12px;
   inset-inline-end: 12px;
   padding: 6px 14px;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--charcoal);
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   cursor: pointer;
   opacity: 0;
   transform: translateY(-4px);
@@ -2676,25 +2767,25 @@ td.notes.seating {
   height: 19px;
 }
 .invite-empty-title {
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--charcoal);
 }
 .invite-empty-desc {
   max-width: 210px;
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.5;
   color: var(--muted);
 }
 .invite-empty-cta {
   margin-top: 4px;
   padding: 7px 18px;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--charcoal);
   background: var(--cream);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 .invite-empty:hover .invite-empty-cta,
@@ -2738,7 +2829,7 @@ td.notes.seating {
   letter-spacing: -0.01em;
 }
 .countdown-cell-label {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--muted);
   letter-spacing: 0.02em;
@@ -2761,7 +2852,7 @@ td.notes.seating {
   font-weight: 700;
   color: #fff;
   background: linear-gradient(135deg, var(--gold-deep), var(--gold));
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   width: fit-content;
 }
 @media (max-width: 700px) {
@@ -2799,7 +2890,7 @@ td.notes.seating {
     font-size: 21px;
   }
   .countdown-cell-label {
-    font-size: 9.5px;
+    font-size: 10px;
   }
 }
 /* בורר סוג האירוע (Event-ready) — צ'יפים אלגנטיים, חתונה ברירת מחדל */
@@ -2825,7 +2916,7 @@ td.notes.seating {
   border-radius: var(--radius-m);
   background: var(--cream);
   color: var(--charcoal);
-  font-size: 12.5px;
+  font-size: 13px;
   cursor: pointer;
   transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -2892,7 +2983,7 @@ td.notes.seating {
   list-style: none;
   background: var(--cream);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   box-shadow: var(--shadow-card);
   max-height: 260px;
   overflow-y: auto;
@@ -2902,7 +2993,7 @@ td.notes.seating {
   flex-direction: column;
   gap: 2px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   cursor: pointer;
 }
 .venue-ac-item.active,
@@ -3113,7 +3204,7 @@ td.notes.seating {
   width: auto;
   height: auto;
   object-fit: contain;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   box-shadow: 0 2px 10px rgba(43, 38, 32, 0.14);
 }
 .event-image-drop {
@@ -3123,7 +3214,7 @@ td.notes.seating {
   gap: 4px;
   padding: 18px;
   border: 1px dashed var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   color: var(--gold-deep);
   cursor: pointer;
   text-align: center;
@@ -3145,7 +3236,7 @@ td.notes.seating {
 }
 .invite-frame-mat {
   padding: 16px;
-  border-radius: 16px;
+  border-radius: var(--radius-l);
   background: linear-gradient(160deg, #fffdf8 0%, var(--ivory) 100%);
   border: 1px solid var(--line);
   box-shadow: var(--shadow-card);
@@ -3162,7 +3253,7 @@ td.notes.seating {
   width: 100%;
   max-height: 220px;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   border: 1px solid var(--line);
   background: var(--cream);
 }
@@ -3218,13 +3309,13 @@ td.notes.seating {
   flex: 1;
   height: 8px;
   background: var(--surface-hi);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 .bar-fill {
   display: block;
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: linear-gradient(90deg, var(--gold), var(--gold-light));
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -3318,7 +3409,7 @@ td.notes.seating {
 .gauge-glow {
   position: absolute;
   inset: 6% 6% 34% 6%;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: radial-gradient(
     ellipse at center,
     color-mix(in srgb, var(--gauge-confirmed) 20%, transparent) 0%,
@@ -3381,7 +3472,7 @@ td.notes.seating {
   font-feature-settings: 'tnum' 1, 'lnum' 1;
 }
 .gauge-lbl {
-  font-size: clamp(13.5px, 1.6vw, 17px);
+  font-size: clamp(14px, 1.6vw, 17px);
   font-weight: 600;
   color: var(--muted);
   letter-spacing: 0.01em;
@@ -3442,7 +3533,7 @@ td.notes.seating {
   font-feature-settings: 'tnum' 1, 'lnum' 1;
 }
 .gauge-status-label {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--body);
   font-weight: 500;
 }
@@ -3477,26 +3568,26 @@ td.notes.seating {
 }
 .invite-banner-title {
   margin: 0 0 3px;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--charcoal);
 }
 .invite-banner-desc {
   margin: 0;
   max-width: 440px;
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.55;
   color: var(--body);
 }
 .invite-banner-btn {
   flex-shrink: 0;
   padding: 9px 20px;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   color: #fff;
   background: var(--gold-deep);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s ease, transform 0.15s ease;
@@ -3527,14 +3618,14 @@ td.notes.seating {
 }
 .payout-reminder-title {
   margin: 0 0 3px;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--charcoal);
 }
 .payout-reminder-desc {
   margin: 0;
   max-width: 440px;
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.55;
   color: var(--body);
 }
@@ -3544,12 +3635,12 @@ td.notes.seating {
   min-height: 40px;
   padding: 9px 20px;
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--charcoal);
   background: none;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   cursor: pointer;
   white-space: nowrap;
   transition: border-color 0.15s ease, background 0.15s ease;
@@ -3586,7 +3677,7 @@ td.notes.seating {
 .rsvp-feed-empty {
   margin: auto 0;
   padding: 20px 4px;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.6;
   color: var(--muted);
   text-align: center;
@@ -3616,7 +3707,7 @@ td.notes.seating {
   gap: 10px;
   padding: 11px 0;
   border-bottom: 1px solid var(--line-2);
-  font-size: 13.5px;
+  font-size: 14px;
 }
 .rsvp-feed-item:last-child {
   border-bottom: none;
@@ -3662,7 +3753,7 @@ td.notes.seating {
 }
 .seating-helper-desc {
   margin: 0 0 22px;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.65;
   color: var(--body);
 }
@@ -3695,7 +3786,7 @@ td.notes.seating {
   border-radius: 50%;
 }
 .seating-helper-step-label {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--body);
   text-align: center;
@@ -3723,7 +3814,7 @@ td.notes.seating {
   background: var(--gold-deep);
 }
 .seating-helper-step--current .seating-helper-step-label {
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--charcoal);
 }
@@ -3740,12 +3831,12 @@ td.notes.seating {
   max-width: 320px;
   margin-top: auto;
   padding: 12px 22px;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 600;
   color: #fff;
   background: var(--gold-deep);
   border: none;
-  border-radius: 9px;
+  border-radius: var(--radius-s);
   cursor: pointer;
   transition: background 0.15s ease, transform 0.15s ease;
 }
@@ -3884,7 +3975,7 @@ td.notes.seating {
   letter-spacing: -0.02em;
 }
 .dash-page .stat-label {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.01em;
   line-height: 1.4;
@@ -3990,10 +4081,10 @@ td.notes.seating {
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: #eef3ec;
   color: #5a7a52;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -4030,7 +4121,7 @@ td.notes.seating {
   color: var(--gold-deep);
   background: transparent;
   border: 1px solid var(--gold-deep);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 5px 12px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
@@ -4053,7 +4144,7 @@ td.notes.seating {
   cursor: grab;
   user-select: none;
   border: 1.5px solid var(--gold-deep);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.2px;
   text-align: center;
@@ -4173,7 +4264,7 @@ td.notes.seating {
   align-items: center;
   gap: 6px;
   padding: 5px 6px;
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   background: var(--cream);
   border: 1px solid var(--line);
   box-shadow: 0 6px 18px rgba(20, 18, 14, 0.18);
@@ -4197,7 +4288,7 @@ td.notes.seating {
 .element-toolbar button {
   width: 24px;
   height: 24px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   border: 1px solid transparent;
   background: transparent;
   color: var(--body);
@@ -4295,7 +4386,7 @@ td.notes.seating {
 .hall-warnings {
   background: rgba(193, 90, 78, 0.08);
   border: 1px solid rgba(193, 90, 78, 0.3);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 10px 14px;
   margin-bottom: 14px;
 }
@@ -4341,7 +4432,7 @@ td.notes.seating {
   width: 100%;
   padding: 7px 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   font-size: 13px;
   background: var(--surface-hi);
   color: var(--charcoal);
@@ -4416,7 +4507,7 @@ td.notes.seating {
 .assistant-ai-disclosure {
   margin: 0 0 12px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: var(--surface-hi);
   border: 1px solid var(--line-2);
   font-size: 11px;
@@ -4474,7 +4565,7 @@ td.notes.seating {
   gap: 2px;
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 8px 4px;
 }
 .assistant-stat-num {
@@ -4495,7 +4586,7 @@ td.notes.seating {
   width: 100%;
   padding: 7px 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   font-size: 13px;
   background: var(--surface-hi);
   color: var(--charcoal);
@@ -4515,7 +4606,7 @@ td.notes.seating {
 .assistant-search-result {
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 6px 8px;
 }
 .assistant-search-name {
@@ -4541,7 +4632,7 @@ td.notes.seating {
 }
 .assistant-warning {
   font-size: 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 8px 10px;
   border: 1px solid var(--line);
   background: var(--surface-hi);
@@ -4563,7 +4654,7 @@ td.notes.seating {
   color: var(--charcoal);
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 8px 10px;
 }
 .assistant-suggestion .btn-ghost {
@@ -4620,7 +4711,7 @@ td.notes.seating {
   max-height: 900px;
   background: #fbf6ee;
   border: 1px solid #e5dec9;
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   padding: 0;
   box-sizing: border-box;
   overflow: auto;
@@ -4734,7 +4825,7 @@ td.notes.seating {
   display: flex;
   flex-direction: column;
   background: var(--card, #fff);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 24px 60px rgba(20, 18, 14, 0.28);
   padding: 18px;
   gap: 14px;
@@ -4754,7 +4845,7 @@ td.notes.seating {
   position: relative;
   width: 100%;
   height: min(48vh, 360px);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   overflow: hidden;
   background: repeating-conic-gradient(#eee 0% 25%, #f6f6f6 0% 50%) 50% / 22px 22px;
   touch-action: none;
@@ -4797,13 +4888,13 @@ td.notes.seating {
   flex: 1 1 100%;
   padding: 4px;
   background: var(--hover, #f4efe6);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
 }
 .sk-orient button {
   flex: 1;
   height: 40px;
   border: none;
-  border-radius: 9px;
+  border-radius: var(--radius-s);
   background: transparent;
   font-size: 14px;
   font-weight: 600;
@@ -4829,7 +4920,7 @@ td.notes.seating {
 .sk-rotate button {
   width: 38px;
   height: 38px;
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   border: 1px solid var(--border, #e5ded2);
   background: var(--card, #fff);
   font-size: 18px;
@@ -4861,7 +4952,7 @@ td.notes.seating {
   flex: 1;
   padding: 12px 18px;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   background: var(--accent, #c9a35b);
   color: #fff;
   font-size: 15px;
@@ -4882,7 +4973,7 @@ td.notes.seating {
 .sk-cancel {
   padding: 12px 18px;
   border: 1px solid var(--border, #e5ded2);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   background: transparent;
   color: var(--ink, #2c2a25);
   font-size: 15px;
@@ -4900,7 +4991,7 @@ td.notes.seating {
   display: flex;
   flex-direction: column;
   background: var(--card, #fff);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 24px 60px rgba(20, 18, 14, 0.28);
   padding: 20px;
   gap: 16px;
@@ -4913,7 +5004,7 @@ td.notes.seating {
   gap: 10px;
   padding: 32px 16px;
   border: 2px dashed var(--border, #e5ded2);
-  border-radius: 14px;
+  border-radius: var(--radius-l);
   background: var(--hover, #f4efe6);
   text-align: center;
   cursor: pointer;
@@ -4936,14 +5027,14 @@ td.notes.seating {
   gap: 12px;
   padding: 10px;
   border: 1px solid var(--border, #e5ded2);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   background: var(--hover, #f4efe6);
 }
 .sk-upload-preview-img {
   width: 64px;
   height: 64px;
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   object-fit: cover;
 }
 .sk-upload-file-meta {
@@ -4975,7 +5066,7 @@ td.notes.seating {
   transform: translate(-50%, -50%);
   width: min(420px, 90vw);
   background: var(--card, #fff);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 24px 60px rgba(20, 18, 14, 0.28);
   padding: 32px 24px;
   text-align: center;
@@ -5041,7 +5132,7 @@ td.notes.seating {
   display: flex;
   flex-direction: column;
   background: var(--card, #fff);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   box-shadow: 0 24px 60px rgba(20, 18, 14, 0.28);
   padding: 18px;
   gap: 12px;
@@ -5061,13 +5152,13 @@ td.notes.seating {
   gap: 8px;
   padding: 8px 10px;
   border: 1px solid var(--border, #e5ded2);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   background: var(--hover, #f4efe6);
 }
 .sk-review-row select {
   flex: 1;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   border: 1px solid var(--border, #e5ded2);
   background: var(--card, #fff);
   font-size: 13px;
@@ -5076,7 +5167,7 @@ td.notes.seating {
   font-size: 12px;
   white-space: nowrap;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--card, #fff);
 }
 .sk-review-badge-low {
@@ -5098,7 +5189,7 @@ td.notes.seating {
 .sk-review-capacity button {
   width: 24px;
   height: 24px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   border: 1px solid var(--border, #e5ded2);
   background: var(--card, #fff);
   cursor: pointer;
@@ -5106,7 +5197,7 @@ td.notes.seating {
 .sk-review-icon-btn {
   width: 30px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   border: 1px solid var(--border, #e5ded2);
   background: var(--card, #fff);
   cursor: pointer;
@@ -5140,7 +5231,7 @@ td.notes.seating {
   flex: 1 1 42%;
   max-width: 42%;
   align-self: flex-start;
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   overflow: hidden;
   border: 1px solid var(--border, #e5ded2);
 }
@@ -5175,7 +5266,7 @@ td.notes.seating {
   display: inline-block;
   margin: 2px;
   padding: 0 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: rgba(255, 255, 255, 0.85);
   color: var(--ink, #2c2a25);
   font-size: 10px;
@@ -5311,7 +5402,7 @@ td.notes.seating {
   align-items: center;
   gap: 6px;
   padding: 5px 6px;
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   background: var(--cream);
   border: 1px solid var(--line);
   box-shadow: 0 6px 18px rgba(20, 18, 14, 0.18);
@@ -5324,7 +5415,7 @@ td.notes.seating {
   justify-content: center;
   width: 30px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   border: none;
   background: transparent;
   color: var(--charcoal);
@@ -5349,7 +5440,7 @@ td.notes.seating {
   z-index: 5;
   font-size: 11px;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: rgba(201, 162, 39, 0.14);
   border: 1px solid var(--gold-deep);
   color: var(--gold-deep);
@@ -5445,13 +5536,13 @@ td.notes.seating {
   pointer-events: none;
 }
 .type-square {
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
 }
 .type-rectangle {
-  border-radius: 14px;
+  border-radius: var(--radius-l);
 }
 .type-knights {
-  border-radius: 22px;
+  border-radius: var(--radius-xl);
 }
 .hall-table.over .table-graphic {
   border-color: var(--error);
@@ -5541,7 +5632,7 @@ td.notes.seating {
   letter-spacing: 0.02em;
   color: var(--gold-deep, #9c7c1a);
   background: rgba(201, 162, 39, 0.14);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 
 /* מקרא צבעים מעל מפת האולם */
@@ -5550,7 +5641,7 @@ td.notes.seating {
   align-items: center;
   gap: 20px;
   flex-wrap: wrap;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
   margin: 2px 0 0;
 }
@@ -5562,7 +5653,7 @@ td.notes.seating {
 .hall-legend-swatch {
   width: 12px;
   height: 12px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   border: 1px solid var(--line);
   flex-shrink: 0;
 }
@@ -5634,7 +5725,7 @@ td.notes.seating {
   max-width: 52px;
   height: 22px;
   padding: 0 6px;
-  border-radius: 11px;
+  border-radius: var(--radius-m);
   background: var(--ivory);
   border: 1.5px solid var(--line);
   color: var(--charcoal);
@@ -5685,7 +5776,7 @@ td.notes.seating {
   min-width: 13px;
   height: 13px;
   padding: 0 2px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--charcoal);
   color: var(--cream);
   font-size: 8px;
@@ -5708,7 +5799,7 @@ td.notes.seating {
   font-size: 11px;
   font-weight: 500;
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.12s, transform 0.12s;
@@ -5724,7 +5815,7 @@ td.notes.seating {
   align-items: center;
   gap: 5px;
   padding: 5px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 13px;
   background: var(--ivory);
   border: 1px solid var(--line);
@@ -5815,7 +5906,7 @@ td.notes.seating {
   color: var(--charcoal);
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 6px 9px;
   resize: vertical;
 }
@@ -5830,7 +5921,7 @@ td.notes.seating {
   padding: 9px 10px;
   background: rgba(201, 162, 39, 0.06);
   border: 1px solid rgba(201, 162, 39, 0.22);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
 }
 .reserve-toggle-head {
   display: flex;
@@ -5877,7 +5968,7 @@ td.notes.seating {
   padding: 12px;
   background: rgba(201, 162, 39, 0.05);
   border: 1px solid rgba(201, 162, 39, 0.2);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   margin-bottom: 10px;
 }
 .hm-reserve-desc {
@@ -5900,7 +5991,7 @@ td.notes.seating {
   color: var(--charcoal);
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   cursor: pointer;
 }
 .hm-reserve-chips button.active {
@@ -5916,7 +6007,7 @@ td.notes.seating {
   color: var(--charcoal);
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
 }
 .hm-daymode-btn {
   color: #fff !important;
@@ -5965,7 +6056,7 @@ td.notes.seating {
 }
 .day-mode-head p {
   margin: 0;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
   line-height: 1.45;
 }
@@ -5977,7 +6068,7 @@ td.notes.seating {
   color: var(--muted);
   background: rgba(255, 255, 255, 0.6);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   cursor: pointer;
 }
 .day-mode-stats {
@@ -5994,7 +6085,7 @@ td.notes.seating {
   gap: 2px;
   padding: 8px 4px;
   background: var(--surface-hi);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
 }
 .dm-num {
   font-size: 20px;
@@ -6002,17 +6093,17 @@ td.notes.seating {
   color: var(--gold-deep);
 }
 .dm-label {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--muted);
   text-align: center;
 }
 .day-mode-note {
   margin: 10px 16px 0;
   padding: 8px 11px;
-  font-size: 12.5px;
+  font-size: 13px;
   color: #8a6d1f;
   background: rgba(201, 162, 39, 0.12);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   line-height: 1.45;
 }
 .day-mode-list {
@@ -6033,7 +6124,7 @@ td.notes.seating {
 }
 .dm-guest {
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   overflow: hidden;
   background: var(--surface-hi);
 }
@@ -6061,7 +6152,7 @@ td.notes.seating {
   gap: 5px;
 }
 .dm-guest-cta {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--gold-deep);
   white-space: nowrap;
@@ -6081,7 +6172,7 @@ td.notes.seating {
   text-align: start;
   background: var(--surface, #fff);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   cursor: pointer;
   font-family: inherit;
 }
@@ -6100,7 +6191,7 @@ td.notes.seating {
   gap: 8px;
 }
 .dm-rec-table {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--charcoal);
   display: flex;
@@ -6113,7 +6204,7 @@ td.notes.seating {
   color: var(--gold-deep);
   background: rgba(201, 162, 39, 0.16);
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 .dm-rec-free {
   font-size: 12px;
@@ -6121,7 +6212,7 @@ td.notes.seating {
   white-space: nowrap;
 }
 .dm-rec-reasons {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--muted);
   line-height: 1.4;
 }
@@ -6129,12 +6220,12 @@ td.notes.seating {
   position: absolute;
   top: -8px;
   inset-inline-start: 12px;
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 700;
   color: #fff;
   background: var(--gold-deep);
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 
 /* כרטיס רזרבה בדשבורד */
@@ -6165,7 +6256,7 @@ td.notes.seating {
   color: var(--gold-deep);
   background: rgba(201, 162, 39, 0.08);
   border: 1px solid rgba(201, 162, 39, 0.2);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 7px 18px;
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast);
@@ -6200,7 +6291,7 @@ td.notes.seating {
   font-feature-settings: 'tnum' 1, 'lnum' 1;
 }
 .rc-label {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--muted);
   text-align: center;
   line-height: 1.3;
@@ -6233,7 +6324,7 @@ td.notes.seating {
   padding: 5px 8px;
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   border-inline-start: 3px solid var(--line);
 }
 .seated-row.side-groom {
@@ -6262,7 +6353,7 @@ td.notes.seating {
   flex-shrink: 0;
   width: 22px;
   height: 22px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--muted);
@@ -6299,7 +6390,7 @@ td.notes.seating {
   color: var(--charcoal);
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 6px 7px;
 }
 .props-dim-row input:focus {
@@ -6317,7 +6408,7 @@ td.notes.seating {
   color: var(--body);
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 4px 11px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
@@ -6375,7 +6466,7 @@ td.notes.seating {
   color: var(--body);
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 6px 10px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
@@ -6419,7 +6510,7 @@ td.notes.seating {
 }
 .table-insight.has-problem {
   background: rgba(166, 96, 90, 0.06);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 8px;
 }
 
@@ -6728,7 +6819,7 @@ td.notes.seating {
   letter-spacing: -0.01em;
 }
 .auth-panel-sub {
-  font-size: 14.5px;
+  font-size: 15px;
   color: var(--muted);
   margin: 0;
   line-height: 1.5;
@@ -6794,7 +6885,7 @@ td.notes.seating {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.5;
   color: var(--muted);
   cursor: pointer;
@@ -6827,7 +6918,7 @@ td.notes.seating {
 
 .auth-error {
   color: var(--error);
-  font-size: 13.5px;
+  font-size: 14px;
   background: rgba(224, 133, 122, 0.08);
   border: 1px solid rgba(224, 133, 122, 0.25);
   border-radius: var(--radius-s);
@@ -6839,14 +6930,14 @@ td.notes.seating {
   font-size: 13px;
   background: rgba(201, 162, 39, 0.08);
   border: 1px solid rgba(201, 162, 39, 0.25);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 8px 12px;
 }
 
 .auth-submit {
   height: 50px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: linear-gradient(150deg, var(--gold-light), #b08d2a);
   color: var(--cream);
   font-weight: 700;
@@ -6882,7 +6973,7 @@ td.notes.seating {
 .auth-secondary {
   height: 48px;
   border: 1px solid var(--line-2);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: transparent;
   color: var(--body);
   font-size: 14px;
@@ -6924,7 +7015,7 @@ td.notes.seating {
   height: 48px;
   width: 100%;
   border: 1px solid var(--error);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: transparent;
   color: var(--error);
   font-size: 14px;
@@ -6946,7 +7037,7 @@ td.notes.seating {
   gap: 10px;
   padding: 12px;
   border: 1px solid var(--error);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   background: var(--surface-hi);
 }
 .danger-zone-warning {
@@ -6958,7 +7049,7 @@ td.notes.seating {
 .danger-zone-confirm input {
   height: 42px;
   border: 1px solid var(--line-2);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 0 12px;
   font-size: 14px;
   background: var(--cream);
@@ -7038,7 +7129,7 @@ td.notes.seating {
 .event-new-grid input {
   background: var(--ivory);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 10px 12px;
   color: var(--charcoal);
   font-size: 14px;
@@ -7057,7 +7148,7 @@ td.notes.seating {
   background: transparent;
   color: var(--muted);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 6px 14px;
   font-size: 13px;
   cursor: pointer;
@@ -7106,7 +7197,7 @@ td.notes.seating {
   font-feature-settings: 'tnum' 1;
 }
 .admin-stat-label {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
   line-height: 1.4;
 }
@@ -7127,7 +7218,7 @@ td.notes.seating {
   color: var(--gold-deep);
   background: rgba(184, 148, 74, 0.12);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 2px 9px;
 }
 
@@ -7255,7 +7346,7 @@ td.notes.seating {
   color: var(--charcoal);
   background: var(--paper, #fff);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 10px 12px;
 }
 .adm-alert-dot {
@@ -7323,13 +7414,9 @@ td.notes.seating {
 /* --- כפתור פעולה מסוכנת --- */
 .btn-danger {
   padding: 10px 18px;
-  border-radius: 10px;
   border: 1px solid rgba(166, 96, 90, 0.5);
-  background: var(--error, #c0392b);
+  background: var(--error);
   color: #fff;
-  font-size: 15px;
-  font-family: inherit;
-  cursor: pointer;
   transition: filter 0.12s ease;
 }
 .btn-danger:hover:not(:disabled) {
@@ -7347,7 +7434,7 @@ td.notes.seating {
 .adm-user-notice {
   margin: 10px 0 0;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: rgba(88, 140, 96, 0.12);
   color: #3f7048;
   font-size: 14px;
@@ -7360,7 +7447,7 @@ td.notes.seating {
 }
 .adm-user-disabled-banner {
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: rgba(166, 96, 90, 0.12);
   color: var(--error, #c0392b);
   font-size: 14px;
@@ -7368,7 +7455,7 @@ td.notes.seating {
 }
 .adm-user-section {
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   padding: 14px 16px;
   background: var(--cream);
 }
@@ -7420,7 +7507,7 @@ td.notes.seating {
 .adm-field-input {
   padding: 9px 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: #fff;
   color: var(--charcoal);
   font-size: 15px;
@@ -7461,7 +7548,7 @@ td.notes.seating {
   gap: 2px;
   padding: 8px 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
 }
 .adm-user-event-couple {
   font-weight: 600;
@@ -7498,7 +7585,7 @@ td.notes.seating {
   gap: 10px;
   flex-wrap: wrap;
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   background: rgba(191, 160, 84, 0.12);
   border: 1px solid rgba(191, 160, 84, 0.35);
   font-size: 14px;
@@ -7538,7 +7625,7 @@ td.notes.seating {
   gap: 10px;
   padding: 12px;
   border: 1px solid var(--line, #e4ddd0);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   margin-bottom: 10px;
   cursor: pointer;
 }
@@ -7557,7 +7644,7 @@ td.notes.seating {
 }
 .adm-delete-option strong {
   color: var(--charcoal);
-  font-size: 14.5px;
+  font-size: 15px;
 }
 .adm-delete-option small {
   color: var(--muted);
@@ -7567,21 +7654,21 @@ td.notes.seating {
 .adm-delete-warning {
   background: rgba(192, 57, 43, 0.08);
   border: 1px solid rgba(192, 57, 43, 0.35);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 12px;
   margin: 4px 0 16px;
 }
 .adm-delete-warning p {
   margin: 0 0 10px;
   color: var(--error, #c0392b);
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.6;
 }
 .adm-delete-ack {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--charcoal);
   cursor: pointer;
 }
@@ -7634,7 +7721,7 @@ td.notes.seating {
   flex-shrink: 0;
   min-height: 34px;
   padding: 0 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   border: 1px solid rgba(233, 226, 213, 0.5);
   background: transparent;
   color: var(--cream);
@@ -7722,7 +7809,7 @@ td.notes.seating {
   padding: 14px 16px;
   background: var(--cream);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
 }
 .veya-msg-stat.total {
   border-color: var(--gold);
@@ -7757,10 +7844,7 @@ td.notes.seating {
 .veya-defaults {
   margin-top: 8px;
 }
-.btn-sm {
-  font-size: 13px;
-  padding: 6px 14px;
-}
+
 .btn-ghost.danger {
   color: var(--error);
   border-color: rgba(166, 96, 90, 0.4);
@@ -7783,7 +7867,7 @@ td.notes.seating {
   flex-wrap: wrap;
   background: var(--cream);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   padding: 12px 16px;
 }
 .veya-step-card.inactive {
@@ -7813,7 +7897,7 @@ td.notes.seating {
   font-size: 14px;
   font-weight: 600;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 7px 10px;
   background: #fff;
   color: var(--charcoal);
@@ -7833,7 +7917,7 @@ td.notes.seating {
 .veya-step-offset input {
   width: 58px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 6px 8px;
   text-align: center;
   background: #fff;
@@ -7870,14 +7954,14 @@ td.notes.seating {
   font-size: 14px;
   font-weight: 600;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 8px 10px;
   background: #fff;
   color: var(--charcoal);
 }
 .veya-tpl-head select {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 8px 10px;
   background: #fff;
   color: var(--charcoal);
@@ -7885,11 +7969,11 @@ td.notes.seating {
 }
 .veya-tpl-body {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 10px 12px;
   background: #fff;
   color: var(--charcoal);
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.6;
   resize: vertical;
   font-family: inherit;
@@ -8077,13 +8161,13 @@ td.notes.seating {
   gap: 6px;
   border: 1px solid var(--line-2);
   background: var(--surface-hi);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   padding: 4px;
 }
 .confirm-step {
   width: 44px;
   height: 44px;
-  border-radius: 9px;
+  border-radius: var(--radius-s);
   border: none;
   background: transparent;
   color: var(--gold-light);
@@ -8115,7 +8199,7 @@ td.notes.seating {
   width: 100%;
   max-height: 68vh;
   object-fit: contain;
-  border-radius: 16px;
+  border-radius: var(--radius-l);
   margin: 18px 0 12px;
   border: 1px solid var(--gold-deep);
   background: var(--surface-hi);
@@ -8152,7 +8236,7 @@ td.notes.seating {
   justify-content: center;
   gap: 6px;
   padding: 11px 8px;
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
@@ -8183,7 +8267,7 @@ td.notes.seating {
   box-sizing: border-box;
   background: var(--black);
   border: 1px solid var(--line-2);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 10px 12px;
   color: var(--charcoal);
   font-size: 14px;
@@ -8200,7 +8284,7 @@ td.notes.seating {
   font-size: 14px;
   background: rgba(193, 90, 78, 0.1);
   border: 1px solid rgba(193, 90, 78, 0.3);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   padding: 8px 12px;
 }
 .confirm-submit {
@@ -8208,7 +8292,7 @@ td.notes.seating {
   width: 100%;
   height: 50px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   background: linear-gradient(150deg, var(--gold-light), #b08d2a);
   color: var(--cream);
   font-weight: 700;
@@ -8338,7 +8422,7 @@ td.notes.seating {
   padding: 12px 14px;
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-l);
   color: var(--charcoal);
   font-family: var(--font-ui);
   text-align: start;
@@ -8363,7 +8447,7 @@ td.notes.seating {
   width: 38px;
   height: 38px;
   flex: none;
-  border-radius: 11px;
+  border-radius: var(--radius-m);
   background: rgba(201, 162, 39, 0.12);
   color: var(--gold-deep);
 }
@@ -8417,7 +8501,7 @@ td.notes.seating {
   max-width: 440px;
   box-sizing: border-box;
   background: var(--cream);
-  border-radius: 22px 22px 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   padding: 10px 20px max(22px, env(safe-area-inset-bottom, 22px));
   animation: hub-slide-up 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
 }
@@ -8449,7 +8533,7 @@ td.notes.seating {
 .hub-sheet-grip {
   width: 40px;
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--line);
   margin: 2px auto 14px;
 }
@@ -8465,7 +8549,7 @@ td.notes.seating {
   justify-content: center;
   min-height: 54px;
   margin-bottom: 8px;
-  border-radius: 14px;
+  border-radius: var(--radius-l);
   border: 1px solid var(--line);
   background: var(--surface-hi);
   color: var(--charcoal);
@@ -8504,11 +8588,11 @@ td.notes.seating {
 .hub-gift-mock-badge {
   margin: 0 0 14px;
   padding: 7px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   border: 1px dashed var(--gold-deep);
   background: rgba(201, 162, 39, 0.1);
   color: var(--gold-deep);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   text-align: center;
 }
@@ -8524,7 +8608,7 @@ td.notes.seating {
 }
 .hub-gift-hint {
   display: block;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
   margin-top: 5px;
 }
@@ -8537,7 +8621,7 @@ td.notes.seating {
   direction: ltr;
   padding: 10px 14px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-l);
   background: var(--surface-hi);
 }
 .hub-gift-amount-wrap:focus-within {
@@ -8570,7 +8654,7 @@ td.notes.seating {
   min-height: 46px;
   padding: 10px 14px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   background: var(--surface-hi);
   color: var(--charcoal);
   font-family: var(--font-ui);
@@ -8588,7 +8672,7 @@ td.notes.seating {
   margin: 4px 0 10px;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-l);
   background: var(--surface-hi);
 }
 .hub-gift-row {
@@ -8596,7 +8680,7 @@ td.notes.seating {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  font-size: 14.5px;
+  font-size: 15px;
   color: var(--body);
   padding: 4px 0;
 }
@@ -8616,7 +8700,7 @@ td.notes.seating {
   unicode-bidi: isolate;
 }
 .hub-gift-explainer {
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.6;
   color: var(--muted);
   margin: 0 0 16px;
@@ -8638,7 +8722,7 @@ td.notes.seating {
   text-align: center;
 }
 .hub-gift-reference {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
   margin: 0 0 14px;
   font-variant-numeric: tabular-nums;
@@ -8648,7 +8732,7 @@ td.notes.seating {
   width: 100%;
   min-height: 46px;
   margin-top: 8px;
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   border: 1px solid var(--line);
   background: none;
   color: var(--muted);
@@ -8709,7 +8793,7 @@ td.notes.seating {
   max-width: 100%;
   max-height: 82vh;
   object-fit: contain;
-  border-radius: 10px;
+  border-radius: var(--radius-m);
 }
 .hub-viewer-hint {
   font-size: 13px;
@@ -8772,7 +8856,7 @@ td.notes.seating {
   border: 1px solid var(--gold-deep);
   background: rgba(201, 162, 39, 0.08);
   color: var(--gold-light);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 5px 12px;
   font-size: 13px;
   cursor: pointer;
@@ -8792,7 +8876,7 @@ td.notes.seating {
   box-sizing: border-box;
   background: var(--cream);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 12px 14px;
   color: var(--charcoal);
   font-size: 14px;
@@ -8807,7 +8891,7 @@ td.notes.seating {
 .tpl-preview {
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
@@ -8880,7 +8964,7 @@ td.notes.seating {
   padding: 12px 16px;
   border-radius: var(--radius-s);
   background: transparent;
-  font-size: 13.5px;
+  font-size: 14px;
   transition: background var(--transition-fast);
   border: none;
 }
@@ -8900,7 +8984,7 @@ td.notes.seating {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13.5px;
+  font-size: 14px;
 }
 .audit-time {
   color: var(--faint);
@@ -8921,11 +9005,11 @@ td.notes.seating {
   margin: 28px 0;
   padding: 18px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
 }
 .member-row {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 12px;
   margin: 10px 0;
 }
@@ -8991,17 +9075,17 @@ td.notes.seating {
   margin-bottom: 24px;
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 .rsvp-view-btn {
   border: none;
   background: transparent;
   color: var(--muted);
   font-family: var(--font-ui);
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 500;
   padding: 8px 20px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   cursor: pointer;
   transition: color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -9030,7 +9114,7 @@ td.notes.seating {
 .auto-field-row select {
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: var(--cream);
   color: var(--charcoal);
   font-size: 15px;
@@ -9097,7 +9181,7 @@ td.notes.seating {
 .auto-chip {
   font-size: 13px;
   padding: 6px 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1px solid var(--line);
   background: var(--cream);
   color: var(--body);
@@ -9135,7 +9219,7 @@ td.notes.seating {
   align-items: flex-start;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   font-size: 14px;
   color: var(--charcoal);
   background: var(--surface-hi);
@@ -9202,7 +9286,7 @@ td.notes.seating {
   text-align: start;
   border: 1px solid var(--line);
   background: var(--surface-hi);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 10px 12px;
   cursor: pointer;
   display: flex;
@@ -9301,7 +9385,7 @@ td.notes.seating {
   flex: 0 0 auto;
 }
 .auto-toggle {
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1px solid var(--line);
   padding: 5px 12px;
   font-size: 13px;
@@ -9362,7 +9446,7 @@ td.notes.seating {
 }
 .auto-queue-item {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 10px 12px;
   background: var(--surface-hi);
 }
@@ -9518,7 +9602,7 @@ td.notes.seating {
   color: var(--gold-deep);
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 4px 14px;
   margin-bottom: 12px;
 }
@@ -9562,7 +9646,7 @@ td.notes.seating {
   border: 1px solid var(--line-2);
   border-radius: var(--radius-m);
   padding: 12px 16px;
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.5;
 }
 .track-flow-num {
@@ -9636,7 +9720,7 @@ td.notes.seating {
   gap: 8px;
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   padding: 10px 12px;
   cursor: pointer;
   color: var(--muted);
@@ -9692,14 +9776,14 @@ td.notes.seating {
 .wiz-progress {
   height: 6px;
   background: var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 .wiz-progress-fill {
   display: block;
   height: 100%;
   background: linear-gradient(90deg, var(--gold), var(--gold-light));
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   transition: width 0.35s ease;
 }
 
@@ -9744,7 +9828,7 @@ td.notes.seating {
   color: var(--gold-deep);
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 3px 12px;
 }
 .wiz-title {
@@ -9786,7 +9870,7 @@ td.notes.seating {
   gap: 10px;
   background: var(--surface-hi);
   border: 1px dashed var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   padding: 14px 16px;
 }
 .wiz-add-label {
@@ -9806,7 +9890,7 @@ td.notes.seating {
 .wiz-warn {
   background: #fff6e8;
   border: 1px solid var(--gold-light);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 12px 14px;
   color: var(--gold-deep);
   margin: 0;
@@ -9828,7 +9912,7 @@ td.notes.seating {
   gap: 12px;
   background: var(--surface-hi);
   border: 1px solid var(--line-2);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 12px 16px;
   color: var(--charcoal);
 }
@@ -9912,14 +9996,14 @@ td.notes.seating {
   height: 10px;
   background: var(--surface-hi);
   border: 1px solid var(--line-2);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 .track-progress-fill {
   display: block;
   height: 100%;
   background: linear-gradient(90deg, var(--green), #48c07c);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   transition: width 0.4s ease;
 }
 .track-progress-label {
@@ -9987,7 +10071,7 @@ td.notes.seating {
 .msg-type-select {
   padding: 9px 12px;
   border: 1px solid rgba(120, 110, 95, 0.28);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   font-size: 14px;
   font-weight: 600;
   background: #fff;
@@ -10041,7 +10125,7 @@ td.notes.seating {
 .msg-guest-filter {
   padding: 9px 12px;
   border: 1px solid rgba(120, 110, 95, 0.28);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   font-size: 14px;
   background: #fff;
   color: var(--charcoal);
@@ -10161,7 +10245,7 @@ td.notes.seating {
   margin: 0 0 6px;
 }
 .mb-sub {
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.65;
   color: var(--muted);
   margin: 0;
@@ -10240,7 +10324,7 @@ td.notes.seating {
 .mb-picker-item {
   background: transparent;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   padding: 9px 14px;
   cursor: pointer;
   text-align: right;
@@ -10311,7 +10395,7 @@ td.notes.seating {
   color: var(--charcoal);
 }
 .mb-lib-cta-sub {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
 }
 .mb-lib-cta-arrow {
@@ -10322,7 +10406,7 @@ td.notes.seating {
 .mb-textarea {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   padding: 16px 18px;
   font-size: 15px;
   line-height: 1.8;
@@ -10351,7 +10435,7 @@ td.notes.seating {
   gap: 14px;
 }
 .mb-dirty {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--gold-deep);
 }
 
@@ -10366,7 +10450,7 @@ td.notes.seating {
   }
 }
 .mb-preview-note {
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.6;
   color: var(--faint);
   margin: 0;
@@ -10398,7 +10482,7 @@ td.notes.seating {
 }
 .wa-image {
   width: 100%;
-  border-radius: 7px;
+  border-radius: var(--radius-xs);
   margin-bottom: 7px;
   display: block;
 }
@@ -10435,7 +10519,7 @@ td.notes.seating {
 .wa-action-btn {
   display: block;
   text-align: center;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   color: #0a84c4;
   padding-top: 7px;
@@ -10483,7 +10567,7 @@ td.notes.seating {
   flex: none;
   background: transparent;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 10px 16px;
   font-size: 14px;
   color: var(--body);
@@ -10522,7 +10606,7 @@ td.notes.seating {
   gap: 10px;
 }
 .gm2-side-cap {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
   margin: 0;
   text-align: center;
@@ -10610,7 +10694,7 @@ td.notes.seating {
   cursor: default;
 }
 .gm2-counter {
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--muted);
   min-width: 82px;
   text-align: center;
@@ -10624,15 +10708,10 @@ td.notes.seating {
 }
 .gm2-btn {
   flex: 1 1 auto;
-  min-height: 48px;
   padding: 12px 20px;
-  border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--surface-hi);
   color: var(--charcoal);
-  font-size: 15px;
-  font-family: inherit;
-  cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
 }
 .gm2-btn:hover:not(:disabled) {
@@ -10669,7 +10748,7 @@ td.notes.seating {
 .gm2-editor {
   min-height: 240px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-l);
   padding: 18px;
   background: var(--surface-hi);
   font-size: 16px;
@@ -10689,7 +10768,7 @@ td.notes.seating {
 .gm2-chip {
   display: inline-block;
   background: rgba(201, 162, 39, 0.13);
-  border-radius: 7px;
+  border-radius: var(--radius-xs);
   padding: 1px 7px;
   color: var(--gold-deep);
   white-space: nowrap;
@@ -10820,7 +10899,7 @@ td.notes.seating {
   justify-content: space-between;
   background: #075e54;
   color: #fff;
-  font-size: 10.5px;
+  font-size: 11px;
   padding: 5px 14px 3px;
 }
 .ph-status-icons {
@@ -10849,7 +10928,7 @@ td.notes.seating {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   flex: none;
 }
@@ -10885,12 +10964,12 @@ td.notes.seating {
   width: 100%;
   max-height: 190px;
   object-fit: contain;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   margin-bottom: 6px;
   display: block;
 }
 .ph-text {
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.6;
   color: #1f2c1a;
   word-break: break-word;
@@ -10910,7 +10989,7 @@ td.notes.seating {
 }
 .ph-btn {
   text-align: center;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: #0a84c4;
   padding-top: 6px;
@@ -10941,7 +11020,7 @@ td.notes.seating {
   color: var(--body);
   background: var(--surface-hi);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 8px 16px;
   cursor: pointer;
   transition: border-color 0.12s ease, background 0.12s ease;
@@ -10993,12 +11072,12 @@ td.notes.seating {
   gap: 8px;
   background: var(--surface-hi);
   border: 1px solid var(--line-2);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   padding: 16px;
 }
 .commit-explain {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.65;
   color: var(--body);
 }
@@ -11007,13 +11086,13 @@ td.notes.seating {
   min-width: 220px;
   padding: 9px 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: var(--cream);
   color: var(--charcoal);
   font-size: 15px;
 }
 .commit-warn {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--gold-deep);
   font-weight: 600;
 }
@@ -11028,7 +11107,7 @@ td.notes.seating {
   color: var(--charcoal);
 }
 .commit-locked-note {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -11120,7 +11199,7 @@ td.notes.seating {
 .tl-stat-label {
   display: block;
   margin-top: 4px;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
 }
 .tl-compressed {
@@ -11130,7 +11209,7 @@ td.notes.seating {
   border: 1px solid var(--gold-light);
   border-radius: var(--radius-m);
   color: var(--gold-deep);
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
@@ -11165,7 +11244,7 @@ td.notes.seating {
   margin: 0;
   color: var(--charcoal);
   line-height: 1.6;
-  font-size: 14.5px;
+  font-size: 15px;
 }
 
 /* ציר הימים */
@@ -11240,7 +11319,7 @@ td.notes.seating {
 .tl-tag {
   font-size: 11px;
   font-weight: 700;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 2px 10px;
 }
 .tl-tag.now {
@@ -11301,7 +11380,7 @@ td.notes.seating {
   font-size: 14px;
 }
 .tl-action-meta {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
 }
 .tl-moved {
@@ -11391,7 +11470,7 @@ td.notes.seating {
 .onboard-subtitle {
   text-align: center;
   color: var(--muted);
-  font-size: 14.5px;
+  font-size: 15px;
   margin: 0 0 28px;
   line-height: 1.5;
 }
@@ -11517,7 +11596,7 @@ td.notes.seating {
 .onboard-card .btn-primary {
   height: 50px;
   padding: 0 28px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   font-size: 16px;
 }
 
@@ -11599,7 +11678,7 @@ td.notes.seating {
     gap: 8px;
     background: var(--ivory);
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     padding: 0 12px;
     height: 44px;
     min-width: 0;
@@ -11640,7 +11719,7 @@ td.notes.seating {
     top: calc(100% - 4px);
     background: var(--cream);
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: var(--radius-l);
     box-shadow: var(--shadow-card);
     overflow: hidden;
     z-index: 5;
@@ -11736,7 +11815,7 @@ td.notes.seating {
     border: 1px solid var(--line);
     background: var(--cream);
     color: var(--gold-deep);
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     padding: 6px 14px;
     font-size: 13px;
     font-weight: 600;
@@ -11842,7 +11921,7 @@ td.notes.seating {
     border: 1px solid var(--line);
     background: var(--cream);
     color: var(--charcoal);
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     padding: 10px 16px;
     font-size: 14px;
     font-weight: 600;
@@ -11897,7 +11976,7 @@ td.notes.seating {
     width: 100%;
     padding: 14px;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: var(--radius-l);
     background: var(--cream);
     box-shadow: var(--shadow-card);
     text-align: start;
@@ -11954,7 +12033,7 @@ td.notes.seating {
     width: 100%;
     padding: 13px 14px;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: var(--radius-l);
     background: var(--cream);
     text-align: start;
     cursor: pointer;
@@ -12004,7 +12083,7 @@ td.notes.seating {
     flex: 0 0 auto;
     padding: 6px 12px;
     border: 1px solid var(--line);
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     background: var(--cream);
     color: var(--muted);
     font-size: 12px;
@@ -12036,7 +12115,7 @@ td.notes.seating {
     font-variant-numeric: tabular-nums;
   }
   .hm-progress-lbl {
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--muted);
   }
   .hm-stats {
@@ -12051,7 +12130,7 @@ td.notes.seating {
     gap: 2px;
     padding: 14px;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: var(--radius-l);
     background: var(--cream);
   }
   .hm-stat-num {
@@ -12072,7 +12151,7 @@ td.notes.seating {
     border: none;
     background: linear-gradient(160deg, var(--gold-light), var(--gold));
     color: #fff;
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     padding: 14px;
     font-size: 15px;
     font-weight: 700;
@@ -12092,7 +12171,7 @@ td.notes.seating {
     border: 1px solid var(--line);
     background: var(--cream);
     color: var(--charcoal);
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     padding: 13px;
     font-size: 14px;
     font-weight: 600;
@@ -12109,7 +12188,7 @@ td.notes.seating {
   .hm-proposal {
     padding: 14px;
     border: 1px solid var(--gold-light);
-    border-radius: 14px;
+    border-radius: var(--radius-l);
     background: rgba(201, 162, 39, 0.08);
     display: flex;
     flex-direction: column;
@@ -12127,7 +12206,7 @@ td.notes.seating {
   }
   .hm-warn {
     padding: 11px 13px;
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     font-size: 13px;
     line-height: 1.5;
     border: 1px solid var(--line);
@@ -12147,7 +12226,7 @@ td.notes.seating {
     text-align: start;
     padding: 12px 14px;
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     background: var(--cream);
     color: var(--charcoal);
     font-size: 14px;
@@ -12187,7 +12266,7 @@ td.notes.seating {
     margin-top: 4px;
   }
   .hm-seating-report {
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     padding: 13px 14px;
     border: 1px solid var(--line);
     background: var(--cream);
@@ -12234,7 +12313,7 @@ td.notes.seating {
     gap: 8px;
     padding: 12px 13px;
     border: 1px solid var(--gold-light);
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     background: rgba(201, 162, 39, 0.07);
   }
   .hm-clar-q {
@@ -12274,9 +12353,9 @@ td.notes.seating {
     padding: 10px 12px;
     margin: 0 0 10px;
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     background: var(--cream);
-    font-size: 12.5px;
+    font-size: 13px;
     line-height: 1.5;
     color: var(--muted);
   }
@@ -12292,7 +12371,7 @@ td.notes.seating {
     width: 100%;
     padding: 12px;
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     background: var(--cream);
     color: var(--charcoal);
     font-size: 15px;
@@ -12322,7 +12401,7 @@ td.notes.seating {
     padding: 6px 2px;
     border: none;
     background: transparent;
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     cursor: pointer;
   }
   .hm-tab-icon {
@@ -12353,7 +12432,7 @@ td.notes.seating {
     min-width: 18px;
     height: 18px;
     padding: 0 5px;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     background: var(--error);
     color: #fff;
     font-size: 11px;
@@ -12397,7 +12476,7 @@ td.notes.seating {
     max-height: 86dvh;
     z-index: 81;
     background: var(--ivory);
-    border-radius: 22px;
+    border-radius: var(--radius-xl);
     box-shadow: 0 20px 60px -16px rgba(20, 18, 14, 0.5);
     display: flex;
     flex-direction: column;
@@ -12447,7 +12526,7 @@ td.notes.seating {
     max-height: 78dvh;
     z-index: 83;
     background: var(--ivory);
-    border-radius: 22px 22px 0 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     box-shadow: 0 -18px 50px -14px rgba(20, 18, 14, 0.42);
     border-top: 3px solid var(--gold);
     padding: 20px 18px calc(18px + env(safe-area-inset-bottom, 0px));
@@ -12512,7 +12591,7 @@ td.notes.seating {
   .hm-explain-item {
     background: var(--cream);
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: var(--radius-l);
     padding: 10px 12px;
   }
   .hm-explain-row {
@@ -12531,7 +12610,7 @@ td.notes.seating {
     font-weight: 600;
     color: var(--gold-deep);
     background: var(--gold-light);
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     padding: 2px 10px;
   }
   .hm-explain-reasons {
@@ -12545,7 +12624,7 @@ td.notes.seating {
   .hm-explain-reasons li {
     position: relative;
     padding-inline-start: 16px;
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--muted);
     line-height: 1.4;
   }
@@ -12558,7 +12637,7 @@ td.notes.seating {
   }
   .hm-explain-more {
     margin: 12px 2px 0;
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--muted);
     text-align: center;
   }
@@ -12626,7 +12705,7 @@ td.notes.seating {
     color: var(--charcoal);
     text-align: center;
     background: rgba(201, 162, 39, 0.1);
-    border-radius: 10px;
+    border-radius: var(--radius-m);
     padding: 10px 12px;
     line-height: 1.5;
   }
@@ -12635,7 +12714,7 @@ td.notes.seating {
     margin: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
     height: 50px;
     border: none;
-    border-radius: 14px;
+    border-radius: var(--radius-l);
     background: linear-gradient(160deg, var(--gold-light), var(--gold));
     color: #fff;
     font-size: 16px;
@@ -12653,7 +12732,7 @@ td.notes.seating {
     max-width: 300px;
     height: 168px;
     margin: 0 auto;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
     overflow: hidden;
     background: radial-gradient(
         120% 120% at 50% 0%,
@@ -12720,7 +12799,7 @@ td.notes.seating {
     bottom: 12px;
     transform: translate(-50%, 6px);
     padding: 6px 12px;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     background: var(--charcoal);
     color: #fff;
     font-size: 12px;
@@ -12836,10 +12915,10 @@ td.notes.seating {
   }
   .hm-guide-hint {
     margin: 14px 0 8px;
-    font-size: 13.5px;
+    font-size: 14px;
     color: var(--charcoal);
     background: rgba(201, 162, 39, 0.1);
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     padding: 11px 13px;
     line-height: 1.55;
   }
@@ -12875,7 +12954,7 @@ td.notes.seating {
   }
   .hm-guide-sketch-intro {
     margin: 0 0 16px;
-    font-size: 13.5px;
+    font-size: 14px;
     color: var(--muted);
     text-align: center;
     line-height: 1.55;
@@ -12896,14 +12975,14 @@ td.notes.seating {
     width: 100%;
     aspect-ratio: 1 / 1;
     object-fit: cover;
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     border: 1px solid var(--line);
     background: var(--ivory-2);
   }
   .hm-guide-sketch-shot span {
     display: block;
     margin-top: 6px;
-    font-size: 11.5px;
+    font-size: 12px;
     color: var(--muted);
   }
   .hm-guide-sketch-arrow {
@@ -12945,12 +13024,12 @@ td.notes.seating {
   }
   .hm-guide-sketch-steps h4 {
     margin: 0 0 2px;
-    font-size: 14.5px;
+    font-size: 15px;
     color: var(--charcoal);
   }
   .hm-guide-sketch-steps p {
     margin: 0;
-    font-size: 13.5px;
+    font-size: 14px;
     color: var(--muted);
     line-height: 1.5;
   }
@@ -12959,11 +13038,11 @@ td.notes.seating {
     padding: 12px 14px;
     background: var(--ivory-2, #f6efe2);
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius-m);
   }
   .hm-guide-note p {
     margin: 0 0 6px;
-    font-size: 13.5px;
+    font-size: 14px;
     color: var(--charcoal);
     line-height: 1.55;
   }
@@ -12981,7 +13060,7 @@ td.notes.seating {
   .hm-guide-note li {
     position: relative;
     padding-inline-start: 18px;
-    font-size: 13.5px;
+    font-size: 14px;
     color: var(--muted);
     line-height: 1.5;
   }
@@ -13000,7 +13079,7 @@ td.notes.seating {
     margin: 4px 0 6px;
     height: 48px;
     border: none;
-    border-radius: 14px;
+    border-radius: var(--radius-l);
     background: linear-gradient(160deg, var(--gold-light), var(--gold));
     color: #fff;
     font-size: 15px;
@@ -13027,7 +13106,7 @@ td.notes.seating {
     overflow-y: auto;
     z-index: 83;
     background: var(--ivory);
-    border-radius: 22px;
+    border-radius: var(--radius-xl);
     box-shadow: 0 20px 60px -16px rgba(20, 18, 14, 0.5);
     direction: rtl;
     padding: 24px 20px 20px;
@@ -13068,7 +13147,7 @@ td.notes.seating {
     width: 38px;
     height: 38px;
     border: 1px solid var(--gold);
-    border-radius: 10px;
+    border-radius: var(--radius-m);
     background: #fff;
     color: var(--gold);
     font-size: 22px;
@@ -13082,7 +13161,7 @@ td.notes.seating {
     font-size: 16px;
     font-weight: 700;
     border: 1px solid var(--sand, #e5dec9);
-    border-radius: 10px;
+    border-radius: var(--radius-m);
     color: var(--charcoal);
     -moz-appearance: textfield;
   }
@@ -13108,7 +13187,7 @@ td.notes.seating {
     gap: 10px;
     padding: 11px 14px;
     border: 1.5px solid var(--sand, #e5dec9);
-    border-radius: 14px;
+    border-radius: var(--radius-l);
     cursor: pointer;
     font-size: 15px;
     color: var(--charcoal);
@@ -13136,7 +13215,7 @@ td.notes.seating {
     line-height: 1.45;
     color: #9a5b2e;
     background: #fbf1e5;
-    border-radius: 10px;
+    border-radius: var(--radius-m);
     padding: 8px 12px;
   }
   .hm-wizard-actions {
@@ -13148,7 +13227,7 @@ td.notes.seating {
     flex: 1;
     height: 50px;
     border: none;
-    border-radius: 14px;
+    border-radius: var(--radius-l);
     background: linear-gradient(160deg, var(--gold-light), var(--gold));
     color: #fff;
     font-size: 16px;
@@ -13164,7 +13243,7 @@ td.notes.seating {
     height: 50px;
     padding: 0 18px;
     border: 1px solid var(--sand, #e5dec9);
-    border-radius: 14px;
+    border-radius: var(--radius-l);
     background: #fff;
     color: var(--charcoal);
     font-size: 15px;
@@ -13183,7 +13262,7 @@ td.notes.seating {
     overflow-y: auto;
     z-index: 83;
     background: var(--ivory);
-    border-radius: 22px;
+    border-radius: var(--radius-xl);
     box-shadow: 0 20px 60px -16px rgba(20, 18, 14, 0.5);
     direction: rtl;
     padding: 24px 20px 20px;
@@ -13203,7 +13282,7 @@ td.notes.seating {
     text-align: start;
     padding: 16px 16px 18px;
     border: 1.5px solid var(--sand, #e5dec9);
-    border-radius: 16px;
+    border-radius: var(--radius-l);
     background: #fff;
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s, transform 0.15s;
@@ -13221,7 +13300,7 @@ td.notes.seating {
     justify-content: center;
     width: 44px;
     height: 44px;
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     background: rgba(201, 162, 39, 0.12);
     color: var(--gold-deep);
     font-size: 22px;
@@ -13233,7 +13312,7 @@ td.notes.seating {
     color: var(--charcoal);
   }
   .hm-start-card-sub {
-    font-size: 13.5px;
+    font-size: 14px;
     line-height: 1.5;
     color: var(--muted);
   }
@@ -13248,7 +13327,7 @@ td.notes.seating {
     justify-content: center;
     gap: 8px;
     height: 46px;
-    border-radius: 14px;
+    border-radius: var(--radius-l);
     background: #eef3ec;
     color: #5a7a52;
     font-size: 14px;
@@ -13264,7 +13343,7 @@ td.notes.seating {
     bottom: 0;
     z-index: 71;
     background: var(--cream);
-    border-radius: 22px 22px 0 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px));
     box-shadow: 0 -10px 40px -12px rgba(20, 18, 14, 0.4);
     max-height: 82dvh;
@@ -13283,7 +13362,7 @@ td.notes.seating {
   .hm-sheet-handle {
     width: 42px;
     height: 5px;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     background: var(--line);
     margin: 6px auto 12px;
     cursor: pointer;
@@ -13337,7 +13416,7 @@ td.notes.seating {
     gap: 10px;
     padding: 11px 12px;
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     background: var(--ivory);
   }
   .hm-seated-name {
@@ -13357,7 +13436,7 @@ td.notes.seating {
     border: 1px solid var(--line);
     background: var(--cream);
     color: var(--gold-deep);
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     padding: 7px 12px;
     font-size: 13px;
     font-weight: 600;
@@ -13390,7 +13469,7 @@ td.notes.seating {
   .hm-edit-field input {
     padding: 12px;
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     background: var(--ivory);
     color: var(--charcoal);
     font-size: 16px;
@@ -13411,7 +13490,7 @@ td.notes.seating {
     align-items: center;
     justify-content: center;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     background: linear-gradient(160deg, var(--gold-light), var(--gold));
     color: #fff;
     cursor: pointer;
@@ -13430,7 +13509,7 @@ td.notes.seating {
   .hm-type-chips button {
     padding: 11px;
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     background: var(--cream);
     color: var(--charcoal);
     font-size: 14px;
@@ -13448,7 +13527,7 @@ td.notes.seating {
     gap: 14px;
     align-self: flex-start;
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--radius-m);
     padding: 4px;
     background: var(--cream);
   }
@@ -13457,7 +13536,7 @@ td.notes.seating {
     height: 44px;
     border: none;
     background: var(--ivory);
-    border-radius: 10px;
+    border-radius: var(--radius-m);
     font-size: 22px;
     color: var(--charcoal);
     cursor: pointer;
@@ -13631,7 +13710,7 @@ td.notes.seating {
 .send-confirm-warn {
   background: rgba(120, 60, 60, 0.06);
   border: 1px solid rgba(160, 90, 90, 0.25);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   padding: 12px 14px;
   margin: 12px 0;
   text-align: right;
@@ -13692,7 +13771,7 @@ td.notes.seating {
   box-sizing: border-box;
   padding: 9px 12px;
   border: 1px solid rgba(120, 110, 95, 0.28);
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   font-size: 14px;
   margin-bottom: 8px;
   background: #fff;
@@ -13704,7 +13783,7 @@ td.notes.seating {
   max-height: 220px;
   overflow-y: auto;
   border: 1px solid rgba(120, 110, 95, 0.2);
-  border-radius: 12px;
+  border-radius: var(--radius-m);
   background: #fff;
 }
 .send-recipient-row {
@@ -13715,7 +13794,7 @@ td.notes.seating {
   align-items: center;
   gap: 9px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   cursor: pointer;
 }
 .send-recipient-row label:hover {
@@ -13732,7 +13811,7 @@ td.notes.seating {
   font-size: 12px;
   color: var(--body, #6a655d);
   background: rgba(120, 110, 95, 0.12);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 2px 9px;
 }
 .send-recipient-tag.warn {
@@ -13772,7 +13851,7 @@ td.notes.seating {
 .send-progress-bar {
   height: 10px;
   background: var(--surface-hi, #efeae0);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   overflow: hidden;
   margin-top: 16px;
 }
@@ -13781,7 +13860,7 @@ td.notes.seating {
   height: 100%;
   width: 40%;
   background: linear-gradient(90deg, var(--green, #48c07c), #7fd6a5);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   animation: sendIndet 1.1s ease-in-out infinite;
 }
 @keyframes sendIndet {
@@ -13886,7 +13965,7 @@ td.notes.seating {
   text-align: center;
   background: var(--cream);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius-l);
   box-shadow: var(--shadow-card);
   padding: 40px 28px;
 }

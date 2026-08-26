@@ -219,7 +219,7 @@
 
 .pa-badge {
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: rgba(var(--gold-rgb), 0.16);
   color: var(--gold-deep);
   font-size: 11px;

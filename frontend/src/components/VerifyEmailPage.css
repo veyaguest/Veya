@@ -50,7 +50,7 @@
 }
 
 .verify-sub {
-  font-size: 14.5px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--muted);
   margin: 0;
@@ -66,14 +66,14 @@
   color: var(--gold-light);
   background: rgba(201, 162, 39, 0.08);
   border: 1px solid rgba(201, 162, 39, 0.25);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   max-width: 100%;
   overflow-wrap: anywhere;
 }
 
 .verify-hint {
   margin: 26px 0 0;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.6;
   color: var(--body);
 }
@@ -151,7 +151,7 @@
 
 .verify-countdown {
   margin: 6px 0 0;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--faint);
 }
 
@@ -187,7 +187,7 @@
   color: var(--body);
   background: transparent;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   cursor: pointer;
   transition: border-color var(--transition-fast), color var(--transition-fast);
 }

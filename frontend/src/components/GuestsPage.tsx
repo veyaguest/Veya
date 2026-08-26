@@ -275,23 +275,34 @@ export function GuestsPage() {
           <option value="pending">{t.filterButton}: {t.filterLabelPending}</option>
           <option value="no_table">{t.filterButton}: {t.filterLabelNoTable}</option>
         </select>
-        <ImportMenu
-          onExcel={() => fileInput.current?.click()}
-          onPaste={() => setShowPaste(true)}
-          onContacts={contactsSupported ? () => setShowContacts(true) : undefined}
-        />
-        <button className="btn-ghost" onClick={() => setShowCreateGroup(true)}>
-          {t.groupButton}
-        </button>
-        <button className="btn-ghost" onClick={() => setShowNotes(true)}>
-          {t.notesButton}
-        </button>
-        <button className="btn-ghost" onClick={() => setShowSuggestions(true)}>
-          {t.suggestionsButton(suggestionsCount)}
-        </button>
-        <button className="btn-primary" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? t.closeForm : t.addGuestButton}
-        </button>
+        {/* פעולות מקובצות: הפעולה הראשית (הוספת מוזמן) אחרונה ובולטת,
+            והפעולות המשניות לפניה. הקבוצה נשארת יחידה אחת בעטיפת שורות,
+            כדי שכפתור "הוספת מוזמן" לא ייפרד משאר הפעולות במסך צר. */}
+        <div className="toolbar-actions">
+          <ImportMenu
+            onExcel={() => fileInput.current?.click()}
+            onPaste={() => setShowPaste(true)}
+            onContacts={contactsSupported ? () => setShowContacts(true) : undefined}
+          />
+          <button className="btn-ghost" onClick={() => setShowCreateGroup(true)}>
+            {t.groupButton}
+          </button>
+          <button className="btn-ghost" onClick={() => setShowNotes(true)}>
+            {t.notesButton}
+          </button>
+          <button
+            className="btn-ghost toolbar-suggestions"
+            onClick={() => setShowSuggestions(true)}
+          >
+            {t.suggestionsButton}
+            {suggestionsCount > 0 && (
+              <span className="toolbar-badge">{suggestionsCount}</span>
+            )}
+          </button>
+          <button className="btn-primary" onClick={() => setShowForm((s) => !s)}>
+            {showForm ? t.closeForm : t.addGuestButton}
+          </button>
+        </div>
         <input
           ref={fileInput}
           type="file"
