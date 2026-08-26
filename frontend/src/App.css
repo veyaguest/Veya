@@ -48,7 +48,9 @@
      כדי שכל calc() שמסתמך עליו יעבוד גם כשהבאנר לא עלה בכלל. */
   --cookie-banner-height: 0px;
 
-  /* אייקון מנעול כ-mask, כדי שייצבע בצבע הטקסט שסביבו. */
+  /* אייקונים כ-mask, כדי שייצבעו בצבע הטקסט שסביבם. */
+  --icon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7.6v5.2M12 16.2v.2'/%3E%3C/svg%3E");
+  --icon-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 11v5.4M12 7.6v.2'/%3E%3C/svg%3E");
   --icon-lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4.5' y='10.5' width='15' height='9.5' rx='2'/%3E%3Cpath d='M8 10.5V7.8a4 4 0 0 1 8 0v2.7'/%3E%3C/svg%3E");
 
   /* ============================================================
@@ -1267,10 +1269,33 @@ td.notes.seating {
   gap: 10px;
   margin-top: 16px;
 }
+/* ---- שגיאה ----
+   שורת טקסט אדומה נראית כמו תקלה בעיצוב; הודעה ממוסגרת עם אייקון
+   נראית כמו חלק מהמוצר שמטפל במצב. */
 .form-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--error) 30%, transparent);
+  border-radius: var(--radius-m);
+  background: color-mix(in srgb, var(--error) 7%, transparent);
   color: var(--error);
-  font-size: 14px;
-  margin: 10px 0 0;
+  font-size: var(--text-base);
+  line-height: var(--leading-snug);
+}
+.form-error::before {
+  content: '';
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  background-color: currentColor;
+  -webkit-mask: var(--icon-alert) center / contain no-repeat;
+  mask: var(--icon-alert) center / contain no-repeat;
+}
+.form-error:empty {
+  display: none;
 }
 .import-consent-disclosure {
   margin: 14px 0 0;
@@ -1440,12 +1465,88 @@ td.notes.seating {
   border-color: color-mix(in srgb, var(--gauge-declined) 40%, transparent);
 }
 
+/* ============================================================
+   מצבים — ריק, טוען, שגיאה.
+   קודם כל אחד מהם היה שורת טקסט אפורה על רקע ריק. מצב ריק הוא
+   הרגע שבו משתמש חדש מחליט אם להישאר, ומצב שגיאה הוא הרגע שבו
+   הוא מחליט אם לסמוך — שניהם צריכים להיראות כמו חלק מהעיצוב ולא
+   כמו משהו שנשכח.
+   ============================================================ */
 .empty {
-  padding: 56px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-12) var(--space-8);
   text-align: center;
-  color: var(--faint);
-  font-size: 15px;
-  line-height: 1.6;
+  color: var(--muted);
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  max-width: 42ch;
+  margin-inline: auto;
+}
+/* עיגול רך עם קו — נוכחות ויזואלית מינימלית שממסגרת את הריקנות
+   במקום להשאיר שטח לבן. */
+.empty::before {
+  content: '';
+  width: 44px;
+  height: 44px;
+  margin-bottom: var(--space-1);
+  border-radius: var(--radius-full);
+  border: 1px dashed var(--line);
+  background: var(--surface-hi);
+}
+
+.empty-title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+  line-height: var(--leading-snug);
+}
+.empty-desc {
+  color: var(--muted);
+  font-size: var(--text-base);
+}
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* ---- טעינה ---- */
+.dash-loading,
+.mb-empty,
+.load-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-10) 0;
+  color: var(--muted);
+  font-size: var(--text-base);
+}
+.dash-loading::before,
+.mb-empty::before,
+.load-text::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--line);
+  border-top-color: var(--gold);
+  animation: veya-spin 0.7s linear infinite;
+}
+@keyframes veya-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dash-loading::before,
+  .mb-empty::before,
+  .load-text::before {
+    animation: none;
+  }
 }
 
 /* ---- Import dialog ---- */
@@ -3910,12 +4011,7 @@ td.notes.seating {
   transform: translateY(-1px);
 }
 
-.dash-loading {
-  text-align: center;
-  color: var(--muted);
-  font-size: 14px;
-  padding: 40px 0;
-}
+
 .dash-empty-state {
   display: flex;
   flex-direction: column;
@@ -10316,11 +10412,7 @@ td.notes.seating {
   margin: 0;
   max-width: 60ch;
 }
-.mb-empty {
-  color: var(--muted);
-  font-size: 14px;
-  padding: 20px 0;
-}
+
 
 /* --- רשת הכרטיסים --- */
 .mb-grid {

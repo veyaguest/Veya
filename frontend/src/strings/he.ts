@@ -820,8 +820,10 @@ export const strings = {
     deleteRow: 'מחיקה',
     editRow: 'עריכה',
     groupButton: 'קבוצה חדשה',
-    emptySearch: 'לא נמצאו מוזמנים שתואמים לחיפוש.',
-    emptyList: 'הרשימה עדיין ריקה. הוסיפו מוזמן ראשון או ייבאו קובץ אקסל כדי להתחיל.',
+    emptySearchTitle: 'אין מוזמנים שמתאימים לחיפוש',
+    emptySearchDesc: 'אפשר לנסות שם אחר, או חלק ממספר טלפון.',
+    emptyListTitle: 'עדיין אין מוזמנים',
+    emptyListDesc: 'אפשר להוסיף אחד-אחד, או להעלות רשימה קיימת מאקסל.',
     loadingRows: 'טוען…',
     loadMore: (shown: number, total: number) => `טעינת עוד (${shown} מתוך ${total})`,
 
@@ -841,6 +843,7 @@ export const strings = {
     filterLabelNoTable: 'ללא שולחן',
     filteredNotice: (label: string) => `הרשימה מסוננת: ${label}`,
     clearFilter: 'ניקוי סינון',
+    clearSearch: 'ניקוי החיפוש',
 
     // AddGuestForm
     saveErrorGeneric: 'לא הצלחנו לשמור, נסו שוב',

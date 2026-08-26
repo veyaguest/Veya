@@ -578,12 +578,30 @@ export function GuestsPage() {
           </tbody>
         </table>
 
+        {/* מצב ריק אחרי חיפוש שונה ממצב ריק אמיתי: הראשון צריך דרך חזרה,
+            השני צריך את הצעד הראשון. קודם שניהם היו אותה שורת טקסט אפורה. */}
         {!loading && guests.length === 0 && (
           <div className="empty">
-            {search ? t.emptySearch : t.emptyList}
+            <strong className="empty-title">
+              {search ? t.emptySearchTitle : t.emptyListTitle}
+            </strong>
+            <span className="empty-desc">
+              {search ? t.emptySearchDesc : t.emptyListDesc}
+            </span>
+            <div className="empty-actions">
+              {search ? (
+                <button className="btn-ghost btn-sm" onClick={() => setSearch('')}>
+                  {t.clearSearch}
+                </button>
+              ) : (
+                <button className="btn-primary btn-sm" onClick={() => setShowForm(true)}>
+                  {t.addGuestButton}
+                </button>
+              )}
+            </div>
           </div>
         )}
-        {loading && <div className="empty">{t.loadingRows}</div>}
+        {loading && <div className="load-text">{t.loadingRows}</div>}
       </div>
 
       {!loading && hasMore && (
