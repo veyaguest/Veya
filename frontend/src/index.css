@@ -1,6 +1,9 @@
 :root {
-  font-family: 'Assistant', 'Rubik', system-ui, sans-serif;
-  line-height: 1.5;
+  /* פונט הבסיס של המסמך. הטוקנים המלאים מוגדרים ב-App.css (--font-ui
+     וחבריו); כאן נשמרת מחרוזת מפורשת בלבד, כי index.css נטען לפני
+     App.css ומשמש גם מסכים שמחוץ למעטפת האפליקציה. */
+  font-family: 'Heebo', 'Assistant', system-ui, -apple-system, sans-serif;
+  line-height: 1.55;
   color: #f5efe2;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

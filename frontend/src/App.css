@@ -47,6 +47,69 @@
      בגובה האמיתי כשהבאנר מוצג, ומחזיר ל-0px ברגע שהמשתמש בוחר. מוצהר כאן
      כדי שכל calc() שמסתמך עליו יעבוד גם כשהבאנר לא עלה בכלל. */
   --cookie-banner-height: 0px;
+
+  /* ============================================================
+     מערכת עיצוב VEYA — שכבת טוקנים אחת לכל המערכת.
+     לפני הבלוק הזה כל קומפוננטה בחרה ערכים בעצמה: 42 גדלי פונט
+     שונים (כולל 12.5px/13.5px/14.5px), 39 ערכי border-radius,
+     71 צללים — ולכן מסכים שנבנו בזמנים שונים לא נראו כמו אותו
+     מוצר. כאן מוגדר סולם אחד; קומפוננטה חדשה בוחרת ממנו, לא
+     ממציאה ערך.
+     ============================================================ */
+
+  /* ---- טיפוגרפיה: משפחות ----
+     Heebo = פונט המערכת (UI, טבלאות, מספרים). נבחר כי יש לו עברית
+     מלאה, 9 משקלים, וספרות ברורות ואחידות ברוחב (tabular) — קריטי
+     לטבלאות מוזמנים, טלפונים, סכומים ותאריכים. הדשבורד כבר עבר
+     אליו; כאן זה מוחל על כל המערכת.
+     Frank Ruhl Libre = הסריף היחיד לרגעים "רגשיים" (שמות בני הזוג,
+     משטחי הזמנה). Cormorant Garamond = לוגוטייפ VEYA בלבד — אין לו
+     תת-קבוצת עברית כלל, ולכן כל טקסט עברי שהוגדר בו נפל בשקט לפונט
+     אחר, ומחרוזת מעורבת ("42 מוזמנים") יצאה בשני פונטים שונים. */
+  --font-ui: 'Heebo', 'Assistant', system-ui, -apple-system, sans-serif;
+  --font-display: 'Frank Ruhl Libre', 'Heebo', Georgia, serif;
+  --font-brand: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+
+  /* ---- טיפוגרפיה: סולם גדלים ----
+     סולם אחד, בקפיצות מורגשות. אין חצאי פיקסלים. */
+  --text-2xs: 11px;   /* תוויות זעירות, מונים */
+  --text-xs: 12px;    /* תוויות, כיתובי עזר */
+  --text-sm: 13px;    /* טקסט משני, תאי טבלה צפופים */
+  --text-base: 14px;  /* גוף — ברירת המחדל של הממשק */
+  --text-md: 15px;    /* גוף מודגש, כפתורים */
+  --text-lg: 17px;    /* כותרת כרטיס */
+  --text-xl: 20px;    /* כותרת סקשן */
+  --text-2xl: 24px;   /* כותרת מסך */
+  --text-3xl: 30px;   /* מספר-גיבור בכרטיס */
+  --text-4xl: 40px;   /* מספר-גיבור ראשי */
+
+  /* ---- טיפוגרפיה: גובה שורה ומשקלים ---- */
+  --leading-tight: 1.2;    /* כותרות */
+  --leading-snug: 1.35;    /* כותרות משנה */
+  --leading-normal: 1.55;  /* גוף — עברית צריכה יותר אוויר מלטינית */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---- מרווחים: סולם 4px ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- פינות ---- */
+  --radius-xs: 6px;
+  --radius-full: 999px;
+
+  /* ---- גובה מינימלי לאזורי מגע (נגישות: 44px במובייל) ---- */
+  --control-h: 40px;
+  --control-h-lg: 44px;
 }
 
 /* ---- הקשרים כהים: הטוקנים הבהירים מוחלפים חזרה לערכים כהים ----
@@ -72,6 +135,44 @@
   --muted: #8b8578;
   --faint: #6b6355;
   --gold-deep: #e4c96b;    /* על כהה — זהב בהיר קריא יותר */
+}
+
+/* ============================================================
+   בסיס גלובלי — הפונט של המערכת.
+   ⚠️ באג שתוקן כאן: לדפדפן יש ברירת מחדל משלו ל-button/input/
+   select/textarea — הם *אינם* יורשים את הפונט של הדף אלא אם
+   אומרים להם במפורש. בפועל זה אומר ש-.btn-primary ו-.btn-ghost
+   (יותר מ-100 שימושים במערכת), וכל שדות החיפוש/הסינון, הוצגו
+   בפונט המערכת של מערכת ההפעלה ולא בפונט של VEYA. שורה אחת כאן
+   מיישרת את כל הממשק.
+   ============================================================ */
+.shell,
+.auth-page,
+.onboard-page,
+.confirm-page,
+.join-page,
+.verify-page {
+  font-family: var(--font-ui);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* מספרים בממשק מוצג — רוחב אחיד לכל ספרה, כדי שעמודות מספרים
+   בטבלאות ובכרטיסים יתיישרו במקום "לרקוד" בין שורה לשורה. */
+.tabular,
+.stat-num,
+.mini-num,
+.gauge-num,
+.table-num,
+.admin-stat-num,
+.adm-kpi-num {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
 }
 
 /* ---- נגישות: טבעת פוקוס גלויה לניווט מקלדת ----
@@ -147,7 +248,7 @@ summary:focus-visible,
   border-bottom: none;
 }
 .logo-text {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-brand);
   font-size: 26px;
   letter-spacing: 8px;
   color: var(--gold-light);
@@ -258,7 +359,7 @@ summary:focus-visible,
   background: rgba(201, 162, 39, 0.18);
   border: 1px solid var(--gold-light);
   color: var(--gold-light);
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   font-size: 17px;
   font-weight: 600;
 }
@@ -469,7 +570,7 @@ summary:focus-visible,
 
 .page-title {
   position: relative;
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -1261,7 +1362,7 @@ td.notes.seating {
   justify-content: space-between;
 }
 .dialog-head h2 {
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   color: var(--charcoal);
   margin: 0;
   font-size: 22px;
@@ -1326,7 +1427,7 @@ td.notes.seating {
 }
 .reconsent-title {
   /* אותה כותרת serif של כל המערכת (.dialog-head h2 / כותרות דף הנחיתה) */
-  font-family: 'Frank Ruhl Libre', Georgia, serif;
+  font-family: var(--font-display);
   font-weight: 500;
   color: var(--charcoal);
   margin: 0 0 12px;
@@ -1334,21 +1435,21 @@ td.notes.seating {
   line-height: 1.35;
 }
 .reconsent-body {
-  font-family: 'Assistant', system-ui, sans-serif;
+  font-family: var(--font-ui);
   color: var(--body);
   font-size: 14.5px;
   line-height: 1.6;
   margin: 0 0 8px;
 }
 .reconsent-hint {
-  font-family: 'Assistant', system-ui, sans-serif;
+  font-family: var(--font-ui);
   color: var(--muted);
   font-size: 13.5px;
   line-height: 1.6;
   margin: 0 0 16px;
 }
 .reconsent-links {
-  font-family: 'Assistant', system-ui, sans-serif;
+  font-family: var(--font-ui);
   font-size: 13.5px;
   margin: 0 0 20px;
 }
@@ -1385,7 +1486,7 @@ td.notes.seating {
   color: var(--charcoal);
   font-weight: 700;
   font-size: 15px;
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   cursor: pointer;
   transition: filter var(--transition-fast), transform var(--transition-fast);
 }
@@ -1963,7 +2064,7 @@ td.notes.seating {
   border-bottom: 1px solid var(--line);
 }
 .table-name {
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   font-size: 18px;
   color: var(--gold-deep);
   font-weight: 700;
@@ -2017,7 +2118,7 @@ td.notes.seating {
 }
 .clar-title {
   margin: 0 0 4px;
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   font-size: 19px;
   color: var(--charcoal);
 }
@@ -2122,7 +2223,7 @@ td.notes.seating {
   border-color: rgba(201, 162, 39, 0.25);
 }
 .stat-num {
-  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  font-family: var(--font-ui);
   font-size: 38px;
   font-weight: 600;
   line-height: 1;
@@ -2303,7 +2404,7 @@ td.notes.seating {
 }
 .event-couple {
   margin: 0;
-  font-family: var(--font-ui, 'Heebo', 'Assistant', system-ui, sans-serif);
+  font-family: var(--font-ui);
   font-size: 42px;
   font-weight: 700;
   color: var(--charcoal);
@@ -2628,7 +2729,7 @@ td.notes.seating {
   box-shadow: var(--shadow-card);
 }
 .countdown-cell-num {
-  font-family: var(--font-ui, 'Heebo', 'Assistant', system-ui, sans-serif);
+  font-family: var(--font-ui);
   font-size: 25px;
   font-weight: 700;
   line-height: 1;
@@ -3050,7 +3151,7 @@ td.notes.seating {
   box-shadow: var(--shadow-card);
 }
 .invite-frame-caption {
-  font-family: 'Cormorant Garamond', 'Frank Ruhl Libre', serif;
+  font-family: var(--font-display);
   font-style: italic;
   font-size: 13px;
   color: var(--gold-deep);
@@ -3155,7 +3256,7 @@ td.notes.seating {
   gap: 4px;
 }
 .mini-num {
-  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  font-family: var(--font-ui);
   font-size: 32px;
   font-weight: 600;
   color: var(--gold-deep);
@@ -3269,7 +3370,7 @@ td.notes.seating {
   pointer-events: none;
 }
 .gauge-num {
-  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  font-family: var(--font-ui);
   /* קלאמפ נוזלי — גדל/קטן חלק עם רוחב המסך במקום קפיצות מדיה-קוורי,
      כדי שהמספר "ישלוט במסך" גם בטאבלט/דסקטופ בלי לגלוש במובייל. */
   font-size: clamp(52px, 10vw, 108px);
@@ -3333,7 +3434,7 @@ td.notes.seating {
   margin-bottom: 2px;
 }
 .gauge-status-num {
-  font-family: var(--font-ui, 'Heebo', 'Assistant', system-ui, sans-serif);
+  font-family: var(--font-ui);
   font-size: clamp(20px, 2.4vw, 26px);
   font-weight: 700;
   line-height: 1;
@@ -3705,7 +3806,6 @@ td.notes.seating {
    הצבעים, האייקונים והפריסה נשארים כפי שהם.
    ============================================================ */
 .dash-page {
-  --font-ui: 'Heebo', 'Assistant', system-ui, sans-serif;
   font-family: var(--font-ui);
   display: flex;
   flex-direction: column;
@@ -5370,7 +5470,7 @@ td.notes.seating {
   max-width: 80%;
 }
 .table-num {
-  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  font-family: var(--font-ui);
   font-size: calc(20px * var(--t-s, 1));
   font-weight: 700;
   color: #2b2620;
@@ -6462,7 +6562,7 @@ td.notes.seating {
   display: block;
 }
 .auth-logo-tag {
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   font-size: 14px;
   letter-spacing: 3px;
   color: var(--gold);
@@ -6494,7 +6594,7 @@ td.notes.seating {
   border-radius: 50%;
 }
 .auth-monogram-v {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-brand);
   font-size: 34px;
   font-weight: 500;
   color: var(--gold-light);
@@ -6526,7 +6626,7 @@ td.notes.seating {
   gap: 3px;
 }
 .auth-wordmark-name {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-brand);
   font-size: 27px;
   letter-spacing: 8px;
   color: var(--charcoal);
@@ -6534,7 +6634,7 @@ td.notes.seating {
   line-height: 1;
 }
 .auth-wordmark-tag {
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   font-size: 12px;
   letter-spacing: 2px;
   color: var(--gold);
@@ -6555,7 +6655,7 @@ td.notes.seating {
   gap: 16px;
 }
 .auth-hero-title {
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   font-size: 46px;
   line-height: 1.25;
   color: var(--charcoal);
@@ -6620,7 +6720,7 @@ td.notes.seating {
   margin-bottom: 36px;
 }
 .auth-panel-title {
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   font-size: 26px;
   color: var(--charcoal);
   font-weight: 600;
@@ -6656,7 +6756,7 @@ td.notes.seating {
   padding: 0 16px;
   color: var(--charcoal);
   font-size: 15px;
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   box-sizing: border-box;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -6751,7 +6851,7 @@ td.notes.seating {
   color: var(--cream);
   font-weight: 700;
   font-size: 16px;
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   cursor: pointer;
   margin-top: 8px;
   transition: filter 0.15s;
@@ -6786,7 +6886,7 @@ td.notes.seating {
   background: transparent;
   color: var(--body);
   font-size: 14px;
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
@@ -6828,7 +6928,7 @@ td.notes.seating {
   background: transparent;
   color: var(--error);
   font-size: 14px;
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
@@ -6885,7 +6985,7 @@ td.notes.seating {
   display: none;
 }
 .auth-panel-logo-name {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-brand);
   font-size: 26px;
   letter-spacing: 7px;
   color: var(--charcoal);
@@ -6917,7 +7017,7 @@ td.notes.seating {
 
 .first-event-title {
   text-align: center;
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   color: var(--gold-light);
   font-size: 26px;
   margin: 0 0 4px;
@@ -7002,7 +7102,7 @@ td.notes.seating {
   font-size: 28px;
   font-weight: 800;
   color: var(--gold-deep);
-  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  font-family: var(--font-ui);
   font-feature-settings: 'tnum' 1;
 }
 .admin-stat-label {
@@ -7011,7 +7111,7 @@ td.notes.seating {
   line-height: 1.4;
 }
 .admin-section-title {
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   color: var(--charcoal);
   font-size: 19px;
   margin: 28px 0 14px;
@@ -7060,7 +7160,7 @@ td.notes.seating {
   font-weight: 800;
   line-height: 1.1;
   color: var(--gold-deep);
-  font-family: 'Cormorant Garamond', 'Assistant', serif;
+  font-family: var(--font-ui);
 }
 .adm-kpi-label {
   font-size: 13px;
@@ -7417,7 +7517,7 @@ td.notes.seating {
   border-top-color: var(--error, #c0392b);
 }
 .adm-confirm-title {
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   color: var(--charcoal);
   margin: 0 0 8px;
   font-size: 20px;
@@ -7882,7 +7982,7 @@ td.notes.seating {
   margin-bottom: 20px;
 }
 .confirm-brand-name {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-brand);
   font-size: 18px;
   letter-spacing: 6px;
   color: var(--charcoal);
@@ -7893,14 +7993,14 @@ td.notes.seating {
   margin: 0 0 4px;
 }
 .confirm-title {
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   font-size: 20px;
   color: var(--body);
   font-weight: 400;
   margin: 0 0 6px;
 }
 .confirm-couple {
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   font-size: 34px;
   color: var(--gold-light);
   font-weight: 500;
@@ -8087,7 +8187,7 @@ td.notes.seating {
   padding: 10px 12px;
   color: var(--charcoal);
   font-size: 14px;
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   resize: vertical;
 }
 .confirm-note textarea:focus {
@@ -8113,7 +8213,7 @@ td.notes.seating {
   color: var(--cream);
   font-weight: 700;
   font-size: 16px;
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   cursor: pointer;
   transition: filter 0.15s;
 }
@@ -8155,7 +8255,7 @@ td.notes.seating {
   margin: 4px 0 18px;
 }
 .hub-greeting {
-  font-family: 'Frank Ruhl Libre', serif;
+  font-family: var(--font-display);
   font-size: 22px;
   color: var(--charcoal);
   margin: 0;
@@ -8167,7 +8267,7 @@ td.notes.seating {
 }
 
 .hub-title {
-  font-family: 'Cormorant Garamond', 'Frank Ruhl Libre', serif;
+  font-family: var(--font-display);
   font-size: 30px;
   line-height: 1.25;
   color: var(--charcoal);
@@ -8240,7 +8340,7 @@ td.notes.seating {
   border: 1px solid var(--line);
   border-radius: 14px;
   color: var(--charcoal);
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   text-align: start;
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, transform 0.05s ease;
@@ -8456,7 +8556,7 @@ td.notes.seating {
   background: none;
   outline: none;
   color: var(--charcoal);
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   /* 18px+ מונע מ-iOS לבצע zoom אוטומטי בפוקוס על שדה קלט */
   font-size: 24px;
   font-weight: 600;
@@ -8473,7 +8573,7 @@ td.notes.seating {
   border-radius: 12px;
   background: var(--surface-hi);
   color: var(--charcoal);
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   font-size: 16px;   /* לא פחות מ-16px — אחרת iOS מזום פנימה */
   resize: vertical;
 }
@@ -8525,7 +8625,7 @@ td.notes.seating {
 .hub-gift-total-big {
   direction: ltr;
   unicode-bidi: isolate;
-  font-family: 'Frank Ruhl Libre', serif;
+  font-family: var(--font-display);
   font-size: 34px;
   font-weight: 700;
   color: var(--charcoal);
@@ -8552,7 +8652,7 @@ td.notes.seating {
   border: 1px solid var(--line);
   background: none;
   color: var(--muted);
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   font-size: 14px;
   cursor: pointer;
 }
@@ -8561,7 +8661,7 @@ td.notes.seating {
   color: var(--error);
 }
 .hub-gift-title {
-  font-family: 'Frank Ruhl Libre', serif;
+  font-family: var(--font-display);
   font-size: 20px;
   color: var(--charcoal);
   text-align: center;
@@ -8581,7 +8681,7 @@ td.notes.seating {
   background: none;
   border: none;
   color: var(--muted);
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   font-size: 15px;
   cursor: pointer;
 }
@@ -8676,7 +8776,7 @@ td.notes.seating {
   padding: 5px 12px;
   font-size: 13px;
   cursor: pointer;
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   transition: background 0.15s;
 }
 .tpl-chip:hover {
@@ -8697,7 +8797,7 @@ td.notes.seating {
   color: var(--charcoal);
   font-size: 14px;
   line-height: 1.6;
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   resize: vertical;
 }
 .tpl-textarea:focus {
@@ -8866,7 +8966,7 @@ td.notes.seating {
   border: none;
   background: transparent;
   color: var(--muted);
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   font-size: 14px;
   padding: 11px 18px;
   cursor: pointer;
@@ -8897,7 +8997,7 @@ td.notes.seating {
   border: none;
   background: transparent;
   color: var(--muted);
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   font-size: 13.5px;
   font-weight: 500;
   padding: 8px 20px;
@@ -9007,7 +9107,7 @@ td.notes.seating {
   border-color: var(--gold-deep);
   color: var(--gold-deep);
   background: rgba(201, 162, 39, 0.08);
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   transition: background 0.15s;
 }
 .auto-chip-btn:hover {
@@ -9108,7 +9208,7 @@ td.notes.seating {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
   transition: border-color 0.15s, background 0.15s;
 }
 .auto-tpl-item:hover {
@@ -9206,7 +9306,7 @@ td.notes.seating {
   padding: 5px 12px;
   font-size: 13px;
   cursor: pointer;
-  font-family: 'Assistant', sans-serif;
+  font-family: var(--font-ui);
 }
 .auto-toggle.on {
   background: rgba(47, 158, 95, 0.12);
@@ -11281,7 +11381,7 @@ td.notes.seating {
 }
 .onboard-title {
   text-align: center;
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   color: var(--charcoal);
   font-size: 26px;
   font-weight: 600;
@@ -11340,7 +11440,7 @@ td.notes.seating {
 .onboard-step-title {
   margin: 0 0 10px;
   text-align: start;
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   font-size: 19px;
   font-weight: 700;
   color: var(--charcoal);
@@ -13197,7 +13297,7 @@ td.notes.seating {
   }
   .hm-sheet-title {
     margin: 0;
-    font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+    font-family: var(--font-display);
     font-size: 20px;
     color: var(--charcoal);
   }
@@ -13745,7 +13845,7 @@ td.notes.seating {
   margin-top: 8px;
 }
 .rsvp-faq-title {
-  font-family: 'Frank Ruhl Libre', 'Assistant', serif;
+  font-family: var(--font-display);
   font-size: 20px;
   color: var(--charcoal);
   margin: 0 0 14px;
