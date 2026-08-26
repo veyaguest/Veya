@@ -96,7 +96,7 @@ function navItemsFor(
     { key: 'hall' as Page, label: 'סידור הושבה', short: 'הושבה' },
   ]
   if (giftsEligible) {
-    items.push({ key: 'gifts', label: strings.gifts.title, short: strings.gifts.title })
+    items.push({ key: 'gifts', label: strings.gifts.title, short: strings.gifts.navShort })
   }
   return items
 }
