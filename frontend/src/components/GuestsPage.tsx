@@ -551,8 +551,14 @@ export function GuestsPage() {
                     {RSVP_LABELS[g.rsvp_status]}
                   </span>
                 </td>
+                {/* סטטוס ההזמנה הוא מצב *מערכת* (נשלח/נמסר/נקרא), בעוד
+                    אישור ההגעה הוא מצב שהמוזמן בחר. קודם שניהם הוצגו
+                    כתגית-גלולה זהה בשתי עמודות סמוכות, ואי אפשר היה
+                    להבדיל ביניהם במבט. כאן זה נקודה + טקסט שקט — היררכיה
+                    ברורה: הבחירה של המוזמן בולטת, מצב המסירה משני. */}
                 <td>
-                  <span className={`badge invite-${g.invite_status ?? 'not_sent'}`}>
+                  <span className={`delivery delivery-${g.invite_status ?? 'not_sent'}`}>
+                    <span className="delivery-dot" aria-hidden="true" />
                     {INVITE_STATUS_LABELS[g.invite_status ?? 'not_sent']}
                   </span>
                 </td>

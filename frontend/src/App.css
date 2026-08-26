@@ -1314,10 +1314,42 @@ td.notes.seating {
 @media (prefers-reduced-motion: reduce) {
   .skeleton-bar { animation: none; background: var(--surface-hi); }
 }
+/* ---- טבלת המוזמנים ----
+   ``table-layout: auto`` חילק את הרוחב לפי תוכן, ולכן עמודות סטטוס
+   קצרות נדחסו עד ששברו את התגית לשלוש שורות בזמן שעמודות ההערות
+   קיבלו מקום עודף. כאן נקבעת חלוקה מפורשת: לכל עמודה קצרה רוחב
+   מינימלי משלה, וההערות סופגות את השארית. */
 .guests-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--text-base);
+}
+.guests-table th:nth-child(1),
+.guests-table td:nth-child(1) { min-width: 130px; }
+.guests-table th:nth-child(2),
+.guests-table td:nth-child(2) { width: 1%; white-space: nowrap; }
+.guests-table th:nth-child(3),
+.guests-table td:nth-child(3),
+.guests-table th:nth-child(4),
+.guests-table td:nth-child(4) { width: 1%; white-space: nowrap; }
+.guests-table th:nth-child(5),
+.guests-table td:nth-child(5),
+.guests-table th:nth-child(8),
+.guests-table td:nth-child(8) { width: 1%; }
+.guests-table th:nth-child(6),
+.guests-table td:nth-child(6),
+.guests-table th:nth-child(7),
+.guests-table td:nth-child(7) { width: 1%; white-space: nowrap; }
+.guests-table th:nth-child(9),
+.guests-table td:nth-child(9),
+.guests-table th:nth-child(10),
+.guests-table td:nth-child(10) { min-width: 150px; }
+
+/* מספרים בטבלה (כמות, מספר שולחן, טלפון) — ספרות ברוחב אחיד, כדי
+   שהעמודה תיקרא כעמודה ולא כרצף שמתנדנד. */
+.guests-table .center,
+.guests-table .phone {
+  font-variant-numeric: tabular-nums;
 }
 .guests-table th {
   text-align: right;
@@ -1373,6 +1405,7 @@ td.notes.seating {
 .badge {
   display: inline-flex;
   align-items: center;
+  white-space: nowrap;
   padding: 3px 10px;
   border-radius: var(--radius-full);
   font-size: 12px;
@@ -13644,32 +13677,47 @@ td.notes.seating {
    ========================================================================== */
 
 /* תגי סטטוס הזמנה — ניטרלי לא-נשלח, ירקרק לנשלח/נמסר/נקרא, זהב/אדום לתשובה. */
-.badge.invite-not_sent {
-  background: rgba(139, 133, 120, 0.1);
-  color: #6b655a;
-  border-color: rgba(139, 133, 120, 0.3);
+/* ---- מצב מסירת ההזמנה ----
+   נקודת צבע + טקסט שקט, במכוון *לא* גלולה: בעמודה שלידה יושב אישור
+   ההגעה, וכששניהם היו גלולות זהות אי אפשר היה להבחין בין "מה המוזמן
+   ענה" לבין "האם ההודעה הגיעה אליו". הבחירה של המוזמן בולטת; מצב
+   המסירה נשאר מידע רקע. */
+.delivery {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--muted);
 }
-.badge.invite-sent,
-.badge.invite-awaiting {
-  background: rgba(72, 120, 170, 0.12);
-  color: #3b6ea5;
-  border-color: rgba(72, 120, 170, 0.35);
+.delivery-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--faint);
 }
-.badge.invite-delivered,
-.badge.invite-read {
-  background: rgba(72, 160, 120, 0.14);
-  color: #2f8a5f;
-  border-color: rgba(72, 160, 120, 0.35);
+.delivery-sent .delivery-dot,
+.delivery-awaiting .delivery-dot {
+  background: #6f97c4;
 }
-.badge.invite-confirmed {
-  background: color-mix(in srgb, var(--gauge-confirmed) 18%, transparent);
-  color: #1f7a3d;
-  border-color: color-mix(in srgb, var(--gauge-confirmed) 45%, transparent);
+.delivery-delivered .delivery-dot,
+.delivery-read .delivery-dot {
+  background: var(--gauge-confirmed);
 }
-.badge.invite-declined {
-  background: color-mix(in srgb, var(--gauge-declined) 18%, transparent);
-  color: #a5453b;
-  border-color: color-mix(in srgb, var(--gauge-declined) 45%, transparent);
+.delivery-confirmed .delivery-dot {
+  background: var(--gauge-confirmed);
+}
+.delivery-declined .delivery-dot {
+  background: var(--gauge-declined);
+}
+.delivery-sent,
+.delivery-awaiting,
+.delivery-delivered,
+.delivery-read,
+.delivery-confirmed,
+.delivery-declined {
+  color: var(--body);
 }
 
 /* ---- דיאלוג שליחת הזמנות ---- */
