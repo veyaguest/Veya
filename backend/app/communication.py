@@ -21,8 +21,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import (
-    automation, event_cycle, event_terms, message_status, messaging, models,
-    rsvp_timeline,
+    automation, event_cycle, event_terms, gift_eligibility, message_status,
+    messaging, models, rsvp_timeline,
 )
 from app.guest_journey import israel_timezone, now_in_israel
 
@@ -140,8 +140,8 @@ def _scheduled_moment(day: date, send_time: str) -> datetime:
     return datetime.combine(day, t, tzinfo=tz)
 
 
-# המשתנים הדינמיים הנתמכים (הרשימה שנקבעה במפורש). "gift_link" תמיד ריק
-# היום — אין פיצ'ר מתנות באשראי בנוי (roadmap.md).
+# המשתנים הדינמיים הנתמכים (הרשימה שנקבעה במפורש). ``gift_link`` מגודר
+# בזכאות — ראו ``communication_values`` ו-``variables_supported``.
 VARIABLE_KEYS: list[str] = [
     "guest_name", "guest_names", "host_names", "event_type",
     "event_type_definite",
@@ -182,6 +182,34 @@ DEFAULT_VARIABLES_SUPPORTED: dict[str, list[str]] = {
 }
 
 
+def _gift_link(event: models.Event, guest: Optional[models.Guest]) -> str:
+    """קישור המתנה למוזמן — או מחרוזת ריקה כשאין מה לשלוח.
+
+    **אירוע שאינו זכאי מקבל ריק, תמיד.** זה השער היחיד: אין תנאי זכאות
+    מקביל בשום מקום אחר במסלול ההודעות.
+
+    אירוע זכאי מקבל היום גם הוא ריק — מסך המתנה למוזמן טרם נבנה, ולשלוח
+    קישור למסך שאומר "נפתח בקרוב" זה גרוע מלא לשלוח כלום. כשהמסך יהיה
+    מוכן, כאן המקום היחיד שצריך להשתנות.
+    """
+    if not gift_eligibility.is_eligible(event):
+        return ""
+    return ""
+
+
+def variables_supported(event: models.Event, kind: str) -> list[str]:
+    """המשתנים שמוצעים בעורך לסוג הודעה — **מסונן לפי זכאות האירוע.**
+
+    לאירוע שאינו זכאי ``gift_link`` פשוט לא קיים ברשימה, ולכן הוא גם לא
+    מוצע ולא נכנס לתבנית. זו הגנה כפולה יחד עם ``_gift_link``: גם אם
+    הטוקן כבר יושב בתבנית שמורה מלפני, הערך שלו יהיה ריק והשורה תימחק.
+    """
+    keys = list(DEFAULT_VARIABLES_SUPPORTED.get(kind, []))
+    if "gift_link" in keys and not gift_eligibility.is_eligible(event):
+        keys.remove("gift_link")
+    return keys
+
+
 # ---- רינדור: {{var}} -> ערך, שורה עם משתנה ריק נמחקת ----
 
 _VAR_RE = re.compile(r"\{\{\s*(\w+)\s*\}\}")
@@ -220,7 +248,12 @@ def communication_values(event: models.Event, guest: Optional[models.Guest] = No
         "venue_name": event.venue_name or "",
         "address": event.venue_address or "",
         "navigation_link": messaging.maps_link(event.venue_address or ""),
-        "gift_link": "",  # אין פיצ'ר מתנות באשראי בנוי עדיין — roadmap.md
+        # ── קישור המתנה ────────────────────────────────────────────────
+        # ריק היום גם לאירוע זכאי, כי מסך המתנה עצמו עדיין שלד. מה שכן
+        # נקבע כאן זה **מי מחליט**: הערך עובר דרך שער הזכאות, ולא דרך
+        # קבוע. כשייבנה הקישור, אירוע שאינו זכאי ימשיך לקבל מחרוזת ריקה
+        # מאליו — ושורת ההודעה שמכילה אותו תימחק ע"י ``render_message``.
+        "gift_link": _gift_link(event, guest),
     }
     if guest is not None:
         values["guest_name"] = guest.full_name or ""
@@ -266,9 +299,11 @@ def provision_event_messages(db: Session, event: models.Event) -> int:
             message_type=mt,
             title=d.title if d else MESSAGE_TYPE_LABELS[mt],
             content=d.content if d else "",
+            # ``variables_supported`` ולא הרשימה הגולמית: לאירוע שאינו
+            # זכאי לשירות המתנות, ``gift_link`` לא ייכנס לרשימה מלכתחילה.
             variables_supported=(
                 list(d.variables_supported) if d and d.variables_supported
-                else list(DEFAULT_VARIABLES_SUPPORTED.get(mt, []))
+                else variables_supported(event, mt)
             ),
             is_active=d.is_active if d else True,
             trigger_offset_days=DEFAULT_TRIGGER_OFFSET_DAYS.get(mt, 0),

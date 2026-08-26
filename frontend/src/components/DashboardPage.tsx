@@ -33,6 +33,14 @@ import './PostponeDialog.css'
 interface Props {
   // ניווט למסך אחר (מוזמנים / מפת אולם) — עבור הבאנר וכרטיס ההושבה.
   onNavigate?: (page: ReadinessPage) => void
+  /**
+   * האם האירוע זכאי לשירות "מתנות באשראי".
+   *
+   * מגיע מהשרת דרך ``EventSummary.gift_service_eligible``. כשהתשובה
+   * שלילית, תמונת המצב לא מזכירה את השירות בכלל — אין תזכורת ואין
+   * הפניה למסך שממילא אינו קיים לאירוע הזה.
+   */
+  giftsEligible?: boolean
 }
 
 const t = strings.dashboard
@@ -327,7 +335,7 @@ function LockedValue({ text }: { text: string }) {
   )
 }
 
-export function DashboardPage({ onNavigate }: Props) {
+export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [event, setEvent] = useState<EventDetails | null>(null)
   const [editing, setEditing] = useState(false)
@@ -391,6 +399,8 @@ export function DashboardPage({ onNavigate }: Props) {
   // שצופה בדשבורד יקבל כאן 403 — וזה תקין. כישלון שקט משמעו "בלי תזכורת",
   // ולא דשבורד שנשבר בגלל אזור משני.
   useEffect(() => {
+    // לאירוע שאינו זכאי אין מה לשלוף: אין תזכורת, ואין מסך להפנות אליו.
+    if (!giftsEligible) return
     let alive = true
     getPayoutAccount()
       .then((a) => alive && setPayout(a))
@@ -398,7 +408,7 @@ export function DashboardPage({ onNavigate }: Props) {
     return () => {
       alive = false
     }
-  }, [])
+  }, [giftsEligible])
 
   async function onSaveEvent() {
     setError('')
@@ -828,7 +838,9 @@ export function DashboardPage({ onNavigate }: Props) {
                 count={stats.total_guests - stats.invitations_sent}
                 onSend={() => onNavigate?.('messages')}
               />
-              <PayoutReminder account={payout} onNavigate={onNavigate} />
+              {giftsEligible && (
+                <PayoutReminder account={payout} onNavigate={onNavigate} />
+              )}
               <SeatingHelperCard stats={stats} onNavigate={onNavigate} />
             </div>
           </>

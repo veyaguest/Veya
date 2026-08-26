@@ -22,7 +22,7 @@ from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import HTTPException
 
-from app import models
+from app import gift_eligibility, models
 from app.automation import parse_event_date
 from app.call_center import LOCAL_TIMEZONE
 
@@ -54,22 +54,6 @@ GIFT_WINDOW_DAYS = 3
 GIFT_CLOSE_HOUR = 10
 
 
-def gift_feature_enabled() -> bool:
-    """האם פיצ'ר המתנה דלוק בכלל בסביבה הזו.
-
-    **למה זה קיים:** VEYA באוויר עם אירועים אמיתיים. מנגנון הזמינות כאן
-    בנוי ובדוק במלואו, אבל מסך המתנה עצמו הוא עדיין שלד (אין סליקה — ראו
-    ``roadmap.md``). בלי המתג הזה, כל מוזמן באירוע אמיתי שנמצא בתוך שלושת
-    הימים היה רואה כפתור "להעניק מתנה" שמוביל ל"נפתח בקרוב" — בדיוק בימים
-    הרגישים ביותר של הזוג.
-
-    לכן ברירת המחדל היא **כבוי**, וההדלקה היא החלטה מודעת של הבעלים:
-    ``VEYA_GIFT_ENABLED=1`` במשתני הסביבה של השרת. חישוב החלון עצמו לא
-    תלוי במתג — הוא נבדק בנפרד ב-``tests/test_guest_journey.py``.
-    """
-    import os
-
-    return os.getenv("VEYA_GIFT_ENABLED", "").strip().lower() in ("1", "true", "yes")
 
 
 def _israel_tz():
@@ -144,8 +128,17 @@ def days_until_event(event: models.Event, *, today: date | None = None) -> int |
 
 
 def gift_is_open(event: models.Event, *, now: datetime | None = None) -> bool:
-    """האם אזור המתנה פתוח למוזמן כרגע (כולל מתג שחרור הפיצ'ר)."""
-    if not gift_feature_enabled():
+    """האם אזור המתנה פתוח למוזמן כרגע.
+
+    שני תנאים, וכל אחד מהם עומד בפני עצמו:
+
+    1. **האירוע זכאי לשירות** — ``gift_eligibility.is_eligible``, מקור
+       האמת היחיד לשאלה הזו. הבדיקה **אינה** משוכפלת לכאן; כשתחובר
+       מערכת חבילות, המסך הזה יתעדכן מאליו.
+    2. **חלון המתנה פתוח** — חישוב זמן טהור, שאינו תלוי בזכאות ולכן
+       ניתן לבדיקה ולנימוק בנפרד (``gift_window_is_open``).
+    """
+    if not gift_eligibility.is_eligible(event):
         return False
     return gift_window_is_open(event, now=now)
 

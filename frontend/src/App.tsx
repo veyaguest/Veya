@@ -80,15 +80,25 @@ function pageTitles(terms: EventTerms): Record<Page, string> {
 
 // label — הטקסט המלא בסרגל הצד (דסקטופ); short — טקסט קצר לניווט התחתון בטלפון.
 // הסדר תואם את זרימת העבודה: מה לשלוח? (ניהול הודעות) → מה המצב? (אישורי הגעה).
-function navItemsFor(terms: EventTerms): { key: Page; label: string; short: string }[] {
-  return [
-    { key: 'dashboard', label: 'תמונת מצב', short: 'בית' },
-    { key: 'guests', label: `ניהול ${terms.guestsLabel}`, short: terms.guestsLabel },
-    { key: 'messages', label: 'ניהול הודעות', short: 'הודעות' },
-    { key: 'rsvp', label: 'אישורי הגעה', short: 'אישורים' },
-    { key: 'hall', label: 'סידור הושבה', short: 'הושבה' },
-    { key: 'gifts', label: strings.gifts.title, short: strings.gifts.title },
+//
+// ``giftsEligible`` מגיע מהשרת (``EventSummary.gift_service_eligible``) ולא
+// מחושב כאן: אירוע שאינו זכאי לשירות המתנות פשוט לא מקבל את פריט הניווט.
+// זו הסתרה, לא הרשאה — ה-API חוסם בעצמו (404 על ``/gifts``).
+function navItemsFor(
+  terms: EventTerms,
+  giftsEligible: boolean,
+): { key: Page; label: string; short: string }[] {
+  const items = [
+    { key: 'dashboard' as Page, label: 'תמונת מצב', short: 'בית' },
+    { key: 'guests' as Page, label: `ניהול ${terms.guestsLabel}`, short: terms.guestsLabel },
+    { key: 'messages' as Page, label: 'ניהול הודעות', short: 'הודעות' },
+    { key: 'rsvp' as Page, label: 'אישורי הגעה', short: 'אישורים' },
+    { key: 'hall' as Page, label: 'סידור הושבה', short: 'הושבה' },
   ]
+  if (giftsEligible) {
+    items.push({ key: 'gifts', label: strings.gifts.title, short: strings.gifts.title })
+  }
+  return items
 }
 
 /** אייקון קווי לכל פריט ניווט — מוצג בניווט התחתון בטלפון. */
@@ -350,6 +360,19 @@ function App() {
   }
 
   // עדיין בודקים אם יש טוקן תקין.
+  // אירוע שאיבד זכאות לשירות המתנות (או החלפת אירוע פעיל) בזמן שהמסך
+  // פתוח — מחזירים לתמונת המצב במקום להשאיר אזור תוכן ריק.
+  //
+  // ‼️ ה-hook הזה חייב לשבת **לפני** כל ה-early returns שלמטה (טעינה,
+  // אורח, אדמין, טלפן, אין אירועים). React דורש שסדר ה-hooks יהיה זהה
+  // בכל רינדור, ו-hook שיושב אחרי return מותנה שובר את זה ומפיל את כל
+  // האפליקציה ל-ErrorBoundary.
+  const activeEventForGifts = events.find((e) => e.id === activeEventId) ?? null
+  const giftsEligible = activeEventForGifts?.gift_service_eligible ?? false
+  useEffect(() => {
+    if (page === 'gifts' && !giftsEligible) setPage('dashboard')
+  }, [page, giftsEligible])
+
   if (!authChecked) {
     return (
       <div className="boot-screen">
@@ -565,7 +588,10 @@ function App() {
   // מסנכרן את סוג האירוע הפעיל ל-store, כדי שמסכים יגזרו ממנו מונחים דינמיים.
   setActiveEventType(activeEvent?.event_type ?? null)
   const activeTerms = getEventTerms(activeEvent?.event_type)
-  const navItems = navItemsFor(activeTerms)
+  // ``giftsEligible`` כבר חושב למעלה, יחד עם שאר ה-hooks — מקורו בשרת
+  // בלבד. ברירת המחדל כשאין עדיין אירוע פעיל היא **לא זכאי**: עדיף פריט
+  // ניווט שמופיע רגע מאוחר יותר מאשר פריט שמהבהב ונעלם.
+  const navItems = navItemsFor(activeTerms, giftsEligible)
   const pageTitle = pageTitles(activeTerms)
   const eventLabel = activeEvent
     ? hostNames(activeTerms, activeEvent.groom_name, activeEvent.bride_name) ||
@@ -639,7 +665,10 @@ function App() {
         <main className="content" key={`${page}-${activeEventId}`}>
           <ErrorBoundary>
             {page === 'dashboard' && (
-              <DashboardPage onNavigate={(p) => setPage(p)} />
+              <DashboardPage
+                onNavigate={(p) => setPage(p)}
+                giftsEligible={giftsEligible}
+              />
             )}
             {page === 'guests' && <GuestsPage />}
             {page === 'messages' && (
@@ -653,7 +682,10 @@ function App() {
                 <HallPage onNavigate={(p) => setPage(p)} />
               </Suspense>
             )}
-            {page === 'gifts' && <GiftsPage />}
+            {/* גם המסך עצמו מגודר, ולא רק פריט הניווט: משתמש שנשאר על
+                העמוד כשהזכאות משתנה, או שהגיע אליו ממצב שמור, לא אמור
+                לראות מסך שהשרת ממילא יחזיר עליו 404. */}
+            {page === 'gifts' && giftsEligible && <GiftsPage />}
           </ErrorBoundary>
         </main>
         <Footer />

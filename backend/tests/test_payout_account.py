@@ -22,6 +22,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# הבדיקה על ההרשאות כאן נשענת על כך שחבר-אירוע **כן** רואה מתנות (ורק
+# חשבון הבנק חסום לו). מאז שמסך המתנות מגודר בזכאות לשירות
+# (``gift_eligibility``), צריך להדליק את השירות כדי שההנחה הזו תתקיים.
+import os  # noqa: E402
+
+os.environ["VEYA_GIFT_ENABLED"] = "1"
+
 from sqlalchemy import select  # noqa: E402
 
 from app import banks, models  # noqa: E402

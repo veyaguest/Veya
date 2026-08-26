@@ -7,12 +7,12 @@
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import gift as gift_money
-from app import gift_status, models, payout_service, permissions, schemas
+from app import gift_eligibility, gift_status, models, payout_service, permissions, schemas
 from app.database import get_db
 from app.deps import EventAccess
 
@@ -70,10 +70,21 @@ def list_gifts(
     פרמטר, או בקשה ידנית — שמחזיר את הסכומים לפני האימות, כי הם פשוט לא
     נכתבים לתשובה. הנתונים עצמם נשארים בטבלה ללא שינוי; זו הגבלת החזרה.
 
+    **אירוע שאינו זכאי לשירות מקבל 404** — ראו ``gift_eligibility``.
+    זכאות ואימות הם שני דברים שונים: זכאי-ולא-מאומת רואה את המסך בלי
+    סכומים; לא-זכאי אינו רואה אותו כלל.
+
     **מה כן חוזר תמיד:** מי בירך, מה כתב, מתי, ובאיזה סטטוס — ובכללם
     ``paid_count``. כמה מתנות התקבלו הוא נתון של האירוע ולא סכום כספי,
     ובעלי האירוע רשאים לדעת שמתנות מגיעות גם בזמן שהחשבון בבדיקה.
     """
+    # ── שער הזכאות ────────────────────────────────────────────────────
+    # אירוע שאינו זכאי לשירות אינו רואה את המסך בכלל. הבדיקה כאן ולא
+    # בפרונט: הסתרת פריט ניווט אינה הרשאה. 404 ולא 403 — מבחינת אירוע
+    # שאינו זכאי, המסך הזה פשוט לא קיים.
+    if not gift_eligibility.is_eligible(event):
+        raise HTTPException(status_code=404, detail="השירות אינו זמין לאירוע הזה")
+
     rows = list(
         db.scalars(
             select(models.Gift)
@@ -100,7 +111,12 @@ def list_gifts(
     # שמחזירה את שני הסטטוסים בלבד (לא פרטי בנק), כך שהתנאי עצמו יישאר
     # במקום אחד ב-Python. לא נבנתה כאן כדי לא להוסיף migration ידני שאינו
     # נחוץ עדיין: פיצ'ר המתנות סגור בברירת מחדל (``VEYA_GIFT_ENABLED``).
-    amounts_visible = payout_service.is_fully_verified(payout_service.get(db, event.id))
+    # ``is_active`` ולא ``is_fully_verified`` לבדו: הסכומים נפתחים רק
+    # כשהשירות **פועל** — כלומר גם זכאי וגם מאומת. הזכאות כבר נבדקה
+    # למעלה, וזו הגנה בשכבות ולא כפילות: התנאי עצמו מוגדר במקום אחד.
+    amounts_visible = gift_eligibility.is_active(
+        event, account_verified=payout_service.is_fully_verified(payout_service.get(db, event.id))
+    )
 
     total_received_agorot = None
     total_received_display = None

@@ -996,6 +996,14 @@ class EventSummary(BaseModel):
     groom_name: str
     bride_name: str
     venue_name: str
+    #: האם האירוע זכאי לשירות "מתנות באשראי".
+    #:
+    #: **נגזר בשרת מ-``gift_eligibility.is_eligible``** — מקור האמת היחיד.
+    #: הפרונט משתמש בו כדי להסתיר את פריט הניווט ואת המסך; ההסתרה היא
+    #: נוחות בלבד, והאכיפה היא ב-``routers/gifts.py`` (404).
+    #:
+    #: זכאות **אינה** אומרת שהשירות פעיל — לשם כך צריך גם חשבון מאומת.
+    gift_service_eligible: bool = False
 
 
 class VenueSuggestion(BaseModel):

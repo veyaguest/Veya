@@ -13,12 +13,29 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app import auth as auth_module
-from app import communication, models, partners, schemas
+from app import communication, gift_eligibility, models, partners, schemas
 from app.account import delete_event_cascade
 from app.auth import get_current_owner
 from app.database import IS_POSTGRES, get_db
 
 router = APIRouter(prefix="/events", tags=["events"])
+
+
+def _summary(event: models.Event) -> schemas.EventSummary:
+    """סיכום אירוע + זכאותו לשירות המתנות.
+
+    הזכאות נגזרת כאן ולא נשמרת בטבלה: מקור האמת הוא
+    ``gift_eligibility.is_eligible``, וכל שכפול שלו לעמודה היה יוצר מצב
+    שבו התשובה שהפרונט מקבל והתשובה שהשרת אוכף יכולות להיפרד.
+    """
+    return schemas.EventSummary(
+        id=event.id,
+        event_type=event.event_type,
+        groom_name=event.groom_name,
+        bride_name=event.bride_name,
+        venue_name=event.venue_name,
+        gift_service_eligible=gift_eligibility.is_eligible(event),
+    )
 
 
 @router.get("", response_model=list[schemas.EventSummary])
@@ -43,11 +60,12 @@ def list_events(
     event_ids = owned | shared
     if not event_ids:
         return []
-    return db.scalars(
+    rows = db.scalars(
         select(models.Event)
         .where(models.Event.id.in_(event_ids))
         .order_by(models.Event.id.desc())
     ).all()
+    return [_summary(e) for e in rows]
 
 
 @router.post("", response_model=schemas.EventSummary, status_code=201)
@@ -121,7 +139,7 @@ def create_event(
     # מקצה אוטומטית את רצף "תקשורת עם אורחים" (6 ההודעות) לפי סוג האירוע.
     communication.provision_event_messages(db, event)
     db.commit()
-    return event
+    return _summary(event)
 
 
 @router.delete("/{event_id}", status_code=204)

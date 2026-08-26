@@ -879,6 +879,17 @@ export interface EventSummary {
   groom_name: string
   bride_name: string
   venue_name: string
+  /**
+   * האם האירוע זכאי לשירות "מתנות באשראי".
+   *
+   * **נקבע בשרת** (``gift_eligibility.is_eligible``) — הפרונט לא מחשב
+   * זכאות ולא מחזיק תנאי משלו. ההסתרה כאן היא נוחות; האכיפה היא ב-API,
+   * שמחזיר 404 על ``/gifts`` לאירוע שאינו זכאי.
+   *
+   * זכאות **אינה** "השירות פעיל" — לשם כך נדרש גם חשבון קבלת מתנות
+   * מאומת, וזה סטטוס נפרד לגמרי.
+   */
+  gift_service_eligible: boolean
 }
 
 // ---- פאנל אדמין ----
