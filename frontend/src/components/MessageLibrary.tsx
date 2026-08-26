@@ -41,7 +41,7 @@ export function MessageLibrary() {
         </p>
       </div>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
       {rows === null && !error && <p className="mb-empty">טוענים…</p>}
 
       {rows && (

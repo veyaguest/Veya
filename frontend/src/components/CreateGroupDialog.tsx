@@ -143,7 +143,7 @@ export function CreateGroupDialog({ onClose, onCreated }: Props) {
           </div>
         )}
 
-        {error && <p className="form-error">{error}</p>}
+        {error && <p className="form-error" role="alert">{error}</p>}
 
         <div className="add-actions">
           <button className="btn-primary" onClick={save} disabled={saving}>

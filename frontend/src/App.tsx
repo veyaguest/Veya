@@ -602,7 +602,30 @@ function App() {
   return withReconsent(
     withImpersonation(
     <div className="shell">
-      <aside className="sidebar">
+      {/* קישור דילוג — דרישה מפורשת של תקן הנגישות הישראלי IS 5568.
+          מוסתר עד שמגיעים אליו ב-Tab, ואז הוא הדבר הראשון במסך: משתמש
+          מקלדת לא צריך לעבור שוב ושוב על כל פריטי הניווט כדי להגיע
+          לתוכן. ``inset-inline-start`` ולא ``left`` — אחרת ההסתרה
+          נשברת ב-RTL. */}
+      <a
+        className="skip-link"
+        href="#veya-main"
+        onClick={(e) => {
+          // ניווט hash לא עובד כאן: זו אפליקציית SPA בלי ראוטר-hash,
+          // והדפדפן לא מזיז את הפוקוס בעצמו. מעבירים אותו במפורש —
+          // אחרת הקישור "עובד" ויזואלית אבל קורא מסך ממשיך מהניווט.
+          e.preventDefault()
+          const main = document.getElementById('veya-main')
+          main?.focus()
+          main?.scrollIntoView({ block: 'start' })
+        }}
+      >
+        {strings.common.skipToContent}
+      </a>
+      {/* ``role="banner"`` — הסרגל הוא אזור הכותרת של האפליקציה (לוגו,
+          ניווט ראשי, חשבון). בלעדיו קורא מסך לא מוצא landmark של
+          banner בכלל, כי ``.page-header`` לא מרונדר בתמונת מצב. */}
+      <aside className="sidebar" role="banner">
         <div className="sidebar-logo" dir="ltr">
           <span className="auth-monogram">
             <span className="auth-monogram-diamond" />
@@ -611,7 +634,7 @@ function App() {
           <span className="logo-text">VEYA</span>
         </div>
 
-        <nav className="side-nav">
+        <nav className="side-nav" aria-label={strings.common.mainNavLabel}>
           {navItems.map((item) => (
             <button
               key={item.key}
@@ -662,7 +685,15 @@ function App() {
             <h1 className="page-title">{pageTitle[page]}</h1>
           </header>
         )}
-        <main className="content" key={`${page}-${activeEventId}`}>
+        {/* ``tabIndex={-1}`` כדי שקישור הדילוג יוכל להעביר לכאן פוקוס
+            בפועל — בלעדיו הדפדפן מגלגל את העמוד אבל הפוקוס נשאר מאחור,
+            וקורא מסך ממשיך להקריא מהניווט. */}
+        <main
+          id="veya-main"
+          tabIndex={-1}
+          className="content"
+          key={`${page}-${activeEventId}`}
+        >
           <ErrorBoundary>
             {page === 'dashboard' && (
               <DashboardPage

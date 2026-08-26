@@ -55,6 +55,11 @@
      כדי שכל calc() שמסתמך עליו יעבוד גם כשהבאנר לא עלה בכלל. */
   --cookie-banner-height: 0px;
 
+  /* טבעת הפוקוס. --gold על שנהב נותן 2.25:1 בלבד — טבעת שקשה לראות
+     היא טבעת שלא קיימת בפועל למי שמנווט במקלדת. --gold-deep נותן
+     4.51:1 ונשאר בדיוק אותו זהב. בהקשרים הכהים הטוקן נדרס לזהב בהיר. */
+  --focus-ring: var(--gold-deep);
+
   /* אייקונים כ-mask, כדי שייצבעו בצבע הטקסט שסביבם. */
   --icon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7.6v5.2M12 16.2v.2'/%3E%3C/svg%3E");
   --icon-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 11v5.4M12 7.6v.2'/%3E%3C/svg%3E");
@@ -151,6 +156,7 @@
   --muted: #8b8578;
   --faint: #6b6355;
   --gold-deep: #e4c96b;    /* על כהה — זהב בהיר קריא יותר */
+  --focus-ring: var(--gold-light);
 }
 
 /* ============================================================
@@ -204,8 +210,37 @@ textarea:focus-visible,
 select:focus-visible,
 summary:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+/* ה-``<main>`` מקבל פוקוס רק דרך קישור הדילוג, ולכן טבעת סביב כל אזור
+   התוכן היא רעש ולא מידע — הדילוג עצמו כבר גלוי. */
+.content:focus,
+.content:focus-visible {
+  outline: none;
+}
+
+/* ---- קישור דילוג לתוכן (IS 5568) ----
+   מוסתר עד שמגיעים אליו ב-Tab. ``inset-inline-start`` ולא ``left``:
+   ב-RTL הסתרה עם ``left`` דוחפת אותו אל *תוך* המסך במקום החוצה. */
+.skip-link {
+  position: absolute;
+  z-index: 200;
+  inset-block-start: var(--space-2);
+  inset-inline-start: -9999px;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-m);
+  background: var(--charcoal);
+  color: var(--ivory);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  box-shadow: var(--shadow-dialog);
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  inset-inline-start: var(--space-4);
 }
 
 /* ---- גלילה עדינה — scrollbar מותאם ---- */
@@ -478,10 +513,16 @@ summary:focus-visible,
   justify-content: space-between;
   gap: 8px 20px;
 }
+/* ה-padding מגדיל את אזור ההקשה מ-20px לגובה סביר לאצבע, בלי לשנות
+   את המראה: המרווח השלילי מחזיר את הפריסה למקומה. */
 .app-footer-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 18px;
+  gap: 0 var(--space-3);
+  margin: -6px;
+}
+.app-footer-links a {
+  padding: 6px;
 }
 /* ---- צבעי ה-Footer לפי המשטח שמתחתיו ----
    ה-Footer מוצג גם על מסכי האפליקציה הבהירים וגם על מסכי הכניסה
@@ -11350,14 +11391,19 @@ td.notes.seating {
   border-color: var(--gold);
   color: var(--ink, #2b2620);
 }
+/* כותרת אקורדיון היא כפתור, ובגובה 23px היא כמעט בלתי-אפשרית להקשה
+   באצבע. ה-padding מגדיל את שטח ההקשה, והמרווח השלילי מחזיר את
+   הפריסה למקומה — המראה לא משתנה. */
 .lib2-card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  min-height: var(--control-h-lg);
   background: none;
   border: none;
-  padding: 0;
+  padding: var(--space-3) 0;
+  margin: calc(var(--space-3) * -1) 0;
   cursor: pointer;
   text-align: inherit;
   font: inherit;

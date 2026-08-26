@@ -748,7 +748,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
         )}
       </div>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
 
       {/* מצב האירוע — מוצג רק כשיש מה לומר (אירוע רגיל לא מקבל באנר).
           הפעולה הבאה נשלחת פנימה, כדי שהמשתמש תמיד יראה "מה עכשיו". */}

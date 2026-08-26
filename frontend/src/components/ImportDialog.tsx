@@ -67,7 +67,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
         <p className="file-name">📄 {file.name}</p>
 
         {loading && <div className="empty">{t.readingFile}</div>}
-        {error && <p className="form-error">{error}</p>}
+        {error && <p className="form-error" role="alert">{error}</p>}
 
         {preview && (
           <>

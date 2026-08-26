@@ -243,7 +243,7 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
         {strings.messagesPage.pageIntro(activeEventTerms().guestsLabel)}
       </p>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
 
       {/* אחרי דחייה: אותו אשף בדיוק, אבל הזוג צריך לדעת שההזמנה שתצא היא
           החדשה — עם התאריך המעודכן — ולא הזמנה ראשונה. */}
@@ -505,7 +505,7 @@ function SendConfirmStep({
     <div className="send-confirm">
       <h3 className="send-dialog-title">שליחת הזמנות</h3>
 
-      {loadError && <p className="form-error">{loadError}</p>}
+      {loadError && <p className="form-error" role="alert">{loadError}</p>}
 
       {/* תצוגת ההודעה שתישלח + קישור לעריכה */}
       <div className="send-msg-preview">
@@ -610,7 +610,7 @@ function SendConfirmStep({
         לאחר השליחה יתחיל טיימר אישורי ההגעה, וכל התזכורות יחושבו מרגע זה.
       </p>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
 
       <div className="send-dialog-actions">
         <button

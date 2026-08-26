@@ -54,7 +54,7 @@ export function GuestTimelineModal({
           </button>
         </div>
 
-        {error && <p className="form-error">{error}</p>}
+        {error && <p className="form-error" role="alert">{error}</p>}
 
         {data && (
           <>

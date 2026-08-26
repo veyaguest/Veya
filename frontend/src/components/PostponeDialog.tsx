@@ -63,7 +63,7 @@ export function PostponeRequestDialog({
               <strong>{t.dialogNoDateTitle}</strong>
               <span>{t.dialogNoDateBody}</span>
             </div>
-            {error && <p className="form-error">{error}</p>}
+            {error && <p className="form-error" role="alert">{error}</p>}
             <div className="add-actions">
               <button className="btn-primary" onClick={submit} disabled={busy}>
                 {busy ? strings.common.saving : t.dialogSubmit}
@@ -119,7 +119,7 @@ export function PostponeFinishDialog({
           </button>
         </div>
         <p className="postpone-body">{t.finishBody}</p>
-        {error && <p className="form-error">{error}</p>}
+        {error && <p className="form-error" role="alert">{error}</p>}
         <div className="add-actions">
           <button className="btn-primary" onClick={submit} disabled={busy}>
             {busy ? strings.common.saving : t.finishCta}

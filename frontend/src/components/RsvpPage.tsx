@@ -215,7 +215,7 @@ function CoupleRsvpView({
 
   return (
     <div className="rsvp-page couple-rsvp">
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
       {note && <p className="rsvp-note">{note}</p>}
 
       {/* התשובה לשאלה ששם המסך מבטיח — ראשונה, לפני ההגדרות. */}
@@ -302,7 +302,7 @@ function SendTimeSettings() {
     }
   }
 
-  if (loadError) return <p className="form-error">{loadError}</p>
+  if (loadError) return <p className="form-error" role="alert">{loadError}</p>
   if (!event) return null
 
   return (
@@ -341,7 +341,7 @@ function SendTimeSettings() {
           (זהב, מודגש) — אותו סגנון בדיוק של אזהרה אמיתית במסך, ולכן נקרא
           כאילו משהו לא בסדר. */}
       <span className="field-hint">{t.rangeHint}</span>
-      {saveError && <p className="form-error">{saveError}</p>}
+      {saveError && <p className="form-error" role="alert">{saveError}</p>}
       {saved && !dirty && <p className="rsvp-note">{t.saved}</p>}
       {/* כפתור מושבת בלי הסבר נקרא כתקלה. כשאין מה לשמור — אומרים זאת. */}
       <div className="event-edit-actions">
@@ -555,7 +555,7 @@ function TrackStatusCard({
         </div>
       )}
 
-      {typeStatusError && <p className="form-error">{typeStatusError}</p>}
+      {typeStatusError && <p className="form-error" role="alert">{typeStatusError}</p>}
 
       {typeStatus?.not_sent_yet && (
         <div className="msg-empty-state">
@@ -755,7 +755,7 @@ function DashboardTab({
 
   return (
     <div className="auto-dashboard">
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
 
       {/* כרטיסי מצב */}
       <div className="auto-stat-grid">

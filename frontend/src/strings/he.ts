@@ -18,6 +18,10 @@
 
 export const strings = {
   common: {
+    // ---- נגישות (IS 5568) ----
+    skipToContent: 'דלג לתוכן הראשי',
+    mainNavLabel: 'ניווט ראשי',
+
     save: 'שמירה',
     cancel: 'ביטול',
     confirm: 'אישור',

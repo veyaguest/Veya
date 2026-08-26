@@ -244,11 +244,15 @@ export function GuestsPage() {
       )}
 
       <div className="toolbar">
+        {/* placeholder אינו תווית: הוא נעלם ברגע שמקלידים, וקורא מסך לא
+            תמיד מקריא אותו. ``aria-label`` הוא התווית האמיתית. */}
         <input
           className="search"
+          type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t.searchPlaceholder}
+          aria-label={t.searchPlaceholder}
         />
         <select
           className="toolbar-select"
@@ -509,7 +513,7 @@ export function GuestsPage() {
         {t.summary(total, totalPeople, confirmedPeople, activeEventTerms().guestsLabel)}
       </div>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
 
       <div className="table-wrap">
         <table className="guests-table">

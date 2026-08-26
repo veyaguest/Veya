@@ -143,7 +143,7 @@ export function CommunicationTab() {
         <h2 className="gm2-title">{t.communicationTitle(guestsLabel)}</h2>
       </div>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
       {messages === null && !error && <p className="mb-empty">טוענים…</p>}
 
       {messages && (
@@ -474,7 +474,7 @@ function ManualSendPanel({ message }: { message: EventMessage }) {
       </div>
       {empty && <p className="postpone-send-result">{tp.messageNoContent}</p>}
       {result && <p className="postpone-send-result">{result}</p>}
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
     </div>
   )
 }

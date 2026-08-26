@@ -159,7 +159,7 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
         {(stage === 'intro' || stage === 'picking') && (
           <>
             <p className="paste-hint">{t.contactsHint}</p>
-            {error && <p className="form-error">{error}</p>}
+            {error && <p className="form-error" role="alert">{error}</p>}
             <div className="add-actions">
               <button
                 className="btn-primary"
@@ -319,7 +319,7 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
               </>
             )}
 
-            {error && <p className="form-error">{error}</p>}
+            {error && <p className="form-error" role="alert">{error}</p>}
 
             <p className="import-consent-disclosure">
               המשתמש מאשר כי יש לו הרשאה להשתמש בפרטי הקשר שהועלו למערכת

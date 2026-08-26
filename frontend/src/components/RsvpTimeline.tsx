@@ -33,7 +33,7 @@ export function RsvpTimeline() {
   }
 
   if (error) {
-    return <p className="form-error">{error}</p>
+    return <p className="form-error" role="alert">{error}</p>
   }
 
   // עדיין לא בחרו מועד סגירת רשימה — מזמינים אותם להגדיר במסך הפרטים.

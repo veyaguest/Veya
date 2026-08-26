@@ -143,7 +143,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
               dir="rtl"
               autoFocus
             />
-            {error && <p className="form-error">{error}</p>}
+            {error && <p className="form-error" role="alert">{error}</p>}
             <div className="add-actions">
               <button
                 className="btn-primary"
@@ -308,7 +308,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
               </table>
             </div>
 
-            {error && <p className="form-error">{error}</p>}
+            {error && <p className="form-error" role="alert">{error}</p>}
 
             <p className="import-consent-disclosure">
               המשתמש מאשר כי יש לו הרשאה להשתמש בפרטי הקשר שהועלו למערכת

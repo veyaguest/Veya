@@ -214,7 +214,7 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
         </label>
       </div>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
 
       <div className="add-actions">
         <button type="submit" className="btn-primary" disabled={saving}>

@@ -193,7 +193,7 @@ export function GiftsPage() {
   // אותם דפוסים כמו בשאר המערכת (.load-text / .form-error) ולא מחלקות
   // ייעודיות למסך אחד: מצב טעינה ומצב שגיאה צריכים להיראות זהה בכל מקום.
   if (loading) return <p className="load-text">{strings.common.loading}</p>
-  if (error) return <p className="form-error">{error}</p>
+  if (error) return <p className="form-error" role="alert">{error}</p>
   if (!data) return null
 
   return (
