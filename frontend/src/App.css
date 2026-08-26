@@ -31,6 +31,14 @@
   --error: #a45e59;        /* "לא מגיעים"/שגיאה — ורוד-אדמדם מאופק, 4.5:1 */
   --success: #9a7b2e;      /* "מגיעים" — זהב מעומעם, קריא על בהיר */
   --green: #27814e;        /* "אישרו הגעה" — ירוק קריא, 4.5:1 על שנהב */
+  /* --green מכויל מול שנהב/לבן, אבל תגיות "אושר"/"התקבלה" יושבות על
+     רקע ירקרק (ירוק ב-10-12%) שכהה יותר, ושם הוא יורד ל-4.24. גוון
+     אחד כהה יותר, לטקסט על הרקע הזה בלבד. */
+  --green-on-tint: #267c4b;
+  /* אותו שיקול לאדום: על רקע אדמדם ב-10% התגית יורדת ל-4.28. */
+  --error-on-tint: #9f5b57;
+  /* וכך גם לזהב על רקע זהוב ב-14%: 4.33. */
+  --gold-on-tint: #866b28;
   /* ---- טוקני מד ההגעה (Gauge) בדשבורד בלבד — סגנון "לוח מחוונים" פרימיום
      לפי הנחיית המייסד (2026-08-05), מחליף את פלטת ה-12-ההצעות הקודמת
      (ראו Decision Log). לא לשימוש מחוץ לכרטיס. ---- */
@@ -5926,13 +5934,18 @@ td.notes.seating {
 .table-occ {
   font-size: calc(11px * var(--t-s, 1));
   font-weight: var(--weight-semibold);
-  color: #8c8375;
+  /* גוף השולחן צבוע בזהב שקוף (רקע יעיל ~#f1e5c6), ולא בלבן. האפור
+     שהיה כאן נתן שם 2.99:1 — כלומר מספר התפוסה, המידע העיקרי על
+     השולחן, היה הטקסט הכי קשה לקריאה במפה. */
+  color: var(--body);
   margin-top: calc(2px * var(--t-s, 1));
   font-variant-numeric: tabular-nums;
 }
-/* מלא בדיוק — לא תקלה, אבל כדאי לדעת. */
+/* מלא בדיוק — לא תקלה, אבל כדאי לדעת. פחם ולא זהב: על גוף שולחן
+   זהוב, זהב על זהב אינו נקרא (4.04). */
 .table-occ-full {
-  color: var(--gold-deep);
+  color: var(--charcoal);
+  font-weight: var(--weight-bold);
 }
 /* חריגה מהקיבולת — הודעה, לא רמז. */
 .table-occ-over {
@@ -14677,6 +14690,12 @@ td.notes.seating {
 }
 .hall-mobile.is-desktop .hm-tab.active {
   background: color-mix(in srgb, var(--gold) 12%, transparent);
+}
+/* הרקע הזהוב של הלשונית הפעילה מוריד את --gold-deep ל-4.41 — טוקן
+   הזהב-על-רקע-זהוב פותר בדיוק את המקרה הזה. */
+.hall-mobile.is-desktop .hm-tab.active .hm-tab-label,
+.hall-mobile.is-desktop .hm-tab.active .hm-tab-icon {
+  color: var(--gold-on-tint);
 }
 .hall-mobile.is-desktop .hm-tab-label {
   font-size: var(--text-base);

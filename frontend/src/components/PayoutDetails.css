@@ -67,7 +67,7 @@
 .payout-pill-approved {
   border-color: rgba(47, 158, 95, 0.4);
   background: rgba(47, 158, 95, 0.1);
-  color: var(--green);
+  color: var(--green-on-tint);
 }
 
 .payout-line {
