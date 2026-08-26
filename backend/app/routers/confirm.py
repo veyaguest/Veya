@@ -140,7 +140,7 @@ def get_confirm(token: str, request: Request, db: Session = Depends(get_db)):
     _check_rate(ip)
     # מזריקים את הטוקן ל-session *לפני* השאילתה הראשונה, כדי שמדיניות ה-RLS
     # (guests/events/messages) תזהה את המוזמן האנונימי — ראו database.py.
-    set_guest_token(token)
+    set_guest_token(token, db)
     guest = db.scalar(select(models.Guest).where(models.Guest.guest_token == token))
     if guest is None:
         _record_fail(ip)
@@ -160,7 +160,7 @@ def get_confirm_ics(token: str, request: Request, db: Session = Depends(get_db))
     """
     ip = _client_ip(request)
     _check_rate(ip)
-    set_guest_token(token)
+    set_guest_token(token, db)
     guest = db.scalar(select(models.Guest).where(models.Guest.guest_token == token))
     if guest is None:
         _record_fail(ip)
@@ -210,7 +210,7 @@ def _guest_or_404(token: str, request: Request, db: Session, *, what: str):
     """
     ip = _client_ip(request)
     _check_rate(ip)
-    set_guest_token(token)
+    set_guest_token(token, db)
     guest = db.scalar(select(models.Guest).where(models.Guest.guest_token == token))
     if guest is None:
         _record_fail(ip)
@@ -350,7 +350,7 @@ def submit_confirm(
     """המוזמן מסמן אם הוא מגיע, כמה אנשים, והערה. מעדכן סטטוס ורושם ביומן."""
     ip = _client_ip(request)
     _check_rate(ip)
-    set_guest_token(token)
+    set_guest_token(token, db)
     guest = db.scalar(select(models.Guest).where(models.Guest.guest_token == token))
     if guest is None:
         _record_fail(ip)

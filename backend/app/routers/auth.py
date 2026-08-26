@@ -59,10 +59,10 @@ def register(payload: schemas.UserCreate, request: Request, db: Session = Depend
         is_admin=is_admin,
         account_type="couple",
     )
-    # קובעים את זהות הבקשה מיד אחרי שיש id, אבל זה מעדכן רק את ה-ContextVar
-    # בפייתון — לא את הזהות שכבר הוזרקה לטרנזקציה הפתוחה (ראו commit מיד
-    # למטה + ההערה המורחבת ב-google_exchange לעיל).
-    set_request_identity(user.id)
+    # קובעים את זהות הבקשה מיד אחרי שיש id — גם ב-session.info (עמיד ל-commit
+    # מיד למטה + כל commit-והמשך אחר באותה בקשה, ראו set_request_identity
+    # ב-database.py) וגם ב-ContextVar לתאימות (ראו ההערה המורחבת ב-google_exchange לעיל).
+    set_request_identity(user.id, db)
 
     # קודם מוודאים שהמשתמש עצמו נשמר — *לפני* כל כתיבה תלוית-RLS אחרת
     # (הסכמות, אימוץ אירועים). קריטי: הטרנזקציה הנוכחית כבר הוזרקה עם זהות
@@ -398,7 +398,7 @@ def confirm_verification(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="החשבון הזה הושבת. אפשר לפנות אלינו כדי לברר למה",
         )
-    set_request_identity(user.id)
+    set_request_identity(user.id, db)
     # מנקה גם קוד אימות שעדיין ממתין (אם קיים) — אותה "סשן אימות", שני
     # הערוצים מובילים לאותה תוצאה. ב-SQLite consume_email_verification כבר
     # עשה זאת; ב-Postgres הפונקציה הציבורית (SECURITY DEFINER) לא נוגעת
@@ -455,7 +455,7 @@ def forgot_password(
         # google_exchange() למעלה: set_request_identity + commit לפני כל
         # פעולה שתלויה בזהות המחוברת, כדי שהטרנזקציה הבאה תיפתח עם ההזרקה
         # הנכונה.
-        set_request_identity(user.id)
+        set_request_identity(user.id, db)
         db.commit()
         auth.send_password_reset_email(db, user)
         db.commit()
@@ -489,7 +489,7 @@ def reset_password(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="החשבון הזה הושבת. אפשר לפנות אלינו כדי לברר למה",
         )
-    set_request_identity(user.id)
+    set_request_identity(user.id, db)
     # תחת RLS רגיל מכאן (הזהות כבר הוזרקה לשורה למעלה) — אותה תבנית בדיוק
     # כמו confirm_verification: consume_* מחזיר אובייקט "transient" ב-Postgres
     # שמוטציה עליו לא נתפסת ב-commit, אז טוענים מחדש דרך db.get().

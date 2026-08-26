@@ -509,7 +509,7 @@ def get_current_user(
         raise err
     # קובעים את זהות הבקשה מתוך הטוקן *לפני* השאילתה הראשונה, כדי שגם שליפת
     # רשומת המשתמש עצמה תרוץ תחת RLS (מדיניות "כל אחד רואה רק את עצמו").
-    set_request_identity(user_id)
+    set_request_identity(user_id, db)
     user = db.get(models.User, user_id)
     if user is None:
         raise err
@@ -663,7 +663,7 @@ def find_or_create_google_user(
     """
     existing = find_user_by_email(db, email)
     if existing is not None:
-        set_request_identity(existing.id)
+        set_request_identity(existing.id, db)
         needs_avatar = bool(avatar_url) and existing.avatar_url != avatar_url
         needs_verify = not is_email_verified(existing)
         if needs_avatar or needs_verify:
@@ -700,7 +700,7 @@ def find_or_create_google_user(
         is_admin=is_admin,
         account_type="couple",
     )
-    set_request_identity(user.id)
+    set_request_identity(user.id, db)
     # גוגל כבר אימתה את כתובת המייל מול הבעלים שלה — אין טעם לבקש אימות שוב.
     # נעשה כ-UPDATE נפרד על השורה ה"מנוטרת" (ולא כפרמטר ל-app_register_user)
     # מאותה סיבה בדיוק שתועדה למעלה עבור avatar_url.

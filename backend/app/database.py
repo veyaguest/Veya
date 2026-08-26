@@ -6,9 +6,11 @@
 import contextvars
 import os
 
+from typing import Optional
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 load_dotenv()
 
@@ -40,24 +42,65 @@ current_guest_token: contextvars.ContextVar = contextvars.ContextVar(
 )
 
 
-def set_request_identity(user_id) -> None:
-    """קובע את זהות המשתמש של הבקשה הנוכחית (נקרא מ-auth אחרי אימות הטוקן)."""
+def set_request_identity(user_id, db: Optional[Session] = None) -> None:
+    """קובע את זהות המשתמש של הבקשה הנוכחית (נקרא מ-auth אחרי אימות הטוקן).
+
+    שומר את הזהות בשני מקומות: ה-ContextVar הרגיל (תאימות לאחור — למשל
+    קריאות ישנות/כלים שלא מעבירים ``db``), **וגם**, כשמעבירים ``db``, ישירות
+    על אובייקט ה-Session עצמו דרך ``session.info`` — שהוא dict רגיל שחי על
+    אובייקט ה-Session, לא מועתק בין תרדים.
+
+    למה זה קריטי: FastAPI מריץ כל dependency סינכרוני וכל endpoint סינכרוני
+    (וכולם כאלה, ראו routers/*) דרך ``starlette.concurrency.run_in_threadpool``
+    → ``anyio.to_thread.run_sync``, וכל קריאה כזו מקבלת **עותק נפרד ומבודד**
+    של ה-context (כולל כל ה-ContextVars) — ``contextvars.copy_context()``, לא
+    ה-context המקורי. עדכון ל-ContextVar בתוך עותק אחד (למשל בתוך
+    ``get_current_user``) **לא חוזר** לעותק שרץ בקוד הבא (dependency אחר, גוף
+    ה-endpoint) — הם קריאות ``run_in_threadpool`` נפרדות משלהן. זה נשאר בלתי
+    מורגש כל עוד אף אחד לא קורא ל-``db.commit()`` באמצע הבקשה: הזהות שכבר
+    הוזרקה ל-Postgres (``set_config(..., true)``) חיה **ברמת הטרנזקציה**, לא
+    ברמת ה-Python-context, ולכן כל קוד שממשיך להשתמש **באותו אובייקט
+    Session** נהנה ממנה — עד ה-commit הבא, שסוגר את הטרנזקציה. הטרנזקציה
+    החדשה שנפתחת אחריו (``after_begin``, ראו ``_apply_rls_identity`` למטה)
+    קוראת את הזהות מחדש — ואם הקוד שמריץ את השאילתה הבאה רץ בעותק context
+    "ריק" (לא זה שבו נקראה ``set_request_identity``), הזהות אבודה. נתפס
+    בפועל: ``routers/events.py::create_event`` עושה ``db.commit()`` ואז ממשיך
+    ל-``communication.provision_event_messages`` — תחת RLS אמיתי (תפקיד
+    ``veya_app``, לא superuser) זה היה נדחה עם שגיאת RLS.
+
+    הפתרון: ``session.info`` הוא attribute רגיל על אובייקט ה-Session
+    שמועבר (by reference, לא מועתק) בין כל ה-dependencies וגוף ה-endpoint
+    באותה בקשה — בלי קשר לאיזה תרד/עותק-context מריץ את הקוד. שמירת הזהות
+    שם הופכת אותה לעמידה מול commit-והמשך, בלי לגעת בכל endpoint בנפרד.
+    """
     current_user_id.set(user_id)
+    if db is not None:
+        db.info["veya_current_user_id"] = user_id
 
 
 def clear_request_identity() -> None:
-    """מאפס את הזהות בסיום הבקשה (הגנה נוספת מפני דליפה בין בקשות)."""
+    """מאפס את הזהות בסיום הבקשה (הגנה נוספת מפני דליפה בין בקשות).
+
+    לא נדרש לנקות גם ``session.info`` באופן מפורש: ``get_db()`` יוצר
+    ``SessionLocal()`` חדש לכל בקשה (ראו למטה) — אין שימוש חוזר באובייקט
+    Session בין בקשות, כך שאין דרך ש-``session.info`` "ידלוף" לבקשה הבאה.
+    """
     current_user_id.set(None)
 
 
-def set_guest_token(token: str) -> None:
+def set_guest_token(token: str, db: Optional[Session] = None) -> None:
     """קובע את טוקן המוזמן של הבקשה הנוכחית (נקרא מ-confirm.py לפני כל שאילתה).
 
     הטוקן כבר מגיע מהמשתמש עצמו בכתובת ה-URL (``/confirm/{token}``) — אין כאן
     חשיפת מידע חדש, רק "מראים" אותו ל-Postgres כדי שמדיניות ה-RLS תוכל לוודא
     שהשורה שמוחזרת אכן שייכת לאותו טוקן בדיוק.
+
+    שומר גם ב-``session.info`` כשמעבירים ``db`` — אותה סיבה בדיוק כמו
+    ``set_request_identity`` למעלה (עמיד ל-commit-והמשך תחת RLS אמיתי).
     """
     current_guest_token.set(token)
+    if db is not None:
+        db.info["veya_guest_token"] = token
 
 
 def clear_guest_token() -> None:
@@ -128,12 +171,18 @@ if IS_POSTGRES:
 
     @event.listens_for(SessionLocal, "after_begin")
     def _apply_rls_identity(session, transaction, connection):  # noqa: ANN001
-        uid = current_user_id.get()
+        # מעדיפים את הזהות שנשמרה על ה-Session עצמו (session.info) — היא לא
+        # תלויה בהעתקת contextvars בין קריאות run_in_threadpool (ראו ההסבר
+        # המלא ב-set_request_identity למעלה), ולכן שורדת גם commit() שפותח
+        # טרנזקציה חדשה מאוחר יותר באותה בקשה. נופלים חזרה ל-ContextVar רק
+        # כשאין ערך ב-session.info בכלל (למשל session שמעולם לא עבר דרך
+        # set_request_identity/set_guest_token עם db) — תאימות לאחור מלאה.
+        uid = session.info.get("veya_current_user_id", current_user_id.get())
         connection.exec_driver_sql(
             "SELECT set_config('app.current_user_id', %s, true)",
             (str(uid) if uid is not None else "",),
         )
-        token = current_guest_token.get()
+        token = session.info.get("veya_guest_token", current_guest_token.get())
         connection.exec_driver_sql(
             "SELECT set_config('app.guest_token', %s, true)",
             (token if token is not None else "",),
