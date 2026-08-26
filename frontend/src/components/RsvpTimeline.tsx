@@ -87,7 +87,7 @@ function TimelineHeader({ view }: { view: RsvpTimelineView }) {
           label="ימים למועד סגירת הרשימה"
         />
         <TlStat num={view.confirmed_count} label="אישרו הגעה" tone="ok" />
-        <TlStat num={view.pending_count} label="עדיין לא ענו" tone="wait" />
+        <TlStat num={view.pending_count} label="ממתינים לתשובה" tone="wait" />
         <TlStat num={view.total_guests} label="סה״כ מוזמנים" />
       </div>
 

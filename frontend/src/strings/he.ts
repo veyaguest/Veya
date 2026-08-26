@@ -849,11 +849,14 @@ export const strings = {
     sortLabelPartySize: 'כמות אנשים — מהגדול לקטן',
     sortLabelRecent: 'נוספו לאחרונה',
     filterButton: 'סינון',
+    // תוויות הסינון חייבות להיות *אותן מילים* כמו התגיות בטבלה שמתחת:
+    // סינון ל"מתלבטים" שמציג שורות שכתוב בהן "לא החליטו" נקרא כשתי
+    // מערכות מונחים באותו מסך.
     filterLabelAll: 'כל המוזמנים',
-    filterLabelConfirmed: 'מגיעים',
+    filterLabelConfirmed: 'אישרו הגעה',
     filterLabelDeclined: 'לא מגיעים',
-    filterLabelMaybe: 'מתלבטים',
-    filterLabelPending: 'טרם השיבו',
+    filterLabelMaybe: 'לא החליטו',
+    filterLabelPending: 'ממתינים לתשובה',
     filterLabelNoTable: 'ללא שולחן',
     filteredNotice: (label: string) => `הרשימה מסוננת: ${label}`,
     clearFilter: 'ניקוי סינון',
@@ -1058,7 +1061,7 @@ export const strings = {
     // מהיר", ואישור הצעה חכמה. לעולם לא חוסמת, ולעולם לא נוגעת ב-RSVP —
     // רק שואלת. "לא מגיע" מקבל ניסוח חד יותר מ"עדיין לא אישר".
     seatWarningTitle: (isDeclined: boolean) =>
-      isDeclined ? '⚠️ האורח מסומן כ"לא מגיע"' : '⚠️ האורח עדיין לא אישר הגעה',
+      isDeclined ? 'המוזמן מסומן כ"לא מגיע"' : 'המוזמן עדיין לא אישר הגעה',
     seatWarningMessageSingle: (name: string, isDeclined: boolean) =>
       isDeclined
         ? `${name} מסומן/ת כ"לא מגיע/ה". האם בכל זאת להושיב אותו/ה?`

@@ -72,7 +72,7 @@ const OUTCOME_BUTTONS: {
 
 const RSVP_LABELS: Record<string, string> = {
   pending: 'טרם השיב',
-  maybe: 'מתלבט',
+  maybe: 'לא החליט/ה',
   confirmed: 'מגיע',
   declined: 'לא מגיע',
 }
@@ -287,7 +287,7 @@ export function AdminCallCenter() {
               >
                 <option value="">כל הסטטוסים</option>
                 <option value="pending">טרם השיב</option>
-                <option value="maybe">מתלבט</option>
+                <option value="maybe">לא החליט/ה</option>
               </select>
             </div>
           </div>
