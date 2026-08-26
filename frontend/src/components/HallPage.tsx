@@ -148,6 +148,28 @@ const WORLD_MIN_H = 560
 // גבולות קנה-המידה של ההתאמה-למסך. תקרה מעל 1 = מרשים הגדלה מתונה כך שאולם
 // קטן/בינוני "ימלא" את המסך והאלמנטים יֵראו נוחים (במקום להיתקע קטנים במרכז).
 // רצפה נמוכה מאוד — לפי בקשת הבעלים "להכניס הכל בכל מחיר" גם באולם ענק.
+/**
+ * ``setPointerCapture`` שלא מפיל את המסך.
+ *
+ * הדפדפן זורק ``NotFoundError`` כשה-pointerId כבר לא פעיל — מצב שקורה
+ * בפועל: הקשה מהירה מאוד שבה האצבע יורדת ועולה לפני שה-handler רץ, או
+ * ``pointercancel`` שהדפדפן שולח כשהוא מחליט שהמחווה היא גלילה. תשעה
+ * מקומות בעורך קראו לזה ישירות, וכל אחד מהם היה חריגה לא-נתפסת שמגיעה
+ * עד ל-ErrorBoundary באמצע גרירת שולחן.
+ *
+ * ``?.`` לא הגן על זה — הוא בודק שהמתודה קיימת, לא שהיא לא זורקת.
+ *
+ * לכידת המצביע היא אופטימיזציה בלבד: בלעדיה הגרירה ממשיכה לעבוד דרך
+ * מאזיני ה-pointermove/up שיושבים על הקנבס עצמו.
+ */
+function capturePointer(e: React.PointerEvent): void {
+  try {
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+  } catch {
+    /* המצביע כבר לא פעיל — ממשיכים בלי לכידה */
+  }
+}
+
 const FIT_MAX_SCALE = 2.4
 const FIT_MIN_SCALE = 0.08
 // יעד-מילוי: האולם ממלא ~95% מהתצוגה, ומשאיר ~5% שוליים נוחים מסביב (כמו עורך
@@ -974,7 +996,7 @@ function SketchEditor(props: {
 
   // גרירה = הזזת התמונה.
   function onPointerDown(e: React.PointerEvent) {
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    capturePointer(e)
     dragRef.current = { px: e.clientX, py: e.clientY, ox: offset.x, oy: offset.y }
   }
   function onPointerMove(e: React.PointerEvent) {
@@ -2069,7 +2091,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     })
     dragNodesRef.current = nodes
     dragPendingRef.current = null
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    capturePointer(e)
   }
 
   function onElementPointerDown(e: React.PointerEvent, id: string) {
@@ -2083,7 +2105,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     if (el.locked) return
     const w = toWorld(e.clientX, e.clientY)
     dragRef.current = { kind: 'element', id, dx: w.x - el.x, dy: w.y - el.y }
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    capturePointer(e)
   }
 
   // הקשה (בלי גרירה) על אלמנט → בחירה. הדפדפן לא מפעיל click אחרי גרירה, ולכן
@@ -2111,7 +2133,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       lockSquare: el.shape === 'square' || el.shape === 'circle',
       rotation: el.rotation || 0,
     }
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    capturePointer(e)
   }
 
   // סיבוב שולחן — זהה לחלוטין לסיבוב אלמנט (הבר), לכל סוגי השולחנות.
@@ -2130,7 +2152,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       cx: r.left + r.width / 2,
       cy: r.top + r.height / 2,
     }
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    capturePointer(e)
   }
 
   function onRotatePointerDown(e: React.PointerEvent, id: string) {
@@ -2142,7 +2164,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     if (!elNode) return
     const r = elNode.getBoundingClientRect()
     dragRef.current = { kind: 'rotate', id, cx: r.left + r.width / 2, cy: r.top + r.height / 2 }
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    capturePointer(e)
   }
 
   // ---- שכבת הסקיצה: הזזה/שינוי-גודל/סיבוב/שקיפות/נעילה/הצגה (שלב C) ----
@@ -2184,7 +2206,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     if (st.locked) return
     const w = toWorld(e.clientX, e.clientY)
     dragRef.current = { kind: 'sketch-move', dx: w.x - st.x, dy: w.y - st.y }
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    capturePointer(e)
   }
 
   // הקשה (בלי גרירה) → בחירה. אותה הגנה כמו onElementClick.
@@ -2213,7 +2235,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       aspect: st.height > 0 ? st.width / st.height : 1,
       rotation: st.rotation || 0,
     }
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    capturePointer(e)
   }
 
   function onSketchRotatePointerDown(e: React.PointerEvent) {
@@ -2223,7 +2245,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     if (!node) return
     const r = node.getBoundingClientRect()
     dragRef.current = { kind: 'sketch-rotate', cx: r.left + r.width / 2, cy: r.top + r.height / 2 }
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    capturePointer(e)
   }
 
   function onCanvasPointerMove(e: React.PointerEvent) {
