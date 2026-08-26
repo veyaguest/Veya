@@ -1431,6 +1431,8 @@ export interface RsvpTrackAdvanceResult extends RsvpTrackStatus {
 // פעולה בודדת ביום מסוים (בקשת אישור / תזכורת / סבב שיחות / ציון-דרך).
 export interface TimelineAction {
   type: string
+  /** אימוג'י מהשרת — נשמר בחוזה ה-API אך אינו מוצג. הפרונט גוזר את
+   *  האייקון מ-``type`` (ראו ACTION_ICON ב-RsvpTimeline.tsx). */
   icon: string
   label: string
   audience: string // תווית קהל היעד ("כל המוזמנים" / "מי שעדיין לא אישר")

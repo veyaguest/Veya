@@ -250,7 +250,7 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
       {!active && (event?.cycle_number ?? 1) > 1 && (
         <div className="postpone-send">
           <strong className="postpone-send-title">
-            💌 {strings.postpone.newInviteTitle}
+            {strings.postpone.newInviteTitle}
           </strong>
           <p className="postpone-send-body">{strings.postpone.newInviteBody}</p>
         </div>
@@ -770,7 +770,7 @@ function FirstInviteWizard({
               className="btn-ghost"
               onClick={() => fileInput.current?.click()}
             >
-              📄 העלאת Excel
+              העלאת Excel
             </button>
             <button className="btn-ghost" onClick={() => setShowPaste(true)}>
               הדבקת רשימה

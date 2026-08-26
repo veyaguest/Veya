@@ -22,8 +22,6 @@ export interface EventTerms {
   type: EventType
   /** שם הסוג לתצוגה בבורר סוג האירוע */
   label: string
-  /** אימוג'י מלווה בבורר */
-  icon: string
   /** האם יש שני בעלי אירוע (חתן+כלה) או בעל שמחה יחיד */
   hasTwoHosts: boolean
   /** כינוי קיבוצי לבעלי האירוע: "בני הזוג" / "בעל השמחה" / "מארגני האירוע" */
@@ -114,7 +112,6 @@ const BUSINESS_GROUP_OPTIONS = [
 const WEDDING: EventTerms = {
   type: 'wedding',
   label: 'חתונה',
-  icon: '💍',
   hasTwoHosts: true,
   hostsLabel: 'בני הזוג',
   hostAField: 'שם החתן',
@@ -137,7 +134,6 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
   henna: {
     type: 'henna',
     label: 'חינה',
-    icon: '🌿',
     hasTwoHosts: true,
     hostsLabel: 'בני הזוג',
     hostAField: 'שם החתן',
@@ -157,7 +153,6 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
   bar_mitzvah: {
     type: 'bar_mitzvah',
     label: 'בר מצווה',
-    icon: '✡️',
     hasTwoHosts: false,
     hostsLabel: 'החוגג',
     hostAField: 'שם החוגג',
@@ -177,7 +172,6 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
   bat_mitzvah: {
     type: 'bat_mitzvah',
     label: 'בת מצווה',
-    icon: '✡️',
     hasTwoHosts: false,
     hostsLabel: 'החוגגת',
     hostAField: 'שם החוגגת',
@@ -197,7 +191,6 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
   brit: {
     type: 'brit',
     label: 'ברית',
-    icon: '🍼',
     hasTwoHosts: false,
     hostsLabel: 'המשפחה',
     hostAField: 'שם המשפחה',
@@ -217,7 +210,6 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
   brita: {
     type: 'brita',
     label: 'בריתה',
-    icon: '🎀',
     hasTwoHosts: false,
     hostsLabel: 'המשפחה',
     hostAField: 'שם המשפחה',
@@ -237,7 +229,6 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
   business: {
     type: 'business',
     label: 'אירוע עסקי',
-    icon: '💼',
     hasTwoHosts: false,
     hostsLabel: 'מארגני האירוע',
     hostAField: 'שם האירוע / החברה',
@@ -258,11 +249,11 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
 
 /** רשימת סוגי האירוע לבורר, בסדר התצוגה הרצוי (חתונה ראשונה — Wedding-first).
  *
- *  ⚠️ ``icon`` כאן הוא שריד ואינו מוצג יותר בממשק: האייקונים עברו לסט SVG
- *  אחד ב-``components/EventTypeIcon.tsx`` (לפי ``type``). אימוג'י נראה
- *  אחרת בכל מערכת הפעלה ולא ניתן לשלוט בצבע/במשקל שלו — ובורר סוג האירוע
- *  הוא המסך הראשון שלקוח חדש רואה. */
-export const EVENT_TYPE_OPTIONS: { type: EventType; label: string; icon: string }[] = [
+ *  האייקון של כל סוג נגזר מ-``type`` בתוך ``components/EventTypeIcon.tsx``
+ *  (סט SVG אחד). קודם היה כאן שדה ``icon`` עם אימוג'י — הוא הוסר כדי
+ *  שלא יחזור בטעות: אימוג'י מצויר אחרת בכל מערכת הפעלה ולא ניתן לשלוט
+ *  בצבע או במשקל שלו, ובורר סוג האירוע הוא המסך הראשון שלקוח חדש רואה. */
+export const EVENT_TYPE_OPTIONS: { type: EventType; label: string }[] = [
   'wedding',
   'bar_mitzvah',
   'bat_mitzvah',
@@ -272,7 +263,7 @@ export const EVENT_TYPE_OPTIONS: { type: EventType; label: string; icon: string 
   'business',
 ].map((t) => {
   const terms = EVENT_TERMS[t as EventType]
-  return { type: terms.type, label: terms.label, icon: terms.icon }
+  return { type: terms.type, label: terms.label }
 })
 
 /**

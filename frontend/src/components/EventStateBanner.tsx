@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react'
 import type { EventStage, Postponement } from '../types'
 import { strings } from '../strings/he'
 
@@ -44,30 +45,48 @@ export function EventStateBanner({
     )
   }
 
+  // אייקוני מצב האירוע — SVG קווי ולא אימוג'י (⏳/🟠), כדי שהם ייצבעו
+  // לפי ה-tone של הבאנר במקום להישאר בצבע של מערכת ההפעלה.
+  const ICON: Record<string, ReactElement> = {
+    wait: (
+      <>
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 7.4V12l3.2 2" />
+      </>
+    ),
+    open: (
+      <>
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 7.6v5.2M12 16.2v.2" />
+      </>
+    ),
+    done: <path d="M5.5 12.5 10 17l8.5-9" />,
+  }
+
   const copy: Record<
     Exclude<EventStage, 'normal'>,
-    { icon: string; title: string; body: string; tone: string }
+    { icon: keyof typeof ICON; title: string; body: string; tone: string }
   > = {
     requested: {
-      icon: '⏳',
+      icon: 'wait',
       title: t.requestedTitle,
       body: t.requestedBody,
       tone: 'ev-state-wait',
     },
     open: {
-      icon: '🟠',
+      icon: 'open',
       title: t.openTitle,
       body: t.openBody,
       tone: 'ev-state-open',
     },
     new_date_set: {
-      icon: '🟠',
+      icon: 'open',
       title: t.newDateTitle,
       body: t.newDateBody,
       tone: 'ev-state-open',
     },
     rsvp_reopened: {
-      icon: '✓',
+      icon: 'done',
       title: t.reopenedTitle,
       body: t.reopenedBody,
       tone: 'ev-state-done',
@@ -77,7 +96,11 @@ export function EventStateBanner({
   const c = copy[stage]
   return (
     <div className={`ev-state ${c.tone}`} role="status">
-      <span className="ev-state-icon" aria-hidden="true">{c.icon}</span>
+      <span className="ev-state-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+          {ICON[c.icon]}
+        </svg>
+      </span>
       <div className="ev-state-text">
         <strong className="ev-state-title">{c.title}</strong>
         <p className="ev-state-body">{c.body}</p>

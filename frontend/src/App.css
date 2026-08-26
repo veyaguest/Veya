@@ -1972,7 +1972,19 @@ td.notes.seating {
   color: var(--gold-deep);
 }
 .suggestion-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
   margin-inline-end: 6px;
+  vertical-align: -3px;
+  color: var(--gold-deep);
+}
+.suggestion-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .suggestion-actions {
   display: flex;
@@ -2807,7 +2819,10 @@ td.notes.seating {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  /* ראשי תיבות במקום אימוג'י — כמו איש קשר אמיתי בלי תמונה ב-WhatsApp. */
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  color: rgba(255, 255, 255, 0.92);
   background: rgba(255, 255, 255, 0.22);
 }
 .invite-phone-name {
@@ -4111,8 +4126,17 @@ td.notes.seating {
   text-align: center;
 }
 .dash-empty-icon {
-  font-size: 40px;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  color: var(--gold-deep);
+}
+.dash-empty-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .dash-empty-title {
   font-size: 18px;
@@ -5265,7 +5289,17 @@ td.notes.seating {
   background: rgba(201, 163, 91, 0.14);
 }
 .sk-upload-drop-icon {
-  font-size: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: var(--gold-deep);
+}
+.sk-upload-drop-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .sk-upload-drop-hint {
   margin: 0;
@@ -11411,10 +11445,21 @@ td.notes.seating {
   text-align: center;
   box-shadow: var(--shadow-card);
 }
+/* מחזיקי אייקון שהיו מכוילים ל-font-size של אימוג'י — עכשיו הם עוטפים
+   SVG, שאין לו גודל טבעי ולכן חייב מידות מפורשות. */
 .tl-empty-icon {
-  font-size: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--space-2);
+  color: var(--gold-deep);
+}
+.tl-empty-icon svg {
+  width: 100%;
+  height: 100%;
   display: block;
-  margin-bottom: 8px;
 }
 .tl-empty-title {
   font-size: 20px;
@@ -11647,9 +11692,21 @@ td.notes.seating {
   border-color: var(--gold-light);
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
+/* מחזיק אייקון SVG (קודם אימוג'י) — נצבע לפי מצב השלב בלוח הזמנים. */
 .tl-action-icon {
-  font-size: 18px;
-  line-height: 1.3;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  margin-top: 1px;
+  color: var(--gold-deep);
+}
+.tl-action-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .tl-action-main {
   display: flex;
@@ -14398,4 +14455,14 @@ td.notes.seating {
   .toolbar-actions .btn-primary {
     font-size: var(--text-base);
   }
+}
+
+/* ---- רשת ביטחון לאייקוני SVG ----
+   כמה מחזיקי אייקון תוכננו בזמנו לאימוג'י, ולכן הגודל שלהם נקבע דרך
+   font-size. ל-SVG אין גודל טבעי, ובלי מידות מפורשות הוא מתנפח לגודל
+   האלמנט ההורה. הכלל הזה מונע את זה בכל מקום שנשכח. */
+[class$='-icon'] > svg,
+[class$='-ic'] > svg {
+  max-width: 100%;
+  max-height: 100%;
 }

@@ -41,11 +41,24 @@
   background: var(--surface-hi);
 }
 
+/* מחזיק אייקון SVG (קודם אימוג'י) — נצבע לפי ה-tone של הבאנר. */
 .ev-state-icon {
   flex: 0 0 auto;
-  font-size: 18px;
-  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
 }
+.ev-state-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.ev-state-wait .ev-state-icon { color: var(--gold-deep); }
+.ev-state-open .ev-state-icon { color: var(--error); }
+.ev-state-done .ev-state-icon { color: var(--green); }
 .ev-state-text {
   flex: 1;
   min-width: 0;

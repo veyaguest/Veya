@@ -95,7 +95,12 @@ function InvitePhoneMock({
         <span className="invite-phone-notch" aria-hidden="true" />
         <div className="invite-phone-screen">
           <div className="invite-phone-header">
-            <span className="invite-phone-avatar" aria-hidden="true">💍</span>
+            {/* אווטאר איש הקשר: ב-WhatsApp אמיתי זו תמונה או ראשי תיבות
+                על עיגול אפור — לא אימוג'י. חוץ מזה, טבעת (💍) הייתה גם
+                קיבוע של חתונה בתוך רכיב שמשמש את כל סוגי האירוע. */}
+            <span className="invite-phone-avatar" aria-hidden="true">
+              {contactName.trim().charAt(0) || 'V'}
+            </span>
             <span ref={nameRef} className="invite-phone-name">{contactName}</span>
           </div>
           <div className="invite-phone-chat">

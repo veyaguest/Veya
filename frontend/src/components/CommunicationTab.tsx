@@ -636,9 +636,9 @@ function PhonePreview({
               </div>
               {(showRsvp || showNav || showGift) && (
                 <div className="ph-btns">
-                  {showRsvp && <span className="ph-btn">✅ אישור הגעה</span>}
-                  {showNav && <span className="ph-btn">🧭 ניווט</span>}
-                  {showGift && <span className="ph-btn">🎁 מתנה באשראי</span>}
+                  {showRsvp && <span className="ph-btn">אישור הגעה</span>}
+                  {showNav && <span className="ph-btn">ניווט</span>}
+                  {showGift && <span className="ph-btn">מתנה באשראי</span>}
                 </div>
               )}
               <span className="ph-meta">12:30 ✓✓</span>

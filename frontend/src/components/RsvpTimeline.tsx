@@ -174,11 +174,28 @@ function DayRow({ day }: { day: TimelineDay }) {
   )
 }
 
+/* אייקון לכל סוג פעולה בלוח הזמנים.
+ *
+ * השרת מחזיר גם שדה ``icon`` עם אימוג'י (✅ 📩 📞 🏢 🎉), אבל אנחנו
+ * נגזרים מ-``type`` ומתעלמים ממנו: אימוג'י בעמודה אנכית של פעולות נראה
+ * שונה בכל מערכת הפעלה ואי אפשר לצבוע אותו לפי מצב השלב (עבר/היום/עתידי).
+ * ה-API לא השתנה — רק מה שמוצג ממנו. */
+const ACTION_ICON: Record<string, string> = {
+  whatsapp_first: 'M20.5 12.4c0 4-3.8 7.2-8.5 7.2a9.7 9.7 0 0 1-2.6-.35L4.5 20.5l1.3-3.5A6.9 6.9 0 0 1 3.5 12.4c0-4 3.8-7.2 8.5-7.2s8.5 3.2 8.5 7.2Z',
+  reminder: 'M18 16.5V11a6 6 0 1 0-12 0v5.5L4.5 18.5h15L18 16.5ZM10 21h4',
+  call_round: 'M8.6 4.8H6.4A1.9 1.9 0 0 0 4.5 6.9c0 6.9 5.7 12.6 12.6 12.6a1.9 1.9 0 0 0 1.9-1.9v-2.2l-3.8-1.3-1.6 1.9a13.9 13.9 0 0 1-5.4-5.4l1.9-1.6L8.6 4.8Z',
+  commitment: 'M5.5 12.5 10 17l8.5-9',
+  day_before: 'M3.5 5.5h17v15h-17zM3.5 10h17M8.5 3.5v4M15.5 3.5v4',
+  day_of: 'M5 4h6l-1.2 6a1.8 1.8 0 0 1-3.6 0L5 4ZM8 12.2V20M6 20h4M14 6.5h6l-1.2 6a1.8 1.8 0 0 1-3.6 0l-1.2-6ZM17 14.7V20M15 20h4',
+}
+
 function ActionRow({ action }: { action: TimelineAction }) {
   return (
     <li className="tl-action">
-      <span className="tl-action-icon" aria-hidden>
-        {action.icon}
+      <span className="tl-action-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d={ACTION_ICON[action.type] ?? ACTION_ICON.reminder} />
+        </svg>
       </span>
       <span className="tl-action-main">
         <span className="tl-action-label">{action.label}</span>
