@@ -14549,3 +14549,153 @@ td.notes.seating {
     font-size: var(--text-xl);
   }
 }
+
+/* ==========================================================================
+   עורך האולם — מודל הדסקטופ
+   --------------------------------------------------------------------------
+   עד כה הדסקטופ ירש את מודל המגע של הטלפון: חמש לשוניות בסרגל תחתון,
+   ובכל לשונית הפאנל *מחליף* את הקנבס. זה דפוס נכון למסך של 6 אינץ'
+   ומוטעה למסך של 27 — בעורך שולחני מצפים לקנבס קבוע במרכז, לכלים בצד,
+   ולכך שבחירת פריט תפתח את פרטיו בלי להסתיר את מה שנבחר.
+
+   השכבה הזו לא בונה עורך שני. אותו DOM ואותו state בדיוק — רק זורמים
+   אחרת: הסרגל התחתון הופך לרַכֶּבֶת אנכית בראש עמודת הצד, והפאנל של
+   הלשונית הפעילה יושב מתחתיה במקום לכסות את האולם.
+   ``.is-desktop`` נקבע ב-JS ולא רק במדיה, כי בדסקטופ הקנבס חייב להישאר
+   *מרונדר* גם כשלשונית אחרת פתוחה — וזה כבר לא סידור אלא מה שקיים.
+   ========================================================================== */
+.hall-mobile.is-desktop {
+  /* לא fixed: בדסקטופ יש סרגל צד גלובלי, והעורך יושב בתוך זרימת העמוד
+     ולא מעליה. */
+  position: relative;
+  inset: auto;
+  bottom: auto;
+  z-index: auto;
+  height: calc(100vh - 120px);
+  min-height: 560px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+
+  /* הפריסה: פס עליון לרוחב, ומתחתיו עמודת כלים בצד ההתחלה (ימין
+     ב-RTL) לצד הקנבס. ``.hm-tabs`` ו-``.hm-body`` הם אחים ב-DOM, ולכן
+     Grid — לא flex מקונן — הוא מה שמאפשר להפוך "אחד מעל השני" ל"זה
+     לצד זה" בלי לגעת ב-JSX. */
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.hall-mobile.is-desktop .hm-topbar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--cream);
+}
+
+/* ---- עמודת הכלים ----
+   אותם חמישה כפתורים של הסרגל התחתון, כרשימה אנכית. */
+.hall-mobile.is-desktop .hm-tabs {
+  grid-column: 1;
+  grid-row: 2;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-top: none;
+  border-inline-end: 1px solid var(--line);
+  box-shadow: none;
+  overflow-y: auto;
+}
+.hall-mobile.is-desktop .hm-tab {
+  flex: 0 0 auto;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  min-height: var(--control-h-lg);
+  padding: var(--space-2) var(--space-3);
+  text-align: start;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.hall-mobile.is-desktop .hm-tab:hover {
+  background: var(--surface-hi);
+}
+.hall-mobile.is-desktop .hm-tab.active {
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+}
+.hall-mobile.is-desktop .hm-tab-label {
+  font-size: var(--text-base);
+}
+/* התג עובר מפינת האייקון אל סוף השורה — בשורה אופקית יש לו מקום משלו. */
+.hall-mobile.is-desktop .hm-tab-badge {
+  position: static;
+  margin-inline-start: auto;
+}
+
+/* ---- אזור העבודה ---- */
+.hall-mobile.is-desktop .hm-body {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+}
+.hall-mobile.is-desktop .hm-canvas {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* בדסקטופ יש עכבר: גרירה ופאן הם ציפייה בסיסית, ואין סיבה לחסום. */
+  touch-action: auto;
+}
+
+/* ---- הפאנל של הלשונית הפעילה ----
+   בטלפון הוא *מחליף* את הקנבס; בדסקטופ הוא נפתח לצידו, צמוד לרַכֶּבֶת,
+   והאולם נשאר גלוי מאחוריו. זה כל ההבדל בין "מסך כלים" ל"עורך". */
+.hall-mobile.is-desktop .hm-panel {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 330px;
+  z-index: 3;
+  padding: var(--space-4);
+  background: var(--cream);
+  border-inline-end: 1px solid var(--line);
+  box-shadow: 8px 0 24px -18px rgba(43, 38, 32, 0.35);
+  overflow-y: auto;
+}
+
+/* ---- הפעולה הצפה ----
+   FAB הוא דפוס של אצבע. בדסקטופ הוא נשאר עגול אבל קטן ומעוגן לפינת
+   הקנבס, ליד שאר כלי הקנבס — לא מרחף באמצע המסך. */
+.hall-mobile.is-desktop .hm-fab {
+  width: 44px;
+  height: 44px;
+}
+.hall-mobile.is-desktop .hm-fab-wrap {
+  inset-block-end: var(--space-5);
+  inset-inline-start: var(--space-5);
+}
+
+/* ---- פרטי השולחן ----
+   בטלפון מגירה שנפתחת מלמטה ומכסה את האולם. בדסקטופ אותו תוכן בדיוק
+   הופך לפאנל צף בפינת הקנבס: בוחרים שולחן, והפרטים נפתחים *לצד* מה
+   שנבחר במקום להסתיר אותו. */
+.hall-mobile.is-desktop .hm-sheet-backdrop {
+  display: none;
+}
+.hall-mobile.is-desktop .hm-sheet {
+  position: absolute;
+  top: 84px;
+  bottom: auto;
+  inset-inline-end: var(--space-4);
+  inset-inline-start: auto;
+  width: 340px;
+  max-height: calc(100% - 120px);
+  border-radius: var(--radius-l);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-dialog);
+  animation: none;
+}
+.hall-mobile.is-desktop .hm-sheet-handle {
+  display: none;
+}

@@ -33,6 +33,7 @@ import type {
 } from '../types'
 import { GROUP_LABELS, RSVP_LABELS } from '../types'
 import { activeEventTerms, sideLabel } from '../strings/eventTypes'
+import { HALL_DESKTOP_QUERY, useMediaQuery } from '../lib/useMediaQuery'
 import { strings } from '../strings/he'
 import { getEventId } from '../authStore'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -1494,6 +1495,10 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // Bottom Sheet, וניווט תחתון עם 5 מדורים. במחשב הלוח ממלא את אזור התוכן
   // שלצד סרגל הצד (המיקום נקבע ב-CSS לפי רוחב המסך).
   const [mobileTab, setMobileTab] = useState<'hall' | 'tables' | 'guests' | 'smart' | 'tools'>('hall')
+  /* מודל האינטראקציה: בטלפון מסך אחד בכל רגע (קנבס *או* פאנל), בדסקטופ
+     קנבס במרכז ופאנל לצידו במקביל. זה ההבדל היחיד ש-CSS לא יכול לגשר
+     עליו לבדו — הוא קובע *מה מרונדר*, לא רק איפה. */
+  const isDesktop = useMediaQuery(HALL_DESKTOP_QUERY)
   // מיון רשימת "מוזמנים": ברירת מחדל לפי סטטוס שיבוץ (ללא שולחן קודם), או
   // א'-ב'/מספר שולחן — לבחירת המשתמש, נשמר רק בזיכרון המסך הנוכחי.
   const [guestSortMode, setGuestSortMode] = useState<'status' | 'name' | 'table'>('status')
@@ -3650,7 +3655,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     }
 
     return (
-      <div className="hall-mobile">
+      <div className={`hall-mobile${isDesktop ? ' is-desktop' : ''}`}>
         {/* ---- פס עליון: כותרת + חיפוש ---- */}
         <div className="hm-topbar">
           {onNavigate && (
@@ -3781,8 +3786,10 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
             </div>
           )}
 
-          {/* ===== לשונית: אולם ===== */}
-          {mobileTab === 'hall' && (
+          {/* ===== הקנבס =====
+               בטלפון: לשונית "אולם" בלבד — הפאנלים מחליפים אותו.
+               בדסקטופ: קבוע במרכז, והפאנל נפתח לצידו. */}
+          {(mobileTab === 'hall' || isDesktop) && (
             <div
               className="hm-canvas"
               ref={viewportRef}
