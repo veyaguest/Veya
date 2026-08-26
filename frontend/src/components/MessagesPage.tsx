@@ -773,10 +773,10 @@ function FirstInviteWizard({
               📄 העלאת Excel
             </button>
             <button className="btn-ghost" onClick={() => setShowPaste(true)}>
-              📋 הדבקת רשימה
+              הדבקת רשימה
             </button>
             <button className="btn-ghost" onClick={() => setShowAdd(true)}>
-              ➕ הוספה ידנית
+              הוספה ידנית
             </button>
           </div>
           <input
@@ -917,13 +917,10 @@ function NewGuestsBanner({ count, onSend }: { count: number; onSend: () => void 
   return (
     <div className="new-guests-banner" role="status">
       <div className="new-guests-banner-text">
-        <span className="new-guests-banner-icon" aria-hidden>
-          👋
-        </span>
         <span>
-          נוספו <strong>{count}</strong>{' '}
-          {count === 1 ? 'מוזמן/ת חדש/ה שעדיין לא קיבל/ה' : 'מוזמנים חדשים שעדיין לא קיבלו'}{' '}
-          הזמנה.
+          {count === 1 ? 'נוסף ' : 'נוספו '}
+          <strong>{count}</strong>{' '}
+          {count === 1 ? 'מוזמן חדש שעדיין בלי הזמנה' : 'מוזמנים חדשים שעדיין בלי הזמנה'}
         </span>
       </div>
       <button className="btn-primary new-guests-banner-btn" onClick={onSend}>

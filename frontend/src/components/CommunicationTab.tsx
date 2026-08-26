@@ -282,7 +282,7 @@ function MessagePanel({
                   setMode('edit')
                 }}
               >
-                ✏️ עריכה
+                עריכה
               </button>
               {!wide && (
                 <button
@@ -290,7 +290,7 @@ function MessagePanel({
                   className="gm2-btn gm2-btn-quiet"
                   onClick={() => setShowPreview(true)}
                 >
-                  👀 תצוגה מקדימה
+                  תצוגה מקדימה
                 </button>
               )}
             </div>

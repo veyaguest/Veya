@@ -213,6 +213,8 @@ export const strings = {
       thankYouLabel: 'הודעת תודה',
       rangeHint: 'אפשר לבחור שעה בין 10:00 ל-19:00 בלבד.',
       save: 'שמירה',
+      saving: 'שומרים…',
+      noChanges: 'אין שינויים לשמירה',
       saved: 'השעות נשמרו',
       saveError: 'לא הצלחנו לשמור את השעות. נסו שוב',
       loadError: 'לא הצלחנו לטעון את השעות. ננסה שוב',

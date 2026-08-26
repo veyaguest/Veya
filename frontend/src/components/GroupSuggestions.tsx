@@ -85,7 +85,12 @@ export function GroupSuggestions({ refreshToken, open, onClose, onCountChange, o
             {visible.map((s) => (
               <div key={s.surname} className="suggestion-card">
                 <div className="suggestion-text">
-                  <span className="suggestion-icon">✨</span>
+                  <span className="suggestion-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M8.4 4.5 9.7 8l3.5 1.3L9.7 10.6 8.4 14.1 7.1 10.6 3.6 9.3 7.1 8l1.3-3.5Z" />
+                      <path d="M16.6 12.4 17.5 15l2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9.9-2.6Z" />
+                    </svg>
+                  </span>
                   {/* משפט זה משלב טקסט עברי עם <strong> סביב ערכים דינמיים —
                       לא ניתן להוציא אותו כמחרוזת שטוחה יחידה ל-he.ts בלי לאבד
                       את הדגשת ה-JSX. חריג מכוון ומתועד; שאר הטקסטים במסך זה

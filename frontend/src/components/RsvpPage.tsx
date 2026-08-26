@@ -20,6 +20,7 @@ import type {
   RsvpTrackStatus,
 } from '../types'
 import { RSVP_LABELS } from '../types'
+import { DeliveryIcon } from './DeliveryIcon'
 import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { GuestTimelineModal } from './GuestTimelineModal'
@@ -274,9 +275,13 @@ function SendTimeSettings() {
           />
         </div>
       </div>
-      <span className="commit-warn">{t.rangeHint}</span>
+      {/* מגבלת טווח היא מידע, לא אזהרה. הכיתוב הזה הוצג ב-.commit-warn
+          (זהב, מודגש) — אותו סגנון בדיוק של אזהרה אמיתית במסך, ולכן נקרא
+          כאילו משהו לא בסדר. */}
+      <span className="field-hint">{t.rangeHint}</span>
       {saveError && <p className="form-error">{saveError}</p>}
       {saved && !dirty && <p className="rsvp-note">{t.saved}</p>}
+      {/* כפתור מושבת בלי הסבר נקרא כתקלה. כשאין מה לשמור — אומרים זאת. */}
       <div className="event-edit-actions">
         <button
           type="button"
@@ -284,8 +289,9 @@ function SendTimeSettings() {
           disabled={!dirty || busy}
           onClick={save}
         >
-          {t.save}
+          {busy ? t.saving : t.save}
         </button>
+        {!dirty && !busy && <span className="field-hint">{t.noChanges}</span>}
       </div>
     </div>
   )
@@ -295,8 +301,11 @@ function SendTimeSettings() {
 function RsvpEmptyState({ onGoToMessages }: { onGoToMessages?: () => void }) {
   return (
     <div className="tl-empty">
-      <span className="tl-empty-icon" aria-hidden>
-        🗓️
+      <span className="tl-empty-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3.5" y="5.5" width="17" height="15" rx="2.5" />
+          <path d="M3.5 10h17M8.5 3.5v4M15.5 3.5v4" />
+        </svg>
       </span>
       <h3 className="tl-empty-title">אישורי ההגעה יתחילו לרוץ ברגע שתשלחו הזמנה</h3>
       <p className="tl-empty-sub">
@@ -536,7 +545,7 @@ function TrackStatusCard({
             )}
             {typeStatus.failed > 0 && (
               <MessageStatusTile
-                icon="⚠️"
+                icon={<DeliveryIcon name="failed" />}
                 num={typeStatus.failed}
                 label={t.failed}
                 hint={t.failedHint}
@@ -545,7 +554,7 @@ function TrackStatusCard({
             )}
             {typeStatus.no_valid_number > 0 && (
               <MessageStatusTile
-                icon="📵"
+                icon={<DeliveryIcon name="no_number" />}
                 num={typeStatus.no_valid_number}
                 label={t.noValidNumber}
                 hint={t.noValidNumberHint}
@@ -554,7 +563,7 @@ function TrackStatusCard({
             )}
             {typeStatus.blocked > 0 && (
               <MessageStatusTile
-                icon="🚫"
+                icon={<DeliveryIcon name="blocked" />}
                 num={typeStatus.blocked}
                 label={t.blocked}
                 hint={t.blockedHint}
@@ -563,7 +572,7 @@ function TrackStatusCard({
             )}
             {typeStatus.queued > 0 && (
               <MessageStatusTile
-                icon="⏳"
+                icon={<DeliveryIcon name="queued" />}
                 num={typeStatus.queued}
                 label={t.queued}
                 hint={t.queuedHint}
@@ -594,10 +603,10 @@ function TrackStatusCard({
                 <option value="sent">✓ {t.sent}</option>
                 <option value="delivered">✓✓ {t.delivered}</option>
                 <option value="read">✓✓ {t.read}</option>
-                <option value="failed">⚠️ {t.failed}</option>
-                <option value="no_valid_number">📵 {t.noValidNumber}</option>
-                <option value="blocked">🚫 {t.blocked}</option>
-                <option value="queued">⏳ {t.queued}</option>
+                <option value="failed">{t.failed}</option>
+                <option value="no_valid_number">{t.noValidNumber}</option>
+                <option value="blocked">{t.blocked}</option>
+                <option value="queued">{t.queued}</option>
               </select>
             </div>
 
@@ -834,13 +843,13 @@ function GuestStatusBadge({
       case 'read':
         return { icon: <WhatsAppCheck double blue />, label: t.read }
       case 'failed':
-        return { icon: '⚠️', label: t.failed }
+        return { icon: <DeliveryIcon name="failed" />, label: t.failed }
       case 'no_valid_number':
-        return { icon: '📵', label: t.noValidNumber }
+        return { icon: <DeliveryIcon name="no_number" />, label: t.noValidNumber }
       case 'blocked':
-        return { icon: '🚫', label: t.blocked }
+        return { icon: <DeliveryIcon name="blocked" />, label: t.blocked }
       default:
-        return { icon: '⏳', label: t.queued }
+        return { icon: <DeliveryIcon name="queued" />, label: t.queued }
     }
   })()
   return (
@@ -854,8 +863,8 @@ function GuestStatusBadge({
 }
 
 /** כמו StatCard, אבל עם סמל בתחילת התווית — אייקון WhatsApp אמיתי (✓/✓✓
- * אפור/✓✓ כחול) לשלושת סטטוסי המסירה, ואמוג'י לשאר (⚠️/📵/🚫/⏳, שאינם
- * חלק משפת העיצוב של WhatsApp אלא תוצרים פנימיים של VEYA). ``hint`` הוא
+ * אפור/✓✓ כחול) לשלושת סטטוסי המסירה, ואייקון קווי משלנו (DeliveryIcon)
+ * לארבעת המצבים שהם תוצר פנימי של VEYA. ``hint`` הוא
  * הסבר בשפה פשוטה שמופיע כ-tooltip במעבר עכבר/החזקה במובייל. */
 function MessageStatusTile({
   icon,

@@ -11248,10 +11248,19 @@ td.notes.seating {
   color: var(--charcoal);
   font-size: 15px;
 }
+/* אזהרה אמיתית — משהו בלתי הפיך עומד לקרות. */
 .commit-warn {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--gold-deep);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
+}
+
+/* טקסט עזר — מגבלה, פורמט או הבהרה. שקט במכוון, כדי שלא יתחרה
+   באזהרה שלידו ולא ייקרא כתקלה. */
+.field-hint {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: var(--leading-snug);
 }
 .commit-locked {
   display: flex;
