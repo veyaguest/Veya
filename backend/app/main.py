@@ -210,6 +210,16 @@ _EXTRA_COLUMNS = {
     "venues": {
         "city": "VARCHAR DEFAULT ''",
     },
+    "postponement_requests": {
+        # צילום מורחב של המחזור הנסגר (אולם/כתובת/מועד סגירה) — נוסף אחרי
+        # שהטבלה כבר נפרסה לייצור. כולן nullable: בקשה שאושרה לפני התוספת
+        # נשארת בלי צילום, ו-``previous_snapshot_at = NULL`` הוא בדיוק הסמן
+        # שאומר לקוד ליפול חזרה לערכי האירוע החיים.
+        "previous_venue_name": "TEXT",
+        "previous_venue_address": "TEXT",
+        "previous_venue_commit_days_before": "INTEGER",
+        "previous_snapshot_at": "TIMESTAMP",
+    },
     "call_logs": {
         # נוסף אחרי הטבלה עצמה — מאפשר ל"מספר שגוי" להיסגר אוטומטית כשהמספר
         # מתעדכן (ראו models.CallLog.phone_at_call).

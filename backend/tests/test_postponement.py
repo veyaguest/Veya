@@ -567,6 +567,100 @@ def test_postponement_options_have_no_unsupported_placeholders() -> None:
     print("✓ כל המשתנים בנוסחים קיימים במערכת ומתמלאים בפועל")
 
 
+def test_cycle_snapshot_keeps_values_from_closing_moment() -> None:
+    """הארכיון נאמן לרגע הסגירה, לא לערכים ששונו אחריו.
+
+    זה הלב של הבדיקה: מועד סגירת הרשימה היה **5** כשהמחזור נסגר, הזוג שינה
+    אותו ל-**8** בזמן נוהל הדחייה, והארכיון חייב להישאר עם 5. אותו דבר
+    לאולם ולכתובת. בלי זה, ``event_cycles`` היה מתאר מחזור שמעולם לא התקיים —
+    תאריך ישן לצד אולם חדש.
+    """
+    api, _ = bootstrap()
+    _seed_event(api)
+    _patch(api, venue_name="אולם הישן", venue_address="הרצל 5, תל אביב",
+           venue_commit_days_before=5)
+    admin = _admin(api)
+    _open_and_approve(api, admin)
+
+    # אחרי האישור הזוג משנה הכול — זו כל מטרת הנוהל.
+    r = _patch(api, event_date="2027-05-20", venue_name="אולם החדש",
+               venue_address="דיזנגוף 1, תל אביב", venue_commit_days_before=8)
+    assert r.status_code == 200, r.text
+    assert r.json()["venue_commit_days_before"] == 8, "השינוי עצמו לא נשמר"
+
+    r = api.client.post("/postpone/complete", headers=api.headers)
+    assert r.status_code == 200, r.text
+
+    db, models = _db()
+    try:
+        cycle = db.scalars(
+            select(models.EventCycle).where(models.EventCycle.event_id == api.event_id)
+        ).first()
+        assert cycle is not None, "לא נכתב צילום מחזור"
+        assert cycle.venue_commit_days_before == 5, (
+            f"הארכיון קיבל את הערך החדש: {cycle.venue_commit_days_before} (ציפינו 5)"
+        )
+        assert cycle.venue_name == "אולם הישן", f"אולם: {cycle.venue_name}"
+        assert cycle.venue_address == "הרצל 5, תל אביב", f"כתובת: {cycle.venue_address}"
+        assert cycle.event_date == "2026-11-12", f"תאריך: {cycle.event_date}"
+        assert cycle.event_time == "19:30", f"שעה: {cycle.event_time}"
+
+        # והאירוע עצמו כן נושא את הערכים החדשים — הצילום לא "החזיר" כלום.
+        event = db.get(models.Event, api.event_id)
+        assert event.venue_commit_days_before == 8
+        assert event.venue_name == "אולם החדש"
+    finally:
+        db.close()
+    print("✓ צילום המחזור נאמן לרגע הסגירה (5), גם אחרי ששונה ל-8")
+
+
+def test_cycle_snapshot_falls_back_for_pre_upgrade_requests() -> None:
+    """בקשה שאושרה לפני שהצילום המורחב נוסף לא שוברת את הסגירה.
+
+    בייצור עשויה להיות בדיוק ברגע הזה בקשה מאושרת שנוצרה בגרסה הקודמת, בלי
+    שדות הצילום. היא חייבת להיסגר בשקט לפי ההתנהגות הישנה (ערכי האירוע
+    החיים) ולא לכתוב ארכיון ריק.
+    """
+    api, _ = bootstrap()
+    _seed_event(api)
+    _patch(api, venue_name="אולם", venue_commit_days_before=5)
+    admin = _admin(api)
+    _open_and_approve(api, admin)
+
+    # מדמים בקשה "ישנה": מוחקים את הצילום המורחב ומשאירים רק תאריך/שעה.
+    db, models = _db()
+    try:
+        row = db.scalars(
+            select(models.PostponementRequest)
+            .where(models.PostponementRequest.event_id == api.event_id)
+        ).first()
+        row.previous_snapshot_at = None
+        row.previous_venue_name = None
+        row.previous_venue_address = None
+        row.previous_venue_commit_days_before = None
+        db.commit()
+    finally:
+        db.close()
+
+    _patch(api, event_date="2027-05-20", venue_commit_days_before=8)
+    r = api.client.post("/postpone/complete", headers=api.headers)
+    assert r.status_code == 200, f"סגירה נשברה על בקשה ישנה: {r.text}"
+
+    db, models = _db()
+    try:
+        cycle = db.scalars(
+            select(models.EventCycle).where(models.EventCycle.event_id == api.event_id)
+        ).first()
+        # ההתנהגות הישנה: ערכי האירוע החיים. לא ריק, ולא קריסה.
+        assert cycle is not None and cycle.venue_commit_days_before == 8, (
+            f"נפילה רכה נכשלה: {cycle and cycle.venue_commit_days_before}"
+        )
+        assert cycle.venue_name == "אולם", f"אולם: {cycle.venue_name}"
+    finally:
+        db.close()
+    print("✓ בקשה שאושרה לפני השדרוג נסגרת בשקט לפי ההתנהגות הישנה")
+
+
 def test_event_delete_removes_postponement_data() -> None:
     """מחיקת אירוע לא נופלת על נתוני נוהל הדחייה, ולא משאירה אותם יתומים."""
     api, _ = bootstrap()
@@ -611,6 +705,8 @@ if __name__ == "__main__":
         test_second_postponement_works()
         test_postponement_options_available_only_after_approval()
         test_postponement_options_have_no_unsupported_placeholders()
+        test_cycle_snapshot_keeps_values_from_closing_moment()
+        test_cycle_snapshot_falls_back_for_pre_upgrade_requests()
         test_event_delete_removes_postponement_data()
         print("\nכל בדיקות נוהל הדחייה עברו ✓")
     finally:

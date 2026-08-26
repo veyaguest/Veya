@@ -184,8 +184,15 @@ def approve(
     _set_status(row, postponement_status.APPROVED)
     row.reviewed_by_user_id = reviewer_user_id
     row.reviewed_at = datetime.utcnow()
+    # צילום האירוע כפי שהוא **עכשיו**, לפני שהזוג נוגע בו. כל שדה שנשמר
+    # בארכיון המחזור מצולם כאן, באותו רגע אחד — אחרת הארכיון היה מערבב
+    # תאריך ישן עם אולם חדש ומתאר מחזור שמעולם לא התקיים.
     row.previous_event_date = event.event_date or ""
     row.previous_event_time = event.event_time or ""
+    row.previous_venue_name = event.venue_name or ""
+    row.previous_venue_address = event.venue_address or ""
+    row.previous_venue_commit_days_before = event.venue_commit_days_before
+    row.previous_snapshot_at = row.reviewed_at
 
     # ייבוא מקומי: ``communication`` הוא מודול כבד שמושך את שרשרת ההודעות
     # כולה, ואין סיבה שכל מי שמייבא את השירות הזה ישלם עליו.
@@ -271,15 +278,32 @@ def complete(
     old_cycle = event.cycle_number or 1
     now = datetime.utcnow()
 
-    # 1 — צילום המחזור שנסגר.
+    # 1 — צילום המחזור שנסגר, מתוך מה שנלכד ברגע האישור.
+    #
+    # ``previous_snapshot_at`` הוא סמן הקיום: בקשה שאושרה לפני שהצילום
+    # המורחב נוסף למערכת נופלת בעדינות לערכי האירוע החיים — בדיוק ההתנהגות
+    # שהייתה קודם — במקום לכתוב ארכיון ריק. אי אפשר להסיק זאת מהערכים
+    # עצמם, כי ``previous_venue_commit_days_before = None`` הוא ערך לגיטימי.
+    snapshotted = row.previous_snapshot_at is not None
     db.add(models.EventCycle(
         event_id=event.id,
         cycle_number=old_cycle,
         event_date=row.previous_event_date or "",
         event_time=row.previous_event_time or "",
-        venue_name=event.venue_name or "",
-        venue_address=event.venue_address or "",
-        venue_commit_days_before=event.venue_commit_days_before,
+        venue_name=(
+            (row.previous_venue_name or "") if snapshotted else (event.venue_name or "")
+        ),
+        venue_address=(
+            (row.previous_venue_address or "") if snapshotted
+            else (event.venue_address or "")
+        ),
+        venue_commit_days_before=(
+            row.previous_venue_commit_days_before if snapshotted
+            else event.venue_commit_days_before
+        ),
+        # לא מצולם באישור בכוונה: ``rsvp_track_started_at`` נקבע פעם אחת
+        # בהפעלת המסלול ואינו משתנה בין האישור לסגירה, ולכן הערך החי נכון
+        # ממילא. ראו ``models.PostponementRequest``.
         started_at=event.rsvp_track_started_at,
         closed_at=now,
         close_reason="postponed",

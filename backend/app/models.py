@@ -983,6 +983,29 @@ class PostponementRequest(Base):
     # החדש עודכן" בלי לנחש: אם התאריך הנוכחי שונה מהערך כאן — נקבע תאריך חדש.
     previous_event_date: Mapped[str] = mapped_column(String, default="")
     previous_event_time: Mapped[str] = mapped_column(String, default="")
+    # שאר שדות ה-snapshot של המחזור הנסגר, מצולמים באותו רגע בדיוק — האישור.
+    #
+    # **למה לצלם ולא לקרוא מהאירוע בזמן הסגירה:** בין האישור לסגירה הזוג
+    # עורך את האירוע — זו כל מטרת הנוהל. אירוע שנדחה ושינה אולם היה נרשם
+    # בארכיון עם האולם **החדש** לצד התאריך **הישן**, כלומר רשומה היסטורית
+    # שמעולם לא התקיימה במציאות.
+    #
+    # ``rsvp_track_started_at`` אינו כאן במכוון: הוא נקבע פעם אחת בהפעלת
+    # המסלול ואינו משתנה בין האישור לסגירה (``activate_track`` כותב אליו
+    # רק כשהוא ``None``), ולכן קריאתו בזמן הסגירה נכונה ממילא.
+    previous_venue_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    previous_venue_address: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    previous_venue_commit_days_before: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True
+    )
+    #: מתי נלקח הצילום. משמש כ**סמן קיום** ולא כזמן בלבד: ``None`` פירושו
+    #: בקשה שאושרה לפני שהצילום המורחב נוסף, ואז נופלים בעדינות לערכי
+    #: האירוע החיים (ההתנהגות הקודמת) במקום לכתוב ארכיון ריק. נדרש דווקא
+    #: משום ש-``previous_venue_commit_days_before = NULL`` הוא ערך לגיטימי
+    #: בפני עצמו ("מועד סגירה טרם נבחר"), ולכן אי אפשר להסיק ממנו כלום.
+    previous_snapshot_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
 
 
 class EventCycle(Base):
