@@ -936,7 +936,13 @@ summary:focus-visible,
 .acc-btn,
 .gm2-btn,
 .apr-btn,
-.join-btn {
+.join-btn,
+/* משפחת הכפתורים של מסך המתנות — נשכחה בסבב הקודם והמשיכה עם גבהים
+   46/48px וגדלים משלה. זהו המסך הפיננסי של המוצר; דווקא בו כפתור
+   שנראה אחר מכל השאר מוריד אמון. */
+.payout-cta,
+.payout-submit,
+.payout-cancel {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -958,7 +964,10 @@ summary:focus-visible,
 .acc-btn:disabled,
 .gm2-btn:disabled,
 .apr-btn:disabled,
-.join-btn:disabled {
+.join-btn:disabled,
+.payout-cta:disabled,
+.payout-submit:disabled,
+.payout-cancel:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;

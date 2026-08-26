@@ -32,12 +32,18 @@ const t = strings.gifts
  * מציג את מה שקיבל, ומסביר בבאנר למה חסר.
  */
 
-/** ₪1 = 100 אגורות. הצגה בלבד — כל חשבון הכסף כבר בוצע בשרת. */
+/** ₪1 = 100 אגורות. הצגה בלבד — כל חשבון הכסף כבר בוצע בשרת.
+ *
+ *  סדר הכתיבה: **המספר ואז הסימן, עם רווח** — "3,900 ₪". זה הכתיב
+ *  הישראלי (``hebrew-writing-rules.md``); "₪3,900" הוא סדר אנגלי
+ *  שנראה כמו תרגום. הרווח הוא רווח דק שאינו נשבר (U+202F), כדי
+ *  שהסימן לעולם לא ייפול לשורה נפרדת מהמספר. */
 function formatAgorot(agorot: number): string {
   const whole = Math.trunc(agorot / 100)
   const rest = agorot % 100
   const shown = whole.toLocaleString('he-IL')
-  return rest ? `₪${shown}.${String(rest).padStart(2, '0')}` : `₪${shown}`
+  const value = rest ? `${shown}.${String(rest).padStart(2, '0')}` : shown
+  return `${value}\u202f₪`
 }
 
 /** "24.08.26" — קצר ועדין, לא משפט שלם.
@@ -52,8 +58,9 @@ function formatDate(iso: string): string {
   if (isNaN(d.getTime())) return ''
   const dd = String(d.getDate()).padStart(2, '0')
   const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const yy = String(d.getFullYear()).slice(-2)
-  return `${dd}.${mm}.${yy}`
+  // שנה מלאה, כמו בכל שאר המערכת ("18.11.2026"). שנתיים ספרות חסכו
+  // מעט מקום אבל יצרו פורמט תאריך שני במוצר שיש בו כבר אחד.
+  return `${dd}.${mm}.${d.getFullYear()}`
 }
 
 /** תג סטטוס — ברור אך לא צעקני. */
@@ -115,7 +122,14 @@ function TotalReceived({ data }: { data: GiftsSummary }) {
           {/* ה-LTR חל על **המספר בלבד**, לא על הפסקה. אחרת "₪2,180" היה
               נכון בסדר התווים אבל הפסקה כולה הייתה נצמדת לשמאל ויוצאת
               מיישור עם התווית שמעליה והשורה שמתחתיה. */}
-          <span className="gifts-total-figure">{data.total_received_display}</span>
+          {/* מעוצב כאן ולא נלקח מ-``total_received_display`` של השרת:
+              השרת מחזיר "₪1,240" (סדר אנגלי), ואילו שורות המתנות עוברות
+              דרך ``formatAgorot`` המקומי. שתי נוסחאות באותו מסך פירושן
+              שהסכום הגדול והסכומים שמתחתיו כתובים אחרת. הסכום עצמו מגיע
+              מהשרת — רק העיצוב שלו מקומי. */}
+          <span className="gifts-total-figure">
+            {formatAgorot(data.total_received_agorot ?? 0)}
+          </span>
         </p>
         <p className="gifts-total-sub">{t.giftsCount(data.paid_count)}</p>
       </section>
@@ -176,8 +190,10 @@ export function GiftsPage() {
     getGifts().then(setData).catch(() => undefined)
   }, [])
 
-  if (loading) return <div className="gifts-state">{strings.common.loading}</div>
-  if (error) return <div className="gifts-state gifts-state-error">{error}</div>
+  // אותם דפוסים כמו בשאר המערכת (.load-text / .form-error) ולא מחלקות
+  // ייעודיות למסך אחד: מצב טעינה ומצב שגיאה צריכים להיראות זהה בכל מקום.
+  if (loading) return <p className="load-text">{strings.common.loading}</p>
+  if (error) return <p className="form-error">{error}</p>
   if (!data) return null
 
   return (

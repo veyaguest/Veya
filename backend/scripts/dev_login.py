@@ -81,6 +81,19 @@ SURNAMES = [
 ]
 GROUPS = ["family", "friends", "work", "army", "other"]
 SIDES = ["groom", "bride", "shared"]
+GIFT_NAMES = [
+    "משפחת כהן", "נועה ואיתי", "דוד ורחל לוי", "צוות המשרד", "שירה מזרחי",
+    "משפחת פרץ", "יונתן וטליה", "סבתא אסתר", "חברים מהצבא", "רון ואלה",
+]
+GIFT_BLESSINGS = [
+    "מזל טוב! שיהיה בשעה טובה ומוצלחת",
+    "אוהבים אתכם, מחכים לחגוג",
+    "כל הכבוד, מאחלים לכם המון אושר",
+    "",
+    "בהצלחה בדרך החדשה שלכם",
+    "",
+]
+
 NOTE_POOL = [
     "לשבת ליד משפחת כהן",
     "עדיף לא ליד השולחן של הרמקולים",
@@ -194,8 +207,71 @@ def main() -> None:
                 )
             db.commit()
 
+        # ---- חשבון קבלת מתנות מאומת ----
+        # השרת מסתיר סכומי מתנות כל עוד החשבון לא עבר את שתי הבדיקות
+        # (ראו decisions.md 2026-08-25), ולכן בלי זה אי אפשר לראות בכלל
+        # את מצב "הסכומים גלויים" של המסך. VEYA_DEV_PAYOUT_VERIFIED=1
+        # מדלג על תהליך האישור **במסד המקומי בלבד** — לא בקוד ולא בייצור.
+        if os.getenv("VEYA_DEV_PAYOUT_VERIFIED", "").strip() == "1":
+            pa = (
+                db.query(models.PayoutAccount)
+                .filter(models.PayoutAccount.event_id == event.id)
+                .one_or_none()
+            )
+            if pa is None:
+                pa = models.PayoutAccount(
+                    event_id=event.id,
+                    bank_code=12,
+                    branch_number="661",
+                    account_number="4041288",
+                )
+                db.add(pa)
+            pa.status = "verified"
+            pa.provider_status = "approved"
+            pa.submitted_at = datetime.utcnow() - timedelta(days=6)
+            pa.status_changed_at = datetime.utcnow() - timedelta(days=4)
+            db.commit()
+
+        # ---- מתנות באשראי ----
+        # נזרעות רק כשהמתג המתועד VEYA_GIFT_ENABLED דלוק, כלומר רק כשמישהו
+        # באמת עובד על המסך הזה. אלה נתוני פיתוח מקומיים בלבד.
+        if os.getenv("VEYA_GIFT_ENABLED", "").strip() == "1":
+            have = db.query(models.Gift).filter(models.Gift.event_id == event.id).count()
+            if have == 0:
+                grng = random.Random(770425)
+                guest_ids = [
+                    g.id
+                    for g in db.query(models.Guest)
+                    .filter(models.Guest.event_id == event.id)
+                    .limit(40)
+                    .all()
+                ]
+                statuses = ["paid"] * 9 + ["pending"] * 2 + ["failed"] + ["refunded"]
+                for i, st in enumerate(statuses):
+                    amount = grng.choice([20000, 30000, 40000, 50000, 75000, 100000])
+                    fee = round(amount * 0.019) + 150
+                    db.add(
+                        models.Gift(
+                            event_id=event.id,
+                            guest_id=guest_ids[i % len(guest_ids)] if guest_ids else None,
+                            gift_amount_agorot=amount,
+                            fee_agorot=fee,
+                            total_agorot=amount + fee,
+                            currency="ILS",
+                            status=st,
+                            provider="mock",
+                            provider_transaction_id=f"dev_{i:03d}",
+                            idempotency_key=secrets.token_urlsafe(12),
+                            sender_name=GIFT_NAMES[i % len(GIFT_NAMES)],
+                            message=grng.choice(GIFT_BLESSINGS) or None,
+                            created_at=datetime.utcnow() - timedelta(days=grng.randint(0, 14)),
+                        )
+                    )
+                db.commit()
+
         token = auth.create_access_token(user)
         guests = db.query(models.Guest).filter(models.Guest.event_id == event.id).count()
+        gifts = db.query(models.Gift).filter(models.Gift.event_id == event.id).count()
 
         print("\n" + "=" * 68)
         print("  VEYA — כניסת פיתוח (development only)")
@@ -203,6 +279,8 @@ def main() -> None:
         print(f"  משתמש : {user.email} (id={user.id}, {'חדש' if created else 'קיים'})")
         print(f"  אירוע : {event.groom_name} ו{event.bride_name} (id={event.id})")
         print(f"  מוזמנים: {guests}")
+        if gifts:
+            print(f"  מתנות : {gifts}")
         print("-" * 68)
         print("  הדבק ב-DevTools Console של האפליקציה, ואז רענן:\n")
         print(
