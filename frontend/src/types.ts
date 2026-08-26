@@ -1396,18 +1396,9 @@ export interface MessageTypeStatus {
   guests: MessageTypeGuestRow[]
 }
 
-// מקור אמת יחיד לאייקון של כל סוג הודעה — משותף לבורר "מעקב אחר" (RsvpPage)
-// ולשלבי "תקשורת עם אורחים" (CommunicationTab), כדי שאותו סוג הודעה תמיד
-// יזוהה באותו סמל בכל מסך.
-export const MESSAGE_TYPE_ICONS: Record<MessageType, string> = {
-  invitation: '💌',
-  reminder_1: '👋',
-  reminder_2: '🔔',
-  final_reminder: '⏰',
-  event_day: '🎉',
-  thank_you: '❤️',
-  postponement: '🟠',
-}
+// האייקון של כל סוג הודעה חי ב-``components/MessageTypeIcon.tsx`` (SVG
+// קווי, אחד לכל הסוגים). קודם הייתה כאן מפת אימוג'י — היא הוסרה כדי
+// שכל המערכת תדבר בשפת אייקונים אחת ולא באוסף סמלים של מערכת ההפעלה.
 
 /** סוגי הודעה שהזוג שולח ידנית (ולא לפי לוח זמנים). */
 export const MANUAL_SEND_TYPES: MessageType[] = ['postponement']

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { getEvent, getMessageLibrary } from '../api'
 import type { EventType, MessageDefault } from '../types'
 import { EVENT_TYPE_OPTIONS } from '../strings/eventTypes'
+import { EventTypeIcon } from './EventTypeIcon'
 
 /**
  * ספריית הודעות מוכנות — תצוגה בלבד (לא עריכה) של כל ברירות המחדל, לפי סוג
@@ -53,7 +54,8 @@ export function MessageLibrary() {
                 className={`lib2-chip ${selected === opt.type ? 'active' : ''}`}
                 onClick={() => setSelected(opt.type)}
               >
-                <span aria-hidden="true">{opt.icon}</span> {opt.label}
+                <EventTypeIcon type={opt.type} size={18} />
+                {opt.label}
               </button>
             ))}
           </div>

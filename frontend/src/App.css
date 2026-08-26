@@ -48,6 +48,9 @@
      כדי שכל calc() שמסתמך עליו יעבוד גם כשהבאנר לא עלה בכלל. */
   --cookie-banner-height: 0px;
 
+  /* אייקון מנעול כ-mask, כדי שייצבע בצבע הטקסט שסביבו. */
+  --icon-lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4.5' y='10.5' width='15' height='9.5' rx='2'/%3E%3Cpath d='M8 10.5V7.8a4 4 0 0 1 8 0v2.7'/%3E%3C/svg%3E");
+
   /* ============================================================
      מערכת עיצוב VEYA — שכבת טוקנים אחת לכל המערכת.
      לפני הבלוק הזה כל קומפוננטה בחרה ערכים בעצמה: 42 גדלי פונט
@@ -14065,4 +14068,53 @@ td.notes.seating {
 }
 .error-boundary-card .btn-primary {
   width: 100%;
+}
+
+/* ---- אייקוני סוג אירוע וסוג הודעה ----
+   סט SVG אחיד שהחליף אימוג'י. הצבע נגזר מהטקסט שסביבו, ולכן אותו
+   אייקון עובד על רקע בהיר, על רקע כהה ובמצב "נבחר" בלי גרסה נפרדת. */
+.event-type-icon,
+.msg-type-icon {
+  display: block;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.event-type-chip-icon,
+.gm2-step-icon,
+.gm2-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold-deep);
+}
+.event-type-chip.active .event-type-chip-icon,
+.gm2-step.active .gm2-step-icon {
+  color: inherit;
+}
+.lib2-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ---- הערת "שדה נעול" ----
+   סמל המנעול היה אימוג'י בתוך המחרוזת (🔒) — נראה אחרת בכל מערכת הפעלה,
+   ולא ניתן היה לצבוע אותו בזהב של המערכת. עכשיו הוא אייקון SVG שנצבע
+   בצבע הטקסט של ההערה. */
+.locked-note,
+.commit-locked-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.locked-note::before,
+.commit-locked-note::before {
+  content: '';
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  background-color: currentColor;
+  -webkit-mask: var(--icon-lock) center / contain no-repeat;
+  mask: var(--icon-lock) center / contain no-repeat;
 }

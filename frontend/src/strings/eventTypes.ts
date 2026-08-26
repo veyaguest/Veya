@@ -256,7 +256,12 @@ export const EVENT_TERMS: Record<EventType, EventTerms> = {
   },
 }
 
-/** רשימת סוגי האירוע לבורר, בסדר התצוגה הרצוי (חתונה ראשונה — Wedding-first). */
+/** רשימת סוגי האירוע לבורר, בסדר התצוגה הרצוי (חתונה ראשונה — Wedding-first).
+ *
+ *  ⚠️ ``icon`` כאן הוא שריד ואינו מוצג יותר בממשק: האייקונים עברו לסט SVG
+ *  אחד ב-``components/EventTypeIcon.tsx`` (לפי ``type``). אימוג'י נראה
+ *  אחרת בכל מערכת הפעלה ולא ניתן לשלוט בצבע/במשקל שלו — ובורר סוג האירוע
+ *  הוא המסך הראשון שלקוח חדש רואה. */
 export const EVENT_TYPE_OPTIONS: { type: EventType; label: string; icon: string }[] = [
   'wedding',
   'bar_mitzvah',

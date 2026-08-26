@@ -28,10 +28,13 @@ import { PasteImportDialog } from './PasteImportDialog'
 
 type Tab = 'communication' | 'library'
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'communication', label: 'תקשורת עם אורחים' },
-  { key: 'library', label: 'ספריית הודעות מוכנות' },
-]
+// התוויות נגזרות מהלקסיקון: באירוע עסקי "מוזמנים" הופך ל"משתתפים".
+function tabsFor(guestsLabel: string): { key: Tab; label: string }[] {
+  return [
+    { key: 'communication', label: `תקשורת עם ${guestsLabel}` },
+    { key: 'library', label: 'ספריית הודעות מוכנות' },
+  ]
+}
 
 /**
  * מסך ניהול ההודעות: בחירת סוג הודעה, נוסח, תצוגה מקדימה, ושליחה בפועל —
@@ -85,6 +88,7 @@ function AdminMessagesShell({ onNavigate }: { onNavigate?: (page: 'guests') => v
 
 function AdminMessagesView() {
   const [tab, setTab] = useState<Tab>('communication')
+  const TABS = tabsFor(activeEventTerms().guestsLabel)
 
   return (
     <div className="rsvp-page">
@@ -236,8 +240,7 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
   return (
     <div className="rsvp-page couple-rsvp">
       <p className="page-intro">
-        כאן תוכלו לבחור הודעות לאורחים, לתזמן ולשלוח אותן, ולוודא שכל מי
-        שצריך לקבל הזמנה אכן קיבל אותה.
+        {strings.messagesPage.pageIntro(activeEventTerms().guestsLabel)}
       </p>
 
       {error && <p className="form-error">{error}</p>}

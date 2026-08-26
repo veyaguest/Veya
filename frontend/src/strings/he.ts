@@ -147,10 +147,10 @@ export const strings = {
   toasts: {
     profileUpdated: 'הפרטים עודכנו',
     passwordUpdated: 'הסיסמה עודכנה. מכשירים אחרים נותקו.',
-    messageSaved: 'שמרנו את ההודעה ✓',
+    messageSaved: 'ההודעה נשמרה',
     messageLoaded: 'הודעה נטענה מהספרייה — אפשר לערוך ואז לשמור',
-    templateCreated: 'התבנית נוצרה ✓',
-    templateSaved: 'התבנית נשמרה ✓',
+    templateCreated: 'התבנית נוצרה',
+    templateSaved: 'התבנית נשמרה',
     adminUserDetailsSaved: 'הפרטים נשמרו',
     invitationsSent: 'ההזמנות נשלחו',
   },
@@ -383,7 +383,7 @@ export const strings = {
     giftPayNow: 'הדמיית תשלום מוצלח',
     giftPayFail: 'הדמיית תשלום שנכשל',
     giftBack: 'חזרה',
-    giftSuccessTitle: 'המתנה נשלחה 💛',
+    giftSuccessTitle: 'המתנה נשלחה',
     giftSuccessBody: (total: string, amount: string) =>
       `זו הדמיה — לא חויבתם. בתשלום אמיתי הייתם משלמים ${total}, ובעלי האירוע היו מקבלים ${amount}.`,
     giftFailTitle: 'התשלום לא עבר',
@@ -403,16 +403,20 @@ export const strings = {
     commitLabel: 'מועד סגירת הרשימה',
     commitExplain:
       'כמה ימים לפני האירוע צריך למסור לאולם מספר סופי? ביום הזה כל אישורי ההגעה נסגרים, ולוח הזמנים שלהם נבנה לאחור סביבו.',
-    commitLockedValue: (n: number | string) => `${n} ימים לפני האירוע`,
+    // "1 ימים לפני האירוע" הוא שגיאת דקדוק שהופיעה בכל בורר בחירת המועד.
+    // בעברית יחיד מקבל ניסוח אחר לגמרי — לא רק מספר אחר.
+    commitLockedValue: (n: number | string) =>
+      Number(n) === 1 ? 'יום אחד לפני האירוע' : `${n} ימים לפני האירוע`,
     commitLockedNote:
-      '🔒 כבר בחרתם — הבחירה נעולה כי לוח הזמנים כבר בנוי סביבה.',
+      'כבר בחרתם — הבחירה נעולה כי לוח הזמנים כבר בנוי סביבה.',
     commitSelectPlaceholder: 'בחרו מספר ימים…',
-    commitOptionLabel: (n: number) => `${n} ימים לפני האירוע`,
+    commitOptionLabel: (n: number) =>
+      n === 1 ? 'יום אחד לפני האירוע' : `${n} ימים לפני האירוע`,
     commitWarn: 'שימו לב: אחרי השמירה אי אפשר לשנות את הבחירה.',
     imageLabel: 'תמונת ההזמנה',
     imageAlt: 'תצוגה מקדימה של ההזמנה',
     imageRemove: 'הסרת התמונה',
-    imageUpload: '⬆ העלאת תמונת הזמנה',
+    imageUpload: 'העלאת תמונת הזמנה',
     imageUploadHint: 'זו התמונה שתישלח למוזמנים בהזמנה',
     // ---- Empty state לתמונת ההזמנה בהירו — כשעוד לא הועלתה תמונה ----
     inviteEmptyTitle: 'תמונת ההזמנה',
@@ -420,7 +424,7 @@ export const strings = {
     inviteEmptyCta: 'הוספת תמונה',
     venueFallback:
       'עוד לא הזנתם את פרטי האירוע — בואו נשלים את השמות, האולם והתאריך',
-    editButton: '✎ עריכת פרטים',
+    editButton: 'עריכת פרטים',
     rsvpTitle: 'תמונת מצב — אישורי הגעה',
     rsvpSub: (confirmed: number, total: number) =>
       `${confirmed} אישרו הגעה מתוך ${total}`,
@@ -529,7 +533,7 @@ export const strings = {
       send_reminders: 'שליחת תזכורות',
       update_event: 'עדכון פרטי אירוע',
       confirm_submit: 'אישור הגעה מהקישור',
-      gift_mock_checkout: '🎁 הדמיית מתנה (לא תשלום אמיתי)',
+      gift_mock_checkout: 'הדמיית מתנה (לא תשלום אמיתי)',
       confirm_invalid_token: '⚠ ניסיון גישה לקישור לא תקין',
     } as Record<string, string>,
   },
@@ -540,7 +544,8 @@ export const strings = {
   // ========================================================================
   postpone: {
     // ---- נעילת פרטי האירוע (מוצג ליד השדות הנעולים) ----
-    lockedNote: '🔒 פרטים אלה נשמרים קבועים אחרי פתיחת האירוע, כדי שאישורי ההגעה והתזכורות יישארו מסונכרנים.',
+    lockedNote:
+      'פרטים אלה נשמרים קבועים אחרי פתיחת האירוע, כדי שאישורי ההגעה והתזכורות יישארו מסונכרנים.',
     lockedFieldHint: 'נעול לעריכה',
 
     // ---- הכניסה לנוהל, באזור פרטי האירוע ----
@@ -557,7 +562,7 @@ export const strings = {
     dialogNoDateBody:
       'אין צורך להזין תאריך עכשיו. לאחר אישור הבקשה תוכלו לעדכן את האירוע כשתדעו את הפרטים.',
     dialogSubmit: 'שליחת בקשה לאישור',
-    sentTitle: 'הבקשה נשלחה ✓',
+    sentTitle: 'הבקשה נשלחה',
     sentBody:
       'הבקשה ממתינה לאישור מנהל VEYA. לאחר האישור תוכלו לעדכן את פרטי האירוע.',
     sendError: 'לא הצלחנו לשלוח את הבקשה. נסו שוב',
@@ -596,7 +601,7 @@ export const strings = {
     messageSend: 'שליחת הודעת דחייה',
     messageNoContent: 'בחרו נוסח או כתבו הודעה לפני השליחה',
     messageSending: 'שולחים…',
-    messageSent: (n: number) => `ההודעה נשלחה ל-${n} מוזמנים ✓`,
+    messageSent: (n: number) => `ההודעה נשלחה ל-${n} מוזמנים`,
     messageSkipped: (n: number) =>
       `${n} מוזמנים דולגו — אין להם מספר טלפון תקין`,
     messageError: 'לא הצלחנו לשלוח את ההודעה. נסו שוב',
@@ -616,7 +621,7 @@ export const strings = {
     // בניווט — בלי אמוג'י (לפריטי הניווט יש אייקוני SVG משלהם).
     title: 'מתנות באשראי',
     // ככותרת המסך עצמו.
-    pageTitle: '🎁 מתנות באשראי',
+    pageTitle: 'מתנות באשראי',
     loadError: 'לא הצלחנו לטעון את המתנות. ננסה שוב',
 
     // סיכום — **רק** מה שהאירוע קיבל בפועל. עמלת השירות אינה מוצגת כאן
@@ -772,6 +777,16 @@ export const strings = {
     },
   },
 
+  // ---- מסך "ניהול הודעות" ----
+  // המונחים כאן תלויי-סוג-אירוע ולכן מקבלים את guestsLabel מהלקסיקון:
+  // בחתונה "מוזמנים", באירוע עסקי "משתתפים".
+  messagesPage: {
+    pageIntro: (guestsLabel: string) =>
+      `כאן בוחרים אילו הודעות יוצאות ל${guestsLabel}, מתי הן יוצאות, ולמי הן כבר הגיעו.`,
+    communicationTitle: (guestsLabel: string) => `הודעות ל${guestsLabel}`,
+    previewCaption: (guestsLabel: string) => `כך ה${guestsLabel} יראו את ההודעה`,
+  },
+
   guests: {
     // GuestsPage
     loadError: 'לא הצלחנו לטעון את הרשימה, ננסה שוב',
@@ -878,7 +893,7 @@ export const strings = {
     timelineReplied: 'המוזמן הגיב',
     timelineLoadError: 'שגיאה בטעינת ציר הזמן',
     timelineTitle: (name: string) => `ציר זמן — ${name}`,
-    closeX: 'סגירה ✕',
+    closeX: 'סגירה',
     currentStatus: 'סטטוס נוכחי:',
     timelineEmpty: 'עדיין לא נשלחו הודעות למוזמן הזה.',
 
@@ -910,7 +925,7 @@ export const strings = {
       'לכל קבוצה אפשר לרשום העדפה קצרה — למשל "רחוק מהרעש" או "קרוב לרחבה". נשמור אותה לכל חברי הקבוצה כדי לעזור בסידור ההושבה.',
     notesEmpty: 'עדיין אין קבוצות. הוסיפו מוזמנים ושייכו אותם לקבוצות כדי להגדיר העדפות.',
     notesInputPlaceholder: 'למשל: רחוק מהרעש',
-    notesSaved: 'שמרנו ✓',
+    notesSaved: 'נשמר',
     notesDone: 'סיום',
     groupCount: (n: number) => `${n} מוזמנים`,
 
@@ -1048,7 +1063,7 @@ export const strings = {
     constraintsChecking: 'בודקים…',
     constraintsSummary: (guests: number, found: number, pending: number) =>
       `נבדקו ${guests} · ${found} העדפות זוהו · ${pending} ממתינות להבהרה`,
-    constraintsNonePending: 'אין הבהרות ממתינות ✓',
+    constraintsNonePending: 'אין הבהרות ממתינות',
     clarificationQuestion: (who: string, what: string, target: string) =>
       `${who} ביקש/ה ${what} "${target}" — למי הכוונה?`,
     clarificationNone: 'אף אחד מהם',
@@ -1092,7 +1107,7 @@ export const strings = {
       emptyHint: 'אפשר לנסות סקיצה ברורה יותר, או להמשיך בבנייה ידנית.',
 
       // שלב 3: מסך "בדיקה ואישור".
-      reviewTitle: 'הסקיצה מוכנה 🎉',
+      reviewTitle: 'הסקיצה מוכנה',
       summary: (tables: number, other: number) => {
         const tablesPart = tables === 1 ? 'שולחן אחד' : `${tables} שולחנות`
         if (other === 0) return `זיהינו ${tablesPart}.`

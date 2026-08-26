@@ -3,6 +3,7 @@ import { createMyEvent } from '../api'
 import type { EventSummary, EventType } from '../types'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
+import { EventTypeIcon } from './EventTypeIcon'
 
 /** שדות יצירת אירוע חדש (סוג אירוע + בעלי האירוע + אולם) — משמש במסך הראשון ובפופאובר. */
 function NewEventFields({
@@ -57,7 +58,7 @@ function NewEventFields({
               onClick={() => setEventType(opt.type)}
             >
               <span className="event-type-chip-icon" aria-hidden="true">
-                {opt.icon}
+                <EventTypeIcon type={opt.type} />
               </span>
               <span className="event-type-chip-label">{opt.label}</span>
             </button>

@@ -78,7 +78,7 @@ function RequestCard({
       <header className="apo-head">
         <div className="apo-title-wrap">
           <h3 className="apo-title">
-            {terms.icon} {row.event_title || `אירוע #${row.event_id}`}
+            {row.event_title || `אירוע #${row.event_id}`}
           </h3>
           <span className="apo-sub">
             {terms.label}

@@ -19,7 +19,7 @@ import type {
   MessageTypeStatus,
   RsvpTrackStatus,
 } from '../types'
-import { MESSAGE_TYPE_ICONS, RSVP_LABELS } from '../types'
+import { RSVP_LABELS } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { GuestTimelineModal } from './GuestTimelineModal'
@@ -477,7 +477,7 @@ function TrackStatusCard({
           >
             {sequence.map((m) => (
               <option key={m.message_type} value={m.message_type}>
-                {MESSAGE_TYPE_ICONS[m.message_type]} {m.title}
+                {m.title}
               </option>
             ))}
           </select>

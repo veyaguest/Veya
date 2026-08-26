@@ -16,12 +16,12 @@ import type {
   MessageType,
   TargetAudience,
 } from '../types'
-import { MANUAL_SEND_TYPES, MESSAGE_TYPE_ICONS, TARGET_AUDIENCE_LABELS } from '../types'
-import { EVENT_TERMS } from '../strings/eventTypes'
+import { MANUAL_SEND_TYPES, TARGET_AUDIENCE_LABELS } from '../types'
+import { MessageTypeIcon } from './MessageTypeIcon'
+import { activeEventTerms, EVENT_TERMS } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import './PostponeDialog.css'
 
-const STEP_ICON = MESSAGE_TYPE_ICONS
 
 /**
  * באילו שלבים תמונת ההזמנה נלווית להודעה — מקור אמת יחיד לכלל הזה.
@@ -108,7 +108,11 @@ function asReadableText(content: string, values: Record<string, string>): string
     .join('')
 }
 
+const t = strings.messagesPage
+
 export function CommunicationTab() {
+  // המונח נשאב מהלקסיקון: באירוע עסקי "מוזמנים" הופך ל"משתתפים".
+  const guestsLabel = activeEventTerms().guestsLabel
   const [messages, setMessages] = useState<EventMessage[] | null>(null)
   const [event, setEvent] = useState<EventDetails | null>(null)
   const [activeType, setActiveType] = useState<MessageType>('invitation')
@@ -136,7 +140,7 @@ export function CommunicationTab() {
   return (
     <div className="gm2-wrap">
       <div className="gm2-head">
-        <h2 className="gm2-title">💬 הודעות לאורחים</h2>
+        <h2 className="gm2-title">{t.communicationTitle(guestsLabel)}</h2>
       </div>
 
       {error && <p className="form-error">{error}</p>}
@@ -153,7 +157,7 @@ export function CommunicationTab() {
                 onClick={() => setActiveType(m.message_type)}
               >
                 <span className="gm2-step-icon" aria-hidden="true">
-                  {STEP_ICON[m.message_type]}
+                  <MessageTypeIcon type={m.message_type} />
                 </span>
                 <span className="gm2-step-name">{m.title}</span>
               </button>
@@ -251,7 +255,7 @@ function MessagePanel({
       <section className="gm2-card">
         <header className="gm2-card-head">
           <span className="gm2-card-icon" aria-hidden="true">
-            {STEP_ICON[message.message_type]}
+            <MessageTypeIcon type={message.message_type} />
           </span>
           <h3 className="gm2-card-title">{message.title}</h3>
         </header>
@@ -376,7 +380,7 @@ function MessagePanel({
       {wide && (
         <aside className="gm2-side">
           <PhonePreview message={message} event={event} />
-          <p className="gm2-side-cap">👀 כך האורחים יראו את ההודעה</p>
+          <p className="gm2-side-cap">{t.previewCaption(activeEventTerms().guestsLabel)}</p>
         </aside>
       )}
 
@@ -388,7 +392,9 @@ function MessagePanel({
           <div className="gm2-sheet-backdrop" onClick={() => setShowPreview(false)}>
             <div className="gm2-sheet" onClick={(e) => e.stopPropagation()}>
               <div className="gm2-sheet-head">
-                <h3 className="gm2-card-title">כך האורחים יראו את ההודעה</h3>
+                <h3 className="gm2-card-title">
+                  {t.previewCaption(activeEventTerms().guestsLabel)}
+                </h3>
                 <button
                   type="button"
                   className="gm2-sheet-close"

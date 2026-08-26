@@ -5,6 +5,7 @@ import type { EventSummary, EventType } from '../types'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
 import { VenueAutocomplete } from './VenueAutocomplete'
 import { TimePicker } from './TimePicker'
+import { EventTypeIcon } from './EventTypeIcon'
 import { AddGuestForm } from './AddGuestForm'
 import { ContactsImportDialog, isContactPickerSupported } from './ContactsImportDialog'
 import { ImportDialog } from './ImportDialog'
@@ -197,7 +198,7 @@ export function OnboardingWizard({ onCreated }: Props) {
                     onClick={() => setForm({ ...form, event_type: opt.type })}
                   >
                     <span className="event-type-chip-icon" aria-hidden="true">
-                      {opt.icon}
+                      <EventTypeIcon type={opt.type} />
                     </span>
                     <span className="event-type-chip-label">{opt.label}</span>
                   </button>
