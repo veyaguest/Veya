@@ -508,6 +508,7 @@ type HmIconName =
   | 'copy'
   | 'trash'
   | 'check'
+  | 'sketch'
 
 function HmIcon({ name, size = 22 }: { name: HmIconName; size?: number }) {
   const common = {
@@ -642,6 +643,15 @@ function HmIcon({ name, size = 22 }: { name: HmIconName; size?: number }) {
       return (
         <svg {...common}>
           <path d="M5 12.5 10 17.5 19.5 7" />
+        </svg>
+      )
+    // תמונה/סקיצה — החליף את האימוג'י 🖼️ שהופיע בשלושה מקומות בעורך.
+    case 'sketch':
+      return (
+        <svg {...common}>
+          <rect x="3.5" y="5" width="17" height="14" rx="2" />
+          <path d="M3.8 15.6 8.2 11.4l3.3 3.1 3.4-3.6 5.1 5" />
+          <path d="M15.6 9v.2" />
         </svg>
       )
     case 'save':
@@ -800,7 +810,9 @@ function HallStartChoice(props: { hasContent: boolean; onBuildNew: () => void; o
             <span className="hm-start-card-sub">בנו את האולם שלכם מאפס והוסיפו שולחנות, רחבה ואובייקטים לפי הצורך.</span>
           </button>
           <button type="button" className="hm-start-card" onClick={props.onBuildFromSketch}>
-            <span className="hm-start-card-ic" aria-hidden="true">🖼️</span>
+            <span className="hm-start-card-ic" aria-hidden="true">
+              <HmIcon name="sketch" size={26} />
+            </span>
             <span className="hm-start-card-title">בניית אולם מסקיצה</span>
             <span className="hm-start-card-sub">
               יש לכם סקיצה מהאולם? העלו אותה ו-VEYA תזהה את השולחנות, המספרים והפריסה ותבנה עבורכם את האולם.
@@ -1141,7 +1153,7 @@ function SketchUploadDialog(props: {
             }}
           >
             <span className="sk-upload-drop-icon" aria-hidden="true">
-              🖼️
+              <HmIcon name="sketch" size={30} />
             </span>
             <p className="sk-upload-drop-hint">{hallSketchT.uploadDropHint}</p>
             <button type="button" className="hm-ghost-btn" onClick={(e) => { e.stopPropagation(); props.onBrowse() }}>
@@ -4029,7 +4041,16 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                         <span className="table-center">
                           <span className="table-num">{t.table_number}</span>
                           {t.name && <span className="table-name">{t.name}</span>}
-                          <span className="table-occ">
+                          {/* מספר התפוסה הוא הדבר היחיד על השולחן שאומר
+                              "יש כאן בעיה". קודם הוא הוצג באפור 11px גם
+                              כשהיו 18 אנשים ב-12 מקומות, והחריגה סומנה רק
+                              בנקודה בת 10px בפינה. עכשיו הוא עצמו משנה
+                              צבע ומשקל. */}
+                          <span
+                            className={`table-occ${over ? ' table-occ-over' : ''}${
+                              !over && used === t.capacity ? ' table-occ-full' : ''
+                            }`}
+                          >
                             {used}/{t.capacity}
                           </span>
                         </span>
@@ -4940,7 +4961,11 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                 </div>
 
                 <div className="hm-guide-step">
-                  <span className="hm-guide-emoji">➕</span>
+                  <span className="hm-guide-emoji" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d='M12 5.5v13M5.5 12h13' />
+                    </svg>
+                  </span>
                   <div>
                     <h3>מוסיפים שולחנות ואלמנטים</h3>
                     <p>
@@ -4951,7 +4976,11 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                 </div>
 
                 <div className="hm-guide-step">
-                  <span className="hm-guide-emoji">✋</span>
+                  <span className="hm-guide-emoji" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d='M8.5 11V5.8a1.6 1.6 0 0 1 3.2 0V11M11.7 10.6V4.9a1.6 1.6 0 0 1 3.2 0v5.7M14.9 10.9V6.6a1.6 1.6 0 0 1 3.1 0v7.6a6 6 0 0 1-6 6h-.9a5.4 5.4 0 0 1-4-1.8l-3-3.4a1.6 1.6 0 0 1 2.3-2.2l2 1.9' />
+                    </svg>
+                  </span>
                   <div>
                     <h3>מזיזים, מסובבים ומשנים גודל</h3>
                     <p>
@@ -4962,7 +4991,11 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                 </div>
 
                 <div className="hm-guide-step">
-                  <span className="hm-guide-emoji">🪑</span>
+                  <span className="hm-guide-emoji" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d='M7 4.5h10v7H7zM6 12.5h12M8 12.5v6M16 12.5v6' />
+                    </svg>
+                  </span>
                   <div>
                     <h3>הושבה בקליק</h3>
                     <p>
@@ -4973,7 +5006,11 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                 </div>
 
                 <div className="hm-guide-step">
-                  <span className="hm-guide-emoji">✨</span>
+                  <span className="hm-guide-emoji" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d='M8.4 4.5 9.7 8l3.5 1.3L9.7 10.6 8.4 14.1 7.1 10.6 3.6 9.3 7.1 8l1.3-3.5ZM16.6 12.4 17.5 15l2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9.9-2.6Z' />
+                    </svg>
+                  </span>
                   <div>
                     <h3>מילוי אוטומטי חכם</h3>
                     <p>
@@ -4984,7 +5021,11 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                 </div>
 
                 <div className="hm-guide-step">
-                  <span className="hm-guide-emoji">🖼️</span>
+                  <span className="hm-guide-emoji" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d='M3.5 5.5h17v13h-17zM3.8 15.4l4.4-4.2 3.3 3.1 3.4-3.6 5.1 5M15.6 8.9v.2' />
+                    </svg>
+                  </span>
                   <div>
                     <h3>סקיצת האולם כרקע</h3>
                     <p>
@@ -5150,7 +5191,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                 </p>
               </div>
               <button className="hm-guide-cta" onClick={() => setGuideOpen(false)}>
-                יאללה, מתחילים
+                מתחילים
               </button>
             </div>
           </>

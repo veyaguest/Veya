@@ -5712,6 +5712,9 @@ td.notes.seating {
 }
 .table-status-dot.status-red {
   background: var(--error);
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 0 0 2px rgba(166, 96, 90, 0.25);
 }
 .hall-tray.drag-over {
   border-color: var(--gold);
@@ -5801,13 +5804,34 @@ td.notes.seating {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* ---- תפוסת השולחן ----
+   זה המספר היחיד על השולחן שיכול לומר "יש כאן בעיה", והוא היה הטקסט
+   החלש ביותר עליו: אפור 11px, זהה לגמרי בין 8/12 לבין 18/12. החריגה
+   סומנה רק בנקודה בת 10px בפינה. שלושה מצבים, שלושה מראות. */
 .table-occ {
   font-size: calc(11px * var(--t-s, 1));
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: #8c8375;
   margin-top: calc(2px * var(--t-s, 1));
+  font-variant-numeric: tabular-nums;
 }
-.hall-table.over .table-occ {
+/* מלא בדיוק — לא תקלה, אבל כדאי לדעת. */
+.table-occ-full {
+  color: var(--gold-deep);
+}
+/* חריגה מהקיבולת — הודעה, לא רמז. */
+.table-occ-over {
+  color: #fff;
+  font-weight: var(--weight-bold);
+  background: var(--error);
+  border-radius: var(--radius-full);
+  padding: 0 calc(6px * var(--t-s, 1));
+}
+/* הכלל הקודם צבע את המונה באדום על *רקע* אדום של .table-occ-over —
+   כלומר טקסט בצבע הרקע שלו, בלתי קריא לחלוטין. המצב "חריגה" מטופל
+   כולו ב-.table-occ-over, ולכן הכלל הזה מוגבל לשולחנות שאין להם את
+   התג (למשל חפיפה גיאומטרית, שגם היא מסמנת .over). */
+.hall-table.over .table-occ:not(.table-occ-over) {
   color: var(--error);
 }
 
@@ -5905,14 +5929,17 @@ td.notes.seating {
 }
 /* כיסא נקי בסגנון VEYA Seating: מלבן קטן מעוגל בגוון שנהב. פנוי = בהיר,
    תפוס = זהב עדין. בלי שמות על השולחן — רק אינדיקציה כמה מקומות תפוסים. */
+/* כיסא פנוי מול כיסא תפוס: קודם שניהם היו גווני שנהב כמעט זהים על
+   שולחן שנהב, ואי אפשר היה לראות תפוסה במבט על המפה. הפנוי נשאר שקט
+   אבל מקבל מסגרת מובחנת. */
 .seat-pip {
   position: absolute;
   width: calc(11px * var(--t-s, 1));
   height: calc(15px * var(--t-s, 1));
   transform: translate(-50%, -50%);
   border-radius: calc(4px * var(--t-s, 1));
-  background: #f4eee0;
-  border: 1px solid #e5dec9;
+  background: #fdfbf6;
+  border: 1px solid #d9d0b8;
 }
 .seat-pip.seat-taken {
   background: linear-gradient(160deg, #e9dcb3, #c9a227);
@@ -12898,8 +12925,19 @@ td.notes.seating {
   }
   .hm-guide-emoji {
     flex: 0 0 auto;
-    font-size: 26px;
-    line-height: 1.25;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--gold) 12%, transparent);
+    color: var(--gold-deep);
+  }
+  .hm-guide-emoji svg {
+    width: 19px;
+    height: 19px;
+    display: block;
   }
   .hm-guide-step h3,
   .hm-guide-tabs h3 {
