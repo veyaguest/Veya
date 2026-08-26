@@ -270,11 +270,14 @@ export function groupLabel(group: string): string {
   return (GROUP_LABELS as Record<string, string>)[group] ?? group
 }
 
+// המונחים לפי מילון VEYA: לא "סירבו" (מאשים), לא "לא ענו" (מאשים),
+// ולא "מתלבט" (מייחס למוזמן מצב נפשי). ניסוח בלשון רבים ניטרלית —
+// גם נכון לכל מגדר וגם עקבי עם התוויות במסך "תמונת מצב".
 export const RSVP_LABELS: Record<RsvpStatus, string> = {
-  pending: 'טרם השיב',
-  confirmed: 'מגיע',
-  declined: 'לא מגיע',
-  maybe: 'מתלבט',
+  pending: 'ממתינים לתשובה',
+  confirmed: 'אישרו הגעה',
+  declined: 'לא מגיעים',
+  maybe: 'לא החליטו',
 }
 
 // ---- תבנית הודעת הזמנה (שלב RSVP 2) ----

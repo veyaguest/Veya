@@ -4,6 +4,13 @@
      (ראה בלוק ".sidebar, .auth-marketing, .dash-event" בהמשך).
      מפת האולם (.hall-canvas/.hall-viewport) בהירה בכוונה — עורך מסוג
      Figma/Miro, לא משטח כהה. */
+  /* ⚠️ ניגודיות: הערכים של --muted/--faint/--gold-deep/--green/--error
+     כוונו כך שיעברו WCAG AA (4.5:1 לטקסט רגיל) על רקע השנהב והלבן.
+     תקן הנגישות הישראלי IS 5568 מעוגן ב-WCAG 2.0 AA, והטוקנים האלה
+     נושאים את רוב הטקסט המשני במערכת (--muted לבדו: 191 שימושים).
+     הגוון והרוויה נשמרו — רק הבהירות ירדה — ולכן הפלטה עצמה לא השתנתה.
+     לפני השינוי: muted 3.47 · faint 2.06 · gold-deep 3.72 · green 3.16.
+     כל שינוי עתידי בערכים האלה חייב להיבדק מול --ivory ו---cream. */
   --black: #0b0a0c;        /* שחור עמוק — סרגל צד + משטחים כהים */
   --black-soft: #14120e;   /* חום-פחם רך */
   --ivory: #fbf6ee;        /* רקע העמוד — שנהב חמים (spec: #FBF6EE) */
@@ -14,16 +21,16 @@
   --gold: #c9a227;         /* זהב ראשי */
   --gold-rgb: 201, 162, 39; /* אותו --gold, כרכיבי RGB — לשימוש בתוך rgba() כשצריך שקיפות חלקית */
   --gold-light: #e4c96b;   /* זהב בהיר — הדגשה/hover */
-  --gold-deep: #9a7b2e;    /* זהב מעומעם — טקסט/מסגרות זהב על בהיר */
+  --gold-deep: #896e29;    /* זהב מעומעם — טקסט/מסגרות זהב על בהיר (4.5:1 על שנהב) */
   --charcoal: #2b2620;     /* טקסט ראשי/כותרות (spec: #2B2620) */
   --charcoal-panel: #18181b; /* zinc-900 — כרטיס "הצעד הבא" בדשבורד: כהה ומינימלי, בכוונה מנותק מפלטת הזהב */
   --body: #4a4438;         /* טקסט משני — תאי טבלה/מספרים (spec: #4A4438) */
-  --muted: #8c8375;        /* תווית מעומעמת (spec: #8C8375) */
-  --faint: #b8ad97;        /* טקסט/קו חלש (spec: #B8AD97) */
+  --muted: #787064;        /* תווית מעומעמת — 4.5:1 על שנהב (היה #8C8375 = 3.47) */
+  --faint: #9d8d6f;        /* טקסט/קו חלש — 3:1 על שנהב (היה #B8AD97 = 2.06) */
   --ivory-light: #fbf6ee;  /* משטח מקונן בהיר */
-  --error: #a6605a;        /* "לא מגיעים"/שגיאה — ורוד-אדמדם מאופק */
+  --error: #a45e59;        /* "לא מגיעים"/שגיאה — ורוד-אדמדם מאופק, 4.5:1 */
   --success: #9a7b2e;      /* "מגיעים" — זהב מעומעם, קריא על בהיר */
-  --green: #2f9e5f;        /* "אישרו הגעה" — ירוק ברור וקריא על בהיר */
+  --green: #27814e;        /* "אישרו הגעה" — ירוק קריא, 4.5:1 על שנהב */
   /* ---- טוקני מד ההגעה (Gauge) בדשבורד בלבד — סגנון "לוח מחוונים" פרימיום
      לפי הנחיית המייסד (2026-08-05), מחליף את פלטת ה-12-ההצעות הקודמת
      (ראו Decision Log). לא לשימוש מחוץ לכרטיס. ---- */
@@ -130,6 +137,10 @@
    הטוקנים הבהירים של :root ונראית כמו חלון לבן על עמוד כהה. */
 .hub-sheet,
 .onboard-card,
+/* באנר ה-Cookies רץ על רקע --black אבל לא היה ברשימה, ולכן ירש את
+   טוקני המצב הבהיר: הקישור "הגדרות מותאמות" הוצג ב---gold-deep הכהה
+   על שחור (4.07:1) במקום בזהב הבהיר. */
+.cookie-banner,
 .join-card {
   --cream: #14120e;
   --surface-hi: #1c1a14;
@@ -482,8 +493,8 @@ summary:focus-visible,
   text-decoration: underline;
 }
 .app-footer-copy {
-  color: var(--faint);
-  font-size: 13px;
+  color: var(--muted);
+  font-size: var(--text-sm);
 }
 
 /* ---- Cookie Banner ---- */
@@ -1451,7 +1462,7 @@ td.notes.seating {
 }
 .badge.maybe {
   background: color-mix(in srgb, var(--gauge-maybe) 20%, transparent);
-  color: #8a6d1f;
+  color: #83671d;  /* היה #8a6d1f = 4.46:1 — מתחת לסף AA בשערה */
   border-color: color-mix(in srgb, var(--gauge-maybe) 45%, transparent);
 }
 .badge.pending {
@@ -2965,10 +2976,13 @@ td.notes.seating {
   font-feature-settings: 'tnum' 1, 'lnum' 1;
   letter-spacing: -0.01em;
 }
+/* התווית יושבת על תא שקוף-למחצה (cream 55%) ולא על משטח מלא, ולכן
+   --muted יורד שם מתחת ל-4.5:1. תווית בת 11px צריכה ממילא להיות
+   קריאה במיוחד. */
 .countdown-cell-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  color: var(--body);
   letter-spacing: 0.02em;
 }
 .countdown-sep {
@@ -3679,7 +3693,7 @@ td.notes.seating {
   margin-top: 2px;
   font-size: var(--text-base);
   font-weight: var(--weight-medium);
-  color: var(--faint);
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
   pointer-events: none;
@@ -10913,7 +10927,7 @@ td.notes.seating {
   margin: 0;
 }
 .gm2-text-empty {
-  color: var(--faint);
+  color: var(--muted);
 }
 
 /* --- מעבר בין ההודעות המוכנות --- */
@@ -11228,7 +11242,7 @@ td.notes.seating {
   min-height: 1.1em;
 }
 .ph-empty {
-  color: #7a8a6f;
+  color: #5d6b53;  /* היה #7a8a6f = 3.21:1 על בועת ההודעה */
   font-style: italic;
 }
 .ph-btns {
