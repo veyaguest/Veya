@@ -222,9 +222,6 @@ function SeatingHelperCard({ stats, onNavigate }: { stats: DashboardStats; onNav
             >
               <span className="seating-helper-step-num">{status === 'done' ? '✓' : i + 1}</span>
               <span className="seating-helper-step-label">{step}</span>
-              {!isFinal && (
-                <span className="seating-helper-step-arrow" aria-hidden="true">↓</span>
-              )}
             </li>
           )
         })}
@@ -240,23 +237,26 @@ function SeatingHelperCard({ stats, onNavigate }: { stats: DashboardStats; onNav
   )
 }
 
-/** שניות עד לתאריך/שעת האירוע (יכול להיות שלילי אם האירוע כבר עבר). */
+/** זמן שנותר עד לתאריך/שעת האירוע (null אם אין תאריך).
+ *
+ *  מתעדכן פעם בדקה ולא פעם בשנייה: ספירת שניות רצה על מסך "תמונת מצב"
+ *  יצרה תחושת לחץ שסותרת את הטון של VEYA, לא נתנה שום מידע שאפשר לפעול
+ *  לפיו — ואילצה את כל עץ הדשבורד לרנדר מחדש 60 פעם בדקה. */
 function useCountdown(targetMs: number | null) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (targetMs === null) return
-    const id = setInterval(() => setNow(Date.now()), 1000)
+    const id = setInterval(() => setNow(Date.now()), 60_000)
     return () => clearInterval(id)
   }, [targetMs])
 
   if (targetMs === null) return null
   const diff = targetMs - now
-  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true }
+  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, isPast: true }
   return {
     days: Math.floor(diff / 86_400_000),
     hours: Math.floor((diff % 86_400_000) / 3_600_000),
     minutes: Math.floor((diff % 3_600_000) / 60_000),
-    seconds: Math.floor((diff % 60_000) / 1000),
     isPast: false,
   }
 }
@@ -293,8 +293,6 @@ function CountdownTimer({ date, time }: { date?: string; time?: string }) {
       <CountdownCell value={cd.hours} label={t.countdownHours} />
       <span className="countdown-sep" aria-hidden="true">:</span>
       <CountdownCell value={cd.minutes} label={t.countdownMinutes} />
-      <span className="countdown-sep" aria-hidden="true">:</span>
-      <CountdownCell value={cd.seconds} label={t.countdownSeconds} />
     </div>
   )
 }
@@ -691,7 +689,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
                     className="dash-hero-image-edit"
                     onClick={() => setEditing(true)}
                   >
-                    ✎ {strings.common.edit}
+                    {strings.common.edit}
                   </button>
                 </>
               ) : (
@@ -717,13 +715,13 @@ export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
             <div className="dash-hero-info">
               <h2 className="event-couple">{couple ?? terms.defaultTitle}</h2>
               <p className="event-info-line">
-                {terms.icon} {terms.label}
+                {terms.label}
                 {event?.venue_name ? ` · ${event.venue_name}` : ''}
                 {when ? ` · ${when}` : ''}
               </p>
               <CountdownTimer date={event?.event_date} time={event?.event_time} />
               <button className="btn-text dash-edit-link" onClick={() => setEditing(true)}>
-                ✎ עריכת פרטים
+                עריכת פרטים
               </button>
             </div>
           </div>
@@ -771,15 +769,16 @@ export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
         />
       )}
 
-      {/* "מנהלים את האירוע יחד?" — מוצג רק כשאין עדיין בן/בת זוג ואין הזמנה
-          פתוחה. הרכיב מחליט על עצמו ונעלם לבד ברגע שיש שותף/ה. */}
-      <PartnerCta />
-
       {!stats && <p className="dash-loading">{t.loadingData}</p>}
 
       {stats && stats.total_guests === 0 && (
         <div className="dash-empty-state">
-          <span className="dash-empty-icon">📋</span>
+          <span className="dash-empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 4.5h6a1.5 1.5 0 0 1 1.5 1.5v.5h1.5A1.5 1.5 0 0 1 19.5 8v11a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19V8A1.5 1.5 0 0 1 6 6.5h1.5V6A1.5 1.5 0 0 1 9 4.5Z" />
+              <path d="M9 11.5h6M9 15h4" />
+            </svg>
+          </span>
           <h3 className="dash-empty-title">{t.emptyTitle}</h3>
           <p className="dash-empty-desc">{t.emptyDesc}</p>
           <button
@@ -804,9 +803,26 @@ export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
         ]
         return (
           <>
-            {/* ---- סקשן המד — מוקד ויזואלי במלוא הרוחב, מיד מתחת להירו.
-                 לא כרטיס קטן בתוך Grid — "חלון ראווה" עצמאי למד ולסטטיסטיקות
-                 שלו בלבד, בלי כרטיסים אחרים לצידו. ---- */}
+            {/* ---- מה דורש פעולה עכשיו ----
+                 הכרטיסים האלה היו קודם בתחתית המסך, אחרי המד ואחרי יומן
+                 הפעילות. זה הפוך מהדרך שבה קוראים לוח בקרה: "135 מוזמנים
+                 עדיין בלי הזמנה" הוא הדבר היחיד במסך שבאמת מחייב פעולה,
+                 והוא היה מתחת לקו הגלילה. סטטיסטיקה מתארת; פעולה דוחפת —
+                 ולכן הפעולה קודמת. ---- */}
+            <div className="dash-stack dash-actions">
+              <InviteBanner
+                count={stats.total_guests - stats.invitations_sent}
+                onSend={() => onNavigate?.('messages')}
+              />
+              {giftsEligible && (
+                <PayoutReminder account={payout} onNavigate={onNavigate} />
+              )}
+              <SeatingHelperCard stats={stats} onNavigate={onNavigate} />
+            </div>
+
+            {/* ---- סקשן המד — מוקד ויזואלי במלוא הרוחב.
+                 לא כרטיס קטן בתוך Grid — "חלון ראווה" עצמאי למד
+                 ולסטטיסטיקות שלו בלבד, בלי כרטיסים אחרים לצידו. ---- */}
             <section className="gauge-section">
               <div className="gauge-section-head">
                 <h3 className="gauge-section-title">{t.donutCardTitle}</h3>
@@ -833,16 +849,10 @@ export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
               <ActivityLog />
             </section>
 
-            <div className="dash-stack">
-              <InviteBanner
-                count={stats.total_guests - stats.invitations_sent}
-                onSend={() => onNavigate?.('messages')}
-              />
-              {giftsEligible && (
-                <PayoutReminder account={payout} onNavigate={onNavigate} />
-              )}
-              <SeatingHelperCard stats={stats} onNavigate={onNavigate} />
-            </div>
+            {/* "מנהלים את האירוע יחד?" — הזמנה לשותף/ה. שימושי, אבל זו
+                הצעה ולא מצב האירוע, ולכן היא יושבת בסוף המסך ולא בראשו.
+                הרכיב מחליט על עצמו ונעלם לבד ברגע שיש שותף/ה. */}
+            <PartnerCta />
           </>
         )
       })()}
@@ -922,6 +932,10 @@ function RsvpGauge({
   centerValue: number
   centerLabel: string
 }) {
+  /* המספר הגדול לבדו לא אמר כלום: "154" יכול היה להיות 154 מתוך 160
+     או 154 מתוך 400, והוא גם חזר במדויק בכרטיס "מגיעים" שמתחתיו. עכשיו
+     הוא מוצג כיחס — המספר עצמו נשאר הגיבור, ומיד מתחתיו "מתוך X" שנותן
+     לו קנה מידה. */
   const animatedValue = useCountUp(centerValue, 900)
   const total = segments.reduce((s, x) => s + x.value, 0)
 
@@ -944,7 +958,7 @@ function RsvpGauge({
   return (
     <div className="gauge-wrap">
       <span className="gauge-glow" aria-hidden="true" />
-      <svg viewBox="0 0 240 140" className="gauge-svg" role="img" aria-label={`${centerValue} ${centerLabel}`}>
+      <svg viewBox="0 0 240 140" className="gauge-svg" role="img" aria-label={`${centerValue} ${t.gaugeOutOf(total)} ${centerLabel}`}>
         <path
           d={describeArc(CX, CY, R, 180, 0)}
           className="gauge-track"
@@ -975,6 +989,9 @@ function RsvpGauge({
       {/* מרכז המד כ-HTML (ולא SVG) — כדי שהעברית תוצג נכון בכל דפדפן */}
       <div className="gauge-center" aria-hidden="true">
         <span className="gauge-num">{animatedValue}</span>
+        {total > 0 && (
+          <span className="gauge-of">{t.gaugeOutOf(total)}</span>
+        )}
         <span className="gauge-lbl">{centerLabel}</span>
       </div>
     </div>

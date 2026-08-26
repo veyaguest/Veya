@@ -447,23 +447,25 @@ export const strings = {
     countdownDays: 'ימים',
     countdownHours: 'שעות',
     countdownMinutes: 'דקות',
-    countdownSeconds: 'שניות',
     countdownAriaLabel: (days: number, hours: number, minutes: number) =>
       `נותרו ${days} ימים, ${hours} שעות ו-${minutes} דקות לאירוע`,
     rsvpSummary: (confirmed: number, total: number) =>
       `${confirmed} מתוך ${total} מוזמנים אישרו הגעה`,
     donutCardTitle: 'סטטוס אישורי הגעה',
     // ---- מד ההושבה החצי-עגול (Gauge) — מחליף את הדונאט המלא ----
-    gaugeLabel: 'אישורי הגעה',
-    gaugeStatusMaybe: 'מתלבטים',
+    // המד סופר *אנשים* (SUM party_size) ולא רשומות מוזמן — מוזמן אחד
+    // שאישר עבור 4 נספר כ-4. התווית אומרת את זה במפורש, אחרת המספר כאן
+    // נראה סותר את "135 מוזמנים" במסך המוזמנים.
+    gaugeLabel: 'אנשים אישרו הגעה',
+    gaugeOutOf: (total: number) => `מתוך ${total} שהוזמנו`,
+    gaugeStatusMaybe: 'לא החליטו',
     gaugeStatusDeclined: 'לא מגיעים',
-    kpiConfirmed: 'מגיעים',
-    kpiPending: 'ממתינים',
+    kpiConfirmed: 'אישרו הגעה',
+    kpiPending: 'ממתינים לתשובה',
     // ---- באנר "יש מוזמנים בלי הזמנה" — מעל עדכוני אישורי ההגעה ----
     inviteBannerTitle: (count: number) =>
-      `💌 עוד ${count} מוזמנים נשארו ללא הזמנה`,
-    inviteBannerDesc:
-      'זה הזמן להשלים את השליחה ולהמשיך להתקדם עם הכנות האירוע.',
+      `${count} מוזמנים עדיין בלי הזמנה`,
+    inviteBannerDesc: 'ההזמנה תישלח בוואטסאפ, ואישורי ההגעה יתחילו להיכנס.',
     inviteBannerCta: 'שליחת הזמנות',
 
     // ---- תזכורת "פרטי קבלת מתנות" ----
@@ -491,16 +493,18 @@ export const strings = {
     },
 
     // ---- "סידורי הושבה בלי כאב הראש" — הכרטיס המרכזי בעמודה הימנית ----
-    seatingHelperTitle: 'סידורי הושבה בלי כאב הראש',
-    seatingHelperDesc:
-      'כמעט כל זוג מוצא את עצמו בימים שלפני האירוע שובר את הראש על סידורי ההושבה. במקום להעביר אנשים בין שולחנות במשך שעות, מספיק להגדיר קבוצות והעדפות — ואנחנו נבנה לכם הושבה חכמה בלחיצה אחת.',
+    seatingHelperTitle: 'סידור ההושבה',
+    // קודם ישבה כאן פסקה שיווקית בת 45 מילים בתוך לוח הבקרה של מוצר
+    // בתשלום. המשתמש כבר קנה — הוא צריך לדעת איפה הוא עומד, לא למה
+    // הפיצ'ר טוב.
+    seatingHelperDesc: 'שלושה צעדים והמנוע יציע סידור מלא. אפשר לשנות כל שולחן אחר כך.',
     seatingHelperSteps: [
       'הוספת מוזמנים',
       'יצירת קבוצות',
       'הוספת הערות והעדפות הושבה',
       'מעבר לסידור הושבה חכם',
     ],
-    seatingHelperCta: 'התחילו להכין את ההושבה',
+    seatingHelperCta: 'המשך בהכנת ההושבה',
     seatingHelperCtaReady: 'מעבר לסידור הושבה חכם',
     // ---- מוקאפ WhatsApp/אייפון — כיתוב ההזמנה מתחת לתמונה בבועה ----
     inviteCaptionNamed: (celebration: string, names: string) =>
