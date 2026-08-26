@@ -265,9 +265,17 @@ function MessagePanel({
             {readable.trim() ? (
               <p className="gm2-text">{readable}</p>
             ) : (
-              <p className="gm2-text gm2-text-empty">
-                עדיין לא בחרתם הודעה לשלב הזה.
-              </p>
+              /* מצב ריק ולא שורת טקסט: זה המצב שבו *כל* זוג חדש פוגש את
+                 המסך, והוא נמשך עד שבוחרים נוסח לכל אחד מששת השלבים.
+                 שורה אפורה בודדת לצד תצוגת טלפון בגובה מלא נראית כמו
+                 כרטיס שלא נגמר. */
+              <div className="gm2-empty">
+                <span className="gm2-empty-icon" aria-hidden="true">
+                  <MessageTypeIcon type={message.message_type} />
+                </span>
+                <strong className="gm2-empty-title">{t.stepEmptyTitle}</strong>
+                <span className="gm2-empty-desc">{t.stepEmptyDesc}</span>
+              </div>
             )}
 
             <div className="gm2-actions">

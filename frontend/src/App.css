@@ -14770,3 +14770,41 @@ td.notes.seating {
 .hall-mobile.is-desktop .hm-sheet-handle {
   display: none;
 }
+
+/* ---- מצב ריק בכרטיס ההודעה ----
+   הכרטיס יושב לצד תצוגת טלפון בגובה מלא, ולכן שורת טקסט בודדת
+   השאירה עמודה שנראית כאילו נקטעה. אותו דפוס של .empty בשאר
+   המערכת — אייקון, כותרת, משפט — רק בגובה שמתאים לכרטיס. */
+.gm2-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-10) var(--space-5);
+  text-align: center;
+}
+.gm2-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--surface-hi);
+  border: 1px dashed var(--line);
+  color: var(--gold-deep);
+}
+.gm2-empty-title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+  line-height: var(--leading-snug);
+}
+.gm2-empty-desc {
+  max-width: 34ch;
+  font-size: var(--text-base);
+  color: var(--muted);
+  line-height: var(--leading-normal);
+}

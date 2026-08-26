@@ -799,6 +799,8 @@ export const strings = {
       `כאן בוחרים אילו הודעות יוצאות ל${guestsLabel}, מתי הן יוצאות, ולמי הן כבר הגיעו.`,
     communicationTitle: (guestsLabel: string) => `הודעות ל${guestsLabel}`,
     previewCaption: (guestsLabel: string) => `כך ה${guestsLabel} יראו את ההודעה`,
+    stepEmptyTitle: 'עדיין לא נבחר נוסח לשלב הזה',
+    stepEmptyDesc: 'אפשר לבחור מתוך הנוסחים המוכנים, או לכתוב נוסח משלכם.',
   },
 
   guests: {
