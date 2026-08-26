@@ -483,18 +483,29 @@ summary:focus-visible,
   flex-wrap: wrap;
   gap: 6px 18px;
 }
-.app-footer-links a {
-  color: var(--muted);
-  font-size: 13px;
+/* ---- צבעי ה-Footer לפי המשטח שמתחתיו ----
+   ה-Footer מוצג גם על מסכי האפליקציה הבהירים וגם על מסכי הכניסה
+   הכהים (התחברות/אימות/הצטרפות), ואין לו רקע משלו. עם טוקן אחד
+   הוא היה קריא רק על אחד מהם: --muted על השחור של מסך ההתחברות
+   נתן 4.05:1, מתחת לסף AA. ברירת המחדל היא לכן המשטח הכהה (זה
+   מה שה-body צבוע בו), והמצב הבהיר נקבע בתוך .shell. */
+.app-footer-links a,
+.app-footer-copy {
+  color: rgba(245, 239, 226, 0.72);
+  font-size: var(--text-sm);
   text-decoration: none;
 }
 .app-footer-links a:hover {
-  color: var(--gold-deep);
+  color: var(--gold-light);
   text-decoration: underline;
 }
-.app-footer-copy {
+
+.shell .app-footer-links a,
+.shell .app-footer-copy {
   color: var(--muted);
-  font-size: var(--text-sm);
+}
+.shell .app-footer-links a:hover {
+  color: var(--gold-deep);
 }
 
 /* ---- Cookie Banner ---- */
