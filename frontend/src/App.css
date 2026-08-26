@@ -190,6 +190,12 @@ textarea {
 .stat-num,
 .mini-num,
 .gauge-num,
+/* ארבעת כרטיסי הסטטוס מתחת למד יושבים בשורה אחת ואמורים להיקרא
+   כעמודות; המונים בספירה לאחור מתחלפים בכל דקה, ובלי ספרות ברוחב
+   אחיד רוחב התא "קופץ" בכל שינוי. */
+.gauge-status-num,
+.countdown-cell-num,
+.rsvp-summary-num,
 .table-num,
 .admin-stat-num,
 .adm-kpi-num {
