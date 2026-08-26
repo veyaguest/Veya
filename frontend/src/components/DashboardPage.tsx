@@ -327,10 +327,25 @@ function LockableInput({
 function LockedValue({ text }: { text: string }) {
   return (
     <span className="locked-value" title={strings.postpone.lockedFieldHint}>
-      <span className="locked-value-icon" aria-hidden="true">🔒</span>
+      <span className="locked-value-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="4.5" y="10.5" width="15" height="9.5" rx="2" />
+          <path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" />
+        </svg>
+      </span>
       <span className="locked-value-text">{text || '—'}</span>
     </span>
   )
+}
+
+/** תאריך ISO (2026-11-18) בצורה שקוראים בעברית (18.11.2026).
+ *
+ *  שדה תאריך *נעול* אינו input אלא טקסט, ולכן הוא הציג את הערך הגולמי
+ *  כפי שהוא נשמר במסד — פורמט ISO שאף אחד לא כותב ככה בעברית. שדה פתוח
+ *  לא סבל מזה, כי הדפדפן מעצב את התאריך בעצמו. */
+function formatDateValue(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim())
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : iso
 }
 
 export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
@@ -541,7 +556,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
               <label className="field-group">
                 <span className="field-label">{t.dateLabel}</span>
                 {isLocked('event_date', event?.event_date) ? (
-                  <LockedValue text={form.event_date} />
+                  <LockedValue text={formatDateValue(form.event_date)} />
                 ) : (
                   <input
                     type="date"

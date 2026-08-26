@@ -3038,17 +3038,27 @@ td.notes.seating {
   display: block;
   margin-bottom: 8px;
 }
+/* שבעה סוגי אירוע ברשת של 4 עמודות נותנים שורה שנייה קטועה (4+3)
+   שנצמדת לצד אחד ונראית כמו טעות. flex עם עטיפה ומרכוז משאיר את
+   השורה האחרונה מאוזנת בכל מספר סוגים — כולל כשיתווסף סוג שמיני. */
 .event-type-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.event-type-grid > .event-type-chip {
+  flex: 1 1 110px;
+  max-width: 160px;
 }
 .event-type-chip {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 10px 6px;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 74px;
+  padding: var(--space-3) var(--space-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-m);
   background: var(--cream);
@@ -3079,11 +3089,14 @@ td.notes.seating {
   }
 }
 
+/* מספר השדות משתנה לפי סוג האירוע (חתונה = שני מארחים, בר מצווה =
+   אחד), ולכן רשת קשיחה של 3 עמודות יצרה שורה אחרונה קטועה שנצמדת
+   לצד. auto-fit נותן לשדות למלא את השורה בכל מספר. */
 .event-fields {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
 }
 .event-fields input {
   padding: 10px 14px;
@@ -3166,7 +3179,59 @@ td.notes.seating {
   letter-spacing: 0.2px;
 }
 .event-datetime input,
+/* ============================================================
+   שדות תאריך ושעה — אותה גיאומטריה בדיוק.
+   בורר השעה הוא רכיב משלנו, ושדה התאריך הוא ``input type=date``
+   ילידי. הם ישבו זה לצד זה באותה שורה ונראו כשני פקדים משתי
+   מערכות שונות: גובה שונה, פונט שונה, ואייקון שהדפדפן צייר
+   בצבע ובמיקום משלו. כאן שדה התאריך מקבל את המראה של בורר השעה
+   — אבל שומר על ה-picker הילידי, שבמובייל טוב מכל דבר שנבנה
+   בעצמנו.
+   ============================================================ */
+.event-datetime input[type='date'] {
+  width: 100%;
+  min-height: var(--control-h-lg);
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--cream);
+  color: var(--charcoal);
+  font-size: var(--text-md);
+  font-family: inherit;
+  color-scheme: light;
+  direction: ltr;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.event-datetime input[type='date']:hover {
+  border-color: var(--gold-light);
+}
+.event-datetime input[type='date']:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(var(--gold-rgb), 0.14);
+}
+/* האייקון הילידי מוחלף באייקון לוח השנה של המערכת, באותו צבע
+   ובאותו גודל כמו אייקון השעון בבורר השעה. */
+.event-datetime input[type='date']::-webkit-calendar-picker-indicator {
+  width: 17px;
+  height: 17px;
+  opacity: 0.55;
+  cursor: pointer;
+  filter: grayscale(1);
+}
+.event-datetime input[type='date']:hover::-webkit-calendar-picker-indicator {
+  opacity: 0.85;
+}
+
 .time-picker-trigger {
+  width: 100%;
+  min-height: var(--control-h-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius-m);
