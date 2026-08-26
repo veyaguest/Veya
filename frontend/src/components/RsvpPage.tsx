@@ -7,11 +7,13 @@ import {
   getEvent,
   getMessageStatusByType,
   getRsvpTrack,
+  getStats,
   listGuests,
   updateEvent,
 } from '../api'
 import type {
   AutomationDashboard,
+  DashboardStats,
   EventDetails,
   EventMessage,
   Guest,
@@ -99,6 +101,63 @@ function AdminRsvpView({ onGoToMessages }: { onGoToMessages?: () => void }) {
   )
 }
 
+/**
+ * סיכום אישורי הגעה — שורה אחת בראש המסך.
+ *
+ * המסך ששמו "אישורי הגעה" לא ענה על השאלה "כמה אישרו": הנתון חי רק
+ * בתמונת מצב, והזוג נאלץ לעבור מסך כדי לדעת. זו **תצוגה בלבד** של
+ * ``GET /stats`` — אותו מקור שהדשבורד קורא, בלי חישוב חדש ובלי API חדש.
+ *
+ * במכוון לא לוח בקרה שני: אין כאן מד, אין גרף ואין פירוק לפי צד או
+ * קבוצה. ארבעה מספרים בשורה, ומי שרוצה יותר ממשיך לתמונת מצב.
+ *
+ * הספירה היא **אנשים** ולא רשומות מוזמן (``*_people``) — אותה יחידה
+ * בדיוק כמו במד בתמונת מצב, כדי שלא ייווצרו שני מספרים סותרים למי
+ * שעובר בין המסכים.
+ */
+function RsvpSummaryStrip() {
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    // כישלון שקט: הסיכום הוא תוספת הקשר, לא תוכן המסך. שגיאה כאן לא
+    // אמורה להציג הודעה מעל לוח הזמנים שכן נטען בהצלחה.
+    getStats()
+      .then((d) => alive && setStats(d))
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  if (!stats || stats.total_guests === 0) return null
+
+  // אותן תוויות בדיוק כמו במד בתמונת מצב — לא ניסוח מקביל.
+  const d = strings.dashboard
+  const items = [
+    { key: 'confirmed', value: stats.confirmed_people, label: d.kpiConfirmed },
+    { key: 'pending', value: stats.pending_people, label: d.kpiPending },
+    { key: 'maybe', value: stats.maybe_people, label: d.gaugeStatusMaybe },
+    { key: 'declined', value: stats.declined_people, label: d.gaugeStatusDeclined },
+  ]
+
+  return (
+    <section className="rsvp-summary" aria-label={strings.messages.summaryLabel}>
+      <ul className="rsvp-summary-list">
+        {items.map((item) => (
+          <li key={item.key} className={`rsvp-summary-item is-${item.key}`}>
+            <span className="rsvp-summary-num">{item.value}</span>
+            <span className="rsvp-summary-label">{item.label}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="rsvp-summary-foot">
+        {strings.messages.summaryFoot(stats.total_people)}
+      </p>
+    </section>
+  )
+}
+
 // ============ מסך הזוג — מעקב אישורי הגעה ============
 
 function CoupleRsvpView({
@@ -158,6 +217,9 @@ function CoupleRsvpView({
     <div className="rsvp-page couple-rsvp">
       {error && <p className="form-error">{error}</p>}
       {note && <p className="rsvp-note">{note}</p>}
+
+      {/* התשובה לשאלה ששם המסך מבטיח — ראשונה, לפני ההגדרות. */}
+      <RsvpSummaryStrip />
 
       {/* שעת שליחה — מתי ביום יוצאות הודעות המסלול והתודה. רלוונטי גם לפני
           הפעלת המסלול, כדי שהזוג יוכל לקבוע אותה מראש. */}
