@@ -29,7 +29,7 @@ export function RsvpTimeline() {
   }, [load])
 
   if (loading) {
-    return <p className="mb-empty">רגע, מכינים לכם את יומן המשימות…</p>
+    return <p className="load-text">מכינים את לוח אישורי ההגעה…</p>
   }
 
   if (error) {
@@ -40,15 +40,21 @@ export function RsvpTimeline() {
   if (!view || !view.configured) {
     return (
       <div className="tl-empty">
-        <span className="tl-empty-icon" aria-hidden>🗓️</span>
-        <h3 className="tl-empty-title">הכול מתוכנן עד לאורח האחרון</h3>
+        <span className="tl-empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3.5" y="5.5" width="17" height="15" rx="2.5" />
+            <path d="M3.5 10h17M8.5 3.5v4M15.5 3.5v4" />
+            <path d="M8.8 14.6l2 2 4-4" />
+          </svg>
+        </span>
+        <h3 className="tl-empty-title">לוח אישורי ההגעה עוד לא נקבע</h3>
         <p className="tl-empty-sub">
-          עדכנו ב<strong>תמונת מצב</strong> את תאריך האירוע ובחרו כמה ימים
-          לפני האירוע אתם צריכים להעביר לאולם את כמות האורחים שמגיעים.
+          עדכנו ב<strong>תמונת מצב</strong> את תאריך האירוע, ובחרו כמה ימים
+          לפני האירוע צריך למסור לאולם את המספר הסופי.
         </p>
         <p className="tl-empty-sub">
-          אנחנו נבנה עבורכם את לוח אישורי ההגעה — כולל תזמון הודעות ושיחות
-          טלפון לאורחים — כדי שתגיעו לאירוע עם מספר מדויק ובשקט נפשי.
+          משם נבנה את לוח אישורי ההגעה לאחור — תזכורות ושיחות טלפון — כדי
+          שתגיעו לאירוע עם מספר מדויק.
         </p>
       </div>
     )
