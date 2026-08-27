@@ -191,17 +191,11 @@
   flex-wrap: wrap;
   gap: 12px 18px;
 }
-/* הגיאומטריה (גובה/radius/פונט/משקל) מגיעה מבסיס הכפתורים המשותף
-   ב-App.css; כאן נשאר רק מה שייחודי — המילוי הכהה. */
+/* הגיאומטריה *וגם* המילוי מגיעים מ-``.btn-primary`` ב-App.css —
+   פעולה ראשית ב-VEYA נראית אותו דבר בכל מסך. כאן נשאר רק הריווח. */
 .payout-cta {
   padding: 12px 26px;
-  background: var(--charcoal);
-  border: 1px solid var(--charcoal);
-  color: var(--ivory);
-  transition: background var(--transition-fast);
 }
-.payout-cta:hover:not(:disabled) { background: var(--black-soft); }
-.payout-cta:disabled { opacity: 0.6; cursor: default; }
 
 /* משני — קישור, לא כפתור שני. כך אין שתי מסגרות שמתחרות על אותה לחיצה. */
 .payout-secondary {
@@ -363,12 +357,7 @@
 .payout-submit {
   flex: 1;
   min-width: 170px;
-  background: var(--charcoal);
-  border: 1px solid var(--charcoal);
-  color: var(--ivory);
 }
-.payout-submit:hover:not(:disabled) { background: var(--black-soft); }
-.payout-submit:disabled { opacity: 0.6; cursor: default; }
 .payout-cancel {
   background: none;
   border: 1px solid var(--line);
