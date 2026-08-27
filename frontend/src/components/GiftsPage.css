@@ -15,7 +15,15 @@
 /* קצב אנכי אחיד בין האזורים. 32px ולא 18: המרווח הוא מה שמפריד בין
    שלושה אזורים לשלושה כרטיסים שנדבקו זה לזה. */
 .gifts-page > * + * {
-  margin-top: 32px;
+  margin-top: var(--space-8);
+}
+
+/* מצב שגיאה של המסך כולו: הודעה + פעולה. ``.empty-actions`` ממורכז כי
+   נולד בתוך מצב ריק ממורכז; כאן הוא יושב מתחת לבאנר שגיאה שנקרא מימין,
+   ולכן הוא מתיישר לתחילת ההודעה ולא למרכז המסך. */
+.gifts-page > .empty-actions {
+  justify-content: flex-start;
+  margin-top: var(--space-4);
 }
 
 /* ==== 2. סה״כ שהתקבל ====================================================
@@ -23,12 +31,12 @@
    מספר גדול, ונספח קטן. יישור לימין (התחלה) ולא למרכז — כך הוא מתיישר
    עם כותרות שאר המסך במקום לרחף באמצע. */
 .gifts-total {
-  padding: 4px 4px 0;
+  padding: var(--space-1) var(--space-1) 0;
 }
 .gifts-total-label {
   margin: 0;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
   letter-spacing: 0.02em;
   color: var(--muted);
 }
@@ -36,10 +44,13 @@
    של המד בתמונת מצב. סריף עם ספרות לא-טבלאיות הוא הפונט הכי לא מתאים
    לכסף: הספרות שונות ברוחב, ושורות סכומים לא מתיישרות זו מתחת לזו. */
 .gifts-total-value {
-  margin: 6px 0 0;
+  margin: var(--space-1) 0 0;
   font-family: var(--font-ui);
-  font-size: 44px;
-  font-weight: 700;
+  /* ``--text-4xl`` — מספר-הגיבור הראשי של המערכת, אותו גודל בדיוק כמו
+     בתמונת המצב. קודם היה כאן 44px, גודל שאינו קיים בסולם ושהופיע
+     במסך אחד בלבד. */
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
   line-height: 1.05;
   letter-spacing: -0.02em;
   color: var(--charcoal);
@@ -55,31 +66,45 @@
 }
 /* כשאין סכום, במרכז יושבת הספירה — עובדה, לא כותרת-על, ולכן גודל אחד פחות. */
 .gifts-total-value-count {
-  font-size: 30px;
+  font-size: var(--text-3xl);
 }
+/* פירוט לפי מצב / משפט ההסבר. יורש את הצבע החלש כדי שלא יתחרה במספר. */
 .gifts-total-sub {
-  margin: 8px 0 0;
-  font-size: 14px;
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
   color: var(--body);
+}
+/* כשיש גם פירוט וגם משפט נעילה, השני מתקרב לראשון — הם אומרים דבר אחד. */
+.gifts-total-sub + .gifts-total-sub {
+  margin-top: var(--space-1);
 }
 .gifts-total-locked {
   max-width: 44ch;
-  line-height: 1.65;
   color: var(--muted);
 }
 
 /* ==== 3. המתנות שהתקבלו ================================================ */
 /* כותרת אזור — אותו טיפוס בדיוק כמו .gauge-section-title / .rsvp-feed-title
    בתמונת המצב, כדי שהמסך הזה יישמע כמו אותה מערכת. */
+/* 18px ולא טוקן: זהו בדיוק הגודל של ``.gauge-section-title`` ושל
+   ``.rsvp-feed-title``, כלומר כותרת-אזור היא ערך משותף בכל המוצר ולא
+   חריגה של המסך הזה. הפער האמיתי הוא שאין לו טוקן בסולם — וזה שינוי
+   רוחבי, לא שינוי של מסך המתנות. */
 .gifts-log-title {
-  margin: 0 0 14px;
+  margin: 0 0 var(--space-3);
   font-size: 18px;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--charcoal);
 }
 
+/* כשהכרטיס מחזיק מצב ריק במקום רשימה, הריפוד העליון המינימלי (שנועד
+   לשורת הכותרות של הטבלה) הופך לא-סימטרי — ולכן הוא מתאפס. */
+.gifts-card.gifts-card-empty {
+  padding: 0;
+}
 .gifts-card {
-  padding: 4px 20px 16px;
+  padding: var(--space-1) var(--space-5) var(--space-4);
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: var(--radius-l);
@@ -94,16 +119,20 @@
 .gift-head,
 .gift-row {
   display: grid;
-  grid-template-columns: minmax(7rem, 1.2fr) 7rem minmax(0, 2fr) 4.5rem 5.5rem;
+  /* עמודת הסכום 8.5rem ולא 7: ב-7rem הערך "124,800 ₪" מילא את המסלול
+     בדיוק, וסכום עם אגורות ("1,240.50 ₪") כבר גלש אל תוך עמודת הברכה.
+     ``white-space: nowrap`` מונע שבירה, ולכן הרוחב הוא ההגנה היחידה.
+     עמודת הברכה (2fr) סופגת את ההפרש. */
+  grid-template-columns: minmax(7rem, 1.2fr) 8.5rem minmax(0, 2fr) 4.5rem 5.5rem;
   align-items: center;
-  gap: 8px 16px;
+  gap: var(--space-2) var(--space-4);
 }
 
 .gift-head {
-  padding: 14px 0 10px;
+  padding: var(--space-3) 0 var(--space-2);
   border-bottom: 1px solid var(--line-2);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
   letter-spacing: 0.02em;
   color: var(--muted);
 }
@@ -115,51 +144,59 @@
 }
 
 .gift-row {
-  padding: 18px 0;
+  padding: var(--space-4) 0;
   border-bottom: 1px solid var(--line-2);
 }
 .gift-row:last-child {
   border-bottom: none;
-  padding-bottom: 6px;
+  padding-bottom: var(--space-2);
 }
 
 /* שם המוזמן — בולט יותר מהמטא-דאטה שסביבו */
 .gift-cell-name {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
   color: var(--charcoal);
   overflow-wrap: anywhere;
 }
 
 /* הסכום — הדבר הבולט ביותר בשורה.
    ספרות טבלאיות הן חובה כאן: בלעדיהן עמודת הסכומים "רוקדת" בין שורה
-   לשורה, וזה בדיוק המקום שבו זוג סופר כסף. */
+   לשורה, וזה בדיוק המקום שבו זוג סופר כסף.
+
+   ``direction: ltr`` נחוץ כדי ש-"1,240 ₪" יֵצא בסדר הנכון — אבל הוא גם
+   הפך את **קצה היישור**: התוכן נצמד לקצה השמאלי של התא, בזמן שכותרת
+   העמודה ("סכום") — עברית ב-RTL — נצמדת לקצה הימני. התוצאה הייתה כותרת
+   שמרחפת 56px מהנתון שלה. ``text-align: right`` מחזיר את שניהם לאותו
+   קצה, וכבונוס זה גם היישור הנכון לעמודת כסף: סימני ה-₪ מתיישרים זה
+   מתחת לזה, והספרות גדלות שמאלה. */
 .gift-cell-amount {
   font-family: var(--font-ui);
   font-size: var(--text-xl);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--charcoal);
   white-space: nowrap;
   direction: ltr;
   unicode-bidi: isolate;
+  text-align: right;
   font-variant-numeric: tabular-nums lining-nums;
 }
 
 /* סכום שהשרת לא החזיר. שלוש נקודות בצבע חלש — נוכחות בלי תוכן, כך
    שהשורה לא נראית שבורה ולא נראית כאילו הסכום הוא אפס. */
 .gift-amount-hidden {
-  color: var(--faint);
+  color: var(--muted);
   font-family: var(--font-ui);
-  font-size: 16px;
-  font-weight: 400;
+  font-size: var(--text-md);
+  font-weight: var(--weight-regular);
   letter-spacing: 0.12em;
   cursor: help;
 }
 
 /* הברכה — טקסט אנושי, לא שדה נתונים. נטוי ורגוע, במרכאות טיפוגרפיות. */
 .gift-cell-blessing {
-  font-size: 14px;
-  line-height: 1.65;
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
   color: var(--body);
   overflow-wrap: anywhere;
 }
@@ -167,11 +204,9 @@
   font-style: italic;
   quotes: '״' '״';
 }
-.gift-cell-blessing span {
-  color: var(--faint);
-}
 
-/* התאריך — קטן ועדין */
+/* התאריך — קטן ועדין. אותו תיקון יישור כמו בסכום: ``direction: ltr``
+   דחף אותו לקצה השמאלי של התא בזמן שהכותרת "תאריך" נשארה בימני. */
 .gift-cell-date {
   font-size: var(--text-xs);
   color: var(--muted);
@@ -179,6 +214,7 @@
   white-space: nowrap;
   direction: ltr;
   unicode-bidi: isolate;
+  text-align: right;
 }
 
 .gift-cell-status {
@@ -187,54 +223,40 @@
 }
 
 /* תג הסטטוס — ברור אך לא צעקני: רקע רך, בלי מסגרת עבה ובלי צבע רווי. */
+/* הגוון נגזר מטוקן הצבע החי דרך ``color-mix`` ולא מ-rgba קשיח: הערכים
+   שהיו כאן (``47, 158, 95``) נלקחו מ-``--green`` הישן, שכויל מחדש
+   לניגודיות ב-2026-08-26 — כלומר הרקע והטקסט כבר לא היו מאותו ירוק.
+
+   ⚠️ **העוצמות ירדו יחד עם המעבר, וזה לא קוסמטי.** טוקני ה-``*-on-tint``
+   כוילו בשעתו מול הגוונים הישנים, ועברו בקושי (4.51–4.53:1 מול סף 4.5).
+   הטוקנים החדשים כהים יותר, ולכן באותן עוצמות הרקע כהה יותר והטקסט
+   **נופל מתחת לסף** (ירוק ב-12% ⇐ 4.42:1). נמדד מול ``--cream``:
+
+       ירוק 8%  → 4.66:1      אדום 8%  → 4.62:1      זהב 10% → 4.67:1
+
+   כל שינוי בעוצמות או בטוקנים כאן מחייב מדידה מחדש, לא הערכה. */
 .gift-status {
   display: inline-block;
-  padding: 3px 10px;
+  padding: 3px var(--space-2);
   border-radius: var(--radius-full);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
   white-space: nowrap;
   background: var(--surface-hi);
   color: var(--muted);
 }
 .gift-status-paid {
-  background: rgba(47, 158, 95, 0.12);
+  background: color-mix(in srgb, var(--green) 8%, transparent);
   color: var(--green-on-tint);
 }
 .gift-status-refunded {
-  background: rgba(201, 162, 39, 0.14);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
   color: var(--gold-on-tint);
 }
 .gift-status-failed,
 .gift-status-cancelled {
-  background: rgba(166, 96, 90, 0.1);
+  background: color-mix(in srgb, var(--error) 8%, transparent);
   color: var(--error-on-tint);
-}
-
-/* ---- מצב ריק ----------------------------------------------------------
-   משטח רך ולא מסגרת מקווקוות: מקווקו קורא כ"אזור גרירה", וכאן אין מה
-   לגרור — פשוט עוד לא הגיעו מתנות. */
-.gifts-empty {
-  padding: 44px 24px;
-  text-align: center;
-  background: var(--cream);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-l);
-}
-.gifts-empty p {
-  margin: 0;
-}
-.gifts-empty-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--charcoal);
-}
-.gifts-empty-body {
-  max-width: 40ch;
-  margin: 8px auto 0 !important;
-  font-size: 14px;
-  line-height: 1.65;
-  color: var(--muted);
 }
 
 /* ---- מובייל -----------------------------------------------------------
@@ -245,7 +267,7 @@
     display: none;
   }
   .gifts-card {
-    padding: 2px 16px 12px;
+    padding: 2px var(--space-4) var(--space-3);
   }
   .gift-row {
     grid-template-columns: 1fr auto;
@@ -253,8 +275,8 @@
       'name   amount'
       'bless  bless'
       'date   status';
-    gap: 6px 12px;
-    padding: 18px 0;
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-4) 0;
   }
   .gift-cell-name {
     grid-area: name;
@@ -268,8 +290,10 @@
   .gift-cell-blessing {
     grid-area: bless;
   }
-  /* אין ברכה — לא משאירים מקף בודד ששובר את הריתמוס של הכרטיס */
-  .gift-cell-blessing:has(span) {
+  /* אין ברכה — התא ריק לגמרי, ואסור שיישאר לו שטח בגריד: אחרת נפתח
+     מרווח מיותר בין השם לשורת התאריך. (הכלל הקודם הסתיר מקף דקורטיבי
+     שכבר אינו מרונדר.) */
+  .gift-cell-blessing:empty {
     display: none;
   }
   .gift-cell-date {
@@ -282,19 +306,16 @@
   }
 }
 
-/* במסך צר המרווח בין האזורים מתקצר מעט, והמספר הגדול יורד גודל אחד —
-   ב-320px "₪12,480" ב-2.75rem היה נוגע בשוליים. */
+/* במסך צר המרווח בין האזורים מתקצר מעט, והמספר הגדול יורד מדרגה אחת
+   בסולם — ב-320px סכום בן שש ספרות ב-``--text-4xl`` נוגע בשוליים. */
 @media (max-width: 559px) {
   .gifts-page > * + * {
-    margin-top: 26px;
+    margin-top: var(--space-6);
   }
   .gifts-total-value {
-    font-size: 34px;
+    font-size: var(--text-3xl);
   }
   .gifts-total-value-count {
-    font-size: 28px;
-  }
-  .gifts-empty {
-    padding: 36px 18px;
+    font-size: var(--text-2xl);
   }
 }
