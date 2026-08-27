@@ -13746,7 +13746,7 @@ td.notes.seating {
     margin-bottom: 2px;
   }
   .hm-start-card-title {
-    font-size: 16.5px;
+    font-size: var(--text-lg);
     font-weight: 700;
     color: var(--charcoal);
   }
