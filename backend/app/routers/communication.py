@@ -134,7 +134,9 @@ def preview_message(
         select(models.Guest).where(models.Guest.event_id == event.id)
     )
     values = communication.communication_values(event, sample_guest)
-    return schemas.CommunicationPreview(preview=communication.render_message(em.content, values))
+    return schemas.CommunicationPreview(
+        preview=communication.render_message(em.content, values, message_type=message_type)
+    )
 
 
 @router.post("/sequence/{message_type}/test-send", response_model=schemas.CommunicationSendResult)
@@ -153,7 +155,7 @@ def test_send_message(
         select(models.Guest).where(models.Guest.event_id == event.id)
     )
     values = communication.communication_values(event, sample_guest)
-    text = communication.render_message(em.content, values)
+    text = communication.render_message(em.content, values, message_type=message_type)
     if not text:
         raise HTTPException(status_code=400, detail="אין עדיין תוכן להודעה הזו")
     res = messaging.get_provider().send_invitation(user.phone, text)
@@ -217,7 +219,7 @@ def manual_send(
             skipped += 1
             continue
         text = communication.render_message(
-            em.content, communication.communication_values(event, g)
+            em.content, communication.communication_values(event, g), message_type=message_type
         )
         if not text:
             skipped += 1

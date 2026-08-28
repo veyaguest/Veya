@@ -22,7 +22,7 @@ from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import HTTPException
 
-from app import gift_eligibility, models
+from app import gift_eligibility, models, rsvp_timeline
 from app.automation import parse_event_date
 from app.call_center import LOCAL_TIMEZONE
 
@@ -161,6 +161,47 @@ def gift_window_is_open(event: models.Event, *, now: datetime | None = None) -> 
     return opens <= now_in_israel(now) < closes
 
 
+def rsvp_open_date(event: models.Event | None, *, now: datetime | None = None):
+    """התאריך שבו אישורי ההגעה נפתחים למוזמן, או ``None`` אם עדיין לא ידוע.
+
+    **מקור האמת: לוח הזמנים של האירוע** (``rsvp_timeline.compute_schedule``,
+    שעוגנו מועד סגירת רשימת המוזמנים). אישורי ההגעה נפתחים בדיוק ביום שבו
+    יוצאת **התזכורת הראשונה** לפי אותו לוח — לא לפי תאריך שליחת ההזמנה.
+    ההזמנה יכולה לצאת חודש מראש בלי לפתוח כלום.
+    """
+    if event is None:
+        return None
+    # בלי מועד סגירת רשימה (או תאריך אירוע) אין לוח זמנים ואין מה לפתוח.
+    schedule = rsvp_timeline.compute_schedule(event, now)
+    if schedule is None:
+        return None
+    return next(
+        (p.date for p in schedule.placements if p.step["type"] == "reminder"),
+        None,
+    )
+
+
+def rsvp_is_open(event: models.Event | None, *, now: datetime | None = None) -> bool:
+    """האם המוזמן יכול לאשר הגעה כרגע.
+
+    אישורי ההגעה נפתחים ביום התזכורת הראשונה שבלוח הזמנים (``rsvp_open_date``).
+    עד אז ה-Guest Hub במצב צפייה בלבד (הזמנה / יומן / ניווט), והודעת ההזמנה
+    הראשונה אינה מבקשת אישור. רצפת ביטחון: לא נפתח לפני שההזמנות נשלחו בכלל
+    (``rsvp_track_active``).
+
+    ``event is None`` — הקשר תצוגה מקדימה (אין אירוע): מחזיר ``True``, כמו
+    ``compute_actions(None)``.
+    """
+    if event is None:
+        return True
+    if not event.rsvp_track_active:
+        return False
+    opens_on = rsvp_open_date(event, now=now)
+    if opens_on is None:
+        return False
+    return today_in_israel(now) >= opens_on
+
+
 @dataclass(frozen=True)
 class ActionAvailability:
     """מה פתוח למוזמן. מתורגם אחד-לאחד ל-``schemas.ConfirmActions``."""
@@ -182,8 +223,8 @@ def compute_actions(
 
     שלוש הפעולות הראשונות תלויות ב*נתונים* (יש תמונת הזמנה? יש תאריך? יש
     כתובת?) — פעולה בלי נתונים לא מוצגת, במקום כפתור שלא עושה כלום.
-    ``gift`` תלוי ב*זמן*, ו-``rsvp`` פתוח מרגע ההזמנה הראשונה (הודעת
-    ההזמנה עצמה מבקשת אישור — ראו ``messaging.DEFAULT_TEMPLATE``).
+    ``gift`` ו-``rsvp`` תלויים ב*זמן*: ``rsvp`` נפתח ביום התזכורת הראשונה
+    שבלוח הזמנים (``rsvp_is_open``), לא מרגע ההזמנה.
     """
     if event is None:
         return ActionAvailability(False, False, False, True, False)
@@ -191,7 +232,7 @@ def compute_actions(
         invitation=bool(event.invite_image),
         calendar=has_calendar,
         navigation=bool((event.venue_address or "").strip()),
-        rsvp=True,
+        rsvp=rsvp_is_open(event, now=now),
         gift=gift_is_open(event, now=now),
     )
 

@@ -55,6 +55,24 @@ def _set_event(api, **fields):
     return r.json()
 
 
+def _open_rsvp(api):
+    """מפעיל את מסלול אישורי-ההגעה וקובע מועד סגירת רשימה מספיק אחורה כדי
+    שיום התזכורת הראשונה שבלוח הזמנים כבר חלף — ואישורי ההגעה פתוחים.
+
+    (מועד סגירת הרשימה הוא עוגן הלוח, ולכן הוא — לא תאריך שליחת ההזמנה —
+    זה מה שקובע מתי החלון נפתח.)"""
+    from datetime import date, datetime, timedelta
+
+    ev_date = date.fromisoformat(api.client.get("/event", headers=api.headers).json()["event_date"])
+    commit_days = (ev_date - (guest_journey.today_in_israel() - timedelta(days=21))).days
+    _set_event(
+        api,
+        rsvp_track_active=True,
+        rsvp_track_started_at=datetime.utcnow() - timedelta(days=40),
+        venue_commit_days_before=max(commit_days, 1),
+    )
+
+
 def _token(api, guest_id: int) -> str:
     """הטוקן האישי של מוזמן, כפי שהוא נשלח לו בהודעה."""
     from app import models
@@ -81,6 +99,7 @@ def test_valid_guest_sees_own_hub() -> None:
     )
     g = api.add_guest("דנה כהן", "0501111111", party_size=3)
     tok = _token(api, g["id"])
+    _open_rsvp(api)  # אחרי יום התזכורת הראשונה — אישורי ההגעה פתוחים
 
     r = api.client.get(f"/confirm/{tok}")
     assert r.status_code == 200, r.text
@@ -95,7 +114,7 @@ def test_valid_guest_sees_own_hub() -> None:
     acts = data["actions"]
     assert acts["navigation"] is True, "יש כתובת — ניווט חייב להיות זמין"
     assert acts["calendar"] is True, "יש תאריך — הוספה ליומן חייבת להיות זמינה"
-    assert acts["rsvp"] is True, "אישור הגעה פתוח מרגע ההזמנה"
+    assert acts["rsvp"] is True, "חלון אישורי ההגעה כבר נפתח"
     assert acts["gift"] is False, "מתנה באשראי עוד לא נבנתה — חייבת להיות כבויה"
     assert acts["invitation"] is False, "לא הועלתה תמונת הזמנה"
 
@@ -286,6 +305,7 @@ def test_existing_rsvp_still_works() -> None:
                venue_address="הרצל 5, תל אביב")
     g = api.add_guest("מאשר הגעה", "0501230003", party_size=4)
     tok = _token(api, g["id"])
+    _open_rsvp(api)
 
     r = api.client.post(f"/confirm/{tok}", json={
         "coming": True, "maybe": False, "count": 3, "note": "צריך נגישות",
@@ -307,6 +327,38 @@ def test_existing_rsvp_still_works() -> None:
     row = {u["id"]: u for u in hall["unassigned"]}[g["id"]]
     assert row["rsvp_status"] == "declined" and row["seats"] == 0
     print("✓ אי-רגרסיה: אישור ההגעה הקיים עובד, כולל שינוי תשובה וסנכרון לזוג")
+
+
+def test_rsvp_is_closed_before_the_window_opens() -> None:
+    """לפני יום התזכורת הראשונה ה-Hub במצב צפייה בלבד, והשרת דוחה שליחת אישור —
+    לא רק מסתיר את הכפתור."""
+    from datetime import datetime, timedelta
+
+    api, _ = bootstrap()
+    # אירוע רחוק (חודשים) עם מועד סגירת רשימה — התזכורת הראשונה עדיין בעתיד.
+    far = (guest_journey.today_in_israel() + timedelta(days=90)).isoformat()
+    _set_event(api, event_date=far, event_time="19:30",
+               venue_address="הרצל 5, תל אביב", venue_commit_days_before=3)
+    g = api.add_guest("מוקדם מדי", "0501230009", party_size=2)
+    tok = _token(api, g["id"])
+
+    # המסלול עוד לא הופעל — צפייה/יומן/ניווט פתוחים, אישור הגעה לא.
+    data = api.client.get(f"/confirm/{tok}").json()
+    assert data["actions"]["rsvp"] is False
+    assert data["actions"]["calendar"] is True and data["actions"]["navigation"] is True
+    blocked = api.client.post(f"/confirm/{tok}", json={"coming": True, "maybe": False})
+    assert blocked.status_code == 403, blocked.text
+
+    # ההזמנות יצאו זה עתה — אבל מועד סגירת הרשימה עוד רחוק, אז עדיין סגור.
+    _set_event(api, rsvp_track_active=True, rsvp_track_started_at=datetime.utcnow())
+    assert api.client.get(f"/confirm/{tok}").json()["actions"]["rsvp"] is False
+
+    # מזיזים את מועד סגירת הרשימה אחורה → יום התזכורת הראשונה חלף → נפתח.
+    _open_rsvp(api)
+    assert api.client.get(f"/confirm/{tok}").json()["actions"]["rsvp"] is True
+    ok = api.client.post(f"/confirm/{tok}", json={"coming": True, "maybe": False})
+    assert ok.status_code == 200, ok.text
+    print("✓ חלון אישורי ההגעה נאכף בשרת: 403 לפני, 200 אחרי")
 
 
 # ---- מסע האורח: זמינות המתנה דרך ה-API האמיתי ---------------------------
@@ -347,11 +399,13 @@ def test_gift_availability_through_api() -> None:
 def test_other_actions_survive_the_whole_journey() -> None:
     """הפעולות הקיימות זמינות בכל שלב — גם אחרי שהמתנה נפתחה."""
     api, _ = bootstrap()
-    _set_event(api, venue_address="הרצל 5, תל אביב", event_time="19:30")
+    _set_event(api, venue_address="הרצל 5, תל אביב", event_time="19:30",
+               event_date=_event_date_in(10))
     g = api.add_guest("מוזמן", "0507000002")
     tok = _token(api, g["id"])
     for days in (10, 3, 0):
         _set_event(api, event_date=_event_date_in(days))
+        _open_rsvp(api)  # מסלול פעיל + מועד סגירת רשימה שכבר חלף התזכורת הראשונה שלו
         acts = api.client.get(f"/confirm/{tok}").json()["actions"]
         assert acts["calendar"] is True and acts["navigation"] is True
         assert acts["rsvp"] is True, "אישור הגעה נשאר פתוח לאורך כל המסע"
@@ -439,6 +493,7 @@ if __name__ == "__main__":
         test_navigation_links_use_real_address()
         test_calendar_title_follows_event_type()
         test_existing_rsvp_still_works()
+        test_rsvp_is_closed_before_the_window_opens()
         test_gift_availability_through_api()
         test_other_actions_survive_the_whole_journey()
         test_gift_url_param_grants_nothing()

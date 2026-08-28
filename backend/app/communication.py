@@ -214,13 +214,29 @@ def variables_supported(event: models.Event, kind: str) -> list[str]:
 
 _VAR_RE = re.compile(r"\{\{\s*(\w+)\s*\}\}")
 
+# שורת ה-CTA לאישור הגעה בנוסחי ההזמנה המובנים ("לאישור הגעה:", "לאישור:",
+# "אישור הגעה:"). בהודעת ההזמנה עצמה — לפני שחלון אישורי ההגעה נפתח —
+# היא מוחלפת ב"לצפייה בהזמנה:", כי הקישור מוביל לצפייה בלבד ולא לאישור.
+_INVITATION_RSVP_CTA_RE = re.compile(
+    r"^[ \t]*(?:נשמח[ \t]+)?ל?אישור(?:[ \t]+הגעה)?[ \t]*:[ \t]*$",
+    re.MULTILINE,
+)
 
-def render_message(content: str, values: dict[str, str]) -> str:
+
+def render_message(
+    content: str, values: dict[str, str], *, message_type: str | None = None
+) -> str:
     """ממלא משתני ``{{key}}`` בתוכן. שורה שכל המשתנים בה ריקים נמחקת כליל
     (כמו ``messaging.render_automation_template`` — "תוכן חכם"), כדי שלא
-    יישאר "מספר השולחן שלכם: " כשעדיין אין שיבוץ."""
+    יישאר "מספר השולחן שלכם: " כשעדיין אין שיבוץ.
+
+    ``message_type="invitation"`` — שורת ה-CTA לאישור הגעה מוחלפת ב"לצפייה
+    בהזמנה:", כי ההזמנה יוצאת לפני שחלון אישורי ההגעה נפתח (ראו
+    ``guest_journey.rsvp_is_open``)."""
     if not content:
         return ""
+    if message_type == "invitation":
+        content = _INVITATION_RSVP_CTA_RE.sub("לצפייה בהזמנה:", content)
     out_lines: list[str] = []
     for line in content.split("\n"):
         keys_in_line = _VAR_RE.findall(line)
@@ -493,7 +509,9 @@ def compute_due_messages(
                 continue
             if not _due_now(message_type, em, guest, now, event_date, invited_at, event):
                 continue
-            preview = render_message(em.content, communication_values(event, guest))
+            preview = render_message(
+                em.content, communication_values(event, guest), message_type=message_type
+            )
             if not preview:
                 continue
             actions.append(DueMessageAction(event_message=em, guest=guest, preview=preview))

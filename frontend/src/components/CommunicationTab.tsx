@@ -661,7 +661,13 @@ function PhonePreview({
               </div>
               {(showRsvp || showNav || showGift) && (
                 <div className="ph-btns">
-                  {showRsvp && <span className="ph-btn">אישור הגעה</span>}
+                  {showRsvp && (
+                    <span className="ph-btn">
+                      {/* בהזמנה עצמה הקישור הוא לצפייה בלבד — אישורי ההגעה
+                          עדיין לא נפתחו כשההזמנה יוצאת. */}
+                      {message.message_type === 'invitation' ? 'צפייה בהזמנה' : 'אישור הגעה'}
+                    </span>
+                  )}
                   {showNav && <span className="ph-btn">ניווט</span>}
                   {showGift && <span className="ph-btn">מתנה באשראי</span>}
                 </div>

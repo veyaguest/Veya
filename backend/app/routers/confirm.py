@@ -358,6 +358,15 @@ def submit_confirm(
         db.commit()
         raise HTTPException(status_code=404, detail="הקישור כבר לא פעיל — בקשו ממארגני האירוע קישור חדש.")
 
+    # אכיפת חלון אישורי ההגעה בשרת — לא רק הסתרת הכפתור ב-UI. אורח שקיבל
+    # את הקישור מוקדם (או שקורא ישירות ל-API) לא יכול לאשר לפני שהחלון נפתח.
+    event = db.get(models.Event, guest.event_id)
+    if not guest_journey.rsvp_is_open(event):
+        raise HTTPException(
+            status_code=403,
+            detail="אישורי ההגעה עדיין לא נפתחו לאירוע הזה — הקישור יתעדכן מעצמו כשאפשר יהיה לאשר.",
+        )
+
     # אותה לוגיקה בדיוק שרצה כשהאדמין מסמן במקום המוזמן בשיחת טלפון
     # (Call Center) — ראו app/rsvp_response.py.
     note = (payload.note or "").strip()

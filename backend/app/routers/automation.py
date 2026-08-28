@@ -297,7 +297,7 @@ def activate_track(
             skipped_invalid += 1
             continue
         text = communication.render_message(
-            body, communication.communication_values(event, g)
+            body, communication.communication_values(event, g), message_type="invitation"
         )
         if not text:
             skipped_missing += 1  # אין עדיין תוכן להזמנה — לא נשלח כלום

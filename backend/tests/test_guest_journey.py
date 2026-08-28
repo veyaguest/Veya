@@ -33,10 +33,23 @@ EVENT_DAY = date(2026, 11, 12)      # יום חמישי, חורף (שעון יש
 class FakeEvent:
     """מינימום השדות שמנוע המסע נוגע בהם."""
 
-    def __init__(self, event_date="2026-11-12", invite_image=None, venue_address=""):
+    def __init__(
+        self,
+        event_date="2026-11-12",
+        invite_image=None,
+        venue_address="",
+        rsvp_track_active=True,
+        rsvp_track_started_at=datetime(2000, 1, 1),
+        venue_commit_days_before=3,
+    ):
         self.event_date = event_date
         self.invite_image = invite_image
         self.venue_address = venue_address
+        # מסלול פעיל + מועד סגירת רשימה — כדי שיהיה לוח זמנים ש-``rsvp_is_open``
+        # נגזר ממנו. ``test_rsvp_window`` בודק את גבולות החלון עצמו.
+        self.rsvp_track_active = rsvp_track_active
+        self.rsvp_track_started_at = rsvp_track_started_at
+        self.venue_commit_days_before = venue_commit_days_before
 
 
 def il(day: date, hour: int = 12, minute: int = 0) -> datetime:
@@ -240,8 +253,38 @@ def test_other_actions_unchanged_by_gift_logic() -> None:
         assert a.invitation is True, f"ההזמנה נעלמה ב-{moment}"
         assert a.calendar is True, f"היומן נעלם ב-{moment}"
         assert a.navigation is True, f"הניווט נעלם ב-{moment}"
-        assert a.rsvp is True, f"אישור ההגעה נעלם ב-{moment}"
+        # אישור ההגעה עוקב אחרי החלון שלו (``rsvp_is_open``) ולא מושפע
+        # מלוגיקת המתנה — ``compute_actions`` רק מעביר את הערך הלאה.
+        assert a.rsvp is gj.rsvp_is_open(ev, now=moment), f"אישור ההגעה חושב אחרת ב-{moment}"
     print("✓ הזמנה/יומן/ניווט/אישור הגעה לא הושפעו משינוי חלון המתנה")
+
+
+# ---- חלון אישורי ההגעה: נפתח ביום התזכורת הראשונה ----------------------
+
+def test_rsvp_window() -> None:
+    """אישורי הגעה נפתחים ביום התזכורת הראשונה שבלוח הזמנים (עוגן: מועד
+    סגירת רשימת המוזמנים) — לא לפי תאריך שליחת ההזמנה."""
+    # ההזמנה יצאה חודש מראש; זה לא משנה — הלוח עוגן במועד סגירת הרשימה.
+    on = FakeEvent(rsvp_track_active=True, rsvp_track_started_at=datetime(2026, 10, 1))
+    opens = gj.rsvp_open_date(on)
+    assert opens is not None
+
+    assert gj.rsvp_is_open(on, now=il(opens - timedelta(days=1))) is False, "יום לפני — סגור"
+    assert gj.rsvp_is_open(on, now=il(opens)) is True, "יום התזכורת הראשונה — נפתח"
+    assert gj.rsvp_is_open(on, now=il(opens + timedelta(days=10))) is True
+
+    # מסלול לא פעיל — סגור, גם אחרי מועד הפתיחה.
+    off = FakeEvent(rsvp_track_active=False, rsvp_track_started_at=None)
+    assert gj.rsvp_is_open(off, now=il(opens + timedelta(days=3))) is False
+
+    # אין מועד סגירת רשימה — אין לוח, אין פתיחה.
+    nocommit = FakeEvent(venue_commit_days_before=None)
+    assert gj.rsvp_open_date(nocommit) is None
+    assert gj.rsvp_is_open(nocommit, now=il(opens)) is False
+
+    # ``event is None`` (תצוגה מקדימה) — פתוח, כמו ``compute_actions(None)``.
+    assert gj.rsvp_is_open(None) is True
+    print("✓ חלון אישורי ההגעה: נפתח ביום התזכורת הראשונה שבלוח הזמנים")
 
 
 if __name__ == "__main__":
@@ -256,4 +299,5 @@ if __name__ == "__main__":
     test_action_gift_is_not_authorization()
     test_feature_flag_gates_release_not_window()
     test_other_actions_unchanged_by_gift_logic()
+    test_rsvp_window()
     print("\nכל בדיקות מסע האורח עברו ✓")

@@ -355,13 +355,19 @@ def verify_webhook(request: Request):
 def _verify_signature(body: bytes, signature_header: Optional[str]) -> bool:
     """מאמת שהבקשה נחתמה ע"י Meta עם ה-App Secret (HMAC-SHA256 על גוף הבקשה).
 
-    אם ``WHATSAPP_APP_SECRET`` לא מוגדר (פיתוח/mock) — מדלגים על האימות כדי
-    שהזרימה המקומית תמשיך לעבוד. בייצור חובה להגדיר את הסוד כדי לחסום בקשות
-    מזויפות שמתחזות ל-Meta.
+    **דוחים תמיד כשאין סוד מוגדר** — לא "מדלגים על האימות". ה-endpoint הזה
+    ציבורי לגמרי (בלי טוקן, בלי guest_token) ומעדכן RSVP של מוזמן לפי
+    התאמת מספר טלפון בלבד, בלי סינון לפי אירוע (ראו ``_match_guest_by_phone``
+    למטה ו-``app_find_guest_by_phone`` ב-backend/rls/01_helpers_and_grants.sql) —
+    כך שחתימה היא שכבת ההגנה **היחידה** נגד בקשות מזויפות, ולא דבר-מה
+    שאפשר לדלג עליו "עד שיוגדר סוד". התנהגות ישנה (החזרת True בלי סוד)
+    אפשרה לכל אחד לשלוח לכאן בקשה לא-חתומה ולזייף אישור/ביטול הגעה לכל
+    מוזמן במערכת, בכל אירוע, רק לפי סיומת מספר הטלפון שלו — Security Audit,
+    שלב 6.
     """
     app_secret = os.getenv("WHATSAPP_APP_SECRET", "").strip()
     if not app_secret:
-        return True  # אין סוד מוגדר → מצב פיתוח, לא אוכפים.
+        return False  # אין סוד מוגדר → דוחים. אין "מצב פיתוח" מיוחס כאן.
     if not signature_header or not signature_header.startswith("sha256="):
         return False
     expected = hmac.new(
@@ -382,7 +388,16 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     if not _verify_signature(raw_body, request.headers.get("X-Hub-Signature-256")):
         raise HTTPException(status_code=403, detail="חתימת webhook לא תקינה")
     import json
-    data = json.loads(raw_body or b"{}")
+    try:
+        data = json.loads(raw_body or b"{}")
+    except Exception:
+        # גוף לא-JSON תקין (גם אם החתימה כן תקינה) — 400 מבוקר, לא 500 ולא
+        # traceback/פרטי הפענוח החוצה. שונה במכוון מה-except הרחב יותר למטה
+        # (db.rollback + 200 "received: true"): זה חל על כשל *בעיבוד*
+        # payload שכבר פוענח כ-JSON תקני ("לעולם לא נכשלים ל-Meta" על עיבוד
+        # עסקי) — כאן הגוף עצמו לא ניתן לפענוח בכלל, עוד לפני כל קוד עסקי,
+        # ואין סיבה "לא להיכשל" כלפי בקשה שלא הייתה תקינה מלכתחילה.
+        raise HTTPException(status_code=400, detail="גוף הבקשה אינו JSON תקין")
     try:
         for entry in data.get("entry", []):
             for change in entry.get("changes", []):

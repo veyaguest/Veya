@@ -546,10 +546,11 @@ function SendConfirmStep({
                 <span className="wa-empty">אין עדיין נוסח להודעה</span>
               )}
             </div>
-            {/* כשוואטסאפ מחובר הקישור מוצג ככפתור CTA, לא כשורת URL בטקסט. */}
+            {/* כשוואטסאפ מחובר הקישור מוצג ככפתור CTA, לא כשורת URL בטקסט.
+                בהזמנה הקישור הוא לצפייה בלבד — אישורי ההגעה עדיין לא נפתחו. */}
             {showLinkButton && (
               <div className="wa-btns">
-                <span className="wa-btn">אישור הגעה</span>
+                <span className="wa-btn">צפייה בהזמנה</span>
               </div>
             )}
           </div>
