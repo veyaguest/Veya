@@ -194,10 +194,9 @@ function ActionRow({ action }: { action: TimelineAction }) {
       <span className="tl-action-main">
         <span className="tl-action-label">{action.label}</span>
         <span className="tl-action-meta">
+          {/* התאריך שבו ההודעה תישלח בפועל מוצג בכותרת היום. פרטים פנימיים
+              של תזמון (הזזה מסוף שבוע וכו') לא רלוונטיים לבעל האירוע. */}
           {action.audience} · {action.audience_count} מוזמנים
-          {action.moved_from_weekend && (
-            <span className="tl-moved"> · הוזז ליום ראשון בגלל סוף השבוע</span>
-          )}
         </span>
       </span>
     </li>
