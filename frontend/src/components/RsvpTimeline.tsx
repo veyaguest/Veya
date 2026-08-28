@@ -63,7 +63,7 @@ export function RsvpTimeline() {
   return (
     <div className="tl-wrap">
       <TimelineHeader view={view} />
-      <TodayTomorrow view={view} />
+      <TodayCard view={view} />
       <DayScale view={view} />
     </div>
   )
@@ -101,17 +101,14 @@ function TimelineHeader({ view }: { view: RsvpTimelineView }) {
   )
 }
 
-/** שני כרטיסים בולטים: מה קורה היום ומה מחר. */
-function TodayTomorrow({ view }: { view: RsvpTimelineView }) {
+/** כרטיס בולט אחד: מה קורה היום. אין כרטיס 'מחר' — ב-VEYA אין הודעת
+ *  "מחר מתראים", רק הודעת יום האירוע. */
+function TodayCard({ view }: { view: RsvpTimelineView }) {
   return (
     <div className="tl-now">
       <div className="tl-now-card today">
         <span className="tl-now-tag">היום · {view.today}</span>
         <p className="tl-now-text">{view.today_summary}</p>
-      </div>
-      <div className="tl-now-card tomorrow">
-        <span className="tl-now-tag">מחר</span>
-        <p className="tl-now-text">{view.tomorrow_summary}</p>
       </div>
     </div>
   )
@@ -136,7 +133,6 @@ function DayRow({ day }: { day: TimelineDay }) {
   const cls = [
     'tl-day',
     day.is_today ? 'is-today' : '',
-    day.is_tomorrow ? 'is-tomorrow' : '',
     day.is_past ? 'is-past' : '',
     day.is_commitment ? 'is-commitment' : '',
   ]
@@ -154,7 +150,6 @@ function DayRow({ day }: { day: TimelineDay }) {
             {day.weekday} · {day.date}
           </span>
           {day.is_today && <span className="tl-tag now">היום</span>}
-          {day.is_tomorrow && <span className="tl-tag soon">מחר</span>}
           {day.is_commitment && (
             <span className="tl-tag commit">מועד סגירת הרשימה</span>
           )}
@@ -185,7 +180,6 @@ const ACTION_ICON: Record<string, string> = {
   reminder: 'M18 16.5V11a6 6 0 1 0-12 0v5.5L4.5 18.5h15L18 16.5ZM10 21h4',
   call_round: 'M8.6 4.8H6.4A1.9 1.9 0 0 0 4.5 6.9c0 6.9 5.7 12.6 12.6 12.6a1.9 1.9 0 0 0 1.9-1.9v-2.2l-3.8-1.3-1.6 1.9a13.9 13.9 0 0 1-5.4-5.4l1.9-1.6L8.6 4.8Z',
   commitment: 'M5.5 12.5 10 17l8.5-9',
-  day_before: 'M3.5 5.5h17v15h-17zM3.5 10h17M8.5 3.5v4M15.5 3.5v4',
   day_of: 'M5 4h6l-1.2 6a1.8 1.8 0 0 1-3.6 0L5 4ZM8 12.2V20M6 20h4M14 6.5h6l-1.2 6a1.8 1.8 0 0 1-3.6 0l-1.2-6ZM17 14.7V20M15 20h4',
 }
 

@@ -105,6 +105,38 @@ function escapeRe(s: string): string {
 }
 
 /**
+ * מפריד שורות שמכילות קישור (URL) משאר גוף ההודעה.
+ *
+ * כשוואטסאפ מחובר, קישור אישור/ניווט/מתנה מוצג ככפתור CTA בתחתית הבועה —
+ * לא כשורת URL בתוך הטקסט. הפונקציה מחזירה את הטקסט בלי שורות הקישור,
+ * ודגל האם הייתה שורת קישור בכלל (כדי להחליט אם להציג כפתור).
+ */
+export function splitMessageLinks(text: string): { body: string; hasLink: boolean } {
+  const linkRe = /https?:\/\//
+  const lines = text.split('\n')
+  const drop = new Array(lines.length).fill(false)
+  let hasLink = false
+  lines.forEach((line, i) => {
+    if (!linkRe.test(line)) return
+    hasLink = true
+    drop[i] = true
+    // שורת תווית שקדמה לקישור ("לאישור הגעה:") — יורדת יחד איתו, כדי
+    // שלא תישאר תווית מיותמת מעל הכפתור.
+    for (let j = i - 1; j >= 0; j--) {
+      if (lines[j].trim() === '') continue
+      if (/[:：]\s*$/.test(lines[j])) drop[j] = true
+      break
+    }
+  })
+  const body = lines
+    .filter((_, i) => !drop[i])
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+  return { body, hasLink }
+}
+
+/**
  * ממלא תבנית בערכי דוגמה, בדיוק כמו השרת בשליחה בפועל.
  *
  * שלושת הכללים שחייבים להישאר זהים ל-``render_automation_template``:

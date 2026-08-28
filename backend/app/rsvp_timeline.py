@@ -296,17 +296,7 @@ def compute_timeline(
         "audience_count": confirmed,
         "moved_from_weekend": False,
     })
-    # יום לפני האירוע — תזכורת חמה למי שאישר.
-    day_before = event_date - timedelta(days=1)
-    if day_before > commitment_date:
-        ensure_day(day_before)["actions"].append({
-            "type": "day_before",
-            "icon": "🎉",
-            "label": "תזכורת 'מחר מתראים' למי שאישר",
-            "audience": _audience_label("confirmed"),
-            "audience_count": confirmed,
-            "moved_from_weekend": False,
-        })
+    # אין הודעת "מחר מתראים" / "יום לפני האירוע" ב-VEYA — רק הודעת יום האירוע.
     # יום האירוע — הודעה אישית עם מספר השולחן.
     ensure_day(event_date)["actions"].append({
         "type": "day_of",
@@ -317,12 +307,10 @@ def compute_timeline(
         "moved_from_weekend": False,
     })
 
-    # ---- עוגני 'היום' ו'מחר' (מופיעים תמיד, גם בלי פעולה) ----
-    tomorrow = today + timedelta(days=1)
-    for anchor in (today, tomorrow):
-        # לא מציגים 'מחר' אם הוא כבר אחרי יום האירוע (הסתיים).
-        if anchor <= event_date:
-            ensure_day(anchor)
+    # ---- עוגן 'היום' (מופיע תמיד, גם בלי פעולה) ----
+    # אין עוגן 'מחר': ב-VEYA אין הודעת "מחר מתראים", והלוח לא מדבר על מחר.
+    if today <= event_date:
+        ensure_day(today)
 
     # ---- בניית רשימת הימים הממוינת ----
     days: list[dict] = []
@@ -334,13 +322,13 @@ def compute_timeline(
             "iso": iso,
             "weekday": _weekday(d),
             "is_today": d == today,
-            "is_tomorrow": d == tomorrow,
+            "is_tomorrow": False,
             "is_past": d < today,
             "is_commitment": d == commitment_date,
             "actions": entry["actions"],
         })
 
-    # ---- סיכומי 'מה קורה היום / מחר' ----
+    # ---- סיכום 'מה קורה היום' ----
     def summary_for(d: date) -> str:
         e = by_iso.get(d.isoformat())
         if not e or not e["actions"]:
@@ -348,7 +336,9 @@ def compute_timeline(
         return " · ".join(a["label"] for a in e["actions"])
 
     today_summary = summary_for(today)
-    tomorrow_summary = summary_for(tomorrow)
+    # נשאר ב-JSON לתאימות (schemas.RsvpTimelineView), אבל תמיד ריק —
+    # הלוח לא מציג עוד תא 'מחר'.
+    tomorrow_summary = ""
 
     # ---- שלב נוכחי + הפעולה הבאה ----
     action_dates = sorted(

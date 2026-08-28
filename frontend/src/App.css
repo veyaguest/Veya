@@ -10892,6 +10892,21 @@ td.notes.seating {
   color: #7a8a6f;
   font-style: italic;
 }
+/* כפתור CTA בבועת ההזמנה — מוצג רק כשוואטסאפ מחובר, במקום שורת קישור בטקסט. */
+.wa-btns {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+}
+.wa-btn {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0a84c4;
+  padding-top: 6px;
+  margin-top: 6px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
 .wa-meta {
   display: block;
   text-align: left;
@@ -11632,7 +11647,7 @@ td.notes.seating {
 /* היום / מחר */
 .tl-now {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 .tl-now-card {

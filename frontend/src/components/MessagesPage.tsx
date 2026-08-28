@@ -18,6 +18,7 @@ import type {
   SendScope,
 } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
+import { splitMessageLinks } from '../lib/messagePreview'
 import { strings } from '../strings/he'
 import { AddGuestForm } from './AddGuestForm'
 import './PostponeDialog.css'
@@ -388,6 +389,7 @@ function SendInvitationsDialog({
           <SendConfirmStep
             preview={preview}
             error={error}
+            mode={mode}
             onConfirm={onConfirm}
             onEditMessage={onEditMessage}
             onClose={onClose}
@@ -405,12 +407,14 @@ function SendInvitationsDialog({
 function SendConfirmStep({
   preview,
   error,
+  mode,
   onConfirm,
   onEditMessage,
   onClose,
 }: {
   preview: InvitationSendPreview
   error: string
+  mode: string
   onConfirm: (opts?: { guestIds?: number[] }) => void
   onEditMessage: () => void
   onClose: () => void
@@ -492,6 +496,13 @@ function SendConfirmStep({
   const selectedCount = selected.size
   const missingPhone = preview.missing_phone
 
+  // כשוואטסאפ מחובר: שורות הקישור יורדות מגוף הטקסט ומוצגות ככפתור.
+  // ב-mock: ההודעה מוצגת כפי שהיא (הקישור כטקסט), כמו היום.
+  const connected = mode !== 'mock'
+  const linkSplit = connected ? splitMessageLinks(previewText) : null
+  const bodyText = linkSplit ? linkSplit.body : previewText
+  const showLinkButton = !!linkSplit?.hasLink
+
   if (loading) {
     return (
       <div className="send-confirm">
@@ -525,8 +536,8 @@ function SendConfirmStep({
               />
             )}
             <div className="wa-text">
-              {previewText.trim() ? (
-                previewText.split('\n').map((line, i) => (
+              {bodyText.trim() ? (
+                bodyText.split('\n').map((line, i) => (
                   <div key={i} className="wa-line">
                     {line || ' '}
                   </div>
@@ -535,6 +546,12 @@ function SendConfirmStep({
                 <span className="wa-empty">אין עדיין נוסח להודעה</span>
               )}
             </div>
+            {/* כשוואטסאפ מחובר הקישור מוצג ככפתור CTA, לא כשורת URL בטקסט. */}
+            {showLinkButton && (
+              <div className="wa-btns">
+                <span className="wa-btn">אישור הגעה</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

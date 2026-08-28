@@ -740,9 +740,6 @@ export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
                 {when ? ` · ${when}` : ''}
               </p>
               <CountdownTimer date={event?.event_date} time={event?.event_time} />
-              <button className="btn-text dash-edit-link" onClick={() => setEditing(true)}>
-                עריכת פרטים
-              </button>
             </div>
           </div>
         )}
@@ -823,26 +820,9 @@ export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
         ]
         return (
           <>
-            {/* ---- מה דורש פעולה עכשיו ----
-                 הכרטיסים האלה היו קודם בתחתית המסך, אחרי המד ואחרי יומן
-                 הפעילות. זה הפוך מהדרך שבה קוראים לוח בקרה: "135 מוזמנים
-                 עדיין בלי הזמנה" הוא הדבר היחיד במסך שבאמת מחייב פעולה,
-                 והוא היה מתחת לקו הגלילה. סטטיסטיקה מתארת; פעולה דוחפת —
-                 ולכן הפעולה קודמת. ---- */}
-            <div className="dash-stack dash-actions">
-              <InviteBanner
-                count={stats.total_guests - stats.invitations_sent}
-                onSend={() => onNavigate?.('messages')}
-              />
-              {giftsEligible && (
-                <PayoutReminder account={payout} onNavigate={onNavigate} />
-              )}
-              <SeatingHelperCard stats={stats} onNavigate={onNavigate} />
-            </div>
-
-            {/* ---- סקשן המד — מוקד ויזואלי במלוא הרוחב.
-                 לא כרטיס קטן בתוך Grid — "חלון ראווה" עצמאי למד
-                 ולסטטיסטיקות שלו בלבד, בלי כרטיסים אחרים לצידו. ---- */}
+            {/* ---- סקשן המד — סטטוס אישורי ההגעה פותח את תמונת המצב.
+                 גרף העוגה הוא הדבר שהזוג רוצה לראות ראשון: כמה אישרו, כמה
+                 עוד לא. "חלון ראווה" עצמאי במלוא הרוחב, בלי כרטיסים לצידו. ---- */}
             <section className="gauge-section">
               <div className="gauge-section-head">
                 <h3 className="gauge-section-title">{t.donutCardTitle}</h3>
@@ -863,11 +843,31 @@ export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
               </ul>
             </section>
 
+            {/* ---- מה דורש פעולה עכשיו ----
+                 "135 מוזמנים נוספו ועדיין לא קיבלו הזמנה" הוא הדבר במסך
+                 שבאמת מחייב פעולה — מיד אחרי הסטטוס. הסקשן מרונדר רק כשיש
+                 בו תוכן (שני הרכיבים מחזירים null כשאין מה להציג). ---- */}
+            {(stats.total_guests - stats.invitations_sent > 0 || giftsEligible) && (
+              <div className="dash-stack dash-actions">
+                <InviteBanner
+                  count={stats.total_guests - stats.invitations_sent}
+                  onSend={() => onNavigate?.('messages')}
+                />
+                {giftsEligible && (
+                  <PayoutReminder account={payout} onNavigate={onNavigate} />
+                )}
+              </div>
+            )}
+
             {/* ---- יומן פעילות: מי שינה מה ומתי. מקבל משמעות אמיתית
                  כשמנהלים את האירוע בשניים — שני המנהלים רואים אותו יומן. ---- */}
             <section className="rsvp-feed-section">
               <ActivityLog />
             </section>
+
+            {/* ---- סידורי הושבה — אשף מדורג לפיצ'ר הדגל. יושב נמוך במסך:
+                 זו הכנה לקראת הערב, לא מצב שמשתנה כל יום כמו אישורי ההגעה. ---- */}
+            <SeatingHelperCard stats={stats} onNavigate={onNavigate} />
 
             {/* "מנהלים את האירוע יחד?" — הזמנה לשותף/ה. שימושי, אבל זו
                 הצעה ולא מצב האירוע, ולכן היא יושבת בסוף המסך ולא בראשו.

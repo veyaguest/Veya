@@ -6,9 +6,11 @@ import {
   getMessageOptions,
   mediaUrl,
   previewCommunicationMessage,
+  rsvpSummary,
   sendMessageToGuests,
   updateCommunicationMessage,
 } from '../api'
+import { splitMessageLinks } from '../lib/messagePreview'
 import type {
   EventDetails,
   EventMessage,
@@ -117,6 +119,9 @@ export function CommunicationTab() {
   const [event, setEvent] = useState<EventDetails | null>(null)
   const [activeType, setActiveType] = useState<MessageType>('invitation')
   const [error, setError] = useState('')
+  // האם וואטסאפ מחובר (לא mock) — קובע אם הקישור בתצוגה המקדימה מוצג
+  // ככפתור CTA במקום כשורת URL בטקסט. ברירת מחדל: לא מחובר.
+  const [waConnected, setWaConnected] = useState(false)
 
   const refresh = async () => {
     try {
@@ -126,6 +131,9 @@ export function CommunicationTab() {
       ])
       setMessages(seq)
       if (ev) setEvent(ev)
+      rsvpSummary()
+        .then((s) => setWaConnected(s.mode !== 'mock'))
+        .catch(() => undefined)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'טעינת ההודעות נכשלה')
     }
@@ -169,6 +177,7 @@ export function CommunicationTab() {
               key={active.message_type}
               message={active}
               event={event}
+              waConnected={waConnected}
               onSaved={refresh}
             />
           )}
@@ -183,10 +192,12 @@ type Mode = 'view' | 'browse' | 'edit'
 function MessagePanel({
   message,
   event,
+  waConnected,
   onSaved,
 }: {
   message: EventMessage
   event: EventDetails | null
+  waConnected: boolean
   onSaved: () => void
 }) {
   const [mode, setMode] = useState<Mode>('view')
@@ -387,7 +398,7 @@ function MessagePanel({
           במובייל אין מקום לזה לצד הכרטיס, ושם היא נפתחת מהכפתור. */}
       {wide && (
         <aside className="gm2-side">
-          <PhonePreview message={message} event={event} />
+          <PhonePreview message={message} event={event} waConnected={waConnected} />
           <p className="gm2-side-cap">{t.previewCaption(activeEventTerms().guestsLabel)}</p>
         </aside>
       )}
@@ -412,7 +423,7 @@ function MessagePanel({
                   ✕
                 </button>
               </div>
-              <PhonePreview message={message} event={event} />
+              <PhonePreview message={message} event={event} waConnected={waConnected} />
             </div>
           </div>,
           document.body,
@@ -593,11 +604,17 @@ const WIDE_QUERY = '(min-width: 1040px)'
 function PhonePreview({
   message,
   event,
+  waConnected,
 }: {
   message: EventMessage
   event: EventDetails | null
+  waConnected: boolean
 }) {
-  const text = usePreviewText(message)
+  const rawText = usePreviewText(message)
+  // כשוואטסאפ מחובר, שורת הקישור יורדת מהטקסט — הקישור מיוצג בכפתורים
+  // שמתחת לבועה. ב-mock מציגים את ההודעה כפי שהיא (הקישור כטקסט).
+  const text =
+    waConnected && rawText ? splitMessageLinks(rawText).body : rawText
 
   const showImage =
     STEPS_WITH_INVITE_IMAGE.has(message.message_type) && !!event?.invite_image

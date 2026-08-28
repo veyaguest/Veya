@@ -73,6 +73,17 @@ export function GuestsPage() {
   const [showOnboarding, setShowOnboarding] = useState(
     () => localStorage.getItem(ONBOARDING_KEY) !== '1',
   )
+  // מסמנים "נראה" ברגע שהדיאלוג מוצג — לא רק כשסוגרים אותו. בלי זה, מי
+  // שנכנס למסך המוזמנים ועובר לטאב אחר דרך הניווט בלי לסגור (מה שגורם
+  // ל-remount מלא, ראו key ב-App.tsx) היה רואה את הדיאלוג שוב בכל כניסה.
+  useEffect(() => {
+    if (!showOnboarding) return
+    try {
+      localStorage.setItem(ONBOARDING_KEY, '1')
+    } catch {
+      /* localStorage לא זמין (מצב פרטי) — לא נורא, פשוט לא נזכור בין רענונים */
+    }
+  }, [showOnboarding])
   const [toast, setToast] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Guest | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)

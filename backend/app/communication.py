@@ -256,8 +256,12 @@ def communication_values(event: models.Event, guest: Optional[models.Guest] = No
         "gift_link": _gift_link(event, guest),
     }
     if guest is not None:
-        values["guest_name"] = guest.full_name or ""
-        values["guest_names"] = guest.full_name or ""
+        # שם פרטי בלבד בהודעה למוזמן — עקבי עם ``messaging.render_automation_template``
+        # ("שלום דנה", לא "שלום דנה כהן"). שני הטוקנים מצביעים היום לאותו
+        # מוזמן יחיד, ולכן שניהם מקבלים את השם הפרטי.
+        first_name = (guest.full_name or "").split()[0] if guest.full_name else ""
+        values["guest_name"] = first_name
+        values["guest_names"] = first_name
         values["rsvp_link"] = messaging.confirm_link(guest.guest_token)
         values["table_number"] = str(guest.table_number) if guest.table_number else ""
     else:
