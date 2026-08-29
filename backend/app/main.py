@@ -590,14 +590,16 @@ def seed_message_defaults() -> None:
         db.close()
 
 
-# נוסחי "בקשת אישור ראשונה" לחתונה — 12 וריאציות שהבעלים שלח (2026-08-29).
+# נוסחי "בקשת אישור ראשונה" לפי סוג אירוע — וריאציות שהבעלים שלח (2026-08-29).
 # משתמשים ב-{{guest_name}} וב-{{rsvp_link}} בלבד. משמשים גם את הזריעה
 # הראשונית (``seed_message_default_options``) וגם את ההשלמה בפרודקשן
-# (``_ensure_rsvp_request_message_default``). האפשרות הראשונה משמשת גם
-# כברירת המחדל שמוקצית אוטומטית לכל חתונה (``MessageDefault.content``), כי
-# הבקשה נשלחת אוטומטית ואסור שתישאר ריקה בשקט.
-_RSVP_REQUEST_WEDDING_VARS = ["guest_name", "rsvp_link"]
-_RSVP_REQUEST_WEDDING_OPTIONS: list[tuple[str, str]] = [
+# (``_ensure_rsvp_request_message_default``). האפשרות הראשונה של כל סוג
+# משמשת גם כברירת המחדל שמוקצית אוטומטית (``MessageDefault.content``), כי
+# הבקשה נשלחת אוטומטית ואסור שתישאר ריקה בשקט. סוג אירוע שלא מופיע כאן —
+# ``MessageDefault.content`` שלו נשאר ריק עד שהבעלים יזין נוסח.
+_RSVP_REQUEST_OPTION_VARS = ["guest_name", "rsvp_link"]
+_RSVP_REQUEST_OPTIONS_BY_TYPE: dict[str, list[tuple[str, str]]] = {}
+_RSVP_REQUEST_OPTIONS_BY_TYPE["wedding"] = [
     (
         "פשוט וחם",
         "היי {{guest_name}} ❤️\n\n"
@@ -676,16 +678,173 @@ _RSVP_REQUEST_WEDDING_OPTIONS: list[tuple[str, str]] = [
     ),
 ]
 
+_RSVP_REQUEST_OPTIONS_BY_TYPE["henna"] = [
+    (
+        "פשוט וחם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח שתעדכנו אותנו אם אתם מגיעים לחינה שלנו.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "אישי ורגוע",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח לדעת אם תוכלו להיות איתנו בחינה.\n\n"
+        "אפשר לאשר הגעה כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "תזכורת עדינה",
+        "היי {{guest_name}} ❤️\n\n"
+        "קיבלתם את ההזמנה שלנו?\n"
+        "נשמח שתעדכנו אותנו אם אתם מצטרפים.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "קצר וברור",
+        "היי {{guest_name}}!\n\n"
+        "נשמח לקבל מכם אישור הגעה לחינה ❤️\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מזמין",
+        "היי {{guest_name}} ❤️\n\n"
+        "אנחנו מזמינים אתכם להיות איתנו בחינה, ונשמח לדעת אם אתם מגיעים.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "רגוע וקליל",
+        "היי {{guest_name}} 🥰\n\n"
+        "נשמח לדעת אם אתם מצטרפים אלינו לחינה.\n\n"
+        "אישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מצפים לראות אתכם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לדעת אם נוכל לצפות לראות אתכם איתנו בחינה.\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מנומס וחם",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לחינה.\n\n"
+        "{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+    (
+        "ישיר",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לדעת אם אתם איתנו בחינה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "נערכים לקראת",
+        "היי {{guest_name}}!\n\n"
+        "אנחנו מתחילים להיערך לקראת החינה, ונשמח לדעת אם אתם מגיעים.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "מצפים לתשובה",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לקבל מכם תשובה לגבי ההגעה לחינה שלנו.\n\n"
+        "אפשר לאשר כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "חם ומודה",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח שתצטרפו אלינו לחינה.\n\n"
+        "רק עדכנו אותנו אם אתם מגיעים:\n{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+]
+
+_RSVP_REQUEST_OPTIONS_BY_TYPE["brit"] = [
+    (
+        "פשוט וחם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח שתעדכנו אותנו אם אתם מגיעים לברית.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "אישי ורגוע",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח לדעת אם תוכלו להיות איתנו ולחגוג את הרגע המיוחד.\n\n"
+        "אפשר לאשר הגעה כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "תזכורת עדינה",
+        "היי {{guest_name}} ❤️\n\n"
+        "קיבלתם את ההזמנה שלנו?\n"
+        "נשמח שתעדכנו אותנו אם אתם מגיעים.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "קצר וברור",
+        "היי {{guest_name}}!\n\n"
+        "נשמח לקבל מכם אישור הגעה לברית ❤️\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מזמין",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח שתהיו איתנו באירוע ונשמח לדעת אם אתם מגיעים.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "רגוע וקליל",
+        "היי {{guest_name}} 🥰\n\n"
+        "נשמח לדעת אם אתם מצטרפים אלינו.\n\n"
+        "אישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מצפים לראות אתכם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לראות אתכם איתנו בברית.\n\n"
+        "אפשר לעדכן אותנו כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מנומס וחם",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם.\n\n"
+        "לאישור:\n{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+    (
+        "ישיר",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לדעת אם אתם איתנו באירוע.\n\n"
+        "אישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "נערכים לקראת",
+        "היי {{guest_name}}!\n\n"
+        "אנחנו מתחילים להיערך לקראת האירוע, ונשמח לדעת אם אתם מגיעים.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "מצפים לתשובה",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לקבל מכם תשובה לגבי ההגעה לברית.\n\n"
+        "אפשר לאשר כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "חם ומודה",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח שתצטרפו אלינו לרגע המיוחד הזה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+]
+
 
 def seed_message_default_options() -> None:
     """זורע פעם אחת את ספריית הנוסחים לבחירה (``MessageDefaultOption``,
     decisions.md 2026-08-06): הזוג בוחר וריאציה מתוך עד 12 לכל
     event_type×message_type, במקום נוסח קבוע יחיד. רץ רק אם הטבלה ריקה.
 
-    בכוונה **חתונה בלבד בשלב הזה** (הוראת הבעלים): 12 נוסחי הזמנה + 12 נוסחי
-    "בקשת אישור ראשונה" אמיתיים שהבעלים שלח (הומרו מ-``{טוקן}`` ל-``{{token}}``),
-    ושורות ריקות (12 לכל אחד מהשלבים הנותרים) שמחכות לנוסחים הבאים. סוגי
-    אירוע אחרים לא מקבלים כאן שום שורה — לא עוברים אליהם לפני שחתונה שלמה.
+    נוסחים אמיתיים שהבעלים שלח (הומרו מ-``{טוקן}`` ל-``{{token}}``): 12 נוסחי
+    הזמנה לחתונה, ו-12 נוסחי "בקשת אישור ראשונה" לכל סוג אירוע ב-
+    ``_RSVP_REQUEST_OPTIONS_BY_TYPE``. שאר השלבים לחתונה מקבלים 12 שורות
+    ריקות שמחכות לנוסחים; סוגי אירוע אחרים לא מקבלים שורות לשלבים שאין להם
+    נוסח עדיין.
     """
     from sqlalchemy import func, select
 
@@ -852,19 +1011,20 @@ def seed_message_default_options() -> None:
             for i, (tone, content, variables) in enumerate(invitation_options)
         ]
 
-        # "בקשת אישור ראשונה" — 12 נוסחים אמיתיים (כמו הזמנה).
-        rows += [
-            models.MessageDefaultOption(
-                event_type="wedding",
-                message_type="rsvp_request",
-                option_number=i + 1,
-                tone=tone,
-                title=communication.MESSAGE_TYPE_LABELS["rsvp_request"],
-                content=content,
-                variables_supported=list(_RSVP_REQUEST_WEDDING_VARS),
-            )
-            for i, (tone, content) in enumerate(_RSVP_REQUEST_WEDDING_OPTIONS)
-        ]
+        # "בקשת אישור ראשונה" — נוסחים אמיתיים לפי סוג אירוע (כמו הזמנה).
+        for et, opts in _RSVP_REQUEST_OPTIONS_BY_TYPE.items():
+            rows += [
+                models.MessageDefaultOption(
+                    event_type=et,
+                    message_type="rsvp_request",
+                    option_number=i + 1,
+                    tone=tone,
+                    title=communication.MESSAGE_TYPE_LABELS["rsvp_request"],
+                    content=content,
+                    variables_supported=list(_RSVP_REQUEST_OPTION_VARS),
+                )
+                for i, (tone, content) in enumerate(opts)
+            ]
 
         # שורות ריקות לשלבים שעדיין אין להם נוסחים — מבנה זהה, ממתין.
         remaining_types = [
@@ -993,10 +1153,12 @@ def _ensure_rsvp_request_message_default() -> None:
     סוג הודעה שנולד אחרי שהקטלוג כבר נזרע, ולכן ``seed_message_defaults`` /
     ``seed_message_default_options`` (שרצים רק על טבלה ריקה) לא יצרו אותו:
 
-    1. שורת ``MessageDefault`` לכל סוג אירוע. לחתונה — עם נוסח ברירת המחדל
-       (``_RSVP_REQUEST_WEDDING_OPTIONS[0]``), כי הבקשה נשלחת אוטומטית ואסור
-       שתישאר ריקה בשקט; לשאר הסוגים ``content=""`` עד שיוזן נוסח.
-    2. 12 שורות ``MessageDefaultOption`` לחתונה — ספריית הנוסחים לבחירה.
+    1. שורת ``MessageDefault`` לכל סוג אירוע. לסוגים שיש להם נוסחים ב-
+       ``_RSVP_REQUEST_OPTIONS_BY_TYPE`` — עם נוסח ברירת המחדל (אפשרות 1),
+       כי הבקשה נשלחת אוטומטית ואסור שתישאר ריקה בשקט; לשאר ``content=""``
+       עד שיוזן נוסח.
+    2. שורות ``MessageDefaultOption`` — ספריית הנוסחים לבחירה, לכל סוג
+       אירוע שיש לו נוסחים.
     3. יישור כותרת ``final_reminder`` מ"תזכורת אחרונה" ל"תזכורת שלישית"
        (כותרת מערכת, לא של הזוג), כדי שכל המסכים ידברו באותה שפה.
 
@@ -1030,7 +1192,9 @@ def _ensure_rsvp_request_message_default() -> None:
             select(models.MessageDefault.event_type)
             .where(models.MessageDefault.message_type == "rsvp_request")
         ).all())
-        wedding_default_content = _RSVP_REQUEST_WEDDING_OPTIONS[0][1]
+        default_content = {
+            et: opts[0][1] for et, opts in _RSVP_REQUEST_OPTIONS_BY_TYPE.items()
+        }
         created = 0
         for et in event_types:
             if et in have:
@@ -1039,53 +1203,55 @@ def _ensure_rsvp_request_message_default() -> None:
                 event_type=et,
                 message_type="rsvp_request",
                 title=communication.MESSAGE_TYPE_LABELS["rsvp_request"],
-                content=wedding_default_content if et == "wedding" else "",
+                content=default_content.get(et, ""),
                 variables_supported=list(
                     communication.DEFAULT_VARIABLES_SUPPORTED.get("rsvp_request", [])
                 ),
             ))
             created += 1
 
-        # ריפוי חד-פעמי: חתונה שכבר קיבלה שורת rsvp_request ריקה (ברירת מחדל
-        # גלובלית או שורת EventMessage שהוקצתה לפני שהיה נוסח) — נותנים לה
-        # את נוסח ברירת המחדל. "ריק -> ברירת מחדל" בטוח: לעולם לא דורס נוסח
-        # אמיתי שהזוג/הבעלים בחר.
-        db.execute(
-            update(models.MessageDefault)
-            .where(models.MessageDefault.event_type == "wedding")
-            .where(models.MessageDefault.message_type == "rsvp_request")
-            .where(models.MessageDefault.content == "")
-            .values(content=wedding_default_content)
-        )
-        wedding_ids = select(models.Event.id).where(models.Event.event_type == "wedding")
-        db.execute(
-            update(models.EventMessage)
-            .where(models.EventMessage.message_type == "rsvp_request")
-            .where(models.EventMessage.content == "")
-            .where(models.EventMessage.event_id.in_(wedding_ids))
-            .values(content=wedding_default_content)
-        )
-
-        # (2) 12 שורות MessageDefaultOption לחתונה — משלים רק מספרים חסרים.
-        existing_nums = set(db.scalars(
-            select(models.MessageDefaultOption.option_number)
-            .where(models.MessageDefaultOption.event_type == "wedding")
-            .where(models.MessageDefaultOption.message_type == "rsvp_request")
-        ).all())
         opts_created = 0
-        for i, (tone, content) in enumerate(_RSVP_REQUEST_WEDDING_OPTIONS):
-            if (i + 1) in existing_nums:
-                continue
-            db.add(models.MessageDefaultOption(
-                event_type="wedding",
-                message_type="rsvp_request",
-                option_number=i + 1,
-                tone=tone,
-                title=communication.MESSAGE_TYPE_LABELS["rsvp_request"],
-                content=content,
-                variables_supported=list(_RSVP_REQUEST_WEDDING_VARS),
-            ))
-            opts_created += 1
+        for et, opts in _RSVP_REQUEST_OPTIONS_BY_TYPE.items():
+            content0 = opts[0][1]
+            # ריפוי חד-פעמי: סוג אירוע שכבר קיבל שורת rsvp_request ריקה
+            # (ברירת מחדל גלובלית או שורת EventMessage שהוקצתה לפני שהיה נוסח)
+            # — נותנים לו את נוסח ברירת המחדל. "ריק -> ברירת מחדל" בטוח:
+            # לעולם לא דורס נוסח אמיתי שהזוג/הבעלים בחר.
+            db.execute(
+                update(models.MessageDefault)
+                .where(models.MessageDefault.event_type == et)
+                .where(models.MessageDefault.message_type == "rsvp_request")
+                .where(models.MessageDefault.content == "")
+                .values(content=content0)
+            )
+            et_ids = select(models.Event.id).where(models.Event.event_type == et)
+            db.execute(
+                update(models.EventMessage)
+                .where(models.EventMessage.message_type == "rsvp_request")
+                .where(models.EventMessage.content == "")
+                .where(models.EventMessage.event_id.in_(et_ids))
+                .values(content=content0)
+            )
+
+            # שורות MessageDefaultOption — משלים רק מספרים חסרים.
+            existing_nums = set(db.scalars(
+                select(models.MessageDefaultOption.option_number)
+                .where(models.MessageDefaultOption.event_type == et)
+                .where(models.MessageDefaultOption.message_type == "rsvp_request")
+            ).all())
+            for i, (tone, content) in enumerate(opts):
+                if (i + 1) in existing_nums:
+                    continue
+                db.add(models.MessageDefaultOption(
+                    event_type=et,
+                    message_type="rsvp_request",
+                    option_number=i + 1,
+                    tone=tone,
+                    title=communication.MESSAGE_TYPE_LABELS["rsvp_request"],
+                    content=content,
+                    variables_supported=list(_RSVP_REQUEST_OPTION_VARS),
+                ))
+                opts_created += 1
 
         # תמיד commit — גם אם רק ה-UPDATE של הריפוי (ריק -> ברירת מחדל) שינה
         # שורות, בלי שנוצרו שורות חדשות.
