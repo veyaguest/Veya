@@ -129,7 +129,8 @@ export function CreateAccountForm({ onCreated }: { onCreated: () => void }) {
 }
 
 /** כרטיס עריכה לברירת מחדל אחת (event_type × message_type) — עריכת
- * title/content/is_active + שמירה. אין יצירה/מחיקה — 48 השורות קבועות. */
+ * title/content/is_active + שמירה. אין יצירה/מחיקה — השורות קבועות
+ * (event_type × message_type, מוקצות בעליית השרת). */
 function MessageDefaultCard({
   d,
   onSaved,
@@ -197,8 +198,8 @@ function MessageDefaultCard({
   )
 }
 
-/** ניהול ברירות המחדל הגלובליות לרצף "תקשורת עם אורחים" — 8 סוגי אירוע ×
- * 6 סוגי הודעה. כאן מוזנים הטקסטים הסופיים; כל אירוע חדש מעתיק מכאן. */
+/** ניהול ברירות המחדל הגלובליות לרצף "תקשורת עם אורחים" (event_type ×
+ * message_type). כאן מוזנים הטקסטים הסופיים; כל אירוע חדש מעתיק מכאן. */
 export function MessageDefaultsManager() {
   const [defaults, setDefaults] = useState<MessageDefault[] | null>(null)
   const [stats, setStats] = useState<AdminMessageStats | null>(null)
@@ -272,7 +273,7 @@ export function MessageDefaultsManager() {
 
       <h2 className="admin-section-title">תקשורת עם אורחים — ברירות המחדל</h2>
       <p className="file-name">
-        6 ההודעות הקבועות לכל סוג אירוע. כל אירוע חדש מקבל אוטומטית עותק
+        ההודעות הקבועות לכל סוג אירוע. כל אירוע חדש מקבל אוטומטית עותק
         לעריכה משלו; שינוי כאן משפיע רק על אירועים עתידיים.
       </p>
       <div className="veya-tpl-actions" style={{ marginBottom: 16 }}>

@@ -893,17 +893,37 @@ def _ensure_rsvp_request_message_default() -> None:
     יוצר אותו. בלי השורה הזו המייסד לא יכול לערוך את נוסח הבקשה במסך האדמין,
     והסבב לא ישלח כלום (``compute_due_messages`` מדלג על הודעה בלי תוכן).
 
-    idempotent: משלים רק חסר, ``content=""``, לעולם לא דורס נוסח קיים.
-    """
-    from sqlalchemy import select
+    בנוסף מיישר את כותרת ``final_reminder`` מ"תזכורת אחרונה" ל"תזכורת שלישית"
+    (הכותרת נקבעת ע"י המערכת ולא ע"י הזוג), כדי שכל המסכים ידברו באותה שפה —
+    בקשת אישור ראשונה → תזכורת ראשונה / שנייה / שלישית.
 
-    from app import communication
+    idempotent: משלים רק חסר, ``content=""``, לעולם לא דורס נוסח קיים.
+    רץ דרך ``MigrationSessionLocal`` (תפקיד מיוחס, עוקף RLS) כמו שאר תחזוקת
+    העלייה.
+    """
+    from sqlalchemy import select, update
+
+    from app import communication, event_terms
 
     db = MigrationSessionLocal()
     try:
-        event_types = list(db.scalars(
+        # יישור כותרת "תזכורת אחרונה" -> "תזכורת שלישית" — מדויק: לא נוגע
+        # בסוג הודעה אחר ולא בכותרת שכבר עודכנה.
+        for model in (models.MessageDefault, models.EventMessage):
+            db.execute(
+                update(model)
+                .where(model.message_type == "final_reminder")
+                .where(model.title == "תזכורת אחרונה")
+                .values(title="תזכורת שלישית")
+            )
+            db.commit()
+
+        # רשימת סוגי האירוע הקנונית — לא "מה שבמקרה קיים ב-MessageDefault",
+        # שיכול להיות חלקי בסביבות ישנות.
+        seen = set(db.scalars(
             select(models.MessageDefault.event_type).distinct()
         ).all())
+        event_types = sorted(set(event_terms.EVENT_TERMS.keys()) | seen)
         have = set(db.scalars(
             select(models.MessageDefault.event_type)
             .where(models.MessageDefault.message_type == "rsvp_request")
