@@ -122,7 +122,7 @@ function DayScale({ view }: { view: RsvpTimelineView }) {
   if (view.days.length === 0) return null
   return (
     <div className="tl-scale">
-      <h3 className="clar-title">כל התחנות בדרך</h3>
+      <h3 className="clar-title">מסלול אישורי הגעה</h3>
       <ol className="tl-days">
         {view.days.map((day) => (
           <DayRow key={day.iso} day={day} />
