@@ -1107,6 +1107,9 @@ export interface EventMemberRead {
 
 export type MessageType =
   | 'invitation'
+  // בקשת האישור הראשונה — ההודעה הראשונה שמבקשת מהאורח לאשר הגעה, נשלחת
+  // אוטומטית ביום שנפתחים אישורי ההגעה (לפי מועד סגירת רשימת המוזמנים).
+  | 'rsvp_request'
   | 'reminder_1'
   | 'reminder_2'
   | 'final_reminder'
@@ -1118,7 +1121,7 @@ export type MessageType =
 
 // הסדר הקבוע להצגה (תואם ל-backend/app/communication.py: MESSAGE_TYPES).
 export const MESSAGE_TYPES: MessageType[] = [
-  'invitation', 'reminder_1', 'reminder_2',
+  'invitation', 'rsvp_request', 'reminder_1', 'reminder_2',
   'final_reminder', 'event_day', 'thank_you',
 ]
 

@@ -29,9 +29,10 @@ const EVENT_TYPE_ORDER = Object.keys(EVENT_TYPE_LABELS)
 /** תוויות שלבי ההודעה (תואם ל-backend/app/communication.py: MESSAGE_TYPE_LABELS). */
 const MESSAGE_TYPE_LABELS_HE: Record<string, string> = {
   invitation: 'הזמנה',
+  rsvp_request: 'בקשת אישור ראשונה',
   reminder_1: 'תזכורת ראשונה',
   reminder_2: 'תזכורת שנייה',
-  final_reminder: 'תזכורת אחרונה',
+  final_reminder: 'תזכורת שלישית',
   event_day: 'יום האירוע',
   thank_you: 'תודה',
 }

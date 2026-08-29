@@ -34,7 +34,7 @@ import './PostponeDialog.css'
  * צריך לסמן.
  */
 const STEPS_WITH_INVITE_IMAGE: ReadonlySet<MessageType> = new Set<MessageType>([
-  'invitation', 'reminder_1', 'reminder_2', 'final_reminder', 'event_day',
+  'invitation', 'rsvp_request', 'reminder_1', 'reminder_2', 'final_reminder', 'event_day',
 ])
 
 /** מילה טבעית לכל פרט משתנה — מוצגת כשעדיין אין ערך אמיתי לאירוע. */
