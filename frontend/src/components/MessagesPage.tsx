@@ -8,6 +8,7 @@ import {
   mediaUrl,
   previewCommunicationMessage,
   previewSend,
+  updateEvent,
 } from '../api'
 import type {
   EventDetails,
@@ -26,6 +27,7 @@ import { CommunicationTab } from './CommunicationTab'
 import { ImportDialog } from './ImportDialog'
 import { MessageLibrary } from './MessageLibrary'
 import { PasteImportDialog } from './PasteImportDialog'
+import { TimePicker } from './TimePicker'
 
 type Tab = 'communication' | 'library'
 
@@ -287,6 +289,11 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
         </>
       )}
 
+      {/* שעת שליחה — מתי ביום יוצאות הודעות המסלול והתודה. בתחתית העמוד, כי
+          זו הגדרה שקובעים פעם אחת ולא נוגעים בה שוב. רלוונטי גם לפני הפעלת
+          המסלול, כדי שהזוג יוכל לקבוע אותה מראש. */}
+      <SendTimeSettings />
+
       {phase !== 'idle' && preview && (
         <SendInvitationsDialog
           phase={phase}
@@ -300,6 +307,118 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
           onClose={closeDialog}
         />
       )}
+    </div>
+  )
+}
+
+/**
+ * שעת שליחה — מתי ביום יוצאות הודעות מסלול אישורי ההגעה, ומתי יוצאת הודעת
+ * התודה (שעה נפרדת). הטווח (10:00–19:00) ולוגיקת שישי/שבת+שעון ישראל
+ * נאכפים בשרת (app/communication.py) — כאן רק שני שדות שעה ושמירה.
+ */
+function SendTimeSettings() {
+  const t = strings.messages.sendTime
+  const [event, setEvent] = useState<EventDetails | null>(null)
+  const [rsvpTime, setRsvpTime] = useState('')
+  const [thankYouTime, setThankYouTime] = useState('')
+  const [loadError, setLoadError] = useState('')
+  const [saveError, setSaveError] = useState('')
+  const [saved, setSaved] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    getEvent()
+      .then((e) => {
+        if (!alive) return
+        setEvent(e)
+        setRsvpTime(e.rsvp_send_time)
+        setThankYouTime(e.thank_you_send_time)
+      })
+      .catch((err) => {
+        if (alive) setLoadError(err instanceof Error ? err.message : t.loadError)
+      })
+    return () => {
+      alive = false
+    }
+  }, [t.loadError])
+
+  const dirty =
+    !!event && (rsvpTime !== event.rsvp_send_time || thankYouTime !== event.thank_you_send_time)
+
+  async function save() {
+    setBusy(true)
+    setSaveError('')
+    setSaved(false)
+    try {
+      const e = await updateEvent({
+        rsvp_send_time: rsvpTime,
+        thank_you_send_time: thankYouTime,
+      })
+      setEvent(e)
+      setRsvpTime(e.rsvp_send_time)
+      setThankYouTime(e.thank_you_send_time)
+      setSaved(true)
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : t.saveError)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (loadError) return <p className="form-error" role="alert">{loadError}</p>
+  if (!event) return null
+
+  return (
+    <div className="commit-field">
+      <span className="field-label">{t.label}</span>
+      <p className="commit-explain">{t.explain}</p>
+      <div className="event-datetime">
+        <div className="field-group">
+          <span className="field-label">{t.trackLabel}</span>
+          <TimePicker
+            value={rsvpTime}
+            min="10:00"
+            max="19:00"
+            onChange={(time) => {
+              setSaved(false)
+              setRsvpTime(time)
+            }}
+            ariaLabel={t.trackLabel}
+          />
+        </div>
+        <div className="field-group">
+          <span className="field-label">{t.thankYouLabel}</span>
+          <TimePicker
+            value={thankYouTime}
+            min="10:00"
+            max="19:00"
+            onChange={(time) => {
+              setSaved(false)
+              setThankYouTime(time)
+            }}
+            ariaLabel={t.thankYouLabel}
+          />
+        </div>
+      </div>
+      {/* מגבלת טווח היא מידע, לא אזהרה. הכיתוב הזה הוצג ב-.commit-warn
+          (זהב, מודגש) — אותו סגנון בדיוק של אזהרה אמיתית במסך, ולכן נקרא
+          כאילו משהו לא בסדר. */}
+      <span className="field-hint">{t.rangeHint}</span>
+      {saveError && <p className="form-error" role="alert">{saveError}</p>}
+      {saved && !dirty && <p className="rsvp-note">{t.saved}</p>}
+      {/* כפתור מושבת בלי הסבר נקרא כתקלה. כשאין מה לשמור — אומרים זאת. */}
+      <div className="event-edit-actions">
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={!dirty || busy}
+          onClick={save}
+        >
+          {busy ? t.saving : t.save}
+        </button>
+        {!dirty && !busy && <span className="field-hint">{t.noChanges}</span>}
+      </div>
     </div>
   )
 }
