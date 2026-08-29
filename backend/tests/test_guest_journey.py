@@ -259,18 +259,22 @@ def test_other_actions_unchanged_by_gift_logic() -> None:
     print("✓ הזמנה/יומן/ניווט/אישור הגעה לא הושפעו משינוי חלון המתנה")
 
 
-# ---- חלון אישורי ההגעה: נפתח ביום התזכורת הראשונה ----------------------
+# ---- חלון אישורי ההגעה: נפתח ביום בקשת האישור הראשונה ------------------
 
 def test_rsvp_window() -> None:
-    """אישורי הגעה נפתחים ביום התזכורת הראשונה שבלוח הזמנים (עוגן: מועד
-    סגירת רשימת המוזמנים) — לא לפי תאריך שליחת ההזמנה."""
+    """אישורי הגעה נפתחים ביום שבקשת האישור הראשונה יוצאת לפי לוח הזמנים
+    (עוגן: מועד סגירת רשימת המוזמנים) — לא לפי תאריך שליחת ההזמנה."""
+    from app import rsvp_timeline
+
     # ההזמנה יצאה חודש מראש; זה לא משנה — הלוח עוגן במועד סגירת הרשימה.
     on = FakeEvent(rsvp_track_active=True, rsvp_track_started_at=datetime(2026, 10, 1))
     opens = gj.rsvp_open_date(on)
     assert opens is not None
+    # מקור האמת: תאריך שלב ``whatsapp_first`` בלוח הזמנים.
+    assert opens == rsvp_timeline.rsvp_request_date(on)
 
     assert gj.rsvp_is_open(on, now=il(opens - timedelta(days=1))) is False, "יום לפני — סגור"
-    assert gj.rsvp_is_open(on, now=il(opens)) is True, "יום התזכורת הראשונה — נפתח"
+    assert gj.rsvp_is_open(on, now=il(opens)) is True, "יום בקשת האישור הראשונה — נפתח"
     assert gj.rsvp_is_open(on, now=il(opens + timedelta(days=10))) is True
 
     # מסלול לא פעיל — סגור, גם אחרי מועד הפתיחה.
@@ -284,7 +288,37 @@ def test_rsvp_window() -> None:
 
     # ``event is None`` (תצוגה מקדימה) — פתוח, כמו ``compute_actions(None)``.
     assert gj.rsvp_is_open(None) is True
-    print("✓ חלון אישורי ההגעה: נפתח ביום התזכורת הראשונה שבלוח הזמנים")
+    print("✓ חלון אישורי ההגעה: נפתח ביום בקשת האישור הראשונה שבלוח הזמנים")
+
+
+def test_last_call_round_equals_commitment_date() -> None:
+    """מודל מאוחד: יום סגירת רשימת המוזמנים הוא **תמיד** גם יום סבב השיחות
+    האחרון — תאריך אחד ויחיד, שלא יכול לצאת מסנכרון."""
+    from app import rsvp_timeline
+
+    # כמה תרחישים: תאריך אירוע וימי-מרווח שונים, כולל מקרה שבו מועד הסגירה
+    # הגולמי נופל על סוף שבוע (חייב לזוז אחורה — יחד עם הסבב האחרון).
+    for event_date, commit_days in [
+        ("2026-11-12", 3),   # מועד גולמי = 09/11 (שני)
+        ("2026-11-12", 5),   # מועד גולמי = 07/11 (שבת) — זז אחורה
+        ("2026-12-20", 2),
+        ("2026-10-19", 7),
+    ]:
+        ev = FakeEvent(event_date=event_date, venue_commit_days_before=commit_days)
+        schedule = rsvp_timeline.compute_schedule(ev, now=datetime(2026, 1, 1))
+        assert schedule is not None
+        rounds = [p for p in schedule.placements if p.round_number is not None]
+        assert rounds, f"אין סבבי שיחות ({event_date}/{commit_days})"
+        last_round = rounds[-1]
+        assert last_round.date == schedule.commitment_date, (
+            f"הסבב האחרון ({last_round.date}) חייב להיות במועד סגירת הרשימה "
+            f"({schedule.commitment_date}) — {event_date}/{commit_days}"
+        )
+        # אין הצמדה של פעולה כלשהי *אחרי* מועד הסגירה.
+        assert all(p.date <= schedule.commitment_date for p in schedule.placements)
+        # מועד הסגירה עצמו לעולם לא נופל על שישי/שבת.
+        assert not rsvp_timeline.is_weekend(schedule.commitment_date)
+    print("✓ יום סגירת הרשימה = יום סבב השיחות האחרון, תאריך אחד ויחיד")
 
 
 if __name__ == "__main__":
@@ -300,4 +334,5 @@ if __name__ == "__main__":
     test_feature_flag_gates_release_not_window()
     test_other_actions_unchanged_by_gift_logic()
     test_rsvp_window()
+    test_last_call_round_equals_commitment_date()
     print("\nכל בדיקות מסע האורח עברו ✓")

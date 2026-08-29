@@ -405,9 +405,10 @@ def advance_track(
 
 _KIND_LABEL = {
     "invitation": "הזמנה",
+    "rsvp_request": "בקשת אישור ראשונה",
     "reminder_1": "תזכורת ראשונה",
     "reminder_2": "תזכורת שנייה",
-    "final_reminder": "תזכורת אחרונה",
+    "final_reminder": "תזכורת שלישית",
     "event_day": "יום האירוע",
     "thank_you": "תודה",
     "reply": "תשובת המוזמן",

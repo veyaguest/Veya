@@ -11826,9 +11826,6 @@ td.notes.seating {
   font-size: 13px;
   color: var(--muted);
 }
-.tl-moved {
-  color: var(--gold-deep);
-}
 
 @media (max-width: 640px) {
   .tl-header-stats {

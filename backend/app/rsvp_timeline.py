@@ -7,16 +7,23 @@
 הרעיון:
 - הזוג בוחר כמה ימים לפני האירוע הוא חייב למסור לאולם מספר סופי
   (``Event.venue_commit_days_before``, 1–10). מכאן נגזר **מועד סגירת
-  הרשימה** = תאריך האירוע פחות אותם ימים.
+  הרשימה** = תאריך האירוע פחות אותם ימים (מוזז אחורה אם נופל על סוף שבוע).
+- **מועד סגירת הרשימה הוא גם יום סבב השיחות האחרון** — תאריך אחד ויחיד
+  (``Schedule.commitment_date``, וגם תאריך ה-``call_round`` האחרון
+  ב-``placements``). ביום הזה הטלפנים מבצעים את הסבב האחרון מול מי שעדיין
+  לא אישר, ואז סוגרים את הרשימה. אין מועד נפרד ל"סבב טלפונים אחרון".
 - כל סבב אישורי-ההגעה מחושב *לאחור* ממועד סגירת הרשימה, כך שהסבב האחרון
-  מסתיים ממש לפניו — ואז הרשימה סופית ומדויקת.
+  נופל בדיוק עליו — ואז הרשימה סופית ומדויקת.
 - שישי/שבת: לא מתזמנים בהם פעולות. פעולה שנופלת על סוף שבוע מוזזת ליום
   הפעיל הקרוב (ראשון), עם דגל ``moved_from_weekend``.
 - זמן קצר: אם אין מספיק ימים לסבב המלא, המסלול מתכווץ בצורה חכמה
   (``compressed=true``) כדי להספיק כמה שיותר אישורים לפני מועד סגירת הרשימה.
 
-שלב Phase 1: **הגדרה + תצוגה בלבד** — המודול לא שולח כלום. חיבור השליחה
-בפועל לשלבים המתוזמנים יתווסף בשלב הבא.
+המודול עצמו טהור — רק *מחשב* תאריכים. אבל התאריכים האלה הם מקור האמת לשליחה
+בפועל: שלבי ה-WhatsApp (``whatsapp_first`` + ``reminder``) מחוברים למנגנון
+השליחה דרך ``rsvp_request_date`` ו-``communication.py`` (סוג ההודעה
+``rsvp_request`` והתזכורות). סבבי השיחות (``call_round``) נשארים פעולת מוקד
+ידנית (Call Center של האדמין).
 """
 from __future__ import annotations
 
@@ -30,17 +37,25 @@ from app.automation import parse_event_date
 # ---- הסבב הקבוע של אישורי-ההגעה ----
 # כל שלב עם היסט יחסי (בימים) בתוך סבב *אידיאלי* מלא, שנפרס לאחור ממועד
 # סגירת הרשימה. audience: all = כל המוזמנים ; pending = מי שעדיין לא אישר.
-# (השלבים כאן לתצוגה בלבד ב-Phase 1; בעתיד ניתן לגזור אותם מ-VeyaWorkflowStep.)
+# שלבי WhatsApp (whatsapp_first + reminder) נשלחים אוטומטית; call_round הוא
+# פעולת מוקד ידנית. הסדר והתאריכים כאן הם מקור האמת גם ל-Call Center של האדמין.
 CYCLE: list[dict] = [
-    {"type": "whatsapp_first", "offset": 0,  "icon": "✅", "label": "בקשת אישור ראשונה ב-WhatsApp", "audience": "all"},
+    {"type": "whatsapp_first", "offset": 0,  "icon": "✅", "label": "בקשת אישור ראשונה ב-WhatsApp", "audience": "pending"},
     {"type": "reminder",       "offset": 3,  "icon": "📩", "label": "תזכורת ראשונה",              "audience": "pending"},
     {"type": "call_round",     "offset": 6,  "icon": "📞", "label": "סבב שיחות ראשון",            "audience": "pending"},
-    {"type": "reminder",       "offset": 8,  "icon": "📩", "label": "תזכורת נוספת",               "audience": "pending"},
+    {"type": "reminder",       "offset": 8,  "icon": "📩", "label": "תזכורת שנייה",               "audience": "pending"},
     {"type": "call_round",     "offset": 10, "icon": "📞", "label": "סבב שיחות שני",              "audience": "pending"},
-    {"type": "reminder",       "offset": 11, "icon": "📩", "label": "תזכורת אחרונה",             "audience": "pending"},
+    {"type": "reminder",       "offset": 11, "icon": "📩", "label": "תזכורת שלישית",             "audience": "pending"},
     {"type": "call_round",     "offset": 12, "icon": "📞", "label": "סבב שיחות אחרון",           "audience": "pending"},
 ]
 FULL_SPAN = 12  # ההיסט הגדול ביותר בסבב — אורך הסבב האידיאלי בימים.
+
+# האינדקס של סבב השיחות האחרון ב-``CYCLE``. הוא תמיד מוצמד למועד סגירת
+# הרשימה (ראו ``compute_schedule``): יום סגירת הרשימה = יום סבב השיחות
+# האחרון, תאריך אחד ויחיד.
+_LAST_CALL_ROUND_IDX = max(
+    i for i, s in enumerate(CYCLE) if s["type"] == "call_round"
+)
 
 _HEB_WEEKDAY = {6: "ראשון", 0: "שני", 1: "שלישי", 2: "רביעי", 3: "חמישי", 4: "שישי", 5: "שבת"}
 
@@ -75,6 +90,22 @@ def is_weekend(d: date) -> bool:
 def next_active_day(d: date) -> date:
     """גרסה ציבורית של ``_next_active_day``."""
     return _next_active_day(d)
+
+
+def rsvp_request_date(event: models.Event, now: Optional[datetime] = None) -> Optional[date]:
+    """התאריך שבו נשלחת **בקשת האישור הראשונה** (``whatsapp_first``) לפי לוח
+    הזמנים — מקור האמת היחיד גם לתזמון השליחה בפועל (``communication._due_now``)
+    וגם לפתיחת אישורי ההגעה למוזמן (``guest_journey.rsvp_open_date``).
+
+    ``None`` = אין לוח זמנים (חסר תאריך אירוע או מועד סגירת רשימה).
+    """
+    schedule = compute_schedule(event, now)
+    if schedule is None:
+        return None
+    return next(
+        (p.date for p in schedule.placements if p.step["type"] == "whatsapp_first"),
+        None,
+    )
 
 
 def _ddmm(d: date) -> str:
@@ -139,9 +170,14 @@ def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Opt
     if event_date is None or commit_days is None:
         return None
 
-    commitment_date = event_date - timedelta(days=commit_days)
-    # עוגן הסיום: היום הפעיל האחרון *לפני* מועד סגירת הרשימה (יום מרווח לסגירה).
-    anchor_end = _prev_active_day(commitment_date - timedelta(days=1))
+    raw_commitment = event_date - timedelta(days=commit_days)
+    # מועד סגירת הרשימה = תאריך האירוע פחות ימי המרווח לאולם, מוזז אחורה אם
+    # נפל על שישי/שבת. זהו **תאריך אחד ויחיד**: גם יום סבב השיחות האחרון
+    # (ראו ההצמדה למטה) וגם היום שבו הטלפנים סוגרים בפועל את הרשימה.
+    commitment_date = _prev_active_day(raw_commitment)
+    # עוגן פריסת הסבב — היום הפעיל לפני מועד הסגירה. שאר השלבים נפרסים עד
+    # כאן; רק הסבב האחרון מוצמד ל-``commitment_date`` עצמו.
+    anchor_end = _prev_active_day(raw_commitment - timedelta(days=1))
     ideal_start = anchor_end - timedelta(days=FULL_SPAN)
     started_on = (
         event.rsvp_track_started_at.date() if event.rsvp_track_started_at else None
@@ -157,7 +193,7 @@ def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Opt
 
     placements: list[Placement] = []
     round_number = 0
-    for step in CYCLE:
+    for idx, step in enumerate(CYCLE):
         off = round(step["offset"] * scale)
         natural = effective_start + timedelta(days=off)
         placed = _next_active_day(natural)
@@ -165,10 +201,16 @@ def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Opt
             placed = _prev_active_day(anchor_end)
         if step["type"] == "call_round":
             round_number += 1
+        # סבב השיחות האחרון = מועד סגירת הרשימה, תמיד. תאריך אחד ויחיד.
+        if idx == _LAST_CALL_ROUND_IDX:
+            placed = commitment_date
+            moved = _is_weekend(raw_commitment)
+        else:
+            moved = _is_weekend(natural) and placed != natural
         placements.append(Placement(
             step=step,
             date=placed,
-            moved_from_weekend=_is_weekend(natural) and placed != natural,
+            moved_from_weekend=moved,
             round_number=round_number if step["type"] == "call_round" else None,
         ))
 
@@ -286,12 +328,14 @@ def compute_timeline(
 
     rsvp_start_date = schedule.start_date
 
-    # ---- ציוני דרך אחרי הסבב ----
-    # מועד סגירת הרשימה עצמו.
+    # ---- מועד סגירת הרשימה ----
+    # אותו יום בדיוק של סבב השיחות האחרון (``commitment_date == anchor_end``):
+    # הטלפנים מבצעים את הסבב האחרון מול מי שעדיין לא אישר, ואז סוגרים את
+    # הרשימה. מופיע כפעולה נפרדת אחרי הסבב באותו יום, לא כתאריך נוסף.
     ensure_day(commitment_date)["actions"].append({
         "type": "commitment",
         "icon": "🏢",
-        "label": "מועד סגירת הרשימה — הרשימה הסופית מוכנה",
+        "label": "סגירת רשימת המוזמנים — אחרי סבב השיחות האחרון",
         "audience": _audience_label("confirmed"),
         "audience_count": confirmed,
         "moved_from_weekend": False,

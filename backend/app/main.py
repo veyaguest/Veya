@@ -553,9 +553,10 @@ def _migrate_brita_split() -> None:
 
 def seed_message_defaults() -> None:
     """זורע פעם אחת את קטלוג ברירות המחדל הגלובלי לרצף התקשורת: 7 סוגי
-    אירוע × 6 סוגי הודעה = 42 שורות, כולן ``content=""`` (הבעלים יזין את
-    הטקסטים הסופיים דרך ``/admin/message-defaults``). רץ רק אם הטבלה ריקה,
-    כך שעריכה של האדמין לא נדרסת בהפעלה הבאה."""
+    אירוע × כל ``communication.MESSAGE_TYPES``, כולן ``content=""`` (הבעלים
+    יזין את הטקסטים הסופיים דרך ``/admin/message-defaults``). רץ רק אם הטבלה
+    ריקה, כך שעריכה של האדמין לא נדרסת בהפעלה הבאה. סוגי הודעה שנולדו אחרי
+    שהטבלה כבר מלאה בפרודקשן מושלמים בנפרד (ראו ``_ensure_rsvp_request_message_default``)."""
     from sqlalchemy import func, select
 
     from app import communication
@@ -589,15 +590,572 @@ def seed_message_defaults() -> None:
         db.close()
 
 
+# נוסחי "בקשת אישור ראשונה" לפי סוג אירוע — וריאציות שהבעלים שלח (2026-08-29).
+# משתמשים ב-{{guest_name}} וב-{{rsvp_link}} בלבד. משמשים גם את הזריעה
+# הראשונית (``seed_message_default_options``) וגם את ההשלמה בפרודקשן
+# (``_ensure_rsvp_request_message_default``). האפשרות הראשונה של כל סוג
+# משמשת גם כברירת המחדל שמוקצית אוטומטית (``MessageDefault.content``), כי
+# הבקשה נשלחת אוטומטית ואסור שתישאר ריקה בשקט. סוג אירוע שלא מופיע כאן —
+# ``MessageDefault.content`` שלו נשאר ריק עד שהבעלים יזין נוסח.
+_RSVP_REQUEST_OPTION_VARS = ["guest_name", "rsvp_link"]
+_RSVP_REQUEST_OPTIONS_BY_TYPE: dict[str, list[tuple[str, str]]] = {}
+_RSVP_REQUEST_OPTIONS_BY_TYPE["wedding"] = [
+    (
+        "פשוט וחם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח שתעדכנו אותנו אם אתם מגיעים לחתונה שלנו.\n\n"
+        "אפשר לאשר הגעה כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "אישי ורגוע",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח לדעת אם תוכלו להיות איתנו ביום המיוחד שלנו.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "תזכורת עדינה",
+        "היי {{guest_name}} ❤️\n\n"
+        "קיבלתם את ההזמנה שלנו?\n"
+        "נשמח שתעדכנו אותנו אם אתם מגיעים.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "קצר וברור",
+        "היי {{guest_name}}!\n\n"
+        "נשמח לקבל מכם תשובה לגבי ההגעה לחתונה ❤️\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מזמין",
+        "היי {{guest_name}} ❤️\n\n"
+        "אנחנו מזמינים אתכם לחגוג איתנו, ונשמח לדעת אם אתם מגיעים.\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "קצר מאוד",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח לדעת אם אתם מצטרפים אלינו לחתונה.\n\n"
+        "אישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מצפים לראות אתכם",
+        "היי {{guest_name}} ❤️\n\n"
+        "אנחנו רוצים לדעת אם נוכל לצפות לראות אתכם איתנו בחתונה.\n\n"
+        "נשמח שתעדכנו כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מנומס וחם",
+        "היי {{guest_name}}!\n\n"
+        "נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לחתונה.\n\n"
+        "{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+    (
+        "רגוע וקליל",
+        "היי {{guest_name}} 🥰\n\n"
+        "נשמח לדעת אם אתם איתנו.\n\n"
+        "אפשר לאשר הגעה בקלות כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "נערכים לקראת",
+        "היי {{guest_name}} ❤️\n\n"
+        "אנחנו רוצים להתחיל להיערך לקראת החתונה, ונשמח לדעת אם אתם מגיעים.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מצפים לתשובה",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח לקבל מכם אישור הגעה לחתונה שלנו.\n\n"
+        "לעדכון:\n{{rsvp_link}}\n\n"
+        "מחכים לתשובה ❤️",
+    ),
+    (
+        "חם ומודה",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לדעת אם תוכלו להגיע ולחגוג איתנו.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}\n\n"
+        "תודה רבה!",
+    ),
+]
+
+_RSVP_REQUEST_OPTIONS_BY_TYPE["henna"] = [
+    (
+        "פשוט וחם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח שתעדכנו אותנו אם אתם מגיעים לחינה שלנו.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "אישי ורגוע",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח לדעת אם תוכלו להיות איתנו בחינה.\n\n"
+        "אפשר לאשר הגעה כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "תזכורת עדינה",
+        "היי {{guest_name}} ❤️\n\n"
+        "קיבלתם את ההזמנה שלנו?\n"
+        "נשמח שתעדכנו אותנו אם אתם מצטרפים.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "קצר וברור",
+        "היי {{guest_name}}!\n\n"
+        "נשמח לקבל מכם אישור הגעה לחינה ❤️\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מזמין",
+        "היי {{guest_name}} ❤️\n\n"
+        "אנחנו מזמינים אתכם להיות איתנו בחינה, ונשמח לדעת אם אתם מגיעים.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "רגוע וקליל",
+        "היי {{guest_name}} 🥰\n\n"
+        "נשמח לדעת אם אתם מצטרפים אלינו לחינה.\n\n"
+        "אישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מצפים לראות אתכם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לדעת אם נוכל לצפות לראות אתכם איתנו בחינה.\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מנומס וחם",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לחינה.\n\n"
+        "{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+    (
+        "ישיר",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לדעת אם אתם איתנו בחינה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "נערכים לקראת",
+        "היי {{guest_name}}!\n\n"
+        "אנחנו מתחילים להיערך לקראת החינה, ונשמח לדעת אם אתם מגיעים.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "מצפים לתשובה",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לקבל מכם תשובה לגבי ההגעה לחינה שלנו.\n\n"
+        "אפשר לאשר כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "חם ומודה",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח שתצטרפו אלינו לחינה.\n\n"
+        "רק עדכנו אותנו אם אתם מגיעים:\n{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+]
+
+_RSVP_REQUEST_OPTIONS_BY_TYPE["brit"] = [
+    (
+        "פשוט וחם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח שתעדכנו אותנו אם אתם מגיעים לברית.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "אישי ורגוע",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח לדעת אם תוכלו להיות איתנו ולחגוג את הרגע המיוחד.\n\n"
+        "אפשר לאשר הגעה כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "תזכורת עדינה",
+        "היי {{guest_name}} ❤️\n\n"
+        "קיבלתם את ההזמנה שלנו?\n"
+        "נשמח שתעדכנו אותנו אם אתם מגיעים.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "קצר וברור",
+        "היי {{guest_name}}!\n\n"
+        "נשמח לקבל מכם אישור הגעה לברית ❤️\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מזמין",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח שתהיו איתנו באירוע ונשמח לדעת אם אתם מגיעים.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "רגוע וקליל",
+        "היי {{guest_name}} 🥰\n\n"
+        "נשמח לדעת אם אתם מצטרפים אלינו.\n\n"
+        "אישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מצפים לראות אתכם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לראות אתכם איתנו בברית.\n\n"
+        "אפשר לעדכן אותנו כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מנומס וחם",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם.\n\n"
+        "לאישור:\n{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+    (
+        "ישיר",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לדעת אם אתם איתנו באירוע.\n\n"
+        "אישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "נערכים לקראת",
+        "היי {{guest_name}}!\n\n"
+        "אנחנו מתחילים להיערך לקראת האירוע, ונשמח לדעת אם אתם מגיעים.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "מצפים לתשובה",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לקבל מכם תשובה לגבי ההגעה לברית.\n\n"
+        "אפשר לאשר כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "חם ומודה",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח שתצטרפו אלינו לרגע המיוחד הזה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+]
+
+_RSVP_REQUEST_OPTIONS_BY_TYPE["brita"] = [
+    (
+        "פשוט וחם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח שתעדכנו אותנו אם אתם מגיעים לבריתה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "אישי ורגוע",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח לדעת אם תוכלו להיות איתנו בבריתה.\n\n"
+        "אפשר לאשר הגעה כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "תזכורת עדינה",
+        "היי {{guest_name}} ❤️\n\n"
+        "קיבלתם את ההזמנה שלנו?\n"
+        "נשמח שתעדכנו אותנו אם אתם מצטרפים.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "קצר וברור",
+        "היי {{guest_name}}!\n\n"
+        "נשמח לקבל מכם אישור הגעה לבריתה ❤️\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מזמין",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח שתהיו איתנו ונכיר לכם את הקטנה שלנו.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "רגוע וקליל",
+        "היי {{guest_name}} 🥰\n\n"
+        "נשמח לדעת אם אתם מצטרפים אלינו לבריתה.\n\n"
+        "אישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מצפים לראות אתכם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לראות אתכם איתנו בבריתה.\n\n"
+        "אפשר לעדכן אותנו כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מנומס וחם",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם.\n\n"
+        "לאישור:\n{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+    (
+        "ישיר",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לדעת אם אתם איתנו בבריתה.\n\n"
+        "אישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "נערכים לקראת",
+        "היי {{guest_name}}!\n\n"
+        "נשמח לדעת אם אתם מגיעים לבריתה שלנו.\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מצפים לתשובה",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לקבל מכם תשובה לגבי ההגעה לבריתה.\n\n"
+        "לאישור:\n{{rsvp_link}}",
+    ),
+    (
+        "חם ומודה",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח שתצטרפו אלינו לרגע המיוחד הזה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+]
+
+_RSVP_REQUEST_OPTIONS_BY_TYPE["bar_mitzvah"] = [
+    (
+        "פשוט וחם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח שתעדכנו אותנו אם אתם מגיעים לבר המצווה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "אישי ורגוע",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח לדעת אם תוכלו להיות איתנו בבר המצווה.\n\n"
+        "אפשר לאשר הגעה כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "תזכורת עדינה",
+        "היי {{guest_name}} ❤️\n\n"
+        "קיבלתם את ההזמנה שלנו?\n"
+        "נשמח שתעדכנו אותנו אם אתם מצטרפים.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "קצר וברור",
+        "היי {{guest_name}}!\n\n"
+        "נשמח לקבל מכם אישור הגעה לבר המצווה ❤️\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מזמין",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח שתהיו איתנו ונחגוג יחד את בר המצווה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "רגוע וקליל",
+        "היי {{guest_name}} 🥳\n\n"
+        "נשמח לדעת אם אתם מצטרפים אלינו לבר המצווה.\n\n"
+        "אישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מצפים לראות אתכם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לראות אתכם איתנו ביום המיוחד הזה.\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מנומס וחם",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לבר המצווה.\n\n"
+        "{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+    (
+        "ישיר",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לדעת אם אתם איתנו בבר המצווה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "נערכים לקראת",
+        "היי {{guest_name}}!\n\n"
+        "נשמח לדעת אם אתם מגיעים לחגוג איתנו.\n\n"
+        "אפשר לאשר כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מצפים לתשובה",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לקבל מכם תשובה לגבי ההגעה לבר המצווה.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "חם ומודה",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח שתצטרפו אלינו לחגוג את בר המצווה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+]
+
+_RSVP_REQUEST_OPTIONS_BY_TYPE["bat_mitzvah"] = [
+    (
+        "פשוט וחם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח שתעדכנו אותנו אם אתם מגיעים לבת המצווה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "אישי ורגוע",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח לדעת אם תוכלו להיות איתנו בבת המצווה.\n\n"
+        "אפשר לאשר הגעה כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "תזכורת עדינה",
+        "היי {{guest_name}} ❤️\n\n"
+        "קיבלתם את ההזמנה שלנו?\n"
+        "נשמח שתעדכנו אותנו אם אתם מצטרפים.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "קצר וברור",
+        "היי {{guest_name}}!\n\n"
+        "נשמח לקבל מכם אישור הגעה לבת המצווה ❤️\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מזמין",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח שתהיו איתנו ונחגוג יחד את בת המצווה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "רגוע וקליל",
+        "היי {{guest_name}} 🥰\n\n"
+        "נשמח לדעת אם אתם מצטרפים אלינו לבת המצווה.\n\n"
+        "אישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מצפים לראות אתכם",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לראות אתכם איתנו ביום המיוחד הזה.\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מנומס וחם",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לבת המצווה.\n\n"
+        "{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+    (
+        "ישיר",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לדעת אם אתם איתנו בבת המצווה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "נערכים לקראת",
+        "היי {{guest_name}}!\n\n"
+        "נשמח לדעת אם אתם מגיעים לחגוג איתנו.\n\n"
+        "אפשר לאשר כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מצפים לתשובה",
+        "היי {{guest_name}} ❤️\n\n"
+        "נשמח לקבל מכם תשובה לגבי ההגעה לבת המצווה.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "חם ומודה",
+        "היי {{guest_name}} 😊\n\n"
+        "נשמח שתצטרפו אלינו לחגוג את בת המצווה.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}\n\n"
+        "תודה ❤️",
+    ),
+]
+
+# אירוע עסקי — טון מנומס ומאופק, בלי אימוג'י (בהתאם ל-veya-copy).
+_RSVP_REQUEST_OPTIONS_BY_TYPE["business"] = [
+    (
+        "רשמי",
+        "שלום {{guest_name}},\n\n"
+        "נשמח לדעת אם תוכלו להשתתף באירוע שלנו.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מארחים",
+        "היי {{guest_name}},\n\n"
+        "נשמח לארח אתכם באירוע ונשמח לקבל את אישור ההגעה שלכם.\n\n"
+        "{{rsvp_link}}",
+    ),
+    (
+        "ישיר",
+        "שלום {{guest_name}},\n\n"
+        "נשמח לדעת אם אתם מתכננים להגיע לאירוע.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מבקש עדכון",
+        "היי {{guest_name}},\n\n"
+        "נשמח אם תוכלו לעדכן אותנו לגבי השתתפותכם באירוע.\n\n"
+        "אפשר לאשר כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מזמין",
+        "שלום {{guest_name}},\n\n"
+        "נשמח לראות אתכם באירוע שלנו.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "קצר",
+        "היי {{guest_name}},\n\n"
+        "נשמח לדעת אם תוכלו להצטרף אלינו לאירוע.\n\n"
+        "אישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מנומס ומודה",
+        "שלום {{guest_name}},\n\n"
+        "נשמח לקבל מכם עדכון לגבי ההגעה לאירוע.\n\n"
+        "{{rsvp_link}}\n\n"
+        "תודה.",
+    ),
+    (
+        "אישי",
+        "היי {{guest_name}},\n\n"
+        "נשמח אם תוכלו להיות איתנו באירוע.\n\n"
+        "אפשר לעדכן כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "רשמי ומצפה",
+        "שלום {{guest_name}},\n\n"
+        "נשמח לדעת אם נוכל לצפות לראותכם באירוע.\n\n"
+        "לאישור הגעה:\n{{rsvp_link}}",
+    ),
+    (
+        "מבקש אישור",
+        "היי {{guest_name}},\n\n"
+        "נשמח לקבל את אישור ההגעה שלכם לאירוע.\n\n"
+        "אפשר לאשר כאן:\n{{rsvp_link}}",
+    ),
+    (
+        "מבקש תשובה",
+        "שלום {{guest_name}},\n\n"
+        "נשמח לדעת אם אתם מצטרפים אלינו לאירוע.\n\n"
+        "לאישור:\n{{rsvp_link}}",
+    ),
+    (
+        "מארחים ומחכים",
+        "היי {{guest_name}},\n\n"
+        "נשמח לארח אתכם ומחכים לדעת אם תוכלו להגיע.\n\n"
+        "אישור הגעה:\n{{rsvp_link}}",
+    ),
+]
+
+
 def seed_message_default_options() -> None:
     """זורע פעם אחת את ספריית הנוסחים לבחירה (``MessageDefaultOption``,
     decisions.md 2026-08-06): הזוג בוחר וריאציה מתוך עד 12 לכל
     event_type×message_type, במקום נוסח קבוע יחיד. רץ רק אם הטבלה ריקה.
 
-    בכוונה **חתונה בלבד בשלב הזה** (הוראת הבעלים): 12 נוסחי הזמנה אמיתיים
-    שהבעלים שלח (הומרו מ-``{טוקן}`` ל-``{{token}}``), ו-60 שורות ריקות
-    (12 לכל אחד מ-5 השלבים הנותרים) שמחכות לנוסחים הבאים. סוגי אירוע
-    אחרים לא מקבלים כאן שום שורה — לא עוברים אליהם לפני שחתונה שלמה.
+    נוסחים אמיתיים שהבעלים שלח (הומרו מ-``{טוקן}`` ל-``{{token}}``): 12 נוסחי
+    הזמנה לחתונה, ו-12 נוסחי "בקשת אישור ראשונה" לכל סוג אירוע ב-
+    ``_RSVP_REQUEST_OPTIONS_BY_TYPE``. שאר השלבים לחתונה מקבלים 12 שורות
+    ריקות שמחכות לנוסחים; סוגי אירוע אחרים לא מקבלים שורות לשלבים שאין להם
+    נוסח עדיין.
     """
     from sqlalchemy import func, select
 
@@ -764,9 +1322,25 @@ def seed_message_default_options() -> None:
             for i, (tone, content, variables) in enumerate(invitation_options)
         ]
 
-        # 60 שורות ריקות (5 שלבים × 12) — מבנה זהה, ממתין לנוסחים הבאים.
+        # "בקשת אישור ראשונה" — נוסחים אמיתיים לפי סוג אירוע (כמו הזמנה).
+        for et, opts in _RSVP_REQUEST_OPTIONS_BY_TYPE.items():
+            rows += [
+                models.MessageDefaultOption(
+                    event_type=et,
+                    message_type="rsvp_request",
+                    option_number=i + 1,
+                    tone=tone,
+                    title=communication.MESSAGE_TYPE_LABELS["rsvp_request"],
+                    content=content,
+                    variables_supported=list(_RSVP_REQUEST_OPTION_VARS),
+                )
+                for i, (tone, content) in enumerate(opts)
+            ]
+
+        # שורות ריקות לשלבים שעדיין אין להם נוסחים — מבנה זהה, ממתין.
         remaining_types = [
-            mt for mt in communication.MESSAGE_TYPES if mt != "invitation"
+            mt for mt in communication.MESSAGE_TYPES
+            if mt not in ("invitation", "rsvp_request")
         ]
         rows += [
             models.MessageDefaultOption(
@@ -885,6 +1459,126 @@ def _ensure_rls_policies() -> None:
         print(f"[veya:rls] נכשל (השרת ממשיך לעלות): {exc!r}", flush=True)
 
 
+def _ensure_rsvp_request_message_default() -> None:
+    """משלים את התשתית של ``rsvp_request`` ("בקשת אישור ראשונה") בפרודקשן —
+    סוג הודעה שנולד אחרי שהקטלוג כבר נזרע, ולכן ``seed_message_defaults`` /
+    ``seed_message_default_options`` (שרצים רק על טבלה ריקה) לא יצרו אותו:
+
+    1. שורת ``MessageDefault`` לכל סוג אירוע. לסוגים שיש להם נוסחים ב-
+       ``_RSVP_REQUEST_OPTIONS_BY_TYPE`` — עם נוסח ברירת המחדל (אפשרות 1),
+       כי הבקשה נשלחת אוטומטית ואסור שתישאר ריקה בשקט; לשאר ``content=""``
+       עד שיוזן נוסח.
+    2. שורות ``MessageDefaultOption`` — ספריית הנוסחים לבחירה, לכל סוג
+       אירוע שיש לו נוסחים.
+    3. יישור כותרת ``final_reminder`` מ"תזכורת אחרונה" ל"תזכורת שלישית"
+       (כותרת מערכת, לא של הזוג), כדי שכל המסכים ידברו באותה שפה.
+
+    idempotent: משלים רק חסר, לעולם לא דורס נוסח קיים. רץ דרך
+    ``MigrationSessionLocal`` (תפקיד מיוחס, עוקף RLS) כמו שאר תחזוקת העלייה.
+    """
+    from sqlalchemy import select, update
+
+    from app import communication, event_terms
+
+    db = MigrationSessionLocal()
+    try:
+        # (3) יישור כותרת "תזכורת אחרונה" -> "תזכורת שלישית" — מדויק: לא נוגע
+        # בסוג הודעה אחר ולא בכותרת שכבר עודכנה.
+        for model in (models.MessageDefault, models.EventMessage):
+            db.execute(
+                update(model)
+                .where(model.message_type == "final_reminder")
+                .where(model.title == "תזכורת אחרונה")
+                .values(title="תזכורת שלישית")
+            )
+            db.commit()
+
+        # (1) שורת MessageDefault לכל סוג אירוע. רשימה קנונית — לא "מה
+        # שבמקרה קיים ב-MessageDefault", שיכול להיות חלקי בסביבות ישנות.
+        seen = set(db.scalars(
+            select(models.MessageDefault.event_type).distinct()
+        ).all())
+        event_types = sorted(set(event_terms.EVENT_TERMS.keys()) | seen)
+        have = set(db.scalars(
+            select(models.MessageDefault.event_type)
+            .where(models.MessageDefault.message_type == "rsvp_request")
+        ).all())
+        default_content = {
+            et: opts[0][1] for et, opts in _RSVP_REQUEST_OPTIONS_BY_TYPE.items()
+        }
+        created = 0
+        for et in event_types:
+            if et in have:
+                continue
+            db.add(models.MessageDefault(
+                event_type=et,
+                message_type="rsvp_request",
+                title=communication.MESSAGE_TYPE_LABELS["rsvp_request"],
+                content=default_content.get(et, ""),
+                variables_supported=list(
+                    communication.DEFAULT_VARIABLES_SUPPORTED.get("rsvp_request", [])
+                ),
+            ))
+            created += 1
+
+        opts_created = 0
+        for et, opts in _RSVP_REQUEST_OPTIONS_BY_TYPE.items():
+            content0 = opts[0][1]
+            # ריפוי חד-פעמי: סוג אירוע שכבר קיבל שורת rsvp_request ריקה
+            # (ברירת מחדל גלובלית או שורת EventMessage שהוקצתה לפני שהיה נוסח)
+            # — נותנים לו את נוסח ברירת המחדל. "ריק -> ברירת מחדל" בטוח:
+            # לעולם לא דורס נוסח אמיתי שהזוג/הבעלים בחר.
+            db.execute(
+                update(models.MessageDefault)
+                .where(models.MessageDefault.event_type == et)
+                .where(models.MessageDefault.message_type == "rsvp_request")
+                .where(models.MessageDefault.content == "")
+                .values(content=content0)
+            )
+            et_ids = select(models.Event.id).where(models.Event.event_type == et)
+            db.execute(
+                update(models.EventMessage)
+                .where(models.EventMessage.message_type == "rsvp_request")
+                .where(models.EventMessage.content == "")
+                .where(models.EventMessage.event_id.in_(et_ids))
+                .values(content=content0)
+            )
+
+            # שורות MessageDefaultOption — משלים רק מספרים חסרים.
+            existing_nums = set(db.scalars(
+                select(models.MessageDefaultOption.option_number)
+                .where(models.MessageDefaultOption.event_type == et)
+                .where(models.MessageDefaultOption.message_type == "rsvp_request")
+            ).all())
+            for i, (tone, content) in enumerate(opts):
+                if (i + 1) in existing_nums:
+                    continue
+                db.add(models.MessageDefaultOption(
+                    event_type=et,
+                    message_type="rsvp_request",
+                    option_number=i + 1,
+                    tone=tone,
+                    title=communication.MESSAGE_TYPE_LABELS["rsvp_request"],
+                    content=content,
+                    variables_supported=list(_RSVP_REQUEST_OPTION_VARS),
+                ))
+                opts_created += 1
+
+        # תמיד commit — גם אם רק ה-UPDATE של הריפוי (ריק -> ברירת מחדל) שינה
+        # שורות, בלי שנוצרו שורות חדשות.
+        db.commit()
+        if created or opts_created:
+            print(
+                f"[veya:seed] 'בקשת אישור ראשונה': {created} ברירות מחדל, "
+                f"{opts_created} נוסחים לבחירה", flush=True,
+            )
+    except Exception as exc:  # noqa: BLE001 — לעולם לא מפיל את העלייה
+        db.rollback()
+        print(f"[veya:seed] השלמת 'בקשת אישור ראשונה' נכשלה: {exc!r}", flush=True)
+    finally:
+        db.close()
+
+
 def _seed_postponement_options() -> None:
     """זורע את נוסחי הודעת הדחייה. לעולם לא מפיל את עליית השרת."""
     from app.postponement_messages import seed_postponement_options
@@ -938,6 +1632,9 @@ def on_startup() -> None:
     # זורע את ספריית הנוסחים לבחירה (עד 12 לכל event_type×message_type),
     # חתונה בלבד בשלב הזה — ראו seed_message_default_options.
     seed_message_default_options()
+    # משלים שורת "בקשת אישור ראשונה" (rsvp_request) לכל סוג אירוע — סוג הודעה
+    # שנולד אחרי שהקטלוג נזרע בפרודקשן. משלים חסר בלבד, לא דורס.
+    _ensure_rsvp_request_message_default()
     # נוסחי "אירוע נדחה". בנפרד מהזריעה שמעל, כי היא רצה רק על טבלה ריקה —
     # ובייצור הטבלה מלאה מזמן. הזריעה כאן משלימה חסר ולעולם לא דורסת.
     _seed_postponement_options()
