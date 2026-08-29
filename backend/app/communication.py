@@ -29,7 +29,7 @@ from app.guest_journey import israel_timezone, now_in_israel
 # ---- סדר קבוע וכינויים ----
 
 MESSAGE_TYPES: list[str] = [
-    "invitation", "reminder_1", "reminder_2",
+    "invitation", "rsvp_request", "reminder_1", "reminder_2",
     "final_reminder", "event_day", "thank_you",
 ]
 
@@ -52,9 +52,10 @@ MANUAL_SEND_TYPES: frozenset[str] = frozenset({POSTPONEMENT})
 # אלה שמות השלבים עצמם (ניתנו במפורש ע"י הבעלים) — לא "תוכן הודעה".
 MESSAGE_TYPE_LABELS: dict[str, str] = {
     "invitation": "הזמנה",
+    "rsvp_request": "בקשת אישור ראשונה",
     "reminder_1": "תזכורת ראשונה",
     "reminder_2": "תזכורת שנייה",
-    "final_reminder": "תזכורת אחרונה",
+    "final_reminder": "תזכורת שלישית",
     "event_day": "יום האירוע",
     "thank_you": "תודה",
     POSTPONEMENT: "אירוע נדחה",
@@ -62,10 +63,13 @@ MESSAGE_TYPE_LABELS: dict[str, str] = {
 
 # עוגן תזמון ברירת מחדל לכל סוג (ימים ביחס לעוגן הקבוע של הסוג — ראו
 # _is_due_now). הזמנה נשלחת ידנית (לא דרך תור ה-due), ולכן אין לה עוגן.
+# "בקשת אישור ראשונה" מעוגנת ללוח הזמנים (מועד סגירת הרשימה), לא להיסט —
+# ראו _due_now ו-rsvp_timeline.rsvp_request_date.
 DEFAULT_TRIGGER_OFFSET_DAYS: dict[str, int] = {
     "invitation": 0,
-    "reminder_1": 3,       # 3 ימים אחרי שליחת ההזמנה
-    "reminder_2": 7,       # 7 ימים אחרי שליחת ההזמנה
+    "rsvp_request": 0,     # העוגן הוא לוח הזמנים, לא היסט
+    "reminder_1": 3,       # 3 ימים אחרי בקשת האישור הראשונה
+    "reminder_2": 8,       # 8 ימים אחרי בקשת האישור הראשונה
     "final_reminder": -2,  # יומיים לפני האירוע
     "event_day": 0,        # ביום האירוע עצמו
     "thank_you": 1,        # יום אחרי האירוע
@@ -74,6 +78,7 @@ DEFAULT_TRIGGER_OFFSET_DAYS: dict[str, int] = {
 # all / pending / confirmed / declined
 DEFAULT_TARGET_AUDIENCE: dict[str, str] = {
     "invitation": "all",
+    "rsvp_request": "pending",
     "reminder_1": "pending",
     "reminder_2": "pending",
     "final_reminder": "pending",
@@ -85,8 +90,8 @@ DEFAULT_TARGET_AUDIENCE: dict[str, str] = {
 # ---- שעת שליחה (שעון ישראל, ללא תאריך/אזור-זמן) ----
 #
 # הזוג בוחר שעה אחת ("HH:MM") שחלה על כל הודעות מסלול אישורי-ההגעה
-# (reminder_1/reminder_2/final_reminder/event_day — invitation נשלחת ידנית
-# ולא דרך תור ה-due, ולכן אין לה שעה) — ``Event.rsvp_send_time``. הודעת
+# (rsvp_request/reminder_1/reminder_2/final_reminder/event_day — invitation
+# נשלחת ידנית ולא דרך תור ה-due, ולכן אין לה שעה) — ``Event.rsvp_send_time``. הודעת
 # התודה מקבלת הגדרת שעה נפרדת משלה — ``Event.thank_you_send_time`` — כי
 # היא נשלחת יום אחרי האירוע, בהקשר שונה לגמרי מהתזכורות.
 #
@@ -157,6 +162,11 @@ WEDDING_ONLY_VARIABLE_KEYS: list[str] = ["groom_name", "bride_name"]
 # אילו משתנים רלוונטיים לכל סוג הודעה — להצעה בעורך (לא חוסם שימוש באחרים).
 DEFAULT_VARIABLES_SUPPORTED: dict[str, list[str]] = {
     "invitation": [
+        "guest_name", "guest_names", "host_names", "event_type",
+        "event_date", "event_time", "venue_name", "address", "rsvp_link",
+    ],
+    # הבקשה הראשונה שמבקשת אישור הגעה — עם כל פרטי האירוע, כמו ההזמנה.
+    "rsvp_request": [
         "guest_name", "guest_names", "host_names", "event_type",
         "event_date", "event_time", "venue_name", "address", "rsvp_link",
     ],
@@ -396,12 +406,17 @@ class DueMessageAction:
     preview: str
 
 
-def _invited_at(messages: list[models.Message]) -> dict[int, datetime]:
+def _first_sent_at(messages: list[models.Message], kind: str) -> dict[int, datetime]:
+    """הרגע המוקדם ביותר שבו נשלחה למוזמן הודעה מסוג ``kind`` (status="sent").
+
+    משמש לעיגון התזכורות: הן נספרות ``+N`` ימים מ**בקשת האישור הראשונה**
+    (``kind="rsvp_request"``), לא מיום שליחת ההזמנה — שיכולה לצאת חודש מראש.
+    """
     out: dict[int, datetime] = {}
     for m in messages:
         if m.guest_id is None:
             continue
-        if m.direction == "outbound" and m.kind == "invitation" and m.status == "sent":
+        if m.direction == "outbound" and m.kind == kind and m.status == "sent":
             prev = out.get(m.guest_id)
             if prev is None or m.created_at < prev:
                 out[m.guest_id] = m.created_at
@@ -434,7 +449,7 @@ def _due_now(
     guest: models.Guest,
     now: datetime,
     event_date,
-    invited_at: dict[int, datetime],
+    rsvp_requested_at: dict[int, datetime],
     event: models.Event,
 ) -> bool:
     """האם ההודעה הגיע זמנה עבור המוזמן הזה — עוגן קבוע לפי סוג ההודעה, עד
@@ -444,11 +459,20 @@ def _due_now(
     אחת (``rsvp_send_time``).
     """
     now_il = now_in_israel(now)
+    if message_type == "rsvp_request":
+        # מעוגנת ללוח הזמנים של אישורי-ההגעה (מועד סגירת הרשימה), לא להיסט
+        # ולא לשליחת ההזמנה — ראו ``rsvp_timeline.rsvp_request_date``.
+        request_day = rsvp_timeline.rsvp_request_date(event, now)
+        if request_day is None:
+            return False
+        return now_il >= _scheduled_moment(request_day, event.rsvp_send_time)
     if message_type in ("reminder_1", "reminder_2"):
-        anchor = invited_at.get(guest.id)
+        # התזכורות נספרות ``+N`` ימים מ**בקשת האישור הראשונה** של המוזמן —
+        # לא מיום שליחת ההזמנה.
+        anchor = rsvp_requested_at.get(guest.id)
         if anchor is None:
             return False
-        # יום ה"בסיס" נגזר מהיום (שעון ישראל) שבו נשלחה ההזמנה בפועל — לא
+        # יום ה"בסיס" נגזר מהיום (שעון ישראל) שבו נשלחה הבקשה בפועל — לא
         # מהרגע המדויק שלה — כי מה שהזוג בחר הוא שעה ביום, לא מרווח שעות.
         trigger_day = now_in_israel(anchor).date() + timedelta(days=em.trigger_offset_days)
         return now_il >= _scheduled_moment(trigger_day, event.rsvp_send_time)
@@ -491,7 +515,7 @@ def compute_due_messages(
         ).all())
 
     event_date = automation.parse_event_date(event.event_date)
-    invited_at = _invited_at(messages)
+    rsvp_requested_at = _first_sent_at(messages, "rsvp_request")
     sent = _already_sent(messages)
 
     by_type = event_messages_by_type(db, event.id)
@@ -507,7 +531,7 @@ def compute_due_messages(
                 continue
             if not matches_audience(guest, em.target_audience):
                 continue
-            if not _due_now(message_type, em, guest, now, event_date, invited_at, event):
+            if not _due_now(message_type, em, guest, now, event_date, rsvp_requested_at, event):
                 continue
             preview = render_message(
                 em.content, communication_values(event, guest), message_type=message_type

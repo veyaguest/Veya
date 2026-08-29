@@ -553,9 +553,10 @@ def _migrate_brita_split() -> None:
 
 def seed_message_defaults() -> None:
     """זורע פעם אחת את קטלוג ברירות המחדל הגלובלי לרצף התקשורת: 7 סוגי
-    אירוע × 6 סוגי הודעה = 42 שורות, כולן ``content=""`` (הבעלים יזין את
-    הטקסטים הסופיים דרך ``/admin/message-defaults``). רץ רק אם הטבלה ריקה,
-    כך שעריכה של האדמין לא נדרסת בהפעלה הבאה."""
+    אירוע × כל ``communication.MESSAGE_TYPES``, כולן ``content=""`` (הבעלים
+    יזין את הטקסטים הסופיים דרך ``/admin/message-defaults``). רץ רק אם הטבלה
+    ריקה, כך שעריכה של האדמין לא נדרסת בהפעלה הבאה. סוגי הודעה שנולדו אחרי
+    שהטבלה כבר מלאה בפרודקשן מושלמים בנפרד (ראו ``_ensure_rsvp_request_message_default``)."""
     from sqlalchemy import func, select
 
     from app import communication
@@ -885,6 +886,52 @@ def _ensure_rls_policies() -> None:
         print(f"[veya:rls] נכשל (השרת ממשיך לעלות): {exc!r}", flush=True)
 
 
+def _ensure_rsvp_request_message_default() -> None:
+    """משלים שורת ``MessageDefault`` ל-``rsvp_request`` ("בקשת אישור ראשונה")
+    לכל סוג אירוע קיים. סוג ההודעה הזה נולד אחרי שקטלוג ברירות המחדל כבר
+    נזרע בפרודקשן, ולכן ``seed_message_defaults`` (שרץ רק על טבלה ריקה) לא
+    יוצר אותו. בלי השורה הזו המייסד לא יכול לערוך את נוסח הבקשה במסך האדמין,
+    והסבב לא ישלח כלום (``compute_due_messages`` מדלג על הודעה בלי תוכן).
+
+    idempotent: משלים רק חסר, ``content=""``, לעולם לא דורס נוסח קיים.
+    """
+    from sqlalchemy import select
+
+    from app import communication
+
+    db = MigrationSessionLocal()
+    try:
+        event_types = list(db.scalars(
+            select(models.MessageDefault.event_type).distinct()
+        ).all())
+        have = set(db.scalars(
+            select(models.MessageDefault.event_type)
+            .where(models.MessageDefault.message_type == "rsvp_request")
+        ).all())
+        created = 0
+        for et in event_types:
+            if et in have:
+                continue
+            db.add(models.MessageDefault(
+                event_type=et,
+                message_type="rsvp_request",
+                title=communication.MESSAGE_TYPE_LABELS["rsvp_request"],
+                content="",
+                variables_supported=list(
+                    communication.DEFAULT_VARIABLES_SUPPORTED.get("rsvp_request", [])
+                ),
+            ))
+            created += 1
+        if created:
+            db.commit()
+            print(f"[veya:seed] נוצרו {created} שורות 'בקשת אישור ראשונה'", flush=True)
+    except Exception as exc:  # noqa: BLE001 — לעולם לא מפיל את העלייה
+        db.rollback()
+        print(f"[veya:seed] השלמת 'בקשת אישור ראשונה' נכשלה: {exc!r}", flush=True)
+    finally:
+        db.close()
+
+
 def _seed_postponement_options() -> None:
     """זורע את נוסחי הודעת הדחייה. לעולם לא מפיל את עליית השרת."""
     from app.postponement_messages import seed_postponement_options
@@ -938,6 +985,9 @@ def on_startup() -> None:
     # זורע את ספריית הנוסחים לבחירה (עד 12 לכל event_type×message_type),
     # חתונה בלבד בשלב הזה — ראו seed_message_default_options.
     seed_message_default_options()
+    # משלים שורת "בקשת אישור ראשונה" (rsvp_request) לכל סוג אירוע — סוג הודעה
+    # שנולד אחרי שהקטלוג נזרע בפרודקשן. משלים חסר בלבד, לא דורס.
+    _ensure_rsvp_request_message_default()
     # נוסחי "אירוע נדחה". בנפרד מהזריעה שמעל, כי היא רצה רק על טבלה ריקה —
     # ובייצור הטבלה מלאה מזמן. הזריעה כאן משלימה חסר ולעולם לא דורסת.
     _seed_postponement_options()

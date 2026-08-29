@@ -259,18 +259,22 @@ def test_other_actions_unchanged_by_gift_logic() -> None:
     print("✓ הזמנה/יומן/ניווט/אישור הגעה לא הושפעו משינוי חלון המתנה")
 
 
-# ---- חלון אישורי ההגעה: נפתח ביום התזכורת הראשונה ----------------------
+# ---- חלון אישורי ההגעה: נפתח ביום בקשת האישור הראשונה ------------------
 
 def test_rsvp_window() -> None:
-    """אישורי הגעה נפתחים ביום התזכורת הראשונה שבלוח הזמנים (עוגן: מועד
-    סגירת רשימת המוזמנים) — לא לפי תאריך שליחת ההזמנה."""
+    """אישורי הגעה נפתחים ביום שבקשת האישור הראשונה יוצאת לפי לוח הזמנים
+    (עוגן: מועד סגירת רשימת המוזמנים) — לא לפי תאריך שליחת ההזמנה."""
+    from app import rsvp_timeline
+
     # ההזמנה יצאה חודש מראש; זה לא משנה — הלוח עוגן במועד סגירת הרשימה.
     on = FakeEvent(rsvp_track_active=True, rsvp_track_started_at=datetime(2026, 10, 1))
     opens = gj.rsvp_open_date(on)
     assert opens is not None
+    # מקור האמת: תאריך שלב ``whatsapp_first`` בלוח הזמנים.
+    assert opens == rsvp_timeline.rsvp_request_date(on)
 
     assert gj.rsvp_is_open(on, now=il(opens - timedelta(days=1))) is False, "יום לפני — סגור"
-    assert gj.rsvp_is_open(on, now=il(opens)) is True, "יום התזכורת הראשונה — נפתח"
+    assert gj.rsvp_is_open(on, now=il(opens)) is True, "יום בקשת האישור הראשונה — נפתח"
     assert gj.rsvp_is_open(on, now=il(opens + timedelta(days=10))) is True
 
     # מסלול לא פעיל — סגור, גם אחרי מועד הפתיחה.
@@ -284,7 +288,7 @@ def test_rsvp_window() -> None:
 
     # ``event is None`` (תצוגה מקדימה) — פתוח, כמו ``compute_actions(None)``.
     assert gj.rsvp_is_open(None) is True
-    print("✓ חלון אישורי ההגעה: נפתח ביום התזכורת הראשונה שבלוח הזמנים")
+    print("✓ חלון אישורי ההגעה: נפתח ביום בקשת האישור הראשונה שבלוח הזמנים")
 
 
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
 """בדיקות לשעת השליחה של מסלול אישורי-ההגעה (app/communication.py).
 
 התכונה: הזוג בוחר שעה אחת (HH:MM, שעון ישראל, ללא תאריך/אזור-זמן) לכל
-הודעות מסלול אישורי-ההגעה (reminder_1/reminder_2/final_reminder/event_day),
-ושעה נפרדת להודעת התודה — שתיהן בטווח 10:00–19:00 בלבד. מסלול הימים הקיים
-(``trigger_offset_days``) לא השתנה; רק נוסף לו רכיב שעה. שישי/שבת ממשיכים
+הודעות מסלול אישורי-ההגעה (rsvp_request/reminder_1/reminder_2/final_reminder/
+event_day), ושעה נפרדת להודעת התודה — שתיהן בטווח 10:00–19:00 בלבד. מסלול
+הימים הקיים (``trigger_offset_days``) לא השתנה; רק נוסף לו רכיב שעה. שישי/שבת ממשיכים
 לדחות שליחה ליום הפעיל הבא, באמצעות המנגנון הקיים ב-``rsvp_timeline``
 (``is_weekend``/``next_active_day``) — לא לוגיקה חדשה.
 
@@ -20,7 +20,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -161,21 +161,73 @@ def test_weekend_postpones_event_date_anchored_message() -> None:
     print("✓ 7: הודעה שמחושבת מתאריך האירוע ונופלת על שישי/שבת נדחית לראשון")
 
 
-def test_weekend_postpones_invitation_anchored_reminder() -> None:
-    """reminder_1/reminder_2 מחושבים מיום שליחת ההזמנה — אותה דחיית סופ"ש
-    חלה גם עליהם, לא רק על השלבים שמחושבים מתאריך האירוע."""
+def test_weekend_postpones_rsvp_request_anchored_reminder() -> None:
+    """reminder_1/reminder_2 מחושבים מיום **בקשת האישור הראשונה** — אותה
+    דחיית סופ"ש חלה גם עליהם, לא רק על השלבים שמחושבים מתאריך האירוע."""
     ev = FakeEvent()
     guest = FakeGuest()
-    # הזמנה נשלחה ביום שלישי 1/9 ב-08:00 UTC = 11:00 IL (קיץ).
-    invited_at = {1: datetime(2026, 9, 1, 8, 0)}
+    # בקשת האישור הראשונה נשלחה ביום שלישי 1/9 ב-08:00 UTC = 11:00 IL (קיץ).
+    requested_at = {1: datetime(2026, 9, 1, 8, 0)}
     em = FakeEventMessage(3)  # 1/9 + 3 = 4/9, יום שישי!
 
     friday = datetime(2026, 9, 4, 9, 0)      # שישי עצמו — אסור
     sunday_after = datetime(2026, 9, 6, 9, 1)  # אחרי הדחייה לראשון 6/9, 12:00 IL
 
-    assert c._due_now("reminder_1", em, guest, friday, None, invited_at, ev) is False
-    assert c._due_now("reminder_1", em, guest, sunday_after, None, invited_at, ev) is True
-    print("✓ 8: תזכורת שמחושבת מזמן ההזמנה ונופלת על שישי נדחית לראשון גם היא")
+    assert c._due_now("reminder_1", em, guest, friday, None, requested_at, ev) is False
+    assert c._due_now("reminder_1", em, guest, sunday_after, None, requested_at, ev) is True
+    print("✓ 8: תזכורת שמחושבת מבקשת האישור הראשונה ונופלת על שישי נדחית לראשון גם היא")
+
+
+def test_reminder_not_due_before_rsvp_request_sent() -> None:
+    """אין עוגן (בקשת האישור הראשונה עדיין לא נשלחה למוזמן) → התזכורת לא due,
+    בלי קשר לכמה זמן עבר. חשוב: ההזמנה יכולה לצאת חודש מראש — היא לא מפעילה
+    את שעון התזכורות."""
+    ev = FakeEvent()
+    guest = FakeGuest()
+    em = FakeEventMessage(3)
+    way_later = datetime(2027, 1, 1, 12, 0)
+    assert c._due_now("reminder_1", em, guest, way_later, None, {}, ev) is False
+    print("✓ 8b: תזכורת לא נשלחת לפני שיצאה בקשת אישור ראשונה לאותו מוזמן")
+
+
+def test_rsvp_request_due_on_schedule_date_not_before() -> None:
+    """בקשת האישור הראשונה (rsvp_request) מעוגנת ללוח הזמנים (מועד סגירת
+    הרשימה) — לא להיסט ולא לשליחת ההזמנה. due בדיוק ביום/שעה של שלב
+    ``whatsapp_first`` בלוח."""
+    from app import rsvp_timeline
+
+    ev = FakeEvent(
+        event_date="2026-09-30",
+        venue_commit_days_before=5,
+        # ההזמנה יצאה חודשיים מראש — לא רלוונטי, הלוח עוגן במועד סגירת הרשימה.
+        rsvp_track_started_at=datetime(2026, 7, 1),
+        rsvp_send_time="12:00",
+    )
+    guest = FakeGuest()
+    em = FakeEventMessage(0)
+
+    request_day = rsvp_timeline.rsvp_request_date(ev)
+    assert request_day is not None
+
+    day_before = datetime.combine(request_day, datetime.min.time()) - timedelta(days=1)
+    # יום לפני, בכל שעה — עדיין לא.
+    assert c._due_now("rsvp_request", em, guest, day_before, None, {}, ev) is False
+    # יום השליחה עצמו, 09:00 IL (=06:00/07:00 UTC) — לפני 12:00, עדיין לא.
+    early = datetime.combine(request_day, datetime.min.time()).replace(hour=5)
+    assert c._due_now("rsvp_request", em, guest, early, None, {}, ev) is False
+    # יום השליחה, 12:01 IL — due.
+    at_hour = datetime.combine(request_day, datetime.min.time()).replace(hour=10)
+    assert c._due_now("rsvp_request", em, guest, at_hour, None, {}, ev) is True
+    print("✓ 8c: בקשת אישור ראשונה נשלחת בדיוק ביום/שעה של הלוח, לא לפני")
+
+
+def test_rsvp_request_not_due_without_commitment_date() -> None:
+    """בלי מועד סגירת רשימה אין לוח זמנים — הבקשה הראשונה לא due."""
+    ev = FakeEvent(event_date="2026-09-30", venue_commit_days_before=None)
+    guest = FakeGuest()
+    em = FakeEventMessage(0)
+    assert c._due_now("rsvp_request", em, guest, datetime(2026, 9, 20, 12, 0), None, {}, ev) is False
+    print("✓ 8d: בלי מועד סגירת רשימה — בקשת אישור ראשונה לא נכנסת לתור")
 
 
 def test_weekday_message_not_affected_by_weekend_logic() -> None:
@@ -319,6 +371,63 @@ def test_message_not_due_before_scheduled_hour_even_on_repeated_calls() -> None:
     print("✓ 14: לפני השעה שנקבעה — התור נשאר ריק גם בקריאות חוזרות")
 
 
+def test_rsvp_request_then_reminders_chain_end_to_end() -> None:
+    """שרשרת מלאה מול DB: בקשת האישור הראשונה יוצאת בתאריך הלוח, והתזכורת
+    הראשונה נספרת ``+3`` ימים **ממנה** — לא משליחת ההזמנה (שיצאה חודשיים
+    מראש)."""
+    from app import rsvp_timeline
+
+    db = _fresh_session()
+    ev = _make_event(db, venue_commit_days_before=5, rsvp_track_active=True)
+    ev.event_date = "2026-09-30"
+    ev.rsvp_send_time = "12:00"
+    ev.rsvp_track_started_at = datetime(2026, 7, 1)  # ההזמנה יצאה חודשיים מראש
+    db.commit()
+    _make_guest(db, ev.id)
+    db.add_all([
+        models.EventMessage(
+            event_id=ev.id, message_type="rsvp_request",
+            content="היי {{guest_name}}, נשמח לאישור הגעה 🙏",
+            is_active=True, trigger_offset_days=0, target_audience="pending",
+        ),
+        models.EventMessage(
+            event_id=ev.id, message_type="reminder_1",
+            content="היי {{guest_name}}, תזכורת קטנה 🙂",
+            is_active=True, trigger_offset_days=3, target_audience="pending",
+        ),
+    ])
+    db.commit()
+
+    request_day = rsvp_timeline.rsvp_request_date(ev)
+    assert request_day is not None
+
+    # לפני תאריך הלוח — שום דבר בתור (גם לא תזכורת, למרות שחודשיים עברו מ"ההזמנה").
+    before = datetime.combine(request_day, datetime.min.time()) - timedelta(days=2)
+    assert c.compute_due_messages(db, ev, now=before) == []
+
+    # תאריך הלוח, 12:00+ IL — בקשת האישור הראשונה בתור. שולחים.
+    at_request = datetime.combine(request_day, datetime.min.time()).replace(hour=10)
+    actions = c.compute_due_messages(db, ev, now=at_request)
+    assert [a.event_message.message_type for a in actions] == ["rsvp_request"]
+    assert c.send_due_messages(db, ev, actions)["sent"] == 1
+    # ``send_due_messages`` לא מקבל ``now`` — מקבעים את חותמת השליחה לרגע
+    # הבדיקה כדי שעיגון התזכורת יימדד ממנה.
+    db.query(models.Message).filter(models.Message.kind == "rsvp_request").update(
+        {models.Message.created_at: at_request}
+    )
+    db.commit()
+
+    # מיד אחרי — התזכורת עדיין לא due (0 ימים מהבקשה).
+    assert c.compute_due_messages(db, ev, now=at_request) == []
+
+    # 3 ימי-עבודה אחרי הבקשה (עם דחיית סופ"ש) — התזכורת הראשונה due.
+    trigger_day = rsvp_timeline.next_active_day(request_day + timedelta(days=3))
+    at_reminder = datetime.combine(trigger_day, datetime.min.time()).replace(hour=10)
+    later = c.compute_due_messages(db, ev, now=at_reminder)
+    assert [a.event_message.message_type for a in later] == ["reminder_1"]
+    print("✓ 15: בקשת אישור ראשונה → תזכורת ראשונה, מעוגנות ללוח ולא להזמנה")
+
+
 if __name__ == "__main__":
     test_send_time_boundaries_are_inclusive()
     test_send_time_outside_range_rejected()
@@ -327,11 +436,15 @@ if __name__ == "__main__":
     test_thank_you_uses_its_own_send_time_not_rsvp_track()
     test_changing_rsvp_send_time_does_not_affect_thank_you()
     test_weekend_postpones_event_date_anchored_message()
-    test_weekend_postpones_invitation_anchored_reminder()
+    test_weekend_postpones_rsvp_request_anchored_reminder()
+    test_reminder_not_due_before_rsvp_request_sent()
+    test_rsvp_request_due_on_schedule_date_not_before()
+    test_rsvp_request_not_due_without_commitment_date()
     test_weekday_message_not_affected_by_weekend_logic()
     test_dst_summer_offset()
     test_dst_winter_offset()
     test_scheduled_moment_matches_israel_wall_clock_both_seasons()
     test_due_message_not_sent_twice()
     test_message_not_due_before_scheduled_hour_even_on_repeated_calls()
+    test_rsvp_request_then_reminders_chain_end_to_end()
     print("\nכל בדיקות שעת השליחה עברו ✓")

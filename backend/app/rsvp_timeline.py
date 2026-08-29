@@ -15,8 +15,11 @@
 - זמן קצר: אם אין מספיק ימים לסבב המלא, המסלול מתכווץ בצורה חכמה
   (``compressed=true``) כדי להספיק כמה שיותר אישורים לפני מועד סגירת הרשימה.
 
-שלב Phase 1: **הגדרה + תצוגה בלבד** — המודול לא שולח כלום. חיבור השליחה
-בפועל לשלבים המתוזמנים יתווסף בשלב הבא.
+המודול עצמו טהור — רק *מחשב* תאריכים. אבל התאריכים האלה הם מקור האמת לשליחה
+בפועל: שלבי ה-WhatsApp (``whatsapp_first`` + ``reminder``) מחוברים למנגנון
+השליחה דרך ``rsvp_request_date`` ו-``communication.py`` (סוג ההודעה
+``rsvp_request`` והתזכורות). סבבי השיחות (``call_round``) נשארים פעולת מוקד
+ידנית (Call Center של האדמין).
 """
 from __future__ import annotations
 
@@ -30,14 +33,15 @@ from app.automation import parse_event_date
 # ---- הסבב הקבוע של אישורי-ההגעה ----
 # כל שלב עם היסט יחסי (בימים) בתוך סבב *אידיאלי* מלא, שנפרס לאחור ממועד
 # סגירת הרשימה. audience: all = כל המוזמנים ; pending = מי שעדיין לא אישר.
-# (השלבים כאן לתצוגה בלבד ב-Phase 1; בעתיד ניתן לגזור אותם מ-VeyaWorkflowStep.)
+# שלבי WhatsApp (whatsapp_first + reminder) נשלחים אוטומטית; call_round הוא
+# פעולת מוקד ידנית. הסדר והתאריכים כאן הם מקור האמת גם ל-Call Center של האדמין.
 CYCLE: list[dict] = [
-    {"type": "whatsapp_first", "offset": 0,  "icon": "✅", "label": "בקשת אישור ראשונה ב-WhatsApp", "audience": "all"},
+    {"type": "whatsapp_first", "offset": 0,  "icon": "✅", "label": "בקשת אישור ראשונה ב-WhatsApp", "audience": "pending"},
     {"type": "reminder",       "offset": 3,  "icon": "📩", "label": "תזכורת ראשונה",              "audience": "pending"},
     {"type": "call_round",     "offset": 6,  "icon": "📞", "label": "סבב שיחות ראשון",            "audience": "pending"},
-    {"type": "reminder",       "offset": 8,  "icon": "📩", "label": "תזכורת נוספת",               "audience": "pending"},
+    {"type": "reminder",       "offset": 8,  "icon": "📩", "label": "תזכורת שנייה",               "audience": "pending"},
     {"type": "call_round",     "offset": 10, "icon": "📞", "label": "סבב שיחות שני",              "audience": "pending"},
-    {"type": "reminder",       "offset": 11, "icon": "📩", "label": "תזכורת אחרונה",             "audience": "pending"},
+    {"type": "reminder",       "offset": 11, "icon": "📩", "label": "תזכורת שלישית",             "audience": "pending"},
     {"type": "call_round",     "offset": 12, "icon": "📞", "label": "סבב שיחות אחרון",           "audience": "pending"},
 ]
 FULL_SPAN = 12  # ההיסט הגדול ביותר בסבב — אורך הסבב האידיאלי בימים.
@@ -75,6 +79,22 @@ def is_weekend(d: date) -> bool:
 def next_active_day(d: date) -> date:
     """גרסה ציבורית של ``_next_active_day``."""
     return _next_active_day(d)
+
+
+def rsvp_request_date(event: models.Event, now: Optional[datetime] = None) -> Optional[date]:
+    """התאריך שבו נשלחת **בקשת האישור הראשונה** (``whatsapp_first``) לפי לוח
+    הזמנים — מקור האמת היחיד גם לתזמון השליחה בפועל (``communication._due_now``)
+    וגם לפתיחת אישורי ההגעה למוזמן (``guest_journey.rsvp_open_date``).
+
+    ``None`` = אין לוח זמנים (חסר תאריך אירוע או מועד סגירת רשימה).
+    """
+    schedule = compute_schedule(event, now)
+    if schedule is None:
+        return None
+    return next(
+        (p.date for p in schedule.placements if p.step["type"] == "whatsapp_first"),
+        None,
+    )
 
 
 def _ddmm(d: date) -> str:

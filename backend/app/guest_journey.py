@@ -166,28 +166,24 @@ def rsvp_open_date(event: models.Event | None, *, now: datetime | None = None):
 
     **מקור האמת: לוח הזמנים של האירוע** (``rsvp_timeline.compute_schedule``,
     שעוגנו מועד סגירת רשימת המוזמנים). אישורי ההגעה נפתחים בדיוק ביום שבו
-    יוצאת **התזכורת הראשונה** לפי אותו לוח — לא לפי תאריך שליחת ההזמנה.
-    ההזמנה יכולה לצאת חודש מראש בלי לפתוח כלום.
+    יוצאת **בקשת האישור הראשונה** (``whatsapp_first``) לפי אותו לוח — לא לפי
+    תאריך שליחת ההזמנה. ההזמנה יכולה לצאת חודש מראש בלי לפתוח כלום; בקשת
+    האישור הראשונה היא הרגע שבו האורח מתבקש לראשונה לאשר, ולכן גם הרגע שבו
+    כפתור אישור ההגעה נפתח.
     """
     if event is None:
         return None
     # בלי מועד סגירת רשימה (או תאריך אירוע) אין לוח זמנים ואין מה לפתוח.
-    schedule = rsvp_timeline.compute_schedule(event, now)
-    if schedule is None:
-        return None
-    return next(
-        (p.date for p in schedule.placements if p.step["type"] == "reminder"),
-        None,
-    )
+    return rsvp_timeline.rsvp_request_date(event, now)
 
 
 def rsvp_is_open(event: models.Event | None, *, now: datetime | None = None) -> bool:
     """האם המוזמן יכול לאשר הגעה כרגע.
 
-    אישורי ההגעה נפתחים ביום התזכורת הראשונה שבלוח הזמנים (``rsvp_open_date``).
-    עד אז ה-Guest Hub במצב צפייה בלבד (הזמנה / יומן / ניווט), והודעת ההזמנה
-    הראשונה אינה מבקשת אישור. רצפת ביטחון: לא נפתח לפני שההזמנות נשלחו בכלל
-    (``rsvp_track_active``).
+    אישורי ההגעה נפתחים ביום שבקשת האישור הראשונה יוצאת לפי לוח הזמנים
+    (``rsvp_open_date``). עד אז ה-Guest Hub במצב צפייה בלבד (הזמנה / יומן /
+    ניווט), והודעת ההזמנה הראשונה אינה מבקשת אישור. רצפת ביטחון: לא נפתח
+    לפני שההזמנות נשלחו בכלל (``rsvp_track_active``).
 
     ``event is None`` — הקשר תצוגה מקדימה (אין אירוע): מחזיר ``True``, כמו
     ``compute_actions(None)``.
@@ -223,8 +219,8 @@ def compute_actions(
 
     שלוש הפעולות הראשונות תלויות ב*נתונים* (יש תמונת הזמנה? יש תאריך? יש
     כתובת?) — פעולה בלי נתונים לא מוצגת, במקום כפתור שלא עושה כלום.
-    ``gift`` ו-``rsvp`` תלויים ב*זמן*: ``rsvp`` נפתח ביום התזכורת הראשונה
-    שבלוח הזמנים (``rsvp_is_open``), לא מרגע ההזמנה.
+    ``gift`` ו-``rsvp`` תלויים ב*זמן*: ``rsvp`` נפתח ביום שבקשת האישור
+    הראשונה יוצאת לפי לוח הזמנים (``rsvp_is_open``), לא מרגע ההזמנה.
     """
     if event is None:
         return ActionAvailability(False, False, False, True, False)
