@@ -657,8 +657,14 @@
         section { padding: 56px 0; }
         .hero { padding: 56px 0 88px; }
         .header-actions { gap: 6px; }
-        .header-actions .link-quiet { font-size: 13px; padding: 6px 2px; }
-        .header-actions .btn { padding: 9px 14px; font-size: 13px; }
+        /* ברוחב 360px הכותרת נדחסה והכפתור נשבר לשתי שורות. שלושה תיקונים
+           משלימים: לוגו קטן יותר, תווית קצרה יותר, וכפתור שלא נשבר.
+           הריפוד האנכי מביא את מטרות המגע ל-44px (WCAG 2.5.5) בלי להגדיל
+           את הגופן. */
+        .header-logo { height: 28px; }
+        .header-actions .link-quiet { font-size: 13px; padding: 12px 6px; }
+        .lq-long { display: none; }
+        .header-actions .btn { padding: 12px 14px; font-size: 13px; white-space: nowrap; }
         .hero-trust { gap: 8px 16px; font-size: 13px; }
       }
     </style>
@@ -680,7 +686,7 @@
           </svg>
         </a>
         <div class="header-actions">
-          <a href="/app" class="link-quiet">כניסה למערכת</a>
+          <a href="/app" class="link-quiet" aria-label="כניסה למערכת">כניסה<span class="lq-long"> למערכת</span></a>
           <a href="/app?auth=register" class="btn btn-primary">פותחים אירוע <span class="arw" aria-hidden="true">←</span></a>
         </div>
       </div>
@@ -795,7 +801,7 @@
               </span>
               <div>
                 <h3>ההערות מצטברות</h3>
-                <p>"ליד המשפחה", "רחוק מהרעש", "לא ליד עומר" — כל מה שחשוב לזכור, על המוזמן עצמו.</p>
+                <p>ליד המשפחה · רחוק מהרעש · לא ליד עומר — כל מה שחשוב לזכור, על המוזמן עצמו.</p>
               </div>
             </li>
             <li class="flow-step flow-step-last reveal">
@@ -985,7 +991,7 @@
       </section>
 
       <!-- ===== GIFTS — מתנות באשראי =====
-           המסר היחיד שצריך להישאר בראש: האורחים נותנים, בעלי האירוע לא
+           המסר היחיד שצריך להישאר בראש: המוזמנים נותנים, בעלי האירוע לא
            משלמים. פירוט העמלה יושב ב-FAQ בכוונה — לא כאן, כדי שהסקשן לא
            יהפוך להסבר על עמלות. כרטיס האשראי הוא HTML/CSS ולא תמונה, ונשאר
            בדיוק כפי שהיה. -->
@@ -994,7 +1000,7 @@
           <div class="gifts-grid">
             <div class="reveal">
               <span class="kicker">מתנות באשראי</span>
-              <h2 id="gifts-title">האורחים נותנים מתנה באשראי.<br />אתם לא משלמים על השירות.</h2>
+              <h2 id="gifts-title">המוזמנים נותנים מתנה באשראי.<br />אתם לא משלמים על השירות.</h2>
               <p>
                 המוזמנים יכולים לתת מתנה בכרטיס אשראי ישירות מההזמנה — בלי
                 מזומן, בלי מעטפות ובלי להתעסק עם זה ביום האירוע.
@@ -1212,7 +1218,13 @@
           els.forEach(function (el) {
             if (el.classList.contains('in')) return;
             var r = el.getBoundingClientRect();
-            if (r.top < limit && r.bottom > 0) {
+            // `r.top < limit` בלבד — בכוונה בלי תנאי "עדיין על המסך".
+            // בגלילת flick מהירה במובייל אלמנט חוצה את המסך תוך פחות
+            // מ-150ms, מהר יותר מקצב הדיווח של ה-IntersectionObserver, ואז
+            // הוא נשאר ב-opacity:0 **לצמיתות** — המשתמש גולל אחורה ורואה
+            // אזור ריק. כל מה שכבר הגיע לקו החשיפה או עבר אותו חייב להיות
+            // גלוי, גם אם הוא מעל המסך עכשיו.
+            if (r.top < limit) {
               el.classList.add('in');
               io.unobserve(el);
             }
