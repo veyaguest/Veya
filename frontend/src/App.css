@@ -14352,6 +14352,19 @@ td.notes.seating {
   line-height: 1.7;
   font-size: 14px;
 }
+.rsvp-faq-a p {
+  margin: 0;
+}
+.rsvp-faq-a p + p {
+  margin-top: 8px;
+}
+/* שורות אימוג'י ("💬 3 סבבי...") — פריטי רשימה צמודים, לא פסקאות נפרדות. */
+.rsvp-faq-a p.is-item {
+  margin-top: 4px;
+}
+.rsvp-faq-a p.is-item + p:not(.is-item) {
+  margin-top: 10px;
+}
 
 /* ---- Error Boundary — רשת ביטחון גלובלית לקריסת רינדור ---- */
 .error-boundary {
