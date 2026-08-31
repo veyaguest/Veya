@@ -66,7 +66,9 @@ export function RsvpTimeline() {
   return (
     <div className="tl-wrap">
       <TimelineHeader view={view} />
-      <TodayCard view={view} />
+      {/* כרטיס "מה קורה היום" — רק כשבאמת יש פעילות היום. אין פעילות → אין
+          מה להציג (הודעה "אין פעילות מתוכננת" היא רעש טכני לבעל האירוע). */}
+      {view.today_summary && <TodayCard view={view} />}
       <DayScale view={view} />
     </div>
   )
@@ -78,10 +80,9 @@ function TimelineHeader({ view }: { view: RsvpTimelineView }) {
   return (
     <div className="tl-header">
       <span className="track-hero-badge">יומן אישורי ההגעה</span>
-      <h2 className="tl-header-title">לוח הזמנים האישי שלכם</h2>
+      <h2 className="tl-header-title">עד שנדע כמה מגיעים</h2>
       <p className="tl-header-sub">
-        בנינו לכם לוח זמנים שמסתיים במועד סגירת הרשימה ({view.commitment_date})
-        — היום שבו נדע בדיוק מי מגיע ומי לא.
+        כאן תוכלו לראות את השלבים הקרובים עד סגירת רשימת המוזמנים.
       </p>
 
       <div className="tl-header-stats">

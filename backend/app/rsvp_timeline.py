@@ -431,10 +431,12 @@ def compute_timeline(
         })
 
     # ---- סיכום 'מה קורה היום' ----
+    # ריק כשאין פעילות היום — המסך לא מציג בכלל את כרטיס "מה קורה היום" במקרה
+    # הזה (הודעת "אין פעילות מתוכננת" היא רעש טכני לבעל האירוע).
     def summary_for(d: date) -> str:
         e = by_iso.get(d.isoformat())
         if not e or not e["actions"]:
-            return "אין פעילות מתוכננת"
+            return ""
         return " · ".join(a["label"] for a in e["actions"])
 
     today_summary = summary_for(today)
