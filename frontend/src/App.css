@@ -11643,6 +11643,14 @@ td.notes.seating {
   font-size: 14px;
   line-height: 1.6;
 }
+.tl-compressed-title {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.tl-compressed-text {
+  margin: 0;
+}
 
 /* היום / מחר */
 .tl-now {

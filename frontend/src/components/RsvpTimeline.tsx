@@ -96,10 +96,12 @@ function TimelineHeader({ view }: { view: RsvpTimelineView }) {
       </div>
 
       {view.compressed && (
-        <p className="tl-compressed">
-          נשאר מעט זמן עד מועד סגירת הרשימה, אז בנינו עבורכם מסלול מקוצר
-          וחכם שמספיק כמה שיותר אישורים בזמן שנותר.
-        </p>
+        <div className="tl-compressed">
+          <strong className="tl-compressed-title">נשאר מעט זמן עד סגירת הרשימה</strong>
+          <p className="tl-compressed-text">
+            נמשיך מכאן עם הצעדים החשובים כדי להגיע לכמה שיותר תשובות בזמן.
+          </p>
+        </div>
       )}
     </div>
   )
