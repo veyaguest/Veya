@@ -10444,86 +10444,13 @@ td.notes.seating {
 .wa-check-icon-read {
   color: #53bdeb; /* כחול — נקרא, זהה לצבע ה-tick הכחול של WhatsApp */
 }
-.track-status-note {
-  margin: -10px 0 0;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-/* --- בורר "מעקב אחר: X" --- */
-.msg-type-select-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: -8px 0 0;
-}
-.msg-type-select-label {
-  font-size: 13px;
-  color: var(--muted);
-  font-weight: 600;
-}
-.msg-type-select {
-  padding: 9px 12px;
-  border: 1px solid rgba(120, 110, 95, 0.28);
-  border-radius: var(--radius-m);
-  font-size: 14px;
-  font-weight: 600;
-  background: #fff;
-  color: var(--charcoal);
-  cursor: pointer;
-}
-
-.msg-summary-line {
-  margin: 0;
-  font-size: 14px;
-  color: var(--body);
-}
-.msg-summary-line bdi {
-  font-weight: 700;
-  color: var(--charcoal);
-}
-
-.msg-empty-state {
-  padding: 22px 20px;
-  text-align: center;
-  background: var(--surface-hi);
-  border: 1px dashed var(--line-2);
-  border-radius: var(--radius-l);
-  color: var(--muted);
-  font-size: 14px;
-}
-.msg-empty-state p {
-  margin: 0;
-}
-.msg-empty-state p + p {
-  margin-top: 6px;
-  font-size: 12px;
-}
-
-/* --- "מי קיבל את ההודעה" --- */
+/* --- רשימת "אישורי הגעה": סטטוס הודעה + סטטוס אישור, זה לצד זה --- */
 .msg-guest-section {
   border-top: 1px solid var(--line-2);
   padding-top: 16px;
 }
-.msg-guest-controls {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.msg-guest-section .send-recipients-search {
   margin: 10px 0;
-}
-.msg-guest-controls .send-recipients-search {
-  flex: 1;
-  min-width: 160px;
-  margin-bottom: 0;
-}
-.msg-guest-filter {
-  padding: 9px 12px;
-  border: 1px solid rgba(120, 110, 95, 0.28);
-  border-radius: var(--radius-m);
-  font-size: 14px;
-  background: #fff;
-  color: var(--charcoal);
 }
 .msg-guest-list {
   list-style: none;
@@ -10537,45 +10464,74 @@ td.notes.seating {
 }
 .msg-guest-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 16px;
-  flex-wrap: wrap;
-  padding: 10px 14px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
   background: var(--surface-hi);
   border: 1px solid var(--line-2);
   border-radius: var(--radius-s);
 }
+.msg-guest-row-btn {
+  width: 100%;
+  text-align: inherit;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.msg-guest-row-btn:hover {
+  background: var(--line-2);
+  border-color: rgba(120, 110, 95, 0.28);
+}
 .msg-guest-who {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 1px;
   min-width: 0;
 }
-.msg-guest-phone {
+.msg-guest-kind {
   color: var(--muted);
   font-size: 13px;
-  direction: ltr;
+}
+/* שורה שנייה: סטטוס ההודעה בצד אחד, סטטוס אישור ההגעה בצד השני —
+   שני דברים נפרדים, וברור שהם נפרדים. */
+.msg-guest-badges {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
 }
 .msg-guest-status {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   font-size: 13px;
-  white-space: nowrap;
+  color: var(--muted);
+}
+.msg-guest-status.is-failed,
+.msg-guest-status.is-no_valid_number,
+.msg-guest-status.is-blocked {
+  color: var(--gold-deep);
+}
+.msg-guest-rsvp {
+  font-size: 13px;
+  color: var(--muted);
+}
+.msg-guest-rsvp.is-confirmed {
+  color: var(--green);
+  font-weight: 600;
+}
+.msg-guest-rsvp.is-declined {
+  color: var(--gold-deep);
 }
 .msg-guest-empty {
   padding: 16px;
   text-align: center;
   color: var(--muted);
   font-size: 13px;
-}
-@media (max-width: 560px) {
-  .msg-guest-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
 }
 
 /* ============ עורך ההודעות הידידותי (MessageBuilder) ============ */
