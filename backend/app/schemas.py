@@ -1598,15 +1598,6 @@ class AdminAuditRow(BaseModel):
 # --- מסלול אישורי-ההגעה של האירוע (סטטוס למסך הזוג) ---
 
 
-class RsvpTrackPhoneRow(BaseModel):
-    """מוזמן שנכנס לרשימת המעקב הטלפוני (ממתין, אחרי כל התזכורות)."""
-
-    guest_id: int
-    guest_name: str
-    phone: str
-    side: str = ""
-
-
 class RsvpTrackStepRow(BaseModel):
     """שלב במסלול + כמה מוזמנים כבר עברו אותו בפועל."""
 
@@ -1628,8 +1619,6 @@ class RsvpTrackStatus(BaseModel):
     declined: int
     maybe: int
     pending: int
-    in_phone_followup: int  # ממתינים שנכנסו לרשימת המעקב הטלפוני
-    phone_list: list[RsvpTrackPhoneRow]
     steps: list[RsvpTrackStepRow]
     due_now: int            # כמה פעולות במסלול הבשילו וממתינות כרגע
 

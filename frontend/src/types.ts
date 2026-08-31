@@ -1316,13 +1316,6 @@ export interface AdminAuditRow {
 
 // ---- מסלול אישורי-ההגעה של האירוע (מסך הזוג) ----
 
-export interface RsvpTrackPhoneRow {
-  guest_id: number
-  guest_name: string
-  phone: string
-  side: string
-}
-
 export interface RsvpTrackStepRow {
   rule_id: number
   name: string
@@ -1342,8 +1335,6 @@ export interface RsvpTrackStatus {
   declined: number
   maybe: number
   pending: number
-  in_phone_followup: number
-  phone_list: RsvpTrackPhoneRow[]
   steps: RsvpTrackStepRow[]
   due_now: number
 }

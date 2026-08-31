@@ -10578,37 +10578,6 @@ td.notes.seating {
   }
 }
 
-.track-phone {
-  border-top: 1px solid var(--line-2);
-  padding-top: 16px;
-}
-.track-phone-list {
-  list-style: none;
-  padding: 0;
-  margin: 10px 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.track-phone-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 14px;
-  background: var(--surface-hi);
-  border: 1px solid var(--line-2);
-  border-radius: var(--radius-s);
-}
-.track-phone-num {
-  color: var(--gold-deep);
-  font-weight: 600;
-  text-decoration: none;
-  direction: ltr;
-}
-.track-phone-num:hover {
-  text-decoration: underline;
-}
-
 /* ============ עורך ההודעות הידידותי (MessageBuilder) ============ */
 /* עקרונות העיצוב (סבב 3י):
    - משטח אחד שקט. הכרטיסים לבנים על שנהב, בלי מסגרת כבדה — ההפרדה נוצרת

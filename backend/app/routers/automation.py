@@ -73,7 +73,7 @@ def _track_status(
     guests: Optional[list[models.Guest]] = None,
     messages: Optional[list[models.Message]] = None,
 ) -> schemas.RsvpTrackStatus:
-    """מרכיב את תמונת המצב של המסלול למסך הזוג — ספירות, רשימת מעקב טלפוני."""
+    """מרכיב את תמונת המצב של המסלול למסך הזוג — פעיל/לא, מצב, ספירות RSVP."""
     if guests is None:
         guests = _guests(db, event.id)
     if messages is None:
@@ -87,23 +87,6 @@ def _track_status(
         if m.direction == "outbound" and m.kind == "invitation"
         and m.status == "sent" and m.guest_id is not None
     }
-
-    # רשימת המעקב הטלפוני: ממתינים שכבר קיבלו את שתי התזכורות האוטומטיות
-    # (reminder_1 + reminder_2) ועדיין לא ענו — הגיע הזמן להתקשר בעצמכם.
-    reminder2_sent_ids = {
-        m.guest_id for m in messages
-        if m.kind == "reminder_2" and m.guest_id is not None
-    }
-    guests_by_id = {g.id: g for g in guests}
-    phone_list: list[schemas.RsvpTrackPhoneRow] = []
-    for gid in reminder2_sent_ids:
-        g = guests_by_id.get(gid)
-        if g is None or g.rsvp_status != "pending":
-            continue
-        phone_list.append(schemas.RsvpTrackPhoneRow(
-            guest_id=g.id, guest_name=g.full_name,
-            phone=g.phone or "", side=g.side or "",
-        ))
 
     due = (
         communication.compute_due_messages(db, event, guests=guests, messages=messages)
@@ -120,8 +103,6 @@ def _track_status(
         declined=count("declined"),
         maybe=count("maybe"),
         pending=count("pending"),
-        in_phone_followup=len(phone_list),
-        phone_list=phone_list,
         steps=[],  # התזמון הקבוע נערך היום דרך "תקשורת עם אורחים", לא כרשימת שלבים כאן
         due_now=len(due),
     )
