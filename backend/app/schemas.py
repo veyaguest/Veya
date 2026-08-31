@@ -1740,12 +1740,15 @@ class RsvpTrackAdvanceResult(RsvpTrackStatus):
 class TimelineAction(BaseModel):
     """פעולה בודדת ביום מסוים בלוח הזמנים (הודעה / סבב שיחות / ציון דרך)."""
 
-    type: str               # whatsapp_first/reminder/call_round/commitment/day_before/day_of
+    type: str               # whatsapp_first/reminder/call_round/day_of
     icon: str               # אימוג'י לתצוגה
     label: str
     audience: str           # "כל המוזמנים" / "מי שעדיין לא אישר" / ...
     audience_count: int
     moved_from_weekend: bool = False
+    # שורת הסבר נוספת מתחת לפעולה (למשל: סבב השיחות האחרון שגם סוגר את
+    # הרשימה). ריק = לא מוצג.
+    note: str = ""
 
 
 class TimelineDay(BaseModel):

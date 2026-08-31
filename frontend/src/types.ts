@@ -1441,6 +1441,7 @@ export interface TimelineAction {
   audience: string // תווית קהל היעד ("כל המוזמנים" / "מי שעדיין לא אישר")
   audience_count: number
   moved_from_weekend: boolean // הוזז מסוף שבוע ליום פעיל
+  note?: string // שורת הסבר נוספת מתחת לפעולה (ריק = לא מוצג)
 }
 
 // יום אחד בלוח הזמנים, עם כל הפעולות שמתוכננות בו.

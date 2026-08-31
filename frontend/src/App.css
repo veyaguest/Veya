@@ -11826,6 +11826,10 @@ td.notes.seating {
   font-size: 13px;
   color: var(--muted);
 }
+.tl-action-note {
+  font-size: 13px;
+  color: var(--gold-deep);
+}
 
 @media (max-width: 640px) {
   .tl-header-stats {

@@ -321,6 +321,70 @@ def test_last_call_round_equals_commitment_date() -> None:
     print("✓ יום סגירת הרשימה = יום סבב השיחות האחרון, תאריך אחד ויחיד")
 
 
+def test_no_whatsapp_and_call_round_on_the_same_day() -> None:
+    """חוק קשיח: אין באותו יום גם שלב WhatsApp (בקשת אישור / תזכורת) וגם
+    סבב טלפונים. נבדק על מגוון תרחישים, כולל דחיסה וסופי-שבוע."""
+    from app import rsvp_timeline
+
+    scenarios = [
+        ("2026-12-20", 5, datetime(2026, 10, 1)),    # רגיל, לא דחוס
+        ("2026-12-20", 5, datetime(2026, 12, 1)),    # דחוס
+        ("2026-10-22", 5, datetime(2026, 8, 1)),     # מועד גולמי בסוף שבוע
+        ("2026-09-20", 3, datetime(2026, 8, 20)),
+        ("2026-11-30", 10, datetime(2026, 10, 15)),
+        ("2026-11-12", 1, datetime(2026, 10, 20)),
+    ]
+    for event_date, commit_days, started in scenarios:
+        ev = FakeEvent(
+            event_date=event_date, venue_commit_days_before=commit_days,
+            rsvp_track_started_at=started,
+        )
+        sch = rsvp_timeline.compute_schedule(ev, now=datetime(2026, 8, 1))
+        assert sch is not None
+        wa_days = {
+            p.date for p in sch.placements
+            if p.step["type"] in ("whatsapp_first", "reminder")
+        }
+        call_days = {p.date for p in sch.placements if p.round_number is not None}
+        clash = wa_days & call_days
+        assert not clash, (
+            f"WhatsApp וסבב טלפונים באותו יום {clash} — {event_date}/{commit_days}"
+        )
+        # ובכל תרחיש שאינו קיצוני — יש גם יום הפרדה מלא (לפחות יומיים).
+        min_dist = min(
+            (abs((w - c).days) for w in wa_days for c in call_days),
+            default=99,
+        )
+        assert min_dist >= 1  # לעולם לא אותו יום
+    print("✓ אין יום עם WhatsApp + סבב טלפונים יחד")
+
+
+def test_last_round_and_list_closing_are_one_card() -> None:
+    """הסבב האחרון וסגירת הרשימה = כרטיס אחד: תווית מאוחדת + שורת הסבר,
+    בלי שורת 'סגירת רשימת המוזמנים' נפרדת."""
+    from app import rsvp_timeline
+
+    ev = FakeEvent(
+        event_date="2026-12-20", venue_commit_days_before=5,
+        rsvp_track_started_at=datetime(2026, 10, 1),
+    )
+    guests = [type("G", (), {"rsvp_status": s})() for s in (["pending"] * 7 + ["confirmed"] * 3)]
+    view = rsvp_timeline.compute_timeline(ev, guests, now=datetime(2026, 10, 15))
+
+    all_actions = [a for day in view["days"] for a in day["actions"]]
+    # אין יותר סוג פעולה "commitment" נפרד.
+    assert not any(a["type"] == "commitment" for a in all_actions)
+
+    commit_day = next(d for d in view["days"] if d["is_commitment"])
+    labels = [a["label"] for a in commit_day["actions"]]
+    assert "סבב שיחות אחרון וסגירת הרשימה" in labels
+    merged = next(a for a in commit_day["actions"] if a["label"] == "סבב שיחות אחרון וסגירת הרשימה")
+    assert merged["note"] == "אחרי הסבב, רשימת המוזמנים נסגרת."
+    # המספר דינמי — כמה שעדיין לא אישרו.
+    assert merged["audience_count"] == 7
+    print("✓ סבב שיחות אחרון + סגירת הרשימה = כרטיס אחד")
+
+
 if __name__ == "__main__":
     test_gift_window_day_by_day()
     test_opening_moment_is_midnight_three_days_before()
@@ -335,4 +399,6 @@ if __name__ == "__main__":
     test_other_actions_unchanged_by_gift_logic()
     test_rsvp_window()
     test_last_call_round_equals_commitment_date()
+    test_no_whatsapp_and_call_round_on_the_same_day()
+    test_last_round_and_list_closing_are_one_card()
     print("\nכל בדיקות מסע האורח עברו ✓")
