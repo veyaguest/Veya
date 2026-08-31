@@ -87,23 +87,15 @@
                 "name": "מה זה בעצם VEYA?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "VEYA מרכזת במקום אחד את כל מה שקשור למוזמנים ולאירוע — מהמוזמנים וההודעות, דרך אישורי ההגעה ועד סידור ההושבה."
+                  "text": "VEYA מרכזת במקום אחד את כל מה שקשור למוזמנים ולאירוע — מהרשימה וההודעות, דרך אישורי ההגעה ועד סידור ההושבה."
                 }
               },
               {
                 "@type": "Question",
-                "name": "מה אפשר לעשות עם VEYA?",
+                "name": "יש לי כבר אקסל עם המוזמנים. צריך להתחיל מחדש?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "לנהל מוזמנים, לשלוח ולתזמן הודעות WhatsApp, לעקוב אחרי אישורי הגעה ולסדר את ההושבה."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "יש לי כבר אקסל עם המוזמנים. צריך להתחיל הכול מחדש?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "לא. אפשר להכניס את רשימת המוזמנים שלכם ל-VEYA ולהמשיך משם."
+                  "text": "לא. מעלים את הקובץ או מדביקים את הרשימה, VEYA מזהה את העמודות — וממשיכים משם."
                 }
               },
               {
@@ -111,15 +103,15 @@
                 "name": "אפשר לבחור ולתזמן את ההודעות?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "כן. אפשר לבחור מתוך ספריית נוסחים ולתזמן מראש את ההודעות והתזכורות."
+                  "text": "כן. בוחרים נוסח מוכן לכל שלב — הזמנה, תזכורות, יום האירוע ותודה — ומתזמנים מראש. שום הודעה לא יוצאת בלי אישור שלכם."
                 }
               },
               {
                 "@type": "Question",
-                "name": "איך עובד סידור ההושבה?",
+                "name": "איך עובדת ההושבה בקליק?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "בונים את האולם בתוך VEYA, מסדרים את השולחנות ומשבצים את המוזמנים. אפשר גם לקבל הצעת הושבה אוטומטית."
+                  "text": "מסדרים את המוזמנים לקבוצות, מוסיפים הערות ומעלים את סקיצת האולם. בלחיצה אחת VEYA בונה מכל זה סידור הושבה ראשוני."
                 }
               },
               {
@@ -127,23 +119,23 @@
                 "name": "VEYA באמת מסדרת את ההושבה לבד?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "VEYA יכולה להציע סידור לפי המוזמנים והנתונים שהזנתם. אתם תמיד מחליטים ויכולים לשנות הכול."
+                  "text": "היא מציעה סידור לפי מה שהזנתם. ההחלטה תמיד שלכם — אפשר להזיז כל מוזמן ולשנות כל שולחן, ואם לא אהבתם, להחזיר את הסידור הקודם בלחיצה."
                 }
               },
               {
                 "@type": "Question",
-                "name": "אפשר לראות מי אישר הגעה ומי עדיין לא?",
+                "name": "כמה עולה שירות המתנות באשראי?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "כן. רואים מי מגיע, מי לא מגיע, מי מתלבט ומי עדיין לא ענה."
+                  "text": "לכם — כלום. עלות השירות היא 4%, והיא מתווספת לסכום שנותן המתנה משלם. אתם מקבלים את מלוא הסכום שהוא בחר לתת."
                 }
               },
               {
                 "@type": "Question",
-                "name": "אז מה בעצם VEYA חוסכת לי?",
+                "name": "המוזמנים צריכים להוריד אפליקציה?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "את המעבר בין אקסלים, רשימות ו-WhatsApp. הכול נמצא במקום אחד, כך שקל יותר לדעת מה קורה עם המוזמנים והאירוע."
+                  "text": "לא. הם מקבלים הודעה, לוחצים על הקישור ועונים. זהו."
                 }
               }
             ]
@@ -171,6 +163,11 @@
         --line: #e5dec9;
         --green: #2f9e5f;
         --cream-text: #f5efe2;
+        /* עקומות תנועה. ה-ease-out המובנה של הדפדפן חלש מדי לתחושה יוקרתית —
+           הוא "נוחת" מוקדם מדי. שתי העקומות האלה הן מקור האמת היחיד לכל
+           תנועה בדף, כדי שלא ייווצרו עשרים תזמונים שונים שמרגישים שונה. */
+        --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+        --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
       }
       * { box-sizing: border-box; margin: 0; padding: 0; }
       html { scroll-behavior: smooth; }
@@ -194,11 +191,10 @@
       }
       .btn:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
       .btn-primary { background: var(--gold); color: var(--charcoal); box-shadow: 0 8px 22px rgba(201, 162, 39, 0.30); }
-      .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(201, 162, 39, 0.40); }
-      .btn-primary .arw { transition: transform 0.18s ease; }
-      .btn-primary:hover .arw { transform: translateX(-4px); }
+      .btn-primary:hover { box-shadow: 0 12px 30px rgba(201, 162, 39, 0.40); }
+      .btn-primary .arw { transition: transform 0.18s var(--ease-out); }
       .btn-ghost { background: transparent; color: var(--charcoal); border: 1px solid var(--line); }
-      .btn-ghost:hover { border-color: var(--gold-deep); transform: translateY(-1px); }
+      .btn-ghost:hover { border-color: var(--gold-deep); }
       /* גרסאות כהות לכפתורים על רקע כהה */
       .on-dark .btn-ghost { color: var(--cream-text); border-color: rgba(245, 239, 226, 0.28); }
       .on-dark .btn-ghost:hover { border-color: var(--gold-light); background: rgba(245, 239, 226, 0.06); }
@@ -246,20 +242,40 @@
       .section-title { font-size: clamp(27px, 4vw, 40px); margin-bottom: 14px; }
       .section-sub { color: var(--muted); font-size: 17px; }
 
-      /* Intro / value */
-      .value { background: var(--ivory); }
-      .value-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: center; }
-      .value-lead { font-family: 'Frank Ruhl Libre', serif; font-size: clamp(22px, 3vw, 30px); color: var(--charcoal); line-height: 1.4; margin-bottom: 20px; }
-      .value p { font-size: 17px; margin-bottom: 16px; }
-      .value .pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
-      .pill { display: inline-flex; align-items: center; gap: 8px; background: var(--cream); border: 1px solid var(--line); border-radius: 999px; padding: 9px 16px; font-size: 14.5px; font-weight: 600; color: var(--charcoal); }
-      .pill svg { color: var(--gold-deep); }
-      .value-figure { background: linear-gradient(155deg, #ffffff 0%, var(--ivory-2) 100%); border: 1px solid var(--line); border-radius: 24px; padding: 34px; box-shadow: 0 20px 50px rgba(43, 38, 32, 0.07); }
-      .stat-row { display: flex; justify-content: space-between; gap: 16px; }
-      .stat { text-align: center; flex: 1; }
-      .stat .n { font-family: 'Cormorant Garamond', serif; font-size: 44px; font-weight: 600; color: var(--gold-deep); line-height: 1; }
-      .stat .l { font-size: 13.5px; color: var(--muted); margin-top: 8px; }
-      .stat-div { width: 1px; background: var(--line); }
+      /* ===== Flow — עמוד השדרה של הדף =====
+         חמישה שלבים על קו אחד. הקו לא מצויר כאלמנט נפרד אלא כ-::before של כל
+         שלב, מתחת לעיגול שלו ועד לשלב הבא — כך הוא מתאים את עצמו לגובה הטקסט
+         בכל רוחב מסך, בלי מספרי פיקסלים קבועים שנשברים במובייל.
+         הקו נמתח ב-scaleY (transform בלבד — לא נוגע ב-layout) כשהשלב נחשף,
+         כך שהסיפור "נמשך" למטה תוך כדי גלילה במקום להופיע מוכן מראש. */
+      .flow { background: var(--ivory); }
+      .flow-steps { list-style: none; max-width: 620px; margin: 0 auto; padding: 0; }
+      .flow-step { position: relative; display: grid; grid-template-columns: 36px 1fr; gap: 16px; align-items: start; padding-bottom: 30px; }
+      .flow-step:last-child { padding-bottom: 0; }
+      .flow-step::before {
+        content: ""; position: absolute; inset-inline-start: 17px; top: 42px; bottom: -2px; width: 2px; border-radius: 2px;
+        background: linear-gradient(180deg, rgba(201, 162, 39, 0.42), rgba(201, 162, 39, 0.16));
+        transform: scaleY(0); transform-origin: top;
+        transition: transform 0.6s var(--ease-out); transition-delay: var(--d, 0s);
+      }
+      .flow-step.in::before { transform: scaleY(1); }
+      .flow-step:last-child::before { content: none; }
+      .flow-dot {
+        width: 36px; height: 36px; border-radius: 50%; background: var(--cream); border: 1px solid var(--line);
+        display: flex; align-items: center; justify-content: center; color: var(--gold-deep);
+        box-shadow: 0 2px 8px rgba(43, 38, 32, 0.06);
+      }
+      .flow-step h3 { font-size: 18px; margin-bottom: 4px; }
+      .flow-step p { font-size: 15.5px; color: var(--muted); }
+      .flow-step p em { font-style: normal; color: var(--charcoal); font-weight: 600; }
+      /* השלב האחרון הוא הפואנטה — עיגול מלא במקום מתאר, בלי להוסיף עוד טקסט */
+      .flow-step-last .flow-dot { background: var(--ink); border-color: var(--ink); color: var(--gold-light); }
+      .flow-step-last p { color: var(--body); }
+      .flow-step:nth-child(1) { --d: 0s; }
+      .flow-step:nth-child(2) { --d: 0.07s; }
+      .flow-step:nth-child(3) { --d: 0.14s; }
+      .flow-step:nth-child(4) { --d: 0.21s; }
+      .flow-step:nth-child(5) { --d: 0.28s; }
       .mini-list { list-style: none; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
       .mini-list li { display: flex; align-items: flex-start; gap: 11px; font-size: 15.5px; color: var(--body); margin-bottom: 13px; }
       .mini-list li:last-child { margin-bottom: 0; }
@@ -267,30 +283,13 @@
 
       /* Features */
       .features { background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-2) 100%); }
-      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; }
-      .card { background: var(--cream); border: 1px solid var(--line); border-radius: 20px; padding: 32px 30px; transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease; }
-      .card:hover { transform: translateY(-5px); box-shadow: 0 22px 44px rgba(43, 38, 32, 0.10); border-color: rgba(201, 162, 39, 0.4); }
-      .card .ic { width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(145deg, rgba(201, 162, 39, 0.16), rgba(201, 162, 39, 0.06)); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--gold-deep); }
-      .card h3 { font-size: 21px; margin-bottom: 10px; }
-      .card p { font-size: 15.5px; color: var(--body); }
-
-      /* Steps */
-      .how { background: var(--ink); color: var(--cream-text); position: relative; }
-      .how .kicker { color: var(--gold-light); }
-      .how .section-title { color: var(--cream-text); }
-      .how .section-sub { color: #b6aa93; }
-      .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 26px; }
-      .step { position: relative; background: rgba(245, 239, 226, 0.04); border: 1px solid rgba(201, 162, 39, 0.18); border-radius: 18px; padding: 28px 24px; transition: transform 0.2s ease, border-color 0.2s ease; }
-      .step:hover { transform: translateY(-4px); border-color: rgba(201, 162, 39, 0.45); }
-      .step .num { font-family: 'Cormorant Garamond', serif; font-size: 30px; color: var(--charcoal); font-weight: 600; line-height: 1; width: 52px; height: 52px; border-radius: 50%; background: var(--gold-light); display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
-      .step h3 { font-size: 19px; color: var(--cream-text); margin-bottom: 9px; }
-      .step p { font-size: 15px; color: #c8bda8; }
-
       /* Gifts (credit card, "coming soon") */
       .gifts { background: var(--ivory); }
       .gifts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 52px; align-items: center; }
-      .badge-soon { display: inline-block; background: rgba(201, 162, 39, 0.14); color: var(--gold-deep); font-size: 12.5px; font-weight: 700; letter-spacing: 1.5px; padding: 6px 14px; border-radius: 999px; margin-bottom: 18px; }
-      .gifts h2 { font-size: clamp(26px, 3.6vw, 36px); margin-bottom: 16px; }
+      .gifts h2 { font-size: clamp(25px, 3.5vw, 36px); line-height: 1.3; margin-bottom: 18px; }
+      .gift-points { list-style: none; margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); display: grid; gap: 16px; }
+      .gift-point h3 { font-size: 16px; margin-bottom: 3px; }
+      .gift-point p { font-size: 15px; color: var(--muted); margin-bottom: 0; }
       .gifts p { font-size: 17px; margin-bottom: 16px; }
       .trust-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
       .trust-chip { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--charcoal); }
@@ -304,8 +303,7 @@
         display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden;
         transform: rotate(-4deg); transition: transform 0.4s ease;
       }
-      .cc:hover { transform: rotate(0deg) translateY(-4px); }
-      .cc::after { content: ""; position: absolute; top: -40%; left: -20%; width: 70%; height: 180%; background: linear-gradient(90deg, rgba(228, 201, 107, 0) 0%, rgba(228, 201, 107, 0.14) 50%, rgba(228, 201, 107, 0) 100%); transform: rotate(18deg); }
+            .cc::after { content: ""; position: absolute; top: -40%; left: -20%; width: 70%; height: 180%; background: linear-gradient(90deg, rgba(228, 201, 107, 0) 0%, rgba(228, 201, 107, 0.14) 50%, rgba(228, 201, 107, 0) 100%); transform: rotate(18deg); }
       .cc-top { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; }
       .cc-brand { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; letter-spacing: 5px; color: var(--gold-light); }
       .cc-chip { width: 42px; height: 32px; border-radius: 7px; background: linear-gradient(135deg, #e4c96b, #b8912f); position: relative; z-index: 1; }
@@ -390,7 +388,6 @@
         transform: perspective(1600px) rotateX(2deg);
         transition: transform 0.5s ease, box-shadow 0.5s ease;
       }
-      .hero-devices:hover .device-mac { transform: perspective(1600px) rotateX(1deg) rotateY(-1deg); box-shadow: 0 30px 60px -18px rgba(0, 0, 0, 0.55), 0 80px 150px -30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.45); }
       .device-mac-notch {
         position: absolute; top: 0; inset-inline-start: 50%; transform: translateX(-50%);
         width: 11%; min-width: 30px; max-width: 54px; height: 12px;
@@ -493,7 +490,7 @@
       .sc-layout { display: grid; grid-template-columns: 250px 1fr; gap: 30px; align-items: stretch; }
       .sc-tabs { display: flex; flex-direction: column; justify-content: center; gap: 12px; list-style: none; }
       .sc-tab { display: flex; align-items: center; gap: 12px; text-align: start; width: 100%; background: var(--cream); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; cursor: pointer; font-family: 'Assistant', sans-serif; font-size: 14.5px; font-weight: 700; color: var(--body); transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease; }
-      .sc-tab:not([aria-selected="true"]):hover { border-color: rgba(201, 162, 39, 0.4); background: var(--ivory-2); transform: translateY(-1px); }
+      .sc-tab:not([aria-selected="true"]):hover { border-color: rgba(201, 162, 39, 0.4); background: var(--ivory-2); }
       .sc-tab .sc-tab-ic { width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(145deg, rgba(201, 162, 39, 0.14), rgba(201, 162, 39, 0.05)); display: flex; align-items: center; justify-content: center; color: var(--gold-deep); flex-shrink: 0; transition: background 0.18s ease, color 0.18s ease; }
       .sc-tab[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--cream-text); }
       .sc-tab[aria-selected="true"] .sc-tab-ic { background: rgba(228, 201, 107, 0.16); color: var(--gold-light); }
@@ -519,6 +516,58 @@
         .sc-tab .sc-tab-sub { display: none; }
       }
 
+      /* ===== Seating — "הושבה בקליק" =====
+         שלושה ביטים בסקשן אחד: מה מסדרים מראש (prep) ← ואז (bridge) ←
+         מה VEYA מחזירה ומי בשליטה (payoff). הרקע הכהה הוא מה שמסמן שזה
+         הפיצ'ר המבדל, בלי להוסיף לדף עוד סקשן. */
+      .seating { background: var(--ink); color: var(--cream-text); }
+      .seating .kicker { color: var(--gold-light); }
+      .seating .section-title { color: var(--cream-text); }
+      .seating .section-sub { color: #b6aa93; }
+
+      .prep-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 880px; margin: 0 auto; }
+      .prep-card {
+        background: rgba(245, 239, 226, 0.04); border: 1px solid rgba(201, 162, 39, 0.18);
+        border-radius: 18px; padding: 26px 24px;
+        transition: transform 0.22s var(--ease-out), border-color 0.22s var(--ease-out);
+      }
+      .prep-card .ic { width: 40px; height: 40px; border-radius: 12px; background: rgba(228, 201, 107, 0.12); display: flex; align-items: center; justify-content: center; color: var(--gold-light); margin-bottom: 14px; }
+      .prep-card h3 { font-size: 18px; color: var(--cream-text); margin-bottom: 7px; }
+      .prep-card p { font-size: 15px; color: #c8bda8; }
+      /* שלב הסקיצה מחזיק שתי תמונות, ולכן תופס את שתי העמודות */
+      .prep-sketch { grid-column: 1 / -1; }
+      .prep-sketch .s2h-flow { margin-top: 20px; }
+      .prep-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+      .prep-chip { font-size: 13.5px; color: #e2d8c2; background: rgba(245, 239, 226, 0.07); border: 1px solid rgba(201, 162, 39, 0.22); border-radius: 999px; padding: 5px 12px; white-space: nowrap; }
+
+      /* מעבר "ואז" — קו דק משני הצדדים, במקום עוד כותרת */
+      .payoff-bridge {
+        display: flex; align-items: center; justify-content: center; gap: 16px;
+        max-width: 380px; margin: 40px auto 30px;
+        font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: 18px; color: var(--gold-light);
+      }
+      .payoff-bridge::before, .payoff-bridge::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(201, 162, 39, 0) 0%, rgba(201, 162, 39, 0.45) 100%); }
+      .payoff-bridge::after { background: linear-gradient(90deg, rgba(201, 162, 39, 0.45) 0%, rgba(201, 162, 39, 0) 100%); }
+
+      .payoff { max-width: 880px; margin: 0 auto; text-align: center; }
+      .payoff h3 { font-size: clamp(22px, 3.2vw, 31px); color: var(--cream-text); margin-bottom: 12px; }
+      .payoff-lead { font-size: 17px; color: #cabfa9; max-width: 580px; margin: 0 auto 28px; }
+      .payoff-shot {
+        position: relative; aspect-ratio: 16 / 10; border-radius: 18px; overflow: hidden;
+        border: 1px solid rgba(201, 162, 39, 0.22); background: #1d1810;
+        box-shadow: 0 34px 70px -22px rgba(0, 0, 0, 0.65);
+      }
+      .payoff-shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+      .payoff-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 22px; margin-top: 28px; text-align: start; }
+      .payoff-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 15px; color: #c8bda8; }
+      .payoff-list svg { color: var(--gold-light); flex-shrink: 0; margin-top: 3px; }
+      .seating-cta { text-align: center; margin-top: 38px; }
+
+      @media (max-width: 780px) {
+        .prep-grid { grid-template-columns: 1fr; }
+        .payoff-bridge { margin: 32px auto 24px; }
+      }
+
       /* ===== Sketch → Hall (בניית סידור שולחנות מסקיצת האולם) =====
          שני כרטיסים זהים בגודלם — הסקיצה האמיתית מהאולם מימין, אותו אולם
          בתוך VEYA משמאל (כיוון הקריאה RTL), עם חץ ביניהם. שתי התמונות הן
@@ -527,11 +576,9 @@
          aspect-ratio קבוע (5/7) לשתי המסגרות: מקורות התמונה שונים מעט
          ביחס (0.724 מול 0.698), ובלי זה שני הכרטיסים יוצאים בגבהים שונים.
          פלטה נייטרלית בלבד (דיו/פחם/שנהב + נגיעת ירוק אחת), בלי זהב. */
-      .s2h { background: var(--ivory); }
-      .s2h-lead { font-family: 'Frank Ruhl Libre', serif; font-size: clamp(19px, 2.5vw, 25px); color: var(--charcoal); line-height: 1.45; margin-bottom: 12px; }
       .s2h-flow { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; }
       .s2h-card { background: var(--cream); border: 1px solid var(--line); border-radius: 20px; padding: 18px; box-shadow: 0 18px 40px rgba(43, 38, 32, 0.06); transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease; }
-      .s2h-card:hover { transform: translateY(-4px); box-shadow: 0 24px 50px rgba(43, 38, 32, 0.10); border-color: rgba(43, 38, 32, 0.16); }
+      .s2h-card:hover { box-shadow: 0 24px 50px rgba(43, 38, 32, 0.10); border-color: rgba(43, 38, 32, 0.16); }
       /* flex-wrap: במסך צר מאוד התגית יורדת לשורה משלה במקום לדחוס את הכותרת */
       .s2h-cap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; margin-bottom: 14px; }
       .s2h-cap h3 { font-size: 16.5px; }
@@ -539,10 +586,9 @@
       .s2h-card-out .s2h-tag { color: #23794a; border-color: rgba(47, 158, 95, 0.34); background: rgba(47, 158, 95, 0.07); }
       .s2h-frame { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--ivory-2); aspect-ratio: 5 / 7; }
       .s2h-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
-      .s2h-arrow { width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: var(--cream-text); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 12px 26px rgba(23, 19, 13, 0.22); animation: s2h-nudge 2.8s ease-in-out infinite; }
+      .s2h-arrow { width: 46px; height: 46px; border-radius: 50%; background: var(--gold-light); color: var(--ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 12px 26px rgba(0, 0, 0, 0.35); animation: s2h-nudge 2.8s ease-in-out infinite; }
       @keyframes s2h-nudge { 0%, 100% { translate: 0 0; } 50% { translate: -5px 0; } }
       @keyframes s2h-nudge-v { 0%, 100% { translate: 0 0; } 50% { translate: 0 5px; } }
-      .s2h-cta { text-align: center; margin-top: 34px; }
       @media (max-width: 780px) {
         .s2h-flow { grid-template-columns: 1fr; gap: 16px; }
         /* החץ מסתובב כדי להצביע מטה — סדר הקריאה במובייל הוא סקיצה מעל, תוצאה מתחת */
@@ -559,21 +605,22 @@
       .supporting-item h3 { font-size: 16.5px; margin-bottom: 6px; }
       .supporting-item p { font-size: 14.3px; color: var(--body); }
 
-      /* ===== Differentiation strip ===== */
-      .diff { background: var(--ivory-2); }
-      .diff-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-      .diff-card { background: var(--cream); border: 1px solid var(--line); border-radius: 18px; padding: 24px; box-shadow: 0 14px 30px rgba(43, 38, 32, 0.05); }
-      .diff-before { font-size: 13px; color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(170, 70, 50, 0.4); margin-bottom: 8px; }
-      .diff-after { font-size: 15.5px; color: var(--ink); font-weight: 600; display: flex; align-items: center; gap: 8px; }
-      .diff-after svg { color: var(--green); flex-shrink: 0; }
-      @media (max-width: 760px) { .diff-grid { grid-template-columns: 1fr; } }
-
-      /* ===== Scroll reveal ===== */
-      .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+      /* ===== Scroll reveal =====
+         מנוע התנועה היחיד בדף: IntersectionObserver מוסיף `.in`, וה-CSS עושה
+         את השאר. רק opacity ו-transform — שניהם לא נוגעים ב-layout ורצים על
+         ה-GPU, ולכן הגלילה נשארת חלקה גם במובייל חלש.
+         `--d` מאפשר stagger לכל אלמנט בנפרד (ולא רק שלוש מדרגות קבועות),
+         וזה מה שנותן לשלבים בסקשן השרשרת ובסקשן ההושבה להיחשף אחד-אחרי-השני
+         במקום לקפוץ יחד. d1/d2/d3 נשארים כקיצור לשימושים הקיימים בדף. */
+      .reveal {
+        opacity: 0; transform: translateY(20px);
+        transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+        transition-delay: var(--d, 0s);
+      }
       .reveal.in { opacity: 1; transform: none; }
-      .reveal.d1 { transition-delay: 0.08s; }
-      .reveal.d2 { transition-delay: 0.16s; }
-      .reveal.d3 { transition-delay: 0.24s; }
+      .reveal.d1 { --d: 0.08s; }
+      .reveal.d2 { --d: 0.16s; }
+      .reveal.d3 { --d: 0.24s; }
 
       /* ה-Hero גלוי תמיד כבר בטעינה הראשונה — לא תלוי בסקריפט ה-IntersectionObserver
          שיושב בתחתית הדף. בלי זה, על חיבור איטי/מכשיר חלש המשתמש רואה מסך ריק
@@ -593,8 +640,9 @@
       @media (prefers-reduced-motion: reduce) {
         html { scroll-behavior: auto; }
         .reveal { opacity: 1; transform: none; transition: none; }
+        .flow-step::before { transform: scaleY(1); transition: none; }
         .hero .reveal { animation: none; }
-        .btn, .card, .step, .cc { transition: none; }
+        .btn, .cc, .prep-card, .s2h-card { transition: none; }
         .device-phone { animation: none; transform: perspective(900px) rotateY(-3deg); }
         .device-mac { transition: none; }
         .hero-devices::before { animation: none; }
@@ -602,7 +650,7 @@
       }
 
       @media (max-width: 860px) {
-        .value-grid, .gifts-grid { grid-template-columns: 1fr; gap: 36px; }
+        .gifts-grid { grid-template-columns: 1fr; gap: 36px; }
         .gifts-grid .cc-stage { order: -1; }
       }
       @media (max-width: 600px) {
@@ -633,7 +681,7 @@
         </a>
         <div class="header-actions">
           <a href="/app" class="link-quiet">כניסה למערכת</a>
-          <a href="/app?auth=register" class="btn btn-primary">התחילו עכשיו <span class="arw" aria-hidden="true">←</span></a>
+          <a href="/app?auth=register" class="btn btn-primary">פותחים אירוע <span class="arw" aria-hidden="true">←</span></a>
         </div>
       </div>
     </header>
@@ -646,13 +694,12 @@
           <span class="eyebrow reveal d1">מערכת ניהול אירועים חכמה · במקום אחד</span>
           <h1 id="hero-title" class="reveal d1">כל האירוע שלכם,<br /><span class="accent">מנוהל ברוגע</span></h1>
           <p class="lead reveal d2">
-            מוזמנים, אישורי הגעה בוואטסאפ, הזמנות וסידור הושבה — הכול במקום
-            אחד שקט ומדויק. אנחנו מנהלים את הפרטים, כדי שתוכלו פשוט ליהנות
-            מהדרך אל היום הגדול.
+            מוזמנים, אישורי הגעה בוואטסאפ והושבה — במקום אחד. כל מה שאתם
+            מסדרים לאורך הדרך ממשיך לעבוד בשבילכם, עד סידור ההושבה.
           </p>
           <div class="cta-row reveal d2">
-            <a href="/app?auth=register" class="btn btn-primary">בואו נתחיל <span class="arw" aria-hidden="true">←</span></a>
-            <a href="#how" class="btn btn-ghost">איך זה עובד</a>
+            <a href="/app?auth=register" class="btn btn-primary">פותחים אירוע בחינם <span class="arw" aria-hidden="true">←</span></a>
+            <a href="#flow" class="btn btn-ghost">איך זה עובד</a>
           </div>
 
           <div class="hero-devices reveal d3">
@@ -695,52 +742,72 @@
             <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
             <span>אישורי הגעה בוואטסאפ</span>
             <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <span>הושבה חכמה שנגמרת בערב אחד</span>
+            <span>הושבה בקליק</span>
           </div>
         </div>
       </section>
 
-      <!-- ===== VALUE / WHY ===== -->
-      <section class="value" aria-labelledby="value-title">
+      <!-- ===== FLOW — הסיפור המרכזי של הדף =====
+           מחליף את סקשן "למה VEYA" הישן. במקום פסקאות על "הכול במקום אחד",
+           חמישה שלבים שמראים איך המידע שנאסף בדרך ממשיך לעבוד עד ההושבה. -->
+      <section class="flow" id="flow" aria-labelledby="flow-title">
         <div class="wrap">
-          <div class="value-grid">
-            <div class="reveal">
-              <span class="kicker">למה VEYA</span>
-              <h2 id="value-title" class="value-lead">
-                תכנון אירוע מתפזר מהר על אקסל, קבוצות וואטסאפ ופתקים. אנחנו
-                הופכים את זה למקום אחד רגוע ומסודר — לכל סוג אירוע.
-              </h2>
-              <p>
-                בין ניהול רשימת המוזמנים, רדיפה אחרי אישורי הגעה וסידור ההושבה,
-                קל לאבד שליטה. אנחנו מחברים את כל החלקים: כל מוזמן, כל תשובה וכל
-                שולחן מתעדכנים באותו מקום, בזמן אמת — כך שתמיד יש לכם תמונה אחת
-                ברורה של האירוע.
-              </p>
-              <p>
-                במקום שעות של עבודה ידנית, אנחנו עושים את העבודה השחורה בשבילכם —
-                ומשאירים לכם את מה שחשוב באמת: להתרגש.
-              </p>
-              <div class="pills">
-                <span class="pill"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>חוסך שעות עבודה</span>
-                <span class="pill"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10Z"/></svg>מוריד לחץ</span>
-                <span class="pill"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5Z"/></svg>הכול במקום אחד</span>
-              </div>
-            </div>
-            <div class="value-figure reveal d1" role="group" aria-label="במבט מהיר">
-              <div class="stat-row">
-                <div class="stat"><div class="n">1</div><div class="l">מקום לכל האירוע</div></div>
-                <div class="stat-div" aria-hidden="true"></div>
-                <div class="stat"><div class="n">0</div><div class="l">אפליקציות למוזמן</div></div>
-                <div class="stat-div" aria-hidden="true"></div>
-                <div class="stat"><div class="n">∞</div><div class="l">שינויים עד הרגע האחרון</div></div>
-              </div>
-              <ul class="mini-list">
-                <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>מעקב חי אחרי מי אישר, מי ממתין ומי לא מגיע</li>
-                <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>סידור הושבה אוטומטי שאתם תמיד שולטים בו</li>
-                <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>סטטיסטיקות בזמן אמת שעוזרות לכם להחליט</li>
-              </ul>
-            </div>
+          <div class="section-head reveal">
+            <span class="kicker">איך VEYA עובדת</span>
+            <h2 id="flow-title" class="section-title">מה שסידרתם פעם אחת — ממשיך לעבוד בשבילכם</h2>
+            <p class="section-sub">
+              כל פרט שאתם מוסיפים לאורך הדרך נשאר במקום אחד וממשיך הלאה.
+              כשמגיע הרגע לסדר הושבה, VEYA כבר מכירה את האירוע שלכם.
+            </p>
           </div>
+
+          <ol class="flow-steps">
+            <li class="flow-step reveal">
+              <span class="flow-dot" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6.5a3 3 0 0 1 0 5.8"/><path d="M20.5 20a5.5 5.5 0 0 0-4-5.3"/></svg>
+              </span>
+              <div>
+                <h3>המוזמנים נכנסים</h3>
+                <p>מייבאים רשימה מאקסל, מדביקים אותה מהטלפון או מוסיפים ידנית.</p>
+              </div>
+            </li>
+            <li class="flow-step reveal">
+              <span class="flow-dot" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/></svg>
+              </span>
+              <div>
+                <h3>הם מסתדרים לפי צדדים וקבוצות</h3>
+                <p>משפחה, חברים, עבודה — או כל קבוצה שחשוב לכם שתשב יחד.</p>
+              </div>
+            </li>
+            <li class="flow-step reveal">
+              <span class="flow-dot" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 3z"/><path d="m9 10 2 2 4-4"/></svg>
+              </span>
+              <div>
+                <h3>אישורי ההגעה נאספים</h3>
+                <p>ההודעות יוצאות בזמן, והתשובות מתעדכנות לבד — מי מגיע, מי לא, ומי עוד לא ענה.</p>
+              </div>
+            </li>
+            <li class="flow-step reveal">
+              <span class="flow-dot" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3.5h9L19 8v12.5H5.5z"/><path d="M14.5 3.5V8H19"/><path d="M8.5 12.5h7M8.5 16h4.5"/></svg>
+              </span>
+              <div>
+                <h3>ההערות מצטברות</h3>
+                <p>"ליד המשפחה", "רחוק מהרעש", "לא ליד עומר" — כל מה שחשוב לזכור, על המוזמן עצמו.</p>
+              </div>
+            </li>
+            <li class="flow-step flow-step-last reveal">
+              <span class="flow-dot" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="8" r="2.4"/><circle cx="17" cy="8" r="2.4"/><circle cx="12" cy="17" r="2.4"/><path d="M4 20h16"/></svg>
+              </span>
+              <div>
+                <h3>וכשמגיעים לסידור ההושבה — הכול כבר כאן</h3>
+                <p>VEYA כבר יודעת מי המוזמנים, מי מגיע ומה חשוב לכם. <em>לא צריך להזין שום פרט פעמיים.</em></p>
+              </div>
+            </li>
+          </ol>
         </div>
       </section>
 
@@ -750,7 +817,7 @@
           <div class="section-head reveal">
             <span class="kicker">המערכת בפעולה</span>
             <h2 id="showcase-title" class="section-title">ככה זה נראה כשהכול מסודר</h2>
-            <p class="section-sub">לא הבטחה — המערכת האמיתית, בדיוק כמו שתראו אותה אחרי ההרשמה.</p>
+            <p class="section-sub">לא הדמיה — צילומי מסך אמיתיים, בדיוק כמו שתראו אחרי ההרשמה.</p>
           </div>
 
           <div class="sc-layout reveal d1">
@@ -766,10 +833,6 @@
               <button type="button" class="sc-tab" role="tab" id="sc-tab-rsvp" aria-controls="sc-panel-rsvp" aria-selected="false" tabindex="-1" data-target="rsvp">
                 <span class="sc-tab-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 3z"/><path d="m9 10 2 2 4-4"/></svg></span>
                 <span>ניהול הודעות<span class="sc-tab-sub">בחירת נוסח, בלחיצה</span></span>
-              </button>
-              <button type="button" class="sc-tab" role="tab" id="sc-tab-seating" aria-controls="sc-panel-seating" aria-selected="false" tabindex="-1" data-target="seating">
-                <span class="sc-tab-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="8" r="2.4"/><circle cx="17" cy="8" r="2.4"/><circle cx="12" cy="17" r="2.4"/><path d="M4 20h16"/></svg></span>
-                <span>מפת הושבה<span class="sc-tab-sub">גוררים, לא מתפשרים</span></span>
               </button>
             </div>
 
@@ -793,82 +856,191 @@
                   <img src="/product/messages.png" alt="מסך ניהול ההודעות של VEYA, עם בחירת נוסח לכל שלב ותצוגה מקדימה בוואטסאפ" width="1400" height="875" loading="lazy" decoding="async" onerror="this.style.display='none'" />
                 </div>
                 <h3>בוחרים נוסח, לא כותבים מאפס</h3>
-                <p>ספריית נוסחים מוכנים לכל שלב, עם תצוגה מקדימה בוואטסאפ — בוחרים כרטיס ושולחים.</p>
-              </div>
-              <div class="sc-panel sc-panel-seating" id="sc-panel-seating" role="tabpanel" aria-labelledby="sc-tab-seating" tabindex="0">
-                <div class="sc-shot">
-                  <img src="/product/seating.png" alt="עורך מפת האולם של VEYA, עם שולחנות מסודרים וסידור הושבה" width="1400" height="875" loading="lazy" decoding="async" onerror="this.style.display='none'" />
-                </div>
-                <h3>מסיימים את ההושבה בערב אחד</h3>
-                <p>אנחנו מציעים סידור הושבה, ואתם גוררים ומדייקים על מפת האולם.</p>
-                <ul class="mini-list sc-seating-list">
-                  <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>גוררים מוזמן לשולחן, והוא כבר שם</li>
-                  <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>המערכת מציעה סידור, ההחלטה נשארת שלכם</li>
-                  <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>כל שינוי נשמר לבד, בלי ללחוץ שום כפתור</li>
-                </ul>
+                <p>ספריית נוסחים מוכנים לכל שלב, עם תצוגה מקדימה בוואטסאפ. המוזמנים עונים בהודעה — בלי להוריד שום אפליקציה.</p>
               </div>
             </div>
-          </div>
-
-          <div class="sc-cta reveal">
-            <a href="/app?auth=register" class="btn btn-ghost">זה בדיוק מה שמחכה לכם אחרי ההרשמה <span class="arw" aria-hidden="true">←</span></a>
           </div>
         </div>
       </section>
 
-      <!-- ===== SKETCH → HALL ===== -->
-      <section class="s2h" id="sketch" aria-labelledby="s2h-title">
+      <!-- ===== SEATING — הסקשן המרכזי של הדף =====
+           מאחד לתוכו את סקשן "סקיצה → אולם" שהיה קודם עומד לבדו, ומשלים
+           אותו לסיפור אחד: מה מסדרים מראש ← מה VEYA עושה עם זה ← מי בשליטה.
+           רקע כהה במכוון — נותן משקל לפיצ'ר המבדל בלי להאריך את הדף. -->
+      <section class="seating on-dark" id="seating" aria-labelledby="seating-title">
         <div class="wrap">
           <div class="section-head reveal">
-            <span class="kicker">מהסקיצה לאולם דיגיטלי</span>
-            <h2 id="s2h-title" class="section-title">קיבלתם סקיצה מהאולם?</h2>
-            <p class="s2h-lead">נהדר. פשוט מעלים אותה — ו-VEYA כבר תבנה לכם את סידור השולחנות.</p>
+            <span class="kicker">הושבה בקליק</span>
+            <h2 id="seating-title" class="section-title">מסדרים מראש, חוסכים אחר כך</h2>
             <p class="section-sub">
-              ה-AI של VEYA מזהה את השולחנות, המספרים והמיקום שלהם והופך את
-              הסקיצה לאולם דיגיטלי מוכן לסידור הושבה.
+              ככל שתספרו ל-VEYA יותר על המוזמנים לאורך הדרך, כך יישאר לכם
+              פחות לעשות כשהאירוע מתקרב.
             </p>
           </div>
 
-          <div class="s2h-flow reveal d1">
-            <!-- לפני: הסקיצה שקיבלתם מהאולם -->
-            <figure class="s2h-card">
-              <figcaption class="s2h-cap">
-                <h3>הסקיצה מהאולם</h3>
-                <span class="s2h-tag">תמונה או צילום</span>
-              </figcaption>
-              <div class="s2h-frame">
-                <img
-                  src="/product/hall-sketch-before.jpg"
-                  alt="הסקיצה שהתקבלה מהאולם: 36 שולחנות בשש שורות, כל שולחן עם המספר שלו ומספר המקומות"
-                  width="565" height="780" loading="lazy" decoding="async"
-                  onerror="this.style.display='none'"
-                />
+          <div class="prep-grid">
+            <article class="prep-card reveal">
+              <div class="ic" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/></svg>
               </div>
-            </figure>
+              <h3>קבוצות ומשפחות</h3>
+              <p>משפחה, חברים, עבודה — מי חשוב לכם שישב יחד. זה מה שמחזיק שולחנות שלמים ביחד אחר כך.</p>
+            </article>
 
-            <div class="s2h-arrow" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
-            </div>
-
-            <!-- אחרי: אותו אולם בתוך VEYA — אותם מיקומים, אותם מספרים -->
-            <figure class="s2h-card s2h-card-out">
-              <figcaption class="s2h-cap">
-                <h3>האולם שלכם ב-VEYA</h3>
-                <span class="s2h-tag">מוכן לסידור הושבה</span>
-              </figcaption>
-              <div class="s2h-frame">
-                <img
-                  src="/product/hall-sketch-after.jpg"
-                  alt="אותו אולם אחרי הבנייה ב-VEYA: אותם שולחנות באותם מיקומים, כל אחד עם מקומות ישיבה ומצב תפוסה"
-                  width="775" height="1110" loading="lazy" decoding="async"
-                  onerror="this.style.display='none'"
-                />
+            <article class="prep-card reveal d1">
+              <div class="ic" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3.5h9L19 8v12.5H5.5z"/><path d="M14.5 3.5V8H19"/><path d="M8.5 12.5h7M8.5 16h4.5"/></svg>
               </div>
-            </figure>
+              <h3>הערות והעדפות</h3>
+              <p>מה שחשוב לזכור על כל מוזמן, בשפה שלכם:</p>
+              <div class="prep-chips">
+                <span class="prep-chip">ליד המשפחה</span>
+                <span class="prep-chip">רחוק מהרעש</span>
+                <span class="prep-chip">ליד הבר</span>
+                <span class="prep-chip">שולחן אבירים</span>
+                <span class="prep-chip">לא ליד עומר</span>
+              </div>
+            </article>
+
+            <article class="prep-card prep-sketch reveal d2">
+              <div class="ic" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 16.5 16.5 3.5l4 4-13 13z"/><path d="m13 7 2 2M10 10l2 2M7 13l2 2"/></svg>
+              </div>
+              <h3>סקיצת האולם</h3>
+              <p>
+                קיבלתם סקיצה מהאולם? מעלים אותה כמו שהיא. VEYA מזהה את
+                השולחנות, המספרים והמיקום שלהם — ומכינה מהם אולם שאפשר לעבוד איתו.
+              </p>
+              <div class="s2h-flow reveal d1">
+                <!-- לפני: הסקיצה שקיבלתם מהאולם -->
+                <figure class="s2h-card">
+                  <figcaption class="s2h-cap">
+                    <h3>הסקיצה מהאולם</h3>
+                    <span class="s2h-tag">תמונה או צילום</span>
+                  </figcaption>
+                  <div class="s2h-frame">
+                    <img
+                      src="/product/hall-sketch-before.jpg"
+                      alt="הסקיצה שהתקבלה מהאולם: 36 שולחנות בשש שורות, כל שולחן עם המספר שלו ומספר המקומות"
+                      width="565" height="780" loading="lazy" decoding="async"
+                      onerror="this.style.display='none'"
+                    />
+                  </div>
+                </figure>
+
+                <div class="s2h-arrow" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
+                </div>
+
+                <!-- אחרי: אותו אולם בתוך VEYA — אותם מיקומים, אותם מספרים -->
+                <figure class="s2h-card s2h-card-out">
+                  <figcaption class="s2h-cap">
+                    <h3>האולם שלכם ב-VEYA</h3>
+                    <span class="s2h-tag">מוכן לסידור הושבה</span>
+                  </figcaption>
+                  <div class="s2h-frame">
+                    <img
+                      src="/product/hall-sketch-after.jpg"
+                      alt="אותו אולם אחרי הבנייה ב-VEYA: אותם שולחנות באותם מיקומים, כל אחד עם מקומות ישיבה ומצב תפוסה"
+                      width="775" height="1110" loading="lazy" decoding="async"
+                      onerror="this.style.display='none'"
+                    />
+                  </div>
+                </figure>
+              </div>
+            </article>
           </div>
 
-          <div class="s2h-cta reveal">
-            <a href="/app?auth=register" class="btn btn-primary">נסו את VEYA <span class="arw" aria-hidden="true">←</span></a>
+          <p class="payoff-bridge reveal">ואז</p>
+
+          <div class="payoff">
+            <div class="reveal">
+              <h3>בלחיצה אחת — סידור הושבה ראשוני</h3>
+              <p class="payoff-lead">
+                VEYA לוקחת את כל מה שסידרתם — הקבוצות, ההערות, מי אישר הגעה
+                ומבנה האולם — ובונה מזה סידור הושבה שלם.
+              </p>
+            </div>
+
+            <div class="payoff-shot reveal d1">
+              <img
+                src="/product/seating.png"
+                alt="עורך מפת האולם של VEYA, עם שולחנות מסודרים ומוזמנים משובצים"
+                width="1400" height="875" loading="lazy" decoding="async"
+                onerror="this.style.display='none'"
+              />
+            </div>
+
+            <ul class="payoff-list reveal d2">
+              <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ומשם אתם בשליטה — מזיזים כל מוזמן, משנים כל שולחן</li>
+              <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>שולחן שנעלתם נשאר בדיוק כמו שהוא</li>
+              <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>לא אהבתם? מחזירים את הסידור הקודם בלחיצה</li>
+            </ul>
+          </div>
+
+          <div class="seating-cta reveal">
+            <a href="/app?auth=register" class="btn btn-primary">פותחים אירוע <span class="arw" aria-hidden="true">←</span></a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== GIFTS — מתנות באשראי =====
+           המסר היחיד שצריך להישאר בראש: האורחים נותנים, בעלי האירוע לא
+           משלמים. פירוט העמלה יושב ב-FAQ בכוונה — לא כאן, כדי שהסקשן לא
+           יהפוך להסבר על עמלות. כרטיס האשראי הוא HTML/CSS ולא תמונה, ונשאר
+           בדיוק כפי שהיה. -->
+      <section class="gifts" id="gifts" aria-labelledby="gifts-title">
+        <div class="wrap">
+          <div class="gifts-grid">
+            <div class="reveal">
+              <span class="kicker">מתנות באשראי</span>
+              <h2 id="gifts-title">האורחים נותנים מתנה באשראי.<br />אתם לא משלמים על השירות.</h2>
+              <p>
+                המוזמנים יכולים לתת מתנה בכרטיס אשראי ישירות מההזמנה — בלי
+                מזומן, בלי מעטפות ובלי להתעסק עם זה ביום האירוע.
+              </p>
+              <p>
+                הסכום שהם בחרו לתת מגיע אליכם במלואו. עלות השירות מתווספת
+                מעליו, והיא על נותן המתנה.
+              </p>
+
+              <ul class="gift-points">
+                <li class="gift-point">
+                  <h3>נוח למוזמנים</h3>
+                  <p>נותנים מתנה מהטלפון, בלי להוריד אפליקציה ובלי לפתוח חשבון.</p>
+                </li>
+                <li class="gift-point">
+                  <h3>פשוט לכם</h3>
+                  <p>אין מה לבקש, לאסוף או לספור ביום האירוע.</p>
+                </li>
+                <li class="gift-point">
+                  <h3>הכול מרוכז</h3>
+                  <p>רואים מי שלח, כמה ומתי — במסך אחד.</p>
+                </li>
+              </ul>
+
+              <div class="trust-row">
+                <span class="trust-chip"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>פרטי האשראי לא עוברים דרך VEYA</span>
+                <span class="trust-chip"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>הסכום המלא מגיע אליכם</span>
+              </div>
+            </div>
+            <div class="cc-stage reveal d1">
+              <div class="cc" role="img" aria-label="המחשה: כרטיס אשראי למתנה בעיצוב VEYA">
+                <div class="cc-top">
+                  <span class="cc-brand">VEYA</span>
+                  <span class="cc-gift"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M4 12v9h16v-9M12 8v13M12 8S9 3 6.5 5.5 12 8 12 8ZM12 8s3-5 5.5-2.5S12 8 12 8Z"/></svg>מתנה</span>
+                </div>
+                <div class="cc-chip" aria-hidden="true"></div>
+                <div class="cc-num" aria-hidden="true">•••• •••• •••• 1892</div>
+                <div class="cc-bottom">
+                  <div>
+                    <div class="cc-label">מתנה לאירוע</div>
+                    <div class="cc-name">משפחת כהן</div>
+                  </div>
+                  <div class="cc-gift"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>מאובטח</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -913,107 +1085,6 @@
         </div>
       </section>
 
-      <!-- ===== HOW IT WORKS (4 steps) ===== -->
-      <section class="how on-dark" id="how" aria-labelledby="how-title">
-        <div class="wrap">
-          <div class="section-head reveal">
-            <span class="kicker">איך VEYA עובדת</span>
-            <h2 id="how-title" class="section-title">מהרשימה הראשונה ועד יום האירוע — בארבעה צעדים</h2>
-            <p class="section-sub">בלי עקומת למידה. נכנסים ומתחילים לנהל תוך דקות.</p>
-          </div>
-          <div class="steps">
-            <div class="step reveal">
-              <div class="num" aria-hidden="true">1</div>
-              <h3>מעלים את המוזמנים</h3>
-              <p>מייבאים רשימה מאקסל או מוסיפים ידנית — בחלוקה לצדדים ולקבוצות.</p>
-            </div>
-            <div class="step reveal d1">
-              <div class="num" aria-hidden="true">2</div>
-              <h3>שולחים ואוספים אישורי הגעה</h3>
-              <p>שולחים הזמנות דיגיטליות בוואטסאפ, ואנחנו אוספים את התשובות ומעדכנים את הסטטוס אוטומטית.</p>
-            </div>
-            <div class="step reveal d2">
-              <div class="num" aria-hidden="true">3</div>
-              <h3>מסדרים הושבה חכמה</h3>
-              <p>מקבלים הצעת סידור הושבה אוטומטית על מפת האולם, גוררים ומדייקים מה שרוצים.</p>
-            </div>
-            <div class="step reveal d3">
-              <div class="num" aria-hidden="true">4</div>
-              <h3>מנהלים את האירוע במקום אחד</h3>
-              <p>עוקבים אחרי הכול מדשבורד אחד — סטטיסטיקות חיות, שינויים ברגע האחרון ומצב יום האירוע.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ===== DIFFERENTIATION ===== -->
-      <section class="diff" aria-labelledby="diff-title">
-        <div class="wrap">
-          <div class="section-head reveal">
-            <span class="kicker">למה VEYA</span>
-            <h2 id="diff-title" class="section-title">כבר ניסיתם אקסל וקבוצת וואטסאפ?</h2>
-            <p class="section-sub">זה עובד, עד שמישהו לא רואה הודעה, הטבלה מתיישנת ואי אפשר לזכור מי כבר ענה. VEYA מרכזת הכול במקום אחד שמתעדכן לבד.</p>
-          </div>
-          <div class="diff-grid">
-            <div class="diff-card reveal">
-              <div class="diff-before">טבלה שצריך לעדכן ידנית</div>
-              <div class="diff-after"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>מתעדכן לבד, בזמן אמת</div>
-            </div>
-            <div class="diff-card reveal d1">
-              <div class="diff-before">הודעות שנעלמות בתוך קבוצה</div>
-              <div class="diff-after"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>כל תשובה נשמרת ומתועדת</div>
-            </div>
-            <div class="diff-card reveal d2">
-              <div class="diff-before">פתקים ודפים שקל לאבד</div>
-              <div class="diff-after"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>הכול במקום אחד, מגובה אוטומטית</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ===== GIFTS (coming soon) ===== -->
-      <section class="gifts" aria-labelledby="gifts-title">
-        <div class="wrap">
-          <div class="gifts-grid">
-            <div class="reveal">
-              <span class="badge-soon">בקרוב</span>
-              <h2 id="gifts-title">מתנות באשראי — פשוט, נוח ומאובטח</h2>
-              <p>
-                אנחנו עובדים על הדרך הכי אלגנטית לתת מתנה. בקרוב המוזמנים יוכלו
-                להעביר לכם מתנה בכרטיס אשראי, ישירות מההזמנה — בלי מזומן, בלי
-                מעטפות ובלי טרחה ביום האירוע.
-              </p>
-              <p>
-                הכול יתנהל בסביבה מאובטחת ומוצפנת, עם חוויית תשלום פשוטה למוזמן
-                וסיכום ברור לכם — כחלק טבעי מניהול האירוע ב-VEYA.
-              </p>
-              <div class="trust-row">
-                <span class="trust-chip"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>תשלום מאובטח ומוצפן</span>
-                <span class="trust-chip"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6Z"/><path d="m9 12 2 2 4-4"/></svg>הגנה על הפרטים</span>
-                <span class="trust-chip"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>בלי מזומן ומעטפות</span>
-              </div>
-            </div>
-            <div class="cc-stage reveal d1">
-              <div class="cc" role="img" aria-label="המחשה: כרטיס אשראי למתנה בעיצוב VEYA">
-                <div class="cc-top">
-                  <span class="cc-brand">VEYA</span>
-                  <span class="cc-gift"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M4 12v9h16v-9M12 8v13M12 8S9 3 6.5 5.5 12 8 12 8ZM12 8s3-5 5.5-2.5S12 8 12 8Z"/></svg>מתנה</span>
-                </div>
-                <div class="cc-chip" aria-hidden="true"></div>
-                <div class="cc-num" aria-hidden="true">•••• •••• •••• 1892</div>
-                <div class="cc-bottom">
-                  <div>
-                    <div class="cc-label">מתנה לאירוע</div>
-                    <div class="cc-name">משפחת כהן</div>
-                  </div>
-                  <div class="cc-gift"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>מאובטח</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- ===== FAQ ===== -->
       <section class="faq-wrap" aria-labelledby="faq-title">
         <div class="wrap">
@@ -1024,35 +1095,31 @@
           <div class="faq">
             <details class="reveal">
               <summary>מה זה בעצם VEYA?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>VEYA מרכזת במקום אחד את כל מה שקשור למוזמנים ולאירוע — מהמוזמנים וההודעות, דרך אישורי ההגעה ועד סידור ההושבה.</p>
+              <p>VEYA מרכזת במקום אחד את כל מה שקשור למוזמנים ולאירוע — מהרשימה וההודעות, דרך אישורי ההגעה ועד סידור ההושבה.</p>
             </details>
             <details class="reveal">
-              <summary>מה אפשר לעשות עם VEYA?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>לנהל מוזמנים, לשלוח ולתזמן הודעות WhatsApp, לעקוב אחרי אישורי הגעה ולסדר את ההושבה.</p>
-            </details>
-            <details class="reveal">
-              <summary>יש לי כבר אקסל עם המוזמנים. צריך להתחיל הכול מחדש?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>לא. אפשר להכניס את רשימת המוזמנים שלכם ל-VEYA ולהמשיך משם.</p>
+              <summary>יש לי כבר אקסל עם המוזמנים. צריך להתחיל מחדש?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+              <p>לא. מעלים את הקובץ או מדביקים את הרשימה, VEYA מזהה את העמודות — וממשיכים משם.</p>
             </details>
             <details class="reveal">
               <summary>אפשר לבחור ולתזמן את ההודעות?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>כן. אפשר לבחור מתוך ספריית נוסחים ולתזמן מראש את ההודעות והתזכורות.</p>
+              <p>כן. בוחרים נוסח מוכן לכל שלב — הזמנה, תזכורות, יום האירוע ותודה — ומתזמנים מראש. שום הודעה לא יוצאת בלי אישור שלכם.</p>
             </details>
             <details class="reveal">
-              <summary>איך עובד סידור ההושבה?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>בונים את האולם בתוך VEYA, מסדרים את השולחנות ומשבצים את המוזמנים. אפשר גם לקבל הצעת הושבה אוטומטית.</p>
+              <summary>איך עובדת ההושבה בקליק?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+              <p>מסדרים את המוזמנים לקבוצות, מוסיפים הערות ומעלים את סקיצת האולם. בלחיצה אחת VEYA בונה מכל זה סידור הושבה ראשוני.</p>
             </details>
             <details class="reveal">
               <summary>VEYA באמת מסדרת את ההושבה לבד?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>VEYA יכולה להציע סידור לפי המוזמנים והנתונים שהזנתם. אתם תמיד מחליטים ויכולים לשנות הכול.</p>
+              <p>היא מציעה סידור לפי מה שהזנתם. ההחלטה תמיד שלכם — אפשר להזיז כל מוזמן ולשנות כל שולחן, ואם לא אהבתם, להחזיר את הסידור הקודם בלחיצה.</p>
             </details>
             <details class="reveal">
-              <summary>אפשר לראות מי אישר הגעה ומי עדיין לא?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>כן. רואים מי מגיע, מי לא מגיע, מי מתלבט ומי עדיין לא ענה.</p>
+              <summary>כמה עולה שירות המתנות באשראי?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+              <p>לכם — כלום. עלות השירות היא 4%, והיא מתווספת לסכום שנותן המתנה משלם. אתם מקבלים את מלוא הסכום שהוא בחר לתת.</p>
             </details>
             <details class="reveal">
-              <summary>אז מה בעצם VEYA חוסכת לי?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>את המעבר בין אקסלים, רשימות ו-WhatsApp. הכול נמצא במקום אחד, כך שקל יותר לדעת מה קורה עם המוזמנים והאירוע.</p>
+              <summary>המוזמנים צריכים להוריד אפליקציה?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+              <p>לא. הם מקבלים הודעה, לוחצים על הקישור ועונים. זהו.</p>
             </details>
           </div>
         </div>
@@ -1064,7 +1131,7 @@
           <div class="band reveal">
             <h2 id="cta-title">מוכנים לנהל את האירוע שלכם ברוגע?</h2>
             <p>פותחים אירוע בחינם, מעלים מוזמנים ומתחילים לאסוף אישורי הגעה — הכול במקום אחד.</p>
-            <a href="/app?auth=register" class="btn btn-primary">בואו נתחיל <span class="arw" aria-hidden="true">←</span></a>
+            <a href="/app?auth=register" class="btn btn-primary">פותחים אירוע — בחינם <span class="arw" aria-hidden="true">←</span></a>
           </div>
         </div>
       </section>
@@ -1088,7 +1155,8 @@
         </div>
         <nav aria-label="ניווט תחתון">
           <a href="#showcase">המערכת בפעולה</a>
-          <a href="#how">איך זה עובד</a>
+          <a href="#seating">הושבה בקליק</a>
+          <a href="#gifts">מתנות באשראי</a>
           <a href="/blog/">מדריכים</a>
           <a href="/app">כניסה למערכת</a>
         </nav>
@@ -1137,10 +1205,14 @@
         // IntersectionObserver הספיק לתפוס את המעבר, והתוכן נשאר opacity:0
         // לצמיתות. חושפים מיד כל reveal שכבר בתוך המסך בפועל.
         function revealVisible() {
+          // 0.92 מכוון לאותו סף כמו ה-IntersectionObserver למעלה
+          // (rootMargin -8%), כדי שרשת הביטחון לא תחשוף אלמנטים מוקדם ממנו
+          // ותשטח את הקצב של החשיפה ההדרגתית.
+          var limit = window.innerHeight * 0.92;
           els.forEach(function (el) {
             if (el.classList.contains('in')) return;
             var r = el.getBoundingClientRect();
-            if (r.top < window.innerHeight && r.bottom > 0) {
+            if (r.top < limit && r.bottom > 0) {
               el.classList.add('in');
               io.unobserve(el);
             }
@@ -1150,6 +1222,24 @@
         window.addEventListener('load', revealVisible);
         window.addEventListener('hashchange', revealVisible);
         if (location.hash) setTimeout(revealVisible, 350);
+
+        // גם קפיצת גלילה (עוגן, שחזור מיקום אחרי רענון, גלגלת אגרסיבית) עלולה
+        // לדלג על ה-IntersectionObserver ולהשאיר סקשן שלם שקוף. מאזין גלילה
+        // מווסת ב-rAF סוגר את הפער, ומסיר את עצמו ברגע שכל האלמנטים נחשפו —
+        // כך שאין עלות מתמשכת על הגלילה.
+        var ticking = false;
+        function onScroll() {
+          if (ticking) return;
+          ticking = true;
+          requestAnimationFrame(function () {
+            ticking = false;
+            revealVisible();
+            if (!document.querySelector('.reveal:not(.in)')) {
+              window.removeEventListener('scroll', onScroll);
+            }
+          });
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
       })();
 
       // Product Showcase — טאבים נגישים (role="tablist"), בלי ספריית JS חיצונית
