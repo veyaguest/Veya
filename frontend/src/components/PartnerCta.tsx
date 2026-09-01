@@ -2,20 +2,42 @@ import { useEffect, useState } from 'react'
 import { getAccountOverview, invitePartner } from '../api'
 import './PartnerCta.css'
 
+/** דגל דפדפן: הזוג בחר "לא עכשיו". מסתיר את הכרטיס לצמיתות במכשיר הזה —
+ * זו הצעה, לא מצב אירוע, ואין סיבה להמשיך להציע אחרי שאמרו לא. */
+const DISMISSED_KEY = 'veya_partner_cta_dismissed'
+
+function readDismissed(): boolean {
+  try {
+    return localStorage.getItem(DISMISSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
 /**
  * "מנהלים את האירוע יחד?" — כרטיס בדשבורד למי שעדיין לא צירף/ה את בן/בת הזוג.
  *
- * מוצג **רק** כשבאמת אין שותף/ה ואין הזמנה פתוחה. ברגע שנשלחה הזמנה או
- * שמישהו הצטרף, הכרטיס נעלם מעצמו — כדי שלא יהפוך לרעש קבוע בדשבורד.
- * זו התזכורת למי שדילג על ההזמנה בסיום יצירת האירוע (ואסור לחסום שם).
+ * מוצג **רק** כשבאמת אין שותף/ה, אין הזמנה פתוחה, והזוג לא ביקש להסתיר.
+ * ברגע שנשלחה הזמנה או שמישהו הצטרף, הכרטיס נעלם מעצמו — כדי שלא יהפוך
+ * לרעש קבוע בדשבורד. זו התזכורת למי שדילג על ההזמנה בסיום יצירת האירוע.
  */
 export function PartnerCta() {
   const [visible, setVisible] = useState(false)
+  const [dismissed, setDismissed] = useState(readDismissed)
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [sentTo, setSentTo] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  function dismiss() {
+    try {
+      localStorage.setItem(DISMISSED_KEY, '1')
+    } catch {
+      /* מצב פרטי / אחסון חסום — לפחות נסתיר לשארית הביקור */
+    }
+    setDismissed(true)
+  }
 
   useEffect(() => {
     let alive = true
@@ -46,7 +68,7 @@ export function PartnerCta() {
     }
   }
 
-  if (!visible) return null
+  if (!visible || dismissed) return null
 
   if (sentTo) {
     return (
@@ -70,9 +92,14 @@ export function PartnerCta() {
       </div>
 
       {!open ? (
-        <button type="button" className="btn-primary pcta-btn" onClick={() => setOpen(true)}>
-          הזמנת בן/בת זוג
-        </button>
+        <div className="pcta-actions">
+          <button type="button" className="btn-primary pcta-btn" onClick={() => setOpen(true)}>
+            הזמנת בן/בת זוג
+          </button>
+          <button type="button" className="btn-text pcta-dismiss" onClick={dismiss}>
+            לא עכשיו
+          </button>
+        </div>
       ) : (
         <form className="pcta-form" onSubmit={send}>
           <label className="pcta-label" htmlFor="pcta-email">

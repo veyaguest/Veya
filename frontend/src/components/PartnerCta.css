@@ -30,10 +30,31 @@
   color: var(--body);
 }
 
+/* שורת הפעולות: הכפתור הראשי + "לא עכשיו" לצידו. */
+.pcta-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  flex-shrink: 0;
+}
+
 /* המראה (זהב/radius/צל) מגיע מ-.btn-primary עצמו — כאן רק מיקום בתוך הכרטיס. */
 .pcta-btn {
   align-self: flex-start;
   flex-shrink: 0;
+}
+
+/* "לא עכשיו" — פעולה משנית שקטה לצד הכפתור, לא קישור. */
+.pcta-dismiss {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  font-size: 14px;
+  text-decoration: none;
+  color: var(--muted);
+}
+.pcta-dismiss:hover {
+  color: var(--body);
 }
 
 .pcta-form {
