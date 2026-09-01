@@ -101,6 +101,7 @@ def dashboard(
         pending_clarifications=pending_clar,
         guests_with_notes=guests_with_notes,
         group_notes_count=group_notes_count,
+        has_hall_sketch=bool(event.hall_sketch),
         groom_name=event.groom_name,
         bride_name=event.bride_name,
         venue_name=event.venue_name,

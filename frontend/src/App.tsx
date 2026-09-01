@@ -699,6 +699,7 @@ function App() {
               <DashboardPage
                 onNavigate={(p) => setPage(p)}
                 giftsEligible={giftsEligible}
+                currentUserId={user.id}
               />
             )}
             {page === 'guests' && <GuestsPage />}

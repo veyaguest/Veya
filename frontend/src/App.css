@@ -4084,95 +4084,98 @@ td.notes.seating {
   font-weight: 700;
   color: var(--charcoal);
 }
-.seating-helper-desc {
-  margin: 0 0 22px;
+/* כותרת המשנה — המסר המרכזי של הכרטיס, קו אחד מתחת לכותרת. */
+.seating-helper-lead {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gold-deep);
+}
+.seating-helper-intro {
+  margin: 0 0 18px;
   font-size: 14px;
   line-height: 1.65;
   color: var(--body);
 }
-/* ---- מד התקדמות ההושבה ----
-   ארבעת השלבים היו רשימה אנכית עם חץ בין שלב לשלב — כ-300px גובה
-   בלוח בקרה, בשביל מידע שכל תפקידו הוא "איפה אני עומד". אותם ארבעה
-   שלבים בשורה אחת: אותו מידע בדיוק, חמישית מהמקום, ונקרא כמסלול
-   התקדמות במקום כרשימת מטלות. */
-.seating-helper-steps {
+/* ---- ארבעה צעדים, זה מתחת לזה ----
+   שלושה דברים לעשות (קבוצות · הערות · סקיצה) ואז מה ש-VEYA עושה.
+   כל צעד: סימן (אימוג'י, או ✓ אם כבר בוצע) + כותרת + משפט הסבר.
+   לא אשף ולא מסך הדרכה — העין סורקת מלמעלה למטה בשנייה. */
+.shc-steps {
   list-style: none;
-  margin: 0 0 var(--space-5);
+  margin: 0 0 16px;
   padding: 0;
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-}
-.seating-helper-step {
-  position: relative;
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
+  gap: 14px;
 }
-/* הקו המחבר בין העיגולים — נמתח מהעיגול הנוכחי אל הבא, מאחורי
-   העיגולים עצמם. הפריט האחרון לא מקבל קו. */
-.seating-helper-step:not(.seating-helper-step--final)::after {
-  content: '';
-  position: absolute;
-  top: 15px;
-  inset-inline-end: calc(-50% + 15px + var(--space-2) / 2);
-  width: calc(100% - 30px - var(--space-2));
-  height: 2px;
-  background: var(--line);
+.shc-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
 }
-.seating-helper-step--done::after {
-  background: color-mix(in srgb, var(--gauge-confirmed) 45%, transparent);
-}
-.seating-helper-step-num {
+.shc-step-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 30px;
   height: 30px;
   flex-shrink: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--gold-deep);
-  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  font-size: 15px;
+  line-height: 1;
   border-radius: 50%;
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
 }
-.seating-helper-step-label {
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--body);
-  text-align: center;
-  line-height: var(--leading-snug);
-}
-/* ---- מצב אשף: "בוצע" (ירוק+וי), "כאן עכשיו" (זהב ומודגש), "עוד לא"
-   (מעומעם) — כדי שהכרטיס באמת יראה מסלול, לא רשימה סטטית. ---- */
-.seating-helper-step--done .seating-helper-step-num {
+.shc-step--done .shc-step-mark {
+  font-size: 15px;
+  font-weight: 700;
   color: #fff;
   background: var(--green);
 }
-.seating-helper-step--done .seating-helper-step-label {
+.shc-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.shc-step-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--charcoal);
+  line-height: var(--leading-snug);
+}
+.shc-step--done .shc-step-title {
+  color: var(--muted);
+}
+.shc-step-desc {
+  font-size: 13px;
+  line-height: 1.6;
   color: var(--body);
 }
-.seating-helper-step--current .seating-helper-step-num {
-  width: 34px;
-  height: 34px;
-  font-size: 14px;
-  color: #fff;
-  background: var(--gold-deep);
+/* הצעד הרביעי — מה ש-VEYA עושה, לא מטלה של הזוג. קו מפריד עדין מעליו. */
+.shc-step--outcome {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
 }
-.seating-helper-step--current .seating-helper-step-label {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--charcoal);
+.shc-step--outcome .shc-step-mark {
+  background: color-mix(in srgb, var(--gold-deep) 14%, transparent);
 }
-.seating-helper-step--upcoming .seating-helper-step-num {
-  color: var(--muted);
-  background: var(--line-2);
+/* "ומשם אתם בשליטה" — מרגיע: תמיד אפשר לתקן ידנית. */
+.seating-helper-closing {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--body);
 }
-.seating-helper-step--upcoming .seating-helper-step-label {
-  color: var(--muted);
+/* שורת ההמלצה — נבדלת מהגוף: התחלה מוקדמת חוסכת עבודה אחר כך. */
+.seating-helper-rec {
+  margin: 0 0 20px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--body);
+  background: var(--cream-2, color-mix(in srgb, var(--gold) 7%, transparent));
+  border-radius: var(--radius-s);
 }
 .seating-helper-cta {
   align-self: center;

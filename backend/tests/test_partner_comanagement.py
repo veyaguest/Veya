@@ -413,12 +413,12 @@ def test_18_activity_log_shows_who_did_what() -> None:
     assert "guest_party_size_update" in actions, [r["action"] for r in log]
     size_row = actions["guest_party_size_update"]
     assert size_row["actor_name"] == "דנה כהן", size_row
-    assert "מ-2 ל-4" in size_row["detail"], size_row["detail"]
+    assert "משפחת לוי" in size_row["detail"] and "4" in size_row["detail"], size_row["detail"]
 
     assert "seating_assign" in actions, [r["action"] for r in log]
     seat_row = actions["seating_assign"]
     assert seat_row["actor_name"] == "דנה כהן"
-    assert "שולחן 12" in seat_row["detail"], seat_row["detail"]
+    assert "משפחת לוי" in seat_row["detail"], seat_row["detail"]
 
     assert "partner_joined" in actions
 

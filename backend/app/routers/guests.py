@@ -17,13 +17,13 @@ _write = EventAccess(permissions.GUESTS_WRITE)
 
 router = APIRouter(prefix="/guests", tags=["guests"])
 
-# תוויות עברית לסטטוס אישור הגעה — עקביות עם RSVP_LABELS בצד הלקוח
-# (frontend/src/types.ts). משמשות רק לניסוח שורת יומן הפעילות.
-_RSVP_STATUS_LABELS_HE = {
-    "pending": "טרם השיב",
-    "confirmed": "מגיע",
-    "declined": "לא מגיע",
-    "maybe": "מתלבט",
+# ניסוח שורת יומן הפעילות לפי הסטטוס החדש — נייטרלי, בלי הטיית מין
+# (המערכת אינה שומרת מין מוזמן) ובלי "השתנה מ-X ל-Y".
+_RSVP_ACTIVITY_PHRASE = {
+    "confirmed": "אישור הגעה התקבל",
+    "declined": "ביטול הגעה התקבל",
+    "maybe": "עדכון הגעה: אולי",
+    "pending": "עדכון הגעה: ממתין לתשובה",
 }
 
 # תקרת גודל עמוד — מונעת שליפה ענקית אחת שתעמיס על השרת/דפדפן.
@@ -360,20 +360,18 @@ def update_guest(
         audit.record(
             db, "guest_party_size_update",
             event_id=event.id, user_id=user.id,
-            detail=(
-                f"כמות המוזמנים של {guest.full_name} השתנתה "
-                f"מ-{prev_party_size} ל-{guest.party_size}"
-            ),
+            detail=f"עודכנה כמות המוזמנים — {guest.full_name} ({guest.party_size})",
             ip=request.client.host if request.client else None,
         )
 
     if "rsvp_status" in changed and guest.rsvp_status != prev_rsvp_status:
-        prev_label = _RSVP_STATUS_LABELS_HE.get(prev_rsvp_status, prev_rsvp_status)
-        new_label = _RSVP_STATUS_LABELS_HE.get(guest.rsvp_status, guest.rsvp_status)
+        phrase = _RSVP_ACTIVITY_PHRASE.get(guest.rsvp_status, "עדכון אישור הגעה")
+        if guest.rsvp_status == "confirmed" and guest.confirmed_count:
+            phrase += f" ({guest.confirmed_count})"
         audit.record(
             db, "guest_rsvp_manual_update",
             event_id=event.id, user_id=user.id,
-            detail=f"{guest.full_name}: אישור הגעה השתנה מ'{prev_label}' ל'{new_label}'",
+            detail=f"{guest.full_name} — {phrase}",
             ip=request.client.host if request.client else None,
         )
 

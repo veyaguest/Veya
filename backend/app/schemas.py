@@ -525,6 +525,8 @@ class DashboardStats(BaseModel):
     # העדפות ישיבה (למדד המוכנות) — כמה מוזמנים עם הערה, וכמה קבוצות עם העדפה
     guests_with_notes: int = 0
     group_notes_count: int = 0
+    # האם כבר הועלתה סקיצת אולם — לצ'ק-ליסט של כרטיס "הושבה בקליק" בתמונת המצב
+    has_hall_sketch: bool = False
     # פרטי אירוע
     groom_name: str
     bride_name: str
@@ -1524,6 +1526,9 @@ class AuditLogRow(BaseModel):
     ip: Optional[str] = None
     created_at: datetime
     actor_name: str = ""
+    # מזהה המבצע — כדי שה-Frontend יבחין בין "אתם" למנהל השני ("אביב"),
+    # בלי לחשוף שם/מזהה מיותר בפעולה של המשתמש עצמו. ``None`` בפעולות מערכת.
+    actor_id: Optional[int] = None
 
 
 # ---- Timeline של אישורי-ההגעה (המנוע החופשי הישן — כללי/תבניות/תור —

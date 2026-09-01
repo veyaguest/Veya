@@ -1,25 +1,27 @@
 import { useEffect, useState } from 'react'
 import { readAudit } from '../api'
 import type { AuditLogRow } from '../types'
+import { strings } from '../strings/he'
 import './ActivityLog.css'
 
 /**
- * "יומן פעילות" — מי עשה מה ומתי באירוע.
+ * "יומן פעילות" — מה קרה באירוע ומתי, בשפה אנושית.
  *
- * הערך האמיתי שלו מתחיל כשמנהלים את האירוע בשניים: "אביב שינה את כמות
- * המוזמנים של משפחת כהן מ-2 ל-4", "דנה שיבצה את משפחת לוי לשולחן 12".
- * שני המנהלים רואים בדיוק את אותו יומן — הוא תלוי אירוע, לא משתמש.
+ * הערך האמיתי שלו מתחיל כשמנהלים את האירוע בשניים. שני המנהלים רואים
+ * בדיוק את אותו יומן — הוא תלוי אירוע, לא משתמש. כשמנהל *אחר* ביצע פעולה,
+ * שמו מופיע לפניה ("אביב · ..."); פעולה של המשתמש עצמו — בלי שם.
  *
  * מציג רק פעולות שיש להן משמעות לזוג. רשומות תשתית (גישה לקישור, אישורי
  * הסכמה וכו') נשארות ביומן בשרת אבל לא מוצגות כאן, כדי שהיומן יישאר קריא.
+ * הניסוח עצמו — ``strings.dashboard.activityLog`` וה-detail מהשרת; כאן רק
+ * ההרכבה (מי עשה + שורה ראשית + פירוט).
  */
 
-// action → נתיב SVG + תיאור קצר. מה שלא ברשימה פשוט לא מוצג.
+const t = strings.dashboard.activityLog
+
+// action → נתיב SVG. מה שלא ברשימה פשוט לא מוצג.
 //
-// קודם היו כאן אימוג'י (👥 ✅ 🪑 📝 📤 💌 💍 ✖️ 🔑). ביומן שכולו שורות
-// קצרות זה יצר עמודה של סמלים צבעוניים בגדלים ובסגנונות שונים, שמושכת
-// את העין חזק יותר מהתוכן עצמו. אותם אייקונים קוויים בצבע אחד נקראים
-// כסימון סוג, לא כקישוט.
+// אייקונים קוויים בצבע אחד — נקראים כסימון סוג, לא כקישוט.
 const ICONS: Record<string, string> = {
   people: 'M8.6 11a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4ZM3 19.4c0-3 2.5-5.2 5.6-5.2s5.6 2.2 5.6 5.2M16 6.2a2.7 2.7 0 1 1 0 5.4M17 14.3c2.5.4 4 2.4 4 5.1',
   check: 'M4.5 12.5l5 5 10-10',
@@ -32,16 +34,55 @@ const ICONS: Record<string, string> = {
   key: 'M15.5 3.5a5 5 0 1 0-4.2 7.7L4.5 18v2.5H7l1-1v-2h2v-2h2l1.3-1.3a5 5 0 0 0 2.2-10.7ZM16.6 7.4v.2',
 }
 
-const SHOWN: Record<string, { icon: keyof typeof ICONS; label: string }> = {
-  guest_party_size_update: { icon: 'people', label: 'עדכון כמות מוזמנים' },
-  guest_rsvp_manual_update: { icon: 'check', label: 'עדכון אישור הגעה' },
-  seating_assign: { icon: 'chair', label: 'שיבוץ להושבה' },
-  update_event: { icon: 'pencil', label: 'עדכון פרטי האירוע' },
-  send_invitations: { icon: 'send', label: 'שליחת הזמנות' },
-  partner_invited: { icon: 'mail', label: 'הזמנה לניהול משותף' },
-  partner_joined: { icon: 'rings', label: 'הצטרפות לניהול האירוע' },
-  partner_invite_cancelled: { icon: 'close', label: 'ביטול הזמנה' },
-  event_ownership_transferred: { icon: 'key', label: 'העברת ניהול האירוע' },
+const ICON_FOR: Record<string, keyof typeof ICONS> = {
+  guest_party_size_update: 'people',
+  guest_rsvp_manual_update: 'check',
+  seating_assign: 'chair',
+  update_event: 'pencil',
+  send_invitations: 'send',
+  partner_invited: 'mail',
+  partner_joined: 'rings',
+  partner_invite_cancelled: 'close',
+  event_ownership_transferred: 'key',
+}
+
+// פעולות שה-detail שלהן כבר משפט שלם שמזכיר אדם ("אביב הצטרף/ה לניהול") —
+// אין להוסיף לפניהן ייחוס בשם, זה היה יוצר כפילות.
+const SELF_EVIDENT = new Set([
+  'partner_invited',
+  'partner_joined',
+  'partner_invite_cancelled',
+  'event_ownership_transferred',
+])
+
+/** מרכיב את מה שמוצג לשורה אחת: כותרת ("מה קרה") + פירוט אופציונלי. */
+function describe(
+  row: AuditLogRow,
+  currentUserId?: number,
+): { main: string; sub?: string } {
+  const byOther =
+    row.actor_id != null &&
+    currentUserId != null &&
+    row.actor_id !== currentUserId &&
+    !!row.actor_name &&
+    !SELF_EVIDENT.has(row.action)
+  const who = byOther ? row.actor_name! : ''
+
+  if (row.action === 'update_event') {
+    return {
+      main: who ? t.updateEventBy(who) : t.updateEventSelf,
+      sub: row.detail || undefined,
+    }
+  }
+
+  // ``detail`` בשורה אחת = שורה ראשית. ``detail`` עם שורות = ראשונה ראשית,
+  // השאר יורד לשורת המשנה השקטה (למשל "חסר מספר טלפון תקין").
+  const base = row.detail || t.labels[row.action] || ''
+  const [head, ...rest] = base.split('\n')
+  return {
+    main: who ? t.byOther(who, head) : head,
+    sub: rest.join('\n') || undefined,
+  }
 }
 
 /** "לפני 5 דקות" / "אתמול" — זמן יחסי קצר, בעברית. */
@@ -62,7 +103,7 @@ function timeAgo(iso: string): string {
   return new Date(then).toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' })
 }
 
-export function ActivityLog() {
+export function ActivityLog({ currentUserId }: { currentUserId?: number }) {
   const [rows, setRows] = useState<AuditLogRow[] | null>(null)
 
   useEffect(() => {
@@ -77,27 +118,26 @@ export function ActivityLog() {
 
   if (rows === null) return null
 
-  const items = rows.filter((r) => SHOWN[r.action]).slice(0, 12)
+  const items = rows.filter((r) => ICON_FOR[r.action]).slice(0, 12)
   if (items.length === 0) return null
 
   return (
     <div className="alog-card">
-      <h3 className="alog-title">יומן פעילות</h3>
+      <h3 className="alog-title">{t.title}</h3>
       <ul className="alog-list">
         {items.map((row) => {
-          const meta = SHOWN[row.action]
+          const { main, sub } = describe(row, currentUserId)
+          if (!main) return null
           return (
             <li key={row.id} className="alog-item">
               <span className="alog-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d={ICONS[meta.icon]} />
+                  <path d={ICONS[ICON_FOR[row.action]]} />
                 </svg>
               </span>
               <span className="alog-body">
-                <span className="alog-text">
-                  {row.actor_name && <strong>{row.actor_name}: </strong>}
-                  {row.detail || meta.label}
-                </span>
+                <span className="alog-text">{main}</span>
+                {sub && <span className="alog-sub">{sub}</span>}
               </span>
               <span className="alog-time">{timeAgo(row.created_at)}</span>
             </li>

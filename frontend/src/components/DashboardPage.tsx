@@ -41,6 +41,8 @@ interface Props {
    * הפניה למסך שממילא אינו קיים לאירוע הזה.
    */
   giftsEligible?: boolean
+  /** מזהה המשתמש המחובר — ליומן הפעילות, לזיהוי "אתם" מול המנהל השני. */
+  currentUserId?: number
 }
 
 const t = strings.dashboard
@@ -189,54 +191,60 @@ function PayoutReminder({
   )
 }
 
-/** קובע איפה הזוג נמצא בתהליך ההכנה להושבה, לפי נתונים אמיתיים בלבד —
- * לא הנחה. שלב 4 (הושבה) פתוח רק אחרי שיש גם מוזמנים, גם קבוצות אמיתיות
- * (לא כולם "אחר") וגם הערה אחת לפחות (הושבה או קבוצה). */
-function seatingReadinessStep(stats: DashboardStats): number {
-  const hasGuests = stats.total_guests > 0
-  if (!hasGuests) return 0
+/** אילו משלושת צעדי ההכנה כבר בוצעו — לפי נתונים אמיתיים בלבד, לא הנחה.
+ * [0] קבוצות: יש מוזמנים ולפחות אחד לא בקבוצת "אחר".
+ * [1] הערות: הערת הושבה על מוזמן, או העדפה שהוגדרה לקבוצה.
+ * [2] סקיצה: הועלתה סקיצת אולם. */
+function seatingPrepDone(stats: DashboardStats): [boolean, boolean, boolean] {
   const other = (stats.by_group as Record<string, number>).other ?? 0
-  const hasGroups = stats.total_guests - other > 0
-  if (!hasGroups) return 1
-  const hasNotes = stats.guests_with_notes > 0 || stats.group_notes_count > 0
-  if (!hasNotes) return 2
-  return 3
+  return [
+    stats.total_guests > 0 && stats.total_guests - other > 0,
+    stats.guests_with_notes > 0 || stats.group_notes_count > 0,
+    stats.has_hall_sketch,
+  ]
 }
 
-/** "סידורי הושבה בלי כאב הראש" — הכרטיס המרכזי לפיצ'ר הדגל: מסביר את
- * הערך, ומוביל אשף מדורג (מוזמנים → קבוצות → הערות → הושבה חכמה) — לא
- * זורק את הזוג ישר לעורך אולם ריק. ה-CTA "חכם": כל עוד לא הושלמו שלבי
- * ההכנה הוא מוביל למסך המוזמנים (שם מוסיפים מוזמנים, קובעים קבוצות
- * ומזינים הערות הושבה); רק כשהכול מוכן הוא נפתח למפת האולם. */
+/** כרטיס "הושבה בקליק" — המלצה שימושית של VEYA בתמונת המצב: שלושה דברים
+ * קטנים שכדאי לסדר מראש (קבוצות, הערות, סקיצה), ואז VEYA בונה סידור
+ * הושבה ראשוני. שלושת הצעדים מסומנים ✓ לפי מה שכבר נעשה. ה-CTA מוביל
+ * למסך המוזמנים (שם מתחילים) — או ישר למפת האולם כשההכנה הושלמה. */
 function SeatingHelperCard({ stats, onNavigate }: { stats: DashboardStats; onNavigate?: (page: ReadinessPage) => void }) {
-  const steps = t.seatingHelperSteps
-  const currentStep = seatingReadinessStep(stats)
-  const ready = currentStep >= steps.length - 1
+  const s = t.seatingHelper
+  const done = seatingPrepDone(stats)
+  const allDone = done.every(Boolean)
   return (
     <div className="seating-helper-card">
-      <h3 className="seating-helper-title">{t.seatingHelperTitle}</h3>
-      <p className="seating-helper-desc">{t.seatingHelperDesc}</p>
-      <ol className="seating-helper-steps">
-        {steps.map((step, i) => {
-          const isFinal = i === steps.length - 1
-          const status = i < currentStep ? 'done' : i === currentStep ? 'current' : 'upcoming'
-          return (
-            <li
-              key={step}
-              className={`seating-helper-step seating-helper-step--${status}${isFinal ? ' seating-helper-step--final' : ''}`}
-            >
-              <span className="seating-helper-step-num">{status === 'done' ? '✓' : i + 1}</span>
-              <span className="seating-helper-step-label">{step}</span>
-            </li>
-          )
-        })}
-      </ol>
+      <h3 className="seating-helper-title">{s.title}</h3>
+      <p className="seating-helper-lead">{s.lead}</p>
+      <p className="seating-helper-intro">{s.intro}</p>
+      <ul className="shc-steps">
+        {s.steps.map((step, i) => (
+          <li key={step.title} className={`shc-step${done[i] ? ' shc-step--done' : ''}`}>
+            <span className="shc-step-mark" aria-hidden="true">
+              {done[i] ? '✓' : step.emoji}
+            </span>
+            <span className="shc-step-body">
+              <span className="shc-step-title">{step.title}</span>
+              <span className="shc-step-desc">{step.desc}</span>
+            </span>
+          </li>
+        ))}
+        <li className="shc-step shc-step--outcome">
+          <span className="shc-step-mark" aria-hidden="true">{s.outcome.emoji}</span>
+          <span className="shc-step-body">
+            <span className="shc-step-title">{s.outcome.title}</span>
+            <span className="shc-step-desc">{s.outcome.desc}</span>
+          </span>
+        </li>
+      </ul>
+      <p className="seating-helper-closing">{s.closing}</p>
+      <p className="seating-helper-rec">{s.recommendation}</p>
       <button
         type="button"
         className="seating-helper-cta"
-        onClick={() => onNavigate?.(ready ? 'hall' : 'guests')}
+        onClick={() => onNavigate?.(allDone ? 'hall' : 'guests')}
       >
-        {ready ? t.seatingHelperCtaReady : t.seatingHelperCta}
+        {allDone ? s.ctaReady : s.cta}
       </button>
     </div>
   )
@@ -353,7 +361,7 @@ function formatDateValue(iso: string): string {
   return m ? `${m[3]}.${m[2]}.${m[1]}` : iso
 }
 
-export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
+export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId }: Props) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [event, setEvent] = useState<EventDetails | null>(null)
   const [editing, setEditing] = useState(false)
@@ -862,7 +870,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false }: Props) {
             {/* ---- יומן פעילות: מי שינה מה ומתי. מקבל משמעות אמיתית
                  כשמנהלים את האירוע בשניים — שני המנהלים רואים אותו יומן. ---- */}
             <section className="rsvp-feed-section">
-              <ActivityLog />
+              <ActivityLog currentUserId={currentUserId} />
             </section>
 
             {/* ---- סידורי הושבה — אשף מדורג לפיצ'ר הדגל. יושב נמוך במסך:

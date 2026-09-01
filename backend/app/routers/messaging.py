@@ -151,10 +151,13 @@ def send_invitations(
             failed += 1
             last_detail = res.detail
 
+    _detail = f"נשלחו {sent} הזמנות"
+    if failed:
+        _detail += f" · {failed} לא נשלחו"
     audit.record(
         db, "send_invitations",
         event_id=event.id, user_id=user.id,
-        detail=f"נשלחו {sent}, נכשלו {failed}, דולגו {skipped}",
+        detail=_detail,
         ip=request.client.host if request.client else None,
     )
     db.commit()

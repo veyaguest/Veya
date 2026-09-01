@@ -95,10 +95,10 @@ def _assert_core_unchanged(event: models.Event, changed: dict) -> None:
 
 
 def _describe_changed_fields(changed: dict) -> str:
-    """הופך את שמות השדות הטכניים שהשתנו למשפט עברי קריא ליומן הפעילות.
+    """רשימת מה שהשתנה, בעברית קריאה — שורת המשנה ביומן הפעילות מתחת ל
+    "עדכנתם את פרטי האירוע". מחרוזת ריקה = אין פירוט להציג.
 
-    כך הזוג רואה "עדכנתם: שמות בני הזוג, פרטי האולם" ולא "עודכנו שדות:
-    groom_name, venue_name".
+    כך הזוג רואה "פרטי האולם ותמונת ההזמנה" ולא "groom_name, venue_name".
     """
     categories = [
         (("event_type",), "סוג האירוע"),
@@ -112,8 +112,10 @@ def _describe_changed_fields(changed: dict) -> str:
     ]
     labels = [label for keys, label in categories if any(k in changed for k in keys)]
     if not labels:
-        return "עדכנתם את פרטי האירוע"
-    return "עדכנתם: " + ", ".join(labels)
+        return ""
+    if len(labels) == 1:
+        return labels[0]
+    return ", ".join(labels[:-1]) + " ו" + labels[-1]
 
 
 def _event_read(db: Session, event: models.Event) -> schemas.EventRead:
@@ -258,5 +260,6 @@ def read_audit(
     for row in rows:
         item = schemas.AuditLogRow.model_validate(row)
         item.actor_name = names.get(row.user_id, "") if row.user_id else ""
+        item.actor_id = row.user_id
         result.append(item)
     return result

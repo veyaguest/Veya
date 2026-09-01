@@ -462,21 +462,14 @@ def assign_seat(
     previous_table = guest.table_number
     guest.table_number = payload.table_number
 
-    # יומן פעילות: "דנה שיבצה את משפחת לוי לשולחן 12". נרשם רק כששולחן
-    # המוזמן באמת השתנה — גרירה שחזרה לאותו מקום לא אמורה למלא את היומן.
+    # יומן פעילות: "עודכנה ההושבה — משפחת לוי". נרשם רק כששולחן המוזמן
+    # באמת השתנה — גרירה שחזרה לאותו מקום לא אמורה למלא את היומן. בלי
+    # מספרי שולחן ובלי "הועבר מ-X ל-Y" — פרט פנימי שלא מעניין את הזוג.
     if previous_table != guest.table_number:
-        if guest.table_number is None:
-            detail = f"{guest.full_name} הוצא/ה משולחן {previous_table}"
-        elif previous_table is None:
-            detail = f"{guest.full_name} שובץ/ה לשולחן {guest.table_number}"
-        else:
-            detail = (
-                f"{guest.full_name} הועבר/ה משולחן {previous_table} "
-                f"לשולחן {guest.table_number}"
-            )
         audit.record(
             db, "seating_assign", event_id=event.id, user_id=user.id,
-            detail=detail, ip=request.client.host if request.client else None,
+            detail=f"עודכנה ההושבה — {guest.full_name}",
+            ip=request.client.host if request.client else None,
         )
 
     db.commit()

@@ -195,7 +195,7 @@ def test_manual_status_change_creates_audit_event_for_dashboard_feed() -> None:
 
         rows = _audit_action_rows(api, "guest_rsvp_manual_update")
         assert len(rows) == 1, f"ציפינו לרשומת יומן אחת: {rows}"
-        assert rows[0]["detail"] == "ישראל כהן: אישור הגעה השתנה מ'טרם השיב' ל'מגיע'", rows[0]
+        assert rows[0]["detail"] == "ישראל כהן — אישור הגעה התקבל", rows[0]
 
         # PATCH עם אותו ערך — לא אמור ליצור רשומה כפולה.
         r = api.client.patch(f"/guests/{gid}", headers=api.headers,
@@ -217,7 +217,7 @@ def test_manual_status_change_creates_audit_event_for_dashboard_feed() -> None:
         assert r.status_code == 200, r.text
         rows = _audit_action_rows(api, "guest_rsvp_manual_update")
         assert len(rows) == 2, rows
-        assert rows[0]["detail"] == "ישראל כהן: אישור הגעה השתנה מ'מגיע' ל'מתלבט'", rows[0]
+        assert rows[0]["detail"] == "ישראל כהן — עדכון הגעה: אולי", rows[0]
 
         print("✓ שינוי סטטוס ידני יוצר רשומת יומן פעילות אחת, בלי כפילויות")
     finally:

@@ -306,7 +306,7 @@ def activate_track(
     if invitations_sent or failed:
         detail = f"נשלחו {invitations_sent} הזמנות"
         if failed:
-            detail += f" · {failed} נכשלו"
+            detail += f" · {failed} לא נשלחו"
         audit.record(
             db, "send_invitations",
             event_id=event.id, user_id=user.id, detail=detail, ip=ip,
@@ -316,15 +316,14 @@ def activate_track(
         audit.record(
             db, "send_invitations",
             event_id=event.id, user_id=user.id,
-            detail=f"{skipped_total} מוזמנים לא קיבלו הזמנה עקב מספר טלפון חסר/לא תקין או תוכן ריק",
+            detail=f"{skipped_total} מוזמנים לא קיבלו הזמנה\nחסר מספר טלפון תקין",
             ip=ip,
         )
     if resend_skipped:
         audit.record(
             db, "send_invitations",
             event_id=event.id, user_id=user.id,
-            detail=f"{resend_skipped} מוזמנים כבר קיבלו הזמנה — לא נשלחה שוב "
-                   "(שליחה חוזרת מותרת לאדמין בלבד)",
+            detail=f"{resend_skipped} מוזמנים כבר קיבלו הזמנה קודם — לא נשלחה שוב",
             ip=ip,
         )
     if newly_activated:

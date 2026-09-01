@@ -533,6 +533,7 @@ export interface DashboardStats {
   pending_clarifications: number
   guests_with_notes: number
   group_notes_count: number
+  has_hall_sketch: boolean
   groom_name: string
   bride_name: string
   venue_name: string
@@ -634,6 +635,9 @@ export interface AuditLogRow {
   // שם מי שביצע את הפעולה. ריק בפעולות מערכת/אנונימיות (למשל אישור הגעה
   // שהגיע ממוזמן דרך הקישור האישי, בלי משתמש מחובר).
   actor_name?: string
+  // מזהה המבצע — לזיהוי "אתם" מול המנהל השני ביומן הפעילות. null/undefined
+  // בפעולות מערכת.
+  actor_id?: number | null
 }
 
 // ---- מפת אולם (שלב 7) ----
