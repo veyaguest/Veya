@@ -1,0 +1,228 @@
+<!doctype html>
+<!--
+  מחולל אייקוני המותג של VEYA (מקור אמת להפקה חוזרת).
+  פותחים את הקובץ בדפדפן (דרך שרת מקומי כלשהו כדי שה-Google Fonts ייטענו),
+  לוחצים ימני על כל קנבס → "שמור תמונה בשם", ושומרים אל frontend/public/:
+    apple-touch-icon.png · icon-192.png · icon-512.png · favicon-96x96.png · og-image.png
+  הצבעים והגאומטריה נגזרים מ-favicon.svg ומטוקני העיצוב ב-App.css
+  (--charcoal #2b2620, --gold #c9a227, --gold-light #e4c96b).
+-->
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<title>VEYA icon renderer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Frank+Ruhl+Libre:wght@400;500&family=Assistant:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  body { background:#111; color:#eee; font-family:system-ui, sans-serif; margin:16px; }
+  canvas { image-rendering:pixelated; background:#333; margin:6px; vertical-align:top; }
+  .row { display:flex; flex-wrap:wrap; align-items:flex-start; }
+  figure { margin:0 12px 12px 0; }
+  figcaption { font-size:12px; }
+</style>
+</head>
+<body>
+<h1>VEYA icon renderer</h1>
+<div id="stage" class="row"></div>
+<script>
+const BROWN = '#2b2620';
+const GOLD  = '#c9a227';
+const GOLDL = '#e4c96b';
+
+// ---- monogram, authored in a 512 unit box, ring centred at (256,256) ----
+const U = 512;
+const CX = 256, CY = 256;
+const OUTER_R = 190, INNER_R = 172, RING_W = 2.5;
+const DIA_H = 19;            // half diagonal of the 12-o'clock diamond
+const V_SIZE = 209;          // Cormorant Garamond cap-V
+
+function drawMonogram(ctx, scale, unit) {
+  // scale: shrink the monogram around the centre (1 = same as favicon.svg)
+  // unit : px per authoring-unit
+  const px = v => v * unit;
+  const cx = px(CX), cy = px(CY);
+  const oR = px(OUTER_R) * scale;
+  const iR = px(INNER_R) * scale;
+  const ringW = Math.max(px(RING_W) * scale, unit * 1.6);
+
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // inner ring (faint)
+  ctx.beginPath();
+  ctx.arc(cx, cy, iR, 0, Math.PI * 2);
+  ctx.strokeStyle = GOLD;
+  ctx.globalAlpha = 0.45;
+  ctx.lineWidth = ringW;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // outer ring, with a small gap at 12 o'clock where the diamond sits
+  const gap = 0.085; // radians each side of top
+  ctx.beginPath();
+  ctx.arc(cx, cy, oR, -Math.PI / 2 + gap, -Math.PI / 2 - gap + Math.PI * 2);
+  ctx.strokeStyle = GOLD;
+  ctx.lineWidth = ringW;
+  ctx.stroke();
+
+  // diamond (outline only) centred on the outer ring at the top
+  const dTop = cy - oR;
+  const dH = px(DIA_H) * scale;
+  ctx.beginPath();
+  ctx.moveTo(cx, dTop - dH);
+  ctx.lineTo(cx + dH, dTop);
+  ctx.lineTo(cx, dTop + dH);
+  ctx.lineTo(cx - dH, dTop);
+  ctx.closePath();
+  ctx.strokeStyle = GOLD;
+  ctx.lineWidth = ringW;
+  ctx.stroke();
+
+  // V
+  ctx.fillStyle = GOLDL;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '500 ' + (px(V_SIZE) * scale) + "px 'Cormorant Garamond', Georgia, serif";
+  ctx.fillText('V', cx, cy - px(8) * scale);
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// Render at 4x then downscale for crisp edges
+function makeCanvas(size, paint) {
+  const SS = 4;
+  const big = document.createElement('canvas');
+  big.width = big.height = size * SS;
+  const bctx = big.getContext('2d');
+  paint(bctx, size * SS);
+
+  const out = document.createElement('canvas');
+  out.width = out.height = size;
+  const octx = out.getContext('2d');
+  octx.imageSmoothingEnabled = true;
+  octx.imageSmoothingQuality = 'high';
+  octx.drawImage(big, 0, 0, size, size);
+  return out;
+}
+
+// ---- individual icons ----
+function paintAppIcon(ctx, size) {
+  // full-bleed brown square, monogram shrunk to a safe zone for maskable/rounded masks
+  ctx.fillStyle = BROWN;
+  ctx.fillRect(0, 0, size, size);
+  drawMonogram(ctx, 0.78, size / U);
+}
+
+function paintFavicon(ctx, size) {
+  // rounded-square brown tile + faint gold glow (matches favicon.svg), tight crop
+  const unit = size / U;
+  roundRectPath(ctx, 0, 0, size, size, 112 * unit);
+  ctx.fillStyle = BROWN;
+  ctx.fill();
+  const g = ctx.createRadialGradient(size * 0.15, 0, 0, size * 0.15, 0, size * 0.55);
+  g.addColorStop(0, 'rgba(201,162,39,0.09)');
+  g.addColorStop(1, 'rgba(201,162,39,0)');
+  ctx.fillStyle = g;
+  ctx.fill();
+  drawMonogram(ctx, 1, unit);
+}
+
+function paintOg(ctx, w, h) {
+  ctx.fillStyle = BROWN;
+  ctx.fillRect(0, 0, w, h);
+  const g = ctx.createRadialGradient(w * 0.16, 0, 0, w * 0.16, 0, w * 0.7);
+  g.addColorStop(0, 'rgba(201,162,39,0.10)');
+  g.addColorStop(1, 'rgba(201,162,39,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+
+  // monogram, centred horizontally, upper area
+  const unit = (h * 0.5) / U;         // monogram box ~ 50% of height
+  const boxPx = U * unit;
+  ctx.save();
+  ctx.translate((w - boxPx) / 2, h * 0.11);
+  drawMonogram(ctx, 1, unit);
+  ctx.restore();
+
+  const midX = w / 2;
+  // wordmark
+  ctx.fillStyle = '#f5efe2';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = "600 92px 'Cormorant Garamond', Georgia, serif";
+  const word = 'V E Y A';
+  ctx.fillText(word, midX, h * 0.72);
+
+  // tagline
+  ctx.fillStyle = GOLD;
+  ctx.font = "500 27px 'Frank Ruhl Libre', 'Assistant', serif";
+  ctx.fillText('מערכת חכמה לאירועים', midX, h * 0.82);
+  // flanking rules
+  const tw = ctx.measureText('מערכת חכמה לאירועים').width;
+  ctx.strokeStyle = GOLD;
+  ctx.globalAlpha = 0.7;
+  ctx.lineWidth = 1;
+  const ry = h * 0.815;
+  ctx.beginPath();
+  ctx.moveTo(midX - tw / 2 - 60, ry); ctx.lineTo(midX - tw / 2 - 20, ry);
+  ctx.moveTo(midX + tw / 2 + 20, ry); ctx.lineTo(midX + tw / 2 + 60, ry);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+const RESULTS = {};
+function register(name, canvas) {
+  RESULTS[name] = canvas.toDataURL('image/png');
+  const fig = document.createElement('figure');
+  const cap = document.createElement('figcaption');
+  cap.textContent = name;
+  canvas.style.width = Math.min(canvas.width, 180) + 'px';
+  canvas.style.height = 'auto';
+  fig.appendChild(canvas);
+  fig.appendChild(cap);
+  document.getElementById('stage').appendChild(fig);
+}
+
+async function run() {
+  await document.fonts.load("500 200px 'Cormorant Garamond'");
+  await document.fonts.load("600 92px 'Cormorant Garamond'");
+  await document.fonts.load("500 27px 'Frank Ruhl Libre'");
+  await document.fonts.ready;
+
+  register('apple-touch-icon.png', makeCanvas(180, (c, s) => paintAppIcon(c, s)));
+  register('icon-192.png',        makeCanvas(192, (c, s) => paintAppIcon(c, s)));
+  register('icon-512.png',        makeCanvas(512, (c, s) => paintAppIcon(c, s)));
+  register('favicon-96x96.png',   makeCanvas(96,  (c, s) => paintFavicon(c, s)));
+
+  // og-image 1200x630
+  {
+    const SS = 2;
+    const big = document.createElement('canvas');
+    big.width = 1200 * SS; big.height = 630 * SS;
+    const bctx = big.getContext('2d');
+    bctx.scale(SS, SS);
+    paintOg(bctx, 1200, 630);
+    const out = document.createElement('canvas');
+    out.width = 1200; out.height = 630;
+    const octx = out.getContext('2d');
+    octx.imageSmoothingQuality = 'high';
+    octx.drawImage(big, 0, 0, 1200, 630);
+    register('og-image.png', out);
+  }
+
+  window.__READY__ = true;
+  document.title = 'READY';
+}
+run();
+</script>
+</body>
+</html>
