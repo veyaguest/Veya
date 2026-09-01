@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /confirm/
 
-Sitemap: https://veya-snowy.vercel.app/sitemap.xml
+Sitemap: https://veyaguest.co.il/sitemap.xml

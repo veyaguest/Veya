@@ -27,7 +27,8 @@
 
 ## SEO טכני (מצב קיים)
 - הדף כבר `dir="rtl" lang="he"`, יש OG/Twitter tags (`frontend/index.html`).
-- **פערים:** דומיין רשמי `[לאימות]` (כרגע `veya-snowy.vercel.app`), sitemap,
+- **דומיין רשמי:** `veyaguest.co.il` — canonical/OG/sitemap/robots כבר מפנים אליו.
+- **פערים:** sitemap,
   נתוני structured data, מהירות (Performance — `architecture.md`), דפי נחיתה
   ייעודיים (כרגע SPA יחיד).
 

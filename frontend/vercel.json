@@ -1,5 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": { "eq": "veya-snowy.vercel.app" } }],
+      "destination": "https://veyaguest.co.il/:path*",
+      "statusCode": 301
+    }
+  ],
   "rewrites": [
     { "source": "/app", "destination": "/app.html" },
     { "source": "/app/(.*)", "destination": "/app.html" },
