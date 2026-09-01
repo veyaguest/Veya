@@ -243,10 +243,18 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
                       <li key={g.id}>
                         <button type="button" className="fin-result" onClick={() => pick(g)}>
                           <span className="fin-result-name">{g.full_name}</span>
-                          {/* כמה אנשים מיוצגים ברשומה — זה מה שמבדיל את
-                              "משפחת כהן" מ"דני כהן" ברשימת התוצאות. */}
+                          {/* כמה אנשים מיוצגים ברשומה (מבדיל את "משפחת
+                              כהן" מ"דני כהן"), ולצידו סטטוס ההגעה — כדי
+                              שהזוג יראה שבחר את האדם הנכון.
+
+                              הסטטוס **מוצג ולא מסנן**: החיפוש רץ על כל
+                              המוזמנים, כי מי שביטל הגעה או לא ענה יכול
+                              בהחלט לשלוח מתנה. */}
                           <span className="fin-result-meta">
                             {t.resultPartySize(g.party_size)}
+                            <span className={`fin-result-rsvp rsvp-${g.rsvp_status}`}>
+                              {t.rsvpLabels[g.rsvp_status] ?? g.rsvp_status}
+                            </span>
                           </span>
                         </button>
                       </li>

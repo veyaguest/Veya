@@ -42,6 +42,7 @@ import type {
   Expense,
   ExpenseCategory,
   ExpenseInput,
+  FinanceReport,
   FinanceSummary,
   GiftCounting,
   GiftEntry,
@@ -1790,4 +1791,15 @@ export async function updateEnvelope(id: number, input: EnvelopeInput): Promise<
 export async function deleteEnvelope(id: number): Promise<void> {
   const res = await apiFetch(`/finance/envelopes/${id}`, { method: 'DELETE' })
   if (!res.ok) throw await toError(res)
+}
+
+/** הדוח הסופי — שורה לכל מוזמן + כל הסיכומים.
+ *
+ *  נתיב נפרד מ-``/finance`` בכוונה: הוא מכיל מאות שורות ונדרש פעם אחת,
+ *  בסוף. גרירה שלו בכל טעינת מסך הייתה מאטה את המסך בשביל נתון שאיש
+ *  לא מסתכל עליו רוב הזמן. */
+export async function getFinanceReport(): Promise<FinanceReport> {
+  const res = await apiFetch('/finance/report')
+  if (!res.ok) throw await toError(res)
+  return res.json()
 }

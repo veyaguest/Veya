@@ -2458,7 +2458,12 @@ class GiftEntryRead(BaseModel):
 class EnvelopeWrite(BaseModel):
     """הזנת מעטפה או עריכתה."""
 
-    amount_agorot: int = Field(gt=0)
+    #: ``0`` מותר במפורש: **"נספרה מעטפה ריקה" הוא מצב אמיתי**, והוא שונה
+    #: לגמרי מ"עדיין לא נספרה מתנה". מוזמן בלי שורת מתנה מקבל ``None``
+    #: בסך שלו; מוזמן שנספרה לו מעטפה ריקה מקבל ``0``. אילו אפס היה
+    #: אסור כאן, הזוג היה נאלץ לרשום סכום מומצא או להשאיר את המוזמן
+    #: כ"לא נספר" — ושתי האפשרויות משקרות בדוח.
+    amount_agorot: int = Field(ge=0)
     #: ``None`` = "לא ידוע ממי". מצב לגיטימי שאפשר לחזור אליו.
     guest_id: Optional[int] = None
     #: מתנה משותפת — מוזמנים נוספים מעבר ל-``guest_id``.
@@ -2497,17 +2502,40 @@ class GiftIncomeRead(BaseModel):
 
 
 class GuestGiftRowRead(BaseModel):
-    """מוזמן ומצב המתנה שלו — **כולל מי שעדיין לא נספר.**"""
+    """**שורה מלאה אחת לכל מוזמן** — הגעה ומתנה יחד.
+
+    זו השורה שממנה נבנה הדוח הסופי: הזוג לא אמור לחבר מידע משלושה
+    מסכים כדי לדעת מה קרה עם מוזמן אחד.
+
+    ``rsvp_status`` ו-``status`` הם **שני צירים נפרדים** שאינם נגזרים
+    זה מזה: מוזמן שביטל הגעה יכול בהחלט לתת מתנה.
+    """
 
     guest_id: int
     full_name: str
+    phone: str = ""
+    #: מה המוזמן ענה. **אינו** מושפע משיוך מתנה, בשום מסלול.
     rsvp_status: str
-    #: counted / credit / not_counted. "עדיין לא נספרה" אינו "לא נתן".
+    party_size: int = 0
+    #: כמה הגיעו בפועל. 0 למי שלא אישר — כולל מי שנתן מתנה.
+    attended_count: int = 0
+
+    #: counted / credit / not_counted — מצב **המתנה**.
+    #: "עדיין לא נספרה" אינו "לא נתן", ואינו 0 ₪.
     status: Literal["counted", "credit", "not_counted"]
+    #: ``None`` = עדיין לא נספרה (או שסכום האשראי חסום). ``0`` = נספרה
+    #: מעטפה ריקה. שני מצבים שונים, ובכוונה לא אותו ערך.
     total_agorot: Optional[int] = None
     total_display: str = ""
+    envelope_agorot: int = 0
+    envelope_display: str = ""
+    credit_agorot: Optional[int] = None
+    credit_display: str = ""
+    envelope_count: int = 0
+    credit_count: int = 0
     gift_count: int = 0
     envelope_numbers: list[int] = []
+    note: str = ""
 
 
 class GiftCountingRead(BaseModel):
@@ -2526,6 +2554,46 @@ class GiftCountingRead(BaseModel):
     entries: list[GiftEntryRead] = []
 
 
+class GiftBreakdownRead(BaseModel):
+    """הפער בין הגעה למתנות — התובנה שדוח כספי רגיל מפספס."""
+
+    from_attendees_agorot: int = 0
+    from_attendees_display: str = ""
+    from_non_attendees_agorot: int = 0
+    from_non_attendees_display: str = ""
+    #: מעטפות בלי שיוך — לא ניתן לזקוף אותן לאף צד.
+    unattributed_agorot: int = 0
+    unattributed_display: str = ""
+    guests_counted: int = 0
+    guests_not_counted: int = 0
+
+
+class FinanceReportRead(BaseModel):
+    """הדוח הסופי — **תמונה אחת מלאה של האירוע**, לא רק סיכום כספי.
+
+    מוחזר כמבנה נתונים ולא כקובץ, כדי שאותו מקור יזין גם את המסך, גם את
+    הייצוא ל-Excel וגם את גרסת ההדפסה/PDF. שלושה ייצוגים, חישוב אחד.
+    """
+
+    event_title: str = ""
+    event_date: str = ""
+    venue_name: str = ""
+    generated_at: datetime
+
+    rsvp: RsvpSnapshotRead
+    cost: CostSummaryRead
+    income: GiftIncomeRead
+    breakdown: GiftBreakdownRead
+    bottom_line_agorot: Optional[int] = None
+    bottom_line_display: str = ""
+
+    expenses: list[ExpenseRead] = []
+    #: שורה לכל מוזמן — כולל מי שלא הגיע וכולל מי שעדיין לא נספרה לו מתנה.
+    guests: list[GuestGiftRowRead] = []
+    #: מעטפות שלא שויכו לאף מוזמן, כדי שלא ייעלמו מהדוח.
+    unidentified: list[GiftEntryRead] = []
+
+
 class FinanceSummaryRead(BaseModel):
     """התמונה המלאה — הוצאות, הכנסות והשורה התחתונה.
 
@@ -2537,6 +2605,7 @@ class FinanceSummaryRead(BaseModel):
     rsvp: RsvpSnapshotRead
     cost: CostSummaryRead
     income: GiftIncomeRead
+    breakdown: GiftBreakdownRead
     counting_open: bool
     #: הכנסות פחות הוצאות. ``None`` כשצד ההכנסות חסום חלקית.
     bottom_line_agorot: Optional[int] = None

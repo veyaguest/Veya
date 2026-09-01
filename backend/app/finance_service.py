@@ -291,27 +291,67 @@ def gift_income(db: Session, event: models.Event, *, credit_visible: bool) -> Gi
 
 @dataclass(frozen=True)
 class GuestGiftRow:
-    """שורה אחת ב"מי כבר נספר" — מוזמן והמתנות שלו."""
+    """**שורה מלאה אחת לכל מוזמן** — הגעה ומתנה יחד.
+
+    זו היחידה שממנה נבנה הדוח הסופי, ולכן היא מחזיקה את שני צירי המידע
+    בבת אחת: מה המוזמן ענה, כמה אנשים הגיעו ממנו בפועל, ומה התקבל ממנו —
+    בפירוט מעטפה מול אשראי.
+
+    ## RSVP ומתנה הם שני צירים נפרדים
+
+    ``rsvp_status`` ו-``status`` **אינם נגזרים זה מזה ולא משפיעים זה על
+    זה**. מוזמן שביטל הגעה יכול בהחלט לשלוח מתנה, ומוזמן שהגיע יכול לא
+    לתת. כל לוגיקה שתקשור ביניהם תייצר דוח שקרי — ולכן אין כאן שום
+    מקום שבו אחד נגזר מהשני.
+    """
 
     guest_id: int
     full_name: str
+    phone: str
+    #: מה המוזמן ענה — pending / confirmed / declined / maybe.
     rsvp_status: str
-    status: str                 # counted / credit / not_counted
+    #: כמה אנשים הוזמנו ברשומה הזו.
+    party_size: int
+    #: כמה הגיעו בפועל (0 למי שלא אישר) — ``Guest.effective_seats``.
+    attended_count: int
+
+    #: counted / credit / not_counted — מצב **המתנה**, לא ההגעה.
+    status: str
     total_agorot: Optional[int]
+    #: פירוט לפי מקור, כדי שהדוח יוכל להציג עמודה לכל אחד.
+    envelope_agorot: int
+    credit_agorot: Optional[int]
+    envelope_count: int
+    credit_count: int
     gift_count: int
     envelope_numbers: list[int]
+    #: הערות המוזמן (ההערה הפנימית של הבעלים + מה שהמוזמן כתב בדף האישור).
+    note: str
 
 
 def guest_gift_rows(
     db: Session, event: models.Event, *, credit_visible: bool
 ) -> list[GuestGiftRow]:
-    """מצב המתנה לכל מוזמן — כולל מי שעדיין לא נספר.
+    """**שורה מלאה אחת לכל מוזמן** — הגעה ומתנה, בלי לחבר מסכים.
 
-    **מוזמן ללא מתנה מופיע ברשימה** עם ``not_counted``, ולא נעדר ממנה.
-    זו כל הנקודה: הזוג צריך לראות את מי שנשאר לספור, ולא לנחש מי חסר.
+    זו הפונקציה שממנה נבנים גם המסך "לפי מוזמן" וגם הדוח הסופי, ולכן
+    היא מחזירה את שני צירי המידע יחד.
 
-    כמה מתנות לאותו מוזמן מצטברות (``gift_count``, ``total_agorot``) ולא
-    דורסות זו את זו — שתי מעטפות מדוד לוי הן ₪1,000, לא ₪500.
+    ## שלושה כללים שהיא אוכפת
+
+    1. **כל מוזמן מופיע**, גם מי שאין לו מתנה וגם מי שלא הגיע. מוזמן
+       שנעדר מהרשימה הוא מוזמן שהזוג לא יידע שנשאר לספור אותו.
+    2. **``rsvp_status`` ו-``status`` אינם נגזרים זה מזה.** מוזמן שביטל
+       הגעה ונתן ₪1,000 יופיע כ"לא מגיע" **וגם** כ"נספרה". אין כאן שום
+       שורה שבה סטטוס אחד משפיע על השני.
+    3. **"עדיין לא נספרה" אינו "לא נתן".** מוזמן בלי מתנה מקבל
+       ``total_agorot=None`` ולא ``0``: אפס הוא טענה עובדתית ("נספרה
+       מעטפה ריקה") שהמערכת לא יכולה להצדיק. מעטפה שנספרה בסכום 0 —
+       מצב אמיתי וקביל — מקבלת ``status=counted`` עם ``total=0``, וכך
+       שני המצבים נבדלים זה מזה בנתונים עצמם, לא רק בתצוגה.
+
+    כמה מתנות לאותו מוזמן **מצטברות ולא דורסות** — שתי מעטפות מדוד לוי
+    הן ₪1,000, לא ₪500.
     """
     guests = list(
         db.scalars(
@@ -321,11 +361,11 @@ def guest_gift_rows(
         ).all()
     )
 
-    totals: dict[int, int] = {}
-    counts: dict[int, int] = {}
+    env_totals: dict[int, int] = {}
+    env_counts: dict[int, int] = {}
     numbers: dict[int, list[int]] = {}
-    has_credit: set[int] = set()
-    credit_blocked: set[int] = set()
+    credit_totals: dict[int, int] = {}
+    credit_counts: dict[int, int] = {}
 
     for env in envelopes_for(db, event.id):
         # מתנה משותפת נזקפת לכל המוזמנים המשויכים **בסכום המלא**, ולא
@@ -333,8 +373,8 @@ def guest_gift_rows(
         # מהמעטפות עצמן (``gift_income``) ולכן אינו נספר פעמיים.
         linked = [g for g in [env.guest_id, *(env.shared_guest_ids or [])] if g]
         for gid in linked:
-            totals[gid] = totals.get(gid, 0) + env.amount_agorot
-            counts[gid] = counts.get(gid, 0) + 1
+            env_totals[gid] = env_totals.get(gid, 0) + env.amount_agorot
+            env_counts[gid] = env_counts.get(gid, 0) + 1
             numbers.setdefault(gid, []).append(env.envelope_number)
 
     if gift_eligibility.is_eligible(event):
@@ -343,36 +383,131 @@ def guest_gift_rows(
             .where(models.Gift.event_id == event.id)
             .where(models.Gift.status == gift_status.PAID)
         ).all():
-            has_credit.add(row.guest_id)
-            counts[row.guest_id] = counts.get(row.guest_id, 0) + 1
-            if credit_visible:
-                totals[row.guest_id] = totals.get(row.guest_id, 0) + row.gift_amount_agorot
-            else:
-                credit_blocked.add(row.guest_id)
+            credit_counts[row.guest_id] = credit_counts.get(row.guest_id, 0) + 1
+            credit_totals[row.guest_id] = (
+                credit_totals.get(row.guest_id, 0) + row.gift_amount_agorot
+            )
 
     rows: list[GuestGiftRow] = []
     for guest in guests:
-        count = counts.get(guest.id, 0)
+        env_n = env_counts.get(guest.id, 0)
+        cr_n = credit_counts.get(guest.id, 0)
+        count = env_n + cr_n
+
         if count == 0:
             status = NOT_COUNTED
-        elif guest.id in has_credit and guest.id not in numbers:
+        elif env_n == 0:
             status = CREDIT
         else:
             status = COUNTED
-        # סכום שחסר בו רכיב אשראי חסום אינו מוצג בכלל — ראו GiftIncome.
-        total = None if (guest.id in credit_blocked or count == 0) else totals.get(guest.id)
+
+        env_sum = env_totals.get(guest.id, 0)
+        # סכום האשראי חסום ⇒ ``None``, וגם הסך הכולל ``None``. סכום חלקי
+        # שמוצג כ"סה״כ" הוא מספר שקרי, לא קירוב.
+        cr_sum: Optional[int] = credit_totals.get(guest.id, 0) if credit_visible else None
+        if cr_n and not credit_visible:
+            total: Optional[int] = None
+        elif count == 0:
+            total = None
+        else:
+            total = env_sum + (cr_sum or 0)
+
+        # ההערה של המוזמן: הפנימית של הבעלים ומה שהמוזמן כתב בדף האישור.
+        # מאוחדות לשדה אחד כי בדוח יש עמודת "הערות" אחת.
+        note = " · ".join(
+            part.strip()
+            for part in (guest.notes_raw, guest.guest_note)
+            if part and part.strip()
+        )
+
         rows.append(
             GuestGiftRow(
                 guest_id=guest.id,
                 full_name=guest.full_name,
+                phone=guest.phone or "",
                 rsvp_status=guest.rsvp_status,
+                party_size=guest.party_size,
+                # ``effective_seats`` ולא ספירה מקומית — אותו מקור בדיוק
+                # שמנוע ההושבה משתמש בו.
+                attended_count=guest.effective_seats,
                 status=status,
                 total_agorot=total,
+                envelope_agorot=env_sum,
+                credit_agorot=cr_sum,
+                envelope_count=env_n,
+                credit_count=cr_n,
                 gift_count=count,
                 envelope_numbers=sorted(numbers.get(guest.id, [])),
+                note=note,
             )
         )
     return rows
+
+
+@dataclass(frozen=True)
+class GiftBreakdown:
+    """הפילוח שמראה את **הפער בין הגעה למתנות**.
+
+    זו התובנה שדוח כספי רגיל מפספס: מי שלא הגיע עדיין יכול היה לתת, ומי
+    שהגיע לא בהכרח נתן. שני המספרים האלה זה לצד זה הם התמונה האמיתית.
+
+    הסכומים כאן נספרים **מהמעטפות ומהעסקאות**, לא מסכומי המוזמנים — כדי
+    שמתנה משותפת (שמופיעה אצל שני מוזמנים) לא תיספר פעמיים.
+    """
+
+    from_attendees_agorot: int
+    from_non_attendees_agorot: int
+    #: מעטפות שאין להן שיוך, ולכן אי אפשר לשייך אותן לאף אחד מהצדדים.
+    unattributed_agorot: int
+    guests_counted: int
+    guests_not_counted: int
+
+
+def gift_breakdown(
+    db: Session, event: models.Event, *, credit_visible: bool
+) -> GiftBreakdown:
+    """פילוח המתנות לפי הגעה בפועל.
+
+    "הגיע" נקבע לפי ``Guest.effective_seats > 0`` — כלומר מי שאישר הגעה.
+    מוזמן שביטל, התלבט או לא ענה נספר בצד השני, **בלי שזה אומר עליו
+    שום דבר**: זו חלוקה תיאורית לדוח, לא שיפוט.
+    """
+    attended: dict[int, bool] = {
+        g.id: g.effective_seats > 0
+        for g in db.scalars(
+            select(models.Guest).where(models.Guest.event_id == event.id)
+        ).all()
+    }
+
+    from_att = from_non = unattributed = 0
+
+    for env in envelopes_for(db, event.id):
+        if env.guest_id is None:
+            unattributed += env.amount_agorot
+        elif attended.get(env.guest_id):
+            from_att += env.amount_agorot
+        else:
+            from_non += env.amount_agorot
+
+    if credit_visible and gift_eligibility.is_eligible(event):
+        for row in db.scalars(
+            select(models.Gift)
+            .where(models.Gift.event_id == event.id)
+            .where(models.Gift.status == gift_status.PAID)
+        ).all():
+            if attended.get(row.guest_id):
+                from_att += row.gift_amount_agorot
+            else:
+                from_non += row.gift_amount_agorot
+
+    rows = guest_gift_rows(db, event, credit_visible=credit_visible)
+    return GiftBreakdown(
+        from_attendees_agorot=from_att,
+        from_non_attendees_agorot=from_non,
+        unattributed_agorot=unattributed,
+        guests_counted=sum(1 for r in rows if r.status != NOT_COUNTED),
+        guests_not_counted=sum(1 for r in rows if r.status == NOT_COUNTED),
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════

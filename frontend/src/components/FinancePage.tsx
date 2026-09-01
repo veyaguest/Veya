@@ -6,6 +6,7 @@ import {
   getExpenseCategories,
   getFinance,
   getGiftCounting,
+  getFinanceReport,
   getGiftsByGuest,
   updateExpense,
 } from '../api'
@@ -14,6 +15,7 @@ import type {
   Expense,
   ExpenseCategory,
   ExpenseInput,
+  FinanceReport,
   FinanceSummary,
   GiftCounting,
   GiftEntry,
@@ -153,7 +155,10 @@ export function FinancePage() {
 
   return (
     <div className="fin-page">
-      <FinanceHero data={data} />
+      {/* גיבור אחד בכל רגע. בלשונית הספירה הגיבור הוא סכום המתנות
+          (בתוך הלשונית עצמה), ובסיכום הוא התוצאה — שני מספרי-ענק זה
+          מעל זה הם היררכיה שבורה, לא צפיפות מידע. */}
+      {tab === 'cost' && <FinanceHero data={data} />}
 
       <nav className="fin-tabs" aria-label={t.navTitle(terms.eventNoun)}>
         <TabButton current={tab} value="cost" onSelect={setTab}>
@@ -411,7 +416,21 @@ function NextPersonCard({ cost }: { cost: FinanceSummary['cost'] }) {
           </p>
         </>
       ) : (
-        <p className="fin-next-value">{cost.next_attendee_display}</p>
+        <>
+          <p className="fin-next-value">{cost.next_attendee_display}</p>
+          {/* המספר לבדו לא מספיק כשיש התחייבות ברקע: "35 ₪" נראה כמו
+              טעות למי שיודע שמנה עולה 320. המשפט הזה אומר למה. */}
+          {commitment && commitment.unused_quantity > 0 && (
+            <p className="fin-hint">
+              {t.nextPersonPartialBody(commitment.committed_quantity, commitment.label)}
+            </p>
+          )}
+          {commitment && commitment.over_commitment > 0 && (
+            <p className="fin-hint">
+              {t.nextPersonOverBody(commitment.committed_quantity)}
+            </p>
+          )}
+        </>
       )}
 
       <p className="fin-next-intro">{t.stepsIntro}</p>
@@ -700,6 +719,21 @@ function SummaryTab({
 }) {
   const bottom = data.bottom_line_agorot
 
+  // הדוח המלא נטען לפי דרישה, לא עם המסך: הוא מכיל שורה לכל מוזמן
+  // (מאות שורות באירוע טיפוסי), ואיש לא מסתכל עליו רוב הזמן.
+  const [report, setReport] = useState<FinanceReport | null>(null)
+  const [loadingReport, setLoadingReport] = useState(false)
+  const [reportError, setReportError] = useState<string | null>(null)
+
+  function loadReport() {
+    setLoadingReport(true)
+    setReportError(null)
+    getFinanceReport()
+      .then(setReport)
+      .catch((e) => setReportError(e instanceof Error ? e.message : t.reportError))
+      .finally(() => setLoadingReport(false))
+  }
+
   return (
     <>
       <section className="fin-card fin-summary">
@@ -732,6 +766,33 @@ function SummaryTab({
             </>
           )}
         </div>
+
+        {/* השורה שמונעת את השאלה "רגע, כמה ירד לנו?". */}
+        <p className="fin-hint">{t.noFeeNote}</p>
+      </section>
+
+      {/* הפער בין הגעה למתנות — שני מספרים זה לצד זה שדוח כספי רגיל
+          לא מציג בכלל. */}
+      <section className="fin-card">
+        <h2 className="fin-card-title">{t.breakdownTitle}</h2>
+        <div className="fin-hero-facts">
+          <Fact label={t.fromAttendees} value={data.breakdown.from_attendees_display} />
+          <Fact
+            label={t.fromNonAttendees}
+            value={data.breakdown.from_non_attendees_display}
+          />
+          {data.breakdown.unattributed_agorot > 0 && (
+            <Fact
+              label={t.unattributedLabel}
+              value={data.breakdown.unattributed_display}
+            />
+          )}
+          <Fact label={t.guestsCounted} value={String(data.breakdown.guests_counted)} />
+          <Fact
+            label={t.guestsNotCounted}
+            value={String(data.breakdown.guests_not_counted)}
+          />
+        </div>
       </section>
 
       <section className="fin-card">
@@ -744,15 +805,146 @@ function SummaryTab({
         </div>
       </section>
 
-      <div className="fin-download">
+      {/* ── הדוח המלא ────────────────────────────────────────────── */}
+      <section className="fin-section">
+        <div className="fin-section-head">
+          <h2 className="fin-section-title">{t.reportTitle}</h2>
+          {!report && (
+            <button
+              type="button"
+              className="btn-ghost btn-sm"
+              onClick={loadReport}
+              disabled={loadingReport}
+            >
+              {loadingReport ? t.reportLoading : t.byGuestLoad}
+            </button>
+          )}
+        </div>
+        <p className="fin-hint">{t.reportIntro}</p>
+
+        {reportError && (
+          <p className="form-error" role="alert">
+            {reportError}
+          </p>
+        )}
+
+        {report && (
+          <>
+            <div className="fin-card fin-report-card">
+              <ReportTable report={report} />
+            </div>
+            <div className="fin-download">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => downloadReport(report, terms.eventNoun)}
+              >
+                {t.downloadReport}
+              </button>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => printReport(report, terms.eventNoun)}
+              >
+                {t.printReport}
+              </button>
+            </div>
+          </>
+        )}
+      </section>
+    </>
+  )
+}
+
+/**
+ * טבלת הדוח — **שורה אחת מלאה לכל מוזמן.**
+ *
+ * שתי עמודות המפתח, "סטטוס הגעה" ו"סה״כ מתנה", יושבות זו לצד זו ואינן
+ * נגזרות זו מזו: מוזמן שביטל הגעה ונתן ₪1,000 מופיע בדיוק כך. זה כל
+ * הרעיון של הדוח — לא לחבר מידע משלושה מסכים.
+ *
+ * **תא "טרם נספרה" אינו "0 ₪".** מעטפה שנספרה בסכום אפס מוצגת כ-"0 ₪";
+ * מוזמן שעדיין לא נספר מוצג כ"טרם נספרה". שני מצבים שונים, שתי מחרוזות.
+ *
+ * בטלפון הטבלה נגללת אופקית בתוך המכל שלה (``overflow-x``) ולא שוברת את
+ * העמוד — עמודות שנדחסות לרוחב מסך טלפון הופכות ל-9 מילים שבורות.
+ */
+function ReportTable({ report }: { report: FinanceReport }) {
+  const [onlyGifts, setOnlyGifts] = useState(false)
+  const rows = onlyGifts ? report.guests.filter((g) => g.gift_count > 0) : report.guests
+
+  return (
+    <>
+      <div className="fin-filters">
         <button
           type="button"
-          className="btn-ghost"
-          onClick={() => downloadReport(data, terms.eventNoun)}
+          className={`fin-filter ${!onlyGifts ? 'active' : ''}`}
+          onClick={() => setOnlyGifts(false)}
         >
-          {t.downloadReport}
+          {t.filterAll}
+        </button>
+        <button
+          type="button"
+          className={`fin-filter ${onlyGifts ? 'active' : ''}`}
+          onClick={() => setOnlyGifts(true)}
+        >
+          {t.filterCounted}
         </button>
       </div>
+
+      <div className="fin-table-scroll">
+        <table className="fin-table">
+          <thead>
+            <tr>
+              <th>{t.colGuest}</th>
+              <th>{t.colPhone}</th>
+              <th>{t.colRsvp}</th>
+              <th>{t.colInvited}</th>
+              <th>{t.colAttended}</th>
+              <th>{t.colCredit}</th>
+              <th>{t.colEnvelope}</th>
+              <th>{t.colTotal}</th>
+              <th>{t.colNotes}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((g) => (
+              <tr key={g.guest_id}>
+                <td>{g.full_name}</td>
+                <td className="fin-num">{g.phone}</td>
+                <td>
+                  <span className={`fin-guest-status rsvp-${g.rsvp_status}`}>
+                    {t.rsvpLabels[g.rsvp_status] ?? g.rsvp_status}
+                  </span>
+                </td>
+                <td className="fin-num">{g.party_size}</td>
+                <td className="fin-num">{g.attended_count}</td>
+                <td className="fin-num">{g.credit_display || '—'}</td>
+                <td className="fin-num">{g.envelope_display || '—'}</td>
+                <td className="fin-num fin-strong">
+                  {g.status === 'not_counted' ? (
+                    <span className="fin-muted">{t.cellNotCounted}</span>
+                  ) : (
+                    g.total_display
+                  )}
+                </td>
+                <td className="fin-note-cell">{g.note}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* מעטפות בלי שיוך לא נעלמות מהדוח — אחרת הסכום הכולל לא מסתדר
+          עם סכום השורות שמעליו. */}
+      {report.unidentified.length > 0 && (
+        <p className="fin-hint fin-unidentified">
+          {t.unidentifiedSummary(
+            report.income.unidentified_count,
+            report.income.unidentified_display,
+          )}
+        </p>
+      )}
     </>
   )
 }
@@ -784,38 +976,155 @@ function stripSign(display: string): string {
 }
 
 /**
- * ייצוא הדוח כ-CSV.
+ * שורות הדוח — **מקור אחד לשלושת הפלטים**: המסך, ה-Excel וההדפסה.
  *
- * **הקובץ נבנה מהמספרים שהשרת כבר חישב** ולא מחישוב מקומי חדש — אחרת
- * הדוח והמסך היו יכולים לספר שני סיפורים.
+ * בלי הפונקציה הזו היו שלוש רשימות עמודות שצריך לזכור לעדכן יחד, ובדוח
+ * כספי זה בדיוק המקום שבו קובץ הייצוא מתחיל לספר סיפור אחר מהמסך.
  *
- * ה-BOM בתחילת הקובץ אינו קישוט: בלעדיו Excel בעברית פותח UTF-8 כג'יבריש,
- * וזה הפורמט שבו רוב הזוגות יפתחו את הקובץ הזה.
+ * **כל המספרים כאן כבר חושבו בשרת** — הפונקציה מסדרת אותם, לא מחשבת.
  */
-function downloadReport(data: FinanceSummary, eventNoun: string): void {
-  const rows: string[][] = [
-    [t.expensesTitle, '', ''],
-    [t.expenseNameLabel, t.calcMethodLabel, t.amountLabel],
-    ...data.expenses.map((e) => [e.label, describeCalc(e), e.total_display]),
-    ['', '', ''],
-    [t.totalCostLabel, '', data.cost.total_display],
-    [t.attendeesLabel, '', String(data.cost.attendees)],
-    [t.perPersonLabel, '', data.cost.cost_per_attendee_display],
-    ['', '', ''],
-    [t.envelopesLabel, '', data.income.envelopes_display],
-    [t.creditLabel, '', data.income.credit_display],
-    [t.incomeLabel, '', data.income.total_display],
-    [t.bottomLineLabel, '', data.bottom_line_display],
+function reportRows(report: FinanceReport): { head: string[]; body: string[][] } {
+  const head = [
+    t.colGuest, t.colPhone, t.colRsvp, t.colInvited, t.colAttended,
+    t.colCredit, t.colEnvelope, t.colTotal, t.colNotes,
   ]
+  const body = report.guests.map((g) => [
+    g.full_name,
+    g.phone,
+    t.rsvpLabels[g.rsvp_status] ?? g.rsvp_status,
+    String(g.party_size),
+    String(g.attended_count),
+    g.credit_display || '',
+    g.envelope_display || '',
+    // "טרם נספרה" ולא "0 ₪": אפס הוא טענה שאין לה כיסוי כשלא נספר כלום.
+    g.status === 'not_counted' ? t.cellNotCounted : g.total_display,
+    g.note,
+  ])
+  return { head, body }
+}
 
-  const csv = rows.map((r) => r.map(csvCell).join(',')).join('\r\n')
-  const blob = new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8' })
+/** שורות הסיכום שמתלוות לדוח בכל פלט. */
+function summaryRows(report: FinanceReport): string[][] {
+  const { rsvp, cost, income, breakdown } = report
+  return [
+    [t.rsvpTitle, ''],
+    [t.rsvpGuests, String(rsvp.total_guests)],
+    [t.rsvpConfirmed, String(rsvp.confirmed_people)],
+    [t.rsvpDeclined, String(rsvp.declined_guests)],
+    [t.rsvpPending, String(rsvp.pending_guests)],
+    ['', ''],
+    [t.countingTitle, ''],
+    [t.envelopesLabel, income.envelopes_display],
+    [t.creditLabel, income.credit_display],
+    [t.incomeLabel, income.total_display],
+    [t.fromAttendees, breakdown.from_attendees_display],
+    [t.fromNonAttendees, breakdown.from_non_attendees_display],
+    [t.guestsCounted, String(breakdown.guests_counted)],
+    [t.guestsNotCounted, String(breakdown.guests_not_counted)],
+    ['', ''],
+    [t.expensesTitle, ''],
+    ...report.expenses.map((e) => [e.label, e.total_display]),
+    [t.fixedLabel, cost.fixed_display],
+    [t.variableLabel, cost.variable_display],
+    [t.totalCostLabel, cost.total_display],
+    [t.perPersonLabel, cost.cost_per_attendee_display],
+    ['', ''],
+    [t.bottomLineLabel, report.bottom_line_display],
+  ]
+}
+
+/**
+ * ייצוא ל-Excel (CSV).
+ *
+ * ה-BOM בתחילת הקובץ אינו קישוט: בלעדיו Excel בעברית פותח UTF-8
+ * כג'יבריש, וזה הפורמט שבו רוב הזוגות יפתחו את הקובץ הזה.
+ *
+ * ``sep=,`` בשורה הראשונה אומר ל-Excel במפורש מה המפריד — בלעדיו,
+ * גרסאות Excel בהגדרות אזור ישראליות שמות את כל השורה בתא אחד.
+ */
+function downloadReport(report: FinanceReport, eventNoun: string): void {
+  const { head, body } = reportRows(report)
+  const rows = [head, ...body, ['', ''], ...summaryRows(report), ['', ''], [t.noFeeNote]]
+  const csv = ['sep=,', ...rows.map((r) => r.map(csvCell).join(','))].join('\r\n')
+
+  const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
   link.download = t.reportFileName(eventNoun)
   link.click()
   URL.revokeObjectURL(url)
+}
+
+/**
+ * גרסת הדפסה — ומכאן גם PDF, דרך "שמירה כ-PDF" של הדפדפן.
+ *
+ * **בלי ספריית PDF.** ספריית PDF בדפדפן שוקלת מאות קילובייטים, ורובן
+ * שוברות עברית ו-RTL בדיוק במסמך שכולו עברית. חלון הדפסה עם ``dir="rtl"``
+ * נותן פלט נכון בכל דפדפן, במשקל אפס, והמשתמש בוחר מדפסת או PDF באותו
+ * דיאלוג.
+ *
+ * הטבלה נבנית מאותו ``reportRows`` כמו המסך וה-Excel — שלושה פלטים,
+ * מקור אחד.
+ */
+function printReport(report: FinanceReport, eventNoun: string): void {
+  const { head, body } = reportRows(report)
+  const esc = (v: string) =>
+    (v ?? '').replace(/[&<>"]/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string,
+    )
+
+  const html = `<!doctype html><html dir="rtl" lang="he"><head><meta charset="utf-8">
+<title>${esc(t.navTitle(eventNoun))} — ${esc(report.event_title)}</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm; }
+  body { font-family: 'Heebo', Arial, sans-serif; color: #2b2620; font-size: 11px; }
+  h1 { font-size: 18px; margin: 0 0 2px; }
+  .meta { color: #787064; font-size: 11px; margin-bottom: 14px; }
+  h2 { font-size: 13px; margin: 18px 0 6px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border-bottom: 1px solid #e5dec9; padding: 5px 6px; text-align: right; }
+  th { background: #fbf6ee; font-weight: 600; }
+  /* השורות לא נשברות באמצע בין עמודים — שורת מוזמן חצויה בדוח של
+     מאות שורות היא בדיוק מה שהופך אותו ללא-קריא. */
+  tr { break-inside: avoid; }
+  thead { display: table-header-group; }
+  .num { font-variant-numeric: tabular-nums; }
+  .muted { color: #787064; }
+  .sum { width: auto; margin-top: 4px; }
+  .sum td:last-child { font-weight: 600; }
+  .note { color: #787064; font-size: 10px; margin-top: 14px; }
+</style></head><body>
+<h1>${esc(t.navTitle(eventNoun))} — ${esc(report.event_title)}</h1>
+<div class="meta">${esc([report.venue_name, report.event_date].filter(Boolean).join(' · '))}</div>
+<table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+<tbody>${body
+    .map(
+      (r) =>
+        `<tr>${r
+          .map((c, i) => {
+            const cls = i >= 3 && i <= 7 ? 'num' : ''
+            const muted = c === t.cellNotCounted ? ' muted' : ''
+            return `<td class="${cls}${muted}">${esc(c)}</td>`
+          })
+          .join('')}</tr>`,
+    )
+    .join('')}</tbody></table>
+<h2>${esc(t.summaryTitle(eventNoun))}</h2>
+<table class="sum"><tbody>${summaryRows(report)
+    .map((r) => `<tr><td>${esc(r[0])}</td><td class="num">${esc(r[1] ?? '')}</td></tr>`)
+    .join('')}</tbody></table>
+<p class="note">${esc(t.noFeeNote)}</p>
+</body></html>`
+
+  const win = window.open('', '_blank')
+  if (!win) return
+  win.document.write(html)
+  win.document.close()
+  // ההמתנה נותנת לדפדפן לפרוס את הטבלה לפני שדיאלוג ההדפסה נפתח;
+  // בלעדיה דפדפנים מסוימים מדפיסים עמוד ריק.
+  win.onload = () => win.print()
+  setTimeout(() => win.print(), 400)
 }
 
 function csvCell(value: string): string {

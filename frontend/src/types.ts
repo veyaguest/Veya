@@ -1904,16 +1904,67 @@ export interface GiftIncome {
   unidentified_display: string
 }
 
-/** מוזמן ומצב המתנה שלו. ``not_counted`` = **עדיין לא נספרה**, לא "לא נתן". */
+/**
+ * **שורה מלאה אחת לכל מוזמן** — הגעה ומתנה יחד.
+ *
+ * ``rsvp_status`` ו-``status`` הם שני צירים נפרדים שאינם נגזרים זה מזה:
+ * מוזמן שביטל הגעה יכול בהחלט לתת מתנה, ושיוך מתנה לעולם לא משנה את
+ * סטטוס ההגעה.
+ */
 export interface GuestGiftRow {
   guest_id: number
   full_name: string
+  phone: string
+  /** מה המוזמן ענה. אינו מושפע משיוך מתנה. */
   rsvp_status: RsvpStatus
+  party_size: number
+  /** כמה הגיעו בפועל. 0 למי שלא אישר — כולל מי שנתן מתנה. */
+  attended_count: number
+  /** מצב **המתנה**. ``not_counted`` = עדיין לא נספרה — לא "לא נתן", ולא 0 ₪. */
   status: 'counted' | 'credit' | 'not_counted'
+  /** ``null`` = טרם נספרה. ``0`` = נספרה מעטפה ריקה. שני מצבים שונים. */
   total_agorot: number | null
   total_display: string
+  envelope_agorot: number
+  envelope_display: string
+  credit_agorot: number | null
+  credit_display: string
+  envelope_count: number
+  credit_count: number
   gift_count: number
   envelope_numbers: number[]
+  note: string
+}
+
+/** הפער בין הגעה למתנות — התובנה שדוח כספי רגיל מפספס. */
+export interface GiftBreakdown {
+  from_attendees_agorot: number
+  from_attendees_display: string
+  from_non_attendees_agorot: number
+  from_non_attendees_display: string
+  unattributed_agorot: number
+  unattributed_display: string
+  guests_counted: number
+  guests_not_counted: number
+}
+
+/** הדוח הסופי — תמונה אחת מלאה של האירוע, לא רק סיכום כספי. */
+export interface FinanceReport {
+  event_title: string
+  event_date: string
+  venue_name: string
+  generated_at: string
+  rsvp: RsvpSnapshot
+  cost: CostSummary
+  income: GiftIncome
+  breakdown: GiftBreakdown
+  bottom_line_agorot: number | null
+  bottom_line_display: string
+  expenses: Expense[]
+  /** שורה לכל מוזמן — כולל מי שלא הגיע וכולל מי שטרם נספרה לו מתנה. */
+  guests: GuestGiftRow[]
+  /** מעטפות שלא שויכו, כדי שלא ייעלמו מהדוח. */
+  unidentified: GiftEntry[]
 }
 
 export interface GiftCounting {
@@ -1932,6 +1983,7 @@ export interface FinanceSummary {
   rsvp: RsvpSnapshot
   cost: CostSummary
   income: GiftIncome
+  breakdown: GiftBreakdown
   counting_open: boolean
   /** הכנסות פחות הוצאות. ``null`` כשצד ההכנסות חסום חלקית. */
   bottom_line_agorot: number | null

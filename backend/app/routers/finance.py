@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 
 from app import (
     audit,
+    event_terms,
     finance,
     finance_categories,
     finance_service,
@@ -196,6 +197,44 @@ def _entry_read(entry: finance_service.GiftEntry) -> schemas.GiftEntryRead:
     )
 
 
+def _breakdown_read(b: finance_service.GiftBreakdown) -> schemas.GiftBreakdownRead:
+    return schemas.GiftBreakdownRead(
+        from_attendees_agorot=b.from_attendees_agorot,
+        from_attendees_display=finance.format_shekels(b.from_attendees_agorot),
+        from_non_attendees_agorot=b.from_non_attendees_agorot,
+        from_non_attendees_display=finance.format_shekels(b.from_non_attendees_agorot),
+        unattributed_agorot=b.unattributed_agorot,
+        unattributed_display=finance.format_shekels(b.unattributed_agorot),
+        guests_counted=b.guests_counted,
+        guests_not_counted=b.guests_not_counted,
+    )
+
+
+def _guest_row_read(row: finance_service.GuestGiftRow) -> schemas.GuestGiftRowRead:
+    return schemas.GuestGiftRowRead(
+        guest_id=row.guest_id,
+        full_name=row.full_name,
+        phone=row.phone,
+        rsvp_status=row.rsvp_status,
+        party_size=row.party_size,
+        attended_count=row.attended_count,
+        status=row.status,
+        total_agorot=row.total_agorot,
+        total_display=finance.format_shekels(row.total_agorot),
+        envelope_agorot=row.envelope_agorot,
+        # מעטפה שלא נספרה מציגה מחרוזת ריקה ולא "0 ₪": אפס הוא טענה
+        # ("נספרה מעטפה ריקה") שאין לה כיסוי כשלא נספר כלום.
+        envelope_display=finance.format_shekels(row.envelope_agorot) if row.envelope_count else "",
+        credit_agorot=row.credit_agorot,
+        credit_display=finance.format_shekels(row.credit_agorot) if row.credit_count else "",
+        envelope_count=row.envelope_count,
+        credit_count=row.credit_count,
+        gift_count=row.gift_count,
+        envelope_numbers=row.envelope_numbers,
+        note=row.note,
+    )
+
+
 def _rsvp_snapshot(guests: list[models.Guest]) -> schemas.RsvpSnapshotRead:
     """אותה ספירה בדיוק כמו ב-``routers/stats.py`` — ובכוונה.
 
@@ -270,10 +309,82 @@ def summary(
         rsvp=_rsvp_snapshot(guests),
         cost=_cost_summary(expenses, attendees, invited),
         income=_income_read(income),
+        breakdown=_breakdown_read(
+            finance_service.gift_breakdown(db, event, credit_visible=credit_visible)
+        ),
         counting_open=finance_service.counting_open(event),
         bottom_line_agorot=bottom,
         bottom_line_display=finance.format_shekels(bottom),
         expenses=[_expense_read(e, breakdown.lines[e.id]) for e in expenses],
+    )
+
+
+@router.get("/report", response_model=schemas.FinanceReportRead)
+def report(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+):
+    """הדוח הסופי — **תמונה אחת מלאה של האירוע.**
+
+    ## למה זה נתיב נפרד מ-``GET /finance``
+
+    הסיכום השוטף נטען בכל כניסה למסך ומכיל עשרות שורות. הדוח מכיל **שורה
+    לכל מוזמן** — מאות שורות באירוע טיפוסי — והוא נדרש פעם אחת, בסוף.
+    לגרור אותו בכל טעינת מסך היה מאט את המסך בשביל נתון שאיש לא מסתכל
+    עליו רוב הזמן.
+
+    ## מה הדוח מבטיח
+
+    1. **כל מוזמן מופיע**, כולל מי שלא הגיע וכולל מי שעדיין לא נספרה לו
+       מתנה. הזוג לא צריך לחבר מידע משלושה מסכים.
+    2. **הגעה ומתנה הם שתי עמודות נפרדות** שלא נגזרות זו מזו. מוזמן
+       שביטל הגעה ונתן ₪1,000 מופיע בדיוק כך.
+    3. **מעטפות שלא שויכו אינן נעלמות** — הן חוזרות ב-``unidentified``
+       כדי שהסכום הכולל בדוח יסתדר עם הסכום שבמסך.
+    4. **ייצוג אחד, שלושה פלטים.** אותו מבנה מזין את המסך, את הייצוא
+       ל-Excel ואת גרסת ההדפסה/PDF — ולכן אין דרך שהם יסטו זה מזה.
+    """
+    from datetime import datetime
+
+    guests = _guests(db, event.id)
+    expenses = finance_service.expenses_for(db, event.id)
+    attendees = finance.attendee_count(guests)
+    invited = finance.invited_count(guests)
+
+    cost = finance.cost_breakdown(expenses, attendees, invited)
+    credit_visible = finance_service.credit_amounts_visible(db, event)
+    income = finance_service.gift_income(db, event, credit_visible=credit_visible)
+    rows = finance_service.guest_gift_rows(db, event, credit_visible=credit_visible)
+    entries = finance_service.gift_entries(db, event, credit_visible=credit_visible)
+
+    # דרך הלקסיקון: "החתונה של אביב ודנה" / "הברית של יונתן" — לא צירוף
+    # שמות גולמי שהיה מייצר כותרת חתונתית לכל סוג אירוע.
+    title = event_terms.event_display_title(
+        event.event_type, event.groom_name, event.bride_name
+    )
+
+    return schemas.FinanceReportRead(
+        event_title=title,
+        event_date=event.event_date or "",
+        venue_name=event.venue_name or "",
+        generated_at=datetime.utcnow(),
+        rsvp=_rsvp_snapshot(guests),
+        cost=_cost_summary(expenses, attendees, invited),
+        income=_income_read(income),
+        breakdown=_breakdown_read(
+            finance_service.gift_breakdown(db, event, credit_visible=credit_visible)
+        ),
+        bottom_line_agorot=finance_service.bottom_line(cost, income),
+        bottom_line_display=finance.format_shekels(
+            finance_service.bottom_line(cost, income)
+        ),
+        expenses=[_expense_read(e, cost.lines[e.id]) for e in expenses],
+        guests=[_guest_row_read(r) for r in rows],
+        # רק מעטפות: עסקת אשראי תמיד משויכת למוזמן דרך הטוקן שלו, ולכן
+        # לא קיימת "מתנה באשראי בלי שם".
+        unidentified=[
+            _entry_read(e) for e in entries if e.source == "envelope" and not e.guest_id
+        ],
     )
 
 
@@ -448,16 +559,7 @@ def gifts_by_guest(
     """
     credit_visible = finance_service.credit_amounts_visible(db, event)
     return [
-        schemas.GuestGiftRowRead(
-            guest_id=row.guest_id,
-            full_name=row.full_name,
-            rsvp_status=row.rsvp_status,
-            status=row.status,
-            total_agorot=row.total_agorot,
-            total_display=finance.format_shekels(row.total_agorot),
-            gift_count=row.gift_count,
-            envelope_numbers=row.envelope_numbers,
-        )
+        _guest_row_read(row)
         for row in finance_service.guest_gift_rows(db, event, credit_visible=credit_visible)
     ]
 

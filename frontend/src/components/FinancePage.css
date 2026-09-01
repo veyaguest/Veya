@@ -1042,3 +1042,112 @@
     min-width: 220px;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   תגי סטטוס הגעה — בתוצאות החיפוש ובדוח
+   ════════════════════════════════════════════════════════════════════ */
+
+/* הסטטוס מוצג בתוצאות החיפוש **כדי לאשר בחירה, לא כדי לסנן**: מוזמן
+   שביטל הגעה או שלא ענה יכול בהחלט לשלוח מתנה, והחיפוש רץ על כולם.
+   לכן גם "לא מגיע" אינו אדום כאן — הוא עובדה, לא אזהרה. */
+.fin-result-meta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.fin-result-rsvp,
+.fin-guest-status.rsvp-confirmed,
+.fin-guest-status.rsvp-declined,
+.fin-guest-status.rsvp-maybe,
+.fin-guest-status.rsvp-pending {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: var(--text-2xs);
+  white-space: nowrap;
+}
+
+.rsvp-confirmed { background: rgba(39, 129, 78, 0.12); color: var(--green-on-tint); }
+.rsvp-declined  { background: rgba(164, 94, 89, 0.12); color: var(--error-on-tint); }
+.rsvp-maybe     { background: rgba(var(--gold-rgb), 0.16); color: var(--gold-on-tint); }
+.rsvp-pending   { background: var(--line-2); color: var(--muted); }
+
+/* ════════════════════════════════════════════════════════════════════
+   טבלת הדוח
+   ════════════════════════════════════════════════════════════════════ */
+
+.fin-report-card {
+  padding: 12px;
+}
+
+/* תשע עמודות לא נכנסות לרוחב טלפון. גלילה אופקית **בתוך המכל** — לא
+   שבירת עמודות ולא גלילה של העמוד כולו. */
+.fin-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.fin-table th,
+.fin-table td {
+  padding: 8px 10px;
+  text-align: start;
+  border-bottom: 1px solid var(--line-2);
+}
+
+/* הכותרת נדבקת בגלילה: בדוח של מאות שורות, טבלה שהכותרת שלה נעלמה
+   היא טבלה של מספרים בלי שמות. */
+.fin-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--cream);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.fin-table tbody tr:hover {
+  background: var(--surface-hi);
+}
+
+.fin-num {
+  direction: ltr;
+  text-align: start;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-strong {
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+/* "טרם נספרה" — אפור ניטרלי. זו לא שגיאה ולא חוסר, זו עובדה שהספירה
+   עוד לא הגיעה לשם. */
+.fin-muted {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.fin-note-cell {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.fin-download {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
