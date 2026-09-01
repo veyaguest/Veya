@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#2b2620" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-    <link rel="canonical" href="https://veya-snowy.vercel.app/" />
+    <link rel="canonical" href="https://veyaguest.co.il/" />
 
     <title>VEYA — מערכת חכמה לניהול אירועים: מוזמנים, אישורי הגעה והושבה</title>
     <meta
@@ -25,8 +25,8 @@
       property="og:description"
       content="מערכת חכמה לניהול אירועים: מוזמנים, אישורי הגעה בוואטסאפ, הזמנות וסידורי הושבה אוטומטיים. חתונה, בר/בת מצווה, חינה, ברית או אירוע עסקי — הכול במקום אחד."
     />
-    <meta property="og:url" content="https://veya-snowy.vercel.app/" />
-    <meta property="og:image" content="https://veya-snowy.vercel.app/og-image.png?v=3" />
+    <meta property="og:url" content="https://veyaguest.co.il/" />
+    <meta property="og:image" content="https://veyaguest.co.il/og-image.png?v=3" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="VEYA — מערכת חכמה לניהול אירועים" />
@@ -39,7 +39,7 @@
       name="twitter:description"
       content="מערכת חכמה לניהול אירועים: מוזמנים, אישורי הגעה בוואטסאפ, הזמנות וסידורי הושבה אוטומטיים — לכל סוג אירוע."
     />
-    <meta name="twitter:image" content="https://veya-snowy.vercel.app/og-image.png?v=3" />
+    <meta name="twitter:image" content="https://veyaguest.co.il/og-image.png?v=3" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -55,30 +55,30 @@
         "@graph": [
           {
             "@type": "Organization",
-            "@id": "https://veya-snowy.vercel.app/#organization",
+            "@id": "https://veyaguest.co.il/#organization",
             "name": "VEYA",
-            "url": "https://veya-snowy.vercel.app/",
-            "logo": "https://veya-snowy.vercel.app/logo.png",
+            "url": "https://veyaguest.co.il/",
+            "logo": "https://veyaguest.co.il/logo.png",
             "description": "מערכת חכמה לניהול אירועים: אישורי הגעה, ניהול מוזמנים, הזמנות וסידורי הושבה — לחתונות, בר/בת מצווה, חינה, ברית ואירועים עסקיים.",
             "areaServed": "IL"
           },
           {
             "@type": "WebSite",
-            "@id": "https://veya-snowy.vercel.app/#website",
-            "url": "https://veya-snowy.vercel.app/",
+            "@id": "https://veyaguest.co.il/#website",
+            "url": "https://veyaguest.co.il/",
             "name": "VEYA",
             "inLanguage": "he-IL",
-            "publisher": { "@id": "https://veya-snowy.vercel.app/#organization" }
+            "publisher": { "@id": "https://veyaguest.co.il/#organization" }
           },
           {
             "@type": "SoftwareApplication",
             "name": "VEYA",
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
-            "url": "https://veya-snowy.vercel.app/",
+            "url": "https://veyaguest.co.il/",
             "inLanguage": "he-IL",
             "description": "מערכת חכמה לניהול אירועים: אישורי הגעה (RSVP) בוואטסאפ, ניהול רשימת מוזמנים, הזמנות וסידורי הושבה אוטומטיים — לכל סוג אירוע.",
-            "publisher": { "@id": "https://veya-snowy.vercel.app/#organization" }
+            "publisher": { "@id": "https://veyaguest.co.il/#organization" }
           },
           {
             "@type": "FAQPage",
@@ -554,11 +554,6 @@
       .rsvp-list li { display: flex; align-items: center; gap: 11px; font-size: 16.5px; color: var(--charcoal); }
       .rsvp-list svg { color: var(--green); flex-shrink: 0; }
 
-      /* ===== סקיצת אולם ===== */
-      .s2h { background: var(--ivory); }
-      .s2h-lead { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(19px, 2.5vw, 25px); color: var(--charcoal); line-height: 1.45; margin-bottom: 12px; }
-      .s2h-punch { text-align: center; margin-top: 32px; font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(18px, 2.3vw, 22px); color: var(--charcoal); }
-
       /* ===== הושבה בקליק ===== */
       .seating { background: var(--ink); color: var(--cream-text); }
       .seating .kicker { color: var(--gold-light); }
@@ -635,37 +630,6 @@
         .payoff-bridge { margin: 32px auto 24px; }
       }
 
-      /* ===== Sketch → Hall (בניית סידור שולחנות מסקיצת האולם) =====
-         שני כרטיסים זהים בגודלם — הסקיצה האמיתית מהאולם מימין, אותו אולם
-         בתוך VEYA משמאל (כיוון הקריאה RTL), עם חץ ביניהם. שתי התמונות הן
-         צילומי מסך אמיתיים של אותו אולם, חתוכים לאותו אזור שולחנות, כדי
-         שההשוואה תהיה כנה ולא "המחשה".
-         aspect-ratio קבוע (5/7) לשתי המסגרות: מקורות התמונה שונים מעט
-         ביחס (0.724 מול 0.698), ובלי זה שני הכרטיסים יוצאים בגבהים שונים.
-         פלטה נייטרלית בלבד (דיו/פחם/שנהב + נגיעת ירוק אחת), בלי זהב. */
-      .s2h-flow { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; }
-      .s2h-card { background: var(--cream); border: 1px solid var(--line); border-radius: 20px; padding: 18px; box-shadow: 0 18px 40px rgba(43, 38, 32, 0.06); transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease; }
-      .s2h-card:hover { box-shadow: 0 24px 50px rgba(43, 38, 32, 0.10); border-color: rgba(43, 38, 32, 0.16); }
-      /* flex-wrap: במסך צר מאוד התגית יורדת לשורה משלה במקום לדחוס את הכותרת */
-      .s2h-cap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; margin-bottom: 14px; }
-      .s2h-cap h3 { font-size: 16.5px; }
-      .s2h-tag { font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; white-space: nowrap; }
-      .s2h-card-out .s2h-tag { color: #23794a; border-color: rgba(47, 158, 95, 0.34); background: rgba(47, 158, 95, 0.07); }
-      .s2h-frame { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--ivory-2); aspect-ratio: 5 / 7; }
-      .s2h-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
-      .s2h-arrow { width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: var(--cream-text); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 12px 26px rgba(23, 19, 13, 0.22); animation: s2h-nudge 2.8s ease-in-out infinite; }
-      @keyframes s2h-nudge { 0%, 100% { translate: 0 0; } 50% { translate: -5px 0; } }
-      @keyframes s2h-nudge-v { 0%, 100% { translate: 0 0; } 50% { translate: 0 5px; } }
-      @media (max-width: 780px) {
-        .s2h-flow { grid-template-columns: 1fr; gap: 16px; }
-        /* החץ מסתובב כדי להצביע מטה — סדר הקריאה במובייל הוא סקיצה מעל, תוצאה מתחת */
-        .s2h-arrow { transform: rotate(-90deg); margin: 0 auto; animation-name: s2h-nudge-v; }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .s2h-arrow { animation: none; }
-        .s2h-card { transition: none; }
-      }
-
       /* ===== Supporting features (compact) ===== */
       .supporting-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; }
       .supporting-item .ic { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(145deg, rgba(201, 162, 39, 0.14), rgba(201, 162, 39, 0.05)); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; color: var(--gold-deep); }
@@ -682,7 +646,6 @@
         .btn-primary:hover .arw { transform: translateX(-4px); }
         .btn-ghost:hover { transform: translateY(-1px); }
         .sc-tab:not([aria-selected="true"]):hover { transform: translateY(-1px); }
-        .s2h-card:hover { transform: translateY(-4px); }
         .prep-card:hover { transform: translateY(-4px); border-color: rgba(201, 162, 39, 0.42); }
         .step:hover { transform: translateY(-4px); border-color: rgba(201, 162, 39, 0.42); }
         .cc:hover { transform: rotate(0deg) translateY(-4px); }
@@ -733,7 +696,7 @@
         .reveal { opacity: 1; transform: none; transition: none; }
         .flow-step::before { transform: scaleY(1); transition: none; }
         .hero .reveal { animation: none; }
-        .btn, .cc, .prep-card, .step, .s2h-card { transition: none; }
+        .btn, .cc, .prep-card, .step { transition: none; }
         .device-phone { animation: none; transform: perspective(900px) rotateY(-3deg); }
         .device-mac { transition: none; }
         .hero-devices::before { animation: none; }
@@ -970,59 +933,6 @@
         </div>
       </section>
 
-      <!-- ===== סקיצת אולם ===== -->
-      <section class="s2h" id="sketch" aria-labelledby="s2h-title">
-        <div class="wrap">
-          <div class="section-head reveal">
-            <span class="kicker">סקיצת אולם</span>
-            <h2 id="s2h-title" class="section-title">קיבלתם סקיצה מהאולם?</h2>
-            <p class="s2h-lead">מעולה. אל תתחילו לבנות אותה מחדש.</p>
-            <p class="section-sub">
-              מעלים את הסקיצה ל-VEYA. VEYA מזהה את השולחנות והמיקום שלהם
-              והופכת אותה למפת אולם שאפשר לעבוד איתה.
-            </p>
-          </div>
-
-          <div class="s2h-flow reveal d1">
-            <figure class="s2h-card">
-              <figcaption class="s2h-cap">
-                <h3>הסקיצה מהאולם</h3>
-                <span class="s2h-tag">תמונה או צילום</span>
-              </figcaption>
-              <div class="s2h-frame">
-                <img
-                  src="/product/hall-sketch-before.jpg"
-                  alt="הסקיצה שהתקבלה מהאולם: 36 שולחנות בשש שורות, כל שולחן עם המספר שלו ומספר המקומות"
-                  width="565" height="780" loading="lazy" decoding="async"
-                  onerror="this.style.display='none'"
-                />
-              </div>
-            </figure>
-
-            <div class="s2h-arrow" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
-            </div>
-
-            <figure class="s2h-card s2h-card-out">
-              <figcaption class="s2h-cap">
-                <h3>האולם שלכם ב-VEYA</h3>
-                <span class="s2h-tag">מוכן לסידור הושבה</span>
-              </figcaption>
-              <div class="s2h-frame">
-                <img
-                  src="/product/hall-sketch-after.jpg"
-                  alt="אותו אולם אחרי הבנייה ב-VEYA: אותם שולחנות באותם מיקומים, כל אחד עם מקומות ישיבה ומצב תפוסה"
-                  width="775" height="1110" loading="lazy" decoding="async"
-                  onerror="this.style.display='none'"
-                />
-              </div>
-            </figure>
-          </div>
-
-          <p class="s2h-punch reveal">אותה סקיצה. רק סוף סוף אפשר לעבוד איתה.</p>
-        </div>
-      </section>
-
       <!-- ===== הושבה בקליק ===== -->
       <section class="seating on-dark" id="seating" aria-labelledby="seating-title">
         <div class="wrap">
@@ -1068,7 +978,7 @@
 
             <div class="payoff-shot reveal d1">
               <img
-                src="/product/hero-seating.png"
+                src="/product/seating.png"
                 alt="סידור ההושבה של VEYA: אולם מלא ומוזמנים משובצים לשולחנות"
                 width="1400" height="875" loading="lazy" decoding="async"
                 onerror="this.style.display='none'"
