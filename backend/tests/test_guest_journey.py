@@ -385,6 +385,42 @@ def test_last_round_and_list_closing_are_one_card() -> None:
     print("✓ סבב שיחות אחרון + סגירת הרשימה = כרטיס אחד")
 
 
+def test_thank_you_appears_in_timeline_after_event() -> None:
+    """הודעת התודה שכבר קיימת במערכת מוצגת גם במסלול אישורי ההגעה — יום
+    אחרי האירוע (מוזז ליום פעיל), לקהל שאישר הגעה, בסוף המסלול."""
+    from app import rsvp_timeline
+    from app import communication
+
+    # אירוע ביום שישי — יום אחרי נופל בשבת, ולכן הודעת התודה נדחית ליום ראשון,
+    # בדיוק כמו דחיית סוף-השבוע ב-``communication._due_now``.
+    ev = FakeEvent(
+        event_date="2026-12-18", venue_commit_days_before=5,
+        rsvp_track_started_at=datetime(2026, 10, 1),
+    )
+    guests = [type("G", (), {"rsvp_status": s})() for s in (["pending"] * 4 + ["confirmed"] * 6)]
+    view = rsvp_timeline.compute_timeline(ev, guests, now=datetime(2026, 10, 15))
+
+    all_actions = [(d, a) for d in view["days"] for a in d["actions"]]
+    thanks = [(d, a) for d, a in all_actions if a["type"] == "thank_you"]
+    assert len(thanks) == 1, "הודעת תודה אחת בדיוק במסלול"
+    day, action = thanks[0]
+
+    event_date = date(2026, 12, 18)
+    natural = event_date + timedelta(days=1)
+    expected = rsvp_timeline.next_active_day(natural)
+    assert not rsvp_timeline.is_weekend(expected)
+    assert expected > natural  # באמת נדחתה מסוף השבוע
+    assert day["iso"] == expected.isoformat()
+    assert action["moved_from_weekend"] is True
+    # אותו היסט שבו היא נשלחת בפועל.
+    assert communication.DEFAULT_TRIGGER_OFFSET_DAYS["thank_you"] == 1
+    assert action["audience_count"] == 6  # מי שאישר הגעה
+    # מגיעה אחרי הודעת יום-האירוע.
+    day_of = next(d for d, a in all_actions if a["type"] == "day_of")
+    assert day["iso"] > day_of["iso"]
+    print("✓ הודעת התודה מוצגת במסלול אחרי האירוע")
+
+
 if __name__ == "__main__":
     test_gift_window_day_by_day()
     test_opening_moment_is_midnight_three_days_before()
@@ -401,4 +437,5 @@ if __name__ == "__main__":
     test_last_call_round_equals_commitment_date()
     test_no_whatsapp_and_call_round_on_the_same_day()
     test_last_round_and_list_closing_are_one_card()
+    test_thank_you_appears_in_timeline_after_event()
     print("\nכל בדיקות מסע האורח עברו ✓")

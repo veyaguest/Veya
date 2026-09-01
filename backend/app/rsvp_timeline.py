@@ -409,6 +409,20 @@ def compute_timeline(
         "moved_from_weekend": False,
     })
 
+    # הודעת התודה — יום אחרי האירוע (``communication.DEFAULT_TRIGGER_OFFSET_DAYS
+    # ["thank_you"] == 1``; מוזזת ליום פעיל אם נופלת על סוף שבוע, בדיוק כמו
+    # השליחה בפועל ב-``communication._due_now``). מוצגת כשלב אחרון במסלול.
+    thank_you_natural = event_date + timedelta(days=1)
+    thank_you_date = _next_active_day(thank_you_natural)
+    ensure_day(thank_you_date)["actions"].append({
+        "type": "thank_you",
+        "icon": "🙏",
+        "label": "הודעת תודה למוזמנים",
+        "audience": _audience_label("confirmed"),
+        "audience_count": confirmed,
+        "moved_from_weekend": thank_you_date != thank_you_natural,
+    })
+
     # ---- עוגן 'היום' (מופיע תמיד, גם בלי פעולה) ----
     # אין עוגן 'מחר': ב-VEYA אין הודעת "מחר מתראים", והלוח לא מדבר על מחר.
     if today <= event_date:
