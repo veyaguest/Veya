@@ -28,6 +28,7 @@ from app.routers import (
     event,
     event_members,
     events,
+    finance,
     gifts,
     guests,
     hall,
@@ -105,6 +106,7 @@ app.include_router(event.router)
 app.include_router(hall.router)
 app.include_router(confirm.router)
 app.include_router(gifts.router)
+app.include_router(finance.router)
 app.include_router(automation.router)
 app.include_router(communication.router)
 app.include_router(venues.router)

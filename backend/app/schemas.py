@@ -2257,3 +2257,288 @@ class PostponementReviewRow(BaseModel):
     reviewed_by: Optional[str] = None
     reviewed_at: Optional[datetime] = None
     rejection_reason: Optional[str] = None
+
+
+# ════════════════════════════════════════════════════════════════════════
+#  כספי האירוע — עלות האירוע, ספירת מתנות וסיכום
+# ════════════════════════════════════════════════════════════════════════
+
+CalcMethod = Literal["fixed", "per_attendee", "per_guest", "per_unit"]
+
+
+class ExpenseItemRead(BaseModel):
+    """פריט מוצע בקטלוג — הצעה למילוי, לא רשימה סגורה."""
+
+    key: str
+    label: str
+    calc_method: CalcMethod
+    #: האם להציג לפריט את שדות ההתחייבות (כמות מובטחת + מינימום כספי).
+    supports_commitment: bool = False
+
+
+class ExpenseCategoryRead(BaseModel):
+    key: str
+    label: str
+    items: list[ExpenseItemRead]
+
+
+class ExpenseWrite(BaseModel):
+    """יצירה/עדכון של שורת הוצאה.
+
+    **הסכומים מגיעים באגורות שלמות ולא בשקלים.** ה-Frontend ממיר פעם אחת
+    בקלט; מספר עשרוני שנוסע ברשת הוא בדיוק המקום שבו נולדות שגיאות עיגול.
+    """
+
+    category: str = Field(default="other", max_length=60)
+    item_key: str = Field(default="", max_length=60)
+    label: str = Field(min_length=1, max_length=120)
+    calc_method: CalcMethod = "fixed"
+    amount_agorot: int = Field(default=0, ge=0)
+    #: ל-``per_unit`` בלבד.
+    quantity: Optional[int] = Field(default=None, ge=0)
+    #: כמות ההתחייבות מול הספק — ל-``per_attendee`` בלבד. חלק ממנוע
+    #: החישוב ולא שדה מידע: משלמים על MAX(מגיעים, התחייבות).
+    committed_quantity: Optional[int] = Field(default=None, ge=0)
+    #: מינימום כספי מובטח בחוזה, באגורות.
+    min_total_agorot: Optional[int] = Field(default=None, ge=0)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("label")
+    @classmethod
+    def _trim_label(cls, v: str) -> str:
+        trimmed = v.strip()
+        if not trimmed:
+            raise ValueError("נשמח שתזינו שם להוצאה.")
+        return trimmed
+
+
+class ExpenseRead(BaseModel):
+    """שורת הוצאה + התוצאה שלה במצב האורחים הנוכחי.
+
+    התוצאה מגיעה **מהשרת** ולא מחושבת במסך. הכלל הזה הוא אותו כלל שכבר
+    נאכף במתנות (``app/gift.py``): ה-Frontend מצייר כסף, לא מחשב אותו.
+    """
+
+    id: int
+    category: str
+    category_label: str
+    item_key: str
+    label: str
+    calc_method: CalcMethod
+    amount_agorot: int
+    quantity: Optional[int] = None
+    committed_quantity: Optional[int] = None
+    min_total_agorot: Optional[int] = None
+    note: Optional[str] = None
+    sort_order: int = 0
+
+    #: העלות בפועל של השורה.
+    total_agorot: int
+    total_display: str
+    #: הכמות שחויבה בפועל. ``None`` לשורה קבועה — שם אין כמות, ו-1 היה
+    #: מספר ממציא.
+    billed_quantity: Optional[int] = None
+    #: מנות ששולמו ואיש לא ישב בהן (התחייבות פחות מגיעים).
+    unused_quantity: int = 0
+    #: מגיעים מעבר לכמות ההתחייבות.
+    over_commitment: int = 0
+    #: האם המינימום הכספי הוא שקבע את המחיר בפועל.
+    min_total_applied: bool = False
+
+
+class ScenarioRead(BaseModel):
+    """נקודה אחת בלוח "מה יקרה אם יגיעו…"."""
+
+    attendees: int
+    total_agorot: int
+    total_display: str
+    #: ההפרש מהמצב הנוכחי. שלילי = חיסכון.
+    delta_agorot: int
+    #: האם זו הנקודה שהאירוע עומד בה כרגע.
+    is_current: bool = False
+    #: האם זו כמות ההתחייבות מול האולם — המדרגה שבה המחיר מתחיל לזוז.
+    is_commitment: bool = False
+
+
+class StepCostRead(BaseModel):
+    """כמה יעלו עוד N אורחים. נגזר כהפרש בין שני מצבים, ולכן נכון גם
+    מתחת לכמות ההתחייבות (שם התוספת היא 0) וגם מעליה."""
+
+    guests: int
+    added_agorot: int
+    added_display: str
+
+
+class CommitmentRead(BaseModel):
+    """תמונת ההתחייבות מול האולם — הנתון שקובע כמה באמת משלמים.
+
+    מוצג בנפרד מהסיכום כי זו השאלה שהזוג שואל בשבועיים האחרונים:
+    "על כמה התחייבנו, כמה מגיעים, ומה זה אומר".
+    """
+
+    #: שורת ההוצאה שההתחייבות שייכת לה (שורת המנה, בדרך כלל).
+    expense_id: int
+    label: str
+    committed_quantity: int
+    attendees: int
+    #: כמה מנות שולמו ולא נוצלו. 0 כשהמגיעים עברו את ההתחייבות.
+    unused_quantity: int
+    #: כמה מגיעים מעבר להתחייבות. 0 כשעדיין מתחת.
+    over_commitment: int
+    #: הכמות שמחויבת בפועל — MAX(מגיעים, התחייבות).
+    billed_quantity: int
+    unit_price_agorot: int
+    total_agorot: int
+    total_display: str
+    min_total_agorot: Optional[int] = None
+    min_total_applied: bool = False
+
+
+class CostSummaryRead(BaseModel):
+    """התמונה הכספית של צד ההוצאות."""
+
+    total_agorot: int
+    total_display: str
+    fixed_agorot: int
+    fixed_display: str
+    variable_agorot: int
+    variable_display: str
+
+    attendees: int
+    invited: int
+    #: ``None`` כשאין מגיעים — חלוקה באפס אינה "0 ₪ לאורח", היא שאלה
+    #: בלי תשובה, וכך היא מוצגת.
+    cost_per_attendee_agorot: Optional[int] = None
+    cost_per_attendee_display: str = ""
+    #: כמה יעלה האורח הבא.
+    next_attendee_agorot: int = 0
+    next_attendee_display: str = ""
+
+    steps: list[StepCostRead] = []
+    scenarios: list[ScenarioRead] = []
+    commitments: list[CommitmentRead] = []
+
+
+class RsvpSnapshotRead(BaseModel):
+    """מצב אישורי ההגעה — **נקרא מהמקור הקיים**, לא נספר מחדש.
+
+    אותם מספרים בדיוק שמופיעים בתמונת המצב ובמסך אישורי ההגעה. שני
+    מסכים שסופרים "כמה מגיעים" בשתי דרכים הם שני מספרים שיסטו זה מזה.
+    """
+
+    total_guests: int
+    invited_people: int
+    confirmed_guests: int
+    confirmed_people: int
+    declined_guests: int
+    pending_guests: int
+    maybe_guests: int
+
+
+class GiftEntryRead(BaseModel):
+    """שורת מתנה אחת — מעטפה או אשראי, באותה רשימה."""
+
+    source: Literal["envelope", "credit"]
+    id: int
+    #: ``None`` = הסכום חסום (אשראי לפני אישור פרטי קבלת המתנות). לא
+    #: מאופס ולא מוסתר בכוכביות — פשוט לא נכתב לתשובה.
+    amount_agorot: Optional[int] = None
+    amount_display: str = ""
+    guest_id: Optional[int] = None
+    #: ריק = מעטפה שטרם זוהתה. מצב מתועד, לא חוסר נתון.
+    guest_name: str = ""
+    envelope_number: Optional[int] = None
+    note: Optional[str] = None
+    created_at: datetime
+    #: מתנה משותפת — שמות המוזמנים הנוספים. הסכום אינו מפוצל ביניהם.
+    shared_names: list[str] = []
+    status: Optional[str] = None
+
+
+class EnvelopeWrite(BaseModel):
+    """הזנת מעטפה או עריכתה."""
+
+    amount_agorot: int = Field(gt=0)
+    #: ``None`` = "לא ידוע ממי". מצב לגיטימי שאפשר לחזור אליו.
+    guest_id: Optional[int] = None
+    #: מתנה משותפת — מוזמנים נוספים מעבר ל-``guest_id``.
+    shared_guest_ids: list[int] = []
+    note: Optional[str] = Field(default=None, max_length=500)
+
+
+class EnvelopeCreated(BaseModel):
+    """התשובה למעטפה שנשמרה — כוללת את מספר המעטפה **הבא**.
+
+    המספר הבא חוזר מהשרת ולא נספר בדפדפן: זו הדרך היחידה שבה שני
+    מכשירים שסופרים את אותה ערימה במקביל לא יקבלו את אותו מספר.
+    """
+
+    envelope: GiftEntryRead
+    next_envelope_number: int
+
+
+class GiftIncomeRead(BaseModel):
+    """צד ההכנסות."""
+
+    envelopes_agorot: int
+    envelopes_display: str
+    envelopes_count: int
+    #: ``None`` (ולא 0) כשסכומי האשראי חסומים — "0" היה אומר "לא התקבלו
+    #: מתנות באשראי", וזו טענה אחרת לגמרי.
+    credit_agorot: Optional[int] = None
+    credit_display: str = ""
+    credit_count: int = 0
+    #: ``None`` כשחלק מהתמונה חסום. סכום חלקי שמוצג כ"סה״כ" הוא מספר שקרי.
+    total_agorot: Optional[int] = None
+    total_display: str = ""
+    unidentified_count: int = 0
+    unidentified_agorot: int = 0
+    unidentified_display: str = ""
+
+
+class GuestGiftRowRead(BaseModel):
+    """מוזמן ומצב המתנה שלו — **כולל מי שעדיין לא נספר.**"""
+
+    guest_id: int
+    full_name: str
+    rsvp_status: str
+    #: counted / credit / not_counted. "עדיין לא נספרה" אינו "לא נתן".
+    status: Literal["counted", "credit", "not_counted"]
+    total_agorot: Optional[int] = None
+    total_display: str = ""
+    gift_count: int = 0
+    envelope_numbers: list[int] = []
+
+
+class GiftCountingRead(BaseModel):
+    """מסך ספירת המתנות."""
+
+    #: נפתח מיום האירוע ואילך.
+    counting_open: bool
+    #: כמה ימים נשארו עד שייפתח. ``None`` = אין תאריך לאירוע.
+    days_until_open: Optional[int] = None
+    #: האם שירות המתנות באשראי פעיל לאירוע הזה בכלל.
+    credit_service_active: bool = False
+    #: האם מותר להציג סכומי אשראי (החשבון אושר).
+    credit_amounts_visible: bool = False
+    next_envelope_number: int = 1
+    income: GiftIncomeRead
+    entries: list[GiftEntryRead] = []
+
+
+class FinanceSummaryRead(BaseModel):
+    """התמונה המלאה — הוצאות, הכנסות והשורה התחתונה.
+
+    קריאה אחת שמחזירה את כל המסך, בדיוק כמו ``/stats`` לתמונת המצב.
+    שלוש קריאות נפרדות היו מציגות שלושה חלקים שנטענים בזמנים שונים —
+    ובמסך כספי זה נראה כמו מספרים שקופצים.
+    """
+
+    rsvp: RsvpSnapshotRead
+    cost: CostSummaryRead
+    income: GiftIncomeRead
+    counting_open: bool
+    #: הכנסות פחות הוצאות. ``None`` כשצד ההכנסות חסום חלקית.
+    bottom_line_agorot: Optional[int] = None
+    bottom_line_display: str = ""
+    expenses: list[ExpenseRead] = []

@@ -1078,3 +1078,154 @@ class GuestCycleRsvp(Base):
     #: (החלטת בעלים) — נשמר כאן כדי שהארכיון יהיה תמונה מלאה של המחזור.
     table_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     archived_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+# ════════════════════════════════════════════════════════════════════════
+#  כספי האירוע — עלות האירוע וספירת המתנות שאחריו
+# ════════════════════════════════════════════════════════════════════════
+
+
+class EventExpense(Base):
+    """שורת הוצאה אחת בעלות האירוע.
+
+    **כל סכום כאן הוא ``int`` של אגורות**, בדיוק כמו ב-``Gift`` וב-
+    ``app/gift.py``. אין ``float`` בשום מקום בשרשרת הכספית של VEYA: 0.1+0.2
+    אינו 0.3 בבינארי, וטעות של אגורה בסיכום של ₪180,000 היא בדיוק סוג
+    התקלה שמתגלה מאוחר מדי.
+
+    ## ארבע דרכי חישוב, שדה אחד
+
+    ``calc_method`` קובע **מה המשמעות של ``amount_agorot``**:
+
+        fixed         סכום קבוע. ``amount_agorot`` הוא העלות כולה.
+        per_attendee  מחיר לאורח שמגיע. מוכפל במספר המגיעים בפועל.
+        per_guest     מחיר למוזמן. מוכפל בכמות האנשים שהוזמנו.
+        per_unit      מחיר ליחידה. מוכפל ב-``quantity``.
+
+    הפרדה בין ``per_attendee`` ל-``per_guest`` אינה קפדנות מיותרת: מנה
+    באולם משולמת לפי מי שהגיע, אבל הזמנה מודפסת ומעטפה משולמות לפי מי
+    שהוזמן. שתי כמויות שונות לגמרי, ושתיהן כבר קיימות במערכת.
+
+    ## התחייבות לאולם — למה זה לא שדה מידע
+
+    אולם ישראלי כמעט תמיד נמכר בהתחייבות למספר מנות מינימלי. זוג
+    שהתחייב על 500 מנות ומגיעים אליו 463 **משלם על 500**, לא על 463.
+    לכן ``committed_quantity`` הוא חלק ממנוע החישוב ולא הערה:
+
+        מנות לחיוב = MAX(מגיעים בפועל, כמות ההתחייבות)
+        עלות השורה = MAX(מנות לחיוב × מחיר ליחידה, מינימום כספי)
+
+    ``min_total_agorot`` הוא המינימום הכספי המובטח כשהוא נקוב בחוזה
+    כסכום ולא ככמות (שני התנאים יכולים להתקיים יחד, ואז הגבוה מנצח).
+
+    שני השדות חלים על כל שורת ``per_attendee``, לא רק על המנה — אלכוהול
+    לאדם עם מינימום התקשרות הוא בדיוק אותה חשבונאות, ואין סיבה לקבע
+    "שורת המנה" כמקרה מיוחד בקוד.
+
+    ## מה שבמפורש לא נשמר כאן
+    שם ספק, פרטי חוזה, מספר חשבונית או פרטי תשלום. שורת הוצאה היא מספר
+    ולא מסמך; ניהול ספקים הוא מוצר אחר.
+    """
+
+    __tablename__ = "event_expenses"
+    __table_args__ = (
+        # שאילתת "כל ההוצאות של האירוע, לפי סדר תצוגה" היא הגישה היחידה
+        # למסך עלות האירוע. אין כאן שאילתה לפי קטגוריה לבדה.
+        Index("ix_event_expenses_event_sort", "event_id", "sort_order"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+
+    #: מפתח הקטגוריה מהקטלוג (``app/finance_categories.py``) — למשל
+    #: ``"venue_food"``. מחרוזת חופשית ב-DB בכוונה: הקטלוג הוא קובץ קוד
+    #: שיכול לגדול, ו-ENUM ב-DB היה הופך כל תוספת למיגרציה.
+    category: Mapped[str] = mapped_column(String, default="other", index=True)
+    #: מפתח הפריט בתוך הקטגוריה (``"meal_price"``). ריק = פריט חופשי
+    #: שהזוג הוסיף בעצמו, ואז ``label`` הוא כל מה שיש.
+    item_key: Mapped[str] = mapped_column(String, default="")
+    #: השם שהזוג רואה. נשמר ולא נגזר מהקטלוג בזמן קריאה: זוג שערך את
+    #: השם ("DJ — אבי") צריך לראות את השם שלו, לא את שם הקטלוג.
+    label: Mapped[str] = mapped_column(String, default="")
+
+    #: fixed / per_attendee / per_guest / per_unit — ראו ``app/finance.py``.
+    calc_method: Mapped[str] = mapped_column(String, default="fixed")
+    #: סכום קבוע, או מחיר ליחידה/לאורח/למוזמן. לעולם אגורות שלמות.
+    amount_agorot: Mapped[int] = mapped_column(Integer, default=0)
+    #: כמות — ל-``per_unit`` בלבד. None בכל שאר השיטות.
+    quantity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    #: כמות ההתחייבות מול הספק (מנות באולם וכדומה) — ``per_attendee`` בלבד.
+    committed_quantity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    #: מינימום כספי מובטח בחוזה, באגורות. None = אין מינימום כספי.
+    min_total_agorot: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    #: הערה חופשית של הזוג ("כולל מע״מ", "לשלם שבועיים לפני").
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class GiftEnvelope(Base):
+    """מעטפה אחת שנספרה אחרי האירוע.
+
+    ## למה טבלה נפרדת מ-``Gift`` ולא עמודת ``method``
+
+    ``gifts`` היא טבלת **עסקאות סליקה**: היא נכתבת אך ורק מהמסלול הציבורי,
+    אין לה מדיניות INSERT/UPDATE ב-RLS בכלל (``rls/13_gifts_rls.sql``), והיא
+    מחזיקה ``fee``/``total``/``provider``/``idempotency_key`` — שדות שאין להם
+    שום משמעות למעטפה שהזוג ספר במטבח. הוספת כתיבת-בעלים לטבלה הזו הייתה
+    פותחת בדיוק את משטח האבטחה שנסגר שם בכוונה.
+
+    מעטפה היא **רישום ידני של בעלי האירוע**: אין ספק, אין עמלה, אין כרטיס,
+    ומותר לערוך ולמחוק אותה. שני דברים שונים במחזור החיים ובאבטחה — לכן שתי
+    טבלאות, ומקור אמת אחד שמאחד אותן לתצוגה (``app/finance.py``).
+
+    ## מספר המעטפה
+
+    ``envelope_number`` הוא מספר רץ **לכל אירוע** ("מעטפה #127"), ולא מזהה
+    ה-DB. הוא קיים כדי שספירה של 400 מעטפות תהיה מעקב אנושי ולא ים של
+    מספרים אקראיים, והוא ייחודי לאירוע כדי ששני אירועים לא יתנגשו.
+    """
+
+    __tablename__ = "gift_envelopes"
+    __table_args__ = (
+        UniqueConstraint("event_id", "envelope_number", name="uq_envelope_number"),
+        Index("ix_gift_envelopes_event_guest", "event_id", "guest_id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    #: מספר רץ לכל אירוע, מ-1 ומעלה.
+    envelope_number: Mapped[int] = mapped_column(Integer)
+    amount_agorot: Mapped[int] = mapped_column(Integer)
+
+    #: מי נתן. **None = מעטפה שטרם זוהתה** — מצב לגיטימי ומתועד, לא חוסר
+    #: נתון. אפשר לחזור אליה ולשייך אותה מאוחר יותר.
+    guest_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("guests.id", ondelete="SET NULL"), index=True, nullable=True
+    )
+    #: מתנה משותפת: מזהי מוזמנים **נוספים** מעבר ל-``guest_id``.
+    #: הסכום **אינו** מפוצל ביניהם — מעטפה אחת היא סכום אחד, והשיוך
+    #: הנוסף הוא לתצוגה ("רוני ושחר") ולא לחשבון. פיצול סכום היה יוצר
+    #: שני מספרים שסכומם חייב להישאר שווה למקור, וזה מקור באגים.
+    shared_guest_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    #: מי הזין. לאירוע בניהול משותף זו התשובה ל"מי ספר את זה?".
+    recorded_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
