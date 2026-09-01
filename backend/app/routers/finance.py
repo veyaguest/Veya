@@ -250,6 +250,26 @@ def _guest_row_read(row: finance_service.GuestGiftRow) -> schemas.GuestGiftRowRe
     )
 
 
+def _single_expense_read(
+    db: Session, event: models.Event, expense: models.EventExpense
+) -> schemas.ExpenseRead:
+    """שורה אחת, **מחושבת בהקשר של כל שורות האירוע.**
+
+    לא ניתן לחשב שורה כספית בבידוד: שורת ``percent`` נגזרת מסך שאר
+    השורות, ו-``cost_breakdown([expense])`` היה נותן לה בסיס ריק — כלומר
+    0 ₪ בתשובת ה-POST/PUT, בזמן שהסיכום מציג את הערך הנכון. שני מספרים
+    שונים לאותה שורה, משני נתיבים באותו API.
+
+    לכן החישוב כאן עובר תמיד דרך כל ההוצאות, כמו בכל שאר הנתיבים.
+    """
+    guests = _guests(db, event.id)
+    rows = finance_service.expenses_for(db, event.id)
+    breakdown = finance.cost_breakdown(
+        rows, finance.attendee_count(guests), finance.invited_count(guests)
+    )
+    return _expense_read(expense, breakdown.lines[expense.id], event.event_type)
+
+
 def _rsvp_snapshot(guests: list[models.Guest]) -> schemas.RsvpSnapshotRead:
     """אותה ספירה בדיוק כמו ב-``routers/stats.py`` — ובכוונה.
 
@@ -465,12 +485,7 @@ def create_expense(
     )
     db.commit()
     db.refresh(expense)
-
-    guests = _guests(db, event.id)
-    line = finance.cost_breakdown(
-        [expense], finance.attendee_count(guests), finance.invited_count(guests)
-    ).lines[expense.id]
-    return _expense_read(expense, line, event.event_type)
+    return _single_expense_read(db, event, expense)
 
 
 @router.post("/template/apply", response_model=schemas.TemplateApplyResult)
@@ -580,12 +595,7 @@ def update_expense(
     )
     db.commit()
     db.refresh(expense)
-
-    guests = _guests(db, event.id)
-    line = finance.cost_breakdown(
-        [expense], finance.attendee_count(guests), finance.invited_count(guests)
-    ).lines[expense.id]
-    return _expense_read(expense, line, event.event_type)
+    return _single_expense_read(db, event, expense)
 
 
 @router.delete("/expenses/{expense_id}", status_code=204)

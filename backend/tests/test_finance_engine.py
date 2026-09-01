@@ -253,6 +253,28 @@ def test_two_percent_lines_do_not_feed_each_other() -> None:
     assert breakdown.total_agorot == 115_000 * S
 
 
+def test_percent_line_cannot_be_computed_in_isolation() -> None:
+    """רגרסיה: שורת אחוז שמחושבת לבדה מקבלת בסיס ריק, כלומר 0 ₪.
+
+    זה בדיוק הבאג שנתפס ב-QA: ``routers/finance.py`` החזיר בתשובת
+    ה-POST/PUT את השורה אחרי ``cost_breakdown([expense])`` — ואז אותה
+    שורה הראתה 0 ₪ בתשובת השמירה ו-24,087 ₪ בסיכום. שני מספרים לאותה
+    שורה, משני נתיבים באותו API.
+
+    התיקון: ``_single_expense_read`` מחשב תמיד על כל שורות האירוע.
+    הבדיקה כאן נועלת את ההתנהגות שגרמה לבאג, כדי שהיא לא תחזור דרך
+    נתיב אחר.
+    """
+    pct = line(2, PERCENT, 0, quantity=10)
+    alone = finance.cost_breakdown([pct], 100, 100)
+    assert alone.lines[2].total_agorot == 0, "שורת אחוז לבדה אין לה בסיס"
+
+    in_context = finance.cost_breakdown([line(1, FIXED, 100_000), pct], 100, 100)
+    assert in_context.lines[2].total_agorot == 10_000 * S
+    # המסקנה המעשית: לעולם לא לחשב שורה בודדת מחוץ להקשר שלה.
+    assert alone.lines[2].total_agorot != in_context.lines[2].total_agorot
+
+
 def test_percent_grows_with_the_attendee_count() -> None:
     """שורת אחוז זזה עם מספר המגיעים, כי הבסיס שלה זז. לכן היא נספרת
     כ"הוצאה לפי כמות" ולא כהוצאה קבועה."""
