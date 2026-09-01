@@ -23,10 +23,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app import finance, models  # noqa: E402
 from app.finance_categories import (  # noqa: E402
     FIXED,
+    ITEMS,
     PER_ATTENDEE,
     PER_GUEST,
     PER_UNIT,
+    PERCENT,
+    TEMPLATES,
     catalog_for,
+    category_label,
+    default_items_for,
 )
 
 #: ₪1 = 100 אגורות. הבדיקות כתובות בשקלים כדי שיהיו קריאות, וממירות כאן.
@@ -220,47 +225,193 @@ def test_no_floats_anywhere_in_the_result() -> None:
 
 
 # ════════════════════════════════════════════════════════════════════════
-#  6. הקטלוג מותאם לסוג האירוע (Event-first)
+#  6. אחוזים
 # ════════════════════════════════════════════════════════════════════════
 
-def test_wedding_categories_do_not_leak_into_other_event_types() -> None:
-    """"כלה"/"חתן"/"טבעות" הן קטגוריות חתונתיות. הצגתן בברית או באירוע
-    עסקי אינה טעות ניסוח — היא מוצר שבור."""
-    wedding_keys = {c.key for c in catalog_for("wedding")}
-    assert {"bride", "groom", "rings"} <= wedding_keys
-    assert "attire" not in wedding_keys, "בחתונה יש שתי קטגוריות לבוש, לא אחת גנרית"
+def test_percent_is_computed_on_the_non_percent_base() -> None:
+    """טיפים של 10% נגזרים מסך שאר ההוצאות, לא מהסך שכולל אותם."""
+    expenses = [line(1, FIXED, 100_000), line(2, PERCENT, 0, quantity=10)]
+    breakdown = finance.cost_breakdown(expenses, 100, 100)
 
-    for event_type in ("bar_mitzvah", "brit", "business"):
-        keys = {c.key for c in catalog_for(event_type)}
-        assert not ({"bride", "groom", "rings"} & keys), f"קטגוריה חתונתית דלפה ל-{event_type}"
-        assert "attire" in keys, f"אין קטגוריית לבוש ל-{event_type}"
+    assert breakdown.lines[2].total_agorot == 10_000 * S
+    assert breakdown.total_agorot == 110_000 * S
 
 
-def test_chuppah_is_filtered_out_of_non_wedding_design() -> None:
-    """פריט חתונתי בתוך קטגוריה משותפת מסונן בנפרד, בלי לשכפל קטגוריה."""
-    design = {c.key: c for c in catalog_for("business")}["design"]
-    assert "chuppah" not in {i.key for i in design.items}
+def test_two_percent_lines_do_not_feed_each_other() -> None:
+    """שתי שורות אחוז נגזרות מאותו בסיס יציב. אילו אחוז היה נגזר מהסך
+    שכולל אותו, השתיים היו מזינות זו את זו — והתוצאה הייתה תלויה בסדר
+    שבו הוזנו."""
+    expenses = [
+        line(1, FIXED, 100_000),
+        line(2, PERCENT, 0, quantity=10),
+        line(3, PERCENT, 0, quantity=5),
+    ]
+    breakdown = finance.cost_breakdown(expenses, 100, 100)
 
-    wedding_design = {c.key: c for c in catalog_for("wedding")}["design"]
-    assert "chuppah" in {i.key for i in wedding_design.items}
+    assert breakdown.lines[2].total_agorot == 10_000 * S
+    assert breakdown.lines[3].total_agorot == 5_000 * S
+    assert breakdown.total_agorot == 115_000 * S
 
 
-def test_unknown_event_type_gets_the_safe_default() -> None:
-    """סוג לא מוכר מקבל את ברירת המחדל הרחבה ולא רשימה ריקה — מוצר שבור
-    לא ייווצר מטעות הקלדה בשם סוג."""
-    keys = {c.key for c in catalog_for("something_new")}
-    assert "venue_food" in keys and "attire" in keys
+def test_percent_grows_with_the_attendee_count() -> None:
+    """שורת אחוז זזה עם מספר המגיעים, כי הבסיס שלה זז. לכן היא נספרת
+    כ"הוצאה לפי כמות" ולא כהוצאה קבועה."""
+    expenses = [line(1, PER_ATTENDEE, 320), line(2, PERCENT, 0, quantity=10)]
+
+    small = finance.cost_breakdown(expenses, 100, 100)
+    big = finance.cost_breakdown(expenses, 200, 200)
+
+    assert big.lines[2].total_agorot == small.lines[2].total_agorot * 2
+    assert small.fixed_agorot == 0, "אחוז אינו הוצאה קבועה"
 
 
-def test_meal_is_the_only_item_opened_with_commitment_fields() -> None:
-    """"מינימום התחייבות" אינו פריט נפרד בקטלוג אלא שדה על שורת המנה.
-    פריט נפרד היה נספר פעמיים בסיכום."""
-    venue = {c.key: c for c in catalog_for("wedding")}["venue_food"]
-    item_keys = {i.key for i in venue.items}
+def test_percent_rounds_half_up_in_integers() -> None:
+    """עיגול חצי-כלפי-מעלה בחשבון שלמים — כמו ``gift.fee_for``."""
+    expenses = [line(1, FIXED, 0), line(2, PERCENT, 0, quantity=3)]
+    expenses[0].amount_agorot = 15  # 15 אגורות × 3% = 0.45 → 0
+    assert finance.cost_breakdown(expenses, 0, 0).lines[2].total_agorot == 0
 
-    assert "meal_price" in item_keys
-    assert not any("minimum" in k for k in item_keys)
-    assert [i.key for i in venue.items if i.supports_commitment] == ["meal_price"]
+    expenses[0].amount_agorot = 20  # 20 × 3% = 0.6 → 1
+    assert finance.cost_breakdown(expenses, 0, 0).lines[2].total_agorot == 1
+
+
+# ════════════════════════════════════════════════════════════════════════
+#  7. תבנית לכל סוג אירוע (Event-first)
+# ════════════════════════════════════════════════════════════════════════
+
+#: שבעת הסוגים שקיימים בפועל, לפי ה-Audit של הקוד. הרשימה כאן היא
+#: **הנעילה**: תבנית לסוג שאי אפשר ליצור היא קוד מת, וסוג בלי תבנית
+#: הוא זוג שמקבל רשימה גנרית.
+REAL_EVENT_TYPES = (
+    "wedding", "henna", "bar_mitzvah", "bat_mitzvah", "brit", "brita", "business",
+)
+
+#: סוגים שהתבקשו במפורש **לא** להתקיים. הבדיקה שומרת שלא ייכנסו בדלת
+#: האחורית דרך תבנית.
+FORBIDDEN_EVENT_TYPES = ("engagement", "birthday", "shabbat_chatan", "sheva_brachot")
+
+
+def test_templates_match_the_real_event_types_exactly() -> None:
+    from app import event_terms
+
+    assert set(TEMPLATES) == set(REAL_EVENT_TYPES)
+    # והרשימה זהה למנוע המונחים — שני מקורות שחייבים להישאר מסונכרנים.
+    assert set(TEMPLATES) == set(event_terms.EVENT_TERMS)
+
+
+def test_no_invented_event_types() -> None:
+    for forbidden in FORBIDDEN_EVENT_TYPES:
+        assert forbidden not in TEMPLATES, f"סוג אירוע שאינו קיים במערכת: {forbidden}"
+
+
+def test_every_type_has_a_substantial_template() -> None:
+    """"תבנית" של ארבעה סעיפים אינה תבנית — היא רשימה גנרית בתחפושת."""
+    for event_type in REAL_EVENT_TYPES:
+        categories = catalog_for(event_type)
+        items = [i for c in categories for i in c.items]
+        defaults = [i for i in items if i.is_default]
+
+        assert len(categories) >= 6, f"{event_type}: מעט מדי קטגוריות"
+        assert len(items) >= 25, f"{event_type}: מיפוי דל מדי"
+        # ברירות המחדל הן מה שנפתח על המסך — צריכות להספיק להתחיל,
+        # ולא להציף.
+        assert 5 <= len(defaults) <= 25, f"{event_type}: {len(defaults)} ברירות מחדל"
+
+
+def test_templates_are_actually_different_from_each_other() -> None:
+    """תבנית שזהה לאחרת פירושה שסוג האירוע לא קיבל התאמה אמיתית."""
+    signatures = {
+        et: frozenset(i.key for c in catalog_for(et) for i in c.items)
+        for et in REAL_EVENT_TYPES
+    }
+    for a in REAL_EVENT_TYPES:
+        for b in REAL_EVENT_TYPES:
+            if a < b:
+                assert signatures[a] != signatures[b], f"{a} ו-{b} קיבלו אותה תבנית"
+
+
+def test_type_specific_items_do_not_leak() -> None:
+    """הבדיקה המרכזית של Event-first: פריט שמוגדר לסוג אחד לא מופיע
+    בסוג שאין לו שום קשר אליו."""
+    def keys(event_type: str) -> set:
+        return {i.key for c in catalog_for(event_type) for i in c.items}
+
+    # חופה, טבעות וכתובה — חתונה בלבד.
+    for wedding_only in ("chuppah", "rings", "ketubah"):
+        assert wedding_only in keys("wedding")
+        for other in ("brit", "brita", "business", "bar_mitzvah", "bat_mitzvah"):
+            assert wedding_only not in keys(other), f"{wedding_only} דלף ל-{other}"
+
+    # מוהל — ברית בלבד. לא בבריתה, ובוודאי לא באירוע עסקי.
+    assert "mohel" in keys("brit")
+    for other in ("brita", "wedding", "business", "bar_mitzvah"):
+        assert "mohel" not in keys(other), f"מוהל דלף ל-{other}"
+
+    # תפילין — בר מצווה בלבד.
+    assert "tefillin" in keys("bar_mitzvah")
+    assert "tefillin" not in keys("bat_mitzvah")
+
+    # מרצה, תגי שם וסטרימינג — אירוע עסקי.
+    for business_only in ("speaker", "name_tags", "streaming"):
+        assert business_only in keys("business")
+        assert business_only not in keys("brit")
+
+    # עיצוב חינה — חינה בלבד.
+    assert "henna_design" in keys("henna")
+    assert "henna_design" not in keys("wedding")
+
+
+def test_meal_line_carries_the_commitment_fields() -> None:
+    """שדות ההתחייבות פתוחים על שורת המנה בכל סוג שיש בו מנות — שם
+    נמצא רוב הכסף, ושם החוזה נוקב במינימום."""
+    for event_type in ("wedding", "henna", "bar_mitzvah", "bat_mitzvah"):
+        items = {i.key: i for c in catalog_for(event_type) for i in c.items}
+        meal = items.get("meal_price") or items.get("meals")
+        assert meal is not None, f"{event_type}: אין שורת מנה"
+        assert meal.supports_commitment, f"{event_type}: המנה בלי שדות התחייבות"
+        assert meal.calc_method == PER_ATTENDEE
+
+
+def test_default_items_are_a_subset_of_the_catalog() -> None:
+    for event_type in REAL_EVENT_TYPES:
+        catalog = {i.key for c in catalog_for(event_type) for i in c.items}
+        defaults = {item.key for _, item in default_items_for(event_type)}
+        assert defaults <= catalog
+
+
+def test_unknown_event_type_falls_back_without_breaking() -> None:
+    """סוג לא מוכר נופל לתבנית החתונה — נפילה שמורידה דיוק, לא שוברת
+    מסך. **בלי** ליצור "תבנית גנרית" שהיא סוג אירוע שמיני."""
+    assert catalog_for("something_new") == catalog_for("wedding")
+
+
+def test_no_raw_category_key_ever_reaches_the_screen() -> None:
+    """מפתח קטגוריה שהוסר מהתבניות עדיין יושב על שורות קיימות ב-DB.
+    בלי מפת התאימות הזוג היה רואה "venue_food" ככותרת קבוצה — מפתח
+    פנימי שדלף למסך."""
+    for legacy in ("venue_food", "bride", "groom", "rings", "invitations",
+                   "transport", "tips", "other"):
+        label = category_label(legacy, "wedding")
+        assert label != legacy, f"מפתח גולמי דלף למסך: {legacy}"
+        assert not any(c.isascii() and c.isalpha() for c in label)
+
+
+def test_category_label_is_event_type_aware() -> None:
+    """אותו מפתח, ניסוח אחר לפי הסוג: אב לתינוק לא אמור לראות
+    "התינוקת", ואירוע עסקי לא אמור לראות "מקום ואירוח"."""
+    assert category_label("baby", "brit") == "התינוק"
+    assert category_label("baby", "brita") == "התינוקת"
+    assert category_label("venue", "wedding") == "מקום ואירוח"
+    assert category_label("venue", "business") == "מקום"
+
+
+def test_every_template_item_exists_in_the_pool() -> None:
+    """שגיאת הקלדה במפתח פריט הייתה מפילה את הייבוא — הבדיקה תופסת
+    אותה בשם, לא ב-KeyError סתום."""
+    for event_type in REAL_EVENT_TYPES:
+        for category in catalog_for(event_type):
+            for item in category.items:
+                assert item.key in ITEMS
 
 
 if __name__ == "__main__":

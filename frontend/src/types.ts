@@ -1741,7 +1741,14 @@ export type PayoutReviewRow = {
  *   per_guest     מחיר למוזמן. מוכפל בכמות שהוזמנה.
  *   per_unit      מחיר ליחידה. מוכפל ב-``quantity``.
  */
-export type CalcMethod = 'fixed' | 'per_attendee' | 'per_guest' | 'per_unit'
+export type CalcMethod =
+  | 'fixed'
+  | 'per_attendee'
+  | 'per_guest'
+  | 'per_unit'
+  /** אחוז מסך שאר ההוצאות — לטיפים ולדמי הפקה. הבסיס אינו כולל שורות
+   *  אחוז אחרות, כדי ששתיים כאלה לא יזינו זו את זו. */
+  | 'percent'
 
 export interface ExpenseCatalogItem {
   key: string
@@ -1749,6 +1756,11 @@ export interface ExpenseCatalogItem {
   calc_method: CalcMethod
   /** האם להציג לפריט את שדות ההתחייבות (כמות מובטחת + מינימום כספי). */
   supports_commitment: boolean
+  /** כמות פתיחה ליחידות, או אחוזים שלמים ל-``percent``. */
+  default_quantity: number | null
+  /** ``true`` = מוצע מיד בתבנית של סוג האירוע; ``false`` = תחת "הוספת הוצאה". */
+  is_default: boolean
+  sort_order: number
 }
 
 export interface ExpenseCategory {
@@ -1772,6 +1784,12 @@ export interface ExpenseInput {
   /** מינימום כספי מובטח בחוזה, באגורות. */
   min_total_agorot?: number | null
   note?: string | null
+  /** שם הספק. טקסט חופשי — ניהול ספקים הוא מוצר אחר. */
+  vendor?: string
+  /** הערכה מול מחיר שסוכם. ברירת המחדל היא הערכה. */
+  is_estimated?: boolean
+  /** נפרד לגמרי מ-``is_estimated``: אפשר לשלם מקדמה על סכום לא סופי. */
+  is_paid?: boolean
 }
 
 /** שורת הוצאה + התוצאה שלה. **התוצאה מגיעה מהשרת** — המסך לא מחשב כסף. */
@@ -1840,6 +1858,14 @@ export interface CostSummary {
   /** כמה יעלה האורח הבא. 0 מתחת לכמות ההתחייבות — כבר משלמים עליו. */
   next_attendee_agorot: number
   next_attendee_display: string
+  /** כמה כבר שולם וכמה עוד לפניכם — בלי קשר לשאלה אם המחיר סופי. */
+  paid_agorot: number
+  paid_display: string
+  unpaid_agorot: number
+  unpaid_display: string
+  /** כמה מהסך עדיין מבוסס על הערכה. */
+  estimated_agorot: number
+  estimated_display: string
   steps: StepCost[]
   scenarios: Scenario[]
   commitments: Commitment[]
@@ -1988,5 +2014,12 @@ export interface FinanceSummary {
   /** הכנסות פחות הוצאות. ``null`` כשצד ההכנסות חסום חלקית. */
   bottom_line_agorot: number | null
   bottom_line_display: string
+  expenses: Expense[]
+}
+
+export interface TemplateApplyResult {
+  created: number
+  /** ``false`` כשכבר היו הוצאות — התבנית לא נוצרה ולא דרסה דבר. */
+  applied: boolean
   expenses: Expense[]
 }

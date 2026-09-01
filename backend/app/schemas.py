@@ -2263,17 +2263,23 @@ class PostponementReviewRow(BaseModel):
 #  כספי האירוע — עלות האירוע, ספירת מתנות וסיכום
 # ════════════════════════════════════════════════════════════════════════
 
-CalcMethod = Literal["fixed", "per_attendee", "per_guest", "per_unit"]
+CalcMethod = Literal["fixed", "per_attendee", "per_guest", "per_unit", "percent"]
 
 
 class ExpenseItemRead(BaseModel):
-    """פריט מוצע בקטלוג — הצעה למילוי, לא רשימה סגורה."""
+    """פריט בתבנית של סוג האירוע — הצעה למילוי, לא רשימה סגורה."""
 
     key: str
     label: str
     calc_method: CalcMethod
     #: האם להציג לפריט את שדות ההתחייבות (כמות מובטחת + מינימום כספי).
     supports_commitment: bool = False
+    #: כמות פתיחה ל-``per_unit`` (יחידות) או ל-``percent`` (אחוזים שלמים).
+    default_quantity: Optional[int] = None
+    #: ``True`` = מוצע מיד בתבנית; ``False`` = קיים תחת "הוספת הוצאה".
+    #: זה מה שמאפשר תבנית מקיפה בלי מסך עמוס.
+    is_default: bool = False
+    sort_order: int = 0
 
 
 class ExpenseCategoryRead(BaseModel):
@@ -2302,6 +2308,13 @@ class ExpenseWrite(BaseModel):
     #: מינימום כספי מובטח בחוזה, באגורות.
     min_total_agorot: Optional[int] = Field(default=None, ge=0)
     note: Optional[str] = Field(default=None, max_length=500)
+    #: שם הספק. טקסט חופשי — ניהול ספקים הוא מוצר אחר.
+    vendor: str = Field(default="", max_length=120)
+    #: הערכה מול מחיר שסוכם. **ברירת המחדל היא הערכה**: תקציב נבנה
+    #: מהערכות, וסימון הכול כ"סוכם" מלכתחילה מרוקן את ההבחנה.
+    is_estimated: bool = True
+    #: נפרד לחלוטין מ-``is_estimated``: אפשר לשלם מקדמה על סכום לא סופי.
+    is_paid: bool = False
 
     @field_validator("label")
     @classmethod
@@ -2330,6 +2343,9 @@ class ExpenseRead(BaseModel):
     committed_quantity: Optional[int] = None
     min_total_agorot: Optional[int] = None
     note: Optional[str] = None
+    vendor: str = ""
+    is_estimated: bool = True
+    is_paid: bool = False
     sort_order: int = 0
 
     #: העלות בפועל של השורה.
@@ -2344,6 +2360,15 @@ class ExpenseRead(BaseModel):
     over_commitment: int = 0
     #: האם המינימום הכספי הוא שקבע את המחיר בפועל.
     min_total_applied: bool = False
+
+
+class TemplateApplyResult(BaseModel):
+    """תוצאת "להתחיל מהתבנית"."""
+
+    created: int
+    #: ``False`` כשכבר היו הוצאות — התבנית לא נוצרה מחדש ולא דרסה דבר.
+    applied: bool
+    expenses: list["ExpenseRead"] = []
 
 
 class ScenarioRead(BaseModel):
@@ -2413,6 +2438,17 @@ class CostSummaryRead(BaseModel):
     #: כמה יעלה האורח הבא.
     next_attendee_agorot: int = 0
     next_attendee_display: str = ""
+
+    #: כמה מהעלות כבר שולמה בפועל, וכמה עוד לפניכם. שני מספרים שהזוג
+    #: שואל עליהם בכל שיחה עם ההורים, ואין להם שום קשר לשאלה אם המחיר
+    #: סופי — לכן הם נספרים בנפרד מ-``estimated``.
+    paid_agorot: int = 0
+    paid_display: str = ""
+    unpaid_agorot: int = 0
+    unpaid_display: str = ""
+    #: כמה מהסך עדיין מבוסס על הערכה ולא על מחיר שסוכם.
+    estimated_agorot: int = 0
+    estimated_display: str = ""
 
     steps: list[StepCostRead] = []
     scenarios: list[ScenarioRead] = []

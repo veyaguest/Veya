@@ -1162,6 +1162,17 @@ class EventExpense(Base):
     #: מינימום כספי מובטח בחוזה, באגורות. None = אין מינימום כספי.
     min_total_agorot: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
+    #: שם הספק ("אבי — DJ", "סטודיו לימור"). טקסט חופשי, לא ישות נפרדת:
+    #: ניהול ספקים הוא מוצר אחר, וכאן צריך רק לזכור מול מי סוכם.
+    vendor: Mapped[str] = mapped_column(String, default="")
+    #: האם זו הערכה או המחיר הסופי שסוכם. **ברירת המחדל היא הערכה** —
+    #: תקציב נבנה מהערכות, וסימון הכול כ"סופי" מלכתחילה היה הופך את
+    #: ההבחנה לחסרת ערך. הזוג מסמן "סוכם" כשבאמת סוכם.
+    is_estimated: Mapped[bool] = mapped_column(Boolean, default=True)
+    #: האם כבר שולם. נפרד לחלוטין מ-``is_estimated``: אפשר לשלם מקדמה על
+    #: סכום שעדיין לא סופי, ואפשר לסכם מחיר סופי ולא לשלם עדיין.
+    is_paid: Mapped[bool] = mapped_column(Boolean, default=False)
+
     #: הערה חופשית של הזוג ("כולל מע״מ", "לשלם שבועיים לפני").
     note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)

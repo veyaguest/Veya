@@ -55,12 +55,13 @@ def _guests(db: Session, event_id: int) -> list[models.Guest]:
 
 
 def _expense_read(
-    expense: models.EventExpense, line: finance.LineResult
+    expense: models.EventExpense, line: finance.LineResult, event_type: str = "wedding"
 ) -> schemas.ExpenseRead:
     return schemas.ExpenseRead(
         id=expense.id,
         category=expense.category,
-        category_label=finance_categories.category_label(expense.category),
+        # התווית בניסוח של סוג האירוע — "התינוק" בברית, "התינוקת" בבריתה.
+        category_label=finance_categories.category_label(expense.category, event_type),
         item_key=expense.item_key,
         label=expense.label,
         calc_method=expense.calc_method,
@@ -69,6 +70,9 @@ def _expense_read(
         committed_quantity=expense.committed_quantity,
         min_total_agorot=expense.min_total_agorot,
         note=expense.note,
+        vendor=expense.vendor or "",
+        is_estimated=bool(expense.is_estimated),
+        is_paid=bool(expense.is_paid),
         sort_order=expense.sort_order,
         total_agorot=line.total_agorot,
         total_display=finance.format_shekels(line.total_agorot),
@@ -144,7 +148,18 @@ def _cost_summary(
             )
         )
 
+    paid = sum(breakdown.lines[e.id].total_agorot for e in expenses if e.is_paid)
+    estimated = sum(
+        breakdown.lines[e.id].total_agorot for e in expenses if e.is_estimated
+    )
+
     return schemas.CostSummaryRead(
+        paid_agorot=paid,
+        paid_display=finance.format_shekels(paid),
+        unpaid_agorot=breakdown.total_agorot - paid,
+        unpaid_display=finance.format_shekels(breakdown.total_agorot - paid),
+        estimated_agorot=estimated,
+        estimated_display=finance.format_shekels(estimated),
         total_agorot=breakdown.total_agorot,
         total_display=finance.format_shekels(breakdown.total_agorot),
         fixed_agorot=breakdown.fixed_agorot,
@@ -273,6 +288,9 @@ def categories(event: models.Event = Depends(_access)):
                     label=i.label,
                     calc_method=i.calc_method,
                     supports_commitment=i.supports_commitment,
+                    default_quantity=i.default_quantity,
+                    is_default=i.is_default,
+                    sort_order=i.sort_order,
                 )
                 for i in c.items
             ],
@@ -315,7 +333,7 @@ def summary(
         counting_open=finance_service.counting_open(event),
         bottom_line_agorot=bottom,
         bottom_line_display=finance.format_shekels(bottom),
-        expenses=[_expense_read(e, breakdown.lines[e.id]) for e in expenses],
+        expenses=[_expense_read(e, breakdown.lines[e.id], event.event_type) for e in expenses],
     )
 
 
@@ -378,7 +396,7 @@ def report(
         bottom_line_display=finance.format_shekels(
             finance_service.bottom_line(cost, income)
         ),
-        expenses=[_expense_read(e, cost.lines[e.id]) for e in expenses],
+        expenses=[_expense_read(e, cost.lines[e.id], event.event_type) for e in expenses],
         guests=[_guest_row_read(r) for r in rows],
         # רק מעטפות: עסקת אשראי תמיד משויכת למוזמן דרך הטוקן שלו, ולכן
         # לא קיימת "מתנה באשראי בלי שם".
@@ -405,10 +423,16 @@ def _apply_expense(payload: schemas.ExpenseWrite, expense: models.EventExpense) 
     expense.calc_method = payload.calc_method
     expense.amount_agorot = payload.amount_agorot
     expense.note = (payload.note or "").strip() or None
+    expense.vendor = (payload.vendor or "").strip()
+    expense.is_estimated = payload.is_estimated
+    expense.is_paid = payload.is_paid
 
-    expense.quantity = (
-        payload.quantity if payload.calc_method == finance_categories.PER_UNIT else None
-    )
+    # ``quantity`` משרת שתי שיטות: יחידות ב-``per_unit``, ואחוזים
+    # שלמים ב-``percent``. בכל שאר השיטות הוא נמחק.
+    if payload.calc_method in (finance_categories.PER_UNIT, finance_categories.PERCENT):
+        expense.quantity = payload.quantity
+    else:
+        expense.quantity = None
     if payload.calc_method == finance_categories.PER_ATTENDEE:
         expense.committed_quantity = payload.committed_quantity or None
     else:
@@ -446,7 +470,80 @@ def create_expense(
     line = finance.cost_breakdown(
         [expense], finance.attendee_count(guests), finance.invited_count(guests)
     ).lines[expense.id]
-    return _expense_read(expense, line)
+    return _expense_read(expense, line, event.event_type)
+
+
+@router.post("/template/apply", response_model=schemas.TemplateApplyResult)
+def apply_template(
+    request: Request,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+    user: models.User = Depends(get_current_user),
+):
+    """יוצר את שורות התבנית של סוג האירוע — **תקציב פתיחה, לא כלוב.**
+
+    מסך ריק שמבקש מזוג להמציא את רשימת ההוצאות של אירוע הוא מסך שנשאר
+    ריק. במקום זה, לחיצה אחת יוצרת את השורות שרוב האירועים מהסוג הזה
+    כוללים, בסכום 0 ומסומנות כהערכה — מוכנות למילוי.
+
+    **רק ``is_default``.** התבנית המלאה עשירה בהרבה (עשרות פריטים), אבל
+    תקציב שנפתח עם 60 שורות הוא תקציב שסוגרים. השאר נשארים תחת "הוספת
+    הוצאה".
+
+    **לא דורס.** אירוע שכבר יש בו שורה אחת מקבל ``applied=False`` ולא
+    משתנה כלל: התבנית היא נקודת פתיחה, ואין שום מצב שבו לחיצה כאן
+    מוחקת עבודה קיימת.
+    """
+    existing = finance_service.expenses_for(db, event.id)
+    if existing:
+        guests = _guests(db, event.id)
+        cost = finance.cost_breakdown(
+            existing, finance.attendee_count(guests), finance.invited_count(guests)
+        )
+        return schemas.TemplateApplyResult(
+            created=0,
+            applied=False,
+            expenses=[_expense_read(e, cost.lines[e.id], event.event_type) for e in existing],
+        )
+
+    created: list[models.EventExpense] = []
+    for category_key, item in finance_categories.default_items_for(event.event_type):
+        expense = models.EventExpense(
+            event_id=event.id,
+            category=category_key,
+            item_key=item.key,
+            label=item.label,
+            calc_method=item.calc_method,
+            # סכום 0: התבנית יודעת **מה** משלמים, לא **כמה**. מחיר משוער
+            # שהמערכת תמציא הוא בדיוק המספר שזוג ייקח ברצינות בטעות.
+            amount_agorot=0,
+            quantity=item.default_quantity,
+            is_estimated=True,
+            is_paid=False,
+            sort_order=item.sort_order,
+        )
+        db.add(expense)
+        created.append(expense)
+    db.flush()
+
+    audit.record(
+        db, "finance_template_apply",
+        event_id=event.id, user_id=user.id,
+        detail=f"נוצר תקציב פתיחה — {len(created)} שורות",
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+
+    guests = _guests(db, event.id)
+    rows = finance_service.expenses_for(db, event.id)
+    cost = finance.cost_breakdown(
+        rows, finance.attendee_count(guests), finance.invited_count(guests)
+    )
+    return schemas.TemplateApplyResult(
+        created=len(created),
+        applied=True,
+        expenses=[_expense_read(e, cost.lines[e.id], event.event_type) for e in rows],
+    )
 
 
 def _owned_expense(db: Session, event: models.Event, expense_id: int) -> models.EventExpense:
@@ -488,7 +585,7 @@ def update_expense(
     line = finance.cost_breakdown(
         [expense], finance.attendee_count(guests), finance.invited_count(guests)
     ).lines[expense.id]
-    return _expense_read(expense, line)
+    return _expense_read(expense, line, event.event_type)
 
 
 @router.delete("/expenses/{expense_id}", status_code=204)

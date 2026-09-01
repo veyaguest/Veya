@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  applyExpenseTemplate,
   createExpense,
   deleteEnvelope,
   deleteExpense,
@@ -173,7 +174,13 @@ export function FinancePage() {
       </nav>
 
       {tab === 'cost' && (
-        <CostTab data={data} onAdd={() => setEditing(null)} onEdit={setEditing} />
+        <CostTab
+          data={data}
+          terms={terms}
+          onAdd={() => setEditing(null)}
+          onEdit={setEditing}
+          onTemplateApplied={refresh}
+        />
       )}
 
       {tab === 'counting' && (
@@ -278,6 +285,14 @@ function FinanceHero({ data }: { data: FinanceSummary }) {
         />
         <Fact label={t.fixedLabel} value={data.cost.fixed_display} />
         <Fact label={t.variableLabel} value={data.cost.variable_display} />
+        {/* מוצג רק כשבאמת שולם משהו: "0 ₪ שולם" בתחילת התכנון הוא
+            מספר נכון שלא אומר כלום, והוא רק מוסיף רעש. */}
+        {data.cost.paid_agorot > 0 && (
+          <>
+            <Fact label={t.paidSummary} value={data.cost.paid_display} />
+            <Fact label={t.unpaidSummary} value={data.cost.unpaid_display} />
+          </>
+        )}
       </div>
     </section>
   )
@@ -298,15 +313,20 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 function CostTab({
   data,
+  terms,
   onAdd,
   onEdit,
+  onTemplateApplied,
 }: {
   data: FinanceSummary
+  terms: ReturnType<typeof activeEventTerms>
   onAdd: () => void
   onEdit: (e: Expense) => void
+  onTemplateApplied: () => void
 }) {
   const { cost } = data
   const grouped = useMemo(() => groupByCategory(data.expenses), [data.expenses])
+  const [applying, setApplying] = useState(false)
 
   return (
     <>
@@ -325,10 +345,33 @@ function CostTab({
         </div>
 
         {data.expenses.length === 0 ? (
+          // מסך ריק שמבקש מזוג להמציא רשימת הוצאות של אירוע הוא מסך
+          // שנשאר ריק. התבנית של סוג האירוע נותנת נקודת פתיחה — בסכום
+          // 0, כי VEYA יודעת **מה** משלמים ולא **כמה**.
           <div className="fin-card fin-card-empty">
             <div className="empty">
               <p className="empty-title">{t.expensesEmptyTitle}</p>
               <p className="empty-desc">{t.expensesEmptyBody}</p>
+              <div className="empty-actions">
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={applying}
+                  onClick={() => {
+                    setApplying(true)
+                    applyExpenseTemplate()
+                      .then(onTemplateApplied)
+                      .catch(() => undefined)
+                      .finally(() => setApplying(false))
+                  }}
+                >
+                  {applying ? t.templateApplying : t.templateCta(terms.celebration)}
+                </button>
+                <button type="button" className="btn-ghost" onClick={onAdd}>
+                  {t.addExpense}
+                </button>
+              </div>
+              <p className="fin-hint">{t.templateHint}</p>
             </div>
           </div>
         ) : (
@@ -452,6 +495,13 @@ function ExpenseRow({ expense, onEdit }: { expense: Expense; onEdit: () => void 
       <button type="button" className="fin-expense-btn" onClick={onEdit}>
         <span className="fin-expense-name">
           {expense.label}
+          {/* הספק, ואחריו שני המצבים. "שולם" בירוק כי זו בשורה טובה;
+              "הערכה" באפור כי זו עובדה ניטרלית ולא חוסר. */}
+          {expense.vendor && <span className="fin-expense-note">{expense.vendor}</span>}
+          {expense.is_paid && <span className="fin-badge fin-badge-paid">{t.paidLabel}</span>}
+          {expense.is_estimated && (
+            <span className="fin-badge">{t.estimatedLabel}</span>
+          )}
           {expense.note && <span className="fin-expense-note">{expense.note}</span>}
         </span>
         <span className="fin-expense-calc">{describeCalc(expense)}</span>

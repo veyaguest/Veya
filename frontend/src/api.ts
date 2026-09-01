@@ -47,6 +47,7 @@ import type {
   GiftCounting,
   GiftEntry,
   GuestGiftRow,
+  TemplateApplyResult,
   EventDetails,
   EventMemberRead,
   EventMessage,
@@ -1800,6 +1801,16 @@ export async function deleteEnvelope(id: number): Promise<void> {
  *  לא מסתכל עליו רוב הזמן. */
 export async function getFinanceReport(): Promise<FinanceReport> {
   const res = await apiFetch('/finance/report')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** יוצר את תקציב הפתיחה של סוג האירוע — רק שורות ``is_default``.
+ *
+ *  **לא דורס**: אירוע שכבר יש בו הוצאה מקבל ``applied: false`` ולא
+ *  משתנה כלל. התבנית היא נקודת פתיחה, לא איפוס. */
+export async function applyExpenseTemplate(): Promise<TemplateApplyResult> {
+  const res = await apiFetch('/finance/template/apply', { method: 'POST' })
   if (!res.ok) throw await toError(res)
   return res.json()
 }

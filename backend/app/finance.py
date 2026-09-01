@@ -38,7 +38,7 @@ from dataclasses import dataclass
 from typing import Iterable, Optional, Sequence
 
 from app import models
-from app.finance_categories import FIXED, PER_ATTENDEE, PER_GUEST, PER_UNIT
+from app.finance_categories import FIXED, PER_ATTENDEE, PER_GUEST, PER_UNIT, PERCENT
 
 AGOROT_PER_SHEKEL = 100
 
@@ -183,6 +183,13 @@ def _line_total(expense: models.EventExpense, attendees: int, invited: int) -> L
         billable = expense.quantity or 0
         unused = over = 0
         total = billable * unit
+    elif method == PERCENT:
+        # שורת אחוז אינה יכולה להיות מחושבת כאן: היא תלויה בסך שאר
+        # השורות, ולכן היא מקבלת 0 בשלב הזה ומחושבת ב-``total_for``
+        # אחרי שהבסיס ידוע. חישוב במקום אחד ולא בשניים.
+        billable = expense.quantity
+        unused = over = 0
+        total = 0
     else:  # FIXED — וגם כל שיטה לא מוכרת, שנופלת לבטוחה שבהן
         billable = None
         unused = over = 0
@@ -205,6 +212,30 @@ def _line_total(expense: models.EventExpense, attendees: int, invited: int) -> L
     )
 
 
+def percent_base(
+    expenses: Sequence[models.EventExpense], attendees: int, invited: int
+) -> int:
+    """הבסיס שממנו נגזרות שורות האחוז: **סך כל השורות שאינן אחוז.**
+
+    הגדרה מפורשת ולא "אחוז מהסה״כ", כדי למנוע מעגליות: אילו אחוז היה
+    נגזר מהסך שכולל אותו, שתי שורות אחוז היו מזינות זו את זו. כך גם
+    "10% טיפים" ו-"5% בלתי צפויות" נשארים שניהם נגזרים מאותו בסיס יציב,
+    ולא תלויים בסדר שבו הוזנו.
+    """
+    return sum(
+        _line_total(e, attendees, invited).total_agorot
+        for e in expenses
+        if e.calc_method != PERCENT
+    )
+
+
+def percent_line_total(expense: models.EventExpense, base: int) -> int:
+    """שורת אחוז אחת. עיגול חצי-כלפי-מעלה בחשבון שלמים בלבד —
+    בדיוק כמו ``gift.fee_for``, ומאותה סיבה: אין float בשרשרת הכספית."""
+    percent = expense.quantity or 0
+    return (base * percent + 50) // 100
+
+
 def total_for(
     expenses: Sequence[models.EventExpense], attendees: int, invited: int
 ) -> int:
@@ -213,8 +244,13 @@ def total_for(
     הסיכום, התרחישים, "כמה עולה אורח נוסף" והשורה התחתונה כולם קוראים
     לה. לכן אין מצב שבו שני מספרים במסך סותרים זה את זה: הם לא מחושבים
     בשתי דרכים, הם אותה פונקציה בשתי נקודות.
+
+    שני שלבים, כי שורות אחוז תלויות בשאר: קודם הבסיס, ואז האחוזים עליו.
     """
-    return sum(_line_total(e, attendees, invited).total_agorot for e in expenses)
+    base = percent_base(expenses, attendees, invited)
+    return base + sum(
+        percent_line_total(e, base) for e in expenses if e.calc_method == PERCENT
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════
@@ -247,8 +283,26 @@ def cost_breakdown(
     expenses: Sequence[models.EventExpense], attendees: int, invited: int
 ) -> CostBreakdown:
     lines = {e.id: _line_total(e, attendees, invited) for e in expenses}
+
+    # שורות האחוז מקבלות את הערך שלהן רק עכשיו, כשהבסיס ידוע.
+    base = percent_base(expenses, attendees, invited)
+    for expense in expenses:
+        if expense.calc_method == PERCENT:
+            line = lines[expense.id]
+            lines[expense.id] = LineResult(
+                expense_id=line.expense_id,
+                total_agorot=percent_line_total(expense, base),
+                billed_quantity=line.billed_quantity,
+                unused_quantity=0,
+                over_commitment=0,
+                min_total_applied=False,
+            )
+
     total = sum(l.total_agorot for l in lines.values())
 
+    # שורת אחוז נספרת כ"לפי כמות": היא זזה עם מספר המגיעים, בדיוק כמו
+    # המנה שהיא נגזרת ממנה. סיווגה כ"קבועה" היה מציג טיפים כהוצאה
+    # שאינה משתנה — וזה בדיוק ההפך מהאמת.
     fixed = sum(
         lines[e.id].total_agorot for e in expenses if e.calc_method == FIXED
     )

@@ -162,6 +162,12 @@ _EXTRA_COLUMNS = {
         # בכל שאילתת הודעות.
         "cycle_number": "INTEGER DEFAULT 1",
     },
+    # כספי האירוע — שדות שנוספו אחרי הטבלה המקורית.
+    "event_expenses": {
+        "vendor": "TEXT DEFAULT ''",
+        "is_estimated": "BOOLEAN DEFAULT TRUE",
+        "is_paid": "BOOLEAN DEFAULT FALSE",
+    },
     "messages": {
         "channel": "TEXT DEFAULT 'whatsapp'",
         "rule_id": "INTEGER",

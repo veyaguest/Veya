@@ -1302,13 +1302,17 @@ export const strings = {
       per_attendee: 'לפי מספר המגיעים',
       per_guest: 'לפי מספר המוזמנים',
       per_unit: 'לפי יחידה',
+      percent: 'אחוז מהעלות',
     },
     calcMethodHints: {
       fixed: 'סכום אחד, בלי קשר לכמה יגיעו.',
       per_attendee: 'מוכפל במספר המגיעים בפועל. כאן גם מזינים התחייבות מול הספק.',
       per_guest: 'מוכפל בכמות שהוזמנה — למשל הזמנות ומעטפות.',
       per_unit: 'מחיר ליחידה, כפול הכמות שתזינו.',
+      // הבסיס מוגדר במפורש כדי שלא ייראה כאילו האחוז נגזר מעצמו.
+      percent: 'נגזר משאר ההוצאות ומתעדכן איתן — למשל טיפים.',
     },
+    percentLabel: 'אחוז',
     amountLabel: 'סכום',
     unitPriceLabel: 'מחיר ליחידה',
     perPersonPriceLabel: 'מחיר לאדם',
@@ -1320,6 +1324,20 @@ export const strings = {
     committedQuantityPlaceholder: 'למשל: 500',
     minTotalLabel: 'מינימום כספי בחוזה',
     minTotalHint: 'אם החוזה נוקב בסכום מינימלי ולא רק בכמות.',
+    // ---- ספק, מצב ותשלום ----
+    vendorLabel: 'ספק',
+    vendorPlaceholder: 'למשל: אבי — DJ',
+    // שני מצבים נפרדים לגמרי: אפשר לשלם מקדמה על סכום שעדיין לא סופי,
+    // ואפשר לסכם מחיר ולא לשלם עדיין.
+    estimatedLabel: 'הערכה',
+    agreedLabel: 'סוכם',
+    estimatedHint: 'מסמנים "סוכם" כשהמחיר סופי מול הספק.',
+    paidLabel: 'שולם',
+    unpaidLabel: 'טרם שולם',
+    paidSummary: 'שולם',
+    unpaidSummary: 'נותר לשלם',
+    estimatedSummary: 'עדיין בהערכה',
+
     noteLabel: 'הערה',
     notePlaceholder: 'למשל: כולל מע״מ',
     categoryLabel: 'קטגוריה',
@@ -1328,7 +1346,17 @@ export const strings = {
 
     expensesEmptyTitle: 'עוד לא הוספתם הוצאות',
     expensesEmptyBody:
-      'מכאן תראו כמה האירוע עולה, כמה זה יוצא לאדם, ומה קורה אם יגיעו יותר. אפשר להתחיל מהמנה באולם.',
+      'מכאן תראו כמה האירוע עולה, כמה זה יוצא לאדם, ומה קורה אם יגיעו יותר.',
+    // תקציב פתיחה לפי סוג האירוע. הניסוח מבטיח **מה** משלמים ולא
+    // **כמה** — VEYA לא ממציאה מחירים, והתבנית נפתחת בסכום 0.
+    templateCta: (celebration: string) => `להתחיל מתבנית ${celebration}`,
+    templateHint:
+      'נוסיף את ההוצאות שרוב האירועים מהסוג הזה כוללים, בלי סכומים — ותמלאו רק את מה שרלוונטי לכם.',
+    templateApplying: 'מכינים…',
+    templateDone: (n: number) => `נוספו ${n} שורות. אפשר להתחיל למלא.`,
+    // חלוקת הדיאלוג: מה שרוב האירועים כוללים, מול השאר.
+    catalogSuggested: 'מוצע לאירוע שלכם',
+    catalogMore: 'עוד אפשרויות',
 
     deleteExpenseTitle: 'למחוק את ההוצאה?',
     deleteExpenseBody: (label: string) => `${label} תוסר מהסיכום.`,

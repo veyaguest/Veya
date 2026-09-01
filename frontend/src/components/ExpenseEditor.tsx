@@ -66,6 +66,11 @@ export function ExpenseEditor({
   const [committed, setCommitted] = useState(expense?.committed_quantity?.toString() ?? '')
   const [minTotal, setMinTotal] = useState(toShekelInput(expense?.min_total_agorot ?? null))
   const [note, setNote] = useState(expense?.note ?? '')
+  const [vendor, setVendor] = useState(expense?.vendor ?? '')
+  // ברירת המחדל היא הערכה: תקציב נבנה מהערכות, וסימון הכול כ"סוכם"
+  // מלכתחילה מרוקן את ההבחנה מתוכן.
+  const [isEstimated, setIsEstimated] = useState(expense?.is_estimated ?? true)
+  const [isPaid, setIsPaid] = useState(expense?.is_paid ?? false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   // בעריכה מדלגים על שלב הבחירה. בהוספה הוא השלב הראשון, וממנו נגזרות
@@ -93,6 +98,9 @@ export function ExpenseEditor({
     setLabel(item?.label ?? '')
     // ברירת מחדל חכמה, לא כלל: הזוג רשאי לשנות את השיטה מיד אחר כך.
     setMethod(item?.calc_method ?? 'fixed')
+    // כמות פתיחה מהתבנית (2 אלבומי הורים, 10% טיפים) — כדי שהשדה לא
+    // ייפתח ריק כשיש ערך שכמעט תמיד נכון.
+    setQuantity(item?.default_quantity != null ? String(item.default_quantity) : '')
     setPicking(false)
   }
 
@@ -105,10 +113,17 @@ export function ExpenseEditor({
       label: trimmed,
       calc_method: method,
       amount_agorot: toAgorot(amount),
-      quantity: method === 'per_unit' ? toCount(quantity) : null,
+      // ``quantity`` משרת שתי שיטות: יחידות ב-per_unit, ואחוזים שלמים
+      // ב-percent. בשאר השיטות הוא נמחק, כדי שערך רדום לא יחזור לחיים
+      // בעריכה הבאה.
+      quantity:
+        method === 'per_unit' || method === 'percent' ? toCount(quantity) : null,
       committed_quantity: supportsCommitment ? toCount(committed) || null : null,
       min_total_agorot: toAgorot(minTotal) || null,
       note: note.trim() || null,
+      vendor: vendor.trim(),
+      is_estimated: isEstimated,
+      is_paid: isPaid,
     })
   }
 
@@ -129,11 +144,16 @@ export function ExpenseEditor({
               <section key={cat.key} className="fin-catalog-group">
                 <h3 className="fin-catalog-title">{cat.label}</h3>
                 <div className="fin-catalog-items">
-                  {cat.items.map((item) => (
+                  {/* ברירות המחדל של סוג האירוע קודם, ומודגשות: הקטלוג
+                      עשיר (עשרות פריטים), ובלי הסדר הזה הזוג היה סורק
+                      רשימה ארוכה כדי למצוא את מה שרוב האירועים כוללים. */}
+                  {[...cat.items]
+                    .sort((a, b) => Number(b.is_default) - Number(a.is_default))
+                    .map((item) => (
                     <button
                       key={item.key}
                       type="button"
-                      className="fin-chip"
+                      className={`fin-chip ${item.is_default ? 'fin-chip-suggested' : ''}`}
                       onClick={() => pickItem(cat, item)}
                     >
                       {item.label}
@@ -191,7 +211,9 @@ export function ExpenseEditor({
             <fieldset className="fin-method">
               <legend className="field-label">{t.calcMethodLabel}</legend>
               <div className="fin-method-options">
-                {(['fixed', 'per_attendee', 'per_guest', 'per_unit'] as CalcMethod[]).map(
+                {(
+                  ['fixed', 'per_attendee', 'per_guest', 'per_unit', 'percent'] as CalcMethod[]
+                ).map(
                   (m) => (
                     <label
                       key={m}
@@ -213,7 +235,9 @@ export function ExpenseEditor({
             </fieldset>
 
             <div className="fin-row">
-              <label className="field">
+              {/* שורת אחוז אינה נושאת מחיר — הסכום שלה נגזר משאר
+                  ההוצאות. שדה מחיר כאן היה שדה שאין לו שום השפעה. */}
+              <label className="field" hidden={method === 'percent'}>
                 <span className="field-label">
                   {method === 'fixed'
                     ? t.amountLabel
@@ -234,15 +258,17 @@ export function ExpenseEditor({
                 />
               </label>
 
-              {method === 'per_unit' && (
+              {(method === 'per_unit' || method === 'percent') && (
                 <label className="field">
-                  <span className="field-label">{t.quantityLabel}</span>
+                  <span className="field-label">
+                    {method === 'percent' ? t.percentLabel : t.quantityLabel}
+                  </span>
                   <input
                     type="text"
                     inputMode="numeric"
                     value={quantity}
                     onChange={(e) => setQuantity(digitsOnly(e.target.value))}
-                    placeholder="1"
+                    placeholder={method === 'percent' ? '10' : '1'}
                     dir="ltr"
                   />
                 </label>
@@ -282,6 +308,39 @@ export function ExpenseEditor({
                 </div>
               </section>
             )}
+
+            <label className="field">
+              <span className="field-label">{t.vendorLabel}</span>
+              <input
+                type="text"
+                value={vendor}
+                onChange={(e) => setVendor(e.target.value)}
+                placeholder={t.vendorPlaceholder}
+                maxLength={120}
+              />
+            </label>
+
+            {/* שני מתגים נפרדים ובכוונה לא מקושרים: אפשר לשלם מקדמה על
+                סכום שעדיין לא סופי, ואפשר לסכם מחיר ולא לשלם עדיין. */}
+            <div className="fin-toggles">
+              <button
+                type="button"
+                className={`fin-toggle ${!isEstimated ? 'on' : ''}`}
+                aria-pressed={!isEstimated}
+                onClick={() => setIsEstimated((v) => !v)}
+              >
+                {isEstimated ? t.estimatedLabel : t.agreedLabel}
+              </button>
+              <button
+                type="button"
+                className={`fin-toggle ${isPaid ? 'on' : ''}`}
+                aria-pressed={isPaid}
+                onClick={() => setIsPaid((v) => !v)}
+              >
+                {isPaid ? t.paidLabel : t.unpaidLabel}
+              </button>
+            </div>
+            <p className="fin-hint">{t.estimatedHint}</p>
 
             <label className="field">
               <span className="field-label">{t.noteLabel}</span>

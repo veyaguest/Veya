@@ -1151,3 +1151,57 @@
   gap: 8px;
   justify-content: center;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   ספק, הערכה/סוכם, שולם
+   ════════════════════════════════════════════════════════════════════ */
+
+.fin-toggles {
+  display: flex;
+  gap: 8px;
+}
+
+/* מתג ולא תיבת סימון: הכיתוב עצמו הוא המצב ("הערכה" ↔ "סוכם"), ולכן
+   אין צורך בתווית נפרדת שמסבירה מה מסומן. */
+.fin-toggle {
+  flex: 1 1 auto;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--cream);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.fin-toggle.on {
+  border-color: var(--gold-deep);
+  background: rgba(var(--gold-rgb), 0.1);
+  color: var(--charcoal);
+  font-weight: 600;
+}
+
+.fin-badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--line-2);
+  color: var(--muted);
+  font-size: var(--text-2xs);
+  white-space: nowrap;
+}
+
+/* "שולם" הוא בשורה טובה ולכן ירוק; "הערכה" הוא עובדה ניטרלית ולכן
+   אפור. אף אחד מהם אינו אדום — אין כאן מצב שגוי. */
+.fin-badge-paid {
+  background: rgba(39, 129, 78, 0.12);
+  color: var(--green-on-tint);
+}
+
+/* פריט שהתבנית מציעה לסוג האירוע הזה — מודגש קלות כדי שיימצא ראשון
+   בקטלוג של עשרות פריטים. */
+.fin-chip-suggested {
+  border-color: var(--gold-deep);
+  color: var(--charcoal);
+}
