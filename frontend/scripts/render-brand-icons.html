@@ -3,11 +3,16 @@
   מחולל אייקוני המותג של VEYA — מקור אמת להפקה חוזרת.
 
   הרעיון: לא "לצייר מחדש" את הלוגו, אלא לרסטר (raster) את הקובץ הקיים
-  frontend/public/favicon.svg — הטבעות, החריץ ליהלום והיהלום מגיעים
-  1:1 מה-SVG. רק האות V מצוירת בנפרד על קנבס, כדי שתיטען בגופן המותג
-  האמיתי (Cormorant Garamond מ-Google Fonts) ולא ב-fallback של סריף
-  כללי. כל הפרמטרים של ה-V (מיקום, גודל 209, משקל 500, צבע #E4C96B)
-  נלקחים ישירות מ-favicon.svg.
+  frontend/public/favicon.svg — הטבעת, היהלום והרקע מגיעים 1:1 מה-SVG.
+  רק האות V מצוירת בנפרד על קנבס, כדי שתיטען בגופן המותג האמיתי
+  (Cormorant Garamond מ-Google Fonts) ולא ב-fallback של סריף כללי.
+  כל הפרמטרים של ה-V (מיקום, font-size, font-weight, fill) נשלפים
+  אוטומטית מתוך אלמנט ה-<text> של favicon.svg — אין כפילות ואין דריפט.
+
+  favicon.svg מעוצב במכוון עם טבעת אחת עבה ויהלום מלא (ולא טבעת כפולה
+  דקה): קווי שיער נעלמים / מטשטשים בגדלים קטנים (טאב, אייקון אפליקציה
+  באייפון ~120px). הלוגו המלא עם הטבעת הכפולה נשאר ב-og-image.png ובתוך
+  המערכת (.auth-monogram), שם הוא נטען בגודל גדול.
 
   הרצה: מגישים את התיקייה הזו + עותק של favicon.svg משרת מקומי כלשהו
   (python3 -m http.server), פותחים את הקובץ, ושומרים כל קנבס אל
@@ -22,7 +27,7 @@
 <title>VEYA icon renderer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet" />
 <style>
   body { background:#111; color:#eee; font-family:system-ui, sans-serif; margin:16px; }
   canvas { image-rendering:pixelated; background:#333; margin:6px; vertical-align:top; }
@@ -37,14 +42,24 @@
 <script>
 // authoring box of favicon.svg
 const U = 512;
-// V params — copied verbatim from favicon.svg
-const V = { x: 256, y: 256, dy: -8, size: 209, weight: 500, fill: '#E4C96B' };
 
-let svgNoText = null; // favicon.svg source with its <text> element removed
+let svgNoText = null;                 // favicon.svg source, minus its <text> element
+let V = null;                         // the V's params, parsed straight out of favicon.svg
 
 async function loadSvg() {
   const raw = await (await fetch('/favicon.svg')).text();
-  // strip the <text>…</text> (the V) — we redraw it with the real webfont
+  const m = raw.match(/<text[\s\S]*?>\s*V\s*<\/text>/);
+  const t = m ? m[0] : '';
+  const attr = (n, d) => { const r = t.match(new RegExp(n + '="([^"]+)"')); return r ? r[1] : d; };
+  V = {
+    x: parseFloat(attr('x', 256)),
+    y: parseFloat(attr('y', 256)),
+    dy: parseFloat(attr('dy', 0)),
+    size: parseFloat(attr('font-size', 209)),
+    weight: attr('font-weight', '500'),
+    fill: attr('fill', '#E4C96B'),
+  };
+  // strip the <text>…</text> (the V) — we redraw it below with the real webfont
   svgNoText = raw.replace(/<text[\s\S]*?<\/text>/g, '');
 }
 
@@ -110,7 +125,7 @@ function register(name, canvas) {
 
 async function run() {
   await loadSvg();
-  await document.fonts.load("500 200px 'Cormorant Garamond'");
+  await document.fonts.load((V.weight || 500) + " 200px 'Cormorant Garamond'");
   await document.fonts.ready;
 
   // browser tab fallback — identical to favicon.svg (transparent corners kept)
