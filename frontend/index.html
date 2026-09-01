@@ -84,58 +84,58 @@
             "mainEntity": [
               {
                 "@type": "Question",
-                "name": "מה זה בעצם VEYA?",
+                "name": "יש לי כבר רשימת מוזמנים. אפשר פשוט להעלות אותה?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "VEYA מרכזת במקום אחד את כל מה שקשור למוזמנים ולאירוע — מהרשימה וההודעות, דרך אישורי ההגעה ועד סידור ההושבה."
+                  "text": "בטח. תעלו ונמשיך משם. אין סיבה להתחיל הכול מחדש."
                 }
               },
               {
                 "@type": "Question",
-                "name": "יש לי כבר אקסל עם המוזמנים. צריך להתחיל מחדש?",
+                "name": "אפשר לסדר את המוזמנים לפי משפחות?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "לא. מעלים את הקובץ או מדביקים את הרשימה, VEYA מזהה את העמודות — וממשיכים משם."
+                  "text": "כן. אפשר ליצור קבוצות ולסדר את המוזמנים לפי מה שנוח לכם."
                 }
               },
               {
                 "@type": "Question",
-                "name": "אפשר לבחור ולתזמן את ההודעות?",
+                "name": "אפשר להוסיף הערות להושבה?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "כן. בוחרים נוסח מוכן לכל שלב — הזמנה, תזכורות, יום האירוע ותודה — ומתזמנים מראש. שום הודעה לא יוצאת בלי אישור שלכם."
+                  "text": "כן. אפילו לא ליד עומר. אנחנו נבין."
                 }
               },
               {
                 "@type": "Question",
-                "name": "איך עובדת ההושבה בקליק?",
+                "name": "ומה עם הסקיצה של האולם?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "מסדרים את המוזמנים לקבוצות, מוסיפים הערות ומעלים את סקיצת האולם. בלחיצה אחת VEYA בונה מכל זה סידור הושבה ראשוני."
+                  "text": "מעלים אותה ל-VEYA והיא הופכת למפת אולם שאפשר לעבוד איתה."
                 }
               },
               {
                 "@type": "Question",
-                "name": "VEYA באמת מסדרת את ההושבה לבד?",
+                "name": "ההושבה באמת מסתדרת לבד?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "היא מציעה סידור לפי מה שהזנתם. ההחלטה תמיד שלכם — אפשר להזיז כל מוזמן ולשנות כל שולחן, ואם לא אהבתם, להחזיר את הסידור הקודם בלחיצה."
+                  "text": "VEYA יוצרת לכם סידור הושבה ראשוני לפי המידע שסידרתם. אתם תמיד בשליטה ויכולים לשנות הכול."
                 }
               },
               {
                 "@type": "Question",
-                "name": "כמה עולה שירות המתנות באשראי?",
+                "name": "אפשר לתת מתנה באשראי?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "לכם — כלום. עלות השירות היא 4%, והיא מתווספת לסכום שנותן המתנה משלם. אתם מקבלים את מלוא הסכום שהוא בחר לתת."
+                  "text": "כן. האורחים יכולים לתת מתנה באשראי דרך VEYA."
                 }
               },
               {
                 "@type": "Question",
-                "name": "המוזמנים צריכים להוריד אפליקציה?",
+                "name": "ואני משלם על זה?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "לא. הם מקבלים הודעה, לוחצים על הקישור ועונים. זהו."
+                  "text": "לא. השירות ניתן לבעלי האירוע ללא עלות. עלות השירות מתווספת לנותן המתנה ומוצגת לו לפני התשלום."
                 }
               }
             ]
@@ -612,9 +612,12 @@
       .gifts-cta { margin-top: 26px; }
 
       /* ===== איך זה עובד ===== */
-      .how { background: var(--ink); color: var(--cream-text); }
+      /* ארבעה צעדים קצרים — הסקשן נשאר קומפקטי בכוונה. הצמצום הוא במרווח
+         בלבד (ריפוד הסקשן וכותרת הביניים), לא בטקסט. */
+      .how { background: var(--ink); color: var(--cream-text); padding: clamp(52px, 6.5vw, 78px) 0; }
       .how .kicker { color: var(--gold-light); }
       .how .section-title { color: var(--cream-text); }
+      .how .section-head { margin-bottom: 36px; }
       .steps { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 22px; padding: 0; }
       .step { background: rgba(245, 239, 226, 0.04); border: 1px solid rgba(201, 162, 39, 0.18); border-radius: 18px; padding: 26px 24px; transition: border-color 0.2s var(--ease-out), transform 0.2s var(--ease-out); }
       .step .num { display: block; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 30px; font-weight: 600; color: var(--gold-light); line-height: 1; margin-bottom: 14px; letter-spacing: 1px; }
@@ -784,7 +787,7 @@
       <section class="hero on-dark" aria-labelledby="hero-title">
         <div class="wrap">
           <img class="hero-logo reveal" src="/logo.png" alt="VEYA — מערכת חכמה לניהול אירועים" width="1224" height="1067" fetchpriority="high" decoding="async" />
-          <span class="eyebrow reveal d1">מערכת ניהול אירועים חכמה · במקום אחד</span>
+          <span class="eyebrow reveal d1">כל מה שצריך לאירוע · במקום אחד</span>
           <h1 id="hero-title" class="reveal d1">כל האירוע שלכם,<br /><span class="accent">מנוהל ברוגע</span></h1>
           <p class="lead reveal d2">
             יש מספיק דברים על הראש לפני האירוע. VEYA עושה לכם סדר במוזמנים,
@@ -1273,32 +1276,32 @@
           </div>
           <div class="faq">
             <details class="reveal">
-              <summary>מה זה בעצם VEYA?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>VEYA מרכזת במקום אחד את כל מה שקשור למוזמנים ולאירוע — מהרשימה וההודעות, דרך אישורי ההגעה ועד סידור ההושבה.</p>
+              <summary>יש לי כבר רשימת מוזמנים. אפשר פשוט להעלות אותה?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+              <p>בטח. תעלו ונמשיך משם. אין סיבה להתחיל הכול מחדש.</p>
             </details>
             <details class="reveal">
-              <summary>יש לי כבר אקסל עם המוזמנים. צריך להתחיל מחדש?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>לא. מעלים את הקובץ או מדביקים את הרשימה, VEYA מזהה את העמודות — וממשיכים משם.</p>
+              <summary>אפשר לסדר את המוזמנים לפי משפחות?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+              <p>כן. אפשר ליצור קבוצות ולסדר את המוזמנים לפי מה שנוח לכם.</p>
             </details>
             <details class="reveal">
-              <summary>אפשר לבחור ולתזמן את ההודעות?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>כן. בוחרים נוסח מוכן לכל שלב — הזמנה, תזכורות, יום האירוע ותודה — ומתזמנים מראש. שום הודעה לא יוצאת בלי אישור שלכם.</p>
+              <summary>אפשר להוסיף הערות להושבה?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+              <p>כן. אפילו <span class="quote-line">לא ליד עומר</span>. אנחנו נבין.</p>
             </details>
             <details class="reveal">
-              <summary>איך עובדת ההושבה בקליק?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>מסדרים את המוזמנים לקבוצות, מוסיפים הערות ומעלים את סקיצת האולם. בלחיצה אחת VEYA בונה מכל זה סידור הושבה ראשוני.</p>
+              <summary>ומה עם הסקיצה של האולם?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+              <p>מעלים אותה ל-VEYA והיא הופכת למפת אולם שאפשר לעבוד איתה.</p>
             </details>
             <details class="reveal">
-              <summary>VEYA באמת מסדרת את ההושבה לבד?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>היא מציעה סידור לפי מה שהזנתם. ההחלטה תמיד שלכם — אפשר להזיז כל מוזמן ולשנות כל שולחן, ואם לא אהבתם, להחזיר את הסידור הקודם בלחיצה.</p>
+              <summary>ההושבה באמת מסתדרת לבד?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+              <p>VEYA יוצרת לכם סידור הושבה ראשוני לפי המידע שסידרתם. אתם תמיד בשליטה ויכולים לשנות הכול.</p>
             </details>
             <details class="reveal">
-              <summary>כמה עולה שירות המתנות באשראי?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>לכם — כלום. עלות השירות היא 4%, והיא מתווספת לסכום שנותן המתנה משלם. אתם מקבלים את מלוא הסכום שהוא בחר לתת.</p>
+              <summary>אפשר לתת מתנה באשראי?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+              <p>כן. האורחים יכולים לתת מתנה באשראי דרך VEYA.</p>
             </details>
             <details class="reveal">
-              <summary>המוזמנים צריכים להוריד אפליקציה?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>לא. הם מקבלים הודעה, לוחצים על הקישור ועונים. זהו.</p>
+              <summary>ואני משלם על זה?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+              <p>לא. השירות ניתן לבעלי האירוע ללא עלות. עלות השירות מתווספת לנותן המתנה ומוצגת לו לפני התשלום.</p>
             </details>
           </div>
         </div>
