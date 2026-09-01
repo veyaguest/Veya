@@ -1,11 +1,20 @@
 <!doctype html>
 <!--
-  מחולל אייקוני המותג של VEYA (מקור אמת להפקה חוזרת).
-  פותחים את הקובץ בדפדפן (דרך שרת מקומי כלשהו כדי שה-Google Fonts ייטענו),
-  לוחצים ימני על כל קנבס → "שמור תמונה בשם", ושומרים אל frontend/public/:
-    apple-touch-icon.png · icon-192.png · icon-512.png · favicon-96x96.png · og-image.png
-  הצבעים והגאומטריה נגזרים מ-favicon.svg ומטוקני העיצוב ב-App.css
-  (--charcoal #2b2620, --gold #c9a227, --gold-light #e4c96b).
+  מחולל אייקוני המותג של VEYA — מקור אמת להפקה חוזרת.
+
+  הרעיון: לא "לצייר מחדש" את הלוגו, אלא לרסטר (raster) את הקובץ הקיים
+  frontend/public/favicon.svg — הטבעות, החריץ ליהלום והיהלום מגיעים
+  1:1 מה-SVG. רק האות V מצוירת בנפרד על קנבס, כדי שתיטען בגופן המותג
+  האמיתי (Cormorant Garamond מ-Google Fonts) ולא ב-fallback של סריף
+  כללי. כל הפרמטרים של ה-V (מיקום, גודל 209, משקל 500, צבע #E4C96B)
+  נלקחים ישירות מ-favicon.svg.
+
+  הרצה: מגישים את התיקייה הזו + עותק של favicon.svg משרת מקומי כלשהו
+  (python3 -m http.server), פותחים את הקובץ, ושומרים כל קנבס אל
+  frontend/public/:
+    apple-touch-icon.png · icon-192.png · icon-512.png · favicon-96x96.png
+
+  og-image.png לא מיוצר כאן — הקובץ הקיים (הלוגו המלא על רקע חום) נשאר.
 -->
 <html lang="he" dir="rtl">
 <head>
@@ -13,7 +22,7 @@
 <title>VEYA icon renderer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Frank+Ruhl+Libre:wght@400;500&family=Assistant:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap" rel="stylesheet" />
 <style>
   body { background:#111; color:#eee; font-family:system-ui, sans-serif; margin:16px; }
   canvas { image-rendering:pixelated; background:#333; margin:6px; vertical-align:top; }
@@ -26,84 +35,56 @@
 <h1>VEYA icon renderer</h1>
 <div id="stage" class="row"></div>
 <script>
-const BROWN = '#2b2620';
-const GOLD  = '#c9a227';
-const GOLDL = '#e4c96b';
-
-// ---- monogram, authored in a 512 unit box, ring centred at (256,256) ----
+// authoring box of favicon.svg
 const U = 512;
-const CX = 256, CY = 256;
-const OUTER_R = 190, INNER_R = 172, RING_W = 2.5;
-const DIA_H = 19;            // half diagonal of the 12-o'clock diamond
-const V_SIZE = 209;          // Cormorant Garamond cap-V
+// V params — copied verbatim from favicon.svg
+const V = { x: 256, y: 256, dy: -8, size: 209, weight: 500, fill: '#E4C96B' };
 
-function drawMonogram(ctx, scale, unit) {
-  // scale: shrink the monogram around the centre (1 = same as favicon.svg)
-  // unit : px per authoring-unit
-  const px = v => v * unit;
-  const cx = px(CX), cy = px(CY);
-  const oR = px(OUTER_R) * scale;
-  const iR = px(INNER_R) * scale;
-  const ringW = Math.max(px(RING_W) * scale, unit * 1.6);
+let svgNoText = null; // favicon.svg source with its <text> element removed
 
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+async function loadSvg() {
+  const raw = await (await fetch('/favicon.svg')).text();
+  // strip the <text>…</text> (the V) — we redraw it with the real webfont
+  svgNoText = raw.replace(/<text[\s\S]*?<\/text>/g, '');
+}
 
-  // inner ring (faint)
-  ctx.beginPath();
-  ctx.arc(cx, cy, iR, 0, Math.PI * 2);
-  ctx.strokeStyle = GOLD;
-  ctx.globalAlpha = 0.45;
-  ctx.lineWidth = ringW;
-  ctx.stroke();
-  ctx.globalAlpha = 1;
+function svgImage(svgText) {
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([svgText], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
 
-  // outer ring, with a small gap at 12 o'clock where the diamond sits
-  const gap = 0.085; // radians each side of top
-  ctx.beginPath();
-  ctx.arc(cx, cy, oR, -Math.PI / 2 + gap, -Math.PI / 2 - gap + Math.PI * 2);
-  ctx.strokeStyle = GOLD;
-  ctx.lineWidth = ringW;
-  ctx.stroke();
+// draw favicon.svg (minus V) + the V, into a `size` px square.
+// fullBleed=true first paints the whole square with the favicon brown so the
+// rounded-rect corners of favicon.svg become brown-on-brown (for app icons
+// added to a home screen, where transparent corners would go black).
+async function paintIcon(ctx, size, fullBleed) {
+  const unit = size / U;
+  if (fullBleed) {
+    ctx.fillStyle = '#2B2620'; // favicon.svg background rect fill
+    ctx.fillRect(0, 0, size, size);
+  }
+  const img = await svgImage(svgNoText);
+  ctx.drawImage(img, 0, 0, size, size);
 
-  // diamond (outline only) centred on the outer ring at the top
-  const dTop = cy - oR;
-  const dH = px(DIA_H) * scale;
-  ctx.beginPath();
-  ctx.moveTo(cx, dTop - dH);
-  ctx.lineTo(cx + dH, dTop);
-  ctx.lineTo(cx, dTop + dH);
-  ctx.lineTo(cx - dH, dTop);
-  ctx.closePath();
-  ctx.strokeStyle = GOLD;
-  ctx.lineWidth = ringW;
-  ctx.stroke();
-
-  // V
-  ctx.fillStyle = GOLDL;
+  // V — same geometry as favicon.svg (text-anchor:middle, dominant-baseline:central)
+  ctx.fillStyle = V.fill;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '500 ' + (px(V_SIZE) * scale) + "px 'Cormorant Garamond', Georgia, serif";
-  ctx.fillText('V', cx, cy - px(8) * scale);
+  ctx.font = V.weight + ' ' + (V.size * unit) + "px 'Cormorant Garamond', Georgia, 'Times New Roman', serif";
+  ctx.fillText('V', V.x * unit, (V.y + V.dy) * unit);
 }
 
-function roundRectPath(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-// Render at 4x then downscale for crisp edges
-function makeCanvas(size, paint) {
+async function makeCanvas(size, fullBleed) {
   const SS = 4;
   const big = document.createElement('canvas');
   big.width = big.height = size * SS;
-  const bctx = big.getContext('2d');
-  paint(bctx, size * SS);
+  await paintIcon(big.getContext('2d'), size * SS, fullBleed);
 
   const out = document.createElement('canvas');
   out.width = out.height = size;
@@ -114,78 +95,13 @@ function makeCanvas(size, paint) {
   return out;
 }
 
-// ---- individual icons ----
-function paintAppIcon(ctx, size) {
-  // full-bleed brown square, monogram shrunk to a safe zone for maskable/rounded masks
-  ctx.fillStyle = BROWN;
-  ctx.fillRect(0, 0, size, size);
-  drawMonogram(ctx, 0.78, size / U);
-}
-
-function paintFavicon(ctx, size) {
-  // rounded-square brown tile + faint gold glow (matches favicon.svg), tight crop
-  const unit = size / U;
-  roundRectPath(ctx, 0, 0, size, size, 112 * unit);
-  ctx.fillStyle = BROWN;
-  ctx.fill();
-  const g = ctx.createRadialGradient(size * 0.15, 0, 0, size * 0.15, 0, size * 0.55);
-  g.addColorStop(0, 'rgba(201,162,39,0.09)');
-  g.addColorStop(1, 'rgba(201,162,39,0)');
-  ctx.fillStyle = g;
-  ctx.fill();
-  drawMonogram(ctx, 1, unit);
-}
-
-function paintOg(ctx, w, h) {
-  ctx.fillStyle = BROWN;
-  ctx.fillRect(0, 0, w, h);
-  const g = ctx.createRadialGradient(w * 0.16, 0, 0, w * 0.16, 0, w * 0.7);
-  g.addColorStop(0, 'rgba(201,162,39,0.10)');
-  g.addColorStop(1, 'rgba(201,162,39,0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, h);
-
-  // monogram, centred horizontally, upper area
-  const unit = (h * 0.5) / U;         // monogram box ~ 50% of height
-  const boxPx = U * unit;
-  ctx.save();
-  ctx.translate((w - boxPx) / 2, h * 0.11);
-  drawMonogram(ctx, 1, unit);
-  ctx.restore();
-
-  const midX = w / 2;
-  // wordmark
-  ctx.fillStyle = '#f5efe2';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'alphabetic';
-  ctx.font = "600 92px 'Cormorant Garamond', Georgia, serif";
-  const word = 'V E Y A';
-  ctx.fillText(word, midX, h * 0.72);
-
-  // tagline
-  ctx.fillStyle = GOLD;
-  ctx.font = "500 27px 'Frank Ruhl Libre', 'Assistant', serif";
-  ctx.fillText('מערכת חכמה לאירועים', midX, h * 0.82);
-  // flanking rules
-  const tw = ctx.measureText('מערכת חכמה לאירועים').width;
-  ctx.strokeStyle = GOLD;
-  ctx.globalAlpha = 0.7;
-  ctx.lineWidth = 1;
-  const ry = h * 0.815;
-  ctx.beginPath();
-  ctx.moveTo(midX - tw / 2 - 60, ry); ctx.lineTo(midX - tw / 2 - 20, ry);
-  ctx.moveTo(midX + tw / 2 + 20, ry); ctx.lineTo(midX + tw / 2 + 60, ry);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
-}
-
 const RESULTS = {};
 function register(name, canvas) {
   RESULTS[name] = canvas.toDataURL('image/png');
   const fig = document.createElement('figure');
   const cap = document.createElement('figcaption');
-  cap.textContent = name;
-  canvas.style.width = Math.min(canvas.width, 180) + 'px';
+  cap.textContent = name + '  (' + canvas.width + ')';
+  canvas.style.width = Math.min(canvas.width, 200) + 'px';
   canvas.style.height = 'auto';
   fig.appendChild(canvas);
   fig.appendChild(cap);
@@ -193,31 +109,16 @@ function register(name, canvas) {
 }
 
 async function run() {
+  await loadSvg();
   await document.fonts.load("500 200px 'Cormorant Garamond'");
-  await document.fonts.load("600 92px 'Cormorant Garamond'");
-  await document.fonts.load("500 27px 'Frank Ruhl Libre'");
   await document.fonts.ready;
 
-  register('apple-touch-icon.png', makeCanvas(180, (c, s) => paintAppIcon(c, s)));
-  register('icon-192.png',        makeCanvas(192, (c, s) => paintAppIcon(c, s)));
-  register('icon-512.png',        makeCanvas(512, (c, s) => paintAppIcon(c, s)));
-  register('favicon-96x96.png',   makeCanvas(96,  (c, s) => paintFavicon(c, s)));
-
-  // og-image 1200x630
-  {
-    const SS = 2;
-    const big = document.createElement('canvas');
-    big.width = 1200 * SS; big.height = 630 * SS;
-    const bctx = big.getContext('2d');
-    bctx.scale(SS, SS);
-    paintOg(bctx, 1200, 630);
-    const out = document.createElement('canvas');
-    out.width = 1200; out.height = 630;
-    const octx = out.getContext('2d');
-    octx.imageSmoothingQuality = 'high';
-    octx.drawImage(big, 0, 0, 1200, 630);
-    register('og-image.png', out);
-  }
+  // browser tab fallback — identical to favicon.svg (transparent corners kept)
+  register('favicon-96x96.png', await makeCanvas(96, false));
+  // home-screen / PWA — same artwork, corners filled brown
+  register('apple-touch-icon.png', await makeCanvas(180, true));
+  register('icon-192.png', await makeCanvas(192, true));
+  register('icon-512.png', await makeCanvas(512, true));
 
   window.__READY__ = true;
   document.title = 'READY';
