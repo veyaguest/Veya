@@ -37,6 +37,15 @@ import type {
   GiftQuote,
   GiftsSummary,
   DashboardStats,
+  EnvelopeCreated,
+  EnvelopeInput,
+  Expense,
+  ExpenseCategory,
+  ExpenseInput,
+  FinanceSummary,
+  GiftCounting,
+  GiftEntry,
+  GuestGiftRow,
   EventDetails,
   EventMemberRead,
   EventMessage,
@@ -1689,4 +1698,96 @@ export async function acceptInvitation(token: string): Promise<InvitationPreview
   )
   if (!res.ok) throw await toError(res)
   return res.json()
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  כספי האירוע
+// ════════════════════════════════════════════════════════════════════════
+//
+// כל הנתיבים כאן פתוחים **לבעלי האירוע ולבן/בת הזוג בלבד** — לא למפיק
+// ולא לאולם. זה נאכף בשרת (``EventAccess(owner_only=True)``) וב-Postgres
+// (``rls/16_finance_rls.sql``); כאן זה רק מתועד.
+//
+// **אף פונקציה כאן לא שולחת סכום מחושב.** המסך שולח מה שהזוג הקליד
+// ומקבל בחזרה מספרים מוכנים להצגה — אותו כלל שכבר נאכף במתנות.
+
+/** התמונה הכספית המלאה — הוצאות, הכנסות והשורה התחתונה, בקריאה אחת. */
+export async function getFinance(): Promise<FinanceSummary> {
+  const res = await apiFetch('/finance')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** קטלוג ההוצאות המותאם לסוג האירוע. מוגש מהשרת ולא משוכפל כאן. */
+export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
+  const res = await apiFetch('/finance/categories')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function createExpense(input: ExpenseInput): Promise<Expense> {
+  const res = await apiFetch('/finance/expenses', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function updateExpense(id: number, input: ExpenseInput): Promise<Expense> {
+  const res = await apiFetch(`/finance/expenses/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function deleteExpense(id: number): Promise<void> {
+  const res = await apiFetch(`/finance/expenses/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw await toError(res)
+}
+
+/** מסך ספירת המתנות — מעטפות ואשראי יחד, כולל מצב השער והמספר הבא. */
+export async function getGiftCounting(): Promise<GiftCounting> {
+  const res = await apiFetch('/finance/gifts')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** מצב המתנה לכל מוזמן — **כולל מי שעדיין לא נספר**. */
+export async function getGiftsByGuest(): Promise<GuestGiftRow[]> {
+  const res = await apiFetch('/finance/gifts/by-guest')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** שמירת מעטפה. התשובה כוללת את מספר המעטפה הבאה — מהשרת, לא מהדפדפן. */
+export async function createEnvelope(input: EnvelopeInput): Promise<EnvelopeCreated> {
+  const res = await apiFetch('/finance/envelopes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** עריכת מעטפה — כולל שיוך מאוחר של מעטפה שלא זוהתה.
+ *  ``envelope_number`` אינו משתנה: הוא העוגן שבו מזהים את המעטפה בערימה. */
+export async function updateEnvelope(id: number, input: EnvelopeInput): Promise<GiftEntry> {
+  const res = await apiFetch(`/finance/envelopes/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function deleteEnvelope(id: number): Promise<void> {
+  const res = await apiFetch(`/finance/envelopes/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw await toError(res)
 }
