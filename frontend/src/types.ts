@@ -1728,3 +1728,298 @@ export type PayoutReviewRow = {
   reviewed_by: string | null
   reviewed_at: string | null
 }
+
+// ════════════════════════════════════════════════════════════════════════
+//  כספי האירוע
+// ════════════════════════════════════════════════════════════════════════
+
+/**
+ * איך מחושבת שורת הוצאה. הערך קובע **מה המשמעות של ``amount_agorot``**:
+ *
+ *   fixed         סכום קבוע — זו העלות כולה.
+ *   per_attendee  מחיר לאורח שמגיע. מוכפל במספר המגיעים בפועל.
+ *   per_guest     מחיר למוזמן. מוכפל בכמות שהוזמנה.
+ *   per_unit      מחיר ליחידה. מוכפל ב-``quantity``.
+ */
+export type CalcMethod =
+  | 'fixed'
+  | 'per_attendee'
+  | 'per_guest'
+  | 'per_unit'
+  /** אחוז מסך שאר ההוצאות — לטיפים ולדמי הפקה. הבסיס אינו כולל שורות
+   *  אחוז אחרות, כדי ששתיים כאלה לא יזינו זו את זו. */
+  | 'percent'
+
+export interface ExpenseCatalogItem {
+  key: string
+  label: string
+  calc_method: CalcMethod
+  /** האם להציג לפריט את שדות ההתחייבות (כמות מובטחת + מינימום כספי). */
+  supports_commitment: boolean
+  /** כמות פתיחה ליחידות, או אחוזים שלמים ל-``percent``. */
+  default_quantity: number | null
+  /** ``true`` = מוצע מיד בתבנית של סוג האירוע; ``false`` = תחת "הוספת הוצאה". */
+  is_default: boolean
+  sort_order: number
+}
+
+export interface ExpenseCategory {
+  key: string
+  label: string
+  items: ExpenseCatalogItem[]
+}
+
+/** הקלט שנשלח לשרת. **כל הסכומים באגורות שלמות** — ההמרה משקלים קורה
+ *  פעם אחת, בשדה עצמו. מספר עשרוני שנוסע ברשת הוא בדיוק המקום שבו
+ *  נולדות שגיאות עיגול. */
+export interface ExpenseInput {
+  category: string
+  item_key: string
+  label: string
+  calc_method: CalcMethod
+  amount_agorot: number
+  quantity?: number | null
+  /** כמות ההתחייבות מול הספק — ל-``per_attendee`` בלבד. */
+  committed_quantity?: number | null
+  /** מינימום כספי מובטח בחוזה, באגורות. */
+  min_total_agorot?: number | null
+  note?: string | null
+  /** שם הספק. טקסט חופשי — ניהול ספקים הוא מוצר אחר. */
+  vendor?: string
+  /** הערכה מול מחיר שסוכם. ברירת המחדל היא הערכה. */
+  is_estimated?: boolean
+  /** נפרד לגמרי מ-``is_estimated``: אפשר לשלם מקדמה על סכום לא סופי. */
+  is_paid?: boolean
+}
+
+/** שורת הוצאה + התוצאה שלה. **התוצאה מגיעה מהשרת** — המסך לא מחשב כסף. */
+export interface Expense extends ExpenseInput {
+  id: number
+  category_label: string
+  sort_order: number
+  total_agorot: number
+  total_display: string
+  /** הכמות שחויבה בפועל. ``null`` לשורה קבועה — שם אין כמות. */
+  billed_quantity: number | null
+  /** מנות ששולמו ואיש לא ישב בהן (התחייבות פחות מגיעים). */
+  unused_quantity: number
+  /** מגיעים מעבר לכמות ההתחייבות. */
+  over_commitment: number
+  min_total_applied: boolean
+}
+
+/** נקודה בלוח "מה יקרה אם יגיעו…". */
+export interface Scenario {
+  attendees: number
+  total_agorot: number
+  total_display: string
+  /** ההפרש מהמצב הנוכחי. שלילי = חיסכון. */
+  delta_agorot: number
+  is_current: boolean
+  /** כמות ההתחייבות — המדרגה שבה המחיר מתחיל לזוז. */
+  is_commitment: boolean
+}
+
+export interface StepCost {
+  guests: number
+  added_agorot: number
+  added_display: string
+}
+
+/** תמונת ההתחייבות מול האולם — הנתון שקובע כמה באמת משלמים. */
+export interface Commitment {
+  expense_id: number
+  label: string
+  committed_quantity: number
+  attendees: number
+  unused_quantity: number
+  over_commitment: number
+  /** MAX(מגיעים, התחייבות) — הכמות שמחויבת בפועל. */
+  billed_quantity: number
+  unit_price_agorot: number
+  total_agorot: number
+  total_display: string
+  min_total_agorot: number | null
+  min_total_applied: boolean
+}
+
+export interface CostSummary {
+  total_agorot: number
+  total_display: string
+  fixed_agorot: number
+  fixed_display: string
+  variable_agorot: number
+  variable_display: string
+  attendees: number
+  invited: number
+  /** ``null`` כשאין מגיעים — חלוקה באפס אינה "0 ₪ לאורח". */
+  cost_per_attendee_agorot: number | null
+  cost_per_attendee_display: string
+  /** כמה יעלה האורח הבא. 0 מתחת לכמות ההתחייבות — כבר משלמים עליו. */
+  next_attendee_agorot: number
+  next_attendee_display: string
+  /** כמה כבר שולם וכמה עוד לפניכם — בלי קשר לשאלה אם המחיר סופי. */
+  paid_agorot: number
+  paid_display: string
+  unpaid_agorot: number
+  unpaid_display: string
+  /** כמה מהסך עדיין מבוסס על הערכה. */
+  estimated_agorot: number
+  estimated_display: string
+  steps: StepCost[]
+  scenarios: Scenario[]
+  commitments: Commitment[]
+}
+
+/** מצב אישורי ההגעה — **אותם מספרים** שבתמונת המצב, לא ספירה מקבילה. */
+export interface RsvpSnapshot {
+  total_guests: number
+  invited_people: number
+  confirmed_guests: number
+  confirmed_people: number
+  declined_guests: number
+  pending_guests: number
+  maybe_guests: number
+}
+
+/** שורת מתנה אחת — מעטפה או אשראי, באותה רשימה. */
+export interface GiftEntry {
+  source: 'envelope' | 'credit'
+  id: number
+  /** ``null`` = הסכום חסום (אשראי לפני אישור פרטי קבלת המתנות). */
+  amount_agorot: number | null
+  amount_display: string
+  guest_id: number | null
+  /** ריק = מעטפה שטרם זוהתה. מצב מתועד, לא חוסר נתון. */
+  guest_name: string
+  envelope_number: number | null
+  note: string | null
+  created_at: string
+  /** מתנה משותפת — שמות נוספים. הסכום אינו מפוצל ביניהם. */
+  shared_names: string[]
+  status: string | null
+}
+
+export interface EnvelopeInput {
+  amount_agorot: number
+  /** ``null`` = "לא ידוע ממי". מצב לגיטימי שאפשר לחזור אליו. */
+  guest_id: number | null
+  shared_guest_ids: number[]
+  note?: string | null
+}
+
+export interface EnvelopeCreated {
+  envelope: GiftEntry
+  /** המספר הבא — **מהשרת**, כדי ששני מכשירים שסופרים במקביל לא יתנגשו. */
+  next_envelope_number: number
+}
+
+export interface GiftIncome {
+  envelopes_agorot: number
+  envelopes_display: string
+  envelopes_count: number
+  /** ``null`` (ולא 0) כשסכומי האשראי חסומים. */
+  credit_agorot: number | null
+  credit_display: string
+  credit_count: number
+  /** ``null`` כשחלק מהתמונה חסום — סכום חלקי שמוצג כ"סה״כ" הוא מספר שקרי. */
+  total_agorot: number | null
+  total_display: string
+  unidentified_count: number
+  unidentified_agorot: number
+  unidentified_display: string
+}
+
+/**
+ * **שורה מלאה אחת לכל מוזמן** — הגעה ומתנה יחד.
+ *
+ * ``rsvp_status`` ו-``status`` הם שני צירים נפרדים שאינם נגזרים זה מזה:
+ * מוזמן שביטל הגעה יכול בהחלט לתת מתנה, ושיוך מתנה לעולם לא משנה את
+ * סטטוס ההגעה.
+ */
+export interface GuestGiftRow {
+  guest_id: number
+  full_name: string
+  phone: string
+  /** מה המוזמן ענה. אינו מושפע משיוך מתנה. */
+  rsvp_status: RsvpStatus
+  party_size: number
+  /** כמה הגיעו בפועל. 0 למי שלא אישר — כולל מי שנתן מתנה. */
+  attended_count: number
+  /** מצב **המתנה**. ``not_counted`` = עדיין לא נספרה — לא "לא נתן", ולא 0 ₪. */
+  status: 'counted' | 'credit' | 'not_counted'
+  /** ``null`` = טרם נספרה. ``0`` = נספרה מעטפה ריקה. שני מצבים שונים. */
+  total_agorot: number | null
+  total_display: string
+  envelope_agorot: number
+  envelope_display: string
+  credit_agorot: number | null
+  credit_display: string
+  envelope_count: number
+  credit_count: number
+  gift_count: number
+  envelope_numbers: number[]
+  note: string
+}
+
+/** הפער בין הגעה למתנות — התובנה שדוח כספי רגיל מפספס. */
+export interface GiftBreakdown {
+  from_attendees_agorot: number
+  from_attendees_display: string
+  from_non_attendees_agorot: number
+  from_non_attendees_display: string
+  unattributed_agorot: number
+  unattributed_display: string
+  guests_counted: number
+  guests_not_counted: number
+}
+
+/** הדוח הסופי — תמונה אחת מלאה של האירוע, לא רק סיכום כספי. */
+export interface FinanceReport {
+  event_title: string
+  event_date: string
+  venue_name: string
+  generated_at: string
+  rsvp: RsvpSnapshot
+  cost: CostSummary
+  income: GiftIncome
+  breakdown: GiftBreakdown
+  bottom_line_agorot: number | null
+  bottom_line_display: string
+  expenses: Expense[]
+  /** שורה לכל מוזמן — כולל מי שלא הגיע וכולל מי שטרם נספרה לו מתנה. */
+  guests: GuestGiftRow[]
+  /** מעטפות שלא שויכו, כדי שלא ייעלמו מהדוח. */
+  unidentified: GiftEntry[]
+}
+
+export interface GiftCounting {
+  /** נפתח מיום האירוע ואילך. */
+  counting_open: boolean
+  /** כמה ימים עד שייפתח. ``null`` = אין תאריך, או שכבר פתוח. */
+  days_until_open: number | null
+  credit_service_active: boolean
+  credit_amounts_visible: boolean
+  next_envelope_number: number
+  income: GiftIncome
+  entries: GiftEntry[]
+}
+
+export interface FinanceSummary {
+  rsvp: RsvpSnapshot
+  cost: CostSummary
+  income: GiftIncome
+  breakdown: GiftBreakdown
+  counting_open: boolean
+  /** הכנסות פחות הוצאות. ``null`` כשצד ההכנסות חסום חלקית. */
+  bottom_line_agorot: number | null
+  bottom_line_display: string
+  expenses: Expense[]
+}
+
+export interface TemplateApplyResult {
+  created: number
+  /** ``false`` כשכבר היו הוצאות — התבנית לא נוצרה ולא דרסה דבר. */
+  applied: boolean
+  expenses: Expense[]
+}

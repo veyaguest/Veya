@@ -28,6 +28,7 @@ from app.routers import (
     event,
     event_members,
     events,
+    finance,
     gifts,
     guests,
     hall,
@@ -105,6 +106,7 @@ app.include_router(event.router)
 app.include_router(hall.router)
 app.include_router(confirm.router)
 app.include_router(gifts.router)
+app.include_router(finance.router)
 app.include_router(automation.router)
 app.include_router(communication.router)
 app.include_router(venues.router)
@@ -159,6 +161,12 @@ _EXTRA_COLUMNS = {
         # שכבר קיים בייצור הוא מחזור 1, ו-NULL היה שובר את השוואת המחזור
         # בכל שאילתת הודעות.
         "cycle_number": "INTEGER DEFAULT 1",
+    },
+    # כספי האירוע — שדות שנוספו אחרי הטבלה המקורית.
+    "event_expenses": {
+        "vendor": "TEXT DEFAULT ''",
+        "is_estimated": "BOOLEAN DEFAULT TRUE",
+        "is_paid": "BOOLEAN DEFAULT FALSE",
     },
     "messages": {
         "channel": "TEXT DEFAULT 'whatsapp'",

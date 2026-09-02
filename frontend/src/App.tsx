@@ -48,6 +48,11 @@ import type { EventTerms } from './strings/eventTypes'
 const AdminApp = lazy(() =>
   import('./components/AdminApp').then((m) => ({ default: m.AdminApp })),
 )
+// FinancePage נטען עצלן מאותה סיבה כמו HallPage: הוא גורר איתו את עורך
+// ההוצאות ואת מצב הספירה, ורוב הביקורים באפליקציה לא נוגעים בו כלל.
+const FinancePage = lazy(() =>
+  import('./components/FinancePage').then((m) => ({ default: m.FinancePage })),
+)
 const HallPage = lazy(() =>
   import('./components/HallPage').then((m) => ({ default: m.HallPage })),
 )
@@ -64,7 +69,7 @@ const bootFallback = (
   </div>
 )
 
-type Page = 'dashboard' | 'guests' | 'messages' | 'rsvp' | 'hall' | 'gifts'
+type Page = 'dashboard' | 'guests' | 'messages' | 'rsvp' | 'hall' | 'gifts' | 'finance'
 
 // כותרות/ניווט תלויי-סוג-אירוע: "מוזמנים" הופך ל"משתתפים" באירוע עסקי וכו'.
 function pageTitles(terms: EventTerms): Record<Page, string> {
@@ -75,6 +80,9 @@ function pageTitles(terms: EventTerms): Record<Page, string> {
     rsvp: 'אישורי הגעה',
     hall: 'סידור הושבה',
     gifts: strings.gifts.pageTitle,
+    // "כספי החתונה" / "כספי הברית" / "כספי האירוע" — דרך הלקסיקון,
+    // לא טקסט חתונתי קשיח.
+    finance: strings.finance.navTitle(terms.eventNoun),
   }
 }
 
@@ -98,6 +106,13 @@ function navItemsFor(
   if (giftsEligible) {
     items.push({ key: 'gifts', label: strings.gifts.title, short: strings.gifts.navShort })
   }
+  // "כספי האירוע" **אינו** תלוי בזכאות למתנות באשראי: מעטפות ועלויות הן
+  // כסף של הזוג שאין לו שום קשר לספק סליקה. הוא מופיע לכל אירוע.
+  items.push({
+    key: 'finance',
+    label: strings.finance.navTitle(terms.eventNoun),
+    short: strings.finance.navShort,
+  })
   return items
 }
 
@@ -155,6 +170,14 @@ function NavIcon({ page }: { page: Page }) {
           <circle cx="17" cy="8" r="2.4" />
           <circle cx="12" cy="17" r="2.4" />
           <path d="M4 20h16" />
+        </svg>
+      )
+    case 'finance':
+      return (
+        <svg {...common}>
+          <rect x="2.5" y="6" width="19" height="12" rx="2" />
+          <circle cx="12" cy="12" r="2.6" />
+          <path d="M5.5 9.5v.01M18.5 14.5v.01" />
         </svg>
       )
     case 'gifts':
@@ -718,6 +741,11 @@ function App() {
                 העמוד כשהזכאות משתנה, או שהגיע אליו ממצב שמור, לא אמור
                 לראות מסך שהשרת ממילא יחזיר עליו 404. */}
             {page === 'gifts' && giftsEligible && <GiftsPage />}
+            {page === 'finance' && (
+              <Suspense fallback={bootFallback}>
+                <FinancePage />
+              </Suspense>
+            )}
           </ErrorBoundary>
         </main>
         <Footer />
