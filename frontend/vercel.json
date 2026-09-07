@@ -3,25 +3,112 @@
   "redirects": [
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": { "eq": "veya-snowy.vercel.app" } }],
+      "has": [
+        {
+          "type": "host",
+          "value": {
+            "eq": "veya-snowy.vercel.app"
+          }
+        }
+      ],
       "destination": "https://veyaguest.co.il/:path*",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/madrich-ishurey-hagaa",
+      "destination": "/guides/luach-zmanim-ishurey-hagaa/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/madrich-ishurey-hagaa/",
+      "destination": "/guides/luach-zmanim-ishurey-hagaa/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog",
+      "destination": "/guides/",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog/:path*",
+      "destination": "/guides/",
       "statusCode": 301
     }
   ],
   "rewrites": [
-    { "source": "/app", "destination": "/app.html" },
-    { "source": "/app/(.*)", "destination": "/app.html" },
-    { "source": "/confirm/(.*)", "destination": "/app.html" }
+    {
+      "source": "/app",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/app/(.*)",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/confirm/(.*)",
+      "destination": "/app.html"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-        { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=()" },
-        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "geolocation=(), microphone=(), camera=()"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains"
+        }
+      ]
+    },
+    {
+      "source": "/app",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/app/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/confirm/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/legal/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
       ]
     }
   ]

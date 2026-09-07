@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "npm run build:legal",
+    "prebuild": "npm run build:legal && npm run build:site",
     "build": "tsc -b && vite build",
     "build:legal": "node scripts/build-legal-pages.mjs",
     "preview": "vite preview",
     "test:hall-sketch-geometry": "tsc --project tsconfig.testgeom.json && echo '{\"type\":\"commonjs\"}' > .tmp-test/package.json && node .tmp-test/hallSketchGeometry.test.js && rm -rf .tmp-test",
-    "test:seating-workspace": "tsc --project tsconfig.testworkspace.json && echo '{\"type\":\"commonjs\"}' > .tmp-test-ws/package.json && node .tmp-test-ws/seatingWorkspace.test.js && rm -rf .tmp-test-ws"
+    "test:seating-workspace": "tsc --project tsconfig.testworkspace.json && echo '{\"type\":\"commonjs\"}' > .tmp-test-ws/package.json && node .tmp-test-ws/seatingWorkspace.test.js && rm -rf .tmp-test-ws",
+    "build:site": "node scripts/build-site-pages.mjs"
   },
   "dependencies": {
     "@react-oauth/google": "^0.12.1",
