@@ -436,6 +436,117 @@ def test_every_template_item_exists_in_the_pool() -> None:
                 assert item.key in ITEMS
 
 
+# ════════════════════════════════════════════════════════════════════════
+#  איחוד שורות ברירת המחדל
+# ════════════════════════════════════════════════════════════════════════
+#
+# שורה אחת לרכישה אחת. "תאורה" ו"הגברה" מגיעות כמעט תמיד מאותו ספק
+# ובאותה הצעת מחיר, ושתי שורות נפרדות אילצו את הזוג לפצל סכום שקיבל
+# כמקשה אחת. **האיחוד הוא בברירת המחדל בלבד** — מי שקיבל שתי הצעות
+# עדיין מוצא את הפריטים הבודדים תחת "הוספת הוצאה".
+
+#: (מפתח מאוחד, המפתחות שהוא עשוי להחליף). הרשימה רחבה בכוונה: "צילום
+#: ווידאו" מחליף ``photo_stills`` בחתונה ו-``photo`` בחינה ובבר מצווה —
+#: אותה רכישה, שם אחר לפי הסוג.
+MERGED_ITEMS = (
+    ("sound_lighting", ("sound", "lighting")),
+    ("photo_video", ("photo_stills", "photo", "video")),
+    ("design_flowers", ("flowers", "venue_design")),
+    ("hair_makeup", ("makeup", "hair")),
+)
+
+
+def test_merged_items_exist_in_the_pool() -> None:
+    for merged, _ in MERGED_ITEMS:
+        assert merged in ITEMS, f"פריט מאוחד חסר מהמאגר: {merged}"
+
+
+def test_merging_never_removes_the_separate_items() -> None:
+    """**האיחוד מקצר, הוא לא מוחק שליטה.** בכל תבנית שהפריט המאוחד הוא
+    בה ברירת מחדל, שני הפריטים הבודדים חייבים להישאר זמינים בקטלוג —
+    אחרת זוג שקיבל שתי הצעות נפרדות לא יוכל לנהל אותן בנפרד."""
+    for event_type in REAL_EVENT_TYPES:
+        items = {i.key: i for c in catalog_for(event_type) for i in c.items}
+        for merged, parts in MERGED_ITEMS:
+            if not (items.get(merged) and items[merged].is_default):
+                continue
+            present = [p for p in parts if p in items]
+            assert len(present) >= 2, (
+                f"{event_type}: {merged} מוצע, אבל אין לצידו שני פריטים "
+                "בודדים שאפשר לנהל בנפרד"
+            )
+            for part in present:
+                assert not items[part].is_default, (
+                    f"{event_type}: {part} נשאר ברירת מחדל לצד {merged} — "
+                    "השורה תיווצר פעמיים"
+                )
+
+
+def test_merged_item_and_its_parts_share_a_category() -> None:
+    """הפריט המאוחד והפריטים שהוא מחליף יושבים באותה קבוצה — אחרת
+    "הצג עוד" בקבוצה הנכונה לא יגלה אותם."""
+    for event_type in REAL_EVENT_TYPES:
+        placement = {
+            item.key: category.key
+            for category in catalog_for(event_type)
+            for item in category.items
+        }
+        for merged, parts in MERGED_ITEMS:
+            if merged not in placement:
+                continue
+            for part in parts:
+                if part in placement:
+                    assert placement[part] == placement[merged], (
+                        f"{event_type}: {part} בקבוצה אחרת מ-{merged}"
+                    )
+
+
+# ════════════════════════════════════════════════════════════════════════
+#  קיבוץ ההוצאות לתצוגה
+# ════════════════════════════════════════════════════════════════════════
+
+
+def test_group_totals_add_up_to_the_summary() -> None:
+    """**האינווריאנטה שמגינה על כותרת הקבוצה.**
+
+    המסך מציג סכום לכל קבוצה מעל השורות שבתוכה. אם סכום הקבוצות אינו
+    שווה בדיוק לסה״כ שבכותרת המסך, הזוג רואה שני מספרים שלא מסתדרים —
+    וזו בדיוק הצורה שבה מסך כספי מאבד אמון. שורת אחוז היא המקרה המסוכן:
+    היא נגזרת משאר ההוצאות, ולכן אסור לחשב אותה בתוך קבוצה מבודדת.
+    """
+    expenses = [
+        line(1, FIXED, 45_000, category="venue"),
+        line(2, PER_ATTENDEE, 320, category="venue", committed_quantity=500),
+        line(3, FIXED, 12_000, category="music"),
+        line(4, PER_ATTENDEE, 45, category="food"),
+        line(5, PER_GUEST, 12, category="guests"),
+        line(6, PERCENT, 0, category="logistics", quantity=10),
+    ]
+    breakdown = finance.cost_breakdown(expenses, attendees=391, invited=551)
+
+    groups: dict[str, int] = {}
+    for expense in expenses:
+        groups[expense.category] = (
+            groups.get(expense.category, 0) + breakdown.lines[expense.id].total_agorot
+        )
+
+    assert sum(groups.values()) == breakdown.total_agorot
+    # ובפרט: שורת האחוז אינה אפס בקבוצה שלה.
+    assert groups["logistics"] > 0
+
+
+def test_group_total_uses_the_committed_quantity() -> None:
+    """קבוצת המקום נספרת לפי ההתחייבות ולא לפי המגיעים — אותו כלל
+    שנועל את המנוע, גם בכותרת הקבוצה."""
+    expenses = [
+        line(1, FIXED, 45_000, category="venue"),
+        line(2, PER_ATTENDEE, 320, category="venue", committed_quantity=500),
+    ]
+    breakdown = finance.cost_breakdown(expenses, attendees=391, invited=551)
+    venue = sum(breakdown.lines[e.id].total_agorot for e in expenses)
+    assert venue == (45_000 + 500 * 320) * S
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for test in tests:

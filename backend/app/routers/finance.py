@@ -83,8 +83,52 @@ def _expense_read(
     )
 
 
+def _category_totals(
+    expenses: list[models.EventExpense],
+    breakdown: finance.CostBreakdown,
+    event_type: str,
+) -> list[schemas.ExpenseCategoryTotalRead]:
+    """מקבץ את השורות לקבוצות — **בסדר שבו הן מופיעות במסך.**
+
+    הסדר נגזר מ-``sort_order`` של השורות ולא מסדר אלפביתי: המקום ראשון
+    כי שם רוב הכסף, הלוגיסטיקה אחרונה. קבוצה שנמחקה ממנה השורה האחרונה
+    פשוט לא תופיע — אין כאן קבוצה ריקה ששומרת מקום.
+    """
+    order: list[str] = []
+    groups: dict[str, list[models.EventExpense]] = {}
+    for expense in sorted(expenses, key=lambda e: (e.sort_order, e.id)):
+        if expense.category not in groups:
+            groups[expense.category] = []
+            order.append(expense.category)
+        groups[expense.category].append(expense)
+
+    totals: list[schemas.ExpenseCategoryTotalRead] = []
+    for key in order:
+        rows = groups[key]
+        total = sum(breakdown.lines[e.id].total_agorot for e in rows)
+        paid = sum(breakdown.lines[e.id].total_agorot for e in rows if e.is_paid)
+        totals.append(
+            schemas.ExpenseCategoryTotalRead(
+                key=key,
+                label=finance_categories.category_label(key, event_type),
+                total_agorot=total,
+                total_display=finance.format_shekels(total),
+                paid_agorot=paid,
+                paid_display=finance.format_shekels(paid),
+                unpaid_agorot=total - paid,
+                unpaid_display=finance.format_shekels(total - paid),
+                expense_count=len(rows),
+                has_empty=any(breakdown.lines[e.id].total_agorot == 0 for e in rows),
+            )
+        )
+    return totals
+
+
 def _cost_summary(
-    expenses: list[models.EventExpense], attendees: int, invited: int
+    expenses: list[models.EventExpense],
+    attendees: int,
+    invited: int,
+    event_type: str = "wedding",
 ) -> schemas.CostSummaryRead:
     """בונה את כל צד ההוצאות — כולל התרחישים וההתחייבויות.
 
@@ -177,6 +221,7 @@ def _cost_summary(
         steps=steps,
         scenarios=scenarios,
         commitments=commitments,
+        categories=_category_totals(expenses, breakdown, event_type),
     )
 
 
@@ -345,7 +390,7 @@ def summary(
 
     return schemas.FinanceSummaryRead(
         rsvp=_rsvp_snapshot(guests),
-        cost=_cost_summary(expenses, attendees, invited),
+        cost=_cost_summary(expenses, attendees, invited, event.event_type),
         income=_income_read(income),
         breakdown=_breakdown_read(
             finance_service.gift_breakdown(db, event, credit_visible=credit_visible)
@@ -407,7 +452,7 @@ def report(
         venue_name=event.venue_name or "",
         generated_at=datetime.utcnow(),
         rsvp=_rsvp_snapshot(guests),
-        cost=_cost_summary(expenses, attendees, invited),
+        cost=_cost_summary(expenses, attendees, invited, event.event_type),
         income=_income_read(income),
         breakdown=_breakdown_read(
             finance_service.gift_breakdown(db, event, credit_visible=credit_visible)

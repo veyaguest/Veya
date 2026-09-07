@@ -1234,7 +1234,12 @@ export const strings = {
     saveError: 'לא הצלחנו לשמור, נסו שוב',
 
     // ---- הסיכום העליון ----
+    // שלושת המספרים שהזוג באמת שואל, בסדר הזה: כמה זה עולה, כמה כבר
+    // יצא מהכיס, וכמה עוד לפניהם. הפילוח החשבונאי (קבוע מול משתנה)
+    // ירד מכאן לסיכום — הוא נכון, אבל הוא לא שאלה של זוג.
     totalCostLabel: 'סה״כ עלות',
+    paidProgress: (paid: string, total: string) => `${paid} מתוך ${total} כבר שולמו`,
+    nothingPaidYet: 'עוד לא סומן תשלום',
     fixedLabel: 'הוצאות קבועות',
     variableLabel: 'הוצאות לפי כמות',
     attendeesLabel: 'מגיעים',
@@ -1272,6 +1277,9 @@ export const strings = {
     attendingNowLabel: 'מגיעים כרגע',
     unusedLabel: 'לא ינוצלו',
     billedLabel: 'משלמים על',
+    // בכרטיס ההתחייבות: "עלות צפויה" ולא "סה״כ עלות" — כדי שלא ייקרא
+    // כמו סך העלות של כל האירוע שמופיע בכותרת המסך.
+    commitmentCostLabel: 'עלות צפויה',
     unitsWord: (n: number) => (n === 1 ? 'יחידה אחת' : `${n} יחידות`),
     portionsWord: (n: number) => (n === 1 ? 'מנה אחת' : `${n} מנות`),
     // כשהמגיעים עדיין מתחת להתחייבות.
@@ -1284,19 +1292,42 @@ export const strings = {
     minTotalApplied: 'המינימום הכספי בחוזה גבוה מהמכפלה, ולכן הוא זה שנספר.',
 
     // ---- תרחישים ----
+    // "כמה מוסיף אדם נוסף" והלוח יושבים יחד באזור אחד סגור: שניהם
+    // עונים על אותה שאלה, ושניהם שאלה שנשאלת פעם בשבוע ולא בכל כניסה.
+    whatIfTitle: 'מה קורה אם יגיעו יותר או פחות',
+    whatIfOpen: 'הצגה',
+    whatIfClose: 'סגירה',
     scenariosTitle: 'איך מספר המגיעים משפיע על העלות',
     scenarioCurrent: 'כרגע',
     scenarioCommitment: 'ההתחייבות',
     scenarioPeople: (n: number) => `${n} מגיעים`,
 
     // ---- רשימת ההוצאות ----
+    // ההוצאות מוצגות מקובצות וסגורות. אירוע טיפוסי הוא 16 שורות, ואף
+    // אחד לא בא למסך הזה כדי לקרוא 16 שורות — הוא בא לבדוק סעיף אחד.
+    // המילה "קטגוריה" לא מופיעה למשתמש: הכותרת היא הקבוצה עצמה.
     expensesTitle: 'ההוצאות',
     addExpense: 'הוספת הוצאה',
+    addToGroup: (label: string) => `הוספה ל${label}`,
+    groupCount: (n: number) => (n === 1 ? 'סעיף אחד' : `${n} סעיפים`),
+    groupEmptyBadge: 'ממתין לסכום',
+    expandAll: 'פתיחת הכול',
+    collapseAll: 'סגירת הכול',
+    // תיאור החישוב בשפה אנושית, מתחת לשם ההוצאה. אף פעם לא שם
+    // השיטה עצמה — "לפי מספר המגיעים" הוא מונח של המערכת, לא של הזוג.
+    calcPerPortion: (price: string, n: number) => `${price} × ${n} מנות`,
+    calcPerAttendee: (price: string, n: number) => `${price} × ${n} מגיעים`,
+    calcPerGuest: (price: string, n: number) => `${price} × ${n} מוזמנים`,
+    calcPerUnit: (price: string, n: number) => `${price} × ${n}`,
+    calcPercent: (pct: number) => `${pct}% משאר ההוצאות`,
+    expenseNoAmount: 'עוד לא מולא סכום',
     editExpense: 'עריכת הוצאה',
     expenseNameLabel: 'שם ההוצאה',
     expenseNamePlaceholder: 'למשל: DJ',
     // השאלה, לא ההוראה — אותו עיקרון כמו באזור המתנה.
     calcMethodLabel: 'איך לחשב את ההוצאה?',
+    // אופן החישוב כבר נבחר מהקטלוג — מוצג כעובדה, ונפתח לשינוי בלחיצה.
+    calcMethodChange: 'שינוי',
     calcMethods: {
       fixed: 'סכום קבוע',
       per_attendee: 'לפי מספר המגיעים',
@@ -1357,6 +1388,8 @@ export const strings = {
     // חלוקת הדיאלוג: מה שרוב האירועים כוללים, מול השאר.
     catalogSuggested: 'מוצע לאירוע שלכם',
     catalogMore: 'עוד אפשרויות',
+    catalogMoreCount: (n: number) => `עוד ${n} אפשרויות`,
+    catalogAllGroups: 'הצגת כל הקבוצות',
 
     deleteExpenseTitle: 'למחוק את ההוצאה?',
     deleteExpenseBody: (label: string) => `${label} תוסר מהסיכום.`,
@@ -1377,6 +1410,10 @@ export const strings = {
     creditLockedNote: 'סכומי האשראי יופיעו כאן ברגע שפרטי קבלת המתנות יאושרו.',
     totalPartialNote: 'הסכום הכולל יוצג כשכל המקורות יהיו זמינים.',
 
+    // כמה נספרו וכמה לא — התמונה שהזוג צריך בשנייה שהוא פותח את המסך
+    // ביום שאחרי. "עדיין לא נספרו" ולא "לא נתנו" — שתי טענות שונות.
+    countedLabel: 'נספרו',
+    notCountedLabel: 'עדיין לא נספרו',
     startCounting: 'התחלת ספירה',
     stopCounting: 'סיום ספירה',
     envelopeNumber: (n: number) => `מעטפה #${n}`,
@@ -1391,6 +1428,9 @@ export const strings = {
     envelopeUnknownBadge: 'לא מזוהה',
     envelopeUnknownHint: 'תמיד אפשר לחזור ולשייך אותה אחר כך.',
     envelopeSearchEmpty: 'לא מצאנו מוזמן בשם הזה',
+    // בתוצאות החיפוש, כשכבר נרשמה מתנה למוזמן הזה. תיאור ולא אזהרה:
+    // מוזמן יכול לתת פעמיים, והמערכת לא חוסמת — היא רק אומרת.
+    alreadyCounted: (amount: string) => `כבר נרשמה מתנה · ${amount}`,
     // כמה אנשים מיוצגים ברשומה. "משפחת כהן" יכולה להיות 4 אנשים,
     // וזה בדיוק מה שמבדיל אותה מ"דני כהן" ברשימת התוצאות.
     resultPartySize: (n: number) => (n === 1 ? 'מוזמן אחד' : `${n} מוזמנים`),
@@ -1419,6 +1459,8 @@ export const strings = {
     giftsLogTitle: 'כל המתנות',
     giftsEmptyTitle: 'עוד לא נספרו מתנות',
     giftsEmptyBody: 'כל מעטפה שתזינו תופיע כאן, ואפשר לערוך אותה בכל רגע.',
+    giftsShowMore: (n: number) => `הצגת ${n} נוספות`,
+    giftsShowingSome: (shown: number, total: number) => `${shown} מתוך ${total}`,
     sourceEnvelope: 'מעטפה',
     sourceCredit: 'אשראי',
     unidentifiedSummary: (n: number, amount: string) =>
@@ -1456,6 +1498,19 @@ export const strings = {
 
     incomeLabel: 'סה״כ הכנסות',
     expensesLabel: 'סה״כ הוצאות',
+    // עמוד השדרה של מסך הסיכום, בסדר שבו קוראים אותו: כמה זה עולה,
+    // כמה כבר יצא, כמה עוד לפניכם, ומה נכנס מהמתנות.
+    summaryCostLabel: (eventNoun: string) => `עלות ${eventNoun}`,
+    summaryPaidLabel: 'שולם עד עכשיו',
+    summaryUnpaidLabel: 'נשאר לשלם',
+    summaryGiftsLabel: 'מתנות',
+    // ההבדל בין תחזית לתוצאה נאמר בכותרת ולא בהערת שוליים: לפני
+    // האירוע חלק מהמספרים עוד יזוזו, ואחריו הם כבר לא.
+    resultExpected: 'תוצאה צפויה',
+    resultActual: 'התוצאה',
+    forecastNote: 'המתנות עוד לא נספרו — התוצאה כאן היא תחזית לפי מה שידוע כרגע.',
+    estimatedShare: (amount: string) => `מתוכם ${amount} עדיין בהערכה`,
+    costSplitTitle: 'מבנה העלות',
     bottomLineLabel: 'התוצאה',
     surplus: 'נשאר לכם',
     deficit: 'חסר',

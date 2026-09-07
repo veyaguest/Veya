@@ -269,21 +269,114 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   רשימת ההוצאות
+   רשימת ההוצאות — קבוצות מקופלות
    ════════════════════════════════════════════════════════════════════ */
 
+/* הכרטיס מחזיק את כל הקבוצות. בלי ריפוד משלו: הריפוד יושב על כותרת
+   הקבוצה, כדי שיעד המגע יגיע עד קצה הכרטיס ולא ייעצר לפניו. */
+.fin-groups {
+  padding: 0;
+  overflow: hidden;
+}
+
 .fin-group + .fin-group {
-  margin-top: 18px;
-  padding-top: 14px;
   border-top: 1px solid var(--line-2);
 }
 
-.fin-group-title {
-  margin: 0 0 4px;
+.fin-group-head {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/* השורה כולה היא הכפתור — יעד מגע מלא ברוחב הכרטיס, בלי חץ זעיר בקצה
+   שצריך לכוון אליו בטלפון. */
+.fin-group-btn {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--control-h-lg);
+  padding: 14px 16px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.fin-group-btn:hover {
+  background: var(--surface-hi);
+}
+
+.fin-group-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+/* חץ CSS טהור — בלי אייקון וקטורי לתחזק. מצביע שמאלה בסגור ולמטה
+   בפתוח, כמקובל בממשק RTL.
+
+   **גבולות פיזיים ולא לוגיים בכוונה:** הזווית של החץ נגזרת מהצלעות
+   שנצבעות, ו-``border-inline-start`` היה הופך אותה בדיוק הפוך. */
+.fin-group-chevron {
+  width: 8px;
+  height: 8px;
+  border-left: 1.6px solid var(--faint);
+  border-bottom: 1.6px solid var(--faint);
+  transform: rotate(45deg);
+  transition: transform var(--transition-fast);
+}
+
+.fin-group.open .fin-group-chevron,
+.fin-whatif.open .fin-group-chevron {
+  transform: rotate(-45deg);
+}
+
+.fin-group-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+}
+
+.fin-group-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--gold-deep);
+  font-weight: var(--weight-regular);
+  color: var(--muted);
+}
+
+.fin-group-total {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-group-total.is-empty {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+  color: var(--muted);
+  direction: rtl;
+}
+
+.fin-group-body {
+  padding: 0 16px 12px;
+}
+
+.fin-group-add {
+  margin-top: 10px;
+  font-size: var(--text-sm);
 }
 
 .fin-expense-list {
@@ -914,6 +1007,33 @@
   min-width: 0;
 }
 
+/* אופן החישוב כשהוא סגור — עובדה בשורה אחת, לא חמש אפשרויות פתוחות. */
+.fin-method-current {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.fin-method-current-value {
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--charcoal);
+}
+
+.fin-catalog-all,
+.fin-catalog-more {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h);
+  font-size: var(--text-sm);
+}
+
+.fin-catalog-all {
+  margin-bottom: 4px;
+}
+
 .fin-method {
   border: none;
   padding: 0;
@@ -987,6 +1107,186 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   שולם / נשאר לשלם — הפס שבכותרת
+   ════════════════════════════════════════════════════════════════════ */
+
+/* הפס לא מוסיף מידע שאין במספרים שמתחתיו. הוא חוסך את החישוב בראש:
+   "כמה מזה כבר מאחורינו" נקרא ממנו במבט, לא בחילוק. */
+.fin-paybar {
+  margin: 18px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fin-paybar-track {
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--line-2);
+  overflow: hidden;
+}
+
+.fin-paybar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--gold);
+  transition: width var(--transition-medium);
+}
+
+.fin-paybar-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: var(--text-sm);
+}
+
+.fin-paybar-legend > span {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fin-paybar-label {
+  color: var(--muted);
+}
+
+.fin-paybar-legend strong {
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+/* "נשאר לשלם" הוא המספר שמסתכלים עליו — ולכן הוא לא באותו משקל כמו
+   "שולם". הבדל אחד של גוון, בלי צבע אזהרה: זו עובדה תקציבית. */
+.fin-paybar-left strong {
+  color: var(--gold-deep);
+}
+
+/* עובדות משנה בכותרת — קטנות ושקטות, כדי שהמספר הגדול יישאר יחיד. */
+.fin-hero-facts-quiet {
+  margin-top: 18px;
+}
+
+.fin-hero-facts-quiet .fin-fact-value {
+  font-size: var(--text-md);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   "מה קורה אם יגיעו יותר או פחות" — אזור סגור
+   ════════════════════════════════════════════════════════════════════ */
+
+.fin-whatif {
+  padding: 0;
+}
+
+.fin-whatif .fin-card-title {
+  margin: 0;
+}
+
+.fin-whatif-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--control-h-lg);
+  padding: 14px 16px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.fin-whatif-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.fin-whatif-body {
+  padding: 0 16px 16px;
+}
+
+.fin-whatif-body .fin-scenarios {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-2);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   פרטים קטנים
+   ════════════════════════════════════════════════════════════════════ */
+
+.fin-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* קישורי טקסט בתוך המסך הזה נלחצים באצבע על מסך טלפון, ולא רק בעכבר.
+   גובה הבקרה הסטנדרטי של VEYA הופך אותם ליעד מגע אמיתי בלי לשנות את
+   ``btn-link`` הגלובלי — שמשמש גם בהקשרים צפופים במסכים אחרים. */
+.fin-section-actions .btn-link,
+.fin-group-add,
+.fin-gift-more .btn-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h);
+}
+
+/* שורה בלי סכום — אמירה במילים ולא "0 ₪". אפור, לא אדום: זה מצב תקין
+   בתחילת התכנון, לא שגיאה. */
+.fin-expense-total.is-empty {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+  color: var(--muted);
+  direction: rtl;
+}
+
+.fin-badge-empty {
+  background: var(--line-2);
+  color: var(--muted);
+}
+
+/* "כבר נרשמה מתנה" בתוצאות החיפוש — תיאור שקט, לא אזהרה. */
+.fin-result-counted {
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  background: rgba(var(--gold-rgb), 0.16);
+  color: var(--gold-on-tint);
+  font-size: var(--text-xs);
+}
+
+.fin-counting-progress {
+  margin: 10px 0 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.fin-gift-more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-2);
+}
+
+.fin-gift-more .fin-hint {
+  margin: 0;
+}
+
+/* "נשאר לשלם" בסיכום — השורה שהעין נעצרת בה בין העלות למתנות. */
+.fin-summary-row-strong strong {
+  color: var(--gold-deep);
+}
+
+/* ════════════════════════════════════════════════════════════════════
    מדסקטופ ומעלה
    ════════════════════════════════════════════════════════════════════ */
 
@@ -997,6 +1297,20 @@
 
   .fin-commitment-grid {
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+
+  .fin-group-btn {
+    padding: 16px 20px;
+  }
+
+  .fin-group-body {
+    padding: 0 20px 14px;
+  }
+
+  .fin-group-name {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 12px;
   }
 
   .fin-expense-btn {
@@ -1115,6 +1429,31 @@
 }
 
 .fin-table tbody tr:hover {
+  background: var(--surface-hi);
+}
+
+/* עמודת השם נשארת במקום כשגוללים את שאר העמודות.
+
+   הדוח הוא תשע עמודות, ובטלפון הן רחבות משלוש רוחבי מסך. בלי העיגון
+   הזה המשתמש גולל ימינה ומאבד את מי השורה מתארת — טבלה שקוראים בה
+   מספרים בלי לדעת של מי הם. הגלילה עצמה כלואה במכל (``overflow-x``)
+   ולא מזיזה את העמוד. */
+.fin-table th:first-child,
+.fin-table td:first-child {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  background: var(--cream);
+  /* קו הפרדה עדין שמסמן שהעמודה מעוגנת ושאר הטבלה זזה מתחתיה. */
+  box-shadow: 1px 0 0 var(--line-2);
+}
+
+.fin-table thead th:first-child {
+  z-index: 2;
+  background: var(--surface-hi);
+}
+
+.fin-table tbody tr:hover td:first-child {
   background: var(--surface-hi);
 }
 

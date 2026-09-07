@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createEnvelope, listGuests } from '../api'
+import { createEnvelope, getGiftsByGuest, listGuests } from '../api'
 import type { EnvelopeInput, Guest, GiftEntry } from '../types'
 import { strings } from '../strings/he'
 
@@ -19,8 +19,15 @@ interface Props {
  *
  * הוא לא שולח את הזוג לחפש מוזמן, לפתוח אותו, להזין סכום ולחזור לרשימה.
  * ערימת מעטפות מגיעה בסדר אקראי, ובקצב הזה גם מסך טוב הופך לעבודה של
- * שעה וחצי. כאן יש **טופס אחד שנשאר פתוח**: סכום, ממי, שמירה — ומיד
- * המעטפה הבאה, באותו מקום, עם הפוקוס כבר בשדה הסכום.
+ * שעה וחצי. כאן יש **טופס אחד שנשאר פתוח**: ממי, כמה, שמירה — ומיד
+ * המעטפה הבאה, באותו מקום, עם הפוקוס כבר בשדה החיפוש.
+ *
+ * ## למה החיפוש ראשון
+ *
+ * על המעטפה כתוב שם, לא סכום — הסכום מתגלה רק כשפותחים אותה. הסדר
+ * "מי ואז כמה" הוא הסדר שבו הידיים באמת עובדות, והוא גם מה שמאפשר
+ * ל-Enter לשרשר: Enter בחיפוש בוחר ומעביר לסכום, Enter בסכום שומר
+ * ומחזיר לחיפוש. מעטפה שלמה בלי לגעת בעכבר.
  *
  * ## החיפוש מקומי, ובכוונה
  *
@@ -44,6 +51,7 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
   const [addingShared, setAddingShared] = useState(false)
 
   const [guests, setGuests] = useState<Guest[]>([])
+  const [counted, setCounted] = useState<Map<number, string>>(new Map())
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   /** אישור קצר על המעטפה האחרונה — כדי שהזוג יראה שהשמירה תפסה בלי
@@ -55,10 +63,25 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
 
   useEffect(() => {
     let alive = true
-    // limit גבוה במכוון: המסך הזה צריך את **כל** המוזמנים בזיכרון כדי
-    // שהחיפוש יהיה מיידי. זו קריאה אחת בפתיחה, לא בכל הקלדה.
-    listGuests(undefined, 2000, 0, 'name')
-      .then((page) => alive && setGuests(page.items))
+    // **כל** המוזמנים נטענים לזיכרון, בדפים.
+    //
+    // ``limit`` נחתך בשרת ל-200 (``routers/guests.MAX_PAGE_LIMIT``), ולכן
+    // בקשה אחת עם 2000 החזירה בשקט את 200 הראשונים בלבד — ובאירוע של
+    // 260 מוזמנים 60 מהם פשוט לא נמצאו בחיפוש. חיפוש שמבטיח "כל
+    // המוזמנים" ומחזיר חלק מהם הוא הבטחה שבורה, ובמסך שמשייך כסף היא
+    // שולחת מעטפה לערימת "לא מזוהה" בלי סיבה.
+    const PAGE = 200
+    async function loadAll() {
+      const all: Guest[] = []
+      for (let offset = 0; ; offset += PAGE) {
+        const page = await listGuests(undefined, PAGE, offset, 'name')
+        all.push(...page.items)
+        if (all.length >= page.total || page.items.length === 0) break
+      }
+      return all
+    }
+    loadAll()
+      .then((items) => alive && setGuests(items))
       .catch(() => alive && setError(t.loadError))
     return () => {
       alive = false
@@ -66,7 +89,28 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
   }, [])
 
   useEffect(() => {
-    amountRef.current?.focus()
+    searchRef.current?.focus()
+  }, [])
+
+  // מי שכבר נספרה לו מתנה — כדי שתוצאת החיפוש תגיד זאת **לפני** הבחירה.
+  // זה מה שמונע רישום כפול של אותה מעטפה בשתי ידיים שסופרות במקביל.
+  useEffect(() => {
+    let alive = true
+    getGiftsByGuest()
+      .then((rows) => {
+        if (!alive) return
+        setCounted(
+          new Map(
+            rows
+              .filter((r) => r.status !== 'not_counted')
+              .map((r) => [r.guest_id, r.total_display]),
+          ),
+        )
+      })
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
   }, [])
 
   // ── החיפוש ────────────────────────────────────────────────────────
@@ -95,7 +139,7 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
     setQuery('')
     setNote('')
     setAddingShared(false)
-    amountRef.current?.focus()
+    searchRef.current?.focus()
   }
 
   function pick(picked: Guest) {
@@ -104,6 +148,8 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
       setAddingShared(false)
     } else {
       setGuest(picked)
+      // נבחר מוזמן ⇒ הדבר היחיד שנשאר הוא המספר.
+      setTimeout(() => amountRef.current?.focus(), 0)
     }
     setQuery('')
   }
@@ -154,35 +200,6 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
           save()
         }}
       >
-        {/* הסכום ראשון ובגדול. זה המספר שהזוג קורא מהמעטפה שבידו, וכל
-            שאר המסך משרת אותו. */}
-        <label className="fin-counter-amount">
-          <span className="field-label">{t.envelopeAmountLabel}</span>
-          <div className="fin-amount-input">
-            <input
-              ref={amountRef}
-              type="text"
-              inputMode="numeric"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))}
-              onKeyDown={(e) => {
-                // Enter בשדה הסכום מעביר לחיפוש ולא שולח: כמעט תמיד
-                // נשאר עוד צעד אחד לפני שמירה.
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  searchRef.current?.focus()
-                }
-              }}
-              placeholder="0"
-              dir="ltr"
-              autoComplete="off"
-            />
-            <span className="fin-amount-currency" aria-hidden="true">
-              ₪
-            </span>
-          </div>
-        </label>
-
         {/* ממי — או "לא ידוע ממי". */}
         <div className="fin-counter-from">
           <span className="field-label">{t.envelopeFromLabel}</span>
@@ -200,7 +217,7 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
               {!addingShared && (
                 <button
                   type="button"
-                  className="link-btn"
+                  className="btn-link"
                   onClick={() => {
                     setAddingShared(true)
                     // המתנה לרינדור שדה החיפוש לפני מיקוד בו.
@@ -222,12 +239,14 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {
-                  // Enter עם תוצאה יחידה בוחר אותה. עם כמה תוצאות הוא
-                  // לא מנחש — ניחוש כאן משייך כסף למוזמן הלא נכון.
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    if (results.length === 1) pick(results[0])
-                  }
+                  // Enter עם תוצאה יחידה בוחר אותה ועובר לסכום. עם כמה
+                  // תוצאות הוא לא מנחש — ניחוש כאן משייך כסף למוזמן הלא
+                  // נכון. בשדה ריק הוא פשוט ממשיך הלאה, כדי שמעטפה בלי
+                  // שם לא תדרוש עכבר.
+                  if (e.key !== 'Enter') return
+                  e.preventDefault()
+                  if (results.length === 1) pick(results[0])
+                  else if (!query.trim()) amountRef.current?.focus()
                 }}
                 placeholder={t.envelopeSearchPlaceholder}
                 autoComplete="off"
@@ -255,6 +274,15 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
                             <span className={`fin-result-rsvp rsvp-${g.rsvp_status}`}>
                               {t.rsvpLabels[g.rsvp_status] ?? g.rsvp_status}
                             </span>
+                            {/* כבר נספרה לו מתנה — נאמר **לפני** הבחירה
+                                ולא אחריה. זה מה שמונע רישום כפול של אותה
+                                מעטפה כששתי ידיים סופרות במקביל. ואין כאן
+                                חסימה: מוזמן בהחלט יכול לתת פעמיים. */}
+                            {counted.has(g.id) && (
+                              <span className="fin-result-counted">
+                                {t.alreadyCounted(counted.get(g.id) ?? '')}
+                              </span>
+                            )}
                           </span>
                         </button>
                       </li>
@@ -268,6 +296,27 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
             </>
           )}
         </div>
+
+        {/* הסכום — הצעד השני, אחרי שידוע ממי. גדול, כי זה המספר
+            היחיד שמקלידים כאן. */}
+        <label className="fin-counter-amount">
+          <span className="field-label">{t.envelopeAmountLabel}</span>
+          <div className="fin-amount-input">
+            <input
+              ref={amountRef}
+              type="text"
+              inputMode="numeric"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))}
+              placeholder="0"
+              dir="ltr"
+              autoComplete="off"
+            />
+            <span className="fin-amount-currency" aria-hidden="true">
+              ₪
+            </span>
+          </div>
+        </label>
 
         <label className="field fin-counter-note">
           <span className="field-label">{t.envelopeNote}</span>
