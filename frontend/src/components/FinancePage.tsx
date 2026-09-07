@@ -213,6 +213,9 @@ export function FinancePage() {
           categories={categories}
           expense={editing}
           initialCategory={addCategory}
+          // הכמויות שהמערכת כבר יודעת — הטופס מציג אותן ולא שואל עליהן.
+          attendees={data.cost.attendees}
+          invited={data.cost.invited}
           busy={saving}
           error={saveError}
           onSave={handleSaveExpense}
@@ -668,6 +671,13 @@ function ExpenseRow({ expense, onEdit }: { expense: Expense; onEdit: () => void 
               "הערכה" באפור כי זו עובדה ניטרלית ולא חוסר. */}
           {expense.vendor && <span className="fin-expense-note">{expense.vendor}</span>}
           {expense.is_paid && <span className="fin-badge fin-badge-paid">{t.paidLabel}</span>}
+          {/* מקדמה — נאמרת עם הסכום, כי "שולם חלקית" בלי מספר משאיר
+              בדיוק את השאלה ששולחת את הזוג לפתוח את השורה. */}
+          {!expense.is_paid && (expense.paid_amount_agorot ?? 0) > 0 && (
+            <span className="fin-badge fin-badge-partial">
+              {t.partialBadge(expense.paid_display)}
+            </span>
+          )}
           {expense.is_estimated && (
             <span className="fin-badge">{t.estimatedLabel}</span>
           )}

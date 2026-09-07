@@ -547,6 +547,72 @@ def test_group_total_uses_the_committed_quantity() -> None:
     assert venue == (45_000 + 500 * 320) * S
 
 
+# ════════════════════════════════════════════════════════════════════════
+#  תשלום: טרם שולם · מקדמה · שולם במלואו
+# ════════════════════════════════════════════════════════════════════════
+#
+# "כמה כבר שילמנו" מוצג בשלושה מקומות (כותרת המסך, כותרת הקבוצה,
+# הסיכום). כולם קוראים מ-``finance.paid_total``, ולכן אין דרך שהם יסטו.
+
+
+def test_unpaid_line_contributes_nothing() -> None:
+    e = line(1, FIXED, 12_000)
+    assert finance.paid_for_line(e, 12_000 * S) == 0
+
+
+def test_fully_paid_line_follows_the_line_total() -> None:
+    """"שולם במלואו" הוא דגל ולא סכום שמור — ולכן הוא נשאר נכון גם
+    כשעלות השורה זזה. שורת מנה ששולמה במלואה ואז קיבלה עוד עשרה
+    מגיעים עדיין "שולמה במלואה"; סכום שנשמר ברגע התשלום היה מתיישן."""
+    e = line(1, PER_ATTENDEE, 320, is_paid=True)
+    assert finance.paid_for_line(e, 391 * 320 * S) == 391 * 320 * S
+    assert finance.paid_for_line(e, 500 * 320 * S) == 500 * 320 * S
+
+
+def test_advance_payment_counts_as_paid() -> None:
+    e = line(1, FIXED, 45_000, paid_amount_agorot=15_000 * S)
+    assert finance.paid_for_line(e, 45_000 * S) == 15_000 * S
+
+
+def test_advance_is_capped_at_the_line_total() -> None:
+    """מקדמה גבוהה מעלות השורה אינה "שולם יותר מהמחיר" — היא החזר,
+    והוא לא שייך לצד ההוצאות. בלי החיתוך הזה "נשאר לשלם" היה יורד
+    למספר שלילי בכותרת המסך."""
+    e = line(1, FIXED, 10_000, paid_amount_agorot=20_000 * S)
+    assert finance.paid_for_line(e, 10_000 * S) == 10_000 * S
+
+
+def test_paid_total_mixes_all_three_states() -> None:
+    expenses = [
+        line(1, FIXED, 45_000, is_paid=True),                       # שולם
+        line(2, FIXED, 12_000, paid_amount_agorot=5_000 * S),       # מקדמה
+        line(3, FIXED, 8_000),                                      # טרם
+        line(4, PER_ATTENDEE, 320, committed_quantity=500, paid_amount_agorot=50_000 * S),
+    ]
+    breakdown = finance.cost_breakdown(expenses, attendees=391, invited=551)
+    paid = finance.paid_total(expenses, breakdown.lines)
+
+    assert paid == (45_000 + 5_000 + 0 + 50_000) * S
+    # ולעולם לא יותר מהסך.
+    assert paid <= breakdown.total_agorot
+
+
+def test_paid_never_exceeds_the_total() -> None:
+    """האינווריאנטה שמגינה על "נשאר לשלם": הוא לא יכול לצאת שלילי."""
+    expenses = [
+        line(1, FIXED, 1_000, paid_amount_agorot=99_000 * S),
+        line(2, FIXED, 2_000, is_paid=True),
+    ]
+    breakdown = finance.cost_breakdown(expenses, attendees=100, invited=120)
+    assert finance.paid_total(expenses, breakdown.lines) == breakdown.total_agorot
+
+
+def test_full_payment_flag_wins_over_a_stale_advance() -> None:
+    """שורה שסומנה "שולם" אחרי שהייתה מקדמה נספרת פעם אחת, לא פעמיים."""
+    e = line(1, FIXED, 30_000, is_paid=True, paid_amount_agorot=10_000 * S)
+    assert finance.paid_for_line(e, 30_000 * S) == 30_000 * S
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for test in tests:

@@ -73,6 +73,11 @@ def _expense_read(
         vendor=expense.vendor or "",
         is_estimated=bool(expense.is_estimated),
         is_paid=bool(expense.is_paid),
+        paid_amount_agorot=expense.paid_amount_agorot or 0,
+        # מה ששולם בפועל על השורה — נגזר במנוע, לא כאן.
+        paid_display=finance.format_shekels(
+            finance.paid_for_line(expense, line.total_agorot)
+        ),
         sort_order=expense.sort_order,
         total_agorot=line.total_agorot,
         total_display=finance.format_shekels(line.total_agorot),
@@ -106,7 +111,7 @@ def _category_totals(
     for key in order:
         rows = groups[key]
         total = sum(breakdown.lines[e.id].total_agorot for e in rows)
-        paid = sum(breakdown.lines[e.id].total_agorot for e in rows if e.is_paid)
+        paid = finance.paid_total(rows, breakdown.lines)
         totals.append(
             schemas.ExpenseCategoryTotalRead(
                 key=key,
@@ -192,7 +197,7 @@ def _cost_summary(
             )
         )
 
-    paid = sum(breakdown.lines[e.id].total_agorot for e in expenses if e.is_paid)
+    paid = finance.paid_total(expenses, breakdown.lines)
     estimated = sum(
         breakdown.lines[e.id].total_agorot for e in expenses if e.is_estimated
     )
@@ -491,6 +496,10 @@ def _apply_expense(payload: schemas.ExpenseWrite, expense: models.EventExpense) 
     expense.vendor = (payload.vendor or "").strip()
     expense.is_estimated = payload.is_estimated
     expense.is_paid = payload.is_paid
+    # "שולם במלואו" גובר על מקדמה: השארת סכום מקדמה לצד הדגל הייתה
+    # מייצרת שורה ששני שדותיה טוענים דברים שונים, ומספר אחד מהם היה
+    # חוזר לחיים אם הדגל יבוטל אחר כך.
+    expense.paid_amount_agorot = 0 if payload.is_paid else (payload.paid_amount_agorot or 0)
 
     # ``quantity`` משרת שתי שיטות: יחידות ב-``per_unit``, ואחוזים
     # שלמים ב-``percent``. בכל שאר השיטות הוא נמחק.

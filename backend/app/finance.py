@@ -279,6 +279,36 @@ class CostBreakdown:
     lines: dict[int, LineResult]
 
 
+def paid_for_line(expense: models.EventExpense, line_total_agorot: int) -> int:
+    """כמה שולם בפועל על שורה אחת.
+
+    **נקודת האמת היחידה לשאלה "כמה כבר שילמנו".** הכותרת, כותרת הקבוצה
+    והסיכום קוראים כולם מכאן — שלושה מקומות שסופרים תשלומים בשלוש דרכים
+    הם שלושה מספרים שיסטו זה מזה מול חשבונית.
+
+    שלושת המצבים::
+
+        is_paid=True                    שולם במלואו ⇒ עלות השורה
+        is_paid=False, paid_amount>0    מקדמה      ⇒ הסכום ששולם
+        is_paid=False, paid_amount=0    טרם שולם   ⇒ 0
+
+    המקדמה **נחתכת לעלות השורה**: זוג ששילם 20,000 ומאוחר יותר הוריד את
+    המחיר ל-15,000 לא "שילם 20,000 מתוך 15,000". זו החזר, לא הוצאה, והיא
+    לא שייכת לצד ההוצאות.
+    """
+    if expense.is_paid:
+        return line_total_agorot
+    advance = expense.paid_amount_agorot or 0
+    return min(max(advance, 0), line_total_agorot)
+
+
+def paid_total(
+    expenses: Iterable[models.EventExpense], lines: dict[int, "LineResult"]
+) -> int:
+    """סך מה ששולם — מקדמות כלולות."""
+    return sum(paid_for_line(e, lines[e.id].total_agorot) for e in expenses)
+
+
 def cost_breakdown(
     expenses: Sequence[models.EventExpense], attendees: int, invited: int
 ) -> CostBreakdown:

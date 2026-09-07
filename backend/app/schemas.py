@@ -2315,6 +2315,10 @@ class ExpenseWrite(BaseModel):
     is_estimated: bool = True
     #: נפרד לחלוטין מ-``is_estimated``: אפשר לשלם מקדמה על סכום לא סופי.
     is_paid: bool = False
+    #: מקדמה, באגורות — **רק כש-``is_paid`` הוא ``False``.** ראו ההסבר
+    #: ב-``models.EventExpense.paid_amount_agorot``: "שולם במלואו" נשאר
+    #: דגל ולא סכום שמור, כי עלות השורה זזה עם מספר המגיעים.
+    paid_amount_agorot: int = Field(default=0, ge=0)
 
     @field_validator("label")
     @classmethod
@@ -2346,6 +2350,10 @@ class ExpenseRead(BaseModel):
     vendor: str = ""
     is_estimated: bool = True
     is_paid: bool = False
+    paid_amount_agorot: int = 0
+    #: כמה שולם בפועל על השורה — עלותה המלאה כשסומן "שולם", המקדמה
+    #: כשיש מקדמה, ו-0 כשטרם שולם. נגזר ב-``finance.paid_for_line``.
+    paid_display: str = ""
     sort_order: int = 0
 
     #: העלות בפועל של השורה.

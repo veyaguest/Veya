@@ -1172,6 +1172,22 @@ class EventExpense(Base):
     #: האם כבר שולם. נפרד לחלוטין מ-``is_estimated``: אפשר לשלם מקדמה על
     #: סכום שעדיין לא סופי, ואפשר לסכם מחיר סופי ולא לשלם עדיין.
     is_paid: Mapped[bool] = mapped_column(Boolean, default=False)
+    #: כמה כבר שולם, באגורות — **רק למקרה של תשלום חלקי** (מקדמה).
+    #:
+    #: שלושת המצבים נקראים כך:
+    #:
+    #:     is_paid=True                      שולם במלואו
+    #:     is_paid=False, paid_amount>0      שולם חלקית
+    #:     is_paid=False, paid_amount=0      טרם שולם
+    #:
+    #: **"שולם במלואו" נשאר דגל ולא סכום שמור**, וזו לא חוסר-עקביות: עלות
+    #: שורת המנה זזה עם מספר המגיעים, וסכום שנשמר ברגע התשלום היה מתיישן
+    #: ברגע שעוד מוזמן מאשר. הדגל ממשיך להיות נכון; המספר לא היה.
+    #:
+    #: שורות שקדמו לעמודה הזו נשארות ב-0, כלומר בדיוק ההתנהגות הקודמת.
+    paid_amount_agorot: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0", nullable=False
+    )
 
     #: הערה חופשית של הזוג ("כולל מע״מ", "לשלם שבועיים לפני").
     note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

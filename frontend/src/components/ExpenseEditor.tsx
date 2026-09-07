@@ -11,12 +11,19 @@ import { ConfirmDialog } from './ConfirmDialog'
 
 const t = strings.finance
 
+/** שלושת מצבי התשלום. ראו ``models.EventExpense.paid_amount_agorot``. */
+type PaymentStatus = 'unpaid' | 'partial' | 'paid'
+
 interface Props {
   categories: ExpenseCategory[]
   /** ``null`` = הוספה חדשה. אחרת עריכה של שורה קיימת. */
   expense: Expense | null
   /** נפתח מתוך קבוצה מסוימת ⇒ מציגים רק אותה. ``null`` = כל הקבוצות. */
   initialCategory?: string | null
+  /** מספר המגיעים שהמערכת כבר יודעת — מוצג, לא נשאל. */
+  attendees: number
+  /** מספר המוזמנים שהמערכת כבר יודעת. */
+  invited: number
   busy?: boolean
   error?: string | null
   onSave: (input: ExpenseInput) => void
@@ -27,38 +34,50 @@ interface Props {
 /**
  * הוספה ועריכה של שורת הוצאה.
  *
- * ## שני שלבים בהוספה, שלב אחד בעריכה
+ * ## העיקרון: "מה קניתי ← כמה זה עולה ← VEYA עושה את השאר"
  *
- * מסך ריק שמבקש מזוג להמציא את רשימת ההוצאות של אירוע הוא מסך שנשאר
- * ריק. לכן ההוספה מתחילה בבחירה מתוך הקטלוג (קבוצה ← פריט), וממנה
- * נגזרים שם ההוצאה ושיטת החישוב **כברירת מחדל שאפשר לשנות**. הקטלוג
- * מציע; הוא לא כולא. "משהו אחר" פותח שורה חופשית לגמרי בכל קבוצה.
+ * זוג שמתכנן חתונה לא אמור לדעת מה ההבדל בין "לפי מספר המגיעים" לבין
+ * "לפי מספר המוזמנים", ובוודאי לא להחליט ביניהם. הוא יודע דבר אחד: הוא
+ * סגר DJ ב-12,000 ₪. לכן המסך הזה שואל **שתי שאלות** — מה, וכמה — וכל
+ * השאר נגזר: הקבוצה מהפריט, שיטת החישוב מהקטלוג, והכמות מהאירוע.
  *
- * בעריכה אין שלב בחירה — הזוג כבר יודע במה מדובר, והוא בא לשנות מספר.
+ * ## מה המסך לא שואל, ולמה
  *
- * ## הקטלוג מציג את הנפוץ, לא את הכול
+ * | מה | מאיפה זה מגיע במקום |
+ * |---|---|
+ * | קבוצה | מהפריט. "DJ" יושב ב"מוזיקה והפקה" — זה metadata, לא החלטה |
+ * | שם ההוצאה | מהקטלוג. הוא הכותרת של הדיאלוג, לא שדה למלא |
+ * | שיטת חישוב | מהקטלוג, ומוצגת כמשפט ("12,000 ₪ · מחיר קבוע") |
+ * | מספר המגיעים / המוזמנים | מהאירוע. VEYA כבר יודעת, ולא תשאל שוב |
  *
- * בחתונה יש 80 פריטים. שמונים כפתורים במסך אחד הם לא בחירה — הם משימת
- * סריקה. לכן כל קבוצה נפתחת עם מה שרוב האירועים מהסוג הזה כוללים,
- * ו"הצגת עוד" חושפת את השאר. הקטלוג המלא לא הצטמצם; רק מה שרואים בבת
- * אחת. וכשההוספה נפתחת מתוך קבוצה מסוימת — מציגים רק אותה.
+ * מה שכן נשאר שאלה: המחיר, ההתחייבות מול הספק (היא בחוזה — VEYA לא
+ * יכולה לדעת אותה), וסטטוס התשלום.
+ *
+ * ## "כך זה יחושב" — משפט, לא מכפלה
+ *
+ * האזור הזה **אינו מציג סכום מחושב**, וזו החלטה ולא חיסרון. בשורת
+ * האולם המכפלה הפשוטה שגויה — יש התחייבות ויש מינימום כספי — ומספר
+ * שמחושב בדפדפן היה מסלול חישוב שני שיכול לסטות מהשרת. אותו כלל שכבר
+ * נאכף במתנות (``app/gift.py``): הדפדפן מצייר כסף, השרת מחשב אותו.
+ * לכן כאן נאמר **הכלל** במילים, והסכום מגיע מהשרת אחרי השמירה.
+ *
+ * ## הקטלוג: חיפוש למי שיודע, קבוצות למי שמסתכל
+ *
+ * בחתונה יש 80 פריטים. מי שיודע שהוא מחפש "מגנטים" מקליד ומוצא; מי
+ * שבא לראות מה בכלל אפשר סורק את הקבוצות, שנפתחות עם מה שרוב האירועים
+ * מהסוג הזה כוללים ו"עוד N אפשרויות" לשאר.
  *
  * ## הכסף נקלט בשקלים ונשלח באגורות
  *
  * ההמרה קורית **פעם אחת**, כאן, ב-``toAgorot``. אין מספר עשרוני שנוסע
- * ברשת ואין חישוב כספי במסך: אותו כלל שכבר נאכף במתנות
- * (``app/gift.py``) — הדפדפן מצייר כסף, השרת מחשב אותו.
- *
- * ## שדות ההתחייבות מופיעים רק כשיש להם משמעות
- *
- * "כמות שהתחייבתם עליה" נגזרת מהחוזה מול האולם, והיא רלוונטית רק
- * לשורה שמחושבת לפי מספר המגיעים. הצגתה על שורה קבועה הייתה מזמינה
- * את הזוג למלא שדה שלא ישפיע על כלום.
+ * ברשת ואין חישוב כספי במסך.
  */
 export function ExpenseEditor({
   categories,
   expense,
   initialCategory = null,
+  attendees,
+  invited,
   busy,
   error,
   onSave,
@@ -80,46 +99,83 @@ export function ExpenseEditor({
   // ברירת המחדל היא הערכה: תקציב נבנה מהערכות, וסימון הכול כ"סוכם"
   // מלכתחילה מרוקן את ההבחנה מתוכן.
   const [isEstimated, setIsEstimated] = useState(expense?.is_estimated ?? true)
-  const [isPaid, setIsPaid] = useState(expense?.is_paid ?? false)
+  const [payment, setPayment] = useState<PaymentStatus>(initialPayment(expense))
+  const [paidAmount, setPaidAmount] = useState(
+    toShekelInput(expense?.paid_amount_agorot ?? null),
+  )
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  // בעריכה מדלגים על שלב הבחירה. בהוספה הוא השלב הראשון, וממנו נגזרות
-  // ברירות המחדל.
+  // בעריכה מדלגים על שלב הבחירה. בהוספה הוא השלב הראשון.
   const [picking, setPicking] = useState(!editing)
-  // אילו קבוצות כבר נפתחו ל"עוד אפשרויות".
+  const [query, setQuery] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  // מסונן לקבוצה שממנה נלחץ "הוספה ל…", עד שהזוג מבקש את כולן.
   const [onlyCategory, setOnlyCategory] = useState<string | null>(initialCategory)
-  // שיטת החישוב מגיעה מהקטלוג ונכונה כמעט תמיד — לכן היא מוצגת כעובדה
-  // ונפתחת לשינוי בלחיצה. ב"משהו אחר" אין ממה לגזור, והיא פתוחה מיד.
+
+  // ארבע שכבות שנפתחות לפי דרישה. ברירת המחדל של כולן סגורה: מי שבא
+  // להזין DJ ב-12,000 לא צריך לראות אף אחת מהן.
   const [methodOpen, setMethodOpen] = useState(false)
+  const [renaming, setRenaming] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [contractOpen, setContractOpen] = useState(Boolean(expense?.min_total_agorot))
 
   const amountRef = useRef<HTMLInputElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
+  const labelRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
-    // אחרי בחירת פריט מהקטלוג הדבר היחיד שנשאר הוא המספר — ולכן הפוקוס
-    // קופץ ישר אליו. זה ההבדל בין טופס שממלאים לטופס שעוברים דרכו.
-    if (!picking) amountRef.current?.focus()
+    // בבחירה — לחיפוש. בפרטים — למחיר, כי זה הדבר היחיד שנשאר להקליד.
+    if (picking) searchRef.current?.focus()
+    else amountRef.current?.focus()
   }, [picking])
+
+  useEffect(() => {
+    if (renaming) labelRef.current?.focus()
+  }, [renaming])
 
   const category = useMemo(
     () => categories.find((c) => c.key === categoryKey) ?? null,
     [categories, categoryKey],
   )
-
-  const supportsCommitment = method === 'per_attendee'
   const catalogItem = category?.items.find((i) => i.key === itemKey) ?? null
 
-  function pickItem(cat: ExpenseCategory, item: ExpenseCatalogItem | null) {
+  // שדה ההתחייבות נפתח לשורה שמחושבת לפי מגיעים — שם, ורק שם, יש חוזה
+  // שנוקב בכמות מינימלית.
+  const supportsCommitment = method === 'per_attendee'
+
+  // ── חיפוש בקטלוג ──────────────────────────────────────────────────
+  // כל מילה בשאילתה חייבת להימצא בשם הפריט או בשם הקבוצה, כך ש"צילום
+  // מגנטים" מוצא גם כשהפריט נקרא "מגנטים" בלבד.
+  const searchResults = useMemo(() => {
+    const q = query.trim()
+    if (!q) return []
+    const words = q.split(/\s+/).filter(Boolean)
+    const hits: { category: ExpenseCategory; item: ExpenseCatalogItem }[] = []
+    for (const cat of categories) {
+      for (const item of cat.items) {
+        const haystack = `${item.label} ${cat.label}`
+        if (words.every((w) => haystack.includes(w))) hits.push({ category: cat, item })
+      }
+    }
+    // המוצעים קודם — הם מה שרוב האירועים מהסוג הזה כוללים.
+    return hits
+      .sort((a, b) => Number(b.item.is_default) - Number(a.item.is_default))
+      .slice(0, 12)
+  }, [query, categories])
+
+  function pickItem(cat: ExpenseCategory, item: ExpenseCatalogItem | null, name = '') {
     setCategoryKey(cat.key)
     setItemKey(item?.key ?? '')
-    setLabel(item?.label ?? '')
-    // ברירת מחדל חכמה, לא כלל: הזוג רשאי לשנות את השיטה מיד אחר כך.
+    setLabel(item?.label ?? name)
+    // שיטת החישוב נגזרת מהפריט. הזוג לא בוחר אותה — הוא רואה אותה.
     setMethod(item?.calc_method ?? 'fixed')
     // כמות פתיחה מהתבנית (2 אלבומי הורים, 10% טיפים) — כדי שהשדה לא
     // ייפתח ריק כשיש ערך שכמעט תמיד נכון.
     setQuantity(item?.default_quantity != null ? String(item.default_quantity) : '')
-    // "משהו אחר" ⇒ אין פריט קטלוג לגזור ממנו, ולכן השיטה נפתחת מיד.
-    setMethodOpen(item === null)
+    setMethodOpen(false)
+    // שורה חופשית בלי שם מהחיפוש נפתחת עם שדה השם פתוח — אין קטלוג
+    // לגזור ממנו שם, וטופס בלי שם לא ניתן לשמירה.
+    setRenaming(item === null && !name)
+    setQuery('')
     setPicking(false)
   }
 
@@ -142,12 +198,20 @@ export function ExpenseEditor({
       note: note.trim() || null,
       vendor: vendor.trim(),
       is_estimated: isEstimated,
-      is_paid: isPaid,
+      is_paid: payment === 'paid',
+      // מקדמה נשלחת רק במצב "שולם חלקית" — ראו ההסבר במודל.
+      paid_amount_agorot: payment === 'partial' ? toAgorot(paidAmount) : 0,
     })
   }
 
-  // ── שלב הבחירה ────────────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════════
+  //  שלב 1 — מה ההוצאה?
+  // ════════════════════════════════════════════════════════════════
   if (picking) {
+    const searching = query.trim().length > 0
+    const freeTextHome =
+      categories.find((c) => c.key === onlyCategory) ?? categories[categories.length - 1]
+
     return (
       <div className="overlay" onClick={onCancel}>
         <div className="dialog fin-editor" onClick={(e) => e.stopPropagation()}>
@@ -159,95 +223,152 @@ export function ExpenseEditor({
           </div>
 
           <div className="dialog-body fin-catalog">
-            {onlyCategory && (
-              // נפתח מתוך קבוצה ⇒ רואים רק אותה. מי שהתכוון למשהו אחר
-              // חוזר לכולן בלחיצה, בלי לסגור ולפתוח מחדש.
-              <button
-                type="button"
-                className="btn-link fin-catalog-all"
-                onClick={() => setOnlyCategory(null)}
-              >
-                {t.catalogAllGroups}
-              </button>
-            )}
+            <input
+              ref={searchRef}
+              type="search"
+              className="fin-search fin-catalog-search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                // תוצאה יחידה + Enter = בחירה. עם כמה תוצאות אין ניחוש.
+                if (e.key !== 'Enter') return
+                e.preventDefault()
+                if (searchResults.length === 1) {
+                  pickItem(searchResults[0].category, searchResults[0].item)
+                }
+              }}
+              placeholder={t.catalogSearchPlaceholder}
+              aria-label={t.catalogSearchPlaceholder}
+              autoComplete="off"
+            />
 
-            {categories
-              .filter((cat) => !onlyCategory || cat.key === onlyCategory)
-              .map((cat) => {
-                const suggested = cat.items.filter((i) => i.is_default)
-                const more = cat.items.filter((i) => !i.is_default)
-                const open = expanded.has(cat.key) || suggested.length === 0
-
-                return (
-                  <section key={cat.key} className="fin-catalog-group">
-                    <h3 className="fin-catalog-title">{cat.label}</h3>
-                    <div className="fin-catalog-items">
-                      {/* מה שרוב האירועים מהסוג הזה כוללים — וזה הכול,
-                          עד שמבקשים עוד. שמונים כפתורים בבת אחת אינם
-                          בחירה, הם משימת סריקה. */}
-                      {suggested.map((item) => (
+            {searching ? (
+              // ── תוצאות חיפוש: רשימה שטוחה, עם שם הקבוצה לצד כל פריט
+              //    כדי שהבחירה תהיה מודעת ולא עיוורת.
+              <>
+                <ul className="fin-results">
+                  {searchResults.length === 0 ? (
+                    <li className="fin-results-empty">{t.catalogSearchEmpty}</li>
+                  ) : (
+                    searchResults.map(({ category: cat, item }) => (
+                      <li key={`${cat.key}-${item.key}`}>
                         <button
-                          key={item.key}
                           type="button"
-                          className="fin-chip fin-chip-suggested"
+                          className="fin-result"
                           onClick={() => pickItem(cat, item)}
                         >
-                          {item.label}
+                          <span className="fin-result-name">{item.label}</span>
+                          <span className="fin-result-meta">{cat.label}</span>
                         </button>
-                      ))}
+                      </li>
+                    ))
+                  )}
+                </ul>
+                {/* אין פריט מתאים ⇒ אפשר להוסיף את מה שהוקלד כשורה
+                    חופשית, בלי לצאת מהחיפוש ולחפש קבוצה מתאימה. */}
+                {freeTextHome && (
+                  <button
+                    type="button"
+                    className="btn-link fin-catalog-more"
+                    onClick={() => pickItem(freeTextHome, null, query.trim())}
+                  >
+                    {t.catalogAddFree(query.trim())}
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                {onlyCategory && (
+                  <button
+                    type="button"
+                    className="btn-link fin-catalog-all"
+                    onClick={() => setOnlyCategory(null)}
+                  >
+                    {t.catalogAllGroups}
+                  </button>
+                )}
 
-                      {open &&
-                        more.map((item) => (
+                {categories
+                  .filter((cat) => !onlyCategory || cat.key === onlyCategory)
+                  .map((cat) => {
+                    const suggested = cat.items.filter((i) => i.is_default)
+                    const more = cat.items.filter((i) => !i.is_default)
+                    const open = expanded.has(cat.key) || suggested.length === 0
+
+                    return (
+                      <section key={cat.key} className="fin-catalog-group">
+                        <h3 className="fin-catalog-title">{cat.label}</h3>
+                        <div className="fin-catalog-items">
+                          {suggested.map((item) => (
+                            <button
+                              key={item.key}
+                              type="button"
+                              className="fin-chip fin-chip-suggested"
+                              onClick={() => pickItem(cat, item)}
+                            >
+                              {item.label}
+                            </button>
+                          ))}
+
+                          {open &&
+                            more.map((item) => (
+                              <button
+                                key={item.key}
+                                type="button"
+                                className="fin-chip"
+                                onClick={() => pickItem(cat, item)}
+                              >
+                                {item.label}
+                              </button>
+                            ))}
+
+                          {/* קיים בכל קבוצה ולא רק ב"הוצאות נוספות":
+                              הזוג יודע לאיזו קבוצה ההוצאה שלו שייכת גם
+                              כשהיא לא ברשימה. */}
+                          {open && (
+                            <button
+                              type="button"
+                              className="fin-chip fin-chip-custom"
+                              onClick={() => pickItem(cat, null)}
+                            >
+                              {t.customItem}
+                            </button>
+                          )}
+                        </div>
+
+                        {!open && more.length > 0 && (
                           <button
-                            key={item.key}
                             type="button"
-                            className="fin-chip"
-                            onClick={() => pickItem(cat, item)}
+                            className="btn-link fin-catalog-more"
+                            onClick={() =>
+                              setExpanded((prev) => new Set(prev).add(cat.key))
+                            }
                           >
-                            {item.label}
+                            {t.catalogMoreCount(more.length)}
                           </button>
-                        ))}
-
-                      {/* קיים בכל קבוצה ולא רק ב"הוצאות נוספות": הזוג יודע
-                          לאיזו קבוצה ההוצאה שלו שייכת גם כשהיא לא ברשימה. */}
-                      {open && (
-                        <button
-                          type="button"
-                          className="fin-chip fin-chip-custom"
-                          onClick={() => pickItem(cat, null)}
-                        >
-                          {t.customItem}
-                        </button>
-                      )}
-                    </div>
-
-                    {!open && more.length > 0 && (
-                      <button
-                        type="button"
-                        className="btn-link fin-catalog-more"
-                        onClick={() =>
-                          setExpanded((prev) => new Set(prev).add(cat.key))
-                        }
-                      >
-                        {t.catalogMoreCount(more.length)}
-                      </button>
-                    )}
-                  </section>
-                )
-              })}
+                        )}
+                      </section>
+                    )
+                  })}
+              </>
+            )}
           </div>
         </div>
       </div>
     )
   }
 
-  // ── שלב הפרטים ────────────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════════
+  //  שלב 2 — כמה זה עולה?
+  // ════════════════════════════════════════════════════════════════
   return (
     <>
       <div className="overlay" onClick={onCancel}>
         <div className="dialog fin-editor" onClick={(e) => e.stopPropagation()}>
           <div className="dialog-head">
-            <h2>{editing ? t.editExpense : t.addExpense}</h2>
+            {/* שם ההוצאה הוא הכותרת ולא שדה. הוא כבר נבחר, ושדה טקסט
+                בראש הטופס אומר "מלא אותי" גם כשהוא מלא. */}
+            <h2>{label || t.addExpense}</h2>
             <button className="x" onClick={onCancel} aria-label={strings.common.cancel}>
               ✕
             </button>
@@ -260,70 +381,42 @@ export function ExpenseEditor({
               submit()
             }}
           >
-            <label className="field">
-              <span className="field-label">{t.expenseNameLabel}</span>
-              <input
-                type="text"
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                placeholder={t.expenseNamePlaceholder}
-                maxLength={120}
-                required
-              />
-            </label>
-
-            {/* אופן החישוב מגיע מהקטלוג ונכון כמעט תמיד. חמש אפשרויות
-                פתוחות עם הסבר לכל אחת הן החלטה שהזוג לא ביקש לקבל —
-                ולכן הוא רואה מה נבחר, ומשנה רק אם צריך. */}
-            {!methodOpen ? (
-              <p className="fin-method-current">
-                <span className="field-label">{t.calcMethodLabel}</span>
-                <span className="fin-method-current-value">{t.calcMethods[method]}</span>
-                <button type="button" className="btn-link" onClick={() => setMethodOpen(true)}>
-                  {t.calcMethodChange}
+            {/* הקבוצה כ-metadata: מוצגת כדי שהבחירה תהיה שקופה, לא כדי
+                שתתקבל שוב. "שינוי" מחזיר לקטלוג. */}
+            <p className="fin-form-meta">
+              <span className="fin-form-group">{category?.label ?? t.customItem}</span>
+              {!editing && (
+                <button type="button" className="btn-link" onClick={() => setPicking(true)}>
+                  {t.changeItem}
                 </button>
-              </p>
-            ) : (
-              <fieldset className="fin-method">
-                <legend className="field-label">{t.calcMethodLabel}</legend>
-                <div className="fin-method-options">
-                  {(
-                    ['fixed', 'per_attendee', 'per_guest', 'per_unit', 'percent'] as CalcMethod[]
-                  ).map(
-                    (m) => (
-                      <label
-                        key={m}
-                        className={`fin-method-option ${method === m ? 'active' : ''}`}
-                      >
-                        <input
-                          type="radio"
-                          name="calc-method"
-                          value={m}
-                          checked={method === m}
-                          onChange={() => setMethod(m)}
-                        />
-                        <span className="fin-method-name">{t.calcMethods[m]}</span>
-                        <span className="fin-method-hint">{t.calcMethodHints[m]}</span>
-                      </label>
-                    ),
-                  )}
-                </div>
-              </fieldset>
+              )}
+              {!renaming && (
+                <button type="button" className="btn-link" onClick={() => setRenaming(true)}>
+                  {t.renameExpense}
+                </button>
+              )}
+            </p>
+
+            {renaming && (
+              <label className="field">
+                <span className="field-label">{t.expenseNameLabel}</span>
+                <input
+                  ref={labelRef}
+                  type="text"
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  placeholder={t.expenseNamePlaceholder}
+                  maxLength={120}
+                  required
+                />
+              </label>
             )}
 
+            {/* ── המחיר. השאלה היחידה שתמיד נשאלת ─────────────────── */}
             <div className="fin-row">
-              {/* שורת אחוז אינה נושאת מחיר — הסכום שלה נגזר משאר
-                  ההוצאות. שדה מחיר כאן היה שדה שאין לו שום השפעה. */}
               <label className="field" hidden={method === 'percent'}>
-                <span className="field-label">
-                  {method === 'fixed'
-                    ? t.amountLabel
-                    : method === 'per_unit'
-                      ? t.unitPriceLabel
-                      : t.perPersonPriceLabel}
-                </span>
-                {/* ``inputMode="numeric"`` פותח מקלדת ספרות בטלפון. זה
-                    ההבדל בין להקליד 12 סכומים ברצף לבין להילחם במקלדת. */}
+                <span className="field-label">{priceLabel(method, catalogItem)}</span>
+                {/* ``inputMode="numeric"`` פותח מקלדת ספרות בטלפון. */}
                 <input
                   ref={amountRef}
                   type="text"
@@ -335,6 +428,8 @@ export function ExpenseEditor({
                 />
               </label>
 
+              {/* כמות נשאלת **רק** כשהמערכת לא יודעת אותה: יחידות שהזוג
+                  קונה, ואחוז שהוא סיכם. מגיעים ומוזמנים לא נשאלים. */}
               {(method === 'per_unit' || method === 'percent') && (
                 <label className="field">
                   <span className="field-label">
@@ -352,83 +447,197 @@ export function ExpenseEditor({
               )}
             </div>
 
-            {/* ההתחייבות מוצגת רק כשהיא משנה משהו — ראו הסבר בראש הקובץ.
-                מודגשת ויזואלית כי זה הנתון שקובע כמה באמת משלמים. */}
+            {/* ── ההתחייבות: הדבר היחיד בחוזה ש-VEYA לא יכולה לדעת ─── */}
             {supportsCommitment && (
-              <section className="fin-commitment-fields">
-                <h3 className="fin-subtitle">{t.commitmentSectionTitle}</h3>
-                <p className="fin-hint">{t.commitmentHint}</p>
-                <div className="fin-row">
-                  <label className="field">
-                    <span className="field-label">{t.committedQuantityLabel}</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={committed}
-                      onChange={(e) => setCommitted(digitsOnly(e.target.value))}
-                      placeholder={t.committedQuantityPlaceholder}
-                      dir="ltr"
-                    />
-                  </label>
-                  <label className="field">
-                    <span className="field-label">{t.minTotalLabel}</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={minTotal}
-                      onChange={(e) => setMinTotal(digitsOnly(e.target.value))}
-                      placeholder="0"
-                      dir="ltr"
-                    />
-                    <span className="field-hint">{t.minTotalHint}</span>
-                  </label>
-                </div>
-              </section>
+              <label className="field">
+                <span className="field-label">{t.committedQuantityLabel}</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={committed}
+                  onChange={(e) => setCommitted(digitsOnly(e.target.value))}
+                  placeholder={t.committedQuantityPlaceholder}
+                  dir="ltr"
+                />
+                <span className="field-hint">{t.commitmentHint}</span>
+              </label>
             )}
 
-            <label className="field">
-              <span className="field-label">{t.vendorLabel}</span>
-              <input
-                type="text"
-                value={vendor}
-                onChange={(e) => setVendor(e.target.value)}
-                placeholder={t.vendorPlaceholder}
-                maxLength={120}
-              />
-            </label>
+            {/* ── "כך זה יחושב" — הכלל במילים, בלי מכפלה ──────────── */}
+            <section className="fin-preview" aria-live="polite">
+              <h3 className="fin-preview-title">{t.previewTitle}</h3>
+              <p className="fin-preview-line">
+                {describePreview({
+                  method,
+                  amount,
+                  quantity,
+                  committed: supportsCommitment ? toCount(committed) : 0,
+                  attendees,
+                  invited,
+                })}
+              </p>
+              {supportsCommitment && toCount(committed) > 0 && (
+                <p className="fin-preview-note">
+                  {t.previewCommitment(toCount(committed), attendees)}
+                </p>
+              )}
+              {toAgorot(minTotal) > 0 && (
+                <p className="fin-preview-note">
+                  {t.previewMinTotal(shekels(toAgorot(minTotal)))}
+                </p>
+              )}
+              {!methodOpen && (
+                <button
+                  type="button"
+                  className="btn-link fin-preview-change"
+                  onClick={() => setMethodOpen(true)}
+                >
+                  {t.calcMethodChange}
+                </button>
+              )}
+            </section>
 
-            {/* שני מתגים נפרדים ובכוונה לא מקושרים: אפשר לשלם מקדמה על
-                סכום שעדיין לא סופי, ואפשר לסכם מחיר ולא לשלם עדיין. */}
-            <div className="fin-toggles">
+            {methodOpen && (
+              <fieldset className="fin-method">
+                <legend className="field-label">{t.calcMethodLabel}</legend>
+                <div className="fin-method-options">
+                  {(
+                    ['fixed', 'per_attendee', 'per_guest', 'per_unit', 'percent'] as CalcMethod[]
+                  ).map((m) => (
+                    <label
+                      key={m}
+                      className={`fin-method-option ${method === m ? 'active' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="calc-method"
+                        value={m}
+                        checked={method === m}
+                        onChange={() => setMethod(m)}
+                      />
+                      <span className="fin-method-name">{t.calcMethods[m]}</span>
+                      <span className="fin-method-hint">{t.calcMethodHints[m]}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+
+            {/* ── סטטוס תשלום ─────────────────────────────────────── */}
+            <fieldset className="fin-payment">
+              <legend className="field-label">{t.paymentStatusLabel}</legend>
+              <div className="fin-payment-options">
+                {(
+                  [
+                    ['unpaid', t.paymentUnpaid],
+                    ['partial', t.paymentPartial],
+                    ['paid', t.paymentPaid],
+                  ] as [PaymentStatus, string][]
+                ).map(([value, text]) => (
+                  <label
+                    key={value}
+                    className={`fin-payment-option ${payment === value ? 'active' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="payment-status"
+                      value={value}
+                      checked={payment === value}
+                      onChange={() => setPayment(value)}
+                    />
+                    <span>{text}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            {/* שדה המקדמה קיים רק כשהוא רלוונטי — שדה סכום ריק ליד
+                "לא שולם" הוא שדה שמזמין למלא אותו בטעות. */}
+            {payment === 'partial' && (
+              <label className="field">
+                <span className="field-label">{t.paidSoFarLabel}</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={paidAmount}
+                  onChange={(e) => setPaidAmount(digitsOnly(e.target.value))}
+                  placeholder="0"
+                  dir="ltr"
+                />
+              </label>
+            )}
+
+            {/* ── מה שנשאר מקופל ──────────────────────────────────── */}
+            {!detailsOpen ? (
               <button
                 type="button"
-                className={`fin-toggle ${!isEstimated ? 'on' : ''}`}
-                aria-pressed={!isEstimated}
-                onClick={() => setIsEstimated((v) => !v)}
+                className="btn-link fin-more-details"
+                onClick={() => setDetailsOpen(true)}
               >
-                {isEstimated ? t.estimatedLabel : t.agreedLabel}
+                {t.moreDetails}
               </button>
-              <button
-                type="button"
-                className={`fin-toggle ${isPaid ? 'on' : ''}`}
-                aria-pressed={isPaid}
-                onClick={() => setIsPaid((v) => !v)}
-              >
-                {isPaid ? t.paidLabel : t.unpaidLabel}
-              </button>
-            </div>
-            <p className="fin-hint">{t.estimatedHint}</p>
+            ) : (
+              <div className="fin-more-block">
+                <label className="field">
+                  <span className="field-label">{t.vendorLabel}</span>
+                  <input
+                    type="text"
+                    value={vendor}
+                    onChange={(e) => setVendor(e.target.value)}
+                    placeholder={t.vendorPlaceholder}
+                    maxLength={120}
+                  />
+                </label>
 
-            <label className="field">
-              <span className="field-label">{t.noteLabel}</span>
-              <input
-                type="text"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={t.notePlaceholder}
-                maxLength={500}
-              />
-            </label>
+                <label className="field">
+                  <span className="field-label">{t.noteLabel}</span>
+                  <input
+                    type="text"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder={t.notePlaceholder}
+                    maxLength={500}
+                  />
+                </label>
+
+                {/* תיבת סימון ולא מתג: זו עובדה על המחיר, לא בורר בין
+                    שני מצבים שווי-משקל. */}
+                <label className="fin-check">
+                  <input
+                    type="checkbox"
+                    checked={isEstimated}
+                    onChange={(e) => setIsEstimated(e.target.checked)}
+                  />
+                  <span>{t.estimatedCheckbox}</span>
+                </label>
+
+                {/* המינימום הכספי רלוונטי לאחוז קטן מהחוזים, ולכן הוא
+                    יושב שכבה אחת עמוק יותר — לא ליד ההתחייבות. */}
+                {supportsCommitment &&
+                  (contractOpen ? (
+                    <label className="field">
+                      <span className="field-label">{t.minTotalLabel}</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={minTotal}
+                        onChange={(e) => setMinTotal(digitsOnly(e.target.value))}
+                        placeholder="0"
+                        dir="ltr"
+                      />
+                      <span className="field-hint">{t.minTotalHint}</span>
+                    </label>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn-link"
+                      onClick={() => setContractOpen(true)}
+                    >
+                      {t.contractMore}
+                    </button>
+                  ))}
+              </div>
+            )}
 
             {error && (
               <p className="form-error" role="alert">
@@ -438,7 +647,7 @@ export function ExpenseEditor({
 
             <div className="dialog-foot">
               <button type="submit" className="btn-primary" disabled={busy || !label.trim()}>
-                {busy ? strings.common.saving : strings.common.save}
+                {busy ? strings.common.saving : t.saveExpense}
               </button>
               <button type="button" className="btn-ghost" onClick={onCancel} disabled={busy}>
                 {strings.common.cancel}
@@ -454,14 +663,6 @@ export function ExpenseEditor({
                 </button>
               )}
             </div>
-
-            {/* מוצג רק אחרי בחירה מהקטלוג, כדי שהזוג יראה מאיפה השורה
-                הגיעה — ויוכל לחזור ולבחור אחרת בלי לסגור הכול. */}
-            {!editing && (
-              <button type="button" className="btn-link" onClick={() => setPicking(true)}>
-                {catalogItem ? `${category?.label} · ${catalogItem.label}` : category?.label}
-              </button>
-            )}
           </form>
         </div>
       </div>
@@ -481,6 +682,72 @@ export function ExpenseEditor({
   )
 }
 
+// ── תיאור החישוב ─────────────────────────────────────────────────────
+
+/**
+ * "כך זה יחושב" — **משפט שמתאר את הכלל, לא מספר שמחושב כאן.**
+ *
+ * ראו ההסבר המלא בראש הקובץ: מכפלה בדפדפן הייתה מסלול חישוב שני, והיא
+ * גם הייתה שגויה בשורה החשובה ביותר (האולם, שבו יש התחייבות ומינימום).
+ */
+function describePreview({
+  method,
+  amount,
+  quantity,
+  committed,
+  attendees,
+  invited,
+}: {
+  method: CalcMethod
+  amount: string
+  quantity: string
+  committed: number
+  attendees: number
+  invited: number
+}): string {
+  if (method === 'percent') {
+    const pct = toCount(quantity)
+    return pct ? t.previewPercent(pct) : t.previewEmpty
+  }
+
+  const agorot = toAgorot(amount)
+  if (!agorot) return t.previewEmpty
+  const price = shekels(agorot)
+
+  switch (method) {
+    case 'per_attendee':
+      // יש התחייבות ⇒ הכמות עוד לא הוכרעה כאן, והמשפט שמתחת אומר
+      // עליה את הדבר הנכון. מכפלה ב"מגיעים" הייתה סותרת אותו.
+      return committed > 0
+        ? t.previewPerPortion(price)
+        : t.previewPerAttendee(price, attendees)
+    case 'per_guest':
+      return t.previewPerGuest(price, invited)
+    case 'per_unit':
+      return t.previewPerUnit(price, toCount(quantity))
+    default:
+      return t.previewFixed(price)
+  }
+}
+
+/** תווית שדה המחיר, בשפה של הפריט שנבחר. */
+function priceLabel(method: CalcMethod, item: ExpenseCatalogItem | null): string {
+  if (method === 'per_unit') return t.unitPriceLabel
+  // שורה שנמכרת בהתחייבות היא שורת מנה — "מחיר למנה", לא "מחיר לאדם".
+  if (method === 'per_attendee') {
+    return item?.supports_commitment ? t.mealPriceLabel : t.perPersonPriceLabel
+  }
+  if (method === 'per_guest') return t.perGuestPriceLabel
+  return t.amountLabel
+}
+
+/** המצב שהטופס נפתח בו בעריכה. ראו ההסבר במודל. */
+function initialPayment(expense: Expense | null): PaymentStatus {
+  if (expense?.is_paid) return 'paid'
+  if ((expense?.paid_amount_agorot ?? 0) > 0) return 'partial'
+  return 'unpaid'
+}
+
 // ── המרות ────────────────────────────────────────────────────────────
 //
 // **נקודת ההמרה היחידה בין שקלים לאגורות בכל המסך.** הזוג מקליד שקלים
@@ -491,8 +758,8 @@ function digitsOnly(value: string): string {
   return value.replace(/[^\d]/g, '')
 }
 
-function toAgorot(shekels: string): number {
-  const n = parseInt(shekels || '0', 10)
+function toAgorot(shekelInput: string): number {
+  const n = parseInt(shekelInput || '0', 10)
   return Number.isFinite(n) ? n * 100 : 0
 }
 
@@ -504,4 +771,9 @@ function toCount(value: string): number {
 function toShekelInput(agorot: number | null | undefined): string {
   if (!agorot) return ''
   return String(Math.trunc(agorot / 100))
+}
+
+/** עיצוב סכום לתיאור החישוב בלבד — הצגה, לא חישוב. */
+function shekels(agorot: number): string {
+  return `${Math.trunc(agorot / 100).toLocaleString('he-IL')} ₪`
 }
