@@ -12,6 +12,9 @@ backend/uploads/
 # Node / frontend
 node_modules/
 frontend/dist/
+# תיקיות ביניים של בדיקות ה-node (נמחקות בסוף הריצה, אבל לא כשהיא נכשלת)
+frontend/.tmp-test/
+frontend/.tmp-test-ws/
 frontend/.env
 
 # OS / editor

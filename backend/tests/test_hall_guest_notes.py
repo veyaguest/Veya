@@ -61,18 +61,29 @@ def test_internal_note_is_not_exposed() -> None:
 
 
 def test_guest_note_is_exposed() -> None:
-    """הערה שהמוזמן עצמו מסר ב-RSVP מגיעה למסך האולם."""
+    """הערה שהמוזמן עצמו מסר ב-RSVP מגיעה למסך האולם.
+
+    ``guest_note`` נכתב רק במסלול של המוזמן עצמו (``/confirm``) ואינו חלק
+    מ-``GuestUpdate`` — הבעלים לא כותב בשם המוזמן. הבדיקה מדמה את התוצאה
+    ישירות ב-DB, כי מה שנבדק כאן הוא **החשיפה** ב-``GET /hall``.
+    """
     api, teardown = bootstrap()
     try:
         g = api.add_guest("רון לוי", "0503333333")
-        r = api.client.patch(
-            f"/guests/{g['id']}",
-            headers=api.headers,
-            json={"guest_note": "כיסא גלגלים"},
-        )
-        assert r.status_code == 200, r.text
-        row = _guest_in_hall(api.get_hall(), "רון לוי")
-        assert row["guest_note"] == "כיסא גלגלים", row
+
+        from app import models
+        from app.database import SessionLocal
+
+        db = SessionLocal()
+        try:
+            row = db.get(models.Guest, g["id"])
+            row.guest_note = "כיסא גלגלים"
+            db.commit()
+        finally:
+            db.close()
+
+        out = _guest_in_hall(api.get_hall(), "רון לוי")
+        assert out["guest_note"] == "כיסא גלגלים", out
         print("✓ guest_note נחשף ב-GET /hall")
     finally:
         teardown()
