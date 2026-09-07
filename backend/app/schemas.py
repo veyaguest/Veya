@@ -2419,6 +2419,30 @@ class CommitmentRead(BaseModel):
     min_total_applied: bool = False
 
 
+class ExpenseCategoryTotalRead(BaseModel):
+    """סיכום קבוצת הוצאות אחת — הכותרת שנפתחת ונסגרת במסך.
+
+    **מחושב בשרת ולא במסך.** הקבוצה היא סכום של שורות שכבר חושבו, כולל
+    שורות אחוז שנגזרות מהבסיס — ולכן חיבור שלהן בדפדפן היה חישוב כספי
+    שני שיכול לסטות מהסיכום שמעליו. כאן זה אותו ``cost_breakdown``.
+    """
+
+    key: str
+    label: str
+    total_agorot: int
+    total_display: str
+    #: כמה מהקבוצה כבר שולם, וכמה עוד לפניכם — השאלה של §"נשאר לשלם".
+    paid_agorot: int = 0
+    paid_display: str = ""
+    unpaid_agorot: int = 0
+    unpaid_display: str = ""
+    #: מספר השורות בקבוצה. מוצג בכותרת כדי שהזוג יידע מה מסתתר בפנים
+    #: לפני שהוא פותח.
+    expense_count: int = 0
+    #: האם נותרה בקבוצה שורה בלי סכום — קבוצה שנפתחה מהתבנית ולא מולאה.
+    has_empty: bool = False
+
+
 class CostSummaryRead(BaseModel):
     """התמונה הכספית של צד ההוצאות."""
 
@@ -2453,6 +2477,9 @@ class CostSummaryRead(BaseModel):
     steps: list[StepCostRead] = []
     scenarios: list[ScenarioRead] = []
     commitments: list[CommitmentRead] = []
+    #: ההוצאות מקובצות, בסדר התבנית. זה מה שמאפשר למסך להראות קודם
+    #: "מוזיקה והפקה · 20,300 ₪" ורק אז את השורות שבתוכה.
+    categories: list[ExpenseCategoryTotalRead] = []
 
 
 class RsvpSnapshotRead(BaseModel):

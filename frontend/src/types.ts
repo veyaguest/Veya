@@ -1843,6 +1843,22 @@ export interface Commitment {
   min_total_applied: boolean
 }
 
+/** סיכום קבוצת הוצאות — הכותרת שנפתחת ונסגרת. **מחושב בשרת**: חיבור
+ *  שורות בדפדפן היה חישוב כספי שני שיכול לסטות מהסיכום שמעליו. */
+export interface ExpenseCategoryTotal {
+  key: string
+  label: string
+  total_agorot: number
+  total_display: string
+  paid_agorot: number
+  paid_display: string
+  unpaid_agorot: number
+  unpaid_display: string
+  expense_count: number
+  /** נותרה בקבוצה שורה בלי סכום — נפתחה מהתבנית ולא מולאה. */
+  has_empty: boolean
+}
+
 export interface CostSummary {
   total_agorot: number
   total_display: string
@@ -1869,6 +1885,8 @@ export interface CostSummary {
   steps: StepCost[]
   scenarios: Scenario[]
   commitments: Commitment[]
+  /** ההוצאות מקובצות, בסדר התבנית — הבסיס לתצוגה המקופלת. */
+  categories: ExpenseCategoryTotal[]
 }
 
 /** מצב אישורי ההגעה — **אותם מספרים** שבתמונת המצב, לא ספירה מקבילה. */

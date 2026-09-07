@@ -1389,10 +1389,10 @@ def seed_message_default_options() -> None:
 #
 # **מתג כיבוי:** ``VEYA_SKIP_RLS_MIGRATIONS=1`` בסביבה. קיים כדי שאפשר
 # יהיה לכבות מיד מ-Render, בלי deploy של קוד, אם מתגלה בעיה.
-_RLS_MIGRATION_FILES = ("15_postponement_rls.sql",)
+_RLS_MIGRATION_FILES = ("15_postponement_rls.sql", "16_finance_rls.sql")
 
-#: הפונקציות שקובץ 15 נשען עליהן (קבצים 01 ו-08). בלעדיהן ``CREATE POLICY``
-#: ייכשל — ואז עדיף לדלג בקול מאשר להשאיר מדיניות חלקית.
+#: הפונקציות שקובצי 15 ו-16 נשענים עליהן (קבצים 01 ו-08). בלעדיהן
+#: ``CREATE POLICY`` ייכשל — ואז עדיף לדלג בקול מאשר להשאיר מדיניות חלקית.
 _RLS_REQUIRED_FUNCTIONS = ("app_manages_event", "app_is_admin")
 
 
@@ -1456,7 +1456,8 @@ def _ensure_rls_policies() -> None:
                 "FROM pg_class c "
                 "WHERE c.relnamespace = 'public'::regnamespace AND c.relkind = 'r' "
                 "  AND c.relname IN "
-                "      ('postponement_requests', 'event_cycles', 'guest_cycle_rsvp') "
+                "      ('postponement_requests', 'event_cycles', 'guest_cycle_rsvp', "
+                "       'event_expenses', 'gift_envelopes') "
                 "ORDER BY 1"
             ).all()
             summary = " · ".join(

@@ -15,6 +15,8 @@ interface Props {
   categories: ExpenseCategory[]
   /** ``null`` = הוספה חדשה. אחרת עריכה של שורה קיימת. */
   expense: Expense | null
+  /** נפתח מתוך קבוצה מסוימת ⇒ מציגים רק אותה. ``null`` = כל הקבוצות. */
+  initialCategory?: string | null
   busy?: boolean
   error?: string | null
   onSave: (input: ExpenseInput) => void
@@ -28,11 +30,18 @@ interface Props {
  * ## שני שלבים בהוספה, שלב אחד בעריכה
  *
  * מסך ריק שמבקש מזוג להמציא את רשימת ההוצאות של אירוע הוא מסך שנשאר
- * ריק. לכן ההוספה מתחילה בבחירה מתוך הקטלוג (קטגוריה ← פריט), וממנה
+ * ריק. לכן ההוספה מתחילה בבחירה מתוך הקטלוג (קבוצה ← פריט), וממנה
  * נגזרים שם ההוצאה ושיטת החישוב **כברירת מחדל שאפשר לשנות**. הקטלוג
- * מציע; הוא לא כולא. "משהו אחר" פותח שורה חופשית לגמרי בכל קטגוריה.
+ * מציע; הוא לא כולא. "משהו אחר" פותח שורה חופשית לגמרי בכל קבוצה.
  *
  * בעריכה אין שלב בחירה — הזוג כבר יודע במה מדובר, והוא בא לשנות מספר.
+ *
+ * ## הקטלוג מציג את הנפוץ, לא את הכול
+ *
+ * בחתונה יש 80 פריטים. שמונים כפתורים במסך אחד הם לא בחירה — הם משימת
+ * סריקה. לכן כל קבוצה נפתחת עם מה שרוב האירועים מהסוג הזה כוללים,
+ * ו"הצגת עוד" חושפת את השאר. הקטלוג המלא לא הצטמצם; רק מה שרואים בבת
+ * אחת. וכשההוספה נפתחת מתוך קבוצה מסוימת — מציגים רק אותה.
  *
  * ## הכסף נקלט בשקלים ונשלח באגורות
  *
@@ -49,6 +58,7 @@ interface Props {
 export function ExpenseEditor({
   categories,
   expense,
+  initialCategory = null,
   busy,
   error,
   onSave,
@@ -76,6 +86,13 @@ export function ExpenseEditor({
   // בעריכה מדלגים על שלב הבחירה. בהוספה הוא השלב הראשון, וממנו נגזרות
   // ברירות המחדל.
   const [picking, setPicking] = useState(!editing)
+  // אילו קבוצות כבר נפתחו ל"עוד אפשרויות".
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  // מסונן לקבוצה שממנה נלחץ "הוספה ל…", עד שהזוג מבקש את כולן.
+  const [onlyCategory, setOnlyCategory] = useState<string | null>(initialCategory)
+  // שיטת החישוב מגיעה מהקטלוג ונכונה כמעט תמיד — לכן היא מוצגת כעובדה
+  // ונפתחת לשינוי בלחיצה. ב"משהו אחר" אין ממה לגזור, והיא פתוחה מיד.
+  const [methodOpen, setMethodOpen] = useState(false)
 
   const amountRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
@@ -101,6 +118,8 @@ export function ExpenseEditor({
     // כמות פתיחה מהתבנית (2 אלבומי הורים, 10% טיפים) — כדי שהשדה לא
     // ייפתח ריק כשיש ערך שכמעט תמיד נכון.
     setQuantity(item?.default_quantity != null ? String(item.default_quantity) : '')
+    // "משהו אחר" ⇒ אין פריט קטלוג לגזור ממנו, ולכן השיטה נפתחת מיד.
+    setMethodOpen(item === null)
     setPicking(false)
   }
 
@@ -140,37 +159,82 @@ export function ExpenseEditor({
           </div>
 
           <div className="dialog-body fin-catalog">
-            {categories.map((cat) => (
-              <section key={cat.key} className="fin-catalog-group">
-                <h3 className="fin-catalog-title">{cat.label}</h3>
-                <div className="fin-catalog-items">
-                  {/* ברירות המחדל של סוג האירוע קודם, ומודגשות: הקטלוג
-                      עשיר (עשרות פריטים), ובלי הסדר הזה הזוג היה סורק
-                      רשימה ארוכה כדי למצוא את מה שרוב האירועים כוללים. */}
-                  {[...cat.items]
-                    .sort((a, b) => Number(b.is_default) - Number(a.is_default))
-                    .map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      className={`fin-chip ${item.is_default ? 'fin-chip-suggested' : ''}`}
-                      onClick={() => pickItem(cat, item)}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                  {/* קיים בכל קטגוריה ולא רק ב"הוצאות נוספות": הזוג יודע
-                      לאיזו קטגוריה ההוצאה שלו שייכת גם כשהיא לא ברשימה. */}
-                  <button
-                    type="button"
-                    className="fin-chip fin-chip-custom"
-                    onClick={() => pickItem(cat, null)}
-                  >
-                    {t.customItem}
-                  </button>
-                </div>
-              </section>
-            ))}
+            {onlyCategory && (
+              // נפתח מתוך קבוצה ⇒ רואים רק אותה. מי שהתכוון למשהו אחר
+              // חוזר לכולן בלחיצה, בלי לסגור ולפתוח מחדש.
+              <button
+                type="button"
+                className="btn-link fin-catalog-all"
+                onClick={() => setOnlyCategory(null)}
+              >
+                {t.catalogAllGroups}
+              </button>
+            )}
+
+            {categories
+              .filter((cat) => !onlyCategory || cat.key === onlyCategory)
+              .map((cat) => {
+                const suggested = cat.items.filter((i) => i.is_default)
+                const more = cat.items.filter((i) => !i.is_default)
+                const open = expanded.has(cat.key) || suggested.length === 0
+
+                return (
+                  <section key={cat.key} className="fin-catalog-group">
+                    <h3 className="fin-catalog-title">{cat.label}</h3>
+                    <div className="fin-catalog-items">
+                      {/* מה שרוב האירועים מהסוג הזה כוללים — וזה הכול,
+                          עד שמבקשים עוד. שמונים כפתורים בבת אחת אינם
+                          בחירה, הם משימת סריקה. */}
+                      {suggested.map((item) => (
+                        <button
+                          key={item.key}
+                          type="button"
+                          className="fin-chip fin-chip-suggested"
+                          onClick={() => pickItem(cat, item)}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+
+                      {open &&
+                        more.map((item) => (
+                          <button
+                            key={item.key}
+                            type="button"
+                            className="fin-chip"
+                            onClick={() => pickItem(cat, item)}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+
+                      {/* קיים בכל קבוצה ולא רק ב"הוצאות נוספות": הזוג יודע
+                          לאיזו קבוצה ההוצאה שלו שייכת גם כשהיא לא ברשימה. */}
+                      {open && (
+                        <button
+                          type="button"
+                          className="fin-chip fin-chip-custom"
+                          onClick={() => pickItem(cat, null)}
+                        >
+                          {t.customItem}
+                        </button>
+                      )}
+                    </div>
+
+                    {!open && more.length > 0 && (
+                      <button
+                        type="button"
+                        className="btn-link fin-catalog-more"
+                        onClick={() =>
+                          setExpanded((prev) => new Set(prev).add(cat.key))
+                        }
+                      >
+                        {t.catalogMoreCount(more.length)}
+                      </button>
+                    )}
+                  </section>
+                )
+              })}
           </div>
         </div>
       </div>
@@ -208,31 +272,44 @@ export function ExpenseEditor({
               />
             </label>
 
-            <fieldset className="fin-method">
-              <legend className="field-label">{t.calcMethodLabel}</legend>
-              <div className="fin-method-options">
-                {(
-                  ['fixed', 'per_attendee', 'per_guest', 'per_unit', 'percent'] as CalcMethod[]
-                ).map(
-                  (m) => (
-                    <label
-                      key={m}
-                      className={`fin-method-option ${method === m ? 'active' : ''}`}
-                    >
-                      <input
-                        type="radio"
-                        name="calc-method"
-                        value={m}
-                        checked={method === m}
-                        onChange={() => setMethod(m)}
-                      />
-                      <span className="fin-method-name">{t.calcMethods[m]}</span>
-                      <span className="fin-method-hint">{t.calcMethodHints[m]}</span>
-                    </label>
-                  ),
-                )}
-              </div>
-            </fieldset>
+            {/* אופן החישוב מגיע מהקטלוג ונכון כמעט תמיד. חמש אפשרויות
+                פתוחות עם הסבר לכל אחת הן החלטה שהזוג לא ביקש לקבל —
+                ולכן הוא רואה מה נבחר, ומשנה רק אם צריך. */}
+            {!methodOpen ? (
+              <p className="fin-method-current">
+                <span className="field-label">{t.calcMethodLabel}</span>
+                <span className="fin-method-current-value">{t.calcMethods[method]}</span>
+                <button type="button" className="btn-link" onClick={() => setMethodOpen(true)}>
+                  {t.calcMethodChange}
+                </button>
+              </p>
+            ) : (
+              <fieldset className="fin-method">
+                <legend className="field-label">{t.calcMethodLabel}</legend>
+                <div className="fin-method-options">
+                  {(
+                    ['fixed', 'per_attendee', 'per_guest', 'per_unit', 'percent'] as CalcMethod[]
+                  ).map(
+                    (m) => (
+                      <label
+                        key={m}
+                        className={`fin-method-option ${method === m ? 'active' : ''}`}
+                      >
+                        <input
+                          type="radio"
+                          name="calc-method"
+                          value={m}
+                          checked={method === m}
+                          onChange={() => setMethod(m)}
+                        />
+                        <span className="fin-method-name">{t.calcMethods[m]}</span>
+                        <span className="fin-method-hint">{t.calcMethodHints[m]}</span>
+                      </label>
+                    ),
+                  )}
+                </div>
+              </fieldset>
+            )}
 
             <div className="fin-row">
               {/* שורת אחוז אינה נושאת מחיר — הסכום שלה נגזר משאר
@@ -381,7 +458,7 @@ export function ExpenseEditor({
             {/* מוצג רק אחרי בחירה מהקטלוג, כדי שהזוג יראה מאיפה השורה
                 הגיעה — ויוכל לחזור ולבחור אחרת בלי לסגור הכול. */}
             {!editing && (
-              <button type="button" className="link-btn" onClick={() => setPicking(true)}>
+              <button type="button" className="btn-link" onClick={() => setPicking(true)}>
                 {catalogItem ? `${category?.label} · ${catalogItem.label}` : category?.label}
               </button>
             )}
