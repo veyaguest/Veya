@@ -35,6 +35,8 @@ def _guest_out(g: models.Guest) -> schemas.HallGuest:
         group_type=g.group_type,
         rsvp_status=g.rsvp_status,
         is_child=g.is_child,
+        seating_notes=g.seating_notes,
+        guest_note=g.guest_note,
     )
 
 

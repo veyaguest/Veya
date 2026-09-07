@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#2b2620" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <link rel="canonical" href="https://veyaguest.co.il/calculators/rsvp-timeline/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <title>מחשבון לוח זמנים לאישורי הגעה | VEYA</title>
+    <meta name="description" content="מזינים תאריך אירוע ומקבלים את לוח הזמנים המלא של אישורי ההגעה: בקשה, שלוש תזכורות ושלושה סבבי מעקב — נפרסים לאחור ממועד סגירת הרשימה, בלי שישי ושבת." />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="VEYA" />
+    <meta property="og:locale" content="he_IL" />
+    <meta property="og:title" content="מחשבון לוח זמנים לאישורי הגעה | VEYA" />
+    <meta property="og:description" content="מזינים תאריך אירוע ומקבלים את לוח הזמנים המלא של אישורי ההגעה: בקשה, שלוש תזכורות ושלושה סבבי מעקב — נפרסים לאחור ממועד סגירת הרשימה, בלי שישי ושבת." />
+    <meta property="og:url" content="https://veyaguest.co.il/calculators/rsvp-timeline/" />
+    <meta property="og:image" content="https://veyaguest.co.il/og-image.png?v=3" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="VEYA — מערכת לניהול אירועים" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="מחשבון לוח זמנים לאישורי הגעה | VEYA" />
+    <meta name="twitter:description" content="מזינים תאריך אירוע ומקבלים את לוח הזמנים המלא של אישורי ההגעה: בקשה, שלוש תזכורות ושלושה סבבי מעקב — נפרסים לאחור ממועד סגירת הרשימה, בלי שישי ושבת." />
+    <meta name="twitter:image" content="https://veyaguest.co.il/og-image.png?v=3" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Frank+Ruhl+Libre:wght@300;400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/veya-site.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "name": "מחשבון לוח זמנים לאישורי הגעה",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "inLanguage": "he-IL",
+            "url": "https://veyaguest.co.il/calculators/rsvp-timeline/",
+            "description": "פריסת שלבי אישורי ההגעה לאחור ממועד סגירת הרשימה."
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "VEYA",
+                "item": "https://veyaguest.co.il/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "מחשבונים",
+                "item": "https://veyaguest.co.il/calculators/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "לוח זמנים",
+                "item": "https://veyaguest.co.il/calculators/rsvp-timeline/"
+              }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "למה בונים את לוח הזמנים לאחור ולא קדימה?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "כי התאריך היחיד שבאמת מחייב אתכם הוא היום שבו צריך למסור לאולם מספר סופי. אם פורסים את השלבים קדימה מהיום שבו נזכרתם, הסבב האחרון נופל אחרי שכבר היה צריך להחליט."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "למה אין שלבים בשישי ושבת?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "שלב שנופל על סוף שבוע נדחה ליום פעיל. בקשת אישור שנשלחת בשישי בערב נבלעת, וסבב שיחות בשבת פשוט לא קורה."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "מה קורה כשנשאר מעט מדי זמן?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "הלוח מתכווץ: אותם שבעה שלבים נדחסים לטווח שנשאר, אבל שני שלבים לעולם לא נופלים על אותו יום — וסבב שיחות ובקשה בהודעה לא יוצאים באותו יום."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "האם זה מחייב אותי לשלוח בדיוק בתאריכים האלה?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "לא. זו תוכנית עבודה, לא התחייבות. בתוך VEYA אתם מאשרים כל שליחה לפני שהיא יוצאת."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+
+  </head>
+  <body>
+    <header class="site-header on-dark">
+      <div class="wrap">
+        <a href="/" aria-label="VEYA — דף הבית">
+          <svg class="header-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 64" width="212" height="64" fill="none" direction="ltr" role="img" aria-label="VEYA">
+            <g>
+              <circle cx="32" cy="32" r="27" stroke="#C9A227" stroke-width="1.5"/>
+              <circle cx="32" cy="32" r="22.5" stroke="#C9A227" stroke-width="0.75" stroke-opacity="0.45"/>
+              <path d="M32 1.2 L35 5 L32 8.8 L29 5 Z" fill="#C9A227"/>
+              <text x="32" y="44" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="34" font-weight="600" fill="#E4C96B" text-anchor="middle">V</text>
+            </g>
+            <text x="74" y="42.5" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="32" font-weight="600" letter-spacing="9" fill="#F5EFE2">VEYA</text>
+          </svg>
+        </a>
+        <div class="header-actions">
+          <a href="/app" class="link-quiet" aria-label="כניסה למערכת">כניסה<span class="lq-long"> למערכת</span></a>
+          <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="wrap">
+          <p class="crumbs"><a href="/">VEYA</a><span aria-hidden="true">›</span><a href="/calculators/">מחשבונים</a><span aria-hidden="true">›</span>לוח זמנים</p>
+          <span class="eyebrow">מחשבון</span>
+          <h1>לוח הזמנים של אישורי ההגעה</h1>
+          <p class="lead">מזינים את תאריך האירוע וכמה ימים לפניו צריך למסור לאולם מספר סופי. מקבלים את שבעת השלבים בתאריכים אמיתיים — נפרסים לאחור, בלי שישי ושבת.</p>
+          
+        </div>
+      </section>
+
+      <section class="article-wrap">
+        <div class="wrap">
+          <div class="calc">
+            <form class="calc-form" id="f" novalidate>
+              <div class="calc-error" id="err" hidden role="alert"></div>
+
+              <label class="calc-field">
+                <span>תאריך האירוע</span>
+                <input type="date" id="date" required />
+              </label>
+
+              <label class="calc-field">
+                <span>כמה ימים לפני האירוע צריך למסור לאולם מספר סופי?
+                  <span class="hint">רוב האולמות מבקשים בין 3 ל-7 ימים. כתוב בחוזה.</span>
+                </span>
+                <select id="days">
+                  <option value="1">יום אחד לפני האירוע</option>
+                  <option value="2">2 ימים לפני האירוע</option>
+                  <option value="3">3 ימים לפני האירוע</option>
+                  <option value="4">4 ימים לפני האירוע</option>
+                  <option value="5" selected>5 ימים לפני האירוע</option>
+                  <option value="6">6 ימים לפני האירוע</option>
+                  <option value="7">7 ימים לפני האירוע</option>
+                  <option value="8">8 ימים לפני האירוע</option>
+                  <option value="9">9 ימים לפני האירוע</option>
+                  <option value="10">10 ימים לפני האירוע</option>
+                </select>
+              </label>
+
+              <button type="submit" class="btn btn-primary">לבנות את לוח הזמנים</button>
+            </form>
+
+            <div class="calc-out" id="out" aria-live="polite">
+              <div class="calc-empty">בוחרים תאריך אירוע ולוחצים "לבנות את לוח הזמנים".</div>
+            </div>
+          </div>
+
+          <article class="article" style="margin-top:56px">
+            <h2>מה יש בלוח הזה</h2>
+            <p>
+              שבעה שלבים: בקשת אישור ראשונה, שלוש תזכורות ושלושה סבבי מעקב טלפוני.
+              הסבב האחרון נופל <strong>בדיוק על מועד סגירת הרשימה</strong> — זה תאריך אחד
+              ויחיד, לא שניים. ביום הזה סוגרים את הרשימה ומוסרים מספר.
+            </p>
+            <p>
+              שני כללים נוספים שמופעלים אוטומטית: שלב שנופל על שישי או שבת נדחה ליום
+              פעיל, ובאותו יום לא יוצאים גם הודעה וגם סבב שיחות.
+            </p>
+            <p class="calc-note">
+              <b>הבהרה:</b> מספר הימים שהאולם דורש משתנה בין אולמות — בדקו את החוזה
+              שלכם. המחשבון לא מניח מספר מטעמכם.
+            </p>
+          </article>
+        </div>
+      </section>
+
+<section class="faq-wrap" aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="kicker">שאלות נפוצות</span>
+          <h2 id="faq-title" class="section-title">מה שכדאי לדעת</h2>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>למה בונים את לוח הזמנים לאחור ולא קדימה?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+            <p>כי התאריך היחיד שבאמת מחייב אתכם הוא היום שבו צריך למסור לאולם מספר סופי. אם פורסים את השלבים קדימה מהיום שבו נזכרתם, הסבב האחרון נופל אחרי שכבר היה צריך להחליט.</p>
+          </details>
+          <details>
+            <summary>למה אין שלבים בשישי ושבת?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+            <p>שלב שנופל על סוף שבוע נדחה ליום פעיל. בקשת אישור שנשלחת בשישי בערב נבלעת, וסבב שיחות בשבת פשוט לא קורה.</p>
+          </details>
+          <details>
+            <summary>מה קורה כשנשאר מעט מדי זמן?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+            <p>הלוח מתכווץ: אותם שבעה שלבים נדחסים לטווח שנשאר, אבל שני שלבים לעולם לא נופלים על אותו יום — וסבב שיחות ובקשה בהודעה לא יוצאים באותו יום.</p>
+          </details>
+          <details>
+            <summary>האם זה מחייב אותי לשלוח בדיוק בתאריכים האלה?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+            <p>לא. זו תוכנית עבודה, לא התחייבות. בתוך VEYA אתם מאשרים כל שליחה לפני שהיא יוצאת.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+      <section class="band-wrap">
+        <div class="wrap">
+          <div class="band">
+            <span class="kicker">בתוך VEYA</span>
+            <h2>הלוח הזה הופך לתוכנית עבודה</h2>
+            <p class="band-more">
+              במערכת התאריכים האלה מנהלים את התהליך בפועל: מי מקבל מה ומתי, מי עדיין לא
+              ענה, ומי צריך מעקב לפני שסוגרים את הרשימה.
+            </p>
+            <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer-brand">
+          <svg class="footer-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 64" width="212" height="64" fill="none" direction="ltr" role="img" aria-label="VEYA">
+            <g>
+              <circle cx="32" cy="32" r="27" stroke="#C9A227" stroke-width="1.5"/>
+              <circle cx="32" cy="32" r="22.5" stroke="#C9A227" stroke-width="0.75" stroke-opacity="0.45"/>
+              <path d="M32 1.2 L35 5 L32 8.8 L29 5 Z" fill="#C9A227"/>
+              <text x="32" y="44" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="34" font-weight="600" fill="#E4C96B" text-anchor="middle">V</text>
+            </g>
+            <text x="74" y="42.5" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="32" font-weight="600" letter-spacing="9" fill="#F5EFE2">VEYA</text>
+          </svg>
+          <span class="footer-tag">מערכת לניהול אירועים — מוזמנים, אישורי הגעה, הושבה וכספי האירוע במקום אחד.</span>
+        </div>
+        <nav aria-label="ניווט תחתון">
+          <a href="/features/finance/">כספי האירוע</a>
+          <a href="/calculators/">מחשבונים</a>
+          <a href="/guides/">מדריכים</a>
+          <a href="/">דף הבית</a>
+          <a href="/app">כניסה למערכת</a>
+        </nav>
+        <nav aria-label="קישורים משפטיים">
+          <a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">תנאי שימוש</a>
+          <a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">מדיניות פרטיות</a>
+          <a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">מדיניות Cookies</a>
+          <a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">הצהרת נגישות</a>
+          <a href="/legal/about.html#contact" target="_blank" rel="noopener noreferrer">יצירת קשר</a>
+        </nav>
+      </div>
+      <div class="wrap" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(201,162,39,0.14); font-size: 13px; color: #9b907c;">
+        © VEYA — מערכת לניהול אירועים
+      </div>
+    </footer>
+    <script>
+      window.VEYA_API = "http://localhost:8000";
+      var f = document.getElementById('f'), out = document.getElementById('out'), err = document.getElementById('err'), di = document.getElementById('date');
+      var t = new Date(); t.setDate(t.getDate() + 1);
+      di.min = t.toISOString().slice(0, 10);
+      var d90 = new Date(); d90.setDate(d90.getDate() + 90);
+      di.value = d90.toISOString().slice(0, 10);
+      function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+      function heb(iso) { var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+
+      f.addEventListener('submit', function (e) {
+        e.preventDefault();
+        err.hidden = true;
+        if (!di.value) { err.textContent = 'נשמח שתבחרו תאריך אירוע.'; err.hidden = false; return; }
+        out.innerHTML = '<div class="calc-empty">רגע אחד…</div>';
+        fetch(window.VEYA_API + '/public/calculators/rsvp-timeline', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event_date: di.value, commit_days_before: Number(document.getElementById('days').value) })
+        }).then(function (r) {
+          return r.json().then(function (d) { if (!r.ok) throw new Error(d.detail || 'שגיאה'); return d; });
+        }).then(render).catch(function (e2) {
+          out.innerHTML = '<div class="calc-empty">לא הצלחנו לבנות לוח זמנים כרגע.</div>';
+          err.textContent = e2.message || 'לא הצלחנו לחשב כרגע.'; err.hidden = false;
+        });
+      });
+
+      function render(d) {
+        var items = d.placements.map(function (p) {
+          var last = p.type === 'call_round' && p.date === d.commitment_date;
+          return '<li class="tl-item' + (last ? ' is-final' : '') + '">' +
+            '<span class="ico" aria-hidden="true">' + esc(p.icon) + '</span>' +
+            '<span class="nm">' + esc(p.label) + (last ? ' — ומועד סגירת הרשימה' : '') +
+            '<small>יום ' + esc(p.weekday) + ' · ' + p.days_before_event + ' ימים לפני האירוע' +
+            (p.moved_from_weekend ? ' · הוזז מסוף שבוע' : '') + '</small></span>' +
+            '<span class="dt">' + heb(p.date) + '</span></li>';
+        }).join('');
+
+        var warn = d.compressed
+          ? '<p class="calc-note"><b>שימו לב:</b> נשאר מעט זמן, ולכן הלוח דחוס. השלבים נשמרו, אבל הפערים ביניהם קצרים מהרגיל.</p>'
+          : '';
+
+        out.innerHTML =
+          '<div class="calc-headline"><span class="lbl">מועד סגירת הרשימה</span>' +
+          '<span class="big">' + heb(d.commitment_date) + '</span>' +
+          '<p>יום ' + esc(d.commitment_weekday) + '. זה גם היום של סבב המעקב האחרון, וגם היום שבו מוסרים לאולם מספר.</p></div>' +
+          '<div class="numcard"><div class="numcard-head"><h3>שבעת השלבים</h3><span class="numcard-tag">נפרסים לאחור</span></div>' +
+          '<ul class="tl-list" style="padding:6px 18px">' + items + '</ul></div>' + warn;
+      }
+    </script>
+  </body>
+</html>

@@ -1068,6 +1068,120 @@ export const strings = {
     fillEmptyButton: 'השלמת מי שללא שולחן',
     fillEmptyHint: 'משבץ רק את מי שעדיין אין לו שולחן. אף אחד מהמשובצים לא זז.',
 
+    // ================================================================
+    // מרחב העבודה: רשימת המוזמנים לצד סקיצת האולם.
+    // כל טקסט שמכיל "מוזמנים" מקבל את המונח מבחוץ (activeEventTerms),
+    // כדי שאירוע עסקי יקבל "משתתפים" בלי לשכפל מחרוזת.
+    // ================================================================
+    workspace: {
+      // ---- הסרגל וכותרותיו ----
+      panelLabel: (guests: string) => `רשימת ה${guests}`,
+      searchPlaceholder: 'חיפוש שם, קבוצה או מספר שולחן',
+      searchClear: 'ניקוי החיפוש',
+      sortLabel: 'מיון',
+      sortConfirmedFirst: 'אישרו הגעה ראשונים',
+      sortNameAsc: 'שם א׳–ת׳',
+      sortNameDesc: 'שם ת׳–א׳',
+      sortPartySize: 'מספר אנשים',
+      sortSeated: 'הושבו ראשונים',
+      sortUnseated: 'לא הושבו ראשונים',
+
+      // ---- סינון ----
+      filterLabel: 'סינון',
+      filterOpen: 'פתיחת הסינון',
+      filterTitle: (guests: string) => `סינון ${guests}`,
+      filterRsvpTitle: 'אישור הגעה',
+      filterSeatingTitle: 'הושבה',
+      filterGroupTitle: 'קבוצה',
+      filterAll: (guests: string) => `כל ה${guests}`,
+      filterSeatedAll: 'כולם',
+      filterSeated: 'הושבו',
+      filterUnseated: 'לא הושבו',
+      filterAllGroups: 'כל הקבוצות',
+      filterApply: 'החלת הסינון',
+      filterReset: 'ניקוי הסינון',
+      filterActive: (n: number) => `סינון פעיל · ${n} ברשימה`,
+
+      // ---- מצב הרשימה ----
+      countSummary: (shown: number, total: number, guests: string) =>
+        shown === total
+          ? `${total} ${guests}`
+          : `${shown} מתוך ${total} ${guests}`,
+      sectionPeople: (n: number) => (n === 1 ? 'אדם אחד' : `${n} אנשים`),
+      sectionSeated: (n: number) => `${n} הושבו`,
+      emptySearchTitle: 'לא נמצאו מוזמנים התואמים לחיפוש',
+      emptySearchDesc: 'אפשר לנקות את החיפוש או לשנות את הסינון.',
+      emptyListTitle: (guests: string) => `עדיין אין ${guests} באירוע`,
+      emptyListDesc: 'אפשר להוסיף אותם, או לייבא רשימה קיימת.',
+      collapseSection: 'סגירת הסעיף',
+      expandSection: 'פתיחת הסעיף',
+
+      // ---- שורת מוזמן ----
+      seatedAt: (table: number) => `שולחן ${table}`,
+      notSeated: 'לא הושבה',
+      peopleCount: (n: number) => `${n} אנשים`,
+      noteToggle: 'הצגת ההערות',
+      noteSeatingTitle: 'הערת הושבה',
+      noteGuestTitle: 'מה שהמוזמן מסר',
+      noteGroupTitle: 'העדפת הקבוצה',
+
+      // ---- פעולות על מוזמן (המסלול שאינו גרירה) ----
+      actionsLabel: (name: string) => `פעולות עבור ${name}`,
+      actionSeat: 'הושבה לשולחן',
+      actionMove: 'העברה לשולחן אחר',
+      actionUnseat: 'הסרה מהשולחן',
+      actionShowOnMap: 'הצגה במפה',
+      actionEdit: 'עריכת פרטים',
+      actionsClose: 'סגירת הפעולות',
+      dragHint: 'אפשר גם לגרור אל שולחן במפה',
+
+      // ---- בחירת שולחן (דיאלוג) ----
+      pickerTitle: (name: string) => `בחירת שולחן ל${name}`,
+      pickerSearch: 'חיפוש לפי מספר שולחן או שם',
+      pickerFree: (n: number) => (n === 1 ? 'מקום פנוי אחד' : `${n} מקומות פנויים`),
+      pickerOccupancy: (used: number, capacity: number) =>
+        `${used} מתוך ${capacity} מקומות תפוסים`,
+      pickerFull: 'השולחן מלא',
+      pickerFullHint: 'אפשר בכל זאת להושיב כאן — נסמן את החריגה על המפה.',
+      pickerCurrent: 'השולחן הנוכחי',
+      pickerEmpty: 'לא נמצא שולחן מתאים.',
+      pickerNoTables: 'עדיין אין שולחנות באולם. אפשר להוסיף שולחן במפה.',
+      pickerCancel: 'ביטול',
+
+      // ---- ניהול המוזמנים (השכבה שמעל מרחב העבודה) ----
+      manageButton: (guests: string) => `ניהול ${guests}`,
+      manageDialogLabel: (guests: string) => `ניהול ${guests}`,
+      manageClose: 'חזרה לסידור ההושבה',
+
+      // ---- הודעות חיות (aria-live) ----
+      seatedAnnounce: (name: string, table: number) =>
+        `${name} הושב לשולחן ${table}.`,
+      seatedOverAnnounce: (name: string, table: number, used: number, capacity: number) =>
+        `${name} הושב לשולחן ${table}. בשולחן ${used} אנשים מתוך ${capacity} מקומות — יש חריגה.`,
+      unseatedAnnounce: (name: string) => `${name} הוסר מהשולחן וחזר לרשימה.`,
+      filterAnnounce: (n: number, guests: string) =>
+        n === 0 ? 'אין תוצאות' : `${n} ${guests} ברשימה`,
+      selectedAnnounce: (name: string) =>
+        `${name} נבחר. אפשר להקיש על שולחן במפה, או לבחור שולחן מרשימת הפעולות.`,
+      tableSelectedAnnounce: (table: number) => `שולחן ${table} נבחר.`,
+
+      // ---- תוצאת "הושבה בקליק" ----
+      resultSeated: (n: number, guests: string) => `${n} ${guests} שובצו`,
+      resultUnseated: (n: number) =>
+        n === 1 ? 'מוזמן אחד נשאר ללא שולחן' : `${n} מוזמנים נשארו ללא שולחן`,
+      resultShowUnseated: 'הצגת מי שנשאר ללא שולחן',
+      resultAllSeated: 'כולם קיבלו מקום',
+
+      // ---- הפס התחתון בטלפון ----
+      tabGuests: (guests: string) => guests,
+      tabSeating: 'הושבה',
+      tabMore: 'עוד',
+      moreTitle: 'שולחנות והגדרות',
+      sheetClose: 'סגירה',
+      tablesTitle: 'שולחנות',
+      settingsTitle: 'הגדרות הושבה',
+    },
+
     // סיכום אחרי הרצה
     doneTitle: 'הסידור מוכן',
     doneSummary: (people: number, tables: number) =>

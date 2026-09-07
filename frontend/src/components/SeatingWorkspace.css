@@ -1,0 +1,976 @@
+/* ==========================================================================
+   מרחב העבודה של ההושבה — סרגל המוזמנים, בחירת שולחן, והפריסה שסביבם.
+
+   הכול בטוקנים הקיימים של VEYA (App.css :root) — אין כאן צבע, גודל פונט
+   או רדיוס שהומצאו במקום. זה לא redesign; זו פריסה חדשה לאותה מערכת.
+
+   שמות המחלקות ב-``ws-`` כדי שלא יתנגשו ב-``hm-`` (מסך האולם הקיים).
+   ========================================================================== */
+
+/* טקסט שקורא-מסך מקריא אבל העין לא רואה. אין helper כזה ב-App.css. */
+.ws-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ==========================================================================
+   הסרגל
+   ========================================================================== */
+.ws-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: var(--cream);
+  color: var(--charcoal);
+  font-family: var(--font-ui);
+}
+
+/* ---- כלי הרשימה: חיפוש, מיון, סינון ---- */
+.ws-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--line);
+  background: var(--cream);
+}
+
+.ws-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ws-search-icon {
+  position: absolute;
+  inset-inline-start: var(--space-3);
+  font-size: var(--text-sm);
+  opacity: 0.6;
+  pointer-events: none;
+}
+.ws-search-input {
+  width: 100%;
+  min-height: var(--control-h-lg);
+  padding: 0 var(--space-8) 0 var(--space-3);
+  font-family: inherit;
+  font-size: var(--text-base);
+  color: var(--charcoal);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+}
+.ws-search-input::placeholder {
+  color: var(--muted);
+}
+.ws-search-clear {
+  position: absolute;
+  inset-inline-end: var(--space-2);
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-size: var(--text-lg);
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+.ws-search-clear:hover {
+  background: var(--line-2);
+  color: var(--charcoal);
+}
+
+.ws-controls {
+  display: flex;
+  gap: var(--space-2);
+}
+.ws-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--control-h);
+  padding: 0 var(--space-3);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--charcoal);
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  cursor: pointer;
+}
+.ws-filter-btn {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: var(--control-h);
+  padding: 0 var(--space-4);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--charcoal);
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  cursor: pointer;
+}
+.ws-filter-btn:hover {
+  background: var(--surface-hi);
+}
+/* סינון פעיל מסומן גם במסגרת וגם בנקודה — לא בצבע לבדו (§28).
+   הטקסט "סינון פעיל · N ברשימה" מופיע בשורת המונה שמתחת. */
+.ws-filter-btn.is-active {
+  border-color: var(--gold-deep);
+  color: var(--gold-on-tint);
+  font-weight: var(--weight-semibold);
+}
+.ws-filter-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-inline-start: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--gold-deep);
+  vertical-align: middle;
+}
+
+.ws-count {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+/* ---- הרשימה ---- */
+.ws-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  /* גלילה עצמאית: גלגול הרשימה לא מזיז את סקיצת האולם (§4). */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-2) var(--space-2) var(--space-4);
+}
+
+.ws-section {
+  margin-bottom: var(--space-2);
+}
+.ws-section-head,
+.ws-group-head {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.ws-section-btn {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--control-h);
+  padding: var(--space-2) var(--space-2);
+  font-family: inherit;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+  text-align: start;
+  background: none;
+  border: none;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+.ws-section-btn:hover {
+  background: var(--surface-hi);
+}
+.ws-section-caret,
+.ws-group-caret {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.ws-section-label {
+  flex: 1 1 auto;
+}
+.ws-section-count {
+  flex: 0 0 auto;
+  min-width: 26px;
+  padding: 2px var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--body);
+  text-align: center;
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-full);
+}
+/* קו הצבע של הסעיף הוא **תוספת** לתווית הטקסטואלית, שתמיד מופיעה. */
+.ws-section-confirmed .ws-section-btn {
+  box-shadow: inset 3px 0 0 0 var(--green);
+}
+.ws-section-pending .ws-section-btn {
+  box-shadow: inset 3px 0 0 0 var(--gauge-pending);
+}
+.ws-section-maybe .ws-section-btn {
+  box-shadow: inset 3px 0 0 0 var(--gold-light);
+}
+.ws-section-declined .ws-section-btn {
+  box-shadow: inset 3px 0 0 0 var(--error);
+}
+
+.ws-group {
+  margin-inline-start: var(--space-3);
+}
+.ws-group-btn {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--control-h);
+  padding: var(--space-1) var(--space-2);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--body);
+  text-align: start;
+  background: none;
+  border: none;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+.ws-group-btn:hover {
+  background: var(--surface-hi);
+}
+.ws-group-label {
+  flex: 1 1 auto;
+}
+.ws-group-count {
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.ws-group-note {
+  flex: 0 0 auto;
+  padding: 0 var(--space-1);
+  font-size: var(--text-xs);
+  cursor: help;
+}
+
+.ws-guests {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---- שורת מוזמן ---- */
+.ws-guest {
+  /* מאות שורות: הדפדפן מדלג על רינדור מה שמחוץ למסך.
+     ``contain-intrinsic-size`` שומר על גובה פס-הגלילה יציב. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 52px;
+  border-radius: var(--radius-m);
+}
+.ws-guest.is-selected {
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  outline: 1px solid var(--gold-deep);
+}
+.ws-guest-main {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-1);
+}
+.ws-guest-btn {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  min-height: var(--control-h-lg);
+  padding: var(--space-2);
+  font-family: inherit;
+  text-align: start;
+  background: none;
+  border: none;
+  border-radius: var(--radius-m);
+  cursor: pointer;
+}
+.ws-guest-btn:hover {
+  background: var(--surface-hi);
+}
+.ws-guest-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--charcoal);
+  overflow-wrap: anywhere;
+}
+.ws-guest-mark {
+  flex: 0 0 auto;
+  width: 16px;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  text-align: center;
+}
+.ws-guest.is-unseated .ws-guest-mark {
+  color: var(--faint);
+}
+.ws-guest-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline-start: calc(16px + var(--space-2));
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.ws-rsvp {
+  font-weight: var(--weight-medium);
+}
+.ws-rsvp-confirmed {
+  color: var(--green);
+}
+.ws-rsvp-declined {
+  color: var(--error);
+}
+.ws-rsvp-maybe {
+  color: var(--gold-deep);
+}
+.ws-guest-seat {
+  font-weight: var(--weight-medium);
+  color: var(--body);
+}
+.ws-guest-seat.is-empty {
+  color: var(--muted);
+}
+.ws-guest-people {
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-note-btn {
+  flex: 0 0 auto;
+  width: var(--control-h);
+  min-height: var(--control-h-lg);
+  font-size: var(--text-sm);
+  background: none;
+  border: none;
+  border-radius: var(--radius-m);
+  cursor: pointer;
+}
+.ws-note-btn:hover,
+.ws-note-btn.is-open {
+  background: var(--surface-hi);
+}
+
+.ws-notes {
+  margin: 0 var(--space-2) var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-s);
+}
+.ws-note {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--body);
+}
+.ws-note:last-child {
+  margin-bottom: 0;
+}
+.ws-note-title {
+  display: block;
+  font-weight: var(--weight-semibold);
+  color: var(--muted);
+}
+
+/* ---- אזור הפעולות (המסלול שאינו גרירה) ---- */
+.ws-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 var(--space-2) var(--space-2);
+  padding: var(--space-2);
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-s);
+}
+.ws-action {
+  min-height: var(--control-h);
+  padding: 0 var(--space-3);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--charcoal);
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  cursor: pointer;
+}
+.ws-action:hover {
+  border-color: var(--gold-deep);
+  color: var(--gold-on-tint);
+}
+.ws-action-hint {
+  flex: 1 0 100%;
+  margin: 0;
+  font-size: var(--text-2xs);
+  color: var(--muted);
+}
+
+/* ---- מצב ריק ---- */
+.ws-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+.ws-empty-title {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+}
+.ws-empty-desc {
+  max-width: 30ch;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--muted);
+}
+
+/* ---- תחתית הסרגל ---- */
+.ws-footer {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--line);
+  background: var(--cream);
+}
+
+/* ---- כפתורים משותפים ---- */
+.ws-btn-primary,
+.ws-btn-ghost {
+  width: 100%;
+  min-height: var(--control-h-lg);
+  padding: 0 var(--space-4);
+  font-family: inherit;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-m);
+  cursor: pointer;
+}
+.ws-btn-primary {
+  color: var(--black);
+  background: linear-gradient(140deg, var(--gold-light), var(--gold));
+  border: 1px solid var(--gold);
+}
+.ws-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+.ws-btn-primary:disabled,
+.ws-btn-ghost:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ws-btn-ghost {
+  color: var(--charcoal);
+  background: var(--cream);
+  border: 1px solid var(--line);
+}
+.ws-btn-ghost:hover:not(:disabled) {
+  background: var(--surface-hi);
+}
+.ws-manage-btn {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  min-height: var(--control-h);
+}
+
+/* ==========================================================================
+   חלונית הסינון + דיאלוג בחירת השולחן
+   ========================================================================== */
+.ws-popover-backdrop,
+.ws-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(43, 38, 32, 0.32);
+}
+.ws-popover {
+  position: fixed;
+  z-index: 91;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  transform: translate(50%, -50%);
+  width: min(360px, calc(100vw - var(--space-8)));
+  max-height: min(80vh, 620px);
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-dialog);
+}
+/* ב-RTL ``translate`` על ציר ה-X חייב להיות חיובי כדי למרכז — הדפדפן
+   לא הופך transform לפי הכיוון. הכלל למטה מתקן את זה ל-LTR. */
+[dir='ltr'] .ws-popover {
+  transform: translate(-50%, -50%);
+}
+.ws-popover-title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+}
+.ws-fieldset {
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  border: none;
+}
+.ws-fieldset legend {
+  padding: 0 0 var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--muted);
+}
+.ws-radio {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-h);
+  padding: 0 var(--space-1);
+  font-size: var(--text-base);
+  color: var(--charcoal);
+  cursor: pointer;
+}
+.ws-radio input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gold-deep);
+}
+.ws-field {
+  margin-bottom: var(--space-4);
+}
+.ws-field-label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--muted);
+}
+.ws-field .ws-select {
+  width: 100%;
+  min-height: var(--control-h-lg);
+}
+.ws-popover-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ws-dialog {
+  position: fixed;
+  z-index: 91;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  transform: translate(50%, -50%);
+  display: flex;
+  flex-direction: column;
+  width: min(420px, calc(100vw - var(--space-8)));
+  max-height: min(82vh, 680px);
+  padding: var(--space-4);
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-dialog);
+}
+[dir='ltr'] .ws-dialog {
+  transform: translate(-50%, -50%);
+}
+.ws-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.ws-dialog-title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+}
+.ws-dialog-x {
+  flex: 0 0 auto;
+  width: var(--control-h);
+  height: var(--control-h);
+  font-size: var(--text-xl);
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+.ws-dialog-x:hover {
+  background: var(--surface-hi);
+  color: var(--charcoal);
+}
+.ws-dialog-search {
+  flex: 0 0 auto;
+  margin-bottom: var(--space-3);
+  padding-inline: var(--space-3);
+}
+.ws-pick-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.ws-pick-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--control-h-lg);
+  padding: var(--space-2) var(--space-3);
+  font-family: inherit;
+  text-align: start;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  cursor: pointer;
+}
+.ws-pick-row:hover {
+  background: var(--surface-hi);
+  border-color: var(--gold-deep);
+}
+.ws-pick-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ws-pick-title {
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--charcoal);
+}
+.ws-pick-sub {
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.ws-pick-side {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.ws-pick-free {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--green);
+}
+.ws-pick-free.is-full {
+  color: var(--error);
+}
+.ws-pick-current {
+  font-size: var(--text-2xs);
+  color: var(--muted);
+}
+/* שולחן מלא: מסגרת מקווקוות **וגם** הטקסט "השולחן מלא" — לא צבע בלבד. */
+.ws-pick-row.is-full {
+  border-style: dashed;
+}
+.ws-pick-row.is-current {
+  background: var(--surface-hi);
+}
+.ws-dialog-empty {
+  padding: var(--space-6) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--muted);
+  text-align: center;
+}
+.ws-dialog-foot {
+  flex: 0 0 auto;
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-2xs);
+  line-height: var(--leading-normal);
+  color: var(--muted);
+}
+
+/* ==========================================================================
+   פוקוס — טבעת אחת, עקבית, בכל רכיבי מרחב העבודה (§26).
+   ========================================================================== */
+.ws-panel :focus-visible,
+.ws-popover :focus-visible,
+.ws-dialog :focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
+}
+
+/* ==========================================================================
+   Reduced motion (§35)
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .ws-panel *,
+  .ws-popover,
+  .ws-dialog {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==========================================================================
+   הפריסה: מרחב עבודה אחד — מוזמנים + אולם.
+
+   ``.hall-ws`` יושב על אותו אלמנט של ``.hall-mobile``, ולכן הכללים כאן
+   דורסים בכוונה חלק מהפריסה הקודמת (שבה כל פאנל *החליף* את הסקיצה).
+   הקנבס, הסקיצה, הזום/פאן וה-Bottom Sheet של השולחן — ללא שינוי.
+   ========================================================================== */
+
+/* ---- דסקטופ: [סרגל מוזמנים] [אולם] [רַכֶּבֶת כלים] ---- */
+.hall-mobile.hall-ws.is-desktop {
+  grid-template-columns: 340px minmax(0, 1fr) 84px;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    'top  top  top'
+    'side main rail';
+}
+.hall-mobile.hall-ws.is-desktop .hm-topbar {
+  grid-area: top;
+}
+.hall-mobile.hall-ws.is-desktop .ws-side {
+  grid-area: side;
+  min-width: 0;
+  min-height: 0;
+  border-inline-end: 1px solid var(--line);
+  background: var(--cream);
+}
+.hall-mobile.hall-ws.is-desktop .hm-body {
+  grid-area: main;
+  min-width: 0;
+}
+.hall-mobile.hall-ws.is-desktop .hm-tabs {
+  grid-area: rail;
+  grid-column: rail;
+  grid-row: auto;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
+  border-top: none;
+  border-inline-start: 1px solid var(--line);
+  border-inline-end: none;
+  box-shadow: none;
+  overflow-y: auto;
+}
+.hall-mobile.hall-ws.is-desktop .hm-tab {
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 60px;
+  padding: var(--space-2) var(--space-1);
+  text-align: center;
+}
+.hall-mobile.hall-ws.is-desktop .hm-tab-label {
+  font-size: var(--text-2xs);
+  white-space: normal;
+}
+.hall-mobile.hall-ws.is-desktop .hm-tab-badge {
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-start: auto;
+  inset-inline-end: 6px;
+  margin: 0;
+}
+
+/* הפאנל הצף (שולחנות / הושבה / הגדרות) נפתח בצד הרַכֶּבֶת, כך שהאולם
+   נשאר גלוי — וגם סרגל המוזמנים שמנגד לא נחסם. */
+.hall-mobile.hall-ws.is-desktop .hm-panel {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  inset-inline-start: auto;
+  width: 340px;
+  z-index: 6;
+  padding: 0 0 var(--space-4);
+  background: var(--cream);
+  border-inline-start: 1px solid var(--line);
+  box-shadow: -8px 0 24px -18px rgba(43, 38, 32, 0.35);
+  overflow-y: auto;
+}
+
+/* ---- טלפון/טאבלט: הסקיצה היא אזור העבודה, הפאנלים הם מגירות ---- */
+.hall-mobile.hall-ws:not(.is-desktop) .hm-panel,
+.hall-mobile.hall-ws:not(.is-desktop) .ws-sheet {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: 72;
+  display: flex;
+  flex-direction: column;
+  max-height: 78%;
+  padding: 0;
+  background: var(--cream);
+  border-top: 1px solid var(--line);
+  border-start-start-radius: var(--radius-xl);
+  border-start-end-radius: var(--radius-xl);
+  box-shadow: 0 -10px 34px -14px rgba(43, 38, 32, 0.34);
+  animation: wsSheetUp 0.2s ease;
+  overflow: hidden;
+}
+.hall-mobile.hall-ws:not(.is-desktop) .hm-panel {
+  padding-bottom: var(--space-4);
+  overflow-y: auto;
+}
+@keyframes wsSheetUp {
+  from {
+    transform: translateY(14%);
+    opacity: 0;
+  }
+}
+.hm-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 71;
+  background: rgba(20, 18, 14, 0.38);
+}
+.hall-mobile.hall-ws.is-desktop .hm-panel-backdrop {
+  display: none;
+}
+
+/* כותרת הפאנל/המגירה — נדרשת גם לשם הנגיש (aria-label) וגם כדי שתמיד
+   תהיה דרך סגירה גלויה, לא רק הקשה על הרקע. */
+.hm-panel-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3);
+  background: var(--cream);
+  border-bottom: 1px solid var(--line);
+}
+.hm-panel-title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+}
+.hm-panel-x {
+  flex: 0 0 auto;
+  width: var(--control-h-lg);
+  height: var(--control-h-lg);
+  font-size: var(--text-xl);
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+.hm-panel-x:hover {
+  background: var(--surface-hi);
+  color: var(--charcoal);
+}
+
+/* המגירה של סרגל המוזמנים בטלפון: הסרגל עצמו גולל בפנים. */
+.ws-sheet .ws-panel {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+/* ---- שכבת ניהול המוזמנים ---- */
+.ws-manage {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  background: var(--ivory);
+}
+.ws-manage-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--cream);
+  border-bottom: 1px solid var(--line);
+}
+.ws-manage-back {
+  width: auto;
+  flex: 0 0 auto;
+  min-height: var(--control-h);
+  font-size: var(--text-sm);
+}
+.ws-manage-title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+}
+.ws-manage-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+/* ---- יעדי שחרור על המפה ----
+   בזמן גרירה כל השולחנות מסומנים כיעד אפשרי, והשולחן שמתחת לסמן מודגש
+   חזק יותר. המסגרת המקווקוות היא סימן צורני — לא הסתמכות על צבע בלבד. */
+.hall-table.is-drop-candidate .table-graphic {
+  outline: 2px dashed var(--gold-deep);
+  outline-offset: 4px;
+}
+.hall-table.is-drop-over .table-graphic {
+  outline: 3px solid var(--gold-deep);
+  outline-offset: 6px;
+  box-shadow: 0 0 0 6px rgba(var(--gold-rgb), 0.22);
+}
+
+/* פוקוס מקלדת על שולחן — חייב להיראות מעל הקנבס הבהיר (§26). */
+.hall-table:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: var(--radius-s);
+}
+
+/* ---- טאבלט: הסרגל צר יותר, הרַכֶּבֶת נשארת ---- */
+@media (min-width: 761px) and (max-width: 1100px) {
+  .hall-mobile.hall-ws.is-desktop {
+    grid-template-columns: 288px minmax(0, 1fr) 72px;
+  }
+  .hall-mobile.hall-ws.is-desktop .hm-panel {
+    width: 300px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hall-mobile.hall-ws:not(.is-desktop) .hm-panel,
+  .hall-mobile.hall-ws:not(.is-desktop) .ws-sheet {
+    animation: none;
+  }
+}

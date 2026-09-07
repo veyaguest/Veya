@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /app
 Disallow: /confirm/
 
 Sitemap: https://veyaguest.co.il/sitemap.xml

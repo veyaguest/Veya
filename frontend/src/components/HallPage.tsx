@@ -31,12 +31,16 @@ import type {
   SeatingViolation,
   TableType,
 } from '../types'
-import { GROUP_LABELS, RSVP_LABELS } from '../types'
-import { activeEventTerms, sideLabel } from '../strings/eventTypes'
+import { activeEventTerms } from '../strings/eventTypes'
 import { HALL_DESKTOP_QUERY, useMediaQuery } from '../lib/useMediaQuery'
 import { strings } from '../strings/he'
 import { getEventId } from '../authStore'
+import { getGroupNotes } from '../api'
+import { tableAriaLabel } from '../seatingWorkspace'
+import type { WorkspaceFilter } from '../seatingWorkspace'
 import { ConfirmDialog } from './ConfirmDialog'
+import { GuestsPage } from './GuestsPage'
+import { GUEST_DRAG_TYPE, SeatingGuestPanel } from './SeatingGuestPanel'
 
 // טקסטי מסך ההושבה — כולם ב-strings/he.ts, אף פעם לא קשיחים בקומפוננטה.
 const hallT = strings.hall
@@ -1471,7 +1475,15 @@ function SketchBuildSuccess(props: { items: DetectedHallElement[]; onOpen: () =>
   )
 }
 
-export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => void } = {}) {
+export function HallPage({
+  onNavigate,
+  initialView,
+}: {
+  onNavigate?: (page: 'dashboard') => void
+  /** מה לפתוח בכניסה למסך. ``manage`` מגיע מכל CTA של "הוספת מוזמנים"
+      במערכת — מאז שאין יעד ניווט נפרד למוזמנים, הם נוחתים כאן. */
+  initialView?: 'guests' | 'manage'
+} = {}) {
   const [tables, setTables] = useState<TableView[]>([])
   const [unassigned, setUnassigned] = useState<HallGuest[]>([])
   const [elements, setElements] = useState<HallElement[]>([])
@@ -1516,14 +1528,35 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   // אותה מפה נוחה בכל מכשיר: הלוח נכנס במלואו למסך, הקשה על שולחן פותחת
   // Bottom Sheet, וניווט תחתון עם 5 מדורים. במחשב הלוח ממלא את אזור התוכן
   // שלצד סרגל הצד (המיקום נקבע ב-CSS לפי רוחב המסך).
-  const [mobileTab, setMobileTab] = useState<'hall' | 'tables' | 'guests' | 'smart' | 'tools'>('hall')
+  // הפאנל הפתוח כרגע לצד/מעל האולם. ``hall`` = רק הסקיצה.
+  // בטלפון הפאנלים הם מגירות מעל האולם; בדסקטופ הם צפים לצידו, וסרגל
+  // המוזמנים ממילא קבוע בעמודה שלו. ``more`` = "עוד" בטלפון — שולחנות
+  // והגדרות ההושבה יחד, כדי שאף כלי קיים לא ייעלם מהפס התחתון המקוצר.
+  const [panel, setPanel] = useState<
+    'hall' | 'tables' | 'guests' | 'smart' | 'tools' | 'more'
+  >(initialView === 'guests' ? 'guests' : 'hall')
+  // ---- מרחב העבודה: מוזמנים + אולם במסך אחד ----
+  // המוזמן שנגרר כרגע מהסרגל (null = אין גרירה) — מדליק את יעדי השחרור
+  // על המפה. הגרירה היא **תוספת**: אותה הושבה זמינה גם בהקשה ובמקלדת.
+  const [dragGuestId, setDragGuestId] = useState<number | null>(null)
+  const [dropTable, setDropTable] = useState<number | null>(null)
+  // שכבת "ניהול מוזמנים" — מסך המוזמנים הקיים (GuestsPage) כדיאלוג מעל
+  // מרחב העבודה. אין יעד ניווט נפרד, ואף יכולת לא נעלמה.
+  const [manageOpen, setManageOpen] = useState(initialView === 'manage')
+  const [manageSearch, setManageSearch] = useState('')
+  // הודעה לקורא מסך (aria-live) — כל פעולה שמשנה מצב בלי ניווט מכריזה כאן.
+  const [liveMessage, setLiveMessage] = useState('')
+  // העדפות הקבוצה (endpoint קיים) — מוצגות ליד הקבוצה בסרגל.
+  const [groupNotes, setGroupNotes] = useState<Record<string, string>>({})
+  // סינון שנכפה על הסרגל מבחוץ ("הצגת מי שנשאר ללא שולחן").
+  const [pushedFilter, setPushedFilter] = useState<WorkspaceFilter | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  // האלמנט שפתח את הפאנל — הפוקוס חוזר אליו בסגירה (§26).
+  const panelTriggerRef = useRef<HTMLElement | null>(null)
   /* מודל האינטראקציה: בטלפון מסך אחד בכל רגע (קנבס *או* פאנל), בדסקטופ
      קנבס במרכז ופאנל לצידו במקביל. זה ההבדל היחיד ש-CSS לא יכול לגשר
      עליו לבדו — הוא קובע *מה מרונדר*, לא רק איפה. */
   const isDesktop = useMediaQuery(HALL_DESKTOP_QUERY)
-  // מיון רשימת "מוזמנים": ברירת מחדל לפי סטטוס שיבוץ (ללא שולחן קודם), או
-  // א'-ב'/מספר שולחן — לבחירת המשתמש, נשמר רק בזיכרון המסך הנוכחי.
-  const [guestSortMode, setGuestSortMode] = useState<'status' | 'name' | 'table'>('status')
   const [sheetTable, setSheetTable] = useState<number | null>(null)
   const [sheetEdit, setSheetEdit] = useState(false)
   // השולחן שנבחר **על המפה** — נפרד מ-sheetTable בכוונה.
@@ -1840,9 +1873,22 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     }
   }, [])
 
+  // העדפות הקבוצה ("רחוק מהרעש") — endpoint קיים, אותו אחד שמזין את
+  // חלונית "העדפות קבוצה" במסך המוזמנים. נטען פעם אחת ומוצג בסרגל ליד
+  // שם הקבוצה, כדי שמי שמסדר הושבה יראה את ההקשר בלי לעזוב את המסך.
+  const loadGroupNotes = useCallback(async () => {
+    try {
+      const data = await getGroupNotes()
+      setGroupNotes(data.notes ?? {})
+    } catch {
+      /* שקט — הערה, לא פעולה קריטית */
+    }
+  }, [])
+
   useEffect(() => {
     load()
     loadClarifications()
+    loadGroupNotes()
     // האם יש סידור קודם לשחזור. נטען מהשרת (ולא מהזיכרון של הדפדפן) כדי
     // שכפתור "החזרת הסידור הקודם" ישרוד רענון דף ומעבר מכשיר.
     getSeatingUndoState()
@@ -1850,7 +1896,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       .catch(() => {
         /* שקט — היעדר הכפתור עדיף על הודעת שגיאה בטעינה */
       })
-  }, [load, loadClarifications])
+  }, [load, loadClarifications, loadGroupNotes])
 
   // ---- התאמה-למסך חד-פעמית (Auto-Fit) ----
   // מחשבים קנה-מידה אחד שמכניס את כל העולם (התוכן + שוליים) לאזור התצוגה, וממרכז
@@ -2622,7 +2668,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     setSketchSelected(false)
     setWizardOpen(false)
     setDirty(true)
-    setMobileTab('hall')
+    setPanel('hall')
     // אחרי שהלוח התרנדר (worldSize התעדכן) — מבצעים התאמה-למסך חד-פעמית כך
     // שכל האולם החדש ייכנס לתצוגה, ממורכז, בלי גלילה.
     window.setTimeout(() => recomputeFit(), 80)
@@ -3452,45 +3498,19 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
   const visibleUnassigned = [...unassigned].sort((a, b) =>
     a.full_name.localeCompare(b.full_name, 'he'),
   )
+  // כמה **אנשים** נשארו ללא שולחן (לא כמה רשומות) — מוצג בדוח שאחרי
+  // "הושבה בקליק". ``party_size`` ולא ``seats``, כי מי שלא אישר תופס 0
+  // מקומות ועדיין מופיע ברשימה.
+  const unassignedPeople = unassigned.reduce(
+    (sum, g) => sum + (g.rsvp_status === 'confirmed' ? g.seats : g.party_size),
+    0,
+  )
 
-  // כל המוזמנים באירוע ללשונית "מוזמנים", לפי מצב המיון שנבחר (guestSortMode):
-  // - 'status' (ברירת מחדל): קודם כל מי שללא שולחן, אחר כך המשובצים — בכל
-  //   קבוצה מיון א'-ב'.
-  // - 'name': כולם יחד, מיון א'-ב' בלבד (בלי הפרדה לפי שיבוץ).
-  // - 'table': מיון לפי מספר שולחן עולה; מי שללא שולחן בסוף הרשימה, כי אין
-  //   להם מיקום טבעי בסדר מספרי.
-  // נגזר מ-tables/unassigned בכל רינדור, כך שהרשימה מתעדכנת מיד עם כל
-  // שיבוץ/הסרת שיבוץ בלי לוגיקה נוספת.
-  const allGuestsSorted = useMemo(() => {
-    const assignedEntries = tables.flatMap((t) =>
-      t.guests.map((g) => ({ guest: g, tableNumber: t.table_number as number | null })),
-    )
-    const unassignedEntries = unassigned.map((g) => ({ guest: g, tableNumber: null as number | null }))
-    const byName = (a: { guest: HallGuest }, b: { guest: HallGuest }) =>
-      a.guest.full_name.localeCompare(b.guest.full_name, 'he')
-
-    if (guestSortMode === 'name') {
-      return [...unassignedEntries, ...assignedEntries].sort(byName)
-    }
-    if (guestSortMode === 'table') {
-      return [...unassignedEntries, ...assignedEntries].sort((a, b) => {
-        if ((a.tableNumber === null) !== (b.tableNumber === null)) {
-          return a.tableNumber === null ? 1 : -1
-        }
-        if (a.tableNumber !== null && b.tableNumber !== null && a.tableNumber !== b.tableNumber) {
-          return a.tableNumber - b.tableNumber
-        }
-        return byName(a, b)
-      })
-    }
-    // 'status' — ברירת המחדל
-    return [...unassignedEntries, ...assignedEntries].sort((a, b) => {
-      if ((a.tableNumber === null) !== (b.tableNumber === null)) {
-        return a.tableNumber === null ? -1 : 1
-      }
-      return byName(a, b)
-    })
-  }, [tables, unassigned, guestSortMode])
+  // הערה על מה שהיה כאן: עד 2026-09 ישבה כאן ``allGuestsSorted`` —
+  // המיון של לשונית "מוזמנים" שבתוך מסך האולם. הרשימה עברה למרחב
+  // העבודה (``SeatingGuestPanel``), והמיון/הסינון/הקיבוץ שלה חיים
+  // עכשיו ב-``seatingWorkspace.ts`` — מודול טהור עם בדיקות משלו,
+  // במקום שלוש עותקים של אותו רעיון בשלושה מסכים.
 
   // ---- עוזר הושבה חכם: חישובים נגזרים (טהורים, בלי קריאת רשת) ----
   // כל הפונקציות מ-seatingAdvisor.ts הן O(n) — מחושבות מחדש רק כשמשהו
@@ -3531,6 +3551,115 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
       return
     }
     setSeatWarning({ guestIds: [guestId], onConfirm: () => void doAssign(guestId, tableNumber) })
+  }
+
+  // ==========================================================================
+  //            מרחב העבודה: מוזמנים + אולם באותו מסך
+  // ==========================================================================
+  // כל מה שכאן הוא *חיבור* בין סרגל המוזמנים לפעולות שכבר קיימות במסך —
+  // לא לוגיקה חדשה. הושבה עוברת תמיד דרך ``requestSeatGuest`` (ולכן דרך
+  // אזהרת "עדיין לא אישר הגעה"), והשמירה נשארת השמירה האוטומטית הקיימת.
+
+  /** מכריז לקורא מסך. כל פעולה שמשנה מצב בלי ניווט חייבת להישמע (§31). */
+  const announce = useCallback((message: string) => {
+    // איפוס קצר לפני ההודעה — קורא מסך לא מקריא שוב טקסט זהה לקודם
+    // (למשל שתי הושבות רצופות לאותו שולחן) אם ה-DOM לא באמת השתנה.
+    setLiveMessage('')
+    window.setTimeout(() => setLiveMessage(message), 30)
+  }, [])
+
+  const wsT = hallT.workspace
+
+  /** מוזמן → שולחן, מכל מסלול (גרירה / בחירה / דיאלוג / מקלדת). */
+  function seatGuestFromPanel(guestId: number, tableNumber: number) {
+    const guest = guestById.get(guestId)
+    const table = tables.find((t) => t.table_number === tableNumber)
+    requestSeatGuest(guestId, tableNumber)
+    if (!guest || !table) return
+    // חריגת קיבולת אינה חוסמת (התנהגות קיימת) — אבל היא **נאמרת**, ולא
+    // רק נצבעת באדום על המפה.
+    const usedAfter =
+      table.guests.reduce((sum, g) => sum + g.seats, 0) + Math.max(1, guest.seats)
+    announce(
+      usedAfter > table.capacity
+        ? wsT.seatedOverAnnounce(guest.full_name, tableNumber, usedAfter, table.capacity)
+        : wsT.seatedAnnounce(guest.full_name, tableNumber),
+    )
+  }
+
+  /** הסרה משולחן — לעולם לא מוזהרת, בדיוק כמו בכל מסלול קיים. */
+  function unseatGuestFromPanel(guestId: number) {
+    const guest = guestById.get(guestId)
+    moveGuestToTable(guestId, null)
+    if (guest) announce(wsT.unseatedAnnounce(guest.full_name))
+  }
+
+  /** ממקד שולחן על המפה — בוחר אותו ומחזיר את התצוגה לאולם. */
+  function showTableOnMap(tableNumber: number) {
+    setSelectedEl(null)
+    setSelectedTable(tableNumber)
+    setPanel('hall')
+    announce(wsT.tableSelectedAnnounce(tableNumber))
+  }
+
+  /** בחירת מוזמן מהסרגל — מכינה הושבה בהקשה על שולחן. */
+  function selectGuestFromPanel(guestId: number | null) {
+    setSelected(guestId)
+    if (guestId === null) return
+    const guest = guestById.get(guestId)
+    if (guest) announce(wsT.selectedAnnounce(guest.full_name))
+  }
+
+  /** פותח את שכבת ניהול המוזמנים (מסך המוזמנים הקיים) מעל מרחב העבודה. */
+  function openManage(search?: string) {
+    setManageSearch(search ?? '')
+    setManageOpen(true)
+  }
+
+  /** סגירת השכבה — טוענים מחדש את מצב האולם, כדי שמוזמן שנוסף/נערך/נמחק
+      יופיע בסרגל מיד ובלי רענון דף. */
+  async function closeManage() {
+    setManageOpen(false)
+    setManageSearch('')
+    await load()
+    await loadGroupNotes()
+  }
+
+  /** פותח פאנל וזוכר מי פתח אותו, כדי להחזיר לשם את הפוקוס בסגירה. */
+  function openPanel(key: 'hall' | 'tables' | 'guests' | 'smart' | 'tools' | 'more') {
+    if (key === panel) {
+      closePanel()
+      return
+    }
+    if (document.activeElement instanceof HTMLElement) {
+      panelTriggerRef.current = document.activeElement
+    }
+    setPanel(key)
+  }
+
+  const closePanel = useCallback(() => {
+    setPanel('hall')
+    const trigger = panelTriggerRef.current
+    if (trigger && document.contains(trigger)) trigger.focus()
+    panelTriggerRef.current = null
+  }, [])
+
+  /** יעד שחרור לגרירה: מקבל את המוזמן רק אם באמת נגרר מוזמן. */
+  function onTableDragOver(e: React.DragEvent, tableNumber: number) {
+    if (dragGuestId === null) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dropTable !== tableNumber) setDropTable(tableNumber)
+  }
+  function onTableDrop(e: React.DragEvent, tableNumber: number) {
+    const raw = e.dataTransfer.getData(GUEST_DRAG_TYPE)
+    setDragGuestId(null)
+    setDropTable(null)
+    if (!raw) return
+    e.preventDefault()
+    const guestId = Number(raw)
+    if (!Number.isFinite(guestId)) return
+    seatGuestFromPanel(guestId, tableNumber)
   }
 
   const familyGroups = useMemo(() => detectFamilyGroups(allGuestsForFamily), [allGuestsForFamily])
@@ -3673,11 +3802,67 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
     const startMove = (guestId: number) => {
       setSelected(guestId)
       closeSheet()
-      setMobileTab('hall')
+      setPanel('hall')
     }
 
+    // ---- איזה פאנל פתוח, ומה הכותרת שלו ----
+    // בדסקטופ סרגל המוזמנים קבוע בעמודה שלו, ולכן ``guests`` לא פותח שם
+    // פאנל צף; ``more`` הוא מקבץ של טלפון בלבד.
+    const showTables = panel === 'tables' || (!isDesktop && panel === 'more')
+    const showSmart = panel === 'smart'
+    const showTools = panel === 'tools' || (!isDesktop && panel === 'more')
+    const showGuestsSheet = !isDesktop && panel === 'guests'
+    const panelOpen = showTables || showSmart || showTools
+    const panelTitle =
+      panel === 'more'
+        ? wsT.moreTitle
+        : panel === 'smart'
+          ? hallT.oneClickButton
+          : panel === 'tables'
+            ? wsT.tablesTitle
+            : wsT.settingsTitle
+
+    // סרגל המוזמנים — אותו רכיב בדיוק בדסקטופ ובטלפון. כל הפעולות שלו
+    // מגיעות למסלולי ההושבה הקיימים של המסך הזה.
+    const guestPanel = (
+      <SeatingGuestPanel
+        tables={tables}
+        unassigned={unassigned}
+        groupNotes={groupNotes}
+        selectedGuestId={selected}
+        onSelectGuest={selectGuestFromPanel}
+        onSeatGuest={seatGuestFromPanel}
+        onUnseatGuest={unseatGuestFromPanel}
+        onShowTable={showTableOnMap}
+        onManageGuests={openManage}
+        onAnnounce={announce}
+        onDragGuestChange={setDragGuestId}
+        externalFilter={pushedFilter}
+        footer={
+          <>
+            <button
+              type="button"
+              className="ws-btn-primary"
+              onClick={() => onOneClickSeating(false)}
+              disabled={loading}
+            >
+              {loading ? hallT.oneClickRunning : hallT.oneClickButton}
+            </button>
+            <button
+              type="button"
+              className="ws-btn-ghost"
+              onClick={() => onOneClickSeating(true)}
+              disabled={loading || unassigned.length === 0}
+            >
+              {hallT.fillEmptyButton}
+            </button>
+          </>
+        }
+      />
+    )
+
     return (
-      <div className={`hall-mobile${isDesktop ? ' is-desktop' : ''}`}>
+      <div className={`hall-mobile hall-ws${isDesktop ? ' is-desktop' : ''}`}>
         {/* ---- פס עליון: כותרת + חיפוש ---- */}
         <div className="hm-topbar">
           {onNavigate && (
@@ -3764,10 +3949,10 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                       if (r.tableNumber != null) {
                         setSheetTable(r.tableNumber)
                         setSheetEdit(false)
-                        setMobileTab('hall')
+                        setPanel('hall')
                       } else {
                         setSelected(r.guestId)
-                        setMobileTab('hall')
+                        setPanel('hall')
                       }
                     }}
                   >
@@ -3801,7 +3986,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
               <button onClick={() => setSelected(null)}>ביטול</button>
             </div>
           )}
-          {assignTarget !== null && mobileTab === 'guests' && (
+          {assignTarget !== null && panel === 'guests' && (
             <div className="hm-move-banner assign">
               <span>בחרו מוזמן לשיבוץ לשולחן {assignTarget}.</span>
               <button onClick={() => setAssignTarget(null)}>ביטול</button>
@@ -3809,9 +3994,10 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
           )}
 
           {/* ===== הקנבס =====
-               בטלפון: לשונית "אולם" בלבד — הפאנלים מחליפים אותו.
-               בדסקטופ: קבוע במרכז, והפאנל נפתח לצידו. */}
-          {(mobileTab === 'hall' || isDesktop) && (
+               מרחב העבודה: הסקיצה היא אזור העבודה המרכזי בכל מכשיר, ולכן
+               היא **תמיד** מרונדרת. הפאנלים כבר לא מחליפים אותה — בטלפון
+               הם מגירות שנפתחות מעליה, ובדסקטופ הם צפים לצידה. */}
+          {true && (
             <div
               className="hm-canvas"
               ref={viewportRef}
@@ -4039,9 +4225,33 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                       data-tnum={t.table_number}
                       className={`hall-table ${over ? 'over' : ''} ${
                         selected !== null ? 'droppable' : ''
-                      } ${selectedTable === t.table_number ? 'selected' : ''}`}
+                      } ${selectedTable === t.table_number ? 'selected' : ''} ${
+                        dragGuestId !== null ? 'is-drop-candidate' : ''
+                      } ${dropTable === t.table_number ? 'is-drop-over' : ''}`}
                       style={{ left: t.x, top: t.y, width: w }}
                       onClick={(e) => onTableClick(e, t.table_number)}
+                      /* נגישות הקנבס (§33): השולחן הוא אובייקט אמיתי במסך,
+                         ולכן הוא גם מוקד מקלדת עם שם מלא לקורא מסך — לא רק
+                         ציור. Enter/רווח עושים בדיוק מה שהקשה עושה. */
+                      role="button"
+                      tabIndex={0}
+                      aria-label={tableAriaLabel(t, 'שולחן')}
+                      aria-pressed={selectedTable === t.table_number}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter' && e.key !== ' ') return
+                        e.preventDefault()
+                        // ``onTableClick`` מצפה ל-MouseEvent רק בשביל
+                        // stopPropagation — מספק אותו בלי להעתיק לוגיקה.
+                        onTableClick(
+                          e as unknown as React.MouseEvent,
+                          t.table_number,
+                        )
+                      }}
+                      onDragOver={(e) => onTableDragOver(e, t.table_number)}
+                      onDragLeave={() => {
+                        if (dropTable === t.table_number) setDropTable(null)
+                      }}
+                      onDrop={(e) => onTableDrop(e, t.table_number)}
                     >
                       <span className={`table-status-dot status-${status}`} />
                       <div
@@ -4224,9 +4434,43 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
             </div>
           )}
 
-          {/* ===== לשונית: שולחנות ===== */}
-          {mobileTab === 'tables' && (
-            <div className="hm-panel">
+          {/* ===== הפאנלים שלצד האולם =====
+              עד היום כל פאנל *החליף* את הסקיצה. במרחב העבודה החדש הסקיצה
+              נשארת תמיד — בדסקטופ הפאנל צף לצידה, ובטלפון הוא מגירה
+              שנפתחת מעליה ונסגרת ב-Escape, בהקשה על הרקע או בכפתור.
+              "עוד" (בטלפון) מציג שולחנות והגדרות יחד, כדי שאף כלי קיים
+              לא ייעלם מהפס התחתון המקוצר. */}
+          {panelOpen && (
+            <>
+              {!isDesktop && (
+                <div className="hm-panel-backdrop" onClick={closePanel} />
+              )}
+              <div
+                className="hm-panel"
+                ref={panelRef}
+                role={isDesktop ? 'region' : 'dialog'}
+                aria-modal={isDesktop ? undefined : true}
+                aria-label={panelTitle}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Escape') return
+                  e.stopPropagation()
+                  closePanel()
+                }}
+              >
+                <div className="hm-panel-bar">
+                  <h2 className="hm-panel-title">{panelTitle}</h2>
+                  <button
+                    type="button"
+                    className="hm-panel-x"
+                    onClick={closePanel}
+                    aria-label={wsT.sheetClose}
+                  >
+                    ×
+                  </button>
+                </div>
+
+            {showTables && (
+              <>
               {tables.length === 0 ? (
                 <p className="hm-empty">עדיין אין שולחנות. הוסיפו שולחן מלשונית "אולם".</p>
               ) : (
@@ -4242,7 +4486,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                         onClick={() => {
                           setSheetTable(t.table_number)
                           setSheetEdit(false)
-                          setMobileTab('hall')
+                          setPanel('hall')
                         }}
                       >
                         <span className={`hm-dot status-${status}`} />
@@ -4260,81 +4504,11 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                     )
                   })
               )}
-            </div>
-          )}
+              </>
+            )}
 
-          {/* ===== לשונית: מוזמנים (כולם — משובצים וללא שולחן) ===== */}
-          {mobileTab === 'guests' && (
-            <div className="hm-panel">
-              <p className="hm-panel-head">
-                {allGuestsSorted.length} {activeEventTerms().guestsLabel} · ללא שולחן: {visibleUnassigned.length}
-                {assignTarget !== null
-                  ? ` · הקישו על מוזמן ללא שולחן לשיבוץ לשולחן ${assignTarget}`
-                  : ''}
-              </p>
-              <div className="hm-sort-row" role="group" aria-label="מיון רשימת המוזמנים">
-                <button
-                  type="button"
-                  className={`hm-sort-btn ${guestSortMode === 'status' ? 'active' : ''}`}
-                  onClick={() => setGuestSortMode('status')}
-                >
-                  לפי שיבוץ
-                </button>
-                <button
-                  type="button"
-                  className={`hm-sort-btn ${guestSortMode === 'name' ? 'active' : ''}`}
-                  onClick={() => setGuestSortMode('name')}
-                >
-                  שם (א-ב)
-                </button>
-                <button
-                  type="button"
-                  className={`hm-sort-btn ${guestSortMode === 'table' ? 'active' : ''}`}
-                  onClick={() => setGuestSortMode('table')}
-                >
-                  מספר שולחן
-                </button>
-              </div>
-              {allGuestsSorted.length === 0 ? (
-                <p className="hm-empty">עדיין אין {activeEventTerms().guestsLabel} באירוע.</p>
-              ) : (
-                allGuestsSorted.map(({ guest: g, tableNumber }) => (
-                  <button
-                    key={g.id}
-                    className={`hm-guest-row ${selected === g.id ? 'sel' : ''}`}
-                    onClick={() => {
-                      if (tableNumber === null && assignTarget !== null) {
-                        requestSeatGuest(g.id, assignTarget)
-                        setAssignTarget(null)
-                        setMobileTab('hall')
-                      } else {
-                        setSelected(g.id)
-                        setMobileTab('hall')
-                      }
-                    }}
-                  >
-                    <span className="hm-gr-main">
-                      <span className="hm-gr-name">
-                        {g.full_name}
-                        <span className={`badge ${g.rsvp_status}`}>{RSVP_LABELS[g.rsvp_status]}</span>
-                      </span>
-                      <span className="hm-gr-sub">
-                        {GROUP_LABELS[g.group_type]} · {sideLabel(g.side)}
-                        {g.seats > 1 ? ` · ${g.seats} מקומות` : ''}
-                      </span>
-                    </span>
-                    <span className={`hm-gr-cta ${tableNumber === null ? 'hm-gr-cta-empty' : ''}`}>
-                      {tableNumber === null ? 'ללא שולחן' : `שולחן ${tableNumber}`}
-                    </span>
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* ===== לשונית: הושבה חכמה ===== */}
-          {mobileTab === 'smart' && (
-            <div className="hm-panel">
+            {showSmart && (
+              <>
               <p className="assistant-ai-disclosure">
                 המלצות המערכת מבוססות AI ונועדו לסיוע בלבד. האחריות לקבלת
                 החלטות נשארת בידי המשתמש.
@@ -4411,6 +4585,30 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                       <p className="hm-report-sub">
                         {hallT.doneSummary(seatingReport.people, seatingReport.tables)}
                       </p>
+                      {/* §16 — לא רק "כמה שובצו", אלא גם **מי נשאר בחוץ**
+                          ואיך רואים אותו. הכפתור מסנן את סרגל המוזמנים
+                          ל"לא הושבו", ובטלפון גם פותח אותו. */}
+                      <p className="hm-report-sub">
+                        {unassignedPeople > 0
+                          ? wsT.resultUnseated(unassignedPeople)
+                          : wsT.resultAllSeated}
+                      </p>
+                      {unassigned.length > 0 && (
+                        <button
+                          type="button"
+                          className="hm-ghost-btn"
+                          onClick={() => {
+                            setPushedFilter({
+                              rsvp: 'all',
+                              seating: 'unseated',
+                              group: 'all',
+                            })
+                            setPanel(isDesktop ? 'hall' : 'guests')
+                          }}
+                        >
+                          {wsT.resultShowUnseated}
+                        </button>
+                      )}
                     </>
                   ) : (
                     <>
@@ -4475,12 +4673,11 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                   ))}
                 </div>
               )}
-            </div>
-          )}
+              </>
+            )}
 
-          {/* ===== לשונית: כלים ===== */}
-          {mobileTab === 'tools' && (
-            <div className="hm-panel">
+            {showTools && (
+              <>
               <div className={`hm-autosave ${saving || dirty ? 'saving' : ''}`}>
                 <HmIcon name="save" size={16} />
                 {saving ? 'שומר…' : dirty ? 'שינויים יישמרו אוטומטית' : savedTick ? 'נשמר ✓' : 'הכול שמור אוטומטית'}
@@ -4610,36 +4807,135 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                   ))}
                 </select>
               </div>
-            </div>
+              </>
+            )}
+              </div>
+            </>
           )}
         </div>
 
-        {/* ---- ניווט תחתון (5 מדורים) ---- */}
-        <nav className="hm-tabs" aria-label="ניווט מסך הושבה">
-          {(
-            [
-              { key: 'hall', icon: 'hall', label: 'אולם' },
-              { key: 'tables', icon: 'tables', label: 'שולחנות' },
-              { key: 'guests', icon: 'guests', label: activeEventTerms().guestsLabel },
-              { key: 'smart', icon: 'smart', label: 'הושבה' },
-              { key: 'tools', icon: 'tools', label: hallT.settingsTab },
-            ] as const
+        {/* ---- סרגל המוזמנים: עמודה קבועה בדסקטופ ----
+            בדסקטופ הרשימה והאולם נראים יחד תמיד — זה כל הרעיון של מרחב
+            העבודה. בטלפון הוא נפתח כמגירה (למטה), כי שם הסקיצה חייבת את
+            כל המסך. */}
+        {isDesktop && <aside className="ws-side">{guestPanel}</aside>}
+
+        {/* ---- הניווט של מרחב העבודה ----
+            בטלפון: שני כפתורים ראשיים (מוזמנים · הושבה) ו"עוד" לשולחנות
+            ולהגדרות — הסקיצה היא ברירת המחדל ואינה "לשונית".
+            בדסקטופ: רַכֶּבֶת אייקונים דקה בצד הקצה, ליד הקנבס. */}
+        <nav className="hm-tabs" aria-label="כלי מרחב ההושבה">
+          {(isDesktop
+            ? ([
+                { key: 'tables', icon: 'tables', label: wsT.tablesTitle },
+                { key: 'smart', icon: 'smart', label: wsT.tabSeating },
+                { key: 'tools', icon: 'tools', label: hallT.settingsTab },
+              ] as const)
+            : ([
+                {
+                  key: 'guests',
+                  icon: 'guests',
+                  label: wsT.tabGuests(activeEventTerms().guestsLabel),
+                },
+                { key: 'smart', icon: 'smart', label: wsT.tabSeating },
+                { key: 'more', icon: 'tools', label: wsT.tabMore },
+              ] as const)
           ).map((tab) => (
             <button
               key={tab.key}
-              className={`hm-tab ${mobileTab === tab.key ? 'active' : ''}`}
-              onClick={() => setMobileTab(tab.key)}
+              type="button"
+              className={`hm-tab ${panel === tab.key ? 'active' : ''}`}
+              aria-expanded={panel === tab.key}
+              onClick={() => openPanel(tab.key)}
             >
               <span className="hm-tab-icon" aria-hidden="true">
                 <HmIcon name={tab.icon} />
               </span>
               <span className="hm-tab-label">{tab.label}</span>
               {tab.key === 'guests' && visibleUnassigned.length > 0 && (
-                <span className="hm-tab-badge">{visibleUnassigned.length}</span>
+                <span className="hm-tab-badge">
+                  {visibleUnassigned.length}
+                  <span className="ws-sr-only"> ללא שולחן</span>
+                </span>
               )}
             </button>
           ))}
         </nav>
+
+        {/* ---- סרגל המוזמנים בטלפון: מגירה מעל האולם ---- */}
+        {showGuestsSheet && (
+          <>
+            <div className="hm-panel-backdrop" onClick={closePanel} />
+            <div
+              className="ws-sheet"
+              role="dialog"
+              aria-modal="true"
+              aria-label={wsT.panelLabel(activeEventTerms().guestsLabel)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Escape') return
+                e.stopPropagation()
+                closePanel()
+              }}
+            >
+              <div className="hm-panel-bar">
+                <h2 className="hm-panel-title">
+                  {wsT.panelLabel(activeEventTerms().guestsLabel)}
+                </h2>
+                <button
+                  type="button"
+                  className="hm-panel-x"
+                  onClick={closePanel}
+                  aria-label={wsT.sheetClose}
+                >
+                  ×
+                </button>
+              </div>
+              {guestPanel}
+            </div>
+          </>
+        )}
+
+        {/* ---- הודעות חיות לקורא מסך ----
+            כל פעולה שמשנה מצב בלי ניווט (הושבה, הסרה, תוצאת הושבה בקליק,
+            מספר תוצאות סינון) נשמעת כאן. ``polite`` ולא ``assertive``:
+            אנחנו מדווחים, לא קוטעים. */}
+        <div className="ws-sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {liveMessage}
+        </div>
+
+        {/* ---- ניהול המוזמנים ----
+            מסך המוזמנים הקיים, כשכבה מעל מרחב העבודה במקום יעד ניווט
+            נפרד. שום יכולת לא נעלמה: הוספה, ייבוא, עריכה, מחיקה, קבוצות
+            והצעות איחוד — הכול כאן, ובסגירה הסרגל מתעדכן בלי רענון. */}
+        {manageOpen && (
+          <div
+            className="ws-manage"
+            role="dialog"
+            aria-modal="true"
+            aria-label={wsT.manageDialogLabel(activeEventTerms().guestsLabel)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Escape') return
+              e.stopPropagation()
+              void closeManage()
+            }}
+          >
+            <div className="ws-manage-bar">
+              <button
+                type="button"
+                className="ws-btn-ghost ws-manage-back"
+                onClick={() => void closeManage()}
+              >
+                ← {wsT.manageClose}
+              </button>
+              <h2 className="ws-manage-title">
+                {wsT.manageDialogLabel(activeEventTerms().guestsLabel)}
+              </h2>
+            </div>
+            <div className="ws-manage-body">
+              <GuestsPage initialSearch={manageSearch} embedded />
+            </div>
+          </div>
+        )}
 
         {/* ---- Bottom Sheet: פרטי שולחן ---- */}
         {sheetT && (
@@ -4712,7 +5008,7 @@ export function HallPage({ onNavigate }: { onNavigate?: (page: 'dashboard') => v
                       className="hm-primary-btn"
                       onClick={() => {
                         setAssignTarget(sheetT.table_number)
-                        setMobileTab('guests')
+                        setPanel('guests')
                         closeSheet()
                       }}
                     >

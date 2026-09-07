@@ -119,6 +119,13 @@ def next_active_day(d: date) -> date:
     return _next_active_day(d)
 
 
+def hebrew_weekday(d: date) -> str:
+    """שם היום בעברית ("ראשון".."שבת"). גרסה ציבורית של ``_weekday``,
+    לשימוש המחשבון הציבורי (``routers/public_calc.py``) — כדי שהאתר
+    השיווקי לא יחזיק מיפוי ימים משלו שיסטה מזה שבמערכת."""
+    return _weekday(d)
+
+
 def rsvp_request_date(event: models.Event, now: Optional[datetime] = None) -> Optional[date]:
     """התאריך שבו נשלחת **בקשת האישור הראשונה** (``whatsapp_first``) לפי לוח
     הזמנים — מקור האמת היחיד גם לתזמון השליחה בפועל (``communication._due_now``)
