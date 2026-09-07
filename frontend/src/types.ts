@@ -1790,6 +1790,9 @@ export interface ExpenseInput {
   is_estimated?: boolean
   /** נפרד לגמרי מ-``is_estimated``: אפשר לשלם מקדמה על סכום לא סופי. */
   is_paid?: boolean
+  /** מקדמה באגורות — **רק כש-``is_paid`` הוא ``false``**. "שולם במלואו"
+   *  נשאר דגל ולא סכום שמור, כי עלות השורה זזה עם מספר המגיעים. */
+  paid_amount_agorot?: number
 }
 
 /** שורת הוצאה + התוצאה שלה. **התוצאה מגיעה מהשרת** — המסך לא מחשב כסף. */
@@ -1806,6 +1809,8 @@ export interface Expense extends ExpenseInput {
   /** מגיעים מעבר לכמות ההתחייבות. */
   over_commitment: number
   min_total_applied: boolean
+  /** כמה שולם בפועל — עלות מלאה כשסומן "שולם", המקדמה כשיש מקדמה. */
+  paid_display: string
 }
 
 /** נקודה בלוח "מה יקרה אם יגיעו…". */

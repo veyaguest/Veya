@@ -167,6 +167,8 @@ _EXTRA_COLUMNS = {
         "vendor": "TEXT DEFAULT ''",
         "is_estimated": "BOOLEAN DEFAULT TRUE",
         "is_paid": "BOOLEAN DEFAULT FALSE",
+        # תשלום חלקי (מקדמה). 0 = בדיוק ההתנהגות שקדמה לעמודה.
+        "paid_amount_agorot": "INTEGER DEFAULT 0",
     },
     "messages": {
         "channel": "TEXT DEFAULT 'whatsapp'",
