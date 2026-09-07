@@ -602,6 +602,16 @@ class HallGuest(BaseModel):
     group_type: str
     rsvp_status: str
     is_child: bool = False
+    # ---- הערות רלוונטיות להושבה (חשיפה בלבד, אין כאן לוגיקה חדשה) ----
+    # מרחב העבודה של ההושבה מציג ליד כל מוזמן את מה שרלוונטי לשיבוץ שלו,
+    # בלי קריאת רשת נוספת — בדיוק באותו דפוס של ``forbidden_pairs`` /
+    # ``together_pairs`` ב-``HallState``.
+    #
+    # ``notes_raw`` (ההערה הפנימית של הבעלים — "צריך לחזור אליו") **אינו**
+    # נחשף כאן בכוונה: מנוע ההושבה לעולם לא קורא אותו, ולכן גם מסך ההושבה
+    # לא מציג אותו (ראו seating-engine.md — "המקור שהמנוע קורא ממנו").
+    seating_notes: Optional[str] = None   # הערות הושבה — מה שהבעלים כתב
+    guest_note: Optional[str] = None      # מה שהמוזמן עצמו מסר ב-RSVP
 
 
 class HallTable(BaseModel):

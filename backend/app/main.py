@@ -40,6 +40,7 @@ from app.routers import (
     payout_admin,
     postpone,
     postpone_admin,
+    public_calc,
     seating,
     stats,
     venues,)
@@ -115,6 +116,9 @@ app.include_router(payout.router)
 app.include_router(payout_admin.router)
 app.include_router(postpone.router)
 app.include_router(postpone_admin.router)
+# מחשבונים ציבוריים לאתר השיווקי — אנונימיים, מוגבלי-קצב, בלי DB.
+# מעטפת דקה בלבד סביב finance.py ו-rsvp_timeline.py (ראו public_calc.py).
+app.include_router(public_calc.router)
 
 # הגשת קבצי תמונות שהועלו (הזמנה/סקיצת אולם) מתוך backend/uploads.
 from app.media import UPLOADS_DIR  # noqa: E402
