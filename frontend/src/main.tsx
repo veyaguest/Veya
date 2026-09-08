@@ -8,6 +8,7 @@ import { ConfirmPage } from './components/ConfirmPage.tsx'
 import { CookieBanner } from './components/CookieBanner.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 import { GOOGLE_CLIENT_ID } from './lib/supabase.ts'
+import { initPwa } from './lib/pwa.ts'
 
 // ---- חסימת Pinch Zoom ברמת המסמך (iOS Safari) ----
 // iOS Safari מתעלם מ-user-scalable=no ב-viewport, ולכן חוסמים ידנית את
@@ -21,6 +22,13 @@ function installMobileZoomGuard() {
   document.addEventListener('gestureend', stop, { passive: false })
 }
 installMobileZoomGuard()
+
+// ---- מצב "אפליקציה מותקנת" (PWA) ----
+// מסמן על <html> אם VEYA רצה מהאייקון במסך הבית, עוקב אחרי גובה החלון
+// האמיתי (כדי שמקלדת פתוחה לא תחתוך דיאלוגים), ורושם Service Worker
+// מינימלי בייצור. לא נוגע בהתחברות, בניווט או בקריאות ל-API —
+// ראו התיעוד המלא ב-src/lib/pwa.ts.
+initPwa()
 
 // נתיב ציבורי לאישור הגעה: /confirm/{token} — נפתח ללא התחברות.
 // (העמוד מוגש דרך app.html שכבר מסומן noindex, ולכן לא נדרש טיפול נוסף כאן.)
