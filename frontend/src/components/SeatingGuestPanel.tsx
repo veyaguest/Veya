@@ -427,11 +427,17 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
   const terms = activeEventTerms()
   const guestsWord = terms.guestsLabel
 
+  // ---- חיפוש / מיון / סינון ----
+  // שלושתם "נדחים" (``useDeferredValue``): הפקד עצמו מגיב מיד, ובניית
+  // הרשימה מחדש קורית ברקע. עם 300 מוזמנים מיון מחדש עלה כ-57ms של חסימה
+  // (long task) בכל שינוי מיון — פריים שנפל בכל בחירה. כך זה יורד לאפס,
+  // בלי virtualization ובלי תלות חדשה.
   const [search, setSearch] = useState('')
-  // הקלדה לא חוסמת רינדור — הרשימה מתעדכנת ברקע (React 19).
   const deferredSearch = useDeferredValue(search)
   const [sort, setSort] = useState<WorkspaceSort>('confirmed_first')
+  const deferredSort = useDeferredValue(sort)
   const [filter, setFilter] = useState<WorkspaceFilter>(EMPTY_FILTER)
+  const deferredFilter = useDeferredValue(filter)
   const [filterOpen, setFilterOpen] = useState(false)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [expandedGuest, setExpandedGuest] = useState<number | null>(null)
@@ -452,10 +458,10 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
 
   const visible = useMemo(() => {
     const filtered = allEntries.filter(
-      (e) => matchesSearch(e, deferredSearch) && matchesFilter(e, filter),
+      (e) => matchesSearch(e, deferredSearch) && matchesFilter(e, deferredFilter),
     )
-    return sortEntries(filtered, sort)
-  }, [allEntries, deferredSearch, filter, sort])
+    return sortEntries(filtered, deferredSort)
+  }, [allEntries, deferredSearch, deferredFilter, deferredSort])
 
   const sections = useMemo(() => buildSections(visible), [visible])
 

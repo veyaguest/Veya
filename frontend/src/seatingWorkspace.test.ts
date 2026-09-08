@@ -300,6 +300,27 @@ function testBuildEntries(): void {
   console.log('✓ הרשימה נגזרת ממצב האולם החי (tables + unassigned)')
 }
 
+function testNoDuplicateEntries(): void {
+  // מצב ביניים אמיתי: השמירה האוטומטית מחזירה ``unassigned`` מעודכן בזמן
+  // ש-``tables`` המקומי עדיין מהרינדור הקודם — ואותו מוזמן נמצא בשתיהם.
+  // הרשימה חייבת להציג אותו פעם אחת, עם השולחן שלו.
+  const g = guest('כפול', 'confirmed')
+  const tables: WorkspaceTable[] = [{ table_number: 4, capacity: 12, guests: [g] }]
+  const entries = buildEntries(tables, [g])
+  assert.equal(entries.length, 1, 'מוזמן שנמצא גם בשולחן וגם ב-unassigned מופיע פעם אחת')
+  assert.equal(entries[0].tableNumber, 4, 'השיבוץ לשולחן גובר על "ללא שולחן"')
+
+  // וגם מוזמן שמופיע בטעות בשני שולחנות.
+  const twoTables: WorkspaceTable[] = [
+    { table_number: 1, capacity: 12, guests: [g] },
+    { table_number: 2, capacity: 12, guests: [g] },
+  ]
+  const e2 = buildEntries(twoTables, [])
+  assert.equal(e2.length, 1)
+  assert.equal(e2[0].tableNumber, 1)
+  console.log('✓ אין שורות כפולות גם כשמצב הביניים סותר את עצמו')
+}
+
 // ---------------------------------------------------------------------------
 // §27 / §33 — Accessible Names
 // ---------------------------------------------------------------------------
@@ -397,6 +418,7 @@ testNoResults()
 testSections()
 testGroupsInUse()
 testBuildEntries()
+testNoDuplicateEntries()
 testAriaLabels()
 testOccupancy()
 testLargeDataset()
