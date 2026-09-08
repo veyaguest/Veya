@@ -754,7 +754,7 @@
       .fineprint { font-size: 13.5px; color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                    /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -795,6 +795,17 @@
         --motion-fast: 180ms;
         --motion-normal: 420ms;
         --motion-slow: 620ms;
+
+        /* ── צבעים סמנטיים ──
+           `--green` הקיים נשאר כפי שהוא לשימושי **אייקון** (וי ירוק ברשימות):
+           3.16:1 מספיק לגרפיקה אך **לא** לטקסט. לכן יש טוקן טקסט נפרד שעובר
+           AA, וזה מה שמשמש כל הודעת הצלחה כתובה.
+           כל הערכים נבדקו מול הרקע השנהב (--ivory). */
+        --success: #1f7a45;        /* 4.97:1 — טקסט הצלחה */
+        --warning: #a1541a;        /* 5.14:1 — נבדל מהזהב בכוונה */
+        --error: #8f3226;          /* 6.80:1 — טקסט שגיאה */
+        --error-bg: #fbeae7;
+        --error-border: #dda99f;   /* חוזק מ-#e6b9b1 כדי שהגבול ייראה */
 
         /* ── טיפוגרפיה ──────────────────────────────────────────────────────
            ארבעה משקלים בלבד (400/500/600/700). משקל 300 הוסר מהטעינה —
@@ -1070,8 +1081,19 @@
         color: var(--cream-text);
       }
 
+      /* ── הודעת שגיאה במחשבון — עוברת לטוקנים הסמנטיים ──
+         היה המקום היחיד באתר שבו צבע נושא משמעות נכתב כ-hex קשיח. */
+      .calc-error {
+        background: var(--error-bg);
+        border-color: var(--error-border);
+        color: var(--error);
+      }
+
       /* ===== VEYA BRAND LAYER — END ===== */
 
+    
+    
+    
     
     
     
