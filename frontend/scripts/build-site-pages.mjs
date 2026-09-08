@@ -15,6 +15,8 @@ import path from 'node:path'
 import { marked } from 'marked'
 import { page, pageHero, faqHtml, esc, SITE, CTA_PRIMARY } from './site-shell.mjs'
 import { EVENT_TYPES, GROUPS, EXPENSES } from '../content/event-types.mjs'
+import { featureRsvp, featureCalls, featureGuests, featureSeating } from './build-features.mjs'
+import { buildNuschim } from './build-nuschim.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PUB = path.resolve(__dirname, '../public')
@@ -615,7 +617,7 @@ ${faqHtml(faq)}
             '<span class="ico" aria-hidden="true">' + esc(p.icon) + '</span>' +
             '<span class="nm">' + esc(p.label) + (last ? ' — ומועד סגירת הרשימה' : '') +
             '<small>יום ' + esc(p.weekday) + ' · ' + p.days_before_event + ' ימים לפני האירוע' +
-            (p.moved_from_weekend ? ' · הוזז מסוף שבוע' : '') + '</small></span>' +
+            '</small></span>' +
             '<span class="dt">' + heb(p.date) + '</span></li>';
         }).join('');
 
@@ -1033,6 +1035,8 @@ function sitemap(routes) {
       if (r === '/calculators/') return url(r, '0.8', 'monthly')
       if (r.startsWith('/calculators/')) return url(r, '0.9', 'monthly')
       if (r.startsWith('/events/')) return url(r, '0.8', 'monthly')
+      if (r === '/nuschim/') return url(r, '0.8', 'weekly')
+      if (r.startsWith('/nuschim/')) return url(r, '0.7', 'weekly')
       if (r === '/guides/') return url(r, '0.7', 'weekly')
       return url(r, '0.6', 'monthly')
     }),
@@ -1047,12 +1051,20 @@ function sitemap(routes) {
 const guides = loadGuides()
 
 emit('/features/finance/', featureFinance())
+emit('/features/rsvp/', featureRsvp())
+emit('/features/calls/', featureCalls())
+emit('/features/guests/', featureGuests())
+emit('/features/seating/', featureSeating())
 emit('/calculators/', calcIndex())
 emit('/calculators/venue-commitment/', calcVenueCommitment())
 emit('/calculators/rsvp-timeline/', calcRsvpTimeline())
 for (const t of EVENT_TYPES) emit(`/events/${t.slug}/`, eventPage(t))
 emit('/guides/', guidesIndex(guides))
 for (const g of guides) emit(`/guides/${g.slug}/`, guideHtml(g))
+
+// ספריית הנוסחים נבנית אחרונה: היא קוראת לשרת, ולכן היא היחידה שיכולה
+// להיכשל מסיבה חיצונית. כישלון שלה לא מפיל את שאר העמודים.
+for (const p of await buildNuschim(API_URL)) emit(p.path, p.html)
 
 writeFileSync(path.join(PUB, 'sitemap.xml'), sitemap(written))
 console.log(`✓ sitemap.xml (${written.length + 1} כתובות)`)

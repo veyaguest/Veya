@@ -256,10 +256,14 @@
           <span class="footer-tag">מערכת לניהול אירועים — מוזמנים, אישורי הגעה, הושבה וכספי האירוע במקום אחד.</span>
         </div>
         <nav aria-label="ניווט תחתון">
+          <a href="/features/guests/">מוזמנים</a>
+          <a href="/features/rsvp/">אישורי הגעה</a>
+          <a href="/features/calls/">מעקב טלפוני</a>
+          <a href="/features/seating/">הושבה</a>
           <a href="/features/finance/">כספי האירוע</a>
           <a href="/calculators/">מחשבונים</a>
+          <a href="/nuschim/">נוסחים</a>
           <a href="/guides/">מדריכים</a>
-          <a href="/">דף הבית</a>
           <a href="/app">כניסה למערכת</a>
         </nav>
         <nav aria-label="קישורים משפטיים">
@@ -307,7 +311,7 @@
             '<span class="ico" aria-hidden="true">' + esc(p.icon) + '</span>' +
             '<span class="nm">' + esc(p.label) + (last ? ' — ומועד סגירת הרשימה' : '') +
             '<small>יום ' + esc(p.weekday) + ' · ' + p.days_before_event + ' ימים לפני האירוע' +
-            (p.moved_from_weekend ? ' · הוזז מסוף שבוע' : '') + '</small></span>' +
+            '</small></span>' +
             '<span class="dt">' + heb(p.date) + '</span></li>';
         }).join('');
 

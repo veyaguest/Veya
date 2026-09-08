@@ -96,16 +96,35 @@ export function peopleOf(g: HallGuest): number {
   return g.rsvp_status === 'confirmed' ? g.seats : g.party_size
 }
 
-/** בונה את רשימת העבודה מתוך מצב האולם החי (`tables` + `unassigned`). */
+/**
+ * בונה את רשימת העבודה מתוך מצב האולם החי (`tables` + `unassigned`).
+ *
+ * כל מוזמן מופיע **פעם אחת בלבד**, וההופעה הראשונה מנצחת (כלומר שיבוץ
+ * לשולחן גובר על "ללא שולחן"). זו הגנה על התצוגה, לא ניקוי נתונים:
+ * `tables` ו-`unassigned` הם שתי פיסות state נפרדות ב-HallPage, ויש
+ * מסלולים שמעדכנים רק אחת מהן (למשל השמירה האוטומטית, שמקבלת מהשרת
+ * `unassigned` מעודכן בזמן ש-`tables` המקומי עדיין מהרינדור הקודם).
+ * ברגע כזה אותו מוזמן נמצא בשתיהן — וברשימה זה התבטא בשורה כפולה
+ * ובאזהרת "duplicate key" של React.
+ */
 export function buildEntries(
   tables: WorkspaceTable[],
   unassigned: HallGuest[],
 ): GuestEntry[] {
   const entries: GuestEntry[] = []
+  const seen = new Set<number>()
   for (const t of tables) {
-    for (const g of t.guests) entries.push({ guest: g, tableNumber: t.table_number })
+    for (const g of t.guests) {
+      if (seen.has(g.id)) continue
+      seen.add(g.id)
+      entries.push({ guest: g, tableNumber: t.table_number })
+    }
   }
-  for (const g of unassigned) entries.push({ guest: g, tableNumber: null })
+  for (const g of unassigned) {
+    if (seen.has(g.id)) continue
+    seen.add(g.id)
+    entries.push({ guest: g, tableNumber: null })
+  }
   return entries
 }
 
@@ -284,6 +303,20 @@ export function groupAriaLabel(group: WorkspaceGroup, guestsWord: string): strin
 /** "אישרו הגעה, 122 אנשים, 100 הושבו" */
 export function sectionAriaLabel(section: WorkspaceSection): string {
   return `${section.label}, ${section.people} אנשים, ${section.seated} הושבו`
+}
+
+/**
+ * כמה מקומות יהיו תפוסים בשולחן **אחרי** שמוזמן יושב בו.
+ *
+ * שני דברים שקל לטעות בהם, ושניהם התגלו בבדיקה:
+ * 1. מוזמן שכבר יושב בשולחן הזה לא נספר פעמיים (העברה אל אותו שולחן).
+ * 2. מי שאינו "מגיע" תופס `seats === 0`, ולכן "הושבה בכל זאת" שלו אינה
+ *    משנה את התפוסה. עיגול ל-1 היה מדווח למשתמש מספר שלא יופיע על השולחן.
+ */
+export function occupancyAfterSeating(table: WorkspaceTable, guest: HallGuest): number {
+  const current = table.guests.reduce((sum, g) => sum + g.seats, 0)
+  const alreadyHere = table.guests.some((g) => g.id === guest.id)
+  return current + (alreadyHere ? 0 : guest.seats)
 }
 
 /** תפוסת שולחן כטקסט קצר לתצוגה: "8/10". */

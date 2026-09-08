@@ -229,6 +229,20 @@ class TimelineIn(BaseModel):
     commit_days_before: int = Field(ge=1, le=10)
 
 
+#: תוויות ציבוריות לשלבי הסבב.
+#:
+#: **למה לא משתמשים ב-``rsvp_timeline.CYCLE[...]["label"]`` ישירות:** התווית
+#: שם נכתבה למסך של בעל האירוע בתוך המערכת, והיא נוקבת בערוץ השליחה
+#: ("בקשת אישור ראשונה ב-WhatsApp"). באתר הציבורי אסור להבטיח ערוץ שליחה
+#: שאינו פעיל בייצור, ולכן המחשבון מתאר את **השלב** ולא את הערוץ.
+#: זו החלפת תצוגה בלבד — התאריכים, הסדר והמספר עדיין מגיעים מהמנוע.
+PUBLIC_STEP_LABELS = {
+    "whatsapp_first": "בקשת אישור הגעה ראשונה",
+    "reminder": "תזכורת",
+    "call_round": "סבב מעקב טלפוני",
+}
+
+
 class PlacementOut(BaseModel):
     type: str
     label: str
@@ -236,7 +250,10 @@ class PlacementOut(BaseModel):
     date: date
     weekday: str
     days_before_event: int
-    moved_from_weekend: bool
+    #: השלב הוזז ממיקומו הטבעי בסבב. הסיבה יכולה להיות סוף שבוע **או**
+    #: אכיפת הפער המינימלי מהשלב הקודם — ולכן השם גנרי ולא "הוזז מסוף
+    #: שבוע", שהיה טענה שאינה נכונה בחלק מהמקרים.
+    shifted: bool
     round_number: Optional[int]
 
 
@@ -247,6 +264,14 @@ class TimelineOut(BaseModel):
     #: לוח דחוס = לא נשאר מספיק זמן לסבב המלא, והשלבים התכווצו.
     compressed: bool
     placements: list[PlacementOut]
+
+
+def _public_label(placement: rsvp_timeline.Placement) -> str:
+    """תווית השלב לאתר הציבורי, ממוספרת כשיש כמה שלבים מאותו סוג."""
+    base = PUBLIC_STEP_LABELS.get(placement.step["type"], placement.step["label"])
+    if placement.round_number:
+        return f"{base} {placement.round_number}"
+    return base
 
 
 @router.post("/rsvp-timeline", response_model=TimelineOut)
@@ -283,12 +308,12 @@ def rsvp_schedule(payload: TimelineIn, request: Request) -> TimelineOut:
         placements=[
             PlacementOut(
                 type=p.step["type"],
-                label=p.step["label"],
+                label=_public_label(p),
                 icon=p.step["icon"],
                 date=p.date,
                 weekday=rsvp_timeline.hebrew_weekday(p.date),
                 days_before_event=(parsed - p.date).days,
-                moved_from_weekend=p.moved_from_weekend,
+                shifted=p.moved_from_weekend,
                 round_number=p.round_number,
             )
             for p in schedule.placements

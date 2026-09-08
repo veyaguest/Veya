@@ -41,6 +41,7 @@ from app.routers import (
     postpone,
     postpone_admin,
     public_calc,
+    public_library,
     seating,
     stats,
     venues,)
@@ -119,6 +120,8 @@ app.include_router(postpone_admin.router)
 # מחשבונים ציבוריים לאתר השיווקי — אנונימיים, מוגבלי-קצב, בלי DB.
 # מעטפת דקה בלבד סביב finance.py ו-rsvp_timeline.py (ראו public_calc.py).
 app.include_router(public_calc.router)
+# ספריית הנוסחים הציבורית — קריאה בלבד מאותן שורות של המוצר (public_library.py).
+app.include_router(public_library.router)
 
 # הגשת קבצי תמונות שהועלו (הזמנה/סקיצת אולם) מתוך backend/uploads.
 from app.media import UPLOADS_DIR  # noqa: E402

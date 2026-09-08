@@ -22,6 +22,7 @@ import {
   sectionAriaLabel,
   sortEntries,
   tableAriaLabel,
+  occupancyAfterSeating,
   tableOccupancy,
 } from './seatingWorkspace'
 import type { GuestEntry, WorkspaceFilter, WorkspaceTable } from './seatingWorkspace'
@@ -300,6 +301,27 @@ function testBuildEntries(): void {
   console.log('✓ הרשימה נגזרת ממצב האולם החי (tables + unassigned)')
 }
 
+function testNoDuplicateEntries(): void {
+  // מצב ביניים אמיתי: השמירה האוטומטית מחזירה ``unassigned`` מעודכן בזמן
+  // ש-``tables`` המקומי עדיין מהרינדור הקודם — ואותו מוזמן נמצא בשתיהם.
+  // הרשימה חייבת להציג אותו פעם אחת, עם השולחן שלו.
+  const g = guest('כפול', 'confirmed')
+  const tables: WorkspaceTable[] = [{ table_number: 4, capacity: 12, guests: [g] }]
+  const entries = buildEntries(tables, [g])
+  assert.equal(entries.length, 1, 'מוזמן שנמצא גם בשולחן וגם ב-unassigned מופיע פעם אחת')
+  assert.equal(entries[0].tableNumber, 4, 'השיבוץ לשולחן גובר על "ללא שולחן"')
+
+  // וגם מוזמן שמופיע בטעות בשני שולחנות.
+  const twoTables: WorkspaceTable[] = [
+    { table_number: 1, capacity: 12, guests: [g] },
+    { table_number: 2, capacity: 12, guests: [g] },
+  ]
+  const e2 = buildEntries(twoTables, [])
+  assert.equal(e2.length, 1)
+  assert.equal(e2[0].tableNumber, 1)
+  console.log('✓ אין שורות כפולות גם כשמצב הביניים סותר את עצמו')
+}
+
 // ---------------------------------------------------------------------------
 // §27 / §33 — Accessible Names
 // ---------------------------------------------------------------------------
@@ -332,6 +354,40 @@ function testAriaLabels(): void {
   const sections = buildSections([seated, alone])
   assert.equal(sectionAriaLabel(sections[0]), 'אישרו הגעה, 3 אנשים, 1 הושבו')
   console.log('✓ Accessible Names למוזמן, לשולחן ולסעיף')
+}
+
+// ---------------------------------------------------------------------------
+// רגרסיה — תפוסה אחרי הושבה (הבאג: ההודעה דיווחה מספר שלא הופיע על השולחן)
+// ---------------------------------------------------------------------------
+
+function testOccupancyAfterSeating(): void {
+  const sitting = guest('יושב', 'confirmed', { seats: 4 })
+  const table: WorkspaceTable = { table_number: 1, capacity: 10, guests: [sitting] }
+
+  const newcomer = guest('חדש', 'confirmed', { party_size: 3, seats: 3 })
+  assert.equal(occupancyAfterSeating(table, newcomer), 7, '4 + 3')
+
+  // העברה אל אותו שולחן — לא נספר פעמיים.
+  assert.equal(
+    occupancyAfterSeating(table, sitting),
+    4,
+    'מוזמן שכבר יושב בשולחן לא מוסיף לתפוסה',
+  )
+
+  // "הושבה בכל זאת" של מי שלא מגיע: הוא תופס 0 מקומות בפועל, ולכן
+  // התפוסה לא משתנה — וזה מה שחייב להיאמר למשתמש.
+  const declined = guest('לא מגיע', 'declined', { party_size: 5, seats: 0 })
+  assert.equal(
+    occupancyAfterSeating(table, declined),
+    4,
+    'מי שלא מגיע תופס 0 מקומות — התפוסה לא זזה',
+  )
+
+  // חריגה אמיתית מדווחת נכון.
+  const bigParty = guest('משפחה', 'confirmed', { party_size: 8, seats: 8 })
+  assert.equal(occupancyAfterSeating(table, bigParty), 12)
+  assert.ok(occupancyAfterSeating(table, bigParty) > table.capacity, 'זוהתה חריגה')
+  console.log('✓ תפוסה אחרי הושבה: העברה לאותו שולחן, seats=0, וחריגה')
 }
 
 function testOccupancy(): void {
@@ -397,7 +453,9 @@ testNoResults()
 testSections()
 testGroupsInUse()
 testBuildEntries()
+testNoDuplicateEntries()
 testAriaLabels()
 testOccupancy()
+testOccupancyAfterSeating()
 testLargeDataset()
 console.log('OK — לוגיקת רשימת המוזמנים במרחב ההושבה עובדת כמפרט.')

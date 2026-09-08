@@ -310,3 +310,97 @@ a.evt-card:focus-visible { outline: 3px solid var(--gold-light); outline-offset:
 
 /* ---- כרטיסי מחשבון באינדקס ---- */
 .calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   רכיבי סקשן משותפים — השלמה לחילוץ הראשון.
+
+   הכללים כאן **הועתקו מילה במילה** מה-<style> של `frontend/index.html`.
+   הם חסרו בחילוץ הראשון, ולכן עמודים שנבנו מהמעטפת (finance, events)
+   הציגו `.why-inner` ללא רוחב קריאה ו-`.why-punch` בגופן הלא נכון.
+   זו השלמה, לא עיצוב חדש: אין כאן צבע, גופן, רדיוס או צל שלא קיימים
+   כבר בדף הבית.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.flow { background: var(--ivory); }
+.flow-steps { list-style: none; max-width: 620px; margin: 0 auto; padding: 0; }
+.flow-step { position: relative; display: grid; grid-template-columns: 36px 1fr; gap: 16px; align-items: start; padding-bottom: 30px; }
+.flow-step:last-child { padding-bottom: 0; }
+.flow-step::before {
+        content: ""; position: absolute; inset-inline-start: 17px; top: 42px; bottom: -2px; width: 2px; border-radius: 2px;
+        background: linear-gradient(180deg, rgba(201, 162, 39, 0.42), rgba(201, 162, 39, 0.16));
+        transform: scaleY(0); transform-origin: top;
+        transition: transform 0.6s var(--ease-out); transition-delay: var(--d, 0s);
+      }
+.flow-step.in::before { transform: scaleY(1); }
+.flow-step:last-child::before { content: none; }
+.flow-dot {
+        width: 36px; height: 36px; border-radius: 50%; background: var(--cream); border: 1px solid var(--line);
+        display: flex; align-items: center; justify-content: center; color: var(--gold-deep);
+        box-shadow: 0 2px 8px rgba(43, 38, 32, 0.06);
+      }
+.flow-step h3 { font-size: 18px; margin-bottom: 4px; }
+.flow-step p { font-size: 15.5px; color: var(--muted); }
+.flow-step p em { font-style: normal; color: var(--charcoal); font-weight: 600; }
+.flow-step-last .flow-dot { background: var(--ink); border-color: var(--ink); color: var(--gold-light); }
+.flow-step-last p { color: var(--body); }
+.flow-step:nth-child(1) { --d: 0s; }
+.flow-step:nth-child(2) { --d: 0.07s; }
+.flow-step:nth-child(3) { --d: 0.14s; }
+.flow-step:nth-child(4) { --d: 0.21s; }
+.flow-step:nth-child(5) { --d: 0.28s; }
+.features { background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-2) 100%); }
+.showcase { background: linear-gradient(180deg, var(--ivory-2) 0%, var(--ivory) 100%); }
+.sc-shot { position: relative; aspect-ratio: 16 / 10; border-radius: 14px; overflow: hidden; background: linear-gradient(160deg, var(--ivory-2), var(--ivory)); margin-bottom: 18px; border: 1px solid var(--line); }
+.sc-shot::before {
+        content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
+        background: url('/favicon.svg') center / 52px no-repeat;
+      }
+.sc-shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.why { background: var(--ivory); }
+.why-inner { max-width: 680px; margin: 0 auto; text-align: center; }
+.why-inner .section-title { margin-bottom: 22px; }
+.why-inner p { font-size: 17px; margin-bottom: 16px; }
+.why .why-list { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(18px, 2.4vw, 22px); line-height: 1.55; color: var(--charcoal); }
+.why .why-punch,
+.rsvp-band .why-punch,
+.commit .why-punch,
+.after .why-punch { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(18px, 2.3vw, 21px); color: var(--charcoal); margin-top: 26px; }
+.note-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+.note-chip { font-size: 13.5px; font-style: italic; color: var(--body); background: var(--ivory-2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 13px; white-space: nowrap; }
+.rsvp-band { background: var(--ivory-2); }
+.rsvp-inner { max-width: 640px; margin: 0 auto; text-align: center; }
+.rsvp-inner p { font-size: 17px; }
+.rsvp-list { list-style: none; margin: 22px 0 0; padding: 0; display: inline-grid; gap: 10px; text-align: start; }
+.rsvp-list li { display: flex; align-items: center; gap: 11px; font-size: 16.5px; color: var(--charcoal); }
+.rsvp-list svg { color: var(--green); flex-shrink: 0; }
+.prep-list { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; max-width: 900px; margin: 0 auto; padding: 0; }
+.prep-card {
+        background: rgba(245, 239, 226, 0.04); border: 1px solid rgba(201, 162, 39, 0.18);
+        border-radius: 18px; padding: 24px 22px;
+        transition: transform 0.22s var(--ease-out), border-color 0.22s var(--ease-out);
+      }
+.prep-card .ic { width: 40px; height: 40px; border-radius: 12px; background: rgba(228, 201, 107, 0.12); display: flex; align-items: center; justify-content: center; color: var(--gold-light); margin-bottom: 14px; }
+.prep-card p { font-size: 16px; color: #d6cbb5; }
+.prep-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.prep-chip { font-size: 13.5px; font-style: italic; color: #e2d8c2; background: rgba(245, 239, 226, 0.07); border: 1px solid rgba(201, 162, 39, 0.22); border-radius: 999px; padding: 5px 12px; white-space: nowrap; }
+.payoff-bridge {
+        display: flex; align-items: center; justify-content: center; gap: 16px;
+        max-width: 380px; margin: 40px auto 30px;
+        font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: 18px; color: var(--gold-light);
+      }
+.payoff-bridge::before,
+.payoff-bridge::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(201, 162, 39, 0) 0%, rgba(201, 162, 39, 0.45) 100%); }
+.payoff-bridge::after { background: linear-gradient(90deg, rgba(201, 162, 39, 0.45) 0%, rgba(201, 162, 39, 0) 100%); }
+.flow-punch { text-align: center; margin-top: 34px; font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(18px, 2.3vw, 22px); color: var(--charcoal); }
+@media (max-width: 780px) {
+.prep-list { grid-template-columns: 1fr; }
+.payoff-bridge { margin: 32px auto 24px; }
+}
+@media (hover: hover) and (pointer: fine) {
+.prep-card:hover { transform: translateY(-4px); border-color: rgba(201, 162, 39, 0.42); }
+}
+@media (prefers-reduced-motion: reduce) {
+.flow-step::before { transform: scaleY(1); transition: none; }
+.prep-card { transition: none; }
+}

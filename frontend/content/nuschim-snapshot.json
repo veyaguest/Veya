@@ -1,0 +1,1123 @@
+{
+ "categories": [
+  {
+   "key": "invitations",
+   "label": "נוסחי הזמנה",
+   "message_types": [
+    "invitation"
+   ],
+   "event_types": [
+    {
+     "key": "wedding",
+     "label": "חתונה",
+     "count": 12
+    }
+   ],
+   "wordings": [
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "invitation",
+     "message_type_label": "הזמנה",
+     "category": "invitations",
+     "option_number": 1,
+     "tone": "חם ומלא פרטים",
+     "title": "הזמנה",
+     "content": "היי {{guest_name}} ❤️\n\nאנחנו שמחים ונרגשים להזמין אותך לערב החתונה שלנו.\n\n{{groom_name}} & {{bride_name}}\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nנשמח לראות אותך איתנו ולחגוג יחד.\n\nלאישור הגעה:\n{{rsvp_link}}\n\nלניווט:\n{{navigation_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "invitation",
+     "message_type_label": "הזמנה",
+     "category": "invitations",
+     "option_number": 2,
+     "tone": "אישי ומשתף",
+     "title": "הזמנה",
+     "content": "היי {{guest_name}} ❤️\n\nרצינו לשתף אותך שאנחנו מתחתנים ולהזמין אותך לחגוג איתנו את הערב המיוחד הזה.\n\n{{groom_name}} ו־{{bride_name}}\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nנשמח מאוד שתהיה איתנו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "invitation",
+     "message_type_label": "הזמנה",
+     "category": "invitations",
+     "option_number": 3,
+     "tone": "נרגש וחגיגי",
+     "title": "הזמנה",
+     "content": "היי {{guest_name}},\n\nאנחנו מתרגשים לקראת היום הגדול שלנו ושמחים להזמין אותך לחתונה שלנו ❤️\n\n{{groom_name}} & {{bride_name}}\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nמחכים לראות אותך ולשמוח יחד.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "invitation",
+     "message_type_label": "הזמנה",
+     "category": "invitations",
+     "option_number": 4,
+     "tone": "מספר את המסע האישי",
+     "title": "הזמנה",
+     "content": "היי {{guest_name}} ❤️\n\nאחרי הרבה הכנות והתרגשות הגיע הרגע שלנו.\n\nנשמח להזמין אותך לערב החתונה שלנו ולחגוג איתנו.\n\n{{groom_name}} & {{bride_name}}\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "invitation",
+     "message_type_label": "הזמנה",
+     "category": "invitations",
+     "option_number": 5,
+     "tone": "פשוט וקצר",
+     "title": "הזמנה",
+     "content": "היי {{guest_name}},\n\nאנחנו שמחים להזמין אותך להיות איתנו בערב החתונה שלנו ❤️\n\n{{groom_name}} ו־{{bride_name}}\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nנשמח לראות אותך איתנו.\n\nלאישור:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "invitation",
+     "message_type_label": "הזמנה",
+     "category": "invitations",
+     "option_number": 6,
+     "tone": "אישי ובלעדי",
+     "title": "הזמנה",
+     "content": "היי {{guest_name}} ❤️\n\nרצינו להזמין אותך באופן אישי לחתונה שלנו.\n\nאנחנו מתרגשים מאוד ונשמח לחגוג איתך את הערב הזה.\n\n{{groom_name}} & {{bride_name}}\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "invitation",
+     "message_type_label": "הזמנה",
+     "category": "invitations",
+     "option_number": 7,
+     "tone": "רשמי וחגיגי",
+     "title": "הזמנה",
+     "content": "שלום {{guest_name}} ❤️\n\nבשמחה ובהתרגשות אנחנו מזמינים אותך לחתונה שלנו.\n\n{{groom_name}} & {{bride_name}}\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nנשמח מאוד שתגיע לחגוג איתנו.\n\nאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "invitation",
+     "message_type_label": "הזמנה",
+     "category": "invitations",
+     "option_number": 8,
+     "tone": "הכרזה נרגשת",
+     "title": "הזמנה",
+     "content": "היי {{guest_name}},\n\nהגיע הזמן לשתף אותך בתאריך החשוב שלנו ❤️\n\nאנחנו מתחתנים ונשמח שתהיה איתנו בערב החתונה.\n\n{{groom_name}} & {{bride_name}}\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nמחכים לראות אותך.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "invitation",
+     "message_type_label": "הזמנה",
+     "category": "invitations",
+     "option_number": 9,
+     "tone": "נרגש ופשוט",
+     "title": "הזמנה",
+     "content": "היי {{guest_name}} ❤️\n\nאנחנו נרגשים לקראת החתונה שלנו ורוצים להזמין אותך לחגוג איתנו.\n\n{{groom_name}} ו־{{bride_name}}\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nנשמח מאוד לראות אותך שם.\n\nלאישור:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "invitation",
+     "message_type_label": "הזמנה",
+     "category": "invitations",
+     "option_number": 10,
+     "tone": "רשמי וחם",
+     "title": "הזמנה",
+     "content": "שלום {{guest_name}},\n\nאנחנו שמחים ונרגשים לקראת הערב הגדול שלנו.\n\nנשמח שתהיה איתנו בחתונה שלנו ❤️\n\n{{groom_name}} & {{bride_name}}\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "invitation",
+     "message_type_label": "הזמנה",
+     "category": "invitations",
+     "option_number": 11,
+     "tone": "ייחודי ומכובד",
+     "title": "הזמנה",
+     "content": "היי {{guest_name}} ❤️\n\nרצינו להזמין אותך לחגוג איתנו את אחד הרגעים החשובים שלנו.\n\nהחתונה של:\n{{groom_name}} & {{bride_name}}\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nנשמח לראות אותך איתנו.\n\nאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "invitation",
+     "message_type_label": "הזמנה",
+     "category": "invitations",
+     "option_number": 12,
+     "tone": "חם ומרגש",
+     "title": "הזמנה",
+     "content": "היי {{guest_name}} ❤️\n\nאנחנו מתרגשים ושמחים להזמין אותך לערב החתונה שלנו.\n\nנשמח מאוד שתהיה חלק מהשמחה שלנו ותחגוג איתנו.\n\n{{groom_name}} & {{bride_name}}\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nלאישור הגעה:\n{{rsvp_link}}\n\nלניווט:\n{{navigation_link}}"
+    }
+   ]
+  },
+  {
+   "key": "rsvp",
+   "label": "נוסחי בקשת אישור הגעה",
+   "message_types": [
+    "rsvp_request"
+   ],
+   "event_types": [
+    {
+     "key": "bar_mitzvah",
+     "label": "בר מצווה",
+     "count": 12
+    },
+    {
+     "key": "bat_mitzvah",
+     "label": "בת מצווה",
+     "count": 12
+    },
+    {
+     "key": "brit",
+     "label": "ברית",
+     "count": 12
+    },
+    {
+     "key": "brita",
+     "label": "בריתה",
+     "count": 12
+    },
+    {
+     "key": "business",
+     "label": "אירוע עסקי",
+     "count": 12
+    },
+    {
+     "key": "henna",
+     "label": "חינה",
+     "count": 12
+    },
+    {
+     "key": "wedding",
+     "label": "חתונה",
+     "count": 12
+    }
+   ],
+   "wordings": [
+    {
+     "event_type": "bar_mitzvah",
+     "event_type_label": "בר מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 1,
+     "tone": "פשוט וחם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח שתעדכנו אותנו אם אתם מגיעים לבר המצווה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bar_mitzvah",
+     "event_type_label": "בר מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 2,
+     "tone": "אישי ורגוע",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח לדעת אם תוכלו להיות איתנו בבר המצווה.\n\nאפשר לאשר הגעה כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bar_mitzvah",
+     "event_type_label": "בר מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 3,
+     "tone": "תזכורת עדינה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nקיבלתם את ההזמנה שלנו?\nנשמח שתעדכנו אותנו אם אתם מצטרפים.\n\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bar_mitzvah",
+     "event_type_label": "בר מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 4,
+     "tone": "קצר וברור",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}}!\n\nנשמח לקבל מכם אישור הגעה לבר המצווה ❤️\n\nאפשר לעדכן כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bar_mitzvah",
+     "event_type_label": "בר מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 5,
+     "tone": "מזמין",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח שתהיו איתנו ונחגוג יחד את בר המצווה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bar_mitzvah",
+     "event_type_label": "בר מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 6,
+     "tone": "רגוע וקליל",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 🥳\n\nנשמח לדעת אם אתם מצטרפים אלינו לבר המצווה.\n\nאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bar_mitzvah",
+     "event_type_label": "בר מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 7,
+     "tone": "מצפים לראות אתכם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לראות אתכם איתנו ביום המיוחד הזה.\n\nאפשר לעדכן כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bar_mitzvah",
+     "event_type_label": "בר מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 8,
+     "tone": "מנומס וחם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לבר המצווה.\n\n{{rsvp_link}}\n\nתודה ❤️"
+    },
+    {
+     "event_type": "bar_mitzvah",
+     "event_type_label": "בר מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 9,
+     "tone": "ישיר",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לדעת אם אתם איתנו בבר המצווה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bar_mitzvah",
+     "event_type_label": "בר מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 10,
+     "tone": "נערכים לקראת",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}}!\n\nנשמח לדעת אם אתם מגיעים לחגוג איתנו.\n\nאפשר לאשר כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bar_mitzvah",
+     "event_type_label": "בר מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 11,
+     "tone": "מצפים לתשובה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לקבל מכם תשובה לגבי ההגעה לבר המצווה.\n\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bar_mitzvah",
+     "event_type_label": "בר מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 12,
+     "tone": "חם ומודה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח שתצטרפו אלינו לחגוג את בר המצווה.\n\nלאישור הגעה:\n{{rsvp_link}}\n\nתודה ❤️"
+    },
+    {
+     "event_type": "bat_mitzvah",
+     "event_type_label": "בת מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 1,
+     "tone": "פשוט וחם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח שתעדכנו אותנו אם אתם מגיעים לבת המצווה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bat_mitzvah",
+     "event_type_label": "בת מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 2,
+     "tone": "אישי ורגוע",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח לדעת אם תוכלו להיות איתנו בבת המצווה.\n\nאפשר לאשר הגעה כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bat_mitzvah",
+     "event_type_label": "בת מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 3,
+     "tone": "תזכורת עדינה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nקיבלתם את ההזמנה שלנו?\nנשמח שתעדכנו אותנו אם אתם מצטרפים.\n\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bat_mitzvah",
+     "event_type_label": "בת מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 4,
+     "tone": "קצר וברור",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}}!\n\nנשמח לקבל מכם אישור הגעה לבת המצווה ❤️\n\nאפשר לעדכן כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bat_mitzvah",
+     "event_type_label": "בת מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 5,
+     "tone": "מזמין",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח שתהיו איתנו ונחגוג יחד את בת המצווה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bat_mitzvah",
+     "event_type_label": "בת מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 6,
+     "tone": "רגוע וקליל",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 🥰\n\nנשמח לדעת אם אתם מצטרפים אלינו לבת המצווה.\n\nאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bat_mitzvah",
+     "event_type_label": "בת מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 7,
+     "tone": "מצפים לראות אתכם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לראות אתכם איתנו ביום המיוחד הזה.\n\nאפשר לעדכן כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bat_mitzvah",
+     "event_type_label": "בת מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 8,
+     "tone": "מנומס וחם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לבת המצווה.\n\n{{rsvp_link}}\n\nתודה ❤️"
+    },
+    {
+     "event_type": "bat_mitzvah",
+     "event_type_label": "בת מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 9,
+     "tone": "ישיר",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לדעת אם אתם איתנו בבת המצווה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bat_mitzvah",
+     "event_type_label": "בת מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 10,
+     "tone": "נערכים לקראת",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}}!\n\nנשמח לדעת אם אתם מגיעים לחגוג איתנו.\n\nאפשר לאשר כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bat_mitzvah",
+     "event_type_label": "בת מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 11,
+     "tone": "מצפים לתשובה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לקבל מכם תשובה לגבי ההגעה לבת המצווה.\n\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "bat_mitzvah",
+     "event_type_label": "בת מצווה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 12,
+     "tone": "חם ומודה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח שתצטרפו אלינו לחגוג את בת המצווה.\n\nלאישור הגעה:\n{{rsvp_link}}\n\nתודה ❤️"
+    },
+    {
+     "event_type": "brit",
+     "event_type_label": "ברית",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 1,
+     "tone": "פשוט וחם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח שתעדכנו אותנו אם אתם מגיעים לברית.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brit",
+     "event_type_label": "ברית",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 2,
+     "tone": "אישי ורגוע",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח לדעת אם תוכלו להיות איתנו ולחגוג את הרגע המיוחד.\n\nאפשר לאשר הגעה כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brit",
+     "event_type_label": "ברית",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 3,
+     "tone": "תזכורת עדינה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nקיבלתם את ההזמנה שלנו?\nנשמח שתעדכנו אותנו אם אתם מגיעים.\n\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brit",
+     "event_type_label": "ברית",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 4,
+     "tone": "קצר וברור",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}}!\n\nנשמח לקבל מכם אישור הגעה לברית ❤️\n\nאפשר לעדכן כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brit",
+     "event_type_label": "ברית",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 5,
+     "tone": "מזמין",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח שתהיו איתנו באירוע ונשמח לדעת אם אתם מגיעים.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brit",
+     "event_type_label": "ברית",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 6,
+     "tone": "רגוע וקליל",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 🥰\n\nנשמח לדעת אם אתם מצטרפים אלינו.\n\nאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brit",
+     "event_type_label": "ברית",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 7,
+     "tone": "מצפים לראות אתכם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לראות אתכם איתנו בברית.\n\nאפשר לעדכן אותנו כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brit",
+     "event_type_label": "ברית",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 8,
+     "tone": "מנומס וחם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם.\n\nלאישור:\n{{rsvp_link}}\n\nתודה ❤️"
+    },
+    {
+     "event_type": "brit",
+     "event_type_label": "ברית",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 9,
+     "tone": "ישיר",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לדעת אם אתם איתנו באירוע.\n\nאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brit",
+     "event_type_label": "ברית",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 10,
+     "tone": "נערכים לקראת",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}}!\n\nאנחנו מתחילים להיערך לקראת האירוע, ונשמח לדעת אם אתם מגיעים.\n\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brit",
+     "event_type_label": "ברית",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 11,
+     "tone": "מצפים לתשובה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לקבל מכם תשובה לגבי ההגעה לברית.\n\nאפשר לאשר כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brit",
+     "event_type_label": "ברית",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 12,
+     "tone": "חם ומודה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח שתצטרפו אלינו לרגע המיוחד הזה.\n\nלאישור הגעה:\n{{rsvp_link}}\n\nתודה ❤️"
+    },
+    {
+     "event_type": "brita",
+     "event_type_label": "בריתה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 1,
+     "tone": "פשוט וחם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח שתעדכנו אותנו אם אתם מגיעים לבריתה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brita",
+     "event_type_label": "בריתה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 2,
+     "tone": "אישי ורגוע",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח לדעת אם תוכלו להיות איתנו בבריתה.\n\nאפשר לאשר הגעה כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brita",
+     "event_type_label": "בריתה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 3,
+     "tone": "תזכורת עדינה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nקיבלתם את ההזמנה שלנו?\nנשמח שתעדכנו אותנו אם אתם מצטרפים.\n\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brita",
+     "event_type_label": "בריתה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 4,
+     "tone": "קצר וברור",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}}!\n\nנשמח לקבל מכם אישור הגעה לבריתה ❤️\n\nאפשר לעדכן כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brita",
+     "event_type_label": "בריתה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 5,
+     "tone": "מזמין",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח שתהיו איתנו ונכיר לכם את הקטנה שלנו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brita",
+     "event_type_label": "בריתה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 6,
+     "tone": "רגוע וקליל",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 🥰\n\nנשמח לדעת אם אתם מצטרפים אלינו לבריתה.\n\nאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brita",
+     "event_type_label": "בריתה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 7,
+     "tone": "מצפים לראות אתכם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לראות אתכם איתנו בבריתה.\n\nאפשר לעדכן אותנו כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brita",
+     "event_type_label": "בריתה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 8,
+     "tone": "מנומס וחם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם.\n\nלאישור:\n{{rsvp_link}}\n\nתודה ❤️"
+    },
+    {
+     "event_type": "brita",
+     "event_type_label": "בריתה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 9,
+     "tone": "ישיר",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לדעת אם אתם איתנו בבריתה.\n\nאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brita",
+     "event_type_label": "בריתה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 10,
+     "tone": "נערכים לקראת",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}}!\n\nנשמח לדעת אם אתם מגיעים לבריתה שלנו.\n\nאפשר לעדכן כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brita",
+     "event_type_label": "בריתה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 11,
+     "tone": "מצפים לתשובה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לקבל מכם תשובה לגבי ההגעה לבריתה.\n\nלאישור:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "brita",
+     "event_type_label": "בריתה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 12,
+     "tone": "חם ומודה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח שתצטרפו אלינו לרגע המיוחד הזה.\n\nלאישור הגעה:\n{{rsvp_link}}\n\nתודה ❤️"
+    },
+    {
+     "event_type": "business",
+     "event_type_label": "אירוע עסקי",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 1,
+     "tone": "רשמי",
+     "title": "בקשת אישור ראשונה",
+     "content": "שלום {{guest_name}},\n\nנשמח לדעת אם תוכלו להשתתף באירוע שלנו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "business",
+     "event_type_label": "אירוע עסקי",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 2,
+     "tone": "מארחים",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}},\n\nנשמח לארח אתכם באירוע ונשמח לקבל את אישור ההגעה שלכם.\n\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "business",
+     "event_type_label": "אירוע עסקי",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 3,
+     "tone": "ישיר",
+     "title": "בקשת אישור ראשונה",
+     "content": "שלום {{guest_name}},\n\nנשמח לדעת אם אתם מתכננים להגיע לאירוע.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "business",
+     "event_type_label": "אירוע עסקי",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 4,
+     "tone": "מבקש עדכון",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}},\n\nנשמח אם תוכלו לעדכן אותנו לגבי השתתפותכם באירוע.\n\nאפשר לאשר כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "business",
+     "event_type_label": "אירוע עסקי",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 5,
+     "tone": "מזמין",
+     "title": "בקשת אישור ראשונה",
+     "content": "שלום {{guest_name}},\n\nנשמח לראות אתכם באירוע שלנו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "business",
+     "event_type_label": "אירוע עסקי",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 6,
+     "tone": "קצר",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}},\n\nנשמח לדעת אם תוכלו להצטרף אלינו לאירוע.\n\nאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "business",
+     "event_type_label": "אירוע עסקי",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 7,
+     "tone": "מנומס ומודה",
+     "title": "בקשת אישור ראשונה",
+     "content": "שלום {{guest_name}},\n\nנשמח לקבל מכם עדכון לגבי ההגעה לאירוע.\n\n{{rsvp_link}}\n\nתודה."
+    },
+    {
+     "event_type": "business",
+     "event_type_label": "אירוע עסקי",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 8,
+     "tone": "אישי",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}},\n\nנשמח אם תוכלו להיות איתנו באירוע.\n\nאפשר לעדכן כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "business",
+     "event_type_label": "אירוע עסקי",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 9,
+     "tone": "רשמי ומצפה",
+     "title": "בקשת אישור ראשונה",
+     "content": "שלום {{guest_name}},\n\nנשמח לדעת אם נוכל לצפות לראותכם באירוע.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "business",
+     "event_type_label": "אירוע עסקי",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 10,
+     "tone": "מבקש אישור",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}},\n\nנשמח לקבל את אישור ההגעה שלכם לאירוע.\n\nאפשר לאשר כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "business",
+     "event_type_label": "אירוע עסקי",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 11,
+     "tone": "מבקש תשובה",
+     "title": "בקשת אישור ראשונה",
+     "content": "שלום {{guest_name}},\n\nנשמח לדעת אם אתם מצטרפים אלינו לאירוע.\n\nלאישור:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "business",
+     "event_type_label": "אירוע עסקי",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 12,
+     "tone": "מארחים ומחכים",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}},\n\nנשמח לארח אתכם ומחכים לדעת אם תוכלו להגיע.\n\nאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "henna",
+     "event_type_label": "חינה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 1,
+     "tone": "פשוט וחם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח שתעדכנו אותנו אם אתם מגיעים לחינה שלנו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "henna",
+     "event_type_label": "חינה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 2,
+     "tone": "אישי ורגוע",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח לדעת אם תוכלו להיות איתנו בחינה.\n\nאפשר לאשר הגעה כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "henna",
+     "event_type_label": "חינה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 3,
+     "tone": "תזכורת עדינה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nקיבלתם את ההזמנה שלנו?\nנשמח שתעדכנו אותנו אם אתם מצטרפים.\n\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "henna",
+     "event_type_label": "חינה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 4,
+     "tone": "קצר וברור",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}}!\n\nנשמח לקבל מכם אישור הגעה לחינה ❤️\n\nאפשר לעדכן כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "henna",
+     "event_type_label": "חינה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 5,
+     "tone": "מזמין",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nאנחנו מזמינים אתכם להיות איתנו בחינה, ונשמח לדעת אם אתם מגיעים.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "henna",
+     "event_type_label": "חינה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 6,
+     "tone": "רגוע וקליל",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 🥰\n\nנשמח לדעת אם אתם מצטרפים אלינו לחינה.\n\nאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "henna",
+     "event_type_label": "חינה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 7,
+     "tone": "מצפים לראות אתכם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לדעת אם נוכל לצפות לראות אתכם איתנו בחינה.\n\nאפשר לעדכן כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "henna",
+     "event_type_label": "חינה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 8,
+     "tone": "מנומס וחם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לחינה.\n\n{{rsvp_link}}\n\nתודה ❤️"
+    },
+    {
+     "event_type": "henna",
+     "event_type_label": "חינה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 9,
+     "tone": "ישיר",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לדעת אם אתם איתנו בחינה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "henna",
+     "event_type_label": "חינה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 10,
+     "tone": "נערכים לקראת",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}}!\n\nאנחנו מתחילים להיערך לקראת החינה, ונשמח לדעת אם אתם מגיעים.\n\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "henna",
+     "event_type_label": "חינה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 11,
+     "tone": "מצפים לתשובה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לקבל מכם תשובה לגבי ההגעה לחינה שלנו.\n\nאפשר לאשר כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "henna",
+     "event_type_label": "חינה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 12,
+     "tone": "חם ומודה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח שתצטרפו אלינו לחינה.\n\nרק עדכנו אותנו אם אתם מגיעים:\n{{rsvp_link}}\n\nתודה ❤️"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 1,
+     "tone": "פשוט וחם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח שתעדכנו אותנו אם אתם מגיעים לחתונה שלנו.\n\nאפשר לאשר הגעה כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 2,
+     "tone": "אישי ורגוע",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח לדעת אם תוכלו להיות איתנו ביום המיוחד שלנו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 3,
+     "tone": "תזכורת עדינה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nקיבלתם את ההזמנה שלנו?\nנשמח שתעדכנו אותנו אם אתם מגיעים.\n\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 4,
+     "tone": "קצר וברור",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}}!\n\nנשמח לקבל מכם תשובה לגבי ההגעה לחתונה ❤️\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 5,
+     "tone": "מזמין",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nאנחנו מזמינים אתכם לחגוג איתנו, ונשמח לדעת אם אתם מגיעים.\n\nאפשר לעדכן כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 6,
+     "tone": "קצר מאוד",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח לדעת אם אתם מצטרפים אלינו לחתונה.\n\nאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 7,
+     "tone": "מצפים לראות אתכם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nאנחנו רוצים לדעת אם נוכל לצפות לראות אתכם איתנו בחתונה.\n\nנשמח שתעדכנו כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 8,
+     "tone": "מנומס וחם",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}}!\n\nנשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לחתונה.\n\n{{rsvp_link}}\n\nתודה ❤️"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 9,
+     "tone": "רגוע וקליל",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 🥰\n\nנשמח לדעת אם אתם איתנו.\n\nאפשר לאשר הגעה בקלות כאן:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 10,
+     "tone": "נערכים לקראת",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nאנחנו רוצים להתחיל להיערך לקראת החתונה, ונשמח לדעת אם אתם מגיעים.\n\nלאישור הגעה:\n{{rsvp_link}}"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 11,
+     "tone": "מצפים לתשובה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} 😊\n\nנשמח לקבל מכם אישור הגעה לחתונה שלנו.\n\nלעדכון:\n{{rsvp_link}}\n\nמחכים לתשובה ❤️"
+    },
+    {
+     "event_type": "wedding",
+     "event_type_label": "חתונה",
+     "message_type": "rsvp_request",
+     "message_type_label": "בקשת אישור ראשונה",
+     "category": "rsvp",
+     "option_number": 12,
+     "tone": "חם ומודה",
+     "title": "בקשת אישור ראשונה",
+     "content": "היי {{guest_name}} ❤️\n\nנשמח לדעת אם תוכלו להגיע ולחגוג איתנו.\n\nלאישור הגעה:\n{{rsvp_link}}\n\nתודה רבה!"
+    }
+   ]
+  }
+ ],
+ "total": 96
+}
