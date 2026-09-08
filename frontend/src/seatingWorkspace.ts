@@ -305,6 +305,20 @@ export function sectionAriaLabel(section: WorkspaceSection): string {
   return `${section.label}, ${section.people} אנשים, ${section.seated} הושבו`
 }
 
+/**
+ * כמה מקומות יהיו תפוסים בשולחן **אחרי** שמוזמן יושב בו.
+ *
+ * שני דברים שקל לטעות בהם, ושניהם התגלו בבדיקה:
+ * 1. מוזמן שכבר יושב בשולחן הזה לא נספר פעמיים (העברה אל אותו שולחן).
+ * 2. מי שאינו "מגיע" תופס `seats === 0`, ולכן "הושבה בכל זאת" שלו אינה
+ *    משנה את התפוסה. עיגול ל-1 היה מדווח למשתמש מספר שלא יופיע על השולחן.
+ */
+export function occupancyAfterSeating(table: WorkspaceTable, guest: HallGuest): number {
+  const current = table.guests.reduce((sum, g) => sum + g.seats, 0)
+  const alreadyHere = table.guests.some((g) => g.id === guest.id)
+  return current + (alreadyHere ? 0 : guest.seats)
+}
+
 /** תפוסת שולחן כטקסט קצר לתצוגה: "8/10". */
 export function tableOccupancy(table: WorkspaceTable): { used: number; free: number; full: boolean } {
   const used = table.guests.reduce((s, g) => s + g.seats, 0)

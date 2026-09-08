@@ -22,6 +22,7 @@ import {
   sectionAriaLabel,
   sortEntries,
   tableAriaLabel,
+  occupancyAfterSeating,
   tableOccupancy,
 } from './seatingWorkspace'
 import type { GuestEntry, WorkspaceFilter, WorkspaceTable } from './seatingWorkspace'
@@ -355,6 +356,40 @@ function testAriaLabels(): void {
   console.log('✓ Accessible Names למוזמן, לשולחן ולסעיף')
 }
 
+// ---------------------------------------------------------------------------
+// רגרסיה — תפוסה אחרי הושבה (הבאג: ההודעה דיווחה מספר שלא הופיע על השולחן)
+// ---------------------------------------------------------------------------
+
+function testOccupancyAfterSeating(): void {
+  const sitting = guest('יושב', 'confirmed', { seats: 4 })
+  const table: WorkspaceTable = { table_number: 1, capacity: 10, guests: [sitting] }
+
+  const newcomer = guest('חדש', 'confirmed', { party_size: 3, seats: 3 })
+  assert.equal(occupancyAfterSeating(table, newcomer), 7, '4 + 3')
+
+  // העברה אל אותו שולחן — לא נספר פעמיים.
+  assert.equal(
+    occupancyAfterSeating(table, sitting),
+    4,
+    'מוזמן שכבר יושב בשולחן לא מוסיף לתפוסה',
+  )
+
+  // "הושבה בכל זאת" של מי שלא מגיע: הוא תופס 0 מקומות בפועל, ולכן
+  // התפוסה לא משתנה — וזה מה שחייב להיאמר למשתמש.
+  const declined = guest('לא מגיע', 'declined', { party_size: 5, seats: 0 })
+  assert.equal(
+    occupancyAfterSeating(table, declined),
+    4,
+    'מי שלא מגיע תופס 0 מקומות — התפוסה לא זזה',
+  )
+
+  // חריגה אמיתית מדווחת נכון.
+  const bigParty = guest('משפחה', 'confirmed', { party_size: 8, seats: 8 })
+  assert.equal(occupancyAfterSeating(table, bigParty), 12)
+  assert.ok(occupancyAfterSeating(table, bigParty) > table.capacity, 'זוהתה חריגה')
+  console.log('✓ תפוסה אחרי הושבה: העברה לאותו שולחן, seats=0, וחריגה')
+}
+
 function testOccupancy(): void {
   const t: WorkspaceTable = {
     table_number: 1,
@@ -421,5 +456,6 @@ testBuildEntries()
 testNoDuplicateEntries()
 testAriaLabels()
 testOccupancy()
+testOccupancyAfterSeating()
 testLargeDataset()
 console.log('OK — לוגיקת רשימת המוזמנים במרחב ההושבה עובדת כמפרט.')

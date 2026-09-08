@@ -858,6 +858,16 @@
   z-index: 71;
   background: rgba(20, 18, 14, 0.38);
 }
+
+/* באנר השגיאה חייב להישאר מעל המגירות ומעל הרקע המעומעם שלהן.
+   "הושבה בקליק" נלחצת מתוך מגירת המוזמנים; כשהיא נכשלת, ההודעה נולדת
+   בתוך ``.hm-body`` — כלומר *מתחת* לרקע (z-index 71) — והמשתמש ראה
+   הודעת שגיאה מעומעמת שגם אי אפשר לסגור. השגיאה היא בדיוק הדבר שחייב
+   להיות מעל הכול. */
+.hall-mobile.hall-ws .hm-error-banner {
+  position: relative;
+  z-index: 76;
+}
 .hall-mobile.hall-ws.is-desktop .hm-panel-backdrop {
   display: none;
 }

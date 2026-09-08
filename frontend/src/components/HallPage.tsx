@@ -37,8 +37,9 @@ import { useFocusTrap } from '../lib/useFocusTrap'
 import { strings } from '../strings/he'
 import { getEventId } from '../authStore'
 import { getGroupNotes } from '../api'
-import { tableAriaLabel } from '../seatingWorkspace'
-import type { WorkspaceFilter } from '../seatingWorkspace'
+import { occupancyAfterSeating, tableAriaLabel } from '../seatingWorkspace'
+import { EMPTY_FILTER } from '../seatingWorkspace'
+import type { WorkspaceFilter, WorkspaceSort } from '../seatingWorkspace'
 import { ConfirmDialog } from './ConfirmDialog'
 import { GuestsPage } from './GuestsPage'
 import { GUEST_DRAG_TYPE, SeatingGuestPanel } from './SeatingGuestPanel'
@@ -1549,8 +1550,15 @@ export function HallPage({
   const [liveMessage, setLiveMessage] = useState('')
   // העדפות הקבוצה (endpoint קיים) — מוצגות ליד הקבוצה בסרגל.
   const [groupNotes, setGroupNotes] = useState<Record<string, string>>({})
-  // סינון שנכפה על הסרגל מבחוץ ("הצגת מי שנשאר ללא שולחן").
-  const [pushedFilter, setPushedFilter] = useState<WorkspaceFilter | null>(null)
+  // ---- מצב רשימת המוזמנים ----
+  // יושב כאן ולא בתוך ``SeatingGuestPanel`` כי בטלפון הסרגל הוא מגירה
+  // שנפתחת ונסגרת, וכל סגירה הייתה מוחקת את החיפוש, המיון והסינון
+  // (המשתמש הציץ במפה וחזר לרשימה מאופסת). המסך חי כל עוד הוא פתוח,
+  // ולכן הוא הבעלים הנכון של המצב הזה.
+  const [guestSearch, setGuestSearch] = useState('')
+  const [guestSort, setGuestSort] = useState<WorkspaceSort>('confirmed_first')
+  const [guestFilter, setGuestFilter] = useState<WorkspaceFilter>(EMPTY_FILTER)
+  const [guestCollapsed, setGuestCollapsed] = useState<Record<string, boolean>>({})
   const panelRef = useRef<HTMLDivElement | null>(null)
   const guestSheetRef = useRef<HTMLDivElement | null>(null)
   // האלמנט שפתח את הפאנל — הפוקוס חוזר אליו בסגירה (§26).
@@ -3579,12 +3587,30 @@ export function HallPage({
     return guestById.get(guestId)?.rsvp_status !== 'confirmed'
   }
 
-  function requestSeatGuest(guestId: number, targetTable: number | null) {
+  /**
+   * הושבה ידנית, המסלול היחיד: אם המוזמן לא "מגיע" — קודם אזהרה.
+   *
+   * ``onSeated`` רץ **רק כשההעברה באמת בוצעה**. בלי זה הקורא שלנו היה
+   * מכריז "X הושב לשולחן N" גם כשהאזהרה רק נפתחה ושום דבר לא זז — קורא
+   * מסך היה מקבל אישור על פעולה שלא קרתה.
+   */
+  function requestSeatGuest(
+    guestId: number,
+    targetTable: number | null,
+    onSeated?: () => void,
+  ) {
     if (targetTable === null || !needsSeatWarning(guestId)) {
       moveGuestToTable(guestId, targetTable)
+      onSeated?.()
       return
     }
-    setSeatWarning({ guestIds: [guestId], onConfirm: () => moveGuestToTable(guestId, targetTable) })
+    setSeatWarning({
+      guestIds: [guestId],
+      onConfirm: () => {
+        moveGuestToTable(guestId, targetTable)
+        onSeated?.()
+      },
+    })
   }
 
   function requestDoAssign(guestId: number, tableNumber: number) {
@@ -3622,17 +3648,21 @@ export function HallPage({
   function seatGuestFromPanel(guestId: number, tableNumber: number) {
     const guest = guestById.get(guestId)
     const table = tables.find((t) => t.table_number === tableNumber)
-    requestSeatGuest(guestId, tableNumber)
-    if (!guest || !table) return
-    // חריגת קיבולת אינה חוסמת (התנהגות קיימת) — אבל היא **נאמרת**, ולא
-    // רק נצבעת באדום על המפה.
-    const usedAfter =
-      table.guests.reduce((sum, g) => sum + g.seats, 0) + Math.max(1, guest.seats)
-    announce(
-      usedAfter > table.capacity
-        ? wsT.seatedOverAnnounce(guest.full_name, tableNumber, usedAfter, table.capacity)
-        : wsT.seatedAnnounce(guest.full_name, tableNumber),
-    )
+    requestSeatGuest(guestId, tableNumber, () => {
+      if (!guest || !table) return
+      // חריגת קיבולת אינה חוסמת (התנהגות קיימת) — אבל היא **נאמרת**, ולא
+      // רק נצבעת באדום על המפה.
+      //
+      // ``guest.seats`` ולא ``max(1, seats)``: מי שלא מגיע תופס 0 מקומות
+      // בפועל, ולכן "הושבה בכל זאת" שלו אינה משנה את התפוסה — והמספר
+      // שנאמר חייב להיות זה שיופיע על השולחן.
+      const usedAfter = occupancyAfterSeating(table, guest)
+      announce(
+        usedAfter > table.capacity
+          ? wsT.seatedOverAnnounce(guest.full_name, tableNumber, usedAfter, table.capacity)
+          : wsT.seatedAnnounce(guest.full_name, tableNumber),
+      )
+    })
   }
 
   /** הסרה משולחן — לעולם לא מוזהרת, בדיוק כמו בכל מסלול קיים. */
@@ -3877,7 +3907,14 @@ export function HallPage({
         onManageGuests={openManage}
         onAnnounce={announce}
         onDragGuestChange={setDragGuestId}
-        externalFilter={pushedFilter}
+        search={guestSearch}
+        onSearchChange={setGuestSearch}
+        sort={guestSort}
+        onSortChange={setGuestSort}
+        filter={guestFilter}
+        onFilterChange={setGuestFilter}
+        collapsed={guestCollapsed}
+        onCollapsedChange={setGuestCollapsed}
         footer={
           <>
             <button
@@ -4626,30 +4663,11 @@ export function HallPage({
                       <p className="hm-report-sub">
                         {hallT.doneSummary(seatingReport.people, seatingReport.tables)}
                       </p>
-                      {/* §16 — לא רק "כמה שובצו", אלא גם **מי נשאר בחוץ**
-                          ואיך רואים אותו. הכפתור מסנן את סרגל המוזמנים
-                          ל"לא הושבו", ובטלפון גם פותח אותו. */}
                       <p className="hm-report-sub">
                         {unassignedPeople > 0
                           ? wsT.resultUnseated(unassignedPeople)
                           : wsT.resultAllSeated}
                       </p>
-                      {unassignedPeople > 0 && (
-                        <button
-                          type="button"
-                          className="hm-ghost-btn"
-                          onClick={() => {
-                            setPushedFilter({
-                              rsvp: 'confirmed',
-                              seating: 'unseated',
-                              group: 'all',
-                            })
-                            setPanel(isDesktop ? 'hall' : 'guests')
-                          }}
-                        >
-                          {wsT.resultShowUnseated}
-                        </button>
-                      )}
                     </>
                   ) : (
                     <>
@@ -4668,6 +4686,30 @@ export function HallPage({
                         </p>
                       )}
                     </>
+                  )}
+
+                  {/* §16 — "מי נשאר ללא שולחן", **בשני המצבים**.
+                      קודם הכפתור ישב רק בענף ההצלחה — ושם, מעצם הגדרתו,
+                      אף מאשר הגעה לא נשאר בחוץ (מוזמן ללא שולחן הוא הפרה
+                      קשה שמכשילה את ההרצה). כלומר הוא כמעט אף פעם לא הופיע,
+                      ודווקא בענף ההתנגשות — שבו יש בפועל אנשים בלי מקום —
+                      לא הייתה שום דרך לקפוץ אליהם ברשימה. */}
+                  {unassignedPeople > 0 && (
+                    <button
+                      type="button"
+                      className="hm-ghost-btn"
+                      onClick={() => {
+                        setGuestFilter({
+                          rsvp: 'confirmed',
+                          seating: 'unseated',
+                          group: 'all',
+                        })
+                        setGuestSearch('')
+                        setPanel(isDesktop ? 'hall' : 'guests')
+                      }}
+                    >
+                      {wsT.resultShowUnseated}
+                    </button>
                   )}
                 </div>
               )}
