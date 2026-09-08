@@ -44,7 +44,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Frank+Ruhl+Libre:wght@300;400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap"
       rel="stylesheet"
     />
 
@@ -59,7 +59,7 @@
             "name": "VEYA",
             "url": "https://veyaguest.co.il/",
             "logo": "https://veyaguest.co.il/logo.png",
-            "description": "מערכת לניהול אירועים: רשימת מוזמנים, אישורי הגעה, סידור הושבה וכספי האירוע — לחתונה, בר/בת מצווה, חינה, ברית ואירוע עסקי.",
+            "description": "מערכת לניהול אירועים: רשימת מוזמנים, אישורי הגעה, סידור הושבה ומאזן האירוע — לחתונה, בר/בת מצווה, חינה, ברית ואירוע עסקי.",
             "areaServed": "IL"
           },
           {
@@ -754,6 +754,271 @@
       .fineprint { font-size: 13.5px; color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
+      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+      /* ═══════════════════════════════════════════════════════════════════════
+         VEYA — שכבת המותג
+         ═══════════════════════════════════════════════════════════════════════
+
+         מקור אחד לטוקנים, לחתימה הוויזואלית ולשפת התנועה. הקובץ הזה מוזרק
+         אוטומטית בזמן build לשני המקומות (`scripts/build-site-pages.mjs`):
+
+           · frontend/public/veya-site.css   — כל העמודים הפנימיים
+           · frontend/index.html <style>      — דף הבית, שנשאר עם CSS מוטמע (LCP)
+
+         לכן אין לערוך את הבלוק הזה באף אחד מהם ישירות — רק כאן.
+
+         מה זה **לא**: לא Design System חדש. הצבעים, הגופנים והרכיבים הקיימים
+         נשארים בדיוק כפי שהם. מה שנוסף כאן הוא מה שחסר: סולם רדיוסים אחיד
+         (היו 12 ערכים שונים), סולם צללים, טוקני תנועה, וטיפול במספרים.
+         ═══════════════════════════════════════════════════════════════════════ */
+
+      :root {
+        /* ── רדיוס ──────────────────────────────────────────────────────────
+           ארבעה ערכים במקום שנים־עשר. המיפוי נבחר כך שרוב הרכיבים הקיימים
+           לא זזים ויזואלית: 11-14 → md, 16-20 → lg, 28 → xl. */
+        --radius-sm: 8px;
+        --radius-md: 14px;
+        --radius-lg: 18px;
+        --radius-xl: 28px;
+        --radius-pill: 999px;
+
+        /* ── צללים ──────────────────────────────────────────────────────────
+           רכים ונמוכי-אטימות. VEYA לא משתמשת בצל ככלי היררכיה ראשי — הגבול
+           (--line) עושה את זה. הצל רק מרים אלמנט אחד מעל השאר. */
+        --shadow-sm: 0 1px 2px rgba(43, 38, 32, 0.05);
+        --shadow-md: 0 14px 30px -22px rgba(43, 38, 32, 0.40);
+        --shadow-lg: 0 26px 60px -30px rgba(43, 38, 32, 0.38);
+
+        /* ── תנועה ──────────────────────────────────────────────────────────
+           שלושה משכים בלבד. `--ease-out` ו-`--ease-in-out` כבר קיימים
+           ונשארים מקור האמת לעקומות. */
+        --motion-fast: 180ms;
+        --motion-normal: 420ms;
+        --motion-slow: 620ms;
+
+        /* ── טיפוגרפיה ──────────────────────────────────────────────────────
+           ארבעה משקלים בלבד (400/500/600/700). משקל 300 הוסר מהטעינה —
+           הוא לא היה בשימוש באף מקום ורק הוסיף בקשת רשת. */
+        --font-body: 'Assistant', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --font-display: 'Frank Ruhl Libre', Georgia, 'Times New Roman', serif;
+        --font-num: 'Assistant', system-ui, sans-serif;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════════════
+         חתימה ויזואלית #1 — המספר
+
+         המספרים הם הליבה של VEYA: 500 · 463 · 37 · 45 ₪. הם צריכים להיקרא
+         כנתוני מערכת ולא כטקסט רגיל. ארבעה כללים:
+           · ספרות טבלאיות — כדי שמספר שמשתנה לא יזיז את מה שלידו
+           · מרווח אותיות שלילי קל — מספרים גדולים מתפזרים בלי זה
+           · הגופן התצוגתי לספרות הגדולות
+           · תווית מתחת, לא לצד — כך אפשר לסרוק עמודה של מספרים
+         ═══════════════════════════════════════════════════════════════════════ */
+
+      .num,
+      .num-value,
+      .numrow dd,
+      .calc-headline .big,
+      .step-two .big,
+      .tl-item .dt {
+        font-variant-numeric: tabular-nums lining-nums;
+        font-feature-settings: 'tnum' 1, 'lnum' 1;
+      }
+
+      /* בלוק מספר עצמאי: ערך גדול + תווית מתחתיו. */
+      .num {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+      .num-value {
+        font-family: var(--font-display);
+        font-weight: 500;
+        font-size: clamp(30px, 5.2vw, 46px);
+        line-height: 1.05;
+        letter-spacing: -0.015em;
+        color: var(--charcoal);
+        /* המרת ספרות אינה מזיזה את מה שסביבה */
+        font-variant-numeric: tabular-nums lining-nums;
+      }
+      .num-label {
+        font-family: var(--font-body);
+        font-size: 13.5px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: var(--muted);
+      }
+      .num-sub {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .num.is-accent .num-value { color: var(--gold-deep); }
+      .num.is-muted .num-value { color: var(--muted); }
+      .on-dark .num-value { color: var(--cream-text); }
+      .on-dark .num-label { color: #b6aa93; }
+
+      /* שורת מספרים — 500 · 463 · 37. הכלי שמסביר את הפער בלי משפט אחד. */
+      .num-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+        gap: 14px;
+        align-items: start;
+      }
+      .num-row .num {
+        background: var(--cream);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        padding: 18px 18px 16px;
+      }
+      .num-row .num.is-gap {
+        border-color: var(--gold);
+        background: rgba(201, 162, 39, 0.06);
+      }
+      .on-dark .num-row .num {
+        background: rgba(245, 239, 226, 0.04);
+        border-color: rgba(201, 162, 39, 0.18);
+      }
+
+      /* המחבר בין שני מספרים: 463 ← 464 */
+      .num-arrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--font-display);
+        font-size: clamp(22px, 4vw, 32px);
+        color: var(--charcoal);
+        font-variant-numeric: tabular-nums;
+      }
+      .num-arrow .arrow {
+        color: var(--gold-deep);
+        font-size: 0.8em;
+        /* RTL: החץ מצביע שמאלה, כלומר "קדימה" בעברית */
+        transform: none;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════════════
+         חתימה ויזואלית #2 — הקו
+         ציר אנכי עם נקודות. כבר קיים ב-.flow-steps; כאן רק מה שהופך אותו
+         לשפה: מצב "פעיל" לשלב, ומצב "יעד" לשלב האחרון.
+         ═══════════════════════════════════════════════════════════════════════ */
+
+      .flow-step .flow-dot {
+        transition: border-color var(--motion-normal) var(--ease-out),
+                    background var(--motion-normal) var(--ease-out),
+                    box-shadow var(--motion-normal) var(--ease-out);
+      }
+      .flow-step.is-target .flow-dot {
+        background: var(--gold);
+        color: var(--charcoal);
+        box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.18);
+      }
+      .flow-step.is-target h3 { color: var(--gold-deep); }
+      .on-dark .flow-step.is-target h3 { color: var(--gold-light); }
+
+      /* ═══════════════════════════════════════════════════════════════════════
+         חתימה ויזואלית #3 — אחידות הכרטיס והתג
+         הרדיוסים מיושרים לסולם. הערכים נבחרו כך שהשינוי הוויזואלי מינימלי.
+         ═══════════════════════════════════════════════════════════════════════ */
+
+      .numcard,
+      .calc-form,
+      .calc-headline,
+      .calc-empty,
+      .article-cta,
+      .evt-card,
+      .guide-list a,
+      .mistakes li,
+      .step-two,
+      .prep-card { border-radius: var(--radius-lg); }
+
+      .callout,
+      .table-scroll,
+      .sc-shot,
+      .note-chip,
+      .prep-chip,
+      .calc-field input,
+      .calc-field select,
+      .calc-error { border-radius: var(--radius-md); }
+
+      .numcard-tag,
+      .trust-chip,
+      .btn { border-radius: var(--radius-pill); }
+
+      .band { border-radius: var(--radius-xl); }
+
+      /* ═══════════════════════════════════════════════════════════════════════
+         חתימה ויזואלית #4 — מיקרו-אינטראקציות
+         שינוי אחד לכל מצב, ולא ערימה. הכול על transform/opacity/color בלבד.
+         ═══════════════════════════════════════════════════════════════════════ */
+
+      .btn { transition: transform var(--motion-fast) var(--ease-out),
+                         box-shadow var(--motion-fast) var(--ease-out),
+                         border-color var(--motion-fast) var(--ease-out),
+                         background var(--motion-fast) var(--ease-out); }
+      .btn:active { transform: translateY(1px) scale(0.985); }
+      .btn-primary .arw { transition: transform var(--motion-fast) var(--ease-out); }
+      @media (hover: hover) {
+        .btn-primary:hover .arw { transform: translateX(-3px); }  /* RTL: קדימה = שמאלה */
+      }
+
+      .evt-card, .guide-list a {
+        transition: border-color var(--motion-fast) var(--ease-out),
+                    box-shadow var(--motion-fast) var(--ease-out),
+                    transform var(--motion-fast) var(--ease-out);
+      }
+      @media (hover: hover) {
+        .evt-card:hover, .guide-list a:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+      }
+
+      .article a:not(.btn), .callout a, .crumbs a {
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+        transition: color var(--motion-fast) var(--ease-out);
+      }
+
+      details summary { transition: color var(--motion-fast) var(--ease-out); }
+      details summary .chev { transition: transform var(--motion-normal) var(--ease-out); }
+
+      /* מצב פוקוס אחיד לכל האתר — נראה, ולא מסתמך על צבע בלבד. */
+      a:focus-visible, button:focus-visible, summary:focus-visible,
+      input:focus-visible, select:focus-visible {
+        outline: 3px solid var(--gold-light);
+        outline-offset: 3px;
+        border-radius: var(--radius-sm);
+      }
+
+      /* ═══════════════════════════════════════════════════════════════════════
+         חתימה ויזואלית #5 — חשיפה בגלילה
+         שפת תנועה אחת לכל האתר: אטימות + הזזה קטנה כלפי מעלה. אין bounce,
+         אין סיבוב, אין zoom. הכול transform/opacity — בלי layout מחדש.
+         ═══════════════════════════════════════════════════════════════════════ */
+
+      .v-reveal {
+        opacity: 0;
+        transform: translateY(14px);
+        transition: opacity var(--motion-slow) var(--ease-out),
+                    transform var(--motion-slow) var(--ease-out);
+        transition-delay: var(--v-delay, 0ms);
+      }
+      .v-reveal.is-in { opacity: 1; transform: none; }
+
+      /* ── כיבוד העדפת תנועה מופחתת ──
+         לא "פחות אנימציה" אלא **בלי**: כל מה שאמור להיראות, נראה מיד. */
+      @media (prefers-reduced-motion: reduce) {
+        .v-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+        .btn:active { transform: none; }
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+
+      /* ===== VEYA BRAND LAYER — END ===== */
+
     </style>
   </head>
   <body>
@@ -784,7 +1049,7 @@
       <section class="hero on-dark" aria-labelledby="hero-title">
         <div class="wrap">
           <img class="hero-logo reveal" src="/logo.png" alt="VEYA — מערכת לניהול אירועים" width="1224" height="1067" fetchpriority="high" decoding="async" />
-          <span class="eyebrow reveal d1">מוזמנים · אישורי הגעה · הושבה · כספי האירוע</span>
+          <span class="eyebrow reveal d1">מוזמנים · אישורי הגעה · הושבה · מאזן האירוע</span>
           <h1 id="hero-title" class="reveal d1">כמה אנשים באמת מגיעים לאירוע שלכם —<br /><span class="accent">וכמה זה עולה לכם</span></h1>
           <p class="lead reveal d2">
             VEYA מחברת את רשימת המוזמנים, אישורי ההגעה, ההושבה והוצאות האירוע,
@@ -872,29 +1137,29 @@
             </p>
           </div>
 
-          <ol class="flow-steps">
-            <li class="flow-step reveal">
+          <ol class="flow-steps" data-scene data-scene-gap="480">
+            <li class="flow-step reveal" data-step="1">
               <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
               <div>
                 <h3>קובעים את התאריך שבו צריך למסור מספר</h3>
                 <p>כמה ימים לפני האירוע האולם מבקש מכם את המספר הסופי.</p>
               </div>
             </li>
-            <li class="flow-step reveal">
+            <li class="flow-stepNone reveal" data-step="2">
               <span class="flow-dot" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 3z"/><path d="m9 10 2 2 4-4"/></svg></span>
               <div>
                 <h3>פותחים את תהליך אישורי ההגעה</h3>
                 <p>בקשת אישור ראשונה, ואחריה תזכורות בפערים שמתוכננים מראש.</p>
               </div>
             </li>
-            <li class="flow-step reveal">
+            <li class="flow-stepNone reveal" data-step="3">
               <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5z"/></svg></span>
               <div>
                 <h3>מטפלים במי שלא ענה</h3>
                 <p>סבבי מעקב מסודרים, במקום לרדוף אחרי אנשים בין הודעות ורשימות.</p>
               </div>
             </li>
-            <li class="flow-step flow-step-last reveal">
+            <li class="flow-step flow-step-last reveal is-target-on-play" data-step="4">
               <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 19v-6M13 19V9M18 19v-9"/></svg></span>
               <div>
                 <h3>סוגרים את הרשימה עם מספר שאפשר להסביר</h3>
@@ -1074,25 +1339,47 @@
               <h3>איך זה נראה בפועל</h3>
               <span class="numcard-tag">דוגמה</span>
             </div>
-            <dl>
-              <div class="numrow"><dt>התחייבתם בחוזה על</dt><dd>500 מנות</dd></div>
-              <div class="numrow"><dt>אישרו הגעה עד עכשיו</dt><dd>463 אנשים</dd></div>
-              <div class="numrow is-key"><dt>משלמים על</dt><dd>500 מנות</dd></div>
-            </dl>
+            <div class="numcard-body">
+              <div class="num-row" data-scene data-scene-gap="620">
+                <div class="num scene-step" data-step="1">
+                  <span class="num-value" data-count-to="500">500</span>
+                  <span class="num-label">התחייבתם על</span>
+                </div>
+                <div class="num scene-step" data-step="2">
+                  <span class="num-value" data-count-to="463">463</span>
+                  <span class="num-label">אישרו הגעה</span>
+                </div>
+                <div class="num is-gap scene-step" data-step="3">
+                  <span class="num-value" data-count-to="37">37</span>
+                  <span class="num-label">מנות שלא ינוצלו</span>
+                </div>
+              </div>
+            </div>
             <p class="numcard-note">
-              כל עוד מספר המגיעים נמוך מההתחייבות, <b>אתם משלמים על ההתחייבות</b>.
-              ואם החוזה נוקב גם במינימום כספי — נספר הגבוה מבין השניים.
+              מגיעים 463, אבל <b>משלמים על 500</b> — כל עוד מספר המגיעים נמוך
+              מההתחייבות, ההתחייבות היא זו שנספרת. ואם החוזה נוקב גם במינימום
+              כספי, נספר הגבוה מבין השניים.
             </p>
           </div>
 
-          <div class="steps-two reveal d2">
-            <div class="step-two">
+          <div class="steps-two reveal d2" data-scene data-scene-gap="700">
+            <div class="step-two scene-step" data-step="1">
               <span class="lbl">מתחת להתחייבות</span>
+              <span class="num-arrow">
+                <span>463</span>
+                <span class="arrow" aria-hidden="true">←</span>
+                <span class="num-value" style="font-size:1em">464</span>
+              </span>
               <span class="big">אורח נוסף: 0 ₪</span>
               <p>אתם כבר משלמים עליו. עד 500 אין תוספת על המנה.</p>
             </div>
-            <div class="step-two">
+            <div class="step-two scene-step" data-step="2">
               <span class="lbl">מעל ההתחייבות</span>
+              <span class="num-arrow">
+                <span>500</span>
+                <span class="arrow" aria-hidden="true">←</span>
+                <span class="num-value" style="font-size:1em">501</span>
+              </span>
               <span class="big">מחיר מנה מלא</span>
               <p>מהאורח ה-501 כל אחד נספר במחיר מלא. זו המדרגה שמשנה את החשבון.</p>
             </div>
@@ -1195,12 +1482,13 @@
               <h3>דוח סיום האירוע</h3>
               <span class="numcard-tag">מה מוצג</span>
             </div>
-            <dl>
-              <div class="numrow"><dt>כמה אנשים הגיעו בפועל</dt><dd>מהרשימה</dd></div>
-              <div class="numrow"><dt>סך ההוצאות</dt><dd>לפי הסעיפים שהזנתם</dd></div>
-              <div class="numrow"><dt>סך המתנות שנספרו</dt><dd>מעטפה אחר מעטפה</dd></div>
-              <div class="numrow"><dt>עלות בפועל לאורח</dt><dd>מחושב</dd></div>
-              <div class="numrow is-key"><dt>השורה התחתונה</dt><dd>הכנסות פחות הוצאות</dd></div>
+            <dl data-scene data-scene-gap="440">
+              <div class="numrow scene-step" data-step="1"><dt>כמה אנשים הגיעו בפועל</dt><dd>מהרשימה</dd></div>
+              <div class="numrow scene-step" data-step="2"><dt>סך ההוצאות</dt><dd>לפי הסעיפים שהזנתם</dd></div>
+              <div class="numrow scene-step" data-step="3"><dt>כמה כבר שולם, וכמה נשאר</dt><dd>כולל מקדמות</dd></div>
+              <div class="numrow scene-step" data-step="4"><dt>סך המתנות שנספרו</dt><dd>מעטפה אחר מעטפה</dd></div>
+              <div class="numrow scene-step" data-step="5"><dt>עלות בפועל לאורח</dt><dd>מחושב</dd></div>
+              <div class="numrow is-key scene-step" data-step="6"><dt>השורה התחתונה</dt><dd>הכנסות פחות הוצאות</dd></div>
             </dl>
             <p class="numcard-note">
               ספירת המתנות נפתחת מיום האירוע ואילך. מעטפה שעוד לא שויכה נשארת
@@ -1343,10 +1631,10 @@
             <text x="74" y="42.5" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif"
                   font-size="32" font-weight="600" letter-spacing="9" fill="#F5EFE2">VEYA</text>
           </svg>
-          <span class="footer-tag">מערכת לניהול אירועים — מוזמנים, אישורי הגעה, הושבה וכספי האירוע במקום אחד.</span>
+          <span class="footer-tag">מערכת לניהול אירועים — מוזמנים, אישורי הגעה, הושבה ומאזן האירוע במקום אחד.</span>
         </div>
         <nav aria-label="ניווט תחתון">
-          <a href="/features/finance/">כספי האירוע</a>
+          <a href="/features/finance/">מאזן</a>
           <a href="#deadline">מועד סגירת הרשימה</a>
           <a href="#seating">הושבה</a>
           <a href="/calculators/">מחשבונים</a>
@@ -1488,5 +1776,6 @@
         } catch (e) { /* localStorage חסום (מצב פרטי קיצוני) — לא מציגים באנר */ }
       })();
     </script>
+    <script src="/veya-motion.js" defer></script>
   </body>
 </html>

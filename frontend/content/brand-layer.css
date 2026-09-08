@@ -1,6 +1,3 @@
-
-
-/* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
 /* ═══════════════════════════════════════════════════════════════════════
    VEYA — שכבת המותג
    ═══════════════════════════════════════════════════════════════════════
@@ -307,5 +304,3 @@ input:focus-visible, select:focus-visible {
   .scene-step { opacity: 1 !important; transform: none !important; transition: none !important; }
   .flow-steps[data-scene] .flow-step::before { transform: scaleY(1) !important; }
 }
-
-/* ===== VEYA BRAND LAYER — END ===== */

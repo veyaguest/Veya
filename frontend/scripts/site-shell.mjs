@@ -127,7 +127,7 @@ export function page(o) {
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Frank+Ruhl+Libre:wght@300;400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/veya-site.css" />
 
     <script type="application/ld+json">
@@ -157,10 +157,10 @@ ${o.body}
       <div class="wrap">
         <div class="footer-brand">
           ${LOGO_SVG.replace('class="header-logo"', 'class="footer-logo"')}
-          <span class="footer-tag">מערכת לניהול אירועים — מוזמנים, אישורי הגעה, הושבה וכספי האירוע במקום אחד.</span>
+          <span class="footer-tag">מערכת לניהול אירועים — מוזמנים, אישורי הגעה, הושבה ומאזן האירוע במקום אחד.</span>
         </div>
         <nav aria-label="ניווט תחתון">
-          <a href="/features/finance/">כספי האירוע</a>
+          <a href="/features/finance/">מאזן</a>
           <a href="/calculators/">מחשבונים</a>
           <a href="/guides/">מדריכים</a>
           <a href="/">דף הבית</a>
@@ -178,6 +178,7 @@ ${o.body}
         © VEYA — מערכת לניהול אירועים
       </div>
     </footer>
+    <script src="/veya-motion.js" defer></script>
 ${o.scripts || ''}
   </body>
 </html>

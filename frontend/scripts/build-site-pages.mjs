@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * בונה את עמודי האתר הציבורי הסטטיים: מחשבונים, עמוד המוצר "כספי האירוע",
+ * בונה את עמודי האתר הציבורי הסטטיים: מחשבונים, עמוד המוצר "מאזן האירוע",
  * ומרכז המדריכים — כולם דרך מעטפת אחת (`site-shell.mjs`).
  *
  * הרצה: npm run build:site (רץ אוטומטית ב-prebuild).
@@ -73,7 +73,7 @@ function extractFaq(body) {
 
 const CLUSTERS = {
   A: { title: 'התחייבות לאולם וכמות מגיעים', blurb: 'המספר שאתם מוסרים לאולם, ומה הוא אומר בשקלים.' },
-  B: { title: 'כספי האירוע', blurb: 'כמה האירוע עולה, כמה נכנס, ומה נשאר בסוף.' },
+  B: { title: 'מאזן האירוע', blurb: 'כמה האירוע עולה, כמה נכנס, ומה נשאר בסוף.' },
   C: { title: 'אישורי הגעה', blurb: 'איך מגיעים למספר שאפשר לסמוך עליו.' },
   D: { title: 'מוזמנים והושבה', blurb: 'מהרשימה אל השולחנות.' },
   E: { title: 'נוסחים', blurb: 'מה כותבים, ומתי.' },
@@ -687,10 +687,10 @@ function featureFinance() {
   ]
 
   const body = `${pageHero({
-    eyebrow: 'כספי האירוע',
+    eyebrow: 'מאזן האירוע',
     h1: 'כמה האירוע שלכם באמת עולה?',
     lead: 'ההוצאה הגדולה באירוע ישראלי לא נקבעת בטבלה — היא נקבעת במספר האנשים שמגיעים. VEYA מחברת בין אישורי ההגעה, ההתחייבות לאולם וסעיפי ההוצאה, עד לשורה התחתונה אחרי האירוע.',
-    trail: [{ name: 'VEYA', url: '/' }, { name: 'כספי האירוע' }],
+    trail: [{ name: 'VEYA', url: '/' }, { name: 'מאזן האירוע' }],
     cta: `${CTA_PRIMARY}\n            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות שלי</a>`,
   })}
 
@@ -856,18 +856,18 @@ ${faqHtml(faq)}
 
   return page({
     path: '/features/finance/',
-    title: 'כספי האירוע — כמה האירוע שלכם באמת עולה | VEYA',
+    title: 'מאזן האירוע — כמה האירוע שלכם באמת עולה | VEYA',
     description:
       'עלות האירוע לפי מספר המגיעים בפועל, ההתחייבות לאולם, העלות לאורח וספירת המתנות אחרי האירוע — עד לשורה התחתונה. כך VEYA מחברת בין אישורי ההגעה לכסף.',
-    trail: [{ name: 'VEYA', url: '/' }, { name: 'כספי האירוע' }],
+    trail: [{ name: 'VEYA', url: '/' }, { name: 'מאזן האירוע' }],
     faq,
     schema: [
       {
         '@type': 'WebPage',
-        name: 'כספי האירוע',
+        name: 'מאזן האירוע',
         inLanguage: 'he-IL',
         url: `${SITE}/features/finance/`,
-        description: 'מסך כספי האירוע ב-VEYA: הוצאות לפי מספר המגיעים, התחייבות לאולם, עלות לאורח, ספירת מתנות ושורה תחתונה.',
+        description: 'מסך מאזן האירוע ב-VEYA: הוצאות לפי מספר המגיעים, התחייבות לאולם, עלות לאורח, ספירת מתנות ושורה תחתונה.',
       },
     ],
     body,
@@ -955,7 +955,7 @@ ${groups.map((g) => `            <div class="evt-card" style="text-align:center"
       <section class="after tone-alt">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">כספי האירוע</span>
+            <span class="kicker">מאזן האירוע</span>
             <h2 class="section-title">${esc('תבנית ההוצאות של ' + t.the)}</h2>
             <p class="section-sub">
               כשפותחים אירוע מהסוג הזה, אלה הסעיפים שמוצעים מיד. אפשר להוסיף,
