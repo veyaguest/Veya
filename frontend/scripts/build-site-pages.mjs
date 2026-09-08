@@ -615,7 +615,7 @@ ${faqHtml(faq)}
             '<span class="ico" aria-hidden="true">' + esc(p.icon) + '</span>' +
             '<span class="nm">' + esc(p.label) + (last ? ' — ומועד סגירת הרשימה' : '') +
             '<small>יום ' + esc(p.weekday) + ' · ' + p.days_before_event + ' ימים לפני האירוע' +
-            (p.moved_from_weekend ? ' · הוזז מסוף שבוע' : '') + '</small></span>' +
+            '</small></span>' +
             '<span class="dt">' + heb(p.date) + '</span></li>';
         }).join('');
 
