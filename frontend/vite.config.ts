@@ -28,9 +28,32 @@ function devAppRewrite(): Plugin {
   }
 }
 
+// עמודי האתר הסטטיים (/guides/…, /calculators/…, /features/…, /events/…)
+// יושבים ב-public/ כתיקיות עם index.html. Vercel מגיש תיקייה כזו אוטומטית
+// בכתובת עם / בסוף; שרת הפיתוח של Vite לא — הוא נופל ל-SPA fallback ומגיש
+// את דף הבית, כך שאי אפשר היה לבדוק אף עמוד פנימי מקומית. הפלאגין הזה
+// משחזר בפיתוח את התנהגות הייצור.
+function devStaticIndexRewrite(): Plugin {
+  return {
+    name: 'veya-dev-static-index',
+    configureServer(server) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      server.middlewares.use((req: any, _res: any, next: () => void) => {
+        if (!req.url) return next()
+        const [pathname, query = ''] = req.url.split('?')
+        if (/^\/(guides|calculators|features|events)(\/|$)/.test(pathname) && !pathname.endsWith('.html')) {
+          const clean = pathname.replace(/\/$/, '')
+          req.url = `${clean}/index.html${query ? '?' + query : ''}`
+        }
+        next()
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), devAppRewrite()],
+  plugins: [react(), devAppRewrite(), devStaticIndexRewrite()],
   build: {
     rollupOptions: {
       input: {

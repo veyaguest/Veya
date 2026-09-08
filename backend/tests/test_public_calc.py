@@ -211,6 +211,23 @@ def test_rate_limit_kicks_in():
     assert 429 in codes, codes
 
 
+def test_public_labels_never_promise_a_channel():
+    """המחשבון הציבורי מתאר שלב, לא ערוץ שליחה.
+
+    WhatsApp אינו פעיל בייצור (``WHATSAPP_MODE=mock``), ולכן אסור שתווית
+    באתר השיווקי תבטיח אותו. הבדיקה נועדה ליפול אם מישהו יחזיר את התווית
+    הפנימית של המנוע לנתיב הציבורי.
+    """
+    d = post("/rsvp-timeline", {"event_date": _future(80), "commit_days_before": 5}).json()
+    for p in d["placements"]:
+        assert "whatsapp" not in p["label"].lower(), p
+        assert "וואטסאפ" not in p["label"], p
+    # ובכל זאת — התוויות משמעותיות ולא ריקות, וסבבי השיחות ממוספרים.
+    labels = [p["label"] for p in d["placements"]]
+    assert all(labels), labels
+    assert "סבב מעקב טלפוני 3" in labels, labels
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:
