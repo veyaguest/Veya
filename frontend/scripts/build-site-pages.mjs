@@ -455,11 +455,29 @@ ${faqHtml(faq)}
           sc += '</dl></div>';
         }
 
+        // המספר הוא העוגן הוויזואלי של המסך: הוא מקבל את חתימת המספרים
+        // של VEYA, ומונפש מהערך הקודם לחדש כדי שהשינוי יהיה מורגש.
+        var prev = window.__veyaPrevNext;
+        var nextAgorot = d.next_attendee_agorot;
+        window.__veyaPrevNext = nextAgorot;
+
         out.innerHTML =
           '<div class="calc-headline"><span class="lbl">אורח נוסף מוסיף לכם</span>' +
-          '<span class="big">' + esc(d.next_attendee_display) + '</span><p>' + esc(note) + '</p></div>' +
+          '<span class="big num-value" id="calc-anchor">' + esc(d.next_attendee_display) + '</span>' +
+          '<p>' + esc(note) + '</p></div>' +
           '<div class="numcard"><div class="numcard-head"><h3>' + esc(head) + '</h3><span class="numcard-tag">החישוב</span></div><dl>' + rows + '</dl></div>' +
           sc;
+
+        // הנפשת המעבר בין תוצאה לתוצאה — רק כשיש ערך קודם ורק כשלא
+        // ביקשו תנועה מופחתת. veyaCountUp מכבד את ההעדפה בעצמו.
+        var anchor = document.getElementById('calc-anchor');
+        if (anchor && typeof prev === 'number' && prev !== nextAgorot && window.veyaCountUp) {
+          anchor.setAttribute('data-count-from', (prev / 100).toFixed(0));
+          anchor.setAttribute('data-count-to', (nextAgorot / 100).toFixed(0));
+          anchor.setAttribute('data-count-suffix', '\u202f₪');
+          anchor.setAttribute('data-count-duration', '500');
+          window.veyaCountUp(anchor);
+        }
       }`
 
   return page({
@@ -543,11 +561,11 @@ function calcRsvpTimeline() {
                 </select>
               </label>
 
-              <button type="submit" class="btn btn-primary">לבנות את לוח הזמנים</button>
+              <button type="submit" class="btn btn-primary">לראות את לוח הזמנים</button>
             </form>
 
             <div class="calc-out" id="out" aria-live="polite">
-              <div class="calc-empty">בוחרים תאריך אירוע ולוחצים "לבנות את לוח הזמנים".</div>
+              <div class="calc-empty">בוחרים תאריך אירוע ולוחצים "לראות את לוח הזמנים".</div>
             </div>
           </div>
 
@@ -693,7 +711,7 @@ function featureFinance() {
     h1: 'כמה האירוע שלכם באמת עולה?',
     lead: 'ההוצאה הגדולה באירוע ישראלי לא נקבעת בטבלה — היא נקבעת במספר האנשים שמגיעים. VEYA מחברת בין אישורי ההגעה, ההתחייבות לאולם וסעיפי ההוצאה, עד לשורה התחתונה אחרי האירוע.',
     trail: [{ name: 'VEYA', url: '/' }, { name: 'מאזן האירוע' }],
-    cta: `${CTA_PRIMARY}\n            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות שלי</a>`,
+    cta: `${CTA_PRIMARY}\n            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות</a>`,
   })}
 
       <section class="why">
@@ -787,7 +805,7 @@ function featureFinance() {
           </p>
 
           <div class="section-cta">
-            <a href="/calculators/venue-commitment/" class="btn btn-primary">לחשב את ההתחייבות שלכם <span class="arw" aria-hidden="true">←</span></a>
+            <a href="/calculators/venue-commitment/" class="btn btn-primary">לחשב את ההתחייבות <span class="arw" aria-hidden="true">←</span></a>
             <span class="cta-hint">אותו חישוב, פתוח, בלי הרשמה.</span>
           </div>
         </div>
@@ -913,7 +931,7 @@ function eventPage(t) {
     h1: esc(t.title),
     lead: esc(t.lead),
     trail: [{ name: 'VEYA', url: '/' }, { name: 'סוגי אירוע', url: '/#events' }, { name: t.name }],
-    cta: `${CTA_PRIMARY}\n            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות שלי</a>`,
+    cta: `${CTA_PRIMARY}\n            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות</a>`,
   })}
 
       <section class="why">
@@ -979,7 +997,7 @@ ${expenses.map(([cat, items]) => `              <div class="numrow"><dt>${esc(ca
             </p>
           </div>
           <div class="section-cta">
-            <a href="/features/finance/" class="btn btn-ghost">איך עובד הצד הכספי</a>
+            <a href="/features/finance/" class="btn btn-ghost">לעמוד המאזן</a>
           </div>
         </div>
       </section>

@@ -708,4 +708,12 @@ input:focus-visible, select:focus-visible {
   .flow-steps[data-scene] .flow-step::before { transform: scaleY(1) !important; }
 }
 
+/* ── תוצאת המחשבון כעוגן ויזואלי ──
+   המספר הגדול הוא הדבר היחיד במסך שהעין צריכה למצוא. */
+.calc-headline .big.num-value {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  color: var(--cream-text);
+}
+
 /* ===== VEYA BRAND LAYER — END ===== */

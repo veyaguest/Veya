@@ -8,9 +8,9 @@ description: כמה מנות להתחייב באולם, איך מחשבים את
 lead: כמות ההתחייבות היא המספר המינימלי שתשלמו עליו גם אם יגיעו פחות אנשים. הכלל הפשוט הוא להתחייב על מספר שנמוך ממה שאתם באמת מצפים לו, ולהשלים כלפי מעלה מהרזרבה — כי להוסיף מנות ביום האירוע אפשר, ולהוריד כמעט אף פעם לא.
 published: 2026-09-07
 published_he: ספטמבר 2026
-cta_title: לחשב את ההתחייבות שלכם
+cta_title: לחשב את ההתחייבות
 cta_text: מזינים כמה אישרו הגעה, על כמה התחייבתם ומה מחיר המנה — ורואים על כמה באמת משלמים.
-cta_label: למחשבון ההתחייבות
+cta_label: לחשב את ההתחייבות
 cta_url: /calculators/venue-commitment/
 related:
   - /guides/pachot-me-hahitchayvut/|מה קורה אם מגיעים פחות ממה שהתחייבתם
@@ -42,6 +42,12 @@ related:
 
 מכאן נגזר מה שבאמת חשוב: כמות ההתחייבות היא **רצפה, לא תקרה**. אין שום יתרון
 בלהתחייב "בדיוק על מה שיגיע", כי כל טעות כלפי מעלה נשארת בכיס של האולם.
+
+<div class="num-row" data-v-stagger="90">
+  <div class="num v-reveal"><span class="num-value">500</span><span class="num-label">התחייבתם על</span></div>
+  <div class="num v-reveal"><span class="num-value">463</span><span class="num-label">אישרו הגעה</span></div>
+  <div class="num is-gap v-reveal"><span class="num-value">500</span><span class="num-label">משלמים על</span></div>
+</div>
 
 | מצב | התחייבות | מגיעים בפועל | משלמים על |
 |---|---|---|---|

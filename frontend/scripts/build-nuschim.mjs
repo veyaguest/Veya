@@ -167,7 +167,7 @@ ${cat.wordings.map(wordingCard).join('\n')}
           <div class="callout" style="max-width:660px;margin-top:40px">
             <p class="callout-h">צריכים גם לדעת מתי לשלוח את הבקשה?</p>
             <p>לוח הזמנים של אישורי ההגעה נבנה לאחור ממועד סגירת הרשימה.</p>
-            <p><a href="/calculators/rsvp-timeline/">למחשבון לוח הזמנים</a></p>
+            <p><a href="/calculators/rsvp-timeline/">לראות את לוח הזמנים</a></p>
           </div>
 
           ${eventLinks ? `<p class="calc-note" style="margin-top:26px">ניהול האירוע לפי סוג: ${eventLinks}</p>` : ''}
@@ -236,7 +236,7 @@ ${cats.map((c) => `            <li><a href="/nuschim/${c.key}/"><h3>${esc(c.labe
           <div class="callout" style="max-width:660px;margin:34px auto 0">
             <p class="callout-h">צריכים גם לדעת מתי לשלוח את הבקשה?</p>
             <p>לוח הזמנים של אישורי ההגעה נבנה לאחור ממועד סגירת הרשימה.</p>
-            <p><a href="/calculators/rsvp-timeline/">למחשבון לוח הזמנים</a></p>
+            <p><a href="/calculators/rsvp-timeline/">לראות את לוח הזמנים</a></p>
           </div>
         </div>
       </section>
