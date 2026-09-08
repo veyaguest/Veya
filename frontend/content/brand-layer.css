@@ -6,7 +6,7 @@
    אוטומטית בזמן build לשני המקומות (`scripts/build-site-pages.mjs`):
 
      · frontend/public/veya-site.css   — כל העמודים הפנימיים
-     · frontend/index.html <style>      — דף הבית, שנשאר עם CSS מוטמע (LCP)
+     · frontend/index.html — בלוק הסגנון המוטמע של דף הבית (נשאר מוטמע, LCP)
 
    לכן אין לערוך את הבלוק הזה באף אחד מהם ישירות — רק כאן.
 

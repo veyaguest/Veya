@@ -10,7 +10,7 @@ published: 2026-09-07
 published_he: ספטמבר 2026
 cta_title: לראות את התמונה הכספית של האירוע שלכם
 cta_text: ב-VEYA צד ההוצאות מתעדכן לפי מספר המגיעים בפועל, וספירת המתנות נפתחת מיום האירוע.
-cta_label: לעמוד כספי האירוע
+cta_label: לעמוד מאזן האירוע
 cta_url: /features/finance/
 related:
   - /guides/hitchayvut-la-ulam/|התחייבות לאולם — כמה מנות באמת להתחייב

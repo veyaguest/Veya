@@ -37,10 +37,15 @@ writeFileSync(sheetPath, inject(readFileSync(sheetPath, 'utf8')))
 // 2) ה-<style> המוטמע של דף הבית
 const homePath = path.resolve(__dirname, '../index.html')
 const home = readFileSync(homePath, 'utf8')
-const css = home.split('<style>')[1].split('</style>')[0]
-writeFileSync(
-  homePath,
-  home.replace(`<style>${css}</style>`, `<style>${inject(css, '      ')}\n    </style>`),
-)
+// חיתוך לפי אינדקסים ולא לפי split: לבלוק עצמו יש הערות שעשויות להזכיר
+// את המחרוזת "style", ו-split היה חותך את ה-CSS באמצע ומוחק חצי ממנו.
+const open = home.indexOf('<style>')
+const close = home.lastIndexOf('</style>')
+if (open === -1 || close === -1 || close < open) {
+  throw new Error('inject-brand-layer: לא נמצא בלוק <style> תקין ב-index.html')
+}
+const css = home.slice(open + '<style>'.length, close)
+const next = home.slice(0, open) + '<style>' + inject(css, '      ') + '\n    ' + home.slice(close)
+writeFileSync(homePath, next)
 
 console.log('✓ brand-layer הוזרק ל-veya-site.css ול-index.html')

@@ -754,7 +754,7 @@
       .fineprint { font-size: 13.5px; color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                  /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -763,7 +763,7 @@
          אוטומטית בזמן build לשני המקומות (`scripts/build-site-pages.mjs`):
 
            · frontend/public/veya-site.css   — כל העמודים הפנימיים
-           · frontend/index.html <style>      — דף הבית, שנשאר עם CSS מוטמע (LCP)
+           · frontend/index.html — בלוק הסגנון המוטמע של דף הבית (נשאר מוטמע, LCP)
 
          לכן אין לערוך את הבלוק הזה באף אחד מהם ישירות — רק כאן.
 
@@ -1017,8 +1017,55 @@
         }
       }
 
+      /* ═══════════════════════════════════════════════════════════════════════
+         סצנות — התנועה שמסבירה את המוצר
+
+         כל צעד בסצנה מתחיל מוסתר-חלקית ונחשף בתורו (`.is-on` מגיע מ-
+         `veya-motion.js`). **התוכן עצמו תמיד ב-HTML** — הסצנה רק קובעת קצב.
+         מי שאין לו JS, או שביקש תנועה מופחתת, רואה את הכול מיד.
+         ═══════════════════════════════════════════════════════════════════════ */
+
+      .scene-step {
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity var(--motion-normal) var(--ease-out),
+                    transform var(--motion-normal) var(--ease-out);
+      }
+      .scene-step.is-on { opacity: 1; transform: none; }
+
+      /* השלב האחרון בציר מקבל את ההדגשה רק כשהסצנה מגיעה אליו — כך העין
+         נמשכת אל "מועד סגירת הרשימה" אחרי שהבינה את הרצף שהוביל אליו. */
+      .flow-step.is-target-on-play.is-on .flow-dot {
+        background: var(--gold);
+        color: var(--charcoal);
+        box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.18);
+      }
+      .flow-step.is-target-on-play.is-on h3 { color: var(--gold-deep); }
+      .on-dark .flow-step.is-target-on-play.is-on h3 { color: var(--gold-light); }
+
+      /* בציר עם סצנה, הקו המחבר נמתח יחד עם הצעד שנחשף. */
+      .flow-steps[data-scene] .flow-step::before { transform: scaleY(0); }
+      .flow-steps[data-scene] .flow-step.is-on::before {
+        transform: scaleY(1);
+        transition: transform var(--motion-slow) var(--ease-out);
+      }
+
+      /* גוף כרטיס שמכיל שורת מספרים במקום רשימת dl */
+      .numcard-body { padding: 20px; }
+
+      /* המדרגה: 463 ← 464 */
+      .step-two .num-arrow { margin-bottom: 10px; }
+      .step-two .num-arrow .num-value { color: var(--gold-deep); }
+
+      @media (prefers-reduced-motion: reduce) {
+        .scene-step { opacity: 1 !important; transform: none !important; transition: none !important; }
+        .flow-steps[data-scene] .flow-step::before { transform: scaleY(1) !important; }
+      }
+
       /* ===== VEYA BRAND LAYER — END ===== */
 
+    
+    
     </style>
   </head>
   <body>
@@ -1145,14 +1192,14 @@
                 <p>כמה ימים לפני האירוע האולם מבקש מכם את המספר הסופי.</p>
               </div>
             </li>
-            <li class="flow-stepNone reveal" data-step="2">
+            <li class="flow-step reveal" data-step="2">
               <span class="flow-dot" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 3z"/><path d="m9 10 2 2 4-4"/></svg></span>
               <div>
                 <h3>פותחים את תהליך אישורי ההגעה</h3>
                 <p>בקשת אישור ראשונה, ואחריה תזכורות בפערים שמתוכננים מראש.</p>
               </div>
             </li>
-            <li class="flow-stepNone reveal" data-step="3">
+            <li class="flow-step reveal" data-step="3">
               <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5z"/></svg></span>
               <div>
                 <h3>מטפלים במי שלא ענה</h3>
@@ -1634,17 +1681,11 @@
           <span class="footer-tag">מערכת לניהול אירועים — מוזמנים, אישורי הגעה, הושבה ומאזן האירוע במקום אחד.</span>
         </div>
         <nav aria-label="ניווט תחתון">
-<<<<<<< HEAD
-          <a href="/features/finance/">מאזן</a>
-          <a href="#deadline">מועד סגירת הרשימה</a>
-          <a href="#seating">הושבה</a>
-=======
           <a href="/features/guests/">מוזמנים</a>
           <a href="/features/rsvp/">אישורי הגעה</a>
           <a href="/features/calls/">מעקב טלפוני</a>
           <a href="/features/seating/">הושבה</a>
           <a href="/features/finance/">כספי האירוע</a>
->>>>>>> 2d46ee9 (אתר שלב 2: ארבעה עמודי Feature וספריית נוסחים)
           <a href="/calculators/">מחשבונים</a>
           <a href="/nuschim/">נוסחים</a>
           <a href="/guides/">מדריכים</a>
