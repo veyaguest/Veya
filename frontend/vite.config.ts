@@ -41,7 +41,7 @@ function devStaticIndexRewrite(): Plugin {
       server.middlewares.use((req: any, _res: any, next: () => void) => {
         if (!req.url) return next()
         const [pathname, query = ''] = req.url.split('?')
-        if (/^\/(guides|calculators|features|events)(\/|$)/.test(pathname) && !pathname.endsWith('.html')) {
+        if (/^\/(guides|calculators|features|events|nuschim)(\/|$)/.test(pathname) && !pathname.endsWith('.html')) {
           const clean = pathname.replace(/\/$/, '')
           req.url = `${clean}/index.html${query ? '?' + query : ''}`
         }

@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#2b2620" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <link rel="canonical" href="https://veyaguest.co.il/features/guests/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <title>ניהול רשימת מוזמנים לאירוע | VEYA</title>
+    <meta name="description" content="רשימת המוזמנים כמקור אחד לכל האירוע: כמות אנשים בכל רשומה, קבוצות לפי סוג האירוע, סטטוס אישור הגעה, הערות הושבה וייבוא רשימה קיימת." />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="VEYA" />
+    <meta property="og:locale" content="he_IL" />
+    <meta property="og:title" content="ניהול רשימת מוזמנים לאירוע | VEYA" />
+    <meta property="og:description" content="רשימת המוזמנים כמקור אחד לכל האירוע: כמות אנשים בכל רשומה, קבוצות לפי סוג האירוע, סטטוס אישור הגעה, הערות הושבה וייבוא רשימה קיימת." />
+    <meta property="og:url" content="https://veyaguest.co.il/features/guests/" />
+    <meta property="og:image" content="https://veyaguest.co.il/og-image.png?v=3" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="VEYA — מערכת לניהול אירועים" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ניהול רשימת מוזמנים לאירוע | VEYA" />
+    <meta name="twitter:description" content="רשימת המוזמנים כמקור אחד לכל האירוע: כמות אנשים בכל רשומה, קבוצות לפי סוג האירוע, סטטוס אישור הגעה, הערות הושבה וייבוא רשימה קיימת." />
+    <meta name="twitter:image" content="https://veyaguest.co.il/og-image.png?v=3" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Frank+Ruhl+Libre:wght@300;400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/veya-site.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebPage",
+            "name": "ניהול רשימת מוזמנים",
+            "inLanguage": "he-IL",
+            "url": "https://veyaguest.co.il/features/guests/",
+            "description": "רשימת מוזמנים כשכבת הנתונים של האירוע: קבוצות, כמויות, סטטוסים והערות."
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "VEYA",
+                "item": "https://veyaguest.co.il/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "רשימת מוזמנים",
+                "item": "https://veyaguest.co.il/features/guests/"
+              }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "איפה מנהלים את הרשימה בפועל?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "הרשימה, הקבוצות וההערות נמצאות באותו מרחב עבודה של סידור ההושבה — כדי שלא תצטרכו לקפוץ בין מסך רשימה למסך אולם באמצע העבודה."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "מה ההבדל בין מוזמנים לבין מגיעים?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "מוזמנים זו הרשימה. מגיעים זה מי שסימן \"מגיע\", וזה המספר שנספר בהושבה ובחישוב העלות. \"אולי\" ו\"ממתין לתשובה\" נספרים כאפס."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "מה קורה להערה שאני כותב על מוזמן?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "יש שתי שכבות נפרדות: הערה פנימית שנשארת מידע בלבד, והערת הושבה שמזינה את סידור השולחנות. ההפרדה נועדה כדי שהערה תפעולית לא תתפרש בטעות כאילוץ ישיבה."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "הקבוצות זהות בכל סוגי האירועים?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "לא. הקבוצות משתנות לפי סוג האירוע — לבר מצווה יש משפחת האב, משפחת האם וכיתה, ולאירוע עסקי יש עובדים, לקוחות, ספקים והנהלה."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+
+  </head>
+  <body>
+    <header class="site-header on-dark">
+      <div class="wrap">
+        <a href="/" aria-label="VEYA — דף הבית">
+          <svg class="header-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 64" width="212" height="64" fill="none" direction="ltr" role="img" aria-label="VEYA">
+            <g>
+              <circle cx="32" cy="32" r="27" stroke="#C9A227" stroke-width="1.5"/>
+              <circle cx="32" cy="32" r="22.5" stroke="#C9A227" stroke-width="0.75" stroke-opacity="0.45"/>
+              <path d="M32 1.2 L35 5 L32 8.8 L29 5 Z" fill="#C9A227"/>
+              <text x="32" y="44" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="34" font-weight="600" fill="#E4C96B" text-anchor="middle">V</text>
+            </g>
+            <text x="74" y="42.5" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="32" font-weight="600" letter-spacing="9" fill="#F5EFE2">VEYA</text>
+          </svg>
+        </a>
+        <div class="header-actions">
+          <a href="/app" class="link-quiet" aria-label="כניסה למערכת">כניסה<span class="lq-long"> למערכת</span></a>
+          <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="wrap">
+          <p class="crumbs"><a href="/">VEYA</a><span aria-hidden="true">›</span>רשימת מוזמנים</p>
+          <span class="eyebrow">רשימת מוזמנים</span>
+          <h1>רשימת המוזמנים היא המקור לכל האירוע</h1>
+          <p class="lead">כל מוזמן, קבוצה, כמות, סטטוס והערה נמצאים במקום אחד — ומשם ממשיכים לאישורי ההגעה, להושבה ולחישוב האירוע.</p>
+          <div class="cta-row" style="margin-top:26px"><a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות שלי</a></div>
+        </div>
+      </section>
+
+      <section class="why">
+        <div class="wrap">
+          <div class="why-inner">
+            <span class="kicker">למה זה חשוב</span>
+            <h2 class="section-title">אקסל לא נשבר כשהוא גדול. הוא נשבר כשיש ממנו שתי גרסאות.</h2>
+            <p>
+              ברוב האירועים הרשימה חיה בכמה מקומות במקביל: קובץ אחד אצלכם, קובץ אחר
+              אצל ההורים, ותיקונים שנאמרו בטלפון. כל אחד מהם נכון בזמן אחר.
+            </p>
+            <p class="why-punch">רשימה אחת שכל השאר נגזר ממנה — זו כל הנקודה.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="features tone-alt">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="kicker">מה יש בשורה</span>
+            <h2 class="section-title">מוזמן הוא לא רק שם וטלפון</h2>
+            <p class="section-sub">
+              כל שדה כאן משמש בהמשך — באישורי ההגעה, בהושבה או בחישוב העלות.
+            </p>
+          </div>
+          <div class="numcard" style="max-width:640px">
+            <div class="numcard-head">
+              <h3>השדות של כל מוזמן</h3>
+              <span class="numcard-tag">מה נשמר</span>
+            </div>
+            <dl>
+              <div class="numrow"><dt>שם וטלפון</dt><dd>הבסיס לפנייה</dd></div>
+              <div class="numrow is-key"><dt>כמה אנשים ברשומה</dt><dd>לא כל מוזמן הוא אדם אחד</dd></div>
+              <div class="numrow"><dt>צד וקבוצה</dt><dd>משפיעים על ההושבה ועל הפילוח</dd></div>
+              <div class="numrow"><dt>סטטוס אישור הגעה</dt><dd>מגיע · לא מגיע · אולי · ממתין</dd></div>
+              <div class="numrow"><dt>סימון ילד/ה</dt><dd>נבדק בהושבה, לא מנוחש</dd></div>
+              <div class="numrow"><dt>הערה פנימית</dt><dd>מידע בלבד</dd></div>
+              <div class="numrow"><dt>הערת הושבה</dt><dd>מזינה את סידור השולחנות</dd></div>
+            </dl>
+            <p class="numcard-note">
+              <b>כמה אנשים ברשומה</b> הוא השדה שהכי קל לפספס: "משפחת כהן" יכולה להיות
+              רשומה אחת וחמישה כיסאות. מי שסופר שורות במקום אנשים מוסר לאולם מספר שגוי.
+            </p>
+          </div>
+          <div class="sc-shot">
+            <img src="/product/guests.png" alt="טבלת המוזמנים ב-VEYA: שם, כמות, צד, קבוצה וסטטוס אישור הגעה" width="1400" height="875" loading="lazy" decoding="async" onerror="this.closest('.sc-shot').remove()" />
+          </div>
+        </div>
+      </section>
+
+      <section class="commit tone-light">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="kicker">קבוצות</span>
+            <h2 class="section-title">קבוצות שמתאימות לסוג האירוע</h2>
+            <p class="section-sub">
+              הקבוצות אינן תווית בלבד — הן מזינות את הסינון, את הפילוח ואת סידור ההושבה.
+              והן משתנות לפי סוג האירוע, לא נשארות חתונתיות תמיד.
+            </p>
+          </div>
+          <div class="evt-grid" style="max-width:860px;margin:0 auto">
+            <a class="evt-card" href="/events/wedding/"><h3>חתונה</h3><p>משפחה קרובה, משפחה רחוקה, חברים, עבודה, צבא, לימודים, שכנים.</p></a>
+            <a class="evt-card" href="/events/bar-mitzvah/"><h3>בר / בת מצווה</h3><p>משפחת האב, משפחת האם, כיתה, צוות וחוגים.</p></a>
+            <a class="evt-card" href="/events/business/"><h3>אירוע עסקי</h3><p>עובדים, לקוחות, ספקים, הנהלה ושותפים — וגם המילה משתנה ל"משתתפים".</p></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="rsvp-band tone-alt">
+        <div class="wrap">
+          <div class="rsvp-inner">
+            <span class="kicker">מי באמת נספר</span>
+            <h2 class="section-title">בין הרשימה לבין המספר יש הפרש</h2>
+            <p>
+              זה ההפרש שקובע כמה שולחנות לפתוח וכמה מנות למסור לאולם:
+            </p>
+            <ul class="rsvp-list">
+              <li><strong>מוזמנים</strong> — כל מי שברשימה, לפי מספר האנשים בכל רשומה.</li>
+              <li><strong>ממתינים</strong> — עדיין לא ענו. לא נספרים.</li>
+              <li><strong>אולי</strong> — ענו, אבל לא הכריעו. לא נספרים.</li>
+              <li><strong>מגיעים</strong> — אלה שנספרים בהושבה ובעלות.</li>
+            </ul>
+            <p class="why-punch">רק "מגיע" תופס מקום. כל השאר נשאר ברשימת המעקב.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="features tone-light">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="kicker">להתחיל</span>
+            <h2 class="section-title">ייבוא הרשימה שלכם</h2>
+            <p class="section-sub">
+              אם כבר יש רשימה, אין סיבה להקליד אותה מחדש.
+            </p>
+          </div>
+          <div class="supporting-grid">
+            <article class="supporting-item">
+              <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 19h16"/></svg></div>
+              <h3>מקובץ</h3>
+              <p>מעלים את הקובץ, מתאימים את העמודות, ובודקים תצוגה מקדימה לפני שמייבאים.</p>
+            </article>
+            <article class="supporting-item">
+              <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3.5h9L19 8v12.5H5.5z"/><path d="M14.5 3.5V8H19"/><path d="M8.5 12.5h7M8.5 16h4.5"/></svg></div>
+              <h3>מהדבקה</h3>
+              <p>מדביקים רשימה מטקסט חופשי — גם כשהיא לא מסודרת בטבלה.</p>
+            </article>
+            <article class="supporting-item">
+              <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6.5a3 3 0 0 1 0 5.8"/><path d="M20.5 20a5.5 5.5 0 0 0-4-5.3"/></svg></div>
+              <h3>מאנשי הקשר</h3>
+              <p>בוחרים מתוך אנשי הקשר במכשיר, בלי להעתיק מספרים ביד.</p>
+            </article>
+            <article class="supporting-item">
+              <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 5 6v5.5c0 4.2 2.9 7.7 7 8.9 4.1-1.2 7-4.7 7-8.9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
+              <h3>בדיקת תקינות</h3>
+              <p>מספרים שנראים שגויים וכפילויות עולים כהתראה, לפני שמתחילים לפנות לאנשים.</p>
+            </article>
+          </div>
+          <p class="fineprint">
+            הייבוא מזהה גם את הקבוצות של סוג האירוע שבחרתם — "עובדים" באירוע עסקי,
+            "משפחת האב" בבר מצווה.
+          </p>
+
+          <div class="callout" style="max-width:620px;margin:32px auto 0">
+            <p class="callout-h">ומהרשימה ממשיכים לשולחנות</p>
+            <p>הקבוצות, הכמויות והערות ההושבה שסידרתם כאן הם בדיוק מה שסידור ההושבה קורא.</p>
+            <p><a href="/features/seating/">סידור הושבה — מהרשימה לשולחנות</a></p>
+          </div>
+        </div>
+      </section>
+
+<section class="faq-wrap" aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="kicker">שאלות נפוצות</span>
+          <h2 id="faq-title" class="section-title">מה שכדאי לדעת</h2>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>איפה מנהלים את הרשימה בפועל?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+            <p>הרשימה, הקבוצות וההערות נמצאות באותו מרחב עבודה של סידור ההושבה — כדי שלא תצטרכו לקפוץ בין מסך רשימה למסך אולם באמצע העבודה.</p>
+          </details>
+          <details>
+            <summary>מה ההבדל בין מוזמנים לבין מגיעים?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+            <p>מוזמנים זו הרשימה. מגיעים זה מי שסימן "מגיע", וזה המספר שנספר בהושבה ובחישוב העלות. "אולי" ו"ממתין לתשובה" נספרים כאפס.</p>
+          </details>
+          <details>
+            <summary>מה קורה להערה שאני כותב על מוזמן?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+            <p>יש שתי שכבות נפרדות: הערה פנימית שנשארת מידע בלבד, והערת הושבה שמזינה את סידור השולחנות. ההפרדה נועדה כדי שהערה תפעולית לא תתפרש בטעות כאילוץ ישיבה.</p>
+          </details>
+          <details>
+            <summary>הקבוצות זהות בכל סוגי האירועים?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+            <p>לא. הקבוצות משתנות לפי סוג האירוע — לבר מצווה יש משפחת האב, משפחת האם וכיתה, ולאירוע עסקי יש עובדים, לקוחות, ספקים והנהלה.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+      <section class="band-wrap">
+        <div class="wrap">
+          <div class="band">
+            <span class="kicker">מתחילים</span>
+            <h2>רשימה אחת, שכל השאר נגזר ממנה</h2>
+            <p class="band-more">
+              מעלים את הרשימה הקיימת וממשיכים משם — לאישורי ההגעה, להושבה ולחישוב האירוע.
+            </p>
+            <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer-brand">
+          <svg class="footer-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 64" width="212" height="64" fill="none" direction="ltr" role="img" aria-label="VEYA">
+            <g>
+              <circle cx="32" cy="32" r="27" stroke="#C9A227" stroke-width="1.5"/>
+              <circle cx="32" cy="32" r="22.5" stroke="#C9A227" stroke-width="0.75" stroke-opacity="0.45"/>
+              <path d="M32 1.2 L35 5 L32 8.8 L29 5 Z" fill="#C9A227"/>
+              <text x="32" y="44" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="34" font-weight="600" fill="#E4C96B" text-anchor="middle">V</text>
+            </g>
+            <text x="74" y="42.5" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="32" font-weight="600" letter-spacing="9" fill="#F5EFE2">VEYA</text>
+          </svg>
+          <span class="footer-tag">מערכת לניהול אירועים — מוזמנים, אישורי הגעה, הושבה וכספי האירוע במקום אחד.</span>
+        </div>
+        <nav aria-label="ניווט תחתון">
+          <a href="/features/guests/">מוזמנים</a>
+          <a href="/features/rsvp/">אישורי הגעה</a>
+          <a href="/features/calls/">מעקב טלפוני</a>
+          <a href="/features/seating/">הושבה</a>
+          <a href="/features/finance/">כספי האירוע</a>
+          <a href="/calculators/">מחשבונים</a>
+          <a href="/nuschim/">נוסחים</a>
+          <a href="/guides/">מדריכים</a>
+          <a href="/app">כניסה למערכת</a>
+        </nav>
+        <nav aria-label="קישורים משפטיים">
+          <a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">תנאי שימוש</a>
+          <a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">מדיניות פרטיות</a>
+          <a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">מדיניות Cookies</a>
+          <a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">הצהרת נגישות</a>
+          <a href="/legal/about.html#contact" target="_blank" rel="noopener noreferrer">יצירת קשר</a>
+        </nav>
+      </div>
+      <div class="wrap" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(201,162,39,0.14); font-size: 13px; color: #9b907c;">
+        © VEYA — מערכת לניהול אירועים
+      </div>
+    </footer>
+
+  </body>
+</html>

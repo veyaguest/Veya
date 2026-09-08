@@ -1,5 +1,400 @@
 
 
+/* ═══════════════════════════════════════════════════════════════════════
+   VEYA — שכבת המותג
+   ═══════════════════════════════════════════════════════════════════════
+
+   מקור אחד לטוקנים, לחתימה הוויזואלית ולשפת התנועה. הקובץ הזה מוזרק
+   אוטומטית בזמן build לשני המקומות (`scripts/build-site-pages.mjs`):
+
+     · frontend/public/veya-site.css   — כל העמודים הפנימיים
+     · frontend/index.html <style>      — דף הבית, שנשאר עם CSS מוטמע (LCP)
+
+   לכן אין לערוך את הבלוק הזה באף אחד מהם ישירות — רק כאן.
+
+   מה זה **לא**: לא Design System חדש. הצבעים, הגופנים והרכיבים הקיימים
+   נשארים בדיוק כפי שהם. מה שנוסף כאן הוא מה שחסר: סולם רדיוסים אחיד
+   (היו 12 ערכים שונים), סולם צללים, טוקני תנועה, וטיפול במספרים.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── רדיוס ──────────────────────────────────────────────────────────
+     ארבעה ערכים במקום שנים־עשר. המיפוי נבחר כך שרוב הרכיבים הקיימים
+     לא זזים ויזואלית: 11-14 → md, 16-20 → lg, 28 → xl. */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  /* ── צללים ──────────────────────────────────────────────────────────
+     רכים ונמוכי-אטימות. VEYA לא משתמשת בצל ככלי היררכיה ראשי — הגבול
+     (--line) עושה את זה. הצל רק מרים אלמנט אחד מעל השאר. */
+  --shadow-sm: 0 1px 2px rgba(43, 38, 32, 0.05);
+  --shadow-md: 0 14px 30px -22px rgba(43, 38, 32, 0.40);
+  --shadow-lg: 0 26px 60px -30px rgba(43, 38, 32, 0.38);
+
+  /* ── תנועה ──────────────────────────────────────────────────────────
+     שלושה משכים בלבד. `--ease-out` ו-`--ease-in-out` כבר קיימים
+     ונשארים מקור האמת לעקומות. */
+  --motion-fast: 180ms;
+  --motion-normal: 420ms;
+  --motion-slow: 620ms;
+
+  /* ── טיפוגרפיה ──────────────────────────────────────────────────────
+     ארבעה משקלים בלבד (400/500/600/700). משקל 300 הוסר מהטעינה —
+     הוא לא היה בשימוש באף מקום ורק הוסיף בקשת רשת. */
+  --font-body: 'Assistant', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Frank Ruhl Libre', Georgia, 'Times New Roman', serif;
+  --font-num: 'Assistant', system-ui, sans-serif;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   חתימה ויזואלית #1 — המספר
+
+   המספרים הם הליבה של VEYA: 500 · 463 · 37 · 45 ₪. הם צריכים להיקרא
+   כנתוני מערכת ולא כטקסט רגיל. ארבעה כללים:
+     · ספרות טבלאיות — כדי שמספר שמשתנה לא יזיז את מה שלידו
+     · מרווח אותיות שלילי קל — מספרים גדולים מתפזרים בלי זה
+     · הגופן התצוגתי לספרות הגדולות
+     · תווית מתחת, לא לצד — כך אפשר לסרוק עמודה של מספרים
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.num,
+.num-value,
+.numrow dd,
+.calc-headline .big,
+.step-two .big,
+.tl-item .dt {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* בלוק מספר עצמאי: ערך גדול + תווית מתחתיו. */
+.num {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.num-value {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(30px, 5.2vw, 46px);
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  color: var(--charcoal);
+  /* המרת ספרות אינה מזיזה את מה שסביבה */
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.num-label {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+.num-sub {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.num.is-accent .num-value { color: var(--gold-deep); }
+.num.is-muted .num-value { color: var(--muted); }
+.on-dark .num-value { color: var(--cream-text); }
+.on-dark .num-label { color: #b6aa93; }
+
+/* שורת מספרים — 500 · 463 · 37. הכלי שמסביר את הפער בלי משפט אחד. */
+.num-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.num-row .num {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 18px 18px 16px;
+}
+.num-row .num.is-gap {
+  border-color: var(--gold);
+  background: rgba(201, 162, 39, 0.06);
+}
+.on-dark .num-row .num {
+  background: rgba(245, 239, 226, 0.04);
+  border-color: rgba(201, 162, 39, 0.18);
+}
+
+/* המחבר בין שני מספרים: 463 ← 464 */
+.num-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 4vw, 32px);
+  color: var(--charcoal);
+  font-variant-numeric: tabular-nums;
+}
+.num-arrow .arrow {
+  color: var(--gold-deep);
+  font-size: 0.8em;
+  /* RTL: החץ מצביע שמאלה, כלומר "קדימה" בעברית */
+  transform: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   חתימה ויזואלית #2 — הקו
+   ציר אנכי עם נקודות. כבר קיים ב-.flow-steps; כאן רק מה שהופך אותו
+   לשפה: מצב "פעיל" לשלב, ומצב "יעד" לשלב האחרון.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.flow-step .flow-dot {
+  transition: border-color var(--motion-normal) var(--ease-out),
+              background var(--motion-normal) var(--ease-out),
+              box-shadow var(--motion-normal) var(--ease-out);
+}
+.flow-step.is-target .flow-dot {
+  background: var(--gold);
+  color: var(--charcoal);
+  box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.18);
+}
+.flow-step.is-target h3 { color: var(--gold-deep); }
+.on-dark .flow-step.is-target h3 { color: var(--gold-light); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   חתימה ויזואלית #3 — אחידות הכרטיס והתג
+   הרדיוסים מיושרים לסולם. הערכים נבחרו כך שהשינוי הוויזואלי מינימלי.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.numcard,
+.calc-form,
+.calc-headline,
+.calc-empty,
+.article-cta,
+.evt-card,
+.guide-list a,
+.mistakes li,
+.step-two,
+.prep-card { border-radius: var(--radius-lg); }
+
+.callout,
+.table-scroll,
+.sc-shot,
+.note-chip,
+.prep-chip,
+.calc-field input,
+.calc-field select,
+.calc-error { border-radius: var(--radius-md); }
+
+.numcard-tag,
+.trust-chip,
+.btn { border-radius: var(--radius-pill); }
+
+.band { border-radius: var(--radius-xl); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   חתימה ויזואלית #4 — מיקרו-אינטראקציות
+   שינוי אחד לכל מצב, ולא ערימה. הכול על transform/opacity/color בלבד.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.btn { transition: transform var(--motion-fast) var(--ease-out),
+                   box-shadow var(--motion-fast) var(--ease-out),
+                   border-color var(--motion-fast) var(--ease-out),
+                   background var(--motion-fast) var(--ease-out); }
+.btn:active { transform: translateY(1px) scale(0.985); }
+.btn-primary .arw { transition: transform var(--motion-fast) var(--ease-out); }
+@media (hover: hover) {
+  .btn-primary:hover .arw { transform: translateX(-3px); }  /* RTL: קדימה = שמאלה */
+}
+
+.evt-card, .guide-list a {
+  transition: border-color var(--motion-fast) var(--ease-out),
+              box-shadow var(--motion-fast) var(--ease-out),
+              transform var(--motion-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .evt-card:hover, .guide-list a:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+}
+
+.article a:not(.btn), .callout a, .crumbs a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color var(--motion-fast) var(--ease-out);
+}
+
+details summary { transition: color var(--motion-fast) var(--ease-out); }
+details summary .chev { transition: transform var(--motion-normal) var(--ease-out); }
+
+/* מצב פוקוס אחיד לכל האתר — נראה, ולא מסתמך על צבע בלבד. */
+a:focus-visible, button:focus-visible, summary:focus-visible,
+input:focus-visible, select:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   חתימה ויזואלית #5 — חשיפה בגלילה
+   שפת תנועה אחת לכל האתר: אטימות + הזזה קטנה כלפי מעלה. אין bounce,
+   אין סיבוב, אין zoom. הכול transform/opacity — בלי layout מחדש.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.v-reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity var(--motion-slow) var(--ease-out),
+              transform var(--motion-slow) var(--ease-out);
+  transition-delay: var(--v-delay, 0ms);
+}
+.v-reveal.is-in { opacity: 1; transform: none; }
+
+/* ── כיבוד העדפת תנועה מופחתת ──
+   לא "פחות אנימציה" אלא **בלי**: כל מה שאמור להיראות, נראה מיד. */
+@media (prefers-reduced-motion: reduce) {
+  .v-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .btn:active { transform: none; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   סצנות — התנועה שמסבירה את המוצר
+
+   כל צעד בסצנה מתחיל מוסתר-חלקית ונחשף בתורו (`.is-on` מגיע מ-
+   `veya-motion.js`). **התוכן עצמו תמיד ב-HTML** — הסצנה רק קובעת קצב.
+   מי שאין לו JS, או שביקש תנועה מופחתת, רואה את הכול מיד.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.scene-step {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity var(--motion-normal) var(--ease-out),
+              transform var(--motion-normal) var(--ease-out);
+}
+.scene-step.is-on { opacity: 1; transform: none; }
+
+/* השלב האחרון בציר מקבל את ההדגשה רק כשהסצנה מגיעה אליו — כך העין
+   נמשכת אל "מועד סגירת הרשימה" אחרי שהבינה את הרצף שהוביל אליו. */
+.flow-step.is-target-on-play.is-on .flow-dot {
+  background: var(--gold);
+  color: var(--charcoal);
+  box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.18);
+}
+.flow-step.is-target-on-play.is-on h3 { color: var(--gold-deep); }
+.on-dark .flow-step.is-target-on-play.is-on h3 { color: var(--gold-light); }
+
+/* בציר עם סצנה, הקו המחבר נמתח יחד עם הצעד שנחשף. */
+.flow-steps[data-scene] .flow-step::before { transform: scaleY(0); }
+.flow-steps[data-scene] .flow-step.is-on::before {
+  transform: scaleY(1);
+  transition: transform var(--motion-slow) var(--ease-out);
+}
+
+/* גוף כרטיס שמכיל שורת מספרים במקום רשימת dl */
+.numcard-body { padding: 20px; }
+
+/* ---- כרטיסי מחשבון באינדקס ---- */
+.calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   רכיבי סקשן משותפים — השלמה לחילוץ הראשון.
+
+   הכללים כאן **הועתקו מילה במילה** מה-<style> של `frontend/index.html`.
+   הם חסרו בחילוץ הראשון, ולכן עמודים שנבנו מהמעטפת (finance, events)
+   הציגו `.why-inner` ללא רוחב קריאה ו-`.why-punch` בגופן הלא נכון.
+   זו השלמה, לא עיצוב חדש: אין כאן צבע, גופן, רדיוס או צל שלא קיימים
+   כבר בדף הבית.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.flow { background: var(--ivory); }
+.flow-steps { list-style: none; max-width: 620px; margin: 0 auto; padding: 0; }
+.flow-step { position: relative; display: grid; grid-template-columns: 36px 1fr; gap: 16px; align-items: start; padding-bottom: 30px; }
+.flow-step:last-child { padding-bottom: 0; }
+.flow-step::before {
+        content: ""; position: absolute; inset-inline-start: 17px; top: 42px; bottom: -2px; width: 2px; border-radius: 2px;
+        background: linear-gradient(180deg, rgba(201, 162, 39, 0.42), rgba(201, 162, 39, 0.16));
+        transform: scaleY(0); transform-origin: top;
+        transition: transform 0.6s var(--ease-out); transition-delay: var(--d, 0s);
+      }
+.flow-step.in::before { transform: scaleY(1); }
+.flow-step:last-child::before { content: none; }
+.flow-dot {
+        width: 36px; height: 36px; border-radius: 50%; background: var(--cream); border: 1px solid var(--line);
+        display: flex; align-items: center; justify-content: center; color: var(--gold-deep);
+        box-shadow: 0 2px 8px rgba(43, 38, 32, 0.06);
+      }
+.flow-step h3 { font-size: 18px; margin-bottom: 4px; }
+.flow-step p { font-size: 15.5px; color: var(--muted); }
+.flow-step p em { font-style: normal; color: var(--charcoal); font-weight: 600; }
+.flow-step-last .flow-dot { background: var(--ink); border-color: var(--ink); color: var(--gold-light); }
+.flow-step-last p { color: var(--body); }
+.flow-step:nth-child(1) { --d: 0s; }
+.flow-step:nth-child(2) { --d: 0.07s; }
+.flow-step:nth-child(3) { --d: 0.14s; }
+.flow-step:nth-child(4) { --d: 0.21s; }
+.flow-step:nth-child(5) { --d: 0.28s; }
+.features { background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-2) 100%); }
+.showcase { background: linear-gradient(180deg, var(--ivory-2) 0%, var(--ivory) 100%); }
+.sc-shot { position: relative; aspect-ratio: 16 / 10; border-radius: 14px; overflow: hidden; background: linear-gradient(160deg, var(--ivory-2), var(--ivory)); margin-bottom: 18px; border: 1px solid var(--line); }
+.sc-shot::before {
+        content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
+        background: url('/favicon.svg') center / 52px no-repeat;
+      }
+.sc-shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.why { background: var(--ivory); }
+.why-inner { max-width: 680px; margin: 0 auto; text-align: center; }
+.why-inner .section-title { margin-bottom: 22px; }
+.why-inner p { font-size: 17px; margin-bottom: 16px; }
+.why .why-list { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(18px, 2.4vw, 22px); line-height: 1.55; color: var(--charcoal); }
+.why .why-punch,
+.rsvp-band .why-punch,
+.commit .why-punch,
+.after .why-punch { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(18px, 2.3vw, 21px); color: var(--charcoal); margin-top: 26px; }
+.note-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+.note-chip { font-size: 13.5px; font-style: italic; color: var(--body); background: var(--ivory-2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 13px; white-space: nowrap; }
+.rsvp-band { background: var(--ivory-2); }
+.rsvp-inner { max-width: 640px; margin: 0 auto; text-align: center; }
+.rsvp-inner p { font-size: 17px; }
+.rsvp-list { list-style: none; margin: 22px 0 0; padding: 0; display: inline-grid; gap: 10px; text-align: start; }
+.rsvp-list li { display: flex; align-items: center; gap: 11px; font-size: 16.5px; color: var(--charcoal); }
+.rsvp-list svg { color: var(--green); flex-shrink: 0; }
+.prep-list { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; max-width: 900px; margin: 0 auto; padding: 0; }
+.prep-card {
+        background: rgba(245, 239, 226, 0.04); border: 1px solid rgba(201, 162, 39, 0.18);
+        border-radius: 18px; padding: 24px 22px;
+        transition: transform 0.22s var(--ease-out), border-color 0.22s var(--ease-out);
+      }
+.prep-card .ic { width: 40px; height: 40px; border-radius: 12px; background: rgba(228, 201, 107, 0.12); display: flex; align-items: center; justify-content: center; color: var(--gold-light); margin-bottom: 14px; }
+.prep-card p { font-size: 16px; color: #d6cbb5; }
+.prep-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.prep-chip { font-size: 13.5px; font-style: italic; color: #e2d8c2; background: rgba(245, 239, 226, 0.07); border: 1px solid rgba(201, 162, 39, 0.22); border-radius: 999px; padding: 5px 12px; white-space: nowrap; }
+.payoff-bridge {
+        display: flex; align-items: center; justify-content: center; gap: 16px;
+        max-width: 380px; margin: 40px auto 30px;
+        font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: 18px; color: var(--gold-light);
+      }
+.payoff-bridge::before,
+.payoff-bridge::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(201, 162, 39, 0) 0%, rgba(201, 162, 39, 0.45) 100%); }
+.payoff-bridge::after { background: linear-gradient(90deg, rgba(201, 162, 39, 0.45) 0%, rgba(201, 162, 39, 0) 100%); }
+.flow-punch { text-align: center; margin-top: 34px; font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(18px, 2.3vw, 22px); color: var(--charcoal); }
+@media (max-width: 780px) {
+.prep-list { grid-template-columns: 1fr; }
+.payoff-bridge { margin: 32px auto 24px; }
+}
+@media (hover: hover) and (pointer: fine) {
+.prep-card:hover { transform: translateY(-4px); border-color: rgba(201, 162, 39, 0.42); }
+}
+@media (prefers-reduced-motion: reduce) {
+.flow-step::before { transform: scaleY(1); transition: none; }
+.prep-card { transition: none; }
+}
+
 /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
 /* ═══════════════════════════════════════════════════════════════════════
    VEYA — שכבת המותג

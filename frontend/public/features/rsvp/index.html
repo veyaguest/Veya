@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#2b2620" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <link rel="canonical" href="https://veyaguest.co.il/features/rsvp/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <title>אישורי הגעה — מהתשובה עד המספר הסופי | VEYA</title>
+    <meta name="description" content="אישורי הגעה ב-VEYA: סטטוס לכל מוזמן, מעקב אחרי מי שלא ענה, ולוח זמנים שנבנה לאחור ממועד סגירת הרשימה — עד למספר שאפשר למסור לאולם." />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="VEYA" />
+    <meta property="og:locale" content="he_IL" />
+    <meta property="og:title" content="אישורי הגעה — מהתשובה עד המספר הסופי | VEYA" />
+    <meta property="og:description" content="אישורי הגעה ב-VEYA: סטטוס לכל מוזמן, מעקב אחרי מי שלא ענה, ולוח זמנים שנבנה לאחור ממועד סגירת הרשימה — עד למספר שאפשר למסור לאולם." />
+    <meta property="og:url" content="https://veyaguest.co.il/features/rsvp/" />
+    <meta property="og:image" content="https://veyaguest.co.il/og-image.png?v=3" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="VEYA — מערכת לניהול אירועים" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="אישורי הגעה — מהתשובה עד המספר הסופי | VEYA" />
+    <meta name="twitter:description" content="אישורי הגעה ב-VEYA: סטטוס לכל מוזמן, מעקב אחרי מי שלא ענה, ולוח זמנים שנבנה לאחור ממועד סגירת הרשימה — עד למספר שאפשר למסור לאולם." />
+    <meta name="twitter:image" content="https://veyaguest.co.il/og-image.png?v=3" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Frank+Ruhl+Libre:wght@300;400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/veya-site.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebPage",
+            "name": "אישורי הגעה",
+            "inLanguage": "he-IL",
+            "url": "https://veyaguest.co.il/features/rsvp/",
+            "description": "ניהול אישורי הגעה: סטטוסים, מעקב אחרי מי שלא ענה, ולוח זמנים שנגזר ממועד סגירת הרשימה."
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "VEYA",
+                "item": "https://veyaguest.co.il/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "אישורי הגעה",
+                "item": "https://veyaguest.co.il/features/rsvp/"
+              }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "האם \"אולי\" נספר כמי שמגיע?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "לא. רק מוזמן שמסומן \"מגיע\" נספר כתופס מקום — בהושבה ובחישוב העלות כאחד. \"אולי\", \"ממתין לתשובה\" ו\"לא מגיע\" נספרים כאפס, כדי שהמספר שתמסרו לאולם לא ינפח את עצמו."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "מה קורה למוזמן שאישר ואז ביטל?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "הסטטוס מתעדכן והוא מפסיק להיספר. אם הוא כבר שובץ לשולחן הוא נשאר שם, אבל לא נספר כתופס מקום — ואם יסמנו אותו \"מגיע\" שוב, זה חוזר מעצמו."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "אפשר לעדכן סטטוס במקום המוזמן?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "כן. אפשר לעדכן כל סטטוס ידנית מתוך הרשימה, למשל אחרי שיחה או הודעה שהגיעה בערוץ אחר."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "איך יודעים מתי להתחיל?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "לוח הזמנים נבנה לאחור ממועד סגירת הרשימה — היום שבו צריך למסור לאולם מספר סופי. אפשר לראות את התאריכים במחשבון לוח הזמנים, בלי להירשם."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+
+  </head>
+  <body>
+    <header class="site-header on-dark">
+      <div class="wrap">
+        <a href="/" aria-label="VEYA — דף הבית">
+          <svg class="header-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 64" width="212" height="64" fill="none" direction="ltr" role="img" aria-label="VEYA">
+            <g>
+              <circle cx="32" cy="32" r="27" stroke="#C9A227" stroke-width="1.5"/>
+              <circle cx="32" cy="32" r="22.5" stroke="#C9A227" stroke-width="0.75" stroke-opacity="0.45"/>
+              <path d="M32 1.2 L35 5 L32 8.8 L29 5 Z" fill="#C9A227"/>
+              <text x="32" y="44" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="34" font-weight="600" fill="#E4C96B" text-anchor="middle">V</text>
+            </g>
+            <text x="74" y="42.5" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="32" font-weight="600" letter-spacing="9" fill="#F5EFE2">VEYA</text>
+          </svg>
+        </a>
+        <div class="header-actions">
+          <a href="/app" class="link-quiet" aria-label="כניסה למערכת">כניסה<span class="lq-long"> למערכת</span></a>
+          <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="wrap">
+          <p class="crumbs"><a href="/">VEYA</a><span aria-hidden="true">›</span>אישורי הגעה</p>
+          <span class="eyebrow">אישורי הגעה</span>
+          <h1>אישורי הגעה שלא נעצרים בתשובה</h1>
+          <p class="lead">VEYA מרכזת את אישורי ההגעה, המעקב והסטטוסים כדי שתדעו מה מצב הרשימה — ומה המשמעות שלו להמשך האירוע.</p>
+          <div class="cta-row" style="margin-top:26px"><a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+            <a href="/calculators/rsvp-timeline/" class="btn btn-ghost">להציג את לוח הזמנים</a></div>
+        </div>
+      </section>
+
+      <section class="why">
+        <div class="wrap">
+          <div class="why-inner">
+            <span class="kicker">הזווית</span>
+            <h2 class="section-title">אישור הגעה הוא לא סוף התהליך. הוא ההתחלה של ההחלטות.</h2>
+            <p>
+              ברוב הכלים, ברגע שמוזמן ענה — הסיפור נגמר. הוא מקבל וי בטבלה, והטבלה
+              ממשיכה לגדול. אבל התשובה הזו היא בדיוק הנתון שממנו נגזרות ההחלטות
+              היקרות של האירוע.
+            </p>
+            <p class="why-punch">כמה אנשים באמת מגיעים — זה גם כמה שולחנות, וגם כמה זה עולה.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="flow tone-alt">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="kicker">מה קורה אחרי שמוזמן עונה</span>
+            <h2 class="section-title">התשובה לא נשארת בעמודה שלה</h2>
+            <p class="section-sub">
+              כל שלב כאן נשען על אותו נתון של השלב שלפניו — לא על מספר שהוזן מחדש.
+            </p>
+          </div>
+          <ol class="flow-steps">
+            <li class="flow-step">
+              <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6.5a3 3 0 0 1 0 5.8"/><path d="M20.5 20a5.5 5.5 0 0 0-4-5.3"/></svg></span>
+              <div>
+                <h3>מוזמן עונה</h3>
+                <p>התשובה נכנסת לשורת המוזמן שלו, כולל כמה אנשים הוא מביא.</p>
+              </div>
+            </li>
+            <li class="flow-step">
+              <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 3z"/><path d="m9 10 2 2 4-4"/></svg></span>
+              <div>
+                <h3>הסטטוס מתעדכן</h3>
+                <p>מגיע, לא מגיע, אולי או ממתין לתשובה.</p>
+              </div>
+            </li>
+            <li class="flow-step">
+              <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 19v-6M13 19V9M18 19v-9"/></svg></span>
+              <div>
+                <h3>תמונת המצב זזה</h3>
+                <p>כמה אישרו, כמה ממתינים, וכמה אנשים זה בפועל.</p>
+              </div>
+            </li>
+            <li class="flow-step">
+              <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M14.5 9.8c-.6-.8-1.6-1.2-2.6-1.2-1.4 0-2.4.8-2.4 1.9 0 2.6 5 1.4 5 4 0 1.2-1.1 2-2.6 2-1.1 0-2.1-.4-2.7-1.2"/></svg></span>
+              <div>
+                <h3>ההתחייבות והעלות זזות איתה</h3>
+                <p>סעיף שמחושב לפי מספר המגיעים מתעדכן מעצמו.</p>
+              </div>
+            </li>
+            <li class="flow-step flow-step-last">
+              <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="8" r="2.4"/><circle cx="17" cy="8" r="2.4"/><circle cx="12" cy="17" r="2.4"/><path d="M4 20h16"/></svg></span>
+              <div>
+                <h3>וההושבה יודעת כמה מקומות צריך</h3>
+                <p>רק מי שמסומן &quot;מגיע&quot; נספר כתופס מקום.</p>
+              </div>
+            </li>
+          </ol>
+          <p class="flow-punch">מספר אחד עובר דרך כל השרשרת. לא ארבעה מספרים בארבעה מקומות.</p>
+        </div>
+      </section>
+
+      <section class="commit tone-light">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="kicker">סטטוסים</span>
+            <h2 class="section-title">ארבעה סטטוסים, ומי מהם נספר</h2>
+            <p class="section-sub">
+              ההבחנה הזו נשמעת טכנית, והיא זו שקובעת אם המספר שתמסרו לאולם נכון.
+            </p>
+          </div>
+          <div class="numcard">
+            <div class="numcard-head">
+              <h3>מי נספר כתופס מקום</h3>
+              <span class="numcard-tag">בהושבה ובעלות</span>
+            </div>
+            <dl>
+              <div class="numrow is-key"><dt>מגיע</dt><dd>נספר</dd></div>
+              <div class="numrow"><dt>אולי</dt><dd>לא נספר</dd></div>
+              <div class="numrow"><dt>ממתין לתשובה</dt><dd>לא נספר</dd></div>
+              <div class="numrow"><dt>לא מגיע</dt><dd>לא נספר</dd></div>
+            </dl>
+            <p class="numcard-note">
+              <b>"אולי" אינו נספר כמגיע.</b> מוזמן שמתלבט עדיין ברשימת המעקב ועדיין
+              אפשר לחזור אליו — אבל הוא לא מנפח את המספר שאתם מוסרים. אם הוא יאשר,
+              הוא נכנס לספירה מעצמו.
+            </p>
+          </div>
+          <p class="fineprint">
+            מוזמן שאישר מביא את מספר האנשים שהוא ציין. אם לא ציין — נספרת הכמות
+            שהוזמנה עבורו מלכתחילה.
+          </p>
+        </div>
+      </section>
+
+      <section class="features tone-alt">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="kicker">לוח הזמנים</span>
+            <h2 class="section-title">התהליך נבנה ביחס למועד סגירת הרשימה</h2>
+            <p class="section-sub">
+              לא "מתישהו חודש לפני", אלא לאחור מהיום שבו האולם צריך מכם מספר סופי:
+              בקשת אישור, שלוש תזכורות ושלושה סבבי מעקב, בלי שישי ושבת.
+            </p>
+          </div>
+          <div class="supporting-grid">
+            <article class="supporting-item">
+              <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div>
+              <h3>עוגן אחד</h3>
+              <p>מועד סגירת הרשימה נקבע בפתיחת האירוע, וכל השלבים נפרסים אחורה ממנו.</p>
+            </article>
+            <article class="supporting-item">
+              <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 3z"/><path d="m9 10 2 2 4-4"/></svg></div>
+              <h3>רק למי שעדיין לא ענה</h3>
+              <p>מי שכבר אישר לא מקבל תזכורות. זה מה שמונע מהתהליך להרגיש נודניקי.</p>
+            </article>
+            <article class="supporting-item">
+              <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5z"/></svg></div>
+              <h3>מעקב טלפוני בין השלבים</h3>
+              <p>הסבב האחרון נופל בדיוק על מועד סגירת הרשימה.</p>
+            </article>
+            <article class="supporting-item">
+              <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 5 6v5.5c0 4.2 2.9 7.7 7 8.9 4.1-1.2 7-4.7 7-8.9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
+              <h3>שום דבר לא יוצא לבד</h3>
+              <p>מה שאמור להישלח מופיע כתור לאישור, ואתם מאשרים לפני שהוא יוצא.</p>
+            </article>
+          </div>
+          <div class="section-cta">
+            <a href="/calculators/rsvp-timeline/" class="btn btn-ghost">להציג את לוח הזמנים</a>
+            <span class="cta-hint">מזינים תאריך אירוע ומקבלים את התאריכים בפועל. בלי הרשמה.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="commit tone-light">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="kicker">החיבור לכסף</span>
+            <h2 class="section-title">כי מספר המגיעים הוא גם מספר כספי</h2>
+          </div>
+          <ol class="flow-steps">
+            <li class="flow-step">
+              <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6.5a3 3 0 0 1 0 5.8"/><path d="M20.5 20a5.5 5.5 0 0 0-4-5.3"/></svg></span>
+              <div>
+                <h3>מוזמנים</h3>
+                <p>הרשימה המלאה, כולל כמה אנשים בכל רשומה.</p>
+              </div>
+            </li>
+            <li class="flow-step">
+              <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 3z"/><path d="m9 10 2 2 4-4"/></svg></span>
+              <div>
+                <h3>מגיעים</h3>
+                <p>מי שאישר בפועל — וזה המספר שממשיך הלאה.</p>
+              </div>
+            </li>
+            <li class="flow-step">
+              <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
+              <div>
+                <h3>התחייבות</h3>
+                <p>מחייבים אתכם על הגבוה מבין המגיעים לכמות שבחוזה.</p>
+              </div>
+            </li>
+            <li class="flow-step">
+              <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M14.5 9.8c-.6-.8-1.6-1.2-2.6-1.2-1.4 0-2.4.8-2.4 1.9 0 2.6 5 1.4 5 4 0 1.2-1.1 2-2.6 2-1.1 0-2.1-.4-2.7-1.2"/></svg></span>
+              <div>
+                <h3>עלות</h3>
+                <p>כל סעיף שמחושב לפי מספר המגיעים זז עם הרשימה.</p>
+              </div>
+            </li>
+            <li class="flow-step flow-step-last">
+              <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 19v-6M13 19V9M18 19v-9"/></svg></span>
+              <div>
+                <h3>שורה תחתונה</h3>
+                <p>ואחרי האירוע — ההוצאות מול מה שהתקבל.</p>
+              </div>
+            </li>
+          </ol>
+          <div class="callout" style="max-width:620px;margin-inline:auto">
+            <p>
+              אחרי שיודעים כמה מגיעים, אפשר לראות מה זה אומר מבחינת ההתחייבות והעלות.
+            </p>
+            <p><a href="/features/finance/">כספי האירוע — כמה האירוע שלכם באמת עולה</a></p>
+          </div>
+        </div>
+      </section>
+
+<section class="faq-wrap" aria-labelledby="faq-title">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="kicker">שאלות נפוצות</span>
+          <h2 id="faq-title" class="section-title">מה שכדאי לדעת</h2>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>האם &quot;אולי&quot; נספר כמי שמגיע?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+            <p>לא. רק מוזמן שמסומן "מגיע" נספר כתופס מקום — בהושבה ובחישוב העלות כאחד. "אולי", "ממתין לתשובה" ו"לא מגיע" נספרים כאפס, כדי שהמספר שתמסרו לאולם לא ינפח את עצמו.</p>
+          </details>
+          <details>
+            <summary>מה קורה למוזמן שאישר ואז ביטל?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+            <p>הסטטוס מתעדכן והוא מפסיק להיספר. אם הוא כבר שובץ לשולחן הוא נשאר שם, אבל לא נספר כתופס מקום — ואם יסמנו אותו "מגיע" שוב, זה חוזר מעצמו.</p>
+          </details>
+          <details>
+            <summary>אפשר לעדכן סטטוס במקום המוזמן?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+            <p>כן. אפשר לעדכן כל סטטוס ידנית מתוך הרשימה, למשל אחרי שיחה או הודעה שהגיעה בערוץ אחר.</p>
+          </details>
+          <details>
+            <summary>איך יודעים מתי להתחיל?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+            <p>לוח הזמנים נבנה לאחור ממועד סגירת הרשימה — היום שבו צריך למסור לאולם מספר סופי. אפשר לראות את התאריכים במחשבון לוח הזמנים, בלי להירשם.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+      <section class="band-wrap">
+        <div class="wrap">
+          <div class="band">
+            <span class="kicker">מתחילים</span>
+            <h2>מרשימה שמשתנה כל יום — לתמונה אחת</h2>
+            <p class="band-more">
+              מתחילים עם רשימת המוזמנים, ומגיעים למועד סגירת הרשימה עם מספר שאפשר להסביר.
+            </p>
+            <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer-brand">
+          <svg class="footer-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 64" width="212" height="64" fill="none" direction="ltr" role="img" aria-label="VEYA">
+            <g>
+              <circle cx="32" cy="32" r="27" stroke="#C9A227" stroke-width="1.5"/>
+              <circle cx="32" cy="32" r="22.5" stroke="#C9A227" stroke-width="0.75" stroke-opacity="0.45"/>
+              <path d="M32 1.2 L35 5 L32 8.8 L29 5 Z" fill="#C9A227"/>
+              <text x="32" y="44" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="34" font-weight="600" fill="#E4C96B" text-anchor="middle">V</text>
+            </g>
+            <text x="74" y="42.5" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="32" font-weight="600" letter-spacing="9" fill="#F5EFE2">VEYA</text>
+          </svg>
+          <span class="footer-tag">מערכת לניהול אירועים — מוזמנים, אישורי הגעה, הושבה וכספי האירוע במקום אחד.</span>
+        </div>
+        <nav aria-label="ניווט תחתון">
+          <a href="/features/guests/">מוזמנים</a>
+          <a href="/features/rsvp/">אישורי הגעה</a>
+          <a href="/features/calls/">מעקב טלפוני</a>
+          <a href="/features/seating/">הושבה</a>
+          <a href="/features/finance/">כספי האירוע</a>
+          <a href="/calculators/">מחשבונים</a>
+          <a href="/nuschim/">נוסחים</a>
+          <a href="/guides/">מדריכים</a>
+          <a href="/app">כניסה למערכת</a>
+        </nav>
+        <nav aria-label="קישורים משפטיים">
+          <a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">תנאי שימוש</a>
+          <a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">מדיניות פרטיות</a>
+          <a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">מדיניות Cookies</a>
+          <a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">הצהרת נגישות</a>
+          <a href="/legal/about.html#contact" target="_blank" rel="noopener noreferrer">יצירת קשר</a>
+        </nav>
+      </div>
+      <div class="wrap" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(201,162,39,0.14); font-size: 13px; color: #9b907c;">
+        © VEYA — מערכת לניהול אירועים
+      </div>
+    </footer>
+
+  </body>
+</html>
