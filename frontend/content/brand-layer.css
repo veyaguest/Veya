@@ -56,24 +56,24 @@
      זה מזה (13 · 13.5 · 13.8 · 14 · 14.3 · 14.5 …). ההבדלים האלה אינם
      נראים לעין אבל הם בדיוק מה שגורם לעמודים להרגיש כמו תבניות שונות.
      הסולם מאחד אותם ל-15 מדרגות. אף ערך לא זז ביותר מ-1px. */
-  --fs-2xs: 12.5px;
-  --fs-xs: 13.5px;
-  --fs-sm: 14.5px;
-  --fs-md: 15.5px;
-  --fs-base: 16.5px;
-  --fs-lg: 17px;
-  --fs-xl: 18.5px;
-  --fs-2xl: 21px;
-  --fs-3xl: 30px;
+  --fs-2xs: 0.781rem;
+  --fs-xs: 0.844rem;
+  --fs-sm: 0.906rem;
+  --fs-md: 0.969rem;
+  --fs-base: 1.031rem;
+  --fs-lg: 1.063rem;
+  --fs-xl: 1.156rem;
+  --fs-2xl: 1.313rem;
+  --fs-3xl: 1.875rem;
 
   /* מדרגות תצוגה — נשארות fluid, כי כותרת חייבת להתכווץ במובייל. */
-  --fd-xs: clamp(16px, 2.2vw, 19px);
-  --fd-sm: clamp(18px, 2.3vw, 22px);
-  --fd-md: clamp(19px, 2.6vw, 24px);
-  --fd-lg: clamp(21px, 3vw, 27px);
-  --fd-num: clamp(22px, 4vw, 32px);
-  --fd-xl: clamp(26px, 4.2vw, 40px);
-  --fd-2xl: clamp(30px, 5.2vw, 46px);
+  --fd-xs: clamp(1rem, 2.2vw, 1.188rem);
+  --fd-sm: clamp(1.125rem, 2.3vw, 1.375rem);
+  --fd-md: clamp(1.188rem, 2.6vw, 1.5rem);
+  --fd-lg: clamp(1.313rem, 3vw, 1.688rem);
+  --fd-num: clamp(1.375rem, 4vw, 2rem);
+  --fd-xl: clamp(1.625rem, 4.2vw, 2.5rem);
+  --fd-2xl: clamp(1.875rem, 5.2vw, 2.875rem);
 
   /* ── טיפוגרפיה ──────────────────────────────────────────────────────
      ארבעה משקלים בלבד (400/500/600/700). משקל 300 הוסר מהטעינה —
@@ -418,8 +418,13 @@ input:focus-visible, select:focus-visible {
   font-family: var(--font-body);
 }
 .footer-col ul { list-style: none; margin: 0; padding: 0; }
-.footer-col li + li { margin-top: 8px; }
+.footer-col li + li { margin-top: 0; }
 .footer-col a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 44px;
+  min-width: 44px;
   color: #b6aa93;
   text-decoration: none;
   font-size: var(--fs-xs);
@@ -427,3 +432,58 @@ input:focus-visible, select:focus-visible {
 }
 .footer-col a:hover { color: var(--cream-text); }
 .footer-col a:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 3px; }
+
+/* ── נגישות: דילוג לתוכן וטקסט לקוראי מסך ─────────────────────── */
+.skip-link {
+  position: absolute;
+  inset-inline-start: 16px;
+  top: 16px;
+  transform: translateY(-160px);
+  z-index: 200;
+  background: var(--gold);
+  color: var(--charcoal);
+  font-family: 'Assistant', sans-serif;
+  font-weight: 600;
+  font-size: var(--fs-md);
+  padding: 13px 24px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  box-shadow: var(--shadow-lifted);
+  /* transform, לא top: אנימציה על מאפיין פריסה מכריחה layout בכל פריים. */
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+.skip-link:focus { transform: none; }
+@media (prefers-reduced-motion: reduce) { .skip-link { transition: none; } }
+
+.vh {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── משוב מגע: תגובה בלחיצה, לא בשחרור ─────────────────────────── */
+a.evt-card:active, .guide-list a:active, .footer-col a:active { transform: translateY(1px); }
+a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--ease-out),
+  box-shadow var(--motion-normal) var(--ease-out), transform var(--motion-fast) var(--ease-out); }
+.footer-col a { transition: color var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out); }
+
+/* ── העדפות מערכת: שקיפות וניגודיות ───────────────────────────── */
+@media (prefers-reduced-transparency: reduce) {
+  .site-header,
+  .site-header.is-compact { background: var(--ink); backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  .site-header,
+  .site-header.is-compact { background: var(--ink); backdrop-filter: none; border-bottom-color: var(--gold); }
+  .btn-ghost { border-color: var(--charcoal); }
+  .footer-col a { color: var(--cream-text); }
+  .link-quiet { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  a.evt-card:active, .guide-list a:active, .footer-col a:active { transform: none; }
+}

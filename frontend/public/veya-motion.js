@@ -228,3 +228,83 @@
     requestAnimationFrame(update)
   }, { passive: true })
 })()
+
+;/* ── ספירת המעטפות (§11) ──────────────────────────────────────────────
+   הרצף מונע מה-DOM ולא מטבלה בקוד: השורות כבר בעמוד עם ``data-amount``,
+   וה-JS רק מסנכרן אליהן את כרטיס הספירה ואת הסכום הרץ.
+
+   העמוד נשלח במצב הסופי — כל המעטפות, הסכום המלא והדוח. רק אם באמת
+   נגן את הרצף, ה-JS מוסיף ``is-armed`` ומסתיר. כך מי שמגיע בלי JS,
+   וכל crawler, רואים את הסקשן במלואו.
+
+   ההשהיה (460ms לשורה) חייבת להישאר זהה ל-``transition-delay`` שב-CSS. */
+(function () {
+  'use strict'
+  var STEP = 460
+  var stage = document.querySelector('[data-gc]')
+  if (!stage) return
+  var rows = [].slice.call(stage.querySelectorAll('.gc-row'))
+  if (!rows.length) return
+
+  var report = document.querySelector('[data-gc-report]')
+  var elNum = stage.querySelector('[data-gc-num]')
+  var elWho = stage.querySelector('[data-gc-who]')
+  var elAmt = stage.querySelector('[data-gc-amt]')
+  var elSaved = stage.querySelector('[data-gc-saved]')
+  var elTotal = stage.querySelector('[data-gc-total]')
+  var elCount = stage.querySelector('[data-gc-count]')
+
+  var data = rows.map(function (r) {
+    var name = r.querySelector('.gc-row-name')
+    return {
+      amount: parseInt(r.getAttribute('data-amount'), 10) || 0,
+      name: name ? name.textContent : ''
+    }
+  })
+  var nis = function (n) { return n.toLocaleString('he-IL') + ' ₪' }
+
+  // בלי תנועה, או בלי IntersectionObserver — העמוד כבר במצב הנכון.
+  if (window.veyaReducedMotion || !('IntersectionObserver' in window)) return
+
+  stage.classList.add('is-armed')
+  if (report) report.classList.add('is-armed')
+
+  function play() {
+    stage.classList.add('is-on')
+    var running = 0
+    data.forEach(function (d, i) {
+      setTimeout(function () {
+        var prev = running
+        running += d.amount
+        if (elNum) elNum.textContent = 'מעטפה #' + (i + 1)
+        if (elWho) elWho.textContent = d.name
+        if (elAmt) elAmt.textContent = d.amount.toLocaleString('he-IL')
+        if (elSaved) {
+          elSaved.textContent = i === 0
+            ? 'מוכנים לספור'
+            : 'מעטפה #' + i + ' נשמרה — ' + nis(data[i - 1].amount)
+        }
+        if (elCount) elCount.textContent = String(i + 1)
+        if (elTotal && window.veyaCountUp) {
+          elTotal.setAttribute('data-count-from', String(prev))
+          elTotal.setAttribute('data-count-to', String(running))
+          window.veyaCountUp(elTotal)
+        }
+      }, i * STEP)
+    })
+    setTimeout(function () {
+      var last = data[data.length - 1]
+      if (elSaved) elSaved.textContent = 'מעטפה #' + data.length + ' נשמרה — ' + nis(last.amount)
+      if (report) report.classList.add('is-on')
+    }, data.length * STEP + 320)
+  }
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return
+      io.disconnect()
+      play()
+    })
+  }, { threshold: 0.25, rootMargin: '0px 0px -8% 0px' })
+  io.observe(stage)
+})()

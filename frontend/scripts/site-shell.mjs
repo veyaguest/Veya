@@ -147,6 +147,7 @@ ${JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }, null, 2)
 ${o.head || ''}
   </head>
   <body>
+    <a class="skip-link" href="#main">דילוג לתוכן</a>
     <header class="site-header on-dark">
       <div class="wrap">
         <a href="/" aria-label="VEYA — דף הבית">
@@ -159,7 +160,7 @@ ${o.head || ''}
       </div>
     </header>
 
-    <main>
+    <main id="main">
 ${o.body}
     </main>
 

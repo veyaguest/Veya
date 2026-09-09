@@ -1185,8 +1185,22 @@ class EventExpense(Base):
     #: ברגע שעוד מוזמן מאשר. הדגל ממשיך להיות נכון; המספר לא היה.
     #:
     #: שורות שקדמו לעמודה הזו נשארות ב-0, כלומר בדיוק ההתנהגות הקודמת.
+    #:
+    #: ⚠️ **הוחלפו ביומן התשלומים** (``ExpensePayment``). שני השדות נשארים
+    #: לקריאה בלבד, כמסלול נפילה לשורות שנוצרו לפני היומן ועדיין לא
+    #: הומרו. ראו ``finance.paid_for_line``. אין לכתוב אליהם קוד חדש.
     paid_amount_agorot: Mapped[int] = mapped_column(
         Integer, default=0, server_default="0", nullable=False
+    )
+
+    #: יומן התשלומים של השורה. ``lazy="selectin"`` ולא ``"select"``: מסך
+    #: העלות טוען עשרות שורות בבת אחת, ושאילתה לכל אחת הייתה N+1 מול
+    #: Postgres מרוחק.
+    payments: Mapped[list["ExpensePayment"]] = relationship(
+        back_populates="expense",
+        cascade="all, delete-orphan",
+        order_by="ExpensePayment.paid_on, ExpensePayment.id",
+        lazy="selectin",
     )
 
     #: הערה חופשית של הזוג ("כולל מע״מ", "לשלם שבועיים לפני").
@@ -1197,6 +1211,70 @@ class EventExpense(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
+
+
+class ExpensePayment(Base):
+    """תשלום אחד ששולם על חשבון שורת הוצאה — מקדמה או תשלום.
+
+    ## למה יומן ולא מספר
+
+    עד כאן "כמה שולם" היה מספר אחד על השורה. זוג אמיתי משלם לאולם בשלוש
+    פעימות, לצלם במקדמה ובתשלום, ולדיג׳יי במזומן בערב עצמו — והשאלה
+    "מתי שילמנו לצלם ובכמה?" לא הייתה ניתנת למענה. יומן עונה עליה, והוא
+    גם מה שמאפשר את חלק ה' בדוח הסופי ("כל התשלומים").
+
+    ## הסכום נגזר, לא נשמר
+
+    ``נשאר לשלם = עלות השורה − סכום התשלומים``. אין שדה "נשאר לשלם"
+    ואין דגל "שולם במלואו": שניהם נגזרים ב-``finance.paid_for_line``.
+    זה מה שמחזיק את המספר נכון גם כשעלות השורה זזה — שורת מנה ששולמה
+    במלואה ב-391 מגיעים ואז עלתה ל-420 באמת חייבת עוד כסף.
+
+    ## ``event_id`` לצד ``expense_id``
+
+    שכפול לכאורה, ובכוונה: מדיניות ה-RLS בכל טבלאות האירוע נשענת על
+    ``app_manages_event(event_id)``. בלי העמודה הזו המדיניות הייתה
+    דורשת JOIN ל-``event_expenses`` בכל שורה, וזה גם איטי וגם שביר.
+    """
+
+    __tablename__ = "expense_payments"
+    __table_args__ = (
+        # השאילתה היחידה: "כל התשלומים של האירוע, לפי תאריך" (הדוח), ו-
+        # "כל התשלומים של השורה" (המסך). שני האינדקסים מכסים את שתיהן.
+        Index("ix_expense_payments_event_date", "event_id", "paid_on"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    expense_id: Mapped[int] = mapped_column(
+        ForeignKey("event_expenses.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    #: ראו ההסבר למעלה — קיים בשביל ה-RLS, לא בשביל הנוחות.
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+
+    amount_agorot: Mapped[int] = mapped_column(Integer)
+    #: למי שולם. ברירת המחדל היא הספק של השורה, אבל לא תמיד זה אותו אדם
+    #: (מקדמה לאולם שנמסרה למתאם, טיפ שניתן ישירות).
+    payee: Mapped[str] = mapped_column(String, default="")
+    #: תאריך התשלום, ``YYYY-MM-DD``. מחרוזת ולא ``Date`` — בדיוק כמו
+    #: ``Event.event_date``, ומאותה סיבה: אין כאן אזור זמן ואין חישוב.
+    paid_on: Mapped[str] = mapped_column(String, default="")
+    #: ``advance`` (מקדמה) או ``payment`` (תשלום). הבחנה לתצוגה ולדוח
+    #: בלבד — שניהם נספרים אותו דבר בחשבון.
+    kind: Mapped[str] = mapped_column(String, default="payment")
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    #: מי רשם. באירוע בניהול משותף זו התשובה ל"מי שילם את זה?".
+    recorded_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+    expense: Mapped["EventExpense"] = relationship(back_populates="payments")
 
 
 class GiftEnvelope(Base):
