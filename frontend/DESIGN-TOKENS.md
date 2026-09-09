@@ -5,7 +5,7 @@
 > `content/brand-layer.css` (טוקנים חדשים) והריצו `npm run build:brand`.
 
 מקור האמת של הטוקנים הוא ה-CSS. המסמך הזה קיים כדי שאפשר יהיה לקרוא
-אותם בלי לפתוח גיליון של 327 כללים.
+אותם בלי לפתוח גיליון של 329 כללים.
 
 ## צבע — רקע ומשטח
 
@@ -86,6 +86,10 @@
 | `--font-body` | `'Assistant', system-ui, -apple-system, 'Segoe UI', sans-serif` |  |
 | `--font-display` | `'Frank Ruhl Libre', Georgia, 'Times New Roman', serif` |  |
 | `--font-num` | `'Assistant', system-ui, sans-serif` |  |
+
+## נוספים
+
+`--fs-2xs` · `--fs-xs` · `--fs-sm` · `--fs-md` · `--fs-base` · `--fs-lg` · `--fs-xl` · `--fs-2xl` · `--fs-3xl` · `--fd-xs` · `--fd-sm` · `--fd-md` · `--fd-lg` · `--fd-num` · `--fd-xl` · `--fd-2xl`
 
 ## כללים
 

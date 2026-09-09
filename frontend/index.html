@@ -186,7 +186,7 @@
 
       /* ===== Buttons ===== */
       .btn {
-        display: inline-flex; align-items: center; gap: 8px; padding: 13px 28px; border-radius: 999px; font-weight: 600; font-size: 16px;
+        display: inline-flex; align-items: center; gap: 8px; padding: 13px 28px; border-radius: 999px; font-weight: 600; font-size: var(--fs-base);
         text-decoration: none; transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease; cursor: pointer;
         font-family: 'Assistant', sans-serif;
       }
@@ -205,8 +205,8 @@
       .site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 70px; }
       .header-logo { height: 34px; width: auto; display: block; }
       .header-actions { display: flex; align-items: center; gap: 12px; }
-      .header-actions .btn { padding: 9px 20px; font-size: 15px; }
-      .link-quiet { color: var(--cream-text); text-decoration: none; font-weight: 500; font-size: 15px; opacity: 0.85; transition: opacity 0.18s ease; padding: 6px 4px; border-radius: 6px; }
+      .header-actions .btn { padding: 9px 20px; font-size: var(--fs-md); }
+      .link-quiet { color: var(--cream-text); text-decoration: none; font-weight: 500; font-size: var(--fs-md); opacity: 0.85; transition: opacity 0.18s ease; padding: 6px 4px; border-radius: 6px; }
       .link-quiet:hover { opacity: 1; }
       .link-quiet:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 3px; opacity: 1; }
 
@@ -227,21 +227,21 @@
       }
       .hero .wrap { position: relative; z-index: 1; }
       .hero-logo { width: clamp(150px, 22vw, 208px); height: auto; margin: 0 auto 26px; display: block; filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.22)); }
-      .eyebrow { display: inline-block; font-size: 13px; letter-spacing: 3px; color: var(--gold-light); text-transform: uppercase; margin-bottom: 18px; }
+      .eyebrow { display: inline-block; font-size: var(--fs-xs); letter-spacing: 3px; color: var(--gold-light); text-transform: uppercase; margin-bottom: 18px; }
       .hero h1 { font-size: clamp(36px, 6.2vw, 60px); color: var(--cream-text); margin-bottom: 20px; font-weight: 500; }
       .hero h1 .accent { color: var(--gold-light); }
       .hero p.lead { font-size: clamp(17px, 2.4vw, 21px); color: #ddd2bd; max-width: 640px; margin: 0 auto 34px; }
       .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-      .hero-trust { margin-top: 26px; font-size: 14px; color: #b6aa93; display: flex; gap: 10px 22px; justify-content: center; flex-wrap: wrap; }
+      .hero-trust { margin-top: 26px; font-size: var(--fs-sm); color: #b6aa93; display: flex; gap: 10px 22px; justify-content: center; flex-wrap: wrap; }
       .hero-trust span { display: inline-flex; align-items: center; gap: 7px; }
       .hero-trust svg { color: var(--gold-light); flex-shrink: 0; }
 
       /* ===== Sections ===== */
       section { padding: clamp(64px, 9vw, 108px) 0; }
       .section-head { text-align: center; max-width: 620px; margin: 0 auto 52px; }
-      .kicker { display: inline-block; font-size: 12.5px; letter-spacing: 3px; color: var(--gold-deep); text-transform: uppercase; margin-bottom: 14px; }
-      .section-title { font-size: clamp(27px, 4vw, 40px); margin-bottom: 14px; }
-      .section-sub { color: var(--muted); font-size: 17px; }
+      .kicker { display: inline-block; font-size: var(--fs-2xs); letter-spacing: 3px; color: var(--gold-deep); text-transform: uppercase; margin-bottom: 14px; }
+      .section-title { font-size: var(--fd-xl); margin-bottom: 14px; }
+      .section-sub { color: var(--muted); font-size: var(--fs-lg); }
 
       /* ===== Flow — עמוד השדרה של הדף =====
          חמישה שלבים על קו אחד. הקו לא מצויר כאלמנט נפרד אלא כ-::before של כל
@@ -266,8 +266,8 @@
         display: flex; align-items: center; justify-content: center; color: var(--gold-deep);
         box-shadow: 0 2px 8px rgba(43, 38, 32, 0.06);
       }
-      .flow-step h3 { font-size: 18px; margin-bottom: 4px; }
-      .flow-step p { font-size: 15.5px; color: var(--muted); }
+      .flow-step h3 { font-size: var(--fs-xl); margin-bottom: 4px; }
+      .flow-step p { font-size: var(--fs-md); color: var(--muted); }
       .flow-step p em { font-style: normal; color: var(--charcoal); font-weight: 600; }
       /* השלב האחרון הוא הפואנטה — עיגול מלא במקום מתאר, בלי להוסיף עוד טקסט */
       .flow-step-last .flow-dot { background: var(--ink); border-color: var(--ink); color: var(--gold-light); }
@@ -278,14 +278,14 @@
       .flow-step:nth-child(4) { --d: 0.21s; }
       .flow-step:nth-child(5) { --d: 0.28s; }
       .mini-list { list-style: none; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
-      .mini-list li { display: flex; align-items: flex-start; gap: 11px; font-size: 15.5px; color: var(--body); margin-bottom: 13px; }
+      .mini-list li { display: flex; align-items: flex-start; gap: 11px; font-size: var(--fs-md); color: var(--body); margin-bottom: 13px; }
       .mini-list li:last-child { margin-bottom: 0; }
       .mini-list svg { color: var(--green); flex-shrink: 0; margin-top: 3px; }
 
       /* Features */
       .features { background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-2) 100%); }
       .trust-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-      .trust-chip { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--charcoal); }
+      .trust-chip { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-sm); font-weight: 600; color: var(--charcoal); }
       .trust-chip svg { color: var(--gold-deep); }
 
       /* FAQ */
@@ -293,38 +293,38 @@
       .faq { max-width: 780px; margin: 0 auto; }
       details { background: var(--cream); border: 1px solid var(--line); border-radius: 16px; padding: 4px 24px; margin-bottom: 14px; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
       details[open] { border-color: rgba(201, 162, 39, 0.4); box-shadow: 0 10px 28px rgba(43, 38, 32, 0.06); }
-      details summary { font-family: 'Frank Ruhl Libre', serif; font-size: 18px; color: var(--charcoal); cursor: pointer; list-style: none; font-weight: 500; padding: 18px 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+      details summary { font-family: 'Frank Ruhl Libre', serif; font-size: var(--fs-xl); color: var(--charcoal); cursor: pointer; list-style: none; font-weight: 500; padding: 18px 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
       details summary::-webkit-details-marker { display: none; }
       details summary .chev { color: var(--gold-deep); transition: transform 0.25s ease; flex-shrink: 0; }
       details[open] summary .chev { transform: rotate(180deg); }
       details summary:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; border-radius: 8px; }
-      details p { font-size: 15.5px; color: var(--body); padding: 0 0 20px; }
+      details p { font-size: var(--fs-md); color: var(--body); padding: 0 0 20px; }
 
       /* Band CTA */
       .band-wrap { background: var(--ivory-2); padding-top: 0; }
       .band { position: relative; overflow: hidden; background: radial-gradient(120% 120% at 50% 0%, #2a2115 0%, var(--ink) 70%); color: var(--cream-text); text-align: center; border-radius: 28px; padding: 66px 28px; box-shadow: 0 40px 90px -20px rgba(23, 19, 13, 0.35), 0 0 0 1px rgba(228, 201, 107, 0.10); }
       .band::before { content: ""; position: absolute; inset: 0; background: radial-gradient(50% 60% at 50% 0%, rgba(201, 162, 39, 0.20), rgba(201, 162, 39, 0) 70%); pointer-events: none; }
       .band > * { position: relative; z-index: 1; }
-      .band h2 { color: var(--cream-text); font-size: clamp(26px, 4vw, 38px); margin-bottom: 14px; }
-      .band p { color: #cabfa9; max-width: 540px; margin: 0 auto 30px; font-size: 17px; }
+      .band h2 { color: var(--cream-text); font-size: var(--fd-xl); margin-bottom: 14px; }
+      .band p { color: #cabfa9; max-width: 540px; margin: 0 auto 30px; font-size: var(--fs-lg); }
 
       /* Footer */
       .site-footer { background: var(--ink); color: #b6aa93; padding: 48px 0 40px; }
       .site-footer .wrap { display: flex; flex-wrap: wrap; gap: 20px 28px; align-items: center; justify-content: space-between; }
       .footer-brand { display: flex; align-items: center; gap: 14px; }
       .footer-logo { height: 40px; width: auto; }
-      .footer-tag { font-size: 13.5px; color: #9b907c; max-width: 280px; }
+      .footer-tag { font-size: var(--fs-xs); color: #9b907c; max-width: 280px; }
       .site-footer nav { display: flex; flex-wrap: wrap; gap: 22px; }
-      .site-footer nav a { text-decoration: none; color: #cabfa9; font-size: 14.5px; transition: color 0.18s ease; border-radius: 4px; }
+      .site-footer nav a { text-decoration: none; color: #cabfa9; font-size: var(--fs-sm); transition: color 0.18s ease; border-radius: 4px; }
       .site-footer nav a:hover { color: var(--gold-light); }
       .site-footer nav a:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 3px; color: var(--gold-light); }
       .site-footer nav[aria-label="קישורים משפטיים"] { flex-basis: 100%; gap: 8px 18px; }
-      .site-footer nav[aria-label="קישורים משפטיים"] a { font-size: 13px; color: #9b907c; }
+      .site-footer nav[aria-label="קישורים משפטיים"] a { font-size: var(--fs-xs); color: #9b907c; }
 
       /* Cookie Banner (דף נחיתה סטטי — ראו CookieBanner.tsx לגרסת ה-SPA) */
       .cookie-banner-static { position: fixed; inset-inline: 0; bottom: 0; z-index: 100; background: var(--ink); border-top: 1px solid rgba(201,162,39,0.35); padding: env(safe-area-inset-bottom, 0px) 0 0; }
       .cookie-banner-static-inner { max-width: 1100px; margin: 0 auto; padding: 16px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; justify-content: space-between; }
-      .cookie-banner-static-inner p { margin: 0; font-size: 13px; line-height: 1.6; color: #cabfa9; flex: 1 1 320px; }
+      .cookie-banner-static-inner p { margin: 0; font-size: var(--fs-xs); line-height: 1.6; color: #cabfa9; flex: 1 1 320px; }
       .cookie-banner-static-inner a { color: var(--gold-light); margin: 0 4px; }
       .cookie-banner-static-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
@@ -463,7 +463,7 @@
       .showcase { background: linear-gradient(180deg, var(--ivory-2) 0%, var(--ivory) 100%); }
       .sc-layout { display: grid; grid-template-columns: 250px 1fr; gap: 30px; align-items: stretch; }
       .sc-tabs { display: flex; flex-direction: column; justify-content: center; gap: 12px; list-style: none; }
-      .sc-tab { display: flex; align-items: center; gap: 12px; text-align: start; width: 100%; background: var(--cream); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; cursor: pointer; font-family: 'Assistant', sans-serif; font-size: 14.5px; font-weight: 700; color: var(--body); transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease; }
+      .sc-tab { display: flex; align-items: center; gap: 12px; text-align: start; width: 100%; background: var(--cream); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; cursor: pointer; font-family: 'Assistant', sans-serif; font-size: var(--fs-sm); font-weight: 700; color: var(--body); transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease; }
       .sc-tab:not([aria-selected="true"]):hover { border-color: rgba(201, 162, 39, 0.4); background: var(--ivory-2); }
       .sc-tab .sc-tab-ic { width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(145deg, rgba(201, 162, 39, 0.14), rgba(201, 162, 39, 0.05)); display: flex; align-items: center; justify-content: center; color: var(--gold-deep); flex-shrink: 0; transition: background 0.18s ease, color 0.18s ease; }
       .sc-tab[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--cream-text); }
@@ -480,8 +480,8 @@
         background: url('/favicon.svg') center / 52px no-repeat;
       }
       .sc-shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
-      .sc-panel h3 { font-size: 21px; margin-bottom: 6px; }
-      .sc-panel p { font-size: 15.5px; color: var(--body); margin-bottom: 0; }
+      .sc-panel h3 { font-size: var(--fs-2xl); margin-bottom: 6px; }
+      .sc-panel p { font-size: var(--fs-md); color: var(--body); margin-bottom: 0; }
       .sc-cta { text-align: center; margin-top: 30px; }
       @media (max-width: 860px) {
         .sc-layout { grid-template-columns: 1fr; align-items: start; }
@@ -502,30 +502,30 @@
       .why { background: var(--ivory); }
       .why-inner { max-width: 680px; margin: 0 auto; text-align: center; }
       .why-inner .section-title { margin-bottom: 22px; }
-      .why-inner p { font-size: 17px; margin-bottom: 16px; }
-      .why .why-list { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(18px, 2.4vw, 22px); line-height: 1.55; color: var(--charcoal); }
+      .why-inner p { font-size: var(--fs-lg); margin-bottom: 16px; }
+      .why .why-list { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fd-sm); line-height: 1.55; color: var(--charcoal); }
       /* שורת הפואנטה — מה שנשאר בראש אחרי שגוללים הלאה */
       .why .why-punch,
       .rsvp-band .why-punch,
       .commit .why-punch,
-      .after .why-punch { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(18px, 2.3vw, 21px); color: var(--charcoal); margin-top: 26px; }
-      .seating .payoff .why-punch { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(18px, 2.3vw, 21px); color: var(--gold-light); margin-top: 18px; }
+      .after .why-punch { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fd-sm); color: var(--charcoal); margin-top: 26px; }
+      .seating .payoff .why-punch { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fd-sm); color: var(--gold-light); margin-top: 18px; }
 
       /* ===== תוכן מורחב בפאנלים של השואוקייס ===== */
       .sc-qs { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 4px; }
-      .sc-qs li { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: 17px; color: var(--charcoal); }
+      .sc-qs li { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fs-lg); color: var(--charcoal); }
       .sc-panel p + p { margin-top: 8px; }
       .note-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
-      .note-chip { font-size: 13.5px; font-style: italic; color: var(--body); background: var(--ivory-2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 13px; white-space: nowrap; }
+      .note-chip { font-size: var(--fs-xs); font-style: italic; color: var(--body); background: var(--ivory-2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 13px; white-space: nowrap; }
       .sc-panel-cta { margin-top: 20px; }
-      .sc-panel-cta .btn { padding: 11px 22px; font-size: 15px; }
+      .sc-panel-cta .btn { padding: 11px 22px; font-size: var(--fs-md); }
 
       /* ===== אישורי הגעה ===== */
       .rsvp-band { background: var(--ivory-2); }
       .rsvp-inner { max-width: 640px; margin: 0 auto; text-align: center; }
-      .rsvp-inner p { font-size: 17px; }
+      .rsvp-inner p { font-size: var(--fs-lg); }
       .rsvp-list { list-style: none; margin: 22px 0 0; padding: 0; display: inline-grid; gap: 10px; text-align: start; }
-      .rsvp-list li { display: flex; align-items: center; gap: 11px; font-size: 16.5px; color: var(--charcoal); }
+      .rsvp-list li { display: flex; align-items: center; gap: 11px; font-size: var(--fs-base); color: var(--charcoal); }
       .rsvp-list svg { color: var(--green); flex-shrink: 0; }
 
       /* ===== הושבה בקליק ===== */
@@ -542,21 +542,21 @@
         transition: transform 0.22s var(--ease-out), border-color 0.22s var(--ease-out);
       }
       .prep-card .ic { width: 40px; height: 40px; border-radius: 12px; background: rgba(228, 201, 107, 0.12); display: flex; align-items: center; justify-content: center; color: var(--gold-light); margin-bottom: 14px; }
-      .prep-card p { font-size: 16px; color: #d6cbb5; }
+      .prep-card p { font-size: var(--fs-base); color: #d6cbb5; }
       .prep-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-      .prep-chip { font-size: 13.5px; font-style: italic; color: #e2d8c2; background: rgba(245, 239, 226, 0.07); border: 1px solid rgba(201, 162, 39, 0.22); border-radius: 999px; padding: 5px 12px; white-space: nowrap; }
+      .prep-chip { font-size: var(--fs-xs); font-style: italic; color: #e2d8c2; background: rgba(245, 239, 226, 0.07); border: 1px solid rgba(201, 162, 39, 0.22); border-radius: 999px; padding: 5px 12px; white-space: nowrap; }
 
       .payoff-bridge {
         display: flex; align-items: center; justify-content: center; gap: 16px;
         max-width: 380px; margin: 40px auto 30px;
-        font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: 18px; color: var(--gold-light);
+        font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fs-xl); color: var(--gold-light);
       }
       .payoff-bridge::before, .payoff-bridge::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(201, 162, 39, 0) 0%, rgba(201, 162, 39, 0.45) 100%); }
       .payoff-bridge::after { background: linear-gradient(90deg, rgba(201, 162, 39, 0.45) 0%, rgba(201, 162, 39, 0) 100%); }
 
       .payoff { max-width: 880px; margin: 0 auto; text-align: center; }
       .payoff h3 { font-size: clamp(22px, 3.2vw, 31px); color: var(--cream-text); margin-bottom: 12px; }
-      .payoff-lead { font-size: 17px; color: #cabfa9; max-width: 580px; margin: 0 auto 28px; }
+      .payoff-lead { font-size: var(--fs-lg); color: #cabfa9; max-width: 580px; margin: 0 auto 28px; }
       .payoff-shot {
         position: relative; aspect-ratio: 16 / 10; border-radius: 18px; overflow: hidden;
         border: 1px solid rgba(201, 162, 39, 0.22); background: #1d1810;
@@ -564,14 +564,14 @@
       }
       .payoff-shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
       .payoff-after { margin-top: 30px; }
-      .payoff .payoff-after p { font-size: 17px; color: #cabfa9; }
+      .payoff .payoff-after p { font-size: var(--fs-lg); color: #cabfa9; }
       /* שלוש הפעולות כשלושה פעימות נפרדות, כמו בקצב של המשפט עצמו */
       .payoff-beats { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 28px; margin: 14px 0; }
-      .payoff-beats span { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(19px, 2.6vw, 24px); color: var(--cream-text); }
+      .payoff-beats span { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fd-md); color: var(--cream-text); }
       .seating-cta { text-align: center; margin-top: 38px; }
 
       /* ===== החיבור ===== */
-      .flow-punch { text-align: center; margin-top: 34px; font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(18px, 2.3vw, 22px); color: var(--charcoal); }
+      .flow-punch { text-align: center; margin-top: 34px; font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fd-sm); color: var(--charcoal); }
 
       /* ===== איך זה עובד ===== */
       /* ארבעה צעדים קצרים — הסקשן נשאר קומפקטי בכוונה. הצמצום הוא במרווח
@@ -582,14 +582,14 @@
       .how .section-head { margin-bottom: 36px; }
       .steps { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 22px; padding: 0; }
       .step { background: rgba(245, 239, 226, 0.04); border: 1px solid rgba(201, 162, 39, 0.18); border-radius: 18px; padding: 26px 24px; transition: border-color 0.2s var(--ease-out), transform 0.2s var(--ease-out); }
-      .step .num { display: block; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 30px; font-weight: 600; color: var(--gold-light); line-height: 1; margin-bottom: 14px; letter-spacing: 1px; }
-      .step h3 { font-size: 18px; color: var(--cream-text); margin-bottom: 8px; }
-      .step p { font-size: 15px; color: #c8bda8; }
+      .step .num { display: block; font-family: 'Cormorant Garamond', Georgia, serif; font-size: var(--fs-3xl); font-weight: 600; color: var(--gold-light); line-height: 1; margin-bottom: 14px; letter-spacing: 1px; }
+      .step h3 { font-size: var(--fs-xl); color: var(--cream-text); margin-bottom: 8px; }
+      .step p { font-size: var(--fs-md); color: #c8bda8; }
 
       /* ===== שקט (הבאנד הסוגר) ===== */
       .band .kicker { color: var(--gold-light); }
-      .band .band-less { font-size: 17px; line-height: 2; }
-      .band .band-more { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(19px, 2.6vw, 24px); color: var(--cream-text); margin-bottom: 18px; }
+      .band .band-less { font-size: var(--fs-lg); line-height: 2; }
+      .band .band-more { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fd-md); color: var(--cream-text); margin-bottom: 18px; }
 
       @media (max-width: 780px) {
         .prep-list { grid-template-columns: 1fr; }
@@ -599,8 +599,8 @@
       /* ===== Supporting features (compact) ===== */
       .supporting-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; }
       .supporting-item .ic { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(145deg, rgba(201, 162, 39, 0.14), rgba(201, 162, 39, 0.05)); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; color: var(--gold-deep); }
-      .supporting-item h3 { font-size: 16.5px; margin-bottom: 6px; }
-      .supporting-item p { font-size: 14.3px; color: var(--body); }
+      .supporting-item h3 { font-size: var(--fs-base); margin-bottom: 6px; }
+      .supporting-item p { font-size: var(--fs-sm); color: var(--body); }
 
       /* ===== Hover motion — מגודר למצביע אמיתי =====
          במובייל נגיעה יורה `:hover` ומשאירה את האלמנט "מורם" עד שנוגעים
@@ -676,10 +676,10 @@
            הריפוד האנכי מביא את מטרות המגע ל-44px (WCAG 2.5.5) בלי להגדיל
            את הגופן. */
         .header-logo { height: 28px; }
-        .header-actions .link-quiet { font-size: 13px; padding: 12px 6px; }
+        .header-actions .link-quiet { font-size: var(--fs-xs); padding: 12px 6px; }
         .lq-long { display: none; }
-        .header-actions .btn { padding: 12px 14px; font-size: 13px; white-space: nowrap; }
-        .hero-trust { gap: 8px 16px; font-size: 13px; }
+        .header-actions .btn { padding: 12px 14px; font-size: var(--fs-xs); white-space: nowrap; }
+        .hero-trust { gap: 8px 16px; font-size: var(--fs-xs); }
       }
 
       /* ═══════════════════════════════════════════════════════════════
@@ -707,9 +707,9 @@
         display: flex; align-items: center; justify-content: space-between; gap: 12px;
         padding: 14px 20px; background: var(--ivory-2); border-bottom: 1px solid var(--line);
       }
-      .numcard-head h3 { font-size: 16px; margin: 0; }
+      .numcard-head h3 { font-size: var(--fs-base); margin: 0; }
       .numcard-tag {
-        font-size: 11.5px; letter-spacing: 1.6px; font-weight: 700; color: var(--gold-deep);
+        font-size: var(--fs-2xs); letter-spacing: 1.6px; font-weight: 700; color: var(--gold-deep);
         background: rgba(201, 162, 39, 0.13); border-radius: 999px; padding: 3px 10px;
       }
       .numrow {
@@ -717,20 +717,20 @@
         padding: 13px 20px; border-bottom: 1px solid var(--line);
       }
       .numrow:last-child { border-bottom: 0; }
-      .numrow dt { font-size: 15px; color: var(--body); margin: 0; }
-      .numrow dd { margin: 0; font-size: 17px; font-weight: 700; color: var(--charcoal); font-variant-numeric: tabular-nums; }
+      .numrow dt { font-size: var(--fs-md); color: var(--body); margin: 0; }
+      .numrow dd { margin: 0; font-size: var(--fs-lg); font-weight: 700; color: var(--charcoal); font-variant-numeric: tabular-nums; }
       .numrow.is-key { background: rgba(201, 162, 39, 0.07); }
       .numrow.is-key dt { font-weight: 600; color: var(--charcoal); }
       .numrow.is-key dd { color: var(--gold-deep); }
-      .numcard-note { padding: 14px 20px; font-size: 14px; line-height: 1.65; color: var(--muted); background: var(--ivory); border-top: 1px solid var(--line); }
+      .numcard-note { padding: 14px 20px; font-size: var(--fs-sm); line-height: 1.65; color: var(--muted); background: var(--ivory); border-top: 1px solid var(--line); }
       .numcard-note b { color: var(--charcoal); }
 
       /* ---- שתי מדרגות ההתחייבות ---- */
       .steps-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 720px; margin: 28px auto 0; }
       .step-two { background: var(--cream); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; }
-      .step-two .lbl { display: block; font-size: 12.5px; letter-spacing: 1.4px; font-weight: 700; color: var(--gold-deep); margin-bottom: 8px; }
-      .step-two .big { display: block; font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: clamp(20px, 3vw, 26px); color: var(--charcoal); margin-bottom: 6px; }
-      .step-two p { font-size: 14.5px; color: var(--muted); margin: 0; }
+      .step-two .lbl { display: block; font-size: var(--fs-2xs); letter-spacing: 1.4px; font-weight: 700; color: var(--gold-deep); margin-bottom: 8px; }
+      .step-two .big { display: block; font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fd-lg); color: var(--charcoal); margin-bottom: 6px; }
+      .step-two p { font-size: var(--fs-sm); color: var(--muted); margin: 0; }
       @media (max-width: 620px) { .steps-two { grid-template-columns: 1fr; } }
 
       /* ---- כרטיסי סוג אירוע (קישורים) ----
@@ -741,20 +741,20 @@
         border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 16px;
         transition: border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
       }
-      a.evt-card h3 { font-size: 16.5px; margin: 0 0 4px; }
-      a.evt-card p { font-size: 13.8px; color: var(--muted); margin: 0; }
+      a.evt-card h3 { font-size: var(--fs-base); margin: 0 0 4px; }
+      a.evt-card p { font-size: var(--fs-xs); color: var(--muted); margin: 0; }
       a.evt-card:hover { border-color: var(--gold); box-shadow: 0 14px 30px -22px rgba(43, 38, 32, 0.4); }
       a.evt-card:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
 
       /* ---- CTA משני בתוך סקשן (למחשבון) ---- */
       .section-cta { text-align: center; margin-top: 32px; }
-      .section-cta .cta-hint { display: block; font-size: 13.5px; color: var(--muted); margin-top: 10px; }
+      .section-cta .cta-hint { display: block; font-size: var(--fs-xs); color: var(--muted); margin-top: 10px; }
 
       /* ---- הערת אמת מוצרית (מתחת לטענה שדורשת סיוג) ---- */
-      .fineprint { font-size: 13.5px; color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
+      .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                              /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -807,6 +807,31 @@
         --error-bg: #fbeae7;
         --error-border: #dda99f;   /* חוזק מ-#e6b9b1 כדי שהגבול ייראה */
 
+
+        /* ── סולם טיפוגרפיה ──
+           היו 33 גדלי font-size שונים בגיליון, רובם שכנים במרחק 0.3–0.5px
+           זה מזה (13 · 13.5 · 13.8 · 14 · 14.3 · 14.5 …). ההבדלים האלה אינם
+           נראים לעין אבל הם בדיוק מה שגורם לעמודים להרגיש כמו תבניות שונות.
+           הסולם מאחד אותם ל-15 מדרגות. אף ערך לא זז ביותר מ-1px. */
+        --fs-2xs: 12.5px;
+        --fs-xs: 13.5px;
+        --fs-sm: 14.5px;
+        --fs-md: 15.5px;
+        --fs-base: 16.5px;
+        --fs-lg: 17px;
+        --fs-xl: 18.5px;
+        --fs-2xl: 21px;
+        --fs-3xl: 30px;
+
+        /* מדרגות תצוגה — נשארות fluid, כי כותרת חייבת להתכווץ במובייל. */
+        --fd-xs: clamp(16px, 2.2vw, 19px);
+        --fd-sm: clamp(18px, 2.3vw, 22px);
+        --fd-md: clamp(19px, 2.6vw, 24px);
+        --fd-lg: clamp(21px, 3vw, 27px);
+        --fd-num: clamp(22px, 4vw, 32px);
+        --fd-xl: clamp(26px, 4.2vw, 40px);
+        --fd-2xl: clamp(30px, 5.2vw, 46px);
+
         /* ── טיפוגרפיה ──────────────────────────────────────────────────────
            ארבעה משקלים בלבד (400/500/600/700). משקל 300 הוסר מהטעינה —
            הוא לא היה בשימוש באף מקום ורק הוסיף בקשת רשת. */
@@ -846,7 +871,7 @@
       .num-value {
         font-family: var(--font-display);
         font-weight: 500;
-        font-size: clamp(30px, 5.2vw, 46px);
+        font-size: var(--fd-2xl);
         line-height: 1.05;
         letter-spacing: -0.015em;
         color: var(--charcoal);
@@ -855,13 +880,13 @@
       }
       .num-label {
         font-family: var(--font-body);
-        font-size: 13.5px;
+        font-size: var(--fs-xs);
         font-weight: 600;
         letter-spacing: 0.02em;
         color: var(--muted);
       }
       .num-sub {
-        font-size: 13px;
+        font-size: var(--fs-xs);
         color: var(--muted);
         line-height: 1.5;
       }
@@ -898,7 +923,7 @@
         align-items: center;
         gap: 10px;
         font-family: var(--font-display);
-        font-size: clamp(22px, 4vw, 32px);
+        font-size: var(--fd-num);
         color: var(--charcoal);
         font-variant-numeric: tabular-nums;
       }
@@ -1089,8 +1114,19 @@
         color: var(--error);
       }
 
+      /* ── תיקון היררכיה במאמר ──
+         `.article p, .article li` (ספציפיות 0,2,0) גבר על `.article-lead`
+         ו-`.article-meta` (0,1,0), ולכן פסקת הפתיחה ושורת המטא־דאטה הוצגו
+         בגודל הגוף. הכלל כאן מיישר ספציפיות ומחזיר את ההיררכיה. */
+      .article p.article-lead { font-size: var(--fs-xl); }
+      .article p.article-meta { font-size: var(--fs-xs); }
+
       /* ===== VEYA BRAND LAYER — END ===== */
 
+    
+    
+    
+    
     
     
     

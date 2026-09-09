@@ -50,6 +50,31 @@
   --error-bg: #fbeae7;
   --error-border: #dda99f;   /* חוזק מ-#e6b9b1 כדי שהגבול ייראה */
 
+
+  /* ── סולם טיפוגרפיה ──
+     היו 33 גדלי font-size שונים בגיליון, רובם שכנים במרחק 0.3–0.5px
+     זה מזה (13 · 13.5 · 13.8 · 14 · 14.3 · 14.5 …). ההבדלים האלה אינם
+     נראים לעין אבל הם בדיוק מה שגורם לעמודים להרגיש כמו תבניות שונות.
+     הסולם מאחד אותם ל-15 מדרגות. אף ערך לא זז ביותר מ-1px. */
+  --fs-2xs: 12.5px;
+  --fs-xs: 13.5px;
+  --fs-sm: 14.5px;
+  --fs-md: 15.5px;
+  --fs-base: 16.5px;
+  --fs-lg: 17px;
+  --fs-xl: 18.5px;
+  --fs-2xl: 21px;
+  --fs-3xl: 30px;
+
+  /* מדרגות תצוגה — נשארות fluid, כי כותרת חייבת להתכווץ במובייל. */
+  --fd-xs: clamp(16px, 2.2vw, 19px);
+  --fd-sm: clamp(18px, 2.3vw, 22px);
+  --fd-md: clamp(19px, 2.6vw, 24px);
+  --fd-lg: clamp(21px, 3vw, 27px);
+  --fd-num: clamp(22px, 4vw, 32px);
+  --fd-xl: clamp(26px, 4.2vw, 40px);
+  --fd-2xl: clamp(30px, 5.2vw, 46px);
+
   /* ── טיפוגרפיה ──────────────────────────────────────────────────────
      ארבעה משקלים בלבד (400/500/600/700). משקל 300 הוסר מהטעינה —
      הוא לא היה בשימוש באף מקום ורק הוסיף בקשת רשת. */
@@ -89,7 +114,7 @@
 .num-value {
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: clamp(30px, 5.2vw, 46px);
+  font-size: var(--fd-2xl);
   line-height: 1.05;
   letter-spacing: -0.015em;
   color: var(--charcoal);
@@ -98,13 +123,13 @@
 }
 .num-label {
   font-family: var(--font-body);
-  font-size: 13.5px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--muted);
 }
 .num-sub {
-  font-size: 13px;
+  font-size: var(--fs-xs);
   color: var(--muted);
   line-height: 1.5;
 }
@@ -141,7 +166,7 @@
   align-items: center;
   gap: 10px;
   font-family: var(--font-display);
-  font-size: clamp(22px, 4vw, 32px);
+  font-size: var(--fd-num);
   color: var(--charcoal);
   font-variant-numeric: tabular-nums;
 }
@@ -331,3 +356,10 @@ input:focus-visible, select:focus-visible {
   border-color: var(--error-border);
   color: var(--error);
 }
+
+/* ── תיקון היררכיה במאמר ──
+   `.article p, .article li` (ספציפיות 0,2,0) גבר על `.article-lead`
+   ו-`.article-meta` (0,1,0), ולכן פסקת הפתיחה ושורת המטא־דאטה הוצגו
+   בגודל הגוף. הכלל כאן מיישר ספציפיות ומחזיר את ההיררכיה. */
+.article p.article-lead { font-size: var(--fs-xl); }
+.article p.article-meta { font-size: var(--fs-xs); }
