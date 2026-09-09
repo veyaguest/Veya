@@ -1594,7 +1594,7 @@ export const strings = {
     notePlaceholder: 'למשל: כולל מע״מ',
     categoryLabel: 'קטגוריה',
     chooseItem: 'מה מוסיפים?',
-    customItem: 'משהו אחר',
+    customItem: '+ הוצאה אחרת',
 
     expensesEmptyTitle: 'עוד לא הוספתם הוצאות',
     expensesEmptyBody:

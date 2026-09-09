@@ -833,6 +833,64 @@ def test_every_envelope_lands_in_exactly_one_bucket() -> None:
     )
 
 
+# ════════════════════════════════════════════════════════════════════════
+#  מבנה הקטגוריות
+# ════════════════════════════════════════════════════════════════════════
+
+
+def test_every_type_has_a_catch_all_category() -> None:
+    """"שונות" קיימת בכל סוג — הרשת שמונעת מהזוג להיתקע מול הוצאה
+    שאין לה מקום ברשימה. בלעדיה הוא ידחוף אותה לקטגוריה שגויה, והדוח
+    יספר סיפור לא נכון."""
+    for event_type in REAL_EVENT_TYPES:
+        keys = {c.key for c in catalog_for(event_type)}
+        assert "other" in keys, f"{event_type}: אין קטגוריית שונות"
+        assert category_label("other", event_type) == "שונות"
+
+
+def test_catch_all_is_last() -> None:
+    """אחרונה בסדר התצוגה: היא הרשת, לא נקודת הפתיחה."""
+    for event_type in REAL_EVENT_TYPES:
+        assert catalog_for(event_type)[-1].key == "other"
+
+
+def test_no_category_is_empty() -> None:
+    """קטגוריה בלי פריטים היא כותרת שנפתחת לכלום."""
+    for event_type in REAL_EVENT_TYPES:
+        for category in catalog_for(event_type):
+            assert category.items, f"{event_type}/{category.key}: קטגוריה ריקה"
+
+
+def test_an_item_appears_once_per_event_type() -> None:
+    """אותו פריט בשתי קטגוריות = שתי דרכים להוסיף את אותה הוצאה, ושני
+    מקומות לחפש אותה אחר כך."""
+    for event_type in REAL_EVENT_TYPES:
+        seen: dict[str, str] = {}
+        for category in catalog_for(event_type):
+            for item in category.items:
+                assert item.key not in seen, (
+                    f"{event_type}: {item.key} מופיע גם ב-{seen.get(item.key)} "
+                    f"וגם ב-{category.key}"
+                )
+                seen[item.key] = category.key
+
+
+def test_commitment_fields_are_not_catalog_items() -> None:
+    """**ההתחייבות, המינימום והרזרבה הם שדות על שורת המנה, לא הוצאות.**
+
+    הספק מונה אותם תחת "מקום ואירוח", והפיתוי להוסיף אותם כפריטים גדול.
+    פריט "התחייבות למנות" היה נספר בסכום **בנוסף** לשורת המנה — כלומר
+    כפל חיוב על אותו כסף.
+    """
+    forbidden = ("commitment", "committed", "minimum", "min_total", "reserve")
+    for event_type in REAL_EVENT_TYPES:
+        for category in catalog_for(event_type):
+            for item in category.items:
+                assert not any(f in item.key for f in forbidden), (
+                    f"{event_type}: {item.key} הוא שדה על שורת המנה, לא הוצאה"
+                )
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for test in tests:
