@@ -1738,6 +1738,18 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
   return res.json()
 }
 
+/** כמה הגיעו בפועל. ``null`` מנקה ומחזיר את החישוב לאישורי ההגעה.
+ *  מחזיר את הסיכום המלא — המספר הזה מזיז כל מספר אחר במסך. */
+export async function setAttendance(actual: number | null): Promise<FinanceSummary> {
+  const res = await apiFetch('/finance/attendance', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ actual_attendance: actual }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
 // ---- יומן התשלומים ----
 //
 // שלוש הפעולות מחזירות את **שורת ההוצאה כולה** ולא את התשלום: כך המסך

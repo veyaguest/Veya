@@ -1789,6 +1789,9 @@ export interface ExpenseInput {
   committed_quantity?: number | null
   /** מינימום כספי מובטח בחוזה, באגורות. */
   min_total_agorot?: number | null
+  /** מנות רזרבה מול הספק. **אינה נכנסת לשום חישוב** — זכות להזמין עוד,
+   *  לא התחייבות לשלם. */
+  reserve_quantity?: number | null
   note?: string | null
   /** שם הספק. טקסט חופשי — ניהול ספקים הוא מוצר אחר. */
   vendor?: string
@@ -1888,6 +1891,22 @@ export interface Commitment {
   total_display: string
   min_total_agorot: number | null
   min_total_applied: boolean
+  /** מנות רזרבה — מידע ולא הוצאה. */
+  reserve_quantity: number | null
+}
+
+/** מי אישר, כמה הגיעו בפועל, ומה הפער. */
+export interface Attendance {
+  confirmed_people: number
+  /** ``null`` = טרם הוזן. ``0`` הוא ערך אמיתי. */
+  actual: number | null
+  /** ``true`` ⇒ העלות סופית ולא משוערת. */
+  is_final: boolean
+  /** אישרו ולא הגיעו. ``null`` כשאין מספר בפועל. */
+  no_show: number | null
+  /** הגיעו מעבר למי שאישר. ``null`` כשאין מספר בפועל. */
+  extra: number | null
+  event_passed: boolean
 }
 
 /** סיכום קבוצת הוצאות — הכותרת שנפתחת ונסגרת. **מחושב בשרת**: חיבור
@@ -2046,6 +2065,7 @@ export interface FinanceReport {
   venue_name: string
   generated_at: string
   rsvp: RsvpSnapshot
+  attendance: Attendance
   cost: CostSummary
   income: GiftIncome
   breakdown: GiftBreakdown
@@ -2072,6 +2092,7 @@ export interface GiftCounting {
 
 export interface FinanceSummary {
   rsvp: RsvpSnapshot
+  attendance: Attendance
   cost: CostSummary
   income: GiftIncome
   breakdown: GiftBreakdown

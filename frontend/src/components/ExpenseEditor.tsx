@@ -97,6 +97,7 @@ export function ExpenseEditor({
   const [quantity, setQuantity] = useState(expense?.quantity?.toString() ?? '')
   const [committed, setCommitted] = useState(expense?.committed_quantity?.toString() ?? '')
   const [minTotal, setMinTotal] = useState(toShekelInput(expense?.min_total_agorot ?? null))
+  const [reserve, setReserve] = useState(expense?.reserve_quantity?.toString() ?? '')
   const [note, setNote] = useState(expense?.note ?? '')
   const [vendor, setVendor] = useState(expense?.vendor ?? '')
   // ברירת המחדל היא הערכה: תקציב נבנה מהערכות, וסימון הכול כ"סוכם"
@@ -119,7 +120,9 @@ export function ExpenseEditor({
   const [methodOpen, setMethodOpen] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const [contractOpen, setContractOpen] = useState(Boolean(expense?.min_total_agorot))
+  const [contractOpen, setContractOpen] = useState(
+    Boolean(expense?.min_total_agorot || expense?.reserve_quantity),
+  )
 
   const amountRef = useRef<HTMLInputElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -199,6 +202,7 @@ export function ExpenseEditor({
           method === 'per_unit' || method === 'percent' ? toCount(quantity) : null,
         committed_quantity: supportsCommitment ? toCount(committed) || null : null,
         min_total_agorot: toAgorot(minTotal) || null,
+        reserve_quantity: supportsCommitment ? toCount(reserve) || null : null,
         note: note.trim() || null,
         vendor: vendor.trim(),
         is_estimated: isEstimated,
@@ -602,6 +606,19 @@ export function ExpenseEditor({
                     יושב שכבה אחת עמוק יותר — לא ליד ההתחייבות. */}
                 {supportsCommitment &&
                   (contractOpen ? (
+                    <>
+                    <label className="field">
+                      <span className="field-label">{t.reserveLabel}</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={reserve}
+                        onChange={(e) => setReserve(digitsOnly(e.target.value))}
+                        placeholder="0"
+                        dir="ltr"
+                      />
+                      <span className="field-hint">{t.reserveHint}</span>
+                    </label>
                     <label className="field">
                       <span className="field-label">{t.minTotalLabel}</span>
                       <input
@@ -614,6 +631,7 @@ export function ExpenseEditor({
                       />
                       <span className="field-hint">{t.minTotalHint}</span>
                     </label>
+                    </>
                   ) : (
                     <button
                       type="button"

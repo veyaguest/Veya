@@ -2317,6 +2317,8 @@ class ExpenseWrite(BaseModel):
     committed_quantity: Optional[int] = Field(default=None, ge=0)
     #: מינימום כספי מובטח בחוזה, באגורות.
     min_total_agorot: Optional[int] = Field(default=None, ge=0)
+    #: מנות רזרבה מול הספק. **אינה נכנסת לשום חישוב** — ראו המודל.
+    reserve_quantity: Optional[int] = Field(default=None, ge=0)
     note: Optional[str] = Field(default=None, max_length=500)
     #: שם הספק. טקסט חופשי — ניהול ספקים הוא מוצר אחר.
     vendor: str = Field(default="", max_length=120)
@@ -2402,6 +2404,7 @@ class ExpenseRead(BaseModel):
     quantity: Optional[int] = None
     committed_quantity: Optional[int] = None
     min_total_agorot: Optional[int] = None
+    reserve_quantity: Optional[int] = None
     note: Optional[str] = None
     vendor: str = ""
     is_estimated: bool = True
@@ -2492,6 +2495,8 @@ class CommitmentRead(BaseModel):
     total_display: str
     min_total_agorot: Optional[int] = None
     min_total_applied: bool = False
+    #: מנות רזרבה שסוכמו — **מידע ולא הוצאה**. ראו ההסבר במודל.
+    reserve_quantity: Optional[int] = None
 
 
 class ExpenseCategoryTotalRead(BaseModel):
@@ -2571,6 +2576,33 @@ class RsvpSnapshotRead(BaseModel):
     declined_guests: int
     pending_guests: int
     maybe_guests: int
+
+
+class AttendanceRead(BaseModel):
+    """מי אישר, כמה באמת הגיעו, ומה זה אומר על החישוב.
+
+    שלוש עובדות שהמסך צריך כדי לדעת אם להציג "עלות משוערת" או "עלות
+    האירוע", ומתי להציע לדייק את רשימת המוזמנים.
+    """
+
+    #: כמה אנשים אישרו הגעה (מ-``effective_seats``, אותו מקור כמו ההושבה).
+    confirmed_people: int = 0
+    #: כמה הגיעו בפועל. ``None`` = טרם הוזן.
+    actual: Optional[int] = None
+    #: ``True`` כשהוזן מספר בפועל — ואז העלות סופית ולא משוערת.
+    is_final: bool = False
+    #: אישרו ולא הגיעו. ``None`` כשאין מספר בפועל, 0 כשלא היה פער.
+    no_show: Optional[int] = None
+    #: הגיעו מעבר למי שאישר. ``None`` כשאין מספר בפועל.
+    extra: Optional[int] = None
+    #: האם האירוע כבר עבר — הרגע שבו יש טעם לשאול "כמה הגיעו".
+    event_passed: bool = False
+
+
+class AttendanceWrite(BaseModel):
+    """``None`` מנקה את המספר ומחזיר את החישוב לאישורי ההגעה."""
+
+    actual_attendance: Optional[int] = Field(default=None, ge=0)
 
 
 class GiftEntryRead(BaseModel):
@@ -2719,6 +2751,7 @@ class FinanceReportRead(BaseModel):
     generated_at: datetime
 
     rsvp: RsvpSnapshotRead
+    attendance: AttendanceRead
     cost: CostSummaryRead
     income: GiftIncomeRead
     breakdown: GiftBreakdownRead
@@ -2741,6 +2774,7 @@ class FinanceSummaryRead(BaseModel):
     """
 
     rsvp: RsvpSnapshotRead
+    attendance: AttendanceRead
     cost: CostSummaryRead
     income: GiftIncomeRead
     breakdown: GiftBreakdownRead

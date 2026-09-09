@@ -1102,6 +1102,88 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   כמה הגיעו בפועל
+   ════════════════════════════════════════════════════════════════════ */
+
+/* מסגרת זהב דקה: זה הצעד היחיד במסך שהמערכת מבקשת מהזוג לעשות אחרי
+   האירוע, והוא הופך כל מספר אחר מ"משוער" ל"סופי". */
+.fin-attendance {
+  border-color: rgba(var(--gold-rgb), 0.4);
+}
+
+.fin-attendance-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 12px 0 8px;
+}
+
+.fin-attendance-row .field {
+  flex: 0 1 160px;
+}
+
+/* המספר גדול כי הוא הנתון, לא שדה בטופס. */
+.fin-editor .fin-attendance-input,
+.fin-attendance-input {
+  font-size: 28px !important;
+  font-weight: var(--weight-semibold);
+  text-align: center;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.fin-attendance-done {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+}
+
+.fin-attendance-value {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+}
+
+.fin-attendance-done .fin-hint {
+  margin: 0;
+}
+
+.fin-attendance-actions {
+  display: flex;
+  gap: 10px;
+  margin-inline-start: auto;
+}
+
+.fin-attendance-actions .btn-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h);
+  font-size: var(--text-sm);
+}
+
+/* המלצת הדיוק — הצעה, ולכן אין לה צבע של אזהרה ואין בה סימן קריאה. */
+.fin-reconcile p {
+  margin: 0 0 12px;
+  color: var(--body);
+  line-height: var(--leading-normal);
+}
+
+.fin-reconcile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* הערת "עלות משוערת" מתחת למספר הגדול בכותרת. */
+.fin-hero-note {
+  margin: 10px 0 0;
+  max-width: 52ch;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: var(--leading-normal);
+}
+
+/* ════════════════════════════════════════════════════════════════════
    יומן התשלומים
    ════════════════════════════════════════════════════════════════════ */
 

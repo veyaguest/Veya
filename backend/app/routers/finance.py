@@ -109,6 +109,7 @@ def _expense_read(
         quantity=expense.quantity,
         committed_quantity=expense.committed_quantity,
         min_total_agorot=expense.min_total_agorot,
+        reserve_quantity=expense.reserve_quantity,
         note=expense.note,
         vendor=expense.vendor or "",
         is_estimated=bool(expense.is_estimated),
@@ -238,6 +239,7 @@ def _cost_summary(
                 total_display=finance.format_shekels(line.total_agorot),
                 min_total_agorot=expense.min_total_agorot,
                 min_total_applied=line.min_total_applied,
+                reserve_quantity=expense.reserve_quantity,
             )
         )
 
@@ -364,6 +366,28 @@ def _single_expense_read(
     return _expense_read(expense, breakdown.lines[expense.id], event.event_type)
 
 
+def _attendance_read(
+    event: models.Event, guests: list[models.Guest]
+) -> schemas.AttendanceRead:
+    """מי אישר, כמה הגיעו, ומה הפער.
+
+    ``no_show`` ו-``extra`` הם שני צדדים של אותו פער ולעולם לא שניהם
+    יחד — כך המסך לא צריך לבדוק סימן, והמלצת הדיוק יודעת מתי היא
+    רלוונטית בכלל (רק כשיש מי שאישר ולא הגיע).
+    """
+    confirmed = finance.attendee_count(guests)
+    actual = event.actual_attendance
+    return schemas.AttendanceRead(
+        confirmed_people=confirmed,
+        actual=actual,
+        is_final=actual is not None,
+        no_show=None if actual is None else max(0, confirmed - actual),
+        extra=None if actual is None else max(0, actual - confirmed),
+        # אותו כלל בדיוק שפותח את ספירת המתנות — יום האירוע ואילך.
+        event_passed=finance_service.counting_open(event),
+    )
+
+
 def _rsvp_snapshot(guests: list[models.Guest]) -> schemas.RsvpSnapshotRead:
     """אותה ספירה בדיוק כמו ב-``routers/stats.py`` — ובכוונה.
 
@@ -429,7 +453,8 @@ def summary(
     """
     guests = _guests(db, event.id)
     expenses = finance_service.expenses_for(db, event.id)
-    attendees = finance.attendee_count(guests)
+    # לפני האירוע — מאישורי ההגעה; אחרי שהוזן מספר בפועל — הוא.
+    attendees = finance.billing_attendees(event, guests)
     invited = finance.invited_count(guests)
 
     breakdown = finance.cost_breakdown(expenses, attendees, invited)
@@ -439,6 +464,7 @@ def summary(
 
     return schemas.FinanceSummaryRead(
         rsvp=_rsvp_snapshot(guests),
+        attendance=_attendance_read(event, guests),
         cost=_cost_summary(expenses, attendees, invited, event.event_type),
         income=_income_read(income),
         breakdown=_breakdown_read(
@@ -480,7 +506,8 @@ def report(
 
     guests = _guests(db, event.id)
     expenses = finance_service.expenses_for(db, event.id)
-    attendees = finance.attendee_count(guests)
+    # לפני האירוע — מאישורי ההגעה; אחרי שהוזן מספר בפועל — הוא.
+    attendees = finance.billing_attendees(event, guests)
     invited = finance.invited_count(guests)
 
     cost = finance.cost_breakdown(expenses, attendees, invited)
@@ -501,6 +528,7 @@ def report(
         venue_name=event.venue_name or "",
         generated_at=datetime.utcnow(),
         rsvp=_rsvp_snapshot(guests),
+        attendance=_attendance_read(event, guests),
         cost=_cost_summary(expenses, attendees, invited, event.event_type),
         income=_income_read(income),
         breakdown=_breakdown_read(
@@ -558,6 +586,12 @@ def _apply_expense(payload: schemas.ExpenseWrite, expense: models.EventExpense) 
     # המינימום הכספי חל על כל שיטה — חוזה יכול לנקוב במינימום גם על
     # שורה קבועה או שורה לפי יחידה.
     expense.min_total_agorot = payload.min_total_agorot or None
+    # רזרבה רלוונטית רק לשורה שנמכרת לפי מגיעים — שם, ורק שם, יש חוזה
+    # שנוקב בכמות שאפשר להוסיף ביום האירוע.
+    if payload.calc_method == finance_categories.PER_ATTENDEE:
+        expense.reserve_quantity = payload.reserve_quantity or None
+    else:
+        expense.reserve_quantity = None
 
 
 @router.post("/expenses", response_model=schemas.ExpenseRead, status_code=201)
@@ -714,6 +748,37 @@ def delete_expense(
         ip=request.client.host if request.client else None,
     )
     db.commit()
+
+
+@router.put("/attendance", response_model=schemas.FinanceSummaryRead)
+def set_attendance(
+    payload: schemas.AttendanceWrite,
+    request: Request,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+    user: models.User = Depends(get_current_user),
+):
+    """כמה אנשים הגיעו בפועל.
+
+    **הפעולה הזו לא נוגעת ב-``rsvp_status`` של אף מוזמן.** מספר כולל אינו
+    יודע מי מבין המאשרים לא הגיע, וניחוש כאן היה משנה נתון שהזוג מסר
+    במפורש. המסך מציע לזוג לדייק את הרשימה בעצמו — הצעה, לא פעולה.
+
+    מחזיר את הסיכום המלא, כי המספר הזה מזיז כל מספר אחר במסך.
+    """
+    event.actual_attendance = payload.actual_attendance
+    audit.record(
+        db, "finance_attendance_set",
+        event_id=event.id, user_id=user.id,
+        detail=(
+            f"עודכן מספר המגיעים בפועל — {payload.actual_attendance}"
+            if payload.actual_attendance is not None
+            else "נוקה מספר המגיעים בפועל"
+        ),
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+    return summary(db=db, event=event)
 
 
 # ════════════════════════════════════════════════════════════════════════

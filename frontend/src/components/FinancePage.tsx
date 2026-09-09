@@ -10,9 +10,11 @@ import {
   getGiftCounting,
   getFinanceReport,
   getGiftsByGuest,
+  setAttendance,
   updateExpense,
 } from '../api'
 import type {
+  Attendance,
   Commitment,
   Expense,
   ExpenseCategory,
@@ -57,7 +59,7 @@ type Tab = 'cost' | 'counting' | 'summary'
  * הכותרות נבנות מהלקסיקון (``activeEventTerms().eventNoun``) — "עלות
  * החתונה" בחתונה, "עלות הברית" בברית. אין כאן מילה חתונתית קשיחה.
  */
-export function FinancePage() {
+export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') => void }) {
   const terms = activeEventTerms()
 
   const [data, setData] = useState<FinanceSummary | null>(null)
@@ -190,6 +192,8 @@ export function FinancePage() {
         <CostTab
           data={data}
           terms={terms}
+          onAttendance={setData}
+          onNavigate={onNavigate}
           onAdd={(category) => {
             setAddCategory(category ?? null)
             setEditing(null)
@@ -306,10 +310,14 @@ function TabButton({
 function FinanceHero({ data }: { data: FinanceSummary }) {
   const { cost } = data
   const started = cost.total_agorot > 0
+  // כל עוד לא הוזן כמה הגיעו בפועל, המספר נשען על אישורי הגעה שעוד
+  // יזוזו. אומרים את זה בכותרת ולא בהערת שוליים.
+  const estimated = !data.attendance.is_final
+  const label = estimated ? t.estimatedCostLabel : t.totalCostLabel
 
   return (
-    <section className="fin-hero" aria-label={t.totalCostLabel}>
-      <p className="fin-hero-label">{t.totalCostLabel}</p>
+    <section className="fin-hero" aria-label={label}>
+      <p className="fin-hero-label">{label}</p>
       <p className="fin-hero-value">{cost.total_display}</p>
 
       {/* שולם / נשאר לשלם — זוג מספרים אחד, לא שתי עובדות מפוזרות.
@@ -335,6 +343,8 @@ function FinanceHero({ data }: { data: FinanceSummary }) {
           </div>
         </div>
       )}
+
+      {estimated && started && <p className="fin-hero-note">{t.estimatedCostNote}</p>}
 
       <div className="fin-hero-facts fin-hero-facts-quiet">
         <Fact label={t.attendeesLabel} value={String(cost.attendees)} />
@@ -370,12 +380,16 @@ function CostTab({
   onAdd,
   onEdit,
   onTemplateApplied,
+  onAttendance,
+  onNavigate,
 }: {
   data: FinanceSummary
   terms: ReturnType<typeof activeEventTerms>
   onAdd: (category?: string) => void
   onEdit: (e: Expense) => void
   onTemplateApplied: () => void
+  onAttendance: (data: FinanceSummary) => void
+  onNavigate?: (target: 'guests') => void
 }) {
   const { cost } = data
   const grouped = useMemo(() => groupByCategory(data.expenses), [data.expenses])
@@ -397,8 +411,18 @@ function CostTab({
 
   return (
     <>
+      {/* אחרי האירוע — השאלה הראשונה, לפני כל מספר אחר: כמה באמת הגיעו.
+          לפניו אין מה לשאול, והכרטיס לא מופיע בכלל. */}
+      {data.attendance.event_passed && (
+        <AttendanceCard
+          attendance={data.attendance}
+          onSaved={onAttendance}
+          onNavigate={onNavigate}
+        />
+      )}
+
       {cost.commitments.map((c) => (
-        <CommitmentCard key={c.expense_id} commitment={c} />
+        <CommitmentCard key={c.expense_id} commitment={c} attendance={data.attendance} />
       ))}
 
       <section className="fin-section">
@@ -558,7 +582,170 @@ function ExpenseGroup({
  * המשפט מתחת אומר את זה במילים, בלי סימן קריאה ובלי "שימו לב" — זו
  * עובדה חשבונאית, לא אזהרה.
  */
-function CommitmentCard({ commitment: c }: { commitment: Commitment }) {
+/**
+ * "כמה אורחים הגיעו בפועל?" — הצעד שהופך עלות משוערת לעלות סופית.
+ *
+ * ## מספר אחד, לא סימון אדם-אדם
+ *
+ * אף זוג לא יעבור על 600 שורות ביום שאחרי החתונה. גם האולם לא מחייב
+ * לפי רשימה — הוא סופר צלחות. מספר כולל הוא בדיוק הרזולוציה הנכונה.
+ *
+ * ## מה זה משנה
+ *
+ * מרגע שהוזן, הוא מחליף את מספר המגיעים מאישורי ההגעה **בכל החישוב**.
+ * הנוסחה עצמה לא זזה: ``MAX(MAX(מגיעים, התחייבות) × מחיר, מינימום)``
+ * נשארת, ורק מה שנכנס כ"מגיעים" משתנה. תמיד אפשר לנקות ולחזור.
+ *
+ * ## ומה זה **לא** משנה
+ *
+ * אישורי הגעה. מספר כולל אינו יודע מי מבין המאשרים לא הגיע, וניחוש כאן
+ * היה דורס נתון שהמוזמן מסר בעצמו. במקום זה — המלצה, עם דלת יציאה.
+ */
+function AttendanceCard({
+  attendance,
+  onSaved,
+  onNavigate,
+}: {
+  attendance: Attendance
+  onSaved: (data: FinanceSummary) => void
+  onNavigate?: (target: 'guests') => void
+}) {
+  const [value, setValue] = useState(
+    attendance.actual != null ? String(attendance.actual) : '',
+  )
+  const [editing, setEditing] = useState(!attendance.is_final)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [dismissed, setDismissed] = useState(false)
+
+  async function save(next: number | null) {
+    setBusy(true)
+    setError(null)
+    try {
+      onSaved(await setAttendance(next))
+      setEditing(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t.saveError)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <section className="fin-card fin-attendance">
+        {editing ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (value.trim() === '') return
+              save(parseInt(value, 10))
+            }}
+          >
+            <h2 className="fin-card-title">{t.attendanceTitle}</h2>
+            <p className="fin-hint">{t.attendanceBody}</p>
+            <div className="fin-attendance-row">
+              <label className="field">
+                <span className="field-label">{t.attendanceLabel}</span>
+                {/* גדול בכוונה: זה המספר היחיד שמוקלד כאן, והוא זה
+                    שהופך את כל המסך מ"משוער" ל"סופי". */}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  className="fin-attendance-input"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value.replace(/[^\d]/g, ''))}
+                  placeholder={String(attendance.confirmed_people)}
+                  dir="ltr"
+                  autoFocus
+                />
+              </label>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={busy || value.trim() === ''}
+              >
+                {busy ? strings.common.saving : t.attendanceSave}
+              </button>
+            </div>
+            <p className="fin-hint">
+              {t.attendanceConfirmedNote(attendance.confirmed_people)}
+            </p>
+            {error && (
+              <p className="form-error" role="alert">
+                {error}
+              </p>
+            )}
+          </form>
+        ) : (
+          <div className="fin-attendance-done">
+            <span className="fin-attendance-value">
+              {t.attendanceFinal(attendance.actual ?? 0)}
+            </span>
+            <span className="fin-hint">
+              {attendance.no_show
+                ? t.attendanceNoShow(attendance.no_show)
+                : attendance.extra
+                  ? t.attendanceExtra(attendance.extra)
+                  : t.attendanceConfirmedNote(attendance.confirmed_people)}
+            </span>
+            <span className="fin-attendance-actions">
+              <button type="button" className="btn-link" onClick={() => setEditing(true)}>
+                {t.attendanceEdit}
+              </button>
+              <button
+                type="button"
+                className="btn-link"
+                onClick={() => {
+                  setValue('')
+                  save(null)
+                }}
+                disabled={busy}
+              >
+                {t.attendanceClear}
+              </button>
+            </span>
+          </div>
+        )}
+      </section>
+
+      {/* §10 — המלצה, לא חסימה ולא פעולה. מוצגת רק כשיש פער אמיתי, ורק
+          עד שהזוג סוגר אותה. VEYA לא נוגעת באישורי ההגעה בעצמה. */}
+      {attendance.is_final && !!attendance.no_show && !dismissed && (
+        <section className="fin-card fin-reconcile">
+          <h2 className="fin-card-title">{t.reconcileTitle}</h2>
+          <p>{t.reconcileBody(attendance.no_show)}</p>
+          <div className="fin-reconcile-actions">
+            {onNavigate && (
+              <button
+                type="button"
+                className="btn-primary btn-sm"
+                onClick={() => onNavigate('guests')}
+              >
+                {t.reconcileYes}
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn-ghost btn-sm"
+              onClick={() => setDismissed(true)}
+            >
+              {t.reconcileNo}
+            </button>
+          </div>
+        </section>
+      )}
+    </>
+  )
+}
+
+function CommitmentCard({
+  commitment: c,
+  attendance,
+}: {
+  commitment: Commitment
+  attendance: Attendance
+}) {
   return (
     <section className="fin-card fin-commitment">
       <h2 className="fin-card-title">
@@ -571,7 +758,15 @@ function CommitmentCard({ commitment: c }: { commitment: Commitment }) {
       <div className="fin-commitment-grid">
         <Fact label={t.committedLabel} value={String(c.committed_quantity)} />
         <Fact label={t.attendingNowLabel} value={String(c.attendees)} />
-        <Fact label={t.commitmentCostLabel} value={c.total_display} />
+        {/* רזרבה — מוצגת ליד ההתחייבות כי זו אותה שיחה מול הספק, אבל
+            **לא נספרת בעלות**. המשפט שמתחת אומר את זה במילים. */}
+        {!!c.reserve_quantity && (
+          <Fact label={t.reserveFact} value={String(c.reserve_quantity)} />
+        )}
+        <Fact
+          label={attendance.is_final ? t.commitmentCostLabel : t.estimatedCostLabel}
+          value={c.total_display}
+        />
       </div>
 
       <p className="fin-commitment-note">
@@ -582,6 +777,9 @@ function CommitmentCard({ commitment: c }: { commitment: Commitment }) {
             : t.exactCommitment}
       </p>
 
+      {!!c.reserve_quantity && (
+        <p className="fin-hint">{t.reserveNote(c.reserve_quantity)}</p>
+      )}
       {c.min_total_applied && <p className="fin-hint">{t.minTotalApplied}</p>}
     </section>
   )
@@ -1039,7 +1237,11 @@ function SummaryTab({
           "דוח" לבין תשובה. */}
       <section className="fin-card fin-summary">
         <div className="fin-summary-row">
-          <span>{t.summaryCostLabel(terms.eventNoun)}</span>
+          <span>
+            {data.attendance.is_final
+              ? t.summaryCostLabel(terms.eventNoun)
+              : t.estimatedCostLabel}
+          </span>
           <strong>{data.cost.total_display}</strong>
         </div>
         <div className="fin-summary-row">

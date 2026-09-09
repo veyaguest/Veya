@@ -120,6 +120,26 @@ def attendee_count(guests: Iterable[models.Guest]) -> int:
     return sum(g.effective_seats for g in guests)
 
 
+def billing_attendees(event: models.Event, guests: Iterable[models.Guest]) -> int:
+    """המספר שהחישוב הכספי רץ עליו — **נקודת ההכרעה היחידה.**
+
+    לפני האירוע אין מה לספור מלבד אישורי ההגעה, ולכן העלות מוצגת כמשוערת.
+    אחרי האירוע הזוג מזין כמה באמת הגיעו, ומאותו רגע זה המספר שקובע:
+    האולם מחייב לפי מי שאכל, לא לפי מי שהבטיח.
+
+    **הנוסחה לא משתנה כאן.** ``MAX(MAX(מגיעים, התחייבות) × מחיר, מינימום)``
+    נשארת בדיוק כפי שהיא — מה שהפונקציה הזו קובעת הוא רק **מה נכנס
+    כ"מגיעים"**. זו הסיבה שהיא יושבת כאן, מעל המנוע ולא בתוכו: מי שיקרא
+    את ``_line_total`` לא צריך לדעת מאיפה הגיע המספר.
+
+    ``0`` הוא ערך לגיטימי ולא "לא הוזן" — אירוע שבוטל ברגע האחרון ואיש
+    לא הגיע הוא מצב אמיתי, ולכן הבדיקה היא ``is None`` ולא falsy.
+    """
+    if event.actual_attendance is not None:
+        return max(0, event.actual_attendance)
+    return attendee_count(guests)
+
+
 def invited_count(guests: Iterable[models.Guest]) -> int:
     """כמה אנשים הוזמנו — לפי ``party_size``, בלי קשר לתשובה.
 

@@ -168,6 +168,8 @@ _EXTRA_COLUMNS = {
         # שכבר קיים בייצור הוא מחזור 1, ו-NULL היה שובר את השוואת המחזור
         # בכל שאילתת הודעות.
         "cycle_number": "INTEGER DEFAULT 1",
+        # כמה הגיעו בפועל. NULL = טרם הוזן, וזה שונה מ-0.
+        "actual_attendance": "INTEGER",
     },
     # כספי האירוע — שדות שנוספו אחרי הטבלה המקורית.
     "event_expenses": {
@@ -176,6 +178,8 @@ _EXTRA_COLUMNS = {
         "is_paid": "BOOLEAN DEFAULT FALSE",
         # תשלום חלקי (מקדמה). 0 = בדיוק ההתנהגות שקדמה לעמודה.
         "paid_amount_agorot": "INTEGER DEFAULT 0",
+        # מנות רזרבה מול הספק — מידע, לא הוצאה.
+        "reserve_quantity": "INTEGER",
     },
     "messages": {
         "channel": "TEXT DEFAULT 'whatsapp'",

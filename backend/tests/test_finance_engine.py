@@ -699,6 +699,73 @@ def test_paid_total_across_lines_never_exceeds_the_event_total() -> None:
     assert finance.paid_total(expenses, breakdown.lines) <= breakdown.total_agorot
 
 
+# ════════════════════════════════════════════════════════════════════════
+#  כמה הגיעו בפועל
+# ════════════════════════════════════════════════════════════════════════
+#
+# ההחלטה הנעולה: הנוסחה לא משתנה, רק **הקלט** שלה. הבדיקות כאן נועלות
+# את נקודת ההכרעה היחידה (``billing_attendees``) ואת מה שהיא לא עושה.
+
+
+class _Ev:
+    """אירוע מינימלי — ``billing_attendees`` נוגעת בשדה אחד בלבד."""
+
+    def __init__(self, actual=None):
+        self.actual_attendance = actual
+
+
+def guest(seats: int) -> models.Guest:
+    g = models.Guest(full_name="בדיקה", rsvp_status="confirmed", confirmed_count=seats)
+    return g
+
+
+def test_before_the_event_the_count_comes_from_rsvp() -> None:
+    guests = [guest(2), guest(3)]
+    assert finance.billing_attendees(_Ev(), guests) == 5
+
+
+def test_actual_attendance_replaces_the_rsvp_count() -> None:
+    guests = [guest(2), guest(3)]
+    assert finance.billing_attendees(_Ev(508), guests) == 508
+
+
+def test_zero_attendance_is_a_real_answer_not_a_missing_one() -> None:
+    """אירוע שבוטל ברגע האחרון הוא מצב אמיתי. ``0`` אינו "טרם הוזן"."""
+    guests = [guest(2), guest(3)]
+    assert finance.billing_attendees(_Ev(0), guests) == 0
+
+
+def test_clearing_the_count_returns_to_rsvp() -> None:
+    guests = [guest(4)]
+    assert finance.billing_attendees(_Ev(None), guests) == 4
+
+
+def test_the_commitment_formula_is_untouched_by_actual_attendance() -> None:
+    """**הבדיקה המרכזית של השינוי הזה.**
+
+    אותה שורה, אותה התחייבות, שני מספרי מגיעים — והתוצאה זהה בדיוק לזו
+    שהייתה מתקבלת אילו המספר היה מגיע מאישורי ההגעה. אין כאן מסלול
+    חישוב שני; יש קלט אחר לאותה נוסחה.
+    """
+    e = line(1, PER_ATTENDEE, 320, committed_quantity=500)
+
+    # מתחת להתחייבות — משלמים על ההתחייבות, בשני המקורות.
+    assert finance.total_for([e], 391, 551) == 500 * 320 * S
+    assert finance.total_for([e], finance.billing_attendees(_Ev(391), []), 551) == 500 * 320 * S
+
+    # מעליה — משלמים על מי שהגיע.
+    assert finance.total_for([e], finance.billing_attendees(_Ev(508), []), 551) == 508 * 320 * S
+
+
+def test_reserve_is_never_part_of_any_total() -> None:
+    """רזרבה היא זכות להזמין עוד, לא התחייבות לשלם. אם היא נכנסת לחישוב
+    ולו פעם אחת — זוג משלם על מנות שאיש לא אכל."""
+    plain = line(1, PER_ATTENDEE, 320, committed_quantity=500)
+    with_reserve = line(2, PER_ATTENDEE, 320, committed_quantity=500, reserve_quantity=50)
+    assert finance.total_for([plain], 391, 551) == finance.total_for([with_reserve], 391, 551)
+    assert finance.total_for([with_reserve], 391, 551) == 500 * 320 * S
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for test in tests:
