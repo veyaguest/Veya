@@ -127,7 +127,14 @@ ${rel.map((r) => `            <li><a href="${r.url}"><h3>${esc(r.title)}</h3></a
         datePublished: g.published,
         dateModified: g.updated || g.published,
         author: { '@type': 'Organization', name: 'צוות VEYA', url: SITE },
-        publisher: { '@type': 'Organization', name: 'VEYA', url: SITE, logo: `${SITE}/logo.png` },
+        publisher: {
+          '@type': 'Organization',
+          name: 'VEYA',
+          url: SITE,
+          // Google מתעדת את logo כ-ImageObject. מחרוזת עוברת, אבל מייצרת
+          // אזהרה ב-Rich Results Test ולא מזכה בתוצאת הלוגו.
+          logo: { '@type': 'ImageObject', url: `${SITE}/logo.png` },
+        },
         mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE}/guides/${g.slug}/` },
       },
     ],
