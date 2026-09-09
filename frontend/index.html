@@ -294,9 +294,16 @@
       .gc-total-num { font-family: var(--font-display); font-size: var(--fd-2xl); color: var(--charcoal); line-height: 1.05; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
       .gc-total-sub { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
       .gc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-      .gc-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 13px 16px; border: 1px solid var(--line); border-radius: var(--radius-md); background: #fff; transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out); }
+      .gc-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 13px 16px; border: 1px solid var(--line); border-radius: var(--radius-md); background: #fff; }
+      /* ההסתרה מיידית, ורק החשיפה מונפשת. אילו ה-transition היה על
+         כלל הבסיס, הוספת ``is-armed`` בזמן ריצה הייתה מדהה את השורות
+         החוצה ל-300ms לפני שהרצף בכלל מתחיל. */
       .gc-stage.is-armed .gc-row { opacity: 0; transform: translateY(10px); }
-      .gc-stage.is-armed.is-on .gc-row { opacity: 1; transform: none; transition-delay: calc(var(--i) * 460ms); }
+      .gc-stage.is-armed.is-on .gc-row {
+        opacity: 1; transform: none;
+        transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out);
+        transition-delay: calc(var(--i) * 460ms);
+      }
       .gc-row-num { color: var(--gold-deep); font-weight: 700; font-variant-numeric: tabular-nums; font-size: var(--fs-sm); }
       .gc-row-who { display: grid; gap: 2px; min-width: 0; }
       .gc-row-name { color: var(--charcoal); font-weight: 600; }
@@ -304,9 +311,12 @@
       .gc-badge { display: inline-block; width: fit-content; font-size: var(--fs-2xs); font-weight: 600; color: var(--muted); background: var(--ivory-2); border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 2px 9px; }
       .gc-row-amt { font-weight: 700; color: var(--charcoal); font-variant-numeric: tabular-nums; white-space: nowrap; }
       .gc-bridge { text-align: center; margin: 46px auto 22px; max-width: 520px; font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); }
-      .gc-report { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); overflow: hidden; box-shadow: var(--shadow-sm); transition: opacity 420ms var(--ease-out), transform 420ms var(--ease-out); }
+      .gc-report { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); overflow: hidden; box-shadow: var(--shadow-sm); }
       .gc-report.is-armed { opacity: 0; transform: translateY(14px); }
-      .gc-report.is-armed.is-on { opacity: 1; transform: none; }
+      .gc-report.is-armed.is-on {
+        opacity: 1; transform: none;
+        transition: opacity 420ms var(--ease-out), transform 420ms var(--ease-out);
+      }
       .gc-report-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--ivory-2); }
       .gc-report-title { font-family: var(--font-display); font-size: var(--fs-2xl); color: var(--charcoal); }
       .gc-report-sum { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -854,7 +864,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                  /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                        /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1347,6 +1357,7 @@
 
       /* ===== VEYA BRAND LAYER — END ===== */
 
+    
     
     
     
