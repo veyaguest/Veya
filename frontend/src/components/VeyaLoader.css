@@ -1,0 +1,51 @@
+/* ============================================================
+   VeyaLoader — אנימציית טעינה אחידה וממותגת של VEYA.
+   הלוגו העגול (frontend/public/logo_nobg.png) מסתובב חלק ב-360°.
+   CSS בלבד, ללא dependency. משמש גם את ספינר ה-::before המשותף
+   ב-App.css (.dash-loading / .mb-empty / .load-text) דרך אותו
+   @keyframes veya-loader-spin.
+   ============================================================ */
+
+.veya-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* line-height:0 — כדי שעטיפת ה-span לא תוסיף גובה שורה מסביב ללוגו
+     ולא תיווצר קפיצת פריסה כשה-loader מופיע/נעלם. */
+  line-height: 0;
+}
+
+/* לשימוש בתוך כפתור או שורת טקסט — לא תופס שורה משלו. */
+.veya-loader--inline {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.veya-loader-logo {
+  display: block;
+  height: auto;
+  transform-origin: 50% 50%;
+  /* קידום לשכבת GPU — סיבוב חלק בלי שוליים משוננים ב-iPhone/Safari,
+     באותה גישה כמו שאר האנימציות במערכת. */
+  will-change: transform;
+  backface-visibility: hidden;
+  /* משך ~1.4s · linear — מהירות אחידה לחלוטין, בלי האטה בקצוות · לופ אינסופי.
+     from 0deg / to 360deg — סיבוב מלא ורציף בלי קפיצה בתחילת או בסוף המחזור. */
+  animation: veya-loader-spin 1.4s linear infinite;
+}
+
+@keyframes veya-loader-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* משתמשים שביקשו להפחית אנימציות — הלוגו מוצג דומם, בלי סיבוב אינסופי. */
+@media (prefers-reduced-motion: reduce) {
+  .veya-loader-logo {
+    animation: none;
+  }
+}
