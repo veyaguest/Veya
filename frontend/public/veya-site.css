@@ -842,7 +842,8 @@ input:focus-visible, select:focus-visible {
 .skip-link {
   position: absolute;
   inset-inline-start: 16px;
-  top: -120px;
+  top: 16px;
+  transform: translateY(-160px);
   z-index: 200;
   background: var(--gold);
   color: var(--charcoal);
@@ -853,9 +854,10 @@ input:focus-visible, select:focus-visible {
   border-radius: var(--radius-pill);
   text-decoration: none;
   box-shadow: var(--shadow-lifted);
-  transition: top var(--motion-fast) var(--ease-out);
+  /* transform, לא top: אנימציה על מאפיין פריסה מכריחה layout בכל פריים. */
+  transition: transform var(--motion-fast) var(--ease-out);
 }
-.skip-link:focus { top: 16px; }
+.skip-link:focus { transform: none; }
 @media (prefers-reduced-motion: reduce) { .skip-link { transition: none; } }
 
 .vh {

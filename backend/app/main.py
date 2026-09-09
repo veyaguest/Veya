@@ -521,6 +521,89 @@ def _ensure_guest_tokens() -> None:
         db.close()
 
 
+def _migrate_expense_payments() -> None:
+    """ממיר "כמה שולם" מהשדה הישן ליומן התשלומים — **פעם אחת, ובטוח לחזרה.**
+
+    עד יומן התשלומים, שורת הוצאה החזיקה מספר אחד (``paid_amount_agorot``)
+    ודגל (``is_paid``). מהרגע שיש יומן, ``finance.paid_for_line`` קורא
+    ממנו — ושורה ישנה שלא הומרה הייתה נראית "טרם שולמה" ברגע שנוסף לה
+    התשלום הראשון. ההמרה הזו מייצרת לכל שורה כזו שורת תשלום אחת שמסבירה
+    את עצמה, ומאותו רגע היומן הוא המקור.
+
+    **מה שלא מומר:** שורה שכבר יש לה תשלום ביומן. לכן ההרצה חוזרת בלי
+    ליצור כפילות, וגם שרת שעולה ונופל באמצע לא ישכפל דבר.
+
+    שורה שסומנה "שולם במלואו" מומרת לפי **עלות השורה כפי שהיא כרגע** —
+    זו הפרשנות הנכונה היחידה: הדגל אמר "שילמנו הכול", והכול הוא הסכום
+    שהיה נכון באותו רגע.
+    """
+    from app import finance
+
+    with SessionLocal() as db:
+        try:
+            legacy = (
+                db.query(models.EventExpense)
+                .filter(
+                    or_(
+                        models.EventExpense.is_paid.is_(True),
+                        models.EventExpense.paid_amount_agorot > 0,
+                    )
+                )
+                .all()
+            )
+        except Exception:
+            # הטבלה או העמודות עדיין לא קיימות (עלייה ראשונה) — אין מה להמיר.
+            return
+
+        # מקבצים לפי אירוע כדי לחשב את עלות השורה בהקשר הנכון: שורת אחוז
+        # נגזרת משאר ההוצאות של אותו אירוע, ולא ניתן לחשב אותה לבד.
+        by_event: dict[int, list[models.EventExpense]] = {}
+        for expense in legacy:
+            if expense.payments:
+                continue  # כבר הומרה
+            by_event.setdefault(expense.event_id, []).append(expense)
+
+        created = 0
+        for event_id, rows in by_event.items():
+            guests = (
+                db.query(models.Guest).filter(models.Guest.event_id == event_id).all()
+            )
+            all_expenses = (
+                db.query(models.EventExpense)
+                .filter(models.EventExpense.event_id == event_id)
+                .all()
+            )
+            breakdown = finance.cost_breakdown(
+                all_expenses,
+                finance.attendee_count(guests),
+                finance.invited_count(guests),
+            )
+            for expense in rows:
+                line_total = breakdown.lines[expense.id].total_agorot
+                amount = (
+                    line_total
+                    if expense.is_paid
+                    else min(max(expense.paid_amount_agorot or 0, 0), line_total)
+                )
+                if amount <= 0:
+                    continue
+                db.add(
+                    models.ExpensePayment(
+                        expense_id=expense.id,
+                        event_id=event_id,
+                        amount_agorot=amount,
+                        payee=expense.vendor or "",
+                        paid_on="",
+                        kind="payment",
+                    )
+                )
+                created += 1
+
+        if created:
+            db.commit()
+            print(f"[migrations] {created} תשלומים הומרו ליומן התשלומים (חד-פעמי)")
+
+
 def _migrate_brita_split() -> None:
     """מיגרציה חד-פעמית (2026-08-10): "בריתה" היא סוג אירוע עצמאי משלה —
     ``event_type='brita'`` — לא תת-קטגוריה של "ברית" ולא event_type ישן
@@ -1641,6 +1724,9 @@ def on_startup() -> None:
     _ensure_admin()
     # מוודא שלכל מוזמן קיים יש טוקן אישי לאישור הגעה.
     _ensure_guest_tokens()
+    # ממיר "כמה שולם" מהשדה הישן ליומן התשלומים. אחרי create_all (הטבלה
+    # חייבת להתקיים) ואחרי _ensure_columns (העמודות הישנות נקראות ממנה).
+    _migrate_expense_payments()
     # "בריתה" כ-event_type עצמאי משלה (2026-08-10) — מתקנת שיירי דאטה
     # משני תיקוני הכיוון הקודמים. חייבת לרוץ לפני הזריעה למטה.
     _migrate_brita_split()

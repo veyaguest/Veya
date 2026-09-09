@@ -362,7 +362,7 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.14),
           0 0 0 1px rgba(0, 0, 0, 0.45);
         transform: perspective(1600px) rotateX(2deg);
-        transition: transform 0.5s ease, box-shadow 0.5s ease;
+        transition: transform var(--motion-normal) var(--ease-out), box-shadow var(--motion-normal) var(--ease-out);
       }
       .device-mac-notch {
         position: absolute; top: 0; inset-inline-start: 50%; transform: translateX(-50%);
@@ -653,9 +653,12 @@
       .hero .reveal.d1 { animation-delay: 0.06s; }
       .hero .reveal.d2 { animation-delay: 0.12s; }
       .hero .reveal.d3 { animation-delay: 0.18s; }
+      /* עולה למקומו, אבל לא מתוך שקיפות 0. אלמנט ב-opacity:0 אינו מועמד
+         ל-LCP בכרום, ובהירו יושבים גם הלוגו (שנושא fetchpriority="high")
+         וגם ה-H1. פייד מ-0 היה דוחה את רגע ה-LCP בלי שום תמורה ויזואלית. */
       @keyframes hero-fade-up {
-        from { opacity: 0; transform: translateY(14px); }
-        to { opacity: 1; transform: none; }
+        from { transform: translateY(14px); }
+        to { transform: none; }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -756,7 +759,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1196,7 +1199,8 @@
       .skip-link {
         position: absolute;
         inset-inline-start: 16px;
-        top: -120px;
+        top: 16px;
+        transform: translateY(-160px);
         z-index: 200;
         background: var(--gold);
         color: var(--charcoal);
@@ -1207,9 +1211,10 @@
         border-radius: var(--radius-pill);
         text-decoration: none;
         box-shadow: var(--shadow-lifted);
-        transition: top var(--motion-fast) var(--ease-out);
+        /* transform, לא top: אנימציה על מאפיין פריסה מכריחה layout בכל פריים. */
+        transition: transform var(--motion-fast) var(--ease-out);
       }
-      .skip-link:focus { top: 16px; }
+      .skip-link:focus { transform: none; }
       @media (prefers-reduced-motion: reduce) { .skip-link { transition: none; } }
 
       .vh {
@@ -1247,6 +1252,7 @@
 
       /* ===== VEYA BRAND LAYER — END ===== */
 
+    
     
     
     
