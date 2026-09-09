@@ -1631,15 +1631,17 @@ td.notes.seating {
 .mb-empty::before,
 .load-text::before {
   content: '';
-  width: 14px;
-  height: 14px;
-  border-radius: var(--radius-full);
-  border: 2px solid var(--line);
-  border-top-color: var(--gold);
-  animation: veya-spin 0.7s linear infinite;
-}
-@keyframes veya-spin {
-  to { transform: rotate(360deg); }
+  /* אנימציית הטעינה הממותגת: הלוגו העגול של VEYA מסתובב במקום ספינר גנרי.
+     20px — נקרא כלוגו ולא כנקודה, ולא יוצר קפיצת פריסה בשורת הטעינה הקיימת.
+     @keyframes veya-loader-spin מוגדר ב-VeyaLoader.css (נטען תמיד — הקומפוננטה
+     מיובאת ב-App.tsx בייבוא רגיל). */
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 0;
+  background: url('/logo_nobg.png') center / contain no-repeat;
+  animation: veya-loader-spin 1.4s linear infinite;
+  flex-shrink: 0;
 }
 @media (prefers-reduced-motion: reduce) {
   .dash-loading::before,
