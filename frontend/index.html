@@ -418,6 +418,38 @@
       }
       @media (prefers-reduced-motion: reduce) { .bal[data-scene] .scene-step:not(.is-on) { opacity: 1; transform: none; } }
 
+            /* ═════ לפני / אחרי (§9) ════════════════════════════════════════
+         צד "לפני" הוא שלושה פתקים מפוזרים בזוויות שונות; צד "אחרי" הוא
+         רשימה אחת מיושרת. ההבדל הוא המסר, ולכן הוא נאמר בגיאומטריה
+         ולא במילים. הסיבוב הוא transform בלבד ולא משפיע על הפריסה. */
+      .ba-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 22px; align-items: stretch; }
+      .ba-side { display: grid; gap: 14px; align-content: start; padding: 22px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); }
+      .ba-before { background: var(--ivory-2); }
+      .ba-tag { justify-self: start; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); background: #fff; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 4px 11px; }
+      .ba-tag-on { color: var(--charcoal); background: rgba(201, 162, 39, 0.16); border-color: rgba(201, 162, 39, 0.4); }
+      .ba-scatter { display: grid; gap: 10px; padding: 6px 0; }
+      .ba-note { display: grid; gap: 2px; padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+      .ba-n1 { transform: rotate(-1.4deg); }
+      .ba-n2 { transform: rotate(1.1deg) translateX(6px); }
+      .ba-n3 { transform: rotate(-0.7deg) translateX(-4px); }
+      .ba-note-t { font-weight: 600; color: var(--charcoal); font-size: var(--fs-md); }
+      .ba-note-s { font-size: var(--fs-xs); color: var(--muted); }
+      .ba-say { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
+      .ba-arrow { display: grid; place-items: center; color: var(--gold); font-size: var(--fd-lg); }
+      .ba-one { list-style: none; margin: 0; padding: 0; display: grid; }
+      .ba-one li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+      .ba-one li:last-child { border-bottom: 0; }
+      .ba-one-k { color: var(--charcoal); font-weight: 600; }
+      .ba-one-v { font-size: var(--fs-sm); color: var(--muted); text-align: end; }
+      .ba-one-key .ba-one-k { font-family: var(--font-display); font-size: var(--fs-2xl); color: var(--gold-deep); }
+      @media (max-width: 820px) {
+        .ba-grid { grid-template-columns: 1fr; }
+        .ba-arrow { transform: rotate(-90deg); padding: 2px 0; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .ba-n1, .ba-n2, .ba-n3 { transform: none; }
+      }
+
       .hero-trust { margin-top: 26px; font-size: var(--fs-sm); color: #b6aa93; display: flex; gap: 10px 22px; justify-content: center; flex-wrap: wrap; }
       .hero-trust span { display: inline-flex; align-items: center; gap: 7px; }
       .hero-trust svg { color: var(--gold-light); flex-shrink: 0; }
@@ -943,7 +975,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1475,6 +1507,7 @@
     
     
     
+    
     </style>
   </head>
   <body>
@@ -1599,7 +1632,51 @@
       </section>
 
       <!-- ═════ 4. מועד סגירת הרשימה ═════ -->
-      <section class="flow tone-alt" id="deadline" aria-labelledby="deadline-title">
+      <!-- ═════════════════════════════════════════════════════════════════
+         לפני / אחרי (§9)
+
+         משלם על ההבטחה שה-eyebrow בהירו פותח בה: "הרשימה באקסל,
+         האישורים בטלפון, ההוצאות בפנקס". שלושת הפתקים האלה הם בדיוק
+         שלושת הכרטיסים בצד "לפני", ובצד "אחרי" הם אותם נתונים במקום
+         אחד. בלי איורים גנריים ובלי נתונים מומצאים — רק המבנה.
+         ═════════════════════════════════════════════════════════════════ -->
+    <section class="ba tone-alt" aria-labelledby="ba-title">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="kicker">אותו אירוע, שתי דרכים</span>
+          <h2 id="ba-title" class="section-title">אותם נתונים. ההבדל הוא איפה הם יושבים.</h2>
+        </div>
+
+        <div class="ba-grid reveal d1">
+          <div class="ba-side ba-before">
+            <span class="ba-tag">לפני</span>
+            <div class="ba-scatter" aria-hidden="true">
+              <div class="ba-note ba-n1"><span class="ba-note-t">רשימת מוזמנים</span><span class="ba-note-s">גיליון אקסל · גרסה 4 סופי</span></div>
+              <div class="ba-note ba-n2"><span class="ba-note-t">מי אישר</span><span class="ba-note-s">רשום על דף · חלק בטלפון</span></div>
+              <div class="ba-note ba-n3"><span class="ba-note-t">הוצאות</span><span class="ba-note-s">פנקס · קבלות · מחשבון</span></div>
+            </div>
+            <p class="ba-say">שלושה מקורות שלא מדברים זה עם זה. כל שינוי באחד לא מגיע לשניים האחרים, והמספר האמיתי לא נמצא באף אחד מהם.</p>
+          </div>
+
+          <div class="ba-arrow" aria-hidden="true"><span>←</span></div>
+
+          <div class="ba-side ba-after">
+            <span class="ba-tag ba-tag-on">עם VEYA</span>
+            <ul class="ba-one">
+              <li><span class="ba-one-k">רשימת מוזמנים</span><span class="ba-one-v">מקור אחד</span></li>
+              <li><span class="ba-one-k">אישורי הגעה</span><span class="ba-one-v">מתעדכן לבד</span></li>
+              <li><span class="ba-one-k">התחייבות לאולם</span><span class="ba-one-v">נגזר מהמגיעים</span></li>
+              <li><span class="ba-one-k">הושבה</span><span class="ba-one-v">רק מי שאישר</span></li>
+              <li><span class="ba-one-k">מתנות</span><span class="ba-one-v">משויך למוזמן</span></li>
+              <li class="ba-one-key"><span class="ba-one-k">מאזן</span><span class="ba-one-v">הכול נפגש</span></li>
+            </ul>
+            <p class="ba-say">שינוי במקום אחד מגיע לכל השאר. כשמוזמן מאשר, ההושבה, ההתחייבות והמאזן כבר יודעים.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="flow tone-alt" id="deadline" aria-labelledby="deadline-title">
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">מועד סגירת הרשימה</span>
