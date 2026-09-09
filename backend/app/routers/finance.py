@@ -531,6 +531,7 @@ def report(
 
     return schemas.FinanceReportRead(
         event_title=title,
+        event_type_label=event_terms.get_event_terms(event.event_type).celebration,
         event_date=event.event_date or "",
         venue_name=event.venue_name or "",
         generated_at=datetime.utcnow(),

@@ -2760,6 +2760,9 @@ class FinanceReportRead(BaseModel):
     """
 
     event_title: str = ""
+    #: סוג האירוע בעברית ("חתונה", "אירוע ברית") — לכותרת הדוח. מגיע
+    #: מהלקסיקון ולא נכתב קשיח, אחרת ברית הייתה מקבלת כותרת חתונתית.
+    event_type_label: str = ""
     event_date: str = ""
     venue_name: str = ""
     generated_at: datetime

@@ -2074,6 +2074,8 @@ export interface GiftBreakdown {
 /** הדוח הסופי — תמונה אחת מלאה של האירוע, לא רק סיכום כספי. */
 export interface FinanceReport {
   event_title: string
+  /** סוג האירוע בעברית — לכותרת הדוח. מהלקסיקון, לא קשיח. */
+  event_type_label: string
   event_date: string
   venue_name: string
   generated_at: string

@@ -1787,6 +1787,78 @@ export const strings = {
     // בדוח כי זו בדיוק השורה שבה מישהו מחפש "כמה ירד לנו".
     noFeeNote: 'הסכומים כאן הם מה שהתקבל במלואו. עמלת השירות על מתנה באשראי משולמת בידי נותן המתנה ואינה מנוכה מכם.',
 
+    // ---- הדוח הסופי (§19) ----
+    // שבעה חלקים, בסדר שבו קוראים דוח: מי, כמה הגיעו, מה החוזה אמר,
+    // על מה שולם, למי, מה התקבל, ומה השורה התחתונה.
+    repEventTitle: 'פרטי האירוע',
+    repEventType: 'סוג האירוע',
+    repEventDate: 'תאריך',
+    repVenue: 'מקום',
+    repHosts: 'בעלי האירוע',
+    repGeneratedAt: 'הופק בתאריך',
+
+    repGuestsTitle: 'נתוני מוזמנים',
+    repGuestsTotal: 'סה״כ מוזמנים',
+    repConfirmed: 'אישרו הגעה',
+    repPending: 'לא אישרו',
+    repDeclined: 'לא מגיעים',
+    repActual: 'הגיעו בפועל',
+    repNoShow: 'אישרו ולא הגיעו',
+    repExtra: 'הגיעו מעבר למי שאישר',
+    repNotEntered: 'טרם הוזן',
+
+    repCommitmentTitle: 'התחייבות מול הספק',
+    repMealPrice: 'מחיר ליחידה',
+    repCommitted: 'התחייבות',
+    repBilled: 'מחויבים על',
+    repOver: 'מעבר להתחייבות',
+    repUnused: 'מההתחייבות שלא נוצל',
+    repFinalCost: 'עלות',
+
+    repExpensesTitle: 'כל ההוצאות',
+    repCategory: 'קטגוריה',
+    repExpenseName: 'שם ההוצאה',
+    repVendor: 'ספק',
+    repCalc: 'אופן חישוב',
+    repTotal: 'עלות כוללת',
+    repPaid: 'שולם',
+    repRemaining: 'נשאר לשלם',
+
+    repPaymentsTitle: 'כל התשלומים',
+    repPaymentFor: 'עבור',
+    repPaymentTo: 'למי',
+    repPaymentAmount: 'סכום',
+    repPaymentDate: 'תאריך',
+    repPaymentKind: 'סוג',
+    repEmptyPayments: 'לא נרשמו תשלומים.',
+
+    repGiftsTitle: 'כל המתנות',
+    repGiftFrom: 'ממי',
+    repGiftSource: 'סוג',
+    repGiftKind: 'שיוך',
+    repGiftGuest: 'מוזמן',
+    repGiftExternal: 'לא מהרשימה',
+    repGiftUnknown: 'לא מזוהה',
+
+    repSummaryTitle: 'סיכום',
+    repGiftsEnvelopes: 'מעטפות',
+    repGiftsCredit: 'מתנות באשראי',
+    repGiftsExternal: 'מתנות מחוץ לרשימה',
+    repGiftsTotal: 'סה״כ מתנות',
+    // §20 — במילים פשוטות, בלי מונחים חשבונאיים.
+    repResultSurplus: 'האירוע הסתיים בעודף',
+    repResultDeficit: 'חסר לכיסוי העלות',
+    repResultEven: 'המתנות כיסו בדיוק את העלות',
+    repResultFormula: 'סה״כ מתנות פחות סה״כ עלות',
+
+    // גיליונות ה-Excel (§22).
+    sheetSummary: 'סיכום',
+    sheetGuests: 'מוזמנים',
+    sheetExpenses: 'הוצאות',
+    sheetPayments: 'תשלומים',
+    sheetGifts: 'מתנות',
+    excelFileName: (title: string) => `כספים — ${title}.xlsx`,
+
     downloadReport: 'הורדה ל-Excel',
     printReport: 'הדפסה / PDF',
     reportFileName: (title: string) => `כספים — ${title}.csv`,
