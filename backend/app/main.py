@@ -539,7 +539,8 @@ def _migrate_expense_payments() -> None:
     """
     from app import finance
 
-    with SessionLocal() as db:
+    # תחזוקת עלייה — דרך MigrationSessionLocal (עוקף RLS), כמו שאר ה-_migrate_*.
+    with MigrationSessionLocal() as db:
         try:
             legacy = (
                 db.query(models.EventExpense)
