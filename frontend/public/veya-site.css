@@ -769,4 +769,68 @@ input:focus-visible, select:focus-visible {
 .article p.article-lead { font-size: var(--fs-xl); }
 .article p.article-meta { font-size: var(--fs-xs); }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Header — "נאסף" בגלילה
+
+   בראש העמוד ה-header משולב בהירו הכהה. ברגע שהמשתמש מתחיל לגלול הוא
+   מתכווץ ומקבל רקע משלו, כי מאותו רגע הוא צף מעל תוכן בהיר וצריך גבול
+   משלו כדי להיקרא.
+
+   שינוי גובה בלבד — לא transform — ולכן הוא לא גורם ל-layout shift:
+   ה-header הוא `position: sticky` ותופס את מקומו בזרימה מלכתחילה.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.site-header {
+  transition: background var(--motion-normal) var(--ease-out),
+              box-shadow var(--motion-normal) var(--ease-out),
+              border-color var(--motion-normal) var(--ease-out);
+}
+.site-header .wrap {
+  transition: height var(--motion-normal) var(--ease-out);
+}
+.site-header.is-compact {
+  background: rgba(23, 19, 13, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom-color: rgba(201, 162, 39, 0.22);
+  box-shadow: var(--shadow-sm);
+}
+.site-header.is-compact .wrap { height: 58px; }
+.site-header.is-compact .header-logo { height: 28px; }
+.site-header .header-logo { transition: height var(--motion-normal) var(--ease-out); }
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header, .site-header .wrap, .site-header .header-logo { transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Footer — היררכיה במקום רשימה שטוחה
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.footer-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 28px 24px;
+  margin-top: 34px;
+  padding-top: 30px;
+  border-top: 1px solid rgba(201, 162, 39, 0.14);
+}
+.footer-col h3 {
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  color: var(--gold-light);
+  margin: 0 0 12px;
+  font-family: var(--font-body);
+}
+.footer-col ul { list-style: none; margin: 0; padding: 0; }
+.footer-col li + li { margin-top: 8px; }
+.footer-col a {
+  color: #b6aa93;
+  text-decoration: none;
+  font-size: var(--fs-xs);
+  transition: color var(--motion-fast) var(--ease-out);
+}
+.footer-col a:hover { color: var(--cream-text); }
+.footer-col a:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 3px; }
+
 /* ===== VEYA BRAND LAYER — END ===== */

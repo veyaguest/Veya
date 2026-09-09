@@ -207,3 +207,24 @@
   window.veyaCountUp = countUp
   window.veyaReducedMotion = reduced
 })()
+
+;/* ── Header שמתכווץ בגלילה ──
+   נפרד מהמודול הראשי בכוונה: הוא לא אנימציית תוכן אלא מצב ניווט, והוא
+   צריך לרוץ גם כשהמשתמש ביקש תנועה מופחתת (שם הוא פשוט מחליף מצב בלי
+   מעבר — ה-CSS מבטל את ה-transition). */
+(function () {
+  'use strict'
+  var header = document.querySelector('.site-header')
+  if (!header) return
+  var ticking = false
+  function update() {
+    ticking = false
+    header.classList.toggle('is-compact', window.scrollY > 40)
+  }
+  update()
+  window.addEventListener('scroll', function () {
+    if (ticking) return
+    ticking = true
+    requestAnimationFrame(update)
+  }, { passive: true })
+})()

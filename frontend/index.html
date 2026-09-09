@@ -754,7 +754,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                              /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                          /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1121,8 +1121,74 @@
       .article p.article-lead { font-size: var(--fs-xl); }
       .article p.article-meta { font-size: var(--fs-xs); }
 
+      /* ═══════════════════════════════════════════════════════════════════════
+         Header — "נאסף" בגלילה
+
+         בראש העמוד ה-header משולב בהירו הכהה. ברגע שהמשתמש מתחיל לגלול הוא
+         מתכווץ ומקבל רקע משלו, כי מאותו רגע הוא צף מעל תוכן בהיר וצריך גבול
+         משלו כדי להיקרא.
+
+         שינוי גובה בלבד — לא transform — ולכן הוא לא גורם ל-layout shift:
+         ה-header הוא `position: sticky` ותופס את מקומו בזרימה מלכתחילה.
+         ═══════════════════════════════════════════════════════════════════════ */
+
+      .site-header {
+        transition: background var(--motion-normal) var(--ease-out),
+                    box-shadow var(--motion-normal) var(--ease-out),
+                    border-color var(--motion-normal) var(--ease-out);
+      }
+      .site-header .wrap {
+        transition: height var(--motion-normal) var(--ease-out);
+      }
+      .site-header.is-compact {
+        background: rgba(23, 19, 13, 0.92);
+        backdrop-filter: blur(12px);
+        border-bottom-color: rgba(201, 162, 39, 0.22);
+        box-shadow: var(--shadow-sm);
+      }
+      .site-header.is-compact .wrap { height: 58px; }
+      .site-header.is-compact .header-logo { height: 28px; }
+      .site-header .header-logo { transition: height var(--motion-normal) var(--ease-out); }
+
+      @media (prefers-reduced-motion: reduce) {
+        .site-header, .site-header .wrap, .site-header .header-logo { transition: none; }
+      }
+
+      /* ═══════════════════════════════════════════════════════════════════════
+         Footer — היררכיה במקום רשימה שטוחה
+         ═══════════════════════════════════════════════════════════════════════ */
+
+      .footer-cols {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 28px 24px;
+        margin-top: 34px;
+        padding-top: 30px;
+        border-top: 1px solid rgba(201, 162, 39, 0.14);
+      }
+      .footer-col h3 {
+        font-size: var(--fs-2xs);
+        letter-spacing: 0.16em;
+        font-weight: 700;
+        color: var(--gold-light);
+        margin: 0 0 12px;
+        font-family: var(--font-body);
+      }
+      .footer-col ul { list-style: none; margin: 0; padding: 0; }
+      .footer-col li + li { margin-top: 8px; }
+      .footer-col a {
+        color: #b6aa93;
+        text-decoration: none;
+        font-size: var(--fs-xs);
+        transition: color var(--motion-fast) var(--ease-out);
+      }
+      .footer-col a:hover { color: var(--cream-text); }
+      .footer-col a:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 3px; }
+
       /* ===== VEYA BRAND LAYER — END ===== */
 
+    
+    
     
     
     
@@ -1749,24 +1815,56 @@
           </svg>
           <span class="footer-tag">מערכת לניהול אירועים — מוזמנים, אישורי הגעה, הושבה ומאזן האירוע במקום אחד.</span>
         </div>
-        <nav aria-label="ניווט תחתון">
-          <a href="/features/guests/">מוזמנים</a>
-          <a href="/features/rsvp/">אישורי הגעה</a>
-          <a href="/features/calls/">מעקב טלפוני</a>
-          <a href="/features/seating/">הושבה</a>
-          <a href="/features/finance/">כספי האירוע</a>
-          <a href="/calculators/">מחשבונים</a>
-          <a href="/nuschim/">נוסחים</a>
-          <a href="/guides/">מדריכים</a>
-          <a href="/app">כניסה למערכת</a>
-        </nav>
-        <nav aria-label="קישורים משפטיים">
-          <a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">תנאי שימוש</a>
-          <a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">מדיניות פרטיות</a>
-          <a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">מדיניות Cookies</a>
-          <a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">הצהרת נגישות</a>
-          <a href="/legal/about.html#contact" target="_blank" rel="noopener noreferrer">יצירת קשר</a>
-        </nav>
+        <div class="footer-cols">
+          <div class="footer-col">
+            <h3>מוצר</h3>
+            <ul>
+              <li><a href="/features/guests/">רשימת מוזמנים</a></li>
+              <li><a href="/features/rsvp/">אישורי הגעה</a></li>
+              <li><a href="/features/calls/">מעקב טלפוני</a></li>
+              <li><a href="/features/seating/">סידור הושבה</a></li>
+              <li><a href="/features/finance/">מאזן</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>אירועים</h3>
+            <ul>
+              <li><a href="/events/wedding/">חתונה</a></li>
+              <li><a href="/events/henna/">חינה</a></li>
+              <li><a href="/events/bar-mitzvah/">בר מצווה</a></li>
+              <li><a href="/events/bat-mitzvah/">בת מצווה</a></li>
+              <li><a href="/events/brit/">ברית</a></li>
+              <li><a href="/events/brita/">בריתה</a></li>
+              <li><a href="/events/business/">אירוע עסקי</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>כלים</h3>
+            <ul>
+              <li><a href="/calculators/venue-commitment/">מחשבון התחייבות</a></li>
+              <li><a href="/calculators/rsvp-timeline/">לוח זמנים</a></li>
+              <li><a href="/calculators/">כל המחשבונים</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>ידע</h3>
+            <ul>
+              <li><a href="/guides/">מדריכים</a></li>
+              <li><a href="/nuschim/">נוסחי הודעות</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>VEYA</h3>
+            <ul>
+              <li><a href="/legal/about.html" target="_blank" rel="noopener noreferrer">אודות</a></li>
+              <li><a href="/legal/about.html#contact" target="_blank" rel="noopener noreferrer">יצירת קשר</a></li>
+              <li><a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">תנאי שימוש</a></li>
+              <li><a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">מדיניות פרטיות</a></li>
+              <li><a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">הצהרת נגישות</a></li>
+              <li><a href="/app">כניסה למערכת</a></li>
+            </ul>
+          </div>
+        </div>
       </div>
       <div class="wrap" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(201,162,39,0.14); font-size: 13px; color: #9b907c;">
         © VEYA — מערכת לניהול אירועים
