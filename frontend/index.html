@@ -390,6 +390,34 @@
         .tl-list[data-scene] .scene-step:not(.is-on) { opacity: 1; transform: none; }
       }
 
+            /* ═════ מאזן האירוע (§12) ═══════════════════════════════════════
+         מספרים גדולים, לא מסך פיננסי. ארבע משבצות עובדה ואחריהן שורה
+         אחת שמקבלת את כל המשקל — היא התשובה שבגללה נכנסו לכאן. */
+      .bal { margin-top: 34px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); overflow: hidden; }
+      .bal-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--ivory-2); }
+      .bal-title { font-family: var(--font-display); font-size: var(--fs-2xl); color: var(--charcoal); }
+      .bal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .bal-cell { display: grid; gap: 4px; padding: 20px; border-inline-start: 1px solid var(--line); }
+      .bal-cell:first-child { border-inline-start: 0; }
+      .bal-lbl { font-size: var(--fs-sm); color: var(--muted); font-weight: 600; }
+      .bal-val { font-family: var(--font-display); font-size: var(--fd-lg); color: var(--charcoal); font-variant-numeric: tabular-nums; line-height: 1.1; }
+      .bal-bottom { padding: 22px 20px; border-top: 1px solid var(--line); background: linear-gradient(180deg, rgba(201,162,39,0.07), rgba(201,162,39,0.02)); display: grid; gap: 6px; }
+      .bal-big { font-family: var(--font-display); font-size: var(--fd-2xl); color: var(--gold-deep); line-height: 1.05; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+      .bal-note { font-size: var(--fs-sm); color: var(--muted); max-width: 62ch; }
+      .bal[data-scene] .scene-step:not(.is-on) { opacity: 0; transform: translateY(8px); }
+      .bal[data-scene] .scene-step.is-on { opacity: 1; transform: none; transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out); }
+      @media (max-width: 780px) {
+        .bal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .bal-cell:nth-child(odd) { border-inline-start: 0; }
+        .bal-cell:nth-child(n+3) { border-top: 1px solid var(--line); }
+      }
+      @media (max-width: 400px) {
+        .bal-grid { grid-template-columns: 1fr; }
+        .bal-cell { border-inline-start: 0; }
+        .bal-cell + .bal-cell { border-top: 1px solid var(--line); }
+      }
+      @media (prefers-reduced-motion: reduce) { .bal[data-scene] .scene-step:not(.is-on) { opacity: 1; transform: none; } }
+
       .hero-trust { margin-top: 26px; font-size: var(--fs-sm); color: #b6aa93; display: flex; gap: 10px 22px; justify-content: center; flex-wrap: wrap; }
       .hero-trust span { display: inline-flex; align-items: center; gap: 7px; }
       .hero-trust svg { color: var(--gold-light); flex-shrink: 0; }
@@ -915,7 +943,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                    /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                          /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1408,6 +1436,7 @@
 
       /* ===== VEYA BRAND LAYER — END ===== */
 
+    
     
     
     
@@ -2130,6 +2159,46 @@
               במיוחד כשמגיעים לאירועים של אותם אנשים בעתיד — כך רשימת המוזמנים מפסיקה
               להיות מסמך חד-פעמי והופכת לידע שנשאר אצלכם.
             </p>
+          </div>
+        
+          <!-- ═════ מאזן האירוע (§12) ═════════════════════════════════════
+               השדות הם אלה שהשרת באמת מחזיר ב-``FinanceSummaryRead``:
+               ``cost.attendees`` · ``cost.total`` · ``income.envelopes`` ·
+               ``cost.cost_per_attendee`` · ``bottom_line``. המספרים הם
+               דוגמה עקבית בפני עצמה — 128,400 חלקי 463 הם 277 לאדם,
+               ו-141,600 פחות 128,400 הם 13,200. -->
+          <div class="bal reveal d2" data-scene data-scene-gap="300">
+            <div class="bal-head">
+              <span class="bal-title">מאזן האירוע</span>
+              <span class="numcard-tag">דוגמה</span>
+            </div>
+            <div class="bal-grid">
+              <div class="bal-cell scene-step" data-step="1">
+                <span class="bal-lbl">הגיעו בפועל</span>
+                <span class="bal-val"><span data-count-to="463">463</span></span>
+              </div>
+              <div class="bal-cell scene-step" data-step="2">
+                <span class="bal-lbl">סך ההוצאות</span>
+                <span class="bal-val"><span data-count-to="128400">128,400</span> ₪</span>
+              </div>
+              <div class="bal-cell scene-step" data-step="3">
+                <span class="bal-lbl">סך המתנות שנספרו</span>
+                <span class="bal-val"><span data-count-to="141600">141,600</span> ₪</span>
+              </div>
+              <div class="bal-cell scene-step" data-step="4">
+                <span class="bal-lbl">עלות בפועל לאדם</span>
+                <span class="bal-val"><span data-count-to="277">277</span> ₪</span>
+              </div>
+            </div>
+            <div class="bal-bottom scene-step" data-step="5">
+              <span class="bal-lbl">השורה התחתונה</span>
+              <strong class="bal-big">+<span data-count-to="13200">13,200</span> ₪</strong>
+              <span class="bal-note">
+                מה שהתקבל פחות מה שיצא. VEYA מציגה את המספר הזה כפי שהוא —
+                גם כשהוא שלילי. המספרים כאן להמחשה; המאזן האמיתי נבנה
+                מההוצאות שהזנתם ומהמעטפות שספרתם.
+              </span>
+            </div>
           </div>
         </div>
       </section>
