@@ -1,0 +1,42 @@
+# VEYA
+
+> VEYA מלווה אירוע מהמוזמן הראשון ועד השורה התחתונה: רשימת מוזמנים,
+> אישורי הגעה, סידור הושבה ומאזן האירוע. שבעה סוגי אירוע: חתונה,
+> בר מצווה, בת מצווה, חינה, ברית, בריתה ואירוע עסקי. בעברית, בישראל.
+
+## יכולות
+- [מאזן האירוע — כמה האירוע שלכם באמת עולה](https://veyaguest.co.il/features/finance/)
+- [אישורי הגעה — מהתשובה עד המספר הסופי](https://veyaguest.co.il/features/rsvp/)
+- [מעקב אחרי מי שלא אישר הגעה](https://veyaguest.co.il/features/calls/)
+- [ניהול רשימת מוזמנים לאירוע](https://veyaguest.co.il/features/guests/)
+- [סידור הושבה לאירוע — מהרשימה לשולחנות](https://veyaguest.co.il/features/seating/)
+
+## מחשבונים
+- [מחשבונים לאירוע](https://veyaguest.co.il/calculators/)
+- [מחשבון התחייבות לאולם — על כמה באמת משלמים](https://veyaguest.co.il/calculators/venue-commitment/)
+- [מחשבון לוח זמנים לאישורי הגעה](https://veyaguest.co.il/calculators/rsvp-timeline/)
+
+## סוגי אירוע
+- [ניהול מוזמנים ואישורי הגעה לחתונה](https://veyaguest.co.il/events/wedding/)
+- [ניהול מוזמנים ואישורי הגעה לחינה](https://veyaguest.co.il/events/henna/)
+- [ניהול מוזמנים ואישורי הגעה לבר מצווה](https://veyaguest.co.il/events/bar-mitzvah/)
+- [ניהול מוזמנים ואישורי הגעה לבת מצווה](https://veyaguest.co.il/events/bat-mitzvah/)
+- [ניהול מוזמנים ואישורי הגעה לברית](https://veyaguest.co.il/events/brit/)
+- [ניהול מוזמנים ואישורי הגעה לבריתה](https://veyaguest.co.il/events/brita/)
+- [ניהול משתתפים ואישורי הגעה לאירוע עסקי](https://veyaguest.co.il/events/business/)
+
+## מדריכים
+- [מדריכים לניהול אירוע](https://veyaguest.co.il/guides/)
+- [התחייבות לאולם — כמה מנות באמת להתחייב](https://veyaguest.co.il/guides/hitchayvut-la-ulam/)
+- [מה קורה אם מגיעים פחות ממה שהתחייבתם](https://veyaguest.co.il/guides/pachot-me-hahitchayvut/)
+- [רזרבה באירוע — מפוזרת או שולחן שלם](https://veyaguest.co.il/guides/rezerva-be-erua/)
+- [האם האירוע מכסה את עצמו — ואיך בכלל בודקים](https://veyaguest.co.il/guides/haim-haerua-mechase-atzmo/)
+- [אישורי הגעה — לוח הזמנים שעובד בישראל](https://veyaguest.co.il/guides/luach-zmanim-ishurey-hagaa/)
+
+## הודעות למוזמנים
+- [הודעות — מה המוזמנים מקבלים](https://veyaguest.co.il/nuschim/)
+
+## תנאים ומדיניות
+- [תנאי שימוש](https://veyaguest.co.il/legal/terms.html)
+- [מדיניות פרטיות](https://veyaguest.co.il/legal/privacy.html)
+- [מדיניות AI](https://veyaguest.co.il/legal/ai-policy.html)

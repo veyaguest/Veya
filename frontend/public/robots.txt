@@ -4,3 +4,6 @@ Disallow: /app
 Disallow: /confirm/
 
 Sitemap: https://veyaguest.co.il/sitemap.xml
+
+# אינדקס קריא ל-crawlers של AI. גוגל מתעלמת ממנו — הוא לא תחליף ל-HTML ול-schema.
+# LLM-Index: https://veyaguest.co.il/llms.txt

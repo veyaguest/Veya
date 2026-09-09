@@ -25,11 +25,14 @@ const GUIDES_SRC = path.resolve(__dirname, '../content/guides')
 const API_URL = process.env.VITE_API_URL || 'http://localhost:8000'
 
 const written = []
+const titles = new Map()
 function emit(routePath, html) {
   const dir = path.join(PUB, routePath.replace(/^\/|\/$/g, ''))
   mkdirSync(dir, { recursive: true })
   writeFileSync(path.join(dir, 'index.html'), html)
   written.push(routePath)
+  const t = html.match(/<title>([^<]*)<\/title>/)
+  if (t) titles.set(routePath, t[1].replace(/\s*\|\s*VEYA\s*$/, '').trim())
   console.log(`✓ ${routePath}`)
 }
 
@@ -1071,6 +1074,27 @@ ${faqHtml(faq)}
    sitemap
    ════════════════════════════════════════════════════════════════════ */
 
+/* llms.txt — אינדקס קריא ל-crawlers של AI. הוא נגזר מאותה רשימת נתיבים
+   שממנה נבנה ה-sitemap, ולכן הוא לא יכול להיפרד ממנה. גוגל מתעלמת ממנו
+   במפורש; הוא כאן עבור crawlers אחרים, ולא כתחליף ל-HTML ול-schema. */
+function llmsTxt(routes) {
+  const group = (label, filter) => {
+    const rows = routes.filter(filter).map((r) => `- [${titles.get(r) || r}](${SITE}${r})`)
+    return rows.length ? `\n## ${label}\n${rows.join('\n')}\n` : ''
+  }
+  return `# VEYA
+
+> VEYA מלווה אירוע מהמוזמן הראשון ועד השורה התחתונה: רשימת מוזמנים,
+> אישורי הגעה, סידור הושבה ומאזן האירוע. שבעה סוגי אירוע: חתונה,
+> בר מצווה, בת מצווה, חינה, ברית, בריתה ואירוע עסקי. בעברית, בישראל.
+${group('יכולות', (r) => r.startsWith('/features/'))}${group('מחשבונים', (r) => r.startsWith('/calculators/'))}${group('סוגי אירוע', (r) => r.startsWith('/events/'))}${group('מדריכים', (r) => r.startsWith('/guides/'))}${group('הודעות למוזמנים', (r) => r.startsWith('/nuschim'))}
+## תנאים ומדיניות
+- [תנאי שימוש](${SITE}/legal/terms.html)
+- [מדיניות פרטיות](${SITE}/legal/privacy.html)
+- [מדיניות AI](${SITE}/legal/ai-policy.html)
+`
+}
+
 function sitemap(routes) {
   const today = new Date().toISOString().slice(0, 10)
   const url = (loc, priority, freq) =>
@@ -1116,4 +1140,6 @@ for (const p of await buildNuschim(API_URL)) emit(p.path, p.html)
 
 writeFileSync(path.join(PUB, 'sitemap.xml'), sitemap(written))
 console.log(`✓ sitemap.xml (${written.length + 1} כתובות)`)
+writeFileSync(path.join(PUB, 'llms.txt'), llmsTxt(written))
+console.log(`✓ llms.txt`)
 console.log(`\nAPI לעמודי המחשבון: ${API_URL}`)
