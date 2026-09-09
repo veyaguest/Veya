@@ -13,6 +13,7 @@
 export const EVENT_TYPES = [
   {
     slug: 'wedding',
+    gender: 'f',   // מין דקדוקי של `the` — קובע התאמת פועל/תואר
     name: 'חתונה',
     the: 'החתונה',
     guests: 'מוזמנים',
@@ -32,6 +33,7 @@ export const EVENT_TYPES = [
   },
   {
     slug: 'henna',
+    gender: 'f',   // מין דקדוקי של `the` — קובע התאמת פועל/תואר
     name: 'חינה',
     the: 'החינה',
     guests: 'מוזמנים',
@@ -51,6 +53,7 @@ export const EVENT_TYPES = [
   },
   {
     slug: 'bar-mitzvah',
+    gender: 'm',   // מין דקדוקי של `the` — קובע התאמת פועל/תואר
     name: 'בר מצווה',
     the: 'בר המצווה',
     guests: 'מוזמנים',
@@ -70,6 +73,7 @@ export const EVENT_TYPES = [
   },
   {
     slug: 'bat-mitzvah',
+    gender: 'f',   // מין דקדוקי של `the` — קובע התאמת פועל/תואר
     name: 'בת מצווה',
     the: 'בת המצווה',
     guests: 'מוזמנים',
@@ -89,6 +93,7 @@ export const EVENT_TYPES = [
   },
   {
     slug: 'brit',
+    gender: 'f',   // מין דקדוקי של `the` — קובע התאמת פועל/תואר
     name: 'ברית',
     the: 'הברית',
     guests: 'מוזמנים',
@@ -108,6 +113,7 @@ export const EVENT_TYPES = [
   },
   {
     slug: 'brita',
+    gender: 'f',   // מין דקדוקי של `the` — קובע התאמת פועל/תואר
     name: 'בריתה',
     the: 'הבריתה',
     guests: 'מוזמנים',
@@ -127,6 +133,7 @@ export const EVENT_TYPES = [
   },
   {
     slug: 'business',
+    gender: 'm',   // מין דקדוקי של `the` — קובע התאמת פועל/תואר
     name: 'אירוע עסקי',
     the: 'האירוע',
     guests: 'משתתפים',

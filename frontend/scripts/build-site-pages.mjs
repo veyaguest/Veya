@@ -25,11 +25,14 @@ const GUIDES_SRC = path.resolve(__dirname, '../content/guides')
 const API_URL = process.env.VITE_API_URL || 'http://localhost:8000'
 
 const written = []
+const titles = new Map()
 function emit(routePath, html) {
   const dir = path.join(PUB, routePath.replace(/^\/|\/$/g, ''))
   mkdirSync(dir, { recursive: true })
   writeFileSync(path.join(dir, 'index.html'), html)
   written.push(routePath)
+  const t = html.match(/<title>([^<]*)<\/title>/)
+  if (t) titles.set(routePath, t[1].replace(/\s*\|\s*VEYA\s*$/, '').trim())
   console.log(`✓ ${routePath}`)
 }
 
@@ -124,7 +127,14 @@ ${rel.map((r) => `            <li><a href="${r.url}"><h3>${esc(r.title)}</h3></a
         datePublished: g.published,
         dateModified: g.updated || g.published,
         author: { '@type': 'Organization', name: 'צוות VEYA', url: SITE },
-        publisher: { '@type': 'Organization', name: 'VEYA', url: SITE, logo: `${SITE}/logo.png` },
+        publisher: {
+          '@type': 'Organization',
+          name: 'VEYA',
+          url: SITE,
+          // Google מתעדת את logo כ-ImageObject. מחרוזת עוברת, אבל מייצרת
+          // אזהרה ב-Rich Results Test ולא מזכה בתוצאת הלוגו.
+          logo: { '@type': 'ImageObject', url: `${SITE}/logo.png` },
+        },
         mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE}/guides/${g.slug}/` },
       },
     ],
@@ -922,10 +932,10 @@ function eventPage(t) {
   const faq = [
     {
       q: `במה ${t.the} שונה מסוגי אירוע אחרים במערכת?`,
-      a: `זו אותה מערכת, אבל השפה, קבוצות ה${t.guests} ותבנית ההוצאות מותאמות ל${t.the}. אין כאן "מצב חתונה" עם כותרת אחרת.`,
+      a: `זו אותה מערכת, אבל השפה, קבוצות ה${t.guests} ותבנית ההוצאות מותאמות ${pref("ל", t.the)}. אין כאן "מצב חתונה" עם כותרת אחרת.`,
     },
     {
-      q: `אילו קבוצות ${t.guests} יש ב${t.the}?`,
+      q: `אילו קבוצות ${t.guests} יש ${pref("ב", t.the)}?`,
       a: groups.length
         ? `${groups.join(', ')} — ואפשר לשייך כל מוזמן לקבוצה שמתאימה לו.`
         : 'אפשר ליצור קבוצות שמתאימות לאירוע שלכם.',
@@ -968,7 +978,7 @@ ${((FOCUS[t.slug] || {}).chips || []).map((c) => `            <span class="note-
         <div class="wrap">
           <div class="why-inner">
             <span class="kicker">מה מיוחד כאן</span>
-            <h2 class="section-title">${esc('למה ' + t.the + ' לא מתנהל כמו כל אירוע אחר')}</h2>
+            <h2 class="section-title">${esc('למה ' + t.the + (t.gender === 'f' ? ' לא מתנהלת' : ' לא מתנהל') + ' כמו כל אירוע אחר')}</h2>
 ${t.angle.map((para) => `            <p>${esc(para)}</p>`).join('\n')}
           </div>
         </div>
@@ -978,7 +988,7 @@ ${t.angle.map((para) => `            <p>${esc(para)}</p>`).join('\n')}
         <div class="wrap">
           <div class="section-head">
             <span class="kicker">בפועל</span>
-            <h2 class="section-title">${esc('שלושה דברים שהמערכת עושה אחרת ב' + t.the)}</h2>
+            <h2 class="section-title">${esc('שלושה דברים שהמערכת עושה אחרת ' + pref('ב', t.the))}</h2>
           </div>
           <div class="supporting-grid">
 ${t.highlights.map(([h, p]) => `            <article class="supporting-item"><h3>${esc(h)}</h3><p>${esc(p)}</p></article>`).join('\n')}
@@ -1014,7 +1024,7 @@ ${groups.map((g) => `            <div class="evt-card" style="text-align:center"
           </div>
           <div class="numcard" style="max-width:660px">
             <div class="numcard-head">
-              <h3>${esc('מוצע מיד ב' + t.the)}</h3>
+              <h3>${esc('מוצע מיד ' + pref('ב', t.the))}</h3>
               <span class="numcard-tag">ברירת מחדל</span>
             </div>
             <dl>
@@ -1071,6 +1081,34 @@ ${faqHtml(faq)}
    sitemap
    ════════════════════════════════════════════════════════════════════ */
 
+/* llms.txt — אינדקס קריא ל-crawlers של AI. הוא נגזר מאותה רשימת נתיבים
+   שממנה נבנה ה-sitemap, ולכן הוא לא יכול להיפרד ממנה. גוגל מתעלמת ממנו
+   במפורש; הוא כאן עבור crawlers אחרים, ולא כתחליף ל-HTML ול-schema. */
+function llmsTxt(routes) {
+  const group = (label, filter) => {
+    const rows = routes.filter(filter).map((r) => `- [${titles.get(r) || r}](${SITE}${r})`)
+    return rows.length ? `\n## ${label}\n${rows.join('\n')}\n` : ''
+  }
+  return `# VEYA
+
+> VEYA מלווה אירוע מהמוזמן הראשון ועד השורה התחתונה: רשימת מוזמנים,
+> אישורי הגעה, סידור הושבה ומאזן האירוע. שבעה סוגי אירוע: חתונה,
+> בר מצווה, בת מצווה, חינה, ברית, בריתה ואירוע עסקי. בעברית, בישראל.
+${group('יכולות', (r) => r.startsWith('/features/'))}${group('מחשבונים', (r) => r.startsWith('/calculators/'))}${group('סוגי אירוע', (r) => r.startsWith('/events/'))}${group('מדריכים', (r) => r.startsWith('/guides/'))}${group('הודעות למוזמנים', (r) => r.startsWith('/nuschim'))}
+## תנאים ומדיניות
+- [תנאי שימוש](${SITE}/legal/terms.html)
+- [מדיניות פרטיות](${SITE}/legal/privacy.html)
+- [מדיניות AI](${SITE}/legal/ai-policy.html)
+`
+}
+
+/* בעברית אות היחס ב/ל/כ בולעת את ה' הידיעה: ב + החתונה = בחתונה, לא
+   "בהחתונה". שדה `the` בלקסיקון כבר מיודע, ולכן כל שרשור ידני יצר שגיאה
+   דקדוקית. הפונקציה הזו היא המקום היחיד שמותר לחבר בו אות יחס למונח. */
+function pref(letter, definite) {
+  return letter + (definite.startsWith('ה') ? definite.slice(1) : definite)
+}
+
 function sitemap(routes) {
   const today = new Date().toISOString().slice(0, 10)
   const url = (loc, priority, freq) =>
@@ -1116,4 +1154,6 @@ for (const p of await buildNuschim(API_URL)) emit(p.path, p.html)
 
 writeFileSync(path.join(PUB, 'sitemap.xml'), sitemap(written))
 console.log(`✓ sitemap.xml (${written.length + 1} כתובות)`)
+writeFileSync(path.join(PUB, 'llms.txt'), llmsTxt(written))
+console.log(`✓ llms.txt`)
 console.log(`\nAPI לעמודי המחשבון: ${API_URL}`)

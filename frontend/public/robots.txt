@@ -1,6 +1,92 @@
+# ═══════════════════════════════════════════════════════════════
+#  VEYA — robots.txt
+#
+#  העמדה כאן היא "פתוח לכולם": גם למנועי חיפוש קלאסיים וגם ל-crawlers
+#  של AI. כל בוט מקבל בלוק משלו במקום להסתמך על *, כדי שאפשר יהיה
+#  לחסום בוט אחד בעתיד בלי לגעת בשאר.
+#
+#  ⚠️ כלל קשיח: בוט שיש לו בלוק משלו מפסיק לקרוא את הבלוק של *.
+#     לכן כל בלוק חייב לחזור על ה-Disallow. אחרת /app ייפתח לסריקה.
+# ═══════════════════════════════════════════════════════════════
+
 User-agent: *
 Allow: /
 Disallow: /app
 Disallow: /confirm/
 
+# ── מנועי חיפוש ────────────────────────────────────────────────
+User-agent: Googlebot
+Allow: /
+Disallow: /app
+Disallow: /confirm/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /app
+Disallow: /confirm/
+
+# ── OpenAI: אימון וחיפוש הם שני בוטים נפרדים ──────────────────
+# GPTBot = אימון מודל. OAI-SearchBot = ציטוט בתוצאות ChatGPT.
+# חסימת GPTBot לבדה לא פוגעת בציטוט, כל עוד השניים האחרים פתוחים.
+User-agent: GPTBot
+Allow: /
+Disallow: /app
+Disallow: /confirm/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /app
+Disallow: /confirm/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /app
+Disallow: /confirm/
+
+# ── Perplexity ─────────────────────────────────────────────────
+User-agent: PerplexityBot
+Allow: /
+Disallow: /app
+Disallow: /confirm/
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /app
+Disallow: /confirm/
+
+# ── Anthropic ──────────────────────────────────────────────────
+User-agent: ClaudeBot
+Allow: /
+Disallow: /app
+Disallow: /confirm/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /app
+Disallow: /confirm/
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /app
+Disallow: /confirm/
+
+# ── נוספים ─────────────────────────────────────────────────────
+User-agent: MistralAI-User
+Allow: /
+Disallow: /app
+Disallow: /confirm/
+
+User-agent: CCBot
+Allow: /
+Disallow: /app
+Disallow: /confirm/
+
+User-agent: Meta-ExternalAgent
+Allow: /
+Disallow: /app
+Disallow: /confirm/
+
 Sitemap: https://veyaguest.co.il/sitemap.xml
+
+# אינדקס קריא ל-crawlers של AI. גוגל מתעלמת ממנו — הוא לא תחליף ל-HTML ול-schema.
+# LLM-Index: https://veyaguest.co.il/llms.txt
