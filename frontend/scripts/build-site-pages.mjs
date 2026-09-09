@@ -925,10 +925,10 @@ function eventPage(t) {
   const faq = [
     {
       q: `במה ${t.the} שונה מסוגי אירוע אחרים במערכת?`,
-      a: `זו אותה מערכת, אבל השפה, קבוצות ה${t.guests} ותבנית ההוצאות מותאמות ל${t.the}. אין כאן "מצב חתונה" עם כותרת אחרת.`,
+      a: `זו אותה מערכת, אבל השפה, קבוצות ה${t.guests} ותבנית ההוצאות מותאמות ${pref("ל", t.the)}. אין כאן "מצב חתונה" עם כותרת אחרת.`,
     },
     {
-      q: `אילו קבוצות ${t.guests} יש ב${t.the}?`,
+      q: `אילו קבוצות ${t.guests} יש ${pref("ב", t.the)}?`,
       a: groups.length
         ? `${groups.join(', ')} — ואפשר לשייך כל מוזמן לקבוצה שמתאימה לו.`
         : 'אפשר ליצור קבוצות שמתאימות לאירוע שלכם.',
@@ -971,7 +971,7 @@ ${((FOCUS[t.slug] || {}).chips || []).map((c) => `            <span class="note-
         <div class="wrap">
           <div class="why-inner">
             <span class="kicker">מה מיוחד כאן</span>
-            <h2 class="section-title">${esc('למה ' + t.the + ' לא מתנהל כמו כל אירוע אחר')}</h2>
+            <h2 class="section-title">${esc('למה ' + t.the + (t.gender === 'f' ? ' לא מתנהלת' : ' לא מתנהל') + ' כמו כל אירוע אחר')}</h2>
 ${t.angle.map((para) => `            <p>${esc(para)}</p>`).join('\n')}
           </div>
         </div>
@@ -981,7 +981,7 @@ ${t.angle.map((para) => `            <p>${esc(para)}</p>`).join('\n')}
         <div class="wrap">
           <div class="section-head">
             <span class="kicker">בפועל</span>
-            <h2 class="section-title">${esc('שלושה דברים שהמערכת עושה אחרת ב' + t.the)}</h2>
+            <h2 class="section-title">${esc('שלושה דברים שהמערכת עושה אחרת ' + pref('ב', t.the))}</h2>
           </div>
           <div class="supporting-grid">
 ${t.highlights.map(([h, p]) => `            <article class="supporting-item"><h3>${esc(h)}</h3><p>${esc(p)}</p></article>`).join('\n')}
@@ -1017,7 +1017,7 @@ ${groups.map((g) => `            <div class="evt-card" style="text-align:center"
           </div>
           <div class="numcard" style="max-width:660px">
             <div class="numcard-head">
-              <h3>${esc('מוצע מיד ב' + t.the)}</h3>
+              <h3>${esc('מוצע מיד ' + pref('ב', t.the))}</h3>
               <span class="numcard-tag">ברירת מחדל</span>
             </div>
             <dl>
@@ -1093,6 +1093,13 @@ ${group('יכולות', (r) => r.startsWith('/features/'))}${group('מחשבונ
 - [מדיניות פרטיות](${SITE}/legal/privacy.html)
 - [מדיניות AI](${SITE}/legal/ai-policy.html)
 `
+}
+
+/* בעברית אות היחס ב/ל/כ בולעת את ה' הידיעה: ב + החתונה = בחתונה, לא
+   "בהחתונה". שדה `the` בלקסיקון כבר מיודע, ולכן כל שרשור ידני יצר שגיאה
+   דקדוקית. הפונקציה הזו היא המקום היחיד שמותר לחבר בו אות יחס למונח. */
+function pref(letter, definite) {
+  return letter + (definite.startsWith('ה') ? definite.slice(1) : definite)
 }
 
 function sitemap(routes) {
