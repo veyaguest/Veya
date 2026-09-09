@@ -339,6 +339,57 @@
         .gc-stage.is-armed.is-on .gc-row { transition-delay: 0s; }
       }
 
+            /* ═════ ציר סגירת הרשימה (§5) ═══════════════════════════════════
+         קו אנכי ולא אופקי: שבעה שלבים לרוחב נדחסים ב-375px עד שהתאריך
+         והפעולה כבר לא נקראים יחד. הקו נמשך בעזרת scaleY על פסאודו —
+         transform בלבד, בלי להנפיש height. */
+      .tl-wrap { margin-top: 40px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); overflow: hidden; }
+      .tl-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--ivory-2); }
+      .tl-head h3 { margin: 0; font-family: var(--font-display); font-size: var(--fs-2xl); color: var(--charcoal); }
+      .tl-list { list-style: none; margin: 0; padding: 20px 20px 8px; position: relative; }
+      .tl-item {
+        position: relative; display: grid; grid-template-columns: 96px 1fr;
+        gap: 14px; align-items: start; padding: 0 0 18px 0;
+      }
+      /* הקו שמחבר בין הנקודות */
+      .tl-item::before {
+        content: ""; position: absolute; inset-inline-start: 103px; top: 16px; bottom: -2px;
+        width: 1px; background: var(--line);
+      }
+      .tl-item:last-child::before { display: none; }
+      /* הנקודה */
+      .tl-item::after {
+        content: ""; position: absolute; inset-inline-start: 99px; top: 9px;
+        width: 9px; height: 9px; border-radius: 50%;
+        background: var(--ivory); border: 2px solid var(--gold);
+      }
+      .tl-when { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 2px; }
+      .tl-body { display: grid; gap: 3px; padding-inline-start: 22px; min-width: 0; }
+      .tl-what { color: var(--charcoal); font-weight: 600; }
+      .tl-who { font-size: var(--fs-xs); color: var(--muted); }
+      .tl-close .tl-what { font-family: var(--font-display); font-size: var(--fs-2xl); }
+      .tl-close::after { background: var(--gold); box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.18); }
+      .tl-num { font-size: var(--fs-sm); color: var(--charcoal); font-variant-numeric: tabular-nums; }
+      .tl-num span { font-weight: 700; color: var(--gold-deep); }
+      .tl-note { margin: 0; padding: 14px 20px; border-top: 1px solid var(--line); font-size: var(--fs-sm); color: var(--muted); }
+
+      /* אותה הפרדה כמו בסקשן המעטפות: ברירת המחדל גלויה, וה-scene engine
+         מוסיף .is-on. כאן ה-CSS מסתיר רק כשהסצנה באמת מנוהלת. */
+      .tl-list[data-scene] .scene-step:not(.is-on) { opacity: 0; transform: translateY(6px); }
+      .tl-list[data-scene] .scene-step.is-on {
+        opacity: 1; transform: none;
+        transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out);
+      }
+      @media (max-width: 520px) {
+        .tl-item { grid-template-columns: 78px 1fr; gap: 10px; }
+        .tl-item::before { inset-inline-start: 85px; }
+        .tl-item::after { inset-inline-start: 81px; }
+        .tl-body { padding-inline-start: 18px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .tl-list[data-scene] .scene-step:not(.is-on) { opacity: 1; transform: none; }
+      }
+
       .hero-trust { margin-top: 26px; font-size: var(--fs-sm); color: #b6aa93; display: flex; gap: 10px 22px; justify-content: center; flex-wrap: wrap; }
       .hero-trust span { display: inline-flex; align-items: center; gap: 7px; }
       .hero-trust svg { color: var(--gold-light); flex-shrink: 0; }
@@ -864,7 +915,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                        /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                              /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1392,6 +1443,7 @@
     
     
     
+    
     </style>
   </head>
   <body>
@@ -1585,7 +1637,61 @@
               <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ומי עדיין לא ענה בכלל.</li>
             </ul>
             <p class="why-punch">מרשימה שמשתנה כל יום — לתמונה אחת שאפשר לעבוד לפיה.</p>
+          
+          <!-- ═════ ציר סגירת הרשימה (§5) ═══════════════════════════════
+               שבעת השלבים הם בדיוק אלה שב-``rsvp_timeline.py``, בתוויות
+               הנייטרליות מ-``PUBLIC_STEP_LABELS`` — בלי לנקוב בערוץ, כי
+               WhatsApp עדיין במצב mock. הציר נספר לאחור ממועד ההתחייבות
+               לאולם, ולכן היום שבו הוא נעצר הוא היום שבו נמסר המספר. -->
+          <div class="tl-wrap reveal">
+            <div class="tl-head">
+              <h3>איך מגיעים למספר עד מועד הסגירה</h3>
+              <span class="numcard-tag">דוגמה: התחייבות 3 ימים לפני האירוע</span>
+            </div>
+            <ol class="tl-list" data-scene data-scene-gap="360">
+              <li class="tl-item scene-step" data-step="1">
+                <span class="tl-when">15 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">בקשת אישור הגעה ראשונה</span><span class="tl-who">לכל מי שברשימה</span></span>
+              </li>
+              <li class="tl-item scene-step" data-step="2">
+                <span class="tl-when">13 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">תזכורת 1</span><span class="tl-who">למי שעדיין לא ענה</span></span>
+              </li>
+              <li class="tl-item scene-step" data-step="3">
+                <span class="tl-when">11 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">סבב מעקב טלפוני 1</span><span class="tl-who">למי שעדיין לא ענה</span></span>
+              </li>
+              <li class="tl-item scene-step" data-step="4">
+                <span class="tl-when">9 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">תזכורת 2</span><span class="tl-who">למי שעדיין לא ענה</span></span>
+              </li>
+              <li class="tl-item scene-step" data-step="5">
+                <span class="tl-when">7 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">סבב מעקב טלפוני 2</span><span class="tl-who">למי שעדיין לא ענה</span></span>
+              </li>
+              <li class="tl-item scene-step" data-step="6">
+                <span class="tl-when">5 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">תזכורת 3</span><span class="tl-who">למי שעדיין לא ענה</span></span>
+              </li>
+              <li class="tl-item scene-step" data-step="7">
+                <span class="tl-when">3 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">סבב מעקב טלפוני 3</span><span class="tl-who">למי שעדיין לא ענה</span></span>
+              </li>
+              <li class="tl-item tl-close scene-step" data-step="8">
+                <span class="tl-when">3 ימים לפני</span>
+                <span class="tl-body">
+                  <span class="tl-what">סגירת הרשימה</span>
+                  <span class="tl-num"><span data-count-to="463">463</span> מגיעים — זה המספר שנמסר לאולם</span>
+                </span>
+              </li>
+            </ol>
+            <p class="tl-note">
+              VEYA בונה את הציר לאחור מהיום שבו אתם מוסרים מספר לאולם, מדלגת
+              על סופי שבוע, ומכווצת את הרצף אם נשאר פחות זמן. כל שלב פונה רק
+              למי שעדיין לא ענה — מי שכבר אישר לא מקבל עוד תזכורת.
+            </p>
           </div>
+        </div>
         </div>
       </section>
 
@@ -1736,7 +1842,7 @@
                   <span class="num-label">התחייבתם על</span>
                 </div>
                 <div class="num scene-step" data-step="2">
-                  <span class="num-value" data-count-to="463">463</span>
+                  <span class="num-value" data-count-from="500" data-count-to="463">463</span>
                   <span class="num-label">אישרו הגעה</span>
                 </div>
                 <div class="num is-gap scene-step" data-step="3">
