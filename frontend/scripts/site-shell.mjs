@@ -127,7 +127,7 @@ export function page(o) {
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Frank+Ruhl+Libre:wght@300;400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/veya-site.css" />
 
     <script type="application/ld+json">
@@ -157,31 +157,65 @@ ${o.body}
       <div class="wrap">
         <div class="footer-brand">
           ${LOGO_SVG.replace('class="header-logo"', 'class="footer-logo"')}
-          <span class="footer-tag">מערכת לניהול אירועים — מוזמנים, אישורי הגעה, הושבה וכספי האירוע במקום אחד.</span>
+          <span class="footer-tag">מערכת לניהול אירועים — מוזמנים, אישורי הגעה, הושבה ומאזן האירוע במקום אחד.</span>
         </div>
-        <nav aria-label="ניווט תחתון">
-          <a href="/features/guests/">מוזמנים</a>
-          <a href="/features/rsvp/">אישורי הגעה</a>
-          <a href="/features/calls/">מעקב טלפוני</a>
-          <a href="/features/seating/">הושבה</a>
-          <a href="/features/finance/">כספי האירוע</a>
-          <a href="/calculators/">מחשבונים</a>
-          <a href="/nuschim/">נוסחים</a>
-          <a href="/guides/">מדריכים</a>
-          <a href="/app">כניסה למערכת</a>
-        </nav>
-        <nav aria-label="קישורים משפטיים">
-          <a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">תנאי שימוש</a>
-          <a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">מדיניות פרטיות</a>
-          <a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">מדיניות Cookies</a>
-          <a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">הצהרת נגישות</a>
-          <a href="/legal/about.html#contact" target="_blank" rel="noopener noreferrer">יצירת קשר</a>
-        </nav>
+        <div class="footer-cols">
+          <div class="footer-col">
+            <h3>מוצר</h3>
+            <ul>
+              <li><a href="/features/guests/">רשימת מוזמנים</a></li>
+              <li><a href="/features/rsvp/">אישורי הגעה</a></li>
+              <li><a href="/features/calls/">מעקב טלפוני</a></li>
+              <li><a href="/features/seating/">סידור הושבה</a></li>
+              <li><a href="/features/finance/">מאזן</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>אירועים</h3>
+            <ul>
+              <li><a href="/events/wedding/">חתונה</a></li>
+              <li><a href="/events/henna/">חינה</a></li>
+              <li><a href="/events/bar-mitzvah/">בר מצווה</a></li>
+              <li><a href="/events/bat-mitzvah/">בת מצווה</a></li>
+              <li><a href="/events/brit/">ברית</a></li>
+              <li><a href="/events/brita/">בריתה</a></li>
+              <li><a href="/events/business/">אירוע עסקי</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>כלים</h3>
+            <ul>
+              <li><a href="/calculators/venue-commitment/">מחשבון התחייבות</a></li>
+              <li><a href="/calculators/rsvp-timeline/">לוח זמנים</a></li>
+              <li><a href="/calculators/">כל המחשבונים</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>ידע</h3>
+            <ul>
+              <li><a href="/guides/">מדריכים</a></li>
+              <li><a href="/nuschim/">נוסחי הודעות</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>VEYA</h3>
+            <ul>
+              <li><a href="/legal/about.html" target="_blank" rel="noopener noreferrer">אודות</a></li>
+              <li><a href="/legal/about.html#contact" target="_blank" rel="noopener noreferrer">יצירת קשר</a></li>
+              <li><a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">תנאי שימוש</a></li>
+              <li><a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">מדיניות פרטיות</a></li>
+              <li><a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">הצהרת נגישות</a></li>
+              <li><a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">מדיניות Cookies</a></li>
+              <li><a href="/app">כניסה למערכת</a></li>
+            </ul>
+          </div>
+        </div>
       </div>
       <div class="wrap" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(201,162,39,0.14); font-size: 13px; color: #9b907c;">
         © VEYA — מערכת לניהול אירועים
       </div>
     </footer>
+    <script src="/veya-motion.js" defer></script>
 ${o.scripts || ''}
   </body>
 </html>

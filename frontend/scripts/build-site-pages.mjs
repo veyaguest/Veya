@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * בונה את עמודי האתר הציבורי הסטטיים: מחשבונים, עמוד המוצר "כספי האירוע",
+ * בונה את עמודי האתר הציבורי הסטטיים: מחשבונים, עמוד המוצר "מאזן האירוע",
  * ומרכז המדריכים — כולם דרך מעטפת אחת (`site-shell.mjs`).
  *
  * הרצה: npm run build:site (רץ אוטומטית ב-prebuild).
@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { marked } from 'marked'
 import { page, pageHero, faqHtml, esc, SITE, CTA_PRIMARY } from './site-shell.mjs'
-import { EVENT_TYPES, GROUPS, EXPENSES } from '../content/event-types.mjs'
+import { EVENT_TYPES, GROUPS, EXPENSES, FOCUS } from '../content/event-types.mjs'
 import { featureRsvp, featureCalls, featureGuests, featureSeating } from './build-features.mjs'
 import { buildNuschim } from './build-nuschim.mjs'
 
@@ -75,7 +75,7 @@ function extractFaq(body) {
 
 const CLUSTERS = {
   A: { title: 'התחייבות לאולם וכמות מגיעים', blurb: 'המספר שאתם מוסרים לאולם, ומה הוא אומר בשקלים.' },
-  B: { title: 'כספי האירוע', blurb: 'כמה האירוע עולה, כמה נכנס, ומה נשאר בסוף.' },
+  B: { title: 'מאזן האירוע', blurb: 'כמה האירוע עולה, כמה נכנס, ומה נשאר בסוף.' },
   C: { title: 'אישורי הגעה', blurb: 'איך מגיעים למספר שאפשר לסמוך עליו.' },
   D: { title: 'מוזמנים והושבה', blurb: 'מהרשימה אל השולחנות.' },
   E: { title: 'נוסחים', blurb: 'מה כותבים, ומתי.' },
@@ -455,11 +455,29 @@ ${faqHtml(faq)}
           sc += '</dl></div>';
         }
 
+        // המספר הוא העוגן הוויזואלי של המסך: הוא מקבל את חתימת המספרים
+        // של VEYA, ומונפש מהערך הקודם לחדש כדי שהשינוי יהיה מורגש.
+        var prev = window.__veyaPrevNext;
+        var nextAgorot = d.next_attendee_agorot;
+        window.__veyaPrevNext = nextAgorot;
+
         out.innerHTML =
           '<div class="calc-headline"><span class="lbl">אורח נוסף מוסיף לכם</span>' +
-          '<span class="big">' + esc(d.next_attendee_display) + '</span><p>' + esc(note) + '</p></div>' +
+          '<span class="big num-value" id="calc-anchor">' + esc(d.next_attendee_display) + '</span>' +
+          '<p>' + esc(note) + '</p></div>' +
           '<div class="numcard"><div class="numcard-head"><h3>' + esc(head) + '</h3><span class="numcard-tag">החישוב</span></div><dl>' + rows + '</dl></div>' +
           sc;
+
+        // הנפשת המעבר בין תוצאה לתוצאה — רק כשיש ערך קודם ורק כשלא
+        // ביקשו תנועה מופחתת. veyaCountUp מכבד את ההעדפה בעצמו.
+        var anchor = document.getElementById('calc-anchor');
+        if (anchor && typeof prev === 'number' && prev !== nextAgorot && window.veyaCountUp) {
+          anchor.setAttribute('data-count-from', (prev / 100).toFixed(0));
+          anchor.setAttribute('data-count-to', (nextAgorot / 100).toFixed(0));
+          anchor.setAttribute('data-count-suffix', '\u202f₪');
+          anchor.setAttribute('data-count-duration', '500');
+          window.veyaCountUp(anchor);
+        }
       }`
 
   return page({
@@ -543,11 +561,11 @@ function calcRsvpTimeline() {
                 </select>
               </label>
 
-              <button type="submit" class="btn btn-primary">לבנות את לוח הזמנים</button>
+              <button type="submit" class="btn btn-primary">לראות את לוח הזמנים</button>
             </form>
 
             <div class="calc-out" id="out" aria-live="polite">
-              <div class="calc-empty">בוחרים תאריך אירוע ולוחצים "לבנות את לוח הזמנים".</div>
+              <div class="calc-empty">בוחרים תאריך אירוע ולוחצים "לראות את לוח הזמנים".</div>
             </div>
           </div>
 
@@ -689,11 +707,11 @@ function featureFinance() {
   ]
 
   const body = `${pageHero({
-    eyebrow: 'כספי האירוע',
+    eyebrow: 'מאזן האירוע',
     h1: 'כמה האירוע שלכם באמת עולה?',
     lead: 'ההוצאה הגדולה באירוע ישראלי לא נקבעת בטבלה — היא נקבעת במספר האנשים שמגיעים. VEYA מחברת בין אישורי ההגעה, ההתחייבות לאולם וסעיפי ההוצאה, עד לשורה התחתונה אחרי האירוע.',
-    trail: [{ name: 'VEYA', url: '/' }, { name: 'כספי האירוע' }],
-    cta: `${CTA_PRIMARY}\n            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות שלי</a>`,
+    trail: [{ name: 'VEYA', url: '/' }, { name: 'מאזן האירוע' }],
+    cta: `${CTA_PRIMARY}\n            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות</a>`,
   })}
 
       <section class="why">
@@ -787,7 +805,7 @@ function featureFinance() {
           </p>
 
           <div class="section-cta">
-            <a href="/calculators/venue-commitment/" class="btn btn-primary">לחשב את ההתחייבות שלכם <span class="arw" aria-hidden="true">←</span></a>
+            <a href="/calculators/venue-commitment/" class="btn btn-primary">לחשב את ההתחייבות <span class="arw" aria-hidden="true">←</span></a>
             <span class="cta-hint">אותו חישוב, פתוח, בלי הרשמה.</span>
           </div>
         </div>
@@ -858,18 +876,18 @@ ${faqHtml(faq)}
 
   return page({
     path: '/features/finance/',
-    title: 'כספי האירוע — כמה האירוע שלכם באמת עולה | VEYA',
+    title: 'מאזן האירוע — כמה האירוע שלכם באמת עולה | VEYA',
     description:
       'עלות האירוע לפי מספר המגיעים בפועל, ההתחייבות לאולם, העלות לאורח וספירת המתנות אחרי האירוע — עד לשורה התחתונה. כך VEYA מחברת בין אישורי ההגעה לכסף.',
-    trail: [{ name: 'VEYA', url: '/' }, { name: 'כספי האירוע' }],
+    trail: [{ name: 'VEYA', url: '/' }, { name: 'מאזן האירוע' }],
     faq,
     schema: [
       {
         '@type': 'WebPage',
-        name: 'כספי האירוע',
+        name: 'מאזן האירוע',
         inLanguage: 'he-IL',
         url: `${SITE}/features/finance/`,
-        description: 'מסך כספי האירוע ב-VEYA: הוצאות לפי מספר המגיעים, התחייבות לאולם, עלות לאורח, ספירת מתנות ושורה תחתונה.',
+        description: 'מסך מאזן האירוע ב-VEYA: הוצאות לפי מספר המגיעים, התחייבות לאולם, עלות לאורח, ספירת מתנות ושורה תחתונה.',
       },
     ],
     body,
@@ -913,8 +931,24 @@ function eventPage(t) {
     h1: esc(t.title),
     lead: esc(t.lead),
     trail: [{ name: 'VEYA', url: '/' }, { name: 'סוגי אירוע', url: '/#events' }, { name: t.name }],
-    cta: `${CTA_PRIMARY}\n            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות שלי</a>`,
+    cta: `${CTA_PRIMARY}\n            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות</a>`,
   })}
+
+      <section class="commit tone-alt">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="kicker">${esc(t.name)}</span>
+            <h2 class="section-title">${esc((FOCUS[t.slug] || {}).line || '')}</h2>
+          </div>
+          <div class="num-row" data-v-stagger="90" style="max-width:660px;margin:0 auto">
+${((FOCUS[t.slug] || {}).stats || []).map(([v, l]) => `            <div class="num v-reveal"><span class="num-value">${esc(v)}</span><span class="num-label">${esc(l)}</span></div>`).join('\n')}
+          </div>
+          <p class="fineprint" style="text-align:center">מספרי הדוגמה להמחשה בלבד — המערכת עובדת על הנתונים שלכם.</p>
+          <div class="note-chips" style="justify-content:center;margin-top:22px">
+${((FOCUS[t.slug] || {}).chips || []).map((c) => `            <span class="note-chip">${esc(c)}</span>`).join('\n')}
+          </div>
+        </div>
+      </section>
 
       <section class="why">
         <div class="wrap">
@@ -957,7 +991,7 @@ ${groups.map((g) => `            <div class="evt-card" style="text-align:center"
       <section class="after tone-alt">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">כספי האירוע</span>
+            <span class="kicker">מאזן האירוע</span>
             <h2 class="section-title">${esc('תבנית ההוצאות של ' + t.the)}</h2>
             <p class="section-sub">
               כשפותחים אירוע מהסוג הזה, אלה הסעיפים שמוצעים מיד. אפשר להוסיף,
@@ -979,7 +1013,7 @@ ${expenses.map(([cat, items]) => `              <div class="numrow"><dt>${esc(ca
             </p>
           </div>
           <div class="section-cta">
-            <a href="/features/finance/" class="btn btn-ghost">איך עובד הצד הכספי</a>
+            <a href="/features/finance/" class="btn btn-ghost">לעמוד המאזן</a>
           </div>
         </div>
       </section>

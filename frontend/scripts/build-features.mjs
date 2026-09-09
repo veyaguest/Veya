@@ -15,9 +15,9 @@
 import { page, pageHero, faqHtml, esc, SITE, CTA_PRIMARY } from './site-shell.mjs'
 
 const CTA_TIMELINE =
-  '<a href="/calculators/rsvp-timeline/" class="btn btn-ghost">להציג את לוח הזמנים</a>'
+  '<a href="/calculators/rsvp-timeline/" class="btn btn-ghost">לראות את לוח הזמנים</a>'
 const CTA_COMMIT =
-  '<a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות שלי</a>'
+  '<a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות</a>'
 
 const ic = (p, w = 20) =>
   `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`
@@ -212,7 +212,7 @@ ${flowSteps([
             <p>
               אחרי שיודעים כמה מגיעים, אפשר לראות מה זה אומר מבחינת ההתחייבות והעלות.
             </p>
-            <p><a href="/features/finance/">כספי האירוע — כמה האירוע שלכם באמת עולה</a></p>
+            <p><a href="/features/finance/">מאזן האירוע — כמה האירוע שלכם באמת עולה</a></p>
           </div>
         </div>
       </section>

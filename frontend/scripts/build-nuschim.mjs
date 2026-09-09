@@ -167,7 +167,7 @@ ${cat.wordings.map(wordingCard).join('\n')}
           <div class="callout" style="max-width:660px;margin-top:40px">
             <p class="callout-h">צריכים גם לדעת מתי לשלוח את הבקשה?</p>
             <p>לוח הזמנים של אישורי ההגעה נבנה לאחור ממועד סגירת הרשימה.</p>
-            <p><a href="/calculators/rsvp-timeline/">למחשבון לוח הזמנים</a></p>
+            <p><a href="/calculators/rsvp-timeline/">לראות את לוח הזמנים</a></p>
           </div>
 
           ${eventLinks ? `<p class="calc-note" style="margin-top:26px">ניהול האירוע לפי סוג: ${eventLinks}</p>` : ''}
@@ -236,7 +236,7 @@ ${cats.map((c) => `            <li><a href="/nuschim/${c.key}/"><h3>${esc(c.labe
           <div class="callout" style="max-width:660px;margin:34px auto 0">
             <p class="callout-h">צריכים גם לדעת מתי לשלוח את הבקשה?</p>
             <p>לוח הזמנים של אישורי ההגעה נבנה לאחור ממועד סגירת הרשימה.</p>
-            <p><a href="/calculators/rsvp-timeline/">למחשבון לוח הזמנים</a></p>
+            <p><a href="/calculators/rsvp-timeline/">לראות את לוח הזמנים</a></p>
           </div>
         </div>
       </section>
@@ -275,7 +275,7 @@ const NUSCHIM_CSS = `    <style>
       }
       .nuschim-actions { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-top: 1px solid var(--line); }
       .nuschim-actions .btn { padding: 9px 20px; font-size: 14.5px; }
-      .nuschim-copied { font-size: 14px; color: var(--green); font-weight: 600; }
+      .nuschim-copied { font-size: 14px; color: var(--success); font-weight: 600; }
       .nuschim-empty { text-align: center; color: var(--muted); padding: 30px 0; }
       /* אזור ההכרזה נקרא ע"י קורא מסך בלבד — המשוב הוויזואלי יושב ליד הכפתור. */
       .nuschim-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

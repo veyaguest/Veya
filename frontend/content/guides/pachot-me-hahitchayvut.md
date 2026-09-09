@@ -10,7 +10,7 @@ published: 2026-09-07
 published_he: ספטמבר 2026
 cta_title: לראות כמה זה יוצא אצלכם
 cta_text: המחשבון מראה על כמה מנות מחייבים אתכם בפועל, וכמה מוסיף כל אורח נוסף.
-cta_label: למחשבון ההתחייבות
+cta_label: לחשב את ההתחייבות
 cta_url: /calculators/venue-commitment/
 related:
   - /guides/hitchayvut-la-ulam/|התחייבות לאולם — כמה מנות באמת להתחייב
@@ -26,6 +26,13 @@ related:
 מבחינת החוזה, כמות ההתחייבות היא לא תחזית של מספר האורחים אלא **הכמות שקניתם**.
 האולם תכנן, הזמין חומרי גלם וגייס צוות לפי המספר הזה, ולכן הוא לא משתנה
 בדיעבד.
+
+
+<div class="num-row" data-v-stagger="90">
+  <div class="num v-reveal"><span class="num-value">500</span><span class="num-label">התחייבות</span></div>
+  <div class="num v-reveal"><span class="num-value">463</span><span class="num-label">מגיעים</span></div>
+  <div class="num is-gap v-reveal"><span class="num-value">37</span><span class="num-label">פער</span></div>
+</div>
 
 | | הכמות | מה זה אומר |
 |---|---|---|

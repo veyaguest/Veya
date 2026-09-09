@@ -1,0 +1,429 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   VEYA — שכבת המותג
+   ═══════════════════════════════════════════════════════════════════════
+
+   מקור אחד לטוקנים, לחתימה הוויזואלית ולשפת התנועה. הקובץ הזה מוזרק
+   אוטומטית בזמן build לשני המקומות (`scripts/build-site-pages.mjs`):
+
+     · frontend/public/veya-site.css   — כל העמודים הפנימיים
+     · frontend/index.html — בלוק הסגנון המוטמע של דף הבית (נשאר מוטמע, LCP)
+
+   לכן אין לערוך את הבלוק הזה באף אחד מהם ישירות — רק כאן.
+
+   מה זה **לא**: לא Design System חדש. הצבעים, הגופנים והרכיבים הקיימים
+   נשארים בדיוק כפי שהם. מה שנוסף כאן הוא מה שחסר: סולם רדיוסים אחיד
+   (היו 12 ערכים שונים), סולם צללים, טוקני תנועה, וטיפול במספרים.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── רדיוס ──────────────────────────────────────────────────────────
+     ארבעה ערכים במקום שנים־עשר. המיפוי נבחר כך שרוב הרכיבים הקיימים
+     לא זזים ויזואלית: 11-14 → md, 16-20 → lg, 28 → xl. */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  /* ── צללים ──────────────────────────────────────────────────────────
+     רכים ונמוכי-אטימות. VEYA לא משתמשת בצל ככלי היררכיה ראשי — הגבול
+     (--line) עושה את זה. הצל רק מרים אלמנט אחד מעל השאר. */
+  --shadow-sm: 0 1px 2px rgba(43, 38, 32, 0.05);
+  --shadow-md: 0 14px 30px -22px rgba(43, 38, 32, 0.40);
+  --shadow-lg: 0 26px 60px -30px rgba(43, 38, 32, 0.38);
+
+  /* ── תנועה ──────────────────────────────────────────────────────────
+     שלושה משכים בלבד. `--ease-out` ו-`--ease-in-out` כבר קיימים
+     ונשארים מקור האמת לעקומות. */
+  --motion-fast: 180ms;
+  --motion-normal: 420ms;
+  --motion-slow: 620ms;
+
+  /* ── צבעים סמנטיים ──
+     `--green` הקיים נשאר כפי שהוא לשימושי **אייקון** (וי ירוק ברשימות):
+     3.16:1 מספיק לגרפיקה אך **לא** לטקסט. לכן יש טוקן טקסט נפרד שעובר
+     AA, וזה מה שמשמש כל הודעת הצלחה כתובה.
+     כל הערכים נבדקו מול הרקע השנהב (--ivory). */
+  --success: #1f7a45;        /* 4.97:1 — טקסט הצלחה */
+  --warning: #a1541a;        /* 5.14:1 — נבדל מהזהב בכוונה */
+  --error: #8f3226;          /* 6.80:1 — טקסט שגיאה */
+  --error-bg: #fbeae7;
+  --error-border: #dda99f;   /* חוזק מ-#e6b9b1 כדי שהגבול ייראה */
+
+
+  /* ── סולם טיפוגרפיה ──
+     היו 33 גדלי font-size שונים בגיליון, רובם שכנים במרחק 0.3–0.5px
+     זה מזה (13 · 13.5 · 13.8 · 14 · 14.3 · 14.5 …). ההבדלים האלה אינם
+     נראים לעין אבל הם בדיוק מה שגורם לעמודים להרגיש כמו תבניות שונות.
+     הסולם מאחד אותם ל-15 מדרגות. אף ערך לא זז ביותר מ-1px. */
+  --fs-2xs: 12.5px;
+  --fs-xs: 13.5px;
+  --fs-sm: 14.5px;
+  --fs-md: 15.5px;
+  --fs-base: 16.5px;
+  --fs-lg: 17px;
+  --fs-xl: 18.5px;
+  --fs-2xl: 21px;
+  --fs-3xl: 30px;
+
+  /* מדרגות תצוגה — נשארות fluid, כי כותרת חייבת להתכווץ במובייל. */
+  --fd-xs: clamp(16px, 2.2vw, 19px);
+  --fd-sm: clamp(18px, 2.3vw, 22px);
+  --fd-md: clamp(19px, 2.6vw, 24px);
+  --fd-lg: clamp(21px, 3vw, 27px);
+  --fd-num: clamp(22px, 4vw, 32px);
+  --fd-xl: clamp(26px, 4.2vw, 40px);
+  --fd-2xl: clamp(30px, 5.2vw, 46px);
+
+  /* ── טיפוגרפיה ──────────────────────────────────────────────────────
+     ארבעה משקלים בלבד (400/500/600/700). משקל 300 הוסר מהטעינה —
+     הוא לא היה בשימוש באף מקום ורק הוסיף בקשת רשת. */
+  --font-body: 'Assistant', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Frank Ruhl Libre', Georgia, 'Times New Roman', serif;
+  --font-num: 'Assistant', system-ui, sans-serif;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   חתימה ויזואלית #1 — המספר
+
+   המספרים הם הליבה של VEYA: 500 · 463 · 37 · 45 ₪. הם צריכים להיקרא
+   כנתוני מערכת ולא כטקסט רגיל. ארבעה כללים:
+     · ספרות טבלאיות — כדי שמספר שמשתנה לא יזיז את מה שלידו
+     · מרווח אותיות שלילי קל — מספרים גדולים מתפזרים בלי זה
+     · הגופן התצוגתי לספרות הגדולות
+     · תווית מתחת, לא לצד — כך אפשר לסרוק עמודה של מספרים
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.num,
+.num-value,
+.numrow dd,
+.calc-headline .big,
+.step-two .big,
+.tl-item .dt {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* בלוק מספר עצמאי: ערך גדול + תווית מתחתיו. */
+.num {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.num-value {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fd-2xl);
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  color: var(--charcoal);
+  /* המרת ספרות אינה מזיזה את מה שסביבה */
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.num-label {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+.num-sub {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  line-height: 1.5;
+}
+.num.is-accent .num-value { color: var(--gold-deep); }
+.num.is-muted .num-value { color: var(--muted); }
+.on-dark .num-value { color: var(--cream-text); }
+.on-dark .num-label { color: #b6aa93; }
+
+/* שורת מספרים — 500 · 463 · 37. הכלי שמסביר את הפער בלי משפט אחד. */
+.num-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.num-row .num {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 18px 18px 16px;
+}
+.num-row .num.is-gap {
+  border-color: var(--gold);
+  background: rgba(201, 162, 39, 0.06);
+}
+.on-dark .num-row .num {
+  background: rgba(245, 239, 226, 0.04);
+  border-color: rgba(201, 162, 39, 0.18);
+}
+
+/* המחבר בין שני מספרים: 463 ← 464 */
+.num-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: var(--fd-num);
+  color: var(--charcoal);
+  font-variant-numeric: tabular-nums;
+}
+.num-arrow .arrow {
+  color: var(--gold-deep);
+  font-size: 0.8em;
+  /* RTL: החץ מצביע שמאלה, כלומר "קדימה" בעברית */
+  transform: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   חתימה ויזואלית #2 — הקו
+   ציר אנכי עם נקודות. כבר קיים ב-.flow-steps; כאן רק מה שהופך אותו
+   לשפה: מצב "פעיל" לשלב, ומצב "יעד" לשלב האחרון.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.flow-step .flow-dot {
+  transition: border-color var(--motion-normal) var(--ease-out),
+              background var(--motion-normal) var(--ease-out),
+              box-shadow var(--motion-normal) var(--ease-out);
+}
+.flow-step.is-target .flow-dot {
+  background: var(--gold);
+  color: var(--charcoal);
+  box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.18);
+}
+.flow-step.is-target h3 { color: var(--gold-deep); }
+.on-dark .flow-step.is-target h3 { color: var(--gold-light); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   חתימה ויזואלית #3 — אחידות הכרטיס והתג
+   הרדיוסים מיושרים לסולם. הערכים נבחרו כך שהשינוי הוויזואלי מינימלי.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.numcard,
+.calc-form,
+.calc-headline,
+.calc-empty,
+.article-cta,
+.evt-card,
+.guide-list a,
+.mistakes li,
+.step-two,
+.prep-card { border-radius: var(--radius-lg); }
+
+.callout,
+.table-scroll,
+.sc-shot,
+.note-chip,
+.prep-chip,
+.calc-field input,
+.calc-field select,
+.calc-error { border-radius: var(--radius-md); }
+
+.numcard-tag,
+.trust-chip,
+.btn { border-radius: var(--radius-pill); }
+
+.band { border-radius: var(--radius-xl); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   חתימה ויזואלית #4 — מיקרו-אינטראקציות
+   שינוי אחד לכל מצב, ולא ערימה. הכול על transform/opacity/color בלבד.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.btn { transition: transform var(--motion-fast) var(--ease-out),
+                   box-shadow var(--motion-fast) var(--ease-out),
+                   border-color var(--motion-fast) var(--ease-out),
+                   background var(--motion-fast) var(--ease-out); }
+.btn:active { transform: translateY(1px) scale(0.985); }
+.btn-primary .arw { transition: transform var(--motion-fast) var(--ease-out); }
+@media (hover: hover) {
+  .btn-primary:hover .arw { transform: translateX(-3px); }  /* RTL: קדימה = שמאלה */
+}
+
+.evt-card, .guide-list a {
+  transition: border-color var(--motion-fast) var(--ease-out),
+              box-shadow var(--motion-fast) var(--ease-out),
+              transform var(--motion-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .evt-card:hover, .guide-list a:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+}
+
+.article a:not(.btn), .callout a, .crumbs a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color var(--motion-fast) var(--ease-out);
+}
+
+details summary { transition: color var(--motion-fast) var(--ease-out); }
+details summary .chev { transition: transform var(--motion-normal) var(--ease-out); }
+
+/* מצב פוקוס אחיד לכל האתר — נראה, ולא מסתמך על צבע בלבד. */
+a:focus-visible, button:focus-visible, summary:focus-visible,
+input:focus-visible, select:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   חתימה ויזואלית #5 — חשיפה בגלילה
+   שפת תנועה אחת לכל האתר: אטימות + הזזה קטנה כלפי מעלה. אין bounce,
+   אין סיבוב, אין zoom. הכול transform/opacity — בלי layout מחדש.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.v-reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity var(--motion-slow) var(--ease-out),
+              transform var(--motion-slow) var(--ease-out);
+  transition-delay: var(--v-delay, 0ms);
+}
+.v-reveal.is-in { opacity: 1; transform: none; }
+
+/* ── כיבוד העדפת תנועה מופחתת ──
+   לא "פחות אנימציה" אלא **בלי**: כל מה שאמור להיראות, נראה מיד. */
+@media (prefers-reduced-motion: reduce) {
+  .v-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .btn:active { transform: none; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   סצנות — התנועה שמסבירה את המוצר
+
+   כל צעד בסצנה מתחיל מוסתר-חלקית ונחשף בתורו (`.is-on` מגיע מ-
+   `veya-motion.js`). **התוכן עצמו תמיד ב-HTML** — הסצנה רק קובעת קצב.
+   מי שאין לו JS, או שביקש תנועה מופחתת, רואה את הכול מיד.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.scene-step {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity var(--motion-normal) var(--ease-out),
+              transform var(--motion-normal) var(--ease-out);
+}
+.scene-step.is-on { opacity: 1; transform: none; }
+
+/* השלב האחרון בציר מקבל את ההדגשה רק כשהסצנה מגיעה אליו — כך העין
+   נמשכת אל "מועד סגירת הרשימה" אחרי שהבינה את הרצף שהוביל אליו. */
+.flow-step.is-target-on-play.is-on .flow-dot {
+  background: var(--gold);
+  color: var(--charcoal);
+  box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.18);
+}
+.flow-step.is-target-on-play.is-on h3 { color: var(--gold-deep); }
+.on-dark .flow-step.is-target-on-play.is-on h3 { color: var(--gold-light); }
+
+/* בציר עם סצנה, הקו המחבר נמתח יחד עם הצעד שנחשף. */
+.flow-steps[data-scene] .flow-step::before { transform: scaleY(0); }
+.flow-steps[data-scene] .flow-step.is-on::before {
+  transform: scaleY(1);
+  transition: transform var(--motion-slow) var(--ease-out);
+}
+
+/* גוף כרטיס שמכיל שורת מספרים במקום רשימת dl */
+.numcard-body { padding: 20px; }
+
+/* המדרגה: 463 ← 464 */
+.step-two .num-arrow { margin-bottom: 10px; }
+.step-two .num-arrow .num-value { color: var(--gold-deep); }
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-step { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .flow-steps[data-scene] .flow-step::before { transform: scaleY(1) !important; }
+}
+
+/* ── תוצאת המחשבון כעוגן ויזואלי ──
+   המספר הגדול הוא הדבר היחיד במסך שהעין צריכה למצוא. */
+.calc-headline .big.num-value {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  color: var(--cream-text);
+}
+
+/* ── הודעת שגיאה במחשבון — עוברת לטוקנים הסמנטיים ──
+   היה המקום היחיד באתר שבו צבע נושא משמעות נכתב כ-hex קשיח. */
+.calc-error {
+  background: var(--error-bg);
+  border-color: var(--error-border);
+  color: var(--error);
+}
+
+/* ── תיקון היררכיה במאמר ──
+   `.article p, .article li` (ספציפיות 0,2,0) גבר על `.article-lead`
+   ו-`.article-meta` (0,1,0), ולכן פסקת הפתיחה ושורת המטא־דאטה הוצגו
+   בגודל הגוף. הכלל כאן מיישר ספציפיות ומחזיר את ההיררכיה. */
+.article p.article-lead { font-size: var(--fs-xl); }
+.article p.article-meta { font-size: var(--fs-xs); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Header — "נאסף" בגלילה
+
+   בראש העמוד ה-header משולב בהירו הכהה. ברגע שהמשתמש מתחיל לגלול הוא
+   מתכווץ ומקבל רקע משלו, כי מאותו רגע הוא צף מעל תוכן בהיר וצריך גבול
+   משלו כדי להיקרא.
+
+   שינוי גובה בלבד — לא transform — ולכן הוא לא גורם ל-layout shift:
+   ה-header הוא `position: sticky` ותופס את מקומו בזרימה מלכתחילה.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.site-header {
+  transition: background var(--motion-normal) var(--ease-out),
+              box-shadow var(--motion-normal) var(--ease-out),
+              border-color var(--motion-normal) var(--ease-out);
+}
+.site-header .wrap {
+  transition: height var(--motion-normal) var(--ease-out);
+}
+.site-header.is-compact {
+  background: rgba(23, 19, 13, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom-color: rgba(201, 162, 39, 0.22);
+  box-shadow: var(--shadow-sm);
+}
+.site-header.is-compact .wrap { height: 58px; }
+.site-header.is-compact .header-logo { height: 28px; }
+.site-header .header-logo { transition: height var(--motion-normal) var(--ease-out); }
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header, .site-header .wrap, .site-header .header-logo { transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Footer — היררכיה במקום רשימה שטוחה
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.footer-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 28px 24px;
+  margin-top: 34px;
+  padding-top: 30px;
+  border-top: 1px solid rgba(201, 162, 39, 0.14);
+}
+.footer-col h3 {
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  color: var(--gold-light);
+  margin: 0 0 12px;
+  font-family: var(--font-body);
+}
+.footer-col ul { list-style: none; margin: 0; padding: 0; }
+.footer-col li + li { margin-top: 8px; }
+.footer-col a {
+  color: #b6aa93;
+  text-decoration: none;
+  font-size: var(--fs-xs);
+  transition: color var(--motion-fast) var(--ease-out);
+}
+.footer-col a:hover { color: var(--cream-text); }
+.footer-col a:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 3px; }
