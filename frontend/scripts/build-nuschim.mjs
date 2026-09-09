@@ -1,25 +1,26 @@
 /**
- * ספריית הנוסחים — /nuschim/ ועמוד לכל קטגוריה.
+ * הודעות לאורחים — עמוד אחד עם דפדוף פנימי.
  *
  * ## מקור אמת אחד
  *
- * הנוסחים **נקראים מהשרת בזמן build** (`GET /public/library`), שמחזיר את
+ * ההודעות **נקראות מהשרת בזמן build** (`GET /public/library`), שמחזיר את
  * אותן שורות `MessageDefaultOption` שהמוצר משתמש בהן. אין כאן קובץ תוכן
- * שנכתב ביד, ואין מערכת נוסחים מקבילה: כשהבעלים עורך נוסח באדמין, ה-build
- * הבא מרים את השינוי.
+ * שנכתב ביד. `content/nuschim-snapshot.json` הוא מטמון build שנוצר
+ * אוטומטית, ומשמש רק כשהשרת אינו זמין — אין לערוך אותו.
  *
- * ## למה build-time ולא fetch בדפדפן
+ * ## למה עמוד אחד ולא עמוד לקטגוריה
  *
- * העמוד אמור להיות נכס SEO. נוסחים שנטענים ב-JavaScript אינם בהכרח
- * מאונדקסים, ואז נשאר דף עם כותרת וריק. בנוסף, רינדור בצד השרת חוסך
- * לגולש קריאת רשת לפני שהוא רואה תוכן.
+ * חמישה עמודים כמעט זהים, שכל אחד מציג רשימה ארוכה של טקסטים, הם חמישה
+ * עמודים שאף אחד לא גולל עד סופם. במקום זה: ניווט בשני צירים (סוג אירוע
+ * × סוג הודעה) ודפדוף בין הנוסחים בתוך מוקאפ טלפון — בדיוק כמו שהזוג
+ * רואה אותם בתוך המערכת.
  *
- * ## snapshot — למה הוא קיים
+ * ## המשתנים
  *
- * `content/nuschim-snapshot.json` הוא **מטמון build שנוצר אוטומטית**, לא
- * מקור תוכן. הוא נכתב בכל build מוצלח, ומשמש רק כשהשרת אינו זמין בזמן
- * build (למשל שרת שנרדם) — כדי שדחיפה של שינוי לא קשור לא תרוקן את
- * העמודים בשקט. אין לערוך אותו ביד.
+ * בתוך המוצר ההודעה מכילה `{{guest_name}}` והמערכת ממלאת אותו. בדף
+ * ציבורי זה נראה כמו קוד, ולכן כאן הם מוחלפים בפרטי דוגמה קריאים.
+ * `{{rsvp_link}}` ו-`{{navigation_link}}` הופכים לכפתורים בתחתית הבועה,
+ * כי כך הם מוצגים בפועל ב-WhatsApp.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -29,33 +30,55 @@ import { page, pageHero, esc, SITE, CTA_PRIMARY } from './site-shell.mjs'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const SNAPSHOT = path.resolve(__dirname, '../content/nuschim-snapshot.json')
 
-/** טקסט הסבר לכל קטגוריה — הקשר, לא תוכן. הנוסחים עצמם מגיעים מה-DB. */
-const BLURBS = {
-  invitations: {
-    intro: 'ההודעה הראשונה שהמוזמנים מקבלים. היא צריכה להגיד מי, מתי, איפה — ולהשאיר מקום לאישור הגעה.',
-    when: 'נשלחת פעם אחת, בתחילת התהליך.',
-  },
-  rsvp: {
-    intro: 'הבקשה שממנה מתחיל המספר. ככל שהיא קצרה וברורה יותר, כך אחוז המענה גבוה יותר.',
-    when: 'השלב הראשון בלוח הזמנים של אישורי ההגעה.',
-  },
-  reminders: {
-    intro: 'תזכורות יוצאות רק למי שעדיין לא ענה — זה מה שמונע מהן להרגיש נודניקיות.',
-    when: 'שלוש תזכורות, פרוסות בין סבבי המעקב.',
-  },
-  'event-day': {
-    intro: 'ההודעה של יום האירוע: שעה, מקום וניווט. היא נשלחת למי שאישר.',
-    when: 'ביום האירוע עצמו.',
-  },
-  thanks: {
-    intro: 'הודעת התודה שנשלחת אחרי האירוע.',
-    when: 'ביום שאחרי.',
-  },
+/** פרטי דוגמה לכל סוג אירוע. שמות פרטיים נפוצים ושמות מקום גנריים —
+ *  לא שמות של עסקים אמיתיים. */
+const SAMPLE = {
+  wedding:      { guest: 'דנה כהן', a: 'יונתן', b: 'שירה', venue: 'גן האירועים', addr: 'הזורע 12, רמת גן', date: '14.5.2026', time: '19:30', chat: 'החתונה של יונתן ושירה' },
+  henna:        { guest: 'דנה כהן', a: 'יונתן', b: 'שירה', venue: 'בית המשפחה', addr: 'הרצל 8, ראשון לציון', date: '7.5.2026', time: '20:00', chat: 'החינה של יונתן ושירה' },
+  bar_mitzvah:  { guest: 'משפחת לוי', a: 'איתי', b: '', venue: 'אולם האירועים', addr: 'ויצמן 3, כפר סבא', date: '9.3.2026', time: '19:00', chat: 'בר המצווה של איתי' },
+  bat_mitzvah:  { guest: 'משפחת לוי', a: 'רוני', b: '', venue: 'אולם האירועים', addr: 'ויצמן 3, כפר סבא', date: '9.3.2026', time: '19:00', chat: 'בת המצווה של רוני' },
+  brit:         { guest: 'משפחת מזרחי', a: 'הבן שלנו', b: '', venue: 'בית הכנסת', addr: 'הרב קוק 4, פתח תקווה', date: '2.2.2026', time: '9:00', chat: 'הברית של משפחת מזרחי' },
+  brita:        { guest: 'משפחת מזרחי', a: 'הבת שלנו', b: '', venue: 'בית המשפחה', addr: 'הרב קוק 4, פתח תקווה', date: '2.2.2026', time: '11:00', chat: 'הבריתה של משפחת מזרחי' },
+  business:     { guest: 'נועה אברהם', a: '', b: '', venue: 'מרכז הכנסים', addr: 'הארבעה 21, תל אביב', date: '18.11.2026', time: '18:00', chat: 'כנס הלקוחות השנתי' },
 }
+const FALLBACK = SAMPLE.wedding
 
-/** משתנים שמופיעים בנוסחים — מוסברים פעם אחת, לא בכל כרטיס. */
-const VAR_HINT =
-  'הטקסטים כוללים משתנים בסוגריים מסולסלים (למשל <code>{{guest_name}}</code>). בתוך המערכת הם מוחלפים אוטומטית בפרטים של האירוע ושל המוזמן; אם אתם מעתיקים את הנוסח לשימוש חיצוני, החליפו אותם ידנית.'
+/** מחליף משתנים בפרטי דוגמה. הקישורים יוצאים מהטקסט והופכים לכפתורים. */
+function render(content, s) {
+  const buttons = []
+  let text = content
+  if (/\{\{rsvp_link\}\}/.test(text)) buttons.push('אישור הגעה')
+  if (/\{\{navigation_link\}\}/.test(text)) buttons.push('ניווט למקום')
+  // שורת קישור נמחקת — הקישור מוצג ככפתור בתחתית הבועה, כמו ב-WhatsApp.
+  // **וגם שורת התווית שלפניה** ("לאישור הגעה:"), אחרת נשארת כותרת
+  // מיותמת שמצביעה על שום דבר. זו בדיוק התקלה שקיימת גם במנוע הרינדור
+  // של המוצר (ראו product-state.md), ולכן חשוב לא לשחזר אותה כאן.
+  const LINK = /\{\{(rsvp_link|navigation_link|maps_link|gift_link)\}\}/
+  const kept = []
+  for (const line of text.split('\n')) {
+    if (LINK.test(line)) {
+      // אם הוסרה שורת קישור, בודקים אם השורה שנשמרה לפניה היא תווית שלה
+      const prev = kept[kept.length - 1]
+      if (prev !== undefined && /^.{0,32}:\s*$/.test(prev.trim()) && prev.trim()) kept.pop()
+      // אם הקישור היה בתוך שורה עם טקסט — משאירים את הטקסט בלי הקישור
+      const rest = line.replace(new RegExp(LINK.source, 'g'), '').trim()
+      if (rest && !/^.{0,32}:$/.test(rest)) kept.push(rest)
+      continue
+    }
+    kept.push(line)
+  }
+  text = kept.join('\n')
+  const map = {
+    guest_name: s.guest, groom_name: s.a, bride_name: s.b,
+    event_date: s.date, event_time: s.time, venue_name: s.venue,
+    address: s.addr, maps_link: '', gift_link: '',
+    rsvp_link: '', navigation_link: '',
+  }
+  text = text.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in map ? map[k] : m))
+  // ניקוי שאריות: שורות ריקות כפולות שנוצרו מהסרת קישור
+  text = text.replace(/\n{3,}/g, '\n\n').trim()
+  return { text, buttons }
+}
 
 async function fetchLibrary(apiUrl) {
   const url = `${apiUrl.replace(/\/$/, '')}/public/library`
@@ -66,304 +89,339 @@ async function fetchLibrary(apiUrl) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const data = await res.json()
     writeFileSync(SNAPSHOT, JSON.stringify(data, null, 1))
-    console.log(`  ↳ נוסחים מהשרת: ${data.total} · ${data.categories.length} קטגוריות`)
+    console.log(`  ↳ הודעות מהשרת: ${data.total}`)
     return data
   } catch (err) {
     if (existsSync(SNAPSHOT)) {
       const data = JSON.parse(readFileSync(SNAPSHOT, 'utf8'))
-      console.warn(`  ⚠ ${url} לא זמין (${err.message}). נעשה שימוש ב-snapshot: ${data.total} נוסחים.`)
+      console.warn(`  ⚠ ${url} לא זמין (${err.message}). snapshot: ${data.total} הודעות.`)
       return data
     }
-    console.warn(`  ⚠ ${url} לא זמין (${err.message}) ואין snapshot — ספריית הנוסחים לא תיבנה.`)
+    console.warn(`  ⚠ ${url} לא זמין ואין snapshot — עמוד ההודעות לא ייבנה.`)
     return null
+  } finally {
+    clearTimeout(timer)
   }
 }
 
-/** כרטיס נוסח יחיד. `.numcard` הקיים, בלי רכיב חדש. */
-function wordingCard(w, idx) {
-  const id = `w-${w.event_type}-${w.message_type}-${w.option_number}`
-  const meta = [w.event_type_label, w.message_type_label, w.tone].filter(Boolean)
-  const name = w.tone || w.title || `נוסח ${idx + 1}`
-  // `aria-label` ייחודי לכל כפתור: בעמוד יש עשרות כפתורי "העתקת הנוסח",
-  // ומי שמנווט ברשימת הכפתורים של קורא מסך היה שומע את אותה מילה שוב ושוב.
-  const label = `העתקת הנוסח: ${name} · ${w.event_type_label}`
-  return `            <article class="numcard nuschim-card" data-event="${esc(w.event_type)}" id="${id}">
-              <div class="numcard-head">
-                <h3>${esc(name)}</h3>
-                <span class="numcard-tag">${esc(w.event_type_label)}</span>
-              </div>
-              <p class="nuschim-meta">${esc(meta.join(' · '))}</p>
-              <pre class="nuschim-text" id="${id}-t">${esc(w.content)}</pre>
-              <div class="nuschim-actions">
-                <button type="button" class="btn btn-ghost nuschim-copy" data-target="${id}-t" aria-label="${esc(label)}">
-                  העתקת הנוסח
-                </button>
-                <span class="nuschim-copied" aria-hidden="true"></span>
-              </div>
-            </article>`
-}
-
-function categoryPage(cat, allCats) {
-  const blurb = BLURBS[cat.key] || { intro: '', when: '' }
-  const others = allCats
-    .filter((c) => c.key !== cat.key)
-    .map((c) => `            <li><a href="/nuschim/${c.key}/"><h3>${esc(c.label)}</h3><p>${c.wordings.length} נוסחים</p></a></li>`)
-    .join('\n')
-
-  const filters = cat.event_types.length > 1
-    ? `          <div class="nuschim-filters" role="group" aria-label="סינון לפי סוג אירוע">
-            <button type="button" class="note-chip nuschim-filter is-on" data-event="all" aria-pressed="true">הכול (${cat.wordings.length})</button>
-${cat.event_types.map((e) => `            <button type="button" class="note-chip nuschim-filter" data-event="${esc(e.key)}" aria-pressed="false">${esc(e.label)} (${e.count})</button>`).join('\n')}
-          </div>`
-    : ''
-
-  const eventLinks = cat.event_types
-    .map((e) => {
-      const slug = { bar_mitzvah: 'bar-mitzvah', bat_mitzvah: 'bat-mitzvah' }[e.key] || e.key
-      return `<a href="/events/${slug}/">${esc(e.label)}</a>`
-    })
-    .join(' · ')
-
-  return page({
-    path: `/nuschim/${cat.key}/`,
-    title: `${cat.label} לאירוע | VEYA`,
-    description: `${cat.label} מוכנים לשימוש, לפי סוג האירוע. ${blurb.intro}`.slice(0, 300),
-    trail: [{ name: 'VEYA', url: '/' }, { name: 'נוסחי הודעות', url: '/nuschim/' }, { name: cat.label }],
-    schema: [
-      {
-        '@type': 'CollectionPage',
-        name: cat.label,
-        inLanguage: 'he-IL',
-        url: `${SITE}/nuschim/${cat.key}/`,
-        description: blurb.intro,
-      },
-    ],
-    head: NUSCHIM_CSS,
-    body: `${pageHero({
-      eyebrow: 'נוסחי הודעות',
-      h1: esc(cat.label),
-      lead: esc(blurb.intro),
-      trail: [{ name: 'VEYA', url: '/' }, { name: 'נוסחי הודעות', url: '/nuschim/' }, { name: cat.label }],
-    })}
-
-      <section class="article-wrap">
-        <div class="wrap">
-          <p class="calc-note" style="max-width:70ch;margin-bottom:22px">
-            <b>מתי משתמשים:</b> ${esc(blurb.when)} ${VAR_HINT}
-          </p>
-
-${filters}
-
-          <h2 class="section-title" style="font-size:22px;margin-bottom:18px">${esc(cat.label)} מוכנים להעתקה</h2>
-          <div class="nuschim-list">
-${cat.wordings.map(wordingCard).join('\n')}
-          </div>
-
-          <p class="nuschim-empty" hidden>אין נוסחים לסוג האירוע הזה בקטגוריה הזו.</p>
-
-          <!-- אזור הכרזה יחיד לכל העמוד: העתקה וסינון מדווחים דרכו. -->
-          <p id="nuschim-live" class="nuschim-live" role="status" aria-live="polite"></p>
-
-          <div class="callout" style="max-width:660px;margin-top:40px">
-            <p class="callout-h">צריכים גם לדעת מתי לשלוח את הבקשה?</p>
-            <p>לוח הזמנים של אישורי ההגעה נבנה לאחור ממועד סגירת הרשימה.</p>
-            <p><a href="/calculators/rsvp-timeline/">לראות את לוח הזמנים</a></p>
-          </div>
-
-          ${eventLinks ? `<p class="calc-note" style="margin-top:26px">ניהול האירוע לפי סוג: ${eventLinks}</p>` : ''}
-
-${others ? `          <div class="guide-cluster">
-            <h2>קטגוריות נוספות</h2>
-            <ul class="guide-list">
-${others}
-            </ul>
-          </div>` : ''}
-        </div>
-      </section>
-
-      <section class="band-wrap">
-        <div class="wrap">
-          <div class="band">
-            <span class="kicker">מתחילים</span>
-            <h2>הנוסחים האלה כבר בפנים</h2>
-            <p class="band-more">
-              בתוך VEYA בוחרים נוסח לכל שלב, עורכים אותו אם בא לכם, ורואים תצוגה
-              מקדימה לפני שמשהו יוצא.
-            </p>
-            ${CTA_PRIMARY}
-          </div>
-        </div>
-      </section>`,
-    scripts: NUSCHIM_JS,
-  })
-}
-
-function indexPage(cats, total) {
-  return page({
-    path: '/nuschim/',
-    title: 'נוסחי הודעות לאירועים | VEYA',
-    description:
-      'נוסחי הזמנה, בקשת אישור הגעה, תזכורת, יום האירוע ותודה — לפי סוג האירוע והשלב שבו אתם נמצאים. מוכנים להעתקה.',
-    trail: [{ name: 'VEYA', url: '/' }, { name: 'נוסחי הודעות' }],
-    schema: [
-      {
-        '@type': 'CollectionPage',
-        name: 'נוסחי הודעות לאירועים',
-        inLanguage: 'he-IL',
-        url: `${SITE}/nuschim/`,
-        description: 'ספריית נוסחי הודעות לאירועים, לפי שלב וסוג אירוע.',
-      },
-    ],
-    head: NUSCHIM_CSS,
-    body: `${pageHero({
-      eyebrow: 'ספריית נוסחים',
-      h1: 'נוסחי הודעות לאירועים',
-      lead: 'נוסחי הזמנה, אישור הגעה, תזכורת, יום האירוע ותודה — לפי סוג האירוע והשלב שבו אתם נמצאים.',
-      trail: [{ name: 'VEYA', url: '/' }, { name: 'נוסחי הודעות' }],
-    })}
-
-      <section class="article-wrap">
-        <div class="wrap">
-          <h2 class="section-title" style="font-size:22px;text-align:center;margin-bottom:20px">הקטגוריות</h2>
-          <ul class="guide-list" style="max-width:720px;margin:0 auto">
-${cats.map((c) => `            <li><a href="/nuschim/${c.key}/"><h3>${esc(c.label)}</h3><p>${esc((BLURBS[c.key] || {}).intro || '')} (${c.wordings.length} נוסחים)</p></a></li>`).join('\n')}
-          </ul>
-
-          <p class="calc-note" style="max-width:66ch;margin:30px auto 0;text-align:center">
-            ${total} נוסחים, מתוך אותה ספרייה שמוצגת בתוך המערכת. ${VAR_HINT}
-          </p>
-
-          <div class="callout" style="max-width:660px;margin:34px auto 0">
-            <p class="callout-h">צריכים גם לדעת מתי לשלוח את הבקשה?</p>
-            <p>לוח הזמנים של אישורי ההגעה נבנה לאחור ממועד סגירת הרשימה.</p>
-            <p><a href="/calculators/rsvp-timeline/">לראות את לוח הזמנים</a></p>
-          </div>
-        </div>
-      </section>
-
-      <section class="band-wrap">
-        <div class="wrap">
-          <div class="band">
-            <span class="kicker">מתחילים</span>
-            <h2>לא צריך להעתיק ידנית</h2>
-            <p class="band-more">
-              בתוך VEYA הנוסחים כבר משויכים לשלב הנכון, עם הפרטים של האירוע שלכם.
-            </p>
-            ${CTA_PRIMARY}
-          </div>
-        </div>
-      </section>`,
-    scripts: NUSCHIM_JS,
-  })
-}
-
-/** CSS מקומי לעמוד — נשען על הטוקנים הקיימים בלבד, בלי לגעת בגלובלי. */
-const NUSCHIM_CSS = `    <style>
-      .nuschim-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
-      button.nuschim-filter { cursor: pointer; font: inherit; font-size: 13.5px; border: 1px solid var(--line); background: var(--cream); color: var(--body); }
-      button.nuschim-filter.is-on { background: var(--gold); border-color: var(--gold); color: var(--charcoal); font-weight: 600; }
-      button.nuschim-filter:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
-      .nuschim-list { display: grid; gap: 18px; }
-      /* numcard הגיע מדף הבית עם רוחב מוגבל ומרווח עליון משלו. ברשימה כאן
-         הרוחב מלא והמרווח מגיע מהגריד, ולכן שניהם מאופסים. */
-      .nuschim-card { max-width: none; margin: 0; }
-      .nuschim-meta { margin: 0; padding: 10px 20px 0; font-size: 13.5px; color: var(--muted); }
-      .nuschim-text {
-        margin: 10px 0 0; padding: 16px 20px; white-space: pre-wrap; word-break: break-word;
-        font-family: inherit; font-size: 15.5px; line-height: 1.8; color: var(--body);
-        background: var(--ivory); border-top: 1px solid var(--line);
+/* ── סגנון העמוד — מוקאפ הטלפון מועתק מהמוצר (App.css: .ph-*) ── */
+const CSS = `    <style>
+      /* ניווט בשני צירים */
+      .msg-nav { display: grid; gap: 14px; margin-bottom: 26px; }
+      .msg-axis { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .msg-axis > span.lbl {
+        font-size: var(--fs-2xs); letter-spacing: .14em; font-weight: 700;
+        color: var(--muted); margin-inline-end: 4px;
       }
-      .nuschim-actions { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-top: 1px solid var(--line); }
-      .nuschim-actions .btn { padding: 9px 20px; font-size: 14.5px; }
-      .nuschim-copied { font-size: 14px; color: var(--success); font-weight: 600; }
-      .nuschim-empty { text-align: center; color: var(--muted); padding: 30px 0; }
-      /* אזור ההכרזה נקרא ע"י קורא מסך בלבד — המשוב הוויזואלי יושב ליד הכפתור. */
-      .nuschim-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-      .nuschim-text code, .calc-note code { background: var(--ivory-2); padding: 1px 5px; border-radius: 5px; font-size: 0.92em; }
+      button.msg-chip {
+        cursor: pointer; font: inherit; font-size: var(--fs-xs); font-weight: 600;
+        /* 44px מינימום — יעד מגע, לא רק אסתטיקה */
+        min-height: 44px; padding: 8px 16px; border-radius: var(--radius-pill);
+        border: 1px solid var(--line); background: var(--cream); color: var(--body);
+        transition: background var(--motion-fast) var(--ease-out),
+                    border-color var(--motion-fast) var(--ease-out),
+                    color var(--motion-fast) var(--ease-out);
+      }
+      button.msg-chip[aria-pressed="true"] {
+        background: var(--gold); border-color: var(--gold); color: var(--charcoal);
+      }
+      button.msg-chip:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
+
+      /* פריסה: מוקאפ + פאנל */
+      .msg-stage { display: grid; grid-template-columns: minmax(0,300px) minmax(0,1fr); gap: 32px; align-items: start; }
+      @media (max-width: 820px) { .msg-stage { grid-template-columns: 1fr; justify-items: center; } }
+
+      /* ── מוקאפ הטלפון — זהה לזה שבמערכת ── */
+      .ph { width: 290px; max-width: 100%; aspect-ratio: 9/19; display: flex; flex-direction: column;
+            background: #1c1a19; border-radius: 34px; padding: 7px;
+            box-shadow: 0 10px 30px rgba(28,26,25,.22), 0 1px 0 rgba(255,255,255,.14) inset; }
+      .ph-screen { flex: 1; min-height: 0; display: flex; flex-direction: column;
+                   background: #ece5dd; border-radius: 28px; overflow: hidden; position: relative; }
+      .ph-screen::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+                           width: 40%; height: 15px; background: #1c1a19; border-radius: 0 0 11px 11px; z-index: 2; }
+      .ph-status { flex: none; display: flex; align-items: center; justify-content: space-between;
+                   background: #075e54; color: #fff; font-size: 11px; padding: 5px 14px 3px; }
+      .ph-status-icons { letter-spacing: 1px; opacity: .85; }
+      .ph-bar { flex: none; display: flex; align-items: center; gap: 8px;
+                background: #075e54; color: #fff; padding: 7px 12px 10px; }
+      .ph-back { font-size: 19px; line-height: 1; opacity: .9; }
+      .ph-avatar { width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,.24);
+                   display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex: none; }
+      .ph-chat-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .ph-chat { flex: 1; min-height: 0; padding: 12px 10px; overflow-y: auto;
+                 scrollbar-width: none; -ms-overflow-style: none;
+                 background: linear-gradient(rgba(229,221,213,.5), rgba(229,221,213,.5)),
+                             repeating-linear-gradient(45deg, #ece5dd 0 12px, #e7dfd4 12px 24px); }
+      .ph-chat::-webkit-scrollbar { display: none; }
+      .ph-bubble { background: #dcf8c6; border-radius: 10px 10px 10px 3px; padding: 8px 9px 6px;
+                   box-shadow: 0 1px 1px rgba(0,0,0,.13); }
+      .ph-text { font-size: 14px; line-height: 1.6; color: #1f2c1a; word-break: break-word; overflow-wrap: anywhere; }
+      .ph-line { min-height: 1.1em; }
+      .ph-btns { display: flex; flex-direction: column; margin-top: 6px; }
+      .ph-btn { text-align: center; font-size: 13px; font-weight: 600; color: #0a84c4;
+                padding-top: 6px; margin-top: 6px; border-top: 1px solid rgba(0,0,0,.08); }
+      .ph-meta { display: block; text-align: left; font-size: 10px; color: #5b7052; margin-top: 3px; }
+
+      /* פאנל הצד */
+      .msg-panel { min-width: 0; }
+      .msg-tone { font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); margin: 0 0 6px; }
+      .msg-sub { font-size: var(--fs-xs); color: var(--muted); margin: 0 0 20px; }
+      .msg-pager { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+      button.msg-arrow {
+        cursor: pointer; width: 44px; height: 44px; border-radius: var(--radius-pill);
+        border: 1px solid var(--line); background: var(--cream); color: var(--charcoal);
+        font-size: 17px; line-height: 1; display: flex; align-items: center; justify-content: center;
+        transition: border-color var(--motion-fast) var(--ease-out);
+      }
+      button.msg-arrow:hover:not(:disabled) { border-color: var(--gold); }
+      button.msg-arrow:disabled { opacity: .35; cursor: default; }
+      button.msg-arrow:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
+      .msg-count { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+      .msg-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .msg-copied { font-size: var(--fs-sm); color: var(--success); font-weight: 600; }
+      .msg-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      .msg-empty { color: var(--muted); padding: 24px 0; }
     </style>`
 
-const NUSCHIM_JS = `    <script>
+const JS = (data) => `    <script>
+      var MSGS = ${JSON.stringify(data)};
+    </script>
+    <script>
       (function () {
-        // ---- סינון לפי סוג אירוע ----
-        var filters = document.querySelectorAll('.nuschim-filter');
-        var cards = document.querySelectorAll('.nuschim-card');
-        var empty = document.querySelector('.nuschim-empty');
-        filters.forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            var want = btn.dataset.event;
-            filters.forEach(function (b) {
-              var on = b === btn;
-              b.classList.toggle('is-on', on);
-              b.setAttribute('aria-pressed', on ? 'true' : 'false');
-            });
-            var shown = 0;
-            cards.forEach(function (c) {
-              var show = want === 'all' || c.dataset.event === want;
-              c.hidden = !show;
-              if (show) shown++;
-            });
-            if (empty) empty.hidden = shown > 0;
-            var live = document.getElementById('nuschim-live');
-            if (live) live.textContent = shown + ' נוסחים מוצגים';
-          });
-        });
+        var evChips = document.getElementById('ev-axis');
+        var tyChips = document.getElementById('ty-axis');
+        var stage = document.getElementById('stage');
+        var live = document.getElementById('msg-live');
+        if (!evChips || !stage) return;
 
-        // ---- העתקה ----
-        document.querySelectorAll('.nuschim-copy').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            var el = document.getElementById(btn.dataset.target);
-            if (!el) return;
-            var note = btn.parentNode.querySelector('.nuschim-copied');
-            var live = document.getElementById('nuschim-live');
-            var text = el.textContent;
-            function done(ok) {
-              // כשההעתקה לא מתאפשרת (דפדפן ללא הרשאת לוח, הקשר לא מאובטח)
-              // מסמנים את הטקסט עצמו, כדי ש"להעתיק ידנית" יהיה הקשה אחת
-              // ולא בחירה ידנית של פסקה שלמה.
-              if (!ok) {
-                try {
-                  var sel = window.getSelection();
-                  var range = document.createRange();
-                  range.selectNodeContents(el);
-                  sel.removeAllRanges();
-                  sel.addRange(range);
-                } catch (e2) { /* אין מה לעשות — ההודעה למטה עדיין מסבירה */ }
-              }
-              var msg = ok ? 'הנוסח הועתק' : 'סימנו לכם את הטקסט — אפשר להעתיק עכשיו';
-              if (note) note.textContent = msg;
-              if (live) live.textContent = msg;
-              setTimeout(function () {
-                if (note) note.textContent = '';
-                if (live) live.textContent = '';
-              }, 5000);
-            }
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
-            } else {
-              try {
-                var ta = document.createElement('textarea');
-                ta.value = text; ta.setAttribute('readonly', '');
-                ta.style.position = 'absolute'; ta.style.left = '-9999px';
-                document.body.appendChild(ta); ta.select();
-                document.execCommand('copy'); document.body.removeChild(ta);
-                done(true);
-              } catch (e) { done(false); }
-            }
+        var state = { ev: MSGS.events[0].key, ty: null, i: 0 };
+
+        function forEvent(ev) { return MSGS.items.filter(function (m) { return m.ev === ev; }); }
+        function types(ev) {
+          var seen = [], out = [];
+          forEvent(ev).forEach(function (m) {
+            if (seen.indexOf(m.ty) < 0) { seen.push(m.ty); out.push({ key: m.ty, label: m.tyLabel }); }
           });
-        });
+          return out;
+        }
+        function current() {
+          return forEvent(state.ev).filter(function (m) { return m.ty === state.ty; });
+        }
+
+        function chip(label, on, onClick) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'msg-chip';
+          b.textContent = label;
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          b.addEventListener('click', onClick);
+          return b;
+        }
+
+        function renderChips() {
+          evChips.querySelectorAll('button').forEach(function (b) { b.remove(); });
+          MSGS.events.forEach(function (e) {
+            evChips.appendChild(chip(e.label, e.key === state.ev, function () {
+              state.ev = e.key; state.ty = null; state.i = 0; renderAll();
+            }));
+          });
+          var ts = types(state.ev);
+          if (!state.ty || !ts.some(function (t) { return t.key === state.ty; })) {
+            state.ty = ts.length ? ts[0].key : null;
+          }
+          tyChips.querySelectorAll('button').forEach(function (b) { b.remove(); });
+          ts.forEach(function (t) {
+            tyChips.appendChild(chip(t.label, t.key === state.ty, function () {
+              state.ty = t.key; state.i = 0; renderAll();
+            }));
+          });
+          tyChips.hidden = ts.length < 2;
+        }
+
+        function renderStage() {
+          var list = current();
+          if (!list.length) { stage.innerHTML = '<p class="msg-empty">אין כאן הודעות עדיין.</p>'; return; }
+          if (state.i >= list.length) state.i = 0;
+          var m = list[state.i];
+          var lines = m.text.split('\\n').map(function (l) {
+            return '<div class="ph-line">' + (l ? esc(l) : '&nbsp;') + '</div>';
+          }).join('');
+          var btns = m.buttons.length
+            ? '<div class="ph-btns">' + m.buttons.map(function (b) {
+                return '<span class="ph-btn">' + esc(b) + '</span>';
+              }).join('') + '</div>'
+            : '';
+
+          stage.innerHTML =
+            '<div class="ph" dir="rtl">' +
+              '<div class="ph-screen">' +
+                '<div class="ph-status"><span>9:41</span><span class="ph-status-icons" aria-hidden="true">▮▮ ⌁</span></div>' +
+                '<div class="ph-bar"><span class="ph-back" aria-hidden="true">›</span>' +
+                  '<span class="ph-avatar" aria-hidden="true">' + esc(m.chat.charAt(0)) + '</span>' +
+                  '<span class="ph-chat-name">' + esc(m.chat) + '</span></div>' +
+                '<div class="ph-chat"><div class="ph-bubble">' +
+                  '<div class="ph-text">' + lines + '</div>' + btns +
+                  '<span class="ph-meta">9:41</span>' +
+                '</div></div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="msg-panel">' +
+              '<p class="msg-tone">' + esc(m.tone || 'נוסח ' + (state.i + 1)) + '</p>' +
+              '<p class="msg-sub">' + esc(m.tyLabel) + ' · ' + esc(m.evLabel) + '</p>' +
+              '<div class="msg-pager">' +
+                '<button type="button" class="msg-arrow" id="prev" aria-label="ההודעה הקודמת">›</button>' +
+                '<span class="msg-count">' + (state.i + 1) + ' מתוך ' + list.length + '</span>' +
+                '<button type="button" class="msg-arrow" id="next" aria-label="ההודעה הבאה">‹</button>' +
+              '</div>' +
+              '<div class="msg-actions">' +
+                '<button type="button" class="btn btn-ghost" id="copy">העתקת ההודעה</button>' +
+                '<span class="msg-copied" id="copied" aria-hidden="true"></span>' +
+              '</div>' +
+            '</div>';
+
+          var prev = document.getElementById('prev'), next = document.getElementById('next');
+          prev.disabled = state.i === 0;
+          next.disabled = state.i === list.length - 1;
+          prev.addEventListener('click', function () { if (state.i > 0) { state.i--; renderStage(); announce(); } });
+          next.addEventListener('click', function () { if (state.i < list.length - 1) { state.i++; renderStage(); announce(); } });
+          document.getElementById('copy').addEventListener('click', function () { copy(m.text); });
+        }
+
+        function announce() {
+          var list = current();
+          if (live) live.textContent = 'הודעה ' + (state.i + 1) + ' מתוך ' + list.length;
+        }
+
+        function copy(text) {
+          var note = document.getElementById('copied');
+          function done(ok) {
+            var msg = ok ? 'ההודעה הועתקה' : 'לא הצלחנו להעתיק — אפשר לסמן ולהעתיק ידנית';
+            if (note) note.textContent = msg;
+            if (live) live.textContent = msg;
+            setTimeout(function () { if (note) note.textContent = ''; if (live) live.textContent = ''; }, 4000);
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+          } else { done(false); }
+        }
+
+        function esc(s) {
+          return String(s).replace(/[&<>"]/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+          });
+        }
+
+        function renderAll() { renderChips(); renderStage(); }
+        renderAll();
       })();
     </script>`
 
-/**
- * @returns {Promise<Array<{path: string, html: string}>>}
- */
-export async function buildNuschim(apiUrl) {
-  const data = await fetchLibrary(apiUrl)
-  if (!data || !data.categories.length) return []
-  const cats = data.categories
-  const out = [{ path: '/nuschim/', html: indexPage(cats, data.total) }]
-  for (const cat of cats) {
-    out.push({ path: `/nuschim/${cat.key}/`, html: categoryPage(cat, cats) })
+/** ממיר את מבנה ה-API למבנה שטוח שהעמוד עובד איתו. */
+function flatten(data) {
+  const events = []
+  const items = []
+  for (const cat of data.categories) {
+    for (const w of cat.wordings) {
+      const s = SAMPLE[w.event_type] || FALLBACK
+      const { text, buttons } = render(w.content, s)
+      if (!text.trim()) continue
+      items.push({
+        ev: w.event_type, evLabel: w.event_type_label,
+        ty: w.message_type, tyLabel: w.message_type_label,
+        tone: w.tone, text, buttons, chat: s.chat,
+      })
+      if (!events.some((e) => e.key === w.event_type)) {
+        events.push({ key: w.event_type, label: w.event_type_label })
+      }
+    }
   }
-  return out
+  // חתונה ראשונה — היא הסוג העשיר ביותר, ושאר הסוגים לפי סדר הופעה.
+  events.sort((a, b) => (a.key === 'wedding' ? -1 : b.key === 'wedding' ? 1 : 0))
+  return { events, items }
+}
+
+export async function buildNuschim(apiUrl) {
+  const raw = await fetchLibrary(apiUrl)
+  if (!raw || !raw.categories.length) return []
+  const data = flatten(raw)
+  if (!data.items.length) return []
+
+  const evNames = data.events.map((e) => e.label).join(' · ')
+  const body = `${pageHero({
+    eyebrow: 'הודעות לאורחים',
+    h1: 'ההודעות שהאורחים שלכם מקבלים',
+    lead: `הזמנה, בקשת אישור הגעה ותזכורות — לפי סוג האירוע. אלה ההודעות שכבר נמצאות בתוך VEYA, בדיוק כפי שהן נראות בטלפון של המוזמן.`,
+    trail: [{ name: 'VEYA', url: '/' }, { name: 'הודעות לאורחים' }],
+  })}
+
+      <section class="article-wrap">
+        <div class="wrap">
+          <div class="msg-nav">
+            <div class="msg-axis" id="ev-axis" role="group" aria-label="סוג האירוע">
+              <span class="lbl">סוג האירוע</span>
+            </div>
+            <div class="msg-axis" id="ty-axis" role="group" aria-label="סוג ההודעה">
+              <span class="lbl">סוג ההודעה</span>
+            </div>
+          </div>
+
+          <div class="msg-stage" id="stage"></div>
+          <p class="msg-live" id="msg-live" role="status" aria-live="polite"></p>
+
+          <p class="calc-note" style="max-width:66ch;margin-top:34px">
+            <b>הפרטים בהודעות הם דוגמה.</b> בתוך VEYA השם של כל מוזמן, התאריך,
+            השעה והמקום נכנסים אוטומטית מפרטי האירוע שלכם — לא צריך למלא אותם
+            בכל הודעה מחדש. הכפתורים בתחתית ההודעה הם מה שהמוזמן לוחץ עליו
+            בפועל.
+          </p>
+
+          <div class="callout" style="max-width:660px;margin-top:30px">
+            <p class="callout-h">ומתי שולחים כל אחת מהן?</p>
+            <p>לוח הזמנים של אישורי ההגעה נבנה לאחור ממועד סגירת הרשימה.</p>
+            <p><a href="/calculators/rsvp-timeline/">לראות את לוח הזמנים</a></p>
+          </div>
+
+          <p class="calc-note" style="margin-top:24px">
+            ניהול האירוע לפי סוג: ${data.events.map((e) => {
+              const slug = { bar_mitzvah: 'bar-mitzvah', bat_mitzvah: 'bat-mitzvah' }[e.key] || e.key
+              return `<a href="/events/${slug}/">${esc(e.label)}</a>`
+            }).join(' · ')}
+          </p>
+        </div>
+      </section>
+
+      <section class="band-wrap">
+        <div class="wrap">
+          <div class="band">
+            <span class="kicker">מתחילים</span>
+            <h2>ההודעות האלה כבר בפנים</h2>
+            <p class="band-more">
+              בתוך VEYA בוחרים הודעה לכל שלב, עורכים אותה אם בא לכם, ורואים
+              תצוגה מקדימה לפני שמשהו יוצא.
+            </p>
+            ${CTA_PRIMARY}
+          </div>
+        </div>
+      </section>`
+
+  const html = page({
+    path: '/nuschim/',
+    title: 'הודעות לאורחים — מה המוזמנים מקבלים | VEYA',
+    description: `ההודעות שנשלחות למוזמנים באירוע: הזמנה, בקשת אישור הגעה ותזכורות, לפי סוג האירוע — ${evNames}. בדיוק כפי שהן נראות בטלפון.`,
+    trail: [{ name: 'VEYA', url: '/' }, { name: 'הודעות לאורחים' }],
+    schema: [
+      {
+        '@type': 'CollectionPage',
+        name: 'הודעות לאורחים',
+        inLanguage: 'he-IL',
+        url: `${SITE}/nuschim/`,
+        description: 'ההודעות שנשלחות למוזמנים באירוע, לפי סוג האירוע ולפי שלב.',
+      },
+    ],
+    head: CSS,
+    body,
+    scripts: JS(data),
+  })
+
+  return [{ path: '/nuschim/', html }]
 }

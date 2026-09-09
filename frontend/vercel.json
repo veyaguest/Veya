@@ -33,6 +33,26 @@
       "source": "/blog/:path*",
       "destination": "/guides/",
       "statusCode": 301
+    },
+    {
+      "source": "/nuschim/invitations",
+      "destination": "/nuschim/",
+      "statusCode": 301
+    },
+    {
+      "source": "/nuschim/invitations/",
+      "destination": "/nuschim/",
+      "statusCode": 301
+    },
+    {
+      "source": "/nuschim/rsvp",
+      "destination": "/nuschim/",
+      "statusCode": 301
+    },
+    {
+      "source": "/nuschim/rsvp/",
+      "destination": "/nuschim/",
+      "statusCode": 301
     }
   ],
   "rewrites": [
