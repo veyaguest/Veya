@@ -229,9 +229,9 @@
       .hero .wrap { position: relative; z-index: 1; }
       .hero-logo { width: clamp(150px, 22vw, 208px); height: auto; margin: 0 auto 26px; display: block; filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.22)); }
       .eyebrow { display: inline-block; font-size: var(--fs-xs); letter-spacing: 3px; color: var(--gold-light); text-transform: uppercase; margin-bottom: 18px; }
-      .hero h1 { font-size: clamp(36px, 6.2vw, 60px); color: var(--cream-text); margin-bottom: 20px; font-weight: 500; }
+      .hero h1 { font-size: clamp(2.25rem, 6.2vw, 3.75rem); color: var(--cream-text); margin-bottom: 20px; font-weight: 500; }
       .hero h1 .accent { color: var(--gold-light); }
-      .hero p.lead { font-size: clamp(17px, 2.4vw, 21px); color: #ddd2bd; max-width: 640px; margin: 0 auto 34px; }
+      .hero p.lead { font-size: clamp(1.063rem, 2.4vw, 1.313rem); color: #ddd2bd; max-width: 640px; margin: 0 auto 34px; }
       .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
       .hero-trust { margin-top: 26px; font-size: var(--fs-sm); color: #b6aa93; display: flex; gap: 10px 22px; justify-content: center; flex-wrap: wrap; }
       .hero-trust span { display: inline-flex; align-items: center; gap: 7px; }
@@ -470,7 +470,7 @@
       .sc-tab[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--cream-text); }
       .sc-tab[aria-selected="true"] .sc-tab-ic { background: rgba(228, 201, 107, 0.16); color: var(--gold-light); }
       .sc-tab:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
-      .sc-tab .sc-tab-sub { display: block; font-size: 12px; font-weight: 500; opacity: 0.75; margin-top: 2px; }
+      .sc-tab .sc-tab-sub { display: block; font-size: var(--fs-2xs); font-weight: 500; opacity: 0.75; margin-top: 2px; }
       .sc-stage { position: relative; background: var(--cream); border: 1px solid var(--line); border-radius: 22px; padding: 22px; box-shadow: 0 30px 70px rgba(43, 38, 32, 0.08); }
       .sc-panel { display: none; }
       .sc-panel[data-active="true"] { display: block; animation: veya-panel-in 0.35s ease; }
@@ -556,7 +556,7 @@
       .payoff-bridge::after { background: linear-gradient(90deg, rgba(201, 162, 39, 0.45) 0%, rgba(201, 162, 39, 0) 100%); }
 
       .payoff { max-width: 880px; margin: 0 auto; text-align: center; }
-      .payoff h3 { font-size: clamp(22px, 3.2vw, 31px); color: var(--cream-text); margin-bottom: 12px; }
+      .payoff h3 { font-size: clamp(1.375rem, 3.2vw, 1.938rem); color: var(--cream-text); margin-bottom: 12px; }
       .payoff-lead { font-size: var(--fs-lg); color: #cabfa9; max-width: 580px; margin: 0 auto 28px; }
       .payoff-shot {
         position: relative; aspect-ratio: 16 / 10; border-radius: 18px; overflow: hidden;
@@ -755,7 +755,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                            /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -814,24 +814,24 @@
            זה מזה (13 · 13.5 · 13.8 · 14 · 14.3 · 14.5 …). ההבדלים האלה אינם
            נראים לעין אבל הם בדיוק מה שגורם לעמודים להרגיש כמו תבניות שונות.
            הסולם מאחד אותם ל-15 מדרגות. אף ערך לא זז ביותר מ-1px. */
-        --fs-2xs: 12.5px;
-        --fs-xs: 13.5px;
-        --fs-sm: 14.5px;
-        --fs-md: 15.5px;
-        --fs-base: 16.5px;
-        --fs-lg: 17px;
-        --fs-xl: 18.5px;
-        --fs-2xl: 21px;
-        --fs-3xl: 30px;
+        --fs-2xs: 0.781rem;
+        --fs-xs: 0.844rem;
+        --fs-sm: 0.906rem;
+        --fs-md: 0.969rem;
+        --fs-base: 1.031rem;
+        --fs-lg: 1.063rem;
+        --fs-xl: 1.156rem;
+        --fs-2xl: 1.313rem;
+        --fs-3xl: 1.875rem;
 
         /* מדרגות תצוגה — נשארות fluid, כי כותרת חייבת להתכווץ במובייל. */
-        --fd-xs: clamp(16px, 2.2vw, 19px);
-        --fd-sm: clamp(18px, 2.3vw, 22px);
-        --fd-md: clamp(19px, 2.6vw, 24px);
-        --fd-lg: clamp(21px, 3vw, 27px);
-        --fd-num: clamp(22px, 4vw, 32px);
-        --fd-xl: clamp(26px, 4.2vw, 40px);
-        --fd-2xl: clamp(30px, 5.2vw, 46px);
+        --fd-xs: clamp(1rem, 2.2vw, 1.188rem);
+        --fd-sm: clamp(1.125rem, 2.3vw, 1.375rem);
+        --fd-md: clamp(1.188rem, 2.6vw, 1.5rem);
+        --fd-lg: clamp(1.313rem, 3vw, 1.688rem);
+        --fd-num: clamp(1.375rem, 4vw, 2rem);
+        --fd-xl: clamp(1.625rem, 4.2vw, 2.5rem);
+        --fd-2xl: clamp(1.875rem, 5.2vw, 2.875rem);
 
         /* ── טיפוגרפיה ──────────────────────────────────────────────────────
            ארבעה משקלים בלבד (400/500/600/700). משקל 300 הוסר מהטעינה —
@@ -1222,8 +1222,31 @@
         border: 0;
       }
 
+      /* ── משוב מגע: תגובה בלחיצה, לא בשחרור ─────────────────────────── */
+      a.evt-card:active, .guide-list a:active, .footer-col a:active { transform: translateY(1px); }
+      a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--ease-out),
+        box-shadow var(--motion-normal) var(--ease-out), transform var(--motion-fast) var(--ease-out); }
+      .footer-col a { transition: color var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out); }
+
+      /* ── העדפות מערכת: שקיפות וניגודיות ───────────────────────────── */
+      @media (prefers-reduced-transparency: reduce) {
+        .site-header,
+        .site-header.is-compact { background: var(--ink); backdrop-filter: none; }
+      }
+      @media (prefers-contrast: more) {
+        .site-header,
+        .site-header.is-compact { background: var(--ink); backdrop-filter: none; border-bottom-color: var(--gold); }
+        .btn-ghost { border-color: var(--charcoal); }
+        .footer-col a { color: var(--cream-text); }
+        .link-quiet { opacity: 1; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        a.evt-card:active, .guide-list a:active, .footer-col a:active { transform: none; }
+      }
+
       /* ===== VEYA BRAND LAYER — END ===== */
 
+    
     
     
     
@@ -1915,7 +1938,7 @@
           </div>
         </div>
       </div>
-      <div class="wrap" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(201,162,39,0.14); font-size: 13px; color: #9b907c;">
+      <div class="wrap" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(201,162,39,0.14); font-size: var(--fs-xs); color: #9b907c;">
         © VEYA — מערכת לניהול אירועים
       </div>
     </footer>
