@@ -1630,7 +1630,8 @@ export const strings = {
     countingTotalLabel: 'סה״כ מתנות',
     envelopesLabel: 'מעטפות',
     creditLabel: 'אשראי',
-    externalLabel: 'לא מהרשימה',
+    // בסיכום המתנות: הסכום הזה **כלול** במעטפות ואינו מתווסף להן.
+    externalLabel: 'מתוכן, לא מהרשימה',
     // הסכומים חסומים עד שפרטי קבלת המתנות מאושרים — בדיוק כמו במסך
     // המתנות באשראי. הניסוח מבטיח ולא מתנצל: הכסף לא נעלם.
     creditLockedNote: 'סכומי האשראי יופיעו כאן ברגע שפרטי קבלת המתנות יאושרו.',
@@ -1843,7 +1844,7 @@ export const strings = {
     repSummaryTitle: 'סיכום',
     repGiftsEnvelopes: 'מעטפות',
     repGiftsCredit: 'מתנות באשראי',
-    repGiftsExternal: 'מתנות מחוץ לרשימה',
+    repGiftsExternal: 'מתוכן, מנותנים שאינם ברשימה',
     repGiftsTotal: 'סה״כ מתנות',
     // §20 — במילים פשוטות, בלי מונחים חשבונאיים.
     repResultSurplus: 'האירוע הסתיים בעודף',

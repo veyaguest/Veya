@@ -1231,8 +1231,11 @@
   font-weight: var(--weight-regular);
 }
 
-/* תג "לא מהרשימה" ביומן — עובדה ניטרלית, לא חוסר. */
+/* תג "לא מהרשימה" ביומן — עובדה ניטרלית, לא חוסר.
+   ``align-self`` כי ``.fin-gift-who`` הוא עמודת flex: בלעדיו התג נמתח
+   לכל רוחב השורה ונראה כמו פס התקדמות. */
 .fin-badge-external {
+  align-self: flex-start;
   background: var(--line-2);
   color: var(--muted);
 }
@@ -1671,6 +1674,7 @@
    גובה הבקרה הסטנדרטי של VEYA הופך אותם ליעד מגע אמיתי בלי לשנות את
    ``btn-link`` הגלובלי — שמשמש גם בהקשרים צפופים במסכים אחרים. */
 .fin-section-actions .btn-link,
+.fin-gift-delete,
 .fin-group-add,
 .fin-preview-change,
 .fin-more-details,

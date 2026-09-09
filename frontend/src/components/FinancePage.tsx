@@ -1558,7 +1558,7 @@ function eventFacts(report: FinanceReport): string[][] {
   return [
     [t.repEventType, report.event_type_label],
     [t.repHosts, report.event_title],
-    [t.repEventDate, report.event_date],
+    [t.repEventDate, formatEventDate(report.event_date)],
     [t.repVenue, report.venue_name],
   ].filter((r) => r[1])
 }
@@ -1692,8 +1692,12 @@ function summaryFacts(report: FinanceReport): string[][] {
     [t.summaryUnpaidLabel, cost.unpaid_display],
     ['', ''],
     [t.repGiftsEnvelopes, income.envelopes_display],
-    [t.repGiftsCredit, income.credit_display || t.creditLockedNote],
   ]
+  // שורת האשראי מופיעה רק כשיש מתנות אשראי. "0 ₪" או משפט הנעילה
+  // באירוע שלא השתמש בשירות הם תשובה לשאלה שלא נשאלה.
+  if (income.credit_count) {
+    rows.push([t.repGiftsCredit, income.credit_display || t.creditLockedNote])
+  }
   if (income.external_count) rows.push([t.repGiftsExternal, income.external_display])
   rows.push([t.repGiftsTotal, income.total_display || '—'], ['', ''])
 
@@ -1704,11 +1708,22 @@ function summaryFacts(report: FinanceReport): string[][] {
         : bottom_line_agorot < 0
           ? t.repResultDeficit
           : t.repResultEven
-    rows.push([label, stripSign(report.bottom_line_display)], [t.repResultFormula, ''])
+    // הנוסחה נאמרת **בתוך** התווית ולא כשורה משלה — שורה עם תווית ובלי
+    // ערך נראית כמו נתון שלא נטען.
+    rows.push([`${label} (${t.repResultFormula})`, stripSign(report.bottom_line_display)])
   } else {
     rows.push([t.bottomLineLabel, t.bottomLineLocked])
   }
   return rows
+}
+
+/** ``2026-09-05`` → "5 בספטמבר 2026". ריק נשאר ריק. */
+function formatEventDate(iso: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime())
+    ? iso
+    : d.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 /** אגורות → "12,000 ₪". לתצוגה בדוח בלבד — לא חישוב. */
@@ -1847,7 +1862,10 @@ function printReport(report: FinanceReport, eventNoun: string): void {
   const section = (title: string, body: string) =>
     `<section><h2>${esc(title)}</h2>${body}</section>`
 
-  const meta = [report.event_type_label, report.venue_name, report.event_date]
+  // תאריך בניסוח שקוראים ולא ב-ISO. "2026-09-05" בכותרת של דוח פרימיום
+  // הוא פליטה טכנית, לא תאריך.
+  const eventDate = formatEventDate(report.event_date)
+  const meta = [report.event_type_label, report.venue_name, eventDate]
     .filter(Boolean)
     .join(' · ')
 
