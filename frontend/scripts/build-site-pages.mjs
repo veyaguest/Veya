@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { marked } from 'marked'
 import { page, pageHero, faqHtml, esc, SITE, CTA_PRIMARY } from './site-shell.mjs'
-import { EVENT_TYPES, GROUPS, EXPENSES } from '../content/event-types.mjs'
+import { EVENT_TYPES, GROUPS, EXPENSES, FOCUS } from '../content/event-types.mjs'
 import { featureRsvp, featureCalls, featureGuests, featureSeating } from './build-features.mjs'
 import { buildNuschim } from './build-nuschim.mjs'
 
@@ -933,6 +933,22 @@ function eventPage(t) {
     trail: [{ name: 'VEYA', url: '/' }, { name: 'סוגי אירוע', url: '/#events' }, { name: t.name }],
     cta: `${CTA_PRIMARY}\n            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות</a>`,
   })}
+
+      <section class="commit tone-alt">
+        <div class="wrap">
+          <div class="section-head">
+            <span class="kicker">${esc(t.name)}</span>
+            <h2 class="section-title">${esc((FOCUS[t.slug] || {}).line || '')}</h2>
+          </div>
+          <div class="num-row" data-v-stagger="90" style="max-width:660px;margin:0 auto">
+${((FOCUS[t.slug] || {}).stats || []).map(([v, l]) => `            <div class="num v-reveal"><span class="num-value">${esc(v)}</span><span class="num-label">${esc(l)}</span></div>`).join('\n')}
+          </div>
+          <p class="fineprint" style="text-align:center">מספרי הדוגמה להמחשה בלבד — המערכת עובדת על הנתונים שלכם.</p>
+          <div class="note-chips" style="justify-content:center;margin-top:22px">
+${((FOCUS[t.slug] || {}).chips || []).map((c) => `            <span class="note-chip">${esc(c)}</span>`).join('\n')}
+          </div>
+        </div>
+      </section>
 
       <section class="why">
         <div class="wrap">
