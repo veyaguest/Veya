@@ -1796,9 +1796,36 @@ export interface ExpenseInput {
   is_estimated?: boolean
   /** נפרד לגמרי מ-``is_estimated``: אפשר לשלם מקדמה על סכום לא סופי. */
   is_paid?: boolean
-  /** מקדמה באגורות — **רק כש-``is_paid`` הוא ``false``**. "שולם במלואו"
-   *  נשאר דגל ולא סכום שמור, כי עלות השורה זזה עם מספר המגיעים. */
+  /** ⚠️ הוחלף ביומן התשלומים. נשאר בטיפוס כי השרת עדיין מקבל אותו
+   *  לשורות ישנות; קוד חדש לא כותב אליו. */
   paid_amount_agorot?: number
+}
+
+/** מקדמה או תשלום. ההבחנה לתצוגה ולדוח בלבד — שניהם נספרים אותו דבר. */
+export type PaymentKind = 'advance' | 'payment'
+
+/** תשלום אחד על חשבון שורת הוצאה. */
+export interface Payment {
+  id: number
+  expense_id: number
+  amount_agorot: number
+  amount_display: string
+  payee: string
+  /** ``YYYY-MM-DD``, או ריק כשלא נרשם תאריך. */
+  paid_on: string
+  /** התאריך בניסוח שקוראים ("12 באוגוסט"). ריק כשאין תאריך. */
+  paid_on_display: string
+  kind: PaymentKind
+  note: string | null
+}
+
+/** הקלט לשמירת תשלום. הסכום באגורות, כמו בכל השרשרת. */
+export interface PaymentInput {
+  amount_agorot: number
+  payee?: string
+  paid_on?: string
+  kind?: PaymentKind
+  note?: string | null
 }
 
 /** שורת הוצאה + התוצאה שלה. **התוצאה מגיעה מהשרת** — המסך לא מחשב כסף. */
@@ -1815,8 +1842,17 @@ export interface Expense extends ExpenseInput {
   /** מגיעים מעבר לכמות ההתחייבות. */
   over_commitment: number
   min_total_applied: boolean
-  /** כמה שולם בפועל — עלות מלאה כשסומן "שולם", המקדמה כשיש מקדמה. */
+  /** כמה שולם בפועל — סכום היומן, חתוך לעלות השורה. **מהשרת.** */
+  paid_agorot: number
   paid_display: string
+  /** עלות השורה פחות מה ששולם. לעולם לא שלילי. **מהשרת.** */
+  remaining_agorot: number
+  remaining_display: string
+  /** סכום היומן בלי חיתוך. גדול מ-``paid_agorot`` כשנרשם תשלום יתר. */
+  payments_total_agorot: number
+  payments_total_display: string
+  /** יומן התשלומים, לפי תאריך. */
+  payments: Payment[]
 }
 
 /** נקודה בלוח "מה יקרה אם יגיעו…". */

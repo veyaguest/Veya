@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   applyExpenseTemplate,
   createExpense,
+  createPayment,
   deleteEnvelope,
   deleteExpense,
   getExpenseCategories,
@@ -113,13 +114,22 @@ export function FinancePage() {
     if (byGuest !== null) getGiftsByGuest().then(setByGuest).catch(() => undefined)
   }, [byGuest])
 
-  async function handleSaveExpense(input: ExpenseInput) {
+  async function handleSaveExpense(input: ExpenseInput, prepaidAgorot?: number) {
     setSaving(true)
     setSaveError(null)
     try {
-      if (editing) await updateExpense(editing.id, input)
-      else await createExpense(input)
+      if (editing) {
+        await updateExpense(editing.id, input)
+      } else {
+        const created = await createExpense(input)
+        // "כבר שילמתם משהו?" מהטופס — נרשם כתשלום ראשון. אי אפשר לרשום
+        // תשלום על הוצאה שעוד לא נוצרה, ולכן זה קורה כאן ולא בטופס.
+        if (prepaidAgorot) {
+          await createPayment(created.id, { amount_agorot: prepaidAgorot })
+        }
+      }
       setEditing(undefined)
+      setAddCategory(null)
       refresh()
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : t.saveError)
@@ -219,6 +229,12 @@ export function FinancePage() {
           busy={saving}
           error={saveError}
           onSave={handleSaveExpense}
+          // יומן התשלומים משנה את השורה בשרת — הדיאלוג מחזיק את הגרסה
+          // המעודכנת, והמסך שמאחור נטען מחדש כדי שהסיכומים לא יסטו.
+          onPaymentsChanged={(updated) => {
+            setEditing(updated)
+            refresh()
+          }}
           onDelete={editing ? handleDeleteExpense : undefined}
           onCancel={() => {
             setEditing(undefined)
@@ -670,12 +686,15 @@ function ExpenseRow({ expense, onEdit }: { expense: Expense; onEdit: () => void 
           {/* הספק, ואחריו שני המצבים. "שולם" בירוק כי זו בשורה טובה;
               "הערכה" באפור כי זו עובדה ניטרלית ולא חוסר. */}
           {expense.vendor && <span className="fin-expense-note">{expense.vendor}</span>}
-          {expense.is_paid && <span className="fin-badge fin-badge-paid">{t.paidLabel}</span>}
-          {/* מקדמה — נאמרת עם הסכום, כי "שולם חלקית" בלי מספר משאיר
-              בדיוק את השאלה ששולחת את הזוג לפתוח את השורה. */}
-          {!expense.is_paid && (expense.paid_amount_agorot ?? 0) > 0 && (
+          {/* מצב התשלום נגזר מהיומן, לא מדגל: שולם הכול ⇒ "שולם";
+              שולם חלק ⇒ כמה **נשאר**, כי זו השאלה. הסכום בתוך התג —
+              "שולם חלקית" לבדו שולח את הזוג לפתוח את השורה. */}
+          {expense.paid_agorot > 0 && expense.remaining_agorot === 0 && (
+            <span className="fin-badge fin-badge-paid">{t.paidLabel}</span>
+          )}
+          {expense.paid_agorot > 0 && expense.remaining_agorot > 0 && (
             <span className="fin-badge fin-badge-partial">
-              {t.partialBadge(expense.paid_display)}
+              {t.remainingBadge(expense.remaining_display)}
             </span>
           )}
           {expense.is_estimated && (

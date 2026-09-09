@@ -613,6 +613,92 @@ def test_full_payment_flag_wins_over_a_stale_advance() -> None:
     assert finance.paid_for_line(e, 30_000 * S) == 30_000 * S
 
 
+# ════════════════════════════════════════════════════════════════════════
+#  יומן התשלומים
+# ════════════════════════════════════════════════════════════════════════
+#
+# "נשאר לשלם = עלות השורה − סכום התשלומים" הוא המשפט שהמסך מבטיח.
+# הבדיקות כאן נועלות אותו, ובמיוחד את שני הקצוות שבהם הוא נשבר בשקט:
+# תשלום יתר, ושורה שעלותה זזה אחרי שכבר שולמה.
+
+
+def pay(shekels: int, **kw) -> models.ExpensePayment:
+    return models.ExpensePayment(amount_agorot=shekels * S, **kw)
+
+
+def test_payments_sum_is_what_was_paid() -> None:
+    e = line(1, FIXED, 12_000)
+    e.payments = [pay(3_000, kind="advance"), pay(2_000)]
+    assert finance.paid_for_line(e, 12_000 * S) == 5_000 * S
+
+
+def test_remaining_is_cost_minus_payments() -> None:
+    e = line(1, FIXED, 12_000)
+    e.payments = [pay(3_000), pay(2_000)]
+    total = 12_000 * S
+    assert total - finance.paid_for_line(e, total) == 7_000 * S
+
+
+def test_ledger_wins_over_the_legacy_fields() -> None:
+    """שורה שהומרה נושאת גם דגל ישן וגם שורת יומן. אסור שתיספר פעמיים."""
+    e = line(1, FIXED, 12_000, is_paid=True, paid_amount_agorot=4_000 * S)
+    e.payments = [pay(12_000)]
+    assert finance.paid_for_line(e, 12_000 * S) == 12_000 * S
+
+
+def test_legacy_fields_still_read_before_the_migration_runs() -> None:
+    """שרת שעלה על DB שטרם הומר חייב להציג מספר נכון, לא אפס."""
+    e = line(1, FIXED, 12_000, is_paid=True)
+    assert finance.paid_for_line(e, 12_000 * S) == 12_000 * S
+
+    e2 = line(2, FIXED, 12_000, paid_amount_agorot=4_000 * S)
+    assert finance.paid_for_line(e2, 12_000 * S) == 4_000 * S
+
+
+def test_overpayment_is_capped_so_remaining_never_goes_negative() -> None:
+    """המקרה שמופיע בפועל: שולמה מקדמה, ואז המחיר ירד. העודף הוא החזר —
+    הוא לא הופך את "נשאר לשלם" למספר שלילי בכותרת המסך."""
+    e = line(1, FIXED, 10_000)
+    e.payments = [pay(9_000), pay(4_000)]
+    total = 10_000 * S
+    assert finance.paid_for_line(e, total) == total
+    assert total - finance.paid_for_line(e, total) == 0
+    # אבל היומן עצמו נשאר נאמן למה שנרשם.
+    assert finance.payments_total(e) == 13_000 * S
+
+
+def test_fully_paid_meal_line_owes_again_when_more_guests_confirm() -> None:
+    """ההבדל המהותי בין יומן לדגל.
+
+    שורת מנה ששולמה במלואה ב-391 מגיעים ואז עלתה ל-420 **באמת חייבת עוד
+    כסף**. הדגל הישן היה ממשיך לומר "שולם"; היומן אומר את האמת."""
+    e = line(1, PER_ATTENDEE, 320)
+    e.payments = [pay(391 * 320)]
+
+    at_391 = finance.cost_breakdown([e], attendees=391, invited=500)
+    assert finance.paid_for_line(e, at_391.lines[1].total_agorot) == 391 * 320 * S
+    assert at_391.lines[1].total_agorot - finance.paid_for_line(e, at_391.lines[1].total_agorot) == 0
+
+    at_420 = finance.cost_breakdown([e], attendees=420, invited=500)
+    remaining = at_420.lines[1].total_agorot - finance.paid_for_line(
+        e, at_420.lines[1].total_agorot
+    )
+    assert remaining == 29 * 320 * S
+
+
+def test_paid_total_across_lines_never_exceeds_the_event_total() -> None:
+    expenses = [
+        line(1, FIXED, 45_000),
+        line(2, FIXED, 12_000),
+        line(3, PER_ATTENDEE, 320, committed_quantity=500),
+    ]
+    expenses[0].payments = [pay(45_000)]
+    expenses[1].payments = [pay(99_000)]  # תשלום יתר גס
+    expenses[2].payments = []
+    breakdown = finance.cost_breakdown(expenses, attendees=391, invited=551)
+    assert finance.paid_total(expenses, breakdown.lines) <= breakdown.total_agorot
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for test in tests:

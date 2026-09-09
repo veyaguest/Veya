@@ -11,7 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, or_, text
 
 from app import models  # noqa: F401  — נדרש כדי לרשום את הטבלאות
 from app.database import (
@@ -539,7 +539,10 @@ def _migrate_expense_payments() -> None:
     """
     from app import finance
 
-    with SessionLocal() as db:
+    # ``MigrationSessionLocal`` ולא ``SessionLocal``: תחזוקת עלייה רצה לפני
+    # שיש משתמש מחובר, ומדיניות ה-RLS על טבלאות האירוע הייתה חוסמת אותה.
+    db = MigrationSessionLocal()
+    try:
         try:
             legacy = (
                 db.query(models.EventExpense)
@@ -602,6 +605,8 @@ def _migrate_expense_payments() -> None:
         if created:
             db.commit()
             print(f"[migrations] {created} תשלומים הומרו ליומן התשלומים (חד-פעמי)")
+    finally:
+        db.close()
 
 
 def _migrate_brita_split() -> None:
@@ -1462,7 +1467,7 @@ def seed_message_default_options() -> None:
         db.close()
 
 
-# ---- הפעלת RLS לטבלאות נוהל הדחייה ----
+# ---- הפעלת RLS לטבלאות שנולדות ב-create_all ----
 #
 # **למה זה כאן ולא בהרצה ידנית כמו שאר קובצי ה-RLS.** קובצי 01–14 מריצים
 # ידנית ובכוונה: הם נוגעים בכל טבלאות המערכת, והפעלתם היא אירוע תשתיתי
@@ -1481,9 +1486,13 @@ def seed_message_default_options() -> None:
 #
 # **מתג כיבוי:** ``VEYA_SKIP_RLS_MIGRATIONS=1`` בסביבה. קיים כדי שאפשר
 # יהיה לכבות מיד מ-Render, בלי deploy של קוד, אם מתגלה בעיה.
-_RLS_MIGRATION_FILES = ("15_postponement_rls.sql", "16_finance_rls.sql")
+_RLS_MIGRATION_FILES = (
+    "15_postponement_rls.sql",
+    "16_finance_rls.sql",
+    "17_expense_payments_rls.sql",
+)
 
-#: הפונקציות שקובצי 15 ו-16 נשענים עליהן (קבצים 01 ו-08). בלעדיהן
+#: הפונקציות שקובצי 15–17 נשענים עליהן (קבצים 01 ו-08). בלעדיהן
 #: ``CREATE POLICY`` ייכשל — ואז עדיף לדלג בקול מאשר להשאיר מדיניות חלקית.
 _RLS_REQUIRED_FUNCTIONS = ("app_manages_event", "app_is_admin")
 
@@ -1549,7 +1558,7 @@ def _ensure_rls_policies() -> None:
                 "WHERE c.relnamespace = 'public'::regnamespace AND c.relkind = 'r' "
                 "  AND c.relname IN "
                 "      ('postponement_requests', 'event_cycles', 'guest_cycle_rsvp', "
-                "       'event_expenses', 'gift_envelopes') "
+                "       'event_expenses', 'gift_envelopes', 'expense_payments') "
                 "ORDER BY 1"
             ).all()
             summary = " · ".join(

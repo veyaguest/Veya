@@ -19,6 +19,8 @@
 """
 from __future__ import annotations
 
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -54,9 +56,47 @@ def _guests(db: Session, event_id: int) -> list[models.Guest]:
     )
 
 
+#: חודשי השנה בעברית — לתאריך התשלום בניסוח שקוראים, לא ב-ISO.
+_MONTHS = (
+    "בינואר", "בפברואר", "במרץ", "באפריל", "במאי", "ביוני",
+    "ביולי", "באוגוסט", "בספטמבר", "באוקטובר", "בנובמבר", "בדצמבר",
+)
+
+
+def _date_display(iso: str) -> str:
+    """``2026-08-12`` ← "12 באוגוסט". ריק נשאר ריק.
+
+    בלי שנה: כל התשלומים של אירוע נופלים בטווח של שנה, והשנה רק מאריכה
+    את התא בטבלה בלי להוסיף מידע.
+    """
+    if not iso:
+        return ""
+    try:
+        d = date.fromisoformat(iso)
+    except ValueError:
+        return iso
+    return f"{d.day} {_MONTHS[d.month - 1]}"
+
+
+def _payment_read(payment: models.ExpensePayment) -> schemas.PaymentRead:
+    return schemas.PaymentRead(
+        id=payment.id,
+        expense_id=payment.expense_id,
+        amount_agorot=payment.amount_agorot,
+        amount_display=finance.format_shekels(payment.amount_agorot),
+        payee=payment.payee or "",
+        paid_on=payment.paid_on or "",
+        paid_on_display=_date_display(payment.paid_on or ""),
+        kind=payment.kind,  # type: ignore[arg-type]
+        note=payment.note,
+    )
+
+
 def _expense_read(
     expense: models.EventExpense, line: finance.LineResult, event_type: str = "wedding"
 ) -> schemas.ExpenseRead:
+    paid = finance.paid_for_line(expense, line.total_agorot)
+    ledger = finance.payments_total(expense)
     return schemas.ExpenseRead(
         id=expense.id,
         category=expense.category,
@@ -75,9 +115,13 @@ def _expense_read(
         is_paid=bool(expense.is_paid),
         paid_amount_agorot=expense.paid_amount_agorot or 0,
         # מה ששולם בפועל על השורה — נגזר במנוע, לא כאן.
-        paid_display=finance.format_shekels(
-            finance.paid_for_line(expense, line.total_agorot)
-        ),
+        paid_agorot=paid,
+        paid_display=finance.format_shekels(paid),
+        remaining_agorot=line.total_agorot - paid,
+        remaining_display=finance.format_shekels(line.total_agorot - paid),
+        payments_total_agorot=ledger,
+        payments_total_display=finance.format_shekels(ledger),
+        payments=[_payment_read(p) for p in expense.payments],
         sort_order=expense.sort_order,
         total_agorot=line.total_agorot,
         total_display=finance.format_shekels(line.total_agorot),
@@ -670,6 +714,121 @@ def delete_expense(
         ip=request.client.host if request.client else None,
     )
     db.commit()
+
+
+# ════════════════════════════════════════════════════════════════════════
+#  יומן התשלומים
+# ════════════════════════════════════════════════════════════════════════
+#
+# "כמה שולם" הוא סכום היומן, ו"נשאר לשלם" הוא עלות השורה פחותיו. אין
+# כאן שדה מצטבר שצריך לעדכן בכל כתיבה — ולכן גם אין סיכון שהוא יסטה.
+
+
+def _owned_payment(
+    db: Session, event: models.Event, payment_id: int
+) -> models.ExpensePayment:
+    """שולף תשלום ומוודא שהוא של האירוע הזה.
+
+    הסינון על ``event_id`` הוא שכבת ההגנה של ה-API, שעומדת בפני עצמה
+    גם בלי ה-RLS — בדיוק כמו ב-``_owned_expense``.
+    """
+    payment = db.scalar(
+        select(models.ExpensePayment).where(
+            models.ExpensePayment.id == payment_id,
+            models.ExpensePayment.event_id == event.id,
+        )
+    )
+    if payment is None:
+        raise HTTPException(404, "לא מצאנו את התשלום הזה.")
+    return payment
+
+
+@router.post(
+    "/expenses/{expense_id}/payments",
+    response_model=schemas.ExpenseRead,
+    status_code=201,
+)
+def create_payment(
+    expense_id: int,
+    payload: schemas.PaymentWrite,
+    request: Request,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+    user: models.User = Depends(get_current_user),
+):
+    """מוסיף תשלום, ומחזיר את **שורת ההוצאה כולה** מחושבת מחדש.
+
+    מחזיר את השורה ולא את התשלום, כדי שהמסך יקבל בתשובה אחת גם את
+    "שולם עד עכשיו" וגם את "נשאר לשלם" — מחושבים בשרת. לו היה מוחזר
+    התשלום בלבד, המסך היה צריך לחבר בעצמו, וזה בדיוק החישוב הכספי
+    השני שאנחנו נמנעים ממנו לאורך כל הפיצ'ר.
+    """
+    expense = _owned_expense(db, event, expense_id)
+    payment = models.ExpensePayment(
+        expense_id=expense.id,
+        # מהשרת ולא מהלקוח: זה מה שמונע רישום תשלום לאירוע אחר.
+        event_id=event.id,
+        amount_agorot=payload.amount_agorot,
+        # ריק ⇒ הספק של השורה. ברוב המקרים זה בדיוק מי שקיבל את הכסף.
+        payee=(payload.payee or "").strip() or (expense.vendor or ""),
+        paid_on=payload.paid_on,
+        kind=payload.kind,
+        note=(payload.note or "").strip() or None,
+        recorded_by_user_id=user.id,
+    )
+    db.add(payment)
+    db.flush()
+    audit.record(
+        db, "finance_payment_add",
+        event_id=event.id, user_id=user.id,
+        detail=f"נרשם תשלום {finance.format_shekels(payload.amount_agorot)} — {expense.label}",
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+    db.refresh(expense)
+    return _single_expense_read(db, event, expense)
+
+
+@router.put("/payments/{payment_id}", response_model=schemas.ExpenseRead)
+def update_payment(
+    payment_id: int,
+    payload: schemas.PaymentWrite,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+):
+    payment = _owned_payment(db, event, payment_id)
+    expense = _owned_expense(db, event, payment.expense_id)
+    payment.amount_agorot = payload.amount_agorot
+    payment.payee = (payload.payee or "").strip() or (expense.vendor or "")
+    payment.paid_on = payload.paid_on
+    payment.kind = payload.kind
+    payment.note = (payload.note or "").strip() or None
+    db.commit()
+    db.refresh(expense)
+    return _single_expense_read(db, event, expense)
+
+
+@router.delete("/payments/{payment_id}", response_model=schemas.ExpenseRead)
+def delete_payment(
+    payment_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+    user: models.User = Depends(get_current_user),
+):
+    payment = _owned_payment(db, event, payment_id)
+    expense = _owned_expense(db, event, payment.expense_id)
+    amount = payment.amount_agorot
+    db.delete(payment)
+    audit.record(
+        db, "finance_payment_delete",
+        event_id=event.id, user_id=user.id,
+        detail=f"נמחק תשלום {finance.format_shekels(amount)} — {expense.label}",
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+    db.refresh(expense)
+    return _single_expense_read(db, event, expense)
 
 
 # ════════════════════════════════════════════════════════════════════════

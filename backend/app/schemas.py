@@ -1,6 +1,6 @@
 """סכימות Pydantic — ולידציה של קלט/פלט ל-API של המוזמנים."""
 import re
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 from typing import Literal
@@ -2339,6 +2339,52 @@ class ExpenseWrite(BaseModel):
         return trimmed
 
 
+#: מקדמה או תשלום. ההבחנה לתצוגה ולדוח בלבד — שניהם נספרים אותו דבר.
+PaymentKind = Literal["advance", "payment"]
+
+
+class PaymentWrite(BaseModel):
+    """תשלום אחד על חשבון שורת הוצאה.
+
+    **הסכום באגורות שלמות**, כמו בכל השרשרת הכספית. ``event_id`` אינו
+    מגיע מהלקוח — הוא נגזר בשרת מההוצאה, כדי שלא ניתן יהיה לרשום תשלום
+    לאירוע אחר על ידי שליחת מזהה אחר.
+    """
+
+    amount_agorot: int = Field(gt=0)
+    #: למי שולם. ריק ⇒ השרת ממלא את שם הספק של השורה.
+    payee: str = Field(default="", max_length=120)
+    #: ``YYYY-MM-DD``. ריק = לא נרשם תאריך, וזה מצב לגיטימי.
+    paid_on: str = Field(default="", max_length=10)
+    kind: PaymentKind = "payment"
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("paid_on")
+    @classmethod
+    def _valid_date(cls, v: str) -> str:
+        trimmed = (v or "").strip()
+        if not trimmed:
+            return ""
+        try:
+            date.fromisoformat(trimmed)
+        except ValueError:
+            raise ValueError("נשמח לתאריך בפורמט YYYY-MM-DD.")
+        return trimmed
+
+
+class PaymentRead(BaseModel):
+    id: int
+    expense_id: int
+    amount_agorot: int
+    amount_display: str
+    payee: str = ""
+    paid_on: str = ""
+    #: התאריך בניסוח שהזוג קורא ("12 באוגוסט"). ריק כשאין תאריך.
+    paid_on_display: str = ""
+    kind: PaymentKind = "payment"
+    note: Optional[str] = None
+
+
 class ExpenseRead(BaseModel):
     """שורת הוצאה + התוצאה שלה במצב האורחים הנוכחי.
 
@@ -2361,9 +2407,20 @@ class ExpenseRead(BaseModel):
     is_estimated: bool = True
     is_paid: bool = False
     paid_amount_agorot: int = 0
-    #: כמה שולם בפועל על השורה — עלותה המלאה כשסומן "שולם", המקדמה
-    #: כשיש מקדמה, ו-0 כשטרם שולם. נגזר ב-``finance.paid_for_line``.
+    #: כמה שולם בפועל על השורה — סכום יומן התשלומים, חתוך לעלות השורה.
+    #: נגזר ב-``finance.paid_for_line``; המסך לא מחבר תשלומים בעצמו.
+    paid_agorot: int = 0
     paid_display: str = ""
+    #: עלות השורה פחות מה ששולם. לעולם לא שלילי.
+    remaining_agorot: int = 0
+    remaining_display: str = ""
+    #: סכום היומן **בלי חיתוך**. שווה ל-``paid_agorot`` ברוב המקרים;
+    #: גדול ממנו כשנרשמו תשלומים מעל עלות ההוצאה. המסך מסביר את הפער
+    #: במקום להציג שני מספרים שלא מסתדרים.
+    payments_total_agorot: int = 0
+    payments_total_display: str = ""
+    #: יומן התשלומים של השורה, לפי תאריך.
+    payments: list["PaymentRead"] = []
     sort_order: int = 0
 
     #: העלות בפועל של השורה.

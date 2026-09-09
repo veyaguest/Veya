@@ -1101,14 +1101,145 @@
   font-size: var(--text-sm);
 }
 
-/* סטטוס תשלום — שלושה מצבים, לא מתג. */
-.fin-payment {
-  margin: 0;
-  padding: 0;
-  border: 0;
+/* ════════════════════════════════════════════════════════════════════
+   יומן התשלומים
+   ════════════════════════════════════════════════════════════════════ */
+
+.fin-payments {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.fin-payment-options {
+/* שלושת המספרים, בסדר שקוראים: עלות ← שולם ← נשאר. */
+.fin-payments-head {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface-hi);
+}
+
+.fin-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fin-figure-label {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.fin-figure-value {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+/* "נשאר לשלם" מודגש רק כשבאמת נשאר משהו. אפס בזהב היה מושך את העין
+   בדיוק למקום שאין בו מה לעשות. */
+.fin-figure-due .fin-figure-value {
+  color: var(--gold-deep);
+}
+
+.fin-figure-done .fin-figure-value {
+  color: var(--green);
+}
+
+/* הערת תשלום-יתר — מידע, לא שגיאה. אותו טיפול כמו "מעטפות לא מזוהות". */
+.fin-overpaid {
+  padding: 8px 12px;
+  border-radius: var(--radius-s);
+  background: rgba(var(--gold-rgb), 0.1);
+  color: var(--gold-on-tint);
+}
+
+.fin-payment-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fin-payment {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 10px 0;
+}
+
+.fin-payment + .fin-payment {
+  border-top: 1px solid var(--line-2);
+}
+
+.fin-payment-kind {
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  background: var(--line-2);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.fin-payment-amount {
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-payment-meta {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  min-width: 0;
+}
+
+.fin-payment-note {
+  grid-column: 1 / -1;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.fin-payment-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+}
+
+.fin-payment-actions .btn-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h);
+  font-size: var(--text-sm);
+}
+
+.fin-payment-add {
+  align-self: flex-start;
+}
+
+.fin-payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--cream);
+}
+
+.fin-payment-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.fin-payment-kinds {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
