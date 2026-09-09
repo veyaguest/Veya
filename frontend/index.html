@@ -450,6 +450,23 @@
         .ba-n1, .ba-n2, .ba-n3 { transform: none; }
       }
 
+            /* ═════ מעברי סיפור (§4) ═════════════════════════════════════════
+         שורה אחת שסוגרת סקשן ופותחת את הבא, עם קו דק מעליה שמרמז על
+         רצף. ``aria-hidden`` כי זו תוספת קישורית: קורא מסך מקבל את
+         הכותרות עצמן, והשורה הזו הייתה רק חוזרת עליהן בניסוח אחר. */
+      .bridge {
+        position: relative; text-align: center; margin: 0 auto;
+        padding: 46px 20px 10px; max-width: 540px;
+        font-family: var(--font-display); font-size: var(--fd-sm);
+        color: var(--muted);
+      }
+      .bridge::before {
+        content: ""; position: absolute; inset-inline-start: 50%; top: 0;
+        width: 1px; height: 30px; background: linear-gradient(180deg, transparent, var(--gold));
+        opacity: 0.5;
+      }
+      @media (max-width: 560px) { .bridge { padding-top: 36px; font-size: var(--fs-lg); } }
+
       .hero-trust { margin-top: 26px; font-size: var(--fs-sm); color: #b6aa93; display: flex; gap: 10px 22px; justify-content: center; flex-wrap: wrap; }
       .hero-trust span { display: inline-flex; align-items: center; gap: 7px; }
       .hero-trust svg { color: var(--gold-light); flex-shrink: 0; }
@@ -975,7 +992,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                  /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1508,6 +1525,8 @@
     
     
     
+    
+    
     </style>
   </head>
   <body>
@@ -1675,6 +1694,9 @@
         </div>
       </div>
     </section>
+
+    <!-- מעבר סיפורי (§4): סוגר את הסקשן הקודם ופותח את הבא. -->
+    <p class="bridge reveal" aria-hidden="true">הרשימה מסודרת. אז כמה מהם באמת יגיעו?</p>
 
     <section class="flow tone-alt" id="deadline" aria-labelledby="deadline-title">
         <div class="wrap">
@@ -1926,7 +1948,10 @@
       </section>
 
       <!-- ═════ 8. התחייבות ועלות — סקשן הדגל ═════ -->
-      <section class="commit tone-light" id="commitment" aria-labelledby="commitment-title">
+      <!-- מעבר סיפורי (§4): סוגר את הסקשן הקודם ופותח את הבא. -->
+    <p class="bridge reveal" aria-hidden="true">יש מספר. ועל כמה ממנו צריך להתחייב?</p>
+
+    <section class="commit tone-light" id="commitment" aria-labelledby="commitment-title">
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">התחייבות ועלות</span>
@@ -2002,7 +2027,10 @@
       </section>
 
       <!-- ═════ 9. הושבה ═════ -->
-      <section class="seating on-dark" id="seating" aria-labelledby="seating-title">
+      <!-- מעבר סיפורי (§4): סוגר את הסקשן הקודם ופותח את הבא. -->
+    <p class="bridge reveal" aria-hidden="true">ההתחייבות נסגרה. ואיפה כולם יושבים?</p>
+
+    <section class="seating on-dark" id="seating" aria-labelledby="seating-title">
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">הושבה</span>
