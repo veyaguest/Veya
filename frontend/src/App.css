@@ -1641,6 +1641,8 @@ td.notes.seating {
   border-radius: 0;
   background: url('/logo_nobg.png') center / contain no-repeat;
   animation: veya-loader-spin 1.4s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
   flex-shrink: 0;
 }
 @media (prefers-reduced-motion: reduce) {

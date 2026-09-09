@@ -25,6 +25,10 @@
   display: block;
   height: auto;
   transform-origin: 50% 50%;
+  /* קידום לשכבת GPU — סיבוב חלק בלי שוליים משוננים ב-iPhone/Safari,
+     באותה גישה כמו שאר האנימציות במערכת. */
+  will-change: transform;
+  backface-visibility: hidden;
   /* משך ~1.4s · linear — מהירות אחידה לחלוטין, בלי האטה בקצוות · לופ אינסופי.
      from 0deg / to 360deg — סיבוב מלא ורציף בלי קפיצה בתחילת או בסוף המחזור. */
   animation: veya-loader-spin 1.4s linear infinite;
