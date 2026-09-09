@@ -393,6 +393,12 @@
 }
 
 /* ---- אזור הפעולות (המסלול שאינו גרירה) ---- */
+/* ``display: flex`` גובר על ``[hidden]`` של הדפדפן, ולכן אזור סגור היה
+   נשאר פתוח. מחזירים את ההסתרה במפורש — לכל אלמנט כאן שמוסתר ב-hidden. */
+.ws-actions[hidden],
+.ws-panel [hidden] {
+  display: none !important;
+}
 .ws-actions {
   display: flex;
   flex-wrap: wrap;
@@ -852,6 +858,16 @@
   z-index: 71;
   background: rgba(20, 18, 14, 0.38);
 }
+
+/* באנר השגיאה חייב להישאר מעל המגירות ומעל הרקע המעומעם שלהן.
+   "הושבה בקליק" נלחצת מתוך מגירת המוזמנים; כשהיא נכשלת, ההודעה נולדת
+   בתוך ``.hm-body`` — כלומר *מתחת* לרקע (z-index 71) — והמשתמש ראה
+   הודעת שגיאה מעומעמת שגם אי אפשר לסגור. השגיאה היא בדיוק הדבר שחייב
+   להיות מעל הכול. */
+.hall-mobile.hall-ws .hm-error-banner {
+  position: relative;
+  z-index: 76;
+}
 .hall-mobile.hall-ws.is-desktop .hm-panel-backdrop {
   display: none;
 }
@@ -958,8 +974,11 @@
   border-radius: var(--radius-s);
 }
 
-/* ---- טאבלט: הסרגל צר יותר, הרַכֶּבֶת נשארת ---- */
-@media (min-width: 761px) and (max-width: 1100px) {
+/* ---- מסך צר יחסית (או זום 150%+) ----
+   מודל הדסקטופ מתחיל ב-1024px **ובעכבר** (``HALL_DESKTOP_QUERY``); מתחת
+   לזה הפריסה ממילא עוברת למודל המגע. הטווח כאן הוא הקצה התחתון של
+   הדסקטופ, שבו 340px לסרגל משאירים לקנבס פחות מדי. */
+@media (min-width: 1024px) and (max-width: 1240px) {
   .hall-mobile.hall-ws.is-desktop {
     grid-template-columns: 288px minmax(0, 1fr) 72px;
   }

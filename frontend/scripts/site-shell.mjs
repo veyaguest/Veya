@@ -205,6 +205,7 @@ ${o.body}
               <li><a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">תנאי שימוש</a></li>
               <li><a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">מדיניות פרטיות</a></li>
               <li><a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">הצהרת נגישות</a></li>
+              <li><a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">מדיניות Cookies</a></li>
               <li><a href="/app">כניסה למערכת</a></li>
             </ul>
           </div>

@@ -45,7 +45,12 @@ export function SeatTablePickerDialog({
 
   useEffect(() => {
     openerRef.current = document.activeElement
-    const first = dialogRef.current?.querySelector<HTMLElement>('input, button')
+    // החיפוש קודם לכפתור הסגירה: מי שנכנס לכאן רוצה למצוא שולחן, לא
+    // לצאת. ``querySelector('input, button')`` היה מחזיר את ה-✕ כי הוא
+    // קודם ב-DOM.
+    const first =
+      dialogRef.current?.querySelector<HTMLElement>('input') ??
+      dialogRef.current?.querySelector<HTMLElement>('button')
     first?.focus()
     return () => {
       const opener = openerRef.current

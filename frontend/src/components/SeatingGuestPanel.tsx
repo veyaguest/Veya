@@ -73,8 +73,19 @@ export interface SeatingGuestPanelProps {
   onAnnounce: (message: string) => void
   /** מתחיל/מסיים גרירה — HallPage מדליק את יעדי השחרור על המפה. */
   onDragGuestChange: (guestId: number | null) => void
-  /** סינון התחלתי — משמש את "הצגת מי שנשאר ללא שולחן" אחרי הושבה בקליק. */
-  externalFilter?: WorkspaceFilter | null
+  // ---- מצב הרשימה (חיפוש/מיון/סינון/קיפול) ----
+  // נשלט מבחוץ ולא מוחזק כאן, כי בטלפון הסרגל הוא מגירה שנפתחת ונסגרת:
+  // state פנימי היה נמחק בכל סגירה, והמשתמש היה מאבד את החיפוש והמיון
+  // בכל הצצה למפה. הבעלים של המצב הוא המסך, שחי כל עוד המסך פתוח.
+  search: string
+  onSearchChange: (value: string) => void
+  sort: WorkspaceSort
+  onSortChange: (value: WorkspaceSort) => void
+  filter: WorkspaceFilter
+  onFilterChange: (value: WorkspaceFilter) => void
+  /** אילו סעיפים/קבוצות מקופלים. המפתח: `<status>` או `<status>:<group>`. */
+  collapsed: Record<string, boolean>
+  onCollapsedChange: (next: Record<string, boolean>) => void
   /** ה-CTA התחתון (הושבה בקליק והשלמה) — מרונדר ע"י HallPage. */
   footer?: React.ReactNode
 }
@@ -421,28 +432,33 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
   onManageGuests,
   onAnnounce,
   onDragGuestChange,
-  externalFilter,
+  search,
+  onSearchChange,
+  sort,
+  onSortChange,
+  filter,
+  onFilterChange,
+  collapsed,
+  onCollapsedChange,
   footer,
 }: SeatingGuestPanelProps) {
   const terms = activeEventTerms()
   const guestsWord = terms.guestsLabel
 
-  const [search, setSearch] = useState('')
-  // הקלדה לא חוסמת רינדור — הרשימה מתעדכנת ברקע (React 19).
+  // חיפוש/מיון/סינון "נדחים" (``useDeferredValue``): הפקד עצמו מגיב מיד,
+  // ובניית הרשימה מחדש קורית ברקע. עם 300 מוזמנים מיון מחדש עלה כ-57ms
+  // של חסימה (long task) בכל שינוי — פריים שנפל בכל בחירה. כך זה יורד
+  // לאפס, בלי virtualization ובלי תלות חדשה.
   const deferredSearch = useDeferredValue(search)
-  const [sort, setSort] = useState<WorkspaceSort>('confirmed_first')
-  const [filter, setFilter] = useState<WorkspaceFilter>(EMPTY_FILTER)
+  const deferredSort = useDeferredValue(sort)
+  const deferredFilter = useDeferredValue(filter)
   const [filterOpen, setFilterOpen] = useState(false)
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  // פתיחת הפעולות של שורה היא מצב רגעי — היא כן נאפסת בסגירת המגירה,
+  // בכוונה: לא הגיוני לחזור למגירה עם תפריט פעולות פתוח באמצע הרשימה.
   const [expandedGuest, setExpandedGuest] = useState<number | null>(null)
   const [picker, setPicker] = useState<GuestEntry | null>(null)
   const filterBtnRef = useRef<HTMLButtonElement | null>(null)
   const listId = useId()
-
-  // סינון שנכפה מבחוץ ("הצגת מי שנשאר ללא שולחן" אחרי הושבה בקליק).
-  useEffect(() => {
-    if (externalFilter) setFilter(externalFilter)
-  }, [externalFilter])
 
   const allEntries = useMemo(
     () => buildEntries(tables, unassigned),
@@ -452,24 +468,35 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
 
   const visible = useMemo(() => {
     const filtered = allEntries.filter(
-      (e) => matchesSearch(e, deferredSearch) && matchesFilter(e, filter),
+      (e) => matchesSearch(e, deferredSearch) && matchesFilter(e, deferredFilter),
     )
-    return sortEntries(filtered, sort)
-  }, [allEntries, deferredSearch, filter, sort])
+    return sortEntries(filtered, deferredSort)
+  }, [allEntries, deferredSearch, deferredFilter, deferredSort])
 
   const sections = useMemo(() => buildSections(visible), [visible])
 
   // הכרזה על מספר התוצאות אחרי חיפוש/סינון — לא רק שינוי ויזואלי (§31).
-  const lastAnnounced = useRef<number | null>(null)
+  //
+  // מכריזים רק כשהמשתמש **שינה חיפוש או סינון**, ולא בכל פעם שאורך
+  // הרשימה משתנה. קודם התנאי היה על ``visible.length``, ולכן הושבת מוזמן
+  // בזמן שסינון "לא הושבו" פעיל הקטינה את הרשימה והכריזה "197 מוזמנים
+  // ברשימה" — שדרסה את "אבי כהן הושב לשולחן 3" שנאמר רגע קודם. המשתמש
+  // איבד בדיוק את אישור הפעולה שביצע.
+  const lastQuerySig = useRef<string | null>(null)
   useEffect(() => {
-    if (!deferredSearch && !isFilterActive(filter)) {
-      lastAnnounced.current = null
+    const active = deferredSearch !== '' || isFilterActive(deferredFilter)
+    if (!active) {
+      lastQuerySig.current = null
       return
     }
-    if (lastAnnounced.current === visible.length) return
-    lastAnnounced.current = visible.length
+    const sig = `${deferredSearch}|${deferredFilter.rsvp}|${deferredFilter.seating}|${deferredFilter.group}`
+    if (lastQuerySig.current === sig) return
+    lastQuerySig.current = sig
     onAnnounce(t.filterAnnounce(visible.length, guestsWord))
-  }, [visible.length, deferredSearch, filter, onAnnounce, guestsWord])
+    // ``visible.length`` נקרא כאן אבל **אינו** תלות: הוא הערך המדווח, לא
+    // הטריגר. הוספתו לתלויות היא בדיוק הבאג שתוקן.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deferredSearch, deferredFilter, onAnnounce, guestsWord])
 
   const toggleActions = useCallback((guestId: number) => {
     setExpandedGuest((cur) => (cur === guestId ? null : guestId))
@@ -512,7 +539,7 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
             type="search"
             className="ws-search-input"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             placeholder={t.searchPlaceholder}
             aria-label={t.searchPlaceholder}
             aria-controls={listId}
@@ -521,7 +548,7 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
             <button
               type="button"
               className="ws-search-clear"
-              onClick={() => setSearch('')}
+              onClick={() => onSearchChange('')}
               aria-label={t.searchClear}
             >
               ×
@@ -537,7 +564,7 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
             id={`${listId}-sort`}
             className="ws-select ws-sort"
             value={sort}
-            onChange={(e) => setSort(e.target.value as WorkspaceSort)}
+            onChange={(e) => onSortChange(e.target.value as WorkspaceSort)}
           >
             <option value="confirmed_first">
               {t.sortLabel}: {t.sortConfirmedFirst}
@@ -585,7 +612,7 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
           groups={groups}
           guestsWord={guestsWord}
           onApply={(next) => {
-            setFilter(next)
+            onFilterChange(next)
             setFilterOpen(false)
             filterBtnRef.current?.focus()
           }}
@@ -620,8 +647,8 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
               type="button"
               className="ws-btn-ghost"
               onClick={() => {
-                setSearch('')
-                setFilter(EMPTY_FILTER)
+                onSearchChange('')
+                onFilterChange(EMPTY_FILTER)
               }}
             >
               {t.filterReset}
@@ -643,7 +670,7 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
                   aria-controls={bodyId}
                   aria-label={sectionAriaLabel(section)}
                   onClick={() =>
-                    setCollapsed((c) => ({ ...c, [section.key]: !isCollapsed }))
+                    onCollapsedChange({ ...collapsed, [section.key]: !isCollapsed })
                   }
                 >
                   <span className="ws-section-caret" aria-hidden="true">
@@ -672,7 +699,7 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
                           aria-controls={groupBodyId}
                           aria-label={groupAriaLabel(group, guestsWord)}
                           onClick={() =>
-                            setCollapsed((c) => ({ ...c, [groupKey]: !groupCollapsed }))
+                            onCollapsedChange({ ...collapsed, [groupKey]: !groupCollapsed })
                           }
                         >
                           <span className="ws-group-caret" aria-hidden="true">
