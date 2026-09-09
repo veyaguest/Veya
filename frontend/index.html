@@ -339,6 +339,134 @@
         .gc-stage.is-armed.is-on .gc-row { transition-delay: 0s; }
       }
 
+            /* ═════ ציר סגירת הרשימה (§5) ═══════════════════════════════════
+         קו אנכי ולא אופקי: שבעה שלבים לרוחב נדחסים ב-375px עד שהתאריך
+         והפעולה כבר לא נקראים יחד. הקו נמשך בעזרת scaleY על פסאודו —
+         transform בלבד, בלי להנפיש height. */
+      .tl-wrap { margin-top: 40px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); overflow: hidden; }
+      .tl-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--ivory-2); }
+      .tl-head h3 { margin: 0; font-family: var(--font-display); font-size: var(--fs-2xl); color: var(--charcoal); }
+      .tl-list { list-style: none; margin: 0; padding: 20px 20px 8px; position: relative; }
+      .tl-item {
+        position: relative; display: grid; grid-template-columns: 96px 1fr;
+        gap: 14px; align-items: start; padding: 0 0 18px 0;
+      }
+      /* הקו שמחבר בין הנקודות */
+      .tl-item::before {
+        content: ""; position: absolute; inset-inline-start: 103px; top: 16px; bottom: -2px;
+        width: 1px; background: var(--line);
+      }
+      .tl-item:last-child::before { display: none; }
+      /* הנקודה */
+      .tl-item::after {
+        content: ""; position: absolute; inset-inline-start: 99px; top: 9px;
+        width: 9px; height: 9px; border-radius: 50%;
+        background: var(--ivory); border: 2px solid var(--gold);
+      }
+      .tl-when { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 2px; }
+      .tl-body { display: grid; gap: 3px; padding-inline-start: 22px; min-width: 0; }
+      .tl-what { color: var(--charcoal); font-weight: 600; }
+      .tl-who { font-size: var(--fs-xs); color: var(--muted); }
+      .tl-close .tl-what { font-family: var(--font-display); font-size: var(--fs-2xl); }
+      .tl-close::after { background: var(--gold); box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.18); }
+      .tl-num { font-size: var(--fs-sm); color: var(--charcoal); font-variant-numeric: tabular-nums; }
+      .tl-num span { font-weight: 700; color: var(--gold-deep); }
+      .tl-note { margin: 0; padding: 14px 20px; border-top: 1px solid var(--line); font-size: var(--fs-sm); color: var(--muted); }
+
+      /* אותה הפרדה כמו בסקשן המעטפות: ברירת המחדל גלויה, וה-scene engine
+         מוסיף .is-on. כאן ה-CSS מסתיר רק כשהסצנה באמת מנוהלת. */
+      .tl-list[data-scene] .scene-step:not(.is-on) { opacity: 0; transform: translateY(6px); }
+      .tl-list[data-scene] .scene-step.is-on {
+        opacity: 1; transform: none;
+        transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out);
+      }
+      @media (max-width: 520px) {
+        .tl-item { grid-template-columns: 78px 1fr; gap: 10px; }
+        .tl-item::before { inset-inline-start: 85px; }
+        .tl-item::after { inset-inline-start: 81px; }
+        .tl-body { padding-inline-start: 18px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .tl-list[data-scene] .scene-step:not(.is-on) { opacity: 1; transform: none; }
+      }
+
+            /* ═════ מאזן האירוע (§12) ═══════════════════════════════════════
+         מספרים גדולים, לא מסך פיננסי. ארבע משבצות עובדה ואחריהן שורה
+         אחת שמקבלת את כל המשקל — היא התשובה שבגללה נכנסו לכאן. */
+      .bal { margin-top: 34px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); overflow: hidden; }
+      .bal-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--ivory-2); }
+      .bal-title { font-family: var(--font-display); font-size: var(--fs-2xl); color: var(--charcoal); }
+      .bal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .bal-cell { display: grid; gap: 4px; padding: 20px; border-inline-start: 1px solid var(--line); }
+      .bal-cell:first-child { border-inline-start: 0; }
+      .bal-lbl { font-size: var(--fs-sm); color: var(--muted); font-weight: 600; }
+      .bal-val { font-family: var(--font-display); font-size: var(--fd-lg); color: var(--charcoal); font-variant-numeric: tabular-nums; line-height: 1.1; }
+      .bal-bottom { padding: 22px 20px; border-top: 1px solid var(--line); background: linear-gradient(180deg, rgba(201,162,39,0.07), rgba(201,162,39,0.02)); display: grid; gap: 6px; }
+      .bal-big { font-family: var(--font-display); font-size: var(--fd-2xl); color: var(--gold-deep); line-height: 1.05; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+      .bal-note { font-size: var(--fs-sm); color: var(--muted); max-width: 62ch; }
+      .bal[data-scene] .scene-step:not(.is-on) { opacity: 0; transform: translateY(8px); }
+      .bal[data-scene] .scene-step.is-on { opacity: 1; transform: none; transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out); }
+      @media (max-width: 780px) {
+        .bal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .bal-cell:nth-child(odd) { border-inline-start: 0; }
+        .bal-cell:nth-child(n+3) { border-top: 1px solid var(--line); }
+      }
+      @media (max-width: 400px) {
+        .bal-grid { grid-template-columns: 1fr; }
+        .bal-cell { border-inline-start: 0; }
+        .bal-cell + .bal-cell { border-top: 1px solid var(--line); }
+      }
+      @media (prefers-reduced-motion: reduce) { .bal[data-scene] .scene-step:not(.is-on) { opacity: 1; transform: none; } }
+
+            /* ═════ לפני / אחרי (§9) ════════════════════════════════════════
+         צד "לפני" הוא שלושה פתקים מפוזרים בזוויות שונות; צד "אחרי" הוא
+         רשימה אחת מיושרת. ההבדל הוא המסר, ולכן הוא נאמר בגיאומטריה
+         ולא במילים. הסיבוב הוא transform בלבד ולא משפיע על הפריסה. */
+      .ba-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 22px; align-items: stretch; }
+      .ba-side { display: grid; gap: 14px; align-content: start; padding: 22px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); }
+      .ba-before { background: var(--ivory-2); }
+      .ba-tag { justify-self: start; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); background: #fff; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 4px 11px; }
+      .ba-tag-on { color: var(--charcoal); background: rgba(201, 162, 39, 0.16); border-color: rgba(201, 162, 39, 0.4); }
+      .ba-scatter { display: grid; gap: 10px; padding: 6px 0; }
+      .ba-note { display: grid; gap: 2px; padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+      .ba-n1 { transform: rotate(-1.4deg); }
+      .ba-n2 { transform: rotate(1.1deg) translateX(6px); }
+      .ba-n3 { transform: rotate(-0.7deg) translateX(-4px); }
+      .ba-note-t { font-weight: 600; color: var(--charcoal); font-size: var(--fs-md); }
+      .ba-note-s { font-size: var(--fs-xs); color: var(--muted); }
+      .ba-say { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
+      .ba-arrow { display: grid; place-items: center; color: var(--gold); font-size: var(--fd-lg); }
+      .ba-one { list-style: none; margin: 0; padding: 0; display: grid; }
+      .ba-one li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+      .ba-one li:last-child { border-bottom: 0; }
+      .ba-one-k { color: var(--charcoal); font-weight: 600; }
+      .ba-one-v { font-size: var(--fs-sm); color: var(--muted); text-align: end; }
+      .ba-one-key .ba-one-k { font-family: var(--font-display); font-size: var(--fs-2xl); color: var(--gold-deep); }
+      @media (max-width: 820px) {
+        .ba-grid { grid-template-columns: 1fr; }
+        .ba-arrow { transform: rotate(-90deg); padding: 2px 0; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .ba-n1, .ba-n2, .ba-n3 { transform: none; }
+      }
+
+            /* ═════ מעברי סיפור (§4) ═════════════════════════════════════════
+         שורה אחת שסוגרת סקשן ופותחת את הבא, עם קו דק מעליה שמרמז על
+         רצף. ``aria-hidden`` כי זו תוספת קישורית: קורא מסך מקבל את
+         הכותרות עצמן, והשורה הזו הייתה רק חוזרת עליהן בניסוח אחר. */
+      .bridge {
+        position: relative; text-align: center; margin: 0 auto;
+        padding: 46px 20px 10px; max-width: 540px;
+        font-family: var(--font-display); font-size: var(--fd-sm);
+        color: var(--muted);
+      }
+      .bridge::before {
+        content: ""; position: absolute; inset-inline-start: 50%; top: 0;
+        width: 1px; height: 30px; background: linear-gradient(180deg, transparent, var(--gold));
+        opacity: 0.5;
+      }
+      @media (max-width: 560px) { .bridge { padding-top: 36px; font-size: var(--fs-lg); } }
+
       .hero-trust { margin-top: 26px; font-size: var(--fs-sm); color: #b6aa93; display: flex; gap: 10px 22px; justify-content: center; flex-wrap: wrap; }
       .hero-trust span { display: inline-flex; align-items: center; gap: 7px; }
       .hero-trust svg { color: var(--gold-light); flex-shrink: 0; }
@@ -864,7 +992,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                        /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                          /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1355,8 +1483,28 @@
         a.evt-card:active, .guide-list a:active, .footer-col a:active { transform: none; }
       }
 
+      /* ── יעד מגע לקישור הלוגו בהדר ─────────────────────────────────────
+         הלוגו עצמו 34px (ו-28px במצב מכווץ), ולכן העוגן שעוטף אותו היה
+         נמוך מ-44px. מרכזים אותו בתוך יעד תקין בלי לשנות את גודל הלוגו. */
+      .site-header .wrap > a:first-child {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+      }
+
       /* ===== VEYA BRAND LAYER — END ===== */
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -1423,7 +1571,7 @@
       <section class="hero on-dark" aria-labelledby="hero-title">
         <div class="wrap">
           <img class="hero-logo reveal" src="/logo.png" alt="VEYA — ניהול מוזמנים, אישורי הגעה, הושבה ומאזן האירוע" width="1224" height="1067" fetchpriority="high" decoding="async" />
-          <span class="eyebrow reveal d1">הרשימה באקסל · האישורים בוואטסאפ · ההוצאות בפנקס</span>
+          <span class="eyebrow reveal d1">הרשימה באקסל · האישורים בטלפון · ההוצאות בפנקס</span>
           <h1 id="hero-title" class="reveal d1">כמה אנשים באמת מגיעים לאירוע שלכם —<br /><span class="accent">וכמה זה עולה לכם</span></h1>
           <p class="lead reveal d2">
             כל אישור הגעה הוא מספר, וכל מספר הוא כסף. VEYA מחזיקה את הרשימה,
@@ -1516,7 +1664,54 @@
       </section>
 
       <!-- ═════ 4. מועד סגירת הרשימה ═════ -->
-      <section class="flow tone-alt" id="deadline" aria-labelledby="deadline-title">
+      <!-- ═════════════════════════════════════════════════════════════════
+         לפני / אחרי (§9)
+
+         משלם על ההבטחה שה-eyebrow בהירו פותח בה: "הרשימה באקסל,
+         האישורים בטלפון, ההוצאות בפנקס". שלושת הפתקים האלה הם בדיוק
+         שלושת הכרטיסים בצד "לפני", ובצד "אחרי" הם אותם נתונים במקום
+         אחד. בלי איורים גנריים ובלי נתונים מומצאים — רק המבנה.
+         ═════════════════════════════════════════════════════════════════ -->
+    <section class="ba tone-alt" aria-labelledby="ba-title">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="kicker">אותו אירוע, שתי דרכים</span>
+          <h2 id="ba-title" class="section-title">אותם נתונים. ההבדל הוא איפה הם יושבים.</h2>
+        </div>
+
+        <div class="ba-grid reveal d1">
+          <div class="ba-side ba-before">
+            <span class="ba-tag">לפני</span>
+            <div class="ba-scatter" aria-hidden="true">
+              <div class="ba-note ba-n1"><span class="ba-note-t">רשימת מוזמנים</span><span class="ba-note-s">גיליון אקסל · גרסה 4 סופי</span></div>
+              <div class="ba-note ba-n2"><span class="ba-note-t">מי אישר</span><span class="ba-note-s">רשום על דף · חלק בטלפון</span></div>
+              <div class="ba-note ba-n3"><span class="ba-note-t">הוצאות</span><span class="ba-note-s">פנקס · קבלות · מחשבון</span></div>
+            </div>
+            <p class="ba-say">שלושה מקורות שלא מדברים זה עם זה. כל שינוי באחד לא מגיע לשניים האחרים, והמספר האמיתי לא נמצא באף אחד מהם.</p>
+          </div>
+
+          <div class="ba-arrow" aria-hidden="true"><span>←</span></div>
+
+          <div class="ba-side ba-after">
+            <span class="ba-tag ba-tag-on">עם VEYA</span>
+            <ul class="ba-one">
+              <li><span class="ba-one-k">רשימת מוזמנים</span><span class="ba-one-v">מקור אחד</span></li>
+              <li><span class="ba-one-k">אישורי הגעה</span><span class="ba-one-v">מתעדכן לבד</span></li>
+              <li><span class="ba-one-k">התחייבות לאולם</span><span class="ba-one-v">נגזר מהמגיעים</span></li>
+              <li><span class="ba-one-k">הושבה</span><span class="ba-one-v">רק מי שאישר</span></li>
+              <li><span class="ba-one-k">מתנות</span><span class="ba-one-v">משויך למוזמן</span></li>
+              <li class="ba-one-key"><span class="ba-one-k">מאזן</span><span class="ba-one-v">הכול נפגש</span></li>
+            </ul>
+            <p class="ba-say">שינוי במקום אחד מגיע לכל השאר. כשמוזמן מאשר, ההושבה, ההתחייבות והמאזן כבר יודעים.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- מעבר סיפורי (§4): סוגר את הסקשן הקודם ופותח את הבא. -->
+    <p class="bridge reveal" aria-hidden="true">הרשימה מסודרת. אז כמה מהם באמת יגיעו?</p>
+
+    <section class="flow tone-alt" id="deadline" aria-labelledby="deadline-title">
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">מועד סגירת הרשימה</span>
@@ -1585,7 +1780,61 @@
               <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ומי עדיין לא ענה בכלל.</li>
             </ul>
             <p class="why-punch">מרשימה שמשתנה כל יום — לתמונה אחת שאפשר לעבוד לפיה.</p>
+          
+          <!-- ═════ ציר סגירת הרשימה (§5) ═══════════════════════════════
+               שבעת השלבים הם בדיוק אלה שב-``rsvp_timeline.py``, בתוויות
+               הנייטרליות מ-``PUBLIC_STEP_LABELS`` — בלי לנקוב בערוץ, כי
+               WhatsApp עדיין במצב mock. הציר נספר לאחור ממועד ההתחייבות
+               לאולם, ולכן היום שבו הוא נעצר הוא היום שבו נמסר המספר. -->
+          <div class="tl-wrap reveal">
+            <div class="tl-head">
+              <h3>איך מגיעים למספר עד מועד הסגירה</h3>
+              <span class="numcard-tag">דוגמה: התחייבות 3 ימים לפני האירוע</span>
+            </div>
+            <ol class="tl-list" data-scene data-scene-gap="360">
+              <li class="tl-item scene-step" data-step="1">
+                <span class="tl-when">15 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">בקשת אישור הגעה ראשונה</span><span class="tl-who">לכל מי שברשימה</span></span>
+              </li>
+              <li class="tl-item scene-step" data-step="2">
+                <span class="tl-when">13 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">תזכורת 1</span><span class="tl-who">למי שעדיין לא ענה</span></span>
+              </li>
+              <li class="tl-item scene-step" data-step="3">
+                <span class="tl-when">11 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">סבב מעקב טלפוני 1</span><span class="tl-who">למי שעדיין לא ענה</span></span>
+              </li>
+              <li class="tl-item scene-step" data-step="4">
+                <span class="tl-when">9 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">תזכורת 2</span><span class="tl-who">למי שעדיין לא ענה</span></span>
+              </li>
+              <li class="tl-item scene-step" data-step="5">
+                <span class="tl-when">7 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">סבב מעקב טלפוני 2</span><span class="tl-who">למי שעדיין לא ענה</span></span>
+              </li>
+              <li class="tl-item scene-step" data-step="6">
+                <span class="tl-when">5 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">תזכורת 3</span><span class="tl-who">למי שעדיין לא ענה</span></span>
+              </li>
+              <li class="tl-item scene-step" data-step="7">
+                <span class="tl-when">3 ימים לפני</span>
+                <span class="tl-body"><span class="tl-what">סבב מעקב טלפוני 3</span><span class="tl-who">למי שעדיין לא ענה</span></span>
+              </li>
+              <li class="tl-item tl-close scene-step" data-step="8">
+                <span class="tl-when">3 ימים לפני</span>
+                <span class="tl-body">
+                  <span class="tl-what">סגירת הרשימה</span>
+                  <span class="tl-num"><span data-count-to="463">463</span> מגיעים — זה המספר שנמסר לאולם</span>
+                </span>
+              </li>
+            </ol>
+            <p class="tl-note">
+              VEYA בונה את הציר לאחור מהיום שבו אתם מוסרים מספר לאולם, מדלגת
+              על סופי שבוע, ומכווצת את הרצף אם נשאר פחות זמן. כל שלב פונה רק
+              למי שעדיין לא ענה — מי שכבר אישר לא מקבל עוד תזכורת.
+            </p>
           </div>
+        </div>
         </div>
       </section>
 
@@ -1712,7 +1961,10 @@
       </section>
 
       <!-- ═════ 8. התחייבות ועלות — סקשן הדגל ═════ -->
-      <section class="commit tone-light" id="commitment" aria-labelledby="commitment-title">
+      <!-- מעבר סיפורי (§4): סוגר את הסקשן הקודם ופותח את הבא. -->
+    <p class="bridge reveal" aria-hidden="true">יש מספר. ועל כמה ממנו צריך להתחייב?</p>
+
+    <section class="commit tone-light" id="commitment" aria-labelledby="commitment-title">
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">התחייבות ועלות</span>
@@ -1736,7 +1988,7 @@
                   <span class="num-label">התחייבתם על</span>
                 </div>
                 <div class="num scene-step" data-step="2">
-                  <span class="num-value" data-count-to="463">463</span>
+                  <span class="num-value" data-count-from="500" data-count-to="463">463</span>
                   <span class="num-label">אישרו הגעה</span>
                 </div>
                 <div class="num is-gap scene-step" data-step="3">
@@ -1781,14 +2033,17 @@
           </p>
 
           <div class="section-cta reveal">
-            <a href="/calculators/venue-commitment/" class="btn btn-primary">לחשב את ההתחייבות <span class="arw" aria-hidden="true">←</span></a>
+            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות <span class="arw" aria-hidden="true">←</span></a>
             <span class="cta-hint">אותו חישוב שרץ בתוך VEYA. בלי הרשמה.</span>
           </div>
         </div>
       </section>
 
       <!-- ═════ 9. הושבה ═════ -->
-      <section class="seating on-dark" id="seating" aria-labelledby="seating-title">
+      <!-- מעבר סיפורי (§4): סוגר את הסקשן הקודם ופותח את הבא. -->
+    <p class="bridge reveal" aria-hidden="true">ההתחייבות נסגרה. ואיפה כולם יושבים?</p>
+
+    <section class="seating on-dark" id="seating" aria-labelledby="seating-title">
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">הושבה</span>
@@ -1991,10 +2246,10 @@
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">אחרי האירוע</span>
-            <h2 id="after-title" class="section-title">האירוע נגמר. המספרים רק עכשיו מתחילים להיות אמיתיים.</h2>
+            <h2 id="after-title" class="section-title">ועכשיו כל האירוע מסתדר למספר אחד.</h2>
             <p class="section-sub">
-              עד האירוע הכול היה הערכה. אחריו כבר יודעים כמה אנשים הגיעו, כמה האירוע עלה
-              בפועל, וכמה התקבל במעטפות.
+              עד האירוע הכול היה הערכה. עכשיו יש מספרים אמיתיים — כמה אנשים הגיעו,
+              כמה האירוע עלה בפועל, וכמה התקבל במעטפות — והם נפגשים במקום אחד.
             </p>
           </div>
 
@@ -2023,6 +2278,46 @@
               במיוחד כשמגיעים לאירועים של אותם אנשים בעתיד — כך רשימת המוזמנים מפסיקה
               להיות מסמך חד-פעמי והופכת לידע שנשאר אצלכם.
             </p>
+          </div>
+        
+          <!-- ═════ מאזן האירוע (§12) ═════════════════════════════════════
+               השדות הם אלה שהשרת באמת מחזיר ב-``FinanceSummaryRead``:
+               ``cost.attendees`` · ``cost.total`` · ``income.envelopes`` ·
+               ``cost.cost_per_attendee`` · ``bottom_line``. המספרים הם
+               דוגמה עקבית בפני עצמה — 128,400 חלקי 463 הם 277 לאדם,
+               ו-141,600 פחות 128,400 הם 13,200. -->
+          <div class="bal reveal d2" data-scene data-scene-gap="300">
+            <div class="bal-head">
+              <span class="bal-title">מאזן האירוע</span>
+              <span class="numcard-tag">דוגמה</span>
+            </div>
+            <div class="bal-grid">
+              <div class="bal-cell scene-step" data-step="1">
+                <span class="bal-lbl">הגיעו בפועל</span>
+                <span class="bal-val"><span data-count-to="463">463</span></span>
+              </div>
+              <div class="bal-cell scene-step" data-step="2">
+                <span class="bal-lbl">סך ההוצאות</span>
+                <span class="bal-val"><span data-count-to="128400">128,400</span> ₪</span>
+              </div>
+              <div class="bal-cell scene-step" data-step="3">
+                <span class="bal-lbl">סך המתנות שנספרו</span>
+                <span class="bal-val"><span data-count-to="141600">141,600</span> ₪</span>
+              </div>
+              <div class="bal-cell scene-step" data-step="4">
+                <span class="bal-lbl">עלות בפועל לאדם</span>
+                <span class="bal-val"><span data-count-to="277">277</span> ₪</span>
+              </div>
+            </div>
+            <div class="bal-bottom scene-step" data-step="5">
+              <span class="bal-lbl">השורה התחתונה</span>
+              <strong class="bal-big">+<span data-count-to="13200">13,200</span> ₪</strong>
+              <span class="bal-note">
+                מה שהתקבל פחות מה שיצא. VEYA מציגה את המספר הזה כפי שהוא —
+                גם כשהוא שלילי. המספרים כאן להמחשה; המאזן האמיתי נבנה
+                מההוצאות שהזנתם ומהמעטפות שספרתם.
+              </span>
+            </div>
           </div>
         </div>
       </section>
