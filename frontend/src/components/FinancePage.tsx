@@ -999,6 +999,11 @@ function CountingTab({
           <Fact label={t.countedLabel} value={String(counted)} />
           <Fact label={t.notCountedLabel} value={String(notCounted)} />
           <Fact label={t.envelopesLabel} value={income.envelopes_display} />
+          {/* נותנים שאינם ברשימת המוזמנים — מוצגים רק כשיש כאלה. שורה
+              של "0 ₪ לא מהרשימה" בכל אירוע היא רעש. */}
+          {income.external_count > 0 && (
+            <Fact label={t.externalLabel} value={income.external_display} />
+          )}
           {counting.credit_service_active && (
             <Fact
               label={t.creditLabel}
@@ -1116,6 +1121,9 @@ function GiftRow({
         {/* מעטפה בלי שיוך מוצגת כ"לא מזוהה" ולא כשורה ריקה: זה מצב
             מתועד שאפשר לחזור אליו, לא נתון חסר. */}
         {entry.guest_name || <em className="fin-unknown">{t.envelopeUnknownBadge}</em>}
+        {entry.is_external && (
+          <span className="fin-badge fin-badge-external">{t.externalBadge}</span>
+        )}
         {entry.shared_names.length > 0 && (
           <span className="fin-gift-shared">{t.sharedWith(entry.shared_names)}</span>
         )}
@@ -1314,6 +1322,12 @@ function SummaryTab({
             label={t.fromNonAttendees}
             value={data.breakdown.from_non_attendees_display}
           />
+          {data.breakdown.from_external_agorot > 0 && (
+            <Fact
+              label={t.externalLabel}
+              value={data.breakdown.from_external_display}
+            />
+          )}
           {data.breakdown.unattributed_agorot > 0 && (
             <Fact
               label={t.unattributedLabel}

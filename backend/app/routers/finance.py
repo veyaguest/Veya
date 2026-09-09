@@ -286,6 +286,9 @@ def _income_read(income: finance_service.GiftIncome) -> schemas.GiftIncomeRead:
         credit_count=income.credit_count,
         total_agorot=income.total_agorot,
         total_display=finance.format_shekels(income.total_agorot),
+        external_agorot=income.external_agorot,
+        external_display=finance.format_shekels(income.external_agorot),
+        external_count=income.external_count,
         unidentified_count=income.unidentified_count,
         unidentified_agorot=income.unidentified_agorot,
         unidentified_display=finance.format_shekels(income.unidentified_agorot),
@@ -304,6 +307,8 @@ def _entry_read(entry: finance_service.GiftEntry) -> schemas.GiftEntryRead:
         note=entry.note,
         created_at=entry.created_at,
         shared_names=entry.shared_names,
+        is_external=entry.is_external,
+        external_phone=entry.external_phone,
         status=entry.status,
     )
 
@@ -316,6 +321,8 @@ def _breakdown_read(b: finance_service.GiftBreakdown) -> schemas.GiftBreakdownRe
         from_non_attendees_display=finance.format_shekels(b.from_non_attendees_agorot),
         unattributed_agorot=b.unattributed_agorot,
         unattributed_display=finance.format_shekels(b.unattributed_agorot),
+        from_external_agorot=b.from_external_agorot,
+        from_external_display=finance.format_shekels(b.from_external_agorot),
         guests_counted=b.guests_counted,
         guests_not_counted=b.guests_not_counted,
     )
@@ -543,8 +550,13 @@ def report(
         # רק מעטפות: עסקת אשראי תמיד משויכת למוזמן דרך הטוקן שלו, ולכן
         # לא קיימת "מתנה באשראי בלי שם".
         unidentified=[
-            _entry_read(e) for e in entries if e.source == "envelope" and not e.guest_id
+            _entry_read(e)
+            for e in entries
+            if e.source == "envelope" and not e.guest_id and not e.is_external
         ],
+        # נותנים שאינם ברשימת המוזמנים — שורות משלהם בדוח. בלעדיהן הדוח
+        # מציג סה"כ מתנות שגדול מסכום השורות שמעליו.
+        external=[_entry_read(e) for e in entries if e.is_external],
     )
 
 
@@ -990,7 +1002,14 @@ def _envelope_entry(
             id=envelope.id,
             amount_agorot=envelope.amount_agorot,
             guest_id=envelope.guest_id,
-            guest_name=names.get(envelope.guest_id or -1, ""),
+            guest_name=(
+                names.get(envelope.guest_id, "")
+                if envelope.guest_id
+                else (envelope.external_name or "").strip()
+            ),
+            is_external=not envelope.guest_id
+            and bool((envelope.external_name or "").strip()),
+            external_phone=(envelope.external_phone or "").strip(),
             envelope_number=envelope.envelope_number,
             note=envelope.note,
             created_at=envelope.created_at,
@@ -1023,6 +1042,14 @@ def create_envelope(
         amount_agorot=payload.amount_agorot,
         guest_id=payload.guest_id,
         shared_guest_ids=shared or None,
+        # שם חיצוני תקף רק כשאין מוזמן משויך — מוזמן שכבר ברשימה אינו
+        # "חיצוני", ושמירת שניהם הייתה יוצרת שורה עם שתי זהויות.
+        external_name=(
+            None if payload.guest_id else (payload.external_name or "").strip() or None
+        ),
+        external_phone=(
+            None if payload.guest_id else (payload.external_phone or "").strip() or None
+        ),
         note=(payload.note or "").strip() or None,
         recorded_by_user_id=user.id,
     )
@@ -1075,6 +1102,13 @@ def update_envelope(
     envelope.amount_agorot = payload.amount_agorot
     envelope.guest_id = payload.guest_id
     envelope.shared_guest_ids = shared or None
+    # שיוך למוזמן מנקה את השם החיצוני, ולהפך — לשורה יש זהות אחת.
+    envelope.external_name = (
+        None if payload.guest_id else (payload.external_name or "").strip() or None
+    )
+    envelope.external_phone = (
+        None if payload.guest_id else (payload.external_phone or "").strip() or None
+    )
     envelope.note = (payload.note or "").strip() or None
     db.flush()
 

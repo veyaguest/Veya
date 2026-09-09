@@ -1184,6 +1184,60 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   נותן מתנה שאינו ברשימת המוזמנים
+   ════════════════════════════════════════════════════════════════════ */
+
+.fin-external-open {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h);
+  margin-inline-start: -6px;
+  font-size: var(--text-sm);
+}
+
+.fin-external {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface-hi);
+}
+
+.fin-external-title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+}
+
+.fin-external .fin-hint {
+  margin: 0;
+}
+
+.fin-external .btn-link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h);
+  margin-inline-start: -6px;
+  font-size: var(--text-sm);
+}
+
+.fin-optional {
+  color: var(--muted);
+  font-weight: var(--weight-regular);
+}
+
+/* תג "לא מהרשימה" ביומן — עובדה ניטרלית, לא חוסר. */
+.fin-badge-external {
+  background: var(--line-2);
+  color: var(--muted);
+}
+
+/* ════════════════════════════════════════════════════════════════════
    יומן התשלומים
    ════════════════════════════════════════════════════════════════════ */
 

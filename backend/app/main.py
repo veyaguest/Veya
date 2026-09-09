@@ -181,6 +181,11 @@ _EXTRA_COLUMNS = {
         # מנות רזרבה מול הספק — מידע, לא הוצאה.
         "reserve_quantity": "INTEGER",
     },
+    # נותן מתנה שאינו ברשימת המוזמנים.
+    "gift_envelopes": {
+        "external_name": "TEXT",
+        "external_phone": "TEXT",
+    },
     "messages": {
         "channel": "TEXT DEFAULT 'whatsapp'",
         "rule_id": "INTEGER",

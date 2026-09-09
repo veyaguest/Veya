@@ -1343,6 +1343,16 @@ class GiftEnvelope(Base):
     #: שני מספרים שסכומם חייב להישאר שווה למקור, וזה מקור באגים.
     shared_guest_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
+    #: נותן מתנה **שאינו ברשימת המוזמנים** — שכן, קולגה, מישהו שהגיע עם
+    #: חבר. שדה טקסט ולא מוזמן חדש, ובכוונה: הוספתו לרשימת המוזמנים
+    #: הייתה משנה את מספר המוזמנים, את אחוזי אישורי ההגעה ואת ההושבה —
+    #: שלושה מספרים שאין להם שום קשר למתנה שהתקבלה.
+    #:
+    #: שלושת המצבים של מעטפה: ``guest_id`` (מוזמן), ``external_name``
+    #: (חיצוני), או שניהם ריקים (טרם זוהתה).
+    external_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    external_phone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
     note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     #: מי הזין. לאירוע בניהול משותף זו התשובה ל"מי ספר את זה?".
     recorded_by_user_id: Mapped[Optional[int]] = mapped_column(

@@ -2622,6 +2622,9 @@ class GiftEntryRead(BaseModel):
     created_at: datetime
     #: מתנה משותפת — שמות המוזמנים הנוספים. הסכום אינו מפוצל ביניהם.
     shared_names: list[str] = []
+    #: נותן שאינו ברשימת המוזמנים. ``guest_name`` מחזיק את שמו.
+    is_external: bool = False
+    external_phone: str = ""
     status: Optional[str] = None
 
 
@@ -2638,6 +2641,10 @@ class EnvelopeWrite(BaseModel):
     guest_id: Optional[int] = None
     #: מתנה משותפת — מוזמנים נוספים מעבר ל-``guest_id``.
     shared_guest_ids: list[int] = []
+    #: נותן שאינו ברשימת המוזמנים. תקף רק כש-``guest_id`` ריק — מוזמן
+    #: שכבר ברשימה אינו "חיצוני", והשרת מתעלם מהשדה במקרה כזה.
+    external_name: str = Field(default="", max_length=120)
+    external_phone: str = Field(default="", max_length=40)
     note: Optional[str] = Field(default=None, max_length=500)
 
 
@@ -2666,6 +2673,10 @@ class GiftIncomeRead(BaseModel):
     #: ``None`` כשחלק מהתמונה חסום. סכום חלקי שמוצג כ"סה״כ" הוא מספר שקרי.
     total_agorot: Optional[int] = None
     total_display: str = ""
+    #: מנותנים שאינם ברשימת המוזמנים — נספר בתוך המעטפות, ומוצג בנפרד.
+    external_agorot: int = 0
+    external_display: str = ""
+    external_count: int = 0
     unidentified_count: int = 0
     unidentified_agorot: int = 0
     unidentified_display: str = ""
@@ -2734,6 +2745,9 @@ class GiftBreakdownRead(BaseModel):
     #: מעטפות בלי שיוך — לא ניתן לזקוף אותן לאף צד.
     unattributed_agorot: int = 0
     unattributed_display: str = ""
+    #: מנותנים חיצוניים — צד שלישי, לא "לא משויך".
+    from_external_agorot: int = 0
+    from_external_display: str = ""
     guests_counted: int = 0
     guests_not_counted: int = 0
 
@@ -2763,6 +2777,8 @@ class FinanceReportRead(BaseModel):
     guests: list[GuestGiftRowRead] = []
     #: מעטפות שלא שויכו לאף מוזמן, כדי שלא ייעלמו מהדוח.
     unidentified: list[GiftEntryRead] = []
+    #: נותני מתנות שאינם ברשימת המוזמנים — שורות משלהם בדוח.
+    external: list[GiftEntryRead] = []
 
 
 class FinanceSummaryRead(BaseModel):

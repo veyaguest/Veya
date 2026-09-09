@@ -1981,6 +1981,9 @@ export interface GiftEntry {
   created_at: string
   /** מתנה משותפת — שמות נוספים. הסכום אינו מפוצל ביניהם. */
   shared_names: string[]
+  /** נותן שאינו ברשימת המוזמנים. ``guest_name`` מחזיק את שמו. */
+  is_external: boolean
+  external_phone: string
   status: string | null
 }
 
@@ -1989,6 +1992,9 @@ export interface EnvelopeInput {
   /** ``null`` = "לא ידוע ממי". מצב לגיטימי שאפשר לחזור אליו. */
   guest_id: number | null
   shared_guest_ids: number[]
+  /** נותן שאינו ברשימת המוזמנים. תקף רק כשאין ``guest_id``. */
+  external_name?: string
+  external_phone?: string
   note?: string | null
 }
 
@@ -2010,6 +2016,10 @@ export interface GiftIncome {
   total_agorot: number | null
   total_display: string
   unidentified_count: number
+  /** מנותנים שאינם ברשימת המוזמנים — נספר בתוך המעטפות. */
+  external_agorot: number
+  external_display: string
+  external_count: number
   unidentified_agorot: number
   unidentified_display: string
 }
@@ -2053,6 +2063,9 @@ export interface GiftBreakdown {
   from_non_attendees_agorot: number
   from_non_attendees_display: string
   unattributed_agorot: number
+  /** מנותנים חיצוניים — צד שלישי, לא "לא משויך". */
+  from_external_agorot: number
+  from_external_display: string
   unattributed_display: string
   guests_counted: number
   guests_not_counted: number
@@ -2076,6 +2089,8 @@ export interface FinanceReport {
   guests: GuestGiftRow[]
   /** מעטפות שלא שויכו, כדי שלא ייעלמו מהדוח. */
   unidentified: GiftEntry[]
+  /** נותני מתנות שאינם ברשימת המוזמנים. */
+  external: GiftEntry[]
 }
 
 export interface GiftCounting {

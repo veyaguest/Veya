@@ -49,6 +49,10 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
   const [query, setQuery] = useState('')
   const [note, setNote] = useState('')
   const [addingShared, setAddingShared] = useState(false)
+  // §13 — נותן שאינו ברשימת המוזמנים. מסלול מקביל לחיפוש, לא במקומו.
+  const [external, setExternal] = useState(false)
+  const [externalName, setExternalName] = useState('')
+  const [externalPhone, setExternalPhone] = useState('')
 
   const [guests, setGuests] = useState<Guest[]>([])
   const [counted, setCounted] = useState<Map<number, string>>(new Map())
@@ -139,6 +143,9 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
     setQuery('')
     setNote('')
     setAddingShared(false)
+    setExternal(false)
+    setExternalName('')
+    setExternalPhone('')
     searchRef.current?.focus()
   }
 
@@ -166,8 +173,11 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
       amount_agorot: agorot,
       // "לא ידוע ממי" הוא מצב מתועד ולא דילוג — הוא נשמר כמעטפה מלאה
       // עם סכום, ואפשר לחזור ולשייך אותה בכל רגע.
-      guest_id: unknown ? null : (guest?.id ?? null),
-      shared_guest_ids: unknown ? [] : shared.map((g) => g.id),
+      guest_id: unknown || external ? null : (guest?.id ?? null),
+      shared_guest_ids: unknown || external ? [] : shared.map((g) => g.id),
+      // נותן חיצוני — שם במקום שיוך. לא נוצר מוזמן חדש.
+      external_name: !unknown && external ? externalName.trim() : '',
+      external_phone: !unknown && external ? externalPhone.trim() : '',
       note: note.trim() || null,
     }
     try {
@@ -182,7 +192,9 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
     }
   }
 
-  const showSearch = addingShared || !guest
+  const showSearch = !external && (addingShared || !guest)
+  // שמירה אפשרית רק כשיש ממי — או "לא ידוע ממי", שהוא מסלול משלו.
+  const externalReady = !external || externalName.trim().length > 0
 
   return (
     <div className="fin-counter">
@@ -293,7 +305,68 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
               {!query.trim() && !guest && (
                 <p className="fin-hint">{t.envelopeSearchHint}</p>
               )}
+
+              {/* §13 — הדלת למי שאינו ברשימה. מסלול מקביל לחיפוש ולא
+                  במקומו: רוב המעטפות הן ממוזמנים, וזו האפשרות השנייה. */}
+              {!addingShared && (
+                <button
+                  type="button"
+                  className="btn-link fin-external-open"
+                  onClick={() => {
+                    setExternal(true)
+                    setQuery('')
+                    setExternalName(query.trim())
+                  }}
+                >
+                  {t.externalAdd}
+                </button>
+              )}
             </>
+          )}
+
+          {/* נותן שאינו ברשימת המוזמנים — שם, וטלפון אם יש. */}
+          {external && (
+            <div className="fin-external">
+              <p className="fin-external-title">{t.externalTitle}</p>
+              <div className="fin-row">
+                <label className="field">
+                  <span className="field-label">{t.externalNameLabel}</span>
+                  <input
+                    type="text"
+                    value={externalName}
+                    onChange={(e) => setExternalName(e.target.value)}
+                    placeholder={t.externalNamePlaceholder}
+                    maxLength={120}
+                    autoFocus
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">
+                    {t.externalPhoneLabel}
+                    <span className="fin-optional"> · {t.externalPhoneOptional}</span>
+                  </span>
+                  <input
+                    type="tel"
+                    value={externalPhone}
+                    onChange={(e) => setExternalPhone(e.target.value)}
+                    maxLength={40}
+                    dir="ltr"
+                  />
+                </label>
+              </div>
+              <p className="fin-hint">{t.externalHint}</p>
+              <button
+                type="button"
+                className="btn-link"
+                onClick={() => {
+                  setExternal(false)
+                  setExternalName('')
+                  setExternalPhone('')
+                }}
+              >
+                {t.externalBack}
+              </button>
+            </div>
           )}
         </div>
 
@@ -335,7 +408,11 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
         )}
 
         <div className="fin-counter-actions">
-          <button type="submit" className="btn-primary" disabled={busy || !amount}>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={busy || !amount || !externalReady}
+          >
             {busy ? t.envelopeSaving : t.envelopeSave}
           </button>
           {/* מסלול שווה-ערך, לא "ויתור". מעטפה בלי שם היא מעטפה מלאה

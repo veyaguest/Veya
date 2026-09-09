@@ -766,6 +766,73 @@ def test_reserve_is_never_part_of_any_total() -> None:
     assert finance.total_for([with_reserve], 391, 551) == 500 * 320 * S
 
 
+# ════════════════════════════════════════════════════════════════════════
+#  נותן מתנה שאינו ברשימת המוזמנים
+# ════════════════════════════════════════════════════════════════════════
+#
+# שלושת המצבים של מעטפה, וההבחנה שאסור לטשטש ביניהם:
+#
+#     guest_id                מוזמן מהרשימה
+#     external_name           נותן חיצוני — **מזוהה**, פשוט לא הוזמן
+#     שניהם ריקים             טרם זוהתה
+#
+# מעטפה חיצונית שנספרת כ"לא מזוהה" שולחת את הזוג לחפש שיוך שכבר קיים.
+
+
+def envelope(amount: int, *, guest_id=None, external_name=None) -> models.GiftEnvelope:
+    return models.GiftEnvelope(
+        amount_agorot=amount * S, guest_id=guest_id, external_name=external_name
+    )
+
+
+def _classify(envelopes):
+    """אותה חלוקה שעושה ``finance_service.gift_income``."""
+    external = [e for e in envelopes if not e.guest_id and (e.external_name or "").strip()]
+    unknown = [e for e in envelopes if not e.guest_id and not (e.external_name or "").strip()]
+    return external, unknown
+
+
+def test_external_giver_is_not_unidentified() -> None:
+    rows = [
+        envelope(500, guest_id=7),
+        envelope(800, external_name="רונית מהעבודה"),
+        envelope(1_000),
+    ]
+    external, unknown = _classify(rows)
+    assert len(external) == 1 and external[0].amount_agorot == 800 * S
+    assert len(unknown) == 1 and unknown[0].amount_agorot == 1_000 * S
+
+
+def test_blank_external_name_is_still_unidentified() -> None:
+    """רווחים אינם שם. בלי ``strip`` מעטפה ריקה הייתה נספרת כמזוהה."""
+    external, unknown = _classify([envelope(500, external_name="   ")])
+    assert not external and len(unknown) == 1
+
+
+def test_a_guest_link_wins_over_an_external_name() -> None:
+    """לשורה יש זהות אחת. מוזמן שכבר ברשימה אינו "חיצוני"."""
+    external, unknown = _classify([envelope(500, guest_id=7, external_name="מישהו")])
+    assert not external and not unknown
+
+
+def test_every_envelope_lands_in_exactly_one_bucket() -> None:
+    """האינווריאנטה של הדוח: סכום הקבוצות = סכום המעטפות. בלעדיה
+    "סה\"כ מתנות" גדול או קטן מסכום השורות שמתחתיו."""
+    rows = [
+        envelope(500, guest_id=1),
+        envelope(700, guest_id=2),
+        envelope(800, external_name="שכן"),
+        envelope(300, external_name="קולגה"),
+        envelope(1_000),
+    ]
+    external, unknown = _classify(rows)
+    linked = [e for e in rows if e.guest_id]
+    assert len(external) + len(unknown) + len(linked) == len(rows)
+    assert sum(e.amount_agorot for e in external + unknown + linked) == sum(
+        e.amount_agorot for e in rows
+    )
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for test in tests:
