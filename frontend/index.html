@@ -755,7 +755,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1176,8 +1176,13 @@
         font-family: var(--font-body);
       }
       .footer-col ul { list-style: none; margin: 0; padding: 0; }
-      .footer-col li + li { margin-top: 8px; }
+      .footer-col li + li { margin-top: 0; }
       .footer-col a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 44px;
+        min-width: 44px;
         color: #b6aa93;
         text-decoration: none;
         font-size: var(--fs-xs);
@@ -1185,6 +1190,37 @@
       }
       .footer-col a:hover { color: var(--cream-text); }
       .footer-col a:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 3px; }
+
+      /* ── נגישות: דילוג לתוכן וטקסט לקוראי מסך ─────────────────────── */
+      .skip-link {
+        position: absolute;
+        inset-inline-start: 16px;
+        top: -120px;
+        z-index: 200;
+        background: var(--gold);
+        color: var(--charcoal);
+        font-family: 'Assistant', sans-serif;
+        font-weight: 600;
+        font-size: var(--fs-md);
+        padding: 13px 24px;
+        border-radius: var(--radius-pill);
+        text-decoration: none;
+        box-shadow: var(--shadow-lifted);
+        transition: top var(--motion-fast) var(--ease-out);
+      }
+      .skip-link:focus { top: 16px; }
+      @media (prefers-reduced-motion: reduce) { .skip-link { transition: none; } }
+
+      .vh {
+        position: absolute;
+        width: 1px; height: 1px;
+        padding: 0; margin: -1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+      }
 
       /* ===== VEYA BRAND LAYER — END ===== */
 
@@ -1211,9 +1247,11 @@
     
     
     
+    
     </style>
   </head>
   <body>
+    <a class="skip-link" href="#main">דילוג לתוכן</a>
     <header class="site-header on-dark">
       <div class="wrap">
         <a href="/" aria-label="VEYA — דף הבית">
@@ -1236,7 +1274,7 @@
       </div>
     </header>
 
-    <main>
+    <main id="main">
       <!-- ═════ 1. HERO ═════ -->
       <section class="hero on-dark" aria-labelledby="hero-title">
         <div class="wrap">

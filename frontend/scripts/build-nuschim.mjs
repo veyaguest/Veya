@@ -200,7 +200,8 @@ const CSS = `    <style>
  *  מול 13,543 שנעולים בסקריפט — כלומר כל התוכן שלו היה בלתי נראה.
  *  עכשיו הכול ב-DOM, וה-JS רק משדרג אותו למוקאפ עם ניווט. בלי JS נשארת
  *  רשימה קריאה ותקינה. */
-const list = (data) => `          <div class="msg-source" id="msg-source">
+const list = (data) => `          <h2 class="vh">כל ההודעות, לפי סוג האירוע וסוג ההודעה</h2>
+          <div class="msg-source" id="msg-source">
 ${data.items.map((m, i) => `            <article class="msg-item" data-ev="${esc(m.ev)}" data-ty="${esc(m.ty)}"
               data-ev-label="${esc(m.evLabel)}" data-ty-label="${esc(m.tyLabel)}"
               data-tone="${esc(m.tone || '')}" data-chat="${esc(m.chat)}"
