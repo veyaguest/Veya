@@ -89,8 +89,18 @@ ${faq.map((q) => `          <details>
  */
 export function page(o) {
   const url = SITE + o.path
+  // תאריך עדכון לכל עמוד. רעננות היא איתות ציטוט חזק במנועי AI, והיא
+  // מטא־דאטה — לא קופי — ולכן היא לא נוגעת בטקסט שאושר.
+  // עמוד שכבר מגדיר dateModified משלו (מדריך) שומר על שלו.
+  const built = new Date().toISOString().slice(0, 10)
+  const schema = (o.schema || []).map((node) =>
+    node['@type'] === 'WebPage' || node['@type'] === 'CollectionPage' || node['@type'] === 'WebApplication'
+      ? { dateModified: built, ...node }
+      : node,
+  )
+
   const graph = [
-    ...(o.schema || []),
+    ...schema,
     breadcrumbSchema(o.trail || [], o.path),
     faqSchema(o.faq),
   ].filter(Boolean)
@@ -194,7 +204,7 @@ ${o.body}
             <h3>ידע</h3>
             <ul>
               <li><a href="/guides/">מדריכים</a></li>
-              <li><a href="/nuschim/">נוסחי הודעות</a></li>
+              <li><a href="/nuschim/">הודעות</a></li>
             </ul>
           </div>
           <div class="footer-col">
