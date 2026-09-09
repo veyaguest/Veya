@@ -199,15 +199,7 @@ def gift_entries(
                 id=env.id,
                 amount_agorot=env.amount_agorot,
                 guest_id=env.guest_id,
-                # מוזמן ⇒ שמו מהרשימה. חיצוני ⇒ השם שנרשם ידנית. אף אחד
-                # מהם ⇒ ריק, והמסך מציג "לא מזוהה".
-                guest_name=(
-                    names.get(env.guest_id, "")
-                    if env.guest_id
-                    else (env.external_name or "").strip()
-                ),
-                is_external=not env.guest_id and bool((env.external_name or "").strip()),
-                external_phone=(env.external_phone or "").strip(),
+                guest_name=names.get(env.guest_id or -1, ""),
                 envelope_number=env.envelope_number,
                 note=env.note,
                 created_at=env.created_at,
@@ -264,13 +256,7 @@ class GiftIncome:
 def gift_income(db: Session, event: models.Event, *, credit_visible: bool) -> GiftIncome:
     envelopes = envelopes_for(db, event.id)
     env_total = sum(e.amount_agorot for e in envelopes)
-    # "לא מזוהה" = בלי מוזמן **ובלי שם חיצוני**. מעטפה של שכן שנרשם בשמו
-    # היא מעטפה מזוהה לכל דבר; ספירתה כ"לא מזוהה" הייתה שולחת את הזוג
-    # לחפש שיוך שכבר קיים.
-    external = [e for e in envelopes if not e.guest_id and (e.external_name or "").strip()]
-    unidentified = [
-        e for e in envelopes if not e.guest_id and not (e.external_name or "").strip()
-    ]
+    unidentified = [e for e in envelopes if e.guest_id is None]
 
     credit_total: Optional[int] = None
     credit_count = 0
@@ -300,8 +286,6 @@ def gift_income(db: Session, event: models.Event, *, credit_visible: bool) -> Gi
         total_agorot=total,
         unidentified_count=len(unidentified),
         unidentified_agorot=sum(e.amount_agorot for e in unidentified),
-        external_count=len(external),
-        external_agorot=sum(e.amount_agorot for e in external),
     )
 
 
@@ -475,12 +459,8 @@ class GiftBreakdown:
     from_non_attendees_agorot: int
     #: מעטפות שאין להן שיוך, ולכן אי אפשר לשייך אותן לאף אחד מהצדדים.
     unattributed_agorot: int
-    #: מנותנים שאינם ברשימת המוזמנים. **צד שלישי ולא "לא משויך"**: הם
-    #: מזוהים לגמרי, הם פשוט לא הוזמנו — ולכן השאלה "הגיע או לא הגיע"
-    #: לא חלה עליהם.
-    from_external_agorot: int = 0
-    guests_counted: int = 0
-    guests_not_counted: int = 0
+    guests_counted: int
+    guests_not_counted: int
 
 
 def gift_breakdown(
@@ -499,14 +479,11 @@ def gift_breakdown(
         ).all()
     }
 
-    from_att = from_non = unattributed = from_external = 0
+    from_att = from_non = unattributed = 0
 
     for env in envelopes_for(db, event.id):
         if env.guest_id is None:
-            if (env.external_name or "").strip():
-                from_external += env.amount_agorot
-            else:
-                unattributed += env.amount_agorot
+            unattributed += env.amount_agorot
         elif attended.get(env.guest_id):
             from_att += env.amount_agorot
         else:
@@ -528,7 +505,6 @@ def gift_breakdown(
         from_attendees_agorot=from_att,
         from_non_attendees_agorot=from_non,
         unattributed_agorot=unattributed,
-        from_external_agorot=from_external,
         guests_counted=sum(1 for r in rows if r.status != NOT_COUNTED),
         guests_not_counted=sum(1 for r in rows if r.status == NOT_COUNTED),
     )
