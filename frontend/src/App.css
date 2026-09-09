@@ -5475,19 +5475,8 @@ td.notes.seating {
   margin-top: 16px;
   justify-content: center;
 }
-.sk-analyzing-spinner {
-  width: 36px;
-  height: 36px;
+.sk-analyzing-loader {
   margin: 0 auto;
-  border-radius: 50%;
-  border: 3px solid var(--border, #e5ded2);
-  border-top-color: var(--accent, #c9a35b);
-  animation: sk-spin 0.9s linear infinite;
-}
-@keyframes sk-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 .sk-review {
   position: fixed;
@@ -14238,23 +14227,12 @@ td.notes.seating {
   margin: 4px 0;
 }
 
-/* התקדמות — סרגל אינדטרמיניסטי + ספינר עדין. */
+/* התקדמות — סרגל אינדטרמיניסטי + לוגו הטעינה של VEYA. */
 .send-progress {
   padding: 8px 0;
 }
-.send-spinner {
-  width: 42px;
-  height: 42px;
-  margin: 0 auto 16px;
-  border-radius: 50%;
-  border: 4px solid var(--line-2, #e6e0d5);
-  border-top-color: var(--green, #48c07c);
-  animation: sendSpin 0.9s linear infinite;
-}
-@keyframes sendSpin {
-  to {
-    transform: rotate(360deg);
-  }
+.send-loader {
+  margin-bottom: 16px;
 }
 .send-progress-bar {
   height: 10px;

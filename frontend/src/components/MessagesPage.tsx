@@ -28,6 +28,7 @@ import { ImportDialog } from './ImportDialog'
 import { MessageLibrary } from './MessageLibrary'
 import { PasteImportDialog } from './PasteImportDialog'
 import { TimePicker } from './TimePicker'
+import { VeyaLoader } from './VeyaLoader'
 
 type Tab = 'communication' | 'library'
 
@@ -454,7 +455,7 @@ function SendInvitationsDialog({
         {/* ---- מצב: התקדמות ---- */}
         {phase === 'sending' && (
           <div className="send-progress">
-            <div className="send-spinner" aria-hidden="true" />
+            <VeyaLoader size="md" decorative className="send-loader" />
             <h3 className="send-dialog-title">שולחים את ההזמנות…</h3>
             <p className="clar-sub">רגע, מעבירים את ההזמנות למוזמנים שלכם.</p>
             <div className="send-progress-bar">

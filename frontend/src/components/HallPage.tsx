@@ -43,6 +43,7 @@ import type { WorkspaceFilter, WorkspaceSort } from '../seatingWorkspace'
 import { ConfirmDialog } from './ConfirmDialog'
 import { GuestsPage } from './GuestsPage'
 import { GUEST_DRAG_TYPE, SeatingGuestPanel } from './SeatingGuestPanel'
+import { VeyaLoader } from './VeyaLoader'
 
 // טקסטי מסך ההושבה — כולם ב-strings/he.ts, אף פעם לא קשיחים בקומפוננטה.
 const hallT = strings.hall
@@ -1222,7 +1223,7 @@ function SketchAnalyzingOverlay() {
   return (
     <div className="sk-editor-backdrop">
       <div className="sk-analyzing" role="status" aria-live="polite">
-        <div className="sk-analyzing-spinner" aria-hidden="true" />
+        <VeyaLoader size="md" decorative className="sk-analyzing-loader" />
         <h2>{hallSketchT.analyzingTitle}</h2>
         <p>{hallSketchT.analyzingStep}</p>
         <p className="sk-analyzing-sub">{hallSketchT.analyzingHint}</p>
