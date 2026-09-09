@@ -194,7 +194,7 @@ ${o.body}
             <h3>ידע</h3>
             <ul>
               <li><a href="/guides/">מדריכים</a></li>
-              <li><a href="/nuschim/">הודעות לאורחים</a></li>
+              <li><a href="/nuschim/">הודעות</a></li>
             </ul>
           </div>
           <div class="footer-col">

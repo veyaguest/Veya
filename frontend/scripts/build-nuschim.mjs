@@ -1,5 +1,5 @@
 /**
- * הודעות לאורחים — עמוד אחד עם דפדוף פנימי.
+ * הודעות — עמוד אחד עם דפדוף פנימי.
  *
  * ## מקור אמת אחד
  *
@@ -348,10 +348,10 @@ export async function buildNuschim(apiUrl) {
 
   const evNames = data.events.map((e) => e.label).join(' · ')
   const body = `${pageHero({
-    eyebrow: 'הודעות לאורחים',
-    h1: 'ההודעות שהאורחים שלכם מקבלים',
+    eyebrow: 'מה נשלח למוזמנים',
+    h1: 'ההודעות שהמוזמנים שלכם מקבלים',
     lead: `הזמנה, בקשת אישור הגעה ותזכורות — לפי סוג האירוע. אלה ההודעות שכבר נמצאות בתוך VEYA, בדיוק כפי שהן נראות בטלפון של המוזמן.`,
-    trail: [{ name: 'VEYA', url: '/' }, { name: 'הודעות לאורחים' }],
+    trail: [{ name: 'VEYA', url: '/' }, { name: 'הודעות' }],
   })}
 
       <section class="article-wrap">
@@ -406,13 +406,13 @@ export async function buildNuschim(apiUrl) {
 
   const html = page({
     path: '/nuschim/',
-    title: 'הודעות לאורחים — מה המוזמנים מקבלים | VEYA',
+    title: 'הודעות — מה המוזמנים מקבלים | VEYA',
     description: `ההודעות שנשלחות למוזמנים באירוע: הזמנה, בקשת אישור הגעה ותזכורות, לפי סוג האירוע — ${evNames}. בדיוק כפי שהן נראות בטלפון.`,
-    trail: [{ name: 'VEYA', url: '/' }, { name: 'הודעות לאורחים' }],
+    trail: [{ name: 'VEYA', url: '/' }, { name: 'הודעות' }],
     schema: [
       {
         '@type': 'CollectionPage',
-        name: 'הודעות לאורחים',
+        name: 'הודעות',
         inLanguage: 'he-IL',
         url: `${SITE}/nuschim/`,
         description: 'ההודעות שנשלחות למוזמנים באירוע, לפי סוג האירוע ולפי שלב.',
