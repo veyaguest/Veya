@@ -893,4 +893,13 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
   a.evt-card:active, .guide-list a:active, .footer-col a:active { transform: none; }
 }
 
+/* ── יעד מגע לקישור הלוגו בהדר ─────────────────────────────────────
+   הלוגו עצמו 34px (ו-28px במצב מכווץ), ולכן העוגן שעוטף אותו היה
+   נמוך מ-44px. מרכזים אותו בתוך יעד תקין בלי לשנות את גודל הלוגו. */
+.site-header .wrap > a:first-child {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
 /* ===== VEYA BRAND LAYER — END ===== */

@@ -992,7 +992,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                              /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                          /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1483,8 +1483,19 @@
         a.evt-card:active, .guide-list a:active, .footer-col a:active { transform: none; }
       }
 
+      /* ── יעד מגע לקישור הלוגו בהדר ─────────────────────────────────────
+         הלוגו עצמו 34px (ו-28px במצב מכווץ), ולכן העוגן שעוטף אותו היה
+         נמוך מ-44px. מרכזים אותו בתוך יעד תקין בלי לשנות את גודל הלוגו. */
+      .site-header .wrap > a:first-child {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+      }
+
       /* ===== VEYA BRAND LAYER — END ===== */
 
+    
+    
     
     
     
@@ -2022,7 +2033,7 @@
           </p>
 
           <div class="section-cta reveal">
-            <a href="/calculators/venue-commitment/" class="btn btn-primary">לחשב את ההתחייבות <span class="arw" aria-hidden="true">←</span></a>
+            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות <span class="arw" aria-hidden="true">←</span></a>
             <span class="cta-hint">אותו חישוב שרץ בתוך VEYA. בלי הרשמה.</span>
           </div>
         </div>
