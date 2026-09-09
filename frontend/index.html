@@ -234,6 +234,42 @@
       .hero h1 .accent { color: var(--gold-light); }
       .hero p.lead { font-size: clamp(1.063rem, 2.4vw, 1.313rem); color: #ddd2bd; max-width: 640px; margin: 0 auto 34px; }
       .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+            /* ═════ מסלול האירוע (§16) ═════════════════════════════════════
+         שרשרת שמראה את סדר הזמנים האמיתי של אירוע ומובילה את העין לגלילה.
+         במובייל היא נגללת לרוחב בתוך עצמה — שישה שלבים ב-375px נדחסים
+         עד שהם בלתי קריאים. */
+      .journey-rail { margin-top: 40px; }
+      .jr-track { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 6px; }
+      .jr-step {
+        display: inline-flex; align-items: center; min-height: 44px;
+        padding: 9px 16px; border-radius: var(--radius-pill);
+        border: 1px solid rgba(201, 162, 39, 0.28); background: rgba(201, 162, 39, 0.06);
+        color: var(--cream-text); text-decoration: none;
+        font-size: var(--fs-sm); font-weight: 500; white-space: nowrap;
+        transition: border-color var(--motion-fast) var(--ease-out),
+                    background var(--motion-fast) var(--ease-out),
+                    transform var(--motion-fast) var(--ease-out);
+      }
+      .jr-step:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
+      .jr-arrow { color: var(--gold); font-size: var(--fs-md); line-height: 1; opacity: 0.55; }
+      @media (hover: hover) and (pointer: fine) {
+        .jr-step:hover { border-color: var(--gold); background: rgba(201, 162, 39, 0.14); transform: translateY(-2px); }
+      }
+      .jr-step:active { transform: translateY(1px); }
+      /* הרצועה בהירו, שנכנס באנימציית טעינה — לכן ההשהיה נספרת מתום
+         כניסת ההירו (d3 = 180ms) ולא ממחלקת .in של ה-scroll reveal. */
+      .jr-step { animation: jr-in 380ms var(--ease-out) both; animation-delay: calc(260ms + var(--i) * 70ms); }
+      @keyframes jr-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+      @media (max-width: 700px) {
+        .jr-track { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+        .jr-track::-webkit-scrollbar { display: none; }
+        .jr-step { flex: 0 0 auto; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .jr-step { animation: none; }
+        .jr-step:hover, .jr-step:active { transform: none; }
+      }
+
       .hero-trust { margin-top: 26px; font-size: var(--fs-sm); color: #b6aa93; display: flex; gap: 10px 22px; justify-content: center; flex-wrap: wrap; }
       .hero-trust span { display: inline-flex; align-items: center; gap: 7px; }
       .hero-trust svg { color: var(--gold-light); flex-shrink: 0; }
@@ -759,7 +795,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                            /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1284,6 +1320,7 @@
     
     
     
+    
     </style>
   </head>
   <body>
@@ -1314,12 +1351,13 @@
       <!-- ═════ 1. HERO ═════ -->
       <section class="hero on-dark" aria-labelledby="hero-title">
         <div class="wrap">
-          <img class="hero-logo reveal" src="/logo.png" alt="VEYA — מערכת לניהול אירועים" width="1224" height="1067" fetchpriority="high" decoding="async" />
-          <span class="eyebrow reveal d1">מוזמנים · אישורי הגעה · הושבה · מאזן האירוע</span>
+          <img class="hero-logo reveal" src="/logo.png" alt="VEYA — ניהול מוזמנים, אישורי הגעה, הושבה ומאזן האירוע" width="1224" height="1067" fetchpriority="high" decoding="async" />
+          <span class="eyebrow reveal d1">הרשימה באקסל · האישורים בוואטסאפ · ההוצאות בפנקס</span>
           <h1 id="hero-title" class="reveal d1">כמה אנשים באמת מגיעים לאירוע שלכם —<br /><span class="accent">וכמה זה עולה לכם</span></h1>
           <p class="lead reveal d2">
-            VEYA מחברת את רשימת המוזמנים, אישורי ההגעה, ההושבה והוצאות האירוע,
-            כדי שתדעו מה המספר שלכם לפני שסוגרים מול האולם — ומה נשאר אחרי האירוע.
+            כל אישור הגעה הוא מספר, וכל מספר הוא כסף. VEYA מחזיקה את הרשימה,
+            האישורים, ההושבה והמאזן במקום אחד — כדי שתדעו על כמה להתחייב לפני
+            האירוע, ומה נשאר אחריו.
           </p>
           <div class="cta-row reveal d2">
             <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
@@ -1357,6 +1395,24 @@
               </div>
             </div>
           </div>
+
+          <!-- מסלול האירוע (§16): סדר הזמנים האמיתי של אירוע, לא רשימת
+               פיצ'רים. כל שלב הוא קישור אמיתי ומוביל את העין לגלילה. -->
+          <nav class="journey-rail reveal d3" aria-label="מה VEYA מלווה, לפי סדר האירוע">
+            <div class="jr-track">
+            <a class="jr-step" href="/features/guests/" style="--i: 0"><span>מוזמנים</span></a>
+            <span class="jr-arrow" aria-hidden="true">←</span>
+            <a class="jr-step" href="/features/rsvp/" style="--i: 1"><span>אישורי הגעה</span></a>
+            <span class="jr-arrow" aria-hidden="true">←</span>
+            <a class="jr-step" href="/calculators/venue-commitment/" style="--i: 2"><span>התחייבות</span></a>
+            <span class="jr-arrow" aria-hidden="true">←</span>
+            <a class="jr-step" href="/features/seating/" style="--i: 3"><span>הושבה</span></a>
+            <span class="jr-arrow" aria-hidden="true">←</span>
+            <a class="jr-step" href="#gifts" style="--i: 4"><span>מתנות</span></a>
+            <span class="jr-arrow" aria-hidden="true">←</span>
+            <a class="jr-step" href="/features/finance/" style="--i: 5"><span>מאזן</span></a>
+            </div>
+          </nav>
 
           <!-- ═════ 2. TRUST ═════ -->
           <div class="hero-trust reveal d3">
