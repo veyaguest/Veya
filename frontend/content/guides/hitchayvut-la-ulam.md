@@ -43,11 +43,11 @@ related:
 מכאן נגזר מה שבאמת חשוב: כמות ההתחייבות היא **רצפה, לא תקרה**. אין שום יתרון
 בלהתחייב "בדיוק על מה שיגיע", כי כל טעות כלפי מעלה נשארת בכיס של האולם.
 
-<div class="num-row" data-v-stagger="90">
-  <div class="num v-reveal"><span class="num-value">500</span><span class="num-label">התחייבתם על</span></div>
-  <div class="num v-reveal"><span class="num-value">463</span><span class="num-label">אישרו הגעה</span></div>
-  <div class="num is-gap v-reveal"><span class="num-value">500</span><span class="num-label">משלמים על</span></div>
-</div>
+:::numbers
+500 | התחייבתם על
+463 | אישרו הגעה
+500 | משלמים על
+:::
 
 | מצב | התחייבות | מגיעים בפועל | משלמים על |
 |---|---|---|---|

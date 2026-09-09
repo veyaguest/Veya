@@ -992,7 +992,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                          /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1492,8 +1492,52 @@
         min-height: 44px;
       }
 
+      /* ── בלוקים ויזואליים במדריכים (§13) ───────────────────────────────
+         שלושה רכיבים שמפרקים קיר טקסט: משפט שצריך לזכור, קומפוזיציית
+         מספרים, ושרשרת שלבים. כולם נכתבים ב-Markdown ולא ב-HTML ידני. */
+      .article .callout {
+        margin: 26px 0;
+        padding: 18px 20px;
+        border-inline-start: 3px solid var(--gold);
+        border-radius: var(--radius-md);
+        background: var(--ivory-2);
+      }
+      .article .callout p { margin: 0; color: var(--charcoal); font-size: var(--fs-lg); }
+
+      .g-numbers {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1px;
+        margin: 28px 0;
+        background: var(--line);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+      .g-num { display: grid; gap: 3px; padding: 18px 16px; background: var(--ivory); text-align: center; }
+      .g-num-v {
+        font-family: var(--font-display); font-size: var(--fd-lg); line-height: 1.05;
+        color: var(--gold-deep); font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+      }
+      .g-num-l { font-size: var(--fs-sm); color: var(--muted); }
+
+      .g-flow {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 8px 6px;
+        margin: 26px 0; padding: 16px; border: 1px solid var(--line);
+        border-radius: var(--radius-lg); background: var(--ivory-2);
+      }
+      .g-flow-s {
+        padding: 8px 14px; border-radius: var(--radius-pill);
+        background: var(--ivory); border: 1px solid var(--line);
+        color: var(--charcoal); font-size: var(--fs-sm); font-weight: 600; white-space: nowrap;
+      }
+      .g-flow-s:last-child { border-color: rgba(201, 162, 39, 0.45); background: rgba(201, 162, 39, 0.1); }
+      .g-flow-a { color: var(--gold); opacity: 0.6; }
+
       /* ===== VEYA BRAND LAYER — END ===== */
 
+    
+    
     
     
     
