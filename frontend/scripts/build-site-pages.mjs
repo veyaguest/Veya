@@ -245,6 +245,15 @@ function calcIndex() {
     description:
       'מחשבונים חינמיים לאירוע: התחייבות לאולם, כמה מוסיף אדם נוסף, ולוח הזמנים של אישורי ההגעה. אותו חישוב שרץ בתוך VEYA.',
     trail: [{ name: 'VEYA', url: '/' }, { name: 'מחשבונים' }],
+    schema: [
+      {
+        '@type': 'CollectionPage',
+        name: 'מחשבונים לאירוע',
+        inLanguage: 'he-IL',
+        url: `${SITE}/calculators/`,
+        description: 'מחשבוני התחייבות לאולם ולוח זמנים לאישורי הגעה.',
+      },
+    ],
     body: `${pageHero({
       eyebrow: 'כלים',
       h1: 'מחשבונים לאירוע',

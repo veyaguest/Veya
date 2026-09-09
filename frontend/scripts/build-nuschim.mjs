@@ -181,18 +181,62 @@ const CSS = `    <style>
       .msg-copied { font-size: var(--fs-sm); color: var(--success); font-weight: 600; }
       .msg-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
       .msg-empty { color: var(--muted); padding: 24px 0; }
+
+      /* רשימת המקור — נראית כשאין JavaScript, ומוסתרת ברגע שהמוקאפ עולה.
+         היא לא display:none מראש: זה מה שהופך אותה לזמינה לזחלנים. */
+      .msg-source { display: grid; gap: 20px; margin-top: 10px; }
+      .msg-item { border: 1px solid var(--line); border-radius: var(--radius-lg);
+                  background: var(--cream); padding: 18px 20px; }
+      .msg-item-h { font-size: var(--fs-sm); color: var(--gold-deep); margin: 0 0 10px;
+                    font-family: var(--font-body); font-weight: 700; }
+      .msg-item-text { margin: 0; white-space: pre-wrap; word-break: break-word;
+                       font-family: inherit; font-size: var(--fs-md); line-height: 1.8; color: var(--body); }
     </style>`
 
-const JS = (data) => `    <script>
-      var MSGS = ${JSON.stringify(data)};
-    </script>
-    <script>
+/** רשימת ההודעות כ-HTML אמיתי.
+ *
+ *  **למה לא משתנה JavaScript:** זחלני AI (ו-Googlebot לצורך טקסט) לא
+ *  מריצים JS. כשההודעות ישבו ב-`var MSGS` העמוד הכיל 1,181 תווים גלויים
+ *  מול 13,543 שנעולים בסקריפט — כלומר כל התוכן שלו היה בלתי נראה.
+ *  עכשיו הכול ב-DOM, וה-JS רק משדרג אותו למוקאפ עם ניווט. בלי JS נשארת
+ *  רשימה קריאה ותקינה. */
+const list = (data) => `          <div class="msg-source" id="msg-source">
+${data.items.map((m, i) => `            <article class="msg-item" data-ev="${esc(m.ev)}" data-ty="${esc(m.ty)}"
+              data-ev-label="${esc(m.evLabel)}" data-ty-label="${esc(m.tyLabel)}"
+              data-tone="${esc(m.tone || '')}" data-chat="${esc(m.chat)}"
+              data-buttons="${esc(m.buttons.join('|'))}">
+              <h3 class="msg-item-h">${esc(m.tyLabel)} · ${esc(m.evLabel)}${m.tone ? ' · ' + esc(m.tone) : ''}</h3>
+              <pre class="msg-item-text">${esc(m.text)}</pre>
+            </article>`).join('\n')}
+          </div>`
+
+const JS = () => `    <script>
       (function () {
         var evChips = document.getElementById('ev-axis');
         var tyChips = document.getElementById('ty-axis');
         var stage = document.getElementById('stage');
         var live = document.getElementById('msg-live');
         if (!evChips || !stage) return;
+
+        // מקור הנתונים היחיד: הרשימה שכבר נמצאת ב-HTML.
+        var nodes = [].slice.call(document.querySelectorAll('#msg-source .msg-item'));
+        if (!nodes.length) return;
+        var MSGS = { events: [], items: nodes.map(function (n) {
+          return {
+            ev: n.dataset.ev, evLabel: n.dataset.evLabel,
+            ty: n.dataset.ty, tyLabel: n.dataset.tyLabel,
+            tone: n.dataset.tone, chat: n.dataset.chat,
+            buttons: n.dataset.buttons ? n.dataset.buttons.split('|') : [],
+            text: n.querySelector('.msg-item-text').textContent,
+          };
+        }) };
+        MSGS.items.forEach(function (m) {
+          if (!MSGS.events.some(function (e) { return e.key === m.ev; })) {
+            MSGS.events.push({ key: m.ev, label: m.evLabel });
+          }
+        });
+        // מרגע שה-JS פעיל, הרשימה הגולמית מוסתרת — המוקאפ מחליף אותה.
+        document.getElementById('msg-source').hidden = true;
 
         var state = { ev: MSGS.events[0].key, ty: null, i: 0 };
 
@@ -366,6 +410,8 @@ export async function buildNuschim(apiUrl) {
           </div>
 
           <div class="msg-stage" id="stage"></div>
+
+${list(data)}
           <p class="msg-live" id="msg-live" role="status" aria-live="polite"></p>
 
           <p class="calc-note" style="max-width:66ch;margin-top:34px">
@@ -420,7 +466,7 @@ export async function buildNuschim(apiUrl) {
     ],
     head: CSS,
     body,
-    scripts: JS(data),
+    scripts: JS(),
   })
 
   return [{ path: '/nuschim/', html }]

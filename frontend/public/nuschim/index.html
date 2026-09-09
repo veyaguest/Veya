@@ -38,6 +38,7 @@
         "@context": "https://schema.org",
         "@graph": [
           {
+            "dateModified": "2026-09-09",
             "@type": "CollectionPage",
             "name": "הודעות",
             "inLanguage": "he-IL",
@@ -140,6 +141,16 @@
       .msg-copied { font-size: var(--fs-sm); color: var(--success); font-weight: 600; }
       .msg-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
       .msg-empty { color: var(--muted); padding: 24px 0; }
+
+      /* רשימת המקור — נראית כשאין JavaScript, ומוסתרת ברגע שהמוקאפ עולה.
+         היא לא display:none מראש: זה מה שהופך אותה לזמינה לזחלנים. */
+      .msg-source { display: grid; gap: 20px; margin-top: 10px; }
+      .msg-item { border: 1px solid var(--line); border-radius: var(--radius-lg);
+                  background: var(--cream); padding: 18px 20px; }
+      .msg-item-h { font-size: var(--fs-sm); color: var(--gold-deep); margin: 0 0 10px;
+                    font-family: var(--font-body); font-weight: 700; }
+      .msg-item-text { margin: 0; white-space: pre-wrap; word-break: break-word;
+                       font-family: inherit; font-size: var(--fs-md); line-height: 1.8; color: var(--body); }
     </style>
   </head>
   <body>
@@ -186,6 +197,1011 @@
           </div>
 
           <div class="msg-stage" id="stage"></div>
+
+          <div class="msg-source" id="msg-source">
+            <article class="msg-item" data-ev="wedding" data-ty="invitation"
+              data-ev-label="חתונה" data-ty-label="הזמנה"
+              data-tone="חם ומלא פרטים" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה|ניווט למקום">
+              <h3 class="msg-item-h">הזמנה · חתונה · חם ומלא פרטים</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+אנחנו שמחים ונרגשים להזמין אותך לערב החתונה שלנו.
+
+יונתן &amp; שירה
+
+📅 14.5.2026
+⏰ 19:30
+📍 גן האירועים
+📌 הזורע 12, רמת גן
+
+נשמח לראות אותך איתנו ולחגוג יחד.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="invitation"
+              data-ev-label="חתונה" data-ty-label="הזמנה"
+              data-tone="אישי ומשתף" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">הזמנה · חתונה · אישי ומשתף</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+רצינו לשתף אותך שאנחנו מתחתנים ולהזמין אותך לחגוג איתנו את הערב המיוחד הזה.
+
+יונתן ו־שירה
+
+📅 14.5.2026
+⏰ 19:30
+📍 גן האירועים
+
+נשמח מאוד שתהיה איתנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="invitation"
+              data-ev-label="חתונה" data-ty-label="הזמנה"
+              data-tone="נרגש וחגיגי" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">הזמנה · חתונה · נרגש וחגיגי</h3>
+              <pre class="msg-item-text">היי דנה כהן,
+
+אנחנו מתרגשים לקראת היום הגדול שלנו ושמחים להזמין אותך לחתונה שלנו ❤️
+
+יונתן &amp; שירה
+
+📅 14.5.2026
+⏰ 19:30
+📍 גן האירועים
+📌 הזורע 12, רמת גן
+
+מחכים לראות אותך ולשמוח יחד.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="invitation"
+              data-ev-label="חתונה" data-ty-label="הזמנה"
+              data-tone="מספר את המסע האישי" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">הזמנה · חתונה · מספר את המסע האישי</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+אחרי הרבה הכנות והתרגשות הגיע הרגע שלנו.
+
+נשמח להזמין אותך לערב החתונה שלנו ולחגוג איתנו.
+
+יונתן &amp; שירה
+
+📅 14.5.2026
+⏰ 19:30
+📍 גן האירועים</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="invitation"
+              data-ev-label="חתונה" data-ty-label="הזמנה"
+              data-tone="פשוט וקצר" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">הזמנה · חתונה · פשוט וקצר</h3>
+              <pre class="msg-item-text">היי דנה כהן,
+
+אנחנו שמחים להזמין אותך להיות איתנו בערב החתונה שלנו ❤️
+
+יונתן ו־שירה
+
+📅 14.5.2026
+⏰ 19:30
+📍 גן האירועים
+
+נשמח לראות אותך איתנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="invitation"
+              data-ev-label="חתונה" data-ty-label="הזמנה"
+              data-tone="אישי ובלעדי" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">הזמנה · חתונה · אישי ובלעדי</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+רצינו להזמין אותך באופן אישי לחתונה שלנו.
+
+אנחנו מתרגשים מאוד ונשמח לחגוג איתך את הערב הזה.
+
+יונתן &amp; שירה
+
+📅 14.5.2026
+⏰ 19:30
+📍 גן האירועים
+📌 הזורע 12, רמת גן</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="invitation"
+              data-ev-label="חתונה" data-ty-label="הזמנה"
+              data-tone="רשמי וחגיגי" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">הזמנה · חתונה · רשמי וחגיגי</h3>
+              <pre class="msg-item-text">שלום דנה כהן ❤️
+
+בשמחה ובהתרגשות אנחנו מזמינים אותך לחתונה שלנו.
+
+יונתן &amp; שירה
+
+📅 14.5.2026
+⏰ 19:30
+📍 גן האירועים
+
+נשמח מאוד שתגיע לחגוג איתנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="invitation"
+              data-ev-label="חתונה" data-ty-label="הזמנה"
+              data-tone="הכרזה נרגשת" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">הזמנה · חתונה · הכרזה נרגשת</h3>
+              <pre class="msg-item-text">היי דנה כהן,
+
+הגיע הזמן לשתף אותך בתאריך החשוב שלנו ❤️
+
+אנחנו מתחתנים ונשמח שתהיה איתנו בערב החתונה.
+
+יונתן &amp; שירה
+
+📅 14.5.2026
+⏰ 19:30
+📍 גן האירועים
+
+מחכים לראות אותך.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="invitation"
+              data-ev-label="חתונה" data-ty-label="הזמנה"
+              data-tone="נרגש ופשוט" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">הזמנה · חתונה · נרגש ופשוט</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+אנחנו נרגשים לקראת החתונה שלנו ורוצים להזמין אותך לחגוג איתנו.
+
+יונתן ו־שירה
+
+📅 14.5.2026
+⏰ 19:30
+📍 גן האירועים
+
+נשמח מאוד לראות אותך שם.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="invitation"
+              data-ev-label="חתונה" data-ty-label="הזמנה"
+              data-tone="רשמי וחם" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">הזמנה · חתונה · רשמי וחם</h3>
+              <pre class="msg-item-text">שלום דנה כהן,
+
+אנחנו שמחים ונרגשים לקראת הערב הגדול שלנו.
+
+נשמח שתהיה איתנו בחתונה שלנו ❤️
+
+יונתן &amp; שירה
+
+📅 14.5.2026
+⏰ 19:30
+📍 גן האירועים
+📌 הזורע 12, רמת גן</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="invitation"
+              data-ev-label="חתונה" data-ty-label="הזמנה"
+              data-tone="ייחודי ומכובד" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">הזמנה · חתונה · ייחודי ומכובד</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+רצינו להזמין אותך לחגוג איתנו את אחד הרגעים החשובים שלנו.
+
+החתונה של:
+יונתן &amp; שירה
+
+📅 14.5.2026
+⏰ 19:30
+📍 גן האירועים
+
+נשמח לראות אותך איתנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="invitation"
+              data-ev-label="חתונה" data-ty-label="הזמנה"
+              data-tone="חם ומרגש" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה|ניווט למקום">
+              <h3 class="msg-item-h">הזמנה · חתונה · חם ומרגש</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+אנחנו מתרגשים ושמחים להזמין אותך לערב החתונה שלנו.
+
+נשמח מאוד שתהיה חלק מהשמחה שלנו ותחגוג איתנו.
+
+יונתן &amp; שירה
+
+📅 14.5.2026
+⏰ 19:30
+📍 גן האירועים
+📌 הזורע 12, רמת גן</pre>
+            </article>
+            <article class="msg-item" data-ev="bar_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בר מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="פשוט וחם" data-chat="בר המצווה של איתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בר מצווה · פשוט וחם</h3>
+              <pre class="msg-item-text">היי משפחת לוי ❤️
+
+נשמח שתעדכנו אותנו אם אתם מגיעים לבר המצווה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bar_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בר מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="אישי ורגוע" data-chat="בר המצווה של איתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בר מצווה · אישי ורגוע</h3>
+              <pre class="msg-item-text">היי משפחת לוי 😊
+
+נשמח לדעת אם תוכלו להיות איתנו בבר המצווה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bar_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בר מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="תזכורת עדינה" data-chat="בר המצווה של איתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בר מצווה · תזכורת עדינה</h3>
+              <pre class="msg-item-text">היי משפחת לוי ❤️
+
+קיבלתם את ההזמנה שלנו?
+נשמח שתעדכנו אותנו אם אתם מצטרפים.</pre>
+            </article>
+            <article class="msg-item" data-ev="bar_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בר מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="קצר וברור" data-chat="בר המצווה של איתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בר מצווה · קצר וברור</h3>
+              <pre class="msg-item-text">היי משפחת לוי!
+
+נשמח לקבל מכם אישור הגעה לבר המצווה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="bar_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בר מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מזמין" data-chat="בר המצווה של איתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בר מצווה · מזמין</h3>
+              <pre class="msg-item-text">היי משפחת לוי ❤️
+
+נשמח שתהיו איתנו ונחגוג יחד את בר המצווה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bar_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בר מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="רגוע וקליל" data-chat="בר המצווה של איתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בר מצווה · רגוע וקליל</h3>
+              <pre class="msg-item-text">היי משפחת לוי 🥳
+
+נשמח לדעת אם אתם מצטרפים אלינו לבר המצווה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bar_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בר מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מצפים לראות אתכם" data-chat="בר המצווה של איתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בר מצווה · מצפים לראות אתכם</h3>
+              <pre class="msg-item-text">היי משפחת לוי ❤️
+
+נשמח לראות אתכם איתנו ביום המיוחד הזה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bar_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בר מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מנומס וחם" data-chat="בר המצווה של איתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בר מצווה · מנומס וחם</h3>
+              <pre class="msg-item-text">היי משפחת לוי 😊
+
+נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לבר המצווה.
+
+תודה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="bar_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בר מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="ישיר" data-chat="בר המצווה של איתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בר מצווה · ישיר</h3>
+              <pre class="msg-item-text">היי משפחת לוי ❤️
+
+נשמח לדעת אם אתם איתנו בבר המצווה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bar_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בר מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="נערכים לקראת" data-chat="בר המצווה של איתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בר מצווה · נערכים לקראת</h3>
+              <pre class="msg-item-text">היי משפחת לוי!
+
+נשמח לדעת אם אתם מגיעים לחגוג איתנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="bar_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בר מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מצפים לתשובה" data-chat="בר המצווה של איתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בר מצווה · מצפים לתשובה</h3>
+              <pre class="msg-item-text">היי משפחת לוי ❤️
+
+נשמח לקבל מכם תשובה לגבי ההגעה לבר המצווה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bar_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בר מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="חם ומודה" data-chat="בר המצווה של איתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בר מצווה · חם ומודה</h3>
+              <pre class="msg-item-text">היי משפחת לוי 😊
+
+נשמח שתצטרפו אלינו לחגוג את בר המצווה.
+
+תודה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="bat_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בת מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="פשוט וחם" data-chat="בת המצווה של רוני"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בת מצווה · פשוט וחם</h3>
+              <pre class="msg-item-text">היי משפחת לוי ❤️
+
+נשמח שתעדכנו אותנו אם אתם מגיעים לבת המצווה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bat_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בת מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="אישי ורגוע" data-chat="בת המצווה של רוני"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בת מצווה · אישי ורגוע</h3>
+              <pre class="msg-item-text">היי משפחת לוי 😊
+
+נשמח לדעת אם תוכלו להיות איתנו בבת המצווה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bat_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בת מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="תזכורת עדינה" data-chat="בת המצווה של רוני"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בת מצווה · תזכורת עדינה</h3>
+              <pre class="msg-item-text">היי משפחת לוי ❤️
+
+קיבלתם את ההזמנה שלנו?
+נשמח שתעדכנו אותנו אם אתם מצטרפים.</pre>
+            </article>
+            <article class="msg-item" data-ev="bat_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בת מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="קצר וברור" data-chat="בת המצווה של רוני"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בת מצווה · קצר וברור</h3>
+              <pre class="msg-item-text">היי משפחת לוי!
+
+נשמח לקבל מכם אישור הגעה לבת המצווה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="bat_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בת מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מזמין" data-chat="בת המצווה של רוני"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בת מצווה · מזמין</h3>
+              <pre class="msg-item-text">היי משפחת לוי ❤️
+
+נשמח שתהיו איתנו ונחגוג יחד את בת המצווה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bat_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בת מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="רגוע וקליל" data-chat="בת המצווה של רוני"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בת מצווה · רגוע וקליל</h3>
+              <pre class="msg-item-text">היי משפחת לוי 🥰
+
+נשמח לדעת אם אתם מצטרפים אלינו לבת המצווה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bat_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בת מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מצפים לראות אתכם" data-chat="בת המצווה של רוני"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בת מצווה · מצפים לראות אתכם</h3>
+              <pre class="msg-item-text">היי משפחת לוי ❤️
+
+נשמח לראות אתכם איתנו ביום המיוחד הזה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bat_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בת מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מנומס וחם" data-chat="בת המצווה של רוני"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בת מצווה · מנומס וחם</h3>
+              <pre class="msg-item-text">היי משפחת לוי 😊
+
+נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לבת המצווה.
+
+תודה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="bat_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בת מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="ישיר" data-chat="בת המצווה של רוני"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בת מצווה · ישיר</h3>
+              <pre class="msg-item-text">היי משפחת לוי ❤️
+
+נשמח לדעת אם אתם איתנו בבת המצווה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bat_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בת מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="נערכים לקראת" data-chat="בת המצווה של רוני"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בת מצווה · נערכים לקראת</h3>
+              <pre class="msg-item-text">היי משפחת לוי!
+
+נשמח לדעת אם אתם מגיעים לחגוג איתנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="bat_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בת מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מצפים לתשובה" data-chat="בת המצווה של רוני"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בת מצווה · מצפים לתשובה</h3>
+              <pre class="msg-item-text">היי משפחת לוי ❤️
+
+נשמח לקבל מכם תשובה לגבי ההגעה לבת המצווה.</pre>
+            </article>
+            <article class="msg-item" data-ev="bat_mitzvah" data-ty="rsvp_request"
+              data-ev-label="בת מצווה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="חם ומודה" data-chat="בת המצווה של רוני"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בת מצווה · חם ומודה</h3>
+              <pre class="msg-item-text">היי משפחת לוי 😊
+
+נשמח שתצטרפו אלינו לחגוג את בת המצווה.
+
+תודה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="brit" data-ty="rsvp_request"
+              data-ev-label="ברית" data-ty-label="בקשת אישור ראשונה"
+              data-tone="פשוט וחם" data-chat="הברית של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · ברית · פשוט וחם</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי ❤️
+
+נשמח שתעדכנו אותנו אם אתם מגיעים לברית.</pre>
+            </article>
+            <article class="msg-item" data-ev="brit" data-ty="rsvp_request"
+              data-ev-label="ברית" data-ty-label="בקשת אישור ראשונה"
+              data-tone="אישי ורגוע" data-chat="הברית של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · ברית · אישי ורגוע</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי 😊
+
+נשמח לדעת אם תוכלו להיות איתנו ולחגוג את הרגע המיוחד.</pre>
+            </article>
+            <article class="msg-item" data-ev="brit" data-ty="rsvp_request"
+              data-ev-label="ברית" data-ty-label="בקשת אישור ראשונה"
+              data-tone="תזכורת עדינה" data-chat="הברית של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · ברית · תזכורת עדינה</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי ❤️
+
+קיבלתם את ההזמנה שלנו?
+נשמח שתעדכנו אותנו אם אתם מגיעים.</pre>
+            </article>
+            <article class="msg-item" data-ev="brit" data-ty="rsvp_request"
+              data-ev-label="ברית" data-ty-label="בקשת אישור ראשונה"
+              data-tone="קצר וברור" data-chat="הברית של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · ברית · קצר וברור</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי!
+
+נשמח לקבל מכם אישור הגעה לברית ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="brit" data-ty="rsvp_request"
+              data-ev-label="ברית" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מזמין" data-chat="הברית של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · ברית · מזמין</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי ❤️
+
+נשמח שתהיו איתנו באירוע ונשמח לדעת אם אתם מגיעים.</pre>
+            </article>
+            <article class="msg-item" data-ev="brit" data-ty="rsvp_request"
+              data-ev-label="ברית" data-ty-label="בקשת אישור ראשונה"
+              data-tone="רגוע וקליל" data-chat="הברית של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · ברית · רגוע וקליל</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי 🥰
+
+נשמח לדעת אם אתם מצטרפים אלינו.</pre>
+            </article>
+            <article class="msg-item" data-ev="brit" data-ty="rsvp_request"
+              data-ev-label="ברית" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מצפים לראות אתכם" data-chat="הברית של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · ברית · מצפים לראות אתכם</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי ❤️
+
+נשמח לראות אתכם איתנו בברית.</pre>
+            </article>
+            <article class="msg-item" data-ev="brit" data-ty="rsvp_request"
+              data-ev-label="ברית" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מנומס וחם" data-chat="הברית של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · ברית · מנומס וחם</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי 😊
+
+נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם.
+
+תודה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="brit" data-ty="rsvp_request"
+              data-ev-label="ברית" data-ty-label="בקשת אישור ראשונה"
+              data-tone="ישיר" data-chat="הברית של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · ברית · ישיר</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי ❤️
+
+נשמח לדעת אם אתם איתנו באירוע.</pre>
+            </article>
+            <article class="msg-item" data-ev="brit" data-ty="rsvp_request"
+              data-ev-label="ברית" data-ty-label="בקשת אישור ראשונה"
+              data-tone="נערכים לקראת" data-chat="הברית של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · ברית · נערכים לקראת</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי!
+
+אנחנו מתחילים להיערך לקראת האירוע, ונשמח לדעת אם אתם מגיעים.</pre>
+            </article>
+            <article class="msg-item" data-ev="brit" data-ty="rsvp_request"
+              data-ev-label="ברית" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מצפים לתשובה" data-chat="הברית של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · ברית · מצפים לתשובה</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי ❤️
+
+נשמח לקבל מכם תשובה לגבי ההגעה לברית.</pre>
+            </article>
+            <article class="msg-item" data-ev="brit" data-ty="rsvp_request"
+              data-ev-label="ברית" data-ty-label="בקשת אישור ראשונה"
+              data-tone="חם ומודה" data-chat="הברית של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · ברית · חם ומודה</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי 😊
+
+נשמח שתצטרפו אלינו לרגע המיוחד הזה.
+
+תודה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="brita" data-ty="rsvp_request"
+              data-ev-label="בריתה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="פשוט וחם" data-chat="הבריתה של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בריתה · פשוט וחם</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי ❤️
+
+נשמח שתעדכנו אותנו אם אתם מגיעים לבריתה.</pre>
+            </article>
+            <article class="msg-item" data-ev="brita" data-ty="rsvp_request"
+              data-ev-label="בריתה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="אישי ורגוע" data-chat="הבריתה של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בריתה · אישי ורגוע</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי 😊
+
+נשמח לדעת אם תוכלו להיות איתנו בבריתה.</pre>
+            </article>
+            <article class="msg-item" data-ev="brita" data-ty="rsvp_request"
+              data-ev-label="בריתה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="תזכורת עדינה" data-chat="הבריתה של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בריתה · תזכורת עדינה</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי ❤️
+
+קיבלתם את ההזמנה שלנו?
+נשמח שתעדכנו אותנו אם אתם מצטרפים.</pre>
+            </article>
+            <article class="msg-item" data-ev="brita" data-ty="rsvp_request"
+              data-ev-label="בריתה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="קצר וברור" data-chat="הבריתה של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בריתה · קצר וברור</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי!
+
+נשמח לקבל מכם אישור הגעה לבריתה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="brita" data-ty="rsvp_request"
+              data-ev-label="בריתה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מזמין" data-chat="הבריתה של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בריתה · מזמין</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי ❤️
+
+נשמח שתהיו איתנו ונכיר לכם את הקטנה שלנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="brita" data-ty="rsvp_request"
+              data-ev-label="בריתה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="רגוע וקליל" data-chat="הבריתה של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בריתה · רגוע וקליל</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי 🥰
+
+נשמח לדעת אם אתם מצטרפים אלינו לבריתה.</pre>
+            </article>
+            <article class="msg-item" data-ev="brita" data-ty="rsvp_request"
+              data-ev-label="בריתה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מצפים לראות אתכם" data-chat="הבריתה של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בריתה · מצפים לראות אתכם</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי ❤️
+
+נשמח לראות אתכם איתנו בבריתה.</pre>
+            </article>
+            <article class="msg-item" data-ev="brita" data-ty="rsvp_request"
+              data-ev-label="בריתה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מנומס וחם" data-chat="הבריתה של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בריתה · מנומס וחם</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי 😊
+
+נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם.
+
+תודה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="brita" data-ty="rsvp_request"
+              data-ev-label="בריתה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="ישיר" data-chat="הבריתה של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בריתה · ישיר</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי ❤️
+
+נשמח לדעת אם אתם איתנו בבריתה.</pre>
+            </article>
+            <article class="msg-item" data-ev="brita" data-ty="rsvp_request"
+              data-ev-label="בריתה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="נערכים לקראת" data-chat="הבריתה של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בריתה · נערכים לקראת</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי!
+
+נשמח לדעת אם אתם מגיעים לבריתה שלנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="brita" data-ty="rsvp_request"
+              data-ev-label="בריתה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מצפים לתשובה" data-chat="הבריתה של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בריתה · מצפים לתשובה</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי ❤️
+
+נשמח לקבל מכם תשובה לגבי ההגעה לבריתה.</pre>
+            </article>
+            <article class="msg-item" data-ev="brita" data-ty="rsvp_request"
+              data-ev-label="בריתה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="חם ומודה" data-chat="הבריתה של משפחת מזרחי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · בריתה · חם ומודה</h3>
+              <pre class="msg-item-text">היי משפחת מזרחי 😊
+
+נשמח שתצטרפו אלינו לרגע המיוחד הזה.
+
+תודה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="business" data-ty="rsvp_request"
+              data-ev-label="אירוע עסקי" data-ty-label="בקשת אישור ראשונה"
+              data-tone="רשמי" data-chat="כנס הלקוחות השנתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · אירוע עסקי · רשמי</h3>
+              <pre class="msg-item-text">שלום נועה אברהם,
+
+נשמח לדעת אם תוכלו להשתתף באירוע שלנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="business" data-ty="rsvp_request"
+              data-ev-label="אירוע עסקי" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מארחים" data-chat="כנס הלקוחות השנתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · אירוע עסקי · מארחים</h3>
+              <pre class="msg-item-text">היי נועה אברהם,
+
+נשמח לארח אתכם באירוע ונשמח לקבל את אישור ההגעה שלכם.</pre>
+            </article>
+            <article class="msg-item" data-ev="business" data-ty="rsvp_request"
+              data-ev-label="אירוע עסקי" data-ty-label="בקשת אישור ראשונה"
+              data-tone="ישיר" data-chat="כנס הלקוחות השנתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · אירוע עסקי · ישיר</h3>
+              <pre class="msg-item-text">שלום נועה אברהם,
+
+נשמח לדעת אם אתם מתכננים להגיע לאירוע.</pre>
+            </article>
+            <article class="msg-item" data-ev="business" data-ty="rsvp_request"
+              data-ev-label="אירוע עסקי" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מבקש עדכון" data-chat="כנס הלקוחות השנתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · אירוע עסקי · מבקש עדכון</h3>
+              <pre class="msg-item-text">היי נועה אברהם,
+
+נשמח אם תוכלו לעדכן אותנו לגבי השתתפותכם באירוע.</pre>
+            </article>
+            <article class="msg-item" data-ev="business" data-ty="rsvp_request"
+              data-ev-label="אירוע עסקי" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מזמין" data-chat="כנס הלקוחות השנתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · אירוע עסקי · מזמין</h3>
+              <pre class="msg-item-text">שלום נועה אברהם,
+
+נשמח לראות אתכם באירוע שלנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="business" data-ty="rsvp_request"
+              data-ev-label="אירוע עסקי" data-ty-label="בקשת אישור ראשונה"
+              data-tone="קצר" data-chat="כנס הלקוחות השנתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · אירוע עסקי · קצר</h3>
+              <pre class="msg-item-text">היי נועה אברהם,
+
+נשמח לדעת אם תוכלו להצטרף אלינו לאירוע.</pre>
+            </article>
+            <article class="msg-item" data-ev="business" data-ty="rsvp_request"
+              data-ev-label="אירוע עסקי" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מנומס ומודה" data-chat="כנס הלקוחות השנתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · אירוע עסקי · מנומס ומודה</h3>
+              <pre class="msg-item-text">שלום נועה אברהם,
+
+נשמח לקבל מכם עדכון לגבי ההגעה לאירוע.
+
+תודה.</pre>
+            </article>
+            <article class="msg-item" data-ev="business" data-ty="rsvp_request"
+              data-ev-label="אירוע עסקי" data-ty-label="בקשת אישור ראשונה"
+              data-tone="אישי" data-chat="כנס הלקוחות השנתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · אירוע עסקי · אישי</h3>
+              <pre class="msg-item-text">היי נועה אברהם,
+
+נשמח אם תוכלו להיות איתנו באירוע.</pre>
+            </article>
+            <article class="msg-item" data-ev="business" data-ty="rsvp_request"
+              data-ev-label="אירוע עסקי" data-ty-label="בקשת אישור ראשונה"
+              data-tone="רשמי ומצפה" data-chat="כנס הלקוחות השנתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · אירוע עסקי · רשמי ומצפה</h3>
+              <pre class="msg-item-text">שלום נועה אברהם,
+
+נשמח לדעת אם נוכל לצפות לראותכם באירוע.</pre>
+            </article>
+            <article class="msg-item" data-ev="business" data-ty="rsvp_request"
+              data-ev-label="אירוע עסקי" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מבקש אישור" data-chat="כנס הלקוחות השנתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · אירוע עסקי · מבקש אישור</h3>
+              <pre class="msg-item-text">היי נועה אברהם,
+
+נשמח לקבל את אישור ההגעה שלכם לאירוע.</pre>
+            </article>
+            <article class="msg-item" data-ev="business" data-ty="rsvp_request"
+              data-ev-label="אירוע עסקי" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מבקש תשובה" data-chat="כנס הלקוחות השנתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · אירוע עסקי · מבקש תשובה</h3>
+              <pre class="msg-item-text">שלום נועה אברהם,
+
+נשמח לדעת אם אתם מצטרפים אלינו לאירוע.</pre>
+            </article>
+            <article class="msg-item" data-ev="business" data-ty="rsvp_request"
+              data-ev-label="אירוע עסקי" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מארחים ומחכים" data-chat="כנס הלקוחות השנתי"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · אירוע עסקי · מארחים ומחכים</h3>
+              <pre class="msg-item-text">היי נועה אברהם,
+
+נשמח לארח אתכם ומחכים לדעת אם תוכלו להגיע.</pre>
+            </article>
+            <article class="msg-item" data-ev="henna" data-ty="rsvp_request"
+              data-ev-label="חינה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="פשוט וחם" data-chat="החינה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חינה · פשוט וחם</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+נשמח שתעדכנו אותנו אם אתם מגיעים לחינה שלנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="henna" data-ty="rsvp_request"
+              data-ev-label="חינה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="אישי ורגוע" data-chat="החינה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חינה · אישי ורגוע</h3>
+              <pre class="msg-item-text">היי דנה כהן 😊
+
+נשמח לדעת אם תוכלו להיות איתנו בחינה.</pre>
+            </article>
+            <article class="msg-item" data-ev="henna" data-ty="rsvp_request"
+              data-ev-label="חינה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="תזכורת עדינה" data-chat="החינה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חינה · תזכורת עדינה</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+קיבלתם את ההזמנה שלנו?
+נשמח שתעדכנו אותנו אם אתם מצטרפים.</pre>
+            </article>
+            <article class="msg-item" data-ev="henna" data-ty="rsvp_request"
+              data-ev-label="חינה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="קצר וברור" data-chat="החינה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חינה · קצר וברור</h3>
+              <pre class="msg-item-text">היי דנה כהן!
+
+נשמח לקבל מכם אישור הגעה לחינה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="henna" data-ty="rsvp_request"
+              data-ev-label="חינה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מזמין" data-chat="החינה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חינה · מזמין</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+אנחנו מזמינים אתכם להיות איתנו בחינה, ונשמח לדעת אם אתם מגיעים.</pre>
+            </article>
+            <article class="msg-item" data-ev="henna" data-ty="rsvp_request"
+              data-ev-label="חינה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="רגוע וקליל" data-chat="החינה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חינה · רגוע וקליל</h3>
+              <pre class="msg-item-text">היי דנה כהן 🥰
+
+נשמח לדעת אם אתם מצטרפים אלינו לחינה.</pre>
+            </article>
+            <article class="msg-item" data-ev="henna" data-ty="rsvp_request"
+              data-ev-label="חינה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מצפים לראות אתכם" data-chat="החינה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חינה · מצפים לראות אתכם</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+נשמח לדעת אם נוכל לצפות לראות אתכם איתנו בחינה.</pre>
+            </article>
+            <article class="msg-item" data-ev="henna" data-ty="rsvp_request"
+              data-ev-label="חינה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מנומס וחם" data-chat="החינה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חינה · מנומס וחם</h3>
+              <pre class="msg-item-text">היי דנה כהן 😊
+
+נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לחינה.
+
+תודה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="henna" data-ty="rsvp_request"
+              data-ev-label="חינה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="ישיר" data-chat="החינה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חינה · ישיר</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+נשמח לדעת אם אתם איתנו בחינה.</pre>
+            </article>
+            <article class="msg-item" data-ev="henna" data-ty="rsvp_request"
+              data-ev-label="חינה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="נערכים לקראת" data-chat="החינה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חינה · נערכים לקראת</h3>
+              <pre class="msg-item-text">היי דנה כהן!
+
+אנחנו מתחילים להיערך לקראת החינה, ונשמח לדעת אם אתם מגיעים.</pre>
+            </article>
+            <article class="msg-item" data-ev="henna" data-ty="rsvp_request"
+              data-ev-label="חינה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מצפים לתשובה" data-chat="החינה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חינה · מצפים לתשובה</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+נשמח לקבל מכם תשובה לגבי ההגעה לחינה שלנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="henna" data-ty="rsvp_request"
+              data-ev-label="חינה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="חם ומודה" data-chat="החינה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חינה · חם ומודה</h3>
+              <pre class="msg-item-text">היי דנה כהן 😊
+
+נשמח שתצטרפו אלינו לחינה.
+
+תודה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="rsvp_request"
+              data-ev-label="חתונה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="פשוט וחם" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חתונה · פשוט וחם</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+נשמח שתעדכנו אותנו אם אתם מגיעים לחתונה שלנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="rsvp_request"
+              data-ev-label="חתונה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="אישי ורגוע" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חתונה · אישי ורגוע</h3>
+              <pre class="msg-item-text">היי דנה כהן 😊
+
+נשמח לדעת אם תוכלו להיות איתנו ביום המיוחד שלנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="rsvp_request"
+              data-ev-label="חתונה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="תזכורת עדינה" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חתונה · תזכורת עדינה</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+קיבלתם את ההזמנה שלנו?
+נשמח שתעדכנו אותנו אם אתם מגיעים.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="rsvp_request"
+              data-ev-label="חתונה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="קצר וברור" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חתונה · קצר וברור</h3>
+              <pre class="msg-item-text">היי דנה כהן!
+
+נשמח לקבל מכם תשובה לגבי ההגעה לחתונה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="rsvp_request"
+              data-ev-label="חתונה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מזמין" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חתונה · מזמין</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+אנחנו מזמינים אתכם לחגוג איתנו, ונשמח לדעת אם אתם מגיעים.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="rsvp_request"
+              data-ev-label="חתונה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="קצר מאוד" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חתונה · קצר מאוד</h3>
+              <pre class="msg-item-text">היי דנה כהן 😊
+
+נשמח לדעת אם אתם מצטרפים אלינו לחתונה.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="rsvp_request"
+              data-ev-label="חתונה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מצפים לראות אתכם" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חתונה · מצפים לראות אתכם</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+אנחנו רוצים לדעת אם נוכל לצפות לראות אתכם איתנו בחתונה.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="rsvp_request"
+              data-ev-label="חתונה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מנומס וחם" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חתונה · מנומס וחם</h3>
+              <pre class="msg-item-text">היי דנה כהן!
+
+נשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לחתונה.
+
+תודה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="rsvp_request"
+              data-ev-label="חתונה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="רגוע וקליל" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חתונה · רגוע וקליל</h3>
+              <pre class="msg-item-text">היי דנה כהן 🥰
+
+נשמח לדעת אם אתם איתנו.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="rsvp_request"
+              data-ev-label="חתונה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="נערכים לקראת" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חתונה · נערכים לקראת</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+אנחנו רוצים להתחיל להיערך לקראת החתונה, ונשמח לדעת אם אתם מגיעים.</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="rsvp_request"
+              data-ev-label="חתונה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="מצפים לתשובה" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חתונה · מצפים לתשובה</h3>
+              <pre class="msg-item-text">היי דנה כהן 😊
+
+נשמח לקבל מכם אישור הגעה לחתונה שלנו.
+
+מחכים לתשובה ❤️</pre>
+            </article>
+            <article class="msg-item" data-ev="wedding" data-ty="rsvp_request"
+              data-ev-label="חתונה" data-ty-label="בקשת אישור ראשונה"
+              data-tone="חם ומודה" data-chat="החתונה של יונתן ושירה"
+              data-buttons="אישור הגעה">
+              <h3 class="msg-item-h">בקשת אישור ראשונה · חתונה · חם ומודה</h3>
+              <pre class="msg-item-text">היי דנה כהן ❤️
+
+נשמח לדעת אם תוכלו להגיע ולחגוג איתנו.
+
+תודה רבה!</pre>
+            </article>
+          </div>
           <p class="msg-live" id="msg-live" role="status" aria-live="polite"></p>
 
           <p class="calc-note" style="max-width:66ch;margin-top:34px">
@@ -294,15 +1310,32 @@
     </footer>
     <script src="/veya-motion.js" defer></script>
     <script>
-      var MSGS = {"events":[{"key":"wedding","label":"חתונה"},{"key":"bar_mitzvah","label":"בר מצווה"},{"key":"bat_mitzvah","label":"בת מצווה"},{"key":"brit","label":"ברית"},{"key":"brita","label":"בריתה"},{"key":"business","label":"אירוע עסקי"},{"key":"henna","label":"חינה"}],"items":[{"ev":"wedding","evLabel":"חתונה","ty":"invitation","tyLabel":"הזמנה","tone":"חם ומלא פרטים","text":"היי דנה כהן ❤️\n\nאנחנו שמחים ונרגשים להזמין אותך לערב החתונה שלנו.\n\nיונתן & שירה\n\n📅 14.5.2026\n⏰ 19:30\n📍 גן האירועים\n📌 הזורע 12, רמת גן\n\nנשמח לראות אותך איתנו ולחגוג יחד.","buttons":["אישור הגעה","ניווט למקום"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"invitation","tyLabel":"הזמנה","tone":"אישי ומשתף","text":"היי דנה כהן ❤️\n\nרצינו לשתף אותך שאנחנו מתחתנים ולהזמין אותך לחגוג איתנו את הערב המיוחד הזה.\n\nיונתן ו־שירה\n\n📅 14.5.2026\n⏰ 19:30\n📍 גן האירועים\n\nנשמח מאוד שתהיה איתנו.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"invitation","tyLabel":"הזמנה","tone":"נרגש וחגיגי","text":"היי דנה כהן,\n\nאנחנו מתרגשים לקראת היום הגדול שלנו ושמחים להזמין אותך לחתונה שלנו ❤️\n\nיונתן & שירה\n\n📅 14.5.2026\n⏰ 19:30\n📍 גן האירועים\n📌 הזורע 12, רמת גן\n\nמחכים לראות אותך ולשמוח יחד.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"invitation","tyLabel":"הזמנה","tone":"מספר את המסע האישי","text":"היי דנה כהן ❤️\n\nאחרי הרבה הכנות והתרגשות הגיע הרגע שלנו.\n\nנשמח להזמין אותך לערב החתונה שלנו ולחגוג איתנו.\n\nיונתן & שירה\n\n📅 14.5.2026\n⏰ 19:30\n📍 גן האירועים","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"invitation","tyLabel":"הזמנה","tone":"פשוט וקצר","text":"היי דנה כהן,\n\nאנחנו שמחים להזמין אותך להיות איתנו בערב החתונה שלנו ❤️\n\nיונתן ו־שירה\n\n📅 14.5.2026\n⏰ 19:30\n📍 גן האירועים\n\nנשמח לראות אותך איתנו.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"invitation","tyLabel":"הזמנה","tone":"אישי ובלעדי","text":"היי דנה כהן ❤️\n\nרצינו להזמין אותך באופן אישי לחתונה שלנו.\n\nאנחנו מתרגשים מאוד ונשמח לחגוג איתך את הערב הזה.\n\nיונתן & שירה\n\n📅 14.5.2026\n⏰ 19:30\n📍 גן האירועים\n📌 הזורע 12, רמת גן","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"invitation","tyLabel":"הזמנה","tone":"רשמי וחגיגי","text":"שלום דנה כהן ❤️\n\nבשמחה ובהתרגשות אנחנו מזמינים אותך לחתונה שלנו.\n\nיונתן & שירה\n\n📅 14.5.2026\n⏰ 19:30\n📍 גן האירועים\n\nנשמח מאוד שתגיע לחגוג איתנו.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"invitation","tyLabel":"הזמנה","tone":"הכרזה נרגשת","text":"היי דנה כהן,\n\nהגיע הזמן לשתף אותך בתאריך החשוב שלנו ❤️\n\nאנחנו מתחתנים ונשמח שתהיה איתנו בערב החתונה.\n\nיונתן & שירה\n\n📅 14.5.2026\n⏰ 19:30\n📍 גן האירועים\n\nמחכים לראות אותך.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"invitation","tyLabel":"הזמנה","tone":"נרגש ופשוט","text":"היי דנה כהן ❤️\n\nאנחנו נרגשים לקראת החתונה שלנו ורוצים להזמין אותך לחגוג איתנו.\n\nיונתן ו־שירה\n\n📅 14.5.2026\n⏰ 19:30\n📍 גן האירועים\n\nנשמח מאוד לראות אותך שם.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"invitation","tyLabel":"הזמנה","tone":"רשמי וחם","text":"שלום דנה כהן,\n\nאנחנו שמחים ונרגשים לקראת הערב הגדול שלנו.\n\nנשמח שתהיה איתנו בחתונה שלנו ❤️\n\nיונתן & שירה\n\n📅 14.5.2026\n⏰ 19:30\n📍 גן האירועים\n📌 הזורע 12, רמת גן","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"invitation","tyLabel":"הזמנה","tone":"ייחודי ומכובד","text":"היי דנה כהן ❤️\n\nרצינו להזמין אותך לחגוג איתנו את אחד הרגעים החשובים שלנו.\n\nהחתונה של:\nיונתן & שירה\n\n📅 14.5.2026\n⏰ 19:30\n📍 גן האירועים\n\nנשמח לראות אותך איתנו.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"invitation","tyLabel":"הזמנה","tone":"חם ומרגש","text":"היי דנה כהן ❤️\n\nאנחנו מתרגשים ושמחים להזמין אותך לערב החתונה שלנו.\n\nנשמח מאוד שתהיה חלק מהשמחה שלנו ותחגוג איתנו.\n\nיונתן & שירה\n\n📅 14.5.2026\n⏰ 19:30\n📍 גן האירועים\n📌 הזורע 12, רמת גן","buttons":["אישור הגעה","ניווט למקום"],"chat":"החתונה של יונתן ושירה"},{"ev":"bar_mitzvah","evLabel":"בר מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"פשוט וחם","text":"היי משפחת לוי ❤️\n\nנשמח שתעדכנו אותנו אם אתם מגיעים לבר המצווה.","buttons":["אישור הגעה"],"chat":"בר המצווה של איתי"},{"ev":"bar_mitzvah","evLabel":"בר מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"אישי ורגוע","text":"היי משפחת לוי 😊\n\nנשמח לדעת אם תוכלו להיות איתנו בבר המצווה.","buttons":["אישור הגעה"],"chat":"בר המצווה של איתי"},{"ev":"bar_mitzvah","evLabel":"בר מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"תזכורת עדינה","text":"היי משפחת לוי ❤️\n\nקיבלתם את ההזמנה שלנו?\nנשמח שתעדכנו אותנו אם אתם מצטרפים.","buttons":["אישור הגעה"],"chat":"בר המצווה של איתי"},{"ev":"bar_mitzvah","evLabel":"בר מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"קצר וברור","text":"היי משפחת לוי!\n\nנשמח לקבל מכם אישור הגעה לבר המצווה ❤️","buttons":["אישור הגעה"],"chat":"בר המצווה של איתי"},{"ev":"bar_mitzvah","evLabel":"בר מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מזמין","text":"היי משפחת לוי ❤️\n\nנשמח שתהיו איתנו ונחגוג יחד את בר המצווה.","buttons":["אישור הגעה"],"chat":"בר המצווה של איתי"},{"ev":"bar_mitzvah","evLabel":"בר מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"רגוע וקליל","text":"היי משפחת לוי 🥳\n\nנשמח לדעת אם אתם מצטרפים אלינו לבר המצווה.","buttons":["אישור הגעה"],"chat":"בר המצווה של איתי"},{"ev":"bar_mitzvah","evLabel":"בר מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מצפים לראות אתכם","text":"היי משפחת לוי ❤️\n\nנשמח לראות אתכם איתנו ביום המיוחד הזה.","buttons":["אישור הגעה"],"chat":"בר המצווה של איתי"},{"ev":"bar_mitzvah","evLabel":"בר מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מנומס וחם","text":"היי משפחת לוי 😊\n\nנשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לבר המצווה.\n\nתודה ❤️","buttons":["אישור הגעה"],"chat":"בר המצווה של איתי"},{"ev":"bar_mitzvah","evLabel":"בר מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"ישיר","text":"היי משפחת לוי ❤️\n\nנשמח לדעת אם אתם איתנו בבר המצווה.","buttons":["אישור הגעה"],"chat":"בר המצווה של איתי"},{"ev":"bar_mitzvah","evLabel":"בר מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"נערכים לקראת","text":"היי משפחת לוי!\n\nנשמח לדעת אם אתם מגיעים לחגוג איתנו.","buttons":["אישור הגעה"],"chat":"בר המצווה של איתי"},{"ev":"bar_mitzvah","evLabel":"בר מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מצפים לתשובה","text":"היי משפחת לוי ❤️\n\nנשמח לקבל מכם תשובה לגבי ההגעה לבר המצווה.","buttons":["אישור הגעה"],"chat":"בר המצווה של איתי"},{"ev":"bar_mitzvah","evLabel":"בר מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"חם ומודה","text":"היי משפחת לוי 😊\n\nנשמח שתצטרפו אלינו לחגוג את בר המצווה.\n\nתודה ❤️","buttons":["אישור הגעה"],"chat":"בר המצווה של איתי"},{"ev":"bat_mitzvah","evLabel":"בת מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"פשוט וחם","text":"היי משפחת לוי ❤️\n\nנשמח שתעדכנו אותנו אם אתם מגיעים לבת המצווה.","buttons":["אישור הגעה"],"chat":"בת המצווה של רוני"},{"ev":"bat_mitzvah","evLabel":"בת מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"אישי ורגוע","text":"היי משפחת לוי 😊\n\nנשמח לדעת אם תוכלו להיות איתנו בבת המצווה.","buttons":["אישור הגעה"],"chat":"בת המצווה של רוני"},{"ev":"bat_mitzvah","evLabel":"בת מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"תזכורת עדינה","text":"היי משפחת לוי ❤️\n\nקיבלתם את ההזמנה שלנו?\nנשמח שתעדכנו אותנו אם אתם מצטרפים.","buttons":["אישור הגעה"],"chat":"בת המצווה של רוני"},{"ev":"bat_mitzvah","evLabel":"בת מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"קצר וברור","text":"היי משפחת לוי!\n\nנשמח לקבל מכם אישור הגעה לבת המצווה ❤️","buttons":["אישור הגעה"],"chat":"בת המצווה של רוני"},{"ev":"bat_mitzvah","evLabel":"בת מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מזמין","text":"היי משפחת לוי ❤️\n\nנשמח שתהיו איתנו ונחגוג יחד את בת המצווה.","buttons":["אישור הגעה"],"chat":"בת המצווה של רוני"},{"ev":"bat_mitzvah","evLabel":"בת מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"רגוע וקליל","text":"היי משפחת לוי 🥰\n\nנשמח לדעת אם אתם מצטרפים אלינו לבת המצווה.","buttons":["אישור הגעה"],"chat":"בת המצווה של רוני"},{"ev":"bat_mitzvah","evLabel":"בת מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מצפים לראות אתכם","text":"היי משפחת לוי ❤️\n\nנשמח לראות אתכם איתנו ביום המיוחד הזה.","buttons":["אישור הגעה"],"chat":"בת המצווה של רוני"},{"ev":"bat_mitzvah","evLabel":"בת מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מנומס וחם","text":"היי משפחת לוי 😊\n\nנשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לבת המצווה.\n\nתודה ❤️","buttons":["אישור הגעה"],"chat":"בת המצווה של רוני"},{"ev":"bat_mitzvah","evLabel":"בת מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"ישיר","text":"היי משפחת לוי ❤️\n\nנשמח לדעת אם אתם איתנו בבת המצווה.","buttons":["אישור הגעה"],"chat":"בת המצווה של רוני"},{"ev":"bat_mitzvah","evLabel":"בת מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"נערכים לקראת","text":"היי משפחת לוי!\n\nנשמח לדעת אם אתם מגיעים לחגוג איתנו.","buttons":["אישור הגעה"],"chat":"בת המצווה של רוני"},{"ev":"bat_mitzvah","evLabel":"בת מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מצפים לתשובה","text":"היי משפחת לוי ❤️\n\nנשמח לקבל מכם תשובה לגבי ההגעה לבת המצווה.","buttons":["אישור הגעה"],"chat":"בת המצווה של רוני"},{"ev":"bat_mitzvah","evLabel":"בת מצווה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"חם ומודה","text":"היי משפחת לוי 😊\n\nנשמח שתצטרפו אלינו לחגוג את בת המצווה.\n\nתודה ❤️","buttons":["אישור הגעה"],"chat":"בת המצווה של רוני"},{"ev":"brit","evLabel":"ברית","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"פשוט וחם","text":"היי משפחת מזרחי ❤️\n\nנשמח שתעדכנו אותנו אם אתם מגיעים לברית.","buttons":["אישור הגעה"],"chat":"הברית של משפחת מזרחי"},{"ev":"brit","evLabel":"ברית","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"אישי ורגוע","text":"היי משפחת מזרחי 😊\n\nנשמח לדעת אם תוכלו להיות איתנו ולחגוג את הרגע המיוחד.","buttons":["אישור הגעה"],"chat":"הברית של משפחת מזרחי"},{"ev":"brit","evLabel":"ברית","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"תזכורת עדינה","text":"היי משפחת מזרחי ❤️\n\nקיבלתם את ההזמנה שלנו?\nנשמח שתעדכנו אותנו אם אתם מגיעים.","buttons":["אישור הגעה"],"chat":"הברית של משפחת מזרחי"},{"ev":"brit","evLabel":"ברית","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"קצר וברור","text":"היי משפחת מזרחי!\n\nנשמח לקבל מכם אישור הגעה לברית ❤️","buttons":["אישור הגעה"],"chat":"הברית של משפחת מזרחי"},{"ev":"brit","evLabel":"ברית","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מזמין","text":"היי משפחת מזרחי ❤️\n\nנשמח שתהיו איתנו באירוע ונשמח לדעת אם אתם מגיעים.","buttons":["אישור הגעה"],"chat":"הברית של משפחת מזרחי"},{"ev":"brit","evLabel":"ברית","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"רגוע וקליל","text":"היי משפחת מזרחי 🥰\n\nנשמח לדעת אם אתם מצטרפים אלינו.","buttons":["אישור הגעה"],"chat":"הברית של משפחת מזרחי"},{"ev":"brit","evLabel":"ברית","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מצפים לראות אתכם","text":"היי משפחת מזרחי ❤️\n\nנשמח לראות אתכם איתנו בברית.","buttons":["אישור הגעה"],"chat":"הברית של משפחת מזרחי"},{"ev":"brit","evLabel":"ברית","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מנומס וחם","text":"היי משפחת מזרחי 😊\n\nנשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם.\n\nתודה ❤️","buttons":["אישור הגעה"],"chat":"הברית של משפחת מזרחי"},{"ev":"brit","evLabel":"ברית","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"ישיר","text":"היי משפחת מזרחי ❤️\n\nנשמח לדעת אם אתם איתנו באירוע.","buttons":["אישור הגעה"],"chat":"הברית של משפחת מזרחי"},{"ev":"brit","evLabel":"ברית","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"נערכים לקראת","text":"היי משפחת מזרחי!\n\nאנחנו מתחילים להיערך לקראת האירוע, ונשמח לדעת אם אתם מגיעים.","buttons":["אישור הגעה"],"chat":"הברית של משפחת מזרחי"},{"ev":"brit","evLabel":"ברית","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מצפים לתשובה","text":"היי משפחת מזרחי ❤️\n\nנשמח לקבל מכם תשובה לגבי ההגעה לברית.","buttons":["אישור הגעה"],"chat":"הברית של משפחת מזרחי"},{"ev":"brit","evLabel":"ברית","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"חם ומודה","text":"היי משפחת מזרחי 😊\n\nנשמח שתצטרפו אלינו לרגע המיוחד הזה.\n\nתודה ❤️","buttons":["אישור הגעה"],"chat":"הברית של משפחת מזרחי"},{"ev":"brita","evLabel":"בריתה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"פשוט וחם","text":"היי משפחת מזרחי ❤️\n\nנשמח שתעדכנו אותנו אם אתם מגיעים לבריתה.","buttons":["אישור הגעה"],"chat":"הבריתה של משפחת מזרחי"},{"ev":"brita","evLabel":"בריתה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"אישי ורגוע","text":"היי משפחת מזרחי 😊\n\nנשמח לדעת אם תוכלו להיות איתנו בבריתה.","buttons":["אישור הגעה"],"chat":"הבריתה של משפחת מזרחי"},{"ev":"brita","evLabel":"בריתה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"תזכורת עדינה","text":"היי משפחת מזרחי ❤️\n\nקיבלתם את ההזמנה שלנו?\nנשמח שתעדכנו אותנו אם אתם מצטרפים.","buttons":["אישור הגעה"],"chat":"הבריתה של משפחת מזרחי"},{"ev":"brita","evLabel":"בריתה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"קצר וברור","text":"היי משפחת מזרחי!\n\nנשמח לקבל מכם אישור הגעה לבריתה ❤️","buttons":["אישור הגעה"],"chat":"הבריתה של משפחת מזרחי"},{"ev":"brita","evLabel":"בריתה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מזמין","text":"היי משפחת מזרחי ❤️\n\nנשמח שתהיו איתנו ונכיר לכם את הקטנה שלנו.","buttons":["אישור הגעה"],"chat":"הבריתה של משפחת מזרחי"},{"ev":"brita","evLabel":"בריתה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"רגוע וקליל","text":"היי משפחת מזרחי 🥰\n\nנשמח לדעת אם אתם מצטרפים אלינו לבריתה.","buttons":["אישור הגעה"],"chat":"הבריתה של משפחת מזרחי"},{"ev":"brita","evLabel":"בריתה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מצפים לראות אתכם","text":"היי משפחת מזרחי ❤️\n\nנשמח לראות אתכם איתנו בבריתה.","buttons":["אישור הגעה"],"chat":"הבריתה של משפחת מזרחי"},{"ev":"brita","evLabel":"בריתה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מנומס וחם","text":"היי משפחת מזרחי 😊\n\nנשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם.\n\nתודה ❤️","buttons":["אישור הגעה"],"chat":"הבריתה של משפחת מזרחי"},{"ev":"brita","evLabel":"בריתה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"ישיר","text":"היי משפחת מזרחי ❤️\n\nנשמח לדעת אם אתם איתנו בבריתה.","buttons":["אישור הגעה"],"chat":"הבריתה של משפחת מזרחי"},{"ev":"brita","evLabel":"בריתה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"נערכים לקראת","text":"היי משפחת מזרחי!\n\nנשמח לדעת אם אתם מגיעים לבריתה שלנו.","buttons":["אישור הגעה"],"chat":"הבריתה של משפחת מזרחי"},{"ev":"brita","evLabel":"בריתה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מצפים לתשובה","text":"היי משפחת מזרחי ❤️\n\nנשמח לקבל מכם תשובה לגבי ההגעה לבריתה.","buttons":["אישור הגעה"],"chat":"הבריתה של משפחת מזרחי"},{"ev":"brita","evLabel":"בריתה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"חם ומודה","text":"היי משפחת מזרחי 😊\n\nנשמח שתצטרפו אלינו לרגע המיוחד הזה.\n\nתודה ❤️","buttons":["אישור הגעה"],"chat":"הבריתה של משפחת מזרחי"},{"ev":"business","evLabel":"אירוע עסקי","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"רשמי","text":"שלום נועה אברהם,\n\nנשמח לדעת אם תוכלו להשתתף באירוע שלנו.","buttons":["אישור הגעה"],"chat":"כנס הלקוחות השנתי"},{"ev":"business","evLabel":"אירוע עסקי","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מארחים","text":"היי נועה אברהם,\n\nנשמח לארח אתכם באירוע ונשמח לקבל את אישור ההגעה שלכם.","buttons":["אישור הגעה"],"chat":"כנס הלקוחות השנתי"},{"ev":"business","evLabel":"אירוע עסקי","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"ישיר","text":"שלום נועה אברהם,\n\nנשמח לדעת אם אתם מתכננים להגיע לאירוע.","buttons":["אישור הגעה"],"chat":"כנס הלקוחות השנתי"},{"ev":"business","evLabel":"אירוע עסקי","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מבקש עדכון","text":"היי נועה אברהם,\n\nנשמח אם תוכלו לעדכן אותנו לגבי השתתפותכם באירוע.","buttons":["אישור הגעה"],"chat":"כנס הלקוחות השנתי"},{"ev":"business","evLabel":"אירוע עסקי","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מזמין","text":"שלום נועה אברהם,\n\nנשמח לראות אתכם באירוע שלנו.","buttons":["אישור הגעה"],"chat":"כנס הלקוחות השנתי"},{"ev":"business","evLabel":"אירוע עסקי","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"קצר","text":"היי נועה אברהם,\n\nנשמח לדעת אם תוכלו להצטרף אלינו לאירוע.","buttons":["אישור הגעה"],"chat":"כנס הלקוחות השנתי"},{"ev":"business","evLabel":"אירוע עסקי","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מנומס ומודה","text":"שלום נועה אברהם,\n\nנשמח לקבל מכם עדכון לגבי ההגעה לאירוע.\n\nתודה.","buttons":["אישור הגעה"],"chat":"כנס הלקוחות השנתי"},{"ev":"business","evLabel":"אירוע עסקי","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"אישי","text":"היי נועה אברהם,\n\nנשמח אם תוכלו להיות איתנו באירוע.","buttons":["אישור הגעה"],"chat":"כנס הלקוחות השנתי"},{"ev":"business","evLabel":"אירוע עסקי","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"רשמי ומצפה","text":"שלום נועה אברהם,\n\nנשמח לדעת אם נוכל לצפות לראותכם באירוע.","buttons":["אישור הגעה"],"chat":"כנס הלקוחות השנתי"},{"ev":"business","evLabel":"אירוע עסקי","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מבקש אישור","text":"היי נועה אברהם,\n\nנשמח לקבל את אישור ההגעה שלכם לאירוע.","buttons":["אישור הגעה"],"chat":"כנס הלקוחות השנתי"},{"ev":"business","evLabel":"אירוע עסקי","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מבקש תשובה","text":"שלום נועה אברהם,\n\nנשמח לדעת אם אתם מצטרפים אלינו לאירוע.","buttons":["אישור הגעה"],"chat":"כנס הלקוחות השנתי"},{"ev":"business","evLabel":"אירוע עסקי","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מארחים ומחכים","text":"היי נועה אברהם,\n\nנשמח לארח אתכם ומחכים לדעת אם תוכלו להגיע.","buttons":["אישור הגעה"],"chat":"כנס הלקוחות השנתי"},{"ev":"henna","evLabel":"חינה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"פשוט וחם","text":"היי דנה כהן ❤️\n\nנשמח שתעדכנו אותנו אם אתם מגיעים לחינה שלנו.","buttons":["אישור הגעה"],"chat":"החינה של יונתן ושירה"},{"ev":"henna","evLabel":"חינה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"אישי ורגוע","text":"היי דנה כהן 😊\n\nנשמח לדעת אם תוכלו להיות איתנו בחינה.","buttons":["אישור הגעה"],"chat":"החינה של יונתן ושירה"},{"ev":"henna","evLabel":"חינה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"תזכורת עדינה","text":"היי דנה כהן ❤️\n\nקיבלתם את ההזמנה שלנו?\nנשמח שתעדכנו אותנו אם אתם מצטרפים.","buttons":["אישור הגעה"],"chat":"החינה של יונתן ושירה"},{"ev":"henna","evLabel":"חינה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"קצר וברור","text":"היי דנה כהן!\n\nנשמח לקבל מכם אישור הגעה לחינה ❤️","buttons":["אישור הגעה"],"chat":"החינה של יונתן ושירה"},{"ev":"henna","evLabel":"חינה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מזמין","text":"היי דנה כהן ❤️\n\nאנחנו מזמינים אתכם להיות איתנו בחינה, ונשמח לדעת אם אתם מגיעים.","buttons":["אישור הגעה"],"chat":"החינה של יונתן ושירה"},{"ev":"henna","evLabel":"חינה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"רגוע וקליל","text":"היי דנה כהן 🥰\n\nנשמח לדעת אם אתם מצטרפים אלינו לחינה.","buttons":["אישור הגעה"],"chat":"החינה של יונתן ושירה"},{"ev":"henna","evLabel":"חינה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מצפים לראות אתכם","text":"היי דנה כהן ❤️\n\nנשמח לדעת אם נוכל לצפות לראות אתכם איתנו בחינה.","buttons":["אישור הגעה"],"chat":"החינה של יונתן ושירה"},{"ev":"henna","evLabel":"חינה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מנומס וחם","text":"היי דנה כהן 😊\n\nנשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לחינה.\n\nתודה ❤️","buttons":["אישור הגעה"],"chat":"החינה של יונתן ושירה"},{"ev":"henna","evLabel":"חינה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"ישיר","text":"היי דנה כהן ❤️\n\nנשמח לדעת אם אתם איתנו בחינה.","buttons":["אישור הגעה"],"chat":"החינה של יונתן ושירה"},{"ev":"henna","evLabel":"חינה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"נערכים לקראת","text":"היי דנה כהן!\n\nאנחנו מתחילים להיערך לקראת החינה, ונשמח לדעת אם אתם מגיעים.","buttons":["אישור הגעה"],"chat":"החינה של יונתן ושירה"},{"ev":"henna","evLabel":"חינה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מצפים לתשובה","text":"היי דנה כהן ❤️\n\nנשמח לקבל מכם תשובה לגבי ההגעה לחינה שלנו.","buttons":["אישור הגעה"],"chat":"החינה של יונתן ושירה"},{"ev":"henna","evLabel":"חינה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"חם ומודה","text":"היי דנה כהן 😊\n\nנשמח שתצטרפו אלינו לחינה.\n\nתודה ❤️","buttons":["אישור הגעה"],"chat":"החינה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"פשוט וחם","text":"היי דנה כהן ❤️\n\nנשמח שתעדכנו אותנו אם אתם מגיעים לחתונה שלנו.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"אישי ורגוע","text":"היי דנה כהן 😊\n\nנשמח לדעת אם תוכלו להיות איתנו ביום המיוחד שלנו.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"תזכורת עדינה","text":"היי דנה כהן ❤️\n\nקיבלתם את ההזמנה שלנו?\nנשמח שתעדכנו אותנו אם אתם מגיעים.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"קצר וברור","text":"היי דנה כהן!\n\nנשמח לקבל מכם תשובה לגבי ההגעה לחתונה ❤️","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מזמין","text":"היי דנה כהן ❤️\n\nאנחנו מזמינים אתכם לחגוג איתנו, ונשמח לדעת אם אתם מגיעים.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"קצר מאוד","text":"היי דנה כהן 😊\n\nנשמח לדעת אם אתם מצטרפים אלינו לחתונה.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מצפים לראות אתכם","text":"היי דנה כהן ❤️\n\nאנחנו רוצים לדעת אם נוכל לצפות לראות אתכם איתנו בחתונה.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מנומס וחם","text":"היי דנה כהן!\n\nנשמח אם תוכלו לעדכן אותנו לגבי ההגעה שלכם לחתונה.\n\nתודה ❤️","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"רגוע וקליל","text":"היי דנה כהן 🥰\n\nנשמח לדעת אם אתם איתנו.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"נערכים לקראת","text":"היי דנה כהן ❤️\n\nאנחנו רוצים להתחיל להיערך לקראת החתונה, ונשמח לדעת אם אתם מגיעים.","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"מצפים לתשובה","text":"היי דנה כהן 😊\n\nנשמח לקבל מכם אישור הגעה לחתונה שלנו.\n\nמחכים לתשובה ❤️","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"},{"ev":"wedding","evLabel":"חתונה","ty":"rsvp_request","tyLabel":"בקשת אישור ראשונה","tone":"חם ומודה","text":"היי דנה כהן ❤️\n\nנשמח לדעת אם תוכלו להגיע ולחגוג איתנו.\n\nתודה רבה!","buttons":["אישור הגעה"],"chat":"החתונה של יונתן ושירה"}]};
-    </script>
-    <script>
       (function () {
         var evChips = document.getElementById('ev-axis');
         var tyChips = document.getElementById('ty-axis');
         var stage = document.getElementById('stage');
         var live = document.getElementById('msg-live');
         if (!evChips || !stage) return;
+
+        // מקור הנתונים היחיד: הרשימה שכבר נמצאת ב-HTML.
+        var nodes = [].slice.call(document.querySelectorAll('#msg-source .msg-item'));
+        if (!nodes.length) return;
+        var MSGS = { events: [], items: nodes.map(function (n) {
+          return {
+            ev: n.dataset.ev, evLabel: n.dataset.evLabel,
+            ty: n.dataset.ty, tyLabel: n.dataset.tyLabel,
+            tone: n.dataset.tone, chat: n.dataset.chat,
+            buttons: n.dataset.buttons ? n.dataset.buttons.split('|') : [],
+            text: n.querySelector('.msg-item-text').textContent,
+          };
+        }) };
+        MSGS.items.forEach(function (m) {
+          if (!MSGS.events.some(function (e) { return e.key === m.ev; })) {
+            MSGS.events.push({ key: m.ev, label: m.evLabel });
+          }
+        });
+        // מרגע שה-JS פעיל, הרשימה הגולמית מוסתרת — המוקאפ מחליף אותה.
+        document.getElementById('msg-source').hidden = true;
 
         var state = { ev: MSGS.events[0].key, ty: null, i: 0 };
 
