@@ -97,7 +97,7 @@ def test_locked_fields_are_blocked() -> None:
     ]:
         r = _patch(api, **{field: value})
         assert r.status_code == 409, f"{field} היה אמור להיחסם, קיבלנו {r.status_code}"
-        assert "נוהל דחייה" in r.json()["detail"], r.text
+        assert "שינוי מועד" in r.json()["detail"], r.text
 
     ev = _event(api)
     assert ev["event_date"] == "2026-11-12", "תאריך השתנה למרות הנעילה"
