@@ -757,7 +757,7 @@ function App() {
             {page === 'gifts' && giftsEligible && <GiftsPage />}
             {page === 'finance' && (
               <Suspense fallback={bootFallback}>
-                <FinancePage />
+                <FinancePage onNavigate={goTo} />
               </Suspense>
             )}
           </ErrorBoundary>

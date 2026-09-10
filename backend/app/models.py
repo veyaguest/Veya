@@ -172,6 +172,17 @@ class Event(Base):
     # ותשובות הגעה מארכיון (``GuestCycleRsvp``) משויכות למחזור שבו נוצרו, כך
     # שמחזור חדש מתחיל נקי בממשק **בלי שנמחק שום נתון** מהמחזור הקודם.
     # ראו ``app/postponement_service.py`` ו-``app/event_cycle.py``.
+    #: כמה אנשים **הגיעו בפועל** לאירוע. ``None`` = טרם הוזן.
+    #:
+    #: מספר אחד ולא סימון אדם-אדם: אף זוג לא יעבור על 600 שורות ביום
+    #: שאחרי. ברגע שהוא מוזן הוא מחליף את מספר המגיעים מאישורי ההגעה
+    #: בכל החישוב הכספי — **הנוסחה לא משתנה, רק הקלט שלה**. עד אז
+    #: העלות מוצגת כ"משוערת".
+    #:
+    #: ⚠️ **אינו משנה ``rsvp_status`` של אף מוזמן.** אישורי ההגעה הם ציר
+    #: מידע נפרד, ומספר כולל אינו יודע מי מבין המאשרים לא הגיע.
+    actual_attendance: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
     cycle_number: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
@@ -1193,6 +1204,14 @@ class EventExpense(Base):
         Integer, default=0, server_default="0", nullable=False
     )
 
+    #: מנות רזרבה שסוכמו עם הספק — כמות שאפשר להוסיף ביום האירוע.
+    #:
+    #: **אינה הוצאה ואינה נכנסת לשום סכום.** רזרבה היא זכות להזמין עוד,
+    #: לא התחייבות לשלם עליה: זוג שסיכם 50 מנות רזרבה ולא ניצל אותן לא
+    #: שילם עליהן שקל. היא מוצגת לצד ההתחייבות כי היא עונה על השאלה
+    #: "מה קורה אם יגיעו יותר" — ותו לא.
+    reserve_quantity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
     #: יומן התשלומים של השורה. ``lazy="selectin"`` ולא ``"select"``: מסך
     #: העלות טוען עשרות שורות בבת אחת, ושאילתה לכל אחת הייתה N+1 מול
     #: Postgres מרוחק.
@@ -1323,6 +1342,16 @@ class GiftEnvelope(Base):
     #: הנוסף הוא לתצוגה ("רוני ושחר") ולא לחשבון. פיצול סכום היה יוצר
     #: שני מספרים שסכומם חייב להישאר שווה למקור, וזה מקור באגים.
     shared_guest_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+
+    #: נותן מתנה **שאינו ברשימת המוזמנים** — שכן, קולגה, מישהו שהגיע עם
+    #: חבר. שדה טקסט ולא מוזמן חדש, ובכוונה: הוספתו לרשימת המוזמנים
+    #: הייתה משנה את מספר המוזמנים, את אחוזי אישורי ההגעה ואת ההושבה —
+    #: שלושה מספרים שאין להם שום קשר למתנה שהתקבלה.
+    #:
+    #: שלושת המצבים של מעטפה: ``guest_id`` (מוזמן), ``external_name``
+    #: (חיצוני), או שניהם ריקים (טרם זוהתה).
+    external_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    external_phone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     #: מי הזין. לאירוע בניהול משותף זו התשובה ל"מי ספר את זה?".

@@ -1,6 +1,6 @@
 """סכימות Pydantic — ולידציה של קלט/פלט ל-API של המוזמנים."""
 import re
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 from typing import Literal
@@ -2317,6 +2317,8 @@ class ExpenseWrite(BaseModel):
     committed_quantity: Optional[int] = Field(default=None, ge=0)
     #: מינימום כספי מובטח בחוזה, באגורות.
     min_total_agorot: Optional[int] = Field(default=None, ge=0)
+    #: מנות רזרבה מול הספק. **אינה נכנסת לשום חישוב** — ראו המודל.
+    reserve_quantity: Optional[int] = Field(default=None, ge=0)
     note: Optional[str] = Field(default=None, max_length=500)
     #: שם הספק. טקסט חופשי — ניהול ספקים הוא מוצר אחר.
     vendor: str = Field(default="", max_length=120)
@@ -2339,6 +2341,52 @@ class ExpenseWrite(BaseModel):
         return trimmed
 
 
+#: מקדמה או תשלום. ההבחנה לתצוגה ולדוח בלבד — שניהם נספרים אותו דבר.
+PaymentKind = Literal["advance", "payment"]
+
+
+class PaymentWrite(BaseModel):
+    """תשלום אחד על חשבון שורת הוצאה.
+
+    **הסכום באגורות שלמות**, כמו בכל השרשרת הכספית. ``event_id`` אינו
+    מגיע מהלקוח — הוא נגזר בשרת מההוצאה, כדי שלא ניתן יהיה לרשום תשלום
+    לאירוע אחר על ידי שליחת מזהה אחר.
+    """
+
+    amount_agorot: int = Field(gt=0)
+    #: למי שולם. ריק ⇒ השרת ממלא את שם הספק של השורה.
+    payee: str = Field(default="", max_length=120)
+    #: ``YYYY-MM-DD``. ריק = לא נרשם תאריך, וזה מצב לגיטימי.
+    paid_on: str = Field(default="", max_length=10)
+    kind: PaymentKind = "payment"
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("paid_on")
+    @classmethod
+    def _valid_date(cls, v: str) -> str:
+        trimmed = (v or "").strip()
+        if not trimmed:
+            return ""
+        try:
+            date.fromisoformat(trimmed)
+        except ValueError:
+            raise ValueError("נשמח לתאריך בפורמט YYYY-MM-DD.")
+        return trimmed
+
+
+class PaymentRead(BaseModel):
+    id: int
+    expense_id: int
+    amount_agorot: int
+    amount_display: str
+    payee: str = ""
+    paid_on: str = ""
+    #: התאריך בניסוח שהזוג קורא ("12 באוגוסט"). ריק כשאין תאריך.
+    paid_on_display: str = ""
+    kind: PaymentKind = "payment"
+    note: Optional[str] = None
+
+
 class ExpenseRead(BaseModel):
     """שורת הוצאה + התוצאה שלה במצב האורחים הנוכחי.
 
@@ -2356,14 +2404,26 @@ class ExpenseRead(BaseModel):
     quantity: Optional[int] = None
     committed_quantity: Optional[int] = None
     min_total_agorot: Optional[int] = None
+    reserve_quantity: Optional[int] = None
     note: Optional[str] = None
     vendor: str = ""
     is_estimated: bool = True
     is_paid: bool = False
     paid_amount_agorot: int = 0
-    #: כמה שולם בפועל על השורה — עלותה המלאה כשסומן "שולם", המקדמה
-    #: כשיש מקדמה, ו-0 כשטרם שולם. נגזר ב-``finance.paid_for_line``.
+    #: כמה שולם בפועל על השורה — סכום יומן התשלומים, חתוך לעלות השורה.
+    #: נגזר ב-``finance.paid_for_line``; המסך לא מחבר תשלומים בעצמו.
+    paid_agorot: int = 0
     paid_display: str = ""
+    #: עלות השורה פחות מה ששולם. לעולם לא שלילי.
+    remaining_agorot: int = 0
+    remaining_display: str = ""
+    #: סכום היומן **בלי חיתוך**. שווה ל-``paid_agorot`` ברוב המקרים;
+    #: גדול ממנו כשנרשמו תשלומים מעל עלות ההוצאה. המסך מסביר את הפער
+    #: במקום להציג שני מספרים שלא מסתדרים.
+    payments_total_agorot: int = 0
+    payments_total_display: str = ""
+    #: יומן התשלומים של השורה, לפי תאריך.
+    payments: list["PaymentRead"] = []
     sort_order: int = 0
 
     #: העלות בפועל של השורה.
@@ -2435,6 +2495,8 @@ class CommitmentRead(BaseModel):
     total_display: str
     min_total_agorot: Optional[int] = None
     min_total_applied: bool = False
+    #: מנות רזרבה שסוכמו — **מידע ולא הוצאה**. ראו ההסבר במודל.
+    reserve_quantity: Optional[int] = None
 
 
 class ExpenseCategoryTotalRead(BaseModel):
@@ -2516,6 +2578,33 @@ class RsvpSnapshotRead(BaseModel):
     maybe_guests: int
 
 
+class AttendanceRead(BaseModel):
+    """מי אישר, כמה באמת הגיעו, ומה זה אומר על החישוב.
+
+    שלוש עובדות שהמסך צריך כדי לדעת אם להציג "עלות משוערת" או "עלות
+    האירוע", ומתי להציע לדייק את רשימת המוזמנים.
+    """
+
+    #: כמה אנשים אישרו הגעה (מ-``effective_seats``, אותו מקור כמו ההושבה).
+    confirmed_people: int = 0
+    #: כמה הגיעו בפועל. ``None`` = טרם הוזן.
+    actual: Optional[int] = None
+    #: ``True`` כשהוזן מספר בפועל — ואז העלות סופית ולא משוערת.
+    is_final: bool = False
+    #: אישרו ולא הגיעו. ``None`` כשאין מספר בפועל, 0 כשלא היה פער.
+    no_show: Optional[int] = None
+    #: הגיעו מעבר למי שאישר. ``None`` כשאין מספר בפועל.
+    extra: Optional[int] = None
+    #: האם האירוע כבר עבר — הרגע שבו יש טעם לשאול "כמה הגיעו".
+    event_passed: bool = False
+
+
+class AttendanceWrite(BaseModel):
+    """``None`` מנקה את המספר ומחזיר את החישוב לאישורי ההגעה."""
+
+    actual_attendance: Optional[int] = Field(default=None, ge=0)
+
+
 class GiftEntryRead(BaseModel):
     """שורת מתנה אחת — מעטפה או אשראי, באותה רשימה."""
 
@@ -2533,6 +2622,9 @@ class GiftEntryRead(BaseModel):
     created_at: datetime
     #: מתנה משותפת — שמות המוזמנים הנוספים. הסכום אינו מפוצל ביניהם.
     shared_names: list[str] = []
+    #: נותן שאינו ברשימת המוזמנים. ``guest_name`` מחזיק את שמו.
+    is_external: bool = False
+    external_phone: str = ""
     status: Optional[str] = None
 
 
@@ -2549,6 +2641,10 @@ class EnvelopeWrite(BaseModel):
     guest_id: Optional[int] = None
     #: מתנה משותפת — מוזמנים נוספים מעבר ל-``guest_id``.
     shared_guest_ids: list[int] = []
+    #: נותן שאינו ברשימת המוזמנים. תקף רק כש-``guest_id`` ריק — מוזמן
+    #: שכבר ברשימה אינו "חיצוני", והשרת מתעלם מהשדה במקרה כזה.
+    external_name: str = Field(default="", max_length=120)
+    external_phone: str = Field(default="", max_length=40)
     note: Optional[str] = Field(default=None, max_length=500)
 
 
@@ -2577,6 +2673,10 @@ class GiftIncomeRead(BaseModel):
     #: ``None`` כשחלק מהתמונה חסום. סכום חלקי שמוצג כ"סה״כ" הוא מספר שקרי.
     total_agorot: Optional[int] = None
     total_display: str = ""
+    #: מנותנים שאינם ברשימת המוזמנים — נספר בתוך המעטפות, ומוצג בנפרד.
+    external_agorot: int = 0
+    external_display: str = ""
+    external_count: int = 0
     unidentified_count: int = 0
     unidentified_agorot: int = 0
     unidentified_display: str = ""
@@ -2645,6 +2745,9 @@ class GiftBreakdownRead(BaseModel):
     #: מעטפות בלי שיוך — לא ניתן לזקוף אותן לאף צד.
     unattributed_agorot: int = 0
     unattributed_display: str = ""
+    #: מנותנים חיצוניים — צד שלישי, לא "לא משויך".
+    from_external_agorot: int = 0
+    from_external_display: str = ""
     guests_counted: int = 0
     guests_not_counted: int = 0
 
@@ -2657,11 +2760,15 @@ class FinanceReportRead(BaseModel):
     """
 
     event_title: str = ""
+    #: סוג האירוע בעברית ("חתונה", "אירוע ברית") — לכותרת הדוח. מגיע
+    #: מהלקסיקון ולא נכתב קשיח, אחרת ברית הייתה מקבלת כותרת חתונתית.
+    event_type_label: str = ""
     event_date: str = ""
     venue_name: str = ""
     generated_at: datetime
 
     rsvp: RsvpSnapshotRead
+    attendance: AttendanceRead
     cost: CostSummaryRead
     income: GiftIncomeRead
     breakdown: GiftBreakdownRead
@@ -2673,6 +2780,8 @@ class FinanceReportRead(BaseModel):
     guests: list[GuestGiftRowRead] = []
     #: מעטפות שלא שויכו לאף מוזמן, כדי שלא ייעלמו מהדוח.
     unidentified: list[GiftEntryRead] = []
+    #: נותני מתנות שאינם ברשימת המוזמנים — שורות משלהם בדוח.
+    external: list[GiftEntryRead] = []
 
 
 class FinanceSummaryRead(BaseModel):
@@ -2684,6 +2793,7 @@ class FinanceSummaryRead(BaseModel):
     """
 
     rsvp: RsvpSnapshotRead
+    attendance: AttendanceRead
     cost: CostSummaryRead
     income: GiftIncomeRead
     breakdown: GiftBreakdownRead

@@ -1352,6 +1352,10 @@ export const strings = {
     // יצא מהכיס, וכמה עוד לפניהם. הפילוח החשבונאי (קבוע מול משתנה)
     // ירד מכאן לסיכום — הוא נכון, אבל הוא לא שאלה של זוג.
     totalCostLabel: 'סה״כ עלות',
+    // לפני שהוזן מספר המגיעים בפועל, כל מספר במסך נשען על אישורי הגעה
+    // שעוד יזוזו. אומרים את זה בכותרת ולא בהערת שוליים.
+    estimatedCostLabel: 'עלות משוערת',
+    estimatedCostNote: 'מחושבת לפי אישורי ההגעה כרגע. אחרי האירוע, כשתזינו כמה הגיעו, נעדכן לעלות הסופית.',
     paidProgress: (paid: string, total: string) => `${paid} מתוך ${total} כבר שולמו`,
     nothingPaidYet: 'עוד לא סומן תשלום',
     fixedLabel: 'הוצאות קבועות',
@@ -1382,6 +1386,33 @@ export const strings = {
     // המפנה שמשנה את כל החשבון.
     nextPersonOverBody: (committed: number) =>
       `עברתם את ההתחייבות (${committed}), ולכן כל אדם נוסף נספר במחיר מלא.`,
+
+    // ---- כמה הגיעו בפועל ----
+    // §9: מספר אחד ולא סימון אדם-אדם. אף זוג לא יעבור על 600 שורות
+    // ביום שאחרי, והמספר הכולל הוא מה שהאולם מחייב לפיו.
+    attendanceTitle: 'כמה אורחים הגיעו בפועל?',
+    attendanceBody: 'המספר הזה קובע את העלות הסופית של המקום ואת הדוח.',
+    attendanceLabel: 'הגיעו בפועל',
+    attendanceSave: 'שמירה',
+    attendanceEdit: 'שינוי',
+    attendanceClear: 'חזרה לחישוב לפי אישורי ההגעה',
+    attendanceConfirmedNote: (n: number) => `${n} אישרו הגעה.`,
+    // אחרי שהוזן — שורה שקטה עם הפער.
+    attendanceFinal: (actual: number) => `${actual} הגיעו בפועל`,
+    attendanceNoShow: (n: number) =>
+      n === 1 ? 'אדם אחד אישר ולא הגיע' : `${n} אנשים אישרו ולא הגיעו`,
+    attendanceExtra: (n: number) =>
+      n === 1 ? 'אדם אחד הגיע מעבר למי שאישר' : `${n} אנשים הגיעו מעבר למי שאישר`,
+
+    // ---- המלצת הדיוק (§10) ----
+    // המלצה בלבד. VEYA לא משנה אישורי הגעה לבד — מספר כולל לא יודע
+    // **מי** לא הגיע, וניחוש כאן היה דורס נתון שהמוזמן מסר בעצמו.
+    reconcileTitle: 'רוצים לדייק את הדוח?',
+    reconcileBody: (n: number) =>
+      `לפי אישורי ההגעה, ${n} אנשים אישרו הגעה אך לא הגיעו בפועל. ` +
+      'אם אתם זוכרים מי מהם, אפשר לעדכן אותם ברשימת המוזמנים — וזה יעזור לנו להפיק דוח מדויק יותר.',
+    reconcileYes: 'כן, לעדכן',
+    reconcileNo: 'לא עכשיו',
 
     // ---- ההתחייבות לאולם ----
     // האזור החשוב ביותר במסך לפני האירוע. שלושה מספרים זה מול זה, כי
@@ -1486,17 +1517,38 @@ export const strings = {
         ? `${attendees} אישרו הגעה — מעל ההתחייבות (${committed}), ולכן משלמים על ${attendees}.`
         : `${attendees} אישרו הגעה, והתחייבתם על ${committed} — משלמים על ${committed} גם אם יגיעו פחות.`,
     previewMinTotal: (amount: string) => `ואם המכפלה תצא נמוכה מ-${amount}, יחויב המינימום.`,
-    // ---- סטטוס תשלום ----
-    // שלושה מצבים ברורים במקום מתג. "שולם חלקית" הוא המצב שכל זוג
-    // מכיר — מקדמה לאולם — ועד היום לא היה לו מקום.
-    paymentStatusLabel: 'סטטוס תשלום',
-    paymentUnpaid: 'לא שולם',
-    paymentPartial: 'שולם חלקית',
+    // ---- תשלום ----
+    // בורר "לא שולם / חלקית / שולם" הוחלף ביומן תשלומים מלא. "שולם"
+    // נשאר כתג על שורת ההוצאה, ונגזר מהיומן ולא מדגל.
     paymentPaid: 'שולם',
     // התג על שורת ההוצאה. הסכום נאמר בתוכו — "שולם חלקית" לבדו משאיר
     // את השאלה "כמה?" ושולח לפתוח את השורה.
     partialBadge: (amount: string) => `שולם ${amount}`,
-    paidSoFarLabel: 'כמה שולם עד עכשיו?',
+
+    // ---- יומן התשלומים ----
+    // זוג משלם לאולם בשלוש פעימות ולצלם במקדמה ובתשלום. מספר אחד לא
+    // עונה על "מתי שילמנו לצלם ובכמה?", וזו בדיוק השאלה שנשאלת מול
+    // חשבונית. הניסוח כאן תיאורי לגמרי — אין "חובה", אין "טרם".
+    paymentsTitle: 'תשלומים',
+    paymentsEmpty: 'עוד לא נרשמו תשלומים על ההוצאה הזו.',
+    addPayment: '+ הוספת תשלום',
+    savePayment: 'שמירת התשלום',
+    paymentAmountLabel: 'כמה שולם?',
+    paymentDateLabel: 'מתי',
+    paymentPayeeLabel: 'למי שולם',
+    paymentPayeePlaceholder: 'מתמלא לפי הספק, אפשר לשנות',
+    paymentNotePlaceholder: 'למשל: במזומן',
+    // בהוספת הוצאה בלבד — קיצור דרך למי שמזין הוצאה ששילם עליה כבר.
+    prepaidLabel: 'כבר שילמתם משהו?',
+    prepaidHint: 'אפשר להשאיר ריק. תמיד אפשר להוסיף תשלומים אחר כך.',
+    // נרשמו תשלומים מעל עלות ההוצאה. מוסבר ולא מוסתר: הזוג רואה ביומן
+    // סכום אחד ובסיכום סכום אחר, וזו בדיוק השורה שמונעת את השאלה.
+    overpaidNote: (ledger: string, counted: string) =>
+      `נרשמו תשלומים בסך ${ledger} — יותר מעלות ההוצאה. בסיכום נספר ${counted}.`,
+    paymentAdvance: 'מקדמה',
+    paymentRegular: 'תשלום',
+    // בשורת ההוצאה: מה שנשאר, כשנשאר משהו. כשהכול שולם מוצג התג "שולם".
+    remainingBadge: (amount: string) => `נשאר ${amount}`,
     // ---- מה שמקופל ----
     moreDetails: 'ספק, הערה ופרטים נוספים',
     renameExpense: 'שינוי השם',
@@ -1518,6 +1570,12 @@ export const strings = {
     committedQuantityPlaceholder: 'למשל: 500',
     minTotalLabel: 'מינימום כספי בחוזה',
     minTotalHint: 'אם החוזה נוקב בסכום מינימלי ולא רק בכמות.',
+    // רזרבה — זכות להזמין עוד, לא התחייבות לשלם. הניסוח אומר את זה
+    // במפורש, כי "רזרבה" לבדה נשמעת כמו משהו שכבר משלמים עליו.
+    reserveLabel: 'מנות רזרבה',
+    reserveHint: 'כמה אפשר להוסיף ביום האירוע. לא נספרות בעלות — משלמים רק על מה שמוזמן בפועל.',
+    reserveFact: 'רזרבה',
+    reserveNote: (n: number) => `סוכמו ${n} מנות רזרבה — אפשר להוסיף אותן ביום האירוע, ומשלמים רק על מה שינוצל.`,
     // ---- ספק, מצב ותשלום ----
     vendorLabel: 'ספק',
     vendorPlaceholder: 'למשל: אבי — DJ',
@@ -1536,7 +1594,7 @@ export const strings = {
     notePlaceholder: 'למשל: כולל מע״מ',
     categoryLabel: 'קטגוריה',
     chooseItem: 'מה מוסיפים?',
-    customItem: 'משהו אחר',
+    customItem: '+ הוצאה אחרת',
 
     expensesEmptyTitle: 'עוד לא הוספתם הוצאות',
     expensesEmptyBody:
@@ -1572,6 +1630,8 @@ export const strings = {
     countingTotalLabel: 'סה״כ מתנות',
     envelopesLabel: 'מעטפות',
     creditLabel: 'אשראי',
+    // בסיכום המתנות: הסכום הזה **כלול** במעטפות ואינו מתווסף להן.
+    externalLabel: 'מתוכן, לא מהרשימה',
     // הסכומים חסומים עד שפרטי קבלת המתנות מאושרים — בדיוק כמו במסך
     // המתנות באשראי. הניסוח מבטיח ולא מתנצל: הכסף לא נעלם.
     creditLockedNote: 'סכומי האשראי יופיעו כאן ברגע שפרטי קבלת המתנות יאושרו.',
@@ -1595,6 +1655,18 @@ export const strings = {
     envelopeUnknownBadge: 'לא מזוהה',
     envelopeUnknownHint: 'תמיד אפשר לחזור ולשייך אותה אחר כך.',
     envelopeSearchEmpty: 'לא מצאנו מוזמן בשם הזה',
+    // §13 — נותן מתנה שאינו ברשימת המוזמנים. שכן, קולגה, מישהו שהגיע
+    // עם חבר. **אינו נוסף לרשימת המוזמנים ואינו משנה אישורי הגעה** —
+    // אחרת מספר המוזמנים והאחוזים היו זזים בגלל מעטפה.
+    externalAdd: 'נתן מתנה ואינו ברשימה',
+    externalTitle: 'נותן מתנה שאינו ברשימת המוזמנים',
+    externalHint: 'נשמר כנותן מתנה בלבד — לא נוסף לרשימת המוזמנים ולא משנה אישורי הגעה.',
+    externalNameLabel: 'שם מלא',
+    externalNamePlaceholder: 'למשל: רונית מהעבודה',
+    externalPhoneLabel: 'טלפון',
+    externalPhoneOptional: 'אופציונלי',
+    externalBadge: 'לא מהרשימה',
+    externalBack: 'חזרה לחיפוש ברשימה',
     // בתוצאות החיפוש, כשכבר נרשמה מתנה למוזמן הזה. תיאור ולא אזהרה:
     // מוזמן יכול לתת פעמיים, והמערכת לא חוסמת — היא רק אומרת.
     alreadyCounted: (amount: string) => `כבר נרשמה מתנה · ${amount}`,
@@ -1715,6 +1787,78 @@ export const strings = {
     // המתנה מגיעה במלואה — אין ניכוי מהסכום שהזוג מקבל. נאמר במפורש
     // בדוח כי זו בדיוק השורה שבה מישהו מחפש "כמה ירד לנו".
     noFeeNote: 'הסכומים כאן הם מה שהתקבל במלואו. עמלת השירות על מתנה באשראי משולמת בידי נותן המתנה ואינה מנוכה מכם.',
+
+    // ---- הדוח הסופי (§19) ----
+    // שבעה חלקים, בסדר שבו קוראים דוח: מי, כמה הגיעו, מה החוזה אמר,
+    // על מה שולם, למי, מה התקבל, ומה השורה התחתונה.
+    repEventTitle: 'פרטי האירוע',
+    repEventType: 'סוג האירוע',
+    repEventDate: 'תאריך',
+    repVenue: 'מקום',
+    repHosts: 'בעלי האירוע',
+    repGeneratedAt: 'הופק בתאריך',
+
+    repGuestsTitle: 'נתוני מוזמנים',
+    repGuestsTotal: 'סה״כ מוזמנים',
+    repConfirmed: 'אישרו הגעה',
+    repPending: 'לא אישרו',
+    repDeclined: 'לא מגיעים',
+    repActual: 'הגיעו בפועל',
+    repNoShow: 'אישרו ולא הגיעו',
+    repExtra: 'הגיעו מעבר למי שאישר',
+    repNotEntered: 'טרם הוזן',
+
+    repCommitmentTitle: 'התחייבות מול הספק',
+    repMealPrice: 'מחיר ליחידה',
+    repCommitted: 'התחייבות',
+    repBilled: 'מחויבים על',
+    repOver: 'מעבר להתחייבות',
+    repUnused: 'מההתחייבות שלא נוצל',
+    repFinalCost: 'עלות',
+
+    repExpensesTitle: 'כל ההוצאות',
+    repCategory: 'קטגוריה',
+    repExpenseName: 'שם ההוצאה',
+    repVendor: 'ספק',
+    repCalc: 'אופן חישוב',
+    repTotal: 'עלות כוללת',
+    repPaid: 'שולם',
+    repRemaining: 'נשאר לשלם',
+
+    repPaymentsTitle: 'כל התשלומים',
+    repPaymentFor: 'עבור',
+    repPaymentTo: 'למי',
+    repPaymentAmount: 'סכום',
+    repPaymentDate: 'תאריך',
+    repPaymentKind: 'סוג',
+    repEmptyPayments: 'לא נרשמו תשלומים.',
+
+    repGiftsTitle: 'כל המתנות',
+    repGiftFrom: 'ממי',
+    repGiftSource: 'סוג',
+    repGiftKind: 'שיוך',
+    repGiftGuest: 'מוזמן',
+    repGiftExternal: 'לא מהרשימה',
+    repGiftUnknown: 'לא מזוהה',
+
+    repSummaryTitle: 'סיכום',
+    repGiftsEnvelopes: 'מעטפות',
+    repGiftsCredit: 'מתנות באשראי',
+    repGiftsExternal: 'מתוכן, מנותנים שאינם ברשימה',
+    repGiftsTotal: 'סה״כ מתנות',
+    // §20 — במילים פשוטות, בלי מונחים חשבונאיים.
+    repResultSurplus: 'האירוע הסתיים בעודף',
+    repResultDeficit: 'חסר לכיסוי העלות',
+    repResultEven: 'המתנות כיסו בדיוק את העלות',
+    repResultFormula: 'סה״כ מתנות פחות סה״כ עלות',
+
+    // גיליונות ה-Excel (§22).
+    sheetSummary: 'סיכום',
+    sheetGuests: 'מוזמנים',
+    sheetExpenses: 'הוצאות',
+    sheetPayments: 'תשלומים',
+    sheetGifts: 'מתנות',
+    excelFileName: (title: string) => `כספים — ${title}.xlsx`,
 
     downloadReport: 'הורדה ל-Excel',
     printReport: 'הדפסה / PDF',

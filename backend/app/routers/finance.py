@@ -19,6 +19,8 @@
 """
 from __future__ import annotations
 
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -54,9 +56,47 @@ def _guests(db: Session, event_id: int) -> list[models.Guest]:
     )
 
 
+#: חודשי השנה בעברית — לתאריך התשלום בניסוח שקוראים, לא ב-ISO.
+_MONTHS = (
+    "בינואר", "בפברואר", "במרץ", "באפריל", "במאי", "ביוני",
+    "ביולי", "באוגוסט", "בספטמבר", "באוקטובר", "בנובמבר", "בדצמבר",
+)
+
+
+def _date_display(iso: str) -> str:
+    """``2026-08-12`` ← "12 באוגוסט". ריק נשאר ריק.
+
+    בלי שנה: כל התשלומים של אירוע נופלים בטווח של שנה, והשנה רק מאריכה
+    את התא בטבלה בלי להוסיף מידע.
+    """
+    if not iso:
+        return ""
+    try:
+        d = date.fromisoformat(iso)
+    except ValueError:
+        return iso
+    return f"{d.day} {_MONTHS[d.month - 1]}"
+
+
+def _payment_read(payment: models.ExpensePayment) -> schemas.PaymentRead:
+    return schemas.PaymentRead(
+        id=payment.id,
+        expense_id=payment.expense_id,
+        amount_agorot=payment.amount_agorot,
+        amount_display=finance.format_shekels(payment.amount_agorot),
+        payee=payment.payee or "",
+        paid_on=payment.paid_on or "",
+        paid_on_display=_date_display(payment.paid_on or ""),
+        kind=payment.kind,  # type: ignore[arg-type]
+        note=payment.note,
+    )
+
+
 def _expense_read(
     expense: models.EventExpense, line: finance.LineResult, event_type: str = "wedding"
 ) -> schemas.ExpenseRead:
+    paid = finance.paid_for_line(expense, line.total_agorot)
+    ledger = finance.payments_total(expense)
     return schemas.ExpenseRead(
         id=expense.id,
         category=expense.category,
@@ -69,15 +109,20 @@ def _expense_read(
         quantity=expense.quantity,
         committed_quantity=expense.committed_quantity,
         min_total_agorot=expense.min_total_agorot,
+        reserve_quantity=expense.reserve_quantity,
         note=expense.note,
         vendor=expense.vendor or "",
         is_estimated=bool(expense.is_estimated),
         is_paid=bool(expense.is_paid),
         paid_amount_agorot=expense.paid_amount_agorot or 0,
         # מה ששולם בפועל על השורה — נגזר במנוע, לא כאן.
-        paid_display=finance.format_shekels(
-            finance.paid_for_line(expense, line.total_agorot)
-        ),
+        paid_agorot=paid,
+        paid_display=finance.format_shekels(paid),
+        remaining_agorot=line.total_agorot - paid,
+        remaining_display=finance.format_shekels(line.total_agorot - paid),
+        payments_total_agorot=ledger,
+        payments_total_display=finance.format_shekels(ledger),
+        payments=[_payment_read(p) for p in expense.payments],
         sort_order=expense.sort_order,
         total_agorot=line.total_agorot,
         total_display=finance.format_shekels(line.total_agorot),
@@ -194,6 +239,7 @@ def _cost_summary(
                 total_display=finance.format_shekels(line.total_agorot),
                 min_total_agorot=expense.min_total_agorot,
                 min_total_applied=line.min_total_applied,
+                reserve_quantity=expense.reserve_quantity,
             )
         )
 
@@ -240,6 +286,9 @@ def _income_read(income: finance_service.GiftIncome) -> schemas.GiftIncomeRead:
         credit_count=income.credit_count,
         total_agorot=income.total_agorot,
         total_display=finance.format_shekels(income.total_agorot),
+        external_agorot=income.external_agorot,
+        external_display=finance.format_shekels(income.external_agorot),
+        external_count=income.external_count,
         unidentified_count=income.unidentified_count,
         unidentified_agorot=income.unidentified_agorot,
         unidentified_display=finance.format_shekels(income.unidentified_agorot),
@@ -258,6 +307,8 @@ def _entry_read(entry: finance_service.GiftEntry) -> schemas.GiftEntryRead:
         note=entry.note,
         created_at=entry.created_at,
         shared_names=entry.shared_names,
+        is_external=entry.is_external,
+        external_phone=entry.external_phone,
         status=entry.status,
     )
 
@@ -270,6 +321,8 @@ def _breakdown_read(b: finance_service.GiftBreakdown) -> schemas.GiftBreakdownRe
         from_non_attendees_display=finance.format_shekels(b.from_non_attendees_agorot),
         unattributed_agorot=b.unattributed_agorot,
         unattributed_display=finance.format_shekels(b.unattributed_agorot),
+        from_external_agorot=b.from_external_agorot,
+        from_external_display=finance.format_shekels(b.from_external_agorot),
         guests_counted=b.guests_counted,
         guests_not_counted=b.guests_not_counted,
     )
@@ -318,6 +371,28 @@ def _single_expense_read(
         rows, finance.attendee_count(guests), finance.invited_count(guests)
     )
     return _expense_read(expense, breakdown.lines[expense.id], event.event_type)
+
+
+def _attendance_read(
+    event: models.Event, guests: list[models.Guest]
+) -> schemas.AttendanceRead:
+    """מי אישר, כמה הגיעו, ומה הפער.
+
+    ``no_show`` ו-``extra`` הם שני צדדים של אותו פער ולעולם לא שניהם
+    יחד — כך המסך לא צריך לבדוק סימן, והמלצת הדיוק יודעת מתי היא
+    רלוונטית בכלל (רק כשיש מי שאישר ולא הגיע).
+    """
+    confirmed = finance.attendee_count(guests)
+    actual = event.actual_attendance
+    return schemas.AttendanceRead(
+        confirmed_people=confirmed,
+        actual=actual,
+        is_final=actual is not None,
+        no_show=None if actual is None else max(0, confirmed - actual),
+        extra=None if actual is None else max(0, actual - confirmed),
+        # אותו כלל בדיוק שפותח את ספירת המתנות — יום האירוע ואילך.
+        event_passed=finance_service.counting_open(event),
+    )
 
 
 def _rsvp_snapshot(guests: list[models.Guest]) -> schemas.RsvpSnapshotRead:
@@ -385,7 +460,8 @@ def summary(
     """
     guests = _guests(db, event.id)
     expenses = finance_service.expenses_for(db, event.id)
-    attendees = finance.attendee_count(guests)
+    # לפני האירוע — מאישורי ההגעה; אחרי שהוזן מספר בפועל — הוא.
+    attendees = finance.billing_attendees(event, guests)
     invited = finance.invited_count(guests)
 
     breakdown = finance.cost_breakdown(expenses, attendees, invited)
@@ -395,6 +471,7 @@ def summary(
 
     return schemas.FinanceSummaryRead(
         rsvp=_rsvp_snapshot(guests),
+        attendance=_attendance_read(event, guests),
         cost=_cost_summary(expenses, attendees, invited, event.event_type),
         income=_income_read(income),
         breakdown=_breakdown_read(
@@ -436,7 +513,8 @@ def report(
 
     guests = _guests(db, event.id)
     expenses = finance_service.expenses_for(db, event.id)
-    attendees = finance.attendee_count(guests)
+    # לפני האירוע — מאישורי ההגעה; אחרי שהוזן מספר בפועל — הוא.
+    attendees = finance.billing_attendees(event, guests)
     invited = finance.invited_count(guests)
 
     cost = finance.cost_breakdown(expenses, attendees, invited)
@@ -453,10 +531,12 @@ def report(
 
     return schemas.FinanceReportRead(
         event_title=title,
+        event_type_label=event_terms.get_event_terms(event.event_type).celebration,
         event_date=event.event_date or "",
         venue_name=event.venue_name or "",
         generated_at=datetime.utcnow(),
         rsvp=_rsvp_snapshot(guests),
+        attendance=_attendance_read(event, guests),
         cost=_cost_summary(expenses, attendees, invited, event.event_type),
         income=_income_read(income),
         breakdown=_breakdown_read(
@@ -471,8 +551,13 @@ def report(
         # רק מעטפות: עסקת אשראי תמיד משויכת למוזמן דרך הטוקן שלו, ולכן
         # לא קיימת "מתנה באשראי בלי שם".
         unidentified=[
-            _entry_read(e) for e in entries if e.source == "envelope" and not e.guest_id
+            _entry_read(e)
+            for e in entries
+            if e.source == "envelope" and not e.guest_id and not e.is_external
         ],
+        # נותנים שאינם ברשימת המוזמנים — שורות משלהם בדוח. בלעדיהן הדוח
+        # מציג סה"כ מתנות שגדול מסכום השורות שמעליו.
+        external=[_entry_read(e) for e in entries if e.is_external],
     )
 
 
@@ -514,6 +599,12 @@ def _apply_expense(payload: schemas.ExpenseWrite, expense: models.EventExpense) 
     # המינימום הכספי חל על כל שיטה — חוזה יכול לנקוב במינימום גם על
     # שורה קבועה או שורה לפי יחידה.
     expense.min_total_agorot = payload.min_total_agorot or None
+    # רזרבה רלוונטית רק לשורה שנמכרת לפי מגיעים — שם, ורק שם, יש חוזה
+    # שנוקב בכמות שאפשר להוסיף ביום האירוע.
+    if payload.calc_method == finance_categories.PER_ATTENDEE:
+        expense.reserve_quantity = payload.reserve_quantity or None
+    else:
+        expense.reserve_quantity = None
 
 
 @router.post("/expenses", response_model=schemas.ExpenseRead, status_code=201)
@@ -672,6 +763,152 @@ def delete_expense(
     db.commit()
 
 
+@router.put("/attendance", response_model=schemas.FinanceSummaryRead)
+def set_attendance(
+    payload: schemas.AttendanceWrite,
+    request: Request,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+    user: models.User = Depends(get_current_user),
+):
+    """כמה אנשים הגיעו בפועל.
+
+    **הפעולה הזו לא נוגעת ב-``rsvp_status`` של אף מוזמן.** מספר כולל אינו
+    יודע מי מבין המאשרים לא הגיע, וניחוש כאן היה משנה נתון שהזוג מסר
+    במפורש. המסך מציע לזוג לדייק את הרשימה בעצמו — הצעה, לא פעולה.
+
+    מחזיר את הסיכום המלא, כי המספר הזה מזיז כל מספר אחר במסך.
+    """
+    event.actual_attendance = payload.actual_attendance
+    audit.record(
+        db, "finance_attendance_set",
+        event_id=event.id, user_id=user.id,
+        detail=(
+            f"עודכן מספר המגיעים בפועל — {payload.actual_attendance}"
+            if payload.actual_attendance is not None
+            else "נוקה מספר המגיעים בפועל"
+        ),
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+    return summary(db=db, event=event)
+
+
+# ════════════════════════════════════════════════════════════════════════
+#  יומן התשלומים
+# ════════════════════════════════════════════════════════════════════════
+#
+# "כמה שולם" הוא סכום היומן, ו"נשאר לשלם" הוא עלות השורה פחותיו. אין
+# כאן שדה מצטבר שצריך לעדכן בכל כתיבה — ולכן גם אין סיכון שהוא יסטה.
+
+
+def _owned_payment(
+    db: Session, event: models.Event, payment_id: int
+) -> models.ExpensePayment:
+    """שולף תשלום ומוודא שהוא של האירוע הזה.
+
+    הסינון על ``event_id`` הוא שכבת ההגנה של ה-API, שעומדת בפני עצמה
+    גם בלי ה-RLS — בדיוק כמו ב-``_owned_expense``.
+    """
+    payment = db.scalar(
+        select(models.ExpensePayment).where(
+            models.ExpensePayment.id == payment_id,
+            models.ExpensePayment.event_id == event.id,
+        )
+    )
+    if payment is None:
+        raise HTTPException(404, "לא מצאנו את התשלום הזה.")
+    return payment
+
+
+@router.post(
+    "/expenses/{expense_id}/payments",
+    response_model=schemas.ExpenseRead,
+    status_code=201,
+)
+def create_payment(
+    expense_id: int,
+    payload: schemas.PaymentWrite,
+    request: Request,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+    user: models.User = Depends(get_current_user),
+):
+    """מוסיף תשלום, ומחזיר את **שורת ההוצאה כולה** מחושבת מחדש.
+
+    מחזיר את השורה ולא את התשלום, כדי שהמסך יקבל בתשובה אחת גם את
+    "שולם עד עכשיו" וגם את "נשאר לשלם" — מחושבים בשרת. לו היה מוחזר
+    התשלום בלבד, המסך היה צריך לחבר בעצמו, וזה בדיוק החישוב הכספי
+    השני שאנחנו נמנעים ממנו לאורך כל הפיצ'ר.
+    """
+    expense = _owned_expense(db, event, expense_id)
+    payment = models.ExpensePayment(
+        expense_id=expense.id,
+        # מהשרת ולא מהלקוח: זה מה שמונע רישום תשלום לאירוע אחר.
+        event_id=event.id,
+        amount_agorot=payload.amount_agorot,
+        # ריק ⇒ הספק של השורה. ברוב המקרים זה בדיוק מי שקיבל את הכסף.
+        payee=(payload.payee or "").strip() or (expense.vendor or ""),
+        paid_on=payload.paid_on,
+        kind=payload.kind,
+        note=(payload.note or "").strip() or None,
+        recorded_by_user_id=user.id,
+    )
+    db.add(payment)
+    db.flush()
+    audit.record(
+        db, "finance_payment_add",
+        event_id=event.id, user_id=user.id,
+        detail=f"נרשם תשלום {finance.format_shekels(payload.amount_agorot)} — {expense.label}",
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+    db.refresh(expense)
+    return _single_expense_read(db, event, expense)
+
+
+@router.put("/payments/{payment_id}", response_model=schemas.ExpenseRead)
+def update_payment(
+    payment_id: int,
+    payload: schemas.PaymentWrite,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+):
+    payment = _owned_payment(db, event, payment_id)
+    expense = _owned_expense(db, event, payment.expense_id)
+    payment.amount_agorot = payload.amount_agorot
+    payment.payee = (payload.payee or "").strip() or (expense.vendor or "")
+    payment.paid_on = payload.paid_on
+    payment.kind = payload.kind
+    payment.note = (payload.note or "").strip() or None
+    db.commit()
+    db.refresh(expense)
+    return _single_expense_read(db, event, expense)
+
+
+@router.delete("/payments/{payment_id}", response_model=schemas.ExpenseRead)
+def delete_payment(
+    payment_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+    user: models.User = Depends(get_current_user),
+):
+    payment = _owned_payment(db, event, payment_id)
+    expense = _owned_expense(db, event, payment.expense_id)
+    amount = payment.amount_agorot
+    db.delete(payment)
+    audit.record(
+        db, "finance_payment_delete",
+        event_id=event.id, user_id=user.id,
+        detail=f"נמחק תשלום {finance.format_shekels(amount)} — {expense.label}",
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+    db.refresh(expense)
+    return _single_expense_read(db, event, expense)
+
+
 # ════════════════════════════════════════════════════════════════════════
 #  ספירת מתנות
 # ════════════════════════════════════════════════════════════════════════
@@ -766,7 +1003,14 @@ def _envelope_entry(
             id=envelope.id,
             amount_agorot=envelope.amount_agorot,
             guest_id=envelope.guest_id,
-            guest_name=names.get(envelope.guest_id or -1, ""),
+            guest_name=(
+                names.get(envelope.guest_id, "")
+                if envelope.guest_id
+                else (envelope.external_name or "").strip()
+            ),
+            is_external=not envelope.guest_id
+            and bool((envelope.external_name or "").strip()),
+            external_phone=(envelope.external_phone or "").strip(),
             envelope_number=envelope.envelope_number,
             note=envelope.note,
             created_at=envelope.created_at,
@@ -799,6 +1043,14 @@ def create_envelope(
         amount_agorot=payload.amount_agorot,
         guest_id=payload.guest_id,
         shared_guest_ids=shared or None,
+        # שם חיצוני תקף רק כשאין מוזמן משויך — מוזמן שכבר ברשימה אינו
+        # "חיצוני", ושמירת שניהם הייתה יוצרת שורה עם שתי זהויות.
+        external_name=(
+            None if payload.guest_id else (payload.external_name or "").strip() or None
+        ),
+        external_phone=(
+            None if payload.guest_id else (payload.external_phone or "").strip() or None
+        ),
         note=(payload.note or "").strip() or None,
         recorded_by_user_id=user.id,
     )
@@ -851,6 +1103,13 @@ def update_envelope(
     envelope.amount_agorot = payload.amount_agorot
     envelope.guest_id = payload.guest_id
     envelope.shared_guest_ids = shared or None
+    # שיוך למוזמן מנקה את השם החיצוני, ולהפך — לשורה יש זהות אחת.
+    envelope.external_name = (
+        None if payload.guest_id else (payload.external_name or "").strip() or None
+    )
+    envelope.external_phone = (
+        None if payload.guest_id else (payload.external_phone or "").strip() or None
+    )
     envelope.note = (payload.note or "").strip() or None
     db.flush()
 

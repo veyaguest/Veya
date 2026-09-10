@@ -8,11 +8,9 @@ import type {
 } from '../types'
 import { strings } from '../strings/he'
 import { ConfirmDialog } from './ConfirmDialog'
+import { PaymentsPanel } from './PaymentsPanel'
 
 const t = strings.finance
-
-/** שלושת מצבי התשלום. ראו ``models.EventExpense.paid_amount_agorot``. */
-type PaymentStatus = 'unpaid' | 'partial' | 'paid'
 
 interface Props {
   categories: ExpenseCategory[]
@@ -26,7 +24,11 @@ interface Props {
   invited: number
   busy?: boolean
   error?: string | null
-  onSave: (input: ExpenseInput) => void
+  /** ``prepaidAgorot`` — רק בהוספה: סכום שכבר שולם, נרשם כתשלום ראשון
+   *  מיד אחרי היצירה. ``undefined`` = לא שולם עדיין כלום. */
+  onSave: (input: ExpenseInput, prepaidAgorot?: number) => void
+  /** נקרא כשיומן התשלומים שינה את השורה — כדי שהמסך שמאחור יתעדכן. */
+  onPaymentsChanged: (expense: Expense) => void
   onDelete?: () => void
   onCancel: () => void
 }
@@ -81,6 +83,7 @@ export function ExpenseEditor({
   busy,
   error,
   onSave,
+  onPaymentsChanged,
   onDelete,
   onCancel,
 }: Props) {
@@ -94,15 +97,16 @@ export function ExpenseEditor({
   const [quantity, setQuantity] = useState(expense?.quantity?.toString() ?? '')
   const [committed, setCommitted] = useState(expense?.committed_quantity?.toString() ?? '')
   const [minTotal, setMinTotal] = useState(toShekelInput(expense?.min_total_agorot ?? null))
+  const [reserve, setReserve] = useState(expense?.reserve_quantity?.toString() ?? '')
   const [note, setNote] = useState(expense?.note ?? '')
   const [vendor, setVendor] = useState(expense?.vendor ?? '')
   // ברירת המחדל היא הערכה: תקציב נבנה מהערכות, וסימון הכול כ"סוכם"
   // מלכתחילה מרוקן את ההבחנה מתוכן.
   const [isEstimated, setIsEstimated] = useState(expense?.is_estimated ?? true)
-  const [payment, setPayment] = useState<PaymentStatus>(initialPayment(expense))
-  const [paidAmount, setPaidAmount] = useState(
-    toShekelInput(expense?.paid_amount_agorot ?? null),
-  )
+  // **רק בהוספה.** בעריכה יש יומן תשלומים מלא (``PaymentsPanel``), ושדה
+  // בודד לצידו היה מקור שני לאותו מספר. כאן הוא קיצור דרך לזוג שמזין
+  // הוצאה שכבר שילם עליה: הסכום נשמר כתשלום אחד מיד אחרי היצירה.
+  const [prepaid, setPrepaid] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   // בעריכה מדלגים על שלב הבחירה. בהוספה הוא השלב הראשון.
@@ -116,7 +120,9 @@ export function ExpenseEditor({
   const [methodOpen, setMethodOpen] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const [contractOpen, setContractOpen] = useState(Boolean(expense?.min_total_agorot))
+  const [contractOpen, setContractOpen] = useState(
+    Boolean(expense?.min_total_agorot || expense?.reserve_quantity),
+  )
 
   const amountRef = useRef<HTMLInputElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -182,26 +188,30 @@ export function ExpenseEditor({
   function submit() {
     const trimmed = label.trim()
     if (!trimmed) return
-    onSave({
-      category: categoryKey || 'other',
-      item_key: itemKey,
-      label: trimmed,
-      calc_method: method,
-      amount_agorot: toAgorot(amount),
-      // ``quantity`` משרת שתי שיטות: יחידות ב-per_unit, ואחוזים שלמים
-      // ב-percent. בשאר השיטות הוא נמחק, כדי שערך רדום לא יחזור לחיים
-      // בעריכה הבאה.
-      quantity:
-        method === 'per_unit' || method === 'percent' ? toCount(quantity) : null,
-      committed_quantity: supportsCommitment ? toCount(committed) || null : null,
-      min_total_agorot: toAgorot(minTotal) || null,
-      note: note.trim() || null,
-      vendor: vendor.trim(),
-      is_estimated: isEstimated,
-      is_paid: payment === 'paid',
-      // מקדמה נשלחת רק במצב "שולם חלקית" — ראו ההסבר במודל.
-      paid_amount_agorot: payment === 'partial' ? toAgorot(paidAmount) : 0,
-    })
+    onSave(
+      {
+        category: categoryKey || 'other',
+        item_key: itemKey,
+        label: trimmed,
+        calc_method: method,
+        amount_agorot: toAgorot(amount),
+        // ``quantity`` משרת שתי שיטות: יחידות ב-per_unit, ואחוזים שלמים
+        // ב-percent. בשאר השיטות הוא נמחק, כדי שערך רדום לא יחזור לחיים
+        // בעריכה הבאה.
+        quantity:
+          method === 'per_unit' || method === 'percent' ? toCount(quantity) : null,
+        committed_quantity: supportsCommitment ? toCount(committed) || null : null,
+        min_total_agorot: toAgorot(minTotal) || null,
+        reserve_quantity: supportsCommitment ? toCount(reserve) || null : null,
+        note: note.trim() || null,
+        vendor: vendor.trim(),
+        is_estimated: isEstimated,
+        // ``is_paid`` ו-``paid_amount_agorot`` **לא נשלחים יותר**: מה ששולם
+        // חי ביומן התשלומים, והשדות הישנים נשארו בשרת רק כמסלול נפילה
+        // לשורות שטרם הומרו.
+      },
+      toAgorot(prepaid) || undefined,
+    )
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -523,47 +533,28 @@ export function ExpenseEditor({
               </fieldset>
             )}
 
-            {/* ── סטטוס תשלום ─────────────────────────────────────── */}
-            <fieldset className="fin-payment">
-              <legend className="field-label">{t.paymentStatusLabel}</legend>
-              <div className="fin-payment-options">
-                {(
-                  [
-                    ['unpaid', t.paymentUnpaid],
-                    ['partial', t.paymentPartial],
-                    ['paid', t.paymentPaid],
-                  ] as [PaymentStatus, string][]
-                ).map(([value, text]) => (
-                  <label
-                    key={value}
-                    className={`fin-payment-option ${payment === value ? 'active' : ''}`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment-status"
-                      value={value}
-                      checked={payment === value}
-                      onChange={() => setPayment(value)}
-                    />
-                    <span>{text}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            {/* שדה המקדמה קיים רק כשהוא רלוונטי — שדה סכום ריק ליד
-                "לא שולם" הוא שדה שמזמין למלא אותו בטעות. */}
-            {payment === 'partial' && (
+            {/* ── תשלומים ─────────────────────────────────────────────
+                בעריכה — יומן מלא, כי יש שורה קיימת לתלות עליה תשלומים.
+                בהוספה — שדה אחד אופציונלי, כי אי אפשר לרשום תשלום על
+                הוצאה שעוד לא נוצרה, וטופס יצירה עם טבלה ריקה בתוכו הוא
+                טופס שנראה מסובך יותר ממה שהוא. */}
+            {editing && expense ? (
+              <>
+                <h3 className="fin-subtitle">{t.paymentsTitle}</h3>
+                <PaymentsPanel expense={expense} onChanged={onPaymentsChanged} />
+              </>
+            ) : (
               <label className="field">
-                <span className="field-label">{t.paidSoFarLabel}</span>
+                <span className="field-label">{t.prepaidLabel}</span>
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={paidAmount}
-                  onChange={(e) => setPaidAmount(digitsOnly(e.target.value))}
+                  value={prepaid}
+                  onChange={(e) => setPrepaid(digitsOnly(e.target.value))}
                   placeholder="0"
                   dir="ltr"
                 />
+                <span className="field-hint">{t.prepaidHint}</span>
               </label>
             )}
 
@@ -615,6 +606,19 @@ export function ExpenseEditor({
                     יושב שכבה אחת עמוק יותר — לא ליד ההתחייבות. */}
                 {supportsCommitment &&
                   (contractOpen ? (
+                    <>
+                    <label className="field">
+                      <span className="field-label">{t.reserveLabel}</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={reserve}
+                        onChange={(e) => setReserve(digitsOnly(e.target.value))}
+                        placeholder="0"
+                        dir="ltr"
+                      />
+                      <span className="field-hint">{t.reserveHint}</span>
+                    </label>
                     <label className="field">
                       <span className="field-label">{t.minTotalLabel}</span>
                       <input
@@ -627,6 +631,7 @@ export function ExpenseEditor({
                       />
                       <span className="field-hint">{t.minTotalHint}</span>
                     </label>
+                    </>
                   ) : (
                     <button
                       type="button"
@@ -739,13 +744,6 @@ function priceLabel(method: CalcMethod, item: ExpenseCatalogItem | null): string
   }
   if (method === 'per_guest') return t.perGuestPriceLabel
   return t.amountLabel
-}
-
-/** המצב שהטופס נפתח בו בעריכה. ראו ההסבר במודל. */
-function initialPayment(expense: Expense | null): PaymentStatus {
-  if (expense?.is_paid) return 'paid'
-  if ((expense?.paid_amount_agorot ?? 0) > 0) return 'partial'
-  return 'unpaid'
 }
 
 // ── המרות ────────────────────────────────────────────────────────────

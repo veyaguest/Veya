@@ -613,6 +613,284 @@ def test_full_payment_flag_wins_over_a_stale_advance() -> None:
     assert finance.paid_for_line(e, 30_000 * S) == 30_000 * S
 
 
+# ════════════════════════════════════════════════════════════════════════
+#  יומן התשלומים
+# ════════════════════════════════════════════════════════════════════════
+#
+# "נשאר לשלם = עלות השורה − סכום התשלומים" הוא המשפט שהמסך מבטיח.
+# הבדיקות כאן נועלות אותו, ובמיוחד את שני הקצוות שבהם הוא נשבר בשקט:
+# תשלום יתר, ושורה שעלותה זזה אחרי שכבר שולמה.
+
+
+def pay(shekels: int, **kw) -> models.ExpensePayment:
+    return models.ExpensePayment(amount_agorot=shekels * S, **kw)
+
+
+def test_payments_sum_is_what_was_paid() -> None:
+    e = line(1, FIXED, 12_000)
+    e.payments = [pay(3_000, kind="advance"), pay(2_000)]
+    assert finance.paid_for_line(e, 12_000 * S) == 5_000 * S
+
+
+def test_remaining_is_cost_minus_payments() -> None:
+    e = line(1, FIXED, 12_000)
+    e.payments = [pay(3_000), pay(2_000)]
+    total = 12_000 * S
+    assert total - finance.paid_for_line(e, total) == 7_000 * S
+
+
+def test_ledger_wins_over_the_legacy_fields() -> None:
+    """שורה שהומרה נושאת גם דגל ישן וגם שורת יומן. אסור שתיספר פעמיים."""
+    e = line(1, FIXED, 12_000, is_paid=True, paid_amount_agorot=4_000 * S)
+    e.payments = [pay(12_000)]
+    assert finance.paid_for_line(e, 12_000 * S) == 12_000 * S
+
+
+def test_legacy_fields_still_read_before_the_migration_runs() -> None:
+    """שרת שעלה על DB שטרם הומר חייב להציג מספר נכון, לא אפס."""
+    e = line(1, FIXED, 12_000, is_paid=True)
+    assert finance.paid_for_line(e, 12_000 * S) == 12_000 * S
+
+    e2 = line(2, FIXED, 12_000, paid_amount_agorot=4_000 * S)
+    assert finance.paid_for_line(e2, 12_000 * S) == 4_000 * S
+
+
+def test_overpayment_is_capped_so_remaining_never_goes_negative() -> None:
+    """המקרה שמופיע בפועל: שולמה מקדמה, ואז המחיר ירד. העודף הוא החזר —
+    הוא לא הופך את "נשאר לשלם" למספר שלילי בכותרת המסך."""
+    e = line(1, FIXED, 10_000)
+    e.payments = [pay(9_000), pay(4_000)]
+    total = 10_000 * S
+    assert finance.paid_for_line(e, total) == total
+    assert total - finance.paid_for_line(e, total) == 0
+    # אבל היומן עצמו נשאר נאמן למה שנרשם.
+    assert finance.payments_total(e) == 13_000 * S
+
+
+def test_fully_paid_meal_line_owes_again_when_more_guests_confirm() -> None:
+    """ההבדל המהותי בין יומן לדגל.
+
+    שורת מנה ששולמה במלואה ב-391 מגיעים ואז עלתה ל-420 **באמת חייבת עוד
+    כסף**. הדגל הישן היה ממשיך לומר "שולם"; היומן אומר את האמת."""
+    e = line(1, PER_ATTENDEE, 320)
+    e.payments = [pay(391 * 320)]
+
+    at_391 = finance.cost_breakdown([e], attendees=391, invited=500)
+    assert finance.paid_for_line(e, at_391.lines[1].total_agorot) == 391 * 320 * S
+    assert at_391.lines[1].total_agorot - finance.paid_for_line(e, at_391.lines[1].total_agorot) == 0
+
+    at_420 = finance.cost_breakdown([e], attendees=420, invited=500)
+    remaining = at_420.lines[1].total_agorot - finance.paid_for_line(
+        e, at_420.lines[1].total_agorot
+    )
+    assert remaining == 29 * 320 * S
+
+
+def test_paid_total_across_lines_never_exceeds_the_event_total() -> None:
+    expenses = [
+        line(1, FIXED, 45_000),
+        line(2, FIXED, 12_000),
+        line(3, PER_ATTENDEE, 320, committed_quantity=500),
+    ]
+    expenses[0].payments = [pay(45_000)]
+    expenses[1].payments = [pay(99_000)]  # תשלום יתר גס
+    expenses[2].payments = []
+    breakdown = finance.cost_breakdown(expenses, attendees=391, invited=551)
+    assert finance.paid_total(expenses, breakdown.lines) <= breakdown.total_agorot
+
+
+# ════════════════════════════════════════════════════════════════════════
+#  כמה הגיעו בפועל
+# ════════════════════════════════════════════════════════════════════════
+#
+# ההחלטה הנעולה: הנוסחה לא משתנה, רק **הקלט** שלה. הבדיקות כאן נועלות
+# את נקודת ההכרעה היחידה (``billing_attendees``) ואת מה שהיא לא עושה.
+
+
+class _Ev:
+    """אירוע מינימלי — ``billing_attendees`` נוגעת בשדה אחד בלבד."""
+
+    def __init__(self, actual=None):
+        self.actual_attendance = actual
+
+
+def guest(seats: int) -> models.Guest:
+    g = models.Guest(full_name="בדיקה", rsvp_status="confirmed", confirmed_count=seats)
+    return g
+
+
+def test_before_the_event_the_count_comes_from_rsvp() -> None:
+    guests = [guest(2), guest(3)]
+    assert finance.billing_attendees(_Ev(), guests) == 5
+
+
+def test_actual_attendance_replaces_the_rsvp_count() -> None:
+    guests = [guest(2), guest(3)]
+    assert finance.billing_attendees(_Ev(508), guests) == 508
+
+
+def test_zero_attendance_is_a_real_answer_not_a_missing_one() -> None:
+    """אירוע שבוטל ברגע האחרון הוא מצב אמיתי. ``0`` אינו "טרם הוזן"."""
+    guests = [guest(2), guest(3)]
+    assert finance.billing_attendees(_Ev(0), guests) == 0
+
+
+def test_clearing_the_count_returns_to_rsvp() -> None:
+    guests = [guest(4)]
+    assert finance.billing_attendees(_Ev(None), guests) == 4
+
+
+def test_the_commitment_formula_is_untouched_by_actual_attendance() -> None:
+    """**הבדיקה המרכזית של השינוי הזה.**
+
+    אותה שורה, אותה התחייבות, שני מספרי מגיעים — והתוצאה זהה בדיוק לזו
+    שהייתה מתקבלת אילו המספר היה מגיע מאישורי ההגעה. אין כאן מסלול
+    חישוב שני; יש קלט אחר לאותה נוסחה.
+    """
+    e = line(1, PER_ATTENDEE, 320, committed_quantity=500)
+
+    # מתחת להתחייבות — משלמים על ההתחייבות, בשני המקורות.
+    assert finance.total_for([e], 391, 551) == 500 * 320 * S
+    assert finance.total_for([e], finance.billing_attendees(_Ev(391), []), 551) == 500 * 320 * S
+
+    # מעליה — משלמים על מי שהגיע.
+    assert finance.total_for([e], finance.billing_attendees(_Ev(508), []), 551) == 508 * 320 * S
+
+
+def test_reserve_is_never_part_of_any_total() -> None:
+    """רזרבה היא זכות להזמין עוד, לא התחייבות לשלם. אם היא נכנסת לחישוב
+    ולו פעם אחת — זוג משלם על מנות שאיש לא אכל."""
+    plain = line(1, PER_ATTENDEE, 320, committed_quantity=500)
+    with_reserve = line(2, PER_ATTENDEE, 320, committed_quantity=500, reserve_quantity=50)
+    assert finance.total_for([plain], 391, 551) == finance.total_for([with_reserve], 391, 551)
+    assert finance.total_for([with_reserve], 391, 551) == 500 * 320 * S
+
+
+# ════════════════════════════════════════════════════════════════════════
+#  נותן מתנה שאינו ברשימת המוזמנים
+# ════════════════════════════════════════════════════════════════════════
+#
+# שלושת המצבים של מעטפה, וההבחנה שאסור לטשטש ביניהם:
+#
+#     guest_id                מוזמן מהרשימה
+#     external_name           נותן חיצוני — **מזוהה**, פשוט לא הוזמן
+#     שניהם ריקים             טרם זוהתה
+#
+# מעטפה חיצונית שנספרת כ"לא מזוהה" שולחת את הזוג לחפש שיוך שכבר קיים.
+
+
+def envelope(amount: int, *, guest_id=None, external_name=None) -> models.GiftEnvelope:
+    return models.GiftEnvelope(
+        amount_agorot=amount * S, guest_id=guest_id, external_name=external_name
+    )
+
+
+def _classify(envelopes):
+    """אותה חלוקה שעושה ``finance_service.gift_income``."""
+    external = [e for e in envelopes if not e.guest_id and (e.external_name or "").strip()]
+    unknown = [e for e in envelopes if not e.guest_id and not (e.external_name or "").strip()]
+    return external, unknown
+
+
+def test_external_giver_is_not_unidentified() -> None:
+    rows = [
+        envelope(500, guest_id=7),
+        envelope(800, external_name="רונית מהעבודה"),
+        envelope(1_000),
+    ]
+    external, unknown = _classify(rows)
+    assert len(external) == 1 and external[0].amount_agorot == 800 * S
+    assert len(unknown) == 1 and unknown[0].amount_agorot == 1_000 * S
+
+
+def test_blank_external_name_is_still_unidentified() -> None:
+    """רווחים אינם שם. בלי ``strip`` מעטפה ריקה הייתה נספרת כמזוהה."""
+    external, unknown = _classify([envelope(500, external_name="   ")])
+    assert not external and len(unknown) == 1
+
+
+def test_a_guest_link_wins_over_an_external_name() -> None:
+    """לשורה יש זהות אחת. מוזמן שכבר ברשימה אינו "חיצוני"."""
+    external, unknown = _classify([envelope(500, guest_id=7, external_name="מישהו")])
+    assert not external and not unknown
+
+
+def test_every_envelope_lands_in_exactly_one_bucket() -> None:
+    """האינווריאנטה של הדוח: סכום הקבוצות = סכום המעטפות. בלעדיה
+    "סה\"כ מתנות" גדול או קטן מסכום השורות שמתחתיו."""
+    rows = [
+        envelope(500, guest_id=1),
+        envelope(700, guest_id=2),
+        envelope(800, external_name="שכן"),
+        envelope(300, external_name="קולגה"),
+        envelope(1_000),
+    ]
+    external, unknown = _classify(rows)
+    linked = [e for e in rows if e.guest_id]
+    assert len(external) + len(unknown) + len(linked) == len(rows)
+    assert sum(e.amount_agorot for e in external + unknown + linked) == sum(
+        e.amount_agorot for e in rows
+    )
+
+
+# ════════════════════════════════════════════════════════════════════════
+#  מבנה הקטגוריות
+# ════════════════════════════════════════════════════════════════════════
+
+
+def test_every_type_has_a_catch_all_category() -> None:
+    """"שונות" קיימת בכל סוג — הרשת שמונעת מהזוג להיתקע מול הוצאה
+    שאין לה מקום ברשימה. בלעדיה הוא ידחוף אותה לקטגוריה שגויה, והדוח
+    יספר סיפור לא נכון."""
+    for event_type in REAL_EVENT_TYPES:
+        keys = {c.key for c in catalog_for(event_type)}
+        assert "other" in keys, f"{event_type}: אין קטגוריית שונות"
+        assert category_label("other", event_type) == "שונות"
+
+
+def test_catch_all_is_last() -> None:
+    """אחרונה בסדר התצוגה: היא הרשת, לא נקודת הפתיחה."""
+    for event_type in REAL_EVENT_TYPES:
+        assert catalog_for(event_type)[-1].key == "other"
+
+
+def test_no_category_is_empty() -> None:
+    """קטגוריה בלי פריטים היא כותרת שנפתחת לכלום."""
+    for event_type in REAL_EVENT_TYPES:
+        for category in catalog_for(event_type):
+            assert category.items, f"{event_type}/{category.key}: קטגוריה ריקה"
+
+
+def test_an_item_appears_once_per_event_type() -> None:
+    """אותו פריט בשתי קטגוריות = שתי דרכים להוסיף את אותה הוצאה, ושני
+    מקומות לחפש אותה אחר כך."""
+    for event_type in REAL_EVENT_TYPES:
+        seen: dict[str, str] = {}
+        for category in catalog_for(event_type):
+            for item in category.items:
+                assert item.key not in seen, (
+                    f"{event_type}: {item.key} מופיע גם ב-{seen.get(item.key)} "
+                    f"וגם ב-{category.key}"
+                )
+                seen[item.key] = category.key
+
+
+def test_commitment_fields_are_not_catalog_items() -> None:
+    """**ההתחייבות, המינימום והרזרבה הם שדות על שורת המנה, לא הוצאות.**
+
+    הספק מונה אותם תחת "מקום ואירוח", והפיתוי להוסיף אותם כפריטים גדול.
+    פריט "התחייבות למנות" היה נספר בסכום **בנוסף** לשורת המנה — כלומר
+    כפל חיוב על אותו כסף.
+    """
+    forbidden = ("commitment", "committed", "minimum", "min_total", "reserve")
+    for event_type in REAL_EVENT_TYPES:
+        for category in catalog_for(event_type):
+            for item in category.items:
+                assert not any(f in item.key for f in forbidden), (
+                    f"{event_type}: {item.key} הוא שדה על שורת המנה, לא הוצאה"
+                )
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for test in tests:

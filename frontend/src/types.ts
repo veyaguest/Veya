@@ -1789,6 +1789,9 @@ export interface ExpenseInput {
   committed_quantity?: number | null
   /** מינימום כספי מובטח בחוזה, באגורות. */
   min_total_agorot?: number | null
+  /** מנות רזרבה מול הספק. **אינה נכנסת לשום חישוב** — זכות להזמין עוד,
+   *  לא התחייבות לשלם. */
+  reserve_quantity?: number | null
   note?: string | null
   /** שם הספק. טקסט חופשי — ניהול ספקים הוא מוצר אחר. */
   vendor?: string
@@ -1796,9 +1799,36 @@ export interface ExpenseInput {
   is_estimated?: boolean
   /** נפרד לגמרי מ-``is_estimated``: אפשר לשלם מקדמה על סכום לא סופי. */
   is_paid?: boolean
-  /** מקדמה באגורות — **רק כש-``is_paid`` הוא ``false``**. "שולם במלואו"
-   *  נשאר דגל ולא סכום שמור, כי עלות השורה זזה עם מספר המגיעים. */
+  /** ⚠️ הוחלף ביומן התשלומים. נשאר בטיפוס כי השרת עדיין מקבל אותו
+   *  לשורות ישנות; קוד חדש לא כותב אליו. */
   paid_amount_agorot?: number
+}
+
+/** מקדמה או תשלום. ההבחנה לתצוגה ולדוח בלבד — שניהם נספרים אותו דבר. */
+export type PaymentKind = 'advance' | 'payment'
+
+/** תשלום אחד על חשבון שורת הוצאה. */
+export interface Payment {
+  id: number
+  expense_id: number
+  amount_agorot: number
+  amount_display: string
+  payee: string
+  /** ``YYYY-MM-DD``, או ריק כשלא נרשם תאריך. */
+  paid_on: string
+  /** התאריך בניסוח שקוראים ("12 באוגוסט"). ריק כשאין תאריך. */
+  paid_on_display: string
+  kind: PaymentKind
+  note: string | null
+}
+
+/** הקלט לשמירת תשלום. הסכום באגורות, כמו בכל השרשרת. */
+export interface PaymentInput {
+  amount_agorot: number
+  payee?: string
+  paid_on?: string
+  kind?: PaymentKind
+  note?: string | null
 }
 
 /** שורת הוצאה + התוצאה שלה. **התוצאה מגיעה מהשרת** — המסך לא מחשב כסף. */
@@ -1815,8 +1845,17 @@ export interface Expense extends ExpenseInput {
   /** מגיעים מעבר לכמות ההתחייבות. */
   over_commitment: number
   min_total_applied: boolean
-  /** כמה שולם בפועל — עלות מלאה כשסומן "שולם", המקדמה כשיש מקדמה. */
+  /** כמה שולם בפועל — סכום היומן, חתוך לעלות השורה. **מהשרת.** */
+  paid_agorot: number
   paid_display: string
+  /** עלות השורה פחות מה ששולם. לעולם לא שלילי. **מהשרת.** */
+  remaining_agorot: number
+  remaining_display: string
+  /** סכום היומן בלי חיתוך. גדול מ-``paid_agorot`` כשנרשם תשלום יתר. */
+  payments_total_agorot: number
+  payments_total_display: string
+  /** יומן התשלומים, לפי תאריך. */
+  payments: Payment[]
 }
 
 /** נקודה בלוח "מה יקרה אם יגיעו…". */
@@ -1852,6 +1891,22 @@ export interface Commitment {
   total_display: string
   min_total_agorot: number | null
   min_total_applied: boolean
+  /** מנות רזרבה — מידע ולא הוצאה. */
+  reserve_quantity: number | null
+}
+
+/** מי אישר, כמה הגיעו בפועל, ומה הפער. */
+export interface Attendance {
+  confirmed_people: number
+  /** ``null`` = טרם הוזן. ``0`` הוא ערך אמיתי. */
+  actual: number | null
+  /** ``true`` ⇒ העלות סופית ולא משוערת. */
+  is_final: boolean
+  /** אישרו ולא הגיעו. ``null`` כשאין מספר בפועל. */
+  no_show: number | null
+  /** הגיעו מעבר למי שאישר. ``null`` כשאין מספר בפועל. */
+  extra: number | null
+  event_passed: boolean
 }
 
 /** סיכום קבוצת הוצאות — הכותרת שנפתחת ונסגרת. **מחושב בשרת**: חיבור
@@ -1926,6 +1981,9 @@ export interface GiftEntry {
   created_at: string
   /** מתנה משותפת — שמות נוספים. הסכום אינו מפוצל ביניהם. */
   shared_names: string[]
+  /** נותן שאינו ברשימת המוזמנים. ``guest_name`` מחזיק את שמו. */
+  is_external: boolean
+  external_phone: string
   status: string | null
 }
 
@@ -1934,6 +1992,9 @@ export interface EnvelopeInput {
   /** ``null`` = "לא ידוע ממי". מצב לגיטימי שאפשר לחזור אליו. */
   guest_id: number | null
   shared_guest_ids: number[]
+  /** נותן שאינו ברשימת המוזמנים. תקף רק כשאין ``guest_id``. */
+  external_name?: string
+  external_phone?: string
   note?: string | null
 }
 
@@ -1955,6 +2016,10 @@ export interface GiftIncome {
   total_agorot: number | null
   total_display: string
   unidentified_count: number
+  /** מנותנים שאינם ברשימת המוזמנים — נספר בתוך המעטפות. */
+  external_agorot: number
+  external_display: string
+  external_count: number
   unidentified_agorot: number
   unidentified_display: string
 }
@@ -1998,6 +2063,9 @@ export interface GiftBreakdown {
   from_non_attendees_agorot: number
   from_non_attendees_display: string
   unattributed_agorot: number
+  /** מנותנים חיצוניים — צד שלישי, לא "לא משויך". */
+  from_external_agorot: number
+  from_external_display: string
   unattributed_display: string
   guests_counted: number
   guests_not_counted: number
@@ -2006,10 +2074,13 @@ export interface GiftBreakdown {
 /** הדוח הסופי — תמונה אחת מלאה של האירוע, לא רק סיכום כספי. */
 export interface FinanceReport {
   event_title: string
+  /** סוג האירוע בעברית — לכותרת הדוח. מהלקסיקון, לא קשיח. */
+  event_type_label: string
   event_date: string
   venue_name: string
   generated_at: string
   rsvp: RsvpSnapshot
+  attendance: Attendance
   cost: CostSummary
   income: GiftIncome
   breakdown: GiftBreakdown
@@ -2020,6 +2091,8 @@ export interface FinanceReport {
   guests: GuestGiftRow[]
   /** מעטפות שלא שויכו, כדי שלא ייעלמו מהדוח. */
   unidentified: GiftEntry[]
+  /** נותני מתנות שאינם ברשימת המוזמנים. */
+  external: GiftEntry[]
 }
 
 export interface GiftCounting {
@@ -2036,6 +2109,7 @@ export interface GiftCounting {
 
 export interface FinanceSummary {
   rsvp: RsvpSnapshot
+  attendance: Attendance
   cost: CostSummary
   income: GiftIncome
   breakdown: GiftBreakdown

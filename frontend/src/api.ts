@@ -42,6 +42,7 @@ import type {
   Expense,
   ExpenseCategory,
   ExpenseInput,
+  PaymentInput,
   FinanceReport,
   FinanceSummary,
   GiftCounting,
@@ -1733,6 +1734,53 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** כמה הגיעו בפועל. ``null`` מנקה ומחזיר את החישוב לאישורי ההגעה.
+ *  מחזיר את הסיכום המלא — המספר הזה מזיז כל מספר אחר במסך. */
+export async function setAttendance(actual: number | null): Promise<FinanceSummary> {
+  const res = await apiFetch('/finance/attendance', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ actual_attendance: actual }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+// ---- יומן התשלומים ----
+//
+// שלוש הפעולות מחזירות את **שורת ההוצאה כולה** ולא את התשלום: כך המסך
+// מקבל בתשובה אחת גם "שולם עד עכשיו" וגם "נשאר לשלם", מחושבים בשרת,
+// ולא צריך לחבר תשלומים בעצמו.
+
+export async function createPayment(
+  expenseId: number,
+  input: PaymentInput,
+): Promise<Expense> {
+  const res = await apiFetch(`/finance/expenses/${expenseId}/payments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function updatePayment(id: number, input: PaymentInput): Promise<Expense> {
+  const res = await apiFetch(`/finance/payments/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function deletePayment(id: number): Promise<Expense> {
+  const res = await apiFetch(`/finance/payments/${id}`, { method: 'DELETE' })
   if (!res.ok) throw await toError(res)
   return res.json()
 }

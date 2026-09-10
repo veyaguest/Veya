@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   applyExpenseTemplate,
   createExpense,
+  createPayment,
   deleteEnvelope,
   deleteExpense,
   getExpenseCategories,
@@ -9,9 +10,11 @@ import {
   getGiftCounting,
   getFinanceReport,
   getGiftsByGuest,
+  setAttendance,
   updateExpense,
 } from '../api'
 import type {
+  Attendance,
   Commitment,
   Expense,
   ExpenseCategory,
@@ -28,6 +31,7 @@ import { activeEventTerms } from '../strings/eventTypes'
 import { ConfirmDialog } from './ConfirmDialog'
 import { EnvelopeCounter } from './EnvelopeCounter'
 import { ExpenseEditor } from './ExpenseEditor'
+import { downloadWorkbook, type Cell } from '../lib/xlsx'
 import './FinancePage.css'
 
 const t = strings.finance
@@ -56,7 +60,7 @@ type Tab = 'cost' | 'counting' | 'summary'
  * הכותרות נבנות מהלקסיקון (``activeEventTerms().eventNoun``) — "עלות
  * החתונה" בחתונה, "עלות הברית" בברית. אין כאן מילה חתונתית קשיחה.
  */
-export function FinancePage() {
+export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') => void }) {
   const terms = activeEventTerms()
 
   const [data, setData] = useState<FinanceSummary | null>(null)
@@ -113,13 +117,22 @@ export function FinancePage() {
     if (byGuest !== null) getGiftsByGuest().then(setByGuest).catch(() => undefined)
   }, [byGuest])
 
-  async function handleSaveExpense(input: ExpenseInput) {
+  async function handleSaveExpense(input: ExpenseInput, prepaidAgorot?: number) {
     setSaving(true)
     setSaveError(null)
     try {
-      if (editing) await updateExpense(editing.id, input)
-      else await createExpense(input)
+      if (editing) {
+        await updateExpense(editing.id, input)
+      } else {
+        const created = await createExpense(input)
+        // "כבר שילמתם משהו?" מהטופס — נרשם כתשלום ראשון. אי אפשר לרשום
+        // תשלום על הוצאה שעוד לא נוצרה, ולכן זה קורה כאן ולא בטופס.
+        if (prepaidAgorot) {
+          await createPayment(created.id, { amount_agorot: prepaidAgorot })
+        }
+      }
       setEditing(undefined)
+      setAddCategory(null)
       refresh()
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : t.saveError)
@@ -180,6 +193,8 @@ export function FinancePage() {
         <CostTab
           data={data}
           terms={terms}
+          onAttendance={setData}
+          onNavigate={onNavigate}
           onAdd={(category) => {
             setAddCategory(category ?? null)
             setEditing(null)
@@ -219,6 +234,12 @@ export function FinancePage() {
           busy={saving}
           error={saveError}
           onSave={handleSaveExpense}
+          // יומן התשלומים משנה את השורה בשרת — הדיאלוג מחזיק את הגרסה
+          // המעודכנת, והמסך שמאחור נטען מחדש כדי שהסיכומים לא יסטו.
+          onPaymentsChanged={(updated) => {
+            setEditing(updated)
+            refresh()
+          }}
           onDelete={editing ? handleDeleteExpense : undefined}
           onCancel={() => {
             setEditing(undefined)
@@ -290,10 +311,14 @@ function TabButton({
 function FinanceHero({ data }: { data: FinanceSummary }) {
   const { cost } = data
   const started = cost.total_agorot > 0
+  // כל עוד לא הוזן כמה הגיעו בפועל, המספר נשען על אישורי הגעה שעוד
+  // יזוזו. אומרים את זה בכותרת ולא בהערת שוליים.
+  const estimated = !data.attendance.is_final
+  const label = estimated ? t.estimatedCostLabel : t.totalCostLabel
 
   return (
-    <section className="fin-hero" aria-label={t.totalCostLabel}>
-      <p className="fin-hero-label">{t.totalCostLabel}</p>
+    <section className="fin-hero" aria-label={label}>
+      <p className="fin-hero-label">{label}</p>
       <p className="fin-hero-value">{cost.total_display}</p>
 
       {/* שולם / נשאר לשלם — זוג מספרים אחד, לא שתי עובדות מפוזרות.
@@ -319,6 +344,8 @@ function FinanceHero({ data }: { data: FinanceSummary }) {
           </div>
         </div>
       )}
+
+      {estimated && started && <p className="fin-hero-note">{t.estimatedCostNote}</p>}
 
       <div className="fin-hero-facts fin-hero-facts-quiet">
         <Fact label={t.attendeesLabel} value={String(cost.attendees)} />
@@ -354,12 +381,16 @@ function CostTab({
   onAdd,
   onEdit,
   onTemplateApplied,
+  onAttendance,
+  onNavigate,
 }: {
   data: FinanceSummary
   terms: ReturnType<typeof activeEventTerms>
   onAdd: (category?: string) => void
   onEdit: (e: Expense) => void
   onTemplateApplied: () => void
+  onAttendance: (data: FinanceSummary) => void
+  onNavigate?: (target: 'guests') => void
 }) {
   const { cost } = data
   const grouped = useMemo(() => groupByCategory(data.expenses), [data.expenses])
@@ -381,8 +412,18 @@ function CostTab({
 
   return (
     <>
+      {/* אחרי האירוע — השאלה הראשונה, לפני כל מספר אחר: כמה באמת הגיעו.
+          לפניו אין מה לשאול, והכרטיס לא מופיע בכלל. */}
+      {data.attendance.event_passed && (
+        <AttendanceCard
+          attendance={data.attendance}
+          onSaved={onAttendance}
+          onNavigate={onNavigate}
+        />
+      )}
+
       {cost.commitments.map((c) => (
-        <CommitmentCard key={c.expense_id} commitment={c} />
+        <CommitmentCard key={c.expense_id} commitment={c} attendance={data.attendance} />
       ))}
 
       <section className="fin-section">
@@ -542,7 +583,170 @@ function ExpenseGroup({
  * המשפט מתחת אומר את זה במילים, בלי סימן קריאה ובלי "שימו לב" — זו
  * עובדה חשבונאית, לא אזהרה.
  */
-function CommitmentCard({ commitment: c }: { commitment: Commitment }) {
+/**
+ * "כמה אורחים הגיעו בפועל?" — הצעד שהופך עלות משוערת לעלות סופית.
+ *
+ * ## מספר אחד, לא סימון אדם-אדם
+ *
+ * אף זוג לא יעבור על 600 שורות ביום שאחרי החתונה. גם האולם לא מחייב
+ * לפי רשימה — הוא סופר צלחות. מספר כולל הוא בדיוק הרזולוציה הנכונה.
+ *
+ * ## מה זה משנה
+ *
+ * מרגע שהוזן, הוא מחליף את מספר המגיעים מאישורי ההגעה **בכל החישוב**.
+ * הנוסחה עצמה לא זזה: ``MAX(MAX(מגיעים, התחייבות) × מחיר, מינימום)``
+ * נשארת, ורק מה שנכנס כ"מגיעים" משתנה. תמיד אפשר לנקות ולחזור.
+ *
+ * ## ומה זה **לא** משנה
+ *
+ * אישורי הגעה. מספר כולל אינו יודע מי מבין המאשרים לא הגיע, וניחוש כאן
+ * היה דורס נתון שהמוזמן מסר בעצמו. במקום זה — המלצה, עם דלת יציאה.
+ */
+function AttendanceCard({
+  attendance,
+  onSaved,
+  onNavigate,
+}: {
+  attendance: Attendance
+  onSaved: (data: FinanceSummary) => void
+  onNavigate?: (target: 'guests') => void
+}) {
+  const [value, setValue] = useState(
+    attendance.actual != null ? String(attendance.actual) : '',
+  )
+  const [editing, setEditing] = useState(!attendance.is_final)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [dismissed, setDismissed] = useState(false)
+
+  async function save(next: number | null) {
+    setBusy(true)
+    setError(null)
+    try {
+      onSaved(await setAttendance(next))
+      setEditing(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t.saveError)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <section className="fin-card fin-attendance">
+        {editing ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (value.trim() === '') return
+              save(parseInt(value, 10))
+            }}
+          >
+            <h2 className="fin-card-title">{t.attendanceTitle}</h2>
+            <p className="fin-hint">{t.attendanceBody}</p>
+            <div className="fin-attendance-row">
+              <label className="field">
+                <span className="field-label">{t.attendanceLabel}</span>
+                {/* גדול בכוונה: זה המספר היחיד שמוקלד כאן, והוא זה
+                    שהופך את כל המסך מ"משוער" ל"סופי". */}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  className="fin-attendance-input"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value.replace(/[^\d]/g, ''))}
+                  placeholder={String(attendance.confirmed_people)}
+                  dir="ltr"
+                  autoFocus
+                />
+              </label>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={busy || value.trim() === ''}
+              >
+                {busy ? strings.common.saving : t.attendanceSave}
+              </button>
+            </div>
+            <p className="fin-hint">
+              {t.attendanceConfirmedNote(attendance.confirmed_people)}
+            </p>
+            {error && (
+              <p className="form-error" role="alert">
+                {error}
+              </p>
+            )}
+          </form>
+        ) : (
+          <div className="fin-attendance-done">
+            <span className="fin-attendance-value">
+              {t.attendanceFinal(attendance.actual ?? 0)}
+            </span>
+            <span className="fin-hint">
+              {attendance.no_show
+                ? t.attendanceNoShow(attendance.no_show)
+                : attendance.extra
+                  ? t.attendanceExtra(attendance.extra)
+                  : t.attendanceConfirmedNote(attendance.confirmed_people)}
+            </span>
+            <span className="fin-attendance-actions">
+              <button type="button" className="btn-link" onClick={() => setEditing(true)}>
+                {t.attendanceEdit}
+              </button>
+              <button
+                type="button"
+                className="btn-link"
+                onClick={() => {
+                  setValue('')
+                  save(null)
+                }}
+                disabled={busy}
+              >
+                {t.attendanceClear}
+              </button>
+            </span>
+          </div>
+        )}
+      </section>
+
+      {/* §10 — המלצה, לא חסימה ולא פעולה. מוצגת רק כשיש פער אמיתי, ורק
+          עד שהזוג סוגר אותה. VEYA לא נוגעת באישורי ההגעה בעצמה. */}
+      {attendance.is_final && !!attendance.no_show && !dismissed && (
+        <section className="fin-card fin-reconcile">
+          <h2 className="fin-card-title">{t.reconcileTitle}</h2>
+          <p>{t.reconcileBody(attendance.no_show)}</p>
+          <div className="fin-reconcile-actions">
+            {onNavigate && (
+              <button
+                type="button"
+                className="btn-primary btn-sm"
+                onClick={() => onNavigate('guests')}
+              >
+                {t.reconcileYes}
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn-ghost btn-sm"
+              onClick={() => setDismissed(true)}
+            >
+              {t.reconcileNo}
+            </button>
+          </div>
+        </section>
+      )}
+    </>
+  )
+}
+
+function CommitmentCard({
+  commitment: c,
+  attendance,
+}: {
+  commitment: Commitment
+  attendance: Attendance
+}) {
   return (
     <section className="fin-card fin-commitment">
       <h2 className="fin-card-title">
@@ -555,7 +759,15 @@ function CommitmentCard({ commitment: c }: { commitment: Commitment }) {
       <div className="fin-commitment-grid">
         <Fact label={t.committedLabel} value={String(c.committed_quantity)} />
         <Fact label={t.attendingNowLabel} value={String(c.attendees)} />
-        <Fact label={t.commitmentCostLabel} value={c.total_display} />
+        {/* רזרבה — מוצגת ליד ההתחייבות כי זו אותה שיחה מול הספק, אבל
+            **לא נספרת בעלות**. המשפט שמתחת אומר את זה במילים. */}
+        {!!c.reserve_quantity && (
+          <Fact label={t.reserveFact} value={String(c.reserve_quantity)} />
+        )}
+        <Fact
+          label={attendance.is_final ? t.commitmentCostLabel : t.estimatedCostLabel}
+          value={c.total_display}
+        />
       </div>
 
       <p className="fin-commitment-note">
@@ -566,6 +778,9 @@ function CommitmentCard({ commitment: c }: { commitment: Commitment }) {
             : t.exactCommitment}
       </p>
 
+      {!!c.reserve_quantity && (
+        <p className="fin-hint">{t.reserveNote(c.reserve_quantity)}</p>
+      )}
       {c.min_total_applied && <p className="fin-hint">{t.minTotalApplied}</p>}
     </section>
   )
@@ -670,12 +885,15 @@ function ExpenseRow({ expense, onEdit }: { expense: Expense; onEdit: () => void 
           {/* הספק, ואחריו שני המצבים. "שולם" בירוק כי זו בשורה טובה;
               "הערכה" באפור כי זו עובדה ניטרלית ולא חוסר. */}
           {expense.vendor && <span className="fin-expense-note">{expense.vendor}</span>}
-          {expense.is_paid && <span className="fin-badge fin-badge-paid">{t.paidLabel}</span>}
-          {/* מקדמה — נאמרת עם הסכום, כי "שולם חלקית" בלי מספר משאיר
-              בדיוק את השאלה ששולחת את הזוג לפתוח את השורה. */}
-          {!expense.is_paid && (expense.paid_amount_agorot ?? 0) > 0 && (
+          {/* מצב התשלום נגזר מהיומן, לא מדגל: שולם הכול ⇒ "שולם";
+              שולם חלק ⇒ כמה **נשאר**, כי זו השאלה. הסכום בתוך התג —
+              "שולם חלקית" לבדו שולח את הזוג לפתוח את השורה. */}
+          {expense.paid_agorot > 0 && expense.remaining_agorot === 0 && (
+            <span className="fin-badge fin-badge-paid">{t.paidLabel}</span>
+          )}
+          {expense.paid_agorot > 0 && expense.remaining_agorot > 0 && (
             <span className="fin-badge fin-badge-partial">
-              {t.partialBadge(expense.paid_display)}
+              {t.remainingBadge(expense.remaining_display)}
             </span>
           )}
           {expense.is_estimated && (
@@ -782,6 +1000,11 @@ function CountingTab({
           <Fact label={t.countedLabel} value={String(counted)} />
           <Fact label={t.notCountedLabel} value={String(notCounted)} />
           <Fact label={t.envelopesLabel} value={income.envelopes_display} />
+          {/* נותנים שאינם ברשימת המוזמנים — מוצגים רק כשיש כאלה. שורה
+              של "0 ₪ לא מהרשימה" בכל אירוע היא רעש. */}
+          {income.external_count > 0 && (
+            <Fact label={t.externalLabel} value={income.external_display} />
+          )}
           {counting.credit_service_active && (
             <Fact
               label={t.creditLabel}
@@ -899,6 +1122,9 @@ function GiftRow({
         {/* מעטפה בלי שיוך מוצגת כ"לא מזוהה" ולא כשורה ריקה: זה מצב
             מתועד שאפשר לחזור אליו, לא נתון חסר. */}
         {entry.guest_name || <em className="fin-unknown">{t.envelopeUnknownBadge}</em>}
+        {entry.is_external && (
+          <span className="fin-badge fin-badge-external">{t.externalBadge}</span>
+        )}
         {entry.shared_names.length > 0 && (
           <span className="fin-gift-shared">{t.sharedWith(entry.shared_names)}</span>
         )}
@@ -1020,7 +1246,11 @@ function SummaryTab({
           "דוח" לבין תשובה. */}
       <section className="fin-card fin-summary">
         <div className="fin-summary-row">
-          <span>{t.summaryCostLabel(terms.eventNoun)}</span>
+          <span>
+            {data.attendance.is_final
+              ? t.summaryCostLabel(terms.eventNoun)
+              : t.estimatedCostLabel}
+          </span>
           <strong>{data.cost.total_display}</strong>
         </div>
         <div className="fin-summary-row">
@@ -1093,6 +1323,12 @@ function SummaryTab({
             label={t.fromNonAttendees}
             value={data.breakdown.from_non_attendees_display}
           />
+          {data.breakdown.from_external_agorot > 0 && (
+            <Fact
+              label={t.externalLabel}
+              value={data.breakdown.from_external_display}
+            />
+          )}
           {data.breakdown.unattributed_agorot > 0 && (
             <Fact
               label={t.unattributedLabel}
@@ -1307,144 +1543,402 @@ function stripSign(display: string): string {
 }
 
 /**
- * שורות הדוח — **מקור אחד לשלושת הפלטים**: המסך, ה-Excel וההדפסה.
+ * הדוח הסופי — **מקור אחד לשני הפלטים**: PDF/הדפסה ו-Excel.
  *
- * בלי הפונקציה הזו היו שלוש רשימות עמודות שצריך לזכור לעדכן יחד, ובדוח
- * כספי זה בדיוק המקום שבו קובץ הייצוא מתחיל לספר סיפור אחר מהמסך.
+ * שבעה חלקים (§19), בסדר שבו קוראים דוח: מי, כמה הגיעו, מה החוזה אמר,
+ * על מה שולם, למי, מה התקבל, ומה השורה התחתונה. בלי המבנה המשותף כאן
+ * היו שתי רשימות עמודות שצריך לזכור לעדכן יחד — ובדוח כספי זה בדיוק
+ * המקום שבו קובץ הייצוא מתחיל לספר סיפור אחר מהמסך.
  *
- * **כל המספרים כאן כבר חושבו בשרת** — הפונקציה מסדרת אותם, לא מחשבת.
+ * **כל המספרים כאן כבר חושבו בשרת.** הפונקציות מסדרות אותם, לא מחשבות.
  */
-function reportRows(report: FinanceReport): { head: string[]; body: string[][] } {
-  const head = [
-    t.colGuest, t.colPhone, t.colRsvp, t.colInvited, t.colAttended,
-    t.colCredit, t.colEnvelope, t.colTotal, t.colNotes,
+
+/** ח"א — פרטי האירוע. */
+function eventFacts(report: FinanceReport): string[][] {
+  return [
+    [t.repEventType, report.event_type_label],
+    [t.repHosts, report.event_title],
+    [t.repEventDate, formatEventDate(report.event_date)],
+    [t.repVenue, report.venue_name],
+  ].filter((r) => r[1])
+}
+
+/** ח"ב — נתוני מוזמנים. */
+function guestFacts(report: FinanceReport): string[][] {
+  const { rsvp, attendance } = report
+  const rows = [
+    [t.repGuestsTotal, String(rsvp.total_guests)],
+    [t.repConfirmed, String(rsvp.confirmed_people)],
+    [t.repDeclined, String(rsvp.declined_guests)],
+    [t.repPending, String(rsvp.pending_guests)],
+    [t.repActual, attendance.actual != null ? String(attendance.actual) : t.repNotEntered],
   ]
-  const body = report.guests.map((g) => [
+  // הפער מוצג רק כשיש מספר בפועל — אחרת הוא טענה בלי כיסוי.
+  if (attendance.no_show) rows.push([t.repNoShow, String(attendance.no_show)])
+  if (attendance.extra) rows.push([t.repExtra, String(attendance.extra)])
+  return rows
+}
+
+/** ח"ג — ההתחייבות מול הספק. שורה לכל התחייבות, לא רק לאולם. */
+function commitmentFacts(report: FinanceReport): string[][] {
+  const rows: string[][] = []
+  for (const c of report.cost.commitments) {
+    rows.push(
+      [c.label, ''],
+      [t.repMealPrice, formatAgorot(c.unit_price_agorot)],
+      [t.repCommitted, String(c.committed_quantity)],
+      [t.repConfirmed, String(c.attendees)],
+      [t.repBilled, String(c.billed_quantity)],
+    )
+    if (c.reserve_quantity) rows.push([t.reserveFact, String(c.reserve_quantity)])
+    if (c.over_commitment) rows.push([t.repOver, String(c.over_commitment)])
+    if (c.unused_quantity) rows.push([t.repUnused, String(c.unused_quantity)])
+    rows.push([t.repFinalCost, c.total_display])
+  }
+  return rows
+}
+
+const EXPENSE_HEAD = [
+  t.repCategory, t.repExpenseName, t.repVendor, t.repCalc,
+  t.repTotal, t.repPaid, t.repRemaining,
+]
+
+function expenseRows(report: FinanceReport): string[][] {
+  return report.expenses.map((e) => [
+    e.category_label,
+    e.label,
+    e.vendor ?? '',
+    describeCalc(e) || t.calcMethods.fixed,
+    e.total_display,
+    e.paid_display,
+    e.remaining_display,
+  ])
+}
+
+const PAYMENT_HEAD = [
+  t.repPaymentDate, t.repPaymentFor, t.repPaymentTo,
+  t.repPaymentKind, t.repPaymentAmount, t.noteLabel,
+]
+
+/** ח"ה — כל התשלומים, שטוחים מכל ההוצאות ולפי תאריך. */
+function paymentRows(report: FinanceReport): string[][] {
+  const rows: { date: string; cells: string[] }[] = []
+  for (const e of report.expenses) {
+    for (const p of e.payments) {
+      rows.push({
+        date: p.paid_on,
+        cells: [
+          p.paid_on_display,
+          e.label,
+          p.payee,
+          p.kind === 'advance' ? t.paymentAdvance : t.paymentRegular,
+          p.amount_display,
+          p.note ?? '',
+        ],
+      })
+    }
+  }
+  // תשלום בלי תאריך יורד לסוף — הוא לא "לפני הכול".
+  rows.sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'))
+  return rows.map((r) => r.cells)
+}
+
+const GIFT_HEAD = [
+  t.repGiftFrom, t.colPhone, t.colRsvp, t.repGiftKind,
+  t.repGiftSource, t.colTotal, t.colNotes,
+]
+
+/**
+ * ח"ו — כל המתנות: מוזמנים, נותנים חיצוניים, ומעטפות שטרם זוהו.
+ *
+ * **שלוש הקבוצות יחד**, אחרת סה״כ המתנות בסיכום גדול מסכום השורות
+ * שמעליו — וזו בדיוק הצורה שבה דוח מאבד אמון.
+ */
+function giftRows(report: FinanceReport): string[][] {
+  const rows = report.guests.map((g) => [
     g.full_name,
     g.phone,
     t.rsvpLabels[g.rsvp_status] ?? g.rsvp_status,
-    String(g.party_size),
-    String(g.attended_count),
-    g.credit_display || '',
-    g.envelope_display || '',
+    t.repGiftGuest,
+    [g.credit_agorot ? t.sourceCredit : '', g.envelope_agorot ? t.sourceEnvelope : '']
+      .filter(Boolean)
+      .join(' + '),
     // "טרם נספרה" ולא "0 ₪": אפס הוא טענה שאין לה כיסוי כשלא נספר כלום.
     g.status === 'not_counted' ? t.cellNotCounted : g.total_display,
     g.note,
   ])
-  return { head, body }
+
+  for (const e of report.external) {
+    rows.push([
+      e.guest_name, e.external_phone, '', t.repGiftExternal,
+      t.sourceEnvelope, e.amount_display, e.note ?? '',
+    ])
+  }
+  for (const e of report.unidentified) {
+    rows.push([
+      t.repGiftUnknown, '', '', t.repGiftUnknown,
+      `${t.sourceEnvelope} #${e.envelope_number}`, e.amount_display, e.note ?? '',
+    ])
+  }
+  return rows
 }
 
-/** שורות הסיכום שמתלוות לדוח בכל פלט. */
-function summaryRows(report: FinanceReport): string[][] {
-  const { rsvp, cost, income, breakdown } = report
-  return [
-    [t.rsvpTitle, ''],
-    [t.rsvpGuests, String(rsvp.total_guests)],
-    [t.rsvpConfirmed, String(rsvp.confirmed_people)],
-    [t.rsvpDeclined, String(rsvp.declined_guests)],
-    [t.rsvpPending, String(rsvp.pending_guests)],
+/** ח"ז — הסיכום. §20: התוצאה במילים פשוטות. */
+function summaryFacts(report: FinanceReport): string[][] {
+  const { cost, income, bottom_line_agorot } = report
+  const rows = [
+    [t.summaryCostLabel(report.event_type_label), cost.total_display],
+    [t.summaryPaidLabel, cost.paid_display],
+    [t.summaryUnpaidLabel, cost.unpaid_display],
     ['', ''],
-    [t.countingTitle, ''],
-    [t.envelopesLabel, income.envelopes_display],
-    [t.creditLabel, income.credit_display],
-    [t.incomeLabel, income.total_display],
-    [t.fromAttendees, breakdown.from_attendees_display],
-    [t.fromNonAttendees, breakdown.from_non_attendees_display],
-    [t.guestsCounted, String(breakdown.guests_counted)],
-    [t.guestsNotCounted, String(breakdown.guests_not_counted)],
-    ['', ''],
-    [t.expensesTitle, ''],
-    ...report.expenses.map((e) => [e.label, e.total_display]),
-    [t.fixedLabel, cost.fixed_display],
-    [t.variableLabel, cost.variable_display],
-    [t.totalCostLabel, cost.total_display],
-    [t.perPersonLabel, cost.cost_per_attendee_display],
-    ['', ''],
-    [t.bottomLineLabel, report.bottom_line_display],
+    [t.repGiftsEnvelopes, income.envelopes_display],
   ]
+  // שורת האשראי מופיעה רק כשיש מתנות אשראי. "0 ₪" או משפט הנעילה
+  // באירוע שלא השתמש בשירות הם תשובה לשאלה שלא נשאלה.
+  if (income.credit_count) {
+    rows.push([t.repGiftsCredit, income.credit_display || t.creditLockedNote])
+  }
+  if (income.external_count) rows.push([t.repGiftsExternal, income.external_display])
+  rows.push([t.repGiftsTotal, income.total_display || '—'], ['', ''])
+
+  if (bottom_line_agorot !== null) {
+    const label =
+      bottom_line_agorot > 0
+        ? t.repResultSurplus
+        : bottom_line_agorot < 0
+          ? t.repResultDeficit
+          : t.repResultEven
+    // הנוסחה נאמרת **בתוך** התווית ולא כשורה משלה — שורה עם תווית ובלי
+    // ערך נראית כמו נתון שלא נטען.
+    rows.push([`${label} (${t.repResultFormula})`, stripSign(report.bottom_line_display)])
+  } else {
+    rows.push([t.bottomLineLabel, t.bottomLineLocked])
+  }
+  return rows
 }
+
+/** ``2026-09-05`` → "5 בספטמבר 2026". ריק נשאר ריק. */
+function formatEventDate(iso: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime())
+    ? iso
+    : d.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+/** אגורות → "12,000 ₪". לתצוגה בדוח בלבד — לא חישוב. */
+function formatAgorot(agorot: number): string {
+  return `${Math.trunc(agorot / 100).toLocaleString('he-IL')} ₪`
+}
+
+// ── Excel (§22) ──────────────────────────────────────────────────────
 
 /**
- * ייצוא ל-Excel (CSV).
+ * חמישה גיליונות: סיכום · מוזמנים · הוצאות · תשלומים · מתנות.
  *
- * ה-BOM בתחילת הקובץ אינו קישוט: בלעדיו Excel בעברית פותח UTF-8
- * כג'יבריש, וזה הפורמט שבו רוב הזוגות יפתחו את הקובץ הזה.
+ * לא dump: לכל גיליון כותרות מודגשות שקופאות בראש, רוחב עמודות, ויישור
+ * RTL. הסכומים בגיליון הסיכום יושבים למעלה, כדי שמי שפותח את הקובץ
+ * יראה את התמונה לפני הפירוט.
  *
- * ``sep=,`` בשורה הראשונה אומר ל-Excel במפורש מה המפריד — בלעדיו,
- * גרסאות Excel בהגדרות אזור ישראליות שמות את כל השורה בתא אחד.
+ * הכותב הוא שלנו (``lib/xlsx``) — ראו שם למה ולא ספרייה.
  */
 function downloadReport(report: FinanceReport, eventNoun: string): void {
-  const { head, body } = reportRows(report)
-  const rows = [head, ...body, ['', ''], ...summaryRows(report), ['', ''], [t.noFeeNote]]
-  const csv = ['sep=,', ...rows.map((r) => r.map(csvCell).join(','))].join('\r\n')
+  const facts = (rows: string[][]) => rows.map(([k, v]) => [k, v] as Cell[])
 
-  const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = t.reportFileName(eventNoun)
-  link.click()
-  URL.revokeObjectURL(url)
+  downloadWorkbook(t.excelFileName(report.event_title || eventNoun), [
+    {
+      name: t.sheetSummary,
+      head: [t.repSummaryTitle, ''],
+      rows: [
+        ...facts(summaryFacts(report)),
+        ['', ''],
+        [t.repEventTitle, ''],
+        ...facts(eventFacts(report)),
+        ['', ''],
+        [t.repGuestsTitle, ''],
+        ...facts(guestFacts(report)),
+        ...(report.cost.commitments.length
+          ? [['', ''], [t.repCommitmentTitle, ''], ...facts(commitmentFacts(report))]
+          : []),
+        ['', ''],
+        [t.noFeeNote, ''],
+      ],
+      widths: [32, 22],
+    },
+    {
+      name: t.sheetGuests,
+      head: [t.colGuest, t.colPhone, t.colRsvp, t.colInvited, t.colAttended,
+             t.colCredit, t.colEnvelope, t.colTotal, t.colNotes],
+      rows: report.guests.map((g) => [
+        g.full_name, g.phone, t.rsvpLabels[g.rsvp_status] ?? g.rsvp_status,
+        g.party_size, g.attended_count,
+        g.credit_display || '', g.envelope_display || '',
+        g.status === 'not_counted' ? t.cellNotCounted : g.total_display,
+        g.note,
+      ]),
+      widths: [22, 14, 14, 12, 12, 14, 14, 14, 26],
+    },
+    {
+      name: t.sheetExpenses,
+      head: EXPENSE_HEAD,
+      rows: expenseRows(report),
+      widths: [18, 22, 18, 22, 14, 14, 14],
+    },
+    {
+      name: t.sheetPayments,
+      head: PAYMENT_HEAD,
+      rows: paymentRows(report),
+      widths: [14, 22, 20, 10, 14, 26],
+    },
+    {
+      name: t.sheetGifts,
+      head: GIFT_HEAD,
+      rows: giftRows(report),
+      widths: [22, 14, 14, 14, 16, 14, 26],
+    },
+  ])
 }
+
+// ── PDF / הדפסה (§19 + §21) ──────────────────────────────────────────
+
+/** לוגו VEYA, מוטבע ישירות. ראו ההסבר ב-``printReport``. */
+const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 64" role="img" aria-label="VEYA" height="26">
+<circle cx="32" cy="32" r="27" stroke="#C9A227" stroke-width="1.5" fill="none"/>
+<circle cx="32" cy="32" r="23" stroke="#C9A227" stroke-width="0.75" fill="none" opacity="0.45"/>
+<path d="M32 3.2l1.9 1.9-1.9 1.9-1.9-1.9z" fill="#C9A227"/>
+<path d="M23 21.5l9 21 9-21" stroke="#C9A227" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="74" y="42" font-family="Georgia,serif" font-size="26" letter-spacing="6" fill="#2B2620">VEYA</text>
+</svg>`
 
 /**
  * גרסת הדפסה — ומכאן גם PDF, דרך "שמירה כ-PDF" של הדפדפן.
  *
- * **בלי ספריית PDF.** ספריית PDF בדפדפן שוקלת מאות קילובייטים, ורובן
- * שוברות עברית ו-RTL בדיוק במסמך שכולו עברית. חלון הדפסה עם ``dir="rtl"``
- * נותן פלט נכון בכל דפדפן, במשקל אפס, והמשתמש בוחר מדפסת או PDF באותו
- * דיאלוג.
+ * ## בלי ספריית PDF
  *
- * הטבלה נבנית מאותו ``reportRows`` כמו המסך וה-Excel — שלושה פלטים,
- * מקור אחד.
+ * ספריית PDF בדפדפן שוקלת מאות קילובייטים, ורובן שוברות עברית ו-RTL
+ * בדיוק במסמך שכולו עברית. חלון הדפסה עם ``dir="rtl"`` נותן פלט נכון
+ * בכל דפדפן, במשקל אפס, והמשתמש בוחר מדפסת או PDF באותו דיאלוג.
+ *
+ * ## הלוגו מוטבע, לא מקושר
+ *
+ * חלון ההדפסה נפתח כ-``about:blank``, וכתובת יחסית ל-``/logo.svg`` לא
+ * בהכרח נפתרת שם. תמונה שלא נטענה בזמן היא דוח בלי מיתוג — ולכן ה-SVG
+ * יושב במחרוזת. ``position: fixed`` גורם לו לחזור בכל עמוד ב-Chrome
+ * וב-Safari; מספרי עמודים מגיעים מהגדרות ההדפסה של הדפדפן עצמו.
  */
 function printReport(report: FinanceReport, eventNoun: string): void {
-  const { head, body } = reportRows(report)
   const esc = (v: string) =>
     (v ?? '').replace(/[&<>"]/g, (c) =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string,
     )
 
+  const factTable = (rows: string[][]) =>
+    `<table class="facts"><tbody>${rows
+      .map(
+        ([k, v]) =>
+          `<tr class="${v ? '' : 'sub'}"><td>${esc(k)}</td><td class="num">${esc(v)}</td></tr>`,
+      )
+      .join('')}</tbody></table>`
+
+  const dataTable = (head: string[], rows: string[][], numFrom = 3) =>
+    rows.length
+      ? `<table class="grid"><thead><tr>${head
+          .map((h) => `<th>${esc(h)}</th>`)
+          .join('')}</tr></thead><tbody>${rows
+          .map(
+            (r) =>
+              `<tr>${r
+                .map(
+                  (c, i) =>
+                    `<td class="${i >= numFrom ? 'num' : ''}${
+                      c === t.cellNotCounted ? ' muted' : ''
+                    }">${esc(c)}</td>`,
+                )
+                .join('')}</tr>`,
+          )
+          .join('')}</tbody></table>`
+      : `<p class="muted">${esc(t.repEmptyPayments)}</p>`
+
+  const section = (title: string, body: string) =>
+    `<section><h2>${esc(title)}</h2>${body}</section>`
+
+  // תאריך בניסוח שקוראים ולא ב-ISO. "2026-09-05" בכותרת של דוח פרימיום
+  // הוא פליטה טכנית, לא תאריך.
+  const eventDate = formatEventDate(report.event_date)
+  const meta = [report.event_type_label, report.venue_name, eventDate]
+    .filter(Boolean)
+    .join(' · ')
+
   const html = `<!doctype html><html dir="rtl" lang="he"><head><meta charset="utf-8">
 <title>${esc(t.navTitle(eventNoun))} — ${esc(report.event_title)}</title>
 <style>
-  @page { size: A4 landscape; margin: 12mm; }
-  body { font-family: 'Heebo', Arial, sans-serif; color: #2b2620; font-size: 11px; }
-  h1 { font-size: 18px; margin: 0 0 2px; }
-  .meta { color: #787064; font-size: 11px; margin-bottom: 14px; }
-  h2 { font-size: 13px; margin: 18px 0 6px; }
+  @page { size: A4; margin: 22mm 12mm 14mm; }
+  body { font-family: 'Heebo', Arial, sans-serif; color: #2b2620; font-size: 11px; margin: 0; }
+
+  /* כותרת רצה — חוזרת בכל עמוד ב-Chrome וב-Safari. */
+  .runner {
+    position: fixed; top: 0; inset-inline: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 6px; border-bottom: 1px solid #e5dec9;
+    background: #fff;
+  }
+  .runner .who { font-size: 10px; color: #787064; text-align: start; }
+  .runner .who b { display: block; font-size: 12px; color: #2b2620; }
+
+  h1 { font-size: 20px; margin: 0 0 2px; }
+  .lede { color: #787064; font-size: 11px; margin: 0 0 16px; }
+  h2 {
+    font-size: 13px; margin: 0 0 6px; padding-bottom: 4px;
+    border-bottom: 1px solid #e5dec9; color: #896e29;
+  }
+  section { margin-bottom: 16px; break-inside: avoid; }
+  /* טבלה ארוכה כן נשברת — אחרת "כל המוזמנים" היה נדחף לעמוד חדש שלם. */
+  section.long { break-inside: auto; }
+
   table { width: 100%; border-collapse: collapse; }
-  th, td { border-bottom: 1px solid #e5dec9; padding: 5px 6px; text-align: right; }
-  th { background: #fbf6ee; font-weight: 600; }
-  /* השורות לא נשברות באמצע בין עמודים — שורת מוזמן חצויה בדוח של
-     מאות שורות היא בדיוק מה שהופך אותו ללא-קריא. */
-  tr { break-inside: avoid; }
-  thead { display: table-header-group; }
-  .num { font-variant-numeric: tabular-nums; }
+  .facts { width: auto; min-width: 58%; }
+  .facts td { padding: 3px 6px; border-bottom: 1px solid #f2ede1; }
+  .facts td:last-child { font-weight: 600; }
+  .facts tr.sub td { font-weight: 700; color: #2b2620; padding-top: 8px; border-bottom: 0; }
+
+  .grid th, .grid td { border-bottom: 1px solid #e5dec9; padding: 4px 6px; text-align: right; }
+  .grid th { background: #fbf6ee; font-weight: 600; font-size: 10px; }
+  /* השורות לא נשברות באמצע, והכותרת חוזרת בכל עמוד. */
+  .grid tr { break-inside: avoid; }
+  .grid thead { display: table-header-group; }
+
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
   .muted { color: #787064; }
-  .sum { width: auto; margin-top: 4px; }
-  .sum td:last-child { font-weight: 600; }
-  .note { color: #787064; font-size: 10px; margin-top: 14px; }
+  .note { color: #787064; font-size: 10px; margin-top: 10px; }
+  .result { font-size: 15px; font-weight: 700; }
 </style></head><body>
-<h1>${esc(t.navTitle(eventNoun))} — ${esc(report.event_title)}</h1>
-<div class="meta">${esc([report.venue_name, report.event_date].filter(Boolean).join(' · '))}</div>
-<table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead>
-<tbody>${body
-    .map(
-      (r) =>
-        `<tr>${r
-          .map((c, i) => {
-            const cls = i >= 3 && i <= 7 ? 'num' : ''
-            const muted = c === t.cellNotCounted ? ' muted' : ''
-            return `<td class="${cls}${muted}">${esc(c)}</td>`
-          })
-          .join('')}</tr>`,
-    )
-    .join('')}</tbody></table>
-<h2>${esc(t.summaryTitle(eventNoun))}</h2>
-<table class="sum"><tbody>${summaryRows(report)
-    .map((r) => `<tr><td>${esc(r[0])}</td><td class="num">${esc(r[1] ?? '')}</td></tr>`)
-    .join('')}</tbody></table>
+
+<div class="runner">
+  ${LOGO_SVG}
+  <div class="who"><b>${esc(report.event_title)}</b>${esc(meta)}</div>
+</div>
+
+<h1>${esc(t.navTitle(eventNoun))}</h1>
+<p class="lede">${esc(t.repGeneratedAt)} ${esc(
+    new Date(report.generated_at).toLocaleDateString('he-IL'),
+  )}</p>
+
+${section(t.repSummaryTitle, factTable(summaryFacts(report)))}
+${section(t.repEventTitle, factTable(eventFacts(report)))}
+${section(t.repGuestsTitle, factTable(guestFacts(report)))}
+${
+  report.cost.commitments.length
+    ? section(t.repCommitmentTitle, factTable(commitmentFacts(report)))
+    : ''
+}
+${section(t.repExpensesTitle, dataTable(EXPENSE_HEAD, expenseRows(report), 4))}
+${section(t.repPaymentsTitle, dataTable(PAYMENT_HEAD, paymentRows(report), 4))}
+<section class="long"><h2>${esc(t.repGiftsTitle)}</h2>${dataTable(
+    GIFT_HEAD,
+    giftRows(report),
+    5,
+  )}</section>
+
 <p class="note">${esc(t.noFeeNote)}</p>
 </body></html>`
 
@@ -1452,13 +1946,8 @@ function printReport(report: FinanceReport, eventNoun: string): void {
   if (!win) return
   win.document.write(html)
   win.document.close()
-  // ההמתנה נותנת לדפדפן לפרוס את הטבלה לפני שדיאלוג ההדפסה נפתח;
+  // ההמתנה נותנת לדפדפן לפרוס את הטבלאות לפני שדיאלוג ההדפסה נפתח;
   // בלעדיה דפדפנים מסוימים מדפיסים עמוד ריק.
   win.onload = () => win.print()
   setTimeout(() => win.print(), 400)
-}
-
-function csvCell(value: string): string {
-  const text = value ?? ''
-  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
