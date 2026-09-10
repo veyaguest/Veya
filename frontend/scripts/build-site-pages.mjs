@@ -86,9 +86,50 @@ const CLUSTERS = {
   G: { title: 'תרחישים', blurb: 'מה עושים כשמשהו משתנה.' },
 }
 
+/* ── בלוקים ויזואליים במדריכים (§13) ──────────────────────────────────
+   מדריך של 1,200 מילים שהוא רק פסקאות הוא מדריך שלא נקרא עד הסוף.
+   שלושה בלוקים, בתחביר אחד, שנכתבים ישירות ב-Markdown:
+
+     :::callout
+     המשפט שצריך לזכור מהסעיף הזה.
+     :::
+
+     :::numbers
+     500 | התחייבתם על
+     463 | אישרו הגעה
+     37  | פער
+     :::
+
+     :::flow
+     מעטפות > הזנת מתנה > שיוך למוזמן > דוח מתנות > מאזן
+     :::
+
+   ההמרה קורית **לפני** marked, כי HTML ברמת בלוק עובר דרכו כמו שהוא.
+   כך אין תלות בתוסף, והמדריכים נשארים Markdown קריא. */
+function guideBlocks(md) {
+  return md.replace(/^:::(callout|numbers|flow)\n([\s\S]*?)^:::$/gm, (_, kind, raw) => {
+    const body = raw.trim()
+    if (kind === 'callout') {
+      return `<div class="callout"><p>${esc(body).replace(/\n/g, '<br />')}</p></div>`
+    }
+    if (kind === 'numbers') {
+      const cells = body.split('\n').map((line) => {
+        const [v, label] = line.split('|').map((x) => (x || '').trim())
+        return `<div class="g-num"><span class="g-num-v">${esc(v)}</span><span class="g-num-l">${esc(label)}</span></div>`
+      })
+      return `<div class="g-numbers">${cells.join('')}</div>`
+    }
+    const steps = body.split('>').map((x) => x.trim()).filter(Boolean)
+    const items = steps
+      .map((x, i) => (i ? `<span class="g-flow-a" aria-hidden="true">←</span>` : '') + `<span class="g-flow-s">${esc(x)}</span>`)
+      .join('')
+    return `<div class="g-flow">${items}</div>`
+  })
+}
+
 function guideHtml(g) {
   const bodyHtml = marked
-    .parse(g.body, { gfm: true })
+    .parse(guideBlocks(g.body), { gfm: true })
     .replace(/<table>/g, '<div class="table-scroll"><table>')
     .replace(/<\/table>/g, '</table></div>')
 
