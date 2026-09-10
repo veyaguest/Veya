@@ -953,4 +953,24 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
   min-height: 44px;
 }
 
+/* ── כרטיס הספירה: פעימה קצרה בכל מעטפה חדשה ───────────────────── */
+.gc-counter { transition: transform 260ms var(--ease-out); }
+.gc-counter.is-new { transform: scale(1.012); }
+.gc-picked, .gc-amount { transition: opacity 200ms var(--ease-out); }
+.gc-counter.is-typing .gc-picked,
+.gc-counter.is-typing .gc-amount { opacity: 0.25; }
+
+/* ── סטטוס בדוח המתנות ─────────────────────────────────────────────
+   "שויך למוזמן" ולא "התקבל": מעטפה שנספרה כבר התקבלה בהגדרה,
+   ו"התקבל" היה רומז על מסלול תשלום שטרם שוחרר. */
+.gc-linked { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); font-weight: 600; color: var(--success); }
+.gc-linked::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--success); flex: none; }
+.gc-t-link { white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-counter, .gc-counter.is-new { transition: none; transform: none; }
+  .gc-counter.is-typing .gc-picked,
+  .gc-counter.is-typing .gc-amount { opacity: 1; }
+}
+
 /* ===== VEYA BRAND LAYER — END ===== */
