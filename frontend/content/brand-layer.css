@@ -547,3 +547,18 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
   align-items: center;
   min-height: 44px;
 }
+
+/* ── עמודת השיוך בדוח המתנות ───────────────────────────────────────
+   לא "סטטוס": שדה הסטטוס קיים רק בשורת אשראי, והשירות ההוא לא שוחרר.
+   מה שכן אמיתי ומעניין הוא שהמעטפה נמצאה ברשימת המוזמנים — וזה בדיוק
+   המסר: VEYA מחברת בין המתנה למי שנתן אותה. */
+.gc-linked {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: var(--fs-xs); font-weight: 600;
+  color: var(--success);
+}
+.gc-linked::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--success); flex: none;
+}
+.gc-t-link { white-space: nowrap; }

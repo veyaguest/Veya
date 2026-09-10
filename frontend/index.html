@@ -992,7 +992,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                  /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                        /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1543,8 +1543,24 @@
         min-height: 44px;
       }
 
+      /* ── עמודת השיוך בדוח המתנות ───────────────────────────────────────
+         לא "סטטוס": שדה הסטטוס קיים רק בשורת אשראי, והשירות ההוא לא שוחרר.
+         מה שכן אמיתי ומעניין הוא שהמעטפה נמצאה ברשימת המוזמנים — וזה בדיוק
+         המסר: VEYA מחברת בין המתנה למי שנתן אותה. */
+      .gc-linked {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: var(--fs-xs); font-weight: 600;
+        color: var(--success);
+      }
+      .gc-linked::before {
+        content: ""; width: 7px; height: 7px; border-radius: 50%;
+        background: var(--success); flex: none;
+      }
+      .gc-t-link { white-space: nowrap; }
+
       /* ===== VEYA BRAND LAYER — END ===== */
 
+    
     
     
     
