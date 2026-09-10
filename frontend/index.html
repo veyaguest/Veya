@@ -234,20 +234,16 @@
       .hero h1 .accent { color: var(--gold-light); }
       .hero p.lead { font-size: clamp(1.063rem, 2.4vw, 1.313rem); color: #ddd2bd; max-width: 640px; margin: 0 auto 34px; }
       .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-            /* ═════ מסלול האירוע (§16) ═══════════════════════════════════════
+            /* ═════ מסלול האירוע (§16) ═════════════════════════════════════
          שרשרת שמראה את סדר הזמנים האמיתי של אירוע ומובילה את העין לגלילה.
-         כל שלב הוא קישור אמיתי — לא קישוט. במובייל הרצועה נגללת לרוחב
-         בתוך עצמה במקום להידחס, כי שישה שלבים ב-375px נעשים בלתי קריאים. */
+         במובייל היא נגללת לרוחב בתוך עצמה — שישה שלבים ב-375px נדחסים
+         עד שהם בלתי קריאים. */
       .journey-rail { margin-top: 40px; }
-      .jr-track {
-        display: flex; align-items: center; justify-content: center;
-        flex-wrap: wrap; gap: 8px 6px;
-      }
+      .jr-track { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 6px; }
       .jr-step {
         display: inline-flex; align-items: center; min-height: 44px;
         padding: 9px 16px; border-radius: var(--radius-pill);
-        border: 1px solid rgba(201, 162, 39, 0.28);
-        background: rgba(201, 162, 39, 0.06);
+        border: 1px solid rgba(201, 162, 39, 0.28); background: rgba(201, 162, 39, 0.06);
         color: var(--cream-text); text-decoration: none;
         font-size: var(--fs-sm); font-weight: 500; white-space: nowrap;
         transition: border-color var(--motion-fast) var(--ease-out),
@@ -255,39 +251,92 @@
                     transform var(--motion-fast) var(--ease-out);
       }
       .jr-step:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
-      .jr-arrow {
-        color: var(--gold); font-size: var(--fs-md); line-height: 1;
-        opacity: 0.55; user-select: none;
-      }
+      .jr-arrow { color: var(--gold); font-size: var(--fs-md); line-height: 1; opacity: 0.55; }
       @media (hover: hover) and (pointer: fine) {
-        .jr-step:hover {
-          border-color: var(--gold); background: rgba(201, 162, 39, 0.14);
-          transform: translateY(-2px);
-        }
+        .jr-step:hover { border-color: var(--gold); background: rgba(201, 162, 39, 0.14); transform: translateY(-2px); }
       }
       .jr-step:active { transform: translateY(1px); }
-
-      /* הופעה מדורגת: השלבים נכנסים לפי הסדר שבו האירוע באמת מתקדם.
-         ה-delay נגזר מ--i, כך שהוספת שלב לא דורשת שום שינוי ב-CSS. */
-      /* הרצועה יושבת בהירו, שנכנס באנימציית טעינה ולא ב-IntersectionObserver.
-         לכן ההשהיה נספרת מתום כניסת ההירו (d3 = 180ms) ולא ממחלקת .in. */
+      /* הרצועה בהירו, שנכנס באנימציית טעינה — לכן ההשהיה נספרת מתום
+         כניסת ההירו (d3 = 180ms) ולא ממחלקת .in של ה-scroll reveal. */
       .jr-step { animation: jr-in 380ms var(--ease-out) both; animation-delay: calc(260ms + var(--i) * 70ms); }
       @keyframes jr-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
       @media (max-width: 700px) {
-        .jr-track {
-          flex-wrap: nowrap; justify-content: flex-start;
-          overflow-x: auto; padding-bottom: 6px;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: none;
-        }
+        .jr-track { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
         .jr-track::-webkit-scrollbar { display: none; }
         .jr-step { flex: 0 0 auto; }
       }
-
       @media (prefers-reduced-motion: reduce) {
         .jr-step { animation: none; }
         .jr-step:hover, .jr-step:active { transform: none; }
+      }
+
+            /* ═════ ספירת המעטפות — סקשן הדגל (§7–§8) ══════════════════════
+         ברירת המחדל היא "גלוי, במצב הסופי". ה-JS הוא זה שמסתיר לפני
+         שהוא מנגן (``is-armed``) — כך שבלי JS, ובעיני crawler, כל
+         המעטפות והדוח נמצאים כתוכן רגיל. ההפך היה מסתיר את הסקשן החזק
+         בעמוד מכל מי שה-JS שלו לא רץ. */
+      .gifts-scene .section-head p { max-width: 620px; margin-inline: auto; }
+      .gc-stage { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr); gap: 28px; align-items: start; margin-top: 44px; }
+      .gc-counter { background: var(--ivory); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); overflow: hidden; position: sticky; top: 96px; }
+      .gc-counter-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--ivory-2); }
+      .gc-counter-num { font-weight: 700; color: var(--charcoal); font-variant-numeric: tabular-nums; }
+      .gc-counter-close { font-size: var(--fs-xs); color: var(--muted); }
+      .gc-counter-body { padding: 18px; display: grid; gap: 16px; }
+      .gc-field { display: grid; gap: 6px; }
+      .gc-field-label { font-size: var(--fs-sm); color: var(--muted); font-weight: 600; }
+      .gc-picked { display: inline-flex; align-items: center; align-self: start; padding: 9px 14px; border-radius: var(--radius-pill); background: rgba(201, 162, 39, 0.12); border: 1px solid rgba(201, 162, 39, 0.35); color: var(--charcoal); font-weight: 600; }
+      .gc-amount { display: flex; align-items: baseline; gap: 6px; padding: 11px 14px; border: 1px solid var(--line); border-radius: var(--radius-md); background: #fff; font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); font-variant-numeric: tabular-nums; }
+      .gc-cur { font-size: var(--fs-lg); color: var(--muted); }
+      .gc-save { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 12px 20px; border-radius: var(--radius-pill); background: var(--gold); color: var(--charcoal); font-weight: 600; box-shadow: 0 6px 18px rgba(201, 162, 39, 0.28); }
+      .gc-saved { margin: 0; padding: 11px 18px; border-top: 1px solid var(--line); background: rgba(31, 122, 69, 0.07); color: var(--success); font-size: var(--fs-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
+      .gc-total { display: grid; gap: 4px; padding: 20px 22px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); margin-bottom: 14px; }
+      .gc-total-label { font-size: var(--fs-sm); color: var(--muted); font-weight: 600; }
+      .gc-total-num { font-family: var(--font-display); font-size: var(--fd-2xl); color: var(--charcoal); line-height: 1.05; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+      .gc-total-sub { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+      .gc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+      .gc-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 13px 16px; border: 1px solid var(--line); border-radius: var(--radius-md); background: #fff; }
+      /* ההסתרה מיידית, ורק החשיפה מונפשת. אילו ה-transition היה על
+         כלל הבסיס, הוספת ``is-armed`` בזמן ריצה הייתה מדהה את השורות
+         החוצה ל-300ms לפני שהרצף בכלל מתחיל. */
+      .gc-stage.is-armed .gc-row { opacity: 0; transform: translateY(10px); }
+      .gc-stage.is-armed.is-on .gc-row {
+        opacity: 1; transform: none;
+        transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out);
+        transition-delay: calc(var(--i) * 460ms);
+      }
+      .gc-row-num { color: var(--gold-deep); font-weight: 700; font-variant-numeric: tabular-nums; font-size: var(--fs-sm); }
+      .gc-row-who { display: grid; gap: 2px; min-width: 0; }
+      .gc-row-name { color: var(--charcoal); font-weight: 600; }
+      .gc-row-shared { font-size: var(--fs-xs); color: var(--muted); }
+      .gc-badge { display: inline-block; width: fit-content; font-size: var(--fs-2xs); font-weight: 600; color: var(--muted); background: var(--ivory-2); border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 2px 9px; }
+      .gc-row-amt { font-weight: 700; color: var(--charcoal); font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .gc-bridge { text-align: center; margin: 46px auto 22px; max-width: 520px; font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); }
+      .gc-report { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); overflow: hidden; box-shadow: var(--shadow-sm); }
+      .gc-report.is-armed { opacity: 0; transform: translateY(14px); }
+      .gc-report.is-armed.is-on {
+        opacity: 1; transform: none;
+        transition: opacity 420ms var(--ease-out), transform 420ms var(--ease-out);
+      }
+      .gc-report-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--ivory-2); }
+      .gc-report-title { font-family: var(--font-display); font-size: var(--fs-2xl); color: var(--charcoal); }
+      .gc-report-sum { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+      .gc-table-scroll { overflow-x: auto; }
+      .gc-table { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
+      .gc-table th, .gc-table td { padding: 12px 16px; text-align: start; border-bottom: 1px solid var(--line); }
+      .gc-table thead th { font-size: var(--fs-sm); color: var(--muted); font-weight: 700; background: #fff; }
+      .gc-table td { color: var(--charcoal); }
+      .gc-t-num, .gc-t-amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .gc-t-num { color: var(--gold-deep); font-weight: 700; }
+      .gc-t-amt { font-weight: 700; }
+      .gc-t-with { color: var(--muted); }
+      .gc-table tfoot td { font-weight: 700; background: var(--ivory-2); border-bottom: 0; }
+      .gc-note { margin: 0; padding: 14px 20px; font-size: var(--fs-sm); color: var(--muted); border-top: 1px solid var(--line); }
+      .gc-cta { text-align: center; margin-top: 34px; }
+      @media (max-width: 860px) { .gc-stage { grid-template-columns: 1fr; gap: 22px; } .gc-counter { position: static; } }
+      @media (max-width: 460px) { .gc-row { grid-template-columns: auto 1fr; row-gap: 4px; } .gc-row-amt { grid-column: 2; justify-self: start; } }
+      @media (prefers-reduced-motion: reduce) {
+        .gc-stage.is-armed .gc-row, .gc-report.is-armed { opacity: 1; transform: none; transition: none; }
+        .gc-stage.is-armed.is-on .gc-row { transition-delay: 0s; }
       }
 
       .hero-trust { margin-top: 26px; font-size: var(--fs-sm); color: #b6aa93; display: flex; gap: 10px 22px; justify-content: center; flex-wrap: wrap; }
@@ -815,7 +864,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                          /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                        /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1343,9 +1392,6 @@
     
     
     
-    
-    
-    
     </style>
   </head>
   <body>
@@ -1421,25 +1467,25 @@
             </div>
           </div>
 
-          <!-- ═════ מסלול האירוע — פותח את הסיפור של §4 ומחבר את הסקשנים ═════
-         זו לא רשימת פיצ'רים אלא סדר הזמנים האמיתי של אירוע: מי מוזמן,
-         מי מגיע, על כמה מתחייבים, איפה כולם יושבים, מה התקבל, ומה נשאר. -->
-    <nav class="journey-rail reveal d3" aria-label="מה VEYA מלווה, לפי סדר האירוע">
-      <div class="jr-track">
-          <a class="jr-step" href="/features/guests/" style="--i: 0"><span>מוזמנים</span></a>
-          <span class="jr-arrow" aria-hidden="true">←</span>
-          <a class="jr-step" href="/features/rsvp/" style="--i: 1"><span>אישורי הגעה</span></a>
-          <span class="jr-arrow" aria-hidden="true">←</span>
-          <a class="jr-step" href="/calculators/venue-commitment/" style="--i: 2"><span>התחייבות</span></a>
-          <span class="jr-arrow" aria-hidden="true">←</span>
-          <a class="jr-step" href="/features/seating/" style="--i: 3"><span>הושבה</span></a>
-          <span class="jr-arrow" aria-hidden="true">←</span>
-          <a class="jr-step" href="#gifts" style="--i: 4"><span>מתנות</span></a>
-          <span class="jr-arrow" aria-hidden="true">←</span>
-          <a class="jr-step" href="/features/finance/" style="--i: 5"><span>מאזן</span></a>
-      </div>
-    </nav>
-    <!-- ═════ 2. TRUST ═════ -->
+          <!-- מסלול האירוע (§16): סדר הזמנים האמיתי של אירוע, לא רשימת
+               פיצ'רים. כל שלב הוא קישור אמיתי ומוביל את העין לגלילה. -->
+          <nav class="journey-rail reveal d3" aria-label="מה VEYA מלווה, לפי סדר האירוע">
+            <div class="jr-track">
+            <a class="jr-step" href="/features/guests/" style="--i: 0"><span>מוזמנים</span></a>
+            <span class="jr-arrow" aria-hidden="true">←</span>
+            <a class="jr-step" href="/features/rsvp/" style="--i: 1"><span>אישורי הגעה</span></a>
+            <span class="jr-arrow" aria-hidden="true">←</span>
+            <a class="jr-step" href="/calculators/venue-commitment/" style="--i: 2"><span>התחייבות</span></a>
+            <span class="jr-arrow" aria-hidden="true">←</span>
+            <a class="jr-step" href="/features/seating/" style="--i: 3"><span>הושבה</span></a>
+            <span class="jr-arrow" aria-hidden="true">←</span>
+            <a class="jr-step" href="#gifts" style="--i: 4"><span>מתנות</span></a>
+            <span class="jr-arrow" aria-hidden="true">←</span>
+            <a class="jr-step" href="/features/finance/" style="--i: 5"><span>מאזן</span></a>
+            </div>
+          </nav>
+
+          <!-- ═════ 2. TRUST ═════ -->
           <div class="hero-trust reveal d3">
             <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
             <span>נבנתה לאירועים בישראל</span>
@@ -1458,16 +1504,13 @@
         <div class="wrap">
           <div class="why-inner reveal">
             <span class="kicker">הבעיה</span>
-            <h2 id="why-title" class="section-title">כי "יש לנו 500 מוזמנים" זה לא באמת מספר אחד.</h2>
+            <h2 id="why-title" class="section-title">לא צריך לנחש כמה יגיעו.</h2>
             <p class="why-list">
-              רשימת המוזמנים היא רק ההתחלה. מתוכה צריך להבין מי אישר, מי לא ענה, מי אולי,
-              כמה באמת צפויים להגיע, כמה למסור לאולם, כמה שולחנות לפתוח — ובסוף גם כמה
-              האירוע עלה וכמה כסף נכנס.
+              רשימת המוזמנים משתנה כל הזמן. אנשים מאשרים, לא עונים, משנים תוכניות ולפעמים פשוט לא מגיעים.
             </p>
-            <p>
-              כשכל אחד מהדברים האלה נמצא במקום אחר, קשה לדעת מה המספר שעליו באמת אפשר להסתמך.
+            <p class="why-punch">
+              VEYA מרכזת את כל מה שקורה בדרך, כדי שתמיד תדעו איפה אתם עומדים — לפני האירוע, ביום עצמו וגם אחרי.
             </p>
-            <p class="why-punch">VEYA שומרת על מספר אחד לאורך כל הדרך.</p>
           </div>
         </div>
       </section>
@@ -1813,7 +1856,138 @@
       </section>
 
       <!-- ═════ 10. אחרי האירוע ═════ -->
-      <section class="after tone-alt" id="after" aria-labelledby="after-title">
+      <!-- ═══════════════════════════════════════════════════════════════
+         ספירת המעטפות — סקשן הדגל (§7–§8)
+
+         הכול כאן נגזר מהמסך האמיתי ``EnvelopeCounter.tsx``: אותו סדר
+         (ממי → כמה → שמירה), אותן מילים מ-``strings/he.ts``, ואותם שדות
+         שהשרת מחזיר למעטפה (``finance_service.GiftEntry``): מספר · שם ·
+         שותפים · סכום · הערה.
+
+         מה שאין כאן בכוונה: "סטטוס" ו"אופן מתנה". שניהם קיימים רק בשורת
+         אשראי, והשירות ההוא טרם שוחרר (``gift_eligibility``).
+         ═══════════════════════════════════════════════════════════════ -->
+    <section id="gifts" class="gifts-scene tone-light" aria-labelledby="gifts-title">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="kicker">ספירת המעטפות</span>
+          <h2 id="gifts-title">נגמר האירוע. עכשיו רק נשאר להבין כמה קיבלתם.</h2>
+          <p>
+            כל הערב אנשים הביאו מעטפות. עכשיו הן על השולחן, ובכל אחת יש שם —
+            אבל כדי לדעת מה קיבלתם צריך לעבור עליהן אחת־אחת. עם VEYA זה פשוט.
+            פותחים את ספירת המעטפות, מזינים בכל פעם ממי וכמה, לוחצים שמירה —
+            והמעטפה הבאה כבר מחכה.
+          </p>
+        </div>
+
+        <div class="gc-stage" data-gc>
+          <div class="gc-counter" aria-hidden="true">
+            <div class="gc-counter-head">
+              <span class="gc-counter-num" data-gc-num>מעטפה #5</span>
+              <span class="gc-counter-close">סגירה</span>
+            </div>
+            <div class="gc-counter-body">
+              <div class="gc-field">
+                <span class="gc-field-label">ממי?</span>
+                <span class="gc-picked" data-gc-who>לא ידוע ממי</span>
+              </div>
+              <div class="gc-field">
+                <span class="gc-field-label">כמה יש במעטפה?</span>
+                <span class="gc-amount"><span data-gc-amt>3,000</span><span class="gc-cur">₪</span></span>
+              </div>
+              <span class="gc-save">שמירה והמעטפה הבאה</span>
+            </div>
+            <p class="gc-saved" data-gc-saved>מעטפה #4 נשמרה — 700 ₪</p>
+          </div>
+
+          <div class="gc-ledger">
+            <div class="gc-total">
+              <span class="gc-total-label">סה״כ מתנות שהתקבלו</span>
+              <strong class="gc-total-num" data-gc-total
+                data-count-to="7200" data-count-suffix=" ₪" data-count-duration="620">7,200 ₪</strong>
+              <span class="gc-total-sub"><span data-gc-count>5</span> מעטפות</span>
+            </div>
+            <ul class="gc-list">
+            <li class="gc-row" data-amount="500" style="--i: 0">
+              <span class="gc-row-num">#1</span>
+              <span class="gc-row-who"><span class="gc-row-name">דניאל כהן</span></span>
+              <span class="gc-row-amt">500 ₪</span>
+            </li>
+            <li class="gc-row" data-amount="1000" style="--i: 1">
+              <span class="gc-row-num">#2</span>
+              <span class="gc-row-who"><span class="gc-row-name">מאיה לוי</span></span>
+              <span class="gc-row-amt">1,000 ₪</span>
+            </li>
+            <li class="gc-row" data-amount="2000" style="--i: 2">
+              <span class="gc-row-num">#3</span>
+              <span class="gc-row-who"><span class="gc-row-name">משפחת ישראלי</span><span class="gc-row-shared">עם ורד ואיתי ישראלי</span></span>
+              <span class="gc-row-amt">2,000 ₪</span>
+            </li>
+            <li class="gc-row" data-amount="700" style="--i: 3">
+              <span class="gc-row-num">#4</span>
+              <span class="gc-row-who"><span class="gc-row-name">נועה ברק</span></span>
+              <span class="gc-row-amt">700 ₪</span>
+            </li>
+            <li class="gc-row" data-amount="3000" style="--i: 4">
+              <span class="gc-row-num">#5</span>
+              <span class="gc-row-who"><span class="gc-row-name">לא ידוע ממי</span><span class="gc-badge">לא מזוהה</span></span>
+              <span class="gc-row-amt">3,000 ₪</span>
+            </li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="gc-bridge">ובסוף?</p>
+
+        <div class="gc-report" data-gc-report>
+          <div class="gc-report-head">
+            <span class="gc-report-title">דוח מתנות</span>
+            <span class="gc-report-sum">סה״כ 7,200 ₪ · 5 מעטפות</span>
+          </div>
+          <div class="gc-table-scroll">
+            <table class="gc-table">
+              <caption class="vh">דוח המתנות: מספר מעטפה, ממי התקבלה, שותפים למעטפה וסכום</caption>
+              <thead><tr><th scope="col">מעטפה</th><th scope="col">ממי</th><th scope="col">שותפים למעטפה</th><th scope="col">סכום</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="gc-t-num">#1</td><td>דניאל כהן</td>
+                  <td class="gc-t-with">—</td><td class="gc-t-amt">500 ₪</td>
+                </tr>
+                <tr>
+                  <td class="gc-t-num">#2</td><td>מאיה לוי</td>
+                  <td class="gc-t-with">—</td><td class="gc-t-amt">1,000 ₪</td>
+                </tr>
+                <tr>
+                  <td class="gc-t-num">#3</td><td>משפחת ישראלי</td>
+                  <td class="gc-t-with">ורד ואיתי ישראלי</td><td class="gc-t-amt">2,000 ₪</td>
+                </tr>
+                <tr>
+                  <td class="gc-t-num">#4</td><td>נועה ברק</td>
+                  <td class="gc-t-with">—</td><td class="gc-t-amt">700 ₪</td>
+                </tr>
+                <tr>
+                  <td class="gc-t-num">#5</td><td>לא ידוע ממי</td>
+                  <td class="gc-t-with">—</td><td class="gc-t-amt">3,000 ₪</td>
+                </tr>
+              </tbody>
+              <tfoot><tr><td colspan="3">סה״כ מתנות שהתקבלו</td><td class="gc-t-amt">7,200 ₪</td></tr></tfoot>
+            </table>
+          </div>
+          <p class="gc-note">
+            כל המתנות מסודרות מול רשימת המוזמנים. אפשר לראות מי נתן, כמה נתן
+            ולהפיק דוח מתנות מסודר — בלי לשבת אחרי האירוע עם ערימה של מעטפות,
+            דפים ומחשבון. זה לא רק לספור מעטפות. זה לסיים את האירוע כשכל
+            המתנות כבר מסודרות. המספרים כאן להמחשה בלבד.
+          </p>
+        </div>
+
+        <div class="gc-cta">
+          <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="after tone-alt" id="after" aria-labelledby="after-title">
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">אחרי האירוע</span>

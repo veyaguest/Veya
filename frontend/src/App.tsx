@@ -37,6 +37,7 @@ import { MessagesPage } from './components/MessagesPage'
 import { OnboardingWizard } from './components/OnboardingWizard'
 import { ReconsentModal } from './components/ReconsentModal'
 import { RsvpPage } from './components/RsvpPage'
+import { VeyaLoader } from './components/VeyaLoader'
 import type { EventSummary, User } from './types'
 import type { EventTerms } from './strings/eventTypes'
 
@@ -60,11 +61,12 @@ const PhoneAgentApp = lazy(() =>
   import('./components/PhoneAgentApp').then((m) => ({ default: m.PhoneAgentApp })),
 )
 
-// אותו מסך "טוען…" שכבר קיים לבדיקת ההתחברות הראשונית (boot-screen) — משתמשים
+// אותו מסך טעינה שכבר קיים לבדיקת ההתחברות הראשונית (boot-screen) — משתמשים
 // בו גם כ-fallback ל-Suspense, כדי שלא תיווסף שפת טעינה חדשה לאפליקציה.
+// הלוגו העגול של VEYA מסתובב (VeyaLoader) — אותה אנימציית טעינה בכל המערכת.
 const bootFallback = (
   <div className="boot-screen">
-    <span className="dot loading" /> טוען…
+    <VeyaLoader size="lg" />
   </div>
 )
 
@@ -414,7 +416,7 @@ function App() {
   if (!authChecked) {
     return (
       <div className="boot-screen">
-        <span className="dot loading" /> טוען…
+        <VeyaLoader size="lg" />
       </div>
     )
   }

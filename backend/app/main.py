@@ -548,10 +548,9 @@ def _migrate_expense_payments() -> None:
     """
     from app import finance
 
-    # ``MigrationSessionLocal`` ולא ``SessionLocal``: תחזוקת עלייה רצה לפני
-    # שיש משתמש מחובר, ומדיניות ה-RLS על טבלאות האירוע הייתה חוסמת אותה.
-    db = MigrationSessionLocal()
-    try:
+    # תחזוקת עלייה — דרך MigrationSessionLocal (עוקף RLS), כמו שאר ה-_migrate_*:
+    # היא רצה לפני שיש משתמש מחובר, ומדיניות ה-RLS הייתה חוסמת אותה.
+    with MigrationSessionLocal() as db:
         try:
             legacy = (
                 db.query(models.EventExpense)
@@ -614,8 +613,6 @@ def _migrate_expense_payments() -> None:
         if created:
             db.commit()
             print(f"[migrations] {created} תשלומים הומרו ליומן התשלומים (חד-פעמי)")
-    finally:
-        db.close()
 
 
 def _migrate_brita_split() -> None:

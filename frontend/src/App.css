@@ -1631,15 +1631,19 @@ td.notes.seating {
 .mb-empty::before,
 .load-text::before {
   content: '';
-  width: 14px;
-  height: 14px;
-  border-radius: var(--radius-full);
-  border: 2px solid var(--line);
-  border-top-color: var(--gold);
-  animation: veya-spin 0.7s linear infinite;
-}
-@keyframes veya-spin {
-  to { transform: rotate(360deg); }
+  /* אנימציית הטעינה הממותגת: הלוגו העגול של VEYA מסתובב במקום ספינר גנרי.
+     20px — נקרא כלוגו ולא כנקודה, ולא יוצר קפיצת פריסה בשורת הטעינה הקיימת.
+     @keyframes veya-loader-spin מוגדר ב-VeyaLoader.css (נטען תמיד — הקומפוננטה
+     מיובאת ב-App.tsx בייבוא רגיל). */
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 0;
+  background: url('/logo_nobg.png') center / contain no-repeat;
+  animation: veya-loader-spin 1.4s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+  flex-shrink: 0;
 }
 @media (prefers-reduced-motion: reduce) {
   .dash-loading::before,
@@ -5473,19 +5477,8 @@ td.notes.seating {
   margin-top: 16px;
   justify-content: center;
 }
-.sk-analyzing-spinner {
-  width: 36px;
-  height: 36px;
+.sk-analyzing-loader {
   margin: 0 auto;
-  border-radius: 50%;
-  border: 3px solid var(--border, #e5ded2);
-  border-top-color: var(--accent, #c9a35b);
-  animation: sk-spin 0.9s linear infinite;
-}
-@keyframes sk-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 .sk-review {
   position: fixed;
@@ -14236,23 +14229,12 @@ td.notes.seating {
   margin: 4px 0;
 }
 
-/* התקדמות — סרגל אינדטרמיניסטי + ספינר עדין. */
+/* התקדמות — סרגל אינדטרמיניסטי + לוגו הטעינה של VEYA. */
 .send-progress {
   padding: 8px 0;
 }
-.send-spinner {
-  width: 42px;
-  height: 42px;
-  margin: 0 auto 16px;
-  border-radius: 50%;
-  border: 4px solid var(--line-2, #e6e0d5);
-  border-top-color: var(--green, #48c07c);
-  animation: sendSpin 0.9s linear infinite;
-}
-@keyframes sendSpin {
-  to {
-    transform: rotate(360deg);
-  }
+.send-loader {
+  margin-bottom: 16px;
 }
 .send-progress-bar {
   height: 10px;
