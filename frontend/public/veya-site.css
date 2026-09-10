@@ -892,8 +892,6 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
 @media (prefers-reduced-motion: reduce) {
   a.evt-card:active, .guide-list a:active, .footer-col a:active { transform: none; }
 }
-<<<<<<< Updated upstream
-=======
 
 /* ── יעד מגע לקישור הלוגו בהדר ─────────────────────────────────────
    הלוגו עצמו 34px (ו-28px במצב מכווץ), ולכן העוגן שעוטף אותו היה
@@ -974,6 +972,5 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
   .gc-counter.is-typing .gc-picked,
   .gc-counter.is-typing .gc-amount { opacity: 1; }
 }
->>>>>>> Stashed changes
 
 /* ===== VEYA BRAND LAYER — END ===== */
