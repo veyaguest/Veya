@@ -218,6 +218,43 @@ def test_reject_frees_the_queue() -> None:
     print("✓ דחייה משחררת את התור ומאפשרת בקשה חדשה")
 
 
+def test_dismiss_rejection_hides_banner() -> None:
+    """"הבנתי" על הודעת דחייה — הדגל נדבק, וההודעה לא חוזרת."""
+    api, _ = bootstrap()
+    _seed_event(api)
+    api.client.post("/postpone", headers=api.headers)
+    admin = _admin(api)
+    r = api.client.post(
+        f"/admin/postpone/{api.event_id}/reject",
+        headers=admin,
+        json={"reason": "נפתח בטעות"},
+    )
+    assert r.status_code == 200, r.text
+
+    before = api.client.get("/postpone", headers=api.headers).json()
+    assert before["rejection_reason"] == "נפתח בטעות"
+    assert before["rejection_acknowledged"] is False
+
+    d = api.client.post("/postpone/dismiss-rejection", headers=api.headers)
+    assert d.status_code == 200, d.text
+    assert d.json()["rejection_acknowledged"] is True
+
+    after = api.client.get("/postpone", headers=api.headers).json()
+    assert after["rejection_acknowledged"] is True
+    assert after["can_request"] is True
+
+    # שנייה: idempotent — לא נופל, נשאר מאושר.
+    again = api.client.post("/postpone/dismiss-rejection", headers=api.headers)
+    assert again.status_code == 200, again.text
+
+    # בלי בקשה דחויה בכלל → 409.
+    api2, _ = bootstrap()
+    _seed_event(api2)
+    none = api2.client.post("/postpone/dismiss-rejection", headers=api2.headers)
+    assert none.status_code == 409, none.text
+    print("✓ 'הבנתי' מעלים את הודעת הדחייה לתמיד")
+
+
 # ── 3. אחרי האישור ────────────────────────────────────────────────────────
 
 def test_approval_opens_full_edit() -> None:
@@ -697,6 +734,7 @@ if __name__ == "__main__":
         test_request_reaches_admin_queue_only()
         test_no_full_edit_before_approval()
         test_reject_frees_the_queue()
+        test_dismiss_rejection_hides_banner()
         test_approval_opens_full_edit()
         test_postponement_message_opens_on_approval()
         test_postponement_message_can_be_sent()

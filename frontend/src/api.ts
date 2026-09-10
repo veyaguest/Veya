@@ -1086,6 +1086,16 @@ export async function completePostponement(): Promise<Postponement> {
   return res.json()
 }
 
+/**
+ * "הבנתי" על הודעת דחייה שלא אושרה — מעלים את הבאנר לתמיד.
+ * הסימון נשמר בשרת, כך שההודעה לא חוזרת גם במכשיר אחר.
+ */
+export async function dismissPostponementRejection(): Promise<Postponement> {
+  const res = await apiFetch('/postpone/dismiss-rejection', { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
 export async function adminListPostponements(
   scope: 'pending' | 'approved' = 'pending',
 ): Promise<PostponementReviewRow[]> {

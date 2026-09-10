@@ -987,6 +987,10 @@ class PostponementRequest(Base):
     reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     #: סיבת הדחייה של הבקשה (רק בסטטוס ``rejected``). מוצגת לבעלי האירוע.
     rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    #: מתי בעלי האירוע לחצו "הבנתי" על הודעת הדחייה. משנקבע — הבאנר לא מוצג
+    #: יותר, בכל מכשיר. ``NULL`` = טרם אושרה קריאה (וגם בקשה שנדחתה לפני
+    #: שהעמודה נוספה).
+    rejection_ack_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     #: מתי הזוג סיים את הנוהל ופתח מחזור חדש (סטטוס ``completed``).
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

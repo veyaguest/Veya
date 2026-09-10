@@ -28,8 +28,10 @@
 -- זה נאכף במדיניות ה-UPDATE למטה, והיא מדויקת:
 --
 --   אדמין        — רשאי לכל מעבר (אישור, דחייה).
---   בעלי האירוע  — רשאים למעבר **אחד בלבד**: ``approved → completed``,
---                  כלומר "סיימנו לעדכן, פתחו לנו מחזור חדש".
+--   בעלי האירוע  — רשאים לשני עדכונים בלבד:
+--                  1. ``approved → completed`` — "סיימנו לעדכן, פתחו מחזור חדש".
+--                  2. ``rejected → rejected`` — לחיצת "הבנתי" על הודעת הדחייה
+--                     (נוגעת רק ב-``rejection_ack_at``, לא ב-``status``).
 --
 -- זה עובד כי ב-UPDATE, ``USING`` נבדק מול השורה **לפני** השינוי ו-
 -- ``WITH CHECK`` מול השורה **אחרי**. בעלי אירוע שינסו לכתוב ישירות ל-DB
@@ -55,22 +57,25 @@ CREATE POLICY postponement_requests_insert ON postponement_requests FOR INSERT
 
 -- עדכון — ראו "הכלל שמגן על האירוע" בראש הקובץ.
 --
---   USING       מול השורה לפני השינוי: אדמין תמיד; בעלי אירוע רק כשהנוהל
---               כבר אושר — כלומר אין להם דרך לגעת בבקשה שממתינה להכרעה.
---   WITH CHECK  מול השורה אחרי: אדמין תמיד; בעלי אירוע רק אם התוצאה היא
---               ``completed`` — המעבר היחיד שלהם הוא סגירת הנוהל.
+--   USING       מול השורה לפני השינוי: אדמין תמיד; בעלי אירוע כשהנוהל
+--               אושר (בדרך ל-``completed``) או כשנדחה (לחיצת "הבנתי") —
+--               כלומר אין להם דרך לגעת בבקשה שממתינה להכרעה.
+--   WITH CHECK  מול השורה אחרי: אדמין תמיד; בעלי אירוע אם התוצאה היא
+--               ``completed`` (סגירת הנוהל) או ``rejected`` (הבקשה נשארת
+--               דחויה — רק ``rejection_ack_at`` השתנה).
 --
 -- ``event_id`` נבדק בשני הצדדים, אחרת אפשר היה לעדכן שורה ולהצמיד אותה
--- לאירוע אחר.
+-- לאירוע אחר. הגבול שה-RLS שומר עליו לא זז: הכרעה (``→ approved`` /
+-- ``→ rejected``) נשארת של אדמין בלבד.
 DROP POLICY IF EXISTS postponement_requests_update ON postponement_requests;
 CREATE POLICY postponement_requests_update ON postponement_requests FOR UPDATE
   USING (
     app_is_admin()
-    OR (app_manages_event(event_id) AND status = 'approved')
+    OR (app_manages_event(event_id) AND status IN ('approved', 'rejected'))
   )
   WITH CHECK (
     app_is_admin()
-    OR (app_manages_event(event_id) AND status = 'completed')
+    OR (app_manages_event(event_id) AND status IN ('completed', 'rejected'))
   );
 
 -- מחיקת האירוע גוררת מחיקת השורות (ON DELETE CASCADE ברמת ה-FK), אבל

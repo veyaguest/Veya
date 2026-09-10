@@ -66,6 +66,7 @@ def _read(db: Session, event: models.Event) -> schemas.PostponementRead:
         reviewed_at=row.reviewed_at,
         completed_at=row.completed_at,
         rejection_reason=row.rejection_reason,
+        rejection_acknowledged=row.rejection_ack_at is not None,
         previous_event_date=row.previous_event_date or "",
         previous_event_time=row.previous_event_time or "",
         can_request=not is_open,
@@ -127,6 +128,26 @@ def complete(
             user_id=user.id,
             ip=request.client.host if request.client else None,
         )
+    except postponement_service.PostponementError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    db.commit()
+    db.refresh(event)
+    return _read(db, event)
+
+
+@router.post("/dismiss-rejection", response_model=schemas.PostponementRead)
+def dismiss_rejection(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_owner_only),
+    user: models.User = Depends(get_current_owner),
+):
+    """בעלי האירוע לחצו "הבנתי" על הודעת הדחייה. **אין גוף בקשה.**
+
+    מכאן הבאנר "הבקשה לא אושרה" לא מוצג יותר — בכל מכשיר, כי הסימון נשמר
+    בשרת (``PostponementRequest.rejection_ack_at``).
+    """
+    try:
+        postponement_service.acknowledge_rejection(db, event.id, user_id=user.id)
     except postponement_service.PostponementError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     db.commit()

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
+  dismissPostponementRejection,
   getEvent,
   getPayoutAccount,
   getPostponement,
@@ -760,6 +761,13 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
       <EventStateBanner
         stage={stage}
         postponement={postpone}
+        onDismissRejection={async () => {
+          try {
+            setPostpone(await dismissPostponementRejection())
+          } catch (err) {
+            setError(err instanceof Error ? err.message : t.saveError)
+          }
+        }}
         action={
           postpone?.can_complete ? (
             <button

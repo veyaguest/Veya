@@ -591,6 +591,8 @@ export interface Postponement {
   reviewed_at: string | null
   completed_at: string | null
   rejection_reason: string | null
+  /** האם הזוג כבר לחץ "הבנתי" על הודעת הדחייה. משהוא true — הבאנר לא מוצג. */
+  rejection_acknowledged: boolean
   previous_event_date: string
   previous_event_time: string
   can_request: boolean

@@ -2222,6 +2222,9 @@ class PostponementRead(BaseModel):
     completed_at: Optional[datetime] = None
     #: סיבת הדחייה של הבקשה, כשמנהל VEYA דחה אותה. מוצגת לבעלי האירוע.
     rejection_reason: Optional[str] = None
+    #: האם בעלי האירוע כבר לחצו "הבנתי" על הודעת הדחייה. משהוא ``True`` —
+    #: הבאנר לא מוצג יותר.
+    rejection_acknowledged: bool = False
     #: התאריך שהיה לפני הדחייה — כדי שהמסך יוכל להראות "היה X, עכשיו Y".
     previous_event_date: str = ""
     previous_event_time: str = ""

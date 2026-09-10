@@ -557,8 +557,60 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
   font-size: var(--fs-xs); font-weight: 600;
   color: var(--success);
 }
+<<<<<<< Updated upstream
 .gc-linked::before {
   content: ""; width: 7px; height: 7px; border-radius: 50%;
   background: var(--success); flex: none;
 }
 .gc-t-link { white-space: nowrap; }
+=======
+
+/* ── שכבות UI צפות בהירו ───────────────────────────────────────────
+   שלושה קריאונים שנראים כאילו נלקחו מתמונת המצב שמאחוריהם. הם
+   ממוקמים על קצוות אשכול המכשירים ולא במרכזו, כדי לא לכסות את
+   צילום המסך עצמו. אותם שלושה מספרים חוזרים בסקשן ההתחייבות. */
+.hs {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  gap: 2px;
+  padding: 11px 15px;
+  border-radius: var(--radius-md);
+  background: rgba(23, 19, 13, 0.82);
+  border: 1px solid rgba(201, 162, 39, 0.3);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(8px);
+  animation: hs-in 620ms var(--ease-out) both;
+}
+.hs-n {
+  font-family: var(--font-display);
+  font-size: var(--fd-sm);
+  line-height: 1.05;
+  color: var(--cream-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.hs-ok { color: var(--gold-light); }
+.hs-l { font-size: var(--fs-2xs); color: #b6aa93; white-space: nowrap; }
+
+/* ההשהיה נספרת מתום כניסת ההירו, ואיטית בכוונה — שלוש קריאות
+   שנכנסות אחת אחרי השנייה, לא שלוש שמופיעות יחד. */
+.hs-1 { inset-inline-start: -3%;  top: 5%;    animation-delay: 900ms; }
+.hs-2 { inset-inline-end: -4%;    top: 26%;   animation-delay: 1250ms; }
+.hs-3 { inset-inline-end: 4%;     bottom: 6%; animation-delay: 1600ms; }
+@keyframes hs-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* במובייל אין מקום לצוף מעל המכשירים, ולכן הקריאונים יורדים לשורה
+   מתחתיהם. לא מוסתרים — הם נושאים את המספרים של ההירו. */
+@media (max-width: 900px) {
+  .hero-devices { padding-bottom: 76px; }
+  .hs {
+    position: static;
+    animation-delay: 0ms;
+  }
+  .hs-wrap { display: flex; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs { animation: none; }
+}
+>>>>>>> Stashed changes

@@ -245,6 +245,9 @@ _EXTRA_COLUMNS = {
         "previous_venue_address": "TEXT",
         "previous_venue_commit_days_before": "INTEGER",
         "previous_snapshot_at": "TIMESTAMP",
+        # מתי הזוג לחץ "הבנתי" על הודעת דחייה — נוסף אחרי שהטבלה נפרסה.
+        # nullable: בקשות שנדחו קודם פשוט לא סומנו, והבאנר שלהן עדיין יוצג.
+        "rejection_ack_at": "TIMESTAMP",
     },
     "call_logs": {
         # נוסף אחרי הטבלה עצמה — מאפשר ל"מספר שגוי" להיסגר אוטומטית כשהמספר

@@ -137,7 +137,7 @@ def open_request(
                 "כבר יש בקשה שממתינה לאישור. נעדכן אתכם ברגע שהיא תאושר."
             )
         raise PostponementError(
-            "נוהל הדחייה כבר פתוח — אפשר לעדכן את פרטי האירוע עכשיו."
+            "פרטי האירוע כבר פתוחים לעדכון."
         )
 
     row = models.PostponementRequest(
@@ -152,7 +152,7 @@ def open_request(
     audit.record(
         db, "postponement_request",
         event_id=event.id, user_id=user_id,
-        detail="ביקשתם לפתוח נוהל דחייה",
+        detail="ביקשתם לשנות את מועד האירוע",
         ip=ip,
     )
     return row
@@ -203,7 +203,7 @@ def approve(
     audit.record(
         db, "postponement_approved",
         event_id=event_id, user_id=reviewer_user_id,
-        detail="נוהל הדחייה אושר — פרטי האירוע נפתחו לעריכה",
+        detail="הבקשה לשינוי מועד אושרה — פרטי האירוע נפתחו לעריכה",
         ip=ip,
     )
     return row
@@ -240,6 +240,25 @@ def reject(
     return row
 
 
+def acknowledge_rejection(
+    db: Session,
+    event_id: int,
+    *,
+    user_id: Optional[int] = None,
+) -> models.PostponementRequest:
+    """בעלי האירוע לחצו "הבנתי" על הודעת הדחייה — מכאן הבאנר לא מוצג יותר.
+
+    עובד על ``latest`` ולא על ``open_request_of``: בקשה שנדחתה כבר אינה
+    "חיה", ולכן ``open_request_of`` לא היה מוצא אותה.
+    """
+    row = latest(db, event_id)
+    if row is None or row.status != postponement_status.REJECTED:
+        raise PostponementError("אין הודעת דחייה לסגור באירוע הזה")
+    if row.rejection_ack_at is None:
+        row.rejection_ack_at = datetime.utcnow()
+    return row
+
+
 def complete(
     db: Session,
     event: models.Event,
@@ -263,7 +282,7 @@ def complete(
     """
     row = open_request_of(db, event.id)
     if row is None or row.status != postponement_status.APPROVED:
-        raise PostponementError("אין נוהל דחייה פעיל באירוע הזה")
+        raise PostponementError("פרטי האירוע לא פתוחים לעדכון כרגע")
 
     current_date = (event.event_date or "").strip()
     if not current_date:

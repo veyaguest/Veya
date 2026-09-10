@@ -54,7 +54,7 @@ def _assert_known_type(db: Session, event: models.Event, message_type: str) -> N
             return
         raise HTTPException(
             status_code=409,
-            detail="הודעת הדחייה נפתחת רק אחרי אישור נוהל דחייה",
+            detail="ההודעה על שינוי המועד נפתחת רק אחרי אישור הבקשה",
         )
     raise HTTPException(status_code=400, detail="סוג הודעה לא מוכר")
 

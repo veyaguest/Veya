@@ -19,17 +19,25 @@ export function EventStateBanner({
   stage,
   postponement,
   action,
+  onDismissRejection,
 }: {
   stage: EventStage
   /** נדרש רק כדי להציג סיבת דחייה של בקשה שלא אושרה. */
   postponement?: Postponement | null
   /** הפעולה הבאה, כשיש כזו (למשל "פתיחת מחזור חדש"). */
   action?: React.ReactNode
+  /** לחיצת "הבנתי" על הודעת דחייה. כשמסופק — מוצג כפתור שסוגר את ההודעה. */
+  onDismissRejection?: () => void
 }) {
   // בקשה שנדחתה אינה "שלב" של האירוע (הוא חזר לשגרה) — אבל הזוג כן צריך
-  // לדעת שהיא נדחתה ולמה, אחרת הוא ממתין לתשובה שכבר הגיעה.
+  // לדעת שהיא נדחתה ולמה, אחרת הוא ממתין לתשובה שכבר הגיעה. אחרי שהוא לחץ
+  // "הבנתי" (``rejection_acknowledged``) ההודעה יורדת — ולא חוזרת.
   if (stage === 'normal') {
-    if (postponement?.status !== 'rejected' || !postponement.rejection_reason) {
+    if (
+      postponement?.status !== 'rejected' ||
+      !postponement.rejection_reason ||
+      postponement.rejection_acknowledged
+    ) {
       return null
     }
     return (
@@ -41,6 +49,17 @@ export function EventStateBanner({
             {t.rejectedBody(postponement.rejection_reason)}
           </p>
         </div>
+        {onDismissRejection && (
+          <div className="ev-state-action">
+            <button
+              type="button"
+              className="ev-state-dismiss"
+              onClick={onDismissRejection}
+            >
+              {t.rejectedDismiss}
+            </button>
+          </div>
+        )}
       </div>
     )
   }
