@@ -302,7 +302,8 @@
       .gc-stage.is-armed.is-on .gc-row {
         opacity: 1; transform: none;
         transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out);
-        transition-delay: calc(var(--i) * 460ms);
+        /* חייב להישאר זהה ל-STEP ב-veya-motion.js */
+        transition-delay: calc(var(--i) * 900ms);
       }
       .gc-row-num { color: var(--gold-deep); font-weight: 700; font-variant-numeric: tabular-nums; font-size: var(--fs-sm); }
       .gc-row-who { display: grid; gap: 2px; min-width: 0; }
@@ -864,7 +865,8 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                        /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+<<<<<<< Updated upstream
+                                                                                                                                                                                                                              /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1354,6 +1356,89 @@
       @media (prefers-reduced-motion: reduce) {
         a.evt-card:active, .guide-list a:active, .footer-col a:active { transform: none; }
       }
+      <<<<<<< Updated upstream
+      =======
+
+      /* ── יעד מגע לקישור הלוגו בהדר ─────────────────────────────────────
+         הלוגו עצמו 34px (ו-28px במצב מכווץ), ולכן העוגן שעוטף אותו היה
+         נמוך מ-44px. מרכזים אותו בתוך יעד תקין בלי לשנות את גודל הלוגו. */
+      .site-header .wrap > a:first-child {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+      }
+
+      /* ── בלוקים ויזואליים במדריכים (§13) ───────────────────────────────
+         שלושה רכיבים שמפרקים קיר טקסט: משפט שצריך לזכור, קומפוזיציית
+         מספרים, ושרשרת שלבים. כולם נכתבים ב-Markdown ולא ב-HTML ידני. */
+      .article .callout {
+        margin: 26px 0;
+        padding: 18px 20px;
+        border-inline-start: 3px solid var(--gold);
+        border-radius: var(--radius-md);
+        background: var(--ivory-2);
+      }
+      .article .callout p { margin: 0; color: var(--charcoal); font-size: var(--fs-lg); }
+
+      .g-numbers {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1px;
+        margin: 28px 0;
+        background: var(--line);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+      .g-num { display: grid; gap: 3px; padding: 18px 16px; background: var(--ivory); text-align: center; }
+      .g-num-v {
+        font-family: var(--font-display); font-size: var(--fd-lg); line-height: 1.05;
+        color: var(--gold-deep); font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+      }
+      .g-num-l { font-size: var(--fs-sm); color: var(--muted); }
+
+      .g-flow {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 8px 6px;
+        margin: 26px 0; padding: 16px; border: 1px solid var(--line);
+        border-radius: var(--radius-lg); background: var(--ivory-2);
+      }
+      .g-flow-s {
+        padding: 8px 14px; border-radius: var(--radius-pill);
+        background: var(--ivory); border: 1px solid var(--line);
+        color: var(--charcoal); font-size: var(--fs-sm); font-weight: 600; white-space: nowrap;
+      }
+      .g-flow-s:last-child { border-color: rgba(201, 162, 39, 0.45); background: rgba(201, 162, 39, 0.1); }
+      .g-flow-a { color: var(--gold); opacity: 0.6; }
+
+      /* ── יעד מגע לקישור הכניסה בהדר ────────────────────────────────────
+         ``.link-quiet`` הוא קישור טקסט עם padding קטן, ולכן יצא 38px גובה —
+         מתחת למינימום. מרכזים אותו בתוך יעד תקין בלי לשנות את הטיפוגרפיה. */
+      .site-header .link-quiet {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+      }
+
+      /* ── כרטיס הספירה: פעימה קצרה בכל מעטפה חדשה ───────────────────── */
+      .gc-counter { transition: transform 260ms var(--ease-out); }
+      .gc-counter.is-new { transform: scale(1.012); }
+      .gc-picked, .gc-amount { transition: opacity 200ms var(--ease-out); }
+      .gc-counter.is-typing .gc-picked,
+      .gc-counter.is-typing .gc-amount { opacity: 0.25; }
+
+      /* ── סטטוס בדוח המתנות ─────────────────────────────────────────────
+         "שויך למוזמן" ולא "התקבל": מעטפה שנספרה כבר התקבלה בהגדרה,
+         ו"התקבל" היה רומז על מסלול תשלום שטרם שוחרר. */
+      .gc-linked { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); font-weight: 600; color: var(--success); }
+      .gc-linked::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--success); flex: none; }
+      .gc-t-link { white-space: nowrap; }
+
+      @media (prefers-reduced-motion: reduce) {
+        .gc-counter, .gc-counter.is-new { transition: none; transform: none; }
+        .gc-counter.is-typing .gc-picked,
+        .gc-counter.is-typing .gc-amount { opacity: 1; }
+      }
+      >>>>>>> Stashed changes
 
       /* ===== VEYA BRAND LAYER — END ===== */
 
@@ -1391,6 +1476,26 @@
     
     
     
+    
+<<<<<<< Updated upstream
+=======
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+>>>>>>> Stashed changes
     
     </style>
   </head>
@@ -1885,13 +1990,13 @@
         <div class="gc-stage" data-gc>
           <div class="gc-counter" aria-hidden="true">
             <div class="gc-counter-head">
-              <span class="gc-counter-num" data-gc-num>מעטפה #5</span>
+              <span class="gc-counter-num" data-gc-num>מעטפה #10</span>
               <span class="gc-counter-close">סגירה</span>
             </div>
             <div class="gc-counter-body">
               <div class="gc-field">
                 <span class="gc-field-label">ממי?</span>
-                <span class="gc-picked" data-gc-who>לא ידוע ממי</span>
+                <span class="gc-picked" data-gc-who>משפחת ישראלי</span>
               </div>
               <div class="gc-field">
                 <span class="gc-field-label">כמה יש במעטפה?</span>
@@ -1899,40 +2004,65 @@
               </div>
               <span class="gc-save">שמירה והמעטפה הבאה</span>
             </div>
-            <p class="gc-saved" data-gc-saved>מעטפה #4 נשמרה — 700 ₪</p>
+            <p class="gc-saved" data-gc-saved>מעטפה #9 נשמרה — 700 ₪</p>
           </div>
 
           <div class="gc-ledger">
             <div class="gc-total">
               <span class="gc-total-label">סה״כ מתנות שהתקבלו</span>
               <strong class="gc-total-num" data-gc-total
-                data-count-to="7200" data-count-suffix=" ₪" data-count-duration="620">7,200 ₪</strong>
-              <span class="gc-total-sub"><span data-gc-count>5</span> מעטפות</span>
+                data-count-to="16000" data-count-suffix=" ₪" data-count-duration="620">16,000 ₪</strong>
+              <span class="gc-total-sub"><span data-gc-count>10</span> מעטפות</span>
             </div>
             <ul class="gc-list">
-            <li class="gc-row" data-amount="500" style="--i: 0">
+            <li class="gc-row" data-amount="1800" style="--i: 0">
               <span class="gc-row-num">#1</span>
-              <span class="gc-row-who"><span class="gc-row-name">דניאל כהן</span></span>
-              <span class="gc-row-amt">500 ₪</span>
+              <span class="gc-row-who"><span class="gc-row-name">משפחת כהן</span></span>
+              <span class="gc-row-amt">1,800 ₪</span>
             </li>
-            <li class="gc-row" data-amount="1000" style="--i: 1">
+            <li class="gc-row" data-amount="1200" style="--i: 1">
               <span class="gc-row-num">#2</span>
-              <span class="gc-row-who"><span class="gc-row-name">מאיה לוי</span></span>
-              <span class="gc-row-amt">1,000 ₪</span>
+              <span class="gc-row-who"><span class="gc-row-name">דניאל ומשי</span></span>
+              <span class="gc-row-amt">1,200 ₪</span>
             </li>
             <li class="gc-row" data-amount="2000" style="--i: 2">
               <span class="gc-row-num">#3</span>
-              <span class="gc-row-who"><span class="gc-row-name">משפחת ישראלי</span><span class="gc-row-shared">עם ורד ואיתי ישראלי</span></span>
+              <span class="gc-row-who"><span class="gc-row-name">אבי ושרון</span></span>
               <span class="gc-row-amt">2,000 ₪</span>
             </li>
-            <li class="gc-row" data-amount="700" style="--i: 3">
+            <li class="gc-row" data-amount="1500" style="--i: 3">
               <span class="gc-row-num">#4</span>
-              <span class="gc-row-who"><span class="gc-row-name">נועה ברק</span></span>
+              <span class="gc-row-who"><span class="gc-row-name">משפחת לוי</span></span>
+              <span class="gc-row-amt">1,500 ₪</span>
+            </li>
+            <li class="gc-row" data-amount="1000" style="--i: 4">
+              <span class="gc-row-num">#5</span>
+              <span class="gc-row-who"><span class="gc-row-name">רועי ואלינור</span></span>
+              <span class="gc-row-amt">1,000 ₪</span>
+            </li>
+            <li class="gc-row" data-amount="2500" style="--i: 5">
+              <span class="gc-row-num">#6</span>
+              <span class="gc-row-who"><span class="gc-row-name">שחר ונועה</span></span>
+              <span class="gc-row-amt">2,500 ₪</span>
+            </li>
+            <li class="gc-row" data-amount="800" style="--i: 6">
+              <span class="gc-row-num">#7</span>
+              <span class="gc-row-who"><span class="gc-row-name">משפחת אברהם</span></span>
+              <span class="gc-row-amt">800 ₪</span>
+            </li>
+            <li class="gc-row" data-amount="1500" style="--i: 7">
+              <span class="gc-row-num">#8</span>
+              <span class="gc-row-who"><span class="gc-row-name">יובל ותומר</span></span>
+              <span class="gc-row-amt">1,500 ₪</span>
+            </li>
+            <li class="gc-row" data-amount="700" style="--i: 8">
+              <span class="gc-row-num">#9</span>
+              <span class="gc-row-who"><span class="gc-row-name">עדי ומור</span></span>
               <span class="gc-row-amt">700 ₪</span>
             </li>
-            <li class="gc-row" data-amount="3000" style="--i: 4">
-              <span class="gc-row-num">#5</span>
-              <span class="gc-row-who"><span class="gc-row-name">לא ידוע ממי</span><span class="gc-badge">לא מזוהה</span></span>
+            <li class="gc-row" data-amount="3000" style="--i: 9">
+              <span class="gc-row-num">#10</span>
+              <span class="gc-row-who"><span class="gc-row-name">משפחת ישראלי</span></span>
               <span class="gc-row-amt">3,000 ₪</span>
             </li>
             </ul>
@@ -1944,35 +2074,65 @@
         <div class="gc-report" data-gc-report>
           <div class="gc-report-head">
             <span class="gc-report-title">דוח מתנות</span>
-            <span class="gc-report-sum">סה״כ 7,200 ₪ · 5 מעטפות</span>
+            <span class="gc-report-sum">סה״כ 16,000 ₪ · 10 מתנות · 10 מוזמנים שנמצאו</span>
           </div>
           <div class="gc-table-scroll">
             <table class="gc-table">
-              <caption class="vh">דוח המתנות: מספר מעטפה, ממי התקבלה, שותפים למעטפה וסכום</caption>
-              <thead><tr><th scope="col">מעטפה</th><th scope="col">ממי</th><th scope="col">שותפים למעטפה</th><th scope="col">סכום</th></tr></thead>
+              <caption class="vh">דוח המתנות של VEYA: כל מוזמן, הסכום שנתן, והאם המתנה שויכה אליו ברשימה</caption>
+              <thead><tr><th scope="col">מוזמן</th><th scope="col">סכום</th><th scope="col">סטטוס</th></tr></thead>
               <tbody>
                 <tr>
-                  <td class="gc-t-num">#1</td><td>דניאל כהן</td>
-                  <td class="gc-t-with">—</td><td class="gc-t-amt">500 ₪</td>
+                  <td>משפחת כהן</td>
+                  <td class="gc-t-amt">1,800 ₪</td>
+                  <td class="gc-t-link"><span class="gc-linked">שויך למוזמן</span></td>
                 </tr>
                 <tr>
-                  <td class="gc-t-num">#2</td><td>מאיה לוי</td>
-                  <td class="gc-t-with">—</td><td class="gc-t-amt">1,000 ₪</td>
+                  <td>דניאל ומשי</td>
+                  <td class="gc-t-amt">1,200 ₪</td>
+                  <td class="gc-t-link"><span class="gc-linked">שויך למוזמן</span></td>
                 </tr>
                 <tr>
-                  <td class="gc-t-num">#3</td><td>משפחת ישראלי</td>
-                  <td class="gc-t-with">ורד ואיתי ישראלי</td><td class="gc-t-amt">2,000 ₪</td>
+                  <td>אבי ושרון</td>
+                  <td class="gc-t-amt">2,000 ₪</td>
+                  <td class="gc-t-link"><span class="gc-linked">שויך למוזמן</span></td>
                 </tr>
                 <tr>
-                  <td class="gc-t-num">#4</td><td>נועה ברק</td>
-                  <td class="gc-t-with">—</td><td class="gc-t-amt">700 ₪</td>
+                  <td>משפחת לוי</td>
+                  <td class="gc-t-amt">1,500 ₪</td>
+                  <td class="gc-t-link"><span class="gc-linked">שויך למוזמן</span></td>
                 </tr>
                 <tr>
-                  <td class="gc-t-num">#5</td><td>לא ידוע ממי</td>
-                  <td class="gc-t-with">—</td><td class="gc-t-amt">3,000 ₪</td>
+                  <td>רועי ואלינור</td>
+                  <td class="gc-t-amt">1,000 ₪</td>
+                  <td class="gc-t-link"><span class="gc-linked">שויך למוזמן</span></td>
+                </tr>
+                <tr>
+                  <td>שחר ונועה</td>
+                  <td class="gc-t-amt">2,500 ₪</td>
+                  <td class="gc-t-link"><span class="gc-linked">שויך למוזמן</span></td>
+                </tr>
+                <tr>
+                  <td>משפחת אברהם</td>
+                  <td class="gc-t-amt">800 ₪</td>
+                  <td class="gc-t-link"><span class="gc-linked">שויך למוזמן</span></td>
+                </tr>
+                <tr>
+                  <td>יובל ותומר</td>
+                  <td class="gc-t-amt">1,500 ₪</td>
+                  <td class="gc-t-link"><span class="gc-linked">שויך למוזמן</span></td>
+                </tr>
+                <tr>
+                  <td>עדי ומור</td>
+                  <td class="gc-t-amt">700 ₪</td>
+                  <td class="gc-t-link"><span class="gc-linked">שויך למוזמן</span></td>
+                </tr>
+                <tr>
+                  <td>משפחת ישראלי</td>
+                  <td class="gc-t-amt">3,000 ₪</td>
+                  <td class="gc-t-link"><span class="gc-linked">שויך למוזמן</span></td>
                 </tr>
               </tbody>
-              <tfoot><tr><td colspan="3">סה״כ מתנות שהתקבלו</td><td class="gc-t-amt">7,200 ₪</td></tr></tfoot>
+              <tfoot><tr><td>סה״כ מתנות</td><td class="gc-t-amt">16,000 ₪</td><td>10 מתנות</td></tr></tfoot>
             </table>
           </div>
           <p class="gc-note">
