@@ -230,14 +230,14 @@
 })()
 
 ;/* ── ספירת המעטפות (§11) ──────────────────────────────────────────────
-   הרצף מונע מה-DOM ולא מטבלה בקוד: השורות כבר בעמוד עם ``data-amount``,
-   וה-JS רק מסנכרן אליהן את כרטיס הספירה ואת הסכום הרץ.
+   הרצף מונע מה-DOM: השורות כבר בעמוד עם שמות המוזמנים, וה-JS רק מסנכרן
+   אליהן את כרטיס הספירה. אין כאן סכומים ואין ספירה — מה שהרצף ממחיש
+   הוא שכל מעטפה מזוהה ומשויכת למוזמן ברשימה.
 
-   העמוד נשלח במצב הסופי — כל המעטפות, הסכום המלא והדוח. רק אם באמת
-   נגן את הרצף, ה-JS מוסיף ``is-armed`` ומסתיר. כך מי שמגיע בלי JS,
-   וכל crawler, רואים את הסקשן במלואו.
+   העמוד נשלח במצב הסופי. רק אם באמת נגן את הרצף, ה-JS מוסיף ``is-armed``
+   ומסתיר — כך מי שמגיע בלי JS, וכל crawler, רואים את הסקשן במלואו.
 
-   ההשהיה (460ms לשורה) חייבת להישאר זהה ל-``transition-delay`` שב-CSS. */
+   STEP חייב להישאר זהה ל-``transition-delay`` של השורות ב-CSS. */
 (function () {
   'use strict'
   var STEP = 900   // חייב להישאר זהה ל-transition-delay ב-CSS
@@ -248,21 +248,13 @@
 
   var report = document.querySelector('[data-gc-report]')
   var card = stage.querySelector('.gc-counter')
-  var elNum = stage.querySelector('[data-gc-num]')
   var elWho = stage.querySelector('[data-gc-who]')
-  var elAmt = stage.querySelector('[data-gc-amt]')
   var elSaved = stage.querySelector('[data-gc-saved]')
-  var elTotal = stage.querySelector('[data-gc-total]')
-  var elCount = stage.querySelector('[data-gc-count]')
 
-  var data = rows.map(function (r) {
-    var name = r.querySelector('.gc-row-name')
-    return {
-      amount: parseInt(r.getAttribute('data-amount'), 10) || 0,
-      name: name ? name.textContent : ''
-    }
+  var names = rows.map(function (r) {
+    var n = r.querySelector('.gc-row-name')
+    return n ? n.textContent : ''
   })
-  var nis = function (n) { return n.toLocaleString('he-IL') + ' ₪' }
 
   // בלי תנועה, או בלי IntersectionObserver — העמוד כבר במצב הנכון.
   if (window.veyaReducedMotion || !('IntersectionObserver' in window)) return
@@ -272,42 +264,27 @@
 
   function play() {
     stage.classList.add('is-on')
-    var running = 0
-    data.forEach(function (d, i) {
-      // ארבעה שלבים לכל מעטפה, כדי שיהיה זמן לקרוא שם וסכום:
-      // נפתחת ← מי נתן ← כמה ← נשמרה והסכום גדל.
+    names.forEach(function (name, i) {
+      // ארבעה שלבים לכל מעטפה, כדי שיהיה זמן להבין מה קורה:
+      // נפתחת ← ממי ← נמצא ברשימה ← נשמרה.
       var t0 = i * STEP
-      var prev = running
-      running += d.amount
-      var sum = running
-
       setTimeout(function () {
-        if (card) card.classList.add('is-new', 'is-typing')
-        if (elNum) elNum.textContent = 'מעטפה #' + (i + 1)
-        if (elSaved && i > 0) elSaved.textContent = 'מעטפה #' + i + ' נשמרה — ' + nis(data[i - 1].amount)
+        if (card) card.classList.add('is-new', 'is-typing', 'is-unmatched')
+        if (elSaved && i > 0) elSaved.textContent = names[i - 1] + ' — נשמר ושויך לרשימה'
       }, t0)
       setTimeout(function () { if (card) card.classList.remove('is-new') }, t0 + 260)
       setTimeout(function () {
-        if (elWho) elWho.textContent = d.name
+        if (elWho) elWho.textContent = name
         if (card) card.classList.remove('is-typing')
       }, t0 + 220)
+      setTimeout(function () { if (card) card.classList.remove('is-unmatched') }, t0 + 460)
       setTimeout(function () {
-        if (elAmt) elAmt.textContent = d.amount.toLocaleString('he-IL')
-      }, t0 + 460)
-      setTimeout(function () {
-        if (elCount) elCount.textContent = String(i + 1)
-        if (elTotal && window.veyaCountUp) {
-          elTotal.setAttribute('data-count-from', String(prev))
-          elTotal.setAttribute('data-count-to', String(sum))
-          window.veyaCountUp(elTotal)
-        }
+        if (elSaved) elSaved.textContent = name + ' — נשמר ושויך לרשימה'
       }, t0 + 700)
     })
     setTimeout(function () {
-      var last = data[data.length - 1]
-      if (elSaved) elSaved.textContent = 'מעטפה #' + data.length + ' נשמרה — ' + nis(last.amount)
       if (report) report.classList.add('is-on')
-    }, data.length * STEP + 320)
+    }, names.length * STEP + 320)
   }
 
   var io = new IntersectionObserver(function (entries) {

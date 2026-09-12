@@ -554,9 +554,9 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
 /* ── כרטיס הספירה: פעימה קצרה בכל מעטפה חדשה ───────────────────── */
 .gc-counter { transition: transform 260ms var(--ease-out); }
 .gc-counter.is-new { transform: scale(1.012); }
-.gc-picked, .gc-amount { transition: opacity 200ms var(--ease-out); }
-.gc-counter.is-typing .gc-picked,
-.gc-counter.is-typing .gc-amount { opacity: 0.25; }
+.gc-picked, .gc-match { transition: opacity 200ms var(--ease-out); }
+.gc-counter.is-typing .gc-picked { opacity: 0.25; }
+.gc-counter.is-unmatched .gc-match { opacity: 0; }
 
 /* ── עמודת השיוך בדוח המתנות ───────────────────────────────────────
    לא "סטטוס": שדה הסטטוס קיים רק בשורת אשראי, והשירות ההוא לא שוחרר.
@@ -623,7 +623,7 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
   .hs { animation: none; }
   .gc-counter, .gc-counter.is-new { transition: none; transform: none; }
   .gc-counter.is-typing .gc-picked,
-  .gc-counter.is-typing .gc-amount { opacity: 1; }
+  .gc-counter.is-unmatched .gc-match { opacity: 1; }
 }
 
 /* ── רשימת המוזמנים בסקשן אישורי ההגעה ─────────────────────────────
@@ -708,3 +708,10 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
   .cm { grid-template-columns: 1fr; }
   .cm-arrow { transform: rotate(-90deg); padding: 2px 0; }
 }
+
+/* ── סקשן המעטפות בלי סכומים ───────────────────────────────────────
+   שורת הכותרת של העמודה מתארת מה קורה, לא כמה. האייקון בשורה מחליף
+   את מספר המעטפה ומשאיר את אותה פריסה של שלוש עמודות. */
+.gc-total-line { font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); line-height: 1.2; }
+.gc-row-num svg { display: block; }
+.gc-counter .gc-match { justify-self: start; }
