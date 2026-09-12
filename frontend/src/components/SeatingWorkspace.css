@@ -859,6 +859,32 @@
   background: rgba(20, 18, 14, 0.38);
 }
 
+/* ---- גרירת מוזמן מתוך המגירה (טלפון) ----
+   ברגע שגרירה אמיתית מתחילה, המגירה והרקע המעומעם שלה יורדים מהמסך כדי
+   לחשוף את כל האולם. בכוונה ``transform`` + ``opacity`` + ``pointer-events``
+   ולא ``display: none`` / ``visibility: hidden`` / הסרה מה-DOM: השורה
+   הנגררת יושבת בתוך המגירה, ודפדפנים מבטלים גרירה (או לא שולחים לה
+   ``dragend``) כשהמקור שלה נעלם. ``pointer-events: none`` הוא מה שמאפשר
+   ל-``dragover``/``drop`` להגיע לשולחן שמתחת. */
+.hall-mobile.hall-ws:not(.is-desktop) .ws-sheet.is-drag-collapsed {
+  transform: translateY(105%);
+  opacity: 0;
+  pointer-events: none;
+  animation: none;
+  transition:
+    transform var(--transition-medium),
+    opacity var(--transition-fast);
+}
+.hm-panel-backdrop.is-drag-collapsed {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hall-mobile.hall-ws:not(.is-desktop) .ws-sheet.is-drag-collapsed {
+    transition: none;
+  }
+}
+
 /* באנר השגיאה חייב להישאר מעל המגירות ומעל הרקע המעומעם שלהן.
    "הושבה בקליק" נלחצת מתוך מגירת המוזמנים; כשהיא נכשלת, ההודעה נולדת
    בתוך ``.hm-body`` — כלומר *מתחת* לרקע (z-index 71) — והמשתמש ראה

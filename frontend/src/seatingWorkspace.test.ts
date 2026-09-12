@@ -23,6 +23,8 @@ import {
   sortEntries,
   tableAriaLabel,
   occupancyAfterSeating,
+  panelAfterGuestDrag,
+  shouldCollapseGuestSheetForDrag,
   tableOccupancy,
 } from './seatingWorkspace'
 import type { GuestEntry, WorkspaceFilter, WorkspaceTable } from './seatingWorkspace'
@@ -390,6 +392,50 @@ function testOccupancyAfterSeating(): void {
   console.log('✓ תפוסה אחרי הושבה: העברה לאותו שולחן, seats=0, וחריגה')
 }
 
+// ---------------------------------------------------------------------------
+// רגרסיה — גרירה במובייל: המגירה כיסתה את האולם ואי אפשר היה לשחרר על שולחן
+// ---------------------------------------------------------------------------
+
+function testMobileDragCollapsesGuestSheet(): void {
+  // הבאג: גרירה אמיתית שהתחילה במגירת המוזמנים — המגירה נשארה מעל האולם.
+  assert.equal(
+    shouldCollapseGuestSheetForDrag({ isDesktop: false, panel: 'guests', draggingGuestId: 7 }),
+    true,
+    'טלפון + מגירת מוזמנים פתוחה + גרירה פעילה → המגירה מפנה את האולם',
+  )
+
+  // הקשה רגילה אינה גרירה: dragGuestId נקבע רק ב-dragstart.
+  assert.equal(
+    shouldCollapseGuestSheetForDrag({ isDesktop: false, panel: 'guests', draggingGuestId: null }),
+    false,
+    'בלי גרירה פעילה (הקשה/לחיצה) — המגירה נשארת פתוחה',
+  )
+
+  // דסקטופ: הרשימה היא עמודה לצד האולם — לעולם לא מכווצים.
+  assert.equal(
+    shouldCollapseGuestSheetForDrag({ isDesktop: true, panel: 'guests', draggingGuestId: 7 }),
+    false,
+    'בדסקטופ ההתנהגות לא משתנה',
+  )
+  assert.equal(
+    shouldCollapseGuestSheetForDrag({ isDesktop: true, panel: 'hall', draggingGuestId: 7 }),
+    false,
+  )
+
+  // גרירה בטלפון כשהמגירה בכלל לא פתוחה (למשל פאנל "עוד") — אין מה לכווץ.
+  assert.equal(
+    shouldCollapseGuestSheetForDrag({ isDesktop: false, panel: 'more', draggingGuestId: 7 }),
+    false,
+  )
+
+  // אחרי Drop או ביטול: מגירה שכווצה נסגרת, והמשתמש פותח אותה מחדש בכפתור.
+  assert.equal(panelAfterGuestDrag({ collapsedForDrag: true, panel: 'guests' }), 'hall')
+  // גרירה שלא כיווצה דבר (דסקטופ, או בוטלה לפני שהספיקה) — הפאנל לא זז.
+  assert.equal(panelAfterGuestDrag({ collapsedForDrag: false, panel: 'guests' }), 'guests')
+  assert.equal(panelAfterGuestDrag({ collapsedForDrag: false, panel: 'smart' }), 'smart')
+  console.log('✓ גרירה במובייל: המגירה מתכווצת רק בגרירה אמיתית, לא בדסקטופ, ונסגרת בסיום')
+}
+
 function testOccupancy(): void {
   const t: WorkspaceTable = {
     table_number: 1,
@@ -457,5 +503,6 @@ testNoDuplicateEntries()
 testAriaLabels()
 testOccupancy()
 testOccupancyAfterSeating()
+testMobileDragCollapsesGuestSheet()
 testLargeDataset()
 console.log('OK — לוגיקת רשימת המוזמנים במרחב ההושבה עובדת כמפרט.')
