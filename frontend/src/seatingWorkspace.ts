@@ -305,6 +305,43 @@ export function sectionAriaLabel(section: WorkspaceSection): string {
   return `${section.label}, ${section.people} אנשים, ${section.seated} הושבו`
 }
 
+/** הפאנלים של מרחב העבודה — אותו איחוד שמשמש את ``HallPage``. */
+export type WorkPanel = 'hall' | 'tables' | 'guests' | 'smart' | 'tools' | 'more'
+
+/**
+ * האם גרירה פעילה של מוזמן צריכה לכווץ את מגירת המוזמנים.
+ *
+ * בטלפון הרשימה היא מגירה שמכסה את רוב האולם. גרירה שמתחילה בתוכה לא
+ * יכולה להגיע לשום שולחן — המגירה עצמה יושבת מעליו. לכן ברגע שהדפדפן
+ * מזהה גרירה **אמיתית** (``dragstart``, שנורה רק אחרי תזוזה או לחיצה
+ * ארוכה — לא בהקשה רגילה) המגירה מפנה את המסך.
+ *
+ * בדסקטופ הרשימה היא עמודה קבועה לצד האולם ואינה מכסה אותו — שם אין מה
+ * לכווץ, וההתנהגות לא משתנה.
+ */
+export function shouldCollapseGuestSheetForDrag(state: {
+  isDesktop: boolean
+  panel: WorkPanel
+  draggingGuestId: number | null
+}): boolean {
+  return !state.isDesktop && state.panel === 'guests' && state.draggingGuestId !== null
+}
+
+/**
+ * הפאנל שנשאר פתוח אחרי שגרירה הסתיימה — ב-Drop או בביטול.
+ *
+ * אם המגירה כווצה בשביל הגרירה היא נסגרת (``hall``): המשתמש רואה את
+ * התוצאה על המפה, ופותח את הרשימה שוב בכפתור "מוזמנים" — עם אותו חיפוש,
+ * מיון וסינון, כי המצב שלהם חי במסך ולא במגירה. אם לא כווצה (דסקטופ,
+ * או גרירה שבוטלה לפני שהספיקה לכווץ) — שום דבר לא משתנה.
+ */
+export function panelAfterGuestDrag(state: {
+  collapsedForDrag: boolean
+  panel: WorkPanel
+}): WorkPanel {
+  return state.collapsedForDrag ? 'hall' : state.panel
+}
+
 /**
  * כמה מקומות יהיו תפוסים בשולחן **אחרי** שמוזמן יושב בו.
  *

@@ -37,7 +37,12 @@ import { useFocusTrap } from '../lib/useFocusTrap'
 import { strings } from '../strings/he'
 import { getEventId } from '../authStore'
 import { getGroupNotes } from '../api'
-import { occupancyAfterSeating, tableAriaLabel } from '../seatingWorkspace'
+import {
+  occupancyAfterSeating,
+  panelAfterGuestDrag,
+  shouldCollapseGuestSheetForDrag,
+  tableAriaLabel,
+} from '../seatingWorkspace'
 import { EMPTY_FILTER } from '../seatingWorkspace'
 import type { WorkspaceFilter, WorkspaceSort } from '../seatingWorkspace'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -1543,6 +1548,11 @@ export function HallPage({
   // על המפה. הגרירה היא **תוספת**: אותה הושבה זמינה גם בהקשה ובמקלדת.
   const [dragGuestId, setDragGuestId] = useState<number | null>(null)
   const [dropTable, setDropTable] = useState<number | null>(null)
+  // בטלפון: מגירת המוזמנים כווצה כדי לפנות את האולם לגרירה שהתחילה בתוכה.
+  // המגירה נשארת **מרונדרת** בזמן הגרירה (רק מוזזת מהמסך) — השורה הנגררת
+  // חיה בתוכה, ואם היא נמחקת מה-DOM הדפדפן לא שולח לה ``dragend`` וגרירה
+  // שבוטלה הייתה נתקעת. היא נסגרת באמת רק אחרי שהגרירה נגמרה.
+  const [sheetCollapsedForDrag, setSheetCollapsedForDrag] = useState(false)
   // שכבת "ניהול מוזמנים" — מסך המוזמנים הקיים (GuestsPage) כדיאלוג מעל
   // מרחב העבודה. אין יעד ניווט נפרד, ואף יכולת לא נעלמה.
   const [manageOpen, setManageOpen] = useState(initialView === 'manage')
@@ -3557,6 +3567,32 @@ export function HallPage({
   useFocusTrap(guestSheetRef, showGuestsSheet)
   useFocusTrap(panelRef, panelOpen && !isDesktop)
 
+  // ---- גרירת מוזמן מתוך המגירה (טלפון) ----
+  // ``dragGuestId`` נקבע רק ב-``dragstart`` — כלומר אחרי שהדפדפן זיהה
+  // גרירה אמיתית, לא בהקשה רגילה על שורה. רק אז המגירה מפנה את האולם.
+  //
+  // הכיווץ נדחה בטיק אחד (``setTimeout 0``): שינוי מיקום/שקיפות של האלמנט
+  // הנגרר *בתוך* ``dragstart`` גורם לדפדפנים לצלם תמונת גרירה ריקה, ובחלקם
+  // אף לבטל את הגרירה. אחרי שהאירוע הסתיים זה בטוח.
+  const collapseSheetForDrag = shouldCollapseGuestSheetForDrag({
+    isDesktop,
+    panel,
+    draggingGuestId: dragGuestId,
+  })
+  useEffect(() => {
+    if (!collapseSheetForDrag) return
+    const id = window.setTimeout(() => setSheetCollapsedForDrag(true), 0)
+    return () => window.clearTimeout(id)
+  }, [collapseSheetForDrag])
+
+  // הגרירה הסתיימה (Drop או ביטול) — המגירה נסגרת, והאולם נשאר גלוי עם
+  // התוצאה. פתיחה מחדש מכפתור "מוזמנים" מחזירה את אותו חיפוש/מיון/סינון.
+  useEffect(() => {
+    if (dragGuestId !== null || !sheetCollapsedForDrag) return
+    setSheetCollapsedForDrag(false)
+    setPanel((current) => panelAfterGuestDrag({ collapsedForDrag: true, panel: current }))
+  }, [dragGuestId, sheetCollapsedForDrag])
+
   // הערה על מה שהיה כאן: עד 2026-09 ישבה כאן ``allGuestsSorted`` —
   // המיון של לשונית "מוזמנים" שבתוך מסך האולם. הרשימה עברה למרחב
   // העבודה (``SeatingGuestPanel``), והמיון/הסינון/הקיבוץ שלה חיים
@@ -3721,6 +3757,15 @@ export function HallPage({
     const trigger = panelTriggerRef.current
     if (trigger && document.contains(trigger)) trigger.focus()
     panelTriggerRef.current = null
+  }, [])
+
+  /** תחילת/סוף גרירה של מוזמן מהסרגל.
+   *  בסוף גרירה — גם כשבוטלה מחוץ לכל שולחן — מנקים את הדגשת השולחן
+   *  האחרון שהסמן עבר מעליו. בלי זה גרירה שבוטלה השאירה טבעת זהב על
+   *  שולחן אקראי עד הגרירה הבאה. */
+  const onGuestDragChange = useCallback((guestId: number | null) => {
+    setDragGuestId(guestId)
+    if (guestId === null) setDropTable(null)
   }, [])
 
   /** יעד שחרור לגרירה: מקבל את המוזמן רק אם באמת נגרר מוזמן. */
@@ -3907,7 +3952,7 @@ export function HallPage({
         onShowTable={showTableOnMap}
         onManageGuests={openManage}
         onAnnounce={announce}
-        onDragGuestChange={setDragGuestId}
+        onDragGuestChange={onGuestDragChange}
         search={guestSearch}
         onSearchChange={setGuestSearch}
         sort={guestSort}
@@ -4949,9 +4994,12 @@ export function HallPage({
         {/* ---- סרגל המוזמנים בטלפון: מגירה מעל האולם ---- */}
         {showGuestsSheet && (
           <>
-            <div className="hm-panel-backdrop" onClick={closePanel} />
             <div
-              className="ws-sheet"
+              className={`hm-panel-backdrop${sheetCollapsedForDrag ? ' is-drag-collapsed' : ''}`}
+              onClick={closePanel}
+            />
+            <div
+              className={`ws-sheet${sheetCollapsedForDrag ? ' is-drag-collapsed' : ''}`}
               ref={guestSheetRef}
               tabIndex={-1}
               role="dialog"
