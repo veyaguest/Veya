@@ -587,15 +587,16 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
   backdrop-filter: blur(8px);
   animation: hs-in 620ms var(--ease-out) both;
 }
-.hs-n {
-  font-family: var(--font-display);
-  font-size: var(--fd-sm);
-  line-height: 1.05;
-  color: var(--cream-text);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+/* אייקון סטטוס במקום מספר: מה שחשוב הוא מי ענה, לא כמה. */
+.hs { grid-template-columns: auto 1fr; align-items: center; gap: 9px; }
+.hs-i {
+  display: grid; place-items: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1px solid currentColor;
 }
-.hs-ok { color: var(--gold-light); }
+.hs-ok   { color: var(--gold-light); }
+.hs-wait { color: #cabfa9; }
+.hs-no   { color: #b6aa93; }
 .hs-l { font-size: var(--fs-2xs); color: #b6aa93; white-space: nowrap; }
 
 /* ההשהיה נספרת מתום כניסת ההירו, ואיטית בכוונה — שלוש קריאות

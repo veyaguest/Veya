@@ -1052,7 +1052,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                            /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1642,15 +1642,16 @@
         backdrop-filter: blur(8px);
         animation: hs-in 620ms var(--ease-out) both;
       }
-      .hs-n {
-        font-family: var(--font-display);
-        font-size: var(--fd-sm);
-        line-height: 1.05;
-        color: var(--cream-text);
-        font-variant-numeric: tabular-nums;
-        letter-spacing: -0.01em;
+      /* אייקון סטטוס במקום מספר: מה שחשוב הוא מי ענה, לא כמה. */
+      .hs { grid-template-columns: auto 1fr; align-items: center; gap: 9px; }
+      .hs-i {
+        display: grid; place-items: center;
+        width: 22px; height: 22px; border-radius: 50%;
+        border: 1px solid currentColor;
       }
-      .hs-ok { color: var(--gold-light); }
+      .hs-ok   { color: var(--gold-light); }
+      .hs-wait { color: #cabfa9; }
+      .hs-no   { color: #b6aa93; }
       .hs-l { font-size: var(--fs-2xs); color: #b6aa93; white-space: nowrap; }
 
       /* ההשהיה נספרת מתום כניסת ההירו, ואיטית בכוונה — שלוש קריאות
@@ -1733,6 +1734,7 @@
     
     
     
+    
     </style>
   </head>
   <body>
@@ -1779,19 +1781,19 @@
           <div class="hero-devices reveal d3">
 
             <!-- שכבות UI צפות: קריאה מתוך תמונת המצב שמאחוריהן.
-                 המספרים הם אותה דוגמה שרצה לאורך הדף (500 / 463 / 37),
-                 כדי שההירו וסקשן ההתחייבות יספרו את אותו סיפור. -->
+                 סטטוסים, לא כמויות — מה שהמשתמש באמת רוצה לדעת הוא
+                 מי ענה ומי לא, ולא כמה. -->
             <div class="hs hs-1" aria-hidden="true">
-              <span class="hs-n" data-count-to="500">500</span>
-              <span class="hs-l">מוזמנים ברשימה</span>
-            </div>
-            <div class="hs hs-2" aria-hidden="true">
-              <span class="hs-n hs-ok" data-count-to="463">463</span>
+              <span class="hs-i hs-ok"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
               <span class="hs-l">אישרו הגעה</span>
             </div>
-            <div class="hs hs-3" aria-hidden="true">
-              <span class="hs-n" data-count-to="37">37</span>
+            <div class="hs hs-2" aria-hidden="true">
+              <span class="hs-i hs-wait"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
               <span class="hs-l">ממתינים לתשובה</span>
+            </div>
+            <div class="hs hs-3" aria-hidden="true">
+              <span class="hs-i hs-no"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+              <span class="hs-l">לא מגיעים</span>
             </div>
             <div class="device-mac">
               <div class="device-mac-notch" aria-hidden="true"></div>
@@ -1849,7 +1851,7 @@
             <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
             <span>עברית מלאה, מותאם למובייל</span>
             <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <span>7 סוגי אירוע</span>
+            <span>מותאם לכל סוגי האירועים</span>
             <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
             <span>ניהול משותף</span>
           </div>
@@ -1892,7 +1894,7 @@
           <div class="ba-side ba-before">
             <span class="ba-tag">לפני</span>
             <div class="ba-scatter" aria-hidden="true">
-              <div class="ba-note ba-n1"><span class="ba-note-t">רשימת מוזמנים</span><span class="ba-note-s">גיליון אקסל · גרסה 4 סופי</span></div>
+              <div class="ba-note ba-n1"><span class="ba-note-t">רשימת מוזמנים</span><span class="ba-note-s">גיליון אקסל · גרסה סופית־סופית</span></div>
               <div class="ba-note ba-n2"><span class="ba-note-t">מי אישר</span><span class="ba-note-s">רשום על דף · חלק בטלפון</span></div>
               <div class="ba-note ba-n3"><span class="ba-note-t">הוצאות</span><span class="ba-note-s">פנקס · קבלות · מחשבון</span></div>
             </div>
