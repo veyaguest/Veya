@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#2b2620" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>VEYA — אין חיבור</title>
+    <!--
+      העמוד שמוצג כשאין חיבור לאינטרנט (ראו public/sw.js).
+      הכל כאן inline ובגופני מערכת בכוונה: כשאין רשת גם Google Fonts
+      וגם קובץ CSS חיצוני לא ייטענו, ועמוד ה"אין חיבור" הוא בדיוק
+      המקום שאסור לו להישבר.
+    -->
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 24px calc(32px + env(safe-area-inset-bottom, 0px));
+        padding-top: calc(32px + env(safe-area-inset-top, 0px));
+        background: #0b0a0c;
+        color: #f5efe2;
+        font-family: 'Heebo', 'Assistant', system-ui, -apple-system, sans-serif;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+      .card {
+        width: 100%;
+        max-width: 420px;
+        text-align: center;
+        background: #2b2620;
+        border: 1px solid rgba(201, 162, 39, 0.35);
+        border-top: 3px solid #c9a227;
+        border-radius: 20px;
+        padding: 36px 28px 32px;
+        box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.9);
+      }
+      .mono {
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 22px;
+        border: 1.5px solid #c9a227;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+        font-size: 38px;
+        color: #e4c96b;
+        line-height: 1;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-family: 'Frank Ruhl Libre', Georgia, serif;
+        font-size: 24px;
+        font-weight: 500;
+        color: #f5efe2;
+      }
+      p {
+        margin: 0 0 26px;
+        font-size: 15px;
+        color: rgba(245, 239, 226, 0.72);
+      }
+      button {
+        display: block;
+        width: 100%;
+        min-height: 48px;
+        border: 0;
+        border-radius: 12px;
+        background: #c9a227;
+        color: #2b2620;
+        font: inherit;
+        font-weight: 600;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      button:active {
+        background: #b8931f;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="mono" aria-hidden="true">V</div>
+      <h1>אין חיבור כרגע</h1>
+      <p>
+        VEYA צריכה חיבור לאינטרנט כדי להראות לכם תמונת מצב מעודכנת. ברגע
+        שהחיבור יחזור, נמשיך בדיוק מאיפה שהפסקתם.
+      </p>
+      <button type="button" onclick="location.reload()">ניסיון נוסף</button>
+    </main>
+  </body>
+</html>

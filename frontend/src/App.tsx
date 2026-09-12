@@ -33,6 +33,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { EventMembersDialog } from './components/EventMembersDialog'
 import { Footer } from './components/Footer'
 import { GiftsPage } from './components/GiftsPage'
+import { InstallPrompt } from './components/InstallPrompt'
 import { MessagesPage } from './components/MessagesPage'
 import { OnboardingWizard } from './components/OnboardingWizard'
 import { ReconsentModal } from './components/ReconsentModal'
@@ -780,6 +781,12 @@ function App() {
       {membersOpen && activeEventId != null && (
         <EventMembersDialog eventId={activeEventId} onClose={() => setMembersOpen(false)} />
       )}
+
+      {/* ההצעה להוסיף את VEYA למסך הבית של האייפון. מרונדרת כאן ולא
+          גבוה יותר בעץ בכוונה: זה המקום שבו המשתמש כבר מחובר ורואה את
+          האירוע שלו. הקומפוננטה עצמה מחליטה אם בכלל להופיע (Safari
+          באייפון, לא מותקנת, לא נסגרה לאחרונה) — ראו lib/pwa.ts. */}
+      <InstallPrompt />
     </div>,
     ),
   )

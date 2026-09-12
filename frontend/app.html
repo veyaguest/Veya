@@ -11,7 +11,21 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="mobile-web-app-capable" content="yes" />
+    <!-- ==== התקנה כאפליקציה על מסך הבית (iPhone) ====================
+         apple-mobile-web-app-capable  — פותח את VEYA ללא סרגלי Safari.
+         apple-mobile-web-app-title    — השם שמופיע מתחת לאייקון. חייב
+           להיות קצר: ה-<title> המלא ("VEYA — ניהול אירועים") נחתך שם.
+         apple-mobile-web-app-status-bar-style=black — פס הסטטוס נשאר
+           שחור עם טקסט לבן, ותוכן האפליקציה מתחיל **מתחתיו**. בחרנו
+           black ולא black-translucent בכוונה: ה-body של VEYA צבוע
+           #0b0a0c (שחור עמוק), כך שהפס מתמזג בלי תפר — ובלי לדחוף את
+           כל המסכים מתחת ל-Dynamic Island / ל-notch. הערך default היה
+           נותן טקסט כהה על הרקע הכהה הזה, כלומר בלתי קריא.
+         את ה-safe-area שנשאר (סיבוב לרוחב, פס הבית התחתון) מטפלים
+         ב-CSS דרך env(safe-area-inset-*) — ראו App.css. ==================== -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="VEYA" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="theme-color" content="#2b2620" />
     <!-- המערכת עצמה פרטית (התחברות + נתוני מוזמנים) — לא לאינדוקס בגוגל. -->
     <meta name="robots" content="noindex, follow" />
