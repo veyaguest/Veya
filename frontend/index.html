@@ -1052,7 +1052,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                            /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                  /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       /* ═══════════════════════════════════════════════════════════════════════
          VEYA — שכבת המותג
          ═══════════════════════════════════════════════════════════════════════
@@ -1678,6 +1678,59 @@
         .gc-counter.is-typing .gc-amount { opacity: 1; }
       }
 
+      /* ── רשימת המוזמנים בסקשן אישורי ההגעה ─────────────────────────────
+         מציגה סטטוסים, לא כמויות. שורה אחת מחליפה סטטוס בגלילה — ההמחשה
+         של "מוזמן עונה והמערכת מתעדכנת" בלי להסביר אותה במילים. */
+      .gl {
+        margin-top: 26px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        background: var(--ivory);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+      }
+      .gl-head {
+        display: flex; align-items: baseline; justify-content: space-between;
+        gap: 12px; padding: 14px 18px;
+        border-bottom: 1px solid var(--line); background: var(--ivory-2);
+      }
+      .gl-title { font-family: var(--font-display); font-size: var(--fs-xl); color: var(--charcoal); }
+      .gl-sub { font-size: var(--fs-xs); color: var(--muted); }
+      .gl-list { list-style: none; margin: 0; padding: 0; }
+      .gl-row {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 14px; padding: 13px 18px; border-bottom: 1px solid var(--line);
+      }
+      .gl-row:last-child { border-bottom: 0; }
+      .gl-who { display: grid; gap: 1px; min-width: 0; }
+      .gl-name { color: var(--charcoal); font-weight: 600; }
+      .gl-grp { font-size: var(--fs-2xs); color: var(--muted); }
+      .gl-chip {
+        display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+        padding: 5px 11px; border-radius: var(--radius-pill);
+        font-size: var(--fs-2xs); font-weight: 600;
+        border: 1px solid currentColor;
+      }
+      .gl-ok    { color: var(--success); }
+      .gl-wait  { color: var(--warning); }
+      .gl-maybe { color: var(--muted); }
+      .gl-no    { color: var(--muted); }
+
+      /* החלפת הסטטוס: שתי התוויות באותו תא, כך שאין קפיצת פריסה. */
+      .gl-swap { position: relative; display: inline-grid; }
+      .gl-swap > * { grid-area: 1 / 1; transition: opacity 420ms var(--ease-out); }
+      .gl-after  { opacity: 0; }
+      .gl[data-scene] .scene-step.is-on .gl-after  { opacity: 1; }
+      .gl[data-scene] .scene-step.is-on .gl-before { opacity: 0; }
+      .gl-row-live { background: rgba(201, 162, 39, 0.05); }
+
+      @media (max-width: 460px) {
+        .gl-row { flex-wrap: wrap; gap: 8px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .gl-swap > * { transition: none; }
+      }
+
       /* ===== VEYA BRAND LAYER — END ===== */
 
     
@@ -1731,6 +1784,7 @@
     
     
 
+    
     
     
     
@@ -1984,12 +2038,38 @@
               VEYA מרכזת את סטטוס המוזמנים ואת המשך הטיפול במי שעדיין לא ענה, כך שבמקום
               כמה רשימות במקביל יש מקור אחד לאירוע.
             </p>
-            <ul class="rsvp-list">
-              <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>מי אישר הגעה, וכמה אנשים הוא מביא.</li>
-              <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>מי לא מגיע.</li>
-              <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>מי עדיין מתלבט.</li>
-              <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ומי עדיין לא ענה בכלל.</li>
+            <!-- ═════ תמונת המצב של הרשימה ═══════════════════════════════
+               במקום ארבע שורות שמסבירות מה רואים - מראים את זה.
+               הסטטוסים הם אלה שבמוצר (``Guest.rsvp_status``), בתוויות
+               מ-``strings/he.ts``. בלי כמויות: מה שחשוב הוא מי ענה. -->
+          <div class="gl" data-scene data-scene-gap="900">
+            <div class="gl-head">
+              <span class="gl-title">רשימת המוזמנים</span>
+              <span class="gl-sub">מתעדכנת מעצמה</span>
+            </div>
+            <ul class="gl-list scene-step" data-step="1">
+              <li class="gl-row">
+                <span class="gl-who"><span class="gl-name">דניאל ושרון</span><span class="gl-grp">משפחה</span></span>
+                <span class="gl-chip gl-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>אישרו הגעה</span>
+              </li>
+              <li class="gl-row gl-row-live">
+                <span class="gl-who"><span class="gl-name">משפחת כהן</span><span class="gl-grp">חברים</span></span>
+                <span class="gl-swap"><span class="gl-before"><span class="gl-chip gl-wait"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>ממתינים לתשובה</span></span><span class="gl-after"><span class="gl-chip gl-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>אישרו הגעה</span></span></span>
+              </li>
+              <li class="gl-row">
+                <span class="gl-who"><span class="gl-name">יוסי ורונית</span><span class="gl-grp">עבודה</span></span>
+                <span class="gl-chip gl-maybe"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>לא החליטו</span>
+              </li>
+              <li class="gl-row">
+                <span class="gl-who"><span class="gl-name">עומר ונועה</span><span class="gl-grp">משפחה</span></span>
+                <span class="gl-chip gl-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>אישרו הגעה</span>
+              </li>
+              <li class="gl-row">
+                <span class="gl-who"><span class="gl-name">משפחת לוי</span><span class="gl-grp">חברים</span></span>
+                <span class="gl-chip gl-no"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>לא מגיעים</span>
+              </li>
             </ul>
+          </div>
             <p class="why-punch">מרשימה שמשתנה כל יום — לתמונה אחת שאפשר לעבוד לפיה.</p>
           
           <!-- ═════ ציר סגירת הרשימה (§5) ═══════════════════════════════
