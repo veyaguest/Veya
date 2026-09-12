@@ -678,3 +678,33 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
 @media (prefers-reduced-motion: reduce) {
   .gl-swap > * { transition: none; }
 }
+
+/* ── שלוש שכבות ההתחייבות ──────────────────────────────────────────
+   מה שנחתם, מה שמתברר, ומה שנכנס לחשבון. בלי כמויות: המנגנון הוא
+   שההתחייבות היא רצפה ולא תקרה, וזה נאמר במילים ובהיררכיה. */
+.cm {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: stretch; gap: 14px;
+  margin-top: 34px;
+}
+.cm-row {
+  display: grid; gap: 5px; align-content: start;
+  padding: 20px 22px;
+  border: 1px solid var(--line); border-radius: var(--radius-lg);
+  background: var(--ivory);
+}
+.cm-key { background: rgba(201, 162, 39, 0.08); border-color: rgba(201, 162, 39, 0.4); }
+.cm-tag {
+  font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.cm-what { font-family: var(--font-display); font-size: var(--fd-sm); color: var(--charcoal); line-height: 1.15; }
+.cm-key .cm-what { color: var(--gold-deep); }
+.cm-note { font-size: var(--fs-sm); color: var(--muted); }
+.cm-arrow { display: grid; place-items: center; color: var(--gold); font-size: var(--fd-sm); }
+
+@media (max-width: 900px) {
+  .cm { grid-template-columns: 1fr; }
+  .cm-arrow { transform: rotate(-90deg); padding: 2px 0; }
+}

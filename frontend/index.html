@@ -1052,7 +1052,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                        /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                              /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -1734,6 +1734,36 @@
         .gl-swap > * { transition: none; }
       }
 
+      /* ── שלוש שכבות ההתחייבות ──────────────────────────────────────────
+         מה שנחתם, מה שמתברר, ומה שנכנס לחשבון. בלי כמויות: המנגנון הוא
+         שההתחייבות היא רצפה ולא תקרה, וזה נאמר במילים ובהיררכיה. */
+      .cm {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr auto 1fr;
+        align-items: stretch; gap: 14px;
+        margin-top: 34px;
+      }
+      .cm-row {
+        display: grid; gap: 5px; align-content: start;
+        padding: 20px 22px;
+        border: 1px solid var(--line); border-radius: var(--radius-lg);
+        background: var(--ivory);
+      }
+      .cm-key { background: rgba(201, 162, 39, 0.08); border-color: rgba(201, 162, 39, 0.4); }
+      .cm-tag {
+        font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.1em;
+        text-transform: uppercase; color: var(--muted);
+      }
+      .cm-what { font-family: var(--font-display); font-size: var(--fd-sm); color: var(--charcoal); line-height: 1.15; }
+      .cm-key .cm-what { color: var(--gold-deep); }
+      .cm-note { font-size: var(--fs-sm); color: var(--muted); }
+      .cm-arrow { display: grid; place-items: center; color: var(--gold); font-size: var(--fd-sm); }
+
+      @media (max-width: 900px) {
+        .cm { grid-template-columns: 1fr; }
+        .cm-arrow { transform: rotate(-90deg); padding: 2px 0; }
+      }
+
       /* ===== VEYA BRAND LAYER — END ===== */
 
     
@@ -1787,6 +1817,7 @@
     
     
 
+    
     
     
     
@@ -2266,60 +2297,46 @@
             </p>
           </div>
 
-          <div class="numcard reveal d1">
-            <div class="numcard-head">
-              <h3>איך זה נראה בפועל</h3>
-              <span class="numcard-tag">דוגמה</span>
+          <!-- ═════ מה שסגרתם מול מה שקורה ═════════════════════════════
+               שלוש שכבות של אותו אירוע: מה שנחתם בחוזה, מה שמתברר
+               לקראת התאריך, ומה שבסוף נכנס לחשבון. בלי כמויות —
+               המנגנון הוא שההתחייבות היא רצפה, לא תקרה. -->
+          <div class="cm reveal d1" data-scene data-scene-gap="700">
+            <div class="cm-row scene-step" data-step="1">
+              <span class="cm-tag">מה שסגרתם מראש</span>
+              <span class="cm-what">כמות ההתחייבות בחוזה</span>
+              <span class="cm-note">נקבעת חודשים לפני שיש לכם מושג מי יגיע</span>
             </div>
-            <div class="numcard-body">
-              <div class="num-row" data-scene data-scene-gap="620">
-                <div class="num scene-step" data-step="1">
-                  <span class="num-value" data-count-to="500">500</span>
-                  <span class="num-label">התחייבתם על</span>
-                </div>
-                <div class="num scene-step" data-step="2">
-                  <span class="num-value" data-count-from="500" data-count-to="463">463</span>
-                  <span class="num-label">אישרו הגעה</span>
-                </div>
-                <div class="num is-gap scene-step" data-step="3">
-                  <span class="num-value" data-count-to="37">37</span>
-                  <span class="num-label">מנות שלא ינוצלו</span>
-                </div>
-              </div>
+            <span class="cm-arrow scene-step" data-step="2" aria-hidden="true">←</span>
+            <div class="cm-row scene-step" data-step="3">
+              <span class="cm-tag">מה שמתברר לקראת האירוע</span>
+              <span class="cm-what">מי באמת אישר הגעה</span>
+              <span class="cm-note">הרשימה מתייצבת רק סמוך למועד הסגירה</span>
             </div>
-            <p class="numcard-note">
-              מגיעים 463, אבל <b>משלמים על 500</b> — כל עוד מספר המגיעים נמוך
-              מההתחייבות, ההתחייבות היא זו שנספרת. ואם החוזה נוקב גם במינימום
-              כספי, נספר הגבוה מבין השניים.
-            </p>
+            <span class="cm-arrow scene-step" data-step="4" aria-hidden="true">←</span>
+            <div class="cm-row cm-key scene-step" data-step="5">
+              <span class="cm-tag">מה שנכנס לחשבון</span>
+              <span class="cm-what">הגבוה מבין השניים</span>
+              <span class="cm-note">ואם בחוזה יש גם מינימום כספי — נספר הגבוה מביניהם</span>
+            </div>
           </div>
 
           <div class="steps-two reveal d2" data-scene data-scene-gap="700">
             <div class="step-two scene-step" data-step="1">
               <span class="lbl">מתחת להתחייבות</span>
-              <span class="num-arrow">
-                <span>463</span>
-                <span class="arrow" aria-hidden="true">←</span>
-                <span class="num-value" style="font-size:1em">464</span>
-              </span>
-              <span class="big">אדם נוסף: 0 ₪</span>
-              <p>אתם כבר משלמים עליו. עד 500 אין תוספת על המנה.</p>
+              <span class="big">אדם נוסף לא מוסיף לחשבון</span>
+              <p>אתם כבר משלמים עליו. כל עוד לא עברתם את ההתחייבות, היא זו שנספרת.</p>
             </div>
             <div class="step-two scene-step" data-step="2">
               <span class="lbl">מעל ההתחייבות</span>
-              <span class="num-arrow">
-                <span>500</span>
-                <span class="arrow" aria-hidden="true">←</span>
-                <span class="num-value" style="font-size:1em">501</span>
-              </span>
-              <span class="big">מחיר מנה מלא</span>
-              <p>מהאדם ה-501 כל אחד נספר במחיר מלא. זו המדרגה שמשנה את החשבון.</p>
+              <span class="big">כל אדם נוסף במחיר מנה מלא</span>
+              <p>מכאן כל מגיע נספר בנפרד. זו המדרגה שמשנה את החשבון.</p>
             </div>
           </div>
 
           <p class="fineprint reveal">
-            המספרים בדוגמה הם להמחשה בלבד. VEYA מחשבת לפי הנתונים שאתם מזינים —
-            כמות ההתחייבות, מחיר המנה והמינימום הכספי שרשומים בחוזה שלכם.
+            VEYA מחשבת לפי הנתונים שאתם מזינים — כמות ההתחייבות, מחיר המנה
+            והמינימום הכספי שרשומים בחוזה שלכם.
           </p>
 
           <div class="section-cta reveal">
