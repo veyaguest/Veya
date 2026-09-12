@@ -1039,12 +1039,17 @@
 
       /* ---- כרטיסי סוג אירוע (קישורים) ----
          נשענים על .supporting-item הקיים; כאן רק מה שהופך אותו לקישור. */
-      .evt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 14px; }
+      .evt-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+      /* שבעה סוגים: החתונה תופסת שתי עמודות, כך שהרשת נסגרת בשורות מלאות. */
+      .evt-grid > a.evt-card:first-child { grid-column: span 2; }
+      @media (max-width: 860px) { .evt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
       a.evt-card {
         display: block; text-decoration: none; background: var(--cream);
         border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 16px;
         transition: border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
       }
+      .evt-ico { display: inline-grid; place-items: center; width: 42px; height: 42px; margin-bottom: 12px; border-radius: 50%; background: rgba(201, 162, 39, 0.12); color: var(--gold-deep); transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); }
+      a.evt-card:hover .evt-ico { background: var(--gold); color: var(--charcoal); }
       a.evt-card h3 { font-size: var(--fs-base); margin: 0 0 4px; }
       a.evt-card p { font-size: var(--fs-xs); color: var(--muted); margin: 0; }
       a.evt-card:hover { border-color: var(--gold); box-shadow: 0 14px 30px -22px rgba(43, 38, 32, 0.4); }
@@ -2266,7 +2271,7 @@
                 <p>כמה אנשים בכל שורה, לאיזה צד ולאיזו קבוצה הם שייכים, ומה חשוב לזכור עליהם.</p>
                 <div class="note-chips">
                   <span class="note-chip">המשפחה של הכלה</span>
-                  <span class="note-chip">מגיעים 6</span>
+                  <span class="note-chip">כל המשפחה מגיעה</span>
                   <span class="note-chip">עם ילדים</span>
                   <span class="note-chip">לא ליד עומר</span>
                 </div>
@@ -2714,21 +2719,22 @@
       <section class="eventtypes tone-light" id="events" aria-labelledby="events-title">
         <div class="wrap">
           <div class="section-head reveal">
-            <span class="kicker">Event-first</span>
+            <span class="kicker">סוגי האירועים</span>
             <h2 id="events-title" class="section-title">אותה שיטה. אירועים שונים.</h2>
             <p class="section-sub">
-              לכל אירוע יש אנשים, אישורי הגעה, מקומות, החלטות והוצאות. VEYA מתאימה את
-              המערכת לסוג האירוע — במקום להפוך כל אירוע ל"חתונה בתחפושת".
+              לכל אירוע יש אנשים, אישורי הגעה, מקומות, החלטות והוצאות — ולכל אחד
+              יש אופי משלו. VEYA מתאימה את עצמה לסוג האירוע, במקום להפוך כל אירוע
+              ל"חתונה בתחפושת".
             </p>
           </div>
           <div class="evt-grid reveal d1">
-            <a class="evt-card" href="/events/wedding/"><h3>חתונה</h3><p>הרשימה הגדולה, ההתחייבות והשולחנות.</p></a>
-            <a class="evt-card" href="/events/henna/"><h3>חינה</h3><p>רשימה שחופפת חלקית לחתונה.</p></a>
-            <a class="evt-card" href="/events/bar-mitzvah/"><h3>בר מצווה</h3><p>משפחה, כיתה, תנועה — קבוצות משלה.</p></a>
-            <a class="evt-card" href="/events/bat-mitzvah/"><h3>בת מצווה</h3><p>אותה שיטה, בקנה מידה אחר.</p></a>
-            <a class="evt-card" href="/events/brit/"><h3>ברית</h3><p>כשיש ימים ספורים לארגן הכול.</p></a>
-            <a class="evt-card" href="/events/brita/"><h3>בריתה</h3><p>סוג אירוע עצמאי, לא תת-סעיף.</p></a>
-            <a class="evt-card" href="/events/business/"><h3>אירוע עסקי</h3><p>מחלקות, ספקים ודוח נוכחות.</p></a>
+            <a class="evt-card" href="/events/wedding/"><span class="evt-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="14" r="5.5"/><circle cx="15" cy="14" r="5.5"/><path d="m10.5 4 1.5-2 1.5 2-1.5 1.6z"/></svg></span><h3>חתונה</h3><p>שני צדדים, רשימה גדולה, התחייבות לאולם ושולחנות שצריך לסדר.</p></a>
+            <a class="evt-card" href="/events/henna/"><span class="evt-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c2.5 3 4 5.4 4 7.6a4 4 0 0 1-8 0C8 8.4 9.5 6 12 3z"/><path d="M12 14.6V21M9 18.5h6"/></svg></span><h3>חינה</h3><p>ערב משפחתי וצבעוני, עם רשימה שחופפת רק בחלקה לחתונה.</p></a>
+            <a class="evt-card" href="/events/bar-mitzvah/"><span class="evt-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/></svg></span><h3>בר מצווה</h3><p>המשפחה, החברים מהכיתה ומהתנועה — כל קבוצה במקום שלה.</p></a>
+            <a class="evt-card" href="/events/bat-mitzvah/"><span class="evt-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4l-4.8 2.5.9-5.4-3.9-3.8 5.4-.8z"/></svg></span><h3>בת מצווה</h3><p>חגיגה משלה, עם החברות, המשפחה והרגעים שחשובים לה.</p></a>
+            <a class="evt-card" href="/events/brit/"><span class="evt-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.3-7-9.6A4 4 0 0 1 12 8a4 4 0 0 1 7 2.4C19 15.7 12 20 12 20z"/></svg></span><h3>ברית</h3><p>כשיש רק ימים ספורים לארגן, וכולם צריכים לדעת בזמן.</p></a>
+            <a class="evt-card" href="/events/brita/"><span class="evt-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="7" r="2.7"/><circle cx="17" cy="12" r="2.7"/><circle cx="12" cy="17" r="2.7"/><circle cx="7" cy="12" r="2.7"/></svg></span><h3>בריתה</h3><p>חגיגה לבת החדשה, עם רשימה ושולחנות משלה.</p></a>
+            <a class="evt-card" href="/events/business/"><span class="evt-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18"/></svg></span><h3>אירוע עסקי</h3><p>מחלקות, אורחים מבחוץ ורשימת נוכחות מסודרת.</p></a>
           </div>
         </div>
       </section>
