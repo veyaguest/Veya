@@ -240,13 +240,14 @@
    ההשהיה (460ms לשורה) חייבת להישאר זהה ל-``transition-delay`` שב-CSS. */
 (function () {
   'use strict'
-  var STEP = 460
+  var STEP = 900   // חייב להישאר זהה ל-transition-delay ב-CSS
   var stage = document.querySelector('[data-gc]')
   if (!stage) return
   var rows = [].slice.call(stage.querySelectorAll('.gc-row'))
   if (!rows.length) return
 
   var report = document.querySelector('[data-gc-report]')
+  var card = stage.querySelector('.gc-counter')
   var elNum = stage.querySelector('[data-gc-num]')
   var elWho = stage.querySelector('[data-gc-who]')
   var elAmt = stage.querySelector('[data-gc-amt]')
@@ -273,24 +274,34 @@
     stage.classList.add('is-on')
     var running = 0
     data.forEach(function (d, i) {
+      // ארבעה שלבים לכל מעטפה, כדי שיהיה זמן לקרוא שם וסכום:
+      // נפתחת ← מי נתן ← כמה ← נשמרה והסכום גדל.
+      var t0 = i * STEP
+      var prev = running
+      running += d.amount
+      var sum = running
+
       setTimeout(function () {
-        var prev = running
-        running += d.amount
+        if (card) card.classList.add('is-new', 'is-typing')
         if (elNum) elNum.textContent = 'מעטפה #' + (i + 1)
+        if (elSaved && i > 0) elSaved.textContent = 'מעטפה #' + i + ' נשמרה — ' + nis(data[i - 1].amount)
+      }, t0)
+      setTimeout(function () { if (card) card.classList.remove('is-new') }, t0 + 260)
+      setTimeout(function () {
         if (elWho) elWho.textContent = d.name
+        if (card) card.classList.remove('is-typing')
+      }, t0 + 220)
+      setTimeout(function () {
         if (elAmt) elAmt.textContent = d.amount.toLocaleString('he-IL')
-        if (elSaved) {
-          elSaved.textContent = i === 0
-            ? 'מוכנים לספור'
-            : 'מעטפה #' + i + ' נשמרה — ' + nis(data[i - 1].amount)
-        }
+      }, t0 + 460)
+      setTimeout(function () {
         if (elCount) elCount.textContent = String(i + 1)
         if (elTotal && window.veyaCountUp) {
           elTotal.setAttribute('data-count-from', String(prev))
-          elTotal.setAttribute('data-count-to', String(running))
+          elTotal.setAttribute('data-count-to', String(sum))
           window.veyaCountUp(elTotal)
         }
-      }, i * STEP)
+      }, t0 + 700)
     })
     setTimeout(function () {
       var last = data[data.length - 1]

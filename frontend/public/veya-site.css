@@ -953,6 +953,13 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
   min-height: 44px;
 }
 
+/* ── כרטיס הספירה: פעימה קצרה בכל מעטפה חדשה ───────────────────── */
+.gc-counter { transition: transform 260ms var(--ease-out); }
+.gc-counter.is-new { transform: scale(1.012); }
+.gc-picked, .gc-amount { transition: opacity 200ms var(--ease-out); }
+.gc-counter.is-typing .gc-picked,
+.gc-counter.is-typing .gc-amount { opacity: 0.25; }
+
 /* ── עמודת השיוך בדוח המתנות ───────────────────────────────────────
    לא "סטטוס": שדה הסטטוס קיים רק בשורת אשראי, והשירות ההוא לא שוחרר.
    מה שכן אמיתי ומעניין הוא שהמעטפה נמצאה ברשימת המוזמנים — וזה בדיוק
@@ -1015,6 +1022,9 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
 }
 @media (prefers-reduced-motion: reduce) {
   .hs { animation: none; }
+  .gc-counter, .gc-counter.is-new { transition: none; transform: none; }
+  .gc-counter.is-typing .gc-picked,
+  .gc-counter.is-typing .gc-amount { opacity: 1; }
 }
 
 /* ===== VEYA BRAND LAYER — END ===== */
