@@ -18,6 +18,15 @@
         "cd /Users/mac/veya/backend && source venv/bin/activate && uvicorn app.main:app --reload --port 8000"
       ],
       "port": 8000
+    },
+    {
+      "name": "seating-workspace",
+      "runtimeExecutable": "/bin/zsh",
+      "runtimeArgs": [
+        "-c",
+        "export PATH=\"/Users/mac/.local/node/bin:$PATH\" && cd /Users/mac/veya/frontend && npm run dev -- --host 127.0.0.1 --port 5183"
+      ],
+      "port": 5183
     }
   ]
 }
