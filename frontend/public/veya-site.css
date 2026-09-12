@@ -403,7 +403,10 @@ a.evt-card:focus-visible { outline: 3px solid var(--gold-light); outline-offset:
 }
 
 /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
-/* ═══════════════════════════════════════════════════════════════════════
+.tl-item {
+  position: relative; display: block;
+  padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
+}/* ═══════════════════════════════════════════════════════════════════════
    VEYA — שכבת המותג
    ═══════════════════════════════════════════════════════════════════════
 
