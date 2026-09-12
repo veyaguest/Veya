@@ -335,7 +335,7 @@ function calcVenueCommitment() {
       a: 'הכמות המינימלית שסיכמתם בחוזה מול האולם או הספק. גם אם יגיעו פחות אנשים מהכמות הזו, החיוב נשאר לפי הכמות שהתחייבתם עליה.',
     },
     {
-      q: 'למה אדם נוסף עולה לפעמים 0 ₪?',
+      q: 'למה אדם נוסף לא תמיד מוסיף את מחיר המנה?',
       a: 'כל עוד מספר המגיעים נמוך מכמות ההתחייבות, אתם כבר משלמים על המקום שלו. רק מהרגע שעוברים את ההתחייבות כל אדם נוסף נספר במחיר מלא. אם יש לכם הוצאות נוספות לאדם, כמו אלכוהול, הן כן מתווספות גם מתחת להתחייבות.',
     },
     {
@@ -411,7 +411,7 @@ function calcVenueCommitment() {
             <h2>למה זה לא סתם כפל</h2>
             <p>
               אולם ישראלי נמכר כמעט תמיד בהתחייבות לכמות מנות מינימלית. זוג שהתחייב על
-              500 מנות ומגיעים אליו 463 <strong>משלם על 500</strong>, לא על 463. לכן החישוב
+              כמות מסוימת ומגיעים אליו פחות אנשים <strong>משלם על ההתחייבות</strong>, לא על מי שהגיע. לכן החישוב
               הנכון הוא:
             </p>
             <div class="callout">
@@ -420,8 +420,8 @@ function calcVenueCommitment() {
             </div>
             <p>
               מכאן נגזרת גם התשובה לשאלה שנשאלת הכי הרבה בשבועיים האחרונים לפני האירוע:
-              <strong>כמה עולה עוד אדם?</strong> מתחת להתחייבות התשובה היא לרוב 0 ₪ על
-              המנה עצמה, כי כבר משלמים עליה. מעל ההתחייבות — מחיר מנה מלא. מחשבון שמכפיל
+              <strong>כמה עולה עוד אדם?</strong> מתחת להתחייבות המנה עצמה לרוב
+              לא מוסיפה לחשבון, כי כבר משלמים עליה. מעל ההתחייבות — מחיר מנה מלא. מחשבון שמכפיל
               מחיר במספר אנשים ייתן כאן תשובה שגויה בשתי המדרגות.
             </p>
             <p class="calc-note">
@@ -610,7 +610,7 @@ function calcRsvpTimeline() {
 
               <label class="calc-field">
                 <span>כמה ימים לפני האירוע צריך למסור לאולם מספר סופי?
-                  <span class="hint">רוב האולמות מבקשים בין 3 ל-7 ימים. כתוב בחוזה.</span>
+                  <span class="hint">מספר הימים כתוב בחוזה עם האולם.</span>
                 </span>
                 <select id="days">
                   <option value="1">יום אחד לפני האירוע</option>
@@ -842,9 +842,9 @@ function featureFinance() {
               <span class="numcard-tag">דוגמה</span>
             </div>
             <dl>
-              <div class="numrow"><dt>התחייבתם בחוזה על</dt><dd>500 מנות</dd></div>
-              <div class="numrow"><dt>אישרו הגעה</dt><dd>463 אנשים</dd></div>
-              <div class="numrow is-key"><dt>משלמים על</dt><dd>500 מנות</dd></div>
+              <div class="numrow"><dt>התחייבתם בחוזה על</dt><dd>כמות מסוימת</dd></div>
+              <div class="numrow"><dt>אישרו הגעה</dt><dd>פחות אנשים</dd></div>
+              <div class="numrow is-key"><dt>משלמים על</dt><dd>כמות ההתחייבות</dd></div>
             </dl>
             <p class="numcard-note">
               מנות לחיוב הן <b>הגבוה מבין מספר המגיעים לכמות ההתחייבות</b>. אם החוזה
@@ -1005,10 +1005,9 @@ function eventPage(t) {
             <span class="kicker">${esc(t.name)}</span>
             <h2 class="section-title">${esc((FOCUS[t.slug] || {}).line || '')}</h2>
           </div>
-          <div class="num-row" data-v-stagger="90" style="max-width:660px;margin:0 auto">
-${((FOCUS[t.slug] || {}).stats || []).map(([v, l]) => `            <div class="num v-reveal"><span class="num-value">${esc(v)}</span><span class="num-label">${esc(l)}</span></div>`).join('\n')}
+          <div class="evt-focus" data-v-stagger="90">
+${((FOCUS[t.slug] || {}).focus || []).map(([h, d]) => `            <div class="evt-f v-reveal"><span class="evt-f-h">${esc(h)}</span><span class="evt-f-d">${esc(d)}</span></div>`).join('\n')}
           </div>
-          <p class="fineprint" style="text-align:center">מספרי הדוגמה להמחשה בלבד — המערכת עובדת על הנתונים שלכם.</p>
           <div class="note-chips" style="justify-content:center;margin-top:22px">
 ${((FOCUS[t.slug] || {}).chips || []).map((c) => `            <span class="note-chip">${esc(c)}</span>`).join('\n')}
           </div>

@@ -1063,7 +1063,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -1782,6 +1782,14 @@
       .gc-row-num svg { display: block; }
       .gc-counter .gc-match { justify-self: start; }
 
+      /* ── עמודי סוג אירוע: מה בולט בכל אירוע, במילים ─────────────────────
+         במקום שורת מספרים — שלושה דברים שמאפיינים את סוג האירוע. */
+      .evt-focus { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; max-width: 880px; margin: 0 auto; }
+      .evt-f { display: grid; gap: 6px; align-content: start; padding: 20px 22px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); box-shadow: var(--shadow-sm); }
+      .evt-f-h { font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); line-height: 1.2; }
+      .evt-f-d { font-size: var(--fs-sm); color: var(--muted); line-height: 1.55; }
+      @media (max-width: 720px) { .evt-focus { grid-template-columns: 1fr; gap: 10px; } }
+
       /* ===== VEYA BRAND LAYER — END ===== */
 
     
@@ -1835,6 +1843,7 @@
     
     
 
+    
     
     
     
