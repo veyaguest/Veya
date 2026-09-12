@@ -968,14 +968,6 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
 }
 .gc-t-link { white-space: nowrap; }
 
-<<<<<<< Updated upstream
-=======
-@media (prefers-reduced-motion: reduce) {
-  .gc-counter, .gc-counter.is-new { transition: none; transform: none; }
-  .gc-counter.is-typing .gc-picked,
-  .gc-counter.is-typing .gc-amount { opacity: 1; }
-}
-
 /* ── שכבות UI צפות בהירו ───────────────────────────────────────────
    שלושה קריאונים שנראים כאילו נלקחו מתמונת המצב שמאחוריהם. הם
    ממוקמים על קצוות אשכול המכשירים ולא במרכזו, כדי לא לכסות את
@@ -1025,5 +1017,4 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
   .hs { animation: none; }
 }
 
->>>>>>> Stashed changes
 /* ===== VEYA BRAND LAYER — END ===== */

@@ -557,13 +557,11 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
   font-size: var(--fs-xs); font-weight: 600;
   color: var(--success);
 }
-<<<<<<< Updated upstream
 .gc-linked::before {
   content: ""; width: 7px; height: 7px; border-radius: 50%;
   background: var(--success); flex: none;
 }
 .gc-t-link { white-space: nowrap; }
-=======
 
 /* ── שכבות UI צפות בהירו ───────────────────────────────────────────
    שלושה קריאונים שנראים כאילו נלקחו מתמונת המצב שמאחוריהם. הם
@@ -613,4 +611,3 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
 @media (prefers-reduced-motion: reduce) {
   .hs { animation: none; }
 }
->>>>>>> Stashed changes
