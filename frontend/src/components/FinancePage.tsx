@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+// מונוגרם VEYA הרשמי — data URI מוטבע בזמן build, כי חלון ההדפסה נפתח
+// כ-``about:blank`` ולא פותר כתובת יחסית/מוחלטת כמו ``/logo_nobg.png``.
+// ראו ``printReport``.
+import { VEYA_MONOGRAM_DATA_URI as veyaMonogram } from '../assets/veyaMonogramBase64'
 import {
   applyExpenseTemplate,
   createExpense,
@@ -1802,24 +1806,17 @@ function downloadReport(report: FinanceReport, eventNoun: string): void {
 // ── PDF / הדפסה (§19 + §21) ──────────────────────────────────────────
 
 /**
- * לוגו VEYA הרשמי — מוטבע ישירות מ-``frontend/public/logo.svg`` (זהה
- * לקובץ המקור, תו-בתו, בלי לשנות שרטוט/צבע/יחס-ממדים). ראו ההסבר ב-
- * ``printReport``.
- *
- * מילת "VEYA" בלוגו הרשמי צבועה שנהב-קרם (#F5EFE2) כי הוא מיועד לרקע
- * כהה — בדיוק כמו בכל מקום אחר במוצר שמציג את הלוגו הזה (מסכי אימות,
- * הצטרפות, Onboarding). לכן ה-SVG הזה מוצג בתוך שבב רקע כהה
- * (``--black-soft`` / ``#14120e``), לא על רקע לבן ישיר.
+ * מונוגרם VEYA הרשמי (``logo_nobg.png`` — הטבעת + היהלום + ה-V, זהב על
+ * שקוף) מוטבע כ-base64, לצד שם המותג בטיפוגרפיה. לא לוקאפ אופקי מלא:
+ * ב-``veya_horizontal.png``/``logo.svg``/``logo.png`` מילת "VEYA" צבועה
+ * שנהב-קרם — מיועדת לרקע כהה, ונעלמת על הדף הלבן של הדוח (בדיוק כמו
+ * בכל מסך במוצר שמציג את הלוגו המלא: הוא תמיד יושב על כרטיס/רקע כהה).
+ * אין ב-VEYA שום גרסה רשמית לרקע בהיר. הפתרון: המונוגרם הרשמי (תקין
+ * לגמרי על לבן — כולו זהב) + "VEYA" כטקסט ב-``--font-brand``
+ * (Cormorant Garamond) — הפונט ש-``design-system.md`` מייחד *בדיוק*
+ * ללוגוטייפ הזה, לא המצאת עיצוב. ראו ``printReport``.
  */
-const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 64" fill="none" role="img" aria-label="VEYA">
-<g>
-<circle cx="32" cy="32" r="27" stroke="#C9A227" stroke-width="1.5"/>
-<circle cx="32" cy="32" r="22.5" stroke="#C9A227" stroke-width="0.75" stroke-opacity="0.45"/>
-<path d="M32 1.2 L35 5 L32 8.8 L29 5 Z" fill="#C9A227"/>
-<text x="32" y="44" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="34" font-weight="600" fill="#E4C96B" text-anchor="middle">V</text>
-</g>
-<text x="74" y="42.5" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="32" font-weight="600" letter-spacing="9" fill="#F5EFE2">VEYA</text>
-</svg>`
+const LOGO_MONOGRAM_IMG = `<img src="${veyaMonogram}" alt="" />`
 
 /**
  * גרסת הדפסה — ומכאן גם PDF, דרך "שמירה כ-PDF" של הדפדפן.
@@ -1830,12 +1827,14 @@ const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 64" f
  * בדיוק במסמך שכולו עברית. חלון הדפסה עם ``dir="rtl"`` נותן פלט נכון
  * בכל דפדפן, במשקל אפס, והמשתמש בוחר מדפסת או PDF באותו דיאלוג.
  *
- * ## הלוגו מוטבע, לא מקושר
+ * ## הלוגו מוטבע כ-base64, לא מקושר
  *
- * חלון ההדפסה נפתח כ-``about:blank``, וכתובת יחסית ל-``/logo.svg`` לא
- * בהכרח נפתרת שם. תמונה שלא נטענה בזמן היא דוח בלי מיתוג — ולכן ה-SVG
- * יושב במחרוזת. ``position: fixed`` גורם לו לחזור בכל עמוד ב-Chrome
- * וב-Safari; מספרי עמודים מגיעים מהגדרות ההדפסה של הדפדפן עצמו.
+ * חלון ההדפסה נפתח כ-``about:blank``, וכתובת יחסית ל-``/logo_nobg.png``
+ * לא בהכרח נפתרת שם. תמונה שלא נטענה בזמן היא דוח בלי מיתוג — ולכן
+ * ``veyaMonogramBase64.ts`` מייצא data URI מוכן-מראש (base64 של קובץ
+ * ה-PNG הרשמי, בלי לגעת בפיקסל אחד בו). ``position: fixed`` גורם
+ * לכותרת לחזור בכל עמוד ב-Chrome וב-Safari; מספרי עמודים מגיעים
+ * מהגדרות ההדפסה של הדפדפן עצמו.
  */
 function printReport(report: FinanceReport, eventNoun: string): void {
   const esc = (v: string) =>
@@ -1870,8 +1869,12 @@ function printReport(report: FinanceReport, eventNoun: string): void {
           .join('')}</tbody></table>`
       : `<p class="muted">${esc(t.repEmptyPayments)}</p>`
 
-  const section = (title: string, body: string) =>
-    `<section><h2>${esc(title)}</h2>${body}</section>`
+  // cls='long' לסקשנים עם טבלת-נתונים באורך משתנה (יכולה להיות ארוכה):
+  // break-inside: auto מרשה לה להישבר בין עמודים בלי לגרור שורות שכבר
+  // הודפסו לעמוד הבא כדי "לא לשבור" את break-inside: avoid של הסקשן —
+  // בלעדיו Chrome עלול לדלג על שורות שלמות בשבירת עמוד (ראו בדיקות ה-PDF).
+  const section = (title: string, body: string, cls = '') =>
+    `<section${cls ? ` class="${cls}"` : ''}><h2>${esc(title)}</h2>${body}</section>`
 
   // תאריך בניסוח שקוראים ולא ב-ISO. "2026-09-05" בכותרת של דוח פרימיום
   // הוא פליטה טכנית, לא תאריך.
@@ -1883,16 +1886,17 @@ function printReport(report: FinanceReport, eventNoun: string): void {
   const html = `<!doctype html><html dir="rtl" lang="he"><head><meta charset="utf-8">
 <title>${esc(t.navTitle(eventNoun))} — ${esc(report.event_title)}</title>
 <style>
-  /* מרווח עליון של 26mm משאיר שטח בטוח לכותרת הרצה (השבב + הטקסט ~19mm)
-     בלי להתקרב לשוליים הלא-מודפסים של מדפסות ביתיות. */
-  @page { size: A4; margin: 26mm 12mm 14mm; }
-  /* padding-top שווה לגובה הכותרת הרצה — position: fixed בהדפסה מוגדר
-     יחסית לאזור התוכן (אחרי שולי @page), לא לפינת הנייר הפיזית, ובלי
-     הריפוד הזה הכותרת הקבועה מצטיירת מעל ה-h1 ומכסה אותו. */
-  body { font-family: 'Heebo', Arial, sans-serif; color: #2b2620; font-size: 11px; margin: 0; padding-top: 80px; }
+  /* מרווח עליון של 22mm משאיר שטח בטוח לכותרת הרצה (~12mm) בלי להתקרב
+     לשוליים הלא-מודפסים של מדפסות ביתיות. */
+  @page { size: A4; margin: 22mm 12mm 14mm; }
+  body { font-family: 'Heebo', Arial, sans-serif; color: #2b2620; font-size: 11px; margin: 0; }
 
-  /* כותרת רצה — חוזרת בכל עמוד ב-Chrome וב-Safari (position: fixed בהדפסה
-     "נדבק" לעמוד, לא לתוכן). */
+  /* כותרת רצה — חוזרת בכל עמוד ב-Chrome וב-Safari, אבל position: fixed
+     בהדפסה ממוקם יחסית לאזור התוכן של *כל עמוד* (אחרי שולי @page), לא
+     לפינת הנייר — כלומר היא "יושבת" מעל תחילת התוכן בכל עמוד ומכסה
+     אותו, לא רק בעמוד הראשון. פתרון: page-spacer (למטה) שומר בפועל שורה
+     ריקה בגובה הכותרת בתחילת כל עמוד, בעזרת thead שחוזר על עצמו — כך
+     שהתוכן האמיתי מתחיל תמיד מתחת לכותרת הקבועה, בכל עמוד. */
   .runner {
     position: fixed; top: 0; inset-inline: 0;
     display: flex; align-items: center; justify-content: space-between;
@@ -1900,19 +1904,24 @@ function printReport(report: FinanceReport, eventNoun: string): void {
     padding-bottom: 10px; border-bottom: 1px solid #e5dec9;
     background: #fff;
   }
-  /* שבב הלוגו: רקע כהה רשמי של המותג (--black-soft), כי מילת "VEYA"
-     בקובץ המקור צבועה בהיר ונועדה לרקע כהה — בדיוק כמו בכל מסך אחר
-     שמציג את הלוגו הזה. print-color-adjust מבטיח שהרקע הזה מודפס
-     בפועל גם כשהגדרת "גרפיקת רקע" בדיאלוג ההדפסה כבויה. */
-  .brand-mark {
-    display: flex; align-items: center; flex: none;
-    padding: 8px 16px; border-radius: 10px;
-    background: #14120e; border: 1px solid #c9a227;
-    print-color-adjust: exact; -webkit-print-color-adjust: exact; color-adjust: exact;
+  /* טבלה "שקופה" שכל תפקידה לשמור מקום — ה-thead שלה חוזר בתחילת כל
+     עמוד (בדיוק כמו .grid thead למטה), ובכך "דוחף" את שאר הדוח מתחת
+     לכותרת הקבועה גם בעמוד 2, 3 וכו', לא רק בעמוד הראשון. */
+  .page-spacer { width: 100%; border-collapse: collapse; }
+  .page-spacer > thead > tr > td { height: 74px; padding: 0; border: 0; }
+  .page-spacer > tbody > tr > td { padding: 0; }
+  /* המונוגרם הרשמי (זהב, שקוף) יושב ישירות על דף הדוח — בלי תיבת רקע.
+     קווי הטבעת דקים מטבע עיצובם (עדינות מכוונת, לא באג) — קטן מ-48px
+     בערך הם "נמחקים" בהדפסה בפועל, לכן 52px ולא 32px. לצידו "VEYA"
+     כטקסט ב-Cormorant Garamond, הפונט שה-design system מייחד ללוגוטייפ
+     הזה בדיוק, בגוון --gold-deep (הגוון היחיד שכוייל לניגודיות טקסט
+     תקינה על רקע בהיר — --gold הרגיל הוא צבע מסגרת/משטח, לא טקסט). */
+  .brand-mark { display: flex; align-items: center; gap: 12px; flex: none; }
+  .brand-mark img { display: block; height: 52px; width: 52px; }
+  .brand-mark .brand-word {
+    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-size: 24px; font-weight: 600; letter-spacing: 5px; color: #896e29;
   }
-  /* direction: ltr חובה — בלעדיו הדפדפן הופך את כיוון הטקסט בתוך ה-SVG
-     כי המסמך כולו dir="rtl", ו"VEYA" נצבע הפוך וחופף למונוגרמה. */
-  .brand-mark svg { display: block; height: 40px; width: auto; direction: ltr; }
   .runner .who { font-size: 10px; color: #787064; text-align: start; }
   .runner .who b { display: block; font-size: 12px; color: #2b2620; }
 
@@ -1945,9 +1954,11 @@ function printReport(report: FinanceReport, eventNoun: string): void {
 </style></head><body>
 
 <div class="runner">
-  <div class="brand-mark">${LOGO_SVG}</div>
+  <div class="brand-mark">${LOGO_MONOGRAM_IMG}<span class="brand-word">VEYA</span></div>
   <div class="who"><b>${esc(report.event_title)}</b>${esc(meta)}</div>
 </div>
+
+<table class="page-spacer"><thead><tr><td></td></tr></thead><tbody><tr><td>
 
 <h1>${esc(t.navTitle(eventNoun))}</h1>
 <p class="lede">${esc(t.repGeneratedAt)} ${esc(
@@ -1962,8 +1973,8 @@ ${
     ? section(t.repCommitmentTitle, factTable(commitmentFacts(report)))
     : ''
 }
-${section(t.repExpensesTitle, dataTable(EXPENSE_HEAD, expenseRows(report), 4))}
-${section(t.repPaymentsTitle, dataTable(PAYMENT_HEAD, paymentRows(report), 4))}
+${section(t.repExpensesTitle, dataTable(EXPENSE_HEAD, expenseRows(report), 4), 'long')}
+${section(t.repPaymentsTitle, dataTable(PAYMENT_HEAD, paymentRows(report), 4), 'long')}
 <section class="long"><h2>${esc(t.repGiftsTitle)}</h2>${dataTable(
     GIFT_HEAD,
     giftRows(report),
@@ -1971,6 +1982,8 @@ ${section(t.repPaymentsTitle, dataTable(PAYMENT_HEAD, paymentRows(report), 4))}
   )}</section>
 
 <p class="note">${esc(t.noFeeNote)}</p>
+
+</td></tr></tbody></table>
 </body></html>`
 
   const win = window.open('', '_blank')
