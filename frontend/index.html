@@ -842,15 +842,93 @@
         padding: 5px 14px; direction: ltr; max-width: 320px; margin: 0 auto;
       }
       .sh-screen { display: block; width: 100%; height: auto; }
+      /* הטלפון בנוי בשכבות של מכשיר אמיתי, מבחוץ פנימה:
+         מסגרת מתכת דקה עם ברק בקצוות → שוליים שחורים דקים סביב המסך →
+         המסך עצמו בפינות רציפות → Dynamic Island. הפרופורציות לקוחות
+         מ-iPhone 17 (‏71.5×149.6 מ"מ, מסך 19.5:9, אי ברוחב כשליש מהמסך),
+         ולכן הכול ביחידות יחסיות לרוחב ולא בפיקסלים קבועים. */
       .sh-phone {
-        width: 218px; padding: 9px; background: #17130d; border-radius: 34px;
-        box-shadow: 0 30px 60px -34px rgba(23, 19, 13, 0.7); position: relative;
+        --ph-w: 222px;
+        position: relative; width: var(--ph-w);
+        padding: calc(var(--ph-w) * 0.014);
+        border-radius: calc(var(--ph-w) * 0.162);
+        /* מתכת: כהה באמצע הצלע, בהירה בנקודות שבהן האור פוגע בפינה */
+        background:
+          linear-gradient(90deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 7%, rgba(255, 255, 255, 0) 93%, rgba(255, 255, 255, 0.28)),
+          linear-gradient(180deg, #d9d4cb 0%, #8f897e 9%, #a9a397 50%, #8a8479 91%, #cfc9bf 100%);
+        box-shadow:
+          inset 0 0 0 0.5px rgba(255, 255, 255, 0.5),
+          inset 0 1px 1px rgba(255, 255, 255, 0.55),
+          0 0 0 0.5px rgba(23, 19, 13, 0.4),
+          0 1px 2px rgba(23, 19, 13, 0.16),
+          0 12px 20px -12px rgba(23, 19, 13, 0.34),
+          0 46px 64px -38px rgba(23, 19, 13, 0.62);
       }
-      .sh-phone-notch {
-        position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-        width: 64px; height: 15px; border-radius: 0 0 10px 10px; background: #17130d; z-index: 2;
+      /* המסך: הצילום עצמו, והשוליים השחורים הם ה-border שלו — כך הפינה
+         הפנימית נגזרת מהחיצונית ונשארת מקבילה לה. */
+      .sh-phone-screen {
+        position: relative; z-index: 1; display: block; box-sizing: border-box;
+        width: 100%; height: auto; aspect-ratio: 471 / 1000;
+        border: calc(var(--ph-w) * 0.022) solid #050506;
+        border-radius: calc(var(--ph-w) * 0.148);
+        /* אזור שורת הסטטוס מעל התוכן, בצבע הרקע של הצילום עצמו — כך האי
+           יושב מעל שורת השעה ולא על הכותרת, כמו במכשיר אמיתי */
+        padding-top: calc(var(--ph-w) * 0.142);
+        background: #fbf7ee;
+        object-fit: cover; object-position: top;
       }
-      .sh-phone-screen { display: block; width: 100%; height: auto; border-radius: 26px; }
+      .sh-phone-status {
+        position: absolute; z-index: 3; direction: ltr;
+        top: calc(var(--ph-w) * 0.066); left: calc(var(--ph-w) * 0.1); right: calc(var(--ph-w) * 0.085);
+        height: calc(var(--ph-w) * 0.078);
+        display: flex; align-items: center; justify-content: space-between;
+        color: #111; pointer-events: none;
+      }
+      .sh-phone-time {
+        font: 600 calc(var(--ph-w) * 0.052)/1 -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+        letter-spacing: -0.01em; padding-inline-start: calc(var(--ph-w) * 0.03);
+      }
+      .sh-phone-icons { width: calc(var(--ph-w) * 0.2); height: auto; }
+      .sh-phone-island {
+        position: absolute; z-index: 3; left: 50%; transform: translateX(-50%);
+        top: calc(var(--ph-w) * 0.062);
+        width: calc(var(--ph-w) * 0.3); height: calc(var(--ph-w) * 0.086);
+        border-radius: 999px; background: #000;
+        box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
+      }
+      /* עדשת המצלמה הקדמית, בתוך האי */
+      .sh-phone-island::after {
+        content: ""; position: absolute; top: 50%; right: 18%; transform: translateY(-50%);
+        width: 21%; aspect-ratio: 1; border-radius: 50%;
+        background: radial-gradient(circle at 40% 36%, #262c38 0 9%, #0b0d12 40%, #000 72%);
+      }
+      /* ברק עדין על הזכוכית — אלכסון אחד, בלי להסתיר את הצילום */
+      .sh-phone-glare {
+        position: absolute; z-index: 2; pointer-events: none;
+        inset: calc(var(--ph-w) * 0.036);
+        border-radius: calc(var(--ph-w) * 0.126);
+        background: linear-gradient(118deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.04) 24%, rgba(255, 255, 255, 0) 40%);
+      }
+      .sh-phone-glare::after {
+        content: ""; position: absolute; left: 50%; transform: translateX(-50%);
+        bottom: calc(var(--ph-w) * 0.022);
+        width: 36%; height: calc(var(--ph-w) * 0.016); border-radius: 999px;
+        background: rgba(17, 17, 17, 0.82);
+      }
+      /* כפתורי הצד: פעולה ושני ווליום משמאל, הפעלה מימין */
+      .sh-phone-keys::before, .sh-phone-keys::after {
+        content: ""; position: absolute; width: 3px;
+        background: linear-gradient(90deg, #7d776d, #b7b1a6);
+      }
+      .sh-phone-keys::before {
+        left: -2.5px; top: 18%; height: 29%; border-radius: 2px 0 0 2px;
+        -webkit-mask: linear-gradient(#000 0 17%, transparent 17% 31%, #000 31% 62%, transparent 62% 69%, #000 69% 100%);
+        mask: linear-gradient(#000 0 17%, transparent 17% 31%, #000 31% 62%, transparent 62% 69%, #000 69% 100%);
+      }
+      .sh-phone-keys::after {
+        right: -2.5px; top: 27%; height: 15%; border-radius: 0 2px 2px 0;
+        background: linear-gradient(270deg, #7d776d, #b7b1a6);
+      }
       .sh-punch {
         margin: 0 auto 44px; text-align: center; font-family: var(--font-display);
         font-size: var(--fd-md); color: var(--charcoal);
@@ -864,7 +942,6 @@
       .sh-mobile-title { margin: 0 0 10px; font-size: var(--fd-md); color: var(--charcoal); }
       .sh-mobile-body { margin: 0 0 18px; font-size: var(--fs-lg); line-height: 1.75; color: var(--body); }
       .sh-install { min-height: 48px; }
-      .sh-phone-solo { width: 244px; }
       @media (min-width: 861px) {
         .sh-stage { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 26px; justify-items: stretch; }
         .sh-phone { justify-self: center; }
@@ -2695,7 +2772,19 @@
             </div>
 
             <div class="sh-phone" aria-hidden="true">
-              <span class="sh-phone-notch"></span>
+              <span class="sh-phone-keys"></span>
+              <span class="sh-phone-island"></span>
+              <span class="sh-phone-status">
+                <span class="sh-phone-time">9:41</span>
+                <svg class="sh-phone-icons" viewBox="0 0 64 12" fill="currentColor">
+                  <rect x="0" y="8" width="3" height="4" rx="0.8" /><rect x="4.6" y="5.8" width="3" height="6.2" rx="0.8" /><rect x="9.2" y="3.4" width="3" height="8.6" rx="0.8" /><rect x="13.8" y="1" width="3" height="11" rx="0.8" />
+                  <path d="M29 3.1a10.4 10.4 0 0 1 7.1 2.8l1.2-1.3a12.2 12.2 0 0 0-16.6 0l1.2 1.3A10.4 10.4 0 0 1 29 3.1Zm0 3.6a6.6 6.6 0 0 1 4.5 1.8l1.2-1.3a8.4 8.4 0 0 0-11.4 0l1.2 1.3A6.6 6.6 0 0 1 29 6.7Zm0 3.6a2.8 2.8 0 0 1 1.9.7L29 12.2 27.1 11a2.8 2.8 0 0 1 1.9-.7Z" />
+                  <rect x="42.5" y="1.3" width="18.5" height="9.4" rx="2.8" fill="none" stroke="currentColor" stroke-opacity="0.4" />
+                  <rect x="44.3" y="3.1" width="14.9" height="5.8" rx="1.5" />
+                  <path d="M62.2 4.4c.8.3 1.3 1 1.3 1.6s-.5 1.3-1.3 1.6Z" fill-opacity="0.45" />
+                </svg>
+              </span>
+              <span class="sh-phone-glare"></span>
               <img
                 class="sh-phone-screen"
                 src="/product/dashboard-phone.jpg"
@@ -2717,17 +2806,6 @@
                 בלי להוריד אפליקציה מחנות.
               </p>
               <button type="button" class="btn btn-ghost sh-install" data-install-open>הוסיפו למסך הבית</button>
-            </div>
-
-            <div class="sh-phone sh-phone-solo" aria-hidden="true">
-              <span class="sh-phone-notch"></span>
-              <img
-                class="sh-phone-screen"
-                src="/product/dashboard-phone2.jpg"
-                alt=""
-                width="390" height="844" loading="lazy" decoding="async"
-                onerror="veyaRetryImage(this)"
-              />
             </div>
           </div>
         </div>
