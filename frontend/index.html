@@ -851,6 +851,61 @@
       }
       @media (prefers-reduced-motion: reduce) { .dl-stop.is-fresh .dl-date { animation: none; } }
 
+      /* ---- הושבה שאפשר לשחק בה (רקע כהה) ---- */
+      .st { max-width: 1000px; margin: 0 auto 26px; }
+      .st-cols { display: grid; gap: 16px; }
+      .st-pane { min-width: 0; }
+      .st-h { margin: 0 0 10px; font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.04em; color: #b6aa93; }
+      .st-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+      .st-guest {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        padding: 13px 16px; border-radius: var(--radius-md); cursor: grab;
+        background: rgba(245, 239, 226, 0.06); border: 1px solid rgba(245, 239, 226, 0.16);
+        color: var(--cream-text);
+        transition: border-color var(--motion-fast) var(--ease-out), background var(--motion-fast) var(--ease-out), opacity var(--motion-normal) var(--ease-out), transform var(--motion-fast) var(--ease-out);
+      }
+      .st-guest-name { font-weight: 600; }
+      .st-guest-size { font-size: var(--fs-xs); color: #b6aa93; }
+      .st-guest.is-picked { border-color: var(--gold); background: rgba(201, 162, 39, 0.16); }
+      .st-guest.is-dragging { opacity: 0.5; }
+      .st-guest.is-gone { opacity: 0; transform: translateY(-6px); }
+      @media (hover: hover) { .st-guest:hover { border-color: rgba(201, 162, 39, 0.6); } }
+      .st-guest:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
+      .st-allseated { margin: 10px 0 0; color: #b6aa93; font-size: var(--fs-sm); }
+      .st-tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+      .st-table {
+        display: grid; gap: 8px; align-content: start; padding: 14px; cursor: pointer;
+        border-radius: var(--radius-md); background: rgba(245, 239, 226, 0.04);
+        border: 1px dashed rgba(245, 239, 226, 0.22); color: var(--cream-text);
+        transition: border-color var(--motion-fast) var(--ease-out), background var(--motion-fast) var(--ease-out);
+      }
+      .st-table.is-over { border-color: var(--gold); border-style: solid; background: rgba(201, 162, 39, 0.12); }
+      .st-table.is-full { opacity: 0.65; }
+      .st-table:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
+      .st-table-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+      .st-table-name { font-weight: 600; }
+      .st-table-count { font-size: var(--fs-sm); color: #b6aa93; font-variant-numeric: tabular-nums; }
+      .st-table-count b { color: var(--gold-light); }
+      .st-seated { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+      .st-chip {
+        padding: 4px 10px; border-radius: var(--radius-pill); font-size: var(--fs-xs);
+        background: rgba(201, 162, 39, 0.18); color: var(--cream-text);
+        animation: st-in var(--motion-normal) var(--ease-out);
+      }
+      @keyframes st-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+      .st-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 16px; }
+      .st-say { margin: 0; font-size: var(--fs-sm); color: #cabfa9; min-height: 1.5em; }
+      .st-auto { min-height: 44px; }
+      .st-note { max-width: 56ch; margin: 0 auto 26px; text-align: center; color: #cabfa9; font-size: var(--fs-md); line-height: 1.7; }
+      .st-shot img { border-radius: var(--radius-lg); }
+      @media (min-width: 861px) { .st-cols { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 22px; } }
+      @media (max-width: 560px) {
+        .st-bar { flex-direction: column; align-items: stretch; }
+        .st-auto { width: 100%; }
+        .st-guest { cursor: pointer; }
+      }
+      @media (prefers-reduced-motion: reduce) { .st-chip { animation: none; } .st-guest { transition: none; } }
+
       /* ---- מעקב אחרי מי שלא ענה: סבב אחרי סבב ---- */
       .fu { max-width: 680px; margin: 0 auto 30px; padding: 18px; background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
       .fu-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -2568,46 +2623,86 @@
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">הושבה</span>
-            <h2 id="seating-title" class="section-title">את רוב ההושבה עדיף לעשות כשעוד יש לכם זמן לחשוב.</h2>
+            <h2 id="seating-title" class="section-title">יאללה, בואו נראה איפה הם יושבים.</h2>
             <p class="section-sub">
-              הטעות היא לחכות לימים האחרונים. את החלוקה הראשונית אפשר לעשות הרבה קודם —
-              ואז, כשהאישורים משתנים, נשארים בעיקר תיקונים קטנים.
+              יש לכם מוזמנים.<br />
+              יש לכם שולחנות.<br />
+              עכשיו רק צריך לחבר ביניהם.
             </p>
           </div>
 
-          <ul class="prep-list">
-            <li class="prep-card reveal">
-              <div class="ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/></svg></div>
-              <p>מסדרים את המוזמנים לפי משפחות וקבוצות.</p>
-            </li>
-            <li class="prep-card reveal d1">
-              <div class="ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3.5h9L19 8v12.5H5.5z"/><path d="M14.5 3.5V8H19"/><path d="M8.5 12.5h7M8.5 16h4.5"/></svg></div>
-              <p>מוסיפים הערות הושבה:</p>
-              <div class="prep-chips">
-                <span class="prep-chip">ליד הבר</span>
-                <span class="prep-chip">רחוק מהרעש</span>
-                <span class="prep-chip">ליד הכניסה</span>
-                <span class="prep-chip">לא ליד עומר</span>
+          <!-- ═════ הושבה שאפשר לשחק בה ══════════════════════════════════
+               גוררים מוזמן לשולחן (או מקישים עליו ואז על השולחן — כך זה
+               עובד בטלפון). הקיבולת נבדקת באמת: שולחן שאין בו מספיק
+               מקום אומר את זה, ולא בולע את הקבוצה בשקט. -->
+          <div class="st reveal d1" data-seating>
+            <div class="st-cols">
+              <div class="st-pane">
+                <h3 class="st-h">מוזמנים</h3>
+                <ul class="st-list" data-st-guests>
+                  <li class="st-guest" draggable="true" data-id="כהן" data-size="8" tabindex="0">
+                    <span class="st-guest-name">משפחת כהן</span>
+                    <span class="st-guest-size">8 אנשים</span>
+                  </li>
+                  <li class="st-guest" draggable="true" data-id="רועי" data-size="2" tabindex="0">
+                    <span class="st-guest-name">רועי וטל</span>
+                    <span class="st-guest-size">2 אנשים</span>
+                  </li>
+                  <li class="st-guest" draggable="true" data-id="לוי" data-size="6" tabindex="0">
+                    <span class="st-guest-name">משפחת לוי</span>
+                    <span class="st-guest-size">6 אנשים</span>
+                  </li>
+                  <li class="st-guest" draggable="true" data-id="דניאל" data-size="2" tabindex="0">
+                    <span class="st-guest-name">דניאל</span>
+                    <span class="st-guest-size">2 אנשים</span>
+                  </li>
+                  <li class="st-guest" draggable="true" data-id="מיכל" data-size="5" tabindex="0">
+                    <span class="st-guest-name">מיכל והמשפחה</span>
+                    <span class="st-guest-size">5 אנשים</span>
+                  </li>
+                </ul>
+                <p class="st-allseated" data-st-allseated hidden>כולם יושבים.</p>
               </div>
-            </li>
-            <li class="prep-card reveal d2">
-              <div class="ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 16.5 16.5 3.5l4 4-13 13z"/><path d="m13 7 2 2M10 10l2 2M7 13l2 2"/></svg></div>
-              <p>מעלים את סקיצת האולם והיא הופכת למפת שולחנות.</p>
-            </li>
-          </ul>
 
-          <p class="payoff-bridge reveal">ואז…</p>
-
-          <div class="payoff">
-            <div class="reveal">
-              <h3>לוחצים על הושבה בקליק.</h3>
-              <p class="payoff-lead">
-                VEYA לוקחת את הקבוצות, ההערות ומספר המגיעים בפועל, ומחזירה סידור התחלתי
-                שאפשר לעבוד ממנו.
-              </p>
+              <div class="st-pane">
+                <h3 class="st-h">שולחנות</h3>
+                <div class="st-tables" data-st-tables>
+                  <div class="st-table" data-cap="10" data-used="8" tabindex="0" role="button" aria-label="שולחן 1">
+                    <span class="st-table-head"><span class="st-table-name">שולחן 1</span><span class="st-table-count"><b data-st-used>8</b> / 10</span></span>
+                    <ul class="st-seated"></ul>
+                  </div>
+                  <div class="st-table" data-cap="10" data-used="6" tabindex="0" role="button" aria-label="שולחן 2">
+                    <span class="st-table-head"><span class="st-table-name">שולחן 2</span><span class="st-table-count"><b data-st-used>6</b> / 10</span></span>
+                    <ul class="st-seated"></ul>
+                  </div>
+                  <div class="st-table" data-cap="10" data-used="4" tabindex="0" role="button" aria-label="שולחן 3">
+                    <span class="st-table-head"><span class="st-table-name">שולחן 3</span><span class="st-table-count"><b data-st-used>4</b> / 10</span></span>
+                    <ul class="st-seated"></ul>
+                  </div>
+                  <div class="st-table" data-cap="10" data-used="0" tabindex="0" role="button" aria-label="שולחן 4">
+                    <span class="st-table-head"><span class="st-table-name">שולחן 4</span><span class="st-table-count"><b data-st-used>0</b> / 10</span></span>
+                    <ul class="st-seated"></ul>
+                  </div>
+                  <div class="st-table" data-cap="10" data-used="0" tabindex="0" role="button" aria-label="שולחן 5">
+                    <span class="st-table-head"><span class="st-table-name">שולחן 5</span><span class="st-table-count"><b data-st-used>0</b> / 10</span></span>
+                    <ul class="st-seated"></ul>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="payoff-shot reveal d1">
+            <div class="st-bar">
+              <p class="st-say" data-st-say role="status" aria-live="polite">גוררים מוזמן לשולחן, או מקישים על מוזמן ואז על שולחן.</p>
+              <button type="button" class="btn btn-ghost st-auto" data-st-auto>עזבו, ש־VEYA תסדר</button>
+            </div>
+          </div>
+
+          <p class="st-note reveal d2">
+            ואם יש לכם בקשות כמו "שיהיו ביחד", "לא ליד הרמקולים" או "שלא ישבו
+            ליד X" — גם את זה אנחנו לוקחים בחשבון.
+          </p>
+
+          <div class="payoff-shot reveal d2 st-shot">
               <img
                 src="/product/seating.png"
                 alt="סידור ההושבה של VEYA: מפת אולם עם שולחנות ומוזמנים משובצים"
@@ -2622,6 +2717,9 @@
               <p>ואם משהו לא מסתדר — אפשר לחזור לסידור הקודם.</p>
               <p class="why-punch">אתם מחליטים. VEYA חוסכת לכם את ההתחלה ואת הבדיקה.</p>
             </div>
+
+          <div class="section-cta reveal d2">
+            <a href="/app?auth=register" class="btn btn-primary">בא לי לנסות את VEYA <span class="arw" aria-hidden="true">←</span></a>
           </div>
 
           <p class="fineprint reveal">
@@ -3246,6 +3344,123 @@
         });
         input.addEventListener('change', function () { render(true); });
         input.addEventListener('input', function () { render(true); });
+      })();
+
+      /* ---- הושבה: גרירה במחשב, הקשה בטלפון ----
+         הדגמה מפושטת של מה שקורה במפת האולם: מוזמן נכנס לשולחן, מספר
+         המקומות מתעדכן, ושולחן שאין בו מספיק מקום אומר את זה. הכפתור
+         "שתסדר" משבץ את מי שנשאר — לפי מקום פנוי בלבד, בלי להמציא חוכמה
+         שאין כאן. */
+      (function () {
+        var box = document.querySelector('[data-seating]');
+        if (!box) return;
+        var list = box.querySelector('[data-st-guests]');
+        var tables = [].slice.call(box.querySelectorAll('.st-table'));
+        var say = box.querySelector('[data-st-say]');
+        var auto = box.querySelector('[data-st-auto]');
+        var allSeated = box.querySelector('[data-st-allseated]');
+        var picked = null;
+
+        function free(table) {
+          return parseInt(table.getAttribute('data-cap'), 10) - parseInt(table.getAttribute('data-used'), 10);
+        }
+        function remaining() {
+          return [].slice.call(list.querySelectorAll('.st-guest'));
+        }
+        function pick(guest) {
+          if (picked === guest) { picked.classList.remove('is-picked'); picked = null; say.textContent = ''; return; }
+          if (picked) picked.classList.remove('is-picked');
+          picked = guest;
+          guest.classList.add('is-picked');
+          // "בחרתם את…" עובד גם לשם יחיד וגם למשפחה, בלי להטות מין ומספר.
+          say.textContent = 'בחרתם את ' + guest.querySelector('.st-guest-name').textContent + '. עכשיו בחרו שולחן.';
+        }
+        function seat(guest, table) {
+          var size = parseInt(guest.getAttribute('data-size'), 10);
+          if (size > free(table)) {
+            say.textContent = 'בשולחן הזה נשאר מקום ל־' + free(table) + '. אפשר שולחן אחר.';
+            return false;
+          }
+          var used = parseInt(table.getAttribute('data-used'), 10) + size;
+          table.setAttribute('data-used', String(used));
+          table.querySelector('[data-st-used]').textContent = String(used);
+          table.classList.toggle('is-full', used >= parseInt(table.getAttribute('data-cap'), 10));
+          var chip = document.createElement('li');
+          chip.className = 'st-chip';
+          chip.textContent = guest.querySelector('.st-guest-name').textContent;
+          table.querySelector('.st-seated').appendChild(chip);
+          guest.classList.add('is-gone');
+          setTimeout(function () { guest.remove(); done(); }, 220);
+          if (picked === guest) picked = null;
+          say.textContent = '';
+          return true;
+        }
+        function done() {
+          if (remaining().length) return;
+          allSeated.hidden = false;
+          say.textContent = 'זה כבר נראה יותר טוב.';
+          auto.disabled = true;
+        }
+
+        // גרירה (מחשב)
+        list.addEventListener('dragstart', function (e) {
+          var g = e.target.closest('.st-guest');
+          if (!g) return;
+          g.classList.add('is-dragging');
+          e.dataTransfer.setData('text/plain', g.getAttribute('data-id'));
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        list.addEventListener('dragend', function (e) {
+          var g = e.target.closest('.st-guest');
+          if (g) g.classList.remove('is-dragging');
+          tables.forEach(function (t) { t.classList.remove('is-over'); });
+        });
+        tables.forEach(function (table) {
+          table.addEventListener('dragover', function (e) { e.preventDefault(); table.classList.add('is-over'); });
+          table.addEventListener('dragleave', function () { table.classList.remove('is-over'); });
+          table.addEventListener('drop', function (e) {
+            e.preventDefault();
+            table.classList.remove('is-over');
+            var id = e.dataTransfer.getData('text/plain');
+            var g = list.querySelector('.st-guest[data-id="' + id + '"]');
+            if (g) seat(g, table);
+          });
+          // הקשה (טלפון) ומקלדת
+          table.addEventListener('click', function () {
+            if (!picked) { say.textContent = 'קודם בוחרים מוזמן.'; return; }
+            seat(picked, table);
+          });
+          table.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            e.preventDefault();
+            table.click();
+          });
+        });
+        list.addEventListener('click', function (e) {
+          var g = e.target.closest('.st-guest');
+          if (g) pick(g);
+        });
+        list.addEventListener('keydown', function (e) {
+          var g = e.target.closest('.st-guest');
+          if (!g || (e.key !== 'Enter' && e.key !== ' ')) return;
+          e.preventDefault();
+          pick(g);
+        });
+
+        auto.addEventListener('click', function () {
+          var left = remaining();
+          if (!left.length) return;
+          auto.disabled = true;
+          var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          left.forEach(function (guest, k) {
+            setTimeout(function () {
+              var size = parseInt(guest.getAttribute('data-size'), 10);
+              var target = tables.filter(function (t) { return free(t) >= size; })
+                                 .sort(function (a, b) { return free(a) - free(b); })[0];
+              if (target) seat(guest, target);
+            }, reduced ? 0 : k * 260);
+          });
+        });
       })();
 
       /* ---- מעקב אחרי מי שלא ענה ----
