@@ -821,7 +821,7 @@
         color: var(--charcoal); line-height: 1.35;
       }
       .gh-shot img {
-        display: block; width: 100%; height: auto; max-width: min(380px, 100%); margin: 0 auto;
+        display: block; width: 100%; height: auto; max-width: min(320px, 100%); margin: 0 auto;
         border-radius: var(--radius-xl); border: 1px solid rgba(23, 19, 13, 0.14);
         box-shadow: 0 30px 60px -34px rgba(23, 19, 13, 0.55);
       }
@@ -836,7 +836,10 @@
         .gh-text { grid-area: text; align-self: end; }
         .gh-shot { grid-area: shot; }
         .gh-cta { grid-area: cta; align-self: start; }
-        .gh-shot img { max-width: min(440px, 100%); }
+        /* הצילום ארוך (מסך טלפון שלם), ולכן בדסקטופ מגבילים לפי גובה
+           המסך ולא לפי רוחב — כך הוא נשאר שלם בלי שהמשתמש יצטרך לגלול
+           באמצע התמונה. */
+        .gh-shot img { width: auto; height: min(82vh, 980px); max-width: 100%; }
       }
       .rsvp-band .why-punch,
       .commit .why-punch,
@@ -2212,8 +2215,8 @@
 
       <!-- ═════ אזור האורחים ═══════════════════════════════════════════
            צילום מסך אמיתי של ה-Guest Hub (``/confirm/{token}``, ConfirmPage)
-           ולא מוקאפ: זה בדיוק מה שמוזמן מקבל בקישור האישי שלו — פרטי
-           האירוע, הוספה ליומן, ניווט ואישור ההגעה. הצילום צולם מהמוצר
+           ולא מוקאפ: זה בדיוק מה שמוזמן מקבל בקישור האישי שלו — ההזמנה
+           עצמה, פרטי האירוע, הוספה ליומן, ניווט ואישור ההגעה. הצילום צולם מהמוצר
            הרץ על אירוע דמו, ולכן אין בו פרטים של אף אדם אמיתי. -->
       <section class="gh tone-alt" aria-labelledby="gh-title">
         <div class="wrap">
@@ -2232,10 +2235,10 @@
             </div>
             <div class="gh-shot reveal d1">
               <img
-                src="/product/guest-hub.png"
-                alt="אזור האורחים של VEYA כפי שמוזמן רואה אותו בטלפון: פרטי האירוע, תאריך ושעה, כתובת האולם, הוספה ליומן, ניווט למקום האירוע וכפתורי אישור ההגעה"
-                width="960"
-                height="1700"
+                src="/product/guest-hub.jpg"
+                alt="אזור האורחים של VEYA כפי שמוזמן רואה אותו בטלפון: תמונת ההזמנה, תאריך ושעה, כתובת האולם, צפייה בהזמנה, הוספה ליומן, ניווט למקום האירוע וכפתורי אישור ההגעה"
+                width="800"
+                height="2078"
                 loading="lazy"
                 decoding="async"
                 onerror="this.closest('.gh-shot').hidden = true"
