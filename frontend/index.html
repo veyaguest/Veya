@@ -276,62 +276,23 @@
          המעטפות והדוח נמצאים כתוכן רגיל. ההפך היה מסתיר את הסקשן החזק
          בעמוד מכל מי שה-JS שלו לא רץ. */
       .gifts-scene .section-head p { max-width: 620px; margin-inline: auto; }
-      .gc-stage { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr); gap: 28px; align-items: start; margin-top: 44px; }
-      .gc-counter { background: var(--ivory); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); overflow: hidden; position: sticky; top: 96px; }
-      .gc-counter-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--ivory-2); }
-      .gc-counter-num { font-weight: 700; color: var(--charcoal); font-variant-numeric: tabular-nums; }
-      .gc-counter-close { font-size: var(--fs-xs); color: var(--muted); }
-      .gc-counter-body { padding: 18px; display: grid; gap: 16px; }
-      .gc-field { display: grid; gap: 6px; }
-      .gc-field-label { font-size: var(--fs-sm); color: var(--muted); font-weight: 600; }
-      .gc-picked { display: inline-flex; align-items: center; align-self: start; padding: 9px 14px; border-radius: var(--radius-pill); background: rgba(201, 162, 39, 0.12); border: 1px solid rgba(201, 162, 39, 0.35); color: var(--charcoal); font-weight: 600; }
-      .gc-save { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 12px 20px; border-radius: var(--radius-pill); background: var(--gold); color: var(--charcoal); font-weight: 600; box-shadow: 0 6px 18px rgba(201, 162, 39, 0.28); }
-      .gc-saved { margin: 0; padding: 11px 18px; border-top: 1px solid var(--line); background: rgba(31, 122, 69, 0.07); color: var(--success); font-size: var(--fs-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
-      .gc-total { display: grid; gap: 4px; padding: 20px 22px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); margin-bottom: 14px; }
-      .gc-total-label { font-size: var(--fs-sm); color: var(--muted); font-weight: 600; }
-      .gc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-      .gc-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 13px 16px; border: 1px solid var(--line); border-radius: var(--radius-md); background: #fff; }
-      /* ההסתרה מיידית, ורק החשיפה מונפשת. אילו ה-transition היה על
-         כלל הבסיס, הוספת ``is-armed`` בזמן ריצה הייתה מדהה את השורות
-         החוצה ל-300ms לפני שהרצף בכלל מתחיל. */
-      .gc-stage.is-armed .gc-row { opacity: 0; transform: translateY(10px); }
-      .gc-stage.is-armed.is-on .gc-row {
-        opacity: 1; transform: none;
-        transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out);
-        /* חייב להישאר זהה ל-STEP ב-veya-motion.js */
-        transition-delay: calc(var(--i) * 900ms);
+      /* ---- ההדגמה: המסך האמיתי של VEYA בתוך מסגרת ----
+         ה-iframe טוען את ``/demo/gifts`` — ``FinancePage`` ו-``EnvelopeCounter``
+         האמיתיים, על שרת דמו בזיכרון. הגובה קבוע מראש כדי שהעמוד לא יקפוץ
+         כשההדגמה נטענת. */
+      .gc-demo {
+        margin: 0 auto 26px; padding: 10px; max-width: 1040px;
+        background: var(--ivory-2); border: 1px solid var(--line);
+        border-radius: var(--radius-xl); box-shadow: 0 30px 60px -38px rgba(23, 19, 13, 0.5);
       }
-      .gc-row-num { color: var(--gold-deep); font-weight: 700; font-variant-numeric: tabular-nums; font-size: var(--fs-sm); }
-      .gc-row-who { display: grid; gap: 2px; min-width: 0; }
-      .gc-row-name { color: var(--charcoal); font-weight: 600; }
-      .gc-row-shared { font-size: var(--fs-xs); color: var(--muted); }
-      .gc-badge { display: inline-block; width: fit-content; font-size: var(--fs-2xs); font-weight: 600; color: var(--muted); background: var(--ivory-2); border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 2px 9px; }
-      .gc-bridge { text-align: center; margin: 46px auto 22px; max-width: 520px; font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); }
-      .gc-report { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); overflow: hidden; box-shadow: var(--shadow-sm); }
-      .gc-report.is-armed { opacity: 0; transform: translateY(14px); }
-      .gc-report.is-armed.is-on {
-        opacity: 1; transform: none;
-        transition: opacity 420ms var(--ease-out), transform 420ms var(--ease-out);
+      .gc-frame {
+        display: block; width: 100%; height: 820px; border: 0;
+        border-radius: var(--radius-lg); background: var(--ivory);
       }
-      .gc-report-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--ivory-2); }
-      .gc-report-title { font-family: var(--font-display); font-size: var(--fs-2xl); color: var(--charcoal); }
-      .gc-report-sum { font-size: var(--fs-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
-      .gc-table-scroll { overflow-x: auto; }
-      .gc-table { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
-      .gc-table th, .gc-table td { padding: 12px 16px; text-align: start; border-bottom: 1px solid var(--line); }
-      .gc-table thead th { font-size: var(--fs-sm); color: var(--muted); font-weight: 700; background: #fff; }
-      .gc-table td { color: var(--charcoal); }
-      .gc-t-num,
-      .gc-t-with { color: var(--muted); }
-      
-      .gc-note { margin: 0; padding: 14px 20px; font-size: var(--fs-sm); color: var(--muted); border-top: 1px solid var(--line); }
+      @media (max-width: 899px) { .gc-frame { height: 640px; } }
+      @media (max-width: 560px) { .gc-demo { padding: 6px; } .gc-frame { height: 560px; } }
+      .gc-note { margin: 0 auto; max-width: 62ch; text-align: center; font-size: var(--fs-sm); line-height: 1.7; color: var(--muted); }
       .gc-cta { text-align: center; margin-top: 34px; }
-      @media (max-width: 860px) { .gc-stage { grid-template-columns: 1fr; gap: 22px; } .gc-counter { position: static; } }
-      @media (max-width: 460px) { .gc-row { gap: 10px; padding: 12px 14px; } }
-      @media (prefers-reduced-motion: reduce) {
-        .gc-stage.is-armed .gc-row, .gc-report.is-armed { opacity: 1; transform: none; transition: none; }
-        .gc-stage.is-armed.is-on .gc-row { transition-delay: 0s; }
-      }
 
             /* ═════ ציר סגירת הרשימה (§5) ═══════════════════════════════════
          קו אנכי ולא אופקי: שבעה שלבים לרוחב נדחסים ב-375px עד שהתאריך
@@ -1170,7 +1131,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                        /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -1225,7 +1186,6 @@
         --error: #8f3226;          /* 6.80:1 — טקסט שגיאה */
         --error-bg: #fbeae7;
         --error-border: #dda99f;   /* חוזק מ-#e6b9b1 כדי שהגבול ייראה */
-
 
         /* ── סולם טיפוגרפיה ──
            היו 33 גדלי font-size שונים בגיליון, רובם שכנים במרחק 0.3–0.5px
@@ -1566,7 +1526,7 @@
         box-shadow: var(--shadow-sm);
       }
       .site-header.is-compact .wrap { height: 58px; }
-      .site-header.is-compact .header-logo { height: 46px; }
+      .site-header.is-compact .header-logo { height: 28px; }
       .site-header .header-logo { transition: height var(--motion-normal) var(--ease-out); }
 
       @media (prefers-reduced-motion: reduce) {
@@ -1725,26 +1685,12 @@
       }
 
       /* ── כרטיס הספירה: פעימה קצרה בכל מעטפה חדשה ───────────────────── */
-      .gc-counter { transition: transform 260ms var(--ease-out); }
-      .gc-counter.is-new { transform: scale(1.012); }
-      .gc-picked, .gc-match { transition: opacity 200ms var(--ease-out); }
-      .gc-counter.is-typing .gc-picked { opacity: 0.25; }
-      .gc-counter.is-unmatched .gc-match { opacity: 0; }
+
 
       /* ── עמודת השיוך בדוח המתנות ───────────────────────────────────────
          לא "סטטוס": שדה הסטטוס קיים רק בשורת אשראי, והשירות ההוא לא שוחרר.
          מה שכן אמיתי ומעניין הוא שהמעטפה נמצאה ברשימת המוזמנים — וזה בדיוק
          המסר: VEYA מחברת בין המתנה למי שנתן אותה. */
-      .gc-linked {
-        display: inline-flex; align-items: center; gap: 6px;
-        font-size: var(--fs-xs); font-weight: 600;
-        color: var(--success);
-      }
-      .gc-linked::before {
-        content: ""; width: 7px; height: 7px; border-radius: 50%;
-        background: var(--success); flex: none;
-      }
-      .gc-t-link { white-space: nowrap; }
 
       /* ── שכבות UI צפות בהירו ───────────────────────────────────────────
          שלושה קריאונים שנראים כאילו נלקחו מתמונת המצב שמאחוריהם. הם
@@ -1794,9 +1740,6 @@
       }
       @media (prefers-reduced-motion: reduce) {
         .hs { animation: none; }
-        .gc-counter, .gc-counter.is-new { transition: none; transform: none; }
-        .gc-counter.is-typing .gc-picked,
-        .gc-counter.is-unmatched .gc-match { opacity: 1; }
       }
 
       /* ── רשימת המוזמנים בסקשן אישורי ההגעה ─────────────────────────────
@@ -1882,13 +1825,6 @@
         .cm-arrow { transform: rotate(-90deg); padding: 2px 0; }
       }
 
-      /* ── סקשן המעטפות בלי סכומים ───────────────────────────────────────
-         שורת הכותרת של העמודה מתארת מה קורה, לא כמה. האייקון בשורה מחליף
-         את מספר המעטפה ומשאיר את אותה פריסה של שלוש עמודות. */
-      .gc-total-line { font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); line-height: 1.2; }
-      .gc-row-num svg { display: block; }
-      .gc-counter .gc-match { justify-self: start; }
-
       /* ── עמודי סוג אירוע: מה בולט בכל אירוע, במילים ─────────────────────
          במקום שורת מספרים — שלושה דברים שמאפיינים את סוג האירוע. */
       .evt-focus { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; max-width: 880px; margin: 0 auto; }
@@ -1950,6 +1886,9 @@
     
     
 
+    
+    
+    
     
     
     
@@ -2596,167 +2535,29 @@
           <h2 id="gifts-title">לא רק סופרים מעטפות. יודעים ממי הגיעה כל מתנה.</h2>
           <p>
             כל הערב אנשים הביאו מעטפות. עכשיו הן על השולחן, ובכל אחת יש שם.
-            עם VEYA פותחים את ספירת המעטפות, בוחרים ממי כל מעטפה — והיא
-            משויכת מיד למוזמן ברשימה. לוחצים שמירה, והמעטפה הבאה כבר מחכה.
+            עם VEYA פותחים את ספירת המעטפות, בוחרים ממי כל מעטפה ומזינים
+            כמה יש בה. היא משויכת מיד למוזמן ברשימה, לוחצים שמירה — והמעטפה
+            הבאה כבר מחכה.
           </p>
         </div>
 
-        <div class="gc-stage" data-gc>
-          <div class="gc-counter" aria-hidden="true">
-            <div class="gc-counter-head">
-              <span class="gc-counter-num" data-gc-num>המעטפה הבאה</span>
-              <span class="gc-counter-close">סגירה</span>
-            </div>
-            <div class="gc-counter-body">
-              <div class="gc-field">
-                <span class="gc-field-label">ממי?</span>
-                <span class="gc-picked" data-gc-who>אלעד ומאיה</span>
-              </div>
-              <div class="gc-field">
-                <span class="gc-field-label">ברשימת המוזמנים</span>
-                <span class="gc-linked gc-match">נמצא ושויך</span>
-              </div>
-              <span class="gc-save">שמירה והמעטפה הבאה</span>
-            </div>
-            <p class="gc-saved" data-gc-saved>אלעד ומאיה — נשמר ושויך לרשימה</p>
+        <!-- ההדגמה היא המסך האמיתי של VEYA, לא ציור שלו: ``/demo/gifts``
+               מרנדר את ``FinancePage`` ואת ``EnvelopeCounter`` של המוצר על
+               שרת דמו בזיכרון, ו"אצבע" מקלידה בהם מעטפה אחרי מעטפה. יומן
+               המתנות שמימין מתעדכן מהשמירות האמיתיות ולא מרשימה כתובה.
+               ``loading="lazy"`` — נטען רק כשמתקרבים לסקשן. -->
+          <div class="gc-demo reveal d1">
+            <iframe
+              class="gc-frame"
+              src="/demo/gifts"
+              title="ספירת המעטפות ויומן המתנות ב-VEYA — הדגמה חיה של המסך עצמו"
+              loading="lazy"
+            ></iframe>
           </div>
 
-          <div class="gc-ledger">
-            <div class="gc-total">
-                <span class="gc-total-label">נכנסות לרשימת המוזמנים</span>
-                <span class="gc-total-line">כל מעטפה — מול מי שנתן אותה</span>
-              </div>
-            <ul class="gc-list">
-            <li class="gc-row" style="--i: 0">
-              <span class="gc-row-num" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.6 6.2 8.4 6 8.4-6"/></svg></span>
-              <span class="gc-row-who"><span class="gc-row-name">דניאל ושרון</span></span>
-              <span class="gc-linked">שויך לרשימה</span>
-            </li>
-            <li class="gc-row" style="--i: 1">
-              <span class="gc-row-num" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.6 6.2 8.4 6 8.4-6"/></svg></span>
-              <span class="gc-row-who"><span class="gc-row-name">יוסי ורונית</span></span>
-              <span class="gc-linked">שויך לרשימה</span>
-            </li>
-            <li class="gc-row" style="--i: 2">
-              <span class="gc-row-num" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.6 6.2 8.4 6 8.4-6"/></svg></span>
-              <span class="gc-row-who"><span class="gc-row-name">עומר ונועה</span></span>
-              <span class="gc-linked">שויך לרשימה</span>
-            </li>
-            <li class="gc-row" style="--i: 3">
-              <span class="gc-row-num" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.6 6.2 8.4 6 8.4-6"/></svg></span>
-              <span class="gc-row-who"><span class="gc-row-name">משפחת כהן</span></span>
-              <span class="gc-linked">שויך לרשימה</span>
-            </li>
-            <li class="gc-row" style="--i: 4">
-              <span class="gc-row-num" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.6 6.2 8.4 6 8.4-6"/></svg></span>
-              <span class="gc-row-who"><span class="gc-row-name">משפחת לוי</span></span>
-              <span class="gc-linked">שויך לרשימה</span>
-            </li>
-            <li class="gc-row" style="--i: 5">
-              <span class="gc-row-num" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.6 6.2 8.4 6 8.4-6"/></svg></span>
-              <span class="gc-row-who"><span class="gc-row-name">דני ומיכל</span></span>
-              <span class="gc-linked">שויך לרשימה</span>
-            </li>
-            <li class="gc-row" style="--i: 6">
-              <span class="gc-row-num" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.6 6.2 8.4 6 8.4-6"/></svg></span>
-              <span class="gc-row-who"><span class="gc-row-name">אבי וסיוון</span></span>
-              <span class="gc-linked">שויך לרשימה</span>
-            </li>
-            <li class="gc-row" style="--i: 7">
-              <span class="gc-row-num" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.6 6.2 8.4 6 8.4-6"/></svg></span>
-              <span class="gc-row-who"><span class="gc-row-name">משפחת ישראלי</span></span>
-              <span class="gc-linked">שויך לרשימה</span>
-            </li>
-            <li class="gc-row" style="--i: 8">
-              <span class="gc-row-num" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.6 6.2 8.4 6 8.4-6"/></svg></span>
-              <span class="gc-row-who"><span class="gc-row-name">תומר ושני</span></span>
-              <span class="gc-linked">שויך לרשימה</span>
-            </li>
-            <li class="gc-row" style="--i: 9">
-              <span class="gc-row-num" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.6 6.2 8.4 6 8.4-6"/></svg></span>
-              <span class="gc-row-who"><span class="gc-row-name">אלעד ומאיה</span></span>
-              <span class="gc-linked">שויך לרשימה</span>
-            </li>
-            </ul>
-          </div>
-        </div>
+          <p class="gc-bridge">בסוף יש לכם דוח מסודר שאפשר לחזור אליו.</p>
 
-        <p class="gc-bridge">בסוף יש לכם דוח מסודר שאפשר לחזור אליו.</p>
-
-        <div class="gc-report" data-gc-report>
-          <div class="gc-report-head">
-            <span class="gc-report-title">דוח מתנות</span>
-            <span class="gc-report-sum">כל מתנה מול המוזמן שנתן אותה</span>
-          </div>
-          <div class="gc-table-scroll">
-            <table class="gc-table">
-              <caption class="vh">דוח המתנות של VEYA: שם המוזמן, סטטוס השיוך לרשימה, סוג המתנה והערות</caption>
-              <thead><tr><th scope="col">שם המוזמן</th><th scope="col">סטטוס</th><th scope="col">מתנה</th><th scope="col">הערות</th></tr></thead>
-              <tbody>
-                <tr>
-                  <td>דניאל ושרון</td>
-                  <td class="gc-t-link"><span class="gc-linked">שויך לרשימה</span></td>
-                  <td>מעטפה</td>
-                  <td class="gc-t-with">כולל ברכה</td>
-                </tr>
-                <tr>
-                  <td>יוסי ורונית</td>
-                  <td class="gc-t-link"><span class="gc-linked">שויך לרשימה</span></td>
-                  <td>מעטפה</td>
-                  <td class="gc-t-with">—</td>
-                </tr>
-                <tr>
-                  <td>עומר ונועה</td>
-                  <td class="gc-t-link"><span class="gc-linked">שויך לרשימה</span></td>
-                  <td>מעטפה</td>
-                  <td class="gc-t-with">מעטפה משותפת עם ההורים</td>
-                </tr>
-                <tr>
-                  <td>משפחת כהן</td>
-                  <td class="gc-t-link"><span class="gc-linked">שויך לרשימה</span></td>
-                  <td>מעטפה</td>
-                  <td class="gc-t-with">—</td>
-                </tr>
-                <tr>
-                  <td>משפחת לוי</td>
-                  <td class="gc-t-link"><span class="gc-linked">שויך לרשימה</span></td>
-                  <td>מעטפה</td>
-                  <td class="gc-t-with">כולל ברכה</td>
-                </tr>
-                <tr>
-                  <td>דני ומיכל</td>
-                  <td class="gc-t-link"><span class="gc-linked">שויך לרשימה</span></td>
-                  <td>מעטפה</td>
-                  <td class="gc-t-with">—</td>
-                </tr>
-                <tr>
-                  <td>אבי וסיוון</td>
-                  <td class="gc-t-link"><span class="gc-linked">שויך לרשימה</span></td>
-                  <td>מעטפה</td>
-                  <td class="gc-t-with">—</td>
-                </tr>
-                <tr>
-                  <td>משפחת ישראלי</td>
-                  <td class="gc-t-link"><span class="gc-linked">שויך לרשימה</span></td>
-                  <td>מעטפה</td>
-                  <td class="gc-t-with">מעטפה משותפת</td>
-                </tr>
-                <tr>
-                  <td>תומר ושני</td>
-                  <td class="gc-t-link"><span class="gc-linked">שויך לרשימה</span></td>
-                  <td>מעטפה</td>
-                  <td class="gc-t-with">—</td>
-                </tr>
-                <tr>
-                  <td>אלעד ומאיה</td>
-                  <td class="gc-t-link"><span class="gc-linked">שויך לרשימה</span></td>
-                  <td>מעטפה</td>
-                  <td class="gc-t-with">כולל ברכה</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="gc-note">
+        <p class="gc-note">
             כל המתנות מסודרות מול רשימת המוזמנים. רואים ממי הגיעה כל מתנה,
             ואפשר לחזור לדוח בכל רגע — בלי לשבת אחרי האירוע עם ערימה של
             מעטפות ודפים. זה לא רק לספור מעטפות. זה לסיים את האירוע כשכל

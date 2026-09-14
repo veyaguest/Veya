@@ -53,7 +53,6 @@
   --error-bg: #fbeae7;
   --error-border: #dda99f;   /* חוזק מ-#e6b9b1 כדי שהגבול ייראה */
 
-
   /* ── סולם טיפוגרפיה ──
      היו 33 גדלי font-size שונים בגיליון, רובם שכנים במרחק 0.3–0.5px
      זה מזה (13 · 13.5 · 13.8 · 14 · 14.3 · 14.5 …). ההבדלים האלה אינם
@@ -552,26 +551,12 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
 }
 
 /* ── כרטיס הספירה: פעימה קצרה בכל מעטפה חדשה ───────────────────── */
-.gc-counter { transition: transform 260ms var(--ease-out); }
-.gc-counter.is-new { transform: scale(1.012); }
-.gc-picked, .gc-match { transition: opacity 200ms var(--ease-out); }
-.gc-counter.is-typing .gc-picked { opacity: 0.25; }
-.gc-counter.is-unmatched .gc-match { opacity: 0; }
+
 
 /* ── עמודת השיוך בדוח המתנות ───────────────────────────────────────
    לא "סטטוס": שדה הסטטוס קיים רק בשורת אשראי, והשירות ההוא לא שוחרר.
    מה שכן אמיתי ומעניין הוא שהמעטפה נמצאה ברשימת המוזמנים — וזה בדיוק
    המסר: VEYA מחברת בין המתנה למי שנתן אותה. */
-.gc-linked {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: var(--fs-xs); font-weight: 600;
-  color: var(--success);
-}
-.gc-linked::before {
-  content: ""; width: 7px; height: 7px; border-radius: 50%;
-  background: var(--success); flex: none;
-}
-.gc-t-link { white-space: nowrap; }
 
 /* ── שכבות UI צפות בהירו ───────────────────────────────────────────
    שלושה קריאונים שנראים כאילו נלקחו מתמונת המצב שמאחוריהם. הם
@@ -621,9 +606,6 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
 }
 @media (prefers-reduced-motion: reduce) {
   .hs { animation: none; }
-  .gc-counter, .gc-counter.is-new { transition: none; transform: none; }
-  .gc-counter.is-typing .gc-picked,
-  .gc-counter.is-unmatched .gc-match { opacity: 1; }
 }
 
 /* ── רשימת המוזמנים בסקשן אישורי ההגעה ─────────────────────────────
@@ -708,13 +690,6 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
   .cm { grid-template-columns: 1fr; }
   .cm-arrow { transform: rotate(-90deg); padding: 2px 0; }
 }
-
-/* ── סקשן המעטפות בלי סכומים ───────────────────────────────────────
-   שורת הכותרת של העמודה מתארת מה קורה, לא כמה. האייקון בשורה מחליף
-   את מספר המעטפה ומשאיר את אותה פריסה של שלוש עמודות. */
-.gc-total-line { font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); line-height: 1.2; }
-.gc-row-num svg { display: block; }
-.gc-counter .gc-match { justify-self: start; }
 
 /* ── עמודי סוג אירוע: מה בולט בכל אירוע, במילים ─────────────────────
    במקום שורת מספרים — שלושה דברים שמאפיינים את סוג האירוע. */

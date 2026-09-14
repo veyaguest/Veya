@@ -67,6 +67,10 @@
     {
       "source": "/confirm/(.*)",
       "destination": "/app.html"
+    },
+    {
+      "source": "/demo/(.*)",
+      "destination": "/app.html"
     }
   ],
   "headers": [

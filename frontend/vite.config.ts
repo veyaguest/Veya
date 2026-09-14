@@ -19,7 +19,7 @@ function devAppRewrite(): Plugin {
         // /confirm/{token} הוא עמוד המוזמן (Guest Hub) — גם הוא נטען מתוך
         // app.html, וגם לו יש rewrite ב-vercel.json. בלי השורה הזו הוא היה
         // נופל בפיתוח לדף הנחיתה, ואי אפשר היה לבדוק אותו מקומית בכלל.
-        if (req.url && /^\/(app|confirm)(\/|$|\?)/.test(req.url) && !req.url.startsWith('/app.html')) {
+        if (req.url && /^\/(app|confirm|demo)(\/|$|\?)/.test(req.url) && !req.url.startsWith('/app.html')) {
           req.url = '/app.html'
         }
         next()

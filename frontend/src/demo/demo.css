@@ -1,0 +1,65 @@
+/* ההדגמה של ספירת המעטפות — שכבה דקה סביב המסך האמיתי.
+   כאן יש רק במה, סמן וסרגל מידה. אין כאן אף חלק של המסך עצמו. */
+.demo-root,
+.demo-root body {
+  background: var(--ivory, #fbf6ee);
+}
+
+.demo-stage {
+  position: relative;
+  padding: 14px 14px 20px;
+  background: var(--ivory, #fbf6ee);
+  scroll-behavior: smooth;
+}
+
+/* פריסת ההדגמה בלבד: במסך רחב מסך ההזנה משמאל והדוח מימין, כדי ששניהם
+   ייראו יחד. זו CSS על הבמה — הרכיבים עצמם לא יודעים על זה כלום, וסדר
+   ה-DOM נשאר בדיוק כפי שהמוצר מרנדר אותו. */
+@media (min-width: 900px) {
+  .demo-stage .fin-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 20px;
+    align-items: start;
+  }
+  .demo-stage .fin-tabs { grid-column: 1 / -1; grid-row: 1; }
+  .demo-stage .fin-hero { grid-column: 1 / -1; grid-row: 2; }
+  /* מסך ההזנה בעמודה אחת, יומן המתנות בשנייה — באותה שורה. */
+  .demo-stage .fin-counter,
+  .demo-stage .fin-counter-cta { grid-column: 1; grid-row: 3; }
+  .demo-stage .fin-section { grid-column: 2; grid-row: 3; }
+  /* "לפי מוזמן" הוא השני, ורץ לרוחב מתחת לשניהם. */
+  .demo-stage .fin-section + .fin-section { grid-column: 1 / -1; grid-row: 4; }
+}
+
+/* יומן המתנות גדל עם כל מעטפה. בהדגמה נותנים לו גובה קבוע עם גלילה,
+   כדי שהמסגרת בדף הנחיתה לא תמשיך להתארך תוך כדי. השורות החדשות
+   ממילא בראש הרשימה. */
+.demo-stage .fin-gift-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+/* הסמן: עיגול קטן עם "לחיצה". לא סרטון ולא אפקט — רק היד. */
+.demo-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  background: rgba(23, 19, 13, 0.82);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 16px rgba(23, 19, 13, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 90;
+  transition: transform 380ms cubic-bezier(0.23, 1, 0.32, 1), opacity 200ms linear;
+}
+.demo-cursor.is-on { opacity: 1; }
+.demo-cursor.is-press { transform-origin: center; box-shadow: 0 0 0 8px rgba(201, 162, 39, 0.28); }
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-cursor { display: none; }
+}

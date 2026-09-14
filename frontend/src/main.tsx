@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import './index.css'
@@ -7,6 +7,9 @@ import App from './App.tsx'
 import { ConfirmPage } from './components/ConfirmPage.tsx'
 import { CookieBanner } from './components/CookieBanner.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
+const DemoGiftCounting = lazy(() =>
+  import('./demo/DemoGiftCounting.tsx').then((m) => ({ default: m.DemoGiftCounting })),
+)
 import { GOOGLE_CLIENT_ID } from './lib/supabase.ts'
 import { initPwa } from './lib/pwa.ts'
 
@@ -33,11 +36,21 @@ initPwa()
 // נתיב ציבורי לאישור הגעה: /confirm/{token} — נפתח ללא התחברות.
 // (העמוד מוגש דרך app.html שכבר מסומן noindex, ולכן לא נדרש טיפול נוסף כאן.)
 const confirmMatch = window.location.pathname.match(/^\/confirm\/([^/]+)/)
+// הדגמת ספירת המעטפות לדף הנחיתה (/demo/gifts). נטענת ב-``lazy`` כדי
+// שהיא לא תיכנס ל-bundle של האפליקציה עצמה, ורצה על שרת דמו בזיכרון.
+const demoMatch = /^\/demo\/gifts\/?$/.test(window.location.pathname)
 
 // עוטפים ב-GoogleOAuthProvider רק כשה-Client ID קיים — אחרת הכפתור ממילא לא
 // מוצג (isGoogleAuthConfigured מחזיר false), ובלי clientId ה-provider זורק.
 // דף אישור ההגעה הציבורי לא צריך את זה (המוזמן לא מתחבר בגוגל).
 function AppTree() {
+  if (demoMatch) {
+    return (
+      <Suspense fallback={null}>
+        <DemoGiftCounting />
+      </Suspense>
+    )
+  }
   const tree = confirmMatch
     ? <ConfirmPage token={decodeURIComponent(confirmMatch[1])} />
     : <App />
