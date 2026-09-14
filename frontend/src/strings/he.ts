@@ -458,8 +458,9 @@ export const strings = {
     countdownDays: 'ימים',
     countdownHours: 'שעות',
     countdownMinutes: 'דקות',
-    countdownAriaLabel: (days: number, hours: number, minutes: number) =>
-      `נותרו ${days} ימים, ${hours} שעות ו-${minutes} דקות לאירוע`,
+    countdownSeconds: 'שניות',
+    countdownAriaLabel: (days: number, hours: number, minutes: number, seconds: number) =>
+      `נותרו ${days} ימים, ${hours} שעות, ${minutes} דקות ו-${seconds} שניות לאירוע`,
     rsvpSummary: (confirmed: number, total: number) =>
       `${confirmed} מתוך ${total} מוזמנים אישרו הגעה`,
     donutCardTitle: 'סטטוס אישורי הגעה',

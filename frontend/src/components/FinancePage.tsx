@@ -1801,13 +1801,24 @@ function downloadReport(report: FinanceReport, eventNoun: string): void {
 
 // ── PDF / הדפסה (§19 + §21) ──────────────────────────────────────────
 
-/** לוגו VEYA, מוטבע ישירות. ראו ההסבר ב-``printReport``. */
-const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 64" role="img" aria-label="VEYA" height="26">
-<circle cx="32" cy="32" r="27" stroke="#C9A227" stroke-width="1.5" fill="none"/>
-<circle cx="32" cy="32" r="23" stroke="#C9A227" stroke-width="0.75" fill="none" opacity="0.45"/>
-<path d="M32 3.2l1.9 1.9-1.9 1.9-1.9-1.9z" fill="#C9A227"/>
-<path d="M23 21.5l9 21 9-21" stroke="#C9A227" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="74" y="42" font-family="Georgia,serif" font-size="26" letter-spacing="6" fill="#2B2620">VEYA</text>
+/**
+ * לוגו VEYA הרשמי — מוטבע ישירות מ-``frontend/public/logo.svg`` (זהה
+ * לקובץ המקור, תו-בתו, בלי לשנות שרטוט/צבע/יחס-ממדים). ראו ההסבר ב-
+ * ``printReport``.
+ *
+ * מילת "VEYA" בלוגו הרשמי צבועה שנהב-קרם (#F5EFE2) כי הוא מיועד לרקע
+ * כהה — בדיוק כמו בכל מקום אחר במוצר שמציג את הלוגו הזה (מסכי אימות,
+ * הצטרפות, Onboarding). לכן ה-SVG הזה מוצג בתוך שבב רקע כהה
+ * (``--black-soft`` / ``#14120e``), לא על רקע לבן ישיר.
+ */
+const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 64" fill="none" role="img" aria-label="VEYA">
+<g>
+<circle cx="32" cy="32" r="27" stroke="#C9A227" stroke-width="1.5"/>
+<circle cx="32" cy="32" r="22.5" stroke="#C9A227" stroke-width="0.75" stroke-opacity="0.45"/>
+<path d="M32 1.2 L35 5 L32 8.8 L29 5 Z" fill="#C9A227"/>
+<text x="32" y="44" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="34" font-weight="600" fill="#E4C96B" text-anchor="middle">V</text>
+</g>
+<text x="74" y="42.5" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="32" font-weight="600" letter-spacing="9" fill="#F5EFE2">VEYA</text>
 </svg>`
 
 /**
@@ -1872,16 +1883,36 @@ function printReport(report: FinanceReport, eventNoun: string): void {
   const html = `<!doctype html><html dir="rtl" lang="he"><head><meta charset="utf-8">
 <title>${esc(t.navTitle(eventNoun))} — ${esc(report.event_title)}</title>
 <style>
-  @page { size: A4; margin: 22mm 12mm 14mm; }
-  body { font-family: 'Heebo', Arial, sans-serif; color: #2b2620; font-size: 11px; margin: 0; }
+  /* מרווח עליון של 26mm משאיר שטח בטוח לכותרת הרצה (השבב + הטקסט ~19mm)
+     בלי להתקרב לשוליים הלא-מודפסים של מדפסות ביתיות. */
+  @page { size: A4; margin: 26mm 12mm 14mm; }
+  /* padding-top שווה לגובה הכותרת הרצה — position: fixed בהדפסה מוגדר
+     יחסית לאזור התוכן (אחרי שולי @page), לא לפינת הנייר הפיזית, ובלי
+     הריפוד הזה הכותרת הקבועה מצטיירת מעל ה-h1 ומכסה אותו. */
+  body { font-family: 'Heebo', Arial, sans-serif; color: #2b2620; font-size: 11px; margin: 0; padding-top: 80px; }
 
-  /* כותרת רצה — חוזרת בכל עמוד ב-Chrome וב-Safari. */
+  /* כותרת רצה — חוזרת בכל עמוד ב-Chrome וב-Safari (position: fixed בהדפסה
+     "נדבק" לעמוד, לא לתוכן). */
   .runner {
     position: fixed; top: 0; inset-inline: 0;
     display: flex; align-items: center; justify-content: space-between;
-    padding-bottom: 6px; border-bottom: 1px solid #e5dec9;
+    gap: 16px;
+    padding-bottom: 10px; border-bottom: 1px solid #e5dec9;
     background: #fff;
   }
+  /* שבב הלוגו: רקע כהה רשמי של המותג (--black-soft), כי מילת "VEYA"
+     בקובץ המקור צבועה בהיר ונועדה לרקע כהה — בדיוק כמו בכל מסך אחר
+     שמציג את הלוגו הזה. print-color-adjust מבטיח שהרקע הזה מודפס
+     בפועל גם כשהגדרת "גרפיקת רקע" בדיאלוג ההדפסה כבויה. */
+  .brand-mark {
+    display: flex; align-items: center; flex: none;
+    padding: 8px 16px; border-radius: 10px;
+    background: #14120e; border: 1px solid #c9a227;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact; color-adjust: exact;
+  }
+  /* direction: ltr חובה — בלעדיו הדפדפן הופך את כיוון הטקסט בתוך ה-SVG
+     כי המסמך כולו dir="rtl", ו"VEYA" נצבע הפוך וחופף למונוגרמה. */
+  .brand-mark svg { display: block; height: 40px; width: auto; direction: ltr; }
   .runner .who { font-size: 10px; color: #787064; text-align: start; }
   .runner .who b { display: block; font-size: 12px; color: #2b2620; }
 
@@ -1914,7 +1945,7 @@ function printReport(report: FinanceReport, eventNoun: string): void {
 </style></head><body>
 
 <div class="runner">
-  ${LOGO_SVG}
+  <div class="brand-mark">${LOGO_SVG}</div>
   <div class="who"><b>${esc(report.event_title)}</b>${esc(meta)}</div>
 </div>
 

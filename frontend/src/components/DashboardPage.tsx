@@ -253,24 +253,26 @@ function SeatingHelperCard({ stats, onNavigate }: { stats: DashboardStats; onNav
 
 /** זמן שנותר עד לתאריך/שעת האירוע (null אם אין תאריך).
  *
- *  מתעדכן פעם בדקה ולא פעם בשנייה: ספירת שניות רצה על מסך "תמונת מצב"
- *  יצרה תחושת לחץ שסותרת את הטון של VEYA, לא נתנה שום מידע שאפשר לפעול
- *  לפיו — ואילצה את כל עץ הדשבורד לרנדר מחדש 60 פעם בדקה. */
+ *  מתעדכן פעם בשנייה לפי שעון אמת (Date.now()), לא בטיקים מונים —
+ *  כך שהספירה לא "נגמרת מוקדם" אם הטאב היה תקוע ברקע. ה-state של הטיימר
+ *  חי בתוך CountdownTimer עצמו, אז הטיקים מרנדרים מחדש רק אותו ולא את
+ *  שאר עץ הדשבורד. */
 function useCountdown(targetMs: number | null) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (targetMs === null) return
-    const id = setInterval(() => setNow(Date.now()), 60_000)
+    const id = setInterval(() => setNow(Date.now()), 1_000)
     return () => clearInterval(id)
   }, [targetMs])
 
   if (targetMs === null) return null
   const diff = targetMs - now
-  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, isPast: true }
+  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true }
   return {
     days: Math.floor(diff / 86_400_000),
     hours: Math.floor((diff % 86_400_000) / 3_600_000),
     minutes: Math.floor((diff % 3_600_000) / 60_000),
+    seconds: Math.floor((diff % 60_000) / 1_000),
     isPast: false,
   }
 }
@@ -301,12 +303,18 @@ function CountdownTimer({ date, time }: { date?: string; time?: string }) {
   }
 
   return (
-    <div className="countdown-timer" role="timer" aria-label={t.countdownAriaLabel(cd.days, cd.hours, cd.minutes)}>
+    <div
+      className="countdown-timer"
+      role="timer"
+      aria-label={t.countdownAriaLabel(cd.days, cd.hours, cd.minutes, cd.seconds)}
+    >
       <CountdownCell value={cd.days} label={t.countdownDays} />
       <span className="countdown-sep" aria-hidden="true">:</span>
       <CountdownCell value={cd.hours} label={t.countdownHours} />
       <span className="countdown-sep" aria-hidden="true">:</span>
       <CountdownCell value={cd.minutes} label={t.countdownMinutes} />
+      <span className="countdown-sep" aria-hidden="true">:</span>
+      <CountdownCell value={cd.seconds} label={t.countdownSeconds} />
     </div>
   )
 }
