@@ -60,7 +60,7 @@ a { color: inherit; }
 .on-dark .btn-ghost:hover { border-color: var(--gold-light); background: rgba(245, 239, 226, 0.06); }
 .site-header { position: sticky; top: 0; z-index: 20; background: rgba(23, 19, 13, 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(201, 162, 39, 0.16); transition: background 0.3s ease; }
 .site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 70px; }
-.header-logo { height: 48px; width: auto; display: block; }
+.header-logo { height: 56px; width: auto; display: block; }
 .header-actions { display: flex; align-items: center; gap: 12px; }
 .header-actions .btn { padding: 9px 20px; font-size: var(--fs-md); }
 .link-quiet { color: var(--cream-text); text-decoration: none; font-weight: 500; font-size: var(--fs-md); opacity: 0.85; transition: opacity 0.18s ease; padding: 6px 4px; border-radius: 6px; }
@@ -98,7 +98,7 @@ details p { font-size: var(--fs-md); color: var(--body); padding: 0 0 20px; }
 .site-footer { background: var(--ink); color: #b6aa93; padding: 48px 0 40px; }
 .site-footer .wrap { display: flex; flex-wrap: wrap; gap: 20px 28px; align-items: center; justify-content: space-between; }
 .footer-brand { display: flex; align-items: center; gap: 14px; }
-.footer-logo { height: 58px; width: auto; }
+.footer-logo { height: 66px; width: auto; }
 .footer-tag { font-size: var(--fs-xs); color: #9b907c; max-width: 280px; }
 .site-footer nav { display: flex; flex-wrap: wrap; gap: 22px; }
 .site-footer nav a { text-decoration: none; color: #cabfa9; font-size: var(--fs-sm); transition: color 0.18s ease; border-radius: 4px; }
@@ -154,7 +154,7 @@ html { scroll-behavior: auto; }
 @media (max-width: 600px) {
 section { padding: 56px 0; }
 .header-actions { gap: 6px; }
-.header-logo { height: 34px; }
+.header-logo { height: 40px; }
 .header-actions .link-quiet { font-size: var(--fs-xs); padding: 12px 6px; }
 .header-actions .btn { padding: 12px 14px; font-size: var(--fs-xs); white-space: nowrap; }
 }
@@ -798,7 +798,7 @@ input:focus-visible, select:focus-visible {
   box-shadow: var(--shadow-sm);
 }
 .site-header.is-compact .wrap { height: 58px; }
-.site-header.is-compact .header-logo { height: 40px; }
+.site-header.is-compact .header-logo { height: 46px; }
 .site-header .header-logo { transition: height var(--motion-normal) var(--ease-out); }
 
 @media (prefers-reduced-motion: reduce) {
