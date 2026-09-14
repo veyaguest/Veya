@@ -16,8 +16,6 @@ import { page, pageHero, faqHtml, esc, SITE, CTA_PRIMARY } from './site-shell.mj
 
 const CTA_TIMELINE =
   '<a href="/calculators/rsvp-timeline/" class="btn btn-ghost">לראות את לוח הזמנים</a>'
-const CTA_COMMIT =
-  '<a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות</a>'
 
 const ic = (p, w = 20) =>
   `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`
@@ -116,7 +114,7 @@ ${flowSteps([
   { icon: ic(P.users), h: 'מוזמן עונה', p: 'התשובה נכנסת לשורת המוזמן שלו, כולל כמה אנשים הוא מביא.' },
   { icon: ic(P.chat), h: 'הסטטוס מתעדכן', p: 'מגיע, לא מגיע, אולי או ממתין לתשובה.' },
   { icon: ic(P.chart), h: 'תמונת המצב זזה', p: 'כמה אישרו, כמה ממתינים, וכמה אנשים זה בפועל.' },
-  { icon: ic(P.coin), h: 'ההתחייבות והעלות זזות איתה', p: 'סעיף שמחושב לפי מספר המגיעים מתעדכן מעצמו.' },
+  { icon: ic(P.coin), h: 'והעלות זזה איתה', p: 'סעיף שמחושב לפי מספר המגיעים מתעדכן מעצמו.' },
   { icon: ic(P.table), h: 'וההושבה יודעת כמה מקומות צריך', p: 'רק מי שמסומן "מגיע" נספר כתופס מקום.' },
 ])}
           <p class="flow-punch">מספר אחד עובר דרך כל השרשרת. לא ארבעה מספרים בארבעה מקומות.</p>
@@ -204,13 +202,12 @@ ${flowSteps([
 ${flowSteps([
   { icon: ic(P.users), h: 'מוזמנים', p: 'הרשימה המלאה, כולל כמה אנשים בכל שורה.' },
   { icon: ic(P.chat), h: 'מגיעים', p: 'מי שאישר בפועל — וזה המספר שממשיך הלאה.' },
-  { icon: ic(P.cal), h: 'התחייבות', p: 'מחייבים אתכם על הגבוה מבין המגיעים לכמות שבחוזה.' },
   { icon: ic(P.coin), h: 'עלות', p: 'כל סעיף שמחושב לפי מספר המגיעים זז עם הרשימה.' },
   { icon: ic(P.chart), h: 'שורה תחתונה', p: 'ואחרי האירוע — ההוצאות מול מה שהתקבל.' },
 ])}
           <div class="callout" style="max-width:620px;margin-inline:auto">
             <p>
-              אחרי שיודעים כמה מגיעים, אפשר לראות מה זה אומר מבחינת ההתחייבות והעלות.
+              אחרי שיודעים כמה מגיעים, אפשר לראות מה זה אומר מבחינת העלות.
             </p>
             <p><a href="/features/finance/">מאזן האירוע — כמה האירוע שלכם באמת עולה</a></p>
           </div>
@@ -493,7 +490,7 @@ export function featureGuests() {
     h1: 'רשימת המוזמנים היא המקור לכל האירוע',
     lead: 'כל מוזמן, קבוצה, כמות, סטטוס והערה נמצאים במקום אחד — ומשם ממשיכים לאישורי ההגעה, להושבה ולחישוב האירוע.',
     trail: [{ name: 'VEYA', url: '/' }, { name: 'רשימת מוזמנים' }],
-    cta: `${CTA_PRIMARY}\n            ${CTA_COMMIT}`,
+    cta: `${CTA_PRIMARY}\n            ${CTA_TIMELINE}`,
   })}
 
       <section class="why">

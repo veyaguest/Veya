@@ -119,14 +119,6 @@
               },
               {
                 "@type": "Question",
-                "name": "האם VEYA מחשבת כמה למסור לאולם?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "VEYA מחשבת את העלות מול כמות המגיעים, ההתחייבות בחוזה והמינימום הכספי שהגדרתם, ומראה מה המשמעות של כל אדם נוסף. ההחלטה על המספר נשארת שלכם."
-                }
-              },
-              {
-                "@type": "Question",
                 "name": "מה קורה אם האירוע נדחה?",
                 "acceptedAnswer": {
                   "@type": "Answer",
@@ -780,11 +772,11 @@
          בטלפון — אותו מחשבון, רק הרספונסיביות שלו עצמו. ``aspect-ratio``
          שומר מקום לתמונה לפי המידה הנכונה, כדי שהעמוד לא יקפוץ. */
       .cl-shot img {
-        display: block; width: 100%; height: auto; aspect-ratio: 1200 / 865;
+        display: block; width: 100%; height: auto; aspect-ratio: 1200 / 943;
         border-radius: var(--radius-lg); border: 1px solid rgba(23, 19, 13, 0.1);
       }
-      @media (max-width: 720px) { .cl-shot img { aspect-ratio: 640 / 911; } }
-      .cl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; max-width: 880px; margin: 0 auto; }
+      @media (max-width: 720px) { .cl-shot img { aspect-ratio: 640 / 1440; } }
+      .cl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; max-width: 440px; margin: 0 auto; }
       a.cl-card {
         display: grid; align-content: start; gap: 8px; text-decoration: none;
         padding: 20px 22px 18px; background: var(--cream); border: 1px solid var(--line);
@@ -982,41 +974,45 @@
       .ck-end { margin: 0 0 20px; font-size: var(--fs-lg); color: var(--charcoal); }
       @media (prefers-reduced-motion: reduce) { .ck-opt { transition: none; } }
 
-      /* ---- כמה זה משנה: סליידר אחד, שלושה מספרים ---- */
-      .im-box { max-width: 760px; margin: 0 auto; padding: 26px 24px; background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
-      .im-nums { list-style: none; margin: 0 0 26px; padding: 0; display: grid; gap: 10px; justify-items: center; }
-      .im-num { display: grid; gap: 2px; justify-items: center; }
-      .im-v { font-family: var(--font-display); font-size: var(--fd-xl); line-height: 1; color: var(--charcoal); font-variant-numeric: tabular-nums; }
-      .im-l { font-size: var(--fs-sm); color: var(--muted); }
-      .im-arrow { color: var(--gold); font-size: var(--fs-lg); line-height: 1; }
-      .im-slider { display: grid; gap: 8px; }
-      /* ציר מספרי נקרא כאן שמאל→ימין (מינוס בשמאל, פלוס בימין), ולכן גם
-         הסליידר וגם התוויות שלו יוצאים מכיוון ה-RTL של העמוד. */
-      .im-ends { display: flex; justify-content: space-between; direction: ltr; font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
-      .im-slider input[type="range"] {
-        -webkit-appearance: none; appearance: none; width: 100%; height: 44px; background: transparent; cursor: pointer; direction: ltr;
+      /* ---- מה קורה כשמשהו זז: בוחרים מקרה, רואים מה זז איתו ---- */
+      .ch { max-width: 720px; margin: 0 auto; }
+      .ch-picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+      .ch-pick {
+        min-height: 50px; padding: 0 10px; font: inherit; font-weight: 600; font-size: var(--fs-sm);
+        color: var(--body); background: var(--cream); border: 1px solid var(--line);
+        border-radius: var(--radius-md); cursor: pointer;
+        transition: background var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
       }
-      .im-slider input[type="range"]::-webkit-slider-runnable-track {
-        height: 6px; border-radius: 999px; background: linear-gradient(90deg, var(--ivory-2), var(--gold-light), var(--ivory-2));
-        border: 1px solid var(--line);
+      .ch-pick.is-on { background: rgba(201, 162, 39, 0.16); border-color: var(--gold); color: var(--charcoal); }
+      .ch-pick:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
+      /* גובה קבוע בין המקרים: מעבר בין כרטיסים לא מזיז את הסקשן. */
+      .ch-panel {
+        padding: 6px 22px 10px; min-height: 268px; background: var(--cream);
+        border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
       }
-      .im-slider input[type="range"]::-moz-range-track {
-        height: 6px; border-radius: 999px; background: linear-gradient(90deg, var(--ivory-2), var(--gold-light), var(--ivory-2)); border: 1px solid var(--line);
+      .ch-panel[hidden] { display: none; }
+      .ch-lines { list-style: none; margin: 0; padding: 0; display: grid; }
+      .ch-line {
+        display: grid; grid-template-columns: 8.5rem 1fr; align-items: baseline; gap: 14px;
+        padding: 18px 0; border-bottom: 1px solid var(--line);
+        opacity: 0; transform: translateY(6px);
+        animation: ch-in var(--motion-normal) var(--ease-out) forwards;
       }
-      .im-slider input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none; appearance: none; width: 30px; height: 30px; margin-top: -13px;
-        border-radius: 50%; background: var(--gold); border: 2px solid var(--cream); box-shadow: var(--shadow-md);
+      .ch-line:nth-child(2) { animation-delay: 90ms; }
+      .ch-line:nth-child(3) { animation-delay: 180ms; }
+      .ch-line:last-child { border-bottom: 0; }
+      @keyframes ch-in { to { opacity: 1; transform: none; } }
+      .ch-what { font-family: var(--font-display); font-size: var(--fd-sm); color: var(--gold-deep); line-height: 1.2; }
+      .ch-does { font-size: var(--fs-md); color: var(--body); line-height: 1.6; }
+      .im-punch { margin: 26px auto 0; max-width: 46ch; text-align: center; font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); }
+      @media (max-width: 560px) {
+        .ch-picks { grid-template-columns: 1fr; }
+        .ch-line { grid-template-columns: 1fr; gap: 4px; padding: 15px 0; }
+        .ch-panel { min-height: 0; padding: 4px 18px 8px; }
       }
-      .im-slider input[type="range"]::-moz-range-thumb {
-        width: 30px; height: 30px; border: 2px solid var(--cream); border-radius: 50%; background: var(--gold); box-shadow: var(--shadow-md);
-      }
-      .im-slider input[type="range"]:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 4px; border-radius: var(--radius-pill); }
-      .im-say { margin: 26px auto 0; max-width: 40ch; text-align: center; font-size: var(--fs-lg); line-height: 1.9; color: var(--body); }
-      .im-punch { margin: 18px auto 0; max-width: 46ch; text-align: center; font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); }
-      @media (min-width: 700px) {
-        .im-nums { grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; gap: 14px; }
-        /* בעמוד RTL הזרימה היא ימין→שמאל, ולכן החץ מצביע שמאלה. */
-        .im-arrow { transform: rotate(90deg); }
+      @media (prefers-reduced-motion: reduce) {
+        .ch-line { opacity: 1; transform: none; animation: none; }
+        .ch-pick { transition: none; }
       }
 
       /* ---- הושבה שאפשר לשחק בה (רקע כהה) ---- */
@@ -1118,8 +1114,7 @@
       }
       /* ---- מדריכים: כרטיס לכל מדריך אמיתי ---- */
       .gd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
-      /* חמישה מדריכים: הראשון תופס שתי עמודות, כך שאין חור בשורה האחרונה. */
-      @media (min-width: 861px) { .gd-grid > .gd-card:first-child { grid-column: span 2; } }
+      @media (min-width: 861px) { .gd-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
       a.gd-card {
         display: grid; align-content: start; gap: 8px; text-decoration: none;
         padding: 22px 22px 18px; background: var(--cream); border: 1px solid var(--line);
@@ -1437,7 +1432,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                  /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                        /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2001,7 +1996,7 @@
       /* ── שכבות UI צפות בהירו ───────────────────────────────────────────
          שלושה קריאונים שנראים כאילו נלקחו מתמונת המצב שמאחוריהם. הם
          ממוקמים על קצוות אשכול המכשירים ולא במרכזו, כדי לא לכסות את
-         צילום המסך עצמו. אותם שלושה מספרים חוזרים בסקשן ההתחייבות. */
+         צילום המסך עצמו. */
       .hs {
         position: absolute;
         z-index: 3;
@@ -2213,6 +2208,7 @@
     
     
     
+    
     </style>
   </head>
   <body>
@@ -2238,12 +2234,12 @@
           <h1 id="hero-title" class="reveal d1">כמה אנשים באמת מגיעים לאירוע שלכם —<br /><span class="accent">וכמה זה עולה לכם</span></h1>
           <p class="lead reveal d2">
             כל אישור הגעה הוא מספר, וכל מספר הוא כסף. VEYA מחזיקה את הרשימה,
-            האישורים, ההושבה והמאזן במקום אחד — כדי שתדעו על כמה להתחייב לפני
+            האישורים, ההושבה והמאזן במקום אחד — כדי שתדעו איפה אתם עומדים לפני
             האירוע, ומה נשאר אחריו.
           </p>
           <div class="cta-row reveal d2">
             <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
-            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות</a>
+            <a href="/calculators/rsvp-timeline/" class="btn btn-ghost">לראות את לוח הזמנים</a>
           </div>
 
           <div class="hero-devices reveal d3">
@@ -2302,13 +2298,11 @@
             <span class="jr-arrow" aria-hidden="true">←</span>
             <a class="jr-step" href="/features/rsvp/" style="--i: 1"><span>אישורי הגעה</span></a>
             <span class="jr-arrow" aria-hidden="true">←</span>
-            <a class="jr-step" href="/calculators/venue-commitment/" style="--i: 2"><span>התחייבות</span></a>
+            <a class="jr-step" href="/features/seating/" style="--i: 2"><span>הושבה</span></a>
             <span class="jr-arrow" aria-hidden="true">←</span>
-            <a class="jr-step" href="/features/seating/" style="--i: 3"><span>הושבה</span></a>
+            <a class="jr-step" href="#gifts" style="--i: 3"><span>מתנות</span></a>
             <span class="jr-arrow" aria-hidden="true">←</span>
-            <a class="jr-step" href="#gifts" style="--i: 4"><span>מתנות</span></a>
-            <span class="jr-arrow" aria-hidden="true">←</span>
-            <a class="jr-step" href="/features/finance/" style="--i: 5"><span>מאזן</span></a>
+            <a class="jr-step" href="/features/finance/" style="--i: 4"><span>מאזן</span></a>
             </div>
           </nav>
 
@@ -2512,7 +2506,7 @@
           <!-- ═════ ציר סגירת הרשימה (§5) ═══════════════════════════════
                שבעת השלבים הם בדיוק אלה שב-``rsvp_timeline.py``, בתוויות
                הנייטרליות מ-``PUBLIC_STEP_LABELS`` — בלי לנקוב בערוץ, כי
-               WhatsApp עדיין במצב mock. הציר נספר לאחור ממועד ההתחייבות
+               WhatsApp עדיין במצב mock. הציר נספר לאחור ממועד סגירת הרשימה
                לאולם, ולכן היום שבו הוא נעצר הוא היום שבו נמסר המספר. -->
           <div class="tl-wrap reveal">
             <div class="tl-head">
@@ -2756,125 +2750,85 @@
         </div>
       </section>
 
-      <!-- ═════ 8. התחייבות ועלות — סקשן הדגל ═════ -->
-      <!-- מעבר סיפורי (§4): סוגר את הסקשן הקודם ופותח את הבא. -->
-    <p class="bridge reveal" aria-hidden="true">יש מספר. ועל כמה ממנו צריך להתחייב?</p>
-
-<!-- ═════ כמה זה באמת משנה ═════════════════════════════════════════
-         סליידר אחד שמראה שהמספרים באירוע מחוברים: כמה מוזמנים, כמה
-         מגיעים, וכמה שולחנות צריך בשבילם. אין כאן חישוב כספי ואין
-         נתוני שוק — רק החשבון הפשוט שכל זוג עושה בראש. -->
+    <!-- ═════ מה קורה כשמשהו זז ════════════════════════════════════════
+         הסקשן הזה לא חוזר על "לדעת כמה מגיעים" (הסקשנים שלפניו) ולא
+         על "הכול במקום אחד" (אותו אירוע, שתי דרכים). הוא מוסיף את ציר
+         הזמן: אירוע אמיתי משתנה, וגם דחייה של התאריך לא מוחקת את מה
+         שכבר נאסף. שלושת המקרים הם התנהגות אמיתית של המוצר. -->
     <section class="im tone-alt" id="impact" aria-labelledby="im-title">
       <div class="wrap">
         <div class="section-head reveal">
-          <h2 id="im-title" class="section-title">20 אנשים פחות. זה באמת משנה?</h2>
+          <h2 id="im-title" class="section-title">ומה קורה כשמשהו זז?</h2>
           <p class="section-sub">
-            ברור שכן.<br />
-            השאלה היא אם אתם מגלים את זה בזמן.
+            אף אירוע לא נשאר בדיוק כמו שתכננתם.<br />
+            השאלה היא כמה עבודה כל שינוי כזה עולה לכם.
           </p>
         </div>
 
-        <div class="im-box reveal d1" data-impact>
-          <ol class="im-nums">
-            <li class="im-num">
-              <span class="im-v" data-im-guests>520</span>
-              <span class="im-l">מוזמנים</span>
-            </li>
-            <li class="im-arrow" aria-hidden="true">↓</li>
-            <li class="im-num">
-              <span class="im-v" data-im-coming>500</span>
-              <span class="im-l">מגיעים</span>
-            </li>
-            <li class="im-arrow" aria-hidden="true">↓</li>
-            <li class="im-num">
-              <span class="im-v" data-im-tables>50</span>
-              <span class="im-l">שולחנות</span>
-            </li>
-          </ol>
+        <div class="ch reveal d1" data-change>
+          <div class="ch-picks" role="group" aria-label="מה השתנה">
+              <button type="button" class="ch-pick is-on" data-ch-pick="cancel" aria-pressed="true">משפחה ביטלה</button>
+              <button type="button" class="ch-pick" data-ch-pick="add" aria-pressed="false">מוסיפים עוד שניים</button>
+              <button type="button" class="ch-pick" data-ch-pick="move" aria-pressed="false">האירוע נדחה</button>
+          </div>
 
-          <label class="im-slider">
-            <span class="vh">כמה אנשים פחות או יותר</span>
-            <span class="hint hint-center" data-hint hidden>נסו להזיז</span>
-            <span class="im-ends" aria-hidden="true"><span>20−</span><span>0</span><span>20+</span></span>
-            <input type="range" min="-20" max="20" step="1" value="0" data-im-range />
-          </label>
+            <div class="ch-panel is-on" data-ch-panel="cancel">
+              <ul class="ch-lines">
+                <li class="ch-line">
+                  <span class="ch-what">הרשימה</span>
+                  <span class="ch-does">הסטטוס משתנה, והמספר בתמונת המצב יורד איתו</span>
+                </li>
+                <li class="ch-line">
+                  <span class="ch-what">ההושבה</span>
+                  <span class="ch-does">השולחן שלהם מסמן שהמקומות התפנו</span>
+                </li>
+                <li class="ch-line">
+                  <span class="ch-what">מי שמחכה</span>
+                  <span class="ch-does">אף אחד לא ממשיך לקבל תזכורות בטעות</span>
+                </li>
+              </ul>
+            </div>
+            <div class="ch-panel" data-ch-panel="add" hidden>
+              <ul class="ch-lines">
+                <li class="ch-line">
+                  <span class="ch-what">הרשימה</span>
+                  <span class="ch-does">שני אנשים נוספים לאותה שורה, לא שורה חדשה</span>
+                </li>
+                <li class="ch-line">
+                  <span class="ch-what">ההושבה</span>
+                  <span class="ch-does">השולחן יודע שצריך עוד שני מקומות</span>
+                </li>
+                <li class="ch-line">
+                  <span class="ch-what">הכסף</span>
+                  <span class="ch-does">המנות והעלות לאדם מתעדכנות מעצמן</span>
+                </li>
+              </ul>
+            </div>
+            <div class="ch-panel" data-ch-panel="move" hidden>
+              <ul class="ch-lines">
+                <li class="ch-line">
+                  <span class="ch-what">הרשימה</span>
+                  <span class="ch-does">נשארת. לא מתחילים לאסוף שמות מחדש</span>
+                </li>
+                <li class="ch-line">
+                  <span class="ch-what">התשובות</span>
+                  <span class="ch-does">מה שכבר ענו נשמר בארכיון ולא נמחק</span>
+                </li>
+                <li class="ch-line">
+                  <span class="ch-what">מה שממשיך</span>
+                  <span class="ch-does">נפתח סבב חדש מול התאריך החדש, ורק ממנו מבקשים תשובה</span>
+                </li>
+              </ul>
+            </div>
         </div>
 
-        <p class="im-say reveal d2">
-          עוד כמה אנשים.<br />
-          עוד שולחן.<br />
-          עוד כמה מנות.<br />
-          ובסוף — גם המספרים משתנים.
-        </p>
-
-        <p class="im-punch reveal d2">זו בדיוק הסיבה שחשוב לדעת איפה אתם עומדים.</p>
+        <p class="im-punch reveal d2">לא מתחילים מהתחלה. ממשיכים מאיפה שהייתם.</p>
       </div>
     </section>
 
-    <section class="commit tone-light" id="commitment" aria-labelledby="commitment-title">
-        <div class="wrap">
-          <div class="section-head reveal">
-            <span class="kicker">התחייבות ועלות</span>
-            <h2 id="commitment-title" class="section-title">המספר שאתם מוסרים לאולם צריך להיות מספר שאפשר להסביר.</h2>
-            <p class="section-sub">
-              התחייבות לאולם היא לא עוד שדה למלא — היא החלטה כספית. VEYA מחברת בין
-              כמות המגיעים, ההתחייבות בחוזה, מחיר המנה והמינימום הכספי, כדי שתראו מה
-              המשמעות של המספר לפני שסוגרים אותו.
-            </p>
-          </div>
-
-          <!-- ═════ מה שסגרתם מול מה שקורה ═════════════════════════════
-               שלוש שכבות של אותו אירוע: מה שנחתם בחוזה, מה שמתברר
-               לקראת התאריך, ומה שבסוף נכנס לחשבון. בלי כמויות —
-               המנגנון הוא שההתחייבות היא רצפה, לא תקרה. -->
-          <div class="cm reveal d1" data-scene data-scene-gap="700">
-            <div class="cm-row scene-step" data-step="1">
-              <span class="cm-tag">מה שסגרתם מראש</span>
-              <span class="cm-what">כמות ההתחייבות בחוזה</span>
-              <span class="cm-note">נקבעת חודשים לפני שיש לכם מושג מי יגיע</span>
-            </div>
-            <span class="cm-arrow scene-step" data-step="2" aria-hidden="true">←</span>
-            <div class="cm-row scene-step" data-step="3">
-              <span class="cm-tag">מה שמתברר לקראת האירוע</span>
-              <span class="cm-what">מי באמת אישר הגעה</span>
-              <span class="cm-note">הרשימה מתייצבת רק סמוך למועד הסגירה</span>
-            </div>
-            <span class="cm-arrow scene-step" data-step="4" aria-hidden="true">←</span>
-            <div class="cm-row cm-key scene-step" data-step="5">
-              <span class="cm-tag">מה שנכנס לחשבון</span>
-              <span class="cm-what">הגבוה מבין השניים</span>
-              <span class="cm-note">ואם בחוזה יש גם מינימום כספי — נספר הגבוה מביניהם</span>
-            </div>
-          </div>
-
-          <div class="steps-two reveal d2" data-scene data-scene-gap="700">
-            <div class="step-two scene-step" data-step="1">
-              <span class="lbl">מתחת להתחייבות</span>
-              <span class="big">אדם נוסף לא מוסיף לחשבון</span>
-              <p>אתם כבר משלמים עליו. כל עוד לא עברתם את ההתחייבות, היא זו שנספרת.</p>
-            </div>
-            <div class="step-two scene-step" data-step="2">
-              <span class="lbl">מעל ההתחייבות</span>
-              <span class="big">כל אדם נוסף במחיר מנה מלא</span>
-              <p>מכאן כל מגיע נספר בנפרד. זו המדרגה שמשנה את החשבון.</p>
-            </div>
-          </div>
-
-          <p class="fineprint reveal">
-            VEYA מחשבת לפי הנתונים שאתם מזינים — כמות ההתחייבות, מחיר המנה
-            והמינימום הכספי שרשומים בחוזה שלכם.
-          </p>
-
-          <div class="section-cta reveal">
-            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות <span class="arw" aria-hidden="true">←</span></a>
-            <span class="cta-hint">אותו חישוב שרץ בתוך VEYA. בלי הרשמה.</span>
-          </div>
-        </div>
-      </section>
-
       <!-- ═════ 9. הושבה ═════ -->
       <!-- מעבר סיפורי (§4): סוגר את הסקשן הקודם ופותח את הבא. -->
-    <p class="bridge reveal" aria-hidden="true">ההתחייבות נסגרה. ואיפה כולם יושבים?</p>
+    <p class="bridge reveal" aria-hidden="true">הרשימה מסודרת. ועכשיו — איפה כולם יושבים?</p>
 
     <section class="seating on-dark" id="seating" aria-labelledby="seating-title">
         <div class="wrap">
@@ -3139,7 +3093,7 @@
             </p>
           </div>
           <div class="evt-grid reveal d1">
-            <a class="evt-card" href="/events/wedding/"><span class="evt-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="14" r="5.5"/><circle cx="15" cy="14" r="5.5"/><path d="m10.5 4 1.5-2 1.5 2-1.5 1.6z"/></svg></span><h3>חתונה</h3><p>שני צדדים, רשימה גדולה, התחייבות לאולם ושולחנות שצריך לסדר.</p></a>
+            <a class="evt-card" href="/events/wedding/"><span class="evt-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="14" r="5.5"/><circle cx="15" cy="14" r="5.5"/><path d="m10.5 4 1.5-2 1.5 2-1.5 1.6z"/></svg></span><h3>חתונה</h3><p>שני צדדים, רשימה גדולה, והרבה שולחנות שצריך לסדר.</p></a>
             <a class="evt-card" href="/events/henna/"><span class="evt-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c2.5 3 4 5.4 4 7.6a4 4 0 0 1-8 0C8 8.4 9.5 6 12 3z"/><path d="M12 14.6V21M9 18.5h6"/></svg></span><h3>חינה</h3><p>ערב משפחתי וצבעוני, עם רשימה שחופפת רק בחלקה לחתונה.</p></a>
             <a class="evt-card" href="/events/bar-mitzvah/"><span class="evt-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/></svg></span><h3>בר מצווה</h3><p>המשפחה, החברים מהכיתה ומהתנועה — כל קבוצה במקום שלה.</p></a>
             <a class="evt-card" href="/events/bat-mitzvah/"><span class="evt-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4l-4.8 2.5.9-5.4-3.9-3.8 5.4-.8z"/></svg></span><h3>בת מצווה</h3><p>חגיגה משלה, עם החברות, המשפחה והרגעים שחשובים לה.</p></a>
@@ -3237,24 +3191,12 @@
             <span class="kicker">מדריכים</span>
             <h2 id="gd-title" class="section-title">השאלות שחוזרות אצל כל זוג, עם תשובות.</h2>
             <p class="section-sub">
-              כמה להתחייב באולם, מה קורה כשמגיעים פחות, מתי לשלוח את בקשת
-              האישור הראשונה, ומה בעצם נשאר בסוף. כתוב בעברית פשוטה, בלי
-              הבטחות ובלי נתונים שאי אפשר לעמוד מאחוריהם.
+              מתי לשלוח את בקשת האישור הראשונה, איך מחזיקים רזרבה בלי לשבור
+              את ההושבה, ומה בעצם נשאר בסוף. כתוב בעברית פשוטה, בלי הבטחות
+              ובלי נתונים שאי אפשר לעמוד מאחוריהם.
             </p>
           </div>
           <div class="gd-grid">
-            <a class="gd-card reveal" href="/guides/hitchayvut-la-ulam/">
-              <span class="gd-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></span>
-              <h3>התחייבות לאולם</h3>
-              <p>כמות ההתחייבות היא רצפה ולא תקרה — ולכן עדיף להתחייב מתחת לצפי, ולהשלים מרזרבה מוכנה.</p>
-              <span class="gd-go" aria-hidden="true">לקריאה <span class="arw">←</span></span>
-            </a>
-            <a class="gd-card reveal d1" href="/guides/pachot-me-hahitchayvut/">
-              <span class="gd-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10"/><path d="m8 10.5 4 4 4-4"/><path d="M4 19h16"/></svg></span>
-              <h3>מגיעים פחות ממה שהתחייבתם</h3>
-              <p>משלמים על ההתחייבות. ההפרש לא מתקזז, אבל הוא כן משנה כמה עולה להוסיף עוד אנשים לרשימה.</p>
-              <span class="gd-go" aria-hidden="true">לקריאה <span class="arw">←</span></span>
-            </a>
             <a class="gd-card reveal d2" href="/guides/rezerva-be-erua/">
               <span class="gd-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 11V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4"/><path d="M3 11h18v5H3z"/><path d="M6 16v3M18 16v3"/></svg></span>
               <h3>רזרבה באירוע</h3>
@@ -3285,38 +3227,34 @@
       <section class="cl tone-light" id="calculators" aria-labelledby="cl-title">
         <div class="wrap">
           <div class="section-head reveal">
-            <span class="kicker">מחשבונים</span>
-            <h2 id="cl-title" class="section-title">שני חישובים שאפשר לעשות כבר עכשיו.</h2>
+            <span class="kicker">מחשבון</span>
+            <h2 id="cl-title" class="section-title">חישוב אחד שאפשר לעשות כבר עכשיו.</h2>
             <p class="section-sub">
-              בלי הרשמה ובלי להשאיר פרטים. מזינים את מה שכתוב בחוזה שלכם,
-              ורואים על מה באמת משלמים — ומתי צריך לסגור את הרשימה.
+              בלי הרשמה ובלי להשאיר פרטים. מזינים תאריך אירוע, ורואים מתי
+              יוצאת כל בקשה, כל תזכורת וכל סבב טלפונים — עד היום שסוגרים
+              את הרשימה.
             </p>
           </div>
 
           <div class="cl-shot reveal d1">
             <picture>
-              <source media="(max-width: 720px)" srcset="/product/calculator-mobile.jpg" width="640" height="911" />
+              <source media="(max-width: 720px)" srcset="/product/calculator-mobile.jpg" width="640" height="1440" />
               <img
               src="/product/calculator.jpg"
-              alt="מחשבון ההתחייבות לאולם של VEYA אחרי חישוב: שדות הקלט מימין, ומשמאל התשובה כמה מוסיף אדם נוסף ופירוט המנות והעלות"
+              alt="מחשבון לוח הזמנים של VEYA אחרי חישוב: תאריך האירוע מימין, ומשמאל מועד סגירת הרשימה ושבעת השלבים בתאריכים אמיתיים"
               width="1200"
-              height="865"
+              height="943"
               loading="lazy"
               decoding="async"
-              onerror="this.closest('.cl-shot').hidden = true"
+              onerror="veyaRetryImage(this)"
             />
             </picture>
           </div>
 
           <div class="cl-grid">
-            <a class="cl-card reveal d2" href="/calculators/venue-commitment/">
-              <h3>מחשבון ההתחייבות לאולם</h3>
-              <p>על כמה מנות מחייבים אתכם בפועל, וכמה באמת מוסיף עוד אדם ברשימה.</p>
-              <span class="cl-go" aria-hidden="true">לחישוב <span class="arw">←</span></span>
-            </a>
-            <a class="cl-card reveal d3" href="/calculators/rsvp-timeline/">
+            <a class="cl-card reveal d2" href="/calculators/rsvp-timeline/">
               <h3>מחשבון לוח הזמנים</h3>
-              <p>מתי לשלוח כל בקשה ותזכורת, לאחור מהיום שבו מוסרים לאולם מספר.</p>
+              <p>מתי לשלוח כל בקשה, כל תזכורת וכל סבב טלפונים — לאחור מהיום שסוגרים את הרשימה.</p>
               <span class="cl-go" aria-hidden="true">לחישוב <span class="arw">←</span></span>
             </a>
           </div>
@@ -3398,10 +3336,6 @@
               <p>הם נשארים כחלק מרשימת המעקב, כך שאפשר לדעת מי עדיין דורש טיפול לפני שמגיעים למועד סגירת הרשימה.</p>
             </details>
             <details class="reveal">
-              <summary>האם VEYA מחשבת כמה למסור לאולם?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
-              <p>VEYA מחשבת את העלות מול כמות המגיעים, ההתחייבות בחוזה והמינימום הכספי שהגדרתם, ומראה מה המשמעות של כל אדם נוסף. ההחלטה על המספר נשארת שלכם.</p>
-            </details>
-            <details class="reveal">
               <summary>מה קורה אם האירוע נדחה?<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
               <p>אפשר לפתוח מחזור חדש לאירוע. תשובות ההגעה מהמועד הקודם נשמרות בארכיון ולא נמחקות, והרשימה חוזרת להיות פתוחה לאישורים מחדש מול התאריך החדש.</p>
             </details>
@@ -3461,7 +3395,6 @@
           <div class="footer-col">
             <h3>כלים</h3>
             <ul>
-              <li><a href="/calculators/venue-commitment/">מחשבון התחייבות</a></li>
               <li><a href="/calculators/rsvp-timeline/">לוח זמנים</a></li>
               <li><a href="/calculators/">כל המחשבונים</a></li>
             </ul>
@@ -3820,46 +3753,51 @@
         });
       })();
 
-      /* ---- כמה זה משנה ----
-         מוזמנים → מגיעים → שולחנות. אותו חשבון פשוט: כל עשרה אנשים הם
-         שולחן. אין כאן כסף ואין ממוצעי שוק — רק הקשר בין המספרים. */
+      /* ---- מה קורה כשמשהו זז ----
+         שלושה מקרים אמיתיים מחיי אירוע. הבחירה מחליפה את הכרטיס שמתחת,
+         והרמז החד-פעמי מסמן שאפשר לבחור. שום דבר כאן לא נוגע בגלילה. */
       (function () {
-        var box = document.querySelector('[data-impact]');
+        var box = document.querySelector('[data-change]');
         if (!box) return;
-        var range = box.querySelector('[data-im-range]');
-        var elG = box.querySelector('[data-im-guests]');
-        var elC = box.querySelector('[data-im-coming]');
-        var elT = box.querySelector('[data-im-tables]');
-        var BASE_GUESTS = 520, BASE_COMING = 500, PER_TABLE = 10;
-
-        function render() {
-          var d = parseInt(range.value, 10) || 0;
-          var coming = BASE_COMING + d;
-          elG.textContent = (BASE_GUESTS + d).toLocaleString('he-IL');
-          elC.textContent = coming.toLocaleString('he-IL');
-          elT.textContent = String(Math.ceil(coming / PER_TABLE));
-          range.setAttribute('aria-valuetext', coming + ' מגיעים');
-        }
+        var picks = [].slice.call(box.querySelectorAll('[data-ch-pick]'));
+        var panels = [].slice.call(box.querySelectorAll('[data-ch-panel]'));
         var touched = false;
-        range.addEventListener('input', function () {
-          touched = true;
-          window.veyaHint.clear(box);
-          render();
-        });
-        render();
 
-        // תזוזה אחת קטנה וחזרה — מספיק כדי להבין שהסליידר חי.
+        function show(key) {
+          picks.forEach(function (p) {
+            var on = p.getAttribute('data-ch-pick') === key;
+            p.classList.toggle('is-on', on);
+            p.setAttribute('aria-pressed', on ? 'true' : 'false');
+          });
+          panels.forEach(function (panel) {
+            var on = panel.getAttribute('data-ch-panel') === key;
+            panel.hidden = !on;
+            if (!on) return;
+            // מפעילים מחדש את כניסת השורות, כדי שהמעבר ייראה כמו תשובה.
+            [].slice.call(panel.querySelectorAll('.ch-line')).forEach(function (li) {
+              li.style.animation = 'none';
+              void li.offsetWidth;
+              li.style.animation = '';
+            });
+          });
+        }
+
+        picks.forEach(function (p) {
+          p.addEventListener('click', function () {
+            touched = true;
+            window.veyaHint.clear(box);
+            show(p.getAttribute('data-ch-pick'));
+          });
+        });
+
+        // רמז חד-פעמי: המקרה השני נדלק לרגע, כדי לומר "אפשר לבחור".
         window.veyaHint.onceInView(box, function () {
-          window.veyaHint.show(box);
           if (window.veyaHint.reduced) return;
-          var step = 0;
-          var frames = [8, 0];
-          var tick = setInterval(function () {
-            if (touched || step >= frames.length) { clearInterval(tick); return; }
-            range.value = String(frames[step]);
-            render();
-            step += 1;
-          }, 520);
+          setTimeout(function () {
+            if (touched) return;
+            picks[1].classList.add('is-glow');
+            setTimeout(function () { picks[1].classList.remove('is-glow'); }, 1100);
+          }, 600);
         });
       })();
 

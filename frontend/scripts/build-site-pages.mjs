@@ -747,7 +747,7 @@ function featureFinance() {
   const faq = [
     {
       q: 'מה בדיוק VEYA מחשבת בצד הכספי?',
-      a: 'את עלות האירוע לפי סעיפי ההוצאה שהזנתם ומספר המגיעים בפועל, את ההתחייבות מול הספק, את העלות הממוצעת לאדם, את מה שהתקבל במתנות אחרי האירוע, ואת ההפרש ביניהם.',
+      a: 'את עלות האירוע לפי סעיפי ההוצאה שהזנתם ומספר המגיעים בפועל, את העלות הממוצעת לאדם, את מה שהתקבל במתנות אחרי האירוע, ואת ההפרש ביניהם.',
     },
     {
       q: 'איך העלות מתעדכנת לבד?',
@@ -774,19 +774,19 @@ function featureFinance() {
   const body = `${pageHero({
     eyebrow: 'מאזן האירוע',
     h1: 'כמה האירוע שלכם באמת עולה?',
-    lead: 'ההוצאה הגדולה באירוע ישראלי לא נקבעת בטבלה — היא נקבעת במספר האנשים שמגיעים. VEYA מחברת בין אישורי ההגעה, ההתחייבות לאולם וסעיפי ההוצאה, עד לשורה התחתונה אחרי האירוע.',
+    lead: 'ההוצאה הגדולה באירוע ישראלי לא נקבעת בטבלה — היא נקבעת במספר האנשים שמגיעים. VEYA מחברת בין אישורי ההגעה לסעיפי ההוצאה, עד לשורה התחתונה אחרי האירוע.',
     trail: [{ name: 'VEYA', url: '/' }, { name: 'מאזן האירוע' }],
-    cta: `${CTA_PRIMARY}\n            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות</a>`,
+    cta: CTA_PRIMARY,
   })}
 
       <section class="why">
         <div class="wrap">
           <div class="why-inner">
             <span class="kicker">השרשרת</span>
-            <h2 class="section-title">מוזמנים ← מגיעים ← התחייבות ← הוצאה ← מתנות ← שורה תחתונה</h2>
+            <h2 class="section-title">מוזמנים ← מגיעים ← הוצאה ← מתנות ← שורה תחתונה</h2>
             <p class="why-list">
               רוב הכלים עוצרים בשלב השני. אחרי שהמוזמן ענה, המספר שלו הופך לעמודה בטבלה
-              ונשאר שם. אצלנו הוא ממשיך: הוא קובע כמה מנות מחייבים אתכם, כמה שולחנות
+              ונשאר שם. אצלנו הוא ממשיך: הוא קובע כמה מנות נספרות, כמה שולחנות
               צריך, וכמה עולה בסוף האירוע.
             </p>
             <p class="why-punch">אישור הגעה אחד משנה מספר בשקלים.</p>
@@ -811,7 +811,7 @@ function featureFinance() {
             </article>
             <article class="supporting-item">
               <h3>לפי מספר המגיעים</h3>
-              <p>מנה, אלכוהול. כאן חיה גם ההתחייבות מול הספק.</p>
+              <p>מנה, אלכוהול. כל אישור הגעה מזיז את השורה הזו.</p>
             </article>
             <article class="supporting-item">
               <h3>לפי מספר המוזמנים</h3>
@@ -821,57 +821,6 @@ function featureFinance() {
               <h3>לפי יחידה או באחוזים</h3>
               <p>מספרי שולחן, הסעות. וטיפים שנגזרים משאר ההוצאות ומתעדכנים איתן.</p>
             </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="commit tone-light">
-        <div class="wrap">
-          <div class="section-head">
-            <span class="kicker">ההתחייבות</span>
-            <h2 class="section-title">ההתחייבות לאולם היא חלק מהחשבון, לא הערה בצד</h2>
-            <p class="section-sub">
-              אולם ישראלי נמכר כמעט תמיד בהתחייבות למספר מנות מינימלי. זה לא פרט טכני —
-              זה מה שקובע כמה תשלמו.
-            </p>
-          </div>
-
-          <div class="numcard">
-            <div class="numcard-head">
-              <h3>איך זה נראה בפועל</h3>
-              <span class="numcard-tag">דוגמה</span>
-            </div>
-            <dl>
-              <div class="numrow"><dt>התחייבתם בחוזה על</dt><dd>כמות מסוימת</dd></div>
-              <div class="numrow"><dt>אישרו הגעה</dt><dd>פחות אנשים</dd></div>
-              <div class="numrow is-key"><dt>משלמים על</dt><dd>כמות ההתחייבות</dd></div>
-            </dl>
-            <p class="numcard-note">
-              מנות לחיוב הן <b>הגבוה מבין מספר המגיעים לכמות ההתחייבות</b>. אם החוזה
-              נוקב גם במינימום כספי — נספר הגבוה מבין השניים.
-            </p>
-          </div>
-
-          <div class="steps-two">
-            <div class="step-two">
-              <span class="lbl">מתחת להתחייבות</span>
-              <span class="big">המנה כבר משולמת</span>
-              <p>אדם נוסף לא מוסיף על המנה. רק הוצאות אחרות לאדם, אם יש.</p>
-            </div>
-            <div class="step-two">
-              <span class="lbl">מעל ההתחייבות</span>
-              <span class="big">מחיר מנה מלא</span>
-              <p>מכאן כל אדם נספר במלוא המחיר. זו המדרגה שמשנה את החשבון.</p>
-            </div>
-          </div>
-
-          <p class="fineprint">
-            המספרים בדוגמה להמחשה בלבד. החישוב רץ על הנתונים שאתם מזינים מהחוזה שלכם.
-          </p>
-
-          <div class="section-cta">
-            <a href="/calculators/venue-commitment/" class="btn btn-primary">לחשב את ההתחייבות <span class="arw" aria-hidden="true">←</span></a>
-            <span class="cta-hint">אותו חישוב, פתוח, בלי הרשמה.</span>
           </div>
         </div>
       </section>
@@ -943,7 +892,7 @@ ${faqHtml(faq)}
     path: '/features/finance/',
     title: 'מאזן האירוע — כמה האירוע שלכם באמת עולה | VEYA',
     description:
-      'עלות האירוע לפי מספר המגיעים בפועל, ההתחייבות לאולם, העלות לאדם וספירת המתנות אחרי האירוע — עד לשורה התחתונה. כך VEYA מחברת בין אישורי ההגעה לכסף.',
+      'עלות האירוע לפי מספר המגיעים בפועל, העלות לאדם וספירת המתנות אחרי האירוע — עד לשורה התחתונה. כך VEYA מחברת בין אישורי ההגעה לכסף.',
     trail: [{ name: 'VEYA', url: '/' }, { name: 'מאזן האירוע' }],
     faq,
     schema: [
@@ -952,7 +901,7 @@ ${faqHtml(faq)}
         name: 'מאזן האירוע',
         inLanguage: 'he-IL',
         url: `${SITE}/features/finance/`,
-        description: 'מסך מאזן האירוע ב-VEYA: הוצאות לפי מספר המגיעים, התחייבות לאולם, עלות לאדם, ספירת מתנות ושורה תחתונה.',
+        description: 'מסך מאזן האירוע ב-VEYA: הוצאות לפי מספר המגיעים, עלות לאדם, ספירת מתנות ושורה תחתונה.',
       },
     ],
     body,
@@ -996,7 +945,7 @@ function eventPage(t) {
     h1: esc(t.title),
     lead: esc(t.lead),
     trail: [{ name: 'VEYA', url: '/' }, { name: 'סוגי אירוע', url: '/#events' }, { name: t.name }],
-    cta: `${CTA_PRIMARY}\n            <a href="/calculators/venue-commitment/" class="btn btn-ghost">לחשב את ההתחייבות</a>`,
+    cta: CTA_PRIMARY,
   })}
 
       <section class="commit tone-alt">
@@ -1071,9 +1020,8 @@ ${groups.map((g) => `            <div class="evt-card" style="text-align:center"
 ${expenses.map(([cat, items]) => `              <div class="numrow"><dt>${esc(cat)}</dt><dd style="font-weight:500;font-size:15px;color:var(--body)">${esc(items.join(' · '))}</dd></div>`).join('\n')}
             </dl>
             <p class="numcard-note">
-              סעיף שנמכר בהתחייבות — מנה או קייטרינג — נושא גם את
-              <b>כמות ההתחייבות והמינימום הכספי</b>, ולכן העלות שלו מחושבת נכון
-              גם כשמגיעים פחות אנשים ממה שהתחייבתם.
+              סעיף שמחושב לפי מספר המגיעים זז עם הרשימה, ולכן העלות שלו
+              מחושבת נכון גם כשמגיעים פחות אנשים ממה שתכננתם.
             </p>
           </div>
           <div class="section-cta">
