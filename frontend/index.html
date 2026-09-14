@@ -807,6 +807,37 @@
       .why .why-list { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fd-sm); line-height: 1.55; color: var(--charcoal); }
       /* שורת הפואנטה — מה שנשאר בראש אחרי שגוללים הלאה */
       .why .why-punch,
+      /* ---- מדריכים: כרטיס לכל מדריך אמיתי ---- */
+      .gd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+      /* חמישה מדריכים: הראשון תופס שתי עמודות, כך שאין חור בשורה האחרונה. */
+      @media (min-width: 861px) { .gd-grid > .gd-card:first-child { grid-column: span 2; } }
+      a.gd-card {
+        display: grid; align-content: start; gap: 8px; text-decoration: none;
+        padding: 22px 22px 18px; background: var(--cream); border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        transition: border-color var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
+      }
+      .gd-ico {
+        display: inline-grid; place-items: center; width: 40px; height: 40px; margin-bottom: 4px;
+        border-radius: 50%; background: rgba(201, 162, 39, 0.12); color: var(--gold-deep);
+        transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
+      }
+      a.gd-card h3 { margin: 0; font-size: var(--fs-lg); color: var(--charcoal); }
+      a.gd-card p { margin: 0; font-size: var(--fs-sm); color: var(--muted); line-height: 1.65; }
+      .gd-go { margin-top: 6px; font-size: var(--fs-sm); font-weight: 600; color: var(--gold-deep); }
+      .gd-go .arw { display: inline-block; transition: transform var(--motion-fast) var(--ease-out); }
+      @media (hover: hover) {
+        a.gd-card:hover { border-color: var(--gold); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        a.gd-card:hover .gd-ico { background: var(--gold); color: var(--charcoal); }
+        a.gd-card:hover .gd-go .arw { transform: translateX(-3px); }
+      }
+      a.gd-card:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
+      a.gd-card:active { transform: translateY(1px); }
+      .gd-all { margin: 20px 0 0; text-align: center; }
+      @media (prefers-reduced-motion: reduce) {
+        a.gd-card, .gd-go .arw { transition: none; }
+        a.gd-card:hover, a.gd-card:active { transform: none; }
+      }
       /* ---- אזור האורחים: טקסט קצר לצד צילום מסך גדול ----
          בטלפון הסדר הוא טקסט → צילום מסך → כפתור, כמו שהתוכן נקרא.
          בדסקטופ הצילום עובר לצד שמאל ותופס את שתי השורות, כך שהוא
@@ -2885,6 +2916,56 @@
               </div>
             </li>
           </ol>
+        </div>
+      </section>
+
+      <!-- ═════ 12. מדריכים ════════════════════════════════════════════
+           חמשת המדריכים האמיתיים של האתר, עם המשפט שכל אחד מהם עונה עליו.
+           לא "תוכן שיווקי": כל כרטיס מוביל למדריך שנכתב במלואו. -->
+      <section class="gd tone-alt" id="guides" aria-labelledby="gd-title">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="kicker">מדריכים</span>
+            <h2 id="gd-title" class="section-title">השאלות שחוזרות אצל כל זוג, עם תשובות.</h2>
+            <p class="section-sub">
+              כמה להתחייב באולם, מה קורה כשמגיעים פחות, מתי לשלוח את בקשת
+              האישור הראשונה, ומה בעצם נשאר בסוף. כתוב בעברית פשוטה, בלי
+              הבטחות ובלי נתונים שאי אפשר לעמוד מאחוריהם.
+            </p>
+          </div>
+          <div class="gd-grid">
+            <a class="gd-card reveal" href="/guides/hitchayvut-la-ulam/">
+              <span class="gd-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></span>
+              <h3>התחייבות לאולם</h3>
+              <p>כמות ההתחייבות היא רצפה ולא תקרה — ולכן עדיף להתחייב מתחת לצפי, ולהשלים מרזרבה מוכנה.</p>
+              <span class="gd-go" aria-hidden="true">לקריאה <span class="arw">←</span></span>
+            </a>
+            <a class="gd-card reveal d1" href="/guides/pachot-me-hahitchayvut/">
+              <span class="gd-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10"/><path d="m8 10.5 4 4 4-4"/><path d="M4 19h16"/></svg></span>
+              <h3>מגיעים פחות ממה שהתחייבתם</h3>
+              <p>משלמים על ההתחייבות. ההפרש לא מתקזז, אבל הוא כן משנה כמה עולה להוסיף עוד אנשים לרשימה.</p>
+              <span class="gd-go" aria-hidden="true">לקריאה <span class="arw">←</span></span>
+            </a>
+            <a class="gd-card reveal d2" href="/guides/rezerva-be-erua/">
+              <span class="gd-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 11V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4"/><path d="M3 11h18v5H3z"/><path d="M6 16v3M18 16v3"/></svg></span>
+              <h3>רזרבה באירוע</h3>
+              <p>מקומות פנויים מפוזרים בין השולחנות, או שולחן שלם ששומרים בצד. כל אחד פותר בעיה אחרת.</p>
+              <span class="gd-go" aria-hidden="true">לקריאה <span class="arw">←</span></span>
+            </a>
+            <a class="gd-card reveal d3" href="/guides/luach-zmanim-ishurey-hagaa/">
+              <span class="gd-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>
+              <h3>לוח הזמנים של האישורים</h3>
+              <p>בונים אותו לאחור, מהיום שבו צריך למסור לאולם מספר — ולא קדימה מהיום שנזכרתם.</p>
+              <span class="gd-go" aria-hidden="true">לקריאה <span class="arw">←</span></span>
+            </a>
+            <a class="gd-card reveal d4" href="/guides/haim-haerua-mechase-atzmo/">
+              <span class="gd-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.6 6.2 8.4 6 8.4-6"/><path d="M12 15.5v3"/></svg></span>
+              <h3>האם האירוע מכסה את עצמו</h3>
+              <p>ההפרש בין מה שהתקבל לבין מה שיצא — ואיפה הצפי נוטה להתנפח בדרך.</p>
+              <span class="gd-go" aria-hidden="true">לקריאה <span class="arw">←</span></span>
+            </a>
+          </div>
+          <p class="gd-all reveal d3"><a class="link-quiet" href="/guides/">כל המדריכים <span class="arw" aria-hidden="true">←</span></a></p>
         </div>
       </section>
 
