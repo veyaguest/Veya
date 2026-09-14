@@ -15,7 +15,7 @@ cta_url: /calculators/venue-commitment/
 related:
   - /guides/pachot-me-hahitchayvut/|מה קורה אם מגיעים פחות ממה שהתחייבתם
   - /guides/rezerva-be-erua/|רזרבה באירוע — מפוזרת או שולחן שלם
-  - /features/finance/|מאזן האירוע ב-VEYA
+  - /calculators/rsvp-timeline/|מחשבון לוח הזמנים של אישורי ההגעה
 ---
 
 ## מה זו בעצם התחייבות לאולם?
