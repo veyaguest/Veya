@@ -205,7 +205,7 @@
       /* ===== Header ===== */
       .site-header { position: sticky; top: 0; z-index: 20; background: rgba(23, 19, 13, 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(201, 162, 39, 0.16); transition: background 0.3s ease; }
       .site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 70px; }
-      .header-logo { height: 48px; width: auto; display: block; }
+      .header-logo { height: 56px; width: auto; display: block; }
       .header-actions { display: flex; align-items: center; gap: 12px; }
       .header-actions .btn { padding: 9px 20px; font-size: var(--fs-md); }
       .link-quiet { color: var(--cream-text); text-decoration: none; font-weight: 500; font-size: var(--fs-md); opacity: 0.85; transition: opacity 0.18s ease; padding: 6px 4px; border-radius: 6px; }
@@ -613,7 +613,7 @@
       .site-footer { background: var(--ink); color: #b6aa93; padding: 48px 0 40px; }
       .site-footer .wrap { display: flex; flex-wrap: wrap; gap: 20px 28px; align-items: center; justify-content: space-between; }
       .footer-brand { display: flex; align-items: center; gap: 14px; }
-      .footer-logo { height: 58px; width: auto; }
+      .footer-logo { height: 66px; width: auto; }
       .footer-tag { font-size: var(--fs-xs); color: #9b907c; max-width: 280px; }
       .site-footer nav { display: flex; flex-wrap: wrap; gap: 22px; }
       .site-footer nav a { text-decoration: none; color: #cabfa9; font-size: var(--fs-sm); transition: color 0.18s ease; border-radius: 4px; }
@@ -807,6 +807,37 @@
       .why .why-list { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fd-sm); line-height: 1.55; color: var(--charcoal); }
       /* שורת הפואנטה — מה שנשאר בראש אחרי שגוללים הלאה */
       .why .why-punch,
+      /* ---- אזור האורחים: טקסט קצר לצד צילום מסך גדול ----
+         בטלפון הסדר הוא טקסט → צילום מסך → כפתור, כמו שהתוכן נקרא.
+         בדסקטופ הצילום עובר לצד שמאל ותופס את שתי השורות, כך שהוא
+         נשאר הדבר הגדול בסקשן. */
+      .gh-grid { display: grid; gap: 26px; align-items: center; }
+      .gh-text { max-width: min(46ch, 100%); }
+      .gh-lead { font-size: var(--fs-lg); color: var(--body); line-height: 1.7; margin: 0 0 18px; }
+      .gh-less { font-size: var(--fs-lg); color: var(--charcoal); line-height: 2; margin: 0 0 20px; }
+      .gh-punch {
+        margin: 0; padding-top: 18px; border-top: 1px solid var(--line);
+        font-family: var(--font-display); font-size: var(--fd-md);
+        color: var(--charcoal); line-height: 1.35;
+      }
+      .gh-shot img {
+        display: block; width: 100%; height: auto; max-width: min(380px, 100%); margin: 0 auto;
+        border-radius: var(--radius-xl); border: 1px solid rgba(23, 19, 13, 0.14);
+        box-shadow: 0 30px 60px -34px rgba(23, 19, 13, 0.55);
+      }
+      .gh-cta { display: flex; }
+      .gh-cta .btn { min-height: 48px; }
+      @media (min-width: 861px) {
+        .gh-grid {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          grid-template-areas: "shot text" "shot cta";
+          align-items: center; gap: 20px 48px;
+        }
+        .gh-text { grid-area: text; align-self: end; }
+        .gh-shot { grid-area: shot; }
+        .gh-cta { grid-area: cta; align-self: start; }
+        .gh-shot img { max-width: min(440px, 100%); }
+      }
       .rsvp-band .why-punch,
       .commit .why-punch,
       .after .why-punch { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fd-sm); color: var(--charcoal); margin-top: 26px; }
@@ -2176,6 +2207,44 @@
             </p>
           </div>
         </div>
+        </div>
+      </section>
+
+      <!-- ═════ אזור האורחים ═══════════════════════════════════════════
+           צילום מסך אמיתי של ה-Guest Hub (``/confirm/{token}``, ConfirmPage)
+           ולא מוקאפ: זה בדיוק מה שמוזמן מקבל בקישור האישי שלו — פרטי
+           האירוע, הוספה ליומן, ניווט ואישור ההגעה. הצילום צולם מהמוצר
+           הרץ על אירוע דמו, ולכן אין בו פרטים של אף אדם אמיתי. -->
+      <section class="gh tone-alt" aria-labelledby="gh-title">
+        <div class="wrap">
+          <div class="gh-grid">
+            <div class="gh-text reveal">
+              <h2 id="gh-title" class="section-title">כל מה שהאורחים צריכים, במקום אחד.</h2>
+              <p class="gh-lead">
+                ההזמנה, הפרטים, איך מגיעים ואיפה מאשרים שמגיעים — הכול נמצא שם.
+              </p>
+              <p class="gh-less">
+                פחות "איפה זה?"<br />
+                פחות "איך מאשרים?"<br />
+                ופחות כאב ראש בשבילכם.
+              </p>
+              <p class="gh-punch">האורחים יודעים מה לעשות. אתם יכולים לשחרר.</p>
+            </div>
+            <div class="gh-shot reveal d1">
+              <img
+                src="/product/guest-hub.png"
+                alt="אזור האורחים של VEYA כפי שמוזמן רואה אותו בטלפון: פרטי האירוע, תאריך ושעה, כתובת האולם, הוספה ליומן, ניווט למקום האירוע וכפתורי אישור ההגעה"
+                width="960"
+                height="1700"
+                loading="lazy"
+                decoding="async"
+                onerror="this.closest('.gh-shot').hidden = true"
+              />
+            </div>
+            <div class="gh-cta reveal d2">
+              <a href="/features/rsvp/" class="btn btn-primary">תראו איך זה נראה <span class="arw" aria-hidden="true">←</span></a>
+            </div>
+          </div>
         </div>
       </section>
 
