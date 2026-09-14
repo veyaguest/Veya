@@ -749,7 +749,13 @@ function App() {
                 currentUserId={user.id}
               />
             )}
-            {page === 'guests' && <GuestsPage initialSearch={guestSearch} />}
+            {page === 'guests' && (
+              <GuestsPage
+                initialSearch={guestSearch}
+                guestsPopupSeen={user.guests_popup_seen}
+                onGuestsPopupSeen={() => setUser({ ...user, guests_popup_seen: true })}
+              />
+            )}
             {page === 'messages' && (
               <MessagesPage isAdmin={user.is_admin} onNavigate={goTo} />
             )}

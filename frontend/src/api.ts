@@ -275,6 +275,12 @@ export async function acceptConsent(
   if (!res.ok) throw await toError(res)
 }
 
+/** מסמן שהמשתמש ראה את מסך ההיכרות עם ניהול מוזמנים — פעם אחת לכל חשבון. */
+export async function markGuestsPopupSeen(): Promise<void> {
+  const res = await apiFetch('/auth/guests-popup-seen', { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+}
+
 /** מוחק לצמיתות את החשבון המחובר (כולל כל האירועים שלו). בלתי הפיך. */
 export async function deleteMyAccount(): Promise<void> {
   const res = await apiFetch('/auth/me', { method: 'DELETE' })
@@ -1165,6 +1171,13 @@ export async function readAudit(limit = 30): Promise<AuditLogRow[]> {
 
 export async function getHall(): Promise<HallState> {
   const res = await apiFetch('/hall')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** מסמן שמדריך ההדרכה של מפת האולם כבר נסגר פעם אחת באירוע הזה. */
+export async function markHallGuideSeen(): Promise<HallState> {
+  const res = await apiFetch('/hall/guide-seen', { method: 'POST' })
   if (!res.ok) throw await toError(res)
   return res.json()
 }

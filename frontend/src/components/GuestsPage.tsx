@@ -5,6 +5,7 @@ import {
   getNoteSplitSuggestions,
   guestDataAlerts,
   listGuests,
+  markGuestsPopupSeen,
 } from '../api'
 import type { GuestFilter, GuestSort } from '../api'
 import type { Guest, GuestDataAlert, NoteSplitCandidate } from '../types'
@@ -28,9 +29,6 @@ const contactsSupported = isContactPickerSupported()
 
 const t = strings.guests
 
-// דגל localStorage — מסך הפתיחה מוצג פעם אחת בלבד.
-const ONBOARDING_KEY = 'veya_guests_onboarding_seen'
-
 const PAGE_SIZE = 50
 
 const FILTER_LABELS: Record<GuestFilter, string> = {
@@ -46,9 +44,18 @@ interface GuestsPageProps {
   /** חיפוש התחלתי — מגיע מסידור ההושבה ("עריכה בניהול המוזמנים" על
       מוזמן מסוים), כדי לנחות ישר על השורה שלו. */
   initialSearch?: string
+  /** האם המשתמש כבר ראה את מסך ההיכרות פעם — ברמת חשבון, מגיע מ-``user``
+      ב-App.tsx (מקור האמת בשרת, לא localStorage). */
+  guestsPopupSeen?: boolean
+  /** עדכון אופטימי של ``user`` ב-App.tsx אחרי שסימנו את המסך כנראה. */
+  onGuestsPopupSeen?: () => void
 }
 
-export function GuestsPage({ initialSearch = '' }: GuestsPageProps = {}) {
+export function GuestsPage({
+  initialSearch = '',
+  guestsPopupSeen = false,
+  onGuestsPopupSeen,
+}: GuestsPageProps = {}) {
   const [guests, setGuests] = useState<Guest[]>([])
   const [total, setTotal] = useState(0)
   const [totalPeople, setTotalPeople] = useState(0)
@@ -76,19 +83,19 @@ export function GuestsPage({ initialSearch = '' }: GuestsPageProps = {}) {
   const [editGuest, setEditGuest] = useState<Guest | null>(null)
   // מוזמנים שמספר הטלפון שלהם נמצא שגוי בשיחה — דורש תיקון של בעל/ת האירוע.
   const [phoneAlerts, setPhoneAlerts] = useState<GuestDataAlert[]>([])
-  const [showOnboarding, setShowOnboarding] = useState(
-    () => localStorage.getItem(ONBOARDING_KEY) !== '1',
-  )
-  // מסמנים "נראה" ברגע שהדיאלוג מוצג — לא רק כשסוגרים אותו. בלי זה, מי
-  // שנכנס למסך המוזמנים ועובר לטאב אחר דרך הניווט בלי לסגור (מה שגורם
-  // ל-remount מלא, ראו key ב-App.tsx) היה רואה את הדיאלוג שוב בכל כניסה.
+  const [showOnboarding, setShowOnboarding] = useState(() => !guestsPopupSeen)
+  // מסמנים "נראה" בשרת (ברמת חשבון — ראו models.User.guests_popup_seen_at)
+  // ברגע שהדיאלוג מוצג — לא רק כשסוגרים אותו. בלי זה, מי שנכנס למסך
+  // המוזמנים ועובר לטאב אחר דרך הניווט בלי לסגור (מה שגורם ל-remount מלא,
+  // ראו key ב-App.tsx) היה רואה את הדיאלוג שוב בכל כניסה.
   useEffect(() => {
     if (!showOnboarding) return
-    try {
-      localStorage.setItem(ONBOARDING_KEY, '1')
-    } catch {
-      /* localStorage לא זמין (מצב פרטי) — לא נורא, פשוט לא נזכור בין רענונים */
-    }
+    markGuestsPopupSeen()
+      .then(() => onGuestsPopupSeen?.())
+      .catch(() => {
+        /* שקט — במקרה הגרוע ביותר המסך יוצג שוב בכניסה הבאה */
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showOnboarding])
   const [toast, setToast] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Guest | null>(null)
@@ -453,10 +460,7 @@ export function GuestsPage({ initialSearch = '' }: GuestsPageProps = {}) {
 
       {showOnboarding && (
         <OnboardingDialog
-          onClose={() => {
-            localStorage.setItem(ONBOARDING_KEY, '1')
-            setShowOnboarding(false)
-          }}
+          onClose={() => setShowOnboarding(false)}
           onPaste={() => setShowPaste(true)}
           onExcel={() => fileInput.current?.click()}
           onContacts={contactsSupported ? () => setShowContacts(true) : undefined}

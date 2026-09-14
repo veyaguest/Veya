@@ -6,6 +6,7 @@
 אבל לא חוסמת — ההחלטה הסופית של הבעלים.
 """
 import math
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -189,7 +190,24 @@ def get_hall(
         ),
         forbidden_pairs=forbidden_pairs,
         together_pairs=together_pairs,
+        guide_seen=event.seating_guide_seen_at is not None,
     )
+
+
+@router.post("/guide-seen", response_model=schemas.HallState)
+def mark_guide_seen(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_write),
+):
+    """מסמן שמדריך ההדרכה של מפת האולם כבר נסגר פעם אחת באירוע הזה.
+
+    פעם אחת לכל אירוע (לא לכל דפדפן/מכשיר) — ראו models.Event.seating_guide_seen_at
+    ואת ה-comment בהגדרת השדה. אידמפוטנטי: קריאה חוזרת לא דורסת את הזמן המקורי.
+    """
+    if event.seating_guide_seen_at is None:
+        event.seating_guide_seen_at = datetime.utcnow()
+        db.commit()
+    return get_hall(db=db, event=event)
 
 
 @router.put("", response_model=schemas.HallState)

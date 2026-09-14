@@ -170,6 +170,8 @@ _EXTRA_COLUMNS = {
         "cycle_number": "INTEGER DEFAULT 1",
         # כמה הגיעו בפועל. NULL = טרם הוזן, וזה שונה מ-0.
         "actual_attendance": "INTEGER",
+        # מתי נסגר לראשונה מדריך ההדרכה של מפת האולם. ראו models.Event.
+        "seating_guide_seen_at": "TIMESTAMP",
     },
     # כספי האירוע — שדות שנוספו אחרי הטבלה המקורית.
     "event_expenses": {
@@ -222,6 +224,8 @@ _EXTRA_COLUMNS = {
         # איפוס סיסמה עצמאי ("שכחתי סיסמה") — ראו models.User.
         "password_reset_hash": "TEXT",
         "password_reset_expires_at": "TIMESTAMP",
+        # מתי נסגר מסך ההיכרות עם ניהול מוזמנים. ראו models.User.
+        "guests_popup_seen_at": "TIMESTAMP",
     },
     "guests": {
         "guest_token": "TEXT",

@@ -732,6 +732,9 @@ class HallState(BaseModel):
     # גרירה) בלי קריאת רשת נוספת. אין כאן לוגיקה חדשה, רק חשיפה.
     forbidden_pairs: list[tuple[int, int]] = []  # זוגות "לא לשבת יחד"
     together_pairs: list[tuple[int, int]] = []   # זוגות "לשבת יחד"
+    # האם מדריך ההדרכה של מפת האולם כבר נסגר פעם באירוע הזה (ראו
+    # models.Event.seating_guide_seen_at). פעם אחת לכל אירוע, לא לכל דפדפן.
+    guide_seen: bool = False
 
 
 class HallTableSave(BaseModel):
@@ -974,6 +977,9 @@ class UserRead(BaseModel):
     # האם חסרים פרטים שחובה למלא לפני יצירת אירוע (שם/טלפון). מאפשר לפרונט
     # להציג השלמת פרטים למשתמשים קיימים בלי לנחש.
     profile_complete: bool = True
+    # האם המשתמש כבר ראה וסגר את מסך ההיכרות עם ניהול מוזמנים — פעם אחת
+    # לכל חשבון. נגזר מ-``User.guests_popup_seen_at`` (ראו routers/auth.py).
+    guests_popup_seen: bool = False
 
 
 class ConsentAccept(BaseModel):

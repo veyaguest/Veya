@@ -82,6 +82,10 @@ class User(Base):
     # גרסת הטוקן: כל טוקן JWT נושא את הגרסה שהייתה בזמן ההנפקה. העלאת המספר
     # (יציאה מכל המכשירים / שינוי סיסמה / איפוס) פוסלת מיד את כל הטוקנים הישנים.
     token_version: Mapped[int] = mapped_column(Integer, default=1)
+    # מתי המשתמש ראה וסגר את מסך ההיכרות עם ניהול מוזמנים. None = טרם ראה.
+    # ברמת חשבון (לא ברמת אירוע) בכוונה: זו הכרות עם מסך במערכת, לא עם
+    # אירוע ספציפי — זוג עם כמה אירועים לא צריך לראות אותה שוב לאירוע השני.
+    guests_popup_seen_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     events: Mapped[list["Event"]] = relationship(back_populates="owner")
@@ -182,6 +186,11 @@ class Event(Base):
     #: ⚠️ **אינו משנה ``rsvp_status`` של אף מוזמן.** אישורי ההגעה הם ציר
     #: מידע נפרד, ומספר כולל אינו יודע מי מבין המאשרים לא הגיע.
     actual_attendance: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    # מתי נסגר לראשונה מדריך ההדרכה של מפת האולם. None = טרם נסגר. ברמת
+    # אירוע (לא משתמש) בכוונה: כל אירוע חדש — גם של אותו בעלים — אמור
+    # להראות את המדריך פעם אחת משלו (ראה routers/hall.py::get_hall).
+    seating_guide_seen_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     cycle_number: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

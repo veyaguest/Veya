@@ -9,6 +9,7 @@ import {
   getHall,
   getReserveSummary,
   listClarifications,
+  markHallGuideSeen,
   mediaUrl,
   recommendSeat,
   resolveClarification,
@@ -35,7 +36,6 @@ import { activeEventTerms } from '../strings/eventTypes'
 import { HALL_DESKTOP_QUERY, useMediaQuery } from '../lib/useMediaQuery'
 import { useFocusTrap } from '../lib/useFocusTrap'
 import { strings } from '../strings/he'
-import { getEventId } from '../authStore'
 import { getGroupNotes } from '../api'
 import {
   occupancyAfterSeating,
@@ -1872,6 +1872,16 @@ export function HallPage({
     try {
       const h = await getHall()
       applyState(h)
+      // מדריך ההדרכה: פותחים אוטומטית בביקור הראשון באירוע הזה — מקור
+      // האמת הוא השרת (Event.seating_guide_seen_at), לא localStorage,
+      // כדי שהמדריך לא ייפתח שוב ממכשיר/דפדפן אחר. מסמנים "נראה" מיד עם
+      // הפתיחה (לא רק בסגירה), באותו רגע שבו הוא נפתח.
+      if (!h.guide_seen) {
+        setGuideOpen(true)
+        markHallGuideSeen().catch(() => {
+          /* שקט — במקרה הגרוע ביותר המדריך ייפתח שוב בכניסה הבאה */
+        })
+      }
       // אולם ריק לגמרי (בלי שולחנות ובלי אלמנטים) => פותחים את אשף הבנייה
       // אוטומטית, כדי שהזוג יתחיל מסקיצה מסודרת ולא ממסך ריק.
       if (h.tables.length === 0 && (h.elements?.length ?? 0) === 0) {
@@ -2040,33 +2050,14 @@ export function HallPage({
     }
   }, [recomputeFit])
 
-  // פתיחה אוטומטית של מדריך ההדרכה בביקור הראשון במסך האולם — פעם אחת לכל
-  // אירוע (ולא פעם אחת לדפדפן), כדי שכל זוג/אירוע חדש יראה אותו גם באותו מכשיר.
-  useEffect(() => {
-    try {
-      const eid = getEventId()
-      const key = eid != null ? `veya_hall_guide_v1_${eid}` : 'veya_hall_guide_v1'
-      if (!localStorage.getItem(key)) {
-        setGuideOpen(true)
-        localStorage.setItem(key, '1')
-      }
-    } catch {
-      /* localStorage לא זמין (מצב פרטי וכו') — פשוט לא פותחים אוטומטית */
-    }
-  }, [])
+  // פתיחה אוטומטית של מדריך ההדרכה — נקבעת ב-load() לפי guide_seen שמגיע
+  // מהשרת (ראו למעלה), פעם אחת לכל אירוע ולא פעם אחת לדפדפן.
 
   // ברגע שהמשתמש גורר שולחן בפעם הראשונה — הוא כבר "בפנים". סוגרים את המדריך
-  // אם פתוח, ומסמנים שראה אותו, כדי שלא ייפתח שוב אוטומטית. הכפתור "?" למעלה
-  // תמיד זמין לפתיחה חוזרת ידנית.
+  // אם פתוח (הסימון בשרת שהוא "נראה" כבר קרה ב-load(), ברגע שהמדריך נפתח).
+  // הכפתור "?" למעלה תמיד זמין לפתיחה חוזרת ידנית.
   function markUserMovedTable() {
     setGuideOpen(false)
-    try {
-      const eid = getEventId()
-      const key = eid != null ? `veya_hall_guide_v1_${eid}` : 'veya_hall_guide_v1'
-      localStorage.setItem(key, '1')
-    } catch {
-      /* localStorage לא זמין — לא נורא, פשוט לא נזכור בין רענונים */
-    }
   }
 
   // אין יותר זום בדסקטופ — הלוח נגלל באופן טבעי (גלגלת/מגע רגילים דרך

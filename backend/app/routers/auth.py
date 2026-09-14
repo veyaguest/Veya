@@ -24,6 +24,7 @@ def _user_read(db: Session, user: models.User) -> schemas.UserRead:
     data.needs_reconsent = legal.needs_reconsent(db, user.id)
     data.email_verified = auth.is_email_verified(user)
     data.profile_complete = auth.profile_complete(user)
+    data.guests_popup_seen = user.guests_popup_seen_at is not None
     return data
 
 
@@ -256,6 +257,20 @@ def accept_consent(
         detail=f"אישור מחדש: {', '.join(payload.types)}", ip=ip,
     )
     db.commit()
+
+
+@router.post("/guests-popup-seen", status_code=204)
+def mark_guests_popup_seen(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(auth.get_current_user),
+):
+    """מסמן שהמשתמש ראה את מסך ההיכרות עם ניהול מוזמנים — פעם אחת לכל
+    חשבון, לא נפתח שוב ממכשיר/דפדפן אחר (ראו GuestsPage.tsx). אידמפוטנטי:
+    קריאה חוזרת לא דורסת את הזמן המקורי.
+    """
+    if user.guests_popup_seen_at is None:
+        user.guests_popup_seen_at = datetime.utcnow()
+        db.commit()
 
 
 # ---------------------------------------------------------------------------
