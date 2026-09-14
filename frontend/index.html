@@ -1437,7 +1437,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                  /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2211,6 +2211,8 @@
     
     
     
+    
+    
     </style>
   </head>
   <body>
@@ -2694,7 +2696,7 @@
                 src="/product/dashboard-browser.jpg"
                 alt="תמונת המצב של VEYA בדפדפן: שמות בני הזוג, ספירה לאחור לאירוע, ומחוון אישורי ההגעה עם כמה אישרו, כמה עדיין ממתינים, כמה לא החליטו וכמה לא מגיעים"
                 width="1280" height="1120" loading="lazy" decoding="async"
-                onerror="this.closest('.sh-browser').hidden = true"
+                onerror="veyaRetryImage(this)"
               />
             </div>
 
@@ -2705,7 +2707,7 @@
                 src="/product/dashboard-phone.jpg"
                 alt=""
                 width="390" height="844" loading="lazy" decoding="async"
-                onerror="this.closest('.sh-phone').hidden = true"
+                onerror="veyaRetryImage(this)"
               />
             </div>
           </div>
@@ -2730,7 +2732,7 @@
                 src="/product/dashboard-phone2.jpg"
                 alt=""
                 width="390" height="844" loading="lazy" decoding="async"
-                onerror="this.closest('.sh-phone').hidden = true"
+                onerror="veyaRetryImage(this)"
               />
             </div>
           </div>
@@ -3594,6 +3596,24 @@
           });
         });
       })();
+
+      /* ---- תמונה שלא נטענה: מנסים שוב, ולא מוחקים את המסגרת ----
+         בקשת תמונה יכולה להיקטע גם כשהקובץ תקין לגמרי: גלילה מהירה
+         שמבטלת טעינה עצלה, רשת סלולרית שנופלת לרגע, או ניתוק קצר של
+         ה-CDN. בפיתוח זה לא קורה — הקבצים מגיעים מ-localhost — ולכן
+         התנהגות כזו נראית "עובד אצלי, שבור בייצור".
+
+         הטיפול הקודם הסתיר את חלון הדפדפן או את הטלפון כולו בכישלון
+         ראשון, בלי דרך חזרה. עכשיו מנסים שוב פעם אחת, ואם גם זה נכשל
+         המסגרת פשוט נשארת במקומה. */
+      window.veyaRetryImage = function (img) {
+        if (img.dataset.veyaRetried) return;
+        img.dataset.veyaRetried = '1';
+        var src = img.getAttribute('src');
+        setTimeout(function () {
+          img.src = src + (src.indexOf('?') === -1 ? '?' : '&') + 'retry=1';
+        }, 700);
+      };
 
       /* ---- "הוסיפו למסך הבית" ----
          ההסבר עצמו הוא זה של המוצר (InstallPrompt): אותם שלושה צעדים.
