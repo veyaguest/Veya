@@ -7,6 +7,9 @@ import App from './App.tsx'
 import { ConfirmPage } from './components/ConfirmPage.tsx'
 import { CookieBanner } from './components/CookieBanner.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
+const DemoDashboard = lazy(() =>
+  import('./demo/DemoDashboard.tsx').then((m) => ({ default: m.DemoDashboard })),
+)
 const DemoGiftCounting = lazy(() =>
   import('./demo/DemoGiftCounting.tsx').then((m) => ({ default: m.DemoGiftCounting })),
 )
@@ -39,11 +42,19 @@ const confirmMatch = window.location.pathname.match(/^\/confirm\/([^/]+)/)
 // הדגמת ספירת המעטפות לדף הנחיתה (/demo/gifts). נטענת ב-``lazy`` כדי
 // שהיא לא תיכנס ל-bundle של האפליקציה עצמה, ורצה על שרת דמו בזיכרון.
 const demoMatch = /^\/demo\/gifts\/?$/.test(window.location.pathname)
+const demoDashboardMatch = /^\/demo\/dashboard\/?$/.test(window.location.pathname)
 
 // עוטפים ב-GoogleOAuthProvider רק כשה-Client ID קיים — אחרת הכפתור ממילא לא
 // מוצג (isGoogleAuthConfigured מחזיר false), ובלי clientId ה-provider זורק.
 // דף אישור ההגעה הציבורי לא צריך את זה (המוזמן לא מתחבר בגוגל).
 function AppTree() {
+  if (demoDashboardMatch) {
+    return (
+      <Suspense fallback={null}>
+        <DemoDashboard />
+      </Suspense>
+    )
+  }
   if (demoMatch) {
     return (
       <Suspense fallback={null}>

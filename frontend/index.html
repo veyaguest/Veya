@@ -829,6 +829,87 @@
         .hint { transition: none; }
       }
 
+      /* ---- תמונת מצב: חלון דפדפן וטלפון עם המסך האמיתי ----
+         מסגרות ולא "מוקאפ": סרגל דפדפן דק עם הכתובת, וטלפון עם מסגרת
+         דקה. כל מה שבפנים הוא צילום של VEYA עצמה. */
+      .sh-stage { display: grid; gap: 18px; justify-items: center; margin-bottom: 26px; }
+      .sh-browser {
+        width: 100%; max-width: 960px; overflow: hidden; background: var(--cream);
+        border: 1px solid var(--line); border-radius: var(--radius-xl);
+        box-shadow: 0 40px 80px -46px rgba(23, 19, 13, 0.6);
+      }
+      .sh-bar {
+        display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+        background: var(--ivory-2); border-bottom: 1px solid var(--line);
+      }
+      .sh-dots { display: inline-flex; gap: 6px; }
+      .sh-dots i { width: 10px; height: 10px; border-radius: 50%; background: rgba(23, 19, 13, 0.16); }
+      .sh-url {
+        flex: 1; text-align: center; font-size: var(--fs-xs); color: var(--muted);
+        background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-pill);
+        padding: 5px 14px; direction: ltr; max-width: 320px; margin: 0 auto;
+      }
+      .sh-screen { display: block; width: 100%; height: auto; }
+      .sh-phone {
+        width: 218px; padding: 9px; background: #17130d; border-radius: 34px;
+        box-shadow: 0 30px 60px -34px rgba(23, 19, 13, 0.7); position: relative;
+      }
+      .sh-phone-notch {
+        position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+        width: 64px; height: 15px; border-radius: 0 0 10px 10px; background: #17130d; z-index: 2;
+      }
+      .sh-phone-screen { display: block; width: 100%; height: auto; border-radius: 26px; }
+      .sh-punch {
+        margin: 0 auto 44px; text-align: center; font-family: var(--font-display);
+        font-size: var(--fd-md); color: var(--charcoal);
+      }
+      /* ---- אותו VEYA, בטלפון ---- */
+      .sh-mobile {
+        display: grid; gap: 24px; justify-items: center; align-items: center;
+        padding-top: 30px; border-top: 1px solid var(--line);
+      }
+      .sh-mobile-text { max-width: 44ch; text-align: center; }
+      .sh-mobile-title { margin: 0 0 10px; font-size: var(--fd-md); color: var(--charcoal); }
+      .sh-mobile-body { margin: 0 0 18px; font-size: var(--fs-lg); line-height: 1.75; color: var(--body); }
+      .sh-install { min-height: 48px; }
+      .sh-phone-solo { width: 244px; }
+      @media (min-width: 861px) {
+        .sh-stage { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 26px; justify-items: stretch; }
+        .sh-phone { justify-self: center; }
+        .sh-mobile { grid-template-columns: minmax(0, 1fr) auto; gap: 44px; justify-items: start; text-align: start; }
+        .sh-mobile-text { text-align: start; }
+      }
+      /* ---- ההסבר על הוספה למסך הבית ---- */
+      .sh-modal { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 20px; }
+      /* ``display: grid`` גובר על ברירת המחדל של [hidden] — בלי השורה הזו
+         ההסבר היה נפתח לבד בטעינת העמוד. */
+      .sh-modal[hidden] { display: none; }
+      .sh-modal-back { position: absolute; inset: 0; background: rgba(23, 19, 13, 0.52); }
+      .sh-modal-card {
+        position: relative; width: min(420px, 100%); padding: 26px 24px 22px; text-align: center;
+        background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg);
+      }
+      .sh-modal-x {
+        position: absolute; inset-inline-end: 10px; top: 8px; width: 40px; height: 40px;
+        border: 0; background: transparent; color: var(--muted); font-size: var(--fs-md); cursor: pointer;
+      }
+      .sh-modal-title { margin: 0 0 8px; font-size: var(--fd-sm); color: var(--charcoal); }
+      .sh-modal-body { margin: 0 0 18px; font-size: var(--fs-md); color: var(--muted); line-height: 1.7; }
+      .sh-steps { margin: 0 0 20px; padding: 0; list-style: none; display: grid; gap: 10px; counter-reset: sh; text-align: start; }
+      .sh-steps li {
+        counter-increment: sh; position: relative; padding: 12px 46px 12px 14px;
+        background: var(--ivory); border: 1px solid var(--line); border-radius: var(--radius-md);
+        font-size: var(--fs-sm); color: var(--body); line-height: 1.6;
+      }
+      .sh-steps li::before {
+        content: counter(sh); position: absolute; inset-inline-start: 12px; top: 11px;
+        width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%;
+        background: rgba(201, 162, 39, 0.16); color: var(--gold-deep); font-size: var(--fs-xs); font-weight: 700;
+      }
+      .sh-share { vertical-align: -3px; color: var(--gold-deep); }
+      .sh-modal-ok { width: 100%; min-height: 46px; }
+
       /* ---- מועד סגירת הרשימה: בוחרים תאריך, הציר נבנה לאחור ---- */
       .dl { max-width: 940px; margin: 0 auto; }
       .dl-pick { display: grid; gap: 8px; justify-items: center; margin-bottom: 26px; }
@@ -1356,7 +1437,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2129,6 +2210,7 @@
     
     
     
+    
     </style>
   </head>
   <body>
@@ -2590,83 +2672,84 @@
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">תמונת מצב</span>
-            <h2 id="showcase-title" class="section-title">עכשיו אתם יודעים כמה אנשים באמת מגיעים.</h2>
+            <h2 id="showcase-title" class="section-title">נכנסים ל־VEYA — ויודעים איפה אתם עומדים.</h2>
             <p class="section-sub">
-              לא כל מוזמן ברשימה הוא כיסא. VEYA מפרידה בין רשימת המוזמנים לבין המספר
-              שעליו אפשר לבנות את ההחלטות הבאות.
+              כמה מוזמנים, כמה אישרו, מי עדיין לא ענה וכמה נשאר עד שסוגרים את
+              הרשימה. הכול במקום אחד, בצורה שקל להבין במבט אחד.
             </p>
           </div>
 
-          <div class="sc-layout reveal d1">
-            <div class="sc-tabs" role="tablist" aria-label="מסכי VEYA">
-              <button type="button" class="sc-tab" role="tab" id="sc-tab-dashboard" aria-controls="sc-panel-dashboard" aria-selected="true" data-target="dashboard">
-                <span class="sc-tab-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 19v-6M13 19V9M18 19v-9"/></svg></span>
-                <span>תמונת מצב<span class="sc-tab-sub">כמה אישרו, כמה ממתינים</span></span>
-              </button>
-              <button type="button" class="sc-tab" role="tab" id="sc-tab-guests" aria-controls="sc-panel-guests" aria-selected="false" tabindex="-1" data-target="guests">
-                <span class="sc-tab-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6.5a3 3 0 0 1 0 5.8"/><path d="M20.5 20a5.5 5.5 0 0 0-4-5.3"/></svg></span>
-                <span>מוזמנים<span class="sc-tab-sub">מקור אמת אחד</span></span>
-              </button>
-              <button type="button" class="sc-tab" role="tab" id="sc-tab-rsvp" aria-controls="sc-panel-rsvp" aria-selected="false" tabindex="-1" data-target="rsvp">
-                <span class="sc-tab-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 3z"/><path d="m9 10 2 2 4-4"/></svg></span>
-                <span>הודעות<span class="sc-tab-sub">נוסח לכל שלב</span></span>
-              </button>
-              <button type="button" class="sc-tab" role="tab" id="sc-tab-seating" aria-controls="sc-panel-seating" aria-selected="false" tabindex="-1" data-target="seating">
-                <span class="sc-tab-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="8" r="2.4"/><circle cx="17" cy="8" r="2.4"/><circle cx="12" cy="17" r="2.4"/><path d="M4 20h16"/></svg></span>
-                <span>הושבה<span class="sc-tab-sub">מהרשימה לשולחנות</span></span>
-              </button>
+          <!-- ═════ תמונת המצב, כמו שהיא נפתחת בדפדפן ════════════════════
+               הצילום הוא ``DashboardPage`` האמיתי (/demo/dashboard), על
+               אירוע שנמצא באמצע הדרך: 438 מתוך 620 אישרו, 102 עדיין לא
+               ענו, ו-37 יום לאירוע. לא מסך ריק ולא נתוני placeholder. -->
+          <div class="sh-stage reveal d1">
+            <div class="sh-browser">
+              <span class="sh-bar" aria-hidden="true">
+                <span class="sh-dots"><i></i><i></i><i></i></span>
+                <span class="sh-url">veyaguest.co.il/app</span>
+              </span>
+              <img
+                class="sh-screen"
+                src="/product/dashboard-browser.jpg"
+                alt="תמונת המצב של VEYA בדפדפן: שמות בני הזוג, ספירה לאחור לאירוע, ומחוון אישורי ההגעה עם כמה אישרו, כמה עדיין ממתינים, כמה לא החליטו וכמה לא מגיעים"
+                width="1280" height="1120" loading="lazy" decoding="async"
+                onerror="this.closest('.sh-browser').hidden = true"
+              />
             </div>
 
-            <div class="sc-stage">
-              <div class="sc-panel" data-active="true" id="sc-panel-dashboard" role="tabpanel" aria-labelledby="sc-tab-dashboard" tabindex="0">
-                <div class="sc-shot">
-                  <img src="/product/dashboard.png" alt="לוח הבקרה של VEYA: מספר המוזמנים, כמה אישרו הגעה, כמה ממתינים לתשובה וגרף התקדמות" width="1400" height="875" loading="lazy" decoding="async" onerror="this.style.display='none'" />
-                </div>
-                <h3>המספר שאפשר לעבוד לפיו.</h3>
-                <ul class="sc-qs">
-                  <li>כמה מוזמנים ברשימה?</li>
-                  <li>כמה אנשים אישרו הגעה?</li>
-                  <li>מי עוד לא ענה?</li>
-                  <li>וכמה זמן נשאר עד שצריך למסור מספר?</li>
-                </ul>
-                <p>סטטוס "מתלבט" לא הופך לבד ל"מגיע" — הוא נספר בנפרד, כדי שהמספר שאתם מוסרים לא ינפח את עצמו.</p>
-              </div>
-
-              <div class="sc-panel" id="sc-panel-guests" role="tabpanel" aria-labelledby="sc-tab-guests" tabindex="0">
-                <div class="sc-shot">
-                  <img src="/product/guests.png" alt="טבלת ניהול המוזמנים ב-VEYA, עם חלוקה לצדדים ולקבוצות וסטטוס אישור הגעה" width="1400" height="875" loading="lazy" decoding="async" onerror="this.style.display='none'" />
-                </div>
-                <h3>הרשימה היא לא רק שמות.</h3>
-                <p>כמה אנשים בכל שורה, לאיזה צד ולאיזו קבוצה הם שייכים, ומה חשוב לזכור עליהם.</p>
-                <div class="note-chips">
-                  <span class="note-chip">המשפחה של הכלה</span>
-                  <span class="note-chip">כל המשפחה מגיעה</span>
-                  <span class="note-chip">עם ילדים</span>
-                  <span class="note-chip">לא ליד עומר</span>
-                </div>
-                <p>מה שסידרתם כאן ממשיך הלאה — להושבה, ולחישוב העלות.</p>
-                <div class="sc-panel-cta">
-                  <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
-                </div>
-              </div>
-
-              <div class="sc-panel" id="sc-panel-rsvp" role="tabpanel" aria-labelledby="sc-tab-rsvp" tabindex="0">
-                <div class="sc-shot">
-                  <img src="/product/messages.png" alt="מסך ההודעות של VEYA, עם נוסח לכל שלב בתהליך ותצוגה מקדימה לפני שליחה" width="1400" height="875" loading="lazy" decoding="async" onerror="this.style.display='none'" />
-                </div>
-                <h3>נוסח מוכן לכל שלב.</h3>
-                <p>הזמנה, בקשת אישור הגעה, תזכורות, הודעת יום האירוע והודעת תודה.</p>
-                <p>בוחרים נוסח, עורכים אותו אם בא לכם, ורואים תצוגה מקדימה לפני שמשהו יוצא.</p>
-              </div>
-
-              <div class="sc-panel" id="sc-panel-seating" role="tabpanel" aria-labelledby="sc-tab-seating" tabindex="0">
-                <div class="sc-shot">
-                  <img src="/product/seating.png" alt="עורך מפת האולם של VEYA, עם שולחנות מסודרים ומוזמנים משובצים" width="1400" height="875" loading="lazy" decoding="async" onerror="this.style.display='none'" />
-                </div>
-                <h3>וכשהמספר ידוע — יודעים כמה שולחנות צריך.</h3>
-                <p>מי שאישר הגעה הוא מי שתופס מקום. אותו מספר, גם במפת האולם.</p>
-              </div>
+            <div class="sh-phone" aria-hidden="true">
+              <span class="sh-phone-notch"></span>
+              <img
+                class="sh-phone-screen"
+                src="/product/dashboard-phone.jpg"
+                alt=""
+                width="390" height="844" loading="lazy" decoding="async"
+                onerror="this.closest('.sh-phone').hidden = true"
+              />
             </div>
+          </div>
+
+          <p class="sh-punch reveal d2">פחות לחפש. יותר לדעת.</p>
+
+          <!-- ═════ אותו VEYA, בטלפון ═══════════════════════════════════ -->
+          <div class="sh-mobile reveal d2">
+            <div class="sh-mobile-text">
+              <h3 class="sh-mobile-title">VEYA איתכם גם בטלפון.</h3>
+              <p class="sh-mobile-body">
+                פותחים מהטלפון, בודקים מה קורה וממשיכים הלאה.<br />
+                בלי להוריד אפליקציה מחנות.
+              </p>
+              <button type="button" class="btn btn-ghost sh-install" data-install-open>הוסיפו למסך הבית</button>
+            </div>
+
+            <div class="sh-phone sh-phone-solo" aria-hidden="true">
+              <span class="sh-phone-notch"></span>
+              <img
+                class="sh-phone-screen"
+                src="/product/dashboard-phone2.jpg"
+                alt=""
+                width="390" height="844" loading="lazy" decoding="async"
+                onerror="this.closest('.sh-phone').hidden = true"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- ההסבר הוא זה שכבר קיים במוצר (``strings.install`` ו-InstallPrompt):
+             אותה כותרת, אותו משפט ואותם שלושה צעדים. אין כאן מנגנון שני. -->
+        <div class="sh-modal" data-install-modal hidden>
+          <div class="sh-modal-back" data-install-close></div>
+          <div class="sh-modal-card" role="dialog" aria-modal="true" aria-labelledby="sh-install-title">
+            <button type="button" class="sh-modal-x" data-install-close aria-label="סגירת ההסבר">✕</button>
+            <h3 id="sh-install-title" class="sh-modal-title">הוסיפו את VEYA למסך הבית</h3>
+            <p class="sh-modal-body">גישה מיידית לאירוע שלכם מהאייפון — נפתחת כמו אפליקציה, בלי לחפש בדפדפן.</p>
+            <ol class="sh-steps">
+              <li>הקישו על כפתור השיתוף <svg class="sh-share" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4"/><path d="m8.5 7.5 3.5-3.5 3.5 3.5"/><rect x="5" y="11" width="14" height="9" rx="2"/></svg> בסרגל התחתון של Safari</li>
+              <li>גללו ובחרו <strong>הוספה למסך הבית</strong></li>
+              <li>אשרו — והאייקון של VEYA יחכה לכם שם</li>
+            </ol>
+            <button type="button" class="btn btn-primary sh-modal-ok" data-install-close>הבנתי</button>
           </div>
         </div>
       </section>
@@ -3509,6 +3592,33 @@
             var next = tabs[(i + dir + tabs.length) % tabs.length];
             activate(next, true);
           });
+        });
+      })();
+
+      /* ---- "הוסיפו למסך הבית" ----
+         ההסבר עצמו הוא זה של המוצר (InstallPrompt): אותם שלושה צעדים.
+         כאן רק פותחים וסוגרים אותו. */
+      (function () {
+        var modal = document.querySelector('[data-install-modal]');
+        var opener = document.querySelector('[data-install-open]');
+        if (!modal || !opener) return;
+        var lastFocus = null;
+        function open() {
+          lastFocus = document.activeElement;
+          modal.hidden = false;
+          var ok = modal.querySelector('.sh-modal-ok');
+          if (ok) ok.focus({ preventScroll: true });
+          document.addEventListener('keydown', onKey);
+        }
+        function close() {
+          modal.hidden = true;
+          document.removeEventListener('keydown', onKey);
+          if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+        }
+        function onKey(e) { if (e.key === 'Escape') close(); }
+        opener.addEventListener('click', open);
+        modal.querySelectorAll('[data-install-close]').forEach(function (el) {
+          el.addEventListener('click', close);
         });
       })();
 

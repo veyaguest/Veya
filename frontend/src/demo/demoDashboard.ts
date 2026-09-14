@@ -1,0 +1,113 @@
+/**
+ * שרת דמו למסך "תמונת מצב" — עבור הצילום שבדף הנחיתה.
+ *
+ * אותו רעיון כמו ``demoServer``: המסך שמצולם הוא ``DashboardPage``
+ * האמיתי של המוצר, בלי שינוי. מה שמוחלף כאן הוא רק התשובות של השרת,
+ * כדי שהצילום יראה אירוע שנמצא באמצע הדרך ולא מסך ריק.
+ *
+ * המספרים עקביים זה עם זה: ``438 + 102 + 40 + 40 = 620`` אנשים, והם
+ * גם מתחלקים לרשומות מוזמנים בגודל משפחתי סביר.
+ */
+
+/** ההזמנה של אירוע הדמו (אותה הזמנה שבסקשן אזור האורחים). */
+const INVITE_IMAGE = 'data:image/jpeg;base64,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'
+
+/** אנשים (זה מה שהמחוון במסך מציג). */
+const PEOPLE = { confirmed: 438, pending: 102, declined: 40, maybe: 40 }
+const TOTAL_PEOPLE = PEOPLE.confirmed + PEOPLE.pending + PEOPLE.declined + PEOPLE.maybe
+
+/** רשומות מוזמנים — "משפחת כהן" היא רשומה אחת עם כמה אנשים. */
+const GUESTS = { confirmed: 231, pending: 54, declined: 21, maybe: 20 }
+const TOTAL_GUESTS = GUESTS.confirmed + GUESTS.pending + GUESTS.declined + GUESTS.maybe
+
+/** תאריך קרוב, כדי שהספירה לאחור במסך תהיה אמיתית. */
+function eventDate(): string {
+  const d = new Date()
+  d.setDate(d.getDate() + 38)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const stats = {
+  total_guests: TOTAL_GUESTS,
+  total_people: TOTAL_PEOPLE,
+  confirmed_people: PEOPLE.confirmed,
+  confirmed: GUESTS.confirmed,
+  declined: GUESTS.declined,
+  maybe: GUESTS.maybe,
+  pending: GUESTS.pending,
+  declined_people: PEOPLE.declined,
+  maybe_people: PEOPLE.maybe,
+  pending_people: PEOPLE.pending,
+  response_rate: Math.round(((TOTAL_PEOPLE - PEOPLE.pending) / TOTAL_PEOPLE) * 100),
+  invitations_sent: TOTAL_GUESTS,
+  by_side: { groom: 174, bride: 152, shared: 0 },
+  by_group: { family: 128, friends: 121, work: 53, army: 0, school: 0, other: 24 },
+  tables_assigned: 28,
+  seated_guests: 402,
+  pending_clarifications: 3,
+  guests_with_notes: 46,
+  group_notes_count: 7,
+  has_hall_sketch: true,
+  groom_name: 'דניאל',
+  bride_name: 'שרון',
+  venue_name: 'אולם הדר',
+}
+
+const event = {
+  id: 1,
+  event_type: 'wedding',
+  groom_name: 'דניאל',
+  bride_name: 'שרון',
+  groom_parents_line: 'משפחת אבני',
+  bride_parents_line: 'משפחת רוזן',
+  venue_name: 'אולם הדר',
+  venue_address: 'החרושת 12, ראשון לציון',
+  event_date: eventDate(),
+  event_time: '19:30',
+  // ההזמנה של אירוע הדמו, מוטבעת כ-data URI: הכרטיס במסך מציג תמונה
+  // אמיתית ולא מצב ריק.
+  invite_image: INVITE_IMAGE,
+  venue_commit_days_before: 5,
+  venue_commit_locked: false,
+  rsvp_send_time: '12:00',
+  thank_you_send_time: '12:00',
+  cycle_number: 1,
+  event_stage: 'normal',   // אירוע פעיל רגיל — לא בנוהל דחייה
+  edit_locked: false,
+  locked_fields: [],
+}
+
+/** יומן הפעילות — אותן שורות שהמסך מציג אחרי יום עבודה רגיל. */
+function audit() {
+  const ago = (minutes: number) => new Date(Date.now() - minutes * 60000).toISOString()
+  return [
+    { id: 5, action: 'rsvp_confirmed', detail: 'משפחת כהן אישרה הגעה · 4 אנשים', created_at: ago(26), actor_id: null },
+    { id: 4, action: 'rsvp_declined', detail: 'יוסי לוי לא מגיע', created_at: ago(95), actor_id: null },
+    { id: 3, action: 'guest_added', detail: 'נוספו 12 מוזמנים מצד הכלה', created_at: ago(240), actor_id: 1 },
+    { id: 2, action: 'message_sent', detail: 'נשלחה תזכורת ל-108 מוזמנים שלא ענו', created_at: ago(1450), actor_id: 1 },
+    { id: 1, action: 'seating_saved', detail: 'סידור ההושבה נשמר · 28 שולחנות', created_at: ago(2880), actor_id: 1 },
+  ]
+}
+
+function json(data: unknown): Response {
+  return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } })
+}
+
+let installed = false
+
+export function installDashboardDemo(): void {
+  if (installed) return
+  installed = true
+  const real = window.fetch.bind(window)
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+    const path = url.replace(/^https?:\/\/[^/]+/, '').split('?')[0]
+    if (path === '/stats') return json(stats)
+    if (path === '/event') return json(event)
+    if (path === '/event/audit') return json(audit())
+    if (path === '/postpone') return json(null)
+    if (path === '/payout') return new Response('null', { status: 404 })
+    if (path === '/partner/overview') return new Response('null', { status: 404 })
+    return real(input as RequestInfo, init)
+  }
+}
