@@ -851,6 +851,25 @@
       }
       @media (prefers-reduced-motion: reduce) { .dl-stop.is-fresh .dl-date { animation: none; } }
 
+      /* ---- מעקב אחרי מי שלא ענה: סבב אחרי סבב ---- */
+      .fu { max-width: 680px; margin: 0 auto 30px; padding: 18px; background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+      .fu-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+      .fu-rounds { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+      .fu-round { padding: 6px 12px; border-radius: var(--radius-pill); background: var(--ivory-2); border: 1px solid var(--line); font-size: var(--fs-xs); color: var(--muted); transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out); }
+      .fu-round.is-on { background: var(--gold); border-color: var(--gold); color: var(--charcoal); font-weight: 600; }
+      .fu-round.is-done { background: rgba(31, 122, 69, 0.08); border-color: rgba(31, 122, 69, 0.25); color: var(--success); }
+      .fu-go { min-height: 44px; }
+      .fu-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+      .fu-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md); transition: opacity var(--motion-normal) var(--ease-out), background var(--motion-normal) var(--ease-out); }
+      .fu-row.is-done { opacity: 0.62; }
+      .fu-name { color: var(--charcoal); font-weight: 600; }
+      .fu-state { padding: 5px 11px; border-radius: var(--radius-pill); font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; }
+      .fu-wait { background: var(--ivory-2); color: var(--muted); border: 1px solid var(--line); }
+      .fu-maybe { background: rgba(201, 162, 39, 0.14); color: var(--gold-deep); }
+      .fu-ok { background: rgba(31, 122, 69, 0.1); color: var(--success); }
+      .fu-say { margin: 14px 0 0; text-align: center; font-size: var(--fs-sm); color: var(--muted); min-height: 1.6em; }
+      @media (max-width: 560px) { .fu-head { flex-direction: column; align-items: stretch; } .fu-go { width: 100%; } }
+
       .calls-punch {
         margin: 26px auto 0; max-width: 52ch; text-align: center;
         font-family: var(--font-display); font-size: var(--fd-md);
@@ -2330,6 +2349,45 @@
               התקשרתם ומי ביקש שתחזרו אליו — הכול מסודר לכם לפי כל אורח.
             </p>
           </div>
+<!-- ═════ מעקב, סבב אחרי סבב ═══════════════════════════════════
+               לחיצה אחת מריצה את שלושת הסבבים: הודעה, תזכורת, טלפון. מי
+               שענה יורד מהמעקב — בדיוק ההתנהגות של המוצר, בקטן. -->
+          <div class="fu reveal d1" data-followup>
+            <div class="fu-head">
+              <span class="fu-rounds" aria-hidden="true">
+                <span class="fu-round" data-round="1">סבב ראשון · הודעה</span>
+                <span class="fu-round" data-round="2">סבב שני · תזכורת</span>
+                <span class="fu-round" data-round="3">סבב שלישי · טלפון</span>
+              </span>
+              <button type="button" class="btn btn-primary fu-go" data-fu-go>להפעיל מעקב</button>
+            </div>
+
+            <ul class="fu-list">
+              <li class="fu-row" data-round="1">
+                <span class="fu-name">דוד לוי</span>
+                <span class="fu-state fu-wait">לא ענה</span>
+              </li>
+              <li class="fu-row" data-round="2">
+                <span class="fu-name">משפחת כהן</span>
+                <span class="fu-state fu-wait">לא ענו</span>
+              </li>
+              <li class="fu-row" data-round="">
+                <span class="fu-name">רועי וטל</span>
+                <span class="fu-state fu-maybe">אולי</span>
+              </li>
+              <li class="fu-row is-done" data-round="">
+                <span class="fu-name">מיכל</span>
+                <span class="fu-state fu-ok">אישרה</span>
+              </li>
+              <li class="fu-row" data-round="3">
+                <span class="fu-name">משפחת ישראלי</span>
+                <span class="fu-state fu-wait">לא ענו</span>
+              </li>
+            </ul>
+
+            <p class="fu-say" data-fu-say role="status" aria-live="polite">מי שכבר ענה לא מקבל עוד הודעה.</p>
+          </div>
+
           <div class="supporting-grid">
             <article class="supporting-item reveal">
               <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div>
@@ -3188,6 +3246,80 @@
         });
         input.addEventListener('change', function () { render(true); });
         input.addEventListener('input', function () { render(true); });
+      })();
+
+      /* ---- מעקב אחרי מי שלא ענה ----
+         שלושה סבבים, בלחיצה אחת: מי שענה יורד מהמעקב, ומי שלא — ממשיך
+         לסבב הבא. אין כאן "אלגוריתם", רק הסדר שבו זה קורה במוצר. */
+      (function () {
+        var box = document.querySelector('[data-followup]');
+        if (!box) return;
+        var go = box.querySelector('[data-fu-go]');
+        var say = box.querySelector('[data-fu-say]');
+        var rounds = [].slice.call(box.querySelectorAll('.fu-round'));
+        var rows = [].slice.call(box.querySelectorAll('.fu-row'));
+        var lines = {
+          1: 'לא ענו? ממשיכים.',
+          2: 'עדיין לא ענו? עכשיו כבר יודעים למי צריך להתקשר.',
+          3: 'פחות לרדוף. יותר לדעת איפה אתם עומדים.'
+        };
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var running = false;
+
+        function answer(row) {
+          var state = row.querySelector('.fu-state');
+          state.className = 'fu-state fu-ok';
+          state.textContent = row.querySelector('.fu-name').textContent.indexOf('משפחת') === 0 ? 'אישרו' : 'אישר';
+          row.classList.add('is-done');
+        }
+        function step(n) {
+          rounds.forEach(function (r) {
+            var v = parseInt(r.getAttribute('data-round'), 10);
+            r.classList.toggle('is-on', v === n);
+            r.classList.toggle('is-done', v < n);
+          });
+          rows.forEach(function (row) {
+            if (parseInt(row.getAttribute('data-round'), 10) === n) answer(row);
+          });
+          say.textContent = lines[n];
+        }
+        function run() {
+          if (running) return;
+          running = true;
+          go.disabled = true;
+          go.textContent = 'רץ…';
+          if (reduced) {
+            step(1); step(2); step(3);
+            finish();
+            return;
+          }
+          [1, 2, 3].forEach(function (n) {
+            setTimeout(function () { step(n); if (n === 3) finish(); }, n * 1250);
+          });
+        }
+        function finish() {
+          rounds.forEach(function (r) { r.classList.remove('is-on'); r.classList.add('is-done'); });
+          go.textContent = 'להריץ שוב';
+          go.disabled = false;
+          running = false;
+          go.addEventListener('click', reset, { once: true });
+        }
+        function reset() {
+          rows.forEach(function (row) {
+            var state = row.querySelector('.fu-state');
+            var name = row.querySelector('.fu-name').textContent;
+            var rnd = row.getAttribute('data-round');
+            if (!rnd) return;
+            state.className = 'fu-state fu-wait';
+            state.textContent = name.indexOf('משפחת') === 0 ? 'לא ענו' : 'לא ענה';
+            row.classList.remove('is-done');
+          });
+          rounds.forEach(function (r) { r.classList.remove('is-on', 'is-done'); });
+          say.textContent = 'מי שכבר ענה לא מקבל עוד הודעה.';
+          go.textContent = 'להפעיל מעקב';
+          run();
+        }
+        go.addEventListener('click', run);
       })();
 
       // Cookie Banner — אותו מפתח localStorage כמו ה-SPA (src/cookieConsent.ts),
