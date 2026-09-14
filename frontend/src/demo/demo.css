@@ -5,11 +5,15 @@
   background: var(--ivory, #fbf6ee);
 }
 
+/* הבמה היא המגלגל: גובה קבוע של המסגרת, וגלילה פנימית בלבד. כך שום
+   תנועה של ההדגמה לא נוגעת בגלילה של העמוד שמסביב. */
 .demo-stage {
   position: relative;
-  padding: 14px 14px 20px;
+  height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 12px 18px;
   background: var(--ivory, #fbf6ee);
-  scroll-behavior: smooth;
 }
 
 /* פריסת ההדגמה בלבד: במסך רחב מסך ההזנה משמאל והדוח מימין, כדי ששניהם

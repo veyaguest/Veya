@@ -257,6 +257,21 @@ export function seedAllEnvelopes(): void {
   })
 }
 
+/** הדוח המלא — אותו מבנה שהשרת מחזיר ל-``GET /finance/report``. */
+function fullReport() {
+  return {
+    event_title: 'החתונה של דניאל ושרון',
+    event_type_label: 'חתונה',
+    event_date: '2026-09-30',
+    venue_name: 'אולם הדר',
+    generated_at: new Date().toISOString(),
+    ...summary(),
+    guests: byGuest(),
+    unidentified: saved.filter((e) => e.guest_id === null),
+    external: saved.filter((e) => e.is_external),
+  }
+}
+
 const CATEGORIES: ExpenseCategory[] = []
 
 function json(data: unknown): Response {
@@ -286,6 +301,7 @@ export function installDemoServer(): void {
     if (path === '/finance/categories') return json(CATEGORIES)
     if (path === '/finance/gifts' && method === 'GET') return json(counting())
     if (path === '/finance/gifts/by-guest') return json(byGuest())
+    if (path === '/finance/report') return json(fullReport())
     if (path === '/guests' && method === 'GET') {
       return json({ items: GUESTS, total: GUESTS.length })
     }
