@@ -851,6 +851,32 @@
       }
       @media (prefers-reduced-motion: reduce) { .dl-stop.is-fresh .dl-date { animation: none; } }
 
+      /* ---- איפה אתם עומדים: ארבע שאלות ותשובה ---- */
+      .ck-box { max-width: 620px; margin: 0 auto; padding: 24px; display: grid; gap: 18px; background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+      .ck-q { display: grid; gap: 8px; }
+      .ck-label { font-size: var(--fs-md); color: var(--charcoal); font-weight: 600; }
+      .ck-input {
+        min-height: 50px; padding: 0 16px; font: inherit; font-size: var(--fs-lg);
+        color: var(--charcoal); background: #fff; border: 1px solid var(--line);
+        border-radius: var(--radius-md); font-variant-numeric: tabular-nums; direction: ltr; text-align: start;
+      }
+      .ck-input:focus-visible { outline: none; border-color: var(--gold); box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.18); }
+      .ck-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .ck-opt {
+        min-height: 50px; padding: 0 14px; font: inherit; font-weight: 600; color: var(--body);
+        background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md); cursor: pointer;
+        transition: border-color var(--motion-fast) var(--ease-out), background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
+      }
+      .ck-opt.is-on { background: rgba(201, 162, 39, 0.16); border-color: var(--gold); color: var(--charcoal); }
+      .ck-opt:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
+      .ck-go { min-height: 50px; }
+      .ck-out { max-width: 620px; margin: 22px auto 0; text-align: center; }
+      .ck-verdict { margin: 0 0 14px; font-family: var(--font-display); font-size: var(--fd-lg); color: var(--charcoal); line-height: 1.25; }
+      .ck-todo { list-style: none; margin: 0 auto 14px; padding: 0; display: grid; gap: 8px; max-width: 34ch; }
+      .ck-todo li { padding: 11px 16px; background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-md); color: var(--body); }
+      .ck-end { margin: 0 0 20px; font-size: var(--fs-lg); color: var(--charcoal); }
+      @media (prefers-reduced-motion: reduce) { .ck-opt { transition: none; } }
+
       /* ---- כמה זה משנה: סליידר אחד, שלושה מספרים ---- */
       .im-box { max-width: 760px; margin: 0 auto; padding: 26px 24px; background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
       .im-nums { list-style: none; margin: 0 0 26px; padding: 0; display: grid; gap: 10px; justify-items: center; }
@@ -1288,7 +1314,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                        /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                              /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2043,6 +2069,7 @@
     
     
 
+    
     
     
     
@@ -3152,6 +3179,56 @@
         </div>
       </section>
 
+      <!-- ═════ איפה אתם עומדים עכשיו ════════════════════════════════
+           ארבע שאלות קצרות, ותשובה שמשתנה לפי מה שסימנו. אין כאן שמירה
+           של נתונים ואין שליחה לשום מקום — הכול נשאר בדפדפן. -->
+      <section class="ck tone-alt" id="check" aria-labelledby="ck-title">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <h2 id="ck-title" class="section-title">איפה אתם עומדים עכשיו?</h2>
+          </div>
+
+          <form class="ck-box reveal d1" data-check>
+            <div class="ck-q">
+              <label class="ck-label" for="ck-guests">כמה מוזמנים יש לכם?</label>
+              <input class="ck-input" id="ck-guests" type="number" inputmode="numeric" min="0" max="5000" value="300" data-ck-guests />
+            </div>
+
+            <div class="ck-q">
+              <label class="ck-label" for="ck-pending">כמה עדיין לא אישרו?</label>
+              <input class="ck-input" id="ck-pending" type="number" inputmode="numeric" min="0" max="5000" value="80" data-ck-pending />
+            </div>
+
+            <div class="ck-q">
+              <span class="ck-label" id="ck-seating-label">יש כבר סידור הושבה?</span>
+              <div class="ck-pair" role="group" aria-labelledby="ck-seating-label">
+                <button type="button" class="ck-opt" data-ck-seating="yes">כן</button>
+                <button type="button" class="ck-opt is-on" data-ck-seating="no">לא</button>
+              </div>
+            </div>
+
+            <div class="ck-q">
+              <span class="ck-label" id="ck-date-label">יש לכם תאריך לסגירת הרשימה?</span>
+              <div class="ck-pair" role="group" aria-labelledby="ck-date-label">
+                <button type="button" class="ck-opt" data-ck-date="yes">כן</button>
+                <button type="button" class="ck-opt is-on" data-ck-date="no">עדיין לא</button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-ghost ck-go">בואו נראה</button>
+          </form>
+
+          <div class="ck-out reveal d2" data-ck-out hidden>
+            <p class="ck-verdict" data-ck-verdict></p>
+            <ul class="ck-todo" data-ck-todo></ul>
+            <p class="ck-end" data-ck-end></p>
+            <div class="section-cta">
+              <a href="/app?auth=register" class="btn btn-primary">יאללה, מתחילים <span class="arw" aria-hidden="true">←</span></a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ═════ 13. FAQ ═════ -->
       <section class="faq-wrap" aria-labelledby="faq-title">
         <div class="wrap">
@@ -3431,6 +3508,63 @@
         });
         input.addEventListener('change', function () { render(true); });
         input.addEventListener('input', function () { render(true); });
+      })();
+
+      /* ---- איפה אתם עומדים ----
+         ארבע שאלות, ותשובה שנבנית ממה שסימנו: מה פתוח, לפי הסדר שבו
+         באמת מטפלים בזה. שום דבר לא נשלח לשום מקום. */
+      (function () {
+        var form = document.querySelector('[data-check]');
+        if (!form) return;
+        var out = document.querySelector('[data-ck-out]');
+        var verdict = out.querySelector('[data-ck-verdict]');
+        var todo = out.querySelector('[data-ck-todo]');
+        var end = out.querySelector('[data-ck-end]');
+        var state = { seating: 'no', date: 'no' };
+
+        function wire(attr, key) {
+          var buttons = [].slice.call(form.querySelectorAll('[data-ck-' + attr + ']'));
+          buttons.forEach(function (b) {
+            b.addEventListener('click', function () {
+              state[key] = b.getAttribute('data-ck-' + attr);
+              buttons.forEach(function (x) { x.classList.toggle('is-on', x === b); });
+            });
+          });
+        }
+        wire('seating', 'seating');
+        wire('date', 'date');
+
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var guests = parseInt(form.querySelector('[data-ck-guests]').value, 10) || 0;
+          var pending = parseInt(form.querySelector('[data-ck-pending]').value, 10) || 0;
+          if (pending > guests) pending = guests;
+          var items = [];
+          if (state.date === 'no') items.push('לקבוע מתי סוגרים את הרשימה.');
+          if (pending > 0) items.push('לסגור את אישורי ההגעה.');
+          if (guests && pending / guests >= 0.2) items.push('לחזור למי שעדיין לא ענה.');
+          if (state.seating === 'no') items.push('להתחיל את ההושבה.');
+
+          if (!items.length) {
+            verdict.textContent = 'נשמע שאתם במקום טוב.';
+            end.textContent = 'אז נשאר רק לשמור על זה ככה — במקום אחד.';
+          } else if (items.length <= 2) {
+            verdict.textContent = 'נשמע שנשאר לכם עוד קצת לסגור.';
+            end.textContent = 'זה בדיוק מה ש־VEYA באה לעשות.';
+          } else {
+            verdict.textContent = 'נשמע שיש לכם עוד כמה דברים לסגור.';
+            end.textContent = 'זה בדיוק מה ש־VEYA באה לעשות.';
+          }
+          todo.innerHTML = '';
+          items.forEach(function (text) {
+            var li = document.createElement('li');
+            li.textContent = text;
+            todo.appendChild(li);
+          });
+          out.hidden = false;
+          out.classList.add('in');
+          out.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
       })();
 
       /* ---- כמה זה משנה ----
