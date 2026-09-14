@@ -805,6 +805,52 @@
         a.cl-card, .cl-go .arw { transition: none; }
         a.cl-card:hover, a.cl-card:active { transform: none; }
       }
+      /* ---- מועד סגירת הרשימה: בוחרים תאריך, הציר נבנה לאחור ---- */
+      .dl { max-width: 940px; margin: 0 auto; }
+      .dl-pick { display: grid; gap: 8px; justify-items: center; margin-bottom: 26px; }
+      .dl-pick-label { font-size: var(--fs-sm); font-weight: 600; color: var(--muted); }
+      .dl-pick-field {
+        display: inline-flex; align-items: center; gap: 10px; min-height: 52px;
+        padding: 6px 16px; background: var(--cream); border: 1px solid var(--line);
+        border-radius: var(--radius-pill); box-shadow: var(--shadow-sm);
+        transition: border-color var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out);
+      }
+      .dl-pick-field:focus-within { border-color: var(--gold); box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.18); }
+      .dl-pick-ico { display: inline-grid; place-items: center; color: var(--gold-deep); }
+      .dl-pick input {
+        min-height: 40px; min-width: 9.5rem; padding: 0 4px; border: 0; background: transparent;
+        font: inherit; font-size: var(--fs-lg); font-variant-numeric: tabular-nums;
+        color: var(--charcoal); direction: ltr; text-align: center;
+      }
+      .dl-pick input:focus { outline: none; }
+      /* אייקון אחד בלבד: שלנו. של הדפדפן מוסתר, והלחיצה על כל השדה
+         פותחת את הבוחר. */
+      .dl-pick input::-webkit-calendar-picker-indicator { opacity: 0; position: absolute; inset-inline-end: 0; width: 100%; height: 100%; cursor: pointer; }
+      .dl-pick-field { position: relative; }
+      .dl-line { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+      .dl-stop {
+        display: grid; grid-template-columns: 5.6rem 1fr; align-items: center; gap: 14px;
+        padding: 14px 18px; background: var(--cream); border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+      }
+      .dl-stop.is-close { background: rgba(201, 162, 39, 0.1); border-color: rgba(201, 162, 39, 0.4); }
+      .dl-date {
+        font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal);
+        font-variant-numeric: tabular-nums; line-height: 1;
+      }
+      .dl-stop.is-close .dl-date { color: var(--gold-deep); }
+      .dl-what { font-size: var(--fs-md); color: var(--body); }
+      .dl-stop.is-close .dl-what { font-weight: 600; color: var(--charcoal); }
+      /* עדכון תאריך: הבהוב עדין אחד, לא אנימציה. */
+      .dl-stop.is-fresh .dl-date { animation: dl-fresh 420ms var(--ease-out); }
+      @keyframes dl-fresh { from { opacity: 0.25; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+      .dl-say { margin: 22px 0 0; text-align: center; font-size: var(--fs-md); color: var(--muted); }
+      @media (min-width: 861px) {
+        .dl-line { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+        .dl-stop { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 6px; padding: 18px 12px; }
+      }
+      @media (prefers-reduced-motion: reduce) { .dl-stop.is-fresh .dl-date { animation: none; } }
+
       .calls-punch {
         margin: 26px auto 0; max-width: 52ch; text-align: center;
         font-family: var(--font-display); font-size: var(--fd-md);
@@ -2081,49 +2127,60 @@
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">מועד סגירת הרשימה</span>
-            <h2 id="deadline-title" class="section-title">מועד סגירת הרשימה הוא הרגע שבו המספר הופך לכסף.</h2>
+            <h2 id="deadline-title" class="section-title">מתי אתם סוגרים את רשימת המוזמנים?</h2>
             <p class="section-sub">
-              האולם צריך מכם מספר. כדי להגיע אליו מוכנים, כדאי לעבוד לאחור מהתאריך שבו
-              באמת צריך להחליט — ולא קדימה מהיום שבו נזכרתם.
+              לא מתישהו לפני האירוע.<br />
+              תאריך ברור.<br />
+              מכאן כבר אפשר לעבוד מסודר.
             </p>
           </div>
 
-          <ol class="flow-steps" data-scene data-scene-gap="480">
-            <li class="flow-step reveal" data-step="1">
-              <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
-              <div>
-                <h3>קובעים את התאריך שבו צריך למסור מספר</h3>
-                <p>כמה ימים לפני האירוע האולם מבקש מכם את המספר הסופי.</p>
-              </div>
-            </li>
-            <li class="flow-step reveal" data-step="2">
-              <span class="flow-dot" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 3z"/><path d="m9 10 2 2 4-4"/></svg></span>
-              <div>
-                <h3>פותחים את תהליך אישורי ההגעה</h3>
-                <p>בקשת אישור ראשונה, ואחריה תזכורות בפערים שמתוכננים מראש.</p>
-              </div>
-            </li>
-            <li class="flow-step reveal" data-step="3">
-              <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5z"/></svg></span>
-              <div>
-                <h3>מטפלים במי שלא ענה</h3>
-                <p>סבבי מעקב מסודרים, במקום לרדוף אחרי אנשים בין הודעות ורשימות.</p>
-              </div>
-            </li>
-            <li class="flow-step flow-step-last reveal is-target-on-play" data-step="4">
-              <span class="flow-dot" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 19v-6M13 19V9M18 19v-9"/></svg></span>
-              <div>
-                <h3>סוגרים את הרשימה עם מספר שאפשר להסביר</h3>
-                <p>ביום שבו צריך להחליט, המספר כבר מוכן — ואתם יודעים מאיפה הוא הגיע.</p>
-              </div>
-            </li>
-          </ol>
+          <!-- ═════ בוחרים תאריך, והציר נבנה לאחור ═══════════════════════
+               אותו היגיון של המוצר: הכול נגזר מהיום שבו סוגרים את הרשימה,
+               והתאריכים מדלגים על שישי ושבת. השדה מגיע עם תאריך התחלתי
+               כדי שגם מי שלא נגע יראה תוכנית מלאה. -->
+          <div class="dl reveal d1" data-deadline>
+            <label class="dl-pick">
+              <span class="dl-pick-label">סגירת הרשימה</span>
+              <span class="dl-pick-field">
+                <span class="dl-pick-ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span>
+                <input type="date" id="dl-date" data-dl-input />
+              </span>
+            </label>
 
-          <p class="flow-punch reveal">VEYA בונה את לוח הזמנים לאחור מהתאריך הזה, ומדלגת על שישי ושבת.</p>
+            <ol class="dl-line" data-dl-line>
+              <li class="dl-stop is-close" data-back="0">
+                <span class="dl-date"></span>
+                <span class="dl-what">סוגרים רשימה</span>
+              </li>
+              <li class="dl-stop" data-back="4">
+                <span class="dl-date"></span>
+                <span class="dl-what">סבב אחרון</span>
+              </li>
+              <li class="dl-stop" data-back="8">
+                <span class="dl-date"></span>
+                <span class="dl-what">טלפונים</span>
+              </li>
+              <li class="dl-stop" data-back="10">
+                <span class="dl-date"></span>
+                <span class="dl-what">תזכורת</span>
+              </li>
+              <li class="dl-stop" data-back="14">
+                <span class="dl-date"></span>
+                <span class="dl-what">מתחילים</span>
+              </li>
+            </ol>
 
-          <div class="section-cta reveal">
-            <a href="/calculators/rsvp-timeline/" class="btn btn-ghost">לראות את לוח הזמנים</a>
-            <span class="cta-hint">מזינים תאריך אירוע ומקבלים את התאריכים בפועל. בלי הרשמה.</span>
+            <p class="dl-say">מתחילים בזמן, מזכירים בזמן, ואם צריך — גם מתקשרים.</p>
+          </div>
+
+          <p class="flow-punch reveal d2">
+            כי המטרה היא לא לרדוף אחרי אנשים.<br />
+            המטרה היא להגיע לרגע שבו אתם יודעים כמה אנשים באמת מגיעים.
+          </p>
+
+          <div class="section-cta reveal d2">
+            <a href="/app?auth=register" class="btn btn-primary">יאללה, בואו נסדר את זה <span class="arw" aria-hidden="true">←</span></a>
           </div>
         </div>
       </section>
@@ -3074,6 +3131,63 @@
             activate(next, true);
           });
         });
+      })();
+
+      /* ---- מועד סגירת הרשימה: הציר נבנה לאחור מהתאריך שנבחר ----
+         אותו כלל כמו במוצר: סופרים אחורה מהיום שבו סוגרים את הרשימה,
+         ושלב שנופל על שישי או שבת נדחה ליום פעיל שלפניו. אין כאן קריאה
+         לשרת — זו אותה אריתמטיקה, בקטן. */
+      (function () {
+        var box = document.querySelector('[data-deadline]');
+        if (!box) return;
+        var input = box.querySelector('[data-dl-input]');
+        var stops = [].slice.call(box.querySelectorAll('.dl-stop'));
+        if (!input || !stops.length) return;
+
+        function iso(d) {
+          return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+        function toWeekday(d) {
+          // 5 = שישי, 6 = שבת. נדחה אחורה ליום פעיל, כמו בלוח של המוצר.
+          while (d.getDay() === 5 || d.getDay() === 6) d.setDate(d.getDate() - 1);
+          return d;
+        }
+        function render(fresh) {
+          var base = new Date(input.value + 'T12:00:00');
+          if (isNaN(base.getTime())) return;
+          stops.forEach(function (li) {
+            var back = parseInt(li.getAttribute('data-back'), 10) || 0;
+            // התאריך שנבחר מוצג כמו שהוא — זו ההחלטה של הזוג. רק השלבים
+            // שנגזרים ממנו מוזזים מסוף השבוע ליום פעיל.
+            var d = new Date(base.getTime() - back * 86400000);
+            if (back) toWeekday(d);
+            var el = li.querySelector('.dl-date');
+            var next = String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0');
+            if (el.textContent === next) return;
+            el.textContent = next;
+            if (!fresh) return;
+            li.classList.remove('is-fresh');
+            void li.offsetWidth;   // מאתחל את האנימציה גם כשהשינוי רצוף
+            li.classList.add('is-fresh');
+          });
+        }
+
+        var today = new Date();
+        input.min = iso(today);
+        // ברירת מחדל: כחודש קדימה — כך שגם מי שלא נגע רואה תוכנית מלאה.
+        var start = new Date(today.getTime() + 30 * 86400000);
+        input.value = iso(toWeekday(start));
+        render(false);
+        // לחיצה על כל השדה — לא רק על האייקון הזעיר — פותחת את לוח השנה.
+        box.querySelector('.dl-pick-field').addEventListener('click', function () {
+          if (typeof input.showPicker === 'function') {
+            try { input.showPicker(); } catch (e) { input.focus(); }
+          } else {
+            input.focus();
+          }
+        });
+        input.addEventListener('change', function () { render(true); });
+        input.addEventListener('input', function () { render(true); });
       })();
 
       // Cookie Banner — אותו מפתח localStorage כמו ה-SPA (src/cookieConsent.ts),
