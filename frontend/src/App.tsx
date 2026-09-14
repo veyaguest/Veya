@@ -34,6 +34,7 @@ import { EventMembersDialog } from './components/EventMembersDialog'
 import { Footer } from './components/Footer'
 import { GiftsPage } from './components/GiftsPage'
 import { InstallPrompt } from './components/InstallPrompt'
+import { GuestsPage } from './components/GuestsPage'
 import { MessagesPage } from './components/MessagesPage'
 import { OnboardingWizard } from './components/OnboardingWizard'
 import { ReconsentModal } from './components/ReconsentModal'
@@ -71,18 +72,22 @@ const bootFallback = (
   </div>
 )
 
-// ``guests`` אינו יעד ניווט יותר: ניהול המוזמנים ועבודת ההושבה חיים
-// באותו מסך אחד — "סידור הושבה". קריאות היסטוריות ל-``onNavigate('guests')``
-// (מתמונת המצב, מההודעות, מאישורי ההגעה) ממופות אליו ב-``goTo`` למטה,
-// ונוחתות ישירות על שכבת ניהול המוזמנים.
-type Page = 'dashboard' | 'messages' | 'rsvp' | 'hall' | 'gifts' | 'finance'
-/** מה ש*מבקשים* לנווט אליו — כולל היעד ההיסטורי ``guests``. */
-type NavTarget = Page | 'guests'
+// "ניהול מוזמנים" ו"סידור הושבה" הם שני אזורים עצמאיים, כל אחד עם יעד
+// ניווט משלו (החלטת בעלים 2026-09-14): את המוזמנים מנהלים במקום אחד, את
+// ההושבה מסדרים במקום אחר, והם מחוברים דרך אותם נתונים — לא דרך מסך משותף.
+type Page = 'dashboard' | 'guests' | 'messages' | 'rsvp' | 'hall' | 'gifts' | 'finance'
+
+/** אפשרויות ניווט. ``guestSearch`` — כניסה לניהול המוזמנים עם חיפוש מוכן
+ *  (למשל "עריכה בניהול המוזמנים" על מוזמן מתוך סידור ההושבה). */
+export interface NavOptions {
+  guestSearch?: string
+}
 
 // כותרות/ניווט תלויי-סוג-אירוע: "מוזמנים" הופך ל"משתתפים" באירוע עסקי וכו'.
 function pageTitles(terms: EventTerms): Record<Page, string> {
   return {
     dashboard: 'האירוע שלנו',
+    guests: `ניהול ${terms.guestsLabel}`,
     messages: 'ניהול הודעות',
     rsvp: 'אישורי הגעה',
     hall: 'סידור הושבה',
@@ -105,10 +110,11 @@ function navItemsFor(
 ): { key: Page; label: string; short: string }[] {
   const items = [
     { key: 'dashboard' as Page, label: 'תמונת מצב', short: 'בית' },
+    // ניהול הרשימה עצמה — הוספה, עריכה, פרטי קשר, קבוצות, סטטוסים והערות.
+    { key: 'guests' as Page, label: `ניהול ${terms.guestsLabel}`, short: terms.guestsLabel },
     { key: 'messages' as Page, label: 'ניהול הודעות', short: 'הודעות' },
     { key: 'rsvp' as Page, label: 'אישורי הגעה', short: 'אישורים' },
-    // מרחב עבודה אחד: הרשימה, הקבוצות, ההערות והאולם באותו מסך. אין
-    // עוד קפיצה בין "מוזמנים" ל"הושבה" באמצע העבודה.
+    // עבודה על המוזמנים שכבר ברשימה: מפת האולם, שולחנות ושיבוץ.
     { key: 'hall' as Page, label: 'סידור הושבה', short: 'הושבה' },
   ]
   if (giftsEligible) {
@@ -145,6 +151,15 @@ function NavIcon({ page }: { page: Page }) {
           <path d="M3 10.5 12 3l9 7.5" />
           <path d="M5 9.5V21h14V9.5" />
           <path d="M9.5 21v-6h5v6" />
+        </svg>
+      )
+    case 'guests':
+      return (
+        <svg {...common}>
+          <circle cx="9" cy="8" r="3" />
+          <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
+          <path d="M16 6.5a3 3 0 0 1 0 5.8" />
+          <path d="M17.5 20a5.5 5.5 0 0 0-2.5-4.6" />
         </svg>
       )
     case 'messages':
@@ -194,10 +209,10 @@ function NavIcon({ page }: { page: Page }) {
 function App() {
   const [online, setOnline] = useState<boolean | null>(null)
   const [page, setPage] = useState<Page>('dashboard')
-  // מה לפתוח בכניסה ל"סידור הושבה": ``manage`` = שכבת ניהול המוזמנים
-  // (כל ה-CTA ההיסטוריים של "הוספת מוזמנים" מגיעים לשם), ``guests`` =
-  // סרגל המוזמנים פתוח, ``undefined`` = הסקיצה כרגיל.
-  const [hallView, setHallView] = useState<'guests' | 'manage' | undefined>(undefined)
+  // חיפוש מוכן לכניסה לניהול המוזמנים (מגיע מ"עריכה בניהול המוזמנים"
+  // בסידור ההושבה). נקרא פעם אחת בטעינת המסך — ``<main key>`` מחליף אותו
+  // בכל מעבר עמוד.
+  const [guestSearch, setGuestSearch] = useState('')
 
   const [user, setUser] = useState<User | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -362,18 +377,9 @@ function App() {
     }
   }
 
-  /** הניווט היחיד של האפליקציה.
-   *
-   * ``guests`` אינו מסך בפני עצמו יותר — הוא ממופה ל"סידור הושבה" עם
-   * שכבת ניהול המוזמנים פתוחה. כך כל קישור קיים במערכת ממשיך לעבוד,
-   * ואין שני יעדים שמפצלים את אותה עבודה. */
-  function goTo(target: NavTarget) {
-    if (target === 'guests') {
-      setHallView('manage')
-      setPage('hall')
-      return
-    }
-    setHallView(undefined)
+  /** הניווט של האפליקציה — כל מעבר בין מסכים עובר כאן. */
+  function goTo(target: Page, options: NavOptions = {}) {
+    setGuestSearch(target === 'guests' ? options.guestSearch ?? '' : '')
     setPage(target)
   }
 
@@ -387,8 +393,8 @@ function App() {
     setActiveEventId(ev.id)
     setEventId(ev.id)
     // ישר להוספת מוזמנים (לא לתמונת מצב) — ההמשך הטבעי של Onboarding מיד
-    // אחרי יצירת האירוע. היעד הוא מרחב ההושבה עם שכבת ניהול המוזמנים
-    // פתוחה, כי שם חיות אפשרויות הייבוא וההוספה.
+    // אחרי יצירת האירוע; GuestsPage מציג את OnboardingDialog (פעם ראשונה
+    // בלבד, דגל localStorage) עם אפשרויות הייבוא הקיימות.
     goTo('guests')
   }
 
@@ -743,13 +749,14 @@ function App() {
                 currentUserId={user.id}
               />
             )}
+            {page === 'guests' && <GuestsPage initialSearch={guestSearch} />}
             {page === 'messages' && (
               <MessagesPage isAdmin={user.is_admin} onNavigate={goTo} />
             )}
             {page === 'rsvp' && <RsvpPage isAdmin={user.is_admin} onNavigate={goTo} />}
             {page === 'hall' && (
               <Suspense fallback={bootFallback}>
-                <HallPage onNavigate={goTo} initialView={hallView} />
+                <HallPage onNavigate={goTo} />
               </Suspense>
             )}
             {/* גם המסך עצמו מגודר, ולא רק פריט הניווט: משתמש שנשאר על

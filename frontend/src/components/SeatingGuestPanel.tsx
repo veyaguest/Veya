@@ -6,6 +6,9 @@
  * רשת, אין state של הושבה, ואין חישוב שיבוץ — הלוגיקה העסקית נשארת בשרת
  * ובמצב הקיים של המסך.
  *
+ * זו **לא** רשימת ניהול המוזמנים: אין כאן הוספה, עריכה או מחיקה. אלה חיות
+ * בניהול המוזמנים (אזור עצמאי, ``GuestsPage``), והסרגל רק מקשר אליו.
+ *
  * שלוש דרכים להושיב מוזמן, וכולן מגיעות לאותה פונקציה ב-HallPage:
  *   1. גרירה אל שולחן במפה (עכבר).
  *   2. בחירת מוזמן → הקשה על שולחן במפה (מגע/עכבר).
@@ -67,8 +70,8 @@ export interface SeatingGuestPanelProps {
   onUnseatGuest: (guestId: number) => void
   /** ממקד את השולחן על המפה (בוחר אותו ומגלגל אליו). */
   onShowTable: (tableNumber: number) => void
-  /** פותח את שכבת ניהול המוזמנים, אופציונלית עם חיפוש מוכן. */
-  onManageGuests: (search?: string) => void
+  /** מעבר לניהול המוזמנים (אזור עצמאי), אופציונלית עם חיפוש מוכן. */
+  onOpenGuests: (search?: string) => void
   /** מכריז לקורא מסך (aria-live) — מסופק ע"י HallPage. */
   onAnnounce: (message: string) => void
   /** מתחיל/מסיים גרירה — HallPage מדליק את יעדי השחרור על המפה. */
@@ -105,6 +108,8 @@ interface GuestRowProps {
   onUnseat: (guestId: number) => void
   onShowTable: (tableNumber: number) => void
   onEdit: (name: string) => void
+  /** המונח לפי סוג האירוע ("מוזמנים"/"משתתפים") — לתווית פעולת העריכה. */
+  guestsWord: string
   onDragStart: (guestId: number) => void
   onDragEnd: () => void
 }
@@ -120,6 +125,7 @@ const GuestRow = memo(function GuestRow({
   onUnseat,
   onShowTable,
   onEdit,
+  guestsWord,
   onDragStart,
   onDragEnd,
 }: GuestRowProps) {
@@ -261,7 +267,7 @@ const GuestRow = memo(function GuestRow({
           </>
         )}
         <button type="button" className="ws-action" onClick={() => onEdit(g.full_name)}>
-          {t.actionEdit}
+          {t.actionEdit(guestsWord)}
         </button>
         <p className="ws-action-hint">{t.dragHint}</p>
       </div>
@@ -429,7 +435,7 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
   onSeatGuest,
   onUnseatGuest,
   onShowTable,
-  onManageGuests,
+  onOpenGuests,
   onAnnounce,
   onDragGuestChange,
   search,
@@ -519,8 +525,8 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
   const handleDragEnd = useCallback(() => onDragGuestChange(null), [onDragGuestChange])
 
   const handleEdit = useCallback(
-    (name: string) => onManageGuests(name),
-    [onManageGuests],
+    (name: string) => onOpenGuests(name),
+    [onOpenGuests],
   )
 
   const handleSeatRequest = useCallback((entry: GuestEntry) => setPicker(entry), [])
@@ -632,9 +638,9 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
             <button
               type="button"
               className="ws-btn-primary"
-              onClick={() => onManageGuests()}
+              onClick={() => onOpenGuests()}
             >
-              {t.manageButton(guestsWord)}
+              {t.openGuestsPage(guestsWord)}
             </button>
           </div>
         )}
@@ -731,6 +737,7 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
                             onUnseat={onUnseatGuest}
                             onShowTable={onShowTable}
                             onEdit={handleEdit}
+                            guestsWord={guestsWord}
                             onDragStart={handleDragStart}
                             onDragEnd={handleDragEnd}
                           />
@@ -745,15 +752,15 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
         })}
       </div>
 
-      {/* ---- תחתית קבועה: הפעולה המרכזית + ניהול המוזמנים ---- */}
+      {/* ---- תחתית קבועה: הפעולה המרכזית + מעבר לניהול המוזמנים ---- */}
       <div className="ws-footer">
         {footer}
         <button
           type="button"
           className="ws-btn-ghost ws-manage-btn"
-          onClick={() => onManageGuests()}
+          onClick={() => onOpenGuests()}
         >
-          {t.manageButton(guestsWord)}
+          {t.openGuestsPage(guestsWord)}
         </button>
       </div>
 

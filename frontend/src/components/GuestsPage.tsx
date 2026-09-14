@@ -43,14 +43,12 @@ const FILTER_LABELS: Record<GuestFilter, string> = {
 }
 
 interface GuestsPageProps {
-  /** חיפוש התחלתי — מגיע ממרחב ההושבה ("עריכת פרטים" על מוזמן מסוים). */
+  /** חיפוש התחלתי — מגיע מסידור ההושבה ("עריכה בניהול המוזמנים" על
+      מוזמן מסוים), כדי לנחות ישר על השורה שלו. */
   initialSearch?: string
-  /** מוצג בתוך שכבה במרחב ההושבה, ולא כמסך עצמאי: מדלגים על מדריך
-      הפתיחה, שכבר הוצג בהקשר שלו ואינו שייך לזרימת ההושבה. */
-  embedded?: boolean
 }
 
-export function GuestsPage({ initialSearch = '', embedded = false }: GuestsPageProps = {}) {
+export function GuestsPage({ initialSearch = '' }: GuestsPageProps = {}) {
   const [guests, setGuests] = useState<Guest[]>([])
   const [total, setTotal] = useState(0)
   const [totalPeople, setTotalPeople] = useState(0)
@@ -79,7 +77,7 @@ export function GuestsPage({ initialSearch = '', embedded = false }: GuestsPageP
   // מוזמנים שמספר הטלפון שלהם נמצא שגוי בשיחה — דורש תיקון של בעל/ת האירוע.
   const [phoneAlerts, setPhoneAlerts] = useState<GuestDataAlert[]>([])
   const [showOnboarding, setShowOnboarding] = useState(
-    () => !embedded && localStorage.getItem(ONBOARDING_KEY) !== '1',
+    () => localStorage.getItem(ONBOARDING_KEY) !== '1',
   )
   // מסמנים "נראה" ברגע שהדיאלוג מוצג — לא רק כשסוגרים אותו. בלי זה, מי
   // שנכנס למסך המוזמנים ועובר לטאב אחר דרך הניווט בלי לסגור (מה שגורם

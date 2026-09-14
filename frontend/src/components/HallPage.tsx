@@ -46,7 +46,6 @@ import {
 import { EMPTY_FILTER } from '../seatingWorkspace'
 import type { WorkspaceFilter, WorkspaceSort } from '../seatingWorkspace'
 import { ConfirmDialog } from './ConfirmDialog'
-import { GuestsPage } from './GuestsPage'
 import { GUEST_DRAG_TYPE, SeatingGuestPanel } from './SeatingGuestPanel'
 import { VeyaLoader } from './VeyaLoader'
 
@@ -1485,12 +1484,13 @@ function SketchBuildSuccess(props: { items: DetectedHallElement[]; onOpen: () =>
 
 export function HallPage({
   onNavigate,
-  initialView,
 }: {
-  onNavigate?: (page: 'dashboard') => void
-  /** מה לפתוח בכניסה למסך. ``manage`` מגיע מכל CTA של "הוספת מוזמנים"
-      במערכת — מאז שאין יעד ניווט נפרד למוזמנים, הם נוחתים כאן. */
-  initialView?: 'guests' | 'manage'
+  /** ``guests`` — מעבר לניהול המוזמנים, שהוא אזור עצמאי ומקור האמת של
+      פרטי המוזמן. סידור ההושבה עובד על הרשימה, אבל לא עורך אותה. */
+  onNavigate?: (
+    page: 'dashboard' | 'guests',
+    options?: { guestSearch?: string },
+  ) => void
 } = {}) {
   const [tables, setTables] = useState<TableView[]>([])
   const [unassigned, setUnassigned] = useState<HallGuest[]>([])
@@ -1542,8 +1542,8 @@ export function HallPage({
   // והגדרות ההושבה יחד, כדי שאף כלי קיים לא ייעלם מהפס התחתון המקוצר.
   const [panel, setPanel] = useState<
     'hall' | 'tables' | 'guests' | 'smart' | 'tools' | 'more'
-  >(initialView === 'guests' ? 'guests' : 'hall')
-  // ---- מרחב העבודה: מוזמנים + אולם במסך אחד ----
+  >('hall')
+  // ---- סביבת ההושבה: רשימת המוזמנים לצד האולם ----
   // המוזמן שנגרר כרגע מהסרגל (null = אין גרירה) — מדליק את יעדי השחרור
   // על המפה. הגרירה היא **תוספת**: אותה הושבה זמינה גם בהקשה ובמקלדת.
   const [dragGuestId, setDragGuestId] = useState<number | null>(null)
@@ -1553,10 +1553,6 @@ export function HallPage({
   // חיה בתוכה, ואם היא נמחקת מה-DOM הדפדפן לא שולח לה ``dragend`` וגרירה
   // שבוטלה הייתה נתקעת. היא נסגרת באמת רק אחרי שהגרירה נגמרה.
   const [sheetCollapsedForDrag, setSheetCollapsedForDrag] = useState(false)
-  // שכבת "ניהול מוזמנים" — מסך המוזמנים הקיים (GuestsPage) כדיאלוג מעל
-  // מרחב העבודה. אין יעד ניווט נפרד, ואף יכולת לא נעלמה.
-  const [manageOpen, setManageOpen] = useState(initialView === 'manage')
-  const [manageSearch, setManageSearch] = useState('')
   // הודעה לקורא מסך (aria-live) — כל פעולה שמשנה מצב בלי ניווט מכריזה כאן.
   const [liveMessage, setLiveMessage] = useState('')
   // העדפות הקבוצה (endpoint קיים) — מוצגות ליד הקבוצה בסרגל.
@@ -3659,8 +3655,10 @@ export function HallPage({
   }
 
   // ==========================================================================
-  //            מרחב העבודה: מוזמנים + אולם באותו מסך
+  //            סביבת ההושבה: רשימת המוזמנים לצד האולם
   // ==========================================================================
+  // הרשימה כאן היא **לעבודת הושבה** — בחירה, גרירה, מצב שולחן. הוספה ועריכה
+  // של מוזמנים קורות בניהול המוזמנים, שהוא אזור עצמאי ומקור האמת שלהם.
   // כל מה שכאן הוא *חיבור* בין סרגל המוזמנים לפעולות שכבר קיימות במסך —
   // לא לוגיקה חדשה. הושבה עוברת תמיד דרך ``requestSeatGuest`` (ולכן דרך
   // אזהרת "עדיין לא אישר הגעה"), והשמירה נשארת השמירה האוטומטית הקיימת.
@@ -3725,19 +3723,12 @@ export function HallPage({
     if (guest) announce(wsT.selectedAnnounce(guest.full_name))
   }
 
-  /** פותח את שכבת ניהול המוזמנים (מסך המוזמנים הקיים) מעל מרחב העבודה. */
-  function openManage(search?: string) {
-    setManageSearch(search ?? '')
-    setManageOpen(true)
-  }
-
-  /** סגירת השכבה — טוענים מחדש את מצב האולם, כדי שמוזמן שנוסף/נערך/נמחק
-      יופיע בסרגל מיד ובלי רענון דף. */
-  async function closeManage() {
-    setManageOpen(false)
-    setManageSearch('')
-    await load()
-    await loadGroupNotes()
+  /** מעבר לניהול המוזמנים — שם מוסיפים, עורכים ומנהלים את הרשימה.
+   *  ``search`` פותח אותו על מוזמן מסוים ("עריכה בניהול המוזמנים").
+   *  בחזרה לסידור ההושבה המסך נטען מחדש מ-``GET /hall``, ולכן כל שינוי
+   *  שנעשה שם מופיע כאן מיד — בלי מסך כפול ובלי העתק של הנתונים. */
+  function openGuestsPage(search?: string) {
+    onNavigate?.('guests', search ? { guestSearch: search } : undefined)
   }
 
   /** פותח פאנל וזוכר מי פתח אותו, כדי להחזיר לשם את הפוקוס בסגירה. */
@@ -3950,7 +3941,7 @@ export function HallPage({
         onSeatGuest={seatGuestFromPanel}
         onUnseatGuest={unseatGuestFromPanel}
         onShowTable={showTableOnMap}
-        onManageGuests={openManage}
+        onOpenGuests={openGuestsPage}
         onAnnounce={announce}
         onDragGuestChange={onGuestDragChange}
         search={guestSearch}
@@ -5036,40 +5027,6 @@ export function HallPage({
         <div className="ws-sr-only" role="status" aria-live="polite" aria-atomic="true">
           {liveMessage}
         </div>
-
-        {/* ---- ניהול המוזמנים ----
-            מסך המוזמנים הקיים, כשכבה מעל מרחב העבודה במקום יעד ניווט
-            נפרד. שום יכולת לא נעלמה: הוספה, ייבוא, עריכה, מחיקה, קבוצות
-            והצעות איחוד — הכול כאן, ובסגירה הסרגל מתעדכן בלי רענון. */}
-        {manageOpen && (
-          <div
-            className="ws-manage"
-            role="dialog"
-            aria-modal="true"
-            aria-label={wsT.manageDialogLabel(activeEventTerms().guestsLabel)}
-            onKeyDown={(e) => {
-              if (e.key !== 'Escape') return
-              e.stopPropagation()
-              void closeManage()
-            }}
-          >
-            <div className="ws-manage-bar">
-              <button
-                type="button"
-                className="ws-btn-ghost ws-manage-back"
-                onClick={() => void closeManage()}
-              >
-                ← {wsT.manageClose}
-              </button>
-              <h2 className="ws-manage-title">
-                {wsT.manageDialogLabel(activeEventTerms().guestsLabel)}
-              </h2>
-            </div>
-            <div className="ws-manage-body">
-              <GuestsPage initialSearch={manageSearch} embedded />
-            </div>
-          </div>
-        )}
 
         {/* ---- Bottom Sheet: פרטי שולחן ---- */}
         {sheetT && (

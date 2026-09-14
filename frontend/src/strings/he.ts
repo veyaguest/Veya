@@ -1140,7 +1140,7 @@ export const strings = {
       emptySearchTitle: 'לא נמצאו מוזמנים התואמים לחיפוש',
       emptySearchDesc: 'אפשר לנקות את החיפוש או לשנות את הסינון.',
       emptyListTitle: (guests: string) => `עדיין אין ${guests} באירוע`,
-      emptyListDesc: 'אפשר להוסיף אותם, או לייבא רשימה קיימת.',
+      emptyListDesc: 'את הרשימה מוסיפים ומייבאים בניהול המוזמנים, והיא מופיעה כאן מיד.',
       collapseSection: 'סגירת הסעיף',
       expandSection: 'פתיחת הסעיף',
 
@@ -1159,7 +1159,8 @@ export const strings = {
       actionMove: 'העברה לשולחן אחר',
       actionUnseat: 'הסרה מהשולחן',
       actionShowOnMap: 'הצגה במפה',
-      actionEdit: 'עריכת פרטים',
+      // העריכה עצמה קורית בניהול המוזמנים — מקור האמת של פרטי המוזמן.
+      actionEdit: (guests: string) => `עריכה בניהול ה${guests}`,
       actionsClose: 'סגירת הפעולות',
       dragHint: 'אפשר גם לגרור אל שולחן במפה',
 
@@ -1176,10 +1177,10 @@ export const strings = {
       pickerNoTables: 'עדיין אין שולחנות באולם. אפשר להוסיף שולחן במפה.',
       pickerCancel: 'ביטול',
 
-      // ---- ניהול המוזמנים (השכבה שמעל מרחב העבודה) ----
-      manageButton: (guests: string) => `ניהול ${guests}`,
-      manageDialogLabel: (guests: string) => `ניהול ${guests}`,
-      manageClose: 'חזרה לסידור ההושבה',
+      // ---- מעבר לניהול המוזמנים ----
+      // ניהול המוזמנים הוא אזור עצמאי: שם מוסיפים ועורכים. מכאן רק עוברים
+      // אליו — הניסוח אומר "לשם", לא "פתיחת חלון".
+      openGuestsPage: (guests: string) => `לניהול ה${guests}`,
 
       // ---- הודעות חיות (aria-live) ----
       seatedAnnounce: (name: string, table: number) =>
