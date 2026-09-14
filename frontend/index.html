@@ -844,6 +844,11 @@
         a.cl-card, .cl-go .arw { transition: none; }
         a.cl-card:hover, a.cl-card:active { transform: none; }
       }
+      .calls-punch {
+        margin: 26px auto 0; max-width: 52ch; text-align: center;
+        font-family: var(--font-display); font-size: var(--fd-md);
+        color: var(--charcoal); line-height: 1.35;
+      }
       /* ---- מדריכים: כרטיס לכל מדריך אמיתי ---- */
       .gd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
       /* חמישה מדריכים: הראשון תופס שתי עמודות, כך שאין חור בשורה האחרונה. */
@@ -2323,35 +2328,30 @@
       <section class="features tone-alt" id="calls" aria-labelledby="calls-title">
         <div class="wrap">
           <div class="section-head reveal">
-            <span class="kicker">מעקב אחרי מי שלא ענה</span>
-            <h2 id="calls-title" class="section-title">ומי שלא עונה? לא צריך שאתם תרדפו אחריו.</h2>
+            <h2 id="calls-title" class="section-title">מי שלא ענה? לא צריך לרדוף אחריו.</h2>
             <p class="section-sub">
-              יש אנשים שפשוט לא עונים להודעה. במקום שזה יהפוך לעוד משימה עליכם,
-              VEYA מנהלת את סבבי המעקב בצורה מסודרת ומרכזת אותם באותה שורת מוזמן.
+              יש תמיד את אלה שלא עונים. במקום לזכור מי קיבל הודעה, למי כבר
+              התקשרתם ומי ביקש שתחזרו אליו — הכול מסודר לכם לפי כל אורח.
             </p>
           </div>
           <div class="supporting-grid">
             <article class="supporting-item reveal">
               <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div>
-              <h3>סבבים, לא ניסיונות אקראיים</h3>
-              <p>המעקב מתוכנן מראש על ציר הזמן, בין תזכורת לתזכורת.</p>
+              <h3>לא שולחים סתם עוד הודעה</h3>
+              <p>המעקב מתקדם לפי הסדר, בזמן הנכון.<br />מי שכבר אישר או אמר שלא מגיע — יורד מהמעקב. נגמר הסיפור.</p>
             </article>
             <article class="supporting-item reveal d1">
               <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6.5a3 3 0 0 1 0 5.8"/><path d="M20.5 20a5.5 5.5 0 0 0-4-5.3"/></svg></div>
-              <h3>רק מי שבאמת פתוח</h3>
-              <p>מי שכבר אישר או ביטל יורד מהרשימה מעצמו. לא מתקשרים אליו שוב.</p>
+              <h3>כל מה שקרה עם האורח, במקום אחד</h3>
+              <p>לא ענה? ביקש שתחזרו אליו? המספר לא נכון?<br />הכול נשאר על אותו אורח, כדי שתמיד תדעו מה המצב.</p>
             </article>
             <article class="supporting-item reveal d2">
-              <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3.5h9L19 8v12.5H5.5z"/><path d="M14.5 3.5V8H19"/><path d="M8.5 12.5h7M8.5 16h4.5"/></svg></div>
-              <h3>תוצאה שנשארת ברשימה</h3>
-              <p>לא ענה, ביקש לחזור מאוחר יותר, או שהמספר שגוי — הכול על אותה שורת מוזמן.</p>
-            </article>
-            <article class="supporting-item reveal d3">
               <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5z"/></svg></div>
-              <h3>מספר שגוי זו תקלת דאטה</h3>
-              <p>הוא לא חוזר לסבב הבא סתם — הוא נפתח אצלכם כהתראה לתיקון ברשימה.</p>
+              <h3>מספר לא נכון? מתקנים וממשיכים</h3>
+              <p>אם המספר שגוי, הוא לא ממשיך להופיע כאילו הכול בסדר.<br />אתם מקבלים סימון שצריך לתקן את הפרטים — ומשם ממשיכים.</p>
             </article>
           </div>
+          <p class="calls-punch reveal d3">פחות לזכור, פחות לרדוף, פחות כאב ראש.</p>
         </div>
       </section>
 
