@@ -807,6 +807,43 @@
       .why .why-list { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fd-sm); line-height: 1.55; color: var(--charcoal); }
       /* שורת הפואנטה — מה שנשאר בראש אחרי שגוללים הלאה */
       .why .why-punch,
+      /* ---- מחשבונים: צילום של הכלי האמיתי, ומתחתיו הדרך אליו ---- */
+      /* מסגרת דקה סביב הצילום: בלי זה הרקע הקרמי של המחשבון נבלע ברקע
+         הקרמי של הסקשן, והתמונה מאבדת את הגבול שלה. */
+      .cl-shot {
+        max-width: 900px; margin: 0 auto 18px; padding: 10px;
+        background: var(--ivory-2); border: 1px solid var(--line);
+        border-radius: var(--radius-xl); box-shadow: 0 26px 54px -34px rgba(23, 19, 13, 0.5);
+      }
+      /* שתי גרסאות של אותו צילום: הפריסה הרחבה במחשב, והפריסה של הטלפון
+         בטלפון — אותו מחשבון, רק הרספונסיביות שלו עצמו. ``aspect-ratio``
+         שומר מקום לתמונה לפי המידה הנכונה, כדי שהעמוד לא יקפוץ. */
+      .cl-shot img {
+        display: block; width: 100%; height: auto; aspect-ratio: 1200 / 865;
+        border-radius: var(--radius-lg); border: 1px solid rgba(23, 19, 13, 0.1);
+      }
+      @media (max-width: 720px) { .cl-shot img { aspect-ratio: 640 / 911; } }
+      .cl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; max-width: 880px; margin: 0 auto; }
+      a.cl-card {
+        display: grid; align-content: start; gap: 8px; text-decoration: none;
+        padding: 20px 22px 18px; background: var(--cream); border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        transition: border-color var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
+      }
+      a.cl-card h3 { margin: 0; font-size: var(--fs-lg); color: var(--charcoal); }
+      a.cl-card p { margin: 0; font-size: var(--fs-sm); color: var(--muted); line-height: 1.65; }
+      .cl-go { margin-top: 4px; font-size: var(--fs-sm); font-weight: 600; color: var(--gold-deep); }
+      .cl-go .arw { display: inline-block; transition: transform var(--motion-fast) var(--ease-out); }
+      @media (hover: hover) {
+        a.cl-card:hover { border-color: var(--gold); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        a.cl-card:hover .cl-go .arw { transform: translateX(-3px); }
+      }
+      a.cl-card:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
+      a.cl-card:active { transform: translateY(1px); }
+      @media (prefers-reduced-motion: reduce) {
+        a.cl-card, .cl-go .arw { transition: none; }
+        a.cl-card:hover, a.cl-card:active { transform: none; }
+      }
       /* ---- מדריכים: כרטיס לכל מדריך אמיתי ---- */
       .gd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
       /* חמישה מדריכים: הראשון תופס שתי עמודות, כך שאין חור בשורה האחרונה. */
@@ -2966,6 +3003,51 @@
             </a>
           </div>
           <p class="gd-all reveal d3"><a class="link-quiet" href="/guides/">כל המדריכים <span class="arw" aria-hidden="true">←</span></a></p>
+        </div>
+      </section>
+
+      <!-- ═════ 12ב. מחשבונים ══════════════════════════════════════════
+           צילום מסך של המחשבון האמיתי אחרי חישוב — אותו חישוב שרץ בתוך
+           VEYA על נתוני האירוע. המספרים בצילום הם הקלט והפלט של הכלי
+           עצמו, לא נתוני שוק ולא דוגמה שיווקית. -->
+      <section class="cl tone-light" id="calculators" aria-labelledby="cl-title">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="kicker">מחשבונים</span>
+            <h2 id="cl-title" class="section-title">שני חישובים שאפשר לעשות כבר עכשיו.</h2>
+            <p class="section-sub">
+              בלי הרשמה ובלי להשאיר פרטים. מזינים את מה שכתוב בחוזה שלכם,
+              ורואים על מה באמת משלמים — ומתי צריך לסגור את הרשימה.
+            </p>
+          </div>
+
+          <div class="cl-shot reveal d1">
+            <picture>
+              <source media="(max-width: 720px)" srcset="/product/calculator-mobile.jpg" width="640" height="911" />
+              <img
+              src="/product/calculator.jpg"
+              alt="מחשבון ההתחייבות לאולם של VEYA אחרי חישוב: שדות הקלט מימין, ומשמאל התשובה כמה מוסיף אדם נוסף ופירוט המנות והעלות"
+              width="1200"
+              height="865"
+              loading="lazy"
+              decoding="async"
+              onerror="this.closest('.cl-shot').hidden = true"
+            />
+            </picture>
+          </div>
+
+          <div class="cl-grid">
+            <a class="cl-card reveal d2" href="/calculators/venue-commitment/">
+              <h3>מחשבון ההתחייבות לאולם</h3>
+              <p>על כמה מנות מחייבים אתכם בפועל, וכמה באמת מוסיף עוד אדם ברשימה.</p>
+              <span class="cl-go" aria-hidden="true">לחישוב <span class="arw">←</span></span>
+            </a>
+            <a class="cl-card reveal d3" href="/calculators/rsvp-timeline/">
+              <h3>מחשבון לוח הזמנים</h3>
+              <p>מתי לשלוח כל בקשה ותזכורת, לאחור מהיום שבו מוסרים לאולם מספר.</p>
+              <span class="cl-go" aria-hidden="true">לחישוב <span class="arw">←</span></span>
+            </a>
+          </div>
         </div>
       </section>
 
