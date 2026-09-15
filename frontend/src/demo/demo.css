@@ -20,6 +20,9 @@ body {
   height: 100vh;
   overflow: hidden;
   background: var(--ivory, #fbf6ee);
+  /* צבע הטקסט של המוצר. באפליקציה הוא מגיע מ-.shell; בלי זה ההדגמה יורשת
+     את הקרם של index.css, ושמות המוזמנים בדוח נראים דהויים. */
+  color: var(--charcoal);
 }
 .demo-track {
   padding: 12px 12px 18px;
