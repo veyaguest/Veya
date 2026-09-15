@@ -2311,79 +2311,67 @@
         .wc-v { font-size: var(--fs-lg); }
       }
 
-      /* ═════ Art direction — קצב הרקעים של הדף כולו ══════════════════════
-         סיפור אחד מלמעלה למטה, רק מגוונים שכבר קיימים במותג:
-           לבן/שנהב (#fbf6ee) → שנהב חם (#f6efe2) → חול (#ede4d3, line-2 של
-           המוצר) → לילה (#17130d, --ink).
-         פרקים:
-           1 פתיחה — ההירו כהה, והדף הבהיר עולה עליו כמו גיליון.
-           2 מהבעיה לסדר — "לא צריך לנחש" והדבקת הרשימה: שני סקשנים נקיים על שנהב.
-           3 אישורי הגעה — מתחמם בהדרגה עד שיא "תמונת המצב" על חול.
-           4 הושבה — הגיליון הכהה עולה מתוך החול, והקו הזהב ממשיך לתוכו.
-           5 כסף — חזרה לאור, מתחמם שוב לקראת המאזן.
-           6 התוצאה — המסע בתוך VEYA על לילה: השיא החזותי.
-           7 סגירה — אזורים בהירים ופשוטים עד הקריאה לפעולה.
-         שלוש הטכניקות לא בכל מעבר: גיליון חופף רק בכניסה לאזור כהה (ובהירו),
-         שינוי גוון הדרגתי רק בין גוונים בהירים, והקו הזהב של שורות המעבר.
-         הכול רקעים סטטיים — אין כאן אנימציה, ואין שינוי פריסה בזמן גלילה. */
+      /* ═════ Art direction — עומק מהצורה, לא מצבעים ══════════════════════
+         רק הפלטה של VEYA: שנהב #fbf6ee, שנהב חם #f6efe2, חול #ede4d3 (line-2
+         של המוצר), ולילה #17130d/#211b12. אין זהב כרקע ואין צבעי סטטוס זרים.
+         המעברים בנויים מצורות:
+           • קשת רחבה — כשנכנסים לאזור כהה ויוצאים ממנו (הירו, הושבה, המסע).
+           • גל רך — סביב תמונת המצב, פעם אחת בדף.
+           • הטבעת של הלוגו — קווים דקים ענקיים שחוצים גבול בין סקשנים.
+           • מעבר גוון עדין — בין שני גוונים בהירים סמוכים.
+         הכול סטטי: בלי אנימציה, בלי blur, ובלי שינוי פריסה בגלילה. */
       :root {
         --bg-paper: var(--ivory);
         --bg-linen: var(--ivory-2);
         --bg-sand: #ede4d3;
-        --bg-sand-soft: color-mix(in srgb, var(--ivory-2) 55%, #ede4d3);
         --bg-night: var(--ink);
-        --sheet-r: 36px;
-        /* זהב לטקסט: אותו זהב, עמוק מעט יותר — נשאר מעל 4.5:1 גם על שנהב חם,
-           חול ותגיות בגוון זהב (היה 4.1–4.5 בחלק מהמקומות). */
-        --gold-deep: color-mix(in srgb, #836a26 80%, var(--charcoal));
-      }
-      @media (max-width: 720px) { :root { --sheet-r: 24px; } }
-
-      /* ── הרצף, סקשן אחרי סקשן ─────────────────────────────────────────
-         כהה → שנהב → לבן → חול → שנהב → פשתן → לבן → כהה (תמונת המצב) →
-         חול → כהה (הושבה) → שנהב → זהב (המאזן) → לבן → כהה (המסע) →
-         חול → שנהב → פשתן → לבן. שלושה עוגנים כהים באמצע הדף, וגווני
-         ביניים ברורים ביניהם — לא "אוף־וויט אחרי אוף־וויט". */
-      :root {
-        --bg-white: var(--cream);
         --bg-night-2: var(--ink-2);
-        --bg-gold: color-mix(in srgb, var(--gold) 20%, var(--ivory));
+        --arc: 88px;
+        --wave: 72px;
+        /* זהב לטקסט: אותו זהב, עמוק מעט יותר — מעל 4.5:1 על כל הגוונים */
+        --gold-deep: color-mix(in srgb, #836a26 80%, var(--charcoal));
+        /* סטטוסים בהדגמות שבדף: בגוני המותג. המשמעות נשארת באייקון ובמילה
+           ("אישרו הגעה", "חסרה כמות"), לא בצבע ירוק או כתום. */
+        --success: var(--gold-deep);
+        --warning: color-mix(in srgb, var(--charcoal) 55%, #836a26);
       }
+      @media (max-width: 720px) { :root { --arc: 40px; --wave: 40px; } }
 
-      /* פרק 1 → 2: הגיליון הבהיר עולה על ההירו */
-      #why {
+      /* ── קשת רחבה: המשטח הבא עולה על הקודם בקימור אחד גדול ── */
+      #why, #seating, #gifts, #how, #guides {
         position: relative; z-index: 2;
-        margin-top: calc(var(--sheet-r) * -1);
-        border-radius: var(--sheet-r) var(--sheet-r) 0 0;
-        background: var(--bg-paper);
+        margin-top: calc(var(--arc) * -1);
+        border-radius: 50% 50% 0 0 / var(--arc) var(--arc) 0 0;
       }
-      section.ps { background: var(--bg-white); }
 
-      /* שורות המעבר: לרוחב מלא, בגוון של המעבר עצמו */
+      /* פתיחה: ההירו הכהה, והשנהב עולה עליו בקשת */
+      .hero::after { display: none; }
+      #why { background: var(--bg-paper); }
+      section.ps { background: var(--bg-paper); }
+
+      /* שורות המעבר לרוחב מלא */
       p.bridge.bridge-soft,
       p.bridge.bridge-dark {
-        max-width: none; margin: 0;
+        max-width: none; margin: -1px 0 0;
         padding-inline: max(20px, calc((100% - 540px) / 2));
       }
-      p.bridge.bridge-soft { background: linear-gradient(180deg, var(--bg-white), var(--bg-sand)); padding-bottom: 20px; }
-      /* חפיפה של פיקסל אחד — בלי זה נשאר תפר דק בין שני משטחים באותו גוון */
-      p.bridge.bridge-soft, p.bridge.bridge-dark { margin-top: -1px; }
-      /* ההירו כבר לא דוהה לשנהב: הגיליון הבהיר עולה עליו */
-      .hero::after { display: none; }
+      p.bridge.bridge-soft { background: linear-gradient(180deg, var(--bg-paper), var(--bg-linen)); padding-bottom: 20px; }
 
-      /* פרק 3: אישורי הגעה — חול, שנהב, פשתן, לבן, ואז השיא הכהה */
-      #deadline { background: var(--bg-sand); }
+      /* אישורי הגעה: פשתן ושנהב לסירוגין, והטבעת חוצה אל מועד הסגירה */
+      #deadline { background: var(--bg-linen); }
       #rsvp { background: var(--bg-paper); }
       section.gh { background: var(--bg-linen); }
-      #calls { background: var(--bg-white); padding-bottom: calc(108px + var(--sheet-r)); }
+      #calls { background: var(--bg-paper); }
 
-      /* תמונת המצב: גיליון כהה — המוצר על רקע עמוק, כמו תצלום מוצר */
-      #showcase {
-        position: relative; z-index: 2;
-        margin-top: calc(var(--sheet-r) * -1);
-        border-radius: var(--sheet-r) var(--sheet-r) 0 0;
-        background: var(--bg-night-2); color: var(--cream-text);
+      /* תמונת המצב: משטח כהה שנפתח בגל רך ונסגר בגל רך */
+      #showcase { position: relative; z-index: 2; background: var(--bg-night-2); color: var(--cream-text); }
+      #showcase::before, #impact::before {
+        content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: var(--wave);
+        pointer-events: none;
+        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 72' preserveAspectRatio='none'%3E%3Cpath d='M0 44C240 10 480 6 720 32s480 42 720 8V72H0Z'/%3E%3C/svg%3E") center bottom / 100% 100% no-repeat;
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 72' preserveAspectRatio='none'%3E%3Cpath d='M0 44C240 10 480 6 720 32s480 42 720 8V72H0Z'/%3E%3C/svg%3E") center bottom / 100% 100% no-repeat;
       }
+      #showcase::before { background: var(--bg-night-2); }
       #showcase .kicker { color: var(--gold-light); }
       #showcase .section-title { color: var(--cream-text); }
       #showcase .section-sub { color: #d8ceb9; }
@@ -2392,45 +2380,54 @@
       #showcase .sh-mobile-title { color: var(--cream-text); }
       #showcase .sh-mobile-body { color: #d8ceb9; }
       #showcase .sh-modal-card { color: var(--body); }
+      #impact { position: relative; z-index: 3; background: var(--bg-linen); }
+      #impact::before { background: var(--bg-linen); transform: none; }
 
-      /* ומה קורה כשמשהו זז — חזרה לחול, שממשיך אל שורת המעבר של ההושבה */
-      #impact { background: var(--bg-sand); }
-
-      /* פרק 3 → 4: הקו הזהב יורד מתוך החול, והגיליון הכהה עולה */
+      /* אל ההושבה: הקו הזהב יורד, והלילה עולה בקשת */
       p.bridge.bridge-dark {
         position: relative; z-index: 1;
-        background: var(--bg-sand);
-        padding-bottom: calc(18px + var(--sheet-r) + 34px);
-        margin-bottom: calc(var(--sheet-r) * -1);
+        background: var(--bg-linen);
+        padding-bottom: calc(18px + var(--arc) + 34px);
+        margin-bottom: 0;
       }
       p.bridge.bridge-dark::after {
-        content: ""; position: absolute; inset-inline-start: 50%; bottom: var(--sheet-r);
+        content: ""; position: absolute; inset-inline-start: 50%; bottom: calc(var(--arc) + 6px);
         width: 1px; height: 34px; background: linear-gradient(180deg, var(--gold), rgba(201, 162, 39, 0));
         opacity: 0.6;
       }
-      #seating, #how {
-        position: relative; z-index: 2;
-        border-radius: var(--sheet-r) var(--sheet-r) 0 0;
-      }
-      #seating { background: var(--bg-night); }
+      #seating { background: var(--bg-night); padding-bottom: calc(108px + var(--arc)); }
 
-      /* פרק 5: כסף — שנהב, ואז המאזן על זהב */
+      /* כסף: השנהב עולה על הלילה, ואז חול למאזן — עם הטבעת */
       #gifts { background: var(--bg-paper); }
-      #after { background: var(--bg-gold); }
+      #after { background: var(--bg-sand); }
       #events {
-        background: var(--bg-white);
-        padding-bottom: calc(108px + var(--sheet-r));
+        background: linear-gradient(180deg, var(--bg-sand) 0%, var(--bg-paper) 38%);
+        padding-bottom: calc(108px + var(--arc));
       }
 
-      /* פרק 6: המסע בתוך VEYA — הגיליון הכהה עולה על סוגי האירועים */
-      #how { background: var(--bg-night); margin-top: calc(var(--sheet-r) * -1); }
+      /* המסע בתוך VEYA: הלילה עולה בקשת, והפשתן עולה עליו בסוף */
+      #how { background: var(--bg-night); padding-bottom: calc(78px + var(--arc)); }
       #how .section-sub { color: #d8ceb9; }
-
-      /* פרק 7: סגירה — חול, שנהב, פשתן, לבן */
-      #guides { background: var(--bg-sand); }
+      #guides { background: var(--bg-linen); }
       #calculators { background: var(--bg-paper); }
       #check { background: var(--bg-linen); }
-      section.faq-wrap, section.band-wrap { background: var(--bg-white); }
+      section.faq-wrap, section.band-wrap { background: var(--bg-paper); }
+
+      /* ── הטבעת של הלוגו: קו דק ענקי שחוצה גבול בין סקשנים ──
+         שתי טבעות, כמו בסמל — אחת בקו, השנייה רכה יותר. רק במסכים רחבים,
+         שם יש לה שוליים ריקים לעבור בהם בלי לחצות טקסט. */
+      /* חיתוך לרוחב בלבד: הטבעת יכולה לחצות למעלה/למטה אל הסקשן הסמוך, אבל לא לייצר גלילה לצדדים */
+      #deadline, #after { position: relative; overflow-x: clip; overflow-y: visible; }
+      #deadline > .wrap, #after > .wrap { position: relative; z-index: 1; }
+      #deadline::before, #after::before {
+        content: ""; position: absolute; z-index: 0; pointer-events: none;
+        width: 1040px; height: 1040px; border-radius: 50%;
+        border: 1px solid rgba(201, 162, 39, 0.26);
+        outline: 1px solid rgba(201, 162, 39, 0.12); outline-offset: 26px;
+      }
+      #deadline::before { top: -560px; inset-inline-end: -700px; }
+      #after::before { bottom: -600px; inset-inline-start: -720px; }
+      @media (max-width: 1180px) { #deadline::before, #after::before { display: none; } }
 
       /* תגיות זהב על גוון זהב: רקע רך מעט יותר, כדי שהטקסט יישאר קריא */
       .numcard-tag { background: rgba(201, 162, 39, 0.1); }
