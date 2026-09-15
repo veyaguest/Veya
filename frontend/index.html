@@ -1207,6 +1207,14 @@
       }
       .fu-shot img { display: block; width: 100%; height: auto; }
 
+      /* ---- אישורי הגעה: ראש המסך האמיתי ---- */
+      .rs-shot {
+        margin: 26px auto 8px; width: min(100%, 390px);
+        background: var(--ivory); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+        box-shadow: 0 1px 2px rgba(43, 38, 32, 0.05), 0 22px 44px -30px rgba(43, 38, 32, 0.4);
+      }
+      .rs-shot img { display: block; width: 100%; height: auto; }
+
       .calls-punch {
         margin: 26px auto 0; max-width: 52ch; text-align: center;
         font-family: var(--font-display); font-size: var(--fd-md);
@@ -2932,38 +2940,12 @@
               אישורי הגעה הם לא סוף התהליך — הם הדרך להגיע למספר שאפשר לקבל איתו החלטה.
               כל תשובה נרשמת על המוזמן עצמו, וממשיכה משם להושבה ולחשבון של האירוע.
             </p>
-            <!-- ═════ תמונת המצב של הרשימה ═══════════════════════════════
-               במקום ארבע שורות שמסבירות מה רואים - מראים את זה.
-               הסטטוסים הם אלה שבמוצר (``Guest.rsvp_status``), בתוויות
-               מ-``strings/he.ts``. בלי כמויות: מה שחשוב הוא מי ענה. -->
-          <div class="gl" data-scene data-scene-gap="900">
-            <div class="gl-head">
-              <span class="gl-title">רשימת המוזמנים</span>
-              <span class="gl-sub">מתעדכנת מעצמה</span>
-            </div>
-            <ul class="gl-list scene-step" data-step="1">
-              <li class="gl-row">
-                <span class="gl-who"><span class="gl-name">דניאל ושרון</span><span class="gl-grp">משפחה</span></span>
-                <span class="gl-chip gl-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>אישרו הגעה</span>
-              </li>
-              <li class="gl-row gl-row-live">
-                <span class="gl-who"><span class="gl-name">משפחת כהן</span><span class="gl-grp">חברים</span></span>
-                <span class="gl-swap"><span class="gl-before"><span class="gl-chip gl-wait"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>ממתינים לתשובה</span></span><span class="gl-after"><span class="gl-chip gl-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>אישרו הגעה</span></span></span>
-              </li>
-              <li class="gl-row">
-                <span class="gl-who"><span class="gl-name">יוסי ורונית</span><span class="gl-grp">עבודה</span></span>
-                <span class="gl-chip gl-maybe"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>לא החליטו</span>
-              </li>
-              <li class="gl-row">
-                <span class="gl-who"><span class="gl-name">עומר ונועה</span><span class="gl-grp">משפחה</span></span>
-                <span class="gl-chip gl-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>אישרו הגעה</span>
-              </li>
-              <li class="gl-row">
-                <span class="gl-who"><span class="gl-name">משפחת לוי</span><span class="gl-grp">חברים</span></span>
-                <span class="gl-chip gl-no"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>לא מגיעים</span>
-              </li>
-            </ul>
-          </div>
+            <!-- ═════ איפה הרשימה עומדת ═════════════════════════════════
+               חיתוך אמיתי מראש מסך אישורי ההגעה ב-VEYA (אירוע ההדגמה): כמה
+               אנשים אישרו, ממתינים, לא החליטו ולא מגיעים — מתוך כמה הוזמנו. -->
+            <figure class="rs-shot">
+              <img src="/product/rsvp-counts.jpg" alt="ראש מסך אישורי ההגעה ב־VEYA: 256 אישרו הגעה, 274 ממתינים לתשובה, 45 לא החליטו ו־69 לא מגיעים, מתוך 644 אנשים שהוזמנו" width="1170" height="612" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+            </figure>
             <p class="why-punch">מרשימה שמשתנה כל יום — לתמונה אחת שאפשר לעבוד לפיה.</p>
           
         </div>
