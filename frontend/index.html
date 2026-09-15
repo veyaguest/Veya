@@ -370,36 +370,73 @@
       }
       @media (prefers-reduced-motion: reduce) { .bal[data-scene] .scene-step:not(.is-on) { opacity: 1; transform: none; } }
 
-            /* ═════ לפני / אחרי (§9) ════════════════════════════════════════
-         צד "לפני" הוא שלושה פתקים מפוזרים בזוויות שונות; צד "אחרי" הוא
-         רשימה אחת מיושרת. ההבדל הוא המסר, ולכן הוא נאמר בגיאומטריה
-         ולא במילים. הסיבוב הוא transform בלבד ולא משפיע על הפריסה. */
-      .ba-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 22px; align-items: stretch; }
-      .ba-side { display: grid; gap: 14px; align-content: start; padding: 22px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); }
-      .ba-before { background: var(--ivory-2); }
-      .ba-tag { justify-self: start; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); background: #fff; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 4px 11px; }
-      .ba-tag-on { color: var(--charcoal); background: rgba(201, 162, 39, 0.16); border-color: rgba(201, 162, 39, 0.4); }
-      .ba-scatter { display: grid; gap: 10px; padding: 6px 0; }
-      .ba-note { display: grid; gap: 2px; padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
-      .ba-n1 { transform: rotate(-1.4deg); }
-      .ba-n2 { transform: rotate(1.1deg) translateX(6px); }
-      .ba-n3 { transform: rotate(-0.7deg) translateX(-4px); }
-      .ba-note-t { font-weight: 600; color: var(--charcoal); font-size: var(--fs-md); }
-      .ba-note-s { font-size: var(--fs-xs); color: var(--muted); }
-      .ba-say { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
-      .ba-arrow { display: grid; place-items: center; color: var(--gold); font-size: var(--fd-lg); }
-      .ba-one { list-style: none; margin: 0; padding: 0; display: grid; }
-      .ba-one li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
-      .ba-one li:last-child { border-bottom: 0; }
-      .ba-one-k { color: var(--charcoal); font-weight: 600; }
-      .ba-one-v { font-size: var(--fs-sm); color: var(--muted); text-align: end; }
-      .ba-one-key .ba-one-k { font-family: var(--font-display); font-size: var(--fs-2xl); color: var(--gold-deep); }
-      @media (max-width: 820px) {
-        .ba-grid { grid-template-columns: 1fr; }
-        .ba-arrow { transform: rotate(-90deg); padding: 2px 0; }
+      /* ═════ הכול מתחיל מאותה רשימת מוזמנים ══════════════════════════
+         טיפוגרפיה בלבד: טקסט חופשי מימין, אותה רשימה מסודרת משמאל, וכפתור
+         הדבקה ביניהם. שני הצדדים תמיד בגובה מלא — ההדגמה רק מחליפה שקיפות,
+         כך שאין שינוי גובה ואין תנועה של העמוד. */
+      .ps-demo {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: stretch; gap: 0 44px; max-width: 920px; margin: 48px auto 0;
+      }
+      .ps-col { display: grid; align-content: start; gap: 18px; }
+      .ps-label { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.14em; color: var(--muted); }
+      .ps-raw, .ps-rows { list-style: none; margin: 0; padding: 0; }
+      .ps-raw li {
+        position: relative; padding: 9px 0; white-space: pre; font-size: var(--fs-lg); line-height: 1.5;
+        color: var(--body); unicode-bidi: plaintext; transition: color 300ms var(--ease-out);
+      }
+      /* קו זהב דק שעובר מתחת לשורה בזמן שהיא "נקראת" */
+      .ps-raw li::after {
+        content: ""; position: absolute; inset-inline: 0 auto; bottom: 4px; height: 1.5px; width: 100%;
+        background: var(--gold); transform: scaleX(0); transform-origin: right; transition: transform 380ms var(--ease-out);
+      }
+      .ps-raw li.is-read { color: var(--muted); }
+      .ps-raw li.is-read::after { transform: scaleX(1); }
+
+      .ps-rows li {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto 22px; align-items: center; gap: 12px;
+        padding: 9px 0; border-bottom: 1px solid var(--line);
+        transition: opacity 320ms var(--ease-out), transform 320ms var(--ease-out);
+      }
+      .ps-rows li:last-child { border-bottom: 0; }
+      .ps-name { font-family: var(--font-display); font-size: var(--fs-xl); line-height: 1.5; color: var(--charcoal); }
+      .ps-count { font-size: var(--fs-lg); font-weight: 700; color: var(--gold-deep); font-variant-numeric: tabular-nums; }
+      .ps-ok { display: grid; place-items: center; color: var(--success); }
+      .ps-flag { justify-self: end; font-size: var(--fs-2xs); font-weight: 600; color: var(--warning); white-space: nowrap; }
+      .ps-rows li:has(.ps-flag) { grid-template-columns: minmax(0, 1fr) auto; }
+
+      .ps-mid { display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; gap: 14px; padding-top: 36px; }
+      .ps-rule { width: 1px; background: linear-gradient(180deg, rgba(201, 162, 39, 0), rgba(201, 162, 39, 0.55), rgba(201, 162, 39, 0)); }
+      .ps-go {
+        display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 16px;
+        border: 1px solid rgba(201, 162, 39, 0.55); border-radius: 10px; background: var(--ivory);
+        font: 600 var(--fs-sm)/1.2 'Assistant', sans-serif; color: var(--charcoal); white-space: nowrap; cursor: pointer;
+        transition: background var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);
+      }
+      .ps-go svg { color: var(--gold-deep); }
+      .ps-go:hover { background: #fff; border-color: var(--gold); }
+      .ps-go:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
+
+      /* בזמן ההדגמה: שורה מסודרת מופיעה רק אחרי שהשורה שלה נקראה */
+      .ps-demo.is-sorting .ps-rows li { opacity: 0; transform: translateY(4px); }
+      .ps-demo.is-sorting .ps-rows li.is-in { opacity: 1; transform: none; }
+
+      .ps-punch { margin: 52px auto 0; max-width: 42ch; text-wrap: balance; text-align: center; font-family: var(--font-display); font-size: var(--fd-md); line-height: 1.3; color: var(--charcoal); }
+      .ps-next { margin: 26px auto 0; text-align: center; }
+      .ps-next p { margin: 0; font-size: var(--fs-md); color: var(--body); }
+      .ps-next .ps-path { margin-top: 8px; font-size: var(--fs-sm); font-weight: 600; letter-spacing: 0.02em; color: var(--gold-deep); }
+
+      @media (max-width: 760px) {
+        .ps-demo { grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: 36px; }
+        .ps-mid { grid-template-rows: none; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 22px 0; }
+        .ps-rule { width: auto; height: 1px; background: linear-gradient(90deg, rgba(201, 162, 39, 0), rgba(201, 162, 39, 0.55), rgba(201, 162, 39, 0)); }
+        .ps-raw li { font-size: var(--fs-md); padding: 7px 0; }
+        .ps-rows li { padding: 8px 0; }
+        .ps-name { font-size: var(--fs-lg); }
+        .ps-punch { margin-top: 40px; }
       }
       @media (prefers-reduced-motion: reduce) {
-        .ba-n1, .ba-n2, .ba-n3 { transform: none; }
+        .ps-raw li, .ps-raw li::after, .ps-rows li { transition: none; }
       }
 
             /* ═════ מעברי סיפור (§4) ═════════════════════════════════════════
@@ -2427,59 +2464,61 @@
       </section>
 
       <!-- ═════ 4. מועד סגירת הרשימה ═════ -->
-      <!-- ═════════════════════════════════════════════════════════════════
-         לפני / אחרי (§9)
-
-         שלושה פתקים — "הרשימה באקסל", "האישורים בטלפון", "ההוצאות
-         בפנקס" — הם בדיוק שלושת הכרטיסים בצד "לפני", ובצד "אחרי" הם
-         אותם נתונים במקום אחד. בלי איורים גנריים ובלי נתונים מומצאים —
-         רק המבנה. (עד 2026-09-15 המשפט הזה נפתח גם כ-eyebrow בהירו;
-         הוסר משם ונשאר רק כאן.)
-         ═════════════════════════════════════════════════════════════════ -->
-    <section class="ba tone-alt" aria-labelledby="ba-title">
+      <!-- ═════ הכול מתחיל מאותה רשימת מוזמנים ═════════════════════════════
+         בלי מוקאפ, בכוונה: רשימה כמו שהיא נכתבת בפתקים או בוואטסאפ, ולידה
+         מה ש-VEYA מוציאה ממנה. השורות בצד "אחרי" הן בדיוק מה שמחזיר המנתח
+         האמיתי (importer.parse_freeform_text) על השורות האלה — כולל "מיכל",
+         שאין לה כמות ולכן היא מסומנת "חסרה כמות" (rowIssueNoCount) ולא נוחשה.
+         ════════════════════════════════════════════════════════════════════ -->
+    <section class="ps tone-alt" aria-labelledby="ps-title">
       <div class="wrap">
         <div class="section-head reveal">
-          <h2 id="ba-title" class="section-title">אותו אירוע. שתי דרכים.</h2>
+          <span class="kicker">יש לכם רשימה? פשוט תדביקו.</span>
+          <h2 id="ps-title" class="section-title">הכול מתחיל מאותה רשימת מוזמנים</h2>
           <p class="section-sub">
-            בהתחלה יש רשימת מוזמנים.<br />
-            אחר כך מתחילים להגיע השינויים.<br />
-            אחד אישר.<br />
-            אחת ביטלה.<br />
-            מישהו הוסיף עוד שניים.<br />
-            מישהו עדיין לא ענה.<br />
-            ופתאום צריך לדעת —<br />
-            כמה באמת מגיעים?
+            כבר יש לכם רשימה? אל תסדרו אותה מחדש.<br />
+            פשוט מעתיקים ומדביקים — VEYA מזהה את המוזמנים ומסדרת אותם לרשימה מוכנה לניהול.
           </p>
         </div>
 
-        <div class="ba-grid reveal d1">
-          <div class="ba-side ba-before">
-            <span class="ba-tag">בדרך הרגילה</span>
-            <div class="ba-scatter" aria-hidden="true">
-              <div class="ba-note ba-n1"><span class="ba-note-t">הרשימה</span></div>
-              <div class="ba-note ba-n2"><span class="ba-note-t">אישורי ההגעה</span></div>
-              <div class="ba-note ba-n3"><span class="ba-note-t">ההודעות והמספרים</span></div>
-            </div>
-            <p class="ba-say">עוברים בין הרשימה, אישורי ההגעה, ההודעות והמספרים ומנסים לחבר את התמונה. יש את הנתונים. רק צריך לרדוף אחריהם.</p>
+        <div class="ps-demo reveal d1" data-paste>
+          <div class="ps-col">
+            <span class="ps-label">מה שכבר יש לכם</span>
+            <ol class="ps-raw">
+              <li>משפחת כהן  4  050-...</li>
+              <li>דני ואורית 2 052...</li>
+              <li>יוסי לוי (3)</li>
+              <li>משפחת ישראלי 6 אנשים 053 ...</li>
+              <li>רועי ונועה 2</li>
+              <li>מיכל 050...</li>
+            </ol>
           </div>
 
-          <div class="ba-arrow" aria-hidden="true"><span>←</span></div>
+          <div class="ps-mid">
+            <span class="ps-rule" aria-hidden="true"></span>
+            <button type="button" class="ps-go" data-paste-go><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9.5 11h5M9.5 15h3"/></svg><span>הדביקו את הרשימה</span></button>
+            <span class="ps-rule" aria-hidden="true"></span>
+          </div>
 
-          <div class="ba-side ba-after">
-            <span class="ba-tag ba-tag-on">עם VEYA</span>
-            <ul class="ba-one">
-              <li><span class="ba-one-k">מי אישר</span></li>
-              <li><span class="ba-one-k">מי עדיין לא ענה</span></li>
-              <li><span class="ba-one-k">כמה אנשים באמת מגיעים</span></li>
-              <li><span class="ba-one-k">כמה צריך לסגור</span></li>
-              <li><span class="ba-one-k">ומה המצב הכספי של האירוע</span></li>
-              <li class="ba-one-key"><span class="ba-one-k">הכול מתנקז לאותו מקום</span></li>
-            </ul>
-            <p class="ba-say">כולל מתנות באשראי שנכנסות ישר לתמונה. לא צריך לחבר את הנקודות. הן כבר מחוברות.</p>
+          <div class="ps-col">
+            <span class="ps-label">מה ש־VEYA עושה איתה</span>
+            <ol class="ps-rows">
+              <li><span class="ps-name">משפחת כהן</span><span class="ps-count">4</span><span class="ps-ok" aria-label="זוהה"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></li>
+              <li><span class="ps-name">דני ואורית</span><span class="ps-count">2</span><span class="ps-ok" aria-label="זוהה"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></li>
+              <li><span class="ps-name">יוסי לוי</span><span class="ps-count">3</span><span class="ps-ok" aria-label="זוהה"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></li>
+              <li><span class="ps-name">משפחת ישראלי</span><span class="ps-count">6</span><span class="ps-ok" aria-label="זוהה"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></li>
+              <li><span class="ps-name">רועי ונועה</span><span class="ps-count">2</span><span class="ps-ok" aria-label="זוהה"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></li>
+              <li><span class="ps-name">מיכל</span><span class="ps-flag">חסרה כמות</span></li>
+            </ol>
           </div>
         </div>
 
-        <p class="bridge reveal d2">אתם מנהלים את האירוע. VEYA שומרת על התמונה ברורה.</p>
+        <p class="ps-punch reveal d2">אתם מביאים את הרשימה. VEYA מסדרת את השאר.</p>
+
+        <div class="ps-next reveal d2">
+          <p>ומכאן אותה רשימה מלווה אתכם לאורך כל האירוע.</p>
+          <p class="ps-path">אישורי הגעה · מעקבים · הושבה · מתנות · דוח</p>
+        </div>
       </div>
     </section>
 
@@ -3919,6 +3958,40 @@
             setTimeout(function () { tabs[1].classList.remove('is-glow'); }, 1100);
           });
         }
+      })();
+
+      /* ---- הכול מתחיל מאותה רשימת מוזמנים ----
+         פעם אחת כשהסקשן נכנס למסך, ושוב רק כשלוחצים "הדביקו את הרשימה".
+         כל שורה נקראת ואז מופיעה מסודרת. בלי focus, בלי גלילה, בלי לולאה. */
+      (function () {
+        var box = document.querySelector('[data-paste]');
+        if (!box) return;
+        var raw = [].slice.call(box.querySelectorAll('.ps-raw li'));
+        var rows = [].slice.call(box.querySelectorAll('.ps-rows li'));
+        var btn = box.querySelector('[data-paste-go]');
+        var timers = [];
+
+        function play() {
+          if (window.veyaHint.reduced) return;
+          timers.forEach(clearTimeout);
+          timers = [];
+          raw.forEach(function (l) { l.classList.remove('is-read'); });
+          rows.forEach(function (r) { r.classList.remove('is-in'); });
+          box.classList.add('is-sorting');
+          raw.forEach(function (l, i) {
+            timers.push(setTimeout(function () {
+              l.classList.add('is-read');
+              if (rows[i]) rows[i].classList.add('is-in');
+            }, 350 + i * 280));
+          });
+          timers.push(setTimeout(function () {
+            box.classList.remove('is-sorting');
+            raw.forEach(function (l) { l.classList.remove('is-read'); });
+          }, 350 + raw.length * 280 + 700));
+        }
+
+        btn.addEventListener('click', play);
+        window.veyaHint.onceInView(box, play);
       })();
 
       /* ---- מועד סגירת הרשימה: הציר נבנה לאחור מהתאריך שנבחר ----
