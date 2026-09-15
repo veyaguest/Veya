@@ -29,46 +29,59 @@ import type {
   GuestGiftRow,
 } from '../types'
 
-/** המעטפות של ההדגמה — שם וסכום, בסדר שבו הן "נפתחות". */
-export const DEMO_ENVELOPES: { name: string; amount: number }[] = [
-  { name: 'דני ורותם', amount: 1000 },
-  { name: 'משפחת כהן', amount: 1800 },
-  { name: 'יוסי לוי', amount: 600 },
-  { name: 'מאיה ואיתי', amount: 1200 },
-  { name: 'משפחת ישראלי', amount: 2000 },
-  { name: 'נועה ושחר', amount: 750 },
-  { name: 'דוד ורונית', amount: 1500 },
-  { name: 'עומר וגל', amount: 900 },
-  { name: 'משפחת אברהם', amount: 2500 },
-  { name: 'תומר ונועה', amount: 1100 },
+/**
+ * המעטפות של ההדגמה — עשר המעטפות הראשונות של אירוע ההדגמה של VEYA
+ * (אותו אירוע שבשאר צילומי המסך בדף): מספר המעטפה, מי נתן וכמה, בסדר
+ * שבו הן נספרו. הצד, הקבוצה וכמות האנשים הם של אותם מוזמנים ברשימה.
+ */
+export const DEMO_ENVELOPES: {
+  name: string
+  amount: number
+  side: 'groom' | 'bride' | 'shared'
+  group: string
+  party: number
+}[] = [
+  { name: 'שחר כהן', amount: 550, side: 'bride', group: 'childhood', party: 1 },
+  { name: 'אלה עמר', amount: 550, side: 'groom', group: 'studies', party: 1 },
+  { name: 'יפה ברק', amount: 1100, side: 'bride', group: 'friends', party: 2 },
+  { name: 'בן לביא', amount: 2000, side: 'groom', group: 'extended_family', party: 4 },
+  { name: 'ערן לביא', amount: 550, side: 'groom', group: 'army', party: 1 },
+  { name: 'עידו רוזנברג', amount: 950, side: 'bride', group: 'studies', party: 2 },
+  { name: 'קרן לוי', amount: 1100, side: 'bride', group: 'studies', party: 2 },
+  { name: 'עידו סבן', amount: 1850, side: 'bride', group: 'extended_family', party: 4 },
+  { name: 'יאיר שמש', amount: 1500, side: 'shared', group: 'neighbors', party: 3 },
+  { name: 'נועם זילבר', amount: 550, side: 'bride', group: 'work', party: 1 },
 ]
 
-/** ``52000 → "₪520"`` — אותו כלל כמו ``gift.format_agorot`` בשרת. */
+/**
+ * ``16000000 → "160,000 ₪"`` — אותו כלל כמו ``finance.format_shekels`` בשרת,
+ * שממנו מגיעים כל הסכומים במסכי מאזן האירוע: המספר, רווח דק שאינו נשבר
+ * (U+202F) ואז הסימן.
+ */
 export function formatAgorot(agorot: number): string {
   const sign = agorot < 0 ? '-' : ''
   const abs = Math.abs(agorot)
   const whole = Math.floor(abs / 100)
   const rest = abs % 100
   const withCommas = whole.toLocaleString('en-US')
-  return rest ? `${sign}₪${withCommas}.${String(rest).padStart(2, '0')}` : `${sign}₪${withCommas}`
+  const body = rest ? `${withCommas}.${String(rest).padStart(2, '0')}` : withCommas
+  return `${sign}${body}\u202F₪`
 }
 
-const PARTY: Record<string, number> = { 'משפחת כהן': 4, 'משפחת ישראלי': 5, 'משפחת אברהם': 4 }
-
-/** רשימת המוזמנים של אירוע הדוגמה. השמות הם אלה שעל המעטפות. */
+/** רשימת המוזמנים של אירוע הדוגמה — אותם מוזמנים שנתנו את המעטפות. */
 const GUESTS: Guest[] = DEMO_ENVELOPES.map((e, i) => ({
   id: i + 1,
   full_name: e.name,
   phone: '',
-  side: (i % 2 === 0 ? 'groom' : 'bride') as Guest['side'],
-  group_type: (i % 3 === 0 ? 'family' : 'friends') as Guest['group_type'],
-  party_size: PARTY[e.name] ?? 2,
+  side: e.side as Guest['side'],
+  group_type: e.group as Guest['group_type'],
+  party_size: e.party,
   notes_raw: null,
   seating_notes: null,
   rsvp_status: 'confirmed' as Guest['rsvp_status'],
   table_number: null,
   guest_token: null,
-  confirmed_count: PARTY[e.name] ?? 2,
+  confirmed_count: e.party,
   guest_note: null,
   is_child: false,
   created_at: new Date().toISOString(),
@@ -271,8 +284,8 @@ function fullReport() {
   return {
     event_title: 'החתונה של דניאל ושרון',
     event_type_label: 'חתונה',
-    event_date: '2026-09-30',
-    venue_name: 'אולם הדר',
+    event_date: '2026-09-24',
+    venue_name: 'אחוזת גן ורדים',
     generated_at: new Date().toISOString(),
     ...summary(),
     guests: byGuest(),
