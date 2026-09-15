@@ -1491,214 +1491,140 @@
       .step-two p { font-size: var(--fs-sm); color: var(--muted); margin: 0; }
       @media (max-width: 620px) { .steps-two { grid-template-columns: 1fr; } }
 
-      /* ---- אירוע אחר. אותה VEYA. ----
-         בחירה בין אירועים (כרטיס עם סימון), ומולה מסך אחד של VEYA שההיגיון
-         שלו משתנה. כל הלוחות באותו תא (grid-area 1/1): הגובה נקבע לפי הלוח
-         הגבוה, והמעבר הוא החלפה שקטה של שקיפות — בלי קפיצה בגובה העמוד. */
-      .et { max-width: 1040px; margin-inline: auto; }
-      .et-tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
-      .et-tab {
-        position: relative; display: grid; justify-items: center; align-content: center; gap: 8px;
-        min-height: 104px; padding: 14px 8px 12px; border: 1px solid var(--line); border-radius: 14px;
-        background: var(--cream); font: 600 var(--fs-md)/1.2 'Assistant', sans-serif; color: var(--body); cursor: pointer;
-        transition: border-color var(--motion-fast) var(--ease-out), background var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
+      /* ---- מסלול האירוע: 01 → 02 → 03 ----
+         RTL מהיסוד: direction: rtl על הסקשן, כל המיקומים לוגיים
+         (inset-inline-start, padding-inline), ו-01 הוא הטור הראשון — כלומר
+         הימני. הקו יוצא מהנקודה של כל שלב אל הנקודה של השלב הבא: בדסקטופ
+         לרוחב (שמאלה), במובייל לאורך מסילה אנכית בצד ימין (למטה).
+         התנועה היחידה: השלב נחשף, והקטע שלו נמתח לכיוון השלב הבא. */
+      #events { direction: rtl; }
+      .rt {
+        --rt-gap: 44px; --rt-dot: 11px; --rt-rail-y: 6px;
+        list-style: none; margin: 8px 0 0; padding: 0;
+        display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--rt-gap);
+        align-items: start;
       }
-      .et-tab-ic {
-        display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
-        background: rgba(201, 162, 39, 0.12); color: var(--gold-deep);
-        transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
+      .rt-step { position: relative; display: grid; grid-template-rows: auto 1fr; min-width: 0; }
+      .rt-rail { position: relative; display: block; height: calc(var(--rt-dot) + var(--rt-rail-y) * 2); }
+      .rt-dot {
+        position: absolute; inset-inline-start: 0; top: var(--rt-rail-y);
+        width: var(--rt-dot); height: var(--rt-dot); border-radius: 50%;
+        background: var(--ivory); border: 2px solid var(--gold); box-sizing: border-box; z-index: 1;
       }
-      .et-tab:hover { border-color: rgba(201, 162, 39, 0.55); }
-      .et-tab.is-on { background: #fff; border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), var(--shadow-sm); color: var(--charcoal); }
-      .et-tab.is-on .et-tab-ic { background: var(--gold); color: var(--charcoal); }
-      /* סימון בחירה בפינה — בחירה של אירוע, לא לשונית ניווט */
-      .et-tab::after {
-        content: ""; position: absolute; top: 8px; inset-inline-end: 8px; width: 18px; height: 18px; border-radius: 50%;
-        background: var(--gold) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232b2620' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 11px no-repeat;
-        opacity: 0; transform: scale(0.6); transition: opacity var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
+      /* הקטע: מהנקודה הזו עד הנקודה של השלב הבא (רוחב הטור + הרווח) */
+      .rt-seg {
+        position: absolute; top: calc(var(--rt-rail-y) + var(--rt-dot) / 2 - 0.5px); height: 1px;
+        inset-inline-start: var(--rt-dot); width: calc(100% + var(--rt-gap) - var(--rt-dot));
+        background: linear-gradient(90deg, rgba(201, 162, 39, 0.55), rgba(201, 162, 39, 0.55));
+        transform: scaleX(0); transform-origin: 100% 50%; /* ב-RTL הקו נמתח מימין (01) שמאלה */
+        transition: transform 1.1s var(--ease-out) 0.35s;
       }
-      .et-tab.is-on::after { opacity: 1; transform: none; }
-      .et-tab:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
+      .rt-step.in .rt-seg { transform: none; }
+      .rt-body { padding-top: 18px; display: grid; align-content: start; }
+      .rt-num {
+        font-family: var(--font-display); font-size: clamp(2.6rem, 4.2vw, 3.5rem); font-weight: 400; line-height: 1;
+        color: color-mix(in srgb, var(--gold-deep) 76%, var(--ivory)); font-variant-numeric: lining-nums; margin-bottom: 14px;
+      }
+      .rt-when { margin: 0 0 6px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.04em; color: var(--gold-deep); }
+      .rt-title { margin: 0 0 8px; font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 500; line-height: 1.2; color: var(--charcoal); }
+      .rt-text { margin: 0 0 22px; font-size: var(--fs-md); line-height: 1.7; color: var(--body); max-width: 34ch; }
 
-      .et-stage { display: grid; padding: clamp(16px, 3vw, 30px); border: 1px solid var(--line); border-radius: var(--radius-xl); background: var(--cream); }
-      .et-panel {
-        grid-area: 1 / 1; display: grid; gap: 18px; align-items: center;
-        opacity: 0; visibility: hidden; transition: opacity 220ms var(--ease-out), visibility 0s linear 220ms;
+      /* ── כרטיסי המוצר: אותה שפה של המסכים ב-VEYA ── */
+      .rt-ui {
+        background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+        box-shadow: 0 1px 2px rgba(43, 38, 32, 0.05), 0 18px 36px -28px rgba(43, 38, 32, 0.35);
+        font-size: var(--fs-xs); color: var(--body);
       }
-      .et-panel.is-on { opacity: 1; visibility: visible; transition: opacity 220ms var(--ease-out), visibility 0s; }
-      .et-story { display: grid; gap: 8px; align-content: center; }
-      .et-name { margin: 0; font-family: var(--font-display); font-size: var(--fd-lg); line-height: 1.1; color: var(--charcoal); font-weight: 500; }
-      /* שתי שורות שמורות תמיד, כדי שהכותרת והקישור לא יזוזו בין אירוע לאירוע */
-      .et-line { margin: 0; font-size: var(--fs-lg); line-height: 1.6; min-height: 3.2em; color: var(--body); max-width: 34ch; }
-      .et-more { justify-self: start; margin-top: 4px; font-size: var(--fs-sm); font-weight: 600; color: var(--gold-deep); text-decoration: none; }
-      .et-more:hover { text-decoration: underline; text-underline-offset: 3px; }
+      .rt-ui-head {
+        display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+        padding: 10px 14px; background: var(--ivory); border-bottom: 1px solid var(--line);
+      }
+      .rt-ui-head--sub { border-top: 1px solid var(--line); }
+      .rt-ui-t { font-weight: 700; color: var(--charcoal); font-size: var(--fs-sm); }
+      .rt-ui-m { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
-      /* המסך של VEYA — אותו שלד בכל אירוע */
-      .et-app { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); overflow: hidden; box-shadow: var(--shadow-sm); }
-      .et-app-bar { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 8px 16px; background: var(--ink); color: #cabfa9; font-size: var(--fs-xs); }
-      .et-app-mark { font-family: var(--font-display); letter-spacing: 0.22em; color: var(--gold-light); font-size: var(--fs-xs); }
-      .et-app-screen { color: var(--cream-text); font-weight: 600; }
-      .et-app-type, .et-app-events { margin-inline-start: auto; }
-      .et-app-type { padding: 2px 10px; border: 1px solid rgba(228, 201, 107, 0.4); border-radius: 999px; color: var(--gold-light); font-size: var(--fs-2xs); }
-      .et-app-events { display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; background: rgba(245, 239, 226, 0.08); }
-      .et-app-events i { font-style: normal; font-size: var(--fs-2xs); padding: 2px 10px; border-radius: 999px; color: #b6aa93; }
-      .et-app-events i.is-on { background: var(--gold); color: var(--charcoal); font-weight: 700; }
-      .et-app-body { display: grid; align-content: center; gap: 12px; min-height: 300px; padding: 16px; }
-      .et-app-body .gl-row { padding: 9px 0; }
-      .et-table { flex: none; font-style: normal; padding: 2px 9px; border-radius: 999px; border: 1px solid rgba(201, 162, 39, 0.45); color: var(--gold-deep); font-size: var(--fs-2xs); font-weight: 600; white-space: nowrap; }
-      .et-note { display: inline-flex; align-items: center; gap: 5px; margin-top: 2px; font-size: var(--fs-2xs); color: var(--body); }
-      .et-note svg { color: var(--gold-deep); flex: none; }
-      .et-filter { display: flex; flex-wrap: wrap; gap: 5px; }
-      .et-filter i { font-style: normal; font-size: var(--fs-2xs); padding: 2px 8px; border-radius: 999px; background: rgba(23, 19, 13, 0.05); color: var(--body); white-space: nowrap; }
-      .et-filter i.is-on { background: rgba(201, 162, 39, 0.16); color: var(--charcoal); font-weight: 600; }
+      .rt-gl { list-style: none; margin: 0; padding: 0 14px; }
+      .rt-g {
+        display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .rt-g:last-child { border-bottom: 0; }
+      .rt-g-main { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+      .rt-g-main b { font-size: var(--fs-sm); color: var(--charcoal); font-weight: 600; white-space: nowrap; }
+      .rt-g-sub { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .rt-g-n {
+        min-width: 22px; height: 22px; display: grid; place-items: center; align-self: center;
+        border: 1px solid var(--line); border-radius: 6px; font-weight: 600; color: var(--charcoal); font-variant-numeric: tabular-nums;
+      }
+      .rt-g-note { grid-column: 1 / -1; display: inline-flex; align-items: center; gap: 5px; color: var(--body); }
+      .rt-g-note svg { width: 13px; height: 13px; color: var(--gold-deep); flex: none; }
 
-      /* חתונה: צד → קבוצה → מוזמן → שולחן */
-      .et-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-      .et-side { display: grid; gap: 10px; align-content: start; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
-      .et-side-h { font-weight: 700; font-size: var(--fs-md); color: var(--charcoal); padding-bottom: 8px; border-bottom: 1px solid var(--line); }
-      .et-grp { display: grid; gap: 6px; padding-inline-start: 10px; border-inline-start: 2px solid rgba(201, 162, 39, 0.4); }
-      .et-grp-h { font-size: var(--fs-2xs); font-weight: 700; color: var(--gold-deep); }
-      .et-g { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: var(--fs-xs); }
-      .et-g b { font-weight: 600; color: var(--charcoal); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .rt-rsvp { padding: 12px 14px 14px; }
+      .rt-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--ivory-2); }
+      .rt-bar i { width: calc(var(--p) * 1%); }
+      .rt-bar i + i { border-inline-start: 2px solid #fff; }
+      .rt-ui .is-yes { background: var(--gold); }
+      .rt-ui .is-maybe { background: rgba(201, 162, 39, 0.4); }
+      .rt-ui .is-wait { background: #d9d0b8; }
+      .rt-ui .is-no { background: rgba(43, 38, 32, 0.55); }
+      .rt-legend { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; }
+      .rt-legend li { display: flex; align-items: center; gap: 6px; }
+      .rt-legend i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+      .rt-legend b { margin-inline-start: auto; color: var(--charcoal); font-variant-numeric: tabular-nums; }
+      .rt-tables { list-style: none; margin: 0; padding: 12px 14px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .rt-tables li {
+        display: flex; justify-content: space-between; align-items: baseline; gap: 6px;
+        padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--ivory);
+      }
+      .rt-tables b { font-variant-numeric: tabular-nums; color: var(--charcoal); font-weight: 600; }
+      .rt-tables li.is-full { border-color: rgba(201, 162, 39, 0.55); }
+      .rt-tables li.is-full b::after { content: " · מלא"; font-weight: 400; color: var(--gold-deep); }
 
-      /* חינה: הערות, ומי יושבת עם מי */
-      .et-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
-      .et-pair-rows { display: grid; padding-inline-end: 12px; border-inline-end: 2px solid var(--gold); border-radius: 0 0 0 0; }
-      .et-pair-rows .gl-row { border-bottom: 1px solid var(--line); }
-      .et-pair-rows .gl-row:last-child { border-bottom: 0; }
-      .et-pair-tag { display: grid; justify-items: center; gap: 6px; font-size: var(--fs-2xs); font-weight: 700; color: var(--charcoal); }
+      .rt-fin { margin: 0; padding: 4px 14px; }
+      .rt-fin div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+      .rt-fin div:last-child { border-bottom: 0; }
+      .rt-fin dt { color: var(--body); }
+      .rt-fin dd { margin: 0; font-weight: 600; color: var(--charcoal); font-variant-numeric: tabular-nums; }
+      .rt-fin-total {
+        display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+        padding: 12px 14px; background: var(--ivory); border-top: 1px solid var(--line);
+      }
+      .rt-fin-total span { font-weight: 700; color: var(--charcoal); font-size: var(--fs-sm); }
+      .rt-fin-total strong { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 500; color: var(--charcoal); font-variant-numeric: lining-nums tabular-nums; }
 
-      /* בר מצווה: כל קבוצה במסלול משלה */
-      .et-lanes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-      .et-lane { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
-      .et-lane-h { font-size: var(--fs-sm); font-weight: 700; color: var(--charcoal); }
-      .et-avs { display: flex; }
-      .et-avs i {
-        display: grid; place-items: center; width: 26px; height: 26px; margin-inline-start: -6px; border-radius: 50%;
-        font-style: normal; font-size: 11px; font-weight: 700; color: var(--body); background: var(--ivory-2); border: 2px solid #fff;
+      .rt-end {
+        margin: 76px auto 0; max-width: 30ch; text-align: center;
+        font-family: var(--font-display); font-size: var(--fd-sm); line-height: 1.35; color: var(--body);
       }
-      .et-avs i:first-child { margin-inline-start: 0; }
-      .et-avs--kids i { width: 21px; height: 21px; font-size: 10px; background: rgba(201, 162, 39, 0.2); color: var(--gold-deep); }
+      .rt-end strong { display: inline-block; margin-top: 4px; font-weight: 500; color: var(--charcoal); font-size: var(--fd-md); }
 
-      /* בת מצווה: שולחן החברות מול שולחנות המשפחה */
-      .et-bat { display: grid; grid-template-columns: auto auto; justify-content: center; align-items: center; gap: 22px; }
-      .et-bat-family { display: grid; gap: 14px; }
-      .et-bat-family .et-hall-t { width: 104px; height: 104px; }
-      .et-bat-family .et-hall-top { width: 68px; height: 68px; }
-      .et-bat-family .et-hall-top b { font-size: var(--fs-2xs); line-height: 1.2; }
-      .et-bat-family .et-hall-seats i { transform: rotate(var(--a)) translateY(-45px); }
-      .et-round-table { position: relative; width: 230px; height: 230px; }
-      .et-round-name {
-        position: absolute; inset: 58px; display: grid; place-content: center; text-align: center; gap: 2px;
-        border-radius: 50%; background: var(--cream); border: 1.5px solid var(--gold);
-        font-weight: 700; font-size: var(--fs-sm); color: var(--charcoal);
-      }
-      .et-round-name small { font-weight: 500; font-size: var(--fs-2xs); color: var(--muted); }
-      .et-seat { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform: rotate(var(--a)) translateY(-94px) rotate(calc(var(--a) * -1)); }
-      .et-seat b {
-        position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); min-width: 46px; padding: 4px 6px; text-align: center;
-        border-radius: 999px; background: #fff; border: 1px solid rgba(201, 162, 39, 0.5); font-size: var(--fs-2xs); font-weight: 600; color: var(--charcoal); white-space: nowrap;
-      }
+      /* השלבים נחשפים אחד אחרי השני */
+      .rt-step.reveal:nth-child(2) { --d: 0.18s; }
+      .rt-step.reveal:nth-child(3) { --d: 0.36s; }
 
-      /* ברית: אותו לוח, מתכווץ לזמן שנשאר */
-      .et-sq { display: grid; gap: 18px; }
-      .et-sq-row { display: grid; gap: 8px; }
-      .et-sq-l { display: flex; justify-content: space-between; gap: 10px; font-size: var(--fs-xs); color: var(--muted); }
-      .et-sq-row--short .et-sq-l span:first-child { color: var(--charcoal); font-weight: 700; }
-      .et-sq-track { position: relative; display: block; height: 26px; }
-      .et-sq-bar { position: absolute; top: 11px; inset-inline-end: 0; width: 100%; height: 4px; border-radius: 999px; background: rgba(23, 19, 13, 0.12); }
-      .et-sq-row--short .et-sq-bar { width: 32%; background: var(--gold); }
-      .et-sq-bar i {
-        position: absolute; top: 50%; inset-inline-start: var(--p); width: 22px; height: 22px; transform: translate(50%, -50%);
-        display: grid; place-items: center; border-radius: 50%; font-style: normal; font-size: 11px; font-weight: 700;
-        background: #fff; border: 1.5px solid rgba(23, 19, 13, 0.25); color: var(--muted);
-      }
-      .et-sq-row--short .et-sq-bar i { border-color: var(--gold-deep); color: var(--charcoal); }
-      .et-sq-legend { list-style: none; margin: 0; padding: 12px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; border-top: 1px solid var(--line); }
-      .et-sq-legend li { display: flex; align-items: center; gap: 8px; font-size: var(--fs-xs); color: var(--charcoal); }
-      .et-sq-legend i { flex: none; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-style: normal; font-size: 11px; font-weight: 700; background: rgba(201, 162, 39, 0.16); color: var(--gold-deep); }
-
-      /* בריתה: אירוע נפרד — רשימה ואולם משלו */
-      .et-split { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: center; }
-      .et-hall { display: grid; grid-template-columns: repeat(2, 84px); gap: 10px 14px; }
-      .et-hall-t { position: relative; width: 84px; height: 84px; display: grid; place-items: center; }
-      .et-hall-top {
-        width: 54px; height: 54px; display: grid; place-content: center; text-align: center;
-        border-radius: 50%; background: var(--cream); border: 1px solid rgba(201, 162, 39, 0.5);
-      }
-      .et-hall-top b { font-size: var(--fs-sm); line-height: 1.1; color: var(--charcoal); }
-      .et-hall-top small { font-size: 10px; color: var(--muted); }
-      .et-hall-seats { position: absolute; inset: 0; }
-      .et-hall-seats i {
-        position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px;
-        border-radius: 50%; background: var(--ivory); border: 1px solid rgba(23, 19, 13, 0.22);
-        transform: rotate(var(--a)) translateY(-37px);
-      }
-      .et-hall-seats i.is-taken { background: var(--gold); border-color: var(--gold-deep); }
-
-      /* כניסה עדינה של תוכן המסך בכל החלפה */
-      @keyframes et-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-      @keyframes et-squeeze { from { width: 100%; } to { width: 32%; } }
-      .et-panel.is-on .et-in { animation: et-in 360ms var(--ease-out) both; }
-      .et-panel.is-on .et-in:nth-child(2) { animation-delay: 70ms; }
-      .et-panel.is-on .et-in:nth-child(3) { animation-delay: 140ms; }
-      .et-panel.is-on .et-in:nth-child(4) { animation-delay: 210ms; }
-      .et-panel.is-on .et-in:nth-child(5) { animation-delay: 280ms; }
-      .et-panel.is-on .et-sq-row--short .et-sq-bar { animation: et-squeeze 700ms var(--ease-out) 260ms both; }
-
-      @media (min-width: 900px) {
-        .et-panel { grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr); gap: 34px; }
-      }
-      @media (max-width: 899px) {
-        /* לוח אחד מעל השני: הכול מתחיל מלמעלה, כדי שהכותרת והמסך לא יזוזו בין בחירות */
-        .et-panel { align-content: start; }
-        .et-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        .et-tab { min-height: 84px; }
-        .et-name { font-size: var(--fd-md); }
-        .et-line { font-size: var(--fs-md); }
-      }
-      @media (max-width: 480px) {
-        .et-tabs { gap: 8px; }
-        .et-tab { min-height: 76px; gap: 6px; padding: 10px 4px 8px; font-size: var(--fs-sm); }
-        .et-tab-ic { width: 36px; height: 36px; }
-        .et-tab::after { top: 6px; inset-inline-end: 6px; width: 15px; height: 15px; background-size: 9px; }
-        .et-stage { padding: 14px; }
-        .et-app-body { padding: 12px; min-height: 0; }
-        .et-sides { gap: 6px; }
-        .et-side { padding: 9px; }
-        .et-g { flex-direction: column; align-items: flex-start; gap: 3px; }
-        .et-lane { grid-template-columns: 78px minmax(0, 1fr) auto; padding: 7px 8px; gap: 6px; }
-        .et-avs--kids i { width: 18px; height: 18px; }
-        .et-avs i { width: 22px; height: 22px; }
-        .et-bat { gap: 10px; }
-        .et-round-table { width: 190px; height: 190px; }
-        .et-seat { transform: rotate(var(--a)) translateY(-76px) rotate(calc(var(--a) * -1)); }
-        .et-seat b { min-width: 40px; padding: 3px 5px; font-size: 11px; }
-        .et-round-name { inset: 50px; font-size: var(--fs-xs); }
-        .et-bat-family .et-hall-t { width: 84px; height: 84px; }
-        .et-bat-family .et-hall-top { width: 56px; height: 56px; }
-        .et-bat-family .et-hall-seats i { transform: rotate(var(--a)) translateY(-37px); }
-        .et-sq-legend { grid-template-columns: 1fr; }
-        .et-split { gap: 10px; }
-        .et-hall { grid-template-columns: repeat(2, 70px); gap: 6px 8px; }
-        .et-hall-t { width: 70px; height: 70px; }
-        .et-hall-top { width: 44px; height: 44px; }
-        .et-hall-top b { font-size: var(--fs-xs); }
-        .et-hall-seats i { width: 8px; height: 8px; margin: -4px 0 0 -4px; transform: rotate(var(--a)) translateY(-30px); }
-      }
-      @media (max-width: 380px) {
-        .et-round-table { width: 168px; height: 168px; }
-        .et-seat { transform: rotate(var(--a)) translateY(-66px) rotate(calc(var(--a) * -1)); }
-        .et-seat b { min-width: 36px; padding: 2px 4px; font-size: 10px; }
-        .et-round-name { inset: 44px; font-size: 11px; }
-        .et-bat-family .et-hall-t { width: 72px; height: 72px; }
-        .et-bat-family .et-hall-top { width: 48px; height: 48px; }
-        .et-bat-family .et-hall-top b { font-size: 10px; }
-        .et-bat-family .et-hall-seats i { width: 8px; height: 8px; margin: -4px 0 0 -4px; transform: rotate(var(--a)) translateY(-31px); }
+      @media (max-width: 900px) {
+        /* מסילה אנכית בצד ימין: 01 למעלה, מתקדמים למטה */
+        .rt { grid-template-columns: minmax(0, 1fr); gap: 0; max-width: 520px; margin-inline: auto; --rt-gap: 40px; }
+        .rt-step { grid-template-columns: 28px minmax(0, 1fr); grid-template-rows: none; column-gap: 14px; padding-bottom: var(--rt-gap); }
+        .rt-step:last-child { padding-bottom: 0; }
+        .rt-rail { height: auto; }
+        .rt-dot { top: 12px; inset-inline-start: calc((28px - var(--rt-dot)) / 2); }
+        .rt-seg {
+          inset-inline-start: calc(14px - 0.5px); top: calc(12px + var(--rt-dot)); bottom: calc(-12px);
+          width: 1px; height: auto; transform: scaleY(0); transform-origin: 50% 0;
+        }
+        .rt-step.in .rt-seg { transform: none; }
+        .rt-body { padding-top: 0; }
+        .rt-num { font-size: 2.2rem; margin-bottom: 8px; }
+        .rt-text { margin-bottom: 16px; }
+        .rt-end { margin-top: 56px; }
+        .rt-g:nth-child(3) { display: none; }
+        .rt-g:nth-child(2) { border-bottom: 0; }
+        .rt-tables li { flex-wrap: nowrap; white-space: nowrap; }
+        .rt-tables li.is-full b::after { content: " ✓"; color: var(--gold-deep); }
       }
       @media (prefers-reduced-motion: reduce) {
-        .et-panel, .et-panel.is-on, .et-tab, .et-tab::after, .et-tab-ic { transition: none; }
-        .et-panel.is-on .et-in, .et-panel.is-on .et-sq-row--short .et-sq-bar { animation: none; }
+        .rt-seg, .rt-step.in .rt-seg { transform: none; transition: none; }
       }
 
       /* ---- CTA משני בתוך סקשן (למחשבון) ---- */
@@ -1709,7 +1635,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2841,6 +2767,7 @@
     
     
     
+    
     </style>
     <script>
       /* צילום שנקטע בטעינה: ניסיון חוזר אחד, והמסגרת נשארת. מוגדר ב-head כדי
@@ -3775,145 +3702,104 @@
       <section class="eventtypes tone-light" id="events" aria-labelledby="events-title">
         <div class="wrap">
           <div class="section-head reveal">
-            <span class="kicker">סוגי האירועים</span>
-            <h2 id="events-title" class="section-title">אירוע אחר.<br />אותה VEYA.</h2>
-            <p class="section-sub">בחרו אירוע ותראו איך VEYA מתאימה את הניהול למה שבאמת חשוב בו.</p>
+            <h2 id="events-title" class="section-title">לא מנהלים כל אירוע באותה צורה.<br />וגם לא צריך.</h2>
+            <p class="section-sub">
+              חתונה, חינה, בר מצווה או ברית — בכל אירוע יש אנשים אחרים, זמן אחר ודברים אחרים שצריך לסגור.
+              VEYA מתאימה את הדרך שבה מנהלים את האירוע למה שקורה בו באמת.
+            </p>
           </div>
-          <div class="et reveal d1" data-et>
-            <div class="et-tabs" role="tablist" aria-label="סוג האירוע">
-            <button type="button" class="et-tab is-on" role="tab" id="et-tab-wedding" aria-controls="et-panel-wedding" aria-selected="true" tabindex="0" data-et-tab="wedding">
-              <span class="et-tab-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="14" r="5.5"/><circle cx="15" cy="14" r="5.5"/><path d="m10.5 4 1.5-2 1.5 2-1.5 1.6z"/></svg></span><span class="et-tab-name">חתונה</span>
-            </button>
-            <button type="button" class="et-tab" role="tab" id="et-tab-henna" aria-controls="et-panel-henna" aria-selected="false" tabindex="-1" data-et-tab="henna">
-              <span class="et-tab-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c2.5 3 4 5.4 4 7.6a4 4 0 0 1-8 0C8 8.4 9.5 6 12 3z"/><path d="M12 14.6V21M9 18.5h6"/></svg></span><span class="et-tab-name">חינה</span>
-            </button>
-            <button type="button" class="et-tab" role="tab" id="et-tab-bar-mitzvah" aria-controls="et-panel-bar-mitzvah" aria-selected="false" tabindex="-1" data-et-tab="bar-mitzvah">
-              <span class="et-tab-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/></svg></span><span class="et-tab-name">בר מצווה</span>
-            </button>
-            <button type="button" class="et-tab" role="tab" id="et-tab-bat-mitzvah" aria-controls="et-panel-bat-mitzvah" aria-selected="false" tabindex="-1" data-et-tab="bat-mitzvah">
-              <span class="et-tab-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4l-4.8 2.5.9-5.4-3.9-3.8 5.4-.8z"/></svg></span><span class="et-tab-name">בת מצווה</span>
-            </button>
-            <button type="button" class="et-tab" role="tab" id="et-tab-brit" aria-controls="et-panel-brit" aria-selected="false" tabindex="-1" data-et-tab="brit">
-              <span class="et-tab-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.3-7-9.6A4 4 0 0 1 12 8a4 4 0 0 1 7 2.4C19 15.7 12 20 12 20z"/></svg></span><span class="et-tab-name">ברית</span>
-            </button>
-            <button type="button" class="et-tab" role="tab" id="et-tab-brita" aria-controls="et-panel-brita" aria-selected="false" tabindex="-1" data-et-tab="brita">
-              <span class="et-tab-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="7" r="2.7"/><circle cx="17" cy="12" r="2.7"/><circle cx="12" cy="17" r="2.7"/><circle cx="7" cy="12" r="2.7"/></svg></span><span class="et-tab-name">בריתה</span>
-            </button>
-            </div>
-            <div class="et-stage">
-            <div class="et-panel is-on" role="tabpanel" id="et-panel-wedding" aria-labelledby="et-tab-wedding" data-et-panel="wedding">
-              <div class="et-story">
-                <h3 class="et-name">חתונה</h3>
-                <p class="et-line">שתי משפחות, מאות מוזמנים, והושבה שצריכה להתחבר למציאות.</p>
-                <a class="et-more" href="/events/wedding/">עוד על חתונה <span aria-hidden="true">←</span></a>
-              </div>
-              <div class="et-app" aria-hidden="true">
-                <div class="et-app-bar"><span class="et-app-mark">VEYA</span><span class="et-app-screen">רשימת המוזמנים</span><span class="et-app-type">חתונה</span></div>
-                <div class="et-app-body">
-                  <div class="et-sides">
-                    <div class="et-side et-in"><span class="et-side-h">צד חתן</span><div class="et-grp"><span class="et-grp-h">חברים</span><span class="et-g"><b>עומר ושני</b><em class="et-table">שולחן 12</em></span><span class="et-g"><b>איתי לוי</b><em class="et-table">שולחן 12</em></span></div><div class="et-grp"><span class="et-grp-h">צבא</span><span class="et-g"><b>יונתן ברק</b><em class="et-table">שולחן 14</em></span></div></div>
-                    <div class="et-side et-in"><span class="et-side-h">צד כלה</span><div class="et-grp"><span class="et-grp-h">משפחה קרובה</span><span class="et-g"><b>משפחת אזולאי</b><em class="et-table">שולחן 3</em></span><span class="et-g"><b>דודה רחל</b><em class="et-table">שולחן 3</em></span></div><div class="et-grp"><span class="et-grp-h">מהלימודים</span><span class="et-g"><b>נועה וטל</b><em class="et-table">שולחן 9</em></span></div></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="et-panel" role="tabpanel" id="et-panel-henna" aria-labelledby="et-tab-henna" data-et-panel="henna" aria-hidden="true">
-              <div class="et-story">
-                <h3 class="et-name">חינה</h3>
-                <p class="et-line">רשימה משפחתית, קבוצות שונות והרבה החלטות קטנות.</p>
-                <a class="et-more" href="/events/henna/">עוד על חינה <span aria-hidden="true">←</span></a>
-              </div>
-              <div class="et-app" aria-hidden="true">
-                <div class="et-app-bar"><span class="et-app-mark">VEYA</span><span class="et-app-screen">רשימת המוזמנים</span><span class="et-app-type">חינה</span></div>
-                <div class="et-app-body">
-                  <div class="et-filter et-in"><i class="is-on">משפחה</i><i class="is-on">צד משפחתי מורחב</i><i class="is-on">חברים</i></div>
-                  <ul class="gl-list">
-                    <li class="gl-row et-in"><span class="gl-who"><span class="gl-name">סבתא מזל</span><span class="gl-grp">משפחה</span><span class="et-note"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>רחוק מהרמקולים</span></span><em class="et-table">שולחן 1</em></li>
-                    <li class="gl-row et-in"><span class="gl-who"><span class="gl-name">אמא ואבא של הכלה</span><span class="gl-grp">משפחה</span><span class="et-note"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>ליד השולחן של סבתא</span></span><em class="et-table">שולחן 1</em></li>
-                  </ul>
-                  <div class="et-pair et-in">
-                    <div class="et-pair-rows">
-                      <span class="gl-row"><span class="gl-who"><span class="gl-name">בנות הדודות</span><span class="gl-grp">צד משפחתי מורחב</span></span></span>
-                      <span class="gl-row"><span class="gl-who"><span class="gl-name">הדס ומאיה</span><span class="gl-grp">חברים</span></span></span>
-                    </div>
-                    <span class="et-pair-tag">יושבות יחד<em class="et-table">שולחן 4</em></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="et-panel" role="tabpanel" id="et-panel-bar-mitzvah" aria-labelledby="et-tab-bar-mitzvah" data-et-panel="bar-mitzvah" aria-hidden="true">
-              <div class="et-story">
-                <h3 class="et-name">בר מצווה</h3>
-                <p class="et-line">משפחה, חברים, כיתה, תנועה — וכל קבוצה מתנהלת אחרת.</p>
-                <a class="et-more" href="/events/bar-mitzvah/">עוד על בר מצווה <span aria-hidden="true">←</span></a>
-              </div>
-              <div class="et-app" aria-hidden="true">
-                <div class="et-app-bar"><span class="et-app-mark">VEYA</span><span class="et-app-screen">קבוצות המוזמנים</span><span class="et-app-type">בר מצווה</span></div>
-                <div class="et-app-body">
-                  <ul class="et-lanes">
-                    <li class="et-lane et-in"><span class="et-lane-h">משפחת האב</span><span class="et-avs"><i>ד</i><i>ר</i><i>מ</i><i>א</i></span><em class="et-table">שולחנות משפחה</em></li>
-                    <li class="et-lane et-in"><span class="et-lane-h">משפחת האם</span><span class="et-avs"><i>ש</i><i>ל</i><i>י</i><i>ח</i></span><em class="et-table">שולחנות משפחה</em></li>
-                    <li class="et-lane et-in"><span class="et-lane-h">חברים</span><span class="et-avs"><i>ת</i><i>ג</i><i>ב</i></span><em class="et-table">שולחנות מבוגרים</em></li>
-                    <li class="et-lane et-in"><span class="et-lane-h">כיתה</span><span class="et-avs et-avs--kids"><i>א</i><i>נ</i><i>ע</i><i>י</i><i>ר</i><i>ד</i><i>ל</i></span><em class="et-table">שולחן ילדים</em></li>
-                    <li class="et-lane et-in"><span class="et-lane-h">צוות/חוגים</span><span class="et-avs et-avs--kids"><i>מ</i><i>ס</i><i>ק</i></span><em class="et-table">יושבים יחד</em></li>
+
+          <!-- ═════ מסלול האירוע: 01 → 02 → 03 ═════════════════════════════
+               בנוי RTL מההתחלה: 01 בצד ימין, הקו מתקדם שמאלה (ובמובייל —
+               למטה, לאורך מסילה בצד ימין). אין טאבים ואין לחיצות: גוללים,
+               והשלבים נחשפים אחד אחרי השני.
+               הנתונים בכרטיסים הם של אירוע ההדגמה של VEYA — אותו אירוע
+               שבצילומי המסך של "איך זה עובד" (313 מוזמנים, 122 משקי בית
+               אישרו, מאזן של ‎−23,325.60 ₪). -->
+          <ol class="rt">
+            <li class="rt-step reveal">
+              <span class="rt-rail" aria-hidden="true"><span class="rt-dot"></span><span class="rt-seg"></span></span>
+              <div class="rt-body">
+                <span class="rt-num" aria-hidden="true">01</span>
+                <p class="rt-when">לפני האירוע</p>
+                <h3 class="rt-title">המוזמנים נכנסים לתמונה</h3>
+                <p class="rt-text">רשימה, קבוצות, פרטים והערות — הכל מתחיל במקום אחד.</p>
+                <div class="rt-ui" role="img" aria-label="רשימת המוזמנים ב־VEYA: לכל מוזמן קבוצה, צד, כמה אנשים והערה להושבה">
+                  <div class="rt-ui-head"><span class="rt-ui-t">רשימת המוזמנים</span><span class="rt-ui-m">313 מוזמנים</span></div>
+                  <ul class="rt-gl">
+                    <li class="rt-g">
+                      <span class="rt-g-main"><b>יפה ברק</b><span class="rt-g-sub">חברים · צד כלה</span></span>
+                      <span class="rt-g-n">2</span>
+                      <span class="rt-g-note"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 12.5V13h.5L11 5.5 10.5 5zM10.5 5l1-1a.7.7 0 0 1 1 1l-1 1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>ליד הכניסה</span>
+                    </li>
+                    <li class="rt-g">
+                      <span class="rt-g-main"><b>ערן לביא</b><span class="rt-g-sub">צבא · צד חתן</span></span>
+                      <span class="rt-g-n">1</span>
+                      <span class="rt-g-note"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 12.5V13h.5L11 5.5 10.5 5zM10.5 5l1-1a.7.7 0 0 1 1 1l-1 1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>ליד הבר</span>
+                    </li>
+                    <li class="rt-g">
+                      <span class="rt-g-main"><b>עידו רוזנברג</b><span class="rt-g-sub">מהלימודים · צד כלה</span></span>
+                      <span class="rt-g-n">2</span>
+                      <span class="rt-g-note"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 12.5V13h.5L11 5.5 10.5 5zM10.5 5l1-1a.7.7 0 0 1 1 1l-1 1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>רחוק מהרמקולים</span>
+                    </li>
                   </ul>
                 </div>
               </div>
-            </div>
-            <div class="et-panel" role="tabpanel" id="et-panel-bat-mitzvah" aria-labelledby="et-tab-bat-mitzvah" data-et-panel="bat-mitzvah" aria-hidden="true">
-              <div class="et-story">
-                <h3 class="et-name">בת מצווה</h3>
-                <p class="et-line">המשפחה והחברות, עם אירוע שמרגיש אחרת לגמרי.</p>
-                <a class="et-more" href="/events/bat-mitzvah/">עוד על בת מצווה <span aria-hidden="true">←</span></a>
-              </div>
-              <div class="et-app" aria-hidden="true">
-                <div class="et-app-bar"><span class="et-app-mark">VEYA</span><span class="et-app-screen">סידור הושבה</span><span class="et-app-type">בת מצווה</span></div>
-                <div class="et-app-body">
-                  <div class="et-bat">
-                    <div class="et-round et-in"><div class="et-round-table"><span class="et-seat" style="--a: 0deg"><b>נועה</b></span><span class="et-seat" style="--a: 45deg"><b>מיכל</b></span><span class="et-seat" style="--a: 90deg"><b>תמר</b></span><span class="et-seat" style="--a: 135deg"><b>יעל</b></span><span class="et-seat" style="--a: 180deg"><b>שירה</b></span><span class="et-seat" style="--a: 225deg"><b>ליה</b></span><span class="et-seat" style="--a: 270deg"><b>אביגיל</b></span><span class="et-seat" style="--a: 315deg"><b>רוני</b></span><span class="et-round-name">שולחן החברות<small>כיתה</small></span></div></div>
-                    <div class="et-bat-family et-in">
-                      <span class="et-hall-t"><span class="et-hall-seats" aria-hidden="true"><i class="is-taken" style="--a: 0.0deg"></i><i class="is-taken" style="--a: 36.0deg"></i><i class="is-taken" style="--a: 72.0deg"></i><i class="is-taken" style="--a: 108.0deg"></i><i class="is-taken" style="--a: 144.0deg"></i><i class="is-taken" style="--a: 180.0deg"></i><i class="is-taken" style="--a: 216.0deg"></i><i class="is-taken" style="--a: 252.0deg"></i><i class="is-taken" style="--a: 288.0deg"></i><i class="" style="--a: 324.0deg"></i></span><span class="et-hall-top"><b>משפחת האב</b></span></span>
-                      <span class="et-hall-t"><span class="et-hall-seats" aria-hidden="true"><i class="is-taken" style="--a: 0.0deg"></i><i class="is-taken" style="--a: 36.0deg"></i><i class="is-taken" style="--a: 72.0deg"></i><i class="is-taken" style="--a: 108.0deg"></i><i class="is-taken" style="--a: 144.0deg"></i><i class="is-taken" style="--a: 180.0deg"></i><i class="is-taken" style="--a: 216.0deg"></i><i class="is-taken" style="--a: 252.0deg"></i><i class="is-taken" style="--a: 288.0deg"></i><i class="is-taken" style="--a: 324.0deg"></i></span><span class="et-hall-top"><b>משפחת האם</b></span></span>
-                    </div>
+            </li>
+
+            <li class="rt-step reveal">
+              <span class="rt-rail" aria-hidden="true"><span class="rt-dot"></span><span class="rt-seg"></span></span>
+              <div class="rt-body">
+                <span class="rt-num" aria-hidden="true">02</span>
+                <p class="rt-when">לקראת האירוע</p>
+                <h3 class="rt-title">מתחילים להבין מי באמת מגיע</h3>
+                <p class="rt-text">אישורי הגעה, מעקבים, מספרים והושבה — הנתונים מתחילים להתחבר.</p>
+                <div class="rt-ui" role="img" aria-label="אישורי הגעה והושבה ב־VEYA: 122 אישרו, 23 אולי, 134 עוד לא ענו ו־34 לא מגיעים; כל 256 האנשים שאישרו כבר משובצים בשולחנות">
+                  <div class="rt-ui-head"><span class="rt-ui-t">אישורי הגעה</span><span class="rt-ui-m">256 אנשים אישרו</span></div>
+                  <div class="rt-rsvp">
+                    <span class="rt-bar"><i class="is-yes" style="--p: 39"></i><i class="is-maybe" style="--p: 7.3"></i><i class="is-wait" style="--p: 42.8"></i><i class="is-no" style="--p: 10.9"></i></span>
+                    <ul class="rt-legend">
+                      <li><i class="is-yes"></i>אישרו <b>122</b></li>
+                      <li><i class="is-maybe"></i>אולי <b>23</b></li>
+                      <li><i class="is-wait"></i>עוד לא ענו <b>134</b></li>
+                      <li><i class="is-no"></i>לא מגיעים <b>34</b></li>
+                    </ul>
                   </div>
+                  <div class="rt-ui-head rt-ui-head--sub"><span class="rt-ui-t">הושבה</span><span class="rt-ui-m">256 מתוך 256 בשולחן</span></div>
+                  <ul class="rt-tables">
+                    <li class="is-full"><span>שולחן 31</span><b>24/24</b></li>
+                    <li class="is-full"><span>שולחן 13</span><b>14/14</b></li>
+                    <li><span>שולחן 26</span><b>11/12</b></li>
+                    <li><span>שולחן 29</span><b>10/12</b></li>
+                  </ul>
                 </div>
               </div>
-            </div>
-            <div class="et-panel" role="tabpanel" id="et-panel-brit" aria-labelledby="et-tab-brit" data-et-panel="brit" aria-hidden="true">
-              <div class="et-story">
-                <h3 class="et-name">ברית</h3>
-                <p class="et-line">מעט זמן, הרבה מוזמנים, ואפס מקום לטעויות.</p>
-                <a class="et-more" href="/events/brit/">עוד על ברית <span aria-hidden="true">←</span></a>
-              </div>
-              <div class="et-app" aria-hidden="true">
-                <div class="et-app-bar"><span class="et-app-mark">VEYA</span><span class="et-app-screen">לוח אישורי ההגעה</span><span class="et-app-type">ברית</span></div>
-                <div class="et-app-body">
-                  <div class="et-sq">
-                    <div class="et-sq-row et-in"><span class="et-sq-l"><span>לוח מלא · עד שבועיים</span><span>האירוע</span></span><span class="et-sq-track"><span class="et-sq-bar"><i style="--p: 0%">1</i><i style="--p: 33.3%">2</i><i style="--p: 66.6%">3</i><i style="--p: 100%">4</i></span></span></div>
-                    <div class="et-sq-row et-sq-row--short et-in"><span class="et-sq-l"><span>נשארו ימים בודדים לאירוע</span><span>האירוע</span></span><span class="et-sq-track"><span class="et-sq-bar"><i style="--p: 0%">1</i><i style="--p: 33.3%">2</i><i style="--p: 66.6%">3</i><i style="--p: 100%">4</i></span></span></div>
-                    <ol class="et-sq-legend et-in"><li><i>1</i>בקשת אישור הגעה</li><li><i>2</i>תזכורת למי שלא ענה</li><li><i>3</i>סבב טלפונים</li><li><i>4</i>סגירת הרשימה</li></ol>
-                  </div>
+            </li>
+
+            <li class="rt-step reveal">
+              <span class="rt-rail" aria-hidden="true"><span class="rt-dot"></span></span>
+              <div class="rt-body">
+                <span class="rt-num" aria-hidden="true">03</span>
+                <p class="rt-when">אחרי האירוע</p>
+                <h3 class="rt-title">והרשימה לא נעלמת</h3>
+                <p class="rt-text">מתנות, הוצאות, דוח ומידע שנשאר אצלכם גם אחרי שהאירוע נגמר.</p>
+                <div class="rt-ui" role="img" aria-label="סיכום האירוע ב־VEYA: עלות האירוע 160,375.60 ₪, מתנות 137,050 ₪, 626.46 ₪ לכל אורח, ומאזן של מינוס 23,325.60 ₪, עם דוח מלא של 313 שורות">
+                  <div class="rt-ui-head"><span class="rt-ui-t">סיכום האירוע</span><span class="rt-ui-m">דוח מלא · 313 שורות</span></div>
+                  <dl class="rt-fin">
+                    <div><dt>עלות האירוע</dt><dd dir="ltr">₪160,375.60</dd></div>
+                    <div><dt>מתנות</dt><dd dir="ltr">₪137,050</dd></div>
+                    <div><dt>לכל אורח</dt><dd dir="ltr">₪626.46</dd></div>
+                  </dl>
+                  <div class="rt-fin-total"><span>המאזן</span><strong dir="ltr">−₪23,325.60</strong></div>
                 </div>
               </div>
-            </div>
-            <div class="et-panel" role="tabpanel" id="et-panel-brita" aria-labelledby="et-tab-brita" data-et-panel="brita" aria-hidden="true">
-              <div class="et-story">
-                <h3 class="et-name">בריתה</h3>
-                <p class="et-line">רשימה משלה, שולחנות משלה, אירוע משלה.</p>
-                <a class="et-more" href="/events/brita/">עוד על בריתה <span aria-hidden="true">←</span></a>
-              </div>
-              <div class="et-app" aria-hidden="true">
-                <div class="et-app-bar"><span class="et-app-mark">VEYA</span><span class="et-app-screen">מוזמנים והושבה</span><span class="et-app-events"><i>ברית</i><i class="is-on">בריתה</i></span></div>
-                <div class="et-app-body">
-                  <div class="et-split">
-                    <ul class="gl-list et-in"><li class="gl-row"><span class="gl-who"><span class="gl-name">משפחת מזרחי</span><span class="gl-grp">משפחה</span></span></li><li class="gl-row"><span class="gl-who"><span class="gl-name">סבא וסבתא</span><span class="gl-grp">משפחה</span></span></li><li class="gl-row"><span class="gl-who"><span class="gl-name">החברות מהעבודה</span><span class="gl-grp">חברים</span></span></li></ul>
-                    <div class="et-hall et-hall--sm et-in"><span class="et-hall-t"><span class="et-hall-seats" aria-hidden="true"><i class="is-taken" style="--a: 0.0deg"></i><i class="is-taken" style="--a: 45.0deg"></i><i class="is-taken" style="--a: 90.0deg"></i><i class="is-taken" style="--a: 135.0deg"></i><i class="is-taken" style="--a: 180.0deg"></i><i class="is-taken" style="--a: 225.0deg"></i><i class="is-taken" style="--a: 270.0deg"></i><i class="is-taken" style="--a: 315.0deg"></i></span><span class="et-hall-top"><b>1</b><small>משפחה</small></span></span><span class="et-hall-t"><span class="et-hall-seats" aria-hidden="true"><i class="is-taken" style="--a: 0.0deg"></i><i class="is-taken" style="--a: 45.0deg"></i><i class="is-taken" style="--a: 90.0deg"></i><i class="is-taken" style="--a: 135.0deg"></i><i class="is-taken" style="--a: 180.0deg"></i><i class="is-taken" style="--a: 225.0deg"></i><i class="" style="--a: 270.0deg"></i><i class="" style="--a: 315.0deg"></i></span><span class="et-hall-top"><b>2</b><small>משפחה</small></span></span><span class="et-hall-t"><span class="et-hall-seats" aria-hidden="true"><i class="is-taken" style="--a: 0.0deg"></i><i class="is-taken" style="--a: 45.0deg"></i><i class="is-taken" style="--a: 90.0deg"></i><i class="is-taken" style="--a: 135.0deg"></i><i class="is-taken" style="--a: 180.0deg"></i><i class="" style="--a: 225.0deg"></i><i class="" style="--a: 270.0deg"></i><i class="" style="--a: 315.0deg"></i></span><span class="et-hall-top"><b>3</b><small>חברים</small></span></span><span class="et-hall-t"><span class="et-hall-seats" aria-hidden="true"><i class="is-taken" style="--a: 0.0deg"></i><i class="is-taken" style="--a: 45.0deg"></i><i class="is-taken" style="--a: 90.0deg"></i><i class="" style="--a: 135.0deg"></i><i class="" style="--a: 180.0deg"></i><i class="" style="--a: 225.0deg"></i><i class="" style="--a: 270.0deg"></i><i class="" style="--a: 315.0deg"></i></span><span class="et-hall-top"><b>4</b><small>חברים</small></span></span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            </div>
-          </div>
+            </li>
+          </ol>
+
+          <p class="rt-end reveal">
+            חתונה גדולה או אירוע משפחתי קטן —<br />
+            <strong>השיטה נשארת. הפרטים משתנים.</strong>
+          </p>
         </div>
       </section>
 
@@ -4688,60 +4574,6 @@
         return { onceInView: onceInView, show: show, clear: clear, reduced: reduced };
       })();
 
-      /* ---- אירוע אחר. אותה VEYA. ----
-         טאבים נגישים: לחיצה או חצים. אין החלפה אוטומטית — המשתמש בוחר. */
-      (function () {
-        var box = document.querySelector('[data-et]');
-        if (!box) return;
-        var tabs = [].slice.call(box.querySelectorAll('[data-et-tab]'));
-        var panels = [].slice.call(box.querySelectorAll('[data-et-panel]'));
-
-        function show(key, focus) {
-          tabs.forEach(function (t) {
-            var on = t.getAttribute('data-et-tab') === key;
-            t.classList.toggle('is-on', on);
-            t.setAttribute('aria-selected', on ? 'true' : 'false');
-            t.tabIndex = on ? 0 : -1;
-            if (on && focus) t.focus({ preventScroll: true });
-          });
-          panels.forEach(function (p) {
-            var on = p.getAttribute('data-et-panel') === key;
-            p.classList.toggle('is-on', on);
-            if (on) p.removeAttribute('aria-hidden'); else p.setAttribute('aria-hidden', 'true');
-            if (!on) return;
-            // מפעילים מחדש את הכניסה, כדי שהמסך ייראה כמו תשובה לבחירה.
-            [].slice.call(p.querySelectorAll('.et-in, .et-sq-row--short .et-sq-bar')).forEach(function (el) {
-              el.style.animation = 'none';
-              void el.offsetWidth;
-              el.style.animation = '';
-            });
-          });
-        }
-
-        tabs.forEach(function (t, i) {
-          t.addEventListener('click', function () {
-            window.veyaHint.clear(box);
-            show(t.getAttribute('data-et-tab'), false);
-          });
-          t.addEventListener('keydown', function (e) {
-            var dir = { ArrowDown: 1, ArrowLeft: 1, ArrowUp: -1, ArrowRight: -1 }[e.key];
-            if (e.key === 'Home') dir = -i; else if (e.key === 'End') dir = tabs.length - 1 - i;
-            if (dir === undefined) return;
-            e.preventDefault();
-            var next = tabs[(i + dir + tabs.length) % tabs.length];
-            window.veyaHint.clear(box);
-            show(next.getAttribute('data-et-tab'), true);
-          });
-        });
-
-        // רמז חד-פעמי: הבחירה השנייה מאירה פעם אחת כשהסקשן נכנס למסך.
-        if (!window.veyaHint.reduced) {
-          window.veyaHint.onceInView(box, function () {
-            tabs[1].classList.add('is-glow');
-            setTimeout(function () { tabs[1].classList.remove('is-glow'); }, 1100);
-          });
-        }
-      })();
 
       /* ---- הכול מתחיל מאותה רשימת מוזמנים ----
          פעם אחת כשהסקשן נכנס למסך, ושוב רק כשלוחצים "הדביקו את הרשימה".
