@@ -224,7 +224,23 @@
       .eyebrow { display: inline-block; font-size: var(--fs-xs); letter-spacing: 3px; color: var(--gold-light); text-transform: uppercase; margin-bottom: 18px; }
       .hero h1 { font-size: clamp(2.25rem, 6.2vw, 3.75rem); color: var(--cream-text); margin-bottom: 20px; font-weight: 500; }
       .hero h1 .accent { color: var(--gold-light); }
-      .hero p.lead { font-size: clamp(1.063rem, 2.4vw, 1.313rem); color: #ddd2bd; max-width: 640px; margin: 0 auto 34px; }
+      /* יכולות VEYA מתחת לכותרת: שורה טיפוגרפית קטנה, לא סקשן — בלי כרטיסים,
+         בלי רקע לאייקון. שלוש פריסות קבועות כדי שלא ייווצר פריט יתום בשורה:
+         שורה אחת במחשב, 3×2 בטאבלט, 2×3 בטלפון. */
+      .hero-caps {
+        list-style: none; padding: 0; margin: 26px auto 38px;
+        display: flex; flex-wrap: nowrap; justify-content: center; gap: 10px 28px;
+        font-size: var(--fs-sm); color: #ddd2bd; line-height: 1.4;
+      }
+      .hero-caps li { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+      .hero-caps svg { width: 17px; height: 17px; flex-shrink: 0; color: var(--gold-light); opacity: 0.8; }
+      @media (max-width: 899px) {
+        .hero-caps { display: grid; grid-template-columns: repeat(3, max-content); gap: 12px 30px; }
+      }
+      @media (max-width: 560px) {
+        .hero-caps { grid-template-columns: repeat(2, max-content); gap: 11px 26px; font-size: var(--fs-xs); margin: 22px auto 32px; }
+        .hero-caps svg { width: 16px; height: 16px; }
+      }
       .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
             /* ═════ מסלול האירוע (§16) ═════════════════════════════════════
          שרשרת שמראה את סדר הזמנים האמיתי של אירוע ומובילה את העין לגלילה.
@@ -2416,6 +2432,7 @@
       }
       .wc-k { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.06em; color: var(--gold-deep); }
       .wc-v { font-family: var(--font-display); font-size: var(--fs-xl); color: var(--charcoal); white-space: nowrap; }
+      .why .why-close { max-width: 560px; margin: 34px auto 0; color: var(--muted); line-height: 1.75; }
       @media (max-width: 720px) {
         .why-chain { display: grid; grid-template-columns: 1fr; gap: 0; width: auto; max-width: 300px; margin: 22px auto 0; }
         .why-chain li { grid-template-columns: 7rem 1fr; align-items: baseline; text-align: start; padding: 9px 0; border-bottom: 1px solid var(--line); }
@@ -2749,11 +2766,16 @@
         <div class="wrap">
           <img class="hero-logo reveal" src="/logo.png" alt="VEYA — ניהול מוזמנים, אישורי הגעה, הושבה ומאזן האירוע" width="1224" height="1067" fetchpriority="high" decoding="async" />
           <h1 id="hero-title" class="reveal d1">כמה אנשים באמת מגיעים לאירוע שלכם —<br /><span class="accent">וכמה זה עולה לכם</span></h1>
-          <p class="lead reveal d2">
-            כל אישור הגעה הוא מספר, וכל מספר הוא כסף. ב־VEYA הרשימה, האישורים,
-            ההושבה והמאזן מחוברים זה לזה — כדי שתדעו איפה אתם עומדים לפני
-            האירוע, ומה נשאר אחריו.
-          </p>
+          <!-- יכולות VEYA: האייקונים הם אייקוני הניווט של המוצר עצמו
+               (NavIcon ב-src/App.tsx), אחד לכל מסך — לא סט אייקונים לדף. -->
+          <ul class="hero-caps reveal d2" aria-label="מה מנהלים ב־VEYA">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0" /><path d="M16 6.5a3 3 0 0 1 0 5.8" /><path d="M17.5 20a5.5 5.5 0 0 0-2.5-4.6" /></svg>ניהול מוזמנים</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2" /><path d="M9 3.5V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v.5" /><path d="M8.5 12.5 11 15l4.5-5" /></svg>אישורי הגעה</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 3z" /><path d="m9 10 2 2 4-4" /></svg>הזמנות והודעות</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="8" r="2.4" /><circle cx="17" cy="8" r="2.4" /><circle cx="12" cy="17" r="2.4" /><path d="M4 20h16" /></svg>הושבה</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="8" width="17" height="4" rx="1" /><path d="M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12" /><path d="M12 8v13" /><path d="M12 8S10.5 3.5 8 3.5a2.5 2.5 0 0 0 0 5M12 8s1.5-4.5 4-4.5a2.5 2.5 0 0 1 0 5" /></svg>מתנות באשראי</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2" /><circle cx="12" cy="12" r="2.6" /><path d="M5.5 9.5v.01M18.5 14.5v.01" /></svg>מאזן האירוע</li>
+          </ul>
           <div class="cta-row reveal d2">
             <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
             <a href="/calculators/rsvp-timeline/" class="btn btn-ghost">לראות את לוח הזמנים</a>
@@ -2831,6 +2853,13 @@
               <li><span class="wc-k">מתנות</span><span class="wc-v">המעטפה נספרה</span></li>
               <li><span class="wc-k">מאזן</span><span class="wc-v">בשורה התחתונה</span></li>
             </ol>
+            <!-- הועבר מההירו (2026-09-15): כאן הוא הסיכום של השרשרת שמעליו —
+                 אישור → שולחן → עלות → מתנה → מאזן. -->
+            <p class="why-close">
+              כל אישור הגעה הוא מספר, וכל מספר הוא כסף. ב־VEYA הרשימה, האישורים,
+              ההושבה והמאזן מחוברים זה לזה — כדי שתדעו איפה אתם עומדים לפני
+              האירוע, ומה נשאר אחריו.
+            </p>
           </div>
         </div>
       </section>
