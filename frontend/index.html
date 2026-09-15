@@ -2388,7 +2388,7 @@
       }
 
       /* ── כסף: הלילה מתבהר לשנהב, ואז חול למאזן ── */
-      #gifts { --sm-up: var(--bg-night); --sm-hu: var(--seam-deep); padding-top: var(--seam-pad); }
+      #gifts { --sm-up: var(--bg-night); --sm-hu: var(--seam-deep); --sm-dn: var(--bg-sand); --sm-hd: var(--seam-soft); padding-top: var(--seam-pad); }
       #giftcard { --sm-c: var(--bg-paper); --sm-dn: var(--bg-sand); --sm-hd: var(--seam-soft); padding-top: 24px; }
       #after { --sm-up: var(--bg-paper); --sm-hu: var(--seam-soft); }
       #events {
@@ -2520,6 +2520,7 @@
     
     
 
+    
     
     
     
@@ -3229,7 +3230,12 @@
          מסר של כמה שניות: אפשר להעניק מתנה באשראי דרך VEYA, ובעלי האירוע לא
          משלמים עמלה (העמלה מתווספת אצל נותן המתנה — החלטה נעולה, gift.py).
          הכרטיס הוא המחשה בלבד: פרטי דמה, בלי מותג של חברת אשראי. -->
-    <section class="gcard" id="giftcard" aria-labelledby="giftcard-title">
+    <!-- מוסתר (2026-09-15): מתנות באשראי עוד לא פעילות — הסליקה במוצר היא
+         MockProvider בלבד ו-VEYA_GIFT_ENABLED כבוי. מחזירים את הסקשן (מוחקים את
+         hidden) ביום שהסליקה אמיתית והמתג דלוק — ובאותה הזדמנות מוחקים את
+         ‎--sm-dn/--sm-hd מ-#gifts ב-art direction, כי המעבר אל החול עובר אז
+         דרך #giftcard. -->
+    <section class="gcard" id="giftcard" aria-labelledby="giftcard-title" hidden>
       <div class="wrap">
         <div class="gcard-in">
           <div class="gcard-text reveal">
