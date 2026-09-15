@@ -2314,6 +2314,17 @@
       }
       @media (max-width: 720px) { :root { --sheet-r: 24px; } }
 
+      /* ── הרצף, סקשן אחרי סקשן ─────────────────────────────────────────
+         כהה → שנהב → לבן → חול → שנהב → פשתן → לבן → כהה (תמונת המצב) →
+         חול → כהה (הושבה) → שנהב → זהב (המאזן) → לבן → כהה (המסע) →
+         חול → שנהב → פשתן → לבן. שלושה עוגנים כהים באמצע הדף, וגווני
+         ביניים ברורים ביניהם — לא "אוף־וויט אחרי אוף־וויט". */
+      :root {
+        --bg-white: var(--cream);
+        --bg-night-2: var(--ink-2);
+        --bg-gold: color-mix(in srgb, var(--gold) 20%, var(--ivory));
+      }
+
       /* פרק 1 → 2: הגיליון הבהיר עולה על ההירו */
       #why {
         position: relative; z-index: 2;
@@ -2321,7 +2332,7 @@
         border-radius: var(--sheet-r) var(--sheet-r) 0 0;
         background: var(--bg-paper);
       }
-      section.ps { background: var(--bg-paper); }
+      section.ps { background: var(--bg-white); }
 
       /* שורות המעבר: לרוחב מלא, בגוון של המעבר עצמו */
       p.bridge.bridge-soft,
@@ -2329,24 +2340,41 @@
         max-width: none; margin: 0;
         padding-inline: max(20px, calc((100% - 540px) / 2));
       }
-      p.bridge.bridge-soft { background: linear-gradient(180deg, var(--bg-paper), var(--bg-linen)); padding-bottom: 20px; }
+      p.bridge.bridge-soft { background: linear-gradient(180deg, var(--bg-white), var(--bg-sand)); padding-bottom: 20px; }
       /* חפיפה של פיקסל אחד — בלי זה נשאר תפר דק בין שני משטחים באותו גוון */
       p.bridge.bridge-soft, p.bridge.bridge-dark { margin-top: -1px; }
       /* ההירו כבר לא דוהה לשנהב: הגיליון הבהיר עולה עליו */
       .hero::after { display: none; }
 
-      /* פרק 3: אישורי הגעה — מתחמם עד תמונת המצב */
-      #deadline { background: var(--bg-linen); }
+      /* פרק 3: אישורי הגעה — חול, שנהב, פשתן, לבן, ואז השיא הכהה */
+      #deadline { background: var(--bg-sand); }
       #rsvp { background: var(--bg-paper); }
       section.gh { background: var(--bg-linen); }
-      #calls { background: var(--bg-paper); }
-      #showcase { background: linear-gradient(180deg, var(--bg-paper) 0%, var(--bg-linen) 30%, var(--bg-sand-soft) 100%); }
-      #impact { background: var(--bg-sand-soft); }
+      #calls { background: var(--bg-white); padding-bottom: calc(108px + var(--sheet-r)); }
+
+      /* תמונת המצב: גיליון כהה — המוצר על רקע עמוק, כמו תצלום מוצר */
+      #showcase {
+        position: relative; z-index: 2;
+        margin-top: calc(var(--sheet-r) * -1);
+        border-radius: var(--sheet-r) var(--sheet-r) 0 0;
+        background: var(--bg-night-2); color: var(--cream-text);
+      }
+      #showcase .kicker { color: var(--gold-light); }
+      #showcase .section-title { color: var(--cream-text); }
+      #showcase .section-sub { color: #d8ceb9; }
+      #showcase .sh-punch { color: var(--gold-light); }
+      #showcase .sh-mobile { border-top-color: rgba(245, 239, 226, 0.16); }
+      #showcase .sh-mobile-title { color: var(--cream-text); }
+      #showcase .sh-mobile-body { color: #d8ceb9; }
+      #showcase .sh-modal-card { color: var(--body); }
+
+      /* ומה קורה כשמשהו זז — חזרה לחול, שממשיך אל שורת המעבר של ההושבה */
+      #impact { background: var(--bg-sand); }
 
       /* פרק 3 → 4: הקו הזהב יורד מתוך החול, והגיליון הכהה עולה */
       p.bridge.bridge-dark {
         position: relative; z-index: 1;
-        background: var(--bg-sand-soft);
+        background: var(--bg-sand);
         padding-bottom: calc(18px + var(--sheet-r) + 34px);
         margin-bottom: calc(var(--sheet-r) * -1);
       }
@@ -2361,11 +2389,11 @@
       }
       #seating { background: var(--bg-night); }
 
-      /* פרק 5: חזרה לאור, ומתחמם לקראת המאזן */
+      /* פרק 5: כסף — שנהב, ואז המאזן על זהב */
       #gifts { background: var(--bg-paper); }
-      #after { background: linear-gradient(180deg, var(--bg-linen) 0%, var(--bg-sand-soft) 100%); }
+      #after { background: var(--bg-gold); }
       #events {
-        background: linear-gradient(180deg, var(--bg-sand-soft) 0%, var(--bg-paper) 42%);
+        background: var(--bg-white);
         padding-bottom: calc(108px + var(--sheet-r));
       }
 
@@ -2373,11 +2401,15 @@
       #how { background: var(--bg-night); margin-top: calc(var(--sheet-r) * -1); }
       #how .section-sub { color: #d8ceb9; }
 
-      /* פרק 7: אזורים בהירים ופשוטים עד הסוף */
-      #guides { background: var(--bg-linen); }
+      /* פרק 7: סגירה — חול, שנהב, פשתן, לבן */
+      #guides { background: var(--bg-sand); }
       #calculators { background: var(--bg-paper); }
       #check { background: var(--bg-linen); }
-      section.faq-wrap, section.band-wrap { background: var(--bg-paper); }
+      section.faq-wrap, section.band-wrap { background: var(--bg-white); }
+
+      /* תגיות זהב על גוון זהב: רקע רך מעט יותר, כדי שהטקסט יישאר קריא */
+      .numcard-tag { background: rgba(201, 162, 39, 0.1); }
+      .dl-stop.is-close { background: rgba(201, 162, 39, 0.08); }
 
       /* פוקוס מקלדת: טבעת שנראית על כל רקע (3:1 לפחות). על משטחים בהירים הזהב
          הבהיר כמעט נעלם (1.4:1), ולכן שם הטבעת בזהב העמוק; על הכהים — הבהיר. */
@@ -2385,9 +2417,6 @@
       .on-dark, #seating, #how, .site-header, .site-footer, .band, .cookie-banner-static { --focus-ring: var(--gold-light); }
       body :focus-visible { outline-color: var(--focus-ring) !important; }
 
-      /* תגיות זהב על גוון זהב: רקע רך מעט יותר, כדי שהטקסט יישאר קריא */
-      .numcard-tag { background: rgba(201, 162, 39, 0.1); }
-      .dl-stop.is-close { background: rgba(201, 162, 39, 0.08); }
 
     
     
@@ -2908,7 +2937,7 @@
       </section>
 
       <!-- ═════ 7. תמונת מצב אמיתית ═════ -->
-      <section class="showcase" id="showcase" aria-labelledby="showcase-title">
+      <section class="showcase on-dark" id="showcase" aria-labelledby="showcase-title">
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">תמונת מצב</span>
