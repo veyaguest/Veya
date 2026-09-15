@@ -197,7 +197,7 @@ ${rel.map((r) => `            <li><a href="${r.url}"><h3>${esc(r.title)}</h3></a
               <span>צוות VEYA</span>
               <span>עודכן: <time datetime="${g.updated || g.published}">${g.updated_he || g.published_he}</time></span>
             </p>
-            <p class="article-lead">${esc(g.lead)}</p>
+            ${g.lead?.length ? `<p class="article-lead">${esc(g.lead)}</p>` : ''}
 ${bodyHtml.split('\n').map((l) => '            ' + l).join('\n')}
 
             <div class="article-cta">
