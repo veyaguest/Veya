@@ -1199,14 +1199,6 @@
         .gcard-fig.reveal .vcard-gift { opacity: 1; transition: none; }
       }
 
-      /* ---- המעקב: חיתוך אמיתי של מסלול אישורי ההגעה ---- */
-      .fu-shot {
-        margin: 0 auto 34px; width: min(100%, 354px);
-        background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
-        box-shadow: 0 1px 2px rgba(43, 38, 32, 0.05), 0 22px 44px -30px rgba(43, 38, 32, 0.4);
-      }
-      .fu-shot img { display: block; width: 100%; height: auto; }
-
       /* ---- אישורי הגעה: ראש המסך האמיתי ---- */
       .rs-shot {
         margin: 26px auto 8px; width: min(100%, 390px);
@@ -2807,9 +2799,6 @@
             <p class="why-list">
               רשימת המוזמנים משתנה כל הזמן. אנשים מאשרים, לא עונים, משנים תוכניות ולפעמים פשוט לא מגיעים.
             </p>
-            <p class="why-punch">
-              ב־VEYA מוזמן הוא לא עוד שורה ברשימה. התשובה שלו ממשיכה איתו עד הסוף:
-            </p>
             <!-- הועבר מההירו (2026-09-15). -->
             <p class="why-close">
               כל אישור הגעה הוא מספר, וכל מספר הוא כסף. ב־VEYA הרשימה, האישורים,
@@ -3016,13 +3005,8 @@
               ייפול בין הכיסאות.
             </p>
           </div>
-          <!-- ═════ המעקב, כמו שהוא במוצר ════════════════════════════════
-               חיתוך אמיתי של "מסלול אישורי הגעה" ממסך אישורי ההגעה ב-VEYA
-               (אירוע ההדגמה): כל סבב נשלח רק למי שעדיין לא אישר, והסבבים
-               מתחלפים בין הודעה, תזכורת וסבב שיחות. -->
-          <figure class="fu-shot reveal d1">
-            <img src="/product/rsvp-route.jpg" alt="מסלול אישורי ההגעה ב־VEYA: בקשת אישור ראשונה, תזכורת ראשונה, סבב שיחות ראשון ותזכורת שנייה — כל אחד עם התאריך שלו, ורק למי שעדיין לא אישר" width="1062" height="1626" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
-          </figure>
+          <!-- בלי המחשה בכוונה (החלטת בעלים 2026-09-15): לא האנימציה ולא
+               צילום מסלול אישורי ההגעה — הסקשן עובר ישר לשלושת הכרטיסים. -->
           <div class="supporting-grid">
             <article class="supporting-item reveal">
               <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div>
