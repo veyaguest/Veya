@@ -50,8 +50,18 @@ ${steps
   .join('\n')}
           </ol>`
 
-const shot = (src, alt) => `          <div class="sc-shot">
-            <img src="${src}" alt="${esc(alt)}" width="1400" height="875" loading="lazy" decoding="async" onerror="this.closest('.sc-shot').remove()" />
+// צילום דסקטופ — תמיד בתוך חלון הדפדפן המשותף (.mk-browser ב-brand layer),
+// אותו מוקאפ כמו בדף הבית.
+const shot = (src, alt) => `          <div class="sc-shot mk-browser mk-browser--fixed">
+            <div class="mk-browser-bar" aria-hidden="true">
+              <span class="mk-browser-lights"><i></i><i></i><i></i></span>
+              <span class="mk-browser-nav"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5" /></svg></span>
+              <span class="mk-browser-url"><svg viewBox="0 0 10 12" fill="currentColor"><path d="M2 5V3.6a3 3 0 0 1 6 0V5h.4c.6 0 1.1.5 1.1 1.1v4.8c0 .6-.5 1.1-1.1 1.1H1.6C1 12 .5 11.5.5 10.9V6.1C.5 5.5 1 5 1.6 5H2Zm1.3 0h3.4V3.6a1.7 1.7 0 0 0-3.4 0V5Z" /></svg><span>veyaguest.co.il/app</span></span>
+              <span class="mk-browser-tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V1.8M5.2 4.4 8 1.6l2.8 2.8M5.5 6.5H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-1.5" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 2.5v11M2.5 8h11" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2" y="4.5" width="9.5" height="9.5" rx="1.6" /><path d="M4.5 2h8a1.5 1.5 0 0 1 1.5 1.5v8" /></svg></span>
+            </div>
+            <div class="mk-browser-view">
+              <img src="${src}" alt="${esc(alt)}" width="1400" height="875" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+            </div>
           </div>`
 
 /* ════════════════════════════════════════════════════════════════════
@@ -488,7 +498,7 @@ export function featureGuests() {
   const body = `${pageHero({
     eyebrow: 'רשימת מוזמנים',
     h1: 'רשימת המוזמנים היא המקור לכל האירוע',
-    lead: 'כל מוזמן, קבוצה, כמות, סטטוס והערה נמצאים במקום אחד — ומשם ממשיכים לאישורי ההגעה, להושבה ולחישוב האירוע.',
+    lead: 'כל מוזמן, קבוצה, כמות, סטטוס והערה נמצאים ברשימה אחת — ומשם ממשיכים לאישורי ההגעה, להושבה ולחישוב האירוע.',
     trail: [{ name: 'VEYA', url: '/' }, { name: 'רשימת מוזמנים' }],
     cta: `${CTA_PRIMARY}\n            ${CTA_TIMELINE}`,
   })}

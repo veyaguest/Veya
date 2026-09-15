@@ -46,13 +46,13 @@ body {
 a { color: inherit; }
 .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
 .btn {
-        display: inline-flex; align-items: center; gap: 8px; padding: 13px 28px; border-radius: 999px; font-weight: 600; font-size: var(--fs-base);
+        display: inline-flex; align-items: center; gap: 8px; padding: 13px 28px; border-radius: 10px; font-weight: 600; font-size: var(--fs-base);
         text-decoration: none; transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease; cursor: pointer;
         font-family: 'Assistant', sans-serif;
       }
 .btn:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
-.btn-primary { background: var(--gold); color: var(--charcoal); box-shadow: 0 8px 22px rgba(201, 162, 39, 0.30); }
-.btn-primary:hover { box-shadow: 0 12px 30px rgba(201, 162, 39, 0.40); }
+.btn-primary { background: var(--gold); color: var(--charcoal); box-shadow: 0 1px 2px rgba(23, 19, 13, 0.18); }
+.btn-primary:hover { background: var(--gold-light); box-shadow: 0 4px 12px -6px rgba(23, 19, 13, 0.35); }
 .btn-primary .arw { transition: transform 0.18s var(--ease-out); }
 .btn-ghost { background: transparent; color: var(--charcoal); border: 1px solid var(--line); }
 .btn-ghost:hover { border-color: var(--gold-deep); }
@@ -348,12 +348,7 @@ a.evt-card:focus-visible { outline: 3px solid var(--gold-light); outline-offset:
 .flow-step:nth-child(5) { --d: 0.28s; }
 .features { background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory-2) 100%); }
 .showcase { background: linear-gradient(180deg, var(--ivory-2) 0%, var(--ivory) 100%); }
-.sc-shot { position: relative; aspect-ratio: 16 / 10; border-radius: 14px; overflow: hidden; background: linear-gradient(160deg, var(--ivory-2), var(--ivory)); margin-bottom: 18px; border: 1px solid var(--line); }
-.sc-shot::before {
-        content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
-        background: url('/favicon.svg') center / 52px no-repeat;
-      }
-.sc-shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.sc-shot { margin-bottom: 18px; }
 .why { background: var(--ivory); }
 .why-inner { max-width: 680px; margin: 0 auto; text-align: center; }
 .why-inner .section-title { margin-bottom: 22px; }
@@ -621,7 +616,6 @@ a.evt-card:focus-visible { outline: 3px solid var(--gold-light); outline-offset:
 
 .callout,
 .table-scroll,
-.sc-shot,
 .note-chip,
 .prep-chip,
 .calc-field input,
@@ -629,8 +623,9 @@ a.evt-card:focus-visible { outline: 3px solid var(--gold-light); outline-offset:
 .calc-error { border-radius: var(--radius-md); }
 
 .numcard-tag,
-.trust-chip,
-.btn { border-radius: var(--radius-pill); }
+.trust-chip { border-radius: var(--radius-pill); }
+/* כפתור ולא גלולה: אותה פינה מתונה כמו בכפתורי המוצר עצמו (App.css). */
+.btn { border-radius: 10px; }
 
 .band { border-radius: var(--radius-xl); }
 
@@ -853,7 +848,7 @@ input:focus-visible, select:focus-visible {
   font-weight: 600;
   font-size: var(--fs-md);
   padding: 13px 24px;
-  border-radius: var(--radius-pill);
+  border-radius: 10px;
   text-decoration: none;
   box-shadow: var(--shadow-lifted);
   /* transform, לא top: אנימציה על מאפיין פריסה מכריחה layout בכל פריים. */
@@ -963,56 +958,6 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
    מה שכן אמיתי ומעניין הוא שהמעטפה נמצאה ברשימת המוזמנים — וזה בדיוק
    המסר: VEYA מחברת בין המתנה למי שנתן אותה. */
 
-/* ── שכבות UI צפות בהירו ───────────────────────────────────────────
-   שלושה קריאונים שנראים כאילו נלקחו מתמונת המצב שמאחוריהם. הם
-   ממוקמים על קצוות אשכול המכשירים ולא במרכזו, כדי לא לכסות את
-   צילום המסך עצמו. */
-.hs {
-  position: absolute;
-  z-index: 3;
-  display: grid;
-  gap: 2px;
-  padding: 11px 15px;
-  border-radius: var(--radius-md);
-  background: rgba(23, 19, 13, 0.82);
-  border: 1px solid rgba(201, 162, 39, 0.3);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
-  backdrop-filter: blur(8px);
-  animation: hs-in 620ms var(--ease-out) both;
-}
-/* אייקון סטטוס במקום מספר: מה שחשוב הוא מי ענה, לא כמה. */
-.hs { grid-template-columns: auto 1fr; align-items: center; gap: 9px; }
-.hs-i {
-  display: grid; place-items: center;
-  width: 22px; height: 22px; border-radius: 50%;
-  border: 1px solid currentColor;
-}
-.hs-ok   { color: var(--gold-light); }
-.hs-wait { color: #cabfa9; }
-.hs-no   { color: #b6aa93; }
-.hs-l { font-size: var(--fs-2xs); color: #b6aa93; white-space: nowrap; }
-
-/* ההשהיה נספרת מתום כניסת ההירו, ואיטית בכוונה — שלוש קריאות
-   שנכנסות אחת אחרי השנייה, לא שלוש שמופיעות יחד. */
-.hs-1 { inset-inline-start: -3%;  top: 5%;    animation-delay: 900ms; }
-.hs-2 { inset-inline-end: -4%;    top: 26%;   animation-delay: 1250ms; }
-.hs-3 { inset-inline-end: 4%;     bottom: 6%; animation-delay: 1600ms; }
-@keyframes hs-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-
-/* במובייל אין מקום לצוף מעל המכשירים, ולכן הקריאונים יורדים לשורה
-   מתחתיהם. לא מוסתרים — הם נושאים את המספרים של ההירו. */
-@media (max-width: 900px) {
-  .hero-devices { padding-bottom: 76px; }
-  .hs {
-    position: static;
-    animation-delay: 0ms;
-  }
-  .hs-wrap { display: flex; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hs { animation: none; }
-}
-
 /* ── רשימת המוזמנים בסקשן אישורי ההגעה ─────────────────────────────
    מציגה סטטוסים, לא כמויות. שורה אחת מחליפה סטטוס בגלילה — ההמחשה
    של "מוזמן עונה והמערכת מתעדכנת" בלי להסביר אותה במילים. */
@@ -1103,5 +1048,166 @@ a.evt-card, .guide-list a { transition: border-color var(--motion-normal) var(--
 .evt-f-h { font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); line-height: 1.2; }
 .evt-f-d { font-size: var(--fs-sm); color: var(--muted); line-height: 1.55; }
 @media (max-width: 720px) { .evt-focus { grid-template-columns: 1fr; gap: 10px; } }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   מוקאפים — שפה אחת לכל האתר
+   ───────────────────────────────────────────────────────────────────────
+   שני רכיבים בלבד: .mk-phone לכל צילום מובייל, .mk-browser לכל צילום
+   דסקטופ. כל מה שבפנים הוא צילום מסך אמיתי (או הדגמה חיה) של VEYA, והמעטפת
+   לא משנה אותו — רק ממסגרת. אין כאן אנימציה, זוהר או שקיפות: מכשיר
+   אמיתי, אור אחד מלמעלה, צל אחד על המשטח.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── אייפון ──────────────────────────────────────────────────────────────
+   שכבות של מכשיר אמיתי, מבחוץ פנימה: מסגרת מתכת עם ברק בקצוות → שוליים
+   שחורים דקים → מסך בפינות רציפות → Dynamic Island. הפרופורציות לקוחות
+   מ-iPhone 17 (‏71.5×149.6 מ"מ, מסך 19.5:9, אי ברוחב כשליש מהמסך),
+   ולכן הכול נגזר מ-‎--ph-w ולא מפיקסלים קבועים.
+   משתנים: ‎--ph-w רוחב · ‎--ph-screen רקע שורת הסטטוס/שוליים · ‎--ph-ink צבע
+   השעה והאייקונים. ‎.mk-phone--fit מציג צילום ארוך במלואו (בלי לחתוך). */
+.mk-phone {
+  --ph-w: 222px;
+  --ph-screen: #fbf7ee;
+  --ph-ink: #111;
+  position: relative; width: var(--ph-w); max-width: 100%;
+  padding: calc(var(--ph-w) * 0.014);
+  border-radius: calc(var(--ph-w) * 0.162);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 7%, rgba(255, 255, 255, 0) 93%, rgba(255, 255, 255, 0.28)),
+    linear-gradient(180deg, #d9d4cb 0%, #8f897e 9%, #a9a397 50%, #8a8479 91%, #cfc9bf 100%);
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    0 0 0 0.5px rgba(23, 19, 13, 0.4),
+    0 1px 2px rgba(23, 19, 13, 0.16),
+    0 12px 20px -12px rgba(23, 19, 13, 0.34),
+    0 46px 64px -38px rgba(23, 19, 13, 0.62);
+}
+/* המסך: השוליים השחורים הם ה-border של הצילום עצמו, כך שהפינה הפנימית
+   נגזרת מהחיצונית ונשארת מקבילה לה. מעל התוכן — אזור שורת הסטטוס, כמו
+   בדפדפן אמיתי בטלפון, כדי שהאי לא יישב על כותרת. */
+.mk-phone-screen {
+  position: relative; z-index: 1; display: block; box-sizing: border-box;
+  width: 100%; height: auto; aspect-ratio: 471 / 1000;
+  border: calc(var(--ph-w) * 0.022) solid #050506;
+  border-radius: calc(var(--ph-w) * 0.148);
+  padding-top: calc(var(--ph-w) * 0.142);
+  background: var(--ph-screen);
+  object-fit: cover; object-position: top;
+}
+.mk-phone--fit .mk-phone-screen { object-fit: contain; }
+.mk-phone-island {
+  position: absolute; z-index: 3; left: 50%; transform: translateX(-50%);
+  top: calc(var(--ph-w) * 0.062);
+  width: calc(var(--ph-w) * 0.3); height: calc(var(--ph-w) * 0.086);
+  border-radius: 999px; background: #000;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
+}
+.mk-phone-island::after {
+  content: ""; position: absolute; top: 50%; right: 18%; transform: translateY(-50%);
+  width: 21%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 40% 36%, #262c38 0 9%, #0b0d12 40%, #000 72%);
+}
+.mk-phone-status {
+  position: absolute; z-index: 3; direction: ltr; pointer-events: none;
+  top: calc(var(--ph-w) * 0.066); left: calc(var(--ph-w) * 0.1); right: calc(var(--ph-w) * 0.085);
+  height: calc(var(--ph-w) * 0.078);
+  display: flex; align-items: center; justify-content: space-between;
+  color: var(--ph-ink);
+}
+.mk-phone-time {
+  font: 600 calc(var(--ph-w) * 0.052)/1 -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: -0.01em; padding-inline-start: calc(var(--ph-w) * 0.03);
+}
+.mk-phone-icons { width: calc(var(--ph-w) * 0.2); height: auto; }
+.mk-phone-glare {
+  position: absolute; z-index: 2; pointer-events: none;
+  inset: calc(var(--ph-w) * 0.036);
+  border-radius: calc(var(--ph-w) * 0.126);
+  background: linear-gradient(118deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.04) 24%, rgba(255, 255, 255, 0) 40%);
+}
+.mk-phone-glare::after {
+  content: ""; position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--ph-w) * 0.022);
+  width: 36%; height: calc(var(--ph-w) * 0.016); border-radius: 999px;
+  background: var(--ph-ink); opacity: 0.82;
+}
+.mk-phone-keys::before, .mk-phone-keys::after {
+  content: ""; position: absolute; width: 3px;
+  background: linear-gradient(90deg, #7d776d, #b7b1a6);
+}
+.mk-phone-keys::before {
+  left: -2.5px; top: 18%; height: 29%; border-radius: 2px 0 0 2px;
+  -webkit-mask: linear-gradient(#000 0 17%, transparent 17% 31%, #000 31% 62%, transparent 62% 69%, #000 69% 100%);
+  mask: linear-gradient(#000 0 17%, transparent 17% 31%, #000 31% 62%, transparent 62% 69%, #000 69% 100%);
+}
+.mk-phone-keys::after {
+  right: -2.5px; top: 27%; height: 15%; border-radius: 0 2px 2px 0;
+  background: linear-gradient(270deg, #7d776d, #b7b1a6);
+}
+
+/* ── דפדפן ───────────────────────────────────────────────────────────────
+   חלון Safari על macOS, במצב בהיר: רמזורים, חצי ניווט, שדה כתובת עם
+   מנעול, וכלים בצד. הסרגל תמיד LTR — כמו במחשב אמיתי, גם כשהאתר בעברית.
+   הגודל של כל הסרגל נגזר מרוחב החלון (container query), כך שחלון קטן
+   במובייל מקבל סרגל קטן ולא סרגל של דסקטופ על מסך צר. */
+.mk-browser {
+  container-type: inline-size;
+  position: relative; width: 100%; overflow: hidden;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow:
+    0 0 0 0.5px rgba(23, 19, 13, 0.22),
+    0 1px 2px rgba(23, 19, 13, 0.08),
+    0 18px 36px -20px rgba(23, 19, 13, 0.32),
+    0 60px 90px -54px rgba(23, 19, 13, 0.5);
+}
+.on-dark .mk-browser {
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.6),
+    0 18px 36px -18px rgba(0, 0, 0, 0.55),
+    0 60px 90px -50px rgba(0, 0, 0, 0.7);
+}
+.mk-browser-bar {
+  direction: ltr;
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center; gap: clamp(8px, 1.8cqi, 18px);
+  height: clamp(30px, 4.6cqi, 46px);
+  padding-inline: clamp(10px, 1.6cqi, 16px);
+  background: linear-gradient(180deg, #f7f5f2, #efece7);
+  border-bottom: 0.5px solid rgba(23, 19, 13, 0.16);
+  color: #6f6a62;
+}
+.mk-browser-lights { display: inline-flex; gap: clamp(5px, 0.8cqi, 8px); }
+.mk-browser-lights i {
+  width: clamp(8px, 1.25cqi, 12px); aspect-ratio: 1; border-radius: 50%;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.16);
+}
+.mk-browser-lights i:nth-child(1) { background: #ff5f57; }
+.mk-browser-lights i:nth-child(2) { background: #febc2e; }
+.mk-browser-lights i:nth-child(3) { background: #28c840; }
+.mk-browser-nav, .mk-browser-tools { display: inline-flex; align-items: center; gap: clamp(6px, 1.2cqi, 14px); }
+.mk-browser-nav svg, .mk-browser-tools svg { width: clamp(10px, 1.5cqi, 15px); height: auto; }
+.mk-browser-nav svg + svg { opacity: 0.4; }
+.mk-browser-url {
+  justify-self: center; width: min(100%, 440px);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  height: clamp(20px, 3cqi, 28px); padding-inline: 10px;
+  border-radius: 7px; background: rgba(23, 19, 13, 0.06);
+  font: 500 clamp(9px, 1.3cqi, 13px)/1 -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  color: #3f3b35; white-space: nowrap; overflow: hidden;
+}
+.mk-browser-url svg { width: clamp(7px, 1cqi, 10px); height: auto; flex: none; color: #7c776e; }
+.mk-browser-view { position: relative; background: var(--ivory, #fbf7ee); }
+.mk-browser-view > img { display: block; width: 100%; height: auto; }
+/* צילום ביחס קבוע (16:10) — ממלא את החלון מלמעלה */
+.mk-browser--fixed .mk-browser-view { aspect-ratio: 16 / 10; }
+.mk-browser--fixed .mk-browser-view > img { position: absolute; inset: 0; height: 100%; object-fit: cover; object-position: top; }
+.mk-browser-view > iframe { display: block; width: 100%; border: 0; }
+@container (max-width: 520px) {
+  .mk-browser-nav, .mk-browser-tools { display: none; }
+  .mk-browser-bar { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .mk-browser-bar::after { content: ""; width: clamp(34px, 9cqi, 44px); }
+}
 
 /* ===== VEYA BRAND LAYER — END ===== */

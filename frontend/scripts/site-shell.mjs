@@ -160,7 +160,7 @@ ${o.body}
       <div class="wrap">
         <div class="footer-brand">
           ${LOGO_SVG.replace('class="header-logo"', 'class="footer-logo"')}
-          <span class="footer-tag">מערכת לניהול אירועים — מוזמנים, אישורי הגעה, הושבה ומאזן האירוע במקום אחד.</span>
+          <span class="footer-tag">מהרשימה הראשונה ועד הדוח שאחרי האירוע: מוזמנים, אישורי הגעה, הושבה ומאזן.</span>
         </div>
         <div class="footer-cols">
           <div class="footer-col">
@@ -217,6 +217,18 @@ ${o.body}
         © VEYA — מערכת לניהול אירועים
       </div>
     </footer>
+    <script>
+      /* צילום שנקטע בטעינה: ניסיון חוזר אחד, והמסגרת נשארת. מוגדר ב-head כדי
+         שיהיה קיים גם לתמונות שנטענות לפני סוף העמוד. */
+      window.veyaRetryImage = function (img) {
+        if (img.dataset.veyaRetried) return;
+        img.dataset.veyaRetried = '1';
+        var src = img.getAttribute('src');
+        setTimeout(function () {
+          img.src = src + (src.indexOf('?') === -1 ? '?' : '&') + 'retry=1';
+        }, 700);
+      };
+    </script>
     <script src="/veya-motion.js" defer></script>
 ${o.scripts || ''}
   </body>
