@@ -5,16 +5,26 @@ body,
 .demo-root {
   background: var(--ivory, #fbf6ee);
 }
+/* המסמך של ההדגמה לא נגלל — גלגלת/החלקה מעל ההדגמה ממשיכות לגלול את
+   הדף שמסביב, ולא "נתקעות" בתוך המסגרת. */
+html,
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
 
-/* הבמה היא המגלגל: גובה קבוע של המסגרת, וגלילה פנימית בלבד. כך שום
-   תנועה של ההדגמה לא נוגעת בגלילה של העמוד שמסביב. */
+/* הבמה בגובה קבוע של המסגרת ובלי גלילה כלל. כשצריך להראות חלק נמוך
+   יותר, ה-track זז פנימה ב-transform — שום דבר לא נגלל. */
 .demo-stage {
   position: relative;
   height: 100vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 12px 12px 18px;
+  overflow: hidden;
   background: var(--ivory, #fbf6ee);
+}
+.demo-track {
+  padding: 12px 12px 18px;
+  transition: transform 700ms cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
 }
 
 /* פריסת ההדגמה בלבד: במסך רחב מסך ההזנה משמאל והדוח מימין, כדי ששניהם
@@ -41,12 +51,10 @@ body,
   .demo-stage .fin-section + .fin-section { grid-column: 1 / -1; grid-row: 4; }
 }
 
-/* יומן המתנות גדל עם כל מעטפה. בהדגמה נותנים לו גובה קבוע עם גלילה,
-   כדי שהמסגרת בדף הנחיתה לא תמשיך להתארך תוך כדי. השורות החדשות
-   ממילא בראש הרשימה. */
+/* יומן המתנות: בלי גלילה פנימית. המסגרת בדף הנחיתה בגובה קבוע ממילא,
+   והשורות החדשות בראש הרשימה. */
 .demo-stage .fin-gift-list {
-  max-height: 360px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 /* הסמן: עיגול קטן עם "לחיצה". לא סרטון ולא אפקט — רק היד. */
@@ -64,11 +72,12 @@ body,
   opacity: 0;
   pointer-events: none;
   z-index: 90;
-  transition: transform 380ms cubic-bezier(0.23, 1, 0.32, 1), opacity 200ms linear;
+  transition: transform 620ms cubic-bezier(0.25, 1, 0.5, 1), opacity 300ms linear;
 }
 .demo-cursor.is-on { opacity: 1; }
 .demo-cursor.is-press { transform-origin: center; box-shadow: 0 0 0 8px rgba(201, 162, 39, 0.28); }
 
 @media (prefers-reduced-motion: reduce) {
   .demo-cursor { display: none; }
+  .demo-track { transition: none; }
 }

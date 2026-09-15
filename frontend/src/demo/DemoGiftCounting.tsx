@@ -14,6 +14,16 @@
  *    עם ערימת מעטפות. ההקלדה היא אמיתית: אותם אירועי ``input``/``click``
  *    שהדפדפן שולח, ולכן הרכיב האמיתי מגיב בדיוק כרגיל ובאמת שומר.
  *
+ * ## ההדגמה לא נוגעת בדף שמסביב
+ *
+ * - **אין גלילה בכלל** — לא של הדף ולא פנימית. הבמה לא ניתנת לגלילה;
+ *   כשצריך להראות חלק נמוך יותר, התוכן זז פנימה עם ``transform``.
+ * - **אין focus** — אף שדה לא מקבל מיקוד אוטומטי, ולכן במובייל לא נפתחת
+ *   מקלדת, גם לא כשחוזרים לדף.
+ * - **קצב רגוע** — שלוש מעטפות מוקלדות לאט; השאר נספרות בשקט, והדוח
+ *   בסוף מציג את כולן.
+ * - **נעצרת מחוץ למסך** — כשההדגמה לא נראית, היא מחכה במקום.
+ *
  * ## תנועה מופחתת
  *
  * מי שביקש ``prefers-reduced-motion`` לא רואה הקלדה: המעטפות כבר
@@ -21,49 +31,41 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { FinancePage } from '../components/FinancePage'
-import { DEMO_ENVELOPES, installDemoServer, seedAllEnvelopes } from './demoServer'
+import {
+  DEMO_ENVELOPES,
+  installDemoServer,
+  seedAllEnvelopes,
+  seedRemainingEnvelopes,
+} from './demoServer'
 import './demo.css'
 
-// ---- שכבת הדגמה: מיקוד שלא מזיז את הדף ----
-// ``EnvelopeCounter`` האמיתי ממקד את שדה החיפוש אחרי כל שמירה — התנהגות
-// נכונה במוצר (ממשיכים למעטפה הבאה בלי לגעת בעכבר), אבל בתוך iframe
-// בדף נחיתה כל מיקוד כזה גורר את *הדף של הגולש* חזרה אל המסגרת באמצע
-// גלילה. במקום לשנות את הרכיב, ההדגמה מחליפה כאן את ברירת המחדל של
-// ``focus`` למיקוד בלי גלילה. ההתנהגות של הרכיב לא משתנה — רק הדף
-// שמסביב מפסיק לזוז.
-const nativeFocus = HTMLElement.prototype.focus
-HTMLElement.prototype.focus = function focusWithoutScroll(this: HTMLElement, options?: FocusOptions) {
-  return nativeFocus.call(this, { ...(options || {}), preventScroll: true })
-}
+// ---- שכבת הדגמה: אין מיקוד אוטומטי בכלל ----
+// ``EnvelopeCounter`` האמיתי ממקד שדות (``autoFocus`` ואחרי כל שמירה) —
+// התנהגות נכונה במוצר. בהדגמה בתוך iframe זה פותח מקלדת במובייל ומחזיר
+// אותה כשחוזרים לדף. במקום לשנות את הרכיב, ההדגמה מבטלת כאן את ``focus``
+// הפרוגרמטי. מיקוד של המשתמש עצמו (לחיצה) לא עובר דרך הפונקציה הזו.
+HTMLElement.prototype.focus = function noAutoFocus() {}
 
 // מותקן ברגע הטעינה של המודול — לפני ש-``FinancePage`` מספיק לבקש נתונים.
 installDemoServer()
 // תנועה מופחתת: אין הקלדה, ולכן המעטפות כבר ספורות והמסך נפתח על התוצאה.
 if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) seedAllEnvelopes()
 
-/** קצב ההקלדה — מהיר מספיק כדי לא לשעמם, איטי מספיק כדי להיקרא. */
-const CHAR_MS = 24
-const DIGIT_MS = 62
-const STEP_MS = 130
+/** כמה מעטפות מוקלדות בפועל. השאר נספרות בשקט לפני הדוח. */
+const TYPED_ENVELOPES = 3
+/** קצב ההקלדה — איטי מספיק כדי להבין מה קורה, בלי לחכות. */
+const CHAR_MS = 70
+const DIGIT_MS = 150
+const STEP_MS = 480
+const SETTLE_MS = 380
+const PAN_MS = 700
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
-/**
- * מגלגל את הבמה כך שהאלמנט הפעיל יהיה במרכזה — בלי לגעת בגלילת העמוד.
- *
- * ``scrollIntoView`` היה נוח כאן, אבל הוא מטפס במעלה שרשרת המכילים עד
- * לחלון של הדף המארח: בתוך iframe זה גורר את הגולש בחזרה לסקשן באמצע
- * גלילה. חישוב ידני על ``scrollTop`` של המכיל נשאר בפנים.
- */
-function scrollStageTo(el: Element): void {
-  const stage = el.closest('.demo-stage') as HTMLElement | null
-  if (!stage) return
-  const s = stage.getBoundingClientRect()
-  const r = el.getBoundingClientRect()
-  const delta = r.top + r.height / 2 - (s.top + s.height / 2)
-  const next = Math.max(0, Math.min(stage.scrollTop + delta, stage.scrollHeight - stage.clientHeight))
-  if (Math.abs(next - stage.scrollTop) < 8) return
-  stage.scrollTo({ top: next, behavior: 'smooth' })
+/** מוריד מיקוד שנשאר (למשל אחרי חזרה ללשונית), כדי שלא תיפתח מקלדת. */
+function dropFocus(): void {
+  const el = document.activeElement as HTMLElement | null
+  if (el && el !== document.body) el.blur()
 }
 
 /** ממתין שאלמנט יופיע ב-DOM (הרכיב האמיתי מרנדר בזמן שלו). */
@@ -92,25 +94,64 @@ function setValue(el: HTMLInputElement, value: string): void {
 
 export function DemoGiftCounting() {
   const stageRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
   const cursorRef = useRef<HTMLDivElement>(null)
   const [reduced] = useState(
     () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
   )
 
   useEffect(() => {
+    dropFocus()
+    window.addEventListener('pageshow', dropFocus)
+    window.addEventListener('focus', dropFocus)
+    document.addEventListener('visibilitychange', dropFocus)
+    return () => {
+      window.removeEventListener('pageshow', dropFocus)
+      window.removeEventListener('focus', dropFocus)
+      document.removeEventListener('visibilitychange', dropFocus)
+    }
+  }, [])
+
+  useEffect(() => {
     if (reduced) return
     let alive = true
+    let visible = false
+    let offset = 0
+
+    /** כשההדגמה לא על המסך — מחכים במקום, בלי להמשיך "לרוץ" מאחורי הגב. */
+    async function whenVisible(): Promise<void> {
+      while (alive && (!visible || document.hidden)) await sleep(250)
+    }
+
+    async function pause(ms: number): Promise<void> {
+      await whenVisible()
+      await sleep(ms)
+    }
+
+    /** מביא את האלמנט לתוך הבמה בהזזת התוכן — לא בגלילה. */
+    async function bringIntoView(el: Element): Promise<void> {
+      const stage = stageRef.current
+      const track = trackRef.current
+      if (!stage || !track) return
+      const s = stage.getBoundingClientRect()
+      const r = el.getBoundingClientRect()
+      const pad = s.height * 0.18
+      if (r.top >= s.top + pad && r.bottom <= s.bottom - pad) return
+      const max = Math.max(0, track.offsetHeight - stage.clientHeight)
+      const next = Math.max(0, Math.min(max, offset + (r.top + r.height / 2 - (s.top + s.height / 2))))
+      if (Math.abs(next - offset) < 8) return
+      offset = next
+      track.style.transform = `translateY(${-offset}px)`
+      await sleep(PAN_MS)
+    }
 
     /** מזיז את הסמן למרכז האלמנט, בקואורדינטות של הבמה. */
-    async function moveTo(el: Element, settle = 190): Promise<void> {
+    async function moveTo(el: Element, settle = SETTLE_MS): Promise<void> {
       const stage = stageRef.current
       const cursor = cursorRef.current
       if (!stage || !cursor) return
-      // **לא** ``scrollIntoView``: הוא מגלגל גם את המסמך שמסביב, ובתוך
-      // iframe הוא מושך את הדף של הגולש בחזרה לסקשן. במקום זה מגלגלים
-      // רק את הבמה עצמה — גלילה פנימית שלא יוצאת מהמסגרת.
-      scrollStageTo(el)
-      await sleep(180)
+      await whenVisible()
+      await bringIntoView(el)
       const s = stage.getBoundingClientRect()
       const r = el.getBoundingClientRect()
       cursor.style.transform = `translate(${r.left + r.width / 2 - s.left}px, ${
@@ -122,90 +163,99 @@ export function DemoGiftCounting() {
 
     async function press(el: HTMLElement): Promise<void> {
       cursorRef.current?.classList.add('is-press')
-      await sleep(70)
+      await sleep(140)
       cursorRef.current?.classList.remove('is-press')
       el.click()
-      await sleep(70)
+      dropFocus()
+      await sleep(160)
     }
 
     async function type(el: HTMLInputElement, text: string, speed: number): Promise<void> {
       for (let i = 1; i <= text.length; i += 1) {
         if (!alive) return
+        await whenVisible()
         setValue(el, text.slice(0, i))
         await sleep(speed)
       }
     }
 
     async function run(): Promise<void> {
+      await whenVisible()
       // פותחים את מצב הספירה — בדיוק בלחיצה שהזוג לוחץ במוצר.
       const start = await waitFor<HTMLButtonElement>('.fin-counter-cta button')
       if (!alive || !start) return
       await moveTo(start)
       await press(start)
 
-      for (const envelope of DEMO_ENVELOPES) {
+      for (const envelope of DEMO_ENVELOPES.slice(0, TYPED_ENVELOPES)) {
         if (!alive) return
         const search = await waitFor<HTMLInputElement>('.fin-search')
         if (!alive || !search) return
         await moveTo(search)
-        await press(search)
-        // ``preventScroll`` הוא כל ההבדל: מיקוד רגיל גורר את *הדף המארח*
-        // אל תוך ה-iframe, והגולש נזרק בחזרה לסקשן באמצע גלילה.
-        search.focus({ preventScroll: true })
         // מקלידים את השם המלא ולא קיצור: קיצור היה יכול להחזיר כמה
         // מוזמנים ("משפ…"), והלחיצה הייתה נופלת על השם הלא נכון.
         await type(search, envelope.name, CHAR_MS)
-        await sleep(STEP_MS)
+        await pause(STEP_MS)
 
         // בחירת המוזמן מהתוצאות — לחיצה על השורה, כמו ביד.
         const result = await waitFor<HTMLButtonElement>('.fin-result')
         if (!alive || !result) return
-        await moveTo(result, 170)
+        await moveTo(result)
         await press(result)
 
         const amount = await waitFor<HTMLInputElement>('.fin-amount-input input')
         if (!alive || !amount) return
         await moveTo(amount)
-        await press(amount)
-        amount.focus({ preventScroll: true })
         await type(amount, String(envelope.amount), DIGIT_MS)
-        await sleep(STEP_MS)
+        await pause(STEP_MS)
 
         const save = await waitFor<HTMLButtonElement>('.fin-counter-actions button[type="submit"]')
         if (!alive || !save) return
-        await moveTo(save, 170)
+        await moveTo(save)
         await press(save)
-        await sleep(300)
+        await pause(900)
       }
       cursorRef.current?.classList.remove('is-on')
+
+      // שאר הערימה נספרת בשקט, והדוח מציג את כל המעטפות.
+      seedRemainingEnvelopes()
 
       // ובסוף — הדוח האמיתי של המוצר. עוברים ללשונית הסיכום ולוחצים
       // "הצגת הדוח", בדיוק כמו הזוג אחרי האירוע. הטבלה שנפתחת היא
       // ``ReportTable`` של ``FinancePage``, עם העמודות שלה.
-      await sleep(500)
+      await pause(700)
       const tabs = [].slice.call(document.querySelectorAll('.fin-tabs button')) as HTMLButtonElement[]
       const summaryTab = tabs[tabs.length - 1]
       if (summaryTab) {
-        await moveTo(summaryTab, 300)
+        await moveTo(summaryTab, 500)
         await press(summaryTab)
       }
       const show = await waitFor<HTMLButtonElement>('.fin-section-head button, .fin-report button')
       if (show) {
-        await moveTo(show, 300)
+        await moveTo(show, 500)
         await press(show)
       }
+      const report = await waitFor<HTMLElement>('.fin-report-card')
+      if (report) {
+        await pause(400)
+        await bringIntoView(report)
+      }
+      // נעצרים על הדוח.
       cursorRef.current?.classList.remove('is-on')
     }
 
     const stage = stageRef.current
     if (!stage) return
-    // מתחילים רק כשההדגמה באמת על המסך.
+    let started = false
+    // מתחילים כשההדגמה על המסך, ועוצרים כשהיא יוצאת ממנו.
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (!e.isIntersecting) return
-          io.disconnect()
-          void run()
+          visible = e.isIntersecting
+          if (visible && !started) {
+            started = true
+            void run()
+          }
         })
       },
       { threshold: 0.3 },
@@ -219,9 +269,10 @@ export function DemoGiftCounting() {
 
   return (
     <div className="demo-stage" ref={stageRef}>
-      <FinancePage />
+      <div className="demo-track" ref={trackRef}>
+        <FinancePage />
+      </div>
       <div className="demo-cursor" ref={cursorRef} aria-hidden="true" />
     </div>
   )
 }
-

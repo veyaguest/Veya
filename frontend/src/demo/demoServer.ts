@@ -249,6 +249,15 @@ function createEnvelope(body: {
   return { envelope: entry, next_envelope_number: nextNumber }
 }
 
+/** משלים בשקט את המעטפות שעוד לא נספרו — כדי שההדגמה תקליד רק כמה
+ *  מעטפות לאט, והדוח בסוף עדיין יציג את כל הערימה. */
+export function seedRemainingEnvelopes(): void {
+  const from = saved.length
+  DEMO_ENVELOPES.slice(from).forEach((e, k) => {
+    createEnvelope({ amount_agorot: e.amount * 100, guest_id: from + k + 1, shared_guest_ids: [] })
+  })
+}
+
 /** ממלא מראש את כל המעטפות — למצב "תנועה מופחתת", שבו אין הקלדה. */
 export function seedAllEnvelopes(): void {
   if (saved.length) return

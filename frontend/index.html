@@ -273,7 +273,9 @@
          האמיתיים, על שרת דמו בזיכרון. הגובה קבוע מראש כדי שהעמוד לא יקפוץ
          כשההדגמה נטענת. */
       .gc-demo { margin: 0 auto 26px; max-width: 1040px; }
-      .gc-frame { height: 560px; background: var(--ivory); }
+      /* ההדגמה לצפייה בלבד: לא נגללת, לא מקבלת מגע ולא מיקוד — גלילה או
+         החלקה מעליה ממשיכות לגלול את הדף, ובמובייל לא נפתחת מקלדת. */
+      .gc-frame { height: 560px; background: var(--ivory); pointer-events: none; }
       @media (max-width: 899px) { .gc-frame { height: 520px; } }
       @media (max-width: 560px) { .gc-frame { height: 470px; } }
       .gc-note { margin: 0 auto; max-width: 62ch; text-align: center; font-size: var(--fs-sm); line-height: 1.7; color: var(--muted); }
@@ -3140,6 +3142,8 @@
             <iframe
               class="gc-frame"
               src="/demo/gifts"
+              scrolling="no"
+              tabindex="-1"
               title="ספירת המעטפות ויומן המתנות ב-VEYA — הדגמה חיה של המסך עצמו"
               loading="lazy"
             ></iframe>
