@@ -877,7 +877,6 @@
         background: var(--gold); color: var(--charcoal); font-size: var(--fs-sm); font-weight: 600;
         box-shadow: var(--shadow-lg); white-space: nowrap;
       }
-      .st-ghost.is-demo { transition: transform 820ms var(--ease-out), opacity 300ms linear; }
       .st-list.is-over { outline: 2px dashed var(--gold); outline-offset: 6px; border-radius: var(--radius-md); }
       .st-guest, .st-chip { touch-action: pan-y; }
       .st-chip { cursor: grab; }
@@ -3061,12 +3060,12 @@
             </div>
           </div>
 
-          <p class="st-note reveal d2">
+          <p class="st-note">
             ואם יש לכם בקשות כמו "שיהיו ביחד", "לא ליד הרמקולים" או "שלא ישבו
             ליד X" — גם את זה אנחנו לוקחים בחשבון.
           </p>
 
-          <div class="payoff-shot reveal d2 st-shot mk-browser mk-browser--fixed">
+          <div class="payoff-shot st-shot mk-browser mk-browser--fixed">
             <div class="mk-browser-bar" aria-hidden="true">
               <span class="mk-browser-lights"><i></i><i></i><i></i></span>
               <span class="mk-browser-nav"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5" /></svg></span>
@@ -3083,18 +3082,18 @@
             </div>
           </div>
 
-            <div class="payoff-after reveal d2">
+            <div class="payoff-after">
               <p>אחרי כל הרצה מוצג דוח תקינות:</p>
               <p class="payoff-beats"><span>קיבולת שולחנות.</span><span>מי לא יושב עם מי.</span><span>מי נשאר בלי שולחן.</span></p>
               <p>ואם משהו לא מסתדר — אפשר לחזור לסידור הקודם.</p>
               <p class="why-punch">אתם מחליטים. VEYA חוסכת לכם את ההתחלה ואת הבדיקה.</p>
             </div>
 
-          <div class="section-cta reveal d2">
+          <div class="section-cta">
             <a href="/app?auth=register" class="btn btn-primary">בא לי לנסות את VEYA <span class="arw" aria-hidden="true">←</span></a>
           </div>
 
-          <p class="fineprint reveal">
+          <p class="fineprint">
             המנוע לא "מבין אנשים" — הוא עובד לפי מה שסימנתם: קבוצות, צדדים, הערות הושבה
             ואילוצים. מה שלא אמרתם לו, הוא לא מניח.
           </p>
@@ -4294,13 +4293,10 @@
           el.classList.add('is-picked');
           sayIt('בחרתם את ' + info(el).name + '. עכשיו בחרו שולחן.');
         }
-        var demoGhost = null;
         function firstTouch() {
           if (usedByUser) return;
           usedByUser = true;
           window.veyaHint.clear(box);
-          // ההדגמה מפסיקה מיד — היד של הגולש מנצחת.
-          if (demoGhost) { demoGhost.remove(); demoGhost = null; }
           tables.forEach(function (t) { t.classList.remove('is-over'); });
         }
 
@@ -4406,32 +4402,11 @@
           });
         });
 
-        // ---- הדגמה חד-פעמית: מוזמן אחד נוסע לשולחן, וחוזר ----
+        // ---- רמז אחד, פעם אחת ----
+        // משפט קצר שמופיע כשהסקשן נכנס למסך ונעלם ברגע הנגיעה הראשונה.
+        // בלי יד, בלי מוזמן שנוסע על המסך ובלי תנועה שחוזרת בגלילה.
         window.veyaHint.onceInView(box, function () {
-          window.veyaHint.show(box);
-          if (window.veyaHint.reduced) return;
-          setTimeout(function () {
-            if (usedByUser) return;
-            var guest = remaining().filter(function (g) {
-              return parseInt(g.getAttribute('data-size'), 10) <= free(tables[0]);
-            })[0];
-            if (!guest) return;
-            var from = guest.getBoundingClientRect();
-            var to = tables[0].getBoundingClientRect();
-            var ghost = ghostFor(guest, from.left + from.width / 2, from.top + from.height / 2);
-            demoGhost = ghost;
-            ghost.classList.add('is-demo');
-            tables[0].classList.add('is-over');
-            requestAnimationFrame(function () {
-              ghost.style.transform = 'translate(' + (to.left + to.width / 2) + 'px, ' + (to.top + to.height / 2) + 'px)';
-            });
-            setTimeout(function () {
-              if (!demoGhost) return;
-              ghost.style.opacity = '0';
-              tables[0].classList.remove('is-over');
-              setTimeout(function () { ghost.remove(); demoGhost = null; }, 320);
-            }, 900);
-          }, 500);
+          if (!usedByUser) window.veyaHint.show(box);
         });
       })();
 
