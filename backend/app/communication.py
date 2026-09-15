@@ -63,16 +63,24 @@ MESSAGE_TYPE_LABELS: dict[str, str] = {
 
 # עוגן תזמון ברירת מחדל לכל סוג (ימים ביחס לעוגן הקבוע של הסוג — ראו
 # _is_due_now). הזמנה נשלחת ידנית (לא דרך תור ה-due), ולכן אין לה עוגן.
-# "בקשת אישור ראשונה" מעוגנת ללוח הזמנים (מועד סגירת הרשימה), לא להיסט —
-# ראו _due_now ו-rsvp_timeline.rsvp_request_date.
+# "בקשת אישור ראשונה" ושלוש התזכורות מעוגנות ללוח הזמנים (``rsvp_timeline``),
+# לא להיסט — ראו _due_now, ``rsvp_timeline.rsvp_request_date`` ו-``reminder_date``.
+# ההיסטים שלהן נשמרים בשורות ה-DB לתאימות בלבד ואינם משפיעים על השליחה.
 DEFAULT_TRIGGER_OFFSET_DAYS: dict[str, int] = {
     "invitation": 0,
     "rsvp_request": 0,     # העוגן הוא לוח הזמנים, לא היסט
-    "reminder_1": 3,       # 3 ימים אחרי בקשת האישור הראשונה
-    "reminder_2": 8,       # 8 ימים אחרי בקשת האישור הראשונה
-    "final_reminder": -2,  # יומיים לפני האירוע
+    "reminder_1": 0,       # העוגן הוא לוח הזמנים (תזכורת 1)
+    "reminder_2": 0,       # העוגן הוא לוח הזמנים (תזכורת 2)
+    "final_reminder": 0,   # העוגן הוא לוח הזמנים (תזכורת 3)
     "event_day": 0,        # ביום האירוע עצמו
     "thank_you": 1,        # יום אחרי האירוע
+}
+
+# סוג הודעת התזכורת → מספר התזכורת בלוח הזמנים (``Placement.reminder_number``).
+REMINDER_NUMBER: dict[str, int] = {
+    "reminder_1": 1,
+    "reminder_2": 2,
+    "final_reminder": 3,
 }
 
 # all / pending / confirmed / declined
@@ -466,17 +474,18 @@ def _due_now(
         if request_day is None:
             return False
         return now_il >= _scheduled_moment(request_day, event.rsvp_send_time)
-    if message_type in ("reminder_1", "reminder_2"):
-        # התזכורות נספרות ``+N`` ימים מ**בקשת האישור הראשונה** של המוזמן —
-        # לא מיום שליחת ההזמנה.
-        anchor = rsvp_requested_at.get(guest.id)
-        if anchor is None:
+    if message_type in REMINDER_NUMBER:
+        # התזכורות נשלחות **בתאריך שלהן בלוח הזמנים** (``rsvp_timeline``) — אותו
+        # לוח שהזוג רואה ושממנו נגזרים סבבי השיחות. כך תזכורת לעולם לא יוצאת
+        # אחרי מועד סגירת הרשימה או ביום של סבב שיחות. תזכורת שלא נכנסה ללוח
+        # (אין מספיק ימים) — לא נשלחת. ורק למי שכבר קיבל בקשת אישור ראשונה.
+        if guest.id not in rsvp_requested_at:
             return False
-        # יום ה"בסיס" נגזר מהיום (שעון ישראל) שבו נשלחה הבקשה בפועל — לא
-        # מהרגע המדויק שלה — כי מה שהזוג בחר הוא שעה ביום, לא מרווח שעות.
-        trigger_day = now_in_israel(anchor).date() + timedelta(days=em.trigger_offset_days)
-        return now_il >= _scheduled_moment(trigger_day, event.rsvp_send_time)
-    if message_type in ("final_reminder", "event_day"):
+        reminder_day = rsvp_timeline.reminder_date(event, REMINDER_NUMBER[message_type], now)
+        if reminder_day is None:
+            return False
+        return now_il >= _scheduled_moment(reminder_day, event.rsvp_send_time)
+    if message_type == "event_day":
         if event_date is None:
             return False
         trigger_day = event_date + timedelta(days=em.trigger_offset_days)
