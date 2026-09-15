@@ -290,7 +290,7 @@
          ה-iframe טוען את ``/demo/gifts`` — ``FinancePage`` ו-``EnvelopeCounter``
          האמיתיים, על שרת דמו בזיכרון. הגובה קבוע מראש כדי שהעמוד לא יקפוץ
          כשההדגמה נטענת. */
-      .gc-demo { margin: 0 auto 26px; max-width: 1040px; }
+      .gc-demo { margin: 0 auto 26px; max-width: 860px; }
       /* ההדגמה לצפייה בלבד: לא נגללת, לא מקבלת מגע ולא מיקוד — גלילה או
          החלקה מעליה ממשיכות לגלול את הדף, ובמובייל לא נפתחת מקלדת. */
       .gc-frame { height: 560px; background: var(--ivory); pointer-events: none; }
@@ -621,12 +621,23 @@
       /* ---- מחשבונים: צילום של הכלי האמיתי, ומתחתיו הדרך אליו ---- */
       /* שתי גרסאות של אותו צילום: הפריסה הרחבה בחלון דפדפן במחשב, והפריסה
          של הטלפון באייפון בטלפון — אותו מחשבון, רק הרספונסיביות שלו עצמו. */
-      .cl-shot { max-width: 900px; margin: 0 auto 18px; }
+      /* קומפוזיציה: המחשבון בדפדפן מעט מאחור, ואותו מחשבון בטלפון חופף לפניו.
+         RTL: הטלפון בצד ההתחלה. */
+      .cl-shot {
+        --ph-w: clamp(132px, 14vw, 178px);
+        position: relative; max-width: 700px; margin: 0 auto 22px;
+        padding-bottom: calc(var(--ph-w) * 1.2); perspective: 2200px;
+      }
+      .cl-desk { width: 86%; margin-inline-start: auto; transform: rotateY(-8deg) rotateX(2deg); transform-origin: 70% 50%; }
       .cl-desk .mk-browser-view > img { aspect-ratio: 1200 / 943; }
-      .cl-mob { display: none; }
-      @media (max-width: 720px) {
-        .cl-desk { display: none; }
-        .cl-mob { display: block; --ph-w: min(300px, 76vw); margin-inline: auto; }
+      .cl-shot .cl-mob {
+        position: absolute; z-index: 2; bottom: 0; inset-inline-start: 3%;
+        transform: rotateY(7deg) rotate(-1.5deg);
+      }
+      @media (max-width: 600px) {
+        .cl-shot { --ph-w: clamp(140px, 40vw, 166px); padding-bottom: calc(var(--ph-w) * 1.6); }
+        .cl-desk { width: 80%; }
+        .cl-shot .cl-mob { inset-inline-start: 0; }
       }
       .cl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; max-width: 440px; margin: 0 auto; }
       a.cl-card {
@@ -2509,6 +2520,7 @@
     
     
 
+    
     
     
     
