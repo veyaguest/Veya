@@ -720,13 +720,17 @@
         .sh-mobile-text { text-align: start; }
       }
       /* ---- ההסבר על הוספה למסך הבית ---- */
-      .sh-modal { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 20px; }
+      .sh-modal {
+        position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 20px;
+        /* גלילה רק אם הכרטיס באמת לא נכנס (טלפון לרוחב), ובלי לגרור איתה את הדף */
+        overflow-y: auto; overscroll-behavior: contain;
+      }
       /* ``display: grid`` גובר על ברירת המחדל של [hidden] — בלי השורה הזו
          ההסבר היה נפתח לבד בטעינת העמוד. */
       .sh-modal[hidden] { display: none; }
-      .sh-modal-back { position: absolute; inset: 0; background: rgba(23, 19, 13, 0.52); }
+      .sh-modal-back { position: fixed; inset: 0; background: rgba(23, 19, 13, 0.52); }
       .sh-modal-card {
-        position: relative; width: min(420px, 100%); padding: 26px 24px 22px; text-align: center;
+        position: relative; width: min(420px, 100%); margin: auto; padding: 26px 24px 22px; text-align: center;
         background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-xl);
         box-shadow: var(--shadow-lg);
       }
@@ -749,6 +753,9 @@
       }
       .sh-share { vertical-align: -3px; color: var(--gold-deep); }
       .sh-modal-ok { width: 100%; min-height: 46px; }
+      .sh-modal-card:focus { outline: none; }
+      /* בזמן שההסבר פתוח הדף לא זז מתחתיו; השוליים של פס הגלילה נשמרים כדי שלא תהיה קפיצה לצד */
+      html.is-modal-open { overflow: hidden; scrollbar-gutter: stable; }
 
       /* ---- מועד סגירת הרשימה: בוחרים תאריך, הציר נבנה לאחור ---- */
       .dl { max-width: 940px; margin: 0 auto; }
@@ -2379,7 +2386,7 @@
       #showcase .sh-mobile { border-top-color: rgba(245, 239, 226, 0.16); }
       #showcase .sh-mobile-title { color: var(--cream-text); }
       #showcase .sh-mobile-body { color: #d8ceb9; }
-      #showcase .sh-modal-card { color: var(--body); }
+      .sh-modal .sh-modal-card { color: var(--body); }
       #impact { position: relative; z-index: 3; background: var(--bg-linen); }
       #impact::before { background: var(--bg-linen); transform: none; }
 
@@ -3015,7 +3022,7 @@
              אותה כותרת, אותו משפט ואותם שלושה צעדים. אין כאן מנגנון שני. -->
         <div class="sh-modal" data-install-modal hidden>
           <div class="sh-modal-back" data-install-close></div>
-          <div class="sh-modal-card" role="dialog" aria-modal="true" aria-labelledby="sh-install-title">
+          <div class="sh-modal-card" role="dialog" aria-modal="true" aria-labelledby="sh-install-title" tabindex="-1">
             <button type="button" class="sh-modal-x" data-install-close aria-label="סגירת ההסבר">✕</button>
             <h3 id="sh-install-title" class="sh-modal-title">הוסיפו את VEYA למסך הבית</h3>
             <p class="sh-modal-body">גישה מיידית לאירוע שלכם מהאייפון — נפתחת כמו אפליקציה, בלי לחפש בדפדפן.</p>
@@ -4081,20 +4088,53 @@
         var modal = document.querySelector('[data-install-modal]');
         var opener = document.querySelector('[data-install-open]');
         if (!modal || !opener) return;
+        var root = document.documentElement;
+        var card = modal.querySelector('[role="dialog"]');
+        // החלון יושב בסוף העמוד ולא בתוך הסקשן: אחרת הסקשנים שאחריו
+        // נצבעים מעליו וההסבר נראה פתוח רק בחצי.
+        document.body.appendChild(modal);
         var lastFocus = null;
-        function open() {
+        var savedY = 0;
+        var isOpen = false;
+
+        function focusables() {
+          return Array.prototype.filter.call(card.querySelectorAll('button, [href], input, [tabindex]:not([tabindex="-1"])'),
+            function (el) { return !el.disabled && el.offsetParent !== null; });
+        }
+        function open(e) {
+          if (isOpen) return;
+          isOpen = true;
           lastFocus = document.activeElement;
+          savedY = window.scrollY;
+          root.classList.add('is-modal-open');
           modal.hidden = false;
-          var ok = modal.querySelector('.sh-modal-ok');
-          if (ok) ok.focus({ preventScroll: true });
+          modal.scrollTop = 0;
+          // מקלדת: הפוקוס עובר לכפתור. עכבר/מגע: לחלון עצמו — בלי טבעת, בלי מקלדת ובלי גלילה.
+          var viaKeyboard = e && e.detail === 0;
+          var target = viaKeyboard ? modal.querySelector('.sh-modal-ok') : card;
+          if (target) target.focus({ preventScroll: true });
           document.addEventListener('keydown', onKey);
         }
         function close() {
+          if (!isOpen) return;
+          isOpen = false;
           modal.hidden = true;
+          root.classList.remove('is-modal-open');
           document.removeEventListener('keydown', onKey);
+          // המיקום בדף לא אמור לזוז — ואם דפדפן כלשהו הזיז אותו, חוזרים בדיוק לאותה נקודה
+          if (window.scrollY !== savedY) window.scrollTo({ top: savedY, left: 0, behavior: 'instant' });
           if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
         }
-        function onKey(e) { if (e.key === 'Escape') close(); }
+        function onKey(e) {
+          if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+          if (e.key !== 'Tab') return;
+          var list = focusables();
+          if (!list.length) return;
+          var first = list[0], last = list[list.length - 1];
+          if (e.shiftKey && (document.activeElement === first || document.activeElement === card)) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+          else if (!card.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+        }
         opener.addEventListener('click', open);
         modal.querySelectorAll('[data-install-close]').forEach(function (el) {
           el.addEventListener('click', close);
