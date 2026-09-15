@@ -1610,7 +1610,8 @@
         .rt-rail { height: auto; }
         .rt-dot { top: 12px; inset-inline-start: calc((28px - var(--rt-dot)) / 2); }
         .rt-seg {
-          inset-inline-start: calc(14px - 0.5px); top: calc(12px + var(--rt-dot)); bottom: calc(-12px);
+          /* עד הנקודה של השלב הבא: דרך הרווח שבין השלבים (padding-bottom) ועד ה-top שלה */
+          inset-inline-start: calc(14px - 0.5px); top: calc(12px + var(--rt-dot)); bottom: calc(-1 * (var(--rt-gap) + 12px));
           width: 1px; height: auto; transform: scaleY(0); transform-origin: 50% 0;
         }
         .rt-step.in .rt-seg { transform: none; }
@@ -1635,7 +1636,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2740,6 +2741,7 @@
     
     
 
+    
     
     
     
