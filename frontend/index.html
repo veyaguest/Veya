@@ -2318,23 +2318,31 @@
         .wc-v { font-size: var(--fs-lg); }
       }
 
-      /* ═════ Art direction — עומק מהצורה, לא מצבעים ══════════════════════
+      /* ═════ Art direction — בד אחד ארוך, עם שינויי עומק וגוון ══════════
          רק הפלטה של VEYA: שנהב #fbf6ee, שנהב חם #f6efe2, חול #ede4d3 (line-2
          של המוצר), ולילה #17130d/#211b12. אין זהב כרקע ואין צבעי סטטוס זרים.
-         המעברים בנויים מצורות:
-           • קשת רחבה — כשנכנסים לאזור כהה ויוצאים ממנו (הירו, הושבה, המסע).
-           • גל רך — סביב תמונת המצב, פעם אחת בדף.
-           • הטבעת של הלוגו — קווים דקים ענקיים שחוצים גבול בין סקשנים.
-           • מעבר גוון עדין — בין שני גוונים בהירים סמוכים.
-         הכול סטטי: בלי אנימציה, בלי blur, ובלי שינוי פריסה בגלילה. */
+
+         אין "מעבר" כאלמנט: אין קשת, גל, קו, צל או פס. כל סקשן צובע בעצמו
+         את הקצוות שלו — חצי המעבר התחתון בסקשן שמעל, וחצי העליון בסקשן
+         שמתחת. שני החצאים נפגשים בדיוק באותו גוון (50/50), והעקומה רכה
+         (smoothstep) כך שאין נקודה שבה השינוי מתחיל או נגמר בחדות.
+         המעבר יושב בתוך הריווח של הסקשנים, לא מאחורי טקסט.
+
+         משתנים לכל סקשן:
+           --sm-c   הגוון שלו    --sm-up / --sm-dn  הגוון שמעליו / מתחתיו
+           --sm-hu / --sm-hd     רוחב המעבר המלא בקצה העליון / התחתון
+         הכול סטטי: בלי אנימציה ובלי שינוי פריסה בגלילה. */
       :root {
         --bg-paper: var(--ivory);
         --bg-linen: var(--ivory-2);
         --bg-sand: #ede4d3;
         --bg-night: var(--ink);
         --bg-night-2: var(--ink-2);
-        --arc: 88px;
-        --wave: 72px;
+        /* רוחב מעבר: בין שני גוונים בהירים, ובין בהיר לכהה */
+        --seam-soft: 200px;
+        --seam-deep: 360px;
+        /* ריווח בקצה שבו נכנסים לכהה או יוצאים ממנו: חצי מעבר + אוויר */
+        --seam-pad: 172px;
         /* זהב לטקסט: אותו זהב, עמוק מעט יותר — מעל 4.5:1 על כל הגוונים */
         --gold-deep: color-mix(in srgb, #836a26 80%, var(--charcoal));
         /* סטטוסים בהדגמות שבדף: בגוני המותג. המשמעות נשארת באייקון ובמילה
@@ -2342,19 +2350,63 @@
         --success: var(--gold-deep);
         --warning: color-mix(in srgb, var(--charcoal) 55%, #836a26);
       }
-      @media (max-width: 720px) { :root { --arc: 40px; --wave: 40px; } }
-
-      /* ── קשת רחבה: המשטח הבא עולה על הקודם בקימור אחד גדול ── */
-      #why, #seating, #gifts, #how, #guides {
-        position: relative; z-index: 2;
-        margin-top: calc(var(--arc) * -1);
-        border-radius: 50% 50% 0 0 / var(--arc) var(--arc) 0 0;
+      @media (max-width: 720px) {
+        :root { --seam-soft: 100px; --seam-deep: 210px; --seam-pad: 104px; }
       }
 
-      /* פתיחה: ההירו הכהה, והשנהב עולה עליו בקשת */
+      #why, section.ps, #deadline, #rsvp, section.gh, #calls, #showcase, #impact,
+      p.bridge.bridge-dark, #seating, #gifts, #after, #how, #guides, #calculators,
+      #check, section.faq-wrap, section.band-wrap {
+        --sm-up: var(--sm-c); --sm-dn: var(--sm-c); --sm-hu: 0px; --sm-hd: 0px;
+        position: relative;
+        background: linear-gradient(180deg,
+          color-mix(in oklab, var(--sm-up) 50%, var(--sm-c)) 0px,
+          color-mix(in oklab, var(--sm-up) 42.5%, var(--sm-c)) calc(var(--sm-hu) * 0.05),
+          color-mix(in oklab, var(--sm-up) 35.2%, var(--sm-c)) calc(var(--sm-hu) * 0.1),
+          color-mix(in oklab, var(--sm-up) 28.2%, var(--sm-c)) calc(var(--sm-hu) * 0.15),
+          color-mix(in oklab, var(--sm-up) 21.6%, var(--sm-c)) calc(var(--sm-hu) * 0.2),
+          color-mix(in oklab, var(--sm-up) 12.9%, var(--sm-c)) calc(var(--sm-hu) * 0.275),
+          color-mix(in oklab, var(--sm-up) 6.1%, var(--sm-c)) calc(var(--sm-hu) * 0.35),
+          color-mix(in oklab, var(--sm-up) 1.6%, var(--sm-c)) calc(var(--sm-hu) * 0.425),
+          var(--sm-c) calc(var(--sm-hu) * 0.5),
+          var(--sm-c) calc(100% - var(--sm-hd) * 0.5),
+          color-mix(in oklab, var(--sm-dn) 1.6%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.425),
+          color-mix(in oklab, var(--sm-dn) 6.1%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.35),
+          color-mix(in oklab, var(--sm-dn) 12.9%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.275),
+          color-mix(in oklab, var(--sm-dn) 21.6%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.2),
+          color-mix(in oklab, var(--sm-dn) 28.2%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.15),
+          color-mix(in oklab, var(--sm-dn) 35.2%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.1),
+          color-mix(in oklab, var(--sm-dn) 42.5%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.05),
+          color-mix(in oklab, var(--sm-dn) 50%, var(--sm-c)) 100%);
+      }
+
+      /* הגוון של כל משטח */
+      #why, section.ps, #rsvp, #calls, #gifts, #calculators, section.faq-wrap, section.band-wrap { --sm-c: var(--bg-paper); }
+      #deadline, section.gh, #impact, p.bridge.bridge-dark, #guides, #check { --sm-c: var(--bg-linen); }
+      #after { --sm-c: var(--bg-sand); }
+      #showcase { --sm-c: var(--bg-night-2); color: var(--cream-text); }
+      #seating, #how { --sm-c: var(--bg-night); }
+
+      /* ── פתיחה: הלילה של ההירו נמס לשנהב ── */
       .hero::after { display: none; }
-      #why { background: var(--bg-paper); }
-      section.ps { background: var(--bg-paper); }
+      .hero {
+        --sm-c: var(--bg-night); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-deep);
+        padding-bottom: var(--seam-pad);
+        background:
+          linear-gradient(180deg,
+          transparent calc(100% - var(--sm-hd) * 0.5),
+          var(--sm-c) calc(100% - var(--sm-hd) * 0.5),
+          color-mix(in oklab, var(--sm-dn) 1.6%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.425),
+          color-mix(in oklab, var(--sm-dn) 6.1%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.35),
+          color-mix(in oklab, var(--sm-dn) 12.9%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.275),
+          color-mix(in oklab, var(--sm-dn) 21.6%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.2),
+          color-mix(in oklab, var(--sm-dn) 28.2%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.15),
+          color-mix(in oklab, var(--sm-dn) 35.2%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.1),
+          color-mix(in oklab, var(--sm-dn) 42.5%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.05),
+          color-mix(in oklab, var(--sm-dn) 50%, var(--sm-c)) 100%),
+          radial-gradient(120% 90% at 50% -10%, #2a2115 0%, var(--ink-2) 42%, var(--ink) 100%);
+      }
+      #why { --sm-up: var(--bg-night); --sm-hu: var(--seam-deep); padding-top: var(--seam-pad); }
 
       /* שורות המעבר לרוחב מלא */
       p.bridge.bridge-soft,
@@ -2362,23 +2414,21 @@
         max-width: none; margin: -1px 0 0;
         padding-inline: max(20px, calc((100% - 540px) / 2));
       }
+      /* שנהב ← פשתן: שני גוונים כמעט זהים, מעבר על כל גובה השורה */
       p.bridge.bridge-soft { background: linear-gradient(180deg, var(--bg-paper), var(--bg-linen)); padding-bottom: 20px; }
 
-      /* אישורי הגעה: פשתן ושנהב לסירוגין, והטבעת חוצה אל מועד הסגירה */
-      #deadline { background: var(--bg-linen); }
-      #rsvp { background: var(--bg-paper); }
-      section.gh { background: var(--bg-linen); }
-      #calls { background: var(--bg-paper); }
+      /* ── אישורי הגעה: פשתן ושנהב לסירוגין, בלי קצה ── */
+      #deadline { --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); }
+      #rsvp { --sm-up: var(--bg-linen); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-linen); --sm-hd: var(--seam-soft); }
+      section.gh { --sm-up: var(--bg-paper); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); }
+      #calls { --sm-up: var(--bg-linen); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-night-2); --sm-hd: var(--seam-deep); padding-bottom: var(--seam-pad); }
 
-      /* תמונת המצב: משטח כהה שנפתח בגל רך ונסגר בגל רך */
-      #showcase { position: relative; z-index: 2; background: var(--bg-night-2); color: var(--cream-text); }
-      #showcase::before, #impact::before {
-        content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: var(--wave);
-        pointer-events: none;
-        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 72' preserveAspectRatio='none'%3E%3Cpath d='M0 44C240 10 480 6 720 32s480 42 720 8V72H0Z'/%3E%3C/svg%3E") center bottom / 100% 100% no-repeat;
-        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 72' preserveAspectRatio='none'%3E%3Cpath d='M0 44C240 10 480 6 720 32s480 42 720 8V72H0Z'/%3E%3C/svg%3E") center bottom / 100% 100% no-repeat;
+      /* ── תמונת המצב: השנהב מתכהה אל הלילה, והלילה מתבהר אל הפשתן ── */
+      #showcase {
+        --sm-up: var(--bg-paper); --sm-hu: var(--seam-deep);
+        --sm-dn: var(--bg-linen); --sm-hd: var(--seam-deep);
+        padding-top: var(--seam-pad); padding-bottom: var(--seam-pad);
       }
-      #showcase::before { background: var(--bg-night-2); }
       #showcase .kicker { color: var(--gold-light); }
       #showcase .section-title { color: var(--cream-text); }
       #showcase .section-sub { color: #d8ceb9; }
@@ -2386,55 +2436,67 @@
       #showcase .sh-mobile { border-top-color: rgba(245, 239, 226, 0.16); }
       #showcase .sh-mobile-title { color: var(--cream-text); }
       #showcase .sh-mobile-body { color: #d8ceb9; }
-      .sh-modal .sh-modal-card { color: var(--body); }
-      #impact { position: relative; z-index: 3; background: var(--bg-linen); }
-      #impact::before { background: var(--bg-linen); transform: none; }
+      #impact { --sm-up: var(--bg-night-2); --sm-hu: var(--seam-deep); padding-top: var(--seam-pad); }
 
-      /* אל ההושבה: הקו הזהב יורד, והלילה עולה בקשת */
-      p.bridge.bridge-dark {
-        position: relative; z-index: 1;
-        background: var(--bg-linen);
-        padding-bottom: calc(18px + var(--arc) + 34px);
-        margin-bottom: 0;
+      /* ── אל ההושבה: הפשתן מתכהה לאט אל הלילה ── */
+      p.bridge.bridge-dark { --sm-dn: var(--bg-night); --sm-hd: var(--seam-deep); padding-bottom: var(--seam-pad); margin-bottom: 0; }
+      #seating {
+        --sm-up: var(--bg-linen); --sm-hu: var(--seam-deep);
+        --sm-dn: var(--bg-paper); --sm-hd: var(--seam-deep);
+        padding-top: var(--seam-pad); padding-bottom: var(--seam-pad);
       }
-      p.bridge.bridge-dark::after {
-        content: ""; position: absolute; inset-inline-start: 50%; bottom: calc(var(--arc) + 6px);
-        width: 1px; height: 34px; background: linear-gradient(180deg, var(--gold), rgba(201, 162, 39, 0));
-        opacity: 0.6;
-      }
-      #seating { background: var(--bg-night); padding-bottom: calc(108px + var(--arc)); }
 
-      /* כסף: השנהב עולה על הלילה, ואז חול למאזן — עם הטבעת */
-      #gifts { background: var(--bg-paper); }
-      #after { background: var(--bg-sand); }
+      /* ── כסף: הלילה מתבהר לשנהב, ואז חול למאזן ── */
+      #gifts { --sm-up: var(--bg-night); --sm-hu: var(--seam-deep); --sm-dn: var(--bg-sand); --sm-hd: var(--seam-soft); padding-top: var(--seam-pad); }
+      #after { --sm-up: var(--bg-paper); --sm-hu: var(--seam-soft); }
       #events {
-        background: linear-gradient(180deg, var(--bg-sand) 0%, var(--bg-paper) 38%);
-        padding-bottom: calc(108px + var(--arc));
+        --sm-c: var(--bg-paper); --sm-dn: var(--bg-night); --sm-hd: var(--seam-deep);
+        position: relative; padding-bottom: var(--seam-pad);
+        background: linear-gradient(180deg,
+          var(--bg-sand) 0%,
+          var(--bg-paper) 38%,
+          var(--sm-c) calc(100% - var(--sm-hd) * 0.5),
+          color-mix(in oklab, var(--sm-dn) 1.6%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.425),
+          color-mix(in oklab, var(--sm-dn) 6.1%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.35),
+          color-mix(in oklab, var(--sm-dn) 12.9%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.275),
+          color-mix(in oklab, var(--sm-dn) 21.6%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.2),
+          color-mix(in oklab, var(--sm-dn) 28.2%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.15),
+          color-mix(in oklab, var(--sm-dn) 35.2%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.1),
+          color-mix(in oklab, var(--sm-dn) 42.5%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.05),
+          color-mix(in oklab, var(--sm-dn) 50%, var(--sm-c)) 100%);
       }
 
-      /* המסע בתוך VEYA: הלילה עולה בקשת, והפשתן עולה עליו בסוף */
-      #how { background: var(--bg-night); padding-bottom: calc(78px + var(--arc)); }
+      /* ── המסע בתוך VEYA: אותו לילה, נכנסים ויוצאים ממנו לאט ── */
+      #how {
+        --sm-up: var(--bg-paper); --sm-hu: var(--seam-deep);
+        --sm-dn: var(--bg-linen); --sm-hd: var(--seam-deep);
+        padding-top: var(--seam-pad); padding-bottom: var(--seam-pad);
+      }
       #how .section-sub { color: #d8ceb9; }
-      #guides { background: var(--bg-linen); }
-      #calculators { background: var(--bg-paper); }
-      #check { background: var(--bg-linen); }
-      section.faq-wrap, section.band-wrap { background: var(--bg-paper); }
+      /* הקישור השקט בנוי למשטח כהה; כאן הוא על פשתן, ולכן בזהב העמוק */
+      #guides .link-quiet { color: var(--gold-deep); opacity: 1; }
+      #guides { --sm-up: var(--bg-night); --sm-hu: var(--seam-deep); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); padding-top: var(--seam-pad); }
+      #calculators { --sm-up: var(--bg-linen); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-linen); --sm-hd: var(--seam-soft); }
+      #check { --sm-up: var(--bg-paper); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); }
+      section.faq-wrap { --sm-up: var(--bg-linen); --sm-hu: var(--seam-soft); }
 
-      /* ── הטבעת של הלוגו: קו דק ענקי שחוצה גבול בין סקשנים ──
-         שתי טבעות, כמו בסמל — אחת בקו, השנייה רכה יותר. רק במסכים רחבים,
-         שם יש לה שוליים ריקים לעבור בהם בלי לחצות טקסט. */
-      /* חיתוך לרוחב בלבד: הטבעת יכולה לחצות למעלה/למטה אל הסקשן הסמוך, אבל לא לייצר גלילה לצדדים */
-      #deadline, #after { position: relative; overflow-x: clip; overflow-y: visible; }
-      #deadline > .wrap, #after > .wrap { position: relative; z-index: 1; }
-      #deadline::before, #after::before {
-        content: ""; position: absolute; z-index: 0; pointer-events: none;
-        width: 1040px; height: 1040px; border-radius: 50%;
-        border: 1px solid rgba(201, 162, 39, 0.26);
-        outline: 1px solid rgba(201, 162, 39, 0.12); outline-offset: 26px;
+      /* ── סוף העמוד: השנהב נמס ללילה של הפוטר, כולו בתוך הסקשן האחרון ── */
+      section.band-wrap {
+        --sm-dn: var(--bg-night); --sm-full: 300px;
+        background: linear-gradient(180deg,
+          var(--sm-c) 0px,
+          var(--sm-c) calc(100% - var(--sm-full) * 1),
+          color-mix(in oklab, var(--sm-dn) 0.7%, var(--sm-c)) calc(100% - var(--sm-full) * 0.85),
+          color-mix(in oklab, var(--sm-dn) 6.1%, var(--sm-c)) calc(100% - var(--sm-full) * 0.7),
+          color-mix(in oklab, var(--sm-dn) 16%, var(--sm-c)) calc(100% - var(--sm-full) * 0.55),
+          color-mix(in oklab, var(--sm-dn) 35.2%, var(--sm-c)) calc(100% - var(--sm-full) * 0.4),
+          color-mix(in oklab, var(--sm-dn) 50%, var(--sm-c)) calc(100% - var(--sm-full) * 0.3),
+          color-mix(in oklab, var(--sm-dn) 64.8%, var(--sm-c)) calc(100% - var(--sm-full) * 0.2),
+          color-mix(in oklab, var(--sm-dn) 84%, var(--sm-c)) calc(100% - var(--sm-full) * 0.1),
+          color-mix(in oklab, var(--sm-dn) 93%, var(--sm-c)) calc(100% - var(--sm-full) * 0.05),
+          var(--sm-dn) 100%);
       }
-      #deadline::before { top: -560px; inset-inline-end: -700px; }
-      #after::before { bottom: -600px; inset-inline-start: -720px; }
-      @media (max-width: 1180px) { #deadline::before, #after::before { display: none; } }
+      @media (max-width: 720px) { section.band-wrap { --sm-full: 180px; } }
 
       /* תגיות זהב על גוון זהב: רקע רך מעט יותר, כדי שהטקסט יישאר קריא */
       .numcard-tag { background: rgba(201, 162, 39, 0.1); }
