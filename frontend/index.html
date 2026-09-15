@@ -2277,6 +2277,109 @@
 
       /* ===== VEYA BRAND LAYER — END ===== */
 
+      /* ═════ Art direction — קצב הרקעים של הדף כולו ══════════════════════
+         סיפור אחד מלמעלה למטה, רק מגוונים שכבר קיימים במותג:
+           לבן/שנהב (#fbf6ee) → שנהב חם (#f6efe2) → חול (#ede4d3, line-2 של
+           המוצר) → לילה (#17130d, --ink).
+         פרקים:
+           1 פתיחה — ההירו כהה, והדף הבהיר עולה עליו כמו גיליון.
+           2 מהבעיה לסדר — "לא צריך לנחש" והדבקת הרשימה: שני סקשנים נקיים על שנהב.
+           3 אישורי הגעה — מתחמם בהדרגה עד שיא "תמונת המצב" על חול.
+           4 הושבה — הגיליון הכהה עולה מתוך החול, והקו הזהב ממשיך לתוכו.
+           5 כסף — חזרה לאור, מתחמם שוב לקראת המאזן.
+           6 התוצאה — המסע בתוך VEYA על לילה: השיא החזותי.
+           7 סגירה — אזורים בהירים ופשוטים עד הקריאה לפעולה.
+         שלוש הטכניקות לא בכל מעבר: גיליון חופף רק בכניסה לאזור כהה (ובהירו),
+         שינוי גוון הדרגתי רק בין גוונים בהירים, והקו הזהב של שורות המעבר.
+         הכול רקעים סטטיים — אין כאן אנימציה, ואין שינוי פריסה בזמן גלילה. */
+      :root {
+        --bg-paper: var(--ivory);
+        --bg-linen: var(--ivory-2);
+        --bg-sand: #ede4d3;
+        --bg-sand-soft: color-mix(in srgb, var(--ivory-2) 55%, #ede4d3);
+        --bg-night: var(--ink);
+        --sheet-r: 36px;
+        /* זהב לטקסט: אותו זהב, עמוק מעט יותר — נשאר מעל 4.5:1 גם על שנהב חם,
+           חול ותגיות בגוון זהב (היה 4.1–4.5 בחלק מהמקומות). */
+        --gold-deep: color-mix(in srgb, #836a26 80%, var(--charcoal));
+      }
+      @media (max-width: 720px) { :root { --sheet-r: 24px; } }
+
+      /* פרק 1 → 2: הגיליון הבהיר עולה על ההירו */
+      #why {
+        position: relative; z-index: 2;
+        margin-top: calc(var(--sheet-r) * -1);
+        border-radius: var(--sheet-r) var(--sheet-r) 0 0;
+        background: var(--bg-paper);
+      }
+      section.ps { background: var(--bg-paper); }
+
+      /* שורות המעבר: לרוחב מלא, בגוון של המעבר עצמו */
+      p.bridge.bridge-soft,
+      p.bridge.bridge-dark {
+        max-width: none; margin: 0;
+        padding-inline: max(20px, calc((100% - 540px) / 2));
+      }
+      p.bridge.bridge-soft { background: linear-gradient(180deg, var(--bg-paper), var(--bg-linen)); padding-bottom: 20px; }
+      /* חפיפה של פיקסל אחד — בלי זה נשאר תפר דק בין שני משטחים באותו גוון */
+      p.bridge.bridge-soft, p.bridge.bridge-dark { margin-top: -1px; }
+      /* ההירו כבר לא דוהה לשנהב: הגיליון הבהיר עולה עליו */
+      .hero::after { display: none; }
+
+      /* פרק 3: אישורי הגעה — מתחמם עד תמונת המצב */
+      #deadline { background: var(--bg-linen); }
+      #rsvp { background: var(--bg-paper); }
+      section.gh { background: var(--bg-linen); }
+      #calls { background: var(--bg-paper); }
+      #showcase { background: linear-gradient(180deg, var(--bg-paper) 0%, var(--bg-linen) 30%, var(--bg-sand-soft) 100%); }
+      #impact { background: var(--bg-sand-soft); }
+
+      /* פרק 3 → 4: הקו הזהב יורד מתוך החול, והגיליון הכהה עולה */
+      p.bridge.bridge-dark {
+        position: relative; z-index: 1;
+        background: var(--bg-sand-soft);
+        padding-bottom: calc(18px + var(--sheet-r) + 34px);
+        margin-bottom: calc(var(--sheet-r) * -1);
+      }
+      p.bridge.bridge-dark::after {
+        content: ""; position: absolute; inset-inline-start: 50%; bottom: var(--sheet-r);
+        width: 1px; height: 34px; background: linear-gradient(180deg, var(--gold), rgba(201, 162, 39, 0));
+        opacity: 0.6;
+      }
+      #seating, #how {
+        position: relative; z-index: 2;
+        border-radius: var(--sheet-r) var(--sheet-r) 0 0;
+      }
+      #seating { background: var(--bg-night); }
+
+      /* פרק 5: חזרה לאור, ומתחמם לקראת המאזן */
+      #gifts { background: var(--bg-paper); }
+      #after { background: linear-gradient(180deg, var(--bg-linen) 0%, var(--bg-sand-soft) 100%); }
+      #events {
+        background: linear-gradient(180deg, var(--bg-sand-soft) 0%, var(--bg-paper) 42%);
+        padding-bottom: calc(108px + var(--sheet-r));
+      }
+
+      /* פרק 6: המסע בתוך VEYA — הגיליון הכהה עולה על סוגי האירועים */
+      #how { background: var(--bg-night); margin-top: calc(var(--sheet-r) * -1); }
+      #how .section-sub { color: #d8ceb9; }
+
+      /* פרק 7: אזורים בהירים ופשוטים עד הסוף */
+      #guides { background: var(--bg-linen); }
+      #calculators { background: var(--bg-paper); }
+      #check { background: var(--bg-linen); }
+      section.faq-wrap, section.band-wrap { background: var(--bg-paper); }
+
+      /* פוקוס מקלדת: טבעת שנראית על כל רקע (3:1 לפחות). על משטחים בהירים הזהב
+         הבהיר כמעט נעלם (1.4:1), ולכן שם הטבעת בזהב העמוק; על הכהים — הבהיר. */
+      :root { --focus-ring: var(--gold-deep); }
+      .on-dark, #seating, #how, .site-header, .site-footer, .band, .cookie-banner-static { --focus-ring: var(--gold-light); }
+      body :focus-visible { outline-color: var(--focus-ring) !important; }
+
+      /* תגיות זהב על גוון זהב: רקע רך מעט יותר, כדי שהטקסט יישאר קריא */
+      .numcard-tag { background: rgba(201, 162, 39, 0.1); }
+      .dl-stop.is-close { background: rgba(201, 162, 39, 0.08); }
+
     
     
     
@@ -2523,7 +2626,7 @@
     </section>
 
     <!-- מעבר סיפורי (§4): סוגר את הסקשן הקודם ופותח את הבא. -->
-    <p class="bridge reveal" aria-hidden="true">הרשימה מסודרת. אז כמה מהם באמת יגיעו?</p>
+    <p class="bridge bridge-soft" aria-hidden="true">הרשימה מסודרת. אז כמה מהם באמת יגיעו?</p>
 
     <section class="flow tone-alt" id="deadline" aria-labelledby="deadline-title">
         <div class="wrap">
@@ -2959,7 +3062,7 @@
 
       <!-- ═════ 9. הושבה ═════ -->
       <!-- מעבר סיפורי (§4): סוגר את הסקשן הקודם ופותח את הבא. -->
-    <p class="bridge reveal" aria-hidden="true">הרשימה מסודרת. ועכשיו — איפה כולם יושבים?</p>
+    <p class="bridge bridge-dark" aria-hidden="true">הרשימה מסודרת. ועכשיו — איפה כולם יושבים?</p>
 
     <section class="seating on-dark" id="seating" aria-labelledby="seating-title">
         <div class="wrap">
