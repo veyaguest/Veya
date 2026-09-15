@@ -1107,6 +1107,89 @@
         .sk-chip { display: none !important; }
       }
 
+      /* ---- מתנות באשראי: סקשן קצר, כרטיס אחד ----
+         RTL אמיתי: הטקסט פותח מימין והכרטיס משמאלו. הכרטיס עצמו הוא חפץ
+         פיזי — השבב, מספר הכרטיס והתוקף נשארים במקומם ובכיוון LTR, כמו
+         בכרטיס אמיתי; רק מה שכתוב עליו בעברית מיושר לימין. */
+      .gcard-in {
+        display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 400px);
+        justify-content: center; align-items: center; gap: 40px 72px;
+      }
+      .gcard-title { margin: 0 0 12px; font-family: var(--font-display); font-size: var(--fd-md); font-weight: 500; color: var(--charcoal); line-height: 1.2; text-wrap: balance; }
+      .gcard-sub { margin: 0 0 26px; font-size: var(--fs-lg); color: var(--body); line-height: 1.7; max-width: 40ch; text-wrap: pretty; }
+      .gcard-fee {
+        display: flex; align-items: baseline; gap: 12px; margin: 0 0 6px;
+        padding-top: 18px; border-top: 1px solid var(--line);
+      }
+      .gcard-fee-num { font-family: var(--font-display); font-size: clamp(2.4rem, 4.4vw, 3.2rem); line-height: 1; color: var(--charcoal); font-variant-numeric: lining-nums; }
+      .gcard-fee-label { font-size: var(--fs-lg); font-weight: 700; color: var(--charcoal); }
+      .gcard-note { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
+
+      /* המסגרת ברוחב הכרטיס ומשמשת לו container: כל המידות של הכרטיס
+         (שוליים, פינות, טקסט) נגזרות מהרוחב שלו, כמו בכרטיס אמיתי */
+      .gcard-fig { margin: 0; width: min(380px, 100%); justify-self: center; container-type: inline-size; }
+      .vcard {
+        position: relative; width: 100%; aspect-ratio: 85.6 / 53.98;
+        display: grid; grid-template-rows: auto 1fr auto; padding: 6.5cqw 7cqw 6cqw;
+        border-radius: 3.6cqw; color: var(--cream-text); overflow: hidden;
+        background:
+          linear-gradient(115deg, rgba(245, 239, 226, 0) 38%, rgba(245, 239, 226, 0.055) 50%, rgba(245, 239, 226, 0) 62%),
+          linear-gradient(160deg, #2a2218 0%, var(--ink-2) 46%, var(--ink) 100%);
+        box-shadow:
+          inset 0 0 0 1px rgba(245, 239, 226, 0.08),
+          inset 0 1px 0 rgba(245, 239, 226, 0.1),
+          0 2px 4px rgba(23, 19, 13, 0.12),
+          0 28px 48px -22px rgba(23, 19, 13, 0.5);
+        transform: rotate(-4deg);
+      }
+      /* קו זהב דק לאורך השוליים הפנימיים — כמו הטבעת של הסמל, לא מסגרת */
+      .vcard::after {
+        content: ""; position: absolute; inset: 3.2cqw; border-radius: 2cqw; pointer-events: none;
+        border: 1px solid rgba(201, 162, 39, 0.16);
+      }
+      .vcard-top, .vcard-mid, .vcard-bot { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; }
+      .vcard-top { direction: ltr; }
+      .vcard-wave { width: 7cqw; height: 7cqw; color: rgba(228, 201, 107, 0.7); }
+      .vcard-mark { width: 11cqw; height: 11cqw; }
+      .vcard-mid { direction: ltr; align-items: center; }
+      .vcard-chip {
+        position: relative; width: 12.5cqw; aspect-ratio: 1.3; border-radius: 1.6cqw;
+        background: linear-gradient(135deg, #e9d9a4 0%, #c9a227 55%, #a8871f 100%);
+        box-shadow: inset 0 0 0 1px rgba(23, 19, 13, 0.25);
+      }
+      .vcard-chip i, .vcard-chip::before, .vcard-chip::after { content: ""; position: absolute; }
+      .vcard-chip::before { left: 0; right: 0; top: 50%; border-top: 1px solid rgba(23, 19, 13, 0.3); }
+      .vcard-chip::after { top: 0; bottom: 0; left: 36%; right: 36%; border-left: 1px solid rgba(23, 19, 13, 0.3); border-right: 1px solid rgba(23, 19, 13, 0.3); }
+      .vcard-chip i { top: 28%; bottom: 28%; left: 18%; right: 18%; border: 1px solid rgba(23, 19, 13, 0.28); border-radius: 1cqw; }
+      .vcard-gift { direction: rtl; display: grid; justify-items: start; gap: 1cqw; text-align: start; }
+      .vcard-gift-k { font-size: max(10px, 3.4cqw); letter-spacing: 0.02em; color: #d8ceb9; }
+      .vcard-amt { font-family: var(--font-display); font-size: max(22px, 10.5cqw); line-height: 1; color: var(--gold-light); font-variant-numeric: lining-nums; }
+      .vcard-bot { direction: ltr; gap: 4cqw; align-items: flex-end; }
+      .vcard-num { font-size: max(11px, 4cqw); letter-spacing: 0.08em; color: #e9e1cf; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .vcard-exp { font-size: max(10px, 3.4cqw); color: #cfc4ad; margin-inline-end: auto; }
+      .vcard-word { width: 19cqw; height: auto; opacity: 0.92; }
+
+      /* כניסה אחת, רכה: הכרטיס מתיישב, הסכום מופיע, ואז שורת העמלה */
+      .gcard-fig.reveal { transform: translateY(18px); }
+      .gcard-fig.reveal .vcard { transform: rotate(-8deg) translateY(10px); transition: transform 1.1s var(--ease-out) 0.1s; }
+      .gcard-fig.reveal.in .vcard { transform: rotate(-4deg); }
+      .gcard-fig.reveal .vcard-gift { opacity: 0; transition: opacity 0.7s ease 0.7s; }
+      .gcard-fig.reveal.in .vcard-gift { opacity: 1; }
+      .gcard-text .gcard-fee.reveal { --d: 1.1s; }
+      .gcard-text .gcard-note.reveal { --d: 1.25s; }
+
+      @media (max-width: 860px) {
+        .gcard-in { grid-template-columns: minmax(0, 460px); gap: 44px; }
+        .gcard-text { text-align: center; }
+        .gcard-sub { margin-inline: auto; }
+        .gcard-fee { justify-content: center; }
+        .gcard-fig { grid-row: 2; width: min(360px, calc(100% - 24px)); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .gcard-fig.reveal .vcard, .gcard-fig.reveal.in .vcard { transform: rotate(-4deg); transition: none; }
+        .gcard-fig.reveal .vcard-gift { opacity: 1; transition: none; }
+      }
+
       /* ---- מעקב אחרי מי שלא ענה: סבב אחרי סבב ---- */
       .fu { max-width: 680px; margin: 0 auto 30px; padding: 18px; background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
       .fu-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -1626,7 +1709,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2507,7 +2590,7 @@
       }
 
       #why, section.ps, #deadline, #rsvp, section.gh, #calls, #showcase, #impact,
-      p.bridge.bridge-dark, #seating, #gifts, #after, #how, #guides, #calculators,
+      p.bridge.bridge-dark, #seating, #gifts, #giftcard, #after, #how, #guides, #calculators,
       #check, section.faq-wrap, section.band-wrap {
         --sm-up: var(--sm-c); --sm-dn: var(--sm-c); --sm-hu: 0px; --sm-hd: 0px;
         position: relative;
@@ -2599,7 +2682,8 @@
       }
 
       /* ── כסף: הלילה מתבהר לשנהב, ואז חול למאזן ── */
-      #gifts { --sm-up: var(--bg-night); --sm-hu: var(--seam-deep); --sm-dn: var(--bg-sand); --sm-hd: var(--seam-soft); padding-top: var(--seam-pad); }
+      #gifts { --sm-up: var(--bg-night); --sm-hu: var(--seam-deep); padding-top: var(--seam-pad); }
+      #giftcard { --sm-c: var(--bg-paper); --sm-dn: var(--bg-sand); --sm-hd: var(--seam-soft); padding-top: 24px; }
       #after { --sm-up: var(--bg-paper); --sm-hu: var(--seam-soft); }
       #events {
         --sm-c: var(--bg-paper); --sm-dn: var(--bg-night); --sm-hd: var(--seam-deep);
@@ -2730,6 +2814,7 @@
     
     
 
+    
     
     
     
@@ -3545,6 +3630,47 @@
 
         <div class="gc-cta">
           <a href="/app?auth=register" class="btn btn-primary">מתחילים את האירוע ב־VEYA <span class="arw" aria-hidden="true">←</span></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════ מתנות באשראי — סקשן קצר ═════════════════════════════════════
+         מסר של כמה שניות: אפשר להעניק מתנה באשראי דרך VEYA, ובעלי האירוע לא
+         משלמים עמלה (העמלה מתווספת אצל נותן המתנה — החלטה נעולה, gift.py).
+         הכרטיס הוא המחשה בלבד: פרטי דמה, בלי מותג של חברת אשראי. -->
+    <section class="gcard" id="giftcard" aria-labelledby="giftcard-title">
+      <div class="wrap">
+        <div class="gcard-in">
+          <div class="gcard-text reveal">
+            <h2 id="giftcard-title" class="gcard-title">גם מתנות? ישירות ל־VEYA.</h2>
+            <p class="gcard-sub">האורחים יכולים לתת מתנה באשראי בקלות ובבטחה — ואתם מקבלים את הכסף בלי לשלם עמלה.</p>
+            <p class="gcard-fee reveal d3">
+              <span class="gcard-fee-num">0 ₪</span>
+              <span class="gcard-fee-label">עמלה לבעלי האירוע</span>
+            </p>
+            <p class="gcard-note reveal d3">האורח משלם באשראי, המתנה מגיעה אליכם.</p>
+          </div>
+
+          <figure class="gcard-fig reveal d1">
+            <div class="vcard" role="img" aria-label="המחשה: כרטיס אשראי ממותג VEYA עם מתנה לאירוע בסך 500 ₪">
+              <div class="vcard-top" aria-hidden="true">
+                <svg class="vcard-wave" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8.5 7.5a6.5 6.5 0 0 1 0 9" /><path d="M12 5a10 10 0 0 1 0 14" /><path d="M15.5 2.8a13.2 13.2 0 0 1 0 18.4" /></svg>
+                <img class="vcard-mark" src="/logo_nobg.png" alt="" width="40" height="40" loading="lazy" decoding="async" />
+              </div>
+              <div class="vcard-mid" aria-hidden="true">
+                <span class="vcard-chip"><i></i></span>
+                <span class="vcard-gift">
+                  <span class="vcard-gift-k">מתנה לאירוע</span>
+                  <span class="vcard-amt">500 ₪</span>
+                </span>
+              </div>
+              <div class="vcard-bot" aria-hidden="true">
+                <span class="vcard-num" dir="ltr">•••• •••• •••• 2410</span>
+                <span class="vcard-exp" dir="ltr">12/29</span>
+                <img class="vcard-word" src="/veya_text.png" alt="" width="937" height="256" loading="lazy" decoding="async" />
+              </div>
+            </div>
+          </figure>
         </div>
       </div>
     </section>
