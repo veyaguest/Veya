@@ -14,7 +14,7 @@
     <title>VEYA — כמה אנשים מגיעים לאירוע שלכם, וכמה זה עולה לכם</title>
     <meta
       name="description"
-      content="VEYA מחברת את רשימת המוזמנים, אישורי ההגעה, ההושבה והוצאות האירוע — כדי שתדעו את המספר שלכם לפני שסוגרים מול האולם. לחתונה, בר/בת מצווה, חינה, ברית ואירוע עסקי."
+      content="ב־VEYA כל אישור הגעה ממשיך הלאה: להושבה, לעלות האירוע, למתנות ולמאזן — עד דוח מסודר אחרי האירוע. לחתונה, בר/בת מצווה, חינה, ברית ואירוע עסקי."
     />
 
     <!-- Open Graph -->
@@ -23,7 +23,7 @@
     <meta property="og:title" content="VEYA — כמה אנשים מגיעים לאירוע שלכם, וכמה זה עולה לכם" />
     <meta
       property="og:description"
-      content="רשימת מוזמנים, אישורי הגעה, הושבה והוצאות — מספר אחד לאורך כל הדרך. תדעו כמה למסור לאולם, וכמה זה עולה לכם."
+      content="מהרשימה שכבר יש לכם, דרך אישורי ההגעה וההושבה, ועד המתנות והמאזן — כמה אנשים באמת מגיעים, וכמה זה עולה לכם."
     />
     <meta property="og:url" content="https://veyaguest.co.il/" />
     <meta property="og:image" content="https://veyaguest.co.il/og-image.png?v=3" />
@@ -37,7 +37,7 @@
     <meta name="twitter:title" content="VEYA — כמה אנשים מגיעים לאירוע שלכם, וכמה זה עולה לכם" />
     <meta
       name="twitter:description"
-      content="רשימת מוזמנים, אישורי הגעה, הושבה והוצאות — מספר אחד לאורך כל הדרך. תדעו כמה למסור לאולם, וכמה זה עולה לכם."
+      content="מהרשימה שכבר יש לכם, דרך אישורי ההגעה וההושבה, ועד המתנות והמאזן — כמה אנשים באמת מגיעים, וכמה זה עולה לכם."
     />
     <meta name="twitter:image" content="https://veyaguest.co.il/og-image.png?v=3" />
 
@@ -2286,6 +2286,31 @@
 
       /* ===== VEYA BRAND LAYER — END ===== */
 
+      /* ---- מוזמן אחד לאורך כל האירוע ----
+         שורה טיפוגרפית אחת: שלב מעל, מה קרה בו מתחת, וחץ דק בין השלבים.
+         בלי כרטיסים ובלי מוקאפ — רק הקשר בין השלבים. */
+      .why-chain {
+        list-style: none; padding: 0;
+        /* יוצאת מרוחב הטקסט של הסקשן, כדי שכל השלבים ייכנסו בשורה אחת */
+        width: min(1040px, calc(100vw - 48px));
+        margin: 26px calc((100% - min(1040px, calc(100vw - 48px))) / 2) 0;
+        display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 10px 0;
+      }
+      .why-chain li { display: grid; gap: 3px; padding: 4px 16px; text-align: center; position: relative; }
+      .why-chain li + li::before {
+        content: "←"; position: absolute; inset-inline-start: -7px; top: 50%; transform: translateY(-50%);
+        color: var(--gold-deep); font-size: var(--fs-md); line-height: 1;
+      }
+      .wc-k { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.06em; color: var(--gold-deep); }
+      .wc-v { font-family: var(--font-display); font-size: var(--fs-xl); color: var(--charcoal); white-space: nowrap; }
+      @media (max-width: 720px) {
+        .why-chain { display: grid; grid-template-columns: 1fr; gap: 0; width: auto; max-width: 300px; margin: 22px auto 0; }
+        .why-chain li { grid-template-columns: 7rem 1fr; align-items: baseline; text-align: start; padding: 9px 0; border-bottom: 1px solid var(--line); }
+        .why-chain li:last-child { border-bottom: 0; }
+        .why-chain li + li::before { display: none; }
+        .wc-v { font-size: var(--fs-lg); }
+      }
+
       /* ═════ Art direction — קצב הרקעים של הדף כולו ══════════════════════
          סיפור אחד מלמעלה למטה, רק מגוונים שכבר קיימים במותג:
            לבן/שנהב (#fbf6ee) → שנהב חם (#f6efe2) → חול (#ede4d3, line-2 של
@@ -2616,8 +2641,18 @@
               רשימת המוזמנים משתנה כל הזמן. אנשים מאשרים, לא עונים, משנים תוכניות ולפעמים פשוט לא מגיעים.
             </p>
             <p class="why-punch">
-              VEYA מרכזת את כל מה שקורה בדרך, כדי שתמיד תדעו איפה אתם עומדים — לפני האירוע, ביום עצמו וגם אחרי.
+              ב־VEYA מוזמן הוא לא עוד שורה ברשימה. התשובה שלו ממשיכה איתו עד הסוף:
             </p>
+            <!-- אותו מוזמן, לאורך כל האירוע: אישור → שולחן → עלות → מתנה → מאזן.
+                 שורה טיפוגרפית אחת, בלי מוקאפ. השם והמספרים להמחשה. -->
+            <ol class="why-chain" aria-label="מוזמן אחד לאורך כל האירוע">
+              <li><span class="wc-k">מוזמן</span><span class="wc-v">משפחת כהן</span></li>
+              <li><span class="wc-k">אישור הגעה</span><span class="wc-v">4 מגיעים</span></li>
+              <li><span class="wc-k">הושבה</span><span class="wc-v">שולחן 7</span></li>
+              <li><span class="wc-k">עלות</span><span class="wc-v">4 מנות בחשבון</span></li>
+              <li><span class="wc-k">מתנות</span><span class="wc-v">המעטפה נספרה</span></li>
+              <li><span class="wc-k">מאזן</span><span class="wc-v">בשורה התחתונה</span></li>
+            </ol>
           </div>
         </div>
       </section>
@@ -2636,8 +2671,8 @@
           <span class="kicker">יש לכם רשימה? פשוט תדביקו.</span>
           <h2 id="ps-title" class="section-title">הכול מתחיל מאותה רשימת מוזמנים</h2>
           <p class="section-sub">
-            כבר יש לכם רשימה? אל תסדרו אותה מחדש.<br />
-            פשוט מעתיקים ומדביקים — VEYA מזהה את המוזמנים ומסדרת אותם לרשימה מוכנה לניהול.
+            לא מתחילים מאפס: מביאים את הרשימה שכבר יש לכם, וממשיכים משם.<br />
+            מדביקים מהפתקים או מהוואטסאפ, או מעלים קובץ אקסל — VEYA מזהה את המוזמנים ומסדרת אותם לרשימה מוכנה לניהול.
           </p>
         </div>
 
@@ -2729,7 +2764,7 @@
           </p>
 
           <div class="section-cta reveal d2">
-            <a href="/app?auth=register" class="btn btn-primary">יאללה, בואו נסדר את זה <span class="arw" aria-hidden="true">←</span></a>
+            <a href="/app?auth=register" class="btn btn-primary">קובעים מועד סגירה לאירוע שלכם <span class="arw" aria-hidden="true">←</span></a>
           </div>
         </div>
       </section>
@@ -2742,8 +2777,7 @@
             <h2 id="rsvp-title" class="section-title">לא רק לדעת מי ענה. לדעת איפה הרשימה עומדת.</h2>
             <p>
               אישורי הגעה הם לא סוף התהליך — הם הדרך להגיע למספר שאפשר לקבל איתו החלטה.
-              VEYA מרכזת את סטטוס המוזמנים ואת המשך הטיפול במי שעדיין לא ענה, כך שבמקום
-              כמה רשימות במקביל יש מקור אחד לאירוע.
+              כל תשובה נרשמת על המוזמן עצמו, וממשיכה משם להושבה ולחשבון של האירוע.
             </p>
             <!-- ═════ תמונת המצב של הרשימה ═══════════════════════════════
                במקום ארבע שורות שמסבירות מה רואים - מראים את זה.
@@ -2779,54 +2813,6 @@
           </div>
             <p class="why-punch">מרשימה שמשתנה כל יום — לתמונה אחת שאפשר לעבוד לפיה.</p>
           
-          <!-- ═════ ציר סגירת הרשימה (§5) ═══════════════════════════════
-               שבעת השלבים הם בדיוק אלה שב-``rsvp_timeline.py``, בתוויות
-               הנייטרליות מ-``PUBLIC_STEP_LABELS`` — בלי לנקוב בערוץ, כי
-               WhatsApp עדיין במצב mock. הציר נספר לאחור ממועד סגירת הרשימה
-               לאולם, ולכן היום שבו הוא נעצר הוא היום שבו נמסר המספר. -->
-          <div class="tl-wrap reveal">
-            <div class="tl-head">
-              <h3>איך מגיעים למספר עד מועד הסגירה</h3>
-              <span class="numcard-tag">הסדר שבו זה קורה</span>
-            </div>
-            <ol class="tl-list" data-scene data-scene-gap="620">
-              <li class="tl-item scene-step" data-step="1">
-                <span class="tl-body">
-                  <span class="tl-what">פתיחת הרשימה</span>
-                  <span class="tl-who">בקשת אישור הגעה יוצאת לכל מי שברשימה</span>
-                </span>
-              </li>
-              <li class="tl-item scene-step" data-step="2">
-                <span class="tl-body">
-                  <span class="tl-what">תזכורות</span>
-                  <span class="tl-who">חוזרות רק למי שעדיין לא ענה</span>
-                </span>
-              </li>
-              <li class="tl-item scene-step" data-step="3">
-                <span class="tl-body">
-                  <span class="tl-what">מעקב טלפוני</span>
-                  <span class="tl-who">סבבי שיחות למי שלא הגיב להודעות</span>
-                </span>
-              </li>
-              <li class="tl-item tl-close scene-step" data-step="4">
-                <span class="tl-body">
-                  <span class="tl-what">סגירת הרשימה</span>
-                  <span class="tl-who">כאן נמסר המספר לאולם</span>
-                </span>
-              </li>
-              <li class="tl-item scene-step" data-step="5">
-                <span class="tl-body">
-                  <span class="tl-what">הכנה לאירוע</span>
-                  <span class="tl-who">הושבה, ושיבוץ לשולחנות ביום האירוע</span>
-                </span>
-              </li>
-            </ol>
-            <p class="tl-note">
-              VEYA בונה את הסדר הזה לאחור מהיום שבו אתם מוסרים מספר לאולם,
-              מדלגת על סופי שבוע, ומכווצת את הרצף אם נשאר פחות זמן. כל שלב
-              פונה רק למי שעדיין לא ענה — מי שכבר אישר לא מקבל עוד תזכורת.
-            </p>
-          </div>
         </div>
         </div>
       </section>
@@ -3235,7 +3221,7 @@
             </div>
 
           <div class="section-cta">
-            <a href="/app?auth=register" class="btn btn-primary">בא לי לנסות את VEYA <span class="arw" aria-hidden="true">←</span></a>
+            <a href="/app?auth=register" class="btn btn-primary">מושיבים את האורחים שלכם <span class="arw" aria-hidden="true">←</span></a>
           </div>
 
           <p class="fineprint">
@@ -3303,13 +3289,12 @@
         <p class="gc-note">
             כל המתנות מסודרות מול רשימת המוזמנים. רואים ממי הגיעה כל מתנה,
             ואפשר לחזור לדוח בכל רגע — בלי לשבת אחרי האירוע עם ערימה של
-            מעטפות ודפים. זה לא רק לספור מעטפות. זה לסיים את האירוע כשכל
-            המתנות כבר מסודרות.
+            מעטפות ודפים. וכל סכום שנספר נכנס ישר למאזן של האירוע.
           </p>
         </div>
 
         <div class="gc-cta">
-          <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+          <a href="/app?auth=register" class="btn btn-primary">מתחילים את האירוע ב־VEYA <span class="arw" aria-hidden="true">←</span></a>
         </div>
       </div>
     </section>
@@ -3320,8 +3305,8 @@
             <span class="kicker">אחרי האירוע</span>
             <h2 id="after-title" class="section-title">ובסוף, מאזן אחד לכל האירוע.</h2>
             <p class="section-sub">
-              עד האירוע הכול היה הערכה. אחרי האירוע ההוצאות, התשלומים והמתנות
-              נסגרים לשורה תחתונה אחת — בלי לחבר שום דבר ביד.
+              כמה עלה האירוע, כמה עולה לכם כל אורח, כמה נכנס במתנות — ובסוף
+              כמה באמת הרווחתם או הפסדתם. בלי לחבר שום דבר ביד.
             </p>
           </div>
 
@@ -3392,7 +3377,7 @@
             <h3 class="section-title">האירוע נגמר. הרשימה נשארת.</h3>
             <p>הדוח לא נעלם אחרי האירוע — וגם לא המידע שאספתם.</p>
             <p>
-              בפעם הבאה שתזמינו את אותם אנשים, כבר יש לכם את כל מה שצריך במקום אחד:
+              בפעם הבאה שתזמינו את אותם אנשים, כבר יש לכם את כל מה שצריך:
               מי הגיע, עם מי, איפה ישב ומה חשוב לזכור.
             </p>
             <p>
@@ -3563,8 +3548,8 @@
             <span class="kicker">איך זה עובד</span>
             <h2 id="how-title" class="section-title">מהרשימה הראשונה ועד הדוח שנשאר אחריו.</h2>
             <p class="section-sub">
-              VEYA איתכם לאורך כל הדרך — כדי שלא תצטרכו לחבר לבד את כל מה
-              שקורה סביב האירוע.
+              הרשימה שהבאתם, האישורים שאספתם, ההושבה, ההוצאות והמתנות —
+              כולם מגיעים לאותו מקום בסוף: הדוח של האירוע.
             </p>
           </div>
 
@@ -3686,7 +3671,7 @@
               <span class="wj-num" aria-hidden="true">7</span>
               <div class="wj-text">
                 <h3>הדוח הסופי</h3>
-                <p>בסוף נשאר דוח מסודר: מי הגיע, כמה, ומה נתן — להורדה לאקסל או להדפסה.</p>
+                <p>כאן מתחבר כל מה שעשיתם בדרך: שורה לכל מוזמן — אם אישר, כמה הגיעו ומה נתן. להורדה לאקסל או להדפסה.</p>
               </div>
               <div class="wj-shot mk-browser">
                 <div class="mk-browser-bar" aria-hidden="true">
@@ -3909,7 +3894,7 @@
               מתחילים עם רשימת המוזמנים ומגיעים לאירוע עם תמונה ברורה יותר של האנשים,
               ההושבה והכסף.
             </p>
-            <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+            <a href="/app?auth=register" class="btn btn-primary">מתחילים את האירוע <span class="arw" aria-hidden="true">←</span></a>
           </div>
         </div>
       </section>
