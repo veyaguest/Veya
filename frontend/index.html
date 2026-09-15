@@ -676,8 +676,23 @@
       /* ---- תמונת מצב: חלון דפדפן וטלפון עם המסך האמיתי ----
          המכשירים עצמם (.mk-browser / .mk-phone) מוגדרים פעם אחת ב-brand
          layer; כאן רק הפריסה שלהם. */
-      .sh-stage { display: grid; gap: 18px; justify-items: center; margin-bottom: 26px; }
-      .sh-browser { max-width: 960px; }
+      /* קומפוזיציה אחת, קומפקטית: הדפדפן מעט מאחור ומוטה, והטלפון חופף
+         לפניו בזווית ההפוכה. RTL: הטלפון בצד ההתחלה (ימין), הדפדפן נדחף
+         לצד הסוף. זוויות קטנות, בלי אפקט. */
+      .sh-stage {
+        --ph-w: clamp(118px, 16vw, 188px);
+        position: relative; display: block; max-width: 780px; margin: 6px auto 34px;
+        /* הטלפון (גובהו ‎≈2.1×רוחבו) יורד מתחת לדפדפן בערך בשני שלישים, ושליש ממנו חופף */
+        padding-bottom: calc(var(--ph-w) * 1.3); perspective: 2200px;
+      }
+      .sh-browser {
+        width: 84%; max-width: none; margin-inline-start: auto;
+        transform: rotateY(-8deg) rotateX(2deg); transform-origin: 70% 50%;
+      }
+      .sh-stage .sh-phone {
+        position: absolute; z-index: 2; inset-inline-start: 4%; bottom: 0;
+        transform: rotateY(7deg) rotate(-1.5deg);
+      }
       .sh-punch {
         margin: 0 auto 44px; text-align: center; font-family: var(--font-display);
         font-size: var(--fd-md); color: var(--charcoal);
@@ -691,9 +706,13 @@
       .sh-mobile-title { margin: 0 0 10px; font-size: var(--fd-md); color: var(--charcoal); }
       .sh-mobile-body { margin: 0 0 18px; font-size: var(--fs-lg); line-height: 1.75; color: var(--body); }
       .sh-install { min-height: 48px; }
+      @media (max-width: 600px) {
+        /* בטלפון הטלפון הוא העיקר: גדול יותר, והדפדפן קטן מאחוריו */
+        .sh-stage { --ph-w: clamp(128px, 38vw, 158px); padding-bottom: calc(var(--ph-w) * 1.72); }
+        .sh-browser { width: 78%; }
+        .sh-stage .sh-phone { inset-inline-start: 0; }
+      }
       @media (min-width: 861px) {
-        .sh-stage { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 26px; justify-items: stretch; }
-        .sh-phone { justify-self: center; }
         .sh-mobile { grid-template-columns: minmax(0, 1fr) auto; gap: 44px; justify-items: start; text-align: start; }
         .sh-mobile-text { text-align: start; }
       }
@@ -2508,6 +2527,9 @@
     
     
     
+    
+    
+    
     </style>
     <script>
       /* צילום שנקטע בטעינה: ניסיון חוזר אחד, והמסגרת נשארת. מוגדר ב-head כדי
@@ -2858,9 +2880,9 @@
           </div>
 
           <!-- ═════ תמונת המצב, כמו שהיא נפתחת בדפדפן ════════════════════
-               הצילום הוא ``DashboardPage`` האמיתי (/demo/dashboard), על
-               אירוע שנמצא באמצע הדרך: 438 מתוך 620 אישרו, 102 עדיין לא
-               ענו, ו-37 יום לאירוע. לא מסך ריק ולא נתוני placeholder. -->
+               צילום של תמונת המצב האמיתית של VEYA, מאירוע ההדגמה (אותו אירוע
+               שבשאר הצילומים בדף): 256 מתוך 644 אישרו, 274 ממתינים לתשובה,
+               אחוזת גן ורדים, 24 בספטמבר. בדפדפן ובטלפון — אותו מסך. -->
           <div class="sh-stage reveal d1">
             <div class="mk-browser sh-browser">
               <div class="mk-browser-bar" aria-hidden="true">
@@ -2872,8 +2894,8 @@
               <div class="mk-browser-view">
               <img
                 src="/product/dashboard-browser.jpg"
-                alt="תמונת המצב של VEYA בדפדפן: שמות בני הזוג, ספירה לאחור לאירוע, ומחוון אישורי ההגעה עם כמה אישרו, כמה עדיין ממתינים, כמה לא החליטו וכמה לא מגיעים"
-                width="1280" height="1120" loading="lazy" decoding="async"
+                alt="תמונת המצב של VEYA בדפדפן: דניאל ושרון, ספירה לאחור לאירוע, ומחוון אישורי ההגעה — 256 מתוך 644 אישרו, 45 לא החליטו, 69 לא מגיעים ו־274 ממתינים לתשובה"
+                width="1600" height="1025" loading="lazy" decoding="async"
                 onerror="veyaRetryImage(this)"
               />
               </div>
