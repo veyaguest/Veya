@@ -772,7 +772,10 @@
          פותחת את הבוחר. */
       .dl-pick input::-webkit-calendar-picker-indicator { opacity: 0; position: absolute; inset-inline-end: 0; width: 100%; height: 100%; cursor: pointer; }
       .dl-pick-field { position: relative; }
-      .dl-line { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+      /* מספר השלבים משתנה לפי המועד (עד 7 + סגירה). הגובה שמור מראש כדי
+         שהחלפת תאריך לא תזיז את העמוד. */
+      .dl-line { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; align-content: start; min-height: 530px; }
+      .dl-err { margin: 14px 0 0; text-align: center; font-size: var(--fs-sm); color: var(--body); }
       .dl-stop {
         display: grid; grid-template-columns: 5.6rem 1fr; align-items: center; gap: 14px;
         padding: 14px 18px; background: var(--cream); border: 1px solid var(--line);
@@ -791,8 +794,10 @@
       @keyframes dl-fresh { from { opacity: 0.25; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
       .dl-say { margin: 22px 0 0; text-align: center; font-size: var(--fs-md); color: var(--muted); }
       @media (min-width: 861px) {
-        .dl-line { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
-        .dl-stop { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 6px; padding: 18px 12px; }
+        .dl-line { grid-template-columns: repeat(var(--dl-n, 7), minmax(0, 1fr)); gap: 10px; min-height: 104px; }
+        .dl-stop { grid-template-columns: 1fr; justify-items: center; align-content: center; text-align: center; gap: 6px; padding: 18px 8px; min-height: 118px; }
+        .dl-date { font-size: var(--fd-sm); }
+        .dl-what { font-size: var(--fs-sm); }
       }
       @media (prefers-reduced-motion: reduce) { .dl-stop.is-fresh .dl-date { animation: none; } }
 
@@ -2533,9 +2538,10 @@
           </div>
 
           <!-- ═════ בוחרים תאריך, והציר נבנה לאחור ═══════════════════════
-               אותו היגיון של המוצר: הכול נגזר מהיום שבו סוגרים את הרשימה,
-               והתאריכים מדלגים על שישי ושבת. השדה מגיע עם תאריך התחלתי
-               כדי שגם מי שלא נגע יראה תוכנית מלאה. -->
+               התאריכים לא מחושבים כאן: הם מגיעים ממנוע לוח הזמנים של VEYA
+               (rsvp_timeline.compute_schedule) דרך אותו endpoint ציבורי של
+               מחשבון לוח הזמנים. אותו חלון של עד 14 יום, אותו דילוג על שישי
+               ושבת, אותו כיווץ כשהמועד קרוב, ואותו מספר סבבים. -->
           <div class="dl reveal d1" data-deadline>
             <label class="dl-pick">
               <span class="dl-pick-label">סגירת הרשימה</span>
@@ -2546,28 +2552,8 @@
               </span>
             </label>
 
-            <ol class="dl-line" data-dl-line>
-              <li class="dl-stop is-close" data-back="0">
-                <span class="dl-date"></span>
-                <span class="dl-what">סוגרים רשימה</span>
-              </li>
-              <li class="dl-stop" data-back="4">
-                <span class="dl-date"></span>
-                <span class="dl-what">סבב אחרון</span>
-              </li>
-              <li class="dl-stop" data-back="8">
-                <span class="dl-date"></span>
-                <span class="dl-what">טלפונים</span>
-              </li>
-              <li class="dl-stop" data-back="10">
-                <span class="dl-date"></span>
-                <span class="dl-what">תזכורת</span>
-              </li>
-              <li class="dl-stop" data-back="14">
-                <span class="dl-date"></span>
-                <span class="dl-what">מתחילים</span>
-              </li>
-            </ol>
+            <ol class="dl-line" data-dl-line aria-live="polite"></ol>
+            <p class="dl-err" data-dl-err hidden>לא הצלחנו לחשב את לוח הזמנים כרגע. אפשר לנסות שוב בעוד רגע.</p>
 
             <p class="dl-say">הודעות, תזכורות, טלפונים. כל סבב בזמן שלו.</p>
           </div>
@@ -4084,78 +4070,104 @@
       })();
 
       /* ---- מועד סגירת הרשימה: הציר נבנה לאחור מהתאריך שנבחר ----
-         אותו כלל כמו במוצר: סופרים אחורה מהיום שבו סוגרים את הרשימה,
-         ושלב שנופל על שישי או שבת נדחה ליום פעיל שלפניו. אין כאן קריאה
-         לשרת — זו אותה אריתמטיקה, בקטן. */
+         אין כאן לוח זמנים משלנו. כל תאריך מגיע ממנוע לוח הזמנים של VEYA
+         (rsvp_timeline.compute_schedule) דרך /public/calculators/rsvp-timeline —
+         אותו endpoint של מחשבון לוח הזמנים. המנוע מקבל תאריך אירוע וכמה
+         ימים לפניו נסגרת הרשימה; מועד שבחרו כאן הוא "יום לפני אירוע" שחל
+         למחרת, ולכן מועד הסגירה והסבבים יוצאים בדיוק כמו במערכת. */
       (function () {
         var box = document.querySelector('[data-deadline]');
         if (!box) return;
         var input = box.querySelector('[data-dl-input]');
-        var stops = [].slice.call(box.querySelectorAll('.dl-stop'));
-        if (!input || !stops.length) return;
+        var line = box.querySelector('[data-dl-line]');
+        var err = box.querySelector('[data-dl-err]');
+        if (!input || !line) return;
+        var raw = '%VITE_API_URL%';
+        var API = /^https?:\/\//.test(raw) ? raw.replace(/\/$/, '') : 'http://localhost:8000';
+        var LABEL = { whatsapp_first: 'מתחילים', reminder: 'תזכורת', call_round: 'טלפונים' };
 
         function iso(d) {
           return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
-        function toWeekday(d) {
-          // 5 = שישי, 6 = שבת. נדחה אחורה ליום פעיל, כמו בלוח של המוצר.
-          while (d.getDay() === 5 || d.getDay() === 6) d.setDate(d.getDate() - 1);
-          return d;
+        function ddmm(isoDate) {
+          var p = isoDate.split('-');
+          return p[2] + '.' + p[1];
         }
-        function render(fresh) {
-          var base = new Date(input.value + 'T12:00:00');
-          if (isNaN(base.getTime())) return;
-          stops.forEach(function (li) {
-            var back = parseInt(li.getAttribute('data-back'), 10) || 0;
-            // התאריך שנבחר מוצג כמו שהוא — זו ההחלטה של הזוג. רק השלבים
-            // שנגזרים ממנו מוזזים מסוף השבוע ליום פעיל.
-            var d = new Date(base.getTime() - back * 86400000);
-            if (back) toWeekday(d);
-            var el = li.querySelector('.dl-date');
-            var next = String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0');
-            if (el.textContent === next) return;
-            el.textContent = next;
-            if (!fresh) return;
-            li.classList.remove('is-fresh');
-            void li.offsetWidth;   // מאתחל את האנימציה גם כשהשינוי רצוף
-            li.classList.add('is-fresh');
-          });
+        function stop(date, what, isClose) {
+          var li = document.createElement('li');
+          li.className = 'dl-stop' + (isClose ? ' is-close' : '');
+          var d = document.createElement('span'); d.className = 'dl-date'; d.textContent = ddmm(date);
+          var w = document.createElement('span'); w.className = 'dl-what'; w.textContent = what;
+          li.appendChild(d); li.appendChild(w);
+          return li;
+        }
+
+        var seq = 0, timer = null;
+        function render(data, fresh) {
+          var steps = data.placements.slice();
+          var last = steps[steps.length - 1];
+          // המנוע שם את סבב השיחות האחרון על מועד הסגירה עצמו — יום אחד.
+          var closeLabel = 'סוגרים רשימה';
+          if (last && last.date === data.commitment_date && last.type === 'call_round') {
+            closeLabel = 'סבב אחרון · סוגרים רשימה';
+            steps.pop();
+          }
+          var items = [stop(data.commitment_date, closeLabel, true)];
+          for (var i = steps.length - 1; i >= 0; i -= 1) items.push(stop(steps[i].date, LABEL[steps[i].type] || steps[i].label, false));
+          line.style.setProperty('--dl-n', String(items.length));
+          line.replaceChildren.apply(line, items);
+          if (!fresh) return;
+          items.forEach(function (li) { li.classList.add('is-fresh'); });
+        }
+        function load(fresh) {
+          var picked = new Date(input.value + 'T12:00:00');
+          if (isNaN(picked.getTime())) return;
+          var eventDay = new Date(picked.getTime() + 86400000);
+          var mine = ++seq;
+          fetch(API + '/public/calculators/rsvp-timeline', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ event_date: iso(eventDay), commit_days_before: 1 }),
+          })
+            .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+            .then(function (data) {
+              if (mine !== seq) return;
+              err.hidden = true;
+              render(data, fresh);
+            })
+            .catch(function () {
+              if (mine !== seq) return;
+              err.hidden = false;
+            });
+        }
+        function schedule(fresh) {
+          clearTimeout(timer);
+          timer = setTimeout(function () { load(fresh); }, 250);
         }
 
         var today = new Date();
         input.min = iso(today);
-        // ברירת מחדל: כחודש קדימה — כך שגם מי שלא נגע רואה תוכנית מלאה.
-        var start = new Date(today.getTime() + 30 * 86400000);
-        input.value = iso(toWeekday(start));
-        render(false);
+        // ברירת מחדל: כחודש קדימה — כך שגם מי שלא נגע רואה לוח מלא.
+        input.value = iso(new Date(today.getTime() + 30 * 86400000));
+        load(false);
         // לחיצה על כל השדה — לא רק על האייקון הזעיר — פותחת את לוח השנה.
         box.querySelector('.dl-pick-field').addEventListener('click', function () {
           if (typeof input.showPicker === 'function') {
-            try { input.showPicker(); } catch (e) { input.focus(); }
-          } else {
-            input.focus();
+            try { input.showPicker(); } catch (e) { /* הדפדפן יפתח את השדה בעצמו */ }
           }
         });
         var touched = false;
         function userChanged() {
           touched = true;
           window.veyaHint.clear(box);
-          render(true);
+          schedule(true);
         }
         input.addEventListener('change', userChanged);
         input.addEventListener('input', userChanged);
 
-        // הדגמה אחת: התאריך זז שבוע קדימה, הציר נבנה מחדש, והרמז מופיע.
+        // רמז אחד, פעם אחת. בלי לשנות את התאריך בשביל הגולש.
         window.veyaHint.onceInView(box, function () {
-          window.veyaHint.show(box);
-          if (window.veyaHint.reduced) return;
-          setTimeout(function () {
-            if (touched) return;
-            var d = new Date(input.value + 'T12:00:00');
-            d.setDate(d.getDate() + 7);
-            input.value = iso(d);
-            render(true);
-          }, 700);
+          if (!touched) window.veyaHint.show(box);
         });
       })();
 
