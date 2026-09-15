@@ -32,6 +32,7 @@ import type {
   SeatingViolation,
   TableType,
 } from '../types'
+import { RSVP_LABELS } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
 import { HALL_DESKTOP_QUERY, useMediaQuery } from '../lib/useMediaQuery'
 import { useFocusTrap } from '../lib/useFocusTrap'
@@ -48,6 +49,12 @@ import type { WorkspaceFilter, WorkspaceSort } from '../seatingWorkspace'
 import { ConfirmDialog } from './ConfirmDialog'
 import { GUEST_DRAG_TYPE, SeatingGuestPanel } from './SeatingGuestPanel'
 import { VeyaLoader } from './VeyaLoader'
+// סקיצות האולם האמיתיות של מדריך המסך. מיובאות דרך Vite ולא מוגשות מ-
+// ``/product/...``: הקבצים יושבים ב-``product-sources/`` (מחוץ ל-``public``),
+// ולכן הנתיב הישן החזיר 404 גם מקומית וגם בפרודקשן. ייבוא נותן כתובת עם
+// hash שנכנסת ל-build — ואם הקובץ חסר, ה-build נכשל במקום תמונה שבורה בשקט.
+import hallSketchBefore from '../../product-sources/hall-sketch-before-original.jpg'
+import hallSketchAfter from '../../product-sources/hall-sketch-after-original.jpg'
 
 // טקסטי מסך ההושבה — כולם ב-strings/he.ts, אף פעם לא קשיחים בקומפוננטה.
 const hallT = strings.hall
@@ -5363,6 +5370,65 @@ export function HallPage({
                   </p>
                 </div>
 
+                {/* ---- הושבת מוזמן: הרשימה → בחירה → גרירה → שולחן ----
+                    אותו סיפור בדיוק שהמסך עושה: הסקיצה האמיתית של האולם כרקע
+                    (כמו שכבת הסקיצה במפה), שורות בעיצוב של סרגל המוזמנים,
+                    ושולחנות בעיצוב של המפה. CSS טהור, בלולאה.
+                    במסך צר הרשימה עולה כמגירה מלמטה ויורדת ברגע שהגרירה
+                    מתחילה — בדיוק כמו במובייל האמיתי. בלי מספרים. */}
+                <section className="hm-seatdemo" aria-labelledby="hm-seatdemo-title">
+                  <h3 id="hm-seatdemo-title" className="hm-seatdemo-title">
+                    {hallT.guideSeatDemo.title}
+                  </h3>
+                  <div className="hm-seatdemo-stage" aria-hidden="true">
+                    <div className="sd-hall">
+                      <img className="sd-sketch" src={hallSketchBefore} alt="" />
+                      <span className="sd-table sd-t1" />
+                      <span className="sd-table sd-t2" />
+                      <span className="sd-table sd-t4" />
+                      <span className="sd-table sd-target">
+                        <span className="sd-target-fill" />
+                      </span>
+                      <span className="sd-badge">✓ {hallT.guideSeatDemo.seated}</span>
+                    </div>
+                    <div className="sd-list">
+                      <span className="sd-list-head">{activeEventTerms().guestsLabel}</span>
+                      <span className="sd-row sd-row-picked">
+                        <span className="ws-guest-name">{hallT.guideSeatDemo.guestPicked}</span>
+                        <span className="sd-row-meta">
+                          <span className="ws-rsvp ws-rsvp-confirmed">{RSVP_LABELS.confirmed}</span>
+                          <span className="sd-seat-state">
+                            <span className="sd-seat-before">{wsT.notSeated}</span>
+                            <span className="sd-seat-after">✓ {hallT.guideSeatDemo.seated}</span>
+                          </span>
+                        </span>
+                      </span>
+                      {hallT.guideSeatDemo.guestOthers.map((name) => (
+                        <span className="sd-row" key={name}>
+                          <span className="ws-guest-name">{name}</span>
+                          <span className="sd-row-meta">
+                            <span className="ws-rsvp ws-rsvp-confirmed">{RSVP_LABELS.confirmed}</span>
+                            <span>{wsT.notSeated}</span>
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                    <span className="sd-chip">{hallT.guideSeatDemo.guestPicked}</span>
+                    <span className="sd-touch" />
+                  </div>
+                  <ol className="hm-seatdemo-steps sd-steps-wide">
+                    {hallT.guideSeatDemo.stepsWide.map((step, i) => (
+                      <li key={step} className={`sd-step sd-step-${i + 1}`}>{step}</li>
+                    ))}
+                  </ol>
+                  <ol className="hm-seatdemo-steps sd-steps-narrow">
+                    {hallT.guideSeatDemo.stepsNarrow.map((step, i) => (
+                      <li key={step} className={`sd-step sd-step-${i + 1}`}>{step}</li>
+                    ))}
+                  </ol>
+                  <p className="hm-seatdemo-alt">{hallT.guideSeatDemo.noDrag}</p>
+                </section>
+
                 <div className="hm-guide-divider">
                   <span>עוד דברים שכדאי לדעת</span>
                 </div>
@@ -5458,12 +5524,12 @@ export function HallPage({
 
                   <div className="hm-guide-sketch-shots">
                     <div className="hm-guide-sketch-shot">
-                      <img src="/product/hall-sketch-before.jpg" alt="הסקיצה שהתקבלה מהאולם" loading="lazy" />
+                      <img src={hallSketchBefore} alt="הסקיצה שהתקבלה מהאולם" loading="lazy" />
                       <span>הסקיצה מהאולם</span>
                     </div>
                     <span className="hm-guide-sketch-arrow" aria-hidden="true">←</span>
                     <div className="hm-guide-sketch-shot">
-                      <img src="/product/hall-sketch-after.jpg" alt="אותו אולם אחרי הבנייה ב-VEYA" loading="lazy" />
+                      <img src={hallSketchAfter} alt="אותו אולם אחרי הבנייה ב-VEYA" loading="lazy" />
                       <span>האולם ב-VEYA</span>
                     </div>
                   </div>

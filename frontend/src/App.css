@@ -13269,6 +13269,434 @@ td.notes.seating {
     }
   }
 
+  /* ==========================================================================
+     מדריך מסך ההושבה — הושבת מוזמן: הרשימה → בחירה → גרירה → שולחן
+     --------------------------------------------------------------------------
+     סיפור ויזואלי אחד על הסקיצה האמיתית של האולם (``product-sources``,
+     מיובאת ב-HallPage), עם שורות בעיצוב סרגל המוזמנים ושולחנות בעיצוב המפה.
+     מחזור אחד = 8 שניות; ארבעת המשפטים שמתחת נדלקים יחד עם השלבים.
+     במסך רחב הרשימה והאולם זה לצד זה. בטלפון הרשימה עולה כמגירה מלמטה
+     ויורדת ברגע שהגרירה מתחילה — כמו במסך האמיתי. בלי מספרים.
+     המיקומים באחוזים של הבמה, כדי שהכול יזוז יחד עם רוחב המדריך.
+     ========================================================================== */
+  .hm-seatdemo {
+    margin: 4px 0 20px;
+  }
+  .hm-seatdemo-title {
+    margin: 0 0 10px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--charcoal);
+    text-align: center;
+  }
+  .hm-seatdemo-stage {
+    position: relative;
+    height: 232px;
+    /* מיקום אנימציה ב-LTR (קואורדינטות); הטקסט בפנים נשאר RTL. */
+    direction: ltr;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: var(--ivory);
+    border: 1px solid var(--line);
+  }
+
+  /* ---- האולם ---- */
+  .hm-seatdemo .sd-hall {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 57%;
+    overflow: hidden;
+    background: var(--ivory);
+  }
+  .hm-seatdemo .sd-sketch {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 42%;
+    /* כמו שכבת הסקיצה במפה: רקע עדין שהשולחנות יושבים עליו. */
+    opacity: 0.5;
+  }
+  .hm-seatdemo .sd-table {
+    position: absolute;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    outline: 2px dotted rgba(201, 162, 39, 0.55);
+    outline-offset: 3px;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 6px -2px rgba(43, 38, 32, 0.25);
+    animation: sdCandidate 8s ease-in-out infinite;
+  }
+  .hm-seatdemo .sd-t1 { left: 22%; top: 26%; }
+  .hm-seatdemo .sd-t2 { left: 64%; top: 26%; }
+  .hm-seatdemo .sd-t4 { left: 64%; top: 68%; }
+  .hm-seatdemo .sd-target {
+    left: 22%;
+    top: 68%;
+    animation: sdCandidate 8s ease-in-out infinite, sdTarget 8s ease-in-out infinite;
+  }
+  .hm-seatdemo .sd-target-fill {
+    position: absolute;
+    inset: 5px;
+    border-radius: 50%;
+    background: linear-gradient(160deg, var(--gold-light), var(--gold));
+    transform: scale(0);
+    animation: sdFill 8s ease-in-out infinite;
+  }
+  .hm-seatdemo .sd-badge {
+    position: absolute;
+    left: 22%;
+    top: 68%;
+    direction: rtl;
+    white-space: nowrap;
+    padding: 3px 9px;
+    border-radius: var(--radius-full);
+    background: var(--cream);
+    border: 1px solid var(--green);
+    color: var(--green-on-tint);
+    font-size: 11px;
+    font-weight: 700;
+    box-shadow: 0 4px 12px -6px rgba(43, 38, 32, 0.35);
+    opacity: 0;
+    transform: translate(-30%, -175%) scale(0.9);
+    animation: sdBadge 8s ease-in-out infinite;
+  }
+
+  /* ---- רשימת המוזמנים (בעיצוב הסרגל) ---- */
+  .hm-seatdemo .sd-list {
+    position: absolute;
+    right: 0;
+    inset-block: 0;
+    width: 43%;
+    direction: rtl;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 9px 8px;
+    background: var(--cream);
+    border-inline-start: 1px solid var(--line);
+  }
+  .hm-seatdemo .sd-list-head {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .hm-seatdemo .sd-row {
+    display: block;
+    padding: 6px 8px;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+  }
+  .hm-seatdemo .sd-row .ws-guest-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--charcoal);
+  }
+  .hm-seatdemo .sd-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 6px;
+    margin-top: 2px;
+    font-size: 10.5px;
+    color: var(--muted);
+  }
+  .hm-seatdemo .sd-row-picked {
+    animation: sdPicked 8s ease-in-out infinite;
+  }
+  .hm-seatdemo .sd-seat-state {
+    position: relative;
+    display: inline-grid;
+  }
+  .hm-seatdemo .sd-seat-before,
+  .hm-seatdemo .sd-seat-after {
+    grid-area: 1 / 1;
+  }
+  .hm-seatdemo .sd-seat-before {
+    animation: sdSeatBefore 8s ease-in-out infinite;
+  }
+  .hm-seatdemo .sd-seat-after {
+    color: var(--green-on-tint);
+    font-weight: 700;
+    opacity: 0;
+    animation: sdSeatAfter 8s ease-in-out infinite;
+  }
+
+  /* ---- המוזמן שנלקח מהרשימה, והאצבע ---- */
+  .hm-seatdemo .sd-chip {
+    position: absolute;
+    left: 78.5%;
+    top: 24%;
+    direction: rtl;
+    white-space: nowrap;
+    padding: 5px 11px;
+    border-radius: var(--radius-full);
+    background: #fff;
+    border: 1.5px solid var(--gold-deep);
+    color: var(--charcoal);
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 10px 22px -10px rgba(43, 38, 32, 0.5);
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    animation: sdChipWide 8s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  }
+  .hm-seatdemo .sd-touch {
+    position: absolute;
+    left: 78.5%;
+    top: 24%;
+    width: 22px;
+    height: 22px;
+    margin: 10px 0 0 10px;
+    border-radius: 50%;
+    border: 2px solid var(--gold-deep);
+    background: rgba(201, 162, 39, 0.22);
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    animation: sdTouchWide 8s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  }
+
+  /* ---- המשפטים ---- */
+  .hm-seatdemo-steps {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 10px;
+  }
+  .hm-seatdemo .sd-steps-narrow {
+    display: none;
+  }
+  .hm-seatdemo .sd-step {
+    position: relative;
+    padding-inline-start: 14px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+  .hm-seatdemo .sd-step::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0.55em;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--line);
+  }
+  /* הטקסט רק מחליף צבע (בלי שינוי משקל — שלא יקפוץ), והנקודה נצבעת זהב. */
+  .hm-seatdemo .sd-step-1 { animation: sdStep1 8s linear infinite; }
+  .hm-seatdemo .sd-step-2 { animation: sdStep2 8s linear infinite; }
+  .hm-seatdemo .sd-step-3 { animation: sdStep3 8s linear infinite; }
+  .hm-seatdemo .sd-step-4 { animation: sdStep4 8s linear infinite; }
+  .hm-seatdemo .sd-step-1::before { animation: sdDot1 8s linear infinite; }
+  .hm-seatdemo .sd-step-2::before { animation: sdDot2 8s linear infinite; }
+  .hm-seatdemo .sd-step-3::before { animation: sdDot3 8s linear infinite; }
+  .hm-seatdemo .sd-step-4::before { animation: sdDot4 8s linear infinite; }
+  .hm-seatdemo-alt {
+    margin: 10px 0 0;
+    font-size: 12.5px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* ---- ציר הזמן (מסך רחב) ----
+     0–12 רואים את האולם · 12–26 בוחרים · 26–60 גוררים · 60–100 בשולחן */
+  @keyframes sdChipWide {
+    0%, 19% { left: 78.5%; top: 24%; opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+    24%, 30% { left: 78.5%; top: 24%; opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+    58% { left: 12.5%; top: 68%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    64% { left: 12.5%; top: 68%; opacity: 0; transform: translate(-50%, -50%) scale(0.35); }
+    100% { left: 12.5%; top: 68%; opacity: 0; transform: translate(-50%, -50%) scale(0.35); }
+  }
+  @keyframes sdTouchWide {
+    0%, 10% { left: 78.5%; top: 24%; opacity: 0; transform: translate(-50%, -50%) scale(1.4); }
+    14%, 30% { left: 78.5%; top: 24%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    58% { left: 12.5%; top: 68%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    66%, 100% { left: 12.5%; top: 68%; opacity: 0; transform: translate(-50%, -50%) scale(1.4); }
+  }
+  @keyframes sdPicked {
+    0%, 11% { background: #fff; border-color: var(--line-2); opacity: 1; border-style: solid; }
+    15%, 22% { background: color-mix(in srgb, var(--gold) 14%, #fff); border-color: var(--gold-deep); opacity: 1; border-style: solid; }
+    /* "נלקח" מהרשימה: השורה נשארת כמקום ריק מקווקו עד שהשיבוץ מצליח. */
+    27%, 60% { background: transparent; border-color: var(--gold-deep); opacity: 0.45; border-style: dashed; }
+    66%, 92% { background: color-mix(in srgb, var(--green) 8%, #fff); border-color: var(--green); opacity: 1; border-style: solid; }
+    98%, 100% { background: #fff; border-color: var(--line-2); opacity: 1; border-style: solid; }
+  }
+  @keyframes sdSeatBefore {
+    0%, 62% { opacity: 1; }
+    65%, 94% { opacity: 0; }
+    98%, 100% { opacity: 1; }
+  }
+  @keyframes sdSeatAfter {
+    0%, 62% { opacity: 0; }
+    65%, 94% { opacity: 1; }
+    98%, 100% { opacity: 0; }
+  }
+  @keyframes sdCandidate {
+    0%, 25% { outline-style: dotted; outline-color: rgba(201, 162, 39, 0.55); }
+    29%, 60% { outline-style: dashed; outline-color: var(--gold-deep); }
+    64%, 100% { outline-style: dotted; outline-color: rgba(201, 162, 39, 0.55); }
+  }
+  @keyframes sdTarget {
+    0%, 46% { box-shadow: 0 2px 6px -2px rgba(43, 38, 32, 0.25); }
+    52%, 62% { box-shadow: 0 0 0 7px rgba(201, 162, 39, 0.28), 0 2px 6px -2px rgba(43, 38, 32, 0.25); }
+    70%, 100% { box-shadow: 0 2px 6px -2px rgba(43, 38, 32, 0.25); }
+  }
+  @keyframes sdFill {
+    0%, 59% { transform: scale(0); }
+    65%, 93% { transform: scale(1); }
+    99%, 100% { transform: scale(0); }
+  }
+  @keyframes sdBadge {
+    0%, 61% { opacity: 0; transform: translate(-30%, -150%) scale(0.9); }
+    66%, 92% { opacity: 1; transform: translate(-30%, -175%) scale(1); }
+    97%, 100% { opacity: 0; transform: translate(-30%, -175%) scale(0.95); }
+  }
+  @keyframes sdStep1 {
+    0%, 12% { color: var(--charcoal); }
+    14%, 100% { color: var(--muted); }
+  }
+  @keyframes sdDot1 {
+    0%, 12% { background: var(--gold); }
+    14%, 100% { background: var(--line); }
+  }
+  @keyframes sdStep2 {
+    0%, 12% { color: var(--muted); }
+    14%, 26% { color: var(--charcoal); }
+    28%, 100% { color: var(--muted); }
+  }
+  @keyframes sdDot2 {
+    0%, 12% { background: var(--line); }
+    14%, 26% { background: var(--gold); }
+    28%, 100% { background: var(--line); }
+  }
+  @keyframes sdStep3 {
+    0%, 26% { color: var(--muted); }
+    28%, 60% { color: var(--charcoal); }
+    62%, 100% { color: var(--muted); }
+  }
+  @keyframes sdDot3 {
+    0%, 26% { background: var(--line); }
+    28%, 60% { background: var(--gold); }
+    62%, 100% { background: var(--line); }
+  }
+  @keyframes sdStep4 {
+    0%, 60% { color: var(--muted); }
+    62%, 100% { color: var(--charcoal); }
+  }
+  @keyframes sdDot4 {
+    0%, 60% { background: var(--line); }
+    62%, 100% { background: var(--gold); }
+  }
+
+  /* ---- טלפון: רשימה → בחירה → המגירה יורדת → שולחן ----
+     לא דוחסים את הפריסה הרחבה: האולם מקבל את כל הבמה, והרשימה היא מגירה. */
+  @media (max-width: 520px) {
+    .hm-seatdemo-stage {
+      height: 300px;
+    }
+    .hm-seatdemo .sd-hall {
+      width: 100%;
+    }
+    .hm-seatdemo .sd-sketch {
+      object-position: 50% 38%;
+    }
+    .hm-seatdemo .sd-t1 { left: 70%; top: 17%; }
+    .hm-seatdemo .sd-t2 { left: 70%; top: 41%; }
+    .hm-seatdemo .sd-t4 { left: 30%; top: 12%; }
+    .hm-seatdemo .sd-target,
+    .hm-seatdemo .sd-badge {
+      left: 30%;
+      top: 34%;
+    }
+    .hm-seatdemo .sd-list {
+      top: auto;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      height: 58%;
+      border-inline-start: none;
+      border-top: 1px solid var(--line);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -10px 24px -14px rgba(43, 38, 32, 0.4);
+      transform: translateY(100%);
+      animation: sdSheet 8s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+    }
+    .hm-seatdemo .sd-chip {
+      left: 50%;
+      top: 57%;
+      animation-name: sdChipNarrow;
+    }
+    .hm-seatdemo .sd-touch {
+      left: 50%;
+      top: 57%;
+      animation-name: sdTouchNarrow;
+    }
+    .hm-seatdemo .sd-steps-wide {
+      display: none;
+    }
+    .hm-seatdemo .sd-steps-narrow {
+      display: grid;
+    }
+  }
+  @keyframes sdSheet {
+    0% { transform: translateY(100%); }
+    8%, 26% { transform: translateY(0); }
+    /* הגרירה התחילה — המגירה מפנה את האולם, בדיוק כמו במסך האמיתי. */
+    34%, 92% { transform: translateY(100%); }
+    100% { transform: translateY(100%); }
+  }
+  @keyframes sdChipNarrow {
+    0%, 19% { left: 50%; top: 57%; opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+    24%, 32% { left: 50%; top: 57%; opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+    58% { left: 30%; top: 34%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    64%, 100% { left: 30%; top: 34%; opacity: 0; transform: translate(-50%, -50%) scale(0.35); }
+  }
+  @keyframes sdTouchNarrow {
+    0%, 10% { left: 50%; top: 57%; opacity: 0; transform: translate(-50%, -50%) scale(1.4); }
+    14%, 32% { left: 50%; top: 57%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    58% { left: 30%; top: 34%; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    66%, 100% { left: 30%; top: 34%; opacity: 0; transform: translate(-50%, -50%) scale(1.4); }
+  }
+
+  /* ---- בלי תנועה: מציגים את סוף הסיפור, והמשפטים כולם קריאים ---- */
+  @media (prefers-reduced-motion: reduce) {
+    .hm-seatdemo .sd-table,
+    .hm-seatdemo .sd-target-fill,
+    .hm-seatdemo .sd-badge,
+    .hm-seatdemo .sd-row-picked,
+    .hm-seatdemo .sd-seat-before,
+    .hm-seatdemo .sd-seat-after,
+    .hm-seatdemo .sd-chip,
+    .hm-seatdemo .sd-touch,
+    .hm-seatdemo .sd-list,
+    .hm-seatdemo .sd-step,
+    .hm-seatdemo .sd-step::before {
+      animation: none !important;
+    }
+    .hm-seatdemo .sd-target-fill { transform: scale(1); }
+    .hm-seatdemo .sd-badge { opacity: 1; transform: translate(-30%, -175%); }
+    .hm-seatdemo .sd-row-picked { border-color: var(--green); }
+    .hm-seatdemo .sd-seat-before { opacity: 0; }
+    .hm-seatdemo .sd-seat-after { opacity: 1; }
+    .hm-seatdemo .sd-chip,
+    .hm-seatdemo .sd-touch { opacity: 0; }
+    .hm-seatdemo .sd-step { color: var(--charcoal); }
+    .hm-seatdemo .sd-step::before { background: var(--gold); }
+  }
+  @media (prefers-reduced-motion: reduce) and (max-width: 520px) {
+    /* בטלפון בלי תנועה: המגירה נשארת למטה פתוחה, והשולחן כבר מלא. */
+    .hm-seatdemo .sd-list { transform: none; height: 44%; }
+  }
+
   /* ---- בלוק "איך זה עובד": המפה מתאימה את עצמה ---- */
   .hm-guide-smart {
     margin: 0 0 4px;
