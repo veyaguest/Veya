@@ -2411,6 +2411,24 @@
       .numcard-tag { background: rgba(201, 162, 39, 0.1); }
       .dl-stop.is-close { background: rgba(201, 162, 39, 0.08); }
 
+      /* ── חתימות המותג ─────────────────────────────────────────────────
+         שלוש נקודות בלבד, לפי הסיפור: הסמל במעבר מ"הבעיה" ל-VEYA, הסמל
+         בסוף ההושבה לפני פרק הכסף, והמילה VEYA בסוף המסע, אחרי הדוח.
+         נכסי הלוגו כמו שהם (logo_nobg, veya_text), קטנים ועם הרבה אוויר.
+         בלי אנימציה, בלי מסגרת ובלי סימן מים. */
+      .brand-mark { display: block; width: 44px; height: auto; margin: 0 auto 18px; }
+      .brand-sign { display: grid; justify-items: center; gap: 16px; margin: 64px auto 0; }
+      .brand-line { width: 1px; height: 44px; background: linear-gradient(180deg, rgba(201, 162, 39, 0), rgba(201, 162, 39, 0.6)); }
+      .brand-sign img { display: block; width: 40px; height: auto; }
+      .brand-sign--word img { width: 128px; opacity: 0.92; }
+      @media (max-width: 720px) {
+        .brand-mark { width: 38px; }
+        .brand-sign { margin-top: 48px; gap: 12px; }
+        .brand-line { height: 34px; }
+        .brand-sign img { width: 34px; }
+        .brand-sign--word img { width: 108px; }
+      }
+
       /* פוקוס מקלדת: טבעת שנראית על כל רקע (3:1 לפחות). על משטחים בהירים הזהב
          הבהיר כמעט נעלם (1.4:1), ולכן שם הטבעת בזהב העמוק; על הכהים — הבהיר. */
       :root { --focus-ring: var(--gold-deep); }
@@ -2614,6 +2632,7 @@
     <section class="ps tone-alt" aria-labelledby="ps-title">
       <div class="wrap">
         <div class="section-head reveal">
+          <img class="brand-mark" src="/logo_nobg.png" alt="" aria-hidden="true" width="44" height="44" loading="lazy" decoding="async" />
           <span class="kicker">יש לכם רשימה? פשוט תדביקו.</span>
           <h2 id="ps-title" class="section-title">הכול מתחיל מאותה רשימת מוזמנים</h2>
           <p class="section-sub">
@@ -3223,6 +3242,10 @@
             המנוע לא "מבין אנשים" — הוא עובד לפי מה שסימנתם: קבוצות, צדדים, הערות הושבה
             ואילוצים. מה שלא אמרתם לו, הוא לא מניח.
           </p>
+          <div class="brand-sign" aria-hidden="true">
+            <span class="brand-line"></span>
+            <img src="/logo_nobg.png" alt="" width="40" height="40" loading="lazy" decoding="async" />
+          </div>
         </div>
       </section>
 
@@ -3678,6 +3701,10 @@
               </div>
             </li>
           </ol>
+          <div class="brand-sign brand-sign--word" aria-hidden="true">
+            <span class="brand-line"></span>
+            <img src="/veya_text.png" alt="" width="128" height="35" loading="lazy" decoding="async" />
+          </div>
         </div>
       </section>
 
