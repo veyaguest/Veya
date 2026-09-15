@@ -1493,136 +1493,80 @@
 
       /* ---- מסלול האירוע: 01 → 02 → 03 ----
          RTL מהיסוד: direction: rtl על הסקשן, כל המיקומים לוגיים
-         (inset-inline-start, padding-inline), ו-01 הוא הטור הראשון — כלומר
-         הימני. הקו יוצא מהנקודה של כל שלב אל הנקודה של השלב הבא: בדסקטופ
-         לרוחב (שמאלה), במובייל לאורך מסילה אנכית בצד ימין (למטה).
-         התנועה היחידה: השלב נחשף, והקטע שלו נמתח לכיוון השלב הבא. */
+         (inset-inline-start, grid שנקרא מימין). מסילה אנכית בצד ימין: 01
+         למעלה, והקטע של כל שלב יורד עד הנקודה של השלב הבא. בדסקטופ כל שלב
+         הוא שורה — הטקסט מימין והמסך האמיתי משמאלו; במובייל המסך מתחת.
+         המסכים הם חיתוכים אמיתיים מ-VEYA, לא כרטיסים שנבנו לדף.
+         התנועה היחידה: השלב נחשף, והקטע שלו נמתח למטה. */
       #events { direction: rtl; }
       .rt {
-        --rt-gap: 44px; --rt-dot: 11px; --rt-rail-y: 6px;
-        list-style: none; margin: 8px 0 0; padding: 0;
-        display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--rt-gap);
-        align-items: start;
+        --rt-gap: 72px; --rt-dot: 11px; --rt-rail: 28px;
+        list-style: none; margin: 8px auto 0; padding: 0; max-width: 1000px;
       }
-      .rt-step { position: relative; display: grid; grid-template-rows: auto 1fr; min-width: 0; }
-      .rt-rail { position: relative; display: block; height: calc(var(--rt-dot) + var(--rt-rail-y) * 2); }
+      .rt-step {
+        position: relative; display: grid; grid-template-columns: var(--rt-rail) minmax(0, 1fr);
+        column-gap: 22px; padding-bottom: var(--rt-gap); min-width: 0;
+      }
+      .rt-step:last-child { padding-bottom: 0; }
+      .rt-rail { position: relative; }
       .rt-dot {
-        position: absolute; inset-inline-start: 0; top: var(--rt-rail-y);
+        position: absolute; top: 14px; inset-inline-start: calc((var(--rt-rail) - var(--rt-dot)) / 2);
         width: var(--rt-dot); height: var(--rt-dot); border-radius: 50%;
         background: var(--ivory); border: 2px solid var(--gold); box-sizing: border-box; z-index: 1;
       }
-      /* הקטע: מהנקודה הזו עד הנקודה של השלב הבא (רוחב הטור + הרווח) */
+      /* עד הנקודה של השלב הבא: דרך הרווח שבין השלבים ועד ה-top שלה */
       .rt-seg {
-        position: absolute; top: calc(var(--rt-rail-y) + var(--rt-dot) / 2 - 0.5px); height: 1px;
-        inset-inline-start: var(--rt-dot); width: calc(100% + var(--rt-gap) - var(--rt-dot));
-        background: linear-gradient(90deg, rgba(201, 162, 39, 0.55), rgba(201, 162, 39, 0.55));
-        transform: scaleX(0); transform-origin: 100% 50%; /* ב-RTL הקו נמתח מימין (01) שמאלה */
+        position: absolute; inset-inline-start: calc(var(--rt-rail) / 2 - 0.5px); width: 1px;
+        top: calc(14px + var(--rt-dot)); bottom: calc(-1 * (var(--rt-gap) + 14px));
+        background: rgba(201, 162, 39, 0.55);
+        transform: scaleY(0); transform-origin: 50% 0;
         transition: transform 1.1s var(--ease-out) 0.35s;
       }
       .rt-step.in .rt-seg { transform: none; }
-      .rt-body { padding-top: 18px; display: grid; align-content: start; }
+      .rt-body {
+        display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr);
+        grid-template-areas: "num shot" "when shot" "title shot" "text shot";
+        grid-template-rows: auto auto auto 1fr; column-gap: 56px; align-items: start;
+      }
+      .rt-num { grid-area: num; }
+      .rt-when { grid-area: when; }
+      .rt-title { grid-area: title; }
+      .rt-text { grid-area: text; }
+      .rt-shot { grid-area: shot; }
       .rt-num {
         font-family: var(--font-display); font-size: clamp(2.6rem, 4.2vw, 3.5rem); font-weight: 400; line-height: 1;
         color: color-mix(in srgb, var(--gold-deep) 76%, var(--ivory)); font-variant-numeric: lining-nums; margin-bottom: 14px;
       }
       .rt-when { margin: 0 0 6px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.04em; color: var(--gold-deep); }
       .rt-title { margin: 0 0 8px; font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 500; line-height: 1.2; color: var(--charcoal); }
-      .rt-text { margin: 0 0 22px; font-size: var(--fs-md); line-height: 1.7; color: var(--body); max-width: 34ch; }
+      .rt-text { margin: 0; font-size: var(--fs-md); line-height: 1.7; color: var(--body); max-width: 34ch; }
 
-      /* ── כרטיסי המוצר: אותה שפה של המסכים ב-VEYA ── */
-      .rt-ui {
+      /* המסך האמיתי: חיתוך נקי במסגרת דקה, בלי מכשיר ובלי אפקט */
+      .rt-shot {
+        margin: 0; justify-self: start; align-self: start;
         background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
-        box-shadow: 0 1px 2px rgba(43, 38, 32, 0.05), 0 18px 36px -28px rgba(43, 38, 32, 0.35);
-        font-size: var(--fs-xs); color: var(--body);
+        box-shadow: 0 1px 2px rgba(43, 38, 32, 0.05), 0 22px 44px -30px rgba(43, 38, 32, 0.4);
       }
-      .rt-ui-head {
-        display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
-        padding: 10px 14px; background: var(--ivory); border-bottom: 1px solid var(--line);
-      }
-      .rt-ui-head--sub { border-top: 1px solid var(--line); }
-      .rt-ui-t { font-weight: 700; color: var(--charcoal); font-size: var(--fs-sm); }
-      .rt-ui-m { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-
-      .rt-gl { list-style: none; margin: 0; padding: 0 14px; }
-      .rt-g {
-        display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 0;
-        border-bottom: 1px solid var(--line);
-      }
-      .rt-g:last-child { border-bottom: 0; }
-      .rt-g-main { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-      .rt-g-main b { font-size: var(--fs-sm); color: var(--charcoal); font-weight: 600; white-space: nowrap; }
-      .rt-g-sub { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .rt-g-n {
-        min-width: 22px; height: 22px; display: grid; place-items: center; align-self: center;
-        border: 1px solid var(--line); border-radius: 6px; font-weight: 600; color: var(--charcoal); font-variant-numeric: tabular-nums;
-      }
-      .rt-g-note { grid-column: 1 / -1; display: inline-flex; align-items: center; gap: 5px; color: var(--body); }
-      .rt-g-note svg { width: 13px; height: 13px; color: var(--gold-deep); flex: none; }
-
-      .rt-rsvp { padding: 12px 14px 14px; }
-      .rt-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--ivory-2); }
-      .rt-bar i { width: calc(var(--p) * 1%); }
-      .rt-bar i + i { border-inline-start: 2px solid #fff; }
-      .rt-ui .is-yes { background: var(--gold); }
-      .rt-ui .is-maybe { background: rgba(201, 162, 39, 0.4); }
-      .rt-ui .is-wait { background: #d9d0b8; }
-      .rt-ui .is-no { background: rgba(43, 38, 32, 0.55); }
-      .rt-legend { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; }
-      .rt-legend li { display: flex; align-items: center; gap: 6px; }
-      .rt-legend i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
-      .rt-legend b { margin-inline-start: auto; color: var(--charcoal); font-variant-numeric: tabular-nums; }
-      .rt-tables { list-style: none; margin: 0; padding: 12px 14px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-      .rt-tables li {
-        display: flex; justify-content: space-between; align-items: baseline; gap: 6px;
-        padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--ivory);
-      }
-      .rt-tables b { font-variant-numeric: tabular-nums; color: var(--charcoal); font-weight: 600; }
-      .rt-tables li.is-full { border-color: rgba(201, 162, 39, 0.55); }
-      .rt-tables li.is-full b::after { content: " · מלא"; font-weight: 400; color: var(--gold-deep); }
-
-      .rt-fin { margin: 0; padding: 4px 14px; }
-      .rt-fin div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
-      .rt-fin div:last-child { border-bottom: 0; }
-      .rt-fin dt { color: var(--body); }
-      .rt-fin dd { margin: 0; font-weight: 600; color: var(--charcoal); font-variant-numeric: tabular-nums; }
-      .rt-fin-total {
-        display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
-        padding: 12px 14px; background: var(--ivory); border-top: 1px solid var(--line);
-      }
-      .rt-fin-total span { font-weight: 700; color: var(--charcoal); font-size: var(--fs-sm); }
-      .rt-fin-total strong { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 500; color: var(--charcoal); font-variant-numeric: lining-nums tabular-nums; }
+      .rt-shot img { display: block; width: 100%; height: auto; }
+      .rt-shot--guests { width: min(100%, 560px); }
+      .rt-shot--rsvp-seating { width: min(100%, 470px); }
+      .rt-shot--summary { width: min(100%, 354px); }
 
       .rt-end {
-        margin: 76px auto 0; max-width: 30ch; text-align: center;
+        margin: 84px auto 0; max-width: 30ch; text-align: center;
         font-family: var(--font-display); font-size: var(--fd-sm); line-height: 1.35; color: var(--body);
       }
       .rt-end strong { display: inline-block; margin-top: 4px; font-weight: 500; color: var(--charcoal); font-size: var(--fd-md); }
 
-      /* השלבים נחשפים אחד אחרי השני */
-      .rt-step.reveal:nth-child(2) { --d: 0.18s; }
-      .rt-step.reveal:nth-child(3) { --d: 0.36s; }
-
       @media (max-width: 900px) {
-        /* מסילה אנכית בצד ימין: 01 למעלה, מתקדמים למטה */
-        .rt { grid-template-columns: minmax(0, 1fr); gap: 0; max-width: 520px; margin-inline: auto; --rt-gap: 40px; }
-        .rt-step { grid-template-columns: 28px minmax(0, 1fr); grid-template-rows: none; column-gap: 14px; padding-bottom: var(--rt-gap); }
-        .rt-step:last-child { padding-bottom: 0; }
-        .rt-rail { height: auto; }
-        .rt-dot { top: 12px; inset-inline-start: calc((28px - var(--rt-dot)) / 2); }
-        .rt-seg {
-          /* עד הנקודה של השלב הבא: דרך הרווח שבין השלבים (padding-bottom) ועד ה-top שלה */
-          inset-inline-start: calc(14px - 0.5px); top: calc(12px + var(--rt-dot)); bottom: calc(-1 * (var(--rt-gap) + 12px));
-          width: 1px; height: auto; transform: scaleY(0); transform-origin: 50% 0;
-        }
-        .rt-step.in .rt-seg { transform: none; }
-        .rt-body { padding-top: 0; }
+        .rt { --rt-gap: 52px; max-width: 560px; }
+        .rt-step { column-gap: 14px; }
+        .rt-body { grid-template-columns: minmax(0, 1fr); grid-template-areas: "num" "when" "title" "text" "shot"; grid-template-rows: none; }
         .rt-num { font-size: 2.2rem; margin-bottom: 8px; }
-        .rt-text { margin-bottom: 16px; }
-        .rt-end { margin-top: 56px; }
-        .rt-g:nth-child(3) { display: none; }
-        .rt-g:nth-child(2) { border-bottom: 0; }
-        .rt-tables li { flex-wrap: nowrap; white-space: nowrap; }
-        .rt-tables li.is-full b::after { content: " ✓"; color: var(--gold-deep); }
+        .rt-text { margin-bottom: 18px; }
+        .rt-shot { justify-self: stretch; width: 100%; }
+        .rt-shot--summary { justify-self: start; width: min(100%, 354px); }
+        .rt-end { margin-top: 60px; }
       }
       @media (prefers-reduced-motion: reduce) {
         .rt-seg, .rt-step.in .rt-seg { transform: none; transition: none; }
@@ -1636,7 +1580,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2770,6 +2714,7 @@
     
     
     
+    
     </style>
     <script>
       /* צילום שנקטע בטעינה: ניסיון חוזר אחד, והמסגרת נשארת. מוגדר ב-head כדי
@@ -3712,12 +3657,14 @@
           </div>
 
           <!-- ═════ מסלול האירוע: 01 → 02 → 03 ═════════════════════════════
-               בנוי RTL מההתחלה: 01 בצד ימין, הקו מתקדם שמאלה (ובמובייל —
-               למטה, לאורך מסילה בצד ימין). אין טאבים ואין לחיצות: גוללים,
+               בנוי RTL מההתחלה: מסילה אנכית בצד ימין, 01 למעלה והקו יורד
+               אל 02 ו-03; בדסקטופ הטקסט מימין והמסך האמיתי משמאלו. אין טאבים ואין לחיצות: גוללים,
                והשלבים נחשפים אחד אחרי השני.
-               הנתונים בכרטיסים הם של אירוע ההדגמה של VEYA — אותו אירוע
-               שבצילומי המסך של "איך זה עובד" (313 מוזמנים, 122 משקי בית
-               אישרו, מאזן של ‎−23,325.60 ₪). -->
+               כל המחשה כאן היא חיתוך של מסך אמיתי מתוך VEYA, מאירוע ההדגמה
+               (אותו אירוע שבצילומי "איך זה עובד"): טבלת המוזמנים, סידור
+               ההושבה ולשונית הסיכום של מאזן האירוע. בטבלת המוזמנים הוסתרו
+               רק עמודות הטלפון, סטטוס ההזמנה והשולחן — כדי שהחיתוך יהיה
+               קריא ובלי מספרי טלפון. -->
           <ol class="rt">
             <li class="rt-step reveal">
               <span class="rt-rail" aria-hidden="true"><span class="rt-dot"></span><span class="rt-seg"></span></span>
@@ -3726,26 +3673,9 @@
                 <p class="rt-when">לפני האירוע</p>
                 <h3 class="rt-title">המוזמנים נכנסים לתמונה</h3>
                 <p class="rt-text">רשימה, קבוצות, פרטים והערות — הכל מתחיל במקום אחד.</p>
-                <div class="rt-ui" role="img" aria-label="רשימת המוזמנים ב־VEYA: לכל מוזמן קבוצה, צד, כמה אנשים והערה להושבה">
-                  <div class="rt-ui-head"><span class="rt-ui-t">רשימת המוזמנים</span><span class="rt-ui-m">313 מוזמנים</span></div>
-                  <ul class="rt-gl">
-                    <li class="rt-g">
-                      <span class="rt-g-main"><b>יפה ברק</b><span class="rt-g-sub">חברים · צד כלה</span></span>
-                      <span class="rt-g-n">2</span>
-                      <span class="rt-g-note"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 12.5V13h.5L11 5.5 10.5 5zM10.5 5l1-1a.7.7 0 0 1 1 1l-1 1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>ליד הכניסה</span>
-                    </li>
-                    <li class="rt-g">
-                      <span class="rt-g-main"><b>ערן לביא</b><span class="rt-g-sub">צבא · צד חתן</span></span>
-                      <span class="rt-g-n">1</span>
-                      <span class="rt-g-note"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 12.5V13h.5L11 5.5 10.5 5zM10.5 5l1-1a.7.7 0 0 1 1 1l-1 1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>ליד הבר</span>
-                    </li>
-                    <li class="rt-g">
-                      <span class="rt-g-main"><b>עידו רוזנברג</b><span class="rt-g-sub">מהלימודים · צד כלה</span></span>
-                      <span class="rt-g-n">2</span>
-                      <span class="rt-g-note"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 12.5V13h.5L11 5.5 10.5 5zM10.5 5l1-1a.7.7 0 0 1 1 1l-1 1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>רחוק מהרמקולים</span>
-                    </li>
-                  </ul>
-                </div>
+                <figure class="rt-shot rt-shot--guests">
+                  <img src="/product/route-guests.jpg" alt="ניהול המוזמנים ב־VEYA: טבלת המוזמנים עם שם, צד, קבוצה, כמות, אישור הגעה והערות הושבה" width="1340" height="672" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+                </figure>
               </div>
             </li>
 
@@ -3756,25 +3686,9 @@
                 <p class="rt-when">לקראת האירוע</p>
                 <h3 class="rt-title">מתחילים להבין מי באמת מגיע</h3>
                 <p class="rt-text">אישורי הגעה, מעקבים, מספרים והושבה — הנתונים מתחילים להתחבר.</p>
-                <div class="rt-ui" role="img" aria-label="אישורי הגעה והושבה ב־VEYA: 122 אישרו, 23 אולי, 134 עוד לא ענו ו־34 לא מגיעים; כל 256 האנשים שאישרו כבר משובצים בשולחנות">
-                  <div class="rt-ui-head"><span class="rt-ui-t">אישורי הגעה</span><span class="rt-ui-m">256 אנשים אישרו</span></div>
-                  <div class="rt-rsvp">
-                    <span class="rt-bar"><i class="is-yes" style="--p: 39"></i><i class="is-maybe" style="--p: 7.3"></i><i class="is-wait" style="--p: 42.8"></i><i class="is-no" style="--p: 10.9"></i></span>
-                    <ul class="rt-legend">
-                      <li><i class="is-yes"></i>אישרו <b>122</b></li>
-                      <li><i class="is-maybe"></i>אולי <b>23</b></li>
-                      <li><i class="is-wait"></i>עוד לא ענו <b>134</b></li>
-                      <li><i class="is-no"></i>לא מגיעים <b>34</b></li>
-                    </ul>
-                  </div>
-                  <div class="rt-ui-head rt-ui-head--sub"><span class="rt-ui-t">הושבה</span><span class="rt-ui-m">256 מתוך 256 בשולחן</span></div>
-                  <ul class="rt-tables">
-                    <li class="is-full"><span>שולחן 31</span><b>24/24</b></li>
-                    <li class="is-full"><span>שולחן 13</span><b>14/14</b></li>
-                    <li><span>שולחן 26</span><b>11/12</b></li>
-                    <li><span>שולחן 29</span><b>10/12</b></li>
-                  </ul>
-                </div>
+                <figure class="rt-shot rt-shot--rsvp-seating">
+                  <img src="/product/route-rsvp-seating.jpg" alt="סידור ההושבה ב־VEYA: רשימת המוזמנים ממוינת לפי אישור הגעה — מי אישר, כמה אנשים ובאיזה שולחן — לצד מפת האולם עם התפוסה של כל שולחן" width="1346" height="1220" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+                </figure>
               </div>
             </li>
 
@@ -3785,15 +3699,9 @@
                 <p class="rt-when">אחרי האירוע</p>
                 <h3 class="rt-title">והרשימה לא נעלמת</h3>
                 <p class="rt-text">מתנות, הוצאות, דוח ומידע שנשאר אצלכם גם אחרי שהאירוע נגמר.</p>
-                <div class="rt-ui" role="img" aria-label="סיכום האירוע ב־VEYA: עלות האירוע 160,375.60 ₪, מתנות 137,050 ₪, 626.46 ₪ לכל אורח, ומאזן של מינוס 23,325.60 ₪, עם דוח מלא של 313 שורות">
-                  <div class="rt-ui-head"><span class="rt-ui-t">סיכום האירוע</span><span class="rt-ui-m">דוח מלא · 313 שורות</span></div>
-                  <dl class="rt-fin">
-                    <div><dt>עלות האירוע</dt><dd dir="ltr">₪160,375.60</dd></div>
-                    <div><dt>מתנות</dt><dd dir="ltr">₪137,050</dd></div>
-                    <div><dt>לכל אורח</dt><dd dir="ltr">₪626.46</dd></div>
-                  </dl>
-                  <div class="rt-fin-total"><span>המאזן</span><strong dir="ltr">−₪23,325.60</strong></div>
-                </div>
+                <figure class="rt-shot rt-shot--summary">
+                  <img src="/product/route-summary.jpg" alt="מאזן האירוע ב־VEYA, לשונית הסיכום: עלות משוערת, שולם עד עכשיו, נשאר לשלם, מתנות ותוצאה צפויה" width="708" height="528" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+                </figure>
               </div>
             </li>
           </ol>
