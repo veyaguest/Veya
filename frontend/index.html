@@ -393,12 +393,12 @@
          הדבקה ביניהם. שני הצדדים תמיד בגובה מלא — ההדגמה רק מחליפה שקיפות,
          כך שאין שינוי גובה ואין תנועה של העמוד. */
       .ps-demo {
-        display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-        align-items: stretch; gap: 0 44px; max-width: 920px; margin: 48px auto 0;
+        display: grid; grid-template-columns: minmax(0, 0.62fr) auto minmax(0, 1.38fr);
+        align-items: stretch; gap: 0 40px; max-width: 1000px; margin: 48px auto 0;
       }
       .ps-col { display: grid; align-content: start; gap: 18px; }
       .ps-label { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.14em; color: var(--muted); }
-      .ps-raw, .ps-rows { list-style: none; margin: 0; padding: 0; }
+      .ps-raw { list-style: none; margin: 0; padding: 0; }
       .ps-raw li {
         position: relative; padding: 9px 0; white-space: pre; font-size: var(--fs-lg); line-height: 1.5;
         color: var(--body); unicode-bidi: plaintext; transition: color 300ms var(--ease-out);
@@ -411,17 +411,12 @@
       .ps-raw li.is-read { color: var(--muted); }
       .ps-raw li.is-read::after { transform: scaleX(1); }
 
-      .ps-rows li {
-        display: grid; grid-template-columns: minmax(0, 1fr) auto 22px; align-items: center; gap: 12px;
-        padding: 9px 0; border-bottom: 1px solid var(--line);
-        transition: opacity 320ms var(--ease-out), transform 320ms var(--ease-out);
+      .ps-shot {
+        margin: 0; background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+        box-shadow: 0 1px 2px rgba(43, 38, 32, 0.05), 0 22px 44px -30px rgba(43, 38, 32, 0.4);
+        transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out);
       }
-      .ps-rows li:last-child { border-bottom: 0; }
-      .ps-name { font-family: var(--font-display); font-size: var(--fs-xl); line-height: 1.5; color: var(--charcoal); }
-      .ps-count { font-size: var(--fs-lg); font-weight: 700; color: var(--gold-deep); font-variant-numeric: tabular-nums; }
-      .ps-ok { display: grid; place-items: center; color: var(--success); }
-      .ps-flag { justify-self: end; font-size: var(--fs-2xs); font-weight: 600; color: var(--warning); white-space: nowrap; }
-      .ps-rows li:has(.ps-flag) { grid-template-columns: minmax(0, 1fr) auto; }
+      .ps-shot img { display: block; width: 100%; height: auto; }
 
       .ps-mid { display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; gap: 14px; padding-top: 36px; }
       .ps-rule { width: 1px; background: linear-gradient(180deg, rgba(201, 162, 39, 0), rgba(201, 162, 39, 0.55), rgba(201, 162, 39, 0)); }
@@ -436,8 +431,8 @@
       .ps-go:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
 
       /* בזמן ההדגמה: שורה מסודרת מופיעה רק אחרי שהשורה שלה נקראה */
-      .ps-demo.is-sorting .ps-rows li { opacity: 0; transform: translateY(4px); }
-      .ps-demo.is-sorting .ps-rows li.is-in { opacity: 1; transform: none; }
+      .ps-demo.is-sorting .ps-shot { opacity: 0; transform: translateY(6px); }
+      .ps-demo.is-sorting.is-done .ps-shot { opacity: 1; transform: none; }
 
       .ps-punch { margin: 52px auto 0; max-width: 42ch; text-wrap: balance; text-align: center; font-family: var(--font-display); font-size: var(--fd-md); line-height: 1.3; color: var(--charcoal); }
       .ps-next { margin: 26px auto 0; text-align: center; }
@@ -449,12 +444,10 @@
         .ps-mid { grid-template-rows: none; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 22px 0; }
         .ps-rule { width: auto; height: 1px; background: linear-gradient(90deg, rgba(201, 162, 39, 0), rgba(201, 162, 39, 0.55), rgba(201, 162, 39, 0)); }
         .ps-raw li { font-size: var(--fs-md); padding: 7px 0; }
-        .ps-rows li { padding: 8px 0; }
-        .ps-name { font-size: var(--fs-lg); }
         .ps-punch { margin-top: 40px; }
       }
       @media (prefers-reduced-motion: reduce) {
-        .ps-raw li, .ps-raw li::after, .ps-rows li { transition: none; }
+        .ps-raw li, .ps-raw li::after, .ps-shot { transition: none; }
       }
 
             /* ═════ מעברי סיפור (§4) ═════════════════════════════════════════
@@ -1206,25 +1199,6 @@
         .gcard-fig.reveal .vcard-gift { opacity: 1; transition: none; }
       }
 
-      /* ---- מעקב אחרי מי שלא ענה: סבב אחרי סבב ---- */
-      .fu { max-width: 680px; margin: 0 auto 30px; padding: 18px; background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
-      .fu-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
-      .fu-rounds { display: inline-flex; gap: 6px; flex-wrap: wrap; }
-      .fu-round { padding: 6px 12px; border-radius: var(--radius-pill); background: var(--ivory-2); border: 1px solid var(--line); font-size: var(--fs-xs); color: var(--muted); transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out); }
-      .fu-round.is-on { background: var(--gold); border-color: var(--gold); color: var(--charcoal); font-weight: 600; }
-      .fu-round.is-done { background: rgba(31, 122, 69, 0.08); border-color: rgba(31, 122, 69, 0.25); color: var(--success); }
-      .fu-go { min-height: 44px; }
-      .fu-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-      .fu-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md); transition: opacity var(--motion-normal) var(--ease-out), background var(--motion-normal) var(--ease-out); }
-      .fu-row.is-done { opacity: 0.62; }
-      .fu-name { color: var(--charcoal); font-weight: 600; }
-      .fu-state { padding: 5px 11px; border-radius: var(--radius-pill); font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; }
-      .fu-wait { background: var(--ivory-2); color: var(--muted); border: 1px solid var(--line); }
-      .fu-maybe { background: rgba(201, 162, 39, 0.14); color: var(--gold-deep); }
-      .fu-ok { background: rgba(31, 122, 69, 0.1); color: var(--success); }
-      .fu-say { margin: 14px 0 0; text-align: center; font-size: var(--fs-sm); color: var(--muted); min-height: 1.6em; }
-      @media (max-width: 560px) { .fu-head { flex-direction: column; align-items: stretch; } .fu-go { width: 100%; } }
-
       .calls-punch {
         margin: 26px auto 0; max-width: 52ch; text-align: center;
         font-family: var(--font-display); font-size: var(--fd-md);
@@ -1596,7 +1570,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2415,31 +2389,7 @@
 
       /* ===== VEYA BRAND LAYER — END ===== */
 
-      /* ---- מוזמן אחד לאורך כל האירוע ----
-         שורה טיפוגרפית אחת: שלב מעל, מה קרה בו מתחת, וחץ דק בין השלבים.
-         בלי כרטיסים ובלי מוקאפ — רק הקשר בין השלבים. */
-      .why-chain {
-        list-style: none; padding: 0;
-        /* יוצאת מרוחב הטקסט של הסקשן, כדי שכל השלבים ייכנסו בשורה אחת */
-        width: min(1040px, calc(100vw - 48px));
-        margin: 26px calc((100% - min(1040px, calc(100vw - 48px))) / 2) 0;
-        display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 10px 0;
-      }
-      .why-chain li { display: grid; gap: 3px; padding: 4px 16px; text-align: center; position: relative; }
-      .why-chain li + li::before {
-        content: "←"; position: absolute; inset-inline-start: -7px; top: 50%; transform: translateY(-50%);
-        color: var(--gold-deep); font-size: var(--fs-md); line-height: 1;
-      }
-      .wc-k { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.06em; color: var(--gold-deep); }
-      .wc-v { font-family: var(--font-display); font-size: var(--fs-xl); color: var(--charcoal); white-space: nowrap; }
       .why .why-close { max-width: 560px; margin: 34px auto 0; color: var(--muted); line-height: 1.75; }
-      @media (max-width: 720px) {
-        .why-chain { display: grid; grid-template-columns: 1fr; gap: 0; width: auto; max-width: 300px; margin: 22px auto 0; }
-        .why-chain li { grid-template-columns: 7rem 1fr; align-items: baseline; text-align: start; padding: 9px 0; border-bottom: 1px solid var(--line); }
-        .why-chain li:last-child { border-bottom: 0; }
-        .why-chain li + li::before { display: none; }
-        .wc-v { font-size: var(--fs-lg); }
-      }
 
       /* ═════ Art direction — בד אחד ארוך, עם שינויי עומק וגוון ══════════
          רק הפלטה של VEYA: שנהב #fbf6ee, שנהב חם #f6efe2, חול #ede4d3 (line-2
@@ -2732,6 +2682,7 @@
     
     
     
+    
     </style>
     <script>
       /* צילום שנקטע בטעינה: ניסיון חוזר אחד, והמסגרת נשארת. מוגדר ב-head כדי
@@ -2843,18 +2794,7 @@
             <p class="why-punch">
               ב־VEYA מוזמן הוא לא עוד שורה ברשימה. התשובה שלו ממשיכה איתו עד הסוף:
             </p>
-            <!-- אותו מוזמן, לאורך כל האירוע: אישור → שולחן → עלות → מתנה → מאזן.
-                 שורה טיפוגרפית אחת, בלי מוקאפ. השם והמספרים להמחשה. -->
-            <ol class="why-chain" aria-label="מוזמן אחד לאורך כל האירוע">
-              <li><span class="wc-k">מוזמן</span><span class="wc-v">משפחת כהן</span></li>
-              <li><span class="wc-k">אישור הגעה</span><span class="wc-v">4 מגיעים</span></li>
-              <li><span class="wc-k">הושבה</span><span class="wc-v">שולחן 7</span></li>
-              <li><span class="wc-k">עלות</span><span class="wc-v">4 מנות בחשבון</span></li>
-              <li><span class="wc-k">מתנות</span><span class="wc-v">המעטפה נספרה</span></li>
-              <li><span class="wc-k">מאזן</span><span class="wc-v">בשורה התחתונה</span></li>
-            </ol>
-            <!-- הועבר מההירו (2026-09-15): כאן הוא הסיכום של השרשרת שמעליו —
-                 אישור → שולחן → עלות → מתנה → מאזן. -->
+            <!-- הועבר מההירו (2026-09-15). -->
             <p class="why-close">
               כל אישור הגעה הוא מספר, וכל מספר הוא כסף. ב־VEYA הרשימה, האישורים,
               ההושבה והמאזן מחוברים זה לזה — כדי שתדעו איפה אתם עומדים לפני
@@ -2883,35 +2823,33 @@
           </p>
         </div>
 
+        <!-- משמאל: הטקסט שהודבק. מימין: המסך האמיתי של "הדבקה מרשימה קיימת"
+               ב-VEYA, אחרי שהמנוע (importer.parse_freeform_text) פענח בדיוק את
+               הטקסט הזה — כולל השורה בלי טלפון שלא מסומנת לייבוא. -->
         <div class="ps-demo reveal d1" data-paste>
           <div class="ps-col">
             <span class="ps-label">מה שכבר יש לכם</span>
             <ol class="ps-raw">
-              <li>משפחת כהן  4  050-...</li>
-              <li>דני ואורית 2 052...</li>
-              <li>יוסי לוי (3)</li>
-              <li>משפחת ישראלי 6 אנשים 053 ...</li>
+              <li>משפחת כהן 4 0501234567</li>
+              <li>דני ואורית 2 0521234567</li>
+              <li>יוסי לוי (3) 054-1234567</li>
+              <li>משפחת ישראלי 6 אנשים 0531234567</li>
               <li>רועי ונועה 2</li>
-              <li>מיכל 050...</li>
+              <li>מיכל 0501112233</li>
             </ol>
           </div>
 
           <div class="ps-mid">
             <span class="ps-rule" aria-hidden="true"></span>
-            <button type="button" class="ps-go" data-paste-go><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9.5 11h5M9.5 15h3"/></svg><span>הדביקו את הרשימה</span></button>
+            <button type="button" class="ps-go" data-paste-go><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9.5 11h5M9.5 15h3"/></svg><span>פענוח הרשימה</span></button>
             <span class="ps-rule" aria-hidden="true"></span>
           </div>
 
           <div class="ps-col">
             <span class="ps-label">מה ש־VEYA עושה איתה</span>
-            <ol class="ps-rows">
-              <li><span class="ps-name">משפחת כהן</span><span class="ps-count">4</span><span class="ps-ok" aria-label="זוהה"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></li>
-              <li><span class="ps-name">דני ואורית</span><span class="ps-count">2</span><span class="ps-ok" aria-label="זוהה"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></li>
-              <li><span class="ps-name">יוסי לוי</span><span class="ps-count">3</span><span class="ps-ok" aria-label="זוהה"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></li>
-              <li><span class="ps-name">משפחת ישראלי</span><span class="ps-count">6</span><span class="ps-ok" aria-label="זוהה"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></li>
-              <li><span class="ps-name">רועי ונועה</span><span class="ps-count">2</span><span class="ps-ok" aria-label="זוהה"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></li>
-              <li><span class="ps-name">מיכל</span><span class="ps-flag">חסרה כמות</span></li>
-            </ol>
+            <figure class="ps-shot">
+              <img src="/product/paste-review.jpg" alt="מסך הדבקת רשימת מוזמנים ב־VEYA אחרי פענוח: שם, טלפון, צד, קבוצה והכמות שזוהתה לכל שורה; השורה בלי טלפון לא מסומנת לייבוא" width="1682" height="1328" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+            </figure>
           </div>
         </div>
 
@@ -3088,45 +3026,6 @@
               ייפול בין הכיסאות.
             </p>
           </div>
-<!-- ═════ מעקב, סבב אחרי סבב ═══════════════════════════════════
-               לחיצה אחת מריצה את שלושת הסבבים: הודעה, תזכורת, טלפון. מי
-               שענה יורד מהמעקב — בדיוק ההתנהגות של המוצר, בקטן. -->
-          <div class="fu reveal d1" data-followup>
-            <div class="fu-head">
-              <span class="fu-rounds" aria-hidden="true">
-                <span class="fu-round" data-round="1">סבב ראשון · הודעה</span>
-                <span class="fu-round" data-round="2">סבב שני · תזכורת</span>
-                <span class="fu-round" data-round="3">סבב שלישי · טלפון</span>
-              </span>
-              <button type="button" class="btn btn-primary fu-go" data-fu-go>להפעיל מעקב</button>
-            </div>
-
-            <ul class="fu-list">
-              <li class="fu-row" data-round="1">
-                <span class="fu-name">דוד לוי</span>
-                <span class="fu-state fu-wait">לא ענה</span>
-              </li>
-              <li class="fu-row" data-round="2">
-                <span class="fu-name">משפחת כהן</span>
-                <span class="fu-state fu-wait">לא ענו</span>
-              </li>
-              <li class="fu-row" data-round="">
-                <span class="fu-name">רועי וטל</span>
-                <span class="fu-state fu-maybe">אולי</span>
-              </li>
-              <li class="fu-row is-done" data-round="">
-                <span class="fu-name">מיכל</span>
-                <span class="fu-state fu-ok">אישרה</span>
-              </li>
-              <li class="fu-row" data-round="3">
-                <span class="fu-name">משפחת ישראלי</span>
-                <span class="fu-state fu-wait">לא ענו</span>
-              </li>
-            </ul>
-
-            <p class="fu-say" data-fu-say role="status" aria-live="polite">מי שכבר ענה לא מקבל עוד הודעה.</p>
-          </div>
-
           <div class="supporting-grid">
             <article class="supporting-item reveal">
               <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div>
@@ -4516,12 +4415,12 @@
 
       /* ---- הכול מתחיל מאותה רשימת מוזמנים ----
          פעם אחת כשהסקשן נכנס למסך, ושוב רק כשלוחצים "הדביקו את הרשימה".
-         כל שורה נקראת ואז מופיעה מסודרת. בלי focus, בלי גלילה, בלי לולאה. */
+         השורות נקראות, ואז מופיע המסך האמיתי של VEYA אחרי הפענוח. בלי focus,
+         בלי גלילה, בלי לולאה. */
       (function () {
         var box = document.querySelector('[data-paste]');
         if (!box) return;
         var raw = [].slice.call(box.querySelectorAll('.ps-raw li'));
-        var rows = [].slice.call(box.querySelectorAll('.ps-rows li'));
         var btn = box.querySelector('[data-paste-go]');
         var timers = [];
 
@@ -4530,18 +4429,17 @@
           timers.forEach(clearTimeout);
           timers = [];
           raw.forEach(function (l) { l.classList.remove('is-read'); });
-          rows.forEach(function (r) { r.classList.remove('is-in'); });
+          box.classList.remove('is-done');
           box.classList.add('is-sorting');
           raw.forEach(function (l, i) {
-            timers.push(setTimeout(function () {
-              l.classList.add('is-read');
-              if (rows[i]) rows[i].classList.add('is-in');
-            }, 350 + i * 280));
+            timers.push(setTimeout(function () { l.classList.add('is-read'); }, 350 + i * 220));
           });
+          // המסך האמיתי מופיע אחרי שכל השורות "נקראו"
+          timers.push(setTimeout(function () { box.classList.add('is-done'); }, 350 + raw.length * 220 + 150));
           timers.push(setTimeout(function () {
-            box.classList.remove('is-sorting');
+            box.classList.remove('is-sorting', 'is-done');
             raw.forEach(function (l) { l.classList.remove('is-read'); });
-          }, 350 + raw.length * 280 + 700));
+          }, 350 + raw.length * 220 + 1400));
         }
 
         btn.addEventListener('click', play);
@@ -4779,88 +4677,6 @@
       })();
 
 
-      /* ---- מעקב אחרי מי שלא ענה ----
-         שלושה סבבים, בלחיצה אחת: מי שענה יורד מהמעקב, ומי שלא — ממשיך
-         לסבב הבא. אין כאן "אלגוריתם", רק הסדר שבו זה קורה במוצר. */
-      (function () {
-        var box = document.querySelector('[data-followup]');
-        if (!box) return;
-        var go = box.querySelector('[data-fu-go]');
-        var say = box.querySelector('[data-fu-say]');
-        var rounds = [].slice.call(box.querySelectorAll('.fu-round'));
-        var rows = [].slice.call(box.querySelectorAll('.fu-row'));
-        var lines = {
-          1: 'לא ענו? ממשיכים.',
-          2: 'עדיין לא ענו? עכשיו כבר יודעים למי צריך להתקשר.',
-          3: 'פחות לרדוף. יותר לדעת איפה אתם עומדים.'
-        };
-        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var running = false;
-
-        function answer(row) {
-          var state = row.querySelector('.fu-state');
-          state.className = 'fu-state fu-ok';
-          state.textContent = row.querySelector('.fu-name').textContent.indexOf('משפחת') === 0 ? 'אישרו' : 'אישר';
-          row.classList.add('is-done');
-        }
-        function step(n) {
-          rounds.forEach(function (r) {
-            var v = parseInt(r.getAttribute('data-round'), 10);
-            r.classList.toggle('is-on', v === n);
-            r.classList.toggle('is-done', v < n);
-          });
-          rows.forEach(function (row) {
-            if (parseInt(row.getAttribute('data-round'), 10) === n) answer(row);
-          });
-          say.textContent = lines[n];
-        }
-        function run() {
-          if (running) return;
-          running = true;
-          go.disabled = true;
-          go.textContent = 'רץ…';
-          if (reduced) {
-            step(1); step(2); step(3);
-            finish();
-            return;
-          }
-          [1, 2, 3].forEach(function (n) {
-            setTimeout(function () { step(n); if (n === 3) finish(); }, n * 1250);
-          });
-        }
-        function finish() {
-          rounds.forEach(function (r) { r.classList.remove('is-on'); r.classList.add('is-done'); });
-          go.textContent = 'להריץ שוב';
-          go.disabled = false;
-          running = false;
-          go.addEventListener('click', reset, { once: true });
-        }
-        function reset() {
-          rows.forEach(function (row) {
-            var state = row.querySelector('.fu-state');
-            var name = row.querySelector('.fu-name').textContent;
-            var rnd = row.getAttribute('data-round');
-            if (!rnd) return;
-            state.className = 'fu-state fu-wait';
-            state.textContent = name.indexOf('משפחת') === 0 ? 'לא ענו' : 'לא ענה';
-            row.classList.remove('is-done');
-          });
-          rounds.forEach(function (r) { r.classList.remove('is-on', 'is-done'); });
-          say.textContent = 'מי שכבר ענה לא מקבל עוד הודעה.';
-          go.textContent = 'להפעיל מעקב';
-          run();
-        }
-        go.addEventListener('click', function () {
-          window.veyaHint.clear(box);
-          run();
-        });
-
-        window.veyaHint.onceInView(box, function () {
-          if (window.veyaHint.reduced) return;
-          go.classList.add('is-hinted');
-          setTimeout(function () { go.classList.remove('is-hinted'); }, 1300);
-        });
-      })();
 
       // Cookie Banner — אותו מפתח localStorage כמו ה-SPA (src/cookieConsent.ts),
       // כדי שבחירה בדף הנחיתה לא תבקש שוב אישור אחרי מעבר ל-/app.
