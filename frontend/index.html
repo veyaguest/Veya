@@ -884,76 +884,228 @@
         .ch-pick { transition: none; }
       }
 
-      /* ---- הושבה שאפשר לשחק בה (רקע כהה) ---- */
-      /* הצל שנגרר עם האצבע/העכבר — יושב על ה-body כדי שלא ייחתך. */
-      .st-ghost {
-        position: fixed; top: 0; left: 0; z-index: 120; pointer-events: none;
-        margin: -18px 0 0 -60px; padding: 9px 16px; border-radius: var(--radius-pill);
-        background: var(--gold); color: var(--charcoal); font-size: var(--fs-sm); font-weight: 600;
-        box-shadow: var(--shadow-lg); white-space: nowrap;
+      /* ---- הושבה: מהסקיצה של האולם למפה ----
+         מצב ברירת המחדל הוא המפה הגמורה. data-phase רק מחזיר אחורה לשלב
+         מוקדם יותר בזמן האנימציה החד-פעמית:
+           sketch → analyze → identify → transform → seat → (בלי data-phase)
+         הקואורדינטות של השולחנות הן פיזיות (left/top) — הן מתארות תמונה,
+         והתמונה לא מתהפכת בעברית. כל השאר (טקסט, סדר, שוליים) לוגי. */
+      @property --sk-top { syntax: '<color>'; inherits: false; initial-value: #ddd3bd; }
+      @property --sk-bot { syntax: '<color>'; inherits: false; initial-value: #ddd3bd; }
+      @property --sk-in  { syntax: '<color>'; inherits: false; initial-value: #ddd3bd; }
+      .sk {
+        --sk-ease: cubic-bezier(0.33, 0.7, 0.2, 1);
+        --sk-seat: #ddd3bd;
+        --sk-taken: #c9a227;
+        position: relative;
+        display: grid; gap: 40px 40px; align-items: center;
+        grid-template-columns: minmax(210px, 260px) minmax(320px, 470px) minmax(200px, 230px);
+        justify-content: center;
+        margin: 8px auto 0;
       }
-      .st-list.is-over { outline: 2px dashed var(--gold); outline-offset: 6px; border-radius: var(--radius-md); }
-      .st-guest, .st-chip { touch-action: pan-y; }
-      .st-chip { cursor: grab; }
 
-      .st { max-width: 1000px; margin: 0 auto 26px; }
-      .st-cols { display: grid; gap: 16px; }
-      .st-pane { min-width: 0; }
-      .st-h { margin: 0 0 10px; font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.04em; color: #b6aa93; }
-      /* גובה מינימלי לפי הרשימה המלאה: כשמוזמן עובר לשולחן, הסקשן לא
-         מתכווץ מתחת לאצבע והכפתורים לא זזים. */
-      .st-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; align-content: start; min-height: 302px; }
-      .st-guest {
-        display: flex; align-items: center; justify-content: space-between; gap: 12px;
-        padding: 13px 16px; border-radius: var(--radius-md); cursor: grab;
-        background: rgba(245, 239, 226, 0.06); border: 1px solid rgba(245, 239, 226, 0.16);
-        color: var(--cream-text);
-        transition: border-color var(--motion-fast) var(--ease-out), background var(--motion-fast) var(--ease-out), opacity var(--motion-normal) var(--ease-out), transform var(--motion-fast) var(--ease-out);
+      /* ── ארבעת השלבים ── */
+      .sk-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 26px; }
+      .sk-step { display: grid; grid-template-columns: 30px 1fr; gap: 14px; align-items: start; position: relative; }
+      .sk-step-n {
+        width: 30px; height: 30px; display: grid; place-items: center;
+        border: 1px solid rgba(228, 201, 107, 0.55); border-radius: 50%;
+        font-family: var(--font-display); font-size: var(--fs-sm); color: var(--gold-light);
+        font-variant-numeric: lining-nums; transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
       }
-      .st-guest-name { font-weight: 600; }
-      .st-guest-size { font-size: var(--fs-xs); color: #b6aa93; }
-      .st-guest.is-picked { border-color: var(--gold); background: rgba(201, 162, 39, 0.16); }
-      .st-guest.is-dragging { opacity: 0.5; }
-      .st-guest.is-gone { opacity: 0; transform: translateY(-6px); }
-      @media (hover: hover) { .st-guest:hover { border-color: rgba(201, 162, 39, 0.6); } }
-      .st-guest:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
-      .st-allseated { margin: 10px 0 0; color: #b6aa93; font-size: var(--fs-sm); }
-      .st-tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-      .st-table {
-        display: grid; gap: 8px; align-content: start; padding: 14px; cursor: pointer; min-height: 94px;
-        border-radius: var(--radius-md); background: rgba(245, 239, 226, 0.04);
-        border: 1px dashed rgba(245, 239, 226, 0.22); color: var(--cream-text);
-        transition: border-color var(--motion-fast) var(--ease-out), background var(--motion-fast) var(--ease-out);
+      .sk-step-k { margin: 0 0 2px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.04em; color: var(--gold-light); }
+      .sk-step-t { margin: 0 0 4px; font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 500; color: var(--cream-text); line-height: 1.25; }
+      .sk-step-d { margin: 0; font-size: var(--fs-sm); color: #d8ceb9; line-height: 1.6; }
+      /* השלב הפעיל: המספר מתמלא וקו דק לצידו — צורה, לא רק צבע */
+      .sk-step::before {
+        content: ""; position: absolute; inset-inline-start: -14px; top: 4px; bottom: 4px; width: 2px;
+        background: var(--gold-light); transform: scaleY(0); transform-origin: top; transition: transform 0.5s var(--sk-ease);
       }
-      .st-table.is-over { border-color: var(--gold); border-style: solid; background: rgba(201, 162, 39, 0.12); }
-      .st-table.is-full { opacity: 0.65; }
-      .st-table:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
-      .st-table-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-      .st-table-name { font-weight: 600; }
-      .st-table-count { font-size: var(--fs-sm); color: #b6aa93; font-variant-numeric: tabular-nums; }
-      .st-table-count b { color: var(--gold-light); }
-      .st-seated { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-      .st-chip {
-        padding: 4px 10px; border-radius: var(--radius-pill); font-size: var(--fs-xs);
-        background: rgba(201, 162, 39, 0.18); color: var(--cream-text);
-        animation: st-in var(--motion-normal) var(--ease-out);
+      .sk-step[aria-current="step"]::before { transform: scaleY(1); }
+      .sk-step[aria-current="step"] .sk-step-n { background: var(--gold-light); color: var(--ink); border-color: var(--gold-light); }
+
+      /* ── המסגרת של המפה ── */
+      .sk-stage {
+        margin: 0; min-width: 0; background: var(--ivory); color: var(--charcoal);
+        border: 1px solid rgba(245, 239, 226, 0.14); border-radius: 12px; overflow: hidden;
+        box-shadow: 0 34px 70px -34px rgba(0, 0, 0, 0.7);
       }
-      @keyframes st-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-      .st-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 16px; }
-      .st-say { margin: 0; font-size: var(--fs-sm); color: #cabfa9; min-height: 1.5em; }
-      .st-hint { margin: 0 0 2px; }
-      .st-auto { min-height: 44px; }
-      .st-note { max-width: 56ch; margin: 0 auto 26px; text-align: center; color: #cabfa9; font-size: var(--fs-md); line-height: 1.7; }
-      @media (min-width: 861px) { .st-cols { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 22px; } }
-      @media (max-width: 560px) {
-        .st-bar { flex-direction: column; align-items: stretch; }
-        .st-auto { width: 100%; }
-        .st-guest { cursor: pointer; }
-        /* רשימת המוזמנים לא חוסמת את השולחנות: היא מוגבלת בגובה וגוללת
-           בתוך עצמה, כך שאזור ההנחה תמיד קרוב לאצבע. */
-        .st-list { max-height: 232px; overflow-y: auto; overscroll-behavior: contain; padding-inline-end: 2px; }
+      .sk-bar {
+        display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+        padding: 10px 14px; background: var(--ivory-2); border-bottom: 1px solid var(--line);
+        font-size: var(--fs-xs); line-height: 1.3;
       }
-      @media (prefers-reduced-motion: reduce) { .st-chip { animation: none; } .st-guest { transition: none; } }
+      .sk-bar-state { font-weight: 700; color: var(--charcoal); }
+      .sk-bar-count { color: var(--muted); transition: opacity 0.5s ease; white-space: nowrap; }
+      .sk-map { position: relative; aspect-ratio: 960 / 1534; container-type: inline-size; }
+      .sk-sketch { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.16; transition: opacity 1.8s var(--sk-ease); }
+      .sk-cap {
+        padding: 9px 14px; border-top: 1px solid var(--line); background: var(--ivory-2);
+        font-size: var(--fs-xs); color: var(--muted); text-align: center;
+      }
+
+      /* אלמנטים שהניתוח זיהה: במה, כניסות, קיר */
+      .sk-el { position: absolute; left: var(--x); top: var(--y); width: var(--w); height: var(--h); }
+      .sk-el-mark { position: absolute; inset: -2px; border: 1.5px solid var(--gold); border-radius: 2px; opacity: 0; transition: opacity 0.45s ease; }
+      .sk-el-label {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); white-space: nowrap;
+        font-size: max(9px, 2.2cqw); font-weight: 700; color: var(--body); transition: opacity 0.6s ease;
+      }
+      .sk-el--stage { background: rgba(43, 38, 32, 0.07); border: 1px solid rgba(43, 38, 32, 0.4); border-radius: 3px; transition: opacity 0.8s ease; }
+      .sk-el--entrance { border-bottom: 3px solid var(--gold); transition: opacity 0.8s ease; }
+      .sk-el--entrance .sk-el-label { top: auto; bottom: calc(100% + 2px); left: 0; transform: none; color: var(--gold-deep); }
+      .sk-el--wall { background: rgba(43, 38, 32, 0.5); border-radius: 1px; transition: opacity 0.8s ease; }
+
+      /* שולחן: אותה שפה של מפת האולם במוצר — גוף לבן, כיסאות בגוון שנהב,
+         כיסא תפוס בזהב, מספר בפחם. בלי נקודות סטטוס צבעוניות. */
+      .sk-t {
+        position: absolute; left: var(--x); top: var(--y); width: var(--w); height: var(--h);
+        padding: 0; margin: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer;
+        --sg: max(1.5px, 0.42cqw); --ss: max(3px, 0.9cqw);
+        -webkit-tap-highlight-color: transparent;
+      }
+      .sk-t-mark {
+        position: absolute; inset: -3px; border: 1.5px solid var(--gold); border-radius: 2px;
+        opacity: 0; transition: opacity 0.45s ease calc(var(--i) * 34ms);
+      }
+      .sk-t-body {
+        position: absolute; inset: 0; background: #fff; border: 1px solid var(--line); border-radius: 2px;
+        box-shadow: 0 1px 3px rgba(43, 38, 32, 0.14);
+        transition: opacity 0.9s var(--sk-ease) calc(var(--i) * 14ms), box-shadow 0.4s ease;
+      }
+      .sk-t-body::before, .sk-t-body::after { content: ""; position: absolute; pointer-events: none; }
+      /* כיסאות לאורך הצדדים הארוכים: שורה לכל צד, --n כיסאות בכל שורה */
+      .sk-t-body::after {
+        top: 0; bottom: 0; left: calc(-1 * (var(--sg) + var(--ss))); right: calc(-1 * (var(--sg) + var(--ss)));
+        background:
+          linear-gradient(180deg, transparent 18%, var(--sk-in) 18% 82%, transparent 82%) 0 0 / var(--ss) calc(100% / var(--n)) repeat-y,
+          linear-gradient(180deg, transparent 18%, var(--sk-bot) 18% 82%, transparent 82%) 100% 0 / var(--ss) calc(100% / var(--n)) repeat-y;
+        transition: --sk-in 0.6s ease, --sk-bot 0.6s ease 0.25s;
+      }
+      .sk-t--sq .sk-t-body::before {
+        left: 0; right: 0; top: calc(-1 * (var(--sg) + var(--ss))); bottom: calc(-1 * (var(--sg) + var(--ss)));
+        background:
+          linear-gradient(90deg, transparent 18%, var(--sk-top) 18% 82%, transparent 82%) 0 0 / calc(100% / var(--n)) var(--ss) repeat-x,
+          linear-gradient(90deg, transparent 18%, var(--sk-seat) 18% 82%, transparent 82%) 0 100% / calc(100% / var(--n)) var(--ss) repeat-x;
+        transition: --sk-top 0.6s ease;
+      }
+      .sk-t .sk-t-body::after, .sk-t .sk-t-body::before { --sk-top: var(--sk-seat); --sk-in: var(--sk-seat); --sk-bot: var(--sk-seat); }
+      /* הקבוצה (9) יושבת בשלושה צדדים של שולחן בן 12 */
+      .sk-t.is-seated .sk-t-body::before { --sk-top: var(--sk-taken); }
+      .sk-t.is-seated .sk-t-body::after { --sk-in: var(--sk-taken); --sk-bot: var(--sk-taken); }
+      .sk-t-num {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        padding: 0.05em 0.3em; border-radius: 2px; line-height: 1.15;
+        font-family: var(--font-body); font-size: max(8px, 2.25cqw); font-weight: 700; color: #2b2620;
+        font-variant-numeric: tabular-nums lining-nums;
+        transition: opacity 0.4s ease calc(var(--i) * 22ms), background-color 0.6s ease, color 0.6s ease;
+      }
+      .sk-t[aria-pressed="true"] .sk-t-body { box-shadow: 0 0 0 2px var(--charcoal), 0 4px 10px rgba(43, 38, 32, 0.2); }
+      @media (hover: hover) { .sk-t:hover .sk-t-body { box-shadow: 0 0 0 1.5px var(--gold-deep), 0 2px 6px rgba(43, 38, 32, 0.18); } .sk-t[aria-pressed="true"]:hover .sk-t-body { box-shadow: 0 0 0 2px var(--charcoal), 0 4px 10px rgba(43, 38, 32, 0.2); } }
+      #seating .sk-t:focus-visible {
+        outline: 2px solid var(--gold-deep) !important; outline-offset: calc(var(--sg) + var(--ss) + 2px);
+        border-radius: 3px; z-index: 2;
+      }
+
+      /* ── הקבוצה והשולחן שנבחר ── */
+      .sk-seat { display: grid; gap: 14px; align-self: end; margin-bottom: 44px; }
+      .sk-group, .sk-card {
+        background: var(--ivory); color: var(--body); border: 1px solid var(--line); border-radius: 10px;
+        padding: 14px 16px; box-shadow: 0 20px 40px -26px rgba(0, 0, 0, 0.6);
+      }
+      .sk-group-k { margin: 0 0 8px; font-size: var(--fs-xs); font-weight: 700; color: var(--gold-deep); letter-spacing: 0.04em; }
+      .sk-group-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+      .sk-group-name { font-weight: 700; color: var(--charcoal); font-size: var(--fs-sm); }
+      .sk-group-size { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
+      .sk-group-list { list-style: none; margin: 8px 0 10px; padding: 0; display: grid; gap: 4px; font-size: var(--fs-sm); }
+      .sk-group-list li { display: flex; justify-content: space-between; gap: 8px; }
+      .sk-num { color: var(--muted); font-variant-numeric: tabular-nums; }
+      .sk-group-seat {
+        display: flex; align-items: center; gap: 6px; margin: 0; padding-top: 9px; border-top: 1px solid var(--line);
+        font-size: var(--fs-sm); font-weight: 700; color: var(--charcoal);
+      }
+      .sk-check { width: 16px; height: 16px; color: var(--gold-deep); flex: none; transition: opacity 0.4s ease; }
+      .sk-card { transition: opacity 0.6s ease, transform 0.6s var(--sk-ease); }
+      .sk-card-t { margin: 0 0 2px; font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 500; color: var(--charcoal); }
+      .sk-card-occ { margin: 0 0 4px; font-size: var(--fs-sm); color: var(--body); font-variant-numeric: tabular-nums; }
+      .sk-card-occ b { color: var(--charcoal); }
+      .sk-card-who { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
+
+      /* הקבוצה בדרך לשולחן — פעם אחת בלבד */
+      .sk-chip {
+        position: absolute; z-index: 5; left: 0; top: 0; pointer-events: none; white-space: nowrap;
+        padding: 6px 10px; background: var(--ivory); color: var(--charcoal); border: 1px solid var(--gold);
+        border-radius: 6px; font-size: var(--fs-xs); font-weight: 700; box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.45);
+        transition: transform 1.3s var(--sk-ease), opacity 0.4s ease;
+      }
+
+      #seating .section-title { text-wrap: balance; }
+      .sk-close { text-align: center; margin: 64px auto 0; }
+      .sk-close-a { margin: 0 0 6px; font-family: var(--font-display); font-size: var(--fd-sm); color: var(--cream-text); }
+      .sk-close-b { margin: 0; font-size: var(--fs-lg); color: #d8ceb9; }
+
+      /* ── השלבים של האנימציה (רק כשיש data-phase) ── */
+      .sk[data-phase="sketch"] .sk-sketch,
+      .sk[data-phase="analyze"] .sk-sketch,
+      .sk[data-phase="identify"] .sk-sketch { opacity: 1; }
+      .sk[data-phase="sketch"] .sk-bar-count,
+      .sk[data-phase="analyze"] .sk-bar-count { opacity: 0; }
+      .sk[data-phase="analyze"] .sk-t-mark,
+      .sk[data-phase="identify"] .sk-t-mark,
+      .sk[data-phase="analyze"] .sk-el-mark,
+      .sk[data-phase="identify"] .sk-el-mark { opacity: 1; }
+      .sk[data-phase="sketch"] .sk-t-body,
+      .sk[data-phase="analyze"] .sk-t-body,
+      .sk[data-phase="identify"] .sk-t-body,
+      .sk[data-phase="sketch"] .sk-el--stage, .sk[data-phase="analyze"] .sk-el--stage, .sk[data-phase="identify"] .sk-el--stage,
+      .sk[data-phase="sketch"] .sk-el--entrance, .sk[data-phase="analyze"] .sk-el--entrance, .sk[data-phase="identify"] .sk-el--entrance,
+      .sk[data-phase="sketch"] .sk-el--wall, .sk[data-phase="analyze"] .sk-el--wall, .sk[data-phase="identify"] .sk-el--wall { opacity: 0; }
+      .sk[data-phase="sketch"] .sk-el--stage, .sk[data-phase="analyze"] .sk-el--stage, .sk[data-phase="identify"] .sk-el--stage,
+      .sk[data-phase="sketch"] .sk-el--entrance, .sk[data-phase="analyze"] .sk-el--entrance, .sk[data-phase="identify"] .sk-el--entrance,
+      .sk[data-phase="sketch"] .sk-el--wall, .sk[data-phase="analyze"] .sk-el--wall, .sk[data-phase="identify"] .sk-el--wall { opacity: 1; background: transparent; border-color: transparent; }
+      .sk[data-phase="sketch"] .sk-el-label, .sk[data-phase="analyze"] .sk-el-label, .sk[data-phase="identify"] .sk-el-label { opacity: 0; }
+      .sk[data-phase="sketch"] .sk-t-num,
+      .sk[data-phase="analyze"] .sk-t-num { opacity: 0; }
+      /* זיהוי: המספר שנקרא מהסקיצה מקבל תווית כהה מעל השולחן שבציור */
+      .sk[data-phase="identify"] .sk-t-num { background: var(--ink); color: var(--cream-text); }
+      .sk[data-phase="sketch"] .sk-t.is-seated .sk-t-body::before,
+      .sk[data-phase="analyze"] .sk-t.is-seated .sk-t-body::before,
+      .sk[data-phase="identify"] .sk-t.is-seated .sk-t-body::before,
+      .sk[data-phase="transform"] .sk-t.is-seated .sk-t-body::before,
+      .sk[data-phase="seat"] .sk-t.is-seated .sk-t-body::before { --sk-top: var(--sk-seat); }
+      .sk[data-phase="sketch"] .sk-t.is-seated .sk-t-body::after,
+      .sk[data-phase="analyze"] .sk-t.is-seated .sk-t-body::after,
+      .sk[data-phase="identify"] .sk-t.is-seated .sk-t-body::after,
+      .sk[data-phase="transform"] .sk-t.is-seated .sk-t-body::after,
+      .sk[data-phase="seat"] .sk-t.is-seated .sk-t-body::after { --sk-in: var(--sk-seat); --sk-bot: var(--sk-seat); }
+      .sk[data-phase] .sk-t[aria-pressed="true"]:not(.is-picked) .sk-t-body { box-shadow: 0 1px 3px rgba(43, 38, 32, 0.14); }
+      .sk[data-phase] .sk-card { opacity: 0; transform: translateY(6px); }
+      .sk[data-phase] .sk-group-seat .sk-check { opacity: 0; }
+      .sk[data-phase] .sk-group-seat { font-weight: 400; color: var(--muted); }
+
+      @media (max-width: 1040px) {
+        .sk { grid-template-columns: minmax(0, 1fr) minmax(300px, 400px); align-items: start; gap: 36px 40px; }
+        .sk-steps { grid-column: 1; grid-row: 1; }
+        .sk-stage { grid-column: 2; grid-row: 1 / span 2; }
+        .sk-seat { grid-column: 1; grid-row: 2; align-self: end; margin-bottom: 0; max-width: 320px; }
+      }
+      @media (max-width: 720px) {
+        .sk { grid-template-columns: minmax(0, 1fr); max-width: 440px; gap: 30px; }
+        .sk-stage { grid-column: 1; grid-row: 1; }
+        .sk-steps { grid-column: 1; grid-row: 2; grid-template-columns: 1fr 1fr; gap: 22px 18px; }
+        .sk-step { grid-template-columns: 1fr; gap: 8px; }
+        .sk-step::before { inset-inline-start: -10px; }
+        .sk-step-t { font-size: var(--fs-lg); }
+        .sk-seat { grid-column: 1; grid-row: 3; max-width: none; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .sk-close { margin-top: 48px; }
+      }
+      @media (max-width: 400px) {
+        .sk-seat { grid-template-columns: 1fr; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .sk *, .sk *::before, .sk *::after { transition: none !important; }
+        .sk-chip { display: none !important; }
+      }
 
       /* ---- מעקב אחרי מי שלא ענה: סבב אחרי סבב ---- */
       .fu { max-width: 680px; margin: 0 auto 30px; padding: 18px; background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
@@ -1474,7 +1626,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2603,6 +2755,7 @@
     
     
     
+    
     </style>
     <script>
       /* צילום שנקטע בטעינה: ניסיון חוזר אחד, והמסגרת נשארת. מוגדר ב-head כדי
@@ -3182,118 +3335,149 @@
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">הושבה</span>
-            <h2 id="seating-title" class="section-title">יאללה, בואו נראה איפה הם יושבים.</h2>
+            <h2 id="seating-title" class="section-title">יש לכם סקיצה? בואו נהפוך אותה למפת אולם.</h2>
             <p class="section-sub">
-              יש לכם מוזמנים.<br />
-              יש לכם שולחנות.<br />
-              עכשיו רק צריך לחבר ביניהם.
+              מעלים את הסקיצה שקיבלתם מהאולם — אפילו אם היא רק צילום או קובץ. VEYA מנתחת אותה,
+              מזהה את השולחנות והמבנה והופכת אותה למפה שאפשר באמת לעבוד איתה.
             </p>
           </div>
 
-          <!-- ═════ הושבה שאפשר לשחק בה ══════════════════════════════════
-               גוררים מוזמן לשולחן (או מקישים עליו ואז על השולחן — כך זה
-               עובד בטלפון). הקיבולת נבדקת באמת: שולחן שאין בו מספיק
-               מקום אומר את זה, ולא בולע את הקבוצה בשקט. -->
-          <div class="st reveal d1" data-seating>
-            <div class="st-cols">
-              <div class="st-pane">
-                <h3 class="st-h">מוזמנים</h3>
-                <ul class="st-list" data-st-guests>
-                  <li class="st-guest" draggable="true" data-id="כהן" data-size="8" tabindex="0">
-                    <span class="st-guest-name">משפחת כהן</span>
-                    <span class="st-guest-size">8 אנשים</span>
-                  </li>
-                  <li class="st-guest" draggable="true" data-id="רועי" data-size="2" tabindex="0">
-                    <span class="st-guest-name">רועי וטל</span>
-                    <span class="st-guest-size">2 אנשים</span>
-                  </li>
-                  <li class="st-guest" draggable="true" data-id="לוי" data-size="6" tabindex="0">
-                    <span class="st-guest-name">משפחת לוי</span>
-                    <span class="st-guest-size">6 אנשים</span>
-                  </li>
-                  <li class="st-guest" draggable="true" data-id="דניאל" data-size="2" tabindex="0">
-                    <span class="st-guest-name">דניאל</span>
-                    <span class="st-guest-size">2 אנשים</span>
-                  </li>
-                  <li class="st-guest" draggable="true" data-id="מיכל" data-size="5" tabindex="0">
-                    <span class="st-guest-name">מיכל והמשפחה</span>
-                    <span class="st-guest-size">5 אנשים</span>
-                  </li>
-                </ul>
-                <p class="st-allseated" data-st-allseated hidden>כולם יושבים.</p>
-              </div>
+          <!-- ═════ מהסקיצה למפה ══════════════════════════════════════════
+               הכול כאן אמיתי מתוך אירוע ההדגמה של VEYA: הסקיצה שהועלתה,
+               36 השולחנות, הבמה ושתי הכניסות שהניתוח זיהה בה (עם המספרים
+               והקיבולות שהוא קרא), והקבוצה שיושבת בשולחן 2.
+               מצב ברירת המחדל ב-HTML הוא המפה הגמורה — האנימציה רק מגיעה
+               אליו, פעם אחת, ובלי תנועה בכלל כש-prefers-reduced-motion. -->
+          <div class="sk" data-sketch>
+            <ol class="sk-steps">
+              <li class="sk-step" data-step="1">
+                <span class="sk-step-n" aria-hidden="true">1</span>
+                <div class="sk-step-text">
+                  <p class="sk-step-k">מעלים</p>
+                  <h3 class="sk-step-t">הסקיצה שלכם</h3>
+                  <p class="sk-step-d">צילום / קובץ מהאולם.</p>
+                </div>
+              </li>
+              <li class="sk-step" data-step="2">
+                <span class="sk-step-n" aria-hidden="true">2</span>
+                <div class="sk-step-text">
+                  <p class="sk-step-k">VEYA מנתחת</p>
+                  <h3 class="sk-step-t">מזהים את האולם</h3>
+                  <p class="sk-step-d">השולחנות והמבנה מזוהים מתוך הסקיצה.</p>
+                </div>
+              </li>
+              <li class="sk-step" data-step="3">
+                <span class="sk-step-n" aria-hidden="true">3</span>
+                <div class="sk-step-text">
+                  <p class="sk-step-k">מקבלים מפה חיה</p>
+                  <h3 class="sk-step-t">מוכנים להושבה</h3>
+                  <p class="sk-step-d">עכשיו אפשר לבחור שולחן, לראות מי יושב איפה ולבצע שינויים.</p>
+                </div>
+              </li>
+              <li class="sk-step" data-step="4">
+                <span class="sk-step-n" aria-hidden="true">4</span>
+                <div class="sk-step-text">
+                  <p class="sk-step-k">מושיבים</p>
+                  <h3 class="sk-step-t">מהרשימה לשולחן</h3>
+                  <p class="sk-step-d">הקבוצות, ההערות והבקשות שכבר נמצאות אצלכם עוזרות לבנות את ההושבה.</p>
+                </div>
+              </li>
+            </ol>
 
-              <div class="st-pane">
-                <h3 class="st-h">שולחנות</h3>
-                <div class="st-tables" data-st-tables>
-                  <div class="st-table" data-cap="10" data-base="8" tabindex="0" role="button" aria-label="שולחן 1">
-                    <span class="st-table-head"><span class="st-table-name">שולחן 1</span><span class="st-table-count"><b data-st-used>8</b> / 10</span></span>
-                    <ul class="st-seated"></ul>
-                  </div>
-                  <div class="st-table" data-cap="10" data-base="6" tabindex="0" role="button" aria-label="שולחן 2">
-                    <span class="st-table-head"><span class="st-table-name">שולחן 2</span><span class="st-table-count"><b data-st-used>6</b> / 10</span></span>
-                    <ul class="st-seated"></ul>
-                  </div>
-                  <div class="st-table" data-cap="10" data-base="4" tabindex="0" role="button" aria-label="שולחן 3">
-                    <span class="st-table-head"><span class="st-table-name">שולחן 3</span><span class="st-table-count"><b data-st-used>4</b> / 10</span></span>
-                    <ul class="st-seated"></ul>
-                  </div>
-                  <div class="st-table" data-cap="10" data-base="0" tabindex="0" role="button" aria-label="שולחן 4">
-                    <span class="st-table-head"><span class="st-table-name">שולחן 4</span><span class="st-table-count"><b data-st-used>0</b> / 10</span></span>
-                    <ul class="st-seated"></ul>
-                  </div>
-                  <div class="st-table" data-cap="10" data-base="0" tabindex="0" role="button" aria-label="שולחן 5">
-                    <span class="st-table-head"><span class="st-table-name">שולחן 5</span><span class="st-table-count"><b data-st-used>0</b> / 10</span></span>
-                    <ul class="st-seated"></ul>
-                  </div>
+            <figure class="sk-stage">
+              <div class="sk-bar" aria-hidden="true">
+                <span class="sk-bar-state" data-sk-state>מפת האולם</span>
+                <span class="sk-bar-count">36 שולחנות · במה · 2 כניסות</span>
+              </div>
+              <div class="sk-map">
+                <img
+                  class="sk-sketch" src="/product/hall-sketch.jpg"
+                  alt="הסקיצה שהתקבלה מהאולם: אולם מלבני עם במה בקדמתו, שתי כניסות בקיר הצד ו־36 שולחנות ממוספרים בשורות"
+                  width="960" height="1534" loading="lazy" decoding="async"
+                  onerror="veyaRetryImage(this)"
+                />
+                <div class="sk-els" aria-hidden="true">
+                <span class="sk-el sk-el--stage" style="--x:35.98%;--y:4.31%;--w:21.04%;--h:7.25%"><span class="sk-el-mark"></span><span class="sk-el-label">במה</span></span>
+                <span class="sk-el sk-el--entrance" style="--x:3.05%;--y:28.48%;--w:5.05%;--h:3.05%"><span class="sk-el-mark"></span><span class="sk-el-label">כניסה</span></span>
+                <span class="sk-el sk-el--entrance" style="--x:3.05%;--y:87.11%;--w:5.05%;--h:3.05%"><span class="sk-el-mark"></span><span class="sk-el-label">כניסה</span></span>
+                <span class="sk-el sk-el--wall" style="--x:1.05%;--y:95.82%;--w:86.05%;--h:1.84%"><span class="sk-el-mark"></span></span>
+                </div>
+                <div class="sk-tables" role="group" aria-label="מפת האולם שנבנתה מהסקיצה: 36 שולחנות. בחרו שולחן כדי לראות מי יושב בו.">
+                <button type="button" class="sk-t sk-t--rc" style="--x:74.8%;--y:32.42%;--w:6.21%;--h:10.87%;--i:0;--n:12" data-n="31" data-cap="24" aria-pressed="false" tabindex="-1" aria-label="שולחן 31, 24 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">31</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:62.17%;--y:32.42%;--w:6.21%;--h:10.87%;--i:1;--n:12" data-n="32" data-cap="24" aria-pressed="false" tabindex="-1" aria-label="שולחן 32, 24 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">32</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:49.23%;--y:32.42%;--w:6.21%;--h:10.87%;--i:2;--n:12" data-n="33" data-cap="24" aria-pressed="false" tabindex="-1" aria-label="שולחן 33, 24 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">33</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:36.61%;--y:32.42%;--w:6.21%;--h:10.87%;--i:3;--n:12" data-n="34" data-cap="24" aria-pressed="false" tabindex="-1" aria-label="שולחן 34, 24 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">34</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:24.41%;--y:32.42%;--w:6.21%;--h:10.87%;--i:4;--n:12" data-n="35" data-cap="24" aria-pressed="false" tabindex="-1" aria-label="שולחן 35, 24 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">35</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:11.05%;--y:32.42%;--w:6.21%;--h:10.87%;--i:5;--n:12" data-n="36" data-cap="24" aria-pressed="false" tabindex="-1" aria-label="שולחן 36, 24 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">36</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:76.06%;--y:48.51%;--w:5.05%;--h:5.09%;--i:6;--n:7" data-n="30" data-cap="14" aria-pressed="false" tabindex="-1" aria-label="שולחן 30, 14 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">30</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:62.07%;--y:49.08%;--w:6.42%;--h:3.88%;--i:7;--n:3" data-n="29" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 29, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">29</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:49.23%;--y:49.08%;--w:6.42%;--h:3.88%;--i:8;--n:3" data-n="28" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 28, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">28</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:36.71%;--y:49.08%;--w:6.42%;--h:3.88%;--i:9;--n:3" data-n="27" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 27, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">27</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:24.93%;--y:49.08%;--w:6.42%;--h:3.88%;--i:10;--n:3" data-n="26" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 26, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">26</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:11.47%;--y:48.51%;--w:5.15%;--h:5.09%;--i:11;--n:7" data-n="25" data-cap="14" aria-pressed="false" tabindex="-1" aria-label="שולחן 25, 14 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">25</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:76.06%;--y:57.09%;--w:5.05%;--h:5.09%;--i:12;--n:7" data-n="19" data-cap="14" aria-pressed="false" tabindex="-1" aria-label="שולחן 19, 14 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">19</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:62.07%;--y:57.67%;--w:6.42%;--h:3.88%;--i:13;--n:3" data-n="20" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 20, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">20</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:49.23%;--y:57.67%;--w:6.42%;--h:3.88%;--i:14;--n:3" data-n="21" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 21, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">21</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:36.71%;--y:57.67%;--w:6.42%;--h:3.88%;--i:15;--n:3" data-n="22" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 22, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">22</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:25.14%;--y:57.67%;--w:6.42%;--h:3.88%;--i:16;--n:3" data-n="23" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 23, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">23</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:11.47%;--y:57.09%;--w:5.15%;--h:5.09%;--i:17;--n:7" data-n="24" data-cap="14" aria-pressed="false" tabindex="-1" aria-label="שולחן 24, 14 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">24</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:76.06%;--y:67.97%;--w:5.05%;--h:5.09%;--i:18;--n:7" data-n="18" data-cap="14" aria-pressed="false" tabindex="-1" aria-label="שולחן 18, 14 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">18</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:62.28%;--y:68.54%;--w:6.42%;--h:3.88%;--i:19;--n:3" data-n="17" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 17, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">17</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:49.23%;--y:68.54%;--w:6.42%;--h:3.88%;--i:20;--n:3" data-n="16" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 16, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">16</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:36.92%;--y:68.54%;--w:6.42%;--h:3.88%;--i:21;--n:3" data-n="15" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 15, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">15</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:25.14%;--y:68.54%;--w:6.42%;--h:3.88%;--i:22;--n:3" data-n="14" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 14, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">14</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:11.47%;--y:67.97%;--w:5.15%;--h:5.09%;--i:23;--n:7" data-n="13" data-cap="14" aria-pressed="false" tabindex="-1" aria-label="שולחן 13, 14 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">13</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:76.06%;--y:78.72%;--w:5.05%;--h:5.09%;--i:24;--n:7" data-n="7" data-cap="14" aria-pressed="false" tabindex="-1" aria-label="שולחן 7, 14 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">7</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:62.07%;--y:79.29%;--w:6.42%;--h:3.88%;--i:25;--n:3" data-n="8" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 8, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">8</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:49.23%;--y:79.29%;--w:6.42%;--h:3.88%;--i:26;--n:3" data-n="9" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 9, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">9</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:36.92%;--y:79.29%;--w:6.42%;--h:3.88%;--i:27;--n:3" data-n="10" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 10, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">10</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:25.14%;--y:79.29%;--w:6.42%;--h:3.88%;--i:28;--n:3" data-n="11" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 11, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">11</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:11.47%;--y:78.72%;--w:5.15%;--h:5.09%;--i:29;--n:7" data-n="12" data-cap="14" aria-pressed="false" tabindex="-1" aria-label="שולחן 12, 14 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">12</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:76.06%;--y:89.46%;--w:5.05%;--h:5.09%;--i:30;--n:7" data-n="6" data-cap="14" aria-pressed="false" tabindex="-1" aria-label="שולחן 6, 14 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">6</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:62.07%;--y:90.04%;--w:6.42%;--h:3.88%;--i:31;--n:3" data-n="5" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 5, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">5</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:49.23%;--y:90.04%;--w:6.42%;--h:3.88%;--i:32;--n:3" data-n="4" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 4, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">4</span></button>
+                <button type="button" class="sk-t sk-t--sq" style="--x:36.92%;--y:90.04%;--w:6.42%;--h:3.88%;--i:33;--n:3" data-n="3" data-cap="12" aria-pressed="false" tabindex="-1" aria-label="שולחן 3, 12 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">3</span></button>
+                <button type="button" class="sk-t sk-t--sq is-seated" style="--x:25.14%;--y:90.04%;--w:6.42%;--h:3.88%;--i:34;--n:3" data-n="2" data-cap="12" aria-pressed="true" tabindex="0" aria-label="שולחן 2, 12 מקומות, 9 יושבים"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">2</span></button>
+                <button type="button" class="sk-t sk-t--rc" style="--x:11.47%;--y:89.46%;--w:5.15%;--h:5.09%;--i:35;--n:7" data-n="1" data-cap="14" aria-pressed="false" tabindex="-1" aria-label="שולחן 1, 14 מקומות, פנוי"><span class="sk-t-mark"></span><span class="sk-t-body"></span><span class="sk-t-num">1</span></button>
                 </div>
               </div>
-            </div>
+              <figcaption class="sk-cap">אותה סקיצה, אחרי שהפכה למפת אולם ב־VEYA.</figcaption>
+            </figure>
 
-            <div class="st-bar">
-              <p class="st-hint"><span class="hint" data-hint>נסו לגרור מוזמן לשולחן</span></p>
-              <p class="st-say" data-st-say role="status" aria-live="polite"></p>
-              <button type="button" class="btn btn-ghost st-auto" data-st-auto>עזבו, ש־VEYA תסדר</button>
+            <div class="sk-seat">
+              <div class="sk-group" data-sk-group>
+                <p class="sk-group-k">מוזמנים</p>
+                <div class="sk-group-head">
+                  <span class="sk-group-name">משפחה קרובה · צד חתן</span>
+                  <span class="sk-group-size">9 אנשים</span>
+                </div>
+                <ul class="sk-group-list">
+                  <li><span>אלון שפירא</span><span class="sk-num">4</span></li>
+                  <li><span>ליאור זילבר</span><span class="sk-num">3</span></li>
+                  <li><span>אור אשכנזי</span><span class="sk-num">2</span></li>
+                </ul>
+                <p class="sk-group-seat" data-sk-group-seat>
+                  <svg class="sk-check" viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                  <span data-sk-seat-text>יושבים בשולחן 2</span>
+                </p>
+              </div>
+              <div class="sk-card" data-sk-card>
+                <h3 class="sk-card-t" data-sk-card-t>שולחן 2</h3>
+                <p class="sk-card-occ"><b data-sk-card-used>9</b> / <span data-sk-card-cap>12</span> מקומות</p>
+                <p class="sk-card-who" data-sk-card-who>משפחה קרובה · צד חתן</p>
+              </div>
             </div>
           </div>
 
-          <p class="st-note">
-            ואם יש לכם בקשות כמו "שיהיו ביחד", "לא ליד הרמקולים" או "שלא ישבו
-            ליד X" — גם את זה אנחנו לוקחים בחשבון.
-          </p>
-
-          <div class="payoff-shot st-shot mk-browser">
-            <div class="mk-browser-bar" aria-hidden="true">
-              <span class="mk-browser-lights"><i></i><i></i><i></i></span>
-              <span class="mk-browser-nav"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5" /></svg></span>
-              <span class="mk-browser-url"><svg viewBox="0 0 10 12" fill="currentColor"><path d="M2 5V3.6a3 3 0 0 1 6 0V5h.4c.6 0 1.1.5 1.1 1.1v4.8c0 .6-.5 1.1-1.1 1.1H1.6C1 12 .5 11.5.5 10.9V6.1C.5 5.5 1 5 1.6 5H2Zm1.3 0h3.4V3.6a1.7 1.7 0 0 0-3.4 0V5Z" /></svg><span>veyaguest.co.il/app</span></span>
-              <span class="mk-browser-tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V1.8M5.2 4.4 8 1.6l2.8 2.8M5.5 6.5H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-1.5" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 2.5v11M2.5 8h11" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2" y="4.5" width="9.5" height="9.5" rx="1.6" /><path d="M4.5 2h8a1.5 1.5 0 0 1 1.5 1.5v8" /></svg></span>
-            </div>
-            <div class="mk-browser-view">
-              <img
-                src="/product/seating-drag.jpg"
-                alt="סידור ההושבה של VEYA: סקיצת האולם והשולחנות, רשימת המוזמנים בצד, ומוזמן שנגרר אל שולחן"
-                width="1600" height="1215" loading="lazy" decoding="async"
-                onerror="veyaRetryImage(this)"
-              />
-            </div>
+          <div class="sk-close reveal">
+            <p class="sk-close-a">המוזמנים כבר אצלכם. עכשיו גם האולם.</p>
+            <p class="sk-close-b">מכאן כבר הרבה יותר קל לחבר ביניהם.</p>
           </div>
-
-            <div class="payoff-after">
-              <p>אחרי כל הרצה מוצג דוח תקינות:</p>
-              <p class="payoff-beats"><span>קיבולת שולחנות.</span><span>מי לא יושב עם מי.</span><span>מי נשאר בלי שולחן.</span></p>
-              <p>ואם משהו לא מסתדר — אפשר לחזור לסידור הקודם.</p>
-              <p class="why-punch">אתם מחליטים. VEYA חוסכת לכם את ההתחלה ואת הבדיקה.</p>
-            </div>
 
           <div class="section-cta">
-            <a href="/app?auth=register" class="btn btn-primary">מושיבים את האורחים שלכם <span class="arw" aria-hidden="true">←</span></a>
+            <a href="/app?auth=register" class="btn btn-primary">בואו נסדר את השולחנות <span class="arw" aria-hidden="true">←</span></a>
           </div>
 
-          <p class="fineprint">
-            המנוע לא "מבין אנשים" — הוא עובד לפי מה שסימנתם: קבוצות, צדדים, הערות הושבה
-            ואילוצים. מה שלא אמרתם לו, הוא לא מניח.
-          </p>
           <div class="brand-sign" aria-hidden="true">
             <span class="brand-line"></span>
             <img src="/logo_nobg.png" alt="" width="40" height="40" loading="lazy" decoding="async" />
@@ -4143,6 +4327,147 @@
          ראשון, בלי דרך חזרה. עכשיו מנסים שוב פעם אחת, ואם גם זה נכשל
          המסגרת פשוט נשארת במקומה. */
 
+      /* ---- הושבה: מהסקיצה למפה, פעם אחת ----
+         ה-HTML כבר מכיל את המפה הגמורה. כאן רק:
+           1. מריצים פעם אחת את המעבר סקיצה → ניתוח → זיהוי → מפה → הושבה,
+              כשהמפה נכנסת למסך. לא בלולאה, לא שוב בכניסה חוזרת, ולא בכלל
+              כש-prefers-reduced-motion (אז רואים ישר את המצב הסופי).
+           2. בחירת שולחן (עכבר, מגע, או חיצים + Enter) מציגה מי יושב בו.
+         שום דבר כאן לא גולל, לא מזיז פוקוס ולא משנה גובה. */
+      (function () {
+        var root = document.querySelector('[data-sketch]');
+        if (!root) return;
+        var tables = [].slice.call(root.querySelectorAll('.sk-t'));
+        var steps = [].slice.call(root.querySelectorAll('.sk-step'));
+        var stateEl = root.querySelector('[data-sk-state]');
+        var seatText = root.querySelector('[data-sk-seat-text]');
+        var card = root.querySelector('[data-sk-card]');
+        var cardT = root.querySelector('[data-sk-card-t]');
+        var cardUsed = root.querySelector('[data-sk-card-used]');
+        var cardCap = root.querySelector('[data-sk-card-cap]');
+        var cardWho = root.querySelector('[data-sk-card-who]');
+        var stage = root.querySelector('.sk-stage');
+        var seated = root.querySelector('.sk-t.is-seated');
+        var group = root.querySelector('[data-sk-group]');
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+        var timers = [];
+        var chip = null;
+        var STATES = { sketch: 'הסקיצה מהאולם', analyze: 'מזהים שולחנות ומבנה', identify: '36 שולחנות זוהו' };
+        var STEP_OF = { sketch: 1, analyze: 2, identify: 2, transform: 3, seat: 4 };
+
+        function setPhase(p) {
+          if (p) root.setAttribute('data-phase', p); else root.removeAttribute('data-phase');
+          stateEl.textContent = STATES[p] || 'מפת האולם';
+          steps.forEach(function (s) {
+            if (p && Number(s.getAttribute('data-step')) === STEP_OF[p]) s.setAttribute('aria-current', 'step');
+            else s.removeAttribute('aria-current');
+          });
+          seatText.textContent = (!p || p === 'seat-done') ? 'יושבים בשולחן 2' : 'עדיין בלי שולחן';
+        }
+        function finish() {
+          timers.forEach(clearTimeout); timers = [];
+          if (chip) { chip.remove(); chip = null; }
+          seated.classList.remove('is-picked');
+          setPhase(null);
+        }
+
+        // ── בחירת שולחן ──
+        function show(t) {
+          var n = t.getAttribute('data-n');
+          var isSeated = t.classList.contains('is-seated');
+          cardT.textContent = 'שולחן ' + n;
+          cardUsed.textContent = isSeated ? '9' : '0';
+          cardCap.textContent = t.getAttribute('data-cap');
+          cardWho.textContent = isSeated ? 'משפחה קרובה · צד חתן' : 'עדיין אין כאן מוזמנים.';
+        }
+        function select(t, fromUser) {
+          if (root.hasAttribute('data-phase')) finish();
+          tables.forEach(function (x) {
+            var on = x === t;
+            x.setAttribute('aria-pressed', on ? 'true' : 'false');
+            x.tabIndex = on ? 0 : -1;
+          });
+          if (fromUser) card.setAttribute('aria-live', 'polite');
+          show(t);
+        }
+        tables.forEach(function (t) {
+          t.addEventListener('click', function () { select(t, true); });
+        });
+        // חיצים: עוברים לשולחן הקרוב ביותר בכיוון, כמו בתמונה (לא לפי מספר)
+        root.querySelector('.sk-tables').addEventListener('keydown', function (e) {
+          var dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+          var cur = document.activeElement;
+          if (!dir || tables.indexOf(cur) < 0) return;
+          e.preventDefault();
+          var a = cur.getBoundingClientRect(), ax = a.left + a.width / 2, ay = a.top + a.height / 2;
+          var best = null, bestScore = Infinity;
+          tables.forEach(function (t) {
+            if (t === cur) return;
+            var b = t.getBoundingClientRect(), dx = b.left + b.width / 2 - ax, dy = b.top + b.height / 2 - ay;
+            var along = dx * dir[0] + dy * dir[1];
+            if (along <= 1) return;
+            var across = Math.abs(dx * dir[1]) + Math.abs(dy * dir[0]);
+            var score = along + across * 3;
+            if (score < bestScore) { bestScore = score; best = t; }
+          });
+          if (!best) return;
+          tables.forEach(function (x) { x.tabIndex = x === best ? 0 : -1; });
+          best.focus({ preventScroll: true });
+        });
+
+        // ── האנימציה החד-פעמית ──
+        var played = false;
+        try { played = sessionStorage.getItem('veya-sketch-played') === '1'; } catch (e) {}
+        if (reduce.matches || played || !('IntersectionObserver' in window)) return;
+        // כבר עברו את הסקשן (טעינה באמצע העמוד)? נשארים במצב הסופי.
+        if (stage.getBoundingClientRect().bottom < 0) return;
+
+        setPhase('sketch');
+        function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
+        function run() {
+          try { sessionStorage.setItem('veya-sketch-played', '1'); } catch (e) {}
+          at(1400, function () { setPhase('analyze'); });
+          at(4200, function () { setPhase('identify'); });
+          at(6400, function () { setPhase('transform'); });
+          at(9000, function () { setPhase('seat'); seated.classList.add('is-picked'); travel(); });
+        }
+        function travel() {
+          var box = root.getBoundingClientRect();
+          var from = group.getBoundingClientRect();
+          var to = seated.getBoundingClientRect();
+          var far = Math.abs((to.top + to.height / 2) - (from.top + from.height / 2)) > window.innerHeight * 0.6;
+          var done = function () {
+            if (chip) { chip.style.opacity = '0'; }
+            root.setAttribute('data-phase', 'seat-done');
+            seatText.textContent = 'יושבים בשולחן 2';
+            at(700, finish);
+          };
+          if (far) { at(600, done); return; }
+          chip = document.createElement('span');
+          chip.className = 'sk-chip';
+          chip.setAttribute('aria-hidden', 'true');
+          chip.textContent = 'משפחה קרובה · 9';
+          root.appendChild(chip);
+          var cw = chip.offsetWidth, ch = chip.offsetHeight;
+          var fx = from.left - box.left + from.width / 2 - cw / 2, fy = from.top - box.top + 40;
+          var tx = to.left - box.left + to.width / 2 - cw / 2, ty = to.top - box.top + to.height / 2 - ch / 2;
+          chip.style.transform = 'translate(' + fx + 'px,' + fy + 'px)';
+          chip.getBoundingClientRect();
+          requestAnimationFrame(function () {
+            chip.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(0.86)';
+          });
+          at(1400, done);
+        }
+        var io = new IntersectionObserver(function (entries) {
+          if (!entries[0].isIntersecting) return;
+          io.disconnect();
+          run();
+        }, { threshold: 0.45 });
+        io.observe(stage);
+        // מי שמבקש פחות תנועה באמצע — קופצים ישר לסוף
+        if (reduce.addEventListener) reduce.addEventListener('change', function (e) { if (e.matches) { io.disconnect(); finish(); } });
+      })();
+
       /* ---- "הוסיפו למסך הבית" ----
          ההסבר עצמו הוא זה של המוצר (InstallPrompt): אותם שלושה צעדים.
          כאן רק פותחים וסוגרים אותו. */
@@ -4556,226 +4881,6 @@
         });
       })();
 
-      /* ---- הושבה: גרירה אחת שעובדת גם בעכבר וגם באצבע ----
-         Pointer Events ולא HTML5 drag-and-drop: ה-API הישן פשוט לא קיים
-         במגע, ו"גרירה" בטלפון הייתה נשארת הדגמה בלבד. באצבע הגרירה
-         מתחילה בלחיצה ארוכה קצרה (240ms) — עד אז האצבע מגלגלת את העמוד
-         כרגיל, ולכן הדמו לא נלחם בגלילה. מי שמעדיף: הקשה על מוזמן ואז
-         על שולחן עושה את אותו דבר.
-
-         מוזמן שכבר יושב אפשר לגרור לשולחן אחר או בחזרה לרשימה. */
-      (function () {
-        var box = document.querySelector('[data-seating]');
-        if (!box) return;
-        var list = box.querySelector('[data-st-guests]');
-        var tables = [].slice.call(box.querySelectorAll('.st-table'));
-        var say = box.querySelector('[data-st-say]');
-        var auto = box.querySelector('[data-st-auto]');
-        var allSeated = box.querySelector('[data-st-allseated]');
-        var picked = null;
-        var usedByUser = false;
-
-        function cap(t) { return parseInt(t.getAttribute('data-cap'), 10); }
-        function base(t) { return parseInt(t.getAttribute('data-base'), 10); }
-        function seatedIn(t) {
-          return [].slice.call(t.querySelectorAll('.st-chip')).reduce(function (n, c) {
-            return n + parseInt(c.getAttribute('data-size'), 10);
-          }, 0);
-        }
-        function used(t) { return base(t) + seatedIn(t); }
-        function free(t) { return cap(t) - used(t); }
-        function paint(t) {
-          t.querySelector('[data-st-used]').textContent = String(used(t));
-          t.classList.toggle('is-full', free(t) <= 0);
-        }
-        function remaining() { return [].slice.call(list.querySelectorAll('.st-guest')); }
-        function sayIt(text) { say.textContent = text; }
-
-        function chipFor(name, id, size) {
-          var chip = document.createElement('li');
-          chip.className = 'st-chip';
-          chip.setAttribute('data-id', id);
-          chip.setAttribute('data-size', size);
-          chip.textContent = name;
-          return chip;
-        }
-        function rowFor(name, id, size) {
-          var li = document.createElement('li');
-          li.className = 'st-guest';
-          li.setAttribute('data-id', id);
-          li.setAttribute('data-size', size);
-          li.setAttribute('tabindex', '0');
-          li.innerHTML = '<span class="st-guest-name"></span><span class="st-guest-size"></span>';
-          li.querySelector('.st-guest-name').textContent = name;
-          li.querySelector('.st-guest-size').textContent = size + ' אנשים';
-          return li;
-        }
-        function info(el) {
-          return {
-            id: el.getAttribute('data-id'),
-            size: parseInt(el.getAttribute('data-size'), 10),
-            name: el.classList.contains('st-chip') ? el.textContent : el.querySelector('.st-guest-name').textContent
-          };
-        }
-
-        /** מכניס מוזמן (שורה או צ'יפ) לשולחן. מחזיר false אם אין מקום. */
-        function place(el, table) {
-          var d = info(el);
-          var from = el.closest('.st-table');
-          if (from === table) return true;
-          if (d.size > free(table)) {
-            sayIt('בשולחן הזה נשאר מקום ל־' + free(table) + '. אפשר שולחן אחר.');
-            return false;
-          }
-          table.querySelector('.st-seated').appendChild(chipFor(d.name, d.id, d.size));
-          el.remove();
-          if (from) paint(from);
-          paint(table);
-          if (picked === el) picked = null;
-          sayIt('');
-          finishIfDone();
-          return true;
-        }
-        /** מחזיר מוזמן מהשולחן לרשימה. */
-        function unplace(chip) {
-          var d = info(chip);
-          var from = chip.closest('.st-table');
-          chip.remove();
-          if (from) paint(from);
-          list.appendChild(rowFor(d.name, d.id, d.size));
-          allSeated.hidden = true;
-          auto.disabled = false;
-          sayIt('');
-        }
-        function finishIfDone() {
-          if (remaining().length) return;
-          allSeated.hidden = false;
-          sayIt('זה כבר נראה יותר טוב.');
-          auto.disabled = true;
-        }
-        function pick(el) {
-          if (picked === el) { el.classList.remove('is-picked'); picked = null; sayIt(''); return; }
-          if (picked) picked.classList.remove('is-picked');
-          picked = el;
-          el.classList.add('is-picked');
-          sayIt('בחרתם את ' + info(el).name + '. עכשיו בחרו שולחן.');
-        }
-        function firstTouch() {
-          if (usedByUser) return;
-          usedByUser = true;
-          window.veyaHint.clear(box);
-          tables.forEach(function (t) { t.classList.remove('is-over'); });
-        }
-
-        // ---- גרירה ----
-        var drag = null;
-        function ghostFor(el, x, y) {
-          var g = document.createElement('div');
-          g.className = 'st-ghost';
-          g.textContent = info(el).name;
-          g.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
-          document.body.appendChild(g);
-          return g;
-        }
-        function dropTargetAt(x, y) {
-          var under = document.elementFromPoint(x, y);
-          if (!under) return null;
-          return under.closest('.st-table') || (under.closest('[data-st-guests]') ? list : null);
-        }
-        function highlight(target) {
-          tables.forEach(function (t) { t.classList.toggle('is-over', t === target); });
-          list.classList.toggle('is-over', target === list);
-        }
-        function endDrag(commit, x, y) {
-          if (!drag) return;
-          if (drag.timer) clearTimeout(drag.timer);
-          if (drag.ghost) drag.ghost.remove();
-          if (drag.el) drag.el.classList.remove('is-dragging');
-          highlight(null);
-          var el = drag.el, started = drag.started;
-          drag = null;
-          if (!commit || !started) return;
-          var target = dropTargetAt(x, y);
-          if (!target) return;
-          if (target === list) { if (el.classList.contains('st-chip')) unplace(el); return; }
-          place(el, target);
-        }
-        function beginDrag(el, e) {
-          drag = { el: el, startX: e.clientX, startY: e.clientY, started: false, ghost: null, timer: null };
-          var isTouch = e.pointerType === 'touch';
-          function start() {
-            if (!drag || drag.started) return;
-            drag.started = true;
-            drag.el.classList.add('is-dragging');
-            drag.ghost = ghostFor(drag.el, e.clientX, e.clientY);
-            firstTouch();
-          }
-          // באצבע: לחיצה קצרה-ארוכה פותחת גרירה. בעכבר: מיד בתזוזה.
-          if (isTouch) drag.timer = setTimeout(start, 240);
-          else drag.start = start;
-        }
-
-        box.addEventListener('pointerdown', function (e) {
-          var el = e.target.closest('.st-guest, .st-chip');
-          if (!el || e.button > 0) return;
-          beginDrag(el, e);
-        });
-        window.addEventListener('pointermove', function (e) {
-          if (!drag) return;
-          var dx = Math.abs(e.clientX - drag.startX), dy = Math.abs(e.clientY - drag.startY);
-          if (!drag.started) {
-            // תזוזה לפני שהגרירה נפתחה: בעכבר זו כוונה לגרור, באצבע זו גלילה.
-            if (drag.timer && (dx > 10 || dy > 10)) { clearTimeout(drag.timer); drag = null; return; }
-            if (drag.start && (dx > 4 || dy > 4)) drag.start();
-            if (!drag || !drag.started) return;
-          }
-          e.preventDefault();
-          drag.ghost.style.transform = 'translate(' + e.clientX + 'px, ' + e.clientY + 'px)';
-          highlight(dropTargetAt(e.clientX, e.clientY));
-        }, { passive: false });
-        window.addEventListener('pointerup', function (e) { endDrag(true, e.clientX, e.clientY); });
-        window.addEventListener('pointercancel', function () { endDrag(false); });
-
-        // ---- הקשה: מוזמן ואז שולחן ----
-        box.addEventListener('click', function (e) {
-          var guest = e.target.closest('.st-guest, .st-chip');
-          var table = e.target.closest('.st-table');
-          if (guest && !drag) { firstTouch(); pick(guest); return; }
-          if (!table) return;
-          firstTouch();
-          if (!picked) { sayIt('קודם בוחרים מוזמן.'); return; }
-          place(picked, table);
-        });
-        box.addEventListener('keydown', function (e) {
-          var el = e.target.closest('.st-guest, .st-chip, .st-table');
-          if (!el || (e.key !== 'Enter' && e.key !== ' ')) return;
-          e.preventDefault();
-          el.click();
-        });
-
-        auto.addEventListener('click', function () {
-          firstTouch();
-          var left = remaining();
-          if (!left.length) return;
-          auto.disabled = true;
-          var reduced = window.veyaHint.reduced;
-          left.forEach(function (guest, k) {
-            setTimeout(function () {
-              var size = parseInt(guest.getAttribute('data-size'), 10);
-              var target = tables.filter(function (t) { return free(t) >= size; })
-                                 .sort(function (a, b) { return free(a) - free(b); })[0];
-              if (target) place(guest, target);
-            }, reduced ? 0 : k * 240);
-          });
-        });
-
-        // ---- רמז אחד, פעם אחת ----
-        // משפט קצר שמופיע כשהסקשן נכנס למסך ונעלם ברגע הנגיעה הראשונה.
-        // בלי יד, בלי מוזמן שנוסע על המסך ובלי תנועה שחוזרת בגלילה.
-        window.veyaHint.onceInView(box, function () {
-          if (!usedByUser) window.veyaHint.show(box);
-        });
-      })();
 
       /* ---- מעקב אחרי מי שלא ענה ----
          שלושה סבבים, בלחיצה אחת: מי שענה יורד מהמעקב, ומי שלא — ממשיך
