@@ -28,6 +28,7 @@ import { VenueAutocomplete } from './VenueAutocomplete'
 import { TimePicker } from './TimePicker'
 import { getEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
+import { MAX_COMMIT_DAYS, maxCommitDays } from '../lib/commitDays'
 import './CallFeed.css'
 import './PostponeDialog.css'
 
@@ -397,6 +398,8 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
   // אמת אחד בשרת, לא הרכבה מחדש כאן.
   const [postpone, setPostpone] = useState<Postponement | null>(null)
   const [postponeDialog, setPostponeDialog] = useState<'request' | 'finish' | null>(null)
+  // אפשרויות שהיו סוגרות את הרשימה בתאריך שכבר עבר — מושבתות בבורר.
+  const commitMax = maxCommitDays(form.event_date)
 
   const refresh = useCallback(async () => {
     try {
@@ -629,12 +632,15 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
                     }
                   >
                     <option value="">{t.commitSelectPlaceholder}</option>
-                    {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                      <option key={n} value={n}>
+                    {Array.from({ length: MAX_COMMIT_DAYS }, (_, i) => i + 1).map((n) => (
+                      <option key={n} value={n} disabled={n > commitMax}>
                         {t.commitOptionLabel(n)}
                       </option>
                     ))}
                   </select>
+                  {event?.commit_default_days && form.venue_commit_days_before === '' && (
+                    <span className="field-hint">{t.commitDefaultNote(commitMax)}</span>
+                  )}
                   <span className="commit-warn">{t.commitWarn}</span>
                 </>
               )}

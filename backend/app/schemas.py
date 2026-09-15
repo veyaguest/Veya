@@ -553,6 +553,10 @@ class EventRead(BaseModel):
     venue_commit_days_before: Optional[int] = None
     # האם הבחירה כבר ננעלה (נבחרה בעבר) — הפרונט מציג אותה כקריאה-בלבד.
     venue_commit_locked: bool = False
+    # לא נבחר מועד סגירה והאירוע קרוב → כמה ימים לפני תיסגר הרשימה אוטומטית
+    # (1 = יום לפני). None = אין ברירת מחדל (נבחר כבר, או שהאירוע רחוק).
+    # מחושב בשרת (``rsvp_timeline.resolve_commit_days``) — הפרונט רק מציג.
+    commit_default_days: Optional[int] = None
     # שעת שליחה — "HH:MM", שעון ישראל, 10:00–19:00 (ראו app/communication.py).
     # rsvp_send_time חל על כל מסלול אישורי ההגעה; thank_you_send_time נפרד.
     rsvp_send_time: str = "16:00"
@@ -583,6 +587,7 @@ class EventUpdate(BaseModel):
     event_time: Optional[str] = None
     invite_image: Optional[str] = None
     # בחירה חד-פעמית (1–10). ניתן להגדיר רק פעם אחת; ניסיון לשנות ערך קיים נדחה.
+    # בחירה שהייתה סוגרת את הרשימה בתאריך שכבר עבר — נדחית.
     venue_commit_days_before: Optional[int] = None
     # ולידציית פורמט+טווח מתבצעת ב-router (app/communication.py:validate_send_time),
     # לא כאן — בדיוק כמו venue_commit_days_before ממש למעלה.

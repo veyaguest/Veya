@@ -3,13 +3,17 @@
 בשלב הנוכחי יש אירוע יחיד. הפרטים משמשים לכותרת ההזמנה שנשלחת בוואטסאפ
 ולכותרת הדשבורד.
 """
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import (
-    audit, communication, media, models, postponement_service, schemas, venues,
+    audit, communication, media, models, postponement_service, rsvp_timeline,
+    schemas, venues,
 )
+from app.automation import parse_event_date
 from app.auth import get_current_owner
 from app.database import get_db
 from app.deps import EventAccess, get_current_event
@@ -118,6 +122,12 @@ def _describe_changed_fields(changed: dict) -> str:
     return ", ".join(labels[:-1]) + " ו" + labels[-1]
 
 
+def _commit_default_days(event: models.Event):
+    """ברירת המחדל של מועד הסגירה לאירוע קרוב שלא נבחר לו מועד (או None)."""
+    days, is_default = rsvp_timeline.resolve_commit_days(event)
+    return days if is_default else None
+
+
 def _event_read(db: Session, event: models.Event) -> schemas.EventRead:
     """בונה תשובה עם URL מלא לתמונת ההזמנה (במקום הנתיב הגולמי שב-DB).
 
@@ -142,6 +152,7 @@ def _event_read(db: Session, event: models.Event) -> schemas.EventRead:
         # בזמן נוהל דחייה מאושר גם מועד סגירת הרשימה נפתח מחדש — התאריך החדש
         # מחייב לוח זמנים חדש, ולכן הבחירה שנעשתה למועד הישן כבר לא רלוונטית.
         venue_commit_locked=event.venue_commit_days_before is not None and not unlocked,
+        commit_default_days=_commit_default_days(event),
         rsvp_send_time=event.rsvp_send_time or communication.DEFAULT_SEND_TIME,
         thank_you_send_time=event.thank_you_send_time or communication.DEFAULT_SEND_TIME,
         cycle_number=event.cycle_number or 1,
@@ -202,6 +213,18 @@ def update_event(
                         ),
                     )
                 continue
+            # מועד סגירה שכבר עבר לא נבחר: הרשימה חייבת להיסגר היום או אחריו.
+            event_date = parse_event_date(changed.get("event_date") or event.event_date)
+            if event_date is not None and value > rsvp_timeline.max_commit_days(
+                event_date, datetime.utcnow().date()
+            ):
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "בתאריך הזה הרשימה כבר הייתה סגורה. "
+                        "אפשר לבחור פחות ימים לפני האירוע."
+                    ),
+                )
             event.venue_commit_days_before = value
         elif key in ("rsvp_send_time", "thank_you_send_time"):
             # None בגוף הבקשה => התעלמות (לא מאפס בטעות) — כמו venue_commit_days_before.

@@ -556,6 +556,9 @@ export interface EventDetails {
   venue_commit_days_before: number | null
   // האם הבחירה כבר ננעלה (בלתי-הפיכה מרגע שנקבעה).
   venue_commit_locked: boolean
+  // אירוע קרוב שלא נבחר לו מועד סגירה → כמה ימים לפני תיסגר הרשימה
+  // אוטומטית (1 = יום לפני). null = אין ברירת מחדל. מחושב בשרת.
+  commit_default_days?: number | null
   // שעת שליחה — "HH:MM", שעון ישראל בלבד, בטווח 10:00–19:00.
   // חלה על כל הודעות מסלול אישורי ההגעה (תזכורות/יום האירוע).
   rsvp_send_time: string
@@ -1470,6 +1473,8 @@ export interface RsvpTimelineView {
   configured: boolean
   event_date: string
   commit_days_before: number | null
+  // true = לא נבחר מועד והאירוע קרוב, אז הרשימה נסגרת יום לפני האירוע.
+  commit_is_default?: boolean
   commitment_date: string | null
   rsvp_start_date: string | null
   days_to_commitment: number | null

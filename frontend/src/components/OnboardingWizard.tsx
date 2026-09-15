@@ -11,6 +11,7 @@ import { ContactsImportDialog, isContactPickerSupported } from './ContactsImport
 import { ImportDialog } from './ImportDialog'
 import { PasteImportDialog } from './PasteImportDialog'
 import { strings } from '../strings/he'
+import { MAX_COMMIT_DAYS, maxCommitDays } from '../lib/commitDays'
 
 const t = strings.guests
 // נבדק פעם אחת בטעינת המודול — בדיוק כמו ב-GuestsPage.
@@ -276,9 +277,9 @@ export function OnboardingWizard({ onCreated }: Props) {
                 }
               >
                 <option value="">בחרו מספר ימים… (אפשר גם בהמשך)</option>
-                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={n}>
-                    {n} ימים לפני האירוע
+                {Array.from({ length: MAX_COMMIT_DAYS }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n} disabled={n > maxCommitDays(form.event_date)}>
+                    {strings.dashboard.commitOptionLabel(n)}
                   </option>
                 ))}
               </select>
