@@ -52,7 +52,7 @@ ${steps
 
 // צילום דסקטופ — תמיד בתוך חלון הדפדפן המשותף (.mk-browser ב-brand layer),
 // אותו מוקאפ כמו בדף הבית.
-const shot = (src, alt) => `          <div class="sc-shot mk-browser mk-browser--fixed">
+const shot = (src, alt, w = 1600, h = 1000) => `          <div class="sc-shot mk-browser">
             <div class="mk-browser-bar" aria-hidden="true">
               <span class="mk-browser-lights"><i></i><i></i><i></i></span>
               <span class="mk-browser-nav"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5" /></svg></span>
@@ -60,7 +60,7 @@ const shot = (src, alt) => `          <div class="sc-shot mk-browser mk-browser-
               <span class="mk-browser-tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V1.8M5.2 4.4 8 1.6l2.8 2.8M5.5 6.5H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-1.5" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 2.5v11M2.5 8h11" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2" y="4.5" width="9.5" height="9.5" rx="1.6" /><path d="M4.5 2h8a1.5 1.5 0 0 1 1.5 1.5v8" /></svg></span>
             </div>
             <div class="mk-browser-view">
-              <img src="${src}" alt="${esc(alt)}" width="1400" height="875" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+              <img src="${src}" alt="${esc(alt)}" width="${w}" height="${h}" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
             </div>
           </div>`
 
@@ -546,7 +546,7 @@ export function featureGuests() {
               מספר לא מדויק.
             </p>
           </div>
-${shot('/product/guests.png', 'טבלת המוזמנים ב-VEYA: שם, כמות, צד, קבוצה וסטטוס אישור הגעה')}
+${shot('/product/journey-guests.jpg', 'טבלת המוזמנים ב-VEYA: שם, כמות, צד, קבוצה וסטטוס אישור הגעה')}
         </div>
       </section>
 
@@ -730,7 +730,7 @@ export function featureSeating() {
               רחבה, בר, כניסה ועמדת התקליטן.
             </p>
           </div>
-${shot('/product/seating.png', 'עורך מפת האולם ב-VEYA: שולחנות מסודרים על סקיצת האולם ומוזמנים משובצים')}
+${shot('/product/journey-seating.jpg', 'עורך מפת האולם ב-VEYA: שולחנות מסודרים על סקיצת האולם ומוזמנים משובצים', 1600, 1215)}
           <p class="fineprint">
             מיקום השולחן אינו קישוט: המנוע יודע איפה כל שולחן נמצא, ולכן "רחוק מהרעש"
             או "ליד הכניסה" הם אילוצים שהוא באמת יכול לכבד.
