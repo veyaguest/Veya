@@ -351,40 +351,7 @@
             /* ═════ מאזן האירוע (§12) ═══════════════════════════════════════
          מספרים גדולים, לא מסך פיננסי. ארבע משבצות עובדה ואחריהן שורה
          אחת שמקבלת את כל המשקל — היא התשובה שבגללה נכנסו לכאן. */
-      .bal { margin-top: 34px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--ivory); overflow: hidden; }
-      .bal-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--ivory-2); }
-      .bal-title { font-family: var(--font-display); font-size: var(--fs-2xl); color: var(--charcoal); }
-      .bal-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .bal-col { padding: 18px 20px 20px; }
-      .bal-col + .bal-col { border-inline-start: 1px solid var(--line); }
-      .bal-col-h { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.02em; color: var(--charcoal); }
-      .bal-sign { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-weight: 700; line-height: 1; }
-      .bal-sign-in { background: rgba(31, 122, 69, 0.1); color: var(--success); }
-      .bal-sign-out { background: rgba(201, 162, 39, 0.14); color: var(--gold-deep); }
-      .bal-list { list-style: none; margin: 0; padding: 0; display: grid; }
-      .bal-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
-      .bal-item:last-child { border-bottom: 0; }
-      .bal-item-t { display: grid; gap: 2px; min-width: 0; }
-      .bal-item-n { color: var(--charcoal); font-weight: 600; }
-      .bal-item-s { font-size: var(--fs-xs); color: var(--muted); }
-      .bal-item-s:empty { display: none; }
-      .bal-chip { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; padding: 5px 11px; border-radius: var(--radius-pill); font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; }
-      .bal-ok { background: rgba(31, 122, 69, 0.09); color: var(--success); }
-      .bal-part { background: rgba(201, 162, 39, 0.14); color: var(--gold-deep); }
-      .bal-wait { background: var(--ivory-2); color: var(--muted); border: 1px solid var(--line); }
-      .bal-sum { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-      .bal-facts { list-style: none; margin: 4px 0 2px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-      .bal-facts li { padding: 6px 12px; border-radius: var(--radius-pill); background: #fff; border: 1px solid var(--line); font-size: var(--fs-sm); color: var(--charcoal); }
-      .bal-lbl { font-size: var(--fs-sm); color: var(--muted); font-weight: 600; }
-      .bal-bottom { padding: 22px 20px; border-top: 1px solid var(--line); background: linear-gradient(180deg, rgba(201,162,39,0.07), rgba(201,162,39,0.02)); display: grid; gap: 10px; }
-      .bal-big { font-family: var(--font-display); font-size: var(--fd-lg); color: var(--gold-deep); line-height: 1.1; font-weight: 500; }
-      .bal-note { font-size: var(--fs-sm); color: var(--muted); max-width: 62ch; }
-      .bal-note b { color: var(--charcoal); }
-      .bal[data-scene] .scene-step:not(.is-on) { opacity: 0; transform: translateY(8px); }
-      .bal[data-scene] .scene-step.is-on { opacity: 1; transform: none; transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out); }
       @media (max-width: 720px) {
-        .bal-cols { grid-template-columns: 1fr; }
-        .bal-col + .bal-col { border-inline-start: 0; border-top: 1px solid var(--line); }
       }
       @media (prefers-reduced-motion: reduce) { .bal[data-scene] .scene-step:not(.is-on) { opacity: 1; transform: none; } }
 
@@ -1207,6 +1174,15 @@
       }
       .rs-shot img { display: block; width: 100%; height: auto; }
 
+      /* ---- מאזן האירוע: כרטיס הסיכום האמיתי ---- */
+      .af-shot { margin: 34px auto 0; width: min(100%, 390px); }
+      .af-shot img {
+        display: block; width: 100%; height: auto;
+        border: 1px solid var(--line); border-radius: 12px; background: #fff;
+        box-shadow: 0 1px 2px rgba(43, 38, 32, 0.05), 0 22px 44px -30px rgba(43, 38, 32, 0.4);
+      }
+      .af-note { margin: 16px auto 0; max-width: 46ch; text-align: center; font-size: var(--fs-sm); line-height: 1.7; color: var(--body); }
+
       .calls-punch {
         margin: 26px auto 0; max-width: 52ch; text-align: center;
         font-family: var(--font-display); font-size: var(--fd-md);
@@ -1548,7 +1524,7 @@
       .rt-shot img { display: block; width: 100%; height: auto; }
       .rt-shot--guests { width: min(100%, 560px); }
       .rt-shot--rsvp-seating { width: min(100%, 470px); }
-      .rt-shot--summary { width: min(100%, 354px); }
+      .rt-shot--report { width: min(100%, 600px); }
 
       .rt-end {
         margin: 84px auto 0; max-width: 30ch; text-align: center;
@@ -1563,7 +1539,6 @@
         .rt-num { font-size: 2.2rem; margin-bottom: 8px; }
         .rt-text { margin-bottom: 18px; }
         .rt-shot { justify-self: stretch; width: 100%; }
-        .rt-shot--summary { justify-self: start; width: min(100%, 354px); }
         .rt-end { margin-top: 60px; }
       }
       @media (prefers-reduced-motion: reduce) {
@@ -3469,68 +3444,17 @@
             </p>
           </div>
 
-          <!-- ═════ מאזן האירוע (§12) ═════════════════════════════════════
-               בלי מספרים: הכרטיס מראה ממה המאזן בנוי ואיפה כל חלק עומד.
-               השדות תואמים ל-``FinanceSummaryRead`` — הוצאות ותשלומים מול
-               הכנסות מהמעטפות, ו-``bottom_line`` בסוף. הסטטוסים הם של
-               המוצר: מקדמה, שולם, נשאר לשלם, "עדיין לא נספרה". -->
-          <div class="bal reveal d1" data-scene data-scene-gap="380">
-            <div class="bal-head">
-              <span class="bal-title">מאזן האירוע</span>
-              <span class="numcard-tag">מתעדכן מעצמו</span>
-            </div>
-            <div class="bal-cols">
-              <div class="bal-col">
-                <h3 class="bal-col-h"><span class="bal-sign bal-sign-in" aria-hidden="true">+</span>הכנסות</h3>
-                <ul class="bal-list">
-                  <li class="bal-item scene-step" data-step="1">
-                    <span class="bal-item-t"><span class="bal-item-n">מעטפות</span><span class="bal-item-s">נספרות מיום האירוע</span></span>
-                    <span class="bal-chip bal-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>נספרו</span>
-                  </li>
-                  <li class="bal-item scene-step" data-step="2">
-                    <span class="bal-item-t"><span class="bal-item-n">מתנות</span><span class="bal-item-s">כל מתנה מול מי שנתן אותה</span></span>
-                    <span class="bal-chip bal-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>שויכו למוזמנים</span>
-                  </li>
-                  <li class="bal-item scene-step" data-step="3">
-                    <span class="bal-item-t"><span class="bal-item-n">מעטפה בלי שם</span><span class="bal-item-s">נשארת בצד עד ששייכתם</span></span>
-                    <span class="bal-chip bal-wait">עדיין לא נספרה</span>
-                  </li>
-                </ul>
-              </div>
-              <div class="bal-col">
-                <h3 class="bal-col-h"><span class="bal-sign bal-sign-out" aria-hidden="true">−</span>הוצאות ותשלומים</h3>
-                <ul class="bal-list">
-                  <li class="bal-item scene-step" data-step="1">
-                    <span class="bal-item-t"><span class="bal-item-n">אולם וקייטרינג</span><span class="bal-item-s">לפי מי שהגיע בפועל</span></span>
-                    <span class="bal-chip bal-part">שולמה מקדמה</span>
-                  </li>
-                  <li class="bal-item scene-step" data-step="2">
-                    <span class="bal-item-t"><span class="bal-item-n">צילום</span><span class="bal-item-s">תשלום לספק</span></span>
-                    <span class="bal-chip bal-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>שולם</span>
-                  </li>
-                  <li class="bal-item scene-step" data-step="3">
-                    <span class="bal-item-t"><span class="bal-item-n">מוזיקה</span><span class="bal-item-s">יתרה אחרי המקדמה</span></span>
-                    <span class="bal-chip bal-wait">נשאר לשלם</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div class="bal-bottom scene-step" data-step="4">
-              <div class="bal-sum">
-                <span class="bal-lbl">סיכום</span>
-                <strong class="bal-big">השורה התחתונה</strong>
-              </div>
-              <ul class="bal-facts">
-                <li>מי הגיע בפועל</li>
-                <li>מה עלה האירוע לכל אדם</li>
-                <li>מה התקבל פחות מה שיצא</li>
-              </ul>
-              <span class="bal-note">
-                VEYA מציגה את השורה התחתונה כפי שהיא — גם כשהיא שלילית. מעטפה
-                שעוד לא שויכה נשארת <b>"עדיין לא נספרה"</b>, ולא הופכת ל"לא נתן".
-              </span>
-            </div>
-          </div>
+          <!-- ═════ מאזן האירוע, כמו שהוא במוצר ════════════════════════
+               חיתוך אמיתי של כרטיס הסיכום בלשונית "סיכום" של מאזן האירוע
+               (אירוע ההדגמה): עלות משוערת, שולם, נשאר לשלם, מתנות ותוצאה
+               צפויה — כולל כשהיא חסר. -->
+          <figure class="af-shot reveal d1">
+            <img src="/product/finance-summary.jpg" alt="כרטיס הסיכום של מאזן האירוע ב־VEYA: עלות משוערת 160,375.60 ₪, שולם עד עכשיו 134,616 ₪, נשאר לשלם 25,759.60 ₪, מתנות 137,050 ₪, ותוצאה צפויה — חסר 23,325.60 ₪" width="1062" height="930" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+            <figcaption class="af-note">
+              VEYA מציגה את השורה התחתונה כפי שהיא — גם כשהיא שלילית. מעטפה
+              שעוד לא שויכה נשארת <b>"עדיין לא נספרה"</b>, ולא הופכת ל"לא נתן".
+            </figcaption>
+          </figure>
 
           <div class="why-inner reveal d2" style="margin-top: 34px;">
             <h3 class="section-title">האירוע נגמר. הרשימה נשארת.</h3>
@@ -3571,9 +3495,9 @@
                והשלבים נחשפים אחד אחרי השני.
                כל המחשה כאן היא חיתוך של מסך אמיתי מתוך VEYA, מאירוע ההדגמה
                (אותו אירוע שבצילומי "איך זה עובד"): טבלת המוזמנים, סידור
-               ההושבה ולשונית הסיכום של מאזן האירוע. בטבלת המוזמנים הוסתרו
-               רק עמודות הטלפון, סטטוס ההזמנה והשולחן — כדי שהחיתוך יהיה
-               קריא ובלי מספרי טלפון. -->
+               ההושבה והדוח המלא של מאזן האירוע. בטבלת המוזמנים הוסתרו רק
+               עמודות הטלפון, סטטוס ההזמנה והשולחן, ובדוח — הטלפון, ההערות
+               ו"מתנה באשראי" (שעוד לא פעילה) — כדי שהחיתוך יהיה קריא. -->
           <ol class="rt">
             <li class="rt-step reveal">
               <span class="rt-rail" aria-hidden="true"><span class="rt-dot"></span><span class="rt-seg"></span></span>
@@ -3608,8 +3532,8 @@
                 <p class="rt-when">אחרי האירוע</p>
                 <h3 class="rt-title">והרשימה לא נעלמת</h3>
                 <p class="rt-text">מתנות, הוצאות, דוח ומידע שנשאר אצלכם גם אחרי שהאירוע נגמר.</p>
-                <figure class="rt-shot rt-shot--summary">
-                  <img src="/product/route-summary.jpg" alt="מאזן האירוע ב־VEYA, לשונית הסיכום: עלות משוערת, שולם עד עכשיו, נשאר לשלם, מתנות ותוצאה צפויה" width="708" height="528" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+                <figure class="rt-shot rt-shot--report">
+                  <img src="/product/route-report.jpg" alt="הדוח המלא ב־VEYA: שורה לכל מוזמן — סטטוס הגעה, כמה הוזמנו, כמה הגיעו, מתנה במעטפה וסך המתנה, ו״טרם נספרה״ למי שעוד לא נספר" width="1892" height="594" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
                 </figure>
               </div>
             </li>
