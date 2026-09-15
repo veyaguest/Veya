@@ -1,33 +1,38 @@
-"""לוח הזמנים של אישורי-ההגעה — חישוב *לאחור* ממועד סגירת הרשימה.
+"""לוח הזמנים של אישורי-ההגעה — מתאריך האירוע, דרך מועד סגירת הרשימה, אל הסבבים.
 
 עיקרון מנחה (כמו שאר מנועי ה-RSVP): מודול טהור ודטרמיניסטי. הוא רק *מחשב*
 מתי כל שלב במסלול אישורי-ההגעה אמור לקרות, ומחזיר תצוגת "יומן משימות" לזוג.
 אין כאן תופעות לוואי, אין כתיבה ל-DB, אין קריאות LLM, ואין תלות ב-``seating.py``.
 
-הרעיון:
-- הזוג בוחר כמה ימים לפני האירוע הוא חייב למסור לאולם מספר סופי
-  (``Event.venue_commit_days_before``, 1–10). מכאן נגזר **מועד סגירת
-  הרשימה** = תאריך האירוע פחות אותם ימים (מוזז אחורה אם נופל על סוף שבוע).
-- **מועד סגירת הרשימה הוא גם יום סבב השיחות האחרון** — תאריך אחד ויחיד
-  (``Schedule.commitment_date``, וגם תאריך ה-``call_round`` האחרון
-  ב-``placements``). ביום הזה הטלפנים מבצעים את הסבב האחרון מול מי שעדיין
-  לא אישר, ואז סוגרים את הרשימה. אין מועד נפרד ל"סבב טלפונים אחרון".
-- כל סבב אישורי-ההגעה מחושב *לאחור* ממועד סגירת הרשימה, כך שהסבב האחרון
-  נופל בדיוק עליו — ואז הרשימה סופית ומדויקת.
-- שישי/שבת: לא מתזמנים בהם פעולות. פעולה שנופלת על סוף שבוע מוזזת ליום
-  הפעיל הקרוב (ראשון), עם דגל ``moved_from_weekend``.
-- **אין באותו יום גם שלב WhatsApp וגם סבב טלפונים.** בין כל שני שלבים
-  סמוכים ב-``CYCLE`` יש פער מינימלי בימים פעילים (``GAP_WA_CALL`` /
-  ``GAP_WA_WA``); בלוח לא דחוס יש יום מפריד מלא, ובלוח דחוס הפער מצטמצם
-  אבל שני שלבים לעולם לא נופלים על אותו יום.
-- זמן קצר: אם אין מספיק ימים לסבב המלא, המסלול מתכווץ בצורה חכמה
-  (``compressed=true``) כדי להספיק כמה שיותר אישורים לפני מועד סגירת הרשימה.
+סדר החישוב (לא הופכים אותו — לא מתחילים מ"יש 14 יום"):
+1. **תאריך האירוע** — העוגן הראשון.
+2. **כמה זמן נשאר עד האירוע.**
+3. **מועד סגירת הרשימה** (``resolve_commit_days``):
+   - בעל האירוע בחר כמה ימים לפני האירוע למסור מספר סופי
+     (``Event.venue_commit_days_before``, 1–10) → משתמשים בבחירה.
+   - לא בחר, והאירוע קרוב מכדי לקיים תהליך מלא (פחות מ-``MAX_WINDOW_DAYS``)
+     → ברירת מחדל: **יום לפני האירוע**. אירוע מחר → הרשימה נסגרת היום.
+   - לא בחר והאירוע רחוק → אין עדיין לוח זמנים; בעל האירוע בוחר.
+   אין כאן שום מספר לפי סוג אירוע: ברית, בריתה וחתונה עוברות אותו חישוב,
+   וההבדל נובע רק מתאריך האירוע האמיתי.
+4. **החלון** = מיום הייחוס (היום / יום הפעלת המסלול) עד מועד הסגירה, ולכל
+   היותר ``MAX_WINDOW_DAYS`` ימים. 14 = מקסימום, לא חובה.
+5. **הסבבים נבנים בתוך החלון האמיתי** (``compute_schedule``):
+   - **מועד סגירת הרשימה הוא גם יום סבב השיחות האחרון** — תאריך אחד ויחיד
+     (``Schedule.commitment_date``).
+   - שישי/שבת: לא מתזמנים בהם פעולות.
+   - **כל שלב ביום פעיל משלו** — לכן אף פעם לא WhatsApp וסבב טלפונים באותו
+     יום, אף פעם לא תאריך בעבר ואף פעם לא אחרי מועד הסגירה. כשיש מקום נשמר
+     יום מפריד בין WhatsApp לשיחות (``GAP_WA_CALL`` / ``GAP_WA_WA``).
+   - זמן קצר (``compressed=true``): התהליך נדחס לימים הקיימים. אם אין מספיק
+     ימים פעילים לכל השלבים, נבחרים החשובים ביותר לפי ``STEP_PRIORITY`` —
+     המסלול מתקצר, לא נשבר.
 
 המודול עצמו טהור — רק *מחשב* תאריכים. אבל התאריכים האלה הם מקור האמת לשליחה
 בפועל: שלבי ה-WhatsApp (``whatsapp_first`` + ``reminder``) מחוברים למנגנון
-השליחה דרך ``rsvp_request_date`` ו-``communication.py`` (סוג ההודעה
-``rsvp_request`` והתזכורות). סבבי השיחות (``call_round``) נשארים פעולת מוקד
-ידנית (Call Center של האדמין).
+השליחה דרך ``rsvp_request_date`` / ``reminder_date`` ו-``communication.py``
+(סוג ההודעה ``rsvp_request`` והתזכורות). סבבי השיחות (``call_round``) נשארים
+פעולת מוקד ידנית (Call Center של האדמין).
 """
 from __future__ import annotations
 
@@ -38,28 +43,36 @@ from typing import Optional
 from app import models
 from app.automation import parse_event_date
 
-# ---- הסבב הקבוע של אישורי-ההגעה ----
-# כל שלב עם היסט יחסי (בימים) בתוך סבב *אידיאלי* מלא, שנפרס לאחור ממועד
-# סגירת הרשימה. audience: all = כל המוזמנים ; pending = מי שעדיין לא אישר.
-# שלבי WhatsApp (whatsapp_first + reminder) נשלחים אוטומטית; call_round הוא
-# פעולת מוקד ידנית. הסדר והתאריכים כאן הם מקור האמת גם ל-Call Center של האדמין.
+# ---- הסבב המלא של אישורי-ההגעה ----
+# הסדר כאן הוא סדר השלבים בזמן. audience: all = כל המוזמנים ; pending = מי
+# שעדיין לא אישר. שלבי WhatsApp (whatsapp_first + reminder) נשלחים אוטומטית;
+# call_round הוא פעולת מוקד ידנית. הסדר והתאריכים כאן הם מקור האמת גם
+# ל-Call Center של האדמין.
 CYCLE: list[dict] = [
-    {"type": "whatsapp_first", "offset": 0,  "icon": "✅", "label": "בקשת אישור ראשונה ב-WhatsApp", "audience": "pending"},
-    {"type": "reminder",       "offset": 2,  "icon": "📩", "label": "תזכורת ראשונה",              "audience": "pending"},
-    {"type": "call_round",     "offset": 4,  "icon": "📞", "label": "סבב שיחות ראשון",            "audience": "pending"},
-    {"type": "reminder",       "offset": 6,  "icon": "📩", "label": "תזכורת שנייה",               "audience": "pending"},
-    {"type": "call_round",     "offset": 8,  "icon": "📞", "label": "סבב שיחות שני",              "audience": "pending"},
-    {"type": "reminder",       "offset": 10, "icon": "📩", "label": "תזכורת שלישית",             "audience": "pending"},
-    {"type": "call_round",     "offset": 12, "icon": "📞", "label": "סבב שיחות אחרון",           "audience": "pending"},
+    {"type": "whatsapp_first", "icon": "✅", "label": "בקשת אישור ראשונה ב-WhatsApp", "audience": "pending"},
+    {"type": "reminder",       "icon": "📩", "label": "תזכורת ראשונה",              "audience": "pending"},
+    {"type": "call_round",     "icon": "📞", "label": "סבב שיחות ראשון",            "audience": "pending"},
+    {"type": "reminder",       "icon": "📩", "label": "תזכורת שנייה",               "audience": "pending"},
+    {"type": "call_round",     "icon": "📞", "label": "סבב שיחות שני",              "audience": "pending"},
+    {"type": "reminder",       "icon": "📩", "label": "תזכורת שלישית",             "audience": "pending"},
+    {"type": "call_round",     "icon": "📞", "label": "סבב שיחות אחרון",           "audience": "pending"},
 ]
-FULL_SPAN = 12  # ההיסט הגדול ביותר בסבב — אורך הסבב האידיאלי בימים.
 
-# חוק קשיח: אין באותו יום גם שלב WhatsApp (whatsapp_first / reminder) וגם
-# סבב טלפונים. הפער בין שלבים סמוכים ב-``CYCLE`` נמדד בימים *פעילים*:
-#   · WhatsApp <-> סבב טלפונים  → ``GAP_WA_CALL`` (2 = לפחות יום מפריד ביניהם)
+# אורך התהליך המלא, בימים קלנדריים — **מקסימום, לא חובה**. גם הסף לשאלה
+# "האם האירוע רחוק מספיק כדי שבעל האירוע יבחר מועד סגירה בעצמו" נגזר ממנו
+# (ראו ``resolve_commit_days``) — אין סף נפרד.
+MAX_WINDOW_DAYS = 14
+
+# אירוע קרוב שלא נבחר לו מועד סגירה: הרשימה נסגרת יום לפני האירוע.
+DEFAULT_NEAR_COMMIT_DAYS = 1
+
+# טווח הבחירה הידנית של "כמה ימים לפני האירוע" (נאכף ב-``routers/event.py``).
+MAX_COMMIT_DAYS = 10
+
+# הפער הרצוי בין שלבים סמוכים, בימים *פעילים*, כשיש מקום בחלון:
+#   · WhatsApp <-> סבב טלפונים  → ``GAP_WA_CALL`` (2 = יום מפריד ביניהם)
 #   · WhatsApp <-> WhatsApp     → ``GAP_WA_WA``  (1 — מותר סמוך)
-# בלוח דחוס הפער מצטמצם עד למינימום, אבל שני שלבים לעולם לא נופלים על אותו
-# יום (ראו ``compute_schedule`` — כל שלב נדחף לפחות יום פעיל אחד מקודמו).
+# בלוח דחוס הפער מצטמצם, אבל שני שלבים לעולם לא נופלים על אותו יום.
 GAP_WA_CALL = 2
 GAP_WA_WA = 1
 
@@ -69,6 +82,15 @@ GAP_WA_WA = 1
 _LAST_CALL_ROUND_IDX = max(
     i for i, s in enumerate(CYCLE) if s["type"] == "call_round"
 )
+
+# כשאין מספיק ימים פעילים לכל השלבים — אילו נשמרים קודם (אינדקסים ב-``CYCLE``).
+# החלטת המייסד (2026-09-15): בקשת האישור הראשונה (בלעדיה המוזמנים לא יכולים
+# לאשר) → סבב השיחות ביום הסגירה → ואז לסירוגין תזכורת/שיחה.
+STEP_PRIORITY: tuple[int, ...] = (0, _LAST_CALL_ROUND_IDX, 1, 2, 3, 4, 5)
+
+_REMINDER_LABELS = ("תזכורת ראשונה", "תזכורת שנייה", "תזכורת שלישית")
+_CALL_LABELS = ("סבב שיחות ראשון", "סבב שיחות שני")
+_LAST_CALL_LABEL = "סבב שיחות אחרון"
 
 _HEB_WEEKDAY = {6: "ראשון", 0: "שני", 1: "שלישי", 2: "רביעי", 3: "חמישי", 4: "שישי", 5: "שבת"}
 
@@ -89,20 +111,6 @@ def _prev_active_day(d: date) -> date:
     """היום הפעיל הקרוב אחורה (מדלג על שישי/שבת אל חמישי)."""
     while _is_weekend(d):
         d -= timedelta(days=1)
-    return d
-
-
-def _advance_active(d: date, n: int) -> date:
-    """``n`` ימים פעילים קדימה מ-``d`` (מדלג על שישי/שבת)."""
-    for _ in range(n):
-        d = _next_active_day(d + timedelta(days=1))
-    return d
-
-
-def _retreat_active(d: date, n: int) -> date:
-    """``n`` ימים פעילים אחורה מ-``d`` (מדלג על שישי/שבת)."""
-    for _ in range(n):
-        d = _prev_active_day(d - timedelta(days=1))
     return d
 
 
@@ -142,6 +150,23 @@ def rsvp_request_date(event: models.Event, now: Optional[datetime] = None) -> Op
     )
 
 
+def reminder_date(
+    event: models.Event, number: int, now: Optional[datetime] = None
+) -> Optional[date]:
+    """התאריך של התזכורת ה-``number`` (1/2/3) לפי לוח הזמנים — מקור האמת
+    לשליחת התזכורות בפועל (``communication._due_now``).
+
+    ``None`` = אין לוח זמנים, או שהתזכורת הזו לא נכנסה ללוח כי אין מספיק ימים.
+    """
+    schedule = compute_schedule(event, now)
+    if schedule is None:
+        return None
+    return next(
+        (p.date for p in schedule.placements if p.reminder_number == number),
+        None,
+    )
+
+
 def _ddmm(d: date) -> str:
     return d.strftime("%d/%m/%Y")
 
@@ -174,116 +199,160 @@ class Placement:
     moved_from_weekend: bool
     # סידורי סבב השיחות (1, 2, 3...) — רק לשלבי ``call_round``, אחרת None.
     round_number: Optional[int]
+    # סידורי התזכורת (1, 2, 3) — רק לשלבי ``reminder``, אחרת None. כך השליחה
+    # (``communication._due_now``) יודעת איזו תזכורת זו גם כשהלוח נדחס.
+    reminder_number: Optional[int] = None
 
 
 @dataclass(frozen=True)
 class Schedule:
-    """פריסת הסבב המלאה לאירוע אחד."""
+    """פריסת הסבב לאירוע אחד."""
 
     commitment_date: date
-    anchor_end: date
     start_date: date
     compressed: bool
     placements: list[Placement]
+    # כמה ימים לפני האירוע נסגרת הרשימה בפועל (בחירה ידנית או ברירת מחדל).
+    commit_days: int = DEFAULT_NEAR_COMMIT_DAYS
+    # True = בעל האירוע לא בחר, והמערכת קבעה "יום לפני האירוע" כי האירוע קרוב.
+    commit_is_default: bool = False
+
+
+def _started_on(event: models.Event) -> Optional[date]:
+    return event.rsvp_track_started_at.date() if event.rsvp_track_started_at else None
+
+
+def resolve_commit_days(
+    event: models.Event, now: Optional[datetime] = None
+) -> tuple[Optional[int], bool]:
+    """שלבים 1–4 בסדר החישוב: מתאריך האירוע אל "כמה ימים לפני נסגרת הרשימה".
+
+    מחזיר ``(ימים, האם_ברירת_מחדל)``. ``(None, False)`` = אין עדיין מועד סגירה
+    (אין תאריך אירוע, או שהאירוע רחוק ובעל האירוע עוד לא בחר).
+
+    האירוע "קרוב" כשנשארו פחות מ-``MAX_WINDOW_DAYS`` ימים — כלומר אין זמן
+    לתהליך מלא, ולכן אין טעם לחכות לבחירה: ברירת המחדל היא יום לפני האירוע.
+    """
+    event_date = parse_event_date(event.event_date)
+    if event_date is None:
+        return None, False
+    if event.venue_commit_days_before is not None:
+        return event.venue_commit_days_before, False
+    today = (now or datetime.utcnow()).date()
+    if 0 < (event_date - today).days < MAX_WINDOW_DAYS:
+        return DEFAULT_NEAR_COMMIT_DAYS, True
+    return None, False
+
+
+def max_commit_days(event_date: date, today: date) -> int:
+    """הבחירה הידנית הגדולה ביותר שעוד לא יוצרת מועד סגירה בעבר (0 = אין)."""
+    return max(0, min(MAX_COMMIT_DAYS, (event_date - today).days))
+
+
+def _choose_steps(active_days: int) -> list[int]:
+    """אילו שלבים מ-``CYCLE`` נכנסים לחלון (אינדקסים, בסדר הזמן)."""
+    return sorted(STEP_PRIORITY[: min(active_days, len(CYCLE))])
+
+
+def _spread(chosen: list[int]) -> list[float]:
+    """מיקום יחסי (0..1) לכל שלב נבחר, לפי הפער הרצוי בין שלבים סמוכים."""
+    if len(chosen) == 1:
+        return [0.0]
+    cum = [0]
+    for prev, cur in zip(chosen, chosen[1:]):
+        same_family = (CYCLE[prev]["type"] == "call_round") == (CYCLE[cur]["type"] == "call_round")
+        cum.append(cum[-1] + (GAP_WA_WA if same_family else GAP_WA_CALL))
+    return [c / cum[-1] for c in cum]
 
 
 def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Optional[Schedule]:
     """פורס את שלבי ``CYCLE`` לתאריכים עבור אירוע. ``None`` = אין מה לחשב
-    (חסר תאריך אירוע או שלא נבחר מועד סגירת רשימה).
+    (חסר תאריך אירוע, או אירוע רחוק שעוד לא נבחר לו מועד סגירת רשימה).
 
-    עוגן ההתחלה: היום שבו מסלול אישורי-ההגעה הופעל בפועל
-    (``rsvp_track_started_at`` — כלומר היום שבו נשלחו ההזמנות, שהוא בדיוק
-    המשמעות של השלב הראשון בסבב). כך התאריכים יציבים ולא "בורחים" קדימה
-    בכל יום שעובר. לפני ההפעלה אין עדיין עוגן אמיתי, ולכן מוצג לוח הזמנים
-    הצפוי מהיום — בדיוק כמו קודם.
+    יום הייחוס: היום שבו מסלול אישורי-ההגעה הופעל בפועל
+    (``rsvp_track_started_at``), כדי שהתאריכים יהיו יציבים ולא "יברחו" קדימה
+    בכל יום שעובר. לפני ההפעלה — היום (לוח הזמנים הצפוי מהיום).
     """
     now = now or datetime.utcnow()
     today = now.date()
     event_date = parse_event_date(event.event_date)
-    commit_days = event.venue_commit_days_before
+    commit_days, is_default = resolve_commit_days(event, now)
     if event_date is None or commit_days is None:
         return None
 
+    started_on = _started_on(event)
+    reference = started_on or today
+    if is_default and started_on is not None:
+        # מסלול שהופעל כשהאירוע עוד היה רחוק, בלי בחירת מועד סגירה: ברירת
+        # המחדל "נולדה" ביום שבו האירוע נעשה קרוב — לא מוקדם מזה, כדי שלא
+        # יופיעו פתאום סבבים בתאריכים שכבר עברו.
+        reference = max(started_on, event_date - timedelta(days=MAX_WINDOW_DAYS - 1))
+
+    # ---- מועד סגירת הרשימה ----
+    # תאריך האירוע פחות הימים, מוזז אחורה אם נפל על שישי/שבת. זהו **תאריך
+    # אחד ויחיד**: גם יום סבב השיחות האחרון וגם היום שבו סוגרים את הרשימה.
+    # לעולם לא לפני יום הייחוס (אירוע מחר → הרשימה נסגרת היום). אירוע שכבר
+    # הגיע לפני יום הייחוס לא "נגרר" קדימה — פשוט לא נשארים בו שלבים.
     raw_commitment = event_date - timedelta(days=commit_days)
-    # מועד סגירת הרשימה = תאריך האירוע פחות ימי המרווח לאולם, מוזז אחורה אם
-    # נפל על שישי/שבת. זהו **תאריך אחד ויחיד**: גם יום סבב השיחות האחרון
-    # (ראו ההצמדה למטה) וגם היום שבו הטלפנים סוגרים בפועל את הרשימה.
     commitment_date = _prev_active_day(raw_commitment)
-    # עוגן פריסת הסבב — היום הפעיל לפני מועד הסגירה. שאר השלבים נפרסים עד
-    # כאן; רק הסבב האחרון מוצמד ל-``commitment_date`` עצמו.
-    anchor_end = _prev_active_day(raw_commitment - timedelta(days=1))
-    ideal_start = anchor_end - timedelta(days=FULL_SPAN)
-    started_on = (
-        event.rsvp_track_started_at.date() if event.rsvp_track_started_at else None
-    )
-    # לא מתחילים מוקדם מהסבב האידיאלי (אין טעם לפרוס 12 יום על פני חודשיים),
-    # ולא בעבר כשעוד לא הופעל המסלול.
-    effective_start = max(ideal_start, started_on or today)
-    available = (anchor_end - effective_start).days
-    compressed = available < FULL_SPAN
-    if available < 0:
-        available = 0
-    scale = 1.0 if not compressed else (available / FULL_SPAN if FULL_SPAN else 1.0)
+    if reference < event_date:
+        commitment_date = max(commitment_date, reference)
 
-    def natural_of(step: dict) -> date:
-        return _next_active_day(
-            effective_start + timedelta(days=round(step["offset"] * scale))
-        )
+    # ---- החלון: עד MAX_WINDOW_DAYS ימים, לא לפני יום הייחוס ----
+    window_start = max(commitment_date - timedelta(days=MAX_WINDOW_DAYS), reference)
+    window_days = (commitment_date - window_start).days
+    compressed = window_days < MAX_WINDOW_DAYS
+    active = [
+        d for d in (window_start + timedelta(days=i) for i in range(window_days + 1))
+        if not _is_weekend(d)
+    ]
 
-    families = ["call" if s["type"] == "call_round" else "wa" for s in CYCLE]
+    # ---- בחירת השלבים ופריסתם ----
+    chosen = _choose_steps(len(active))
+    positions = _spread(chosen) if chosen else []
+    slots = len(active) - 1
+    idx = [round(p * slots) for p in positions]
+    # כל שלב ביום פעיל משלו: קדימה — לפחות אחד אחרי הקודם; אחורה — השלב האחרון
+    # על היום האחרון בחלון (מועד הסגירה), וכל שלב לפחות אחד לפני הבא.
+    for j in range(1, len(idx)):
+        idx[j] = max(idx[j], idx[j - 1] + 1)
+    if idx:
+        idx[-1] = slots
+    for j in range(len(idx) - 2, -1, -1):
+        idx[j] = min(idx[j], idx[j + 1] - 1)
 
-    def gap_after(i: int) -> int:
-        """פער מינימלי (בימים פעילים) בין שלב ``i`` לשלב ``i+1``."""
-        return GAP_WA_CALL if families[i] != families[i + 1] else GAP_WA_WA
-
-    # ---- פריסה סדרתית ----
-    # שלב 1 (קדימה): כל שלב במיקומו הטבעי (מעוגן ל-``effective_start`` ומכווץ
-    # לפי ``scale``), ולפחות ``gap_after`` ימים פעילים אחרי השלב הקודם.
-    dates: dict[int, date] = {_LAST_CALL_ROUND_IDX: commitment_date}
-    floor = natural_of(CYCLE[0])
-    for idx in range(_LAST_CALL_ROUND_IDX):
-        dates[idx] = max(natural_of(CYCLE[idx]), floor)
-        floor = _advance_active(dates[idx], gap_after(idx))
-
-    # שלב 2 (לאחור): מושכים כל שלב שנדחף מעבר למקומו, כך שיישאר לפחות
-    # ``gap_after`` ימים פעילים *לפני* השלב הבא. בלוח לא דחוס — תמיד עד יום
-    # ההפרדה המלא (יש מקום). בלוח דחוס — לא מוקדם מהמיקום הטבעי (המכווץ לפי
-    # ``scale``), כדי לשמור על העיגון לתחילת המסלול.
-    for idx in range(_LAST_CALL_ROUND_IDX - 1, -1, -1):
-        want = _retreat_active(dates[idx + 1], gap_after(idx))
-        if dates[idx] > want:
-            dates[idx] = want if not compressed else max(want, natural_of(CYCLE[idx]))
-
-    # שלב 3 (רשת ביטחון): מבטיחים שכל שלב מוקדם ביום פעיל אחד לפחות מהשלב
-    # הבא — יורדים לאחור מסבב השיחות האחרון המוצמד. ``_retreat_active``
-    # תמיד יורד לפחות יום פעיל אחד, ולכן שני שלבים לעולם לא נופלים על אותו
-    # יום (בפרט: אף פעם לא WhatsApp וסבב טלפונים ביחד).
-    for idx in range(_LAST_CALL_ROUND_IDX - 1, -1, -1):
-        hard = _retreat_active(dates[idx + 1], 1)
-        if dates[idx] > hard:
-            dates[idx] = hard
-
+    reminders = [i for i in chosen if CYCLE[i]["type"] == "reminder"]
+    calls = [i for i in chosen if CYCLE[i]["type"] == "call_round"]
     placements: list[Placement] = []
-    round_number = 0
-    for idx, step in enumerate(CYCLE):
-        placed = dates[idx]
-        if step["type"] == "call_round":
-            round_number += 1
-            moved = idx == _LAST_CALL_ROUND_IDX and _is_weekend(raw_commitment)
-            rn: Optional[int] = round_number
+    for j, step_idx in enumerate(chosen):
+        step = dict(CYCLE[step_idx])
+        rn: Optional[int] = None
+        reminder_n: Optional[int] = None
+        if step["type"] == "reminder":
+            reminder_n = reminders.index(step_idx) + 1
+            step["label"] = _REMINDER_LABELS[reminder_n - 1]
+        elif step["type"] == "call_round":
+            rn = calls.index(step_idx) + 1
+            step["label"] = (
+                _LAST_CALL_LABEL if step_idx == _LAST_CALL_ROUND_IDX else _CALL_LABELS[rn - 1]
+            )
+        if step_idx == _LAST_CALL_ROUND_IDX:
+            moved = _is_weekend(raw_commitment)
         else:
-            moved = placed != natural_of(step)
-            rn = None
+            natural = window_start + timedelta(days=round(positions[j] * window_days))
+            moved = _is_weekend(natural)
         placements.append(Placement(
-            step=step, date=placed, moved_from_weekend=moved, round_number=rn,
+            step=step, date=active[idx[j]], moved_from_weekend=moved,
+            round_number=rn, reminder_number=reminder_n,
         ))
 
     return Schedule(
         commitment_date=commitment_date,
-        anchor_end=anchor_end,
-        start_date=min((p.date for p in placements), default=effective_start),
+        start_date=placements[0].date if placements else window_start,
         compressed=compressed,
         placements=placements,
+        commit_days=commit_days,
+        commit_is_default=is_default,
     )
 
 
@@ -316,6 +385,7 @@ def _empty_view(event: models.Event) -> dict:
         "configured": False,
         "event_date": _ddmm(ed) if ed else "",
         "commit_days_before": event.venue_commit_days_before,
+        "commit_is_default": False,
         "commitment_date": None,
         "rsvp_start_date": None,
         "days_to_commitment": None,
@@ -345,12 +415,12 @@ def compute_timeline(
     now = now or datetime.utcnow()
     today = now.date()
     event_date = parse_event_date(event.event_date)
-    commit_days = event.venue_commit_days_before
 
-    # בלי תאריך אירוע או בלי בחירת מועד סגירת רשימה — אין מה לחשב.
+    # בלי תאריך אירוע, או אירוע רחוק בלי בחירת מועד סגירה — אין מה לחשב.
     schedule = compute_schedule(event, now)
-    if schedule is None or event_date is None or commit_days is None:
+    if schedule is None or event_date is None:
         return _empty_view(event)
+    commit_days = schedule.commit_days
 
     total = len(guests)
     pending = sum(1 for g in guests if g.rsvp_status == "pending")
@@ -487,6 +557,7 @@ def compute_timeline(
         "configured": True,
         "event_date": _ddmm(event_date),
         "commit_days_before": commit_days,
+        "commit_is_default": schedule.commit_is_default,
         "commitment_date": _ddmm(commitment_date),
         "rsvp_start_date": _ddmm(rsvp_start_date),
         "days_to_commitment": (commitment_date - today).days,

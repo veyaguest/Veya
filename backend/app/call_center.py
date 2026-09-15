@@ -76,7 +76,7 @@ NOT_HANDLED = "not_handled"
 SCOPES = (SCOPE_TODAY, SCOPE_TOMORROW, SCOPE_LATER, NOT_HANDLED)
 
 # האופק ל"בהמשך": מספיק רחוק כדי לתפוס גם את הסבב האחרון האפשרי (מוגבל תמיד
-# ל-anchor_end, ראו rsvp_timeline.compute_schedule) וגם Follow-up שנקבע
+# למועד סגירת הרשימה, ראו rsvp_timeline.compute_schedule) וגם Follow-up שנקבע
 # קדימה בזמן. לא "אינסוף" בכוונה — רק מספיק כדי שלא נפספס שום דבר אמיתי.
 _FAR_FUTURE_DAYS = 400
 
@@ -101,7 +101,8 @@ def due_events(db: Session, now: Optional[datetime] = None) -> list[tuple[models
     events = db.scalars(
         select(models.Event).where(
             models.Event.rsvp_track_active.is_(True),
-            models.Event.venue_commit_days_before.is_not(None),
+            # בלי סינון לפי מועד סגירה: אירוע קרוב שלא נבחר לו מועד מקבל
+            # ברירת מחדל (יום לפני) — ``compute_schedule`` מחליט אם יש לוח.
             models.Event.event_date != "",
         )
     ).all()

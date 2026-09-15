@@ -1780,6 +1780,8 @@ class RsvpTimelineView(BaseModel):
     configured: bool                        # האם יש תאריך אירוע + מועד סגירת רשימה
     event_date: str = ""
     commit_days_before: Optional[int] = None
+    # True = לא נבחר מועד סגירה והאירוע קרוב, אז הרשימה נסגרת יום לפני האירוע.
+    commit_is_default: bool = False
     commitment_date: Optional[str] = None
     rsvp_start_date: Optional[str] = None
     days_to_commitment: Optional[int] = None
