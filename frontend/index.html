@@ -776,6 +776,15 @@
          שהחלפת תאריך לא תזיז את העמוד. */
       .dl-line { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; align-content: start; min-height: 530px; }
       .dl-err { margin: 14px 0 0; text-align: center; font-size: var(--fs-sm); color: var(--body); }
+      /* ההמלצה: מובחנת, אבל המלצה — לא שדה חובה ולא אזהרה */
+      .dl-rec { max-width: 560px; margin: 0 auto 26px; padding: 14px 18px; text-align: center; border: 1px solid rgba(201, 162, 39, 0.45); border-radius: var(--radius-md); background: var(--cream); }
+      .dl-rec-main { margin: 0; font-size: var(--fs-md); color: var(--charcoal); }
+      .dl-rec-main strong { font-weight: 700; }
+      .dl-rec-star { color: var(--gold-deep); margin-inline-end: 6px; }
+      .dl-rec-why { margin: 4px 0 0; font-size: var(--fs-sm); color: var(--body); }
+      /* הסבב האחרון: התזכורת האחרונה וסבב הטלפונים שסוגר את הרשימה */
+      .dl-tag { grid-column: 1 / -1; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.04em; color: var(--gold-deep); }
+      .dl-stop.is-final { border-color: rgba(201, 162, 39, 0.55); }
       .dl-stop {
         display: grid; grid-template-columns: 5.6rem 1fr; align-items: center; gap: 14px;
         padding: 14px 18px; background: var(--cream); border: 1px solid var(--line);
@@ -788,14 +797,14 @@
       }
       .dl-stop.is-close .dl-date { color: var(--gold-deep); }
       .dl-what { font-size: var(--fs-md); color: var(--body); }
-      .dl-stop.is-close .dl-what { font-weight: 600; color: var(--charcoal); }
+      .dl-stop.is-close .dl-what, .dl-stop.is-final .dl-what { font-weight: 600; color: var(--charcoal); }
       /* עדכון תאריך: הבהוב עדין אחד, לא אנימציה. */
       .dl-stop.is-fresh .dl-date { animation: dl-fresh 420ms var(--ease-out); }
       @keyframes dl-fresh { from { opacity: 0.25; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
       .dl-say { margin: 22px 0 0; text-align: center; font-size: var(--fs-md); color: var(--muted); }
       @media (min-width: 861px) {
         .dl-line { grid-template-columns: repeat(var(--dl-n, 7), minmax(0, 1fr)); gap: 10px; min-height: 104px; }
-        .dl-stop { grid-template-columns: 1fr; justify-items: center; align-content: center; text-align: center; gap: 6px; padding: 18px 8px; min-height: 118px; }
+        .dl-stop { grid-template-columns: 1fr; justify-items: center; align-content: center; text-align: center; gap: 6px; padding: 16px 8px; min-height: 142px; }
         .dl-date { font-size: var(--fd-sm); }
         .dl-what { font-size: var(--fs-sm); }
       }
@@ -2655,6 +2664,11 @@
               </span>
             </label>
 
+            <div class="dl-rec">
+              <p class="dl-rec-main"><span class="dl-rec-star" aria-hidden="true">★</span><strong>ההמלצה שלנו:</strong> לסגור את הרשימה <span dir="ltr">2–3</span> ימים לפני האירוע.</p>
+              <p class="dl-rec-why">ככה נשאר לכם זמן להשלים אישורים, לסגור הושבה ולהגיע לאירוע עם מספרים ברורים.</p>
+            </div>
+
             <ol class="dl-line" data-dl-line aria-live="polite"></ol>
             <p class="dl-err" data-dl-err hidden>לא הצלחנו לחשב את לוח הזמנים כרגע. אפשר לנסות שוב בעוד רגע.</p>
 
@@ -4196,9 +4210,10 @@
           var p = isoDate.split('-');
           return p[2] + '.' + p[1];
         }
-        function stop(date, what, isClose) {
+        function stop(date, what, cls, tag) {
           var li = document.createElement('li');
-          li.className = 'dl-stop' + (isClose ? ' is-close' : '');
+          li.className = 'dl-stop' + (cls ? ' ' + cls : '');
+          if (tag) { var t = document.createElement('span'); t.className = 'dl-tag'; t.textContent = tag; li.appendChild(t); }
           var d = document.createElement('span'); d.className = 'dl-date'; d.textContent = ddmm(date);
           var w = document.createElement('span'); w.className = 'dl-what'; w.textContent = what;
           li.appendChild(d); li.appendChild(w);
@@ -4208,15 +4223,26 @@
         var seq = 0, timer = null;
         function render(data, fresh) {
           var steps = data.placements.slice();
+          var items = [];
           var last = steps[steps.length - 1];
-          // המנוע שם את סבב השיחות האחרון על מועד הסגירה עצמו — יום אחד.
-          var closeLabel = 'סוגרים רשימה';
+          // המנוע שם את סבב הטלפונים האחרון על מועד הסגירה עצמו, ואת התזכורת
+          // האחרונה ביום פעיל שלפניו. יחד הם "הסבב האחרון": הודעה, ואז טלפונים.
           if (last && last.date === data.commitment_date && last.type === 'call_round') {
-            closeLabel = 'סבב אחרון · סוגרים רשימה';
             steps.pop();
+            items.push(stop(data.commitment_date, 'סבב טלפונים · סוגרים רשימה', 'is-close is-final', 'הסבב האחרון'));
+            var prev = steps[steps.length - 1];
+            if (prev && prev.type === 'reminder') {
+              steps.pop();
+              items.push(stop(prev.date, 'תזכורת אחרונה', 'is-final', 'הסבב האחרון'));
+            }
+          } else {
+            items.push(stop(data.commitment_date, 'סוגרים רשימה', 'is-close'));
           }
-          var items = [stop(data.commitment_date, closeLabel, true)];
-          for (var i = steps.length - 1; i >= 0; i -= 1) items.push(stop(steps[i].date, LABEL[steps[i].type] || steps[i].label, false));
+          for (var i = steps.length - 1; i >= 0; i -= 1) {
+            var st = steps[i];
+            var label = st.type === 'call_round' ? 'סבב טלפונים' : (LABEL[st.type] || st.label);
+            items.push(stop(st.date, label, ''));
+          }
           line.style.setProperty('--dl-n', String(items.length));
           line.replaceChildren.apply(line, items);
           if (!fresh) return;
