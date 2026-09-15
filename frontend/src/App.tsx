@@ -92,9 +92,8 @@ function pageTitles(terms: EventTerms): Record<Page, string> {
     rsvp: 'אישורי הגעה',
     hall: 'סידור הושבה',
     gifts: strings.gifts.pageTitle,
-    // "כספי החתונה" / "כספי הברית" / "כספי האירוע" — דרך הלקסיקון,
-    // לא טקסט חתונתי קשיח.
-    finance: strings.finance.navTitle(terms.eventNoun),
+    // "מאזן האירוע" — שם קבוע, זהה בכל סוגי האירוע (לא דרך הלקסיקון).
+    finance: strings.finance.navTitle,
   }
 }
 
@@ -124,7 +123,7 @@ function navItemsFor(
   // כסף של הזוג שאין לו שום קשר לספק סליקה. הוא מופיע לכל אירוע.
   items.push({
     key: 'finance',
-    label: strings.finance.navTitle(terms.eventNoun),
+    label: strings.finance.navTitle,
     short: strings.finance.navShort,
   })
   return items

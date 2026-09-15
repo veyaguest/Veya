@@ -61,8 +61,10 @@ type Tab = 'cost' | 'counting' | 'summary'
  *
  * ## Event-first
  *
- * הכותרות נבנות מהלקסיקון (``activeEventTerms().eventNoun``) — "עלות
- * החתונה" בחתונה, "עלות הברית" בברית. אין כאן מילה חתונתית קשיחה.
+ * כותרות הלשוניות נבנות מהלקסיקון (``activeEventTerms().eventNoun``) —
+ * "עלות החתונה" בחתונה, "עלות הברית" בברית. אין כאן מילה חתונתית קשיחה.
+ * שם העמוד עצמו (``t.navTitle``) הוא היוצא מן הכלל: "מאזן האירוע" קבוע
+ * וזהה בכל סוגי האירוע (החלטת בעלים 2026-09-15) — לא נגזר מהלקסיקון.
  */
 export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') => void }) {
   const terms = activeEventTerms()
@@ -181,7 +183,7 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
           מעל זה הם היררכיה שבורה, לא צפיפות מידע. */}
       {tab === 'cost' && <FinanceHero data={data} />}
 
-      <nav className="fin-tabs" aria-label={t.navTitle(terms.eventNoun)}>
+      <nav className="fin-tabs" aria-label={t.navTitle}>
         <TabButton current={tab} value="cost" onSelect={setTab}>
           {t.costTitle(terms.eventNoun)}
         </TabButton>
@@ -1396,7 +1398,7 @@ function SummaryTab({
               <button
                 type="button"
                 className="btn-ghost"
-                onClick={() => printReport(report, terms.eventNoun)}
+                onClick={() => printReport(report)}
               >
                 {t.printReport}
               </button>
@@ -1836,7 +1838,7 @@ const LOGO_MONOGRAM_IMG = `<img src="${veyaMonogram}" alt="" />`
  * לכותרת לחזור בכל עמוד ב-Chrome וב-Safari; מספרי עמודים מגיעים
  * מהגדרות ההדפסה של הדפדפן עצמו.
  */
-function printReport(report: FinanceReport, eventNoun: string): void {
+function printReport(report: FinanceReport): void {
   const esc = (v: string) =>
     (v ?? '').replace(/[&<>"]/g, (c) =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string,
@@ -1884,7 +1886,7 @@ function printReport(report: FinanceReport, eventNoun: string): void {
     .join(' · ')
 
   const html = `<!doctype html><html dir="rtl" lang="he"><head><meta charset="utf-8">
-<title>${esc(t.navTitle(eventNoun))} — ${esc(report.event_title)}</title>
+<title>${esc(t.navTitle)} — ${esc(report.event_title)}</title>
 <style>
   /* מרווח עליון של 22mm משאיר שטח בטוח לכותרת הרצה (~12mm) בלי להתקרב
      לשוליים הלא-מודפסים של מדפסות ביתיות. */
@@ -1960,7 +1962,7 @@ function printReport(report: FinanceReport, eventNoun: string): void {
 
 <table class="page-spacer"><thead><tr><td></td></tr></thead><tbody><tr><td>
 
-<h1>${esc(t.navTitle(eventNoun))}</h1>
+<h1>${esc(t.navTitle)}</h1>
 <p class="lede">${esc(t.repGeneratedAt)} ${esc(
     new Date(report.generated_at).toLocaleDateString('he-IL'),
   )}</p>
