@@ -1417,84 +1417,87 @@
       .step-two p { font-size: var(--fs-sm); color: var(--muted); margin: 0; }
       @media (max-width: 620px) { .steps-two { grid-template-columns: 1fr; } }
 
-      /* ---- מסלול האירוע: 01 → 02 → 03 ----
-         RTL מהיסוד: direction: rtl על הסקשן, כל המיקומים לוגיים
-         (inset-inline-start, grid שנקרא מימין). מסילה אנכית בצד ימין: 01
-         למעלה, והקטע של כל שלב יורד עד הנקודה של השלב הבא. בדסקטופ כל שלב
-         הוא שורה — הטקסט מימין והמסך האמיתי משמאלו; במובייל המסך מתחת.
-         המסכים הם חיתוכים אמיתיים מ-VEYA, לא כרטיסים שנבנו לדף.
-         התנועה היחידה: השלב נחשף, והקטע שלו נמתח למטה. */
+      /* ---- מפת סוגי האירוע ----
+         לא מסלול ולא שלבים: אוסף לא סימטרי שבו לחתונה יש משקל אחר משאר
+         הסוגים. RTL: הגריד נקרא מימין (העמודה הראשונה היא הימנית), וכל
+         המיקומים לוגיים. שתי המחשות בלבד, שתיהן חיתוך ממסך אמיתי. */
       #events { direction: rtl; }
-      .rt {
-        --rt-gap: 72px; --rt-dot: 11px; --rt-rail: 28px;
-        list-style: none; margin: 8px auto 0; padding: 0; max-width: 1000px;
+      .ev-head { max-width: 46ch; margin: 0 0 clamp(34px, 5vw, 56px); text-align: start; }
+      #events .section-title { text-wrap: balance; }
+      .ev-head .section-sub { margin-inline: 0; text-align: start; }
+      .ev {
+        display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: clamp(26px, 3.4vw, 44px) clamp(20px, 2.6vw, 36px); align-items: start;
       }
-      .rt-step {
-        position: relative; display: grid; grid-template-columns: var(--rt-rail) minmax(0, 1fr);
-        column-gap: 22px; padding-bottom: var(--rt-gap); min-width: 0;
-      }
-      .rt-step:last-child { padding-bottom: 0; }
-      .rt-rail { position: relative; }
-      .rt-dot {
-        position: absolute; top: 14px; inset-inline-start: calc((var(--rt-rail) - var(--rt-dot)) / 2);
-        width: var(--rt-dot); height: var(--rt-dot); border-radius: 50%;
-        background: var(--ivory); border: 2px solid var(--gold); box-sizing: border-box; z-index: 1;
-      }
-      /* עד הנקודה של השלב הבא: דרך הרווח שבין השלבים ועד ה-top שלה */
-      .rt-seg {
-        position: absolute; inset-inline-start: calc(var(--rt-rail) / 2 - 0.5px); width: 1px;
-        top: calc(14px + var(--rt-dot)); bottom: calc(-1 * (var(--rt-gap) + 14px));
-        background: rgba(201, 162, 39, 0.55);
-        transform: scaleY(0); transform-origin: 50% 0;
-        transition: transform 1.1s var(--ease-out) 0.35s;
-      }
-      .rt-step.in .rt-seg { transform: none; }
-      .rt-body {
-        display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr);
-        grid-template-areas: "num shot" "when shot" "title shot" "text shot";
-        grid-template-rows: auto auto auto 1fr; column-gap: 56px; align-items: start;
-      }
-      .rt-num { grid-area: num; }
-      .rt-when { grid-area: when; }
-      .rt-title { grid-area: title; }
-      .rt-text { grid-area: text; }
-      .rt-shot { grid-area: shot; }
-      .rt-num {
-        font-family: var(--font-display); font-size: clamp(2.6rem, 4.2vw, 3.5rem); font-weight: 400; line-height: 1;
-        color: color-mix(in srgb, var(--gold-deep) 76%, var(--ivory)); font-variant-numeric: lining-nums; margin-bottom: 14px;
-      }
-      .rt-when { margin: 0 0 6px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.04em; color: var(--gold-deep); }
-      .rt-title { margin: 0 0 8px; font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 500; line-height: 1.2; color: var(--charcoal); }
-      .rt-text { margin: 0; font-size: var(--fs-md); line-height: 1.7; color: var(--body); max-width: 34ch; }
+      .ev-name { margin: 0 0 8px; font-family: var(--font-display); font-weight: 500; line-height: 1.1; color: var(--charcoal); }
+      .ev-name a { color: inherit; text-decoration: none; }
+      .ev-name a:hover { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+      .ev-name a:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 4px; border-radius: 4px; }
+      .ev-line { margin: 0; color: var(--body); line-height: 1.65; }
+      .ev-meta { margin: 14px 0 0; display: grid; gap: 7px; }
+      .ev-meta > div { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr); gap: 10px; align-items: baseline; }
+      .ev-meta dt { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.1em; color: var(--gold-deep); }
+      .ev-meta dd { margin: 0; font-size: var(--fs-sm); color: var(--muted); line-height: 1.6; }
 
-      /* המסך האמיתי: חיתוך נקי במסגרת דקה, בלי מכשיר ובלי אפקט */
-      .rt-shot {
-        margin: 0; justify-self: start; align-self: start;
-        background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
-        box-shadow: 0 1px 2px rgba(43, 38, 32, 0.05), 0 22px 44px -30px rgba(43, 38, 32, 0.4);
+      /* חתונה — הבלוק הדומיננטי */
+      .ev-main { grid-column: 1 / span 7; grid-row: span 2; }
+      .ev-main .ev-k { margin: 0 0 6px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.08em; color: var(--gold-deep); }
+      .ev-main .ev-name { font-size: clamp(2.4rem, 5vw, 3.6rem); }
+      .ev-main .ev-line { font-size: var(--fs-xl); max-width: 30ch; }
+      .ev-main .ev-meta { margin-top: 20px; max-width: 46ch; }
+      /* פרט קטן מתוך רשימת המוזמנים — לא מסך שלם ולא מכשיר */
+      .ev-detail {
+        margin: 26px 0 0; width: min(100%, 300px); overflow: hidden;
+        border: 1px solid var(--line); border-radius: 10px; background: #fff;
+        box-shadow: 0 1px 2px rgba(43, 38, 32, 0.05), 0 18px 34px -28px rgba(43, 38, 32, 0.4);
       }
-      .rt-shot img { display: block; width: 100%; height: auto; }
-      .rt-shot--guests { width: min(100%, 560px); }
-      .rt-shot--rsvp-seating { width: min(100%, 470px); }
-      .rt-shot--report { width: min(100%, 600px); }
+      .ev-detail img { display: block; width: 100%; height: auto; }
 
-      .rt-end {
-        margin: 84px auto 0; max-width: 30ch; text-align: center;
+      /* המסך שבו בוחרים סוג אירוע */
+      .ev-shot { grid-column: 8 / span 5; margin: 0; }
+      .ev-shot img {
+        display: block; width: 100%; height: auto; border-radius: 10px;
+        border: 1px solid rgba(43, 38, 32, 0.18);
+        box-shadow: 0 2px 4px rgba(43, 38, 32, 0.1), 0 26px 46px -30px rgba(43, 38, 32, 0.55);
+      }
+      .ev-shot figcaption { margin-top: 12px; font-size: var(--fs-sm); color: var(--muted); line-height: 1.6; max-width: 34ch; }
+
+      /* שאר הסוגים — גדלים ומיקומים שונים, לא גריד אחיד */
+      .ev-henna { grid-column: 8 / span 5; }
+      .ev-henna .ev-name { font-size: var(--fd-sm); }
+      .ev-henna .ev-line { font-size: var(--fs-lg); }
+      .ev-bar { grid-column: 1 / span 4; }
+      .ev-bat { grid-column: 5 / span 4; }
+      .ev-bar .ev-name, .ev-bat .ev-name { font-size: var(--fs-2xl); }
+      .ev-bar .ev-line, .ev-bat .ev-line { font-size: var(--fs-md); }
+      .ev-brit { grid-column: 10 / span 3; }
+      .ev-brita { grid-column: 3 / span 5; }
+      .ev-brit .ev-name, .ev-brita .ev-name { font-size: var(--fs-xl); }
+      .ev-brit .ev-line, .ev-brita .ev-line { font-size: var(--fs-sm); }
+      .ev-brit .ev-meta, .ev-brita .ev-meta { margin-top: 10px; }
+
+      .ev-end {
+        margin: clamp(56px, 7vw, 84px) 0 0; max-width: 34ch; text-align: start;
         font-family: var(--font-display); font-size: var(--fd-sm); line-height: 1.35; color: var(--body);
       }
-      .rt-end strong { display: inline-block; margin-top: 4px; font-weight: 500; color: var(--charcoal); font-size: var(--fd-md); }
+      .ev-end strong { display: inline-block; margin-top: 4px; font-weight: 500; color: var(--charcoal); font-size: var(--fd-md); }
 
       @media (max-width: 900px) {
-        .rt { --rt-gap: 52px; max-width: 560px; }
-        .rt-step { column-gap: 14px; }
-        .rt-body { grid-template-columns: minmax(0, 1fr); grid-template-areas: "num" "when" "title" "text" "shot"; grid-template-rows: none; }
-        .rt-num { font-size: 2.2rem; margin-bottom: 8px; }
-        .rt-text { margin-bottom: 18px; }
-        .rt-shot { justify-self: stretch; width: 100%; }
-        .rt-end { margin-top: 60px; }
+        .ev { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 30px 20px; }
+        .ev-main { grid-column: 1 / span 6; grid-row: auto; }
+        .ev-main .ev-line { max-width: none; }
+        .ev-detail { width: min(100%, 300px); }
+        .ev-shot { grid-column: 1 / span 6; }
+        .ev-henna { grid-column: 1 / span 6; }
+        .ev-bar { grid-column: 1 / span 3; }
+        .ev-bat { grid-column: 4 / span 3; }
+        .ev-brit { grid-column: 1 / span 3; }
+        .ev-brita { grid-column: 4 / span 3; }
+        .ev-meta > div { grid-template-columns: 4.2rem minmax(0, 1fr); gap: 8px; }
       }
-      @media (prefers-reduced-motion: reduce) {
-        .rt-seg, .rt-step.in .rt-seg { transform: none; transition: none; }
+      @media (max-width: 520px) {
+        .ev-bar, .ev-bat, .ev-brit, .ev-brita { grid-column: 1 / span 6; }
+        .ev-bar .ev-name, .ev-bat .ev-name { font-size: var(--fs-xl); }
       }
 
       /* ---- CTA משני בתוך סקשן (למחשבון) ---- */
@@ -2625,6 +2628,8 @@
     
     
     
+    
+    
     </style>
     <script>
       /* צילום שנקטע בטעינה: ניסיון חוזר אחד, והמסגרת נשארת. מוגדר ב-head כדי
@@ -3412,65 +3417,84 @@
            כל הלוחות באותו תא, כך שגובה הסקשן לא זז כשמחליפים אירוע. -->
       <section class="eventtypes tone-light" id="events" aria-labelledby="events-title">
         <div class="wrap">
-          <div class="section-head reveal">
-            <h2 id="events-title" class="section-title">לא מנהלים כל אירוע באותה צורה.<br />וגם לא צריך.</h2>
+          <div class="ev-head reveal">
+            <h2 id="events-title" class="section-title">כל אירוע נראה אחרת.<br />VEYA מתאימה את עצמה.</h2>
             <p class="section-sub">
-              חתונה, חינה, בר מצווה או ברית — בכל אירוע יש אנשים אחרים, זמן אחר ודברים אחרים שצריך לסגור.
-              VEYA מתאימה את הדרך שבה מנהלים את האירוע למה שקורה בו באמת.
+              הצדדים, הקבוצות, השפה ותבנית ההוצאות נגזרים מסוג האירוע שבחרתם —
+              לא רק הכותרת שמופיעה למעלה.
             </p>
           </div>
 
-          <!-- ═════ מסלול האירוע: 01 → 02 → 03 ═════════════════════════════
-               בנוי RTL מההתחלה: מסילה אנכית בצד ימין, 01 למעלה והקו יורד
-               אל 02 ו-03; בדסקטופ הטקסט מימין והמסך האמיתי משמאלו. אין טאבים ואין לחיצות: גוללים,
-               והשלבים נחשפים אחד אחרי השני.
-               כל המחשה כאן היא חיתוך של מסך אמיתי מתוך VEYA, מאירוע ההדגמה
-               (אותו אירוע שבצילומי "איך זה עובד"): טבלת המוזמנים, סידור
-               ההושבה והדוח המלא של מאזן האירוע. בטבלת המוזמנים הוסתרו רק
-               עמודות הטלפון, סטטוס ההזמנה והשולחן, ובדוח — הטלפון, ההערות
-               ו"מתנה באשראי" (שעוד לא פעילה) — כדי שהחיתוך יהיה קריא. -->
-          <ol class="rt">
-            <li class="rt-step reveal">
-              <span class="rt-rail" aria-hidden="true"><span class="rt-dot"></span><span class="rt-seg"></span></span>
-              <div class="rt-body">
-                <span class="rt-num" aria-hidden="true">01</span>
-                <p class="rt-when">לפני האירוע</p>
-                <h3 class="rt-title">המוזמנים נכנסים לתמונה</h3>
-                <p class="rt-text">רשימה, קבוצות, פרטים והערות — הכל מתחיל במקום אחד.</p>
-                <figure class="rt-shot rt-shot--guests">
-                  <img src="/product/route-guests.jpg" alt="ניהול המוזמנים ב־VEYA: טבלת המוזמנים עם שם, צד, קבוצה, כמות, אישור הגעה והערות הושבה" width="1340" height="672" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
-                </figure>
-              </div>
-            </li>
+          <!-- ═════ מפת סוגי האירוע ═══════════════════════════════════════
+               כל מה שכתוב כאן מגיע מהלקסיקון של המוצר עצמו:
+               ‎frontend/src/strings/eventTypes.ts ו-backend/app/event_terms.py
+               (sideLabels ו-groupOptions לכל סוג), ותבניות ההוצאות
+               ב-finance_categories.py. שתי ההמחשות הן חיתוכים אמיתיים:
+               מסך בחירת סוג האירוע, ופרט מתוך רשימת המוזמנים. -->
+          <div class="ev">
+            <article class="ev-main reveal">
+              <p class="ev-k">הרשימה הגדולה ביותר</p>
+              <h3 class="ev-name"><a href="/events/wedding/">חתונה</a></h3>
+              <p class="ev-line">שתי משפחות, רשימה ארוכה, וכל אישור הגעה שמשנה מספר בשקלים.</p>
+              <dl class="ev-meta">
+                <div><dt>צדדים</dt><dd>חתן · כלה</dd></div>
+                <div><dt>קבוצות</dt><dd>משפחה קרובה · משפחה רחוקה · חברים · עבודה · צבא · מהלימודים · חברי ילדות · שכנים</dd></div>
+              </dl>
+              <figure class="ev-detail">
+                <img src="/product/detail-guests-groups.jpg" alt="פרט מתוך רשימת המוזמנים ב־VEYA: לכל מוזמן שם, צד (חתן או כלה) והקבוצה שלו" width="638" height="672" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+              </figure>
+            </article>
 
-            <li class="rt-step reveal">
-              <span class="rt-rail" aria-hidden="true"><span class="rt-dot"></span><span class="rt-seg"></span></span>
-              <div class="rt-body">
-                <span class="rt-num" aria-hidden="true">02</span>
-                <p class="rt-when">לקראת האירוע</p>
-                <h3 class="rt-title">מתחילים להבין מי באמת מגיע</h3>
-                <p class="rt-text">אישורי הגעה, מעקבים, מספרים והושבה — הנתונים מתחילים להתחבר.</p>
-                <figure class="rt-shot rt-shot--rsvp-seating">
-                  <img src="/product/route-rsvp-seating.jpg" alt="סידור ההושבה ב־VEYA: רשימת המוזמנים ממוינת לפי אישור הגעה — מי אישר, כמה אנשים ובאיזה שולחן — לצד מפת האולם עם התפוסה של כל שולחן" width="1346" height="1220" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
-                </figure>
-              </div>
-            </li>
+            <figure class="ev-shot reveal d1">
+              <img src="/product/event-type-picker.jpg" alt="בחירת סוג האירוע ב־VEYA: חתונה, בר מצווה, בת מצווה, חינה, ברית, בריתה ואירוע עסקי" width="1284" height="400" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+              <figcaption>זה המסך שקובע. מכאן משתנים הצדדים, הקבוצות והשפה בכל המערכת.</figcaption>
+            </figure>
 
-            <li class="rt-step reveal">
-              <span class="rt-rail" aria-hidden="true"><span class="rt-dot"></span></span>
-              <div class="rt-body">
-                <span class="rt-num" aria-hidden="true">03</span>
-                <p class="rt-when">אחרי האירוע</p>
-                <h3 class="rt-title">והרשימה לא נעלמת</h3>
-                <p class="rt-text">מתנות, הוצאות, דוח ומידע שנשאר אצלכם גם אחרי שהאירוע נגמר.</p>
-                <figure class="rt-shot rt-shot--report">
-                  <img src="/product/route-report.jpg" alt="הדוח המלא ב־VEYA: שורה לכל מוזמן — סטטוס הגעה, כמה הוזמנו, כמה הגיעו, מתנה במעטפה וסך המתנה, ו״טרם נספרה״ למי שעוד לא נספר" width="1892" height="594" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
-                </figure>
-              </div>
-            </li>
-          </ol>
+            <article class="ev-item ev-henna reveal d1">
+              <h3 class="ev-name"><a href="/events/henna/">חינה</a></h3>
+              <p class="ev-line">אירוע נפרד עם רשימה, תאריך והוצאות משלו — לרוב שבוע לפני החתונה.</p>
+              <dl class="ev-meta">
+                <div><dt>צדדים</dt><dd>חתן · כלה</dd></div>
+                <div><dt>קבוצות</dt><dd>משפחה · צד משפחתי מורחב · חברים</dd></div>
+              </dl>
+            </article>
 
-          <p class="rt-end reveal">
+            <article class="ev-item ev-bar reveal d2">
+              <h3 class="ev-name"><a href="/events/bar-mitzvah/">בר מצווה</a></h3>
+              <p class="ev-line">החוגג במרכז, והקבוצות מגיעות גם מהכיתה ומהחוגים.</p>
+              <dl class="ev-meta">
+                <div><dt>צדדים</dt><dd>משפחת האב · משפחת האם</dd></div>
+                <div><dt>קבוצות</dt><dd>משפחת האב · משפחת האם · חברים · כיתה · צוות/חוגים</dd></div>
+              </dl>
+            </article>
+
+            <article class="ev-item ev-bat reveal d2">
+              <h3 class="ev-name"><a href="/events/bat-mitzvah/">בת מצווה</a></h3>
+              <p class="ev-line">אותה מפה של משפחה וחברים — בשפה של החוגגת.</p>
+              <dl class="ev-meta">
+                <div><dt>צדדים</dt><dd>משפחת האב · משפחת האם</dd></div>
+                <div><dt>קבוצות</dt><dd>משפחת האב · משפחת האם · חברים · כיתה · צוות/חוגים</dd></div>
+              </dl>
+            </article>
+
+            <article class="ev-item ev-brit reveal d3">
+              <h3 class="ev-name"><a href="/events/brit/">ברית</a></h3>
+              <p class="ev-line">האירוע עם הכי פחות זמן — הרשימה נבנית לפעמים תוך יומיים.</p>
+              <dl class="ev-meta">
+                <div><dt>קבוצות</dt><dd>משפחה · חברים</dd></div>
+              </dl>
+            </article>
+
+            <article class="ev-item ev-brita reveal d3">
+              <h3 class="ev-name"><a href="/events/brita/">בריתה</a></h3>
+              <p class="ev-line">סוג אירוע עצמאי במערכת, עם נוסחים משלו — לא ברית עם כותרת אחרת.</p>
+              <dl class="ev-meta">
+                <div><dt>קבוצות</dt><dd>משפחה · חברים</dd></div>
+              </dl>
+            </article>
+          </div>
+
+          <p class="ev-end reveal">
             חתונה גדולה או אירוע משפחתי קטן —<br />
             <strong>השיטה נשארת. הפרטים משתנים.</strong>
           </p>
