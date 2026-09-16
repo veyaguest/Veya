@@ -1632,6 +1632,40 @@
         .lead-field input, .lead-field select { transition: none; }
       }
 
+      /* ---- CTA צף אל הטופס ----
+         RTL: יושב בפינה ההתחלתית (ימין למטה) דרך inset-inline-start, ולכן
+         גם באנגלית בעתיד הוא ישב בצד הנכון. מכבד את ה-safe area של אייפון.
+         מופיע פעם אחת ברכות; ב-prefers-reduced-motion בלי תנועה בכלל. */
+      .fab {
+        position: fixed; z-index: 60;
+        inset-inline-start: clamp(16px, 2.4vw, 28px);
+        bottom: calc(clamp(16px, 2.4vw, 28px) + env(safe-area-inset-bottom, 0px));
+        display: inline-flex; align-items: center; gap: 8px;
+        min-height: 46px; padding: 0 18px;
+        background: var(--gold); color: var(--charcoal);
+        border: 1px solid rgba(23, 19, 13, 0.14); border-radius: 10px;
+        font-family: inherit; font-size: var(--fs-sm); font-weight: 700; line-height: 1;
+        text-decoration: none; white-space: nowrap;
+        box-shadow: 0 1px 2px rgba(23, 19, 13, 0.18), 0 12px 26px -12px rgba(23, 19, 13, 0.55);
+        opacity: 0; transform: translateY(10px); pointer-events: none;
+        transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out);
+      }
+      .fab.is-on { opacity: 1; transform: none; pointer-events: auto; }
+      .fab-ic { width: 15px; height: 15px; flex: none; opacity: 0.85; }
+      @media (hover: hover) {
+        .fab:hover { background: var(--gold-light); }
+      }
+      .fab:active { transform: translateY(1px); }
+      .fab:focus-visible { outline: 2px solid var(--charcoal) !important; outline-offset: 3px; }
+      @media (max-width: 600px) {
+        .fab { min-height: 42px; padding: 0 14px; gap: 6px; font-size: var(--fs-xs); border-radius: 999px; }
+        .fab-ic { width: 13px; height: 13px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .fab { transition: none; transform: none; }
+        .fab:active { transform: none; }
+      }
+
       /* ---- CTA משני בתוך סקשן (למחשבון) ---- */
       .section-cta { text-align: center; margin-top: 32px; }
       .section-cta .cta-hint { display: block; font-size: var(--fs-xs); color: var(--muted); margin-top: 10px; }
@@ -2776,6 +2810,10 @@
     
     
     
+    
+    
+    
+    
     </style>
     <script>
       /* צילום שנקטע בטעינה: ניסיון חוזר אחד, והמסגרת נשארת. מוגדר ב-head כדי
@@ -2792,6 +2830,17 @@
   </head>
   <body>
     <a class="skip-link" href="#main">דילוג לתוכן</a>
+    <!-- ═════ CTA צף אל טופס הלידים ═════════════════════════════════════
+         קישור עוגן אמיתי אל #leads (הטופס הקיים; לא נוצר טופס שני).
+         מופיע רק אחרי שההירו יצא מהמסך, ונעלם כשהטופס או הפוטר במסך —
+         כדי שלא יתחרה ב-CTA הראשי ולא יכסה את כפתור השליחה. -->
+    <a class="fab" href="#leads" data-fab aria-label="מעבר לטופס — רוצים להתחיל?">
+      <span class="fab-text">רוצים להתחיל?</span>
+      <svg class="fab-ic" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 3v10M4 9l4 4 4-4" />
+      </svg>
+    </a>
+
     <header class="site-header on-dark">
       <div class="wrap">
         <a href="/" aria-label="VEYA — דף הבית">
@@ -4096,7 +4145,7 @@
            נתיב אנונימי, מוגבל-קצב, שכותב שורה ב-``landing_leads`` — שם,
            טלפון מנורמל, סוג אירוע ותאריך. סוגי האירוע הם אלה של המוצר
            (event_terms.EVENT_TERMS), לא רשימה שנכתבה לדף. -->
-      <section class="leads" id="leads" aria-labelledby="leads-title">
+      <section class="leads" id="leads" tabindex="-1" aria-labelledby="leads-title">
         <div class="wrap">
           <div class="lead-grid">
             <div class="lead-text reveal">
@@ -4351,6 +4400,59 @@
          ראשון, בלי דרך חזרה. עכשיו מנסים שוב פעם אחת, ואם גם זה נכשל
          המסגרת פשוט נשארת במקומה. */
 
+
+      /* ---- CTA צף ----
+         מופיע רק אחרי שההירו יצא מהמסך, ונעלם כשהטופס או הפוטר נראים.
+         הגלילה עצמה היא ניווט עוגן רגיל של הדפדפן (ו-scroll-behavior כבר
+         מכובה תחת prefers-reduced-motion), ולכן אין כאן scrollIntoView
+         ואין חישוב מיקום. אחרי המעבר הפוקוס עובר לסקשן — בלי לפתוח
+         מקלדת ובלי לגלול שוב. */
+      (function () {
+        var fab = document.querySelector('[data-fab]');
+        var leads = document.getElementById('leads');
+        var hero = document.querySelector('.hero');
+        var footer = document.querySelector('.site-footer');
+        if (!fab || !leads || !hero || !('IntersectionObserver' in window)) return;
+
+        var pastHero = false, atTarget = false, atFooter = false;
+        // באנר ה-Cookies יושב בתחתית המסך בביקור ראשון — כל עוד הוא שם,
+        // הכפתור הצף מחכה. שתי החלטות בתחתית המסך באותו רגע זה עומס, וגם
+        // חפיפה ממש.
+        function bannerUp() {
+          var b = document.querySelector('.cookie-banner-static');
+          return !!(b && b.getBoundingClientRect().height > 0);
+        }
+        function sync() {
+          fab.classList.toggle('is-on', pastHero && !atTarget && !atFooter && !bannerUp());
+        }
+
+        new IntersectionObserver(function (entries) {
+          pastHero = !entries[0].isIntersecting; sync();
+        }, { threshold: 0 }).observe(hero);
+
+        new IntersectionObserver(function (entries) {
+          atTarget = entries[0].isIntersecting; sync();
+        }, { threshold: 0.1 }).observe(leads);
+
+        if (footer) {
+          new IntersectionObserver(function (entries) {
+            atFooter = entries[0].isIntersecting; sync();
+          }, { threshold: 0 }).observe(footer);
+        }
+
+        // הבאנר נעלם ברגע שבוחרים בו — ואז אפשר להראות את הכפתור.
+        if (window.MutationObserver) {
+          new MutationObserver(sync).observe(document.body, { childList: true, subtree: true });
+        }
+        document.addEventListener('click', function (e) {
+          if (e.target.closest && e.target.closest('.cookie-banner-static')) setTimeout(sync, 60);
+        });
+
+        fab.addEventListener('click', function () {
+          // אחרי שהדפדפן סיים לגלול אל העוגן — פוקוס על הסקשן עצמו.
+          setTimeout(function () { leads.focus({ preventScroll: true }); }, 700);
+        });
+      })();
 
       /* ---- השאירו פרטים ----
          ולידציה בעברית לפני שליחה, מצב שליחה יחיד (בלי לחיצה כפולה), ואז
