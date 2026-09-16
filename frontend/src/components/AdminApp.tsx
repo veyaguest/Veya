@@ -1,7 +1,9 @@
+/**
+ * מסכי הניהול הוותיקים (משתמשים / אירועים / אולמות). המעטפת, הניווט והדשבורד
+ * עברו ל-``src/admin/`` — כאן נשארים רק המסכים שעדיין בשימוש בתוכה.
+ */
 import { useEffect, useMemo, useState } from 'react'
 import {
-  adminAuditLog,
-  adminDashboard,
   adminDeleteEvent,
   adminDeleteUser,
   adminDeleteVenue,
@@ -18,94 +20,14 @@ import {
   type AdminDeleteUserMode,
 } from '../api'
 import type {
-  AdminAuditRow,
-  AdminDashboard,
   AdminEventRow,
   AdminUserDetail,
   AdminUserRow,
   AdminVenueRow,
-  User,
 } from '../types'
-import { AdminCallCenter } from './AdminCallCenter'
-import { AdminCallers } from './AdminCallers'
-import { AdminPayoutReview } from './AdminPayoutReview'
-import { AdminPostponements } from './AdminPostponements'
-import { CreateAccountForm, MessageDefaultOptionsManager, MessageDefaultsManager } from './AdminPage'
+import { CreateAccountForm } from './AdminPage'
 import { EVENT_TYPE_OPTIONS, getEventTerms } from '../strings/eventTypes'
-import { Footer } from './Footer'
 import { strings } from '../strings/he'
-
-type AdminPage =
-  | 'dashboard'
-  | 'callcenter'
-  | 'users'
-  | 'events'
-  | 'venues'
-  | 'payout'
-  | 'postpone'
-  | 'messages'
-  | 'audit'
-
-const ADMIN_PAGE_TITLES: Record<AdminPage, string> = {
-  dashboard: 'לוח בקרה',
-  callcenter: 'Call Center',
-  users: 'ניהול משתמשים',
-  events: 'ניהול אירועים',
-  venues: 'מאגר האולמות',
-  payout: 'בדיקת פרטי קבלת מתנות',
-  postpone: 'נוהל דחייה',
-  messages: 'הודעות ומסלול אישורים',
-  audit: 'יומן פעולות',
-}
-
-const ADMIN_NAV: { key: AdminPage; label: string }[] = [
-  { key: 'dashboard', label: 'לוח בקרה' },
-  { key: 'callcenter', label: 'Call Center' },
-  { key: 'users', label: 'משתמשים' },
-  { key: 'events', label: 'אירועים' },
-  { key: 'venues', label: 'אולמות' },
-  { key: 'payout', label: 'קבלת מתנות' },
-  { key: 'postpone', label: 'נוהל דחייה' },
-  { key: 'messages', label: 'הודעות ומסלול' },
-  { key: 'audit', label: 'יומן פעולות' },
-]
-
-/** תוויות עבריות לסוגי פעולות ביומן. */
-const AUDIT_ACTION_LABELS: Record<string, string> = {
-  payout_details_saved: 'פרטי קבלת מתנות נשמרו',
-  payout_details_updated: 'פרטי קבלת מתנות עודכנו',
-  payout_certificate_uploaded: 'הועלה אישור ניהול חשבון',
-  payout_status_changed: 'בדיקת VEYA — שינוי סטטוס',
-  payout_provider_status_changed: 'ספק סליקה — שינוי סטטוס',
-  admin_impersonate: 'התחברות כמשתמש',
-  admin_update_user: 'עדכון משתמש',
-  admin_disable_user: 'השבתת משתמש',
-  admin_enable_user: 'הפעלת משתמש',
-  admin_delete_user: 'מחיקת משתמש',
-  admin_delete_event: 'מחיקת אירוע',
-  admin_reset_password: 'איפוס סיסמה',
-  admin_create_account: 'יצירת חשבון',
-  admin_update_venue: 'עדכון אולם',
-  admin_delete_venue: 'מחיקת אולם',
-  admin_merge_venue: 'מיזוג אולמות',
-  update_event: 'עדכון אירוע',
-  send_invitations: 'שליחת הזמנות',
-  send_reminders: 'שליחת תזכורות',
-  automation_run_due: 'הרצת אוטומציה',
-  confirm_submit: 'אישור/ה הגעה',
-  // פעולות שנרשמו בעקבות שיחת טלפון עם מוזמן (Call Center). כאן, ביומן
-  // הפנימי, מותר לקרוא לילד בשמו — בניגוד ל-Feed של בעל/ת האירוע.
-  guest_call_confirmed: 'שיחה: אישר/ה הגעה',
-  guest_call_declined: 'שיחה: לא מגיע/ה',
-  guest_call_no_answer: 'שיחה: לא ענה/תה',
-  guest_call_busy: 'שיחה: תפוס',
-  guest_call_wrong_number: 'שיחה: מספר שגוי',
-  guest_call_callback: 'שיחה: נקבע מועד לחזור',
-  guest_call_followup: 'שיחת המשך',
-  confirm_invalid_token: 'ניסיון גישה עם קישור לא תקין',
-  rsvp_track_activate: 'הפעלת מסלול אישורי הגעה',
-  rsvp_track_advance: 'התקדמות במסלול אישורי הגעה',
-}
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   couple: 'בעל/ת אירוע',
@@ -123,216 +45,6 @@ const ACCOUNT_TYPE_OPTIONS: { value: 'couple' | 'planner' | 'venue' | 'phone_age
 ]
 
 /** אייקון קווי לכל פריט בניווט האדמין. */
-function AdminNavIcon({ page }: { page: AdminPage }) {
-  const common = {
-    className: 'nav-icon',
-    width: 22,
-    height: 22,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.8,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    'aria-hidden': true,
-  }
-  switch (page) {
-    case 'dashboard':
-      return (
-        <svg {...common}>
-          <rect x="3" y="3" width="7" height="9" rx="1.5" />
-          <rect x="14" y="3" width="7" height="5" rx="1.5" />
-          <rect x="14" y="12" width="7" height="9" rx="1.5" />
-          <rect x="3" y="16" width="7" height="5" rx="1.5" />
-        </svg>
-      )
-    case 'callcenter':
-      return (
-        <svg {...common}>
-          <path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5Z" />
-        </svg>
-      )
-    case 'users':
-      return (
-        <svg {...common}>
-          <circle cx="9" cy="8" r="3" />
-          <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
-          <path d="M16 6.5a3 3 0 0 1 0 5.8" />
-          <path d="M17.5 20a5.5 5.5 0 0 0-2.5-4.6" />
-        </svg>
-      )
-    case 'events':
-      return (
-        <svg {...common}>
-          <rect x="3" y="4.5" width="18" height="16" rx="2" />
-          <path d="M3 9h18M8 3v3M16 3v3" />
-        </svg>
-      )
-    case 'venues':
-      return (
-        <svg {...common}>
-          <path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z" />
-          <circle cx="12" cy="10" r="2.5" />
-        </svg>
-      )
-    case 'messages':
-      return (
-        <svg {...common}>
-          <path d="M4 5h16v11H8l-4 3z" />
-          <path d="M8 10h8M8 13h5" />
-        </svg>
-      )
-    case 'audit':
-      return (
-        <svg {...common}>
-          <path d="M9 3h6l2 2v14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
-          <path d="M9.5 9h5M9.5 12h5M9.5 15h3" />
-        </svg>
-      )
-    case 'payout':
-      // מגן עם וי — בדיקה ואישור, לא כסף. הכסף עצמו לא עובר במסך הזה.
-      return (
-        <svg {...common}>
-          <path d="M12 3.5 19 6v5.5c0 4-2.9 7.4-7 8.5-4.1-1.1-7-4.5-7-8.5V6l7-2.5Z" />
-          <path d="M9.2 11.8 11.3 14l3.6-3.8" />
-        </svg>
-      )
-  }
-}
-
-/** גרף עמודות פשוט להרשמות לפי יום (14 ימים אחרונים). */
-function SignupsChart({ points }: { points: AdminDashboard['signups'] }) {
-  const max = Math.max(1, ...points.map((p) => p.count))
-  const total = points.reduce((s, p) => s + p.count, 0)
-  return (
-    <div className="adm-chart">
-      <div className="adm-chart-head">
-        <span className="adm-chart-title">הרשמות ב-14 הימים האחרונים</span>
-        <span className="adm-chart-total">{total} סה״כ</span>
-      </div>
-      <div className="adm-chart-bars">
-        {points.map((p, i) => (
-          <div className="adm-bar" key={i} title={`${p.label}: ${p.count}`}>
-            <div className="adm-bar-track">
-              <div
-                className="adm-bar-fill"
-                style={{ height: `${(p.count / max) * 100}%` }}
-              />
-            </div>
-            <span className="adm-bar-label">{p.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/** לוח הבקרה של האדמין — מונים, גרף, אירועים אחרונים והתראות. */
-function AdminDashboardView() {
-  const [data, setData] = useState<AdminDashboard | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    adminDashboard()
-      .then(setData)
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : strings.errors.adminDashboardLoadFailed),
-      )
-  }, [])
-
-  if (error) return <div className="admin-error">{error}</div>
-  if (!data) return <div className="admin-loading">טוען…</div>
-
-  const kpis = [
-    { num: data.total_events, label: 'אירועים במערכת' },
-    { num: data.upcoming_events, label: 'אירועים עתידיים' },
-    { num: data.total_users, label: 'משתמשים' },
-    { num: data.total_guests, label: 'מוזמנים בסה״כ' },
-    { num: data.total_venues, label: 'אולמות במאגר' },
-    { num: data.whatsapp_sent, label: 'הודעות WhatsApp' },
-  ]
-
-  return (
-    <div className="adm-dash">
-      <div className="adm-kpis">
-        {kpis.map((k) => (
-          <div className="adm-kpi" key={k.label}>
-            <span className="adm-kpi-num">{k.num}</span>
-            <span className="adm-kpi-label">{k.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="adm-dash-grid">
-        <SignupsChart points={data.signups} />
-
-        <div className="adm-alerts">
-          <span className="adm-chart-title">התראות מערכת</span>
-          <div className="adm-alerts-list">
-            {data.alerts.map((a, i) => (
-              <div className={`adm-alert ${a.level}`} key={i}>
-                <span className="adm-alert-dot" aria-hidden="true" />
-                {a.text}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <h2 className="admin-section-title">אירועים לפי סוג</h2>
-      <div className="adm-kpis">
-        {data.events_by_type.map((t) => (
-          <div className="adm-kpi" key={t.event_type}>
-            <span className="adm-kpi-num">{t.count}</span>
-            <span className="adm-kpi-label">{t.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <h2 className="admin-section-title">אירועים אחרונים</h2>
-      <div className="table-wrap">
-        <table className="guests-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>סוג אירוע</th>
-              <th>בעלי האירוע</th>
-              <th>אולם</th>
-              <th>בעלים</th>
-              <th>מוזמנים</th>
-              <th>מתי</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.recent_events.map((e) => (
-              <tr key={e.id}>
-                <td>{e.id}</td>
-                <td>{getEventTerms(e.event_type).label}</td>
-                <td>{e.couple}</td>
-                <td>{e.venue_name || '—'}</td>
-                <td>{e.owner_email || '—'}</td>
-                <td>{e.guests_count}</td>
-                <td>
-                  {e.days_until != null ? (
-                    <span className="badge confirmed">
-                      {e.days_until === 0 ? 'היום' : `בעוד ${e.days_until} ימים`}
-                    </span>
-                  ) : e.event_date ? (
-                    <span className="badge">עבר</span>
-                  ) : (
-                    <span className="badge">ללא תאריך</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-/** מעצב תאריך+שעה קצר בעברית (DD/MM/YYYY HH:MM). */
 function formatDateTime(iso: string): string {
   const d = new Date(iso)
   if (isNaN(d.getTime())) return iso
@@ -928,7 +640,7 @@ function AdminUserDialog({
 }
 
 /** ניהול משתמשים — חיפוש, טבלה לחיצה, כרטיס משתמש מלא, ויצירת חשבון. */
-function AdminUsersView({
+export function AdminUsersView({
   onImpersonate,
 }: {
   onImpersonate: (userId: number) => Promise<void>
@@ -967,11 +679,6 @@ function AdminUsersView({
 
   return (
     <div className="admin-page">
-      {/* ניהול טלפנים — סעיף נפרד בראש מסך המשתמשים, כי זו העבודה השוטפת
-          של המוקד (יצירה, השבתה והקצאת אירועים), בעוד שאר המסך הוא רשימת
-          כלל המשתמשים. */}
-      <AdminCallers />
-
       <CreateAccountForm onCreated={reload} />
 
       <div className="adm-users-head">
@@ -1056,7 +763,7 @@ function AdminUsersView({
 }
 
 /** ניהול אירועים — טבלת כל האירועים + כניסה לאירוע כבעלים (התחזות). */
-function AdminEventsView({
+export function AdminEventsView({
   onImpersonate,
 }: {
   onImpersonate: (userId: number) => Promise<void>
@@ -1234,7 +941,7 @@ function AdminEventsView({
 }
 
 /** ניהול מאגר האולמות — צפייה, עריכה, מחיקה ומיזוג כפילויות. */
-function AdminVenuesView() {
+export function AdminVenuesView() {
   const [venues, setVenues] = useState<AdminVenueRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -1574,177 +1281,3 @@ function AdminVenueMergeDialog({
 }
 
 /** יומן פעולות האדמין — מי עשה מה ומתי, החדשות קודם. */
-function AdminAuditView() {
-  const [rows, setRows] = useState<AdminAuditRow[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [query, setQuery] = useState('')
-
-  useEffect(() => {
-    adminAuditLog()
-      .then(setRows)
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : strings.errors.adminAuditLoadFailed),
-      )
-  }, [])
-
-  const filtered = useMemo(() => {
-    if (!rows) return []
-    const q = query.trim().toLowerCase()
-    if (!q) return rows
-    return rows.filter(
-      (r) =>
-        (AUDIT_ACTION_LABELS[r.action] ?? r.action).toLowerCase().includes(q) ||
-        r.action.toLowerCase().includes(q) ||
-        (r.detail || '').toLowerCase().includes(q) ||
-        (r.actor_email || '').toLowerCase().includes(q),
-    )
-  }, [rows, query])
-
-  if (error && !rows) return <div className="admin-error">{error}</div>
-  if (!rows) return <div className="admin-loading">טוען…</div>
-
-  return (
-    <div className="admin-page">
-      <div className="adm-users-head">
-        <h2 className="admin-section-title">
-          פעולות אחרונות ({filtered.length}
-          {filtered.length !== rows.length ? ` מתוך ${rows.length}` : ''})
-        </h2>
-        <input
-          type="search"
-          className="adm-search"
-          placeholder="חיפוש לפי פעולה, פרטים או מבצע…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </div>
-
-      <p className="file-name">
-        כל פעולה רגישה במערכת נרשמת כאן אוטומטית — מי ביצע, מתי, ומה השתנה.
-      </p>
-
-      <div className="table-wrap">
-        <table className="guests-table">
-          <thead>
-            <tr>
-              <th>מתי</th>
-              <th>מי</th>
-              <th>פעולה</th>
-              <th>פרטים</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((r) => (
-              <tr key={r.id}>
-                <td dir="ltr" className="adm-audit-when">
-                  {new Date(r.created_at).toLocaleString('he-IL')}
-                </td>
-                <td>{r.actor_name || r.actor_email || '—'}</td>
-                <td>
-                  <span className="badge">
-                    {AUDIT_ACTION_LABELS[r.action] ?? r.action}
-                  </span>
-                </td>
-                <td className="adm-audit-detail">{r.detail || '—'}</td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={4} className="adm-empty-row">
-                  לא נמצאו פעולות שתואמות לחיפוש.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-/** פאנל האדמין המלא — מסך נפרד לגמרי מממשק הזוג (App.tsx מנתב לפי is_admin). */
-export function AdminApp({
-  user,
-  onLogout,
-  onImpersonate,
-}: {
-  user: User
-  onLogout: () => void
-  onImpersonate: (userId: number) => Promise<void>
-}) {
-  const [page, setPage] = useState<AdminPage>('dashboard')
-  const userInitial = (user.display_name || user.email || '?').trim().charAt(0).toUpperCase()
-
-  return (
-    <div className="shell admin-shell">
-      <aside className="sidebar">
-        <div className="sidebar-logo" dir="ltr">
-          <span className="auth-monogram">
-            <span className="auth-monogram-diamond" />
-            <span className="auth-monogram-v">V</span>
-          </span>
-          <span className="logo-text">VEYA</span>
-          <span className="admin-badge-pill">ניהול</span>
-        </div>
-
-        <nav className="side-nav">
-          {ADMIN_NAV.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              className={`nav-item ${page === item.key ? 'active' : ''}`}
-              onClick={() => setPage(item.key)}
-            >
-              <span className="nav-bullet" aria-hidden="true" />
-              <AdminNavIcon page={item.key} />
-              <span className="nav-label">{item.label}</span>
-              <span className="nav-label-short">{item.label}</span>
-            </button>
-          ))}
-        </nav>
-
-        <div className="sidebar-foot">
-          <div className="user-chip" title="חשבון אדמין">
-            <span className="user-avatar">{userInitial}</span>
-            <span className="user-meta">
-              <span className="user-name">{user.display_name || 'אדמין'}</span>
-              <span className="user-event">מנהל מערכת</span>
-            </span>
-          </div>
-          <div className="sidebar-foot-row">
-            <span className="conn">
-              <span className="dot ok" />
-              <span className="conn-text">מחובר</span>
-            </span>
-            <button type="button" className="logout-btn" onClick={onLogout}>
-              יציאה
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      <div className="main-area">
-        <header className="page-header">
-          <h1 className="page-title">{ADMIN_PAGE_TITLES[page]}</h1>
-        </header>
-        <main className="content" key={page}>
-          {page === 'dashboard' && <AdminDashboardView />}
-          {page === 'callcenter' && <AdminCallCenter />}
-          {page === 'users' && <AdminUsersView onImpersonate={onImpersonate} />}
-          {page === 'events' && <AdminEventsView onImpersonate={onImpersonate} />}
-          {page === 'venues' && <AdminVenuesView />}
-          {page === 'payout' && <AdminPayoutReview />}
-          {page === 'postpone' && <AdminPostponements />}
-          {page === 'messages' && (
-            <>
-              <MessageDefaultsManager />
-              <MessageDefaultOptionsManager />
-            </>
-          )}
-          {page === 'audit' && <AdminAuditView />}
-        </main>
-        <Footer />
-      </div>
-    </div>
-  )
-}

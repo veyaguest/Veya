@@ -48,7 +48,7 @@ import type { EventTerms } from './strings/eventTypes'
 // שלא נכנס למפת ההושבה, וכל מי שאינו אדמין) אף פעם לא צריכים אותם. טעינה
 // עצלה (lazy) מוציאה אותם מה-bundle הראשוני לצ'אנק נפרד שנטען רק בשימוש בפועל.
 const AdminApp = lazy(() =>
-  import('./components/AdminApp').then((m) => ({ default: m.AdminApp })),
+  import('./admin/AdminRoot').then((m) => ({ default: m.AdminApp })),
 )
 // FinancePage נטען עצלן מאותה סיבה כמו HallPage: הוא גורר איתו את עורך
 // ההוצאות ואת מצב הספירה, ורוב הביקורים באפליקציה לא נוגעים בו כלל.

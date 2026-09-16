@@ -163,7 +163,7 @@ const AUTH_ERROR_MESSAGE = 'אתם צריכים להתחבר מחדש.'
 
 /** fetch עוטף שמזריק כותרות אימות, הופך תקלת רשת גולמית להודעה בעברית,
  * ומטפל ב-401 (טוקן פג/לא תקין). */
-async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   let res: Response
   try {
     res = await fetch(`${API_URL}${path}`, {
@@ -202,7 +202,7 @@ function cleanDetailMessage(msg: string): string {
 }
 
 /** מחלץ הודעת שגיאה קריאה מתשובת FastAPI (כולל שגיאות ולידציה 422). */
-async function toError(res: Response): Promise<Error> {
+export async function toError(res: Response): Promise<Error> {
   // שגיאת שרת (5xx): לעולם לא מציגים למשתמש את התוכן הגולמי (יכול להיות
   // traceback/HTML) — רק את ההודעה הידידותית, בלי קשר למה שהשרת החזיר.
   if (res.status >= 500) {
