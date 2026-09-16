@@ -824,6 +824,8 @@ def _delete_user_impl(db: Session, admin: models.User, target: models.User, mode
     ).all():
         ca.assigned_by_id = None
 
+    admin_audit.detach_user(db, user_id)
+
     db.delete(target)
     return len(owned_events)
 

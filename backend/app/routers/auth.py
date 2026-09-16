@@ -715,6 +715,9 @@ def delete_my_account(
         select(models.AuditLog).where(models.AuditLog.user_id == user.id).with_for_update()
     ).all():
         log.user_id = None
+    from app import admin_audit
+
+    admin_audit.detach_user(db, user.id)
 
     db.delete(user)
     db.commit()

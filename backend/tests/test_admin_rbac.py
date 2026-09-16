@@ -241,5 +241,18 @@ def test_disable_writes_admin_audit_with_before_after() -> None:
     assert items[0]["domain_label"] == "משתמשים"
 
 
+def test_deleting_an_admin_keeps_their_audit_history() -> None:
+    """מחיקת אדמין שביצע פעולות לא נכשלת, והיומן נשאר עם השם שלו."""
+    api, _ = bootstrap()
+    doer_id, doer_h = _admin("admin", name="נועה")
+    victim_id, _ = _plain_user()
+    assert api.client.post(f"/admin/users/{victim_id}/disable", headers=doer_h).status_code == 204
+    _, super_h = _admin("super_admin")
+    r = api.client.delete(f"/admin/users/{doer_id}", headers=super_h)
+    assert r.status_code == 204, r.text
+    rows = _audit_rows(action="user.disable", target_id=str(victim_id))
+    assert rows and rows[0].actor_id is None and rows[0].actor_label == "נועה"
+
+
 def teardown_module(module) -> None:  # noqa: ARG001
     shutdown()

@@ -84,3 +84,17 @@ def record(
     )
     db.add(row)
     return row
+
+
+def detach_user(db: Session, user_id: int) -> None:
+    """לפני מחיקת משתמש: היומן נשאר (השם שמור ב-actor_label), רק מנותק ממנו.
+
+    בלי זה מחיקת אדמין שביצע פעולות הייתה נכשלת ב-foreign key ב-Postgres.
+    """
+    from sqlalchemy import update
+
+    db.execute(
+        update(models.AdminAuditLog)
+        .where(models.AdminAuditLog.actor_id == user_id)
+        .values(actor_id=None)
+    )
