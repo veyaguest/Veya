@@ -13,11 +13,10 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app import (
-    audit, auth, cache, call_center, communication, event_terms, messaging, models, roles,
+    admin_audit, admin_rbac, audit, auth, cache, call_center, communication, event_terms, messaging, models, roles,
     schemas, venues,
 )
 from app.account import delete_event_cascade
-from app.auth import get_current_admin
 from app.database import get_db
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -33,10 +32,17 @@ def _parse_event_date(value: str) -> Optional[date]:
         return None
 
 
+def _guard_admin_target(admin: models.User, target: models.User) -> None:
+    """פעולה על חשבון של אדמין אחר דורשת ``admins.manage`` — אחרת Support
+    היה יכול לאפס סיסמה ל-Super Admin ולהתחבר במקומו (הסלמת הרשאות)."""
+    if target.is_admin and target.id != admin.id:
+        admin_rbac.ensure(admin, "admins.manage")
+
+
 @router.get("/dashboard", response_model=schemas.AdminDashboard)
 def admin_dashboard(
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("dashboard.view")),
 ):
     """סקירת מערכת ללוח הבקרה של האדמין — מונים אמיתיים, אירועים אחרונים,
     גרף הרשמות לפי יום, והתראות נגזרות. נתונים בלבד; שום פעולה משנה.
@@ -202,7 +208,7 @@ def admin_dashboard(
 @router.get("/users", response_model=list[schemas.AdminUserRow])
 def list_users(
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("users.view")),
 ):
     """כל המשתמשים במערכת, עם מספר האירועים והמוזמנים של כל אחד."""
     # ספירת אירועים לכל בעלים.
@@ -242,7 +248,7 @@ def list_users(
 def list_all_events(
     event_type: Optional[str] = None,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("events.view")),
 ):
     """כל האירועים במערכת (מכל המשתמשים), עם בעלים וספירת מוזמנים.
 
@@ -292,7 +298,7 @@ def delete_single_event(
     event_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("events.delete")),
 ):
     """מחיקת אירוע בודד ע"י אדמין — בלתי הפיכה, כולל כל המידע התלוי בו
     (מוזמנים, הודעות, יומן שיחות, סידור הושבה...).
@@ -308,6 +314,11 @@ def delete_single_event(
 
     detail = event_terms.hosts_names(event.event_type, event.groom_name, event.bride_name)
     delete_event_cascade(db, event)
+    admin_audit.record(
+        db, admin, domain="events", action="event.delete",
+        summary=f"מחק/ה את האירוע {detail}", target_type="event", target_id=event_id,
+        target_label=detail, request=request,
+    )
     audit.record(
         db, "admin_delete_event",
         user_id=admin.id,
@@ -326,7 +337,7 @@ def reset_user_password(
     payload: schemas.AdminPasswordReset,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("users.reset_password")),
 ):
     """איפוס סיסמה ע"י אדמין (פתרון ביניים עד שיהיה ערוץ מייל ל"שכחתי סיסמה").
 
@@ -337,9 +348,15 @@ def reset_user_password(
     if target is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש לא נמצא")
 
+    _guard_admin_target(admin, target)
     temp_password = payload.new_password or secrets.token_urlsafe(9)
     target.password_hash = auth.hash_password(temp_password)
     target.token_version = (target.token_version or 1) + 1
+    admin_audit.record(
+        db, admin, domain="users", action="user.reset_password",
+        summary=f"איפס/ה סיסמה למשתמש {target.email}", target_type="user",
+        target_id=target.id, target_label=target.email, request=request,
+    )
     audit.record(
         db, "admin_reset_password",
         user_id=admin.id,
@@ -358,7 +375,7 @@ def reset_user_password(
 def get_user_detail(
     user_id: int,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("users.view")),
 ):
     """כרטיס משתמש מלא: פרופיל, האירועים שלו, ו-10 ההתחברויות האחרונות."""
     target = db.get(models.User, user_id)
@@ -434,13 +451,28 @@ def update_user(
     payload: schemas.AdminUserUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("users.edit")),
 ):
     """עריכת פרטי משתמש ע"י אדמין: שם תצוגה, טלפון, סוג חשבון, והרשאת אדמין."""
     target = db.get(models.User, user_id)
     if target is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש לא נמצא")
 
+    _guard_admin_target(admin, target)
+    if payload.account_type is not None and payload.account_type != target.account_type:
+        admin_rbac.ensure(admin, "users.account_type")
+    if payload.is_admin is not None and payload.is_admin != target.is_admin:
+        admin_rbac.ensure(admin, "admins.manage")
+        if target.id == admin.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="אי אפשר לשנות את הרשאות האדמין של עצמך",
+            )
+
+    before = {
+        "display_name": target.display_name, "phone": target.phone,
+        "account_type": target.account_type, "is_admin": target.is_admin,
+    }
     changes = []
     if payload.display_name is not None:
         new_name = payload.display_name.strip()
@@ -466,6 +498,9 @@ def update_user(
                 )
         changes.append(f"אדמין: {target.is_admin}→{payload.is_admin}")
         target.is_admin = payload.is_admin
+        # הענקת אדמין דרך המסך הזה = הדרגה הבסיסית, לא גישה מלאה. דרגה גבוהה
+        # יותר ניתנת במפורש ב-"הגדרות Admin".
+        target.admin_role = admin_rbac.SUPPORT if payload.is_admin else None
 
     # "טלפן" הוא תפקיד מגביל (גישה למסך השיחות בלבד) ו"אדמין" הוא גישה מלאה
     # — השילוב חסר משמעות ומסוכן. נחסם כאן, ולא רק ב-UI, כדי שגם קריאת API
@@ -478,6 +513,21 @@ def update_user(
         )
 
     if changes:
+        admin_audit.record(
+            db, admin, domain="users", action="user.update",
+            summary=f"עדכן/ה את המשתמש {target.email}", target_type="user",
+            target_id=target.id, target_label=target.email, request=request,
+            changes=[
+                admin_audit.change("display_name", "שם", before["display_name"], target.display_name),
+                admin_audit.change("phone", "טלפון", before["phone"], target.phone),
+                admin_audit.change(
+                    "account_type", "סוג חשבון",
+                    roles.ACCOUNT_TYPE_LABELS.get(before["account_type"], before["account_type"]),
+                    roles.ACCOUNT_TYPE_LABELS.get(target.account_type, target.account_type),
+                ),
+                admin_audit.change("is_admin", "אדמין", before["is_admin"], target.is_admin),
+            ],
+        )
         audit.record(
             db, "admin_update_user",
             user_id=admin.id,
@@ -513,7 +563,7 @@ def disable_user(
     user_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("users.disable")),
 ):
     """השבתת חשבון: המשתמש לא יוכל להתחבר, וכל הטוקנים הקיימים נפסלים."""
     target = db.get(models.User, user_id)
@@ -524,9 +574,16 @@ def disable_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="אי אפשר להשבית את החשבון שלך",
         )
+    _guard_admin_target(admin, target)
     if not target.disabled:
         target.disabled = True
         target.token_version = (target.token_version or 1) + 1
+        admin_audit.record(
+            db, admin, domain="users", action="user.disable",
+            summary=f"חסם/ה את המשתמש {target.email}", target_type="user",
+            target_id=target.id, target_label=target.email, request=request,
+            changes=[admin_audit.change("disabled", "סטטוס", "פעיל", "חסום")],
+        )
         audit.record(
             db, "admin_disable_user",
             user_id=admin.id,
@@ -541,14 +598,21 @@ def enable_user(
     user_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("users.disable")),
 ):
     """הפעלה מחדש של חשבון מושבת."""
     target = db.get(models.User, user_id)
     if target is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש לא נמצא")
+    _guard_admin_target(admin, target)
     if target.disabled:
         target.disabled = False
+        admin_audit.record(
+            db, admin, domain="users", action="user.enable",
+            summary=f"הפעיל/ה את המשתמש {target.email}", target_type="user",
+            target_id=target.id, target_label=target.email, request=request,
+            changes=[admin_audit.change("disabled", "סטטוס", "חסום", "פעיל")],
+        )
         audit.record(
             db, "admin_enable_user",
             user_id=admin.id,
@@ -776,7 +840,7 @@ def delete_user(
         ),
     ),
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("users.delete")),
 ):
     """מחיקת משתמש — פעולה בלתי-הפיכה, בשני מצבים אפשריים (ראו ``mode``):
 
@@ -793,8 +857,17 @@ def delete_user(
     if target is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="המשתמש לא נמצא")
 
+    _guard_admin_target(admin, target)
     email = target.email
     events_count = _delete_user_impl(db, admin, target, mode)
+    admin_audit.record(
+        db, admin, domain="users", action="user.delete",
+        summary=(
+            f"מחק/ה את המשתמש {email}"
+            + (f" ו-{events_count} אירועים שלו" if events_count else "")
+        ),
+        target_type="user", target_id=user_id, target_label=email, request=request,
+    )
 
     audit.record(
         db, "admin_delete_user",
@@ -813,7 +886,7 @@ def impersonate_user(
     user_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("users.impersonate")),
 ):
     """מנפיק טוקן זמני שמאפשר לאדמין לראות את המערכת בדיוק כמו המשתמש.
 
@@ -841,6 +914,11 @@ def impersonate_user(
         )
 
     token = auth.create_access_token(target)
+    admin_audit.record(
+        db, admin, domain="users", action="user.impersonate",
+        summary=f"נכנס/ה כמשתמש {target.email} לצורך תמיכה", target_type="user",
+        target_id=target.id, target_label=target.email, request=request,
+    )
     audit.record(
         db, "admin_impersonate",
         user_id=admin.id,
@@ -861,7 +939,7 @@ def create_account(
     payload: schemas.AdminAccountCreate,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("users.create")),
 ):
     """יצירת חשבון מפיק/אולם ע"י אדמין.
 
@@ -886,6 +964,15 @@ def create_account(
     )
     db.add(user)
     db.commit()
+    admin_audit.record(
+        db, admin, domain="calls" if payload.account_type == roles.PHONE_AGENT else "users",
+        action="user.create",
+        summary=(
+            f"יצר/ה חשבון {roles.ACCOUNT_TYPE_LABELS.get(payload.account_type, payload.account_type)}"
+            f" עבור {user.email}"
+        ),
+        target_type="user", target_id=user.id, target_label=user.email, request=request,
+    )
     audit.record(
         db, "admin_create_account",
         user_id=admin.id,
@@ -911,7 +998,7 @@ def create_account(
 @router.get("/callers", response_model=schemas.AdminCallersPage)
 def list_callers(
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("calls.manage")),
 ):
     """מסך ניהול הטלפנים: כל משתמשי ``phone_agent`` + האירועים להקצאה.
 
@@ -989,7 +1076,7 @@ def set_caller_assignments(
     payload: schemas.AdminCallerAssignmentUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("calls.manage")),
 ):
     """מחליף את רשימת האירועים המוקצים לטלפן.
 
@@ -1029,6 +1116,18 @@ def set_caller_assignments(
         db.add(models.CallAssignment(
             event_id=event_id, user_id=user_id, assigned_by_id=admin.id,
         ))
+    if wanted != set(current):
+        admin_audit.record(
+            db, admin, domain="calls", action="caller.event_assignments",
+            summary=f"עדכן/ה את האירועים של הטלפן {target.display_name or target.email}",
+            target_type="user", target_id=target.id,
+            target_label=target.display_name or target.email, request=request,
+            changes=[admin_audit.change(
+                "event_ids", "אירועים",
+                ", ".join(f"#{e}" for e in sorted(current)) or "תור משותף",
+                ", ".join(f"#{e}" for e in sorted(wanted)) or "תור משותף",
+            )],
+        )
 
     audit.record(
         db, "admin_caller_assignments",
@@ -1072,7 +1171,7 @@ MESSAGE_DEFAULTS_CACHE_TTL_SECONDS = 300  # 5 דקות — עריכה נדירה
 @router.get("/message-defaults", response_model=list[schemas.MessageDefaultRead])
 def list_message_defaults(
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("settings.view")),
 ):
     """כל 48 ברירות המחדל (8 סוגי אירוע × 6 סוגי הודעה), לפי סוג אירוע וסדר קבוע."""
 
@@ -1095,15 +1194,26 @@ def list_message_defaults(
 def update_message_default(
     default_id: int,
     payload: schemas.MessageDefaultUpdate,
+    request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("messages.edit")),
 ):
     d = db.get(models.MessageDefault, default_id)
     if d is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ברירת המחדל לא נמצאה")
     data = payload.model_dump(exclude_unset=True)
+    audit_changes = [
+        admin_audit.change(field, field, getattr(d, field, None), value)
+        for field, value in data.items()
+    ]
     for field, value in data.items():
         setattr(d, field, value)
+    admin_audit.record(
+        db, admin, domain="messages", action="message_default.update",
+        summary=f"עדכן/ה נוסח ברירת מחדל ({d.event_type} · {d.message_type})",
+        target_type="message_default", target_id=d.id,
+        target_label=f"{d.event_type} · {d.message_type}", changes=audit_changes, request=request,
+    )
     db.commit()
     cache.invalidate_prefix("message_defaults:")
     return d
@@ -1111,8 +1221,9 @@ def update_message_default(
 
 @router.post("/message-defaults/backfill", response_model=schemas.MessageDefaultsBackfillResult)
 def backfill_message_defaults(
+    request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("messages.edit")),
 ):
     """מקצה את רצף "תקשורת עם אורחים" לכל אירוע קיים שעדיין חסר לו (idempotent —
     לא נוגע באירוע שכבר קיבל את השורות, אפילו אם עדיין ריקות)."""
@@ -1120,6 +1231,11 @@ def backfill_message_defaults(
     created = 0
     for ev in events:
         created += communication.provision_event_messages(db, ev)
+    admin_audit.record(
+        db, admin, domain="messages", action="message_default.backfill",
+        summary=f"השלים/ה רצף הודעות לאירועים קיימים ({created} הודעות נוצרו)",
+        request=request,
+    )
     db.commit()
     return schemas.MessageDefaultsBackfillResult(
         events_processed=len(events), messages_created=created,
@@ -1135,7 +1251,7 @@ def list_message_default_options(
     event_type: Optional[str] = None,
     message_type: Optional[str] = None,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("settings.view")),
 ):
     stmt = select(models.MessageDefaultOption)
     if event_type:
@@ -1153,8 +1269,9 @@ def list_message_default_options(
 )
 def create_message_default_option(
     payload: schemas.MessageDefaultOptionCreate,
+    request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("messages.edit")),
 ):
     """מוסיף וריאציה חדשה — ממספר אוטומטית את המספר הפנוי הבא (1–12)."""
     taken = set(db.scalars(
@@ -1175,6 +1292,11 @@ def create_message_default_option(
         variables_supported=payload.variables_supported,
     )
     db.add(option)
+    admin_audit.record(
+        db, admin, domain="messages", action="message_option.create",
+        summary=f"הוסיף/ה נוסח לספריית ההודעות ({payload.event_type} · {payload.message_type})",
+        target_type="message_option", target_label=payload.title or "", request=request,
+    )
     db.commit()
     return option
 
@@ -1183,15 +1305,26 @@ def create_message_default_option(
 def update_message_default_option(
     option_id: int,
     payload: schemas.MessageDefaultOptionUpdate,
+    request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("messages.edit")),
 ):
     option = db.get(models.MessageDefaultOption, option_id)
     if option is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="הנוסח לא נמצא")
     data = payload.model_dump(exclude_unset=True)
+    audit_changes = [
+        admin_audit.change(field, field, getattr(option, field, None), value)
+        for field, value in data.items()
+    ]
     for field, value in data.items():
         setattr(option, field, value)
+    admin_audit.record(
+        db, admin, domain="messages", action="message_option.update",
+        summary=f"עדכן/ה נוסח בספריית ההודעות ({option.event_type} · {option.message_type})",
+        target_type="message_option", target_id=option.id, target_label=option.title or "",
+        changes=audit_changes, request=request,
+    )
     db.commit()
     return option
 
@@ -1199,12 +1332,19 @@ def update_message_default_option(
 @router.delete("/message-default-options/{option_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_message_default_option(
     option_id: int,
+    request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("messages.edit")),
 ):
     option = db.get(models.MessageDefaultOption, option_id)
     if option is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="הנוסח לא נמצא")
+    admin_audit.record(
+        db, admin, domain="messages", action="message_option.delete",
+        summary=f"מחק/ה נוסח מספריית ההודעות ({option.event_type} · {option.message_type})",
+        target_type="message_option", target_id=option.id, target_label=option.title or "",
+        request=request,
+    )
     db.delete(option)
     db.commit()
 
@@ -1212,7 +1352,7 @@ def delete_message_default_option(
 @router.get("/veya/message-stats", response_model=schemas.AdminMessageStats)
 def veya_message_stats(
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("settings.view")),
 ):
     """נפח ההודעות במערכת: יוצאות ב-WhatsApp לפי סוג, ונכנסות."""
     rows = db.execute(
@@ -1250,7 +1390,7 @@ def list_audit_log(
     limit: int = 150,
     action: Optional[str] = None,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("audit.view")),
 ):
     """יומן הפעולות האחרונות במערכת — החדשות קודם. סינון אופציונלי לפי סוג פעולה."""
     limit = max(1, min(limit, 500))
@@ -1303,7 +1443,7 @@ def _venue_to_row(v: models.Venue) -> schemas.AdminVenueRow:
 @router.get("/venues", response_model=list[schemas.AdminVenueRow])
 def list_venues(
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("venues.view")),
 ):
     """כל האולמות במאגר, הפופולריים קודם."""
 
@@ -1326,7 +1466,7 @@ def update_venue(
     payload: schemas.AdminVenueUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("venues.edit")),
 ):
     """עדכון שם/כתובת/עיר של אולם. שינוי שם מעדכן גם את מפתח הדדופ."""
     venue = db.get(models.Venue, venue_id)
@@ -1361,6 +1501,12 @@ def update_venue(
         venue.city = data["city"].strip()
 
     after = f"{venue.name} / {venue.address} / {venue.city}"
+    admin_audit.record(
+        db, admin, domain="venues", action="venue.update",
+        summary=f"ערך/ה את האולם {venue.name}", target_type="venue", target_id=venue.id,
+        target_label=venue.name, request=request,
+        changes=[admin_audit.change("venue", "פרטי אולם", before, after)],
+    )
     audit.record(
         db, "admin_update_venue",
         user_id=admin.id,
@@ -1377,12 +1523,17 @@ def delete_venue(
     venue_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("venues.delete")),
 ):
     """מחיקת אולם מהמאגר. לא משפיע על אירועים קיימים (הם שומרים את שם האולם אצלם)."""
     venue = db.get(models.Venue, venue_id)
     if venue is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="האולם לא נמצא")
+    admin_audit.record(
+        db, admin, domain="venues", action="venue.delete",
+        summary=f"מחק/ה את האולם {venue.name}", target_type="venue", target_id=venue.id,
+        target_label=venue.name, request=request,
+    )
     audit.record(
         db, "admin_delete_venue",
         user_id=admin.id,
@@ -1401,7 +1552,7 @@ def merge_venue(
     payload: schemas.AdminVenueMerge,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("venues.delete")),
 ):
     """מיזוג אולם כפול לתוך אולם יעד: מחבר את מונה השימושים ומוחק את המקור."""
     source = db.get(models.Venue, venue_id)
@@ -1414,6 +1565,11 @@ def merge_venue(
         raise HTTPException(status_code=400, detail="אי אפשר למזג אולם לתוך עצמו")
 
     target.usage_count += source.usage_count
+    admin_audit.record(
+        db, admin, domain="venues", action="venue.merge",
+        summary=f"מיזג/ה את האולם {source.name} לתוך {target.name}", target_type="venue",
+        target_id=target.id, target_label=target.name, request=request,
+    )
     audit.record(
         db, "admin_merge_venue",
         user_id=admin.id,

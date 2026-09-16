@@ -40,7 +40,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from app import models
+from app import local_time, models
 from app.automation import parse_event_date
 
 # ---- הסבב המלא של אישורי-ההגעה ----
@@ -219,7 +219,9 @@ class Schedule:
 
 
 def _started_on(event: models.Event) -> Optional[date]:
-    return event.rsvp_track_started_at.date() if event.rsvp_track_started_at else None
+    # יום ההפעלה בישראל — הפעלה ב-01:00 שעון ישראל היא עדיין "היום", לא אתמול ב-UTC.
+    started = event.rsvp_track_started_at
+    return local_time.israel_date(started) if started else None
 
 
 def resolve_commit_days(
@@ -238,7 +240,7 @@ def resolve_commit_days(
         return None, False
     if event.venue_commit_days_before is not None:
         return event.venue_commit_days_before, False
-    today = (now or datetime.utcnow()).date()
+    today = local_time.israel_date(now)
     if 0 < (event_date - today).days < MAX_WINDOW_DAYS:
         return DEFAULT_NEAR_COMMIT_DAYS, True
     return None, False
@@ -274,7 +276,7 @@ def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Opt
     בכל יום שעובר. לפני ההפעלה — היום (לוח הזמנים הצפוי מהיום).
     """
     now = now or datetime.utcnow()
-    today = now.date()
+    today = local_time.israel_date(now)
     event_date = parse_event_date(event.event_date)
     commit_days, is_default = resolve_commit_days(event, now)
     if event_date is None or commit_days is None:
@@ -373,7 +375,7 @@ def due_call_round(
     "האחרון שהגיע" ולא "זה שהיום בדיוק": מוזמן שלא הספיקו להתקשר אליו בסבב
     הקודם עדיין מופיע ברשימה עד שמגיע הסבב הבא — כי הוא עדיין צריך שיחה.
     """
-    today = (now or datetime.utcnow()).date()
+    today = local_time.israel_date(now)
     due = [p for p in call_rounds(event, now) if p.date <= today]
     return due[-1] if due else None
 
@@ -413,7 +415,7 @@ def compute_timeline(
     מחזיר dict שמתאים ל-``schemas.RsvpTimelineView`` (ה-router עוטף אותו).
     """
     now = now or datetime.utcnow()
-    today = now.date()
+    today = local_time.israel_date(now)
     event_date = parse_event_date(event.event_date)
 
     # בלי תאריך אירוע, או אירוע רחוק בלי בחירת מועד סגירה — אין מה לחשב.

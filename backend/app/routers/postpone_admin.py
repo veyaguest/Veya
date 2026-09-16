@@ -25,8 +25,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import event_terms, models, postponement_service, schemas
-from app.auth import get_current_admin
+from app import admin_audit, admin_rbac, event_terms, models, postponement_service, schemas
 from app.database import get_db
 
 router = APIRouter(prefix="/admin/postpone", tags=["admin", "postpone"])
@@ -94,7 +93,7 @@ def _row(db: Session, req: models.PostponementRequest) -> schemas.PostponementRe
 def list_requests(
     scope: str = Query("pending", pattern="^(pending|approved)$"),
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("postponements.review")),
 ):
     """שתי רשימות, לפי ``scope``:
 
@@ -115,7 +114,7 @@ def list_requests(
 def get_one(
     event_id: int,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("postponements.review")),
 ):
     """הבקשה האחרונה של אירוע — גם אחרי שהוכרעה, כדי לראות מי אישר ומתי."""
     req = postponement_service.latest(db, event_id)
@@ -129,7 +128,7 @@ def approve(
     event_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("postponements.review")),
 ):
     """מאשר את נוהל הדחייה.
 
@@ -144,6 +143,11 @@ def approve(
         )
     except postponement_service.PostponementError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    admin_audit.record(
+        db, admin, domain="postponements", action="postponement.approve",
+        summary=f"אישר/ה בקשת דחייה (אירוע #{event_id})", target_type="event",
+        target_id=event_id, event_id=event_id, request=request,
+    )
     db.commit()
     db.refresh(req)
     return _row(db, req)
@@ -155,7 +159,7 @@ def reject(
     payload: schemas.PostponementRejectWrite,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("postponements.review")),
 ):
     """דוחה את הבקשה. הסיבה חובה ומוצגת לבעלי האירוע.
 
@@ -171,6 +175,12 @@ def reject(
         )
     except postponement_service.PostponementError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    admin_audit.record(
+        db, admin, domain="postponements", action="postponement.reject",
+        summary=f"דחה/תה בקשת דחייה (אירוע #{event_id})", target_type="event",
+        target_id=event_id, event_id=event_id, request=request,
+        reason=getattr(payload, "reason", "") or "",
+    )
     db.commit()
     db.refresh(req)
     return _row(db, req)

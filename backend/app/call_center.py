@@ -22,7 +22,7 @@ from typing import Optional
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app import models, roles, rsvp_timeline
+from app import local_time, models, roles, rsvp_timeline
 from app.automation import parse_event_date
 
 # תוצאות שיחה אפשריות — מקור אמת יחיד לערכים ולתוויות שלהם.
@@ -327,7 +327,7 @@ def _pending_followup_dates(db: Session, guest_ids: list[int]) -> dict[int, date
     for log in logs:
         latest[log.guest_id] = log  # הרשימה ממוינת עולה לפי זמן — האחרון מנצח
     return {
-        gid: log.callback_at.date()
+        gid: local_time.israel_date(log.callback_at)
         for gid, log in latest.items()
         if log.outcome == "callback" and log.callback_at is not None
     }
@@ -398,7 +398,7 @@ def build_queues_for_scope(
         raise ValueError(f"טווח לא מוכר: {scope}")
 
     now = now or datetime.utcnow()
-    today = now.date()
+    today = local_time.israel_date(now)
     kwargs = dict(event_id=event_id, query=query, status=status, allowed_event_ids=allowed_event_ids)
 
     today_queues_raw = _drop_ended_events(build_queues(db, now=now, **kwargs), today)

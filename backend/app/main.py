@@ -19,6 +19,7 @@ from app.database import (
 )
 from app.routers import (
     admin,
+    admin_control,
     auth,
     automation,
     call_center,
@@ -95,6 +96,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(admin_control.router)
 app.include_router(call_center.router)
 app.include_router(events.router)
 app.include_router(event_members.router)
@@ -212,6 +214,8 @@ _EXTRA_COLUMNS = {
         "is_admin": "BOOLEAN DEFAULT FALSE",
         "token_version": "INTEGER DEFAULT 1",
         "account_type": "TEXT DEFAULT 'couple'",
+        # דרגת אדמין (RBAC). ריק = super_admin לאדמינים קיימים — ראו admin_rbac.
+        "admin_role": "TEXT",
         "phone": "TEXT DEFAULT ''",
         "disabled": "BOOLEAN DEFAULT FALSE",
         "avatar_url": "TEXT DEFAULT ''",
@@ -1507,6 +1511,7 @@ _RLS_MIGRATION_FILES = (
     "16_finance_rls.sql",
     "17_expense_payments_rls.sql",
     "18_landing_leads_rls.sql",
+    "19_admin_control_rls.sql",
 )
 
 #: הפונקציות שקובצי 15–17 נשענים עליהן (קבצים 01 ו-08). בלעדיהן
@@ -1575,7 +1580,8 @@ def _ensure_rls_policies() -> None:
                 "WHERE c.relnamespace = 'public'::regnamespace AND c.relkind = 'r' "
                 "  AND c.relname IN "
                 "      ('postponement_requests', 'event_cycles', 'guest_cycle_rsvp', "
-                "       'event_expenses', 'gift_envelopes', 'expense_payments') "
+                "       'event_expenses', 'gift_envelopes', 'expense_payments', "
+                "       'admin_audit_logs') "
                 "ORDER BY 1"
             ).all()
             summary = " · ".join(

@@ -76,6 +76,9 @@ class User(Base):
     # ציר נפרד מ-is_admin — is_admin הוא "אדמין-על", account_type הוא "מי המשתמש".
     # שלב 1 בלבד: השדה קיים אך אינו נקרא בשום מקום עדיין (אין שינוי התנהגות).
     account_type: Mapped[str] = mapped_column(String, default="couple")
+    # דרגת אדמין: super_admin / admin / support — רלוונטי רק כש-is_admin=True.
+    # ריק אצל אדמין = super_admin (תאימות לאחור). מקור אמת: app/admin_rbac.py.
+    admin_role: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     # חשבון מושבת ע"י אדמין — המשתמש לא יכול להתחבר וכל הטוקנים שלו נפסלים.
     # ניתן לביטול (אפשר להפעיל מחדש). לא מוחק שום נתון.
     disabled: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -1414,4 +1417,43 @@ class LandingLead(Base):
     #: כאן אזור זמן ואין חישוב.
     event_date: Mapped[str] = mapped_column(String, default="")
     source: Mapped[str] = mapped_column(String, default="landing_page")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class AdminAuditLog(Base):
+    """יומן פעולות אדמין — **רק** פעולות ניהול משמעותיות, עם לפני/אחרי.
+
+    נפרד במכוון מ-``AuditLog``: שם נכתבים גם אירועי אבטחה (קישור לא תקין)
+    וגם הפיד של בעל האירוע (תוצאות שיחה). כאן — מי מהאדמינים שינה מה, כדי
+    לענות על "מי שינה את העמלה מ-4% ל-3.5% ומתי". טבלה של הוספה בלבד: אין
+    endpoint שמעדכן או מוחק שורות.
+    """
+
+    __tablename__ = "admin_audit_logs"
+    __table_args__ = (
+        Index("ix_admin_audit_created", "created_at"),
+        Index("ix_admin_audit_domain_action", "domain", "action"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # nullable: מחיקת אדמין לא מוחקת את ההיסטוריה שלו — השם נשמר ב-actor_label.
+    actor_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
+    actor_label: Mapped[str] = mapped_column(String, default="")
+    actor_role: Mapped[str] = mapped_column(String, default="")
+    # users / events / calls / venues / messages / settings / features /
+    # commerce / payouts / postponements / admins
+    domain: Mapped[str] = mapped_column(String, index=True)
+    action: Mapped[str] = mapped_column(String)
+    target_type: Mapped[str] = mapped_column(String, default="")
+    target_id: Mapped[str] = mapped_column(String, default="")
+    target_label: Mapped[str] = mapped_column(String, default="")
+    # משפט מוכן בעברית: "חסם את המשתמש dana@example.com"
+    summary: Mapped[str] = mapped_column(Text, default="")
+    # [{"field": "fee", "label": "עמלת אשראי", "before": "4%", "after": "3.5%"}]
+    changes: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    reason: Mapped[str] = mapped_column(Text, default="")
+    event_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    ip: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

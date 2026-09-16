@@ -33,8 +33,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session, undefer
 
-from app import banks, event_terms, models, payout_service, schemas
-from app.auth import get_current_admin
+from app import admin_audit, admin_rbac, banks, event_terms, models, payout_service, schemas
 from app.database import get_db
 from app.routers.payout import _certificate_filename, _mask, _quote
 
@@ -94,7 +93,7 @@ def _row(db: Session, account: models.PayoutAccount) -> schemas.PayoutReviewRow:
 def list_accounts(
     scope: str = Query("pending", pattern="^(pending|approved)$"),
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("payouts.review")),
 ):
     """שתי רשימות, לפי ``scope``:
 
@@ -115,7 +114,7 @@ def list_accounts(
 def get_one(
     event_id: int,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("payouts.review")),
 ):
     """חשבון בודד — גם אחרי שהוכרע, כדי לראות מי בדק ומתי."""
     account = payout_service.get(db, event_id)
@@ -128,7 +127,7 @@ def get_one(
 def get_certificate(
     event_id: int,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("payouts.review")),
 ):
     """אישור ניהול החשבון, לצורך הבדיקה עצמה.
 
@@ -160,7 +159,7 @@ def approve(
     event_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("payouts.review")),
 ):
     """VEYA מאשרת את פרטי החשבון.
 
@@ -176,6 +175,11 @@ def approve(
         )
     except payout_service.PayoutError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    admin_audit.record(
+        db, admin, domain="payouts", action="payout.approve",
+        summary=f"אישר/ה פרטי חשבון לקבלת מתנות (אירוע #{event_id})", target_type="event",
+        target_id=event_id, event_id=event_id, request=request,
+    )
     db.commit()
     db.refresh(account)
     return _row(db, account)
@@ -187,7 +191,7 @@ def reject(
     payload: schemas.PayoutRejectWrite,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("payouts.review")),
 ):
     """VEYA דוחה את פרטי החשבון. סיבת הדחייה חובה, ומוצגת לבעלי האירוע."""
     try:
@@ -199,6 +203,12 @@ def reject(
         )
     except payout_service.PayoutError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    admin_audit.record(
+        db, admin, domain="payouts", action="payout.reject",
+        summary=f"דחה/תה פרטי חשבון לקבלת מתנות (אירוע #{event_id})", target_type="event",
+        target_id=event_id, event_id=event_id, request=request,
+        reason=getattr(payload, "reason", "") or "",
+    )
     db.commit()
     db.refresh(account)
     return _row(db, account)
@@ -209,7 +219,7 @@ def reopen(
     event_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("payouts.review")),
 ):
     """פותח מחדש חשבון מאושר, כדי שבעלי האירוע יוכלו לתקן ולהגיש שוב.
 
@@ -227,6 +237,11 @@ def reopen(
         )
     except payout_service.PayoutError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    admin_audit.record(
+        db, admin, domain="payouts", action="payout.reopen",
+        summary=f"פתח/ה מחדש חשבון לקבלת מתנות (אירוע #{event_id})", target_type="event",
+        target_id=event_id, event_id=event_id, request=request,
+    )
     db.commit()
     db.refresh(account)
     return _row(db, account)
@@ -238,7 +253,7 @@ def set_provider(
     payload: schemas.PayoutProviderStatusWrite,
     request: Request,
     db: Session = Depends(get_db),
-    admin: models.User = Depends(get_current_admin),
+    admin: models.User = Depends(admin_rbac.require("payouts.review")),
 ):
     """רושם את תשובת ספק הסליקה — pending / approved / rejected.
 
@@ -256,6 +271,12 @@ def set_provider(
         )
     except payout_service.PayoutError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    admin_audit.record(
+        db, admin, domain="payouts", action="payout.provider_status",
+        summary=f"עדכן/ה סטטוס ספק לחשבון מתנות (אירוע #{event_id})", target_type="event",
+        target_id=event_id, event_id=event_id, request=request,
+        reason=getattr(payload, "reason", "") or "",
+    )
     db.commit()
     db.refresh(account)
     return _row(db, account)
