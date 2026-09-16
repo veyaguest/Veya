@@ -309,6 +309,8 @@ def test_admin_cannot_create_a_hybrid_admin_phone_agent() -> None:
 # הנתיבים שטלפן אמור להצליח בהם. כל השאר חייב להיחסם.
 ALLOWED_PREFIXES = (
     "/admin/call-center",   # מסך השיחות — כל תפקידו
+    "/admin/call-ops/my/",  # המשימות של הטלפן עצמו (מרכז השליטה בטלפנים)
+    "/public/",             # תוכן שיווקי ציבורי (מחשבונים, ספריית נוסחים) — פתוח לכולם במכוון
     "/auth/",               # החשבון שלי (me / logout / שינוי סיסמה)
     "/legal",               # מסמכים משפטיים ציבוריים
     "/health",

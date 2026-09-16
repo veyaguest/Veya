@@ -1457,3 +1457,100 @@ class AdminAuditLog(Base):
     event_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
     ip: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class CallTask(Base):
+    """משימת שיחה אחת — "המוזמן הזה צריך לקבל שיחה בסבב הזה".
+
+    **לוח הזמנים לא זז לכאן.** ``rsvp_timeline`` נשאר מקור האמת ל"מתי".
+    הטבלה הזו היא פנקס: מה נקבע לכל מוזמן, מי מטפל בו ומה קרה — כדי שאפשר
+    יהיה לענות על "מה היה מתוכנן אתמול", להקצות מוזמן לטלפן ולהעביר משימה.
+    נוצרת ומסונכרנת ע"י ``app/call_ops.py::sync`` (אידמפוטנטי).
+
+    כפילויות נחסמות **במסד**: מוזמן אחד, מחזור אירוע אחד, סבב אחד = שורה
+    אחת. ``round_number = 0`` שמור למשימה ידנית (אחת לכל מוזמן במחזור).
+    """
+
+    __tablename__ = "call_tasks"
+    __table_args__ = (
+        UniqueConstraint("guest_id", "event_cycle", "round_number", name="uq_call_task_round"),
+        Index("ix_call_tasks_due_status", "due_date", "status"),
+        Index("ix_call_tasks_planned", "planned_date"),
+        Index("ix_call_tasks_assignee_due", "assignee_id", "due_date"),
+        Index("ix_call_tasks_event_status", "event_id", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
+    guest_id: Mapped[int] = mapped_column(ForeignKey("guests.id"), index=True)
+    event_cycle: Mapped[int] = mapped_column(Integer, default=1)
+    round_number: Mapped[int] = mapped_column(Integer, default=1)
+    # היום (שעון ישראל, YYYY-MM-DD) שבו המשימה תוכננה במקור — לא משתנה
+    # אחרי שהגיע. "מה תוכנן ל-15.09" נשאל על העמודה הזו.
+    planned_date: Mapped[str] = mapped_column(String, default="")
+    # מתי צריך לטפל עכשיו — משתנה בשיחה חוזרת או בשינוי תאריך ידני.
+    due_date: Mapped[str] = mapped_column(String, default="")
+    # למה המשימה קיימת: no_response / callback / manual / wrong_number_fixed
+    reason: Mapped[str] = mapped_column(String, default="no_response")
+    # open / done / closed_by_rsvp / cancelled / skipped
+    status: Mapped[str] = mapped_column(String, default="open")
+    closed_reason: Mapped[str] = mapped_column(String, default="")
+    assignee_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_outcome: Mapped[str] = mapped_column(String, default="")
+    last_attempt_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # מי סגר/טיפל לאחרונה (טלפן או אדמין). nullable — מחיקת משתמש לא מוחקת היסטוריה.
+    handled_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # שינוי ידני (תאריך/ביטול) — הסנכרון האוטומטי לא דורס אותו.
+    pinned: Mapped[bool] = mapped_column(Boolean, default=False)
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class CallerProfile(Base):
+    """זמינות ושיוך של טלפן. בלי שורה = פעיל, בלי מגבלת קיבולת.
+
+    ``User.disabled`` נשאר מנגנון החסימה (אין התחברות). כאן — האם מקבל
+    משימות: ``active`` / ``inactive`` / ``vacation`` (עם טווח תאריכים).
+    """
+
+    __tablename__ = "caller_profiles"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, index=True)
+    availability: Mapped[str] = mapped_column(String, default="active")
+    # חופשה / לא זמין: טווח ימים כולל (YYYY-MM-DD). ריק = לא מוגבל בזמן.
+    unavailable_from: Mapped[str] = mapped_column(String, default="")
+    unavailable_until: Mapped[str] = mapped_column(String, default="")
+    group_name: Mapped[str] = mapped_column(String, default="")
+    # כמה משימות ביום לכל היותר בחלוקה אוטומטית. None = בלי מגבלה.
+    daily_capacity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class CallRoundControl(Base):
+    """שליטה ידנית בסבב שיחות של אירוע: הושהה / נעצר / הופעל ידנית.
+
+    אין שורה = הסבב מתנהל לפי לוח הזמנים. השורה לא משנה את לוח הזמנים עצמו —
+    רק אם נוצרות/מוצגות משימות לסבב הזה.
+    """
+
+    __tablename__ = "call_round_controls"
+    __table_args__ = (
+        UniqueConstraint("event_id", "event_cycle", "round_number", name="uq_call_round_control"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
+    event_cycle: Mapped[int] = mapped_column(Integer, default=1)
+    round_number: Mapped[int] = mapped_column(Integer, default=1)
+    # paused / stopped / started (הופעל ידנית לפני מועדו)
+    state: Mapped[str] = mapped_column(String)
+    reason: Mapped[str] = mapped_column(Text, default="")
+    set_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

@@ -23,6 +23,7 @@ from app.routers import (
     auth,
     automation,
     call_center,
+    call_ops,
     communication,
     confirm,
     constraints,
@@ -98,6 +99,7 @@ app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(admin_control.router)
 app.include_router(call_center.router)
+app.include_router(call_ops.router)
 app.include_router(events.router)
 app.include_router(event_members.router)
 app.include_router(partner.router)
@@ -1512,11 +1514,12 @@ _RLS_MIGRATION_FILES = (
     "17_expense_payments_rls.sql",
     "18_landing_leads_rls.sql",
     "19_admin_control_rls.sql",
+    "20_call_ops_rls.sql",
 )
 
 #: הפונקציות שקובצי 15–17 נשענים עליהן (קבצים 01 ו-08). בלעדיהן
 #: ``CREATE POLICY`` ייכשל — ואז עדיף לדלג בקול מאשר להשאיר מדיניות חלקית.
-_RLS_REQUIRED_FUNCTIONS = ("app_manages_event", "app_is_admin")
+_RLS_REQUIRED_FUNCTIONS = ("app_manages_event", "app_is_admin", "app_agent_assigned_to_event")
 
 
 def _ensure_rls_policies() -> None:
@@ -1581,7 +1584,7 @@ def _ensure_rls_policies() -> None:
                 "  AND c.relname IN "
                 "      ('postponement_requests', 'event_cycles', 'guest_cycle_rsvp', "
                 "       'event_expenses', 'gift_envelopes', 'expense_payments', "
-                "       'admin_audit_logs') "
+                "       'admin_audit_logs', 'call_tasks', 'caller_profiles', 'call_round_controls') "
                 "ORDER BY 1"
             ).all()
             summary = " · ".join(

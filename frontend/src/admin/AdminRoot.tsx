@@ -6,8 +6,6 @@
  */
 import { useEffect, useState, type ReactNode } from 'react'
 import type { User } from '../types'
-import { AdminCallCenter } from '../components/AdminCallCenter'
-import { AdminCallers } from '../components/AdminCallers'
 import { AdminPayoutReview } from '../components/AdminPayoutReview'
 import { AdminPostponements } from '../components/AdminPostponements'
 import { MessageDefaultOptionsManager, MessageDefaultsManager } from '../components/AdminPage'
@@ -18,6 +16,7 @@ import { navigate, useAdminRoute, type AdminRoute } from './route'
 import { AdminSettingsPage } from './pages/AdminSettingsPage'
 import { AuditPage } from './pages/AuditPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { CallOpsPage } from './pages/calls/CallOpsPage'
 import {
   EmptyState,
   ErrorState,
@@ -124,7 +123,7 @@ function Page({
         </LegacyPage>
       )
     case 'calls':
-      return <CallsPage />
+      return <CallOpsPage route={route} />
     case 'postponements':
       return (
         <LegacyPage title="בקשות דחייה">
@@ -181,28 +180,6 @@ function PeoplePage({
       ) : (
         <AdminEventsView onImpersonate={onImpersonate} />
       )}
-    </div>
-  )
-}
-
-function CallsPage() {
-  const can = useCan()
-  const [tab, setTab] = useState<'queue' | 'callers'>('queue')
-  return (
-    <div className="adm-page adm-legacy">
-      <PageHeader title="טלפנים" />
-      {can('calls.manage') && (
-        <Tabs
-          label="טלפנים"
-          tabs={[
-            { key: 'queue', label: 'תור השיחות' },
-            { key: 'callers', label: 'טלפנים' },
-          ]}
-          active={tab}
-          onChange={(k) => setTab(k as 'queue' | 'callers')}
-        />
-      )}
-      {tab === 'queue' || !can('calls.manage') ? <AdminCallCenter /> : <AdminCallers />}
     </div>
   )
 }

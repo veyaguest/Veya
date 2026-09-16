@@ -26,6 +26,7 @@ from app import (
     audit,
     automation,
     call_center,
+    call_ops,
     communication,
     event_terms,
     models,
@@ -383,6 +384,11 @@ def record_outcome(
         phone_at_call=guest.phone or "",
         created_by_id=agent.id,
     ))
+    # פנקס המשימות של מרכז השליטה — אותה שיחה, בלי מסלול תיעוד נוסף.
+    call_ops.on_outcome(
+        db, guest=guest, event=event, round_number=placement.round_number,
+        outcome=payload.outcome, callback_at=callback_at, agent=agent,
+    )
     db.commit()
 
     return schemas.CallOutcomeResult(

@@ -718,6 +718,9 @@ def delete_my_account(
     from app import admin_audit
 
     admin_audit.detach_user(db, user.id)
+    from app import call_ops
+
+    call_ops.detach_user(db, user.id)
 
     db.delete(user)
     db.commit()

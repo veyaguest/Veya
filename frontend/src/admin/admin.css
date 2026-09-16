@@ -798,6 +798,12 @@ textarea.adm-input {
   border-bottom: 1px solid var(--a-line);
   margin-bottom: 18px;
   overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.adm-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .adm-tab {
@@ -824,7 +830,7 @@ textarea.adm-input {
   content: '';
   position: absolute;
   inset-inline: 8px;
-  bottom: -1px;
+  bottom: 0;
   height: 2px;
   background: var(--a-accent);
 }
@@ -1245,5 +1251,442 @@ textarea.adm-input {
   .adm-drawer,
   .adm-drawer.is-wide {
     width: 100vw;
+  }
+}
+
+/* ============================================================
+   מרכז שליטה בטלפנים
+   ============================================================ */
+.adm-datebar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 14px;
+}
+
+.adm-datebar-current {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.adm-datebar-label {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.adm-datebar-date {
+  color: var(--a-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-datebar-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.adm-seg {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--a-line-strong);
+  border-radius: 999px;
+  background: var(--a-surface);
+  color: var(--a-text-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.adm-seg.is-on {
+  background: var(--a-accent);
+  border-color: var(--a-accent);
+  color: #fff;
+}
+
+.adm-stats-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.adm-stats-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.adm-stats-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+.adm-stat-btn {
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.adm-stats .adm-stat-btn + .adm-stat,
+.adm-stats .adm-stat + .adm-stat-btn {
+  border-inline-start: 1px solid var(--a-line);
+}
+
+.adm-stat-btn:hover {
+  background: var(--a-sunken);
+}
+
+.adm-stat.is-bad .adm-stat-value {
+  color: var(--a-bad);
+}
+
+.adm-stats-compact .adm-stat {
+  padding: 10px 12px;
+}
+
+.adm-stats-compact .adm-stat-value {
+  font-size: 19px;
+}
+
+.adm-list-btn {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.adm-list-btn:hover {
+  background: var(--a-sunken);
+}
+
+.adm-col-check {
+  width: 36px;
+}
+
+.adm-col-check input {
+  width: 16px;
+  height: 16px;
+}
+
+.adm-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-inline-start: 6px;
+  border-radius: 50%;
+  background: var(--a-bad-bg);
+  color: var(--a-bad);
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: 1px;
+}
+
+.adm-bulkbar {
+  position: sticky;
+  top: 110px;
+  z-index: 9;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: var(--a-accent);
+  color: #fff;
+  border-radius: var(--a-radius);
+}
+
+.adm-bulkbar .adm-btn {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.adm-bulkbar .adm-danger-text {
+  color: var(--a-bad);
+}
+
+.adm-bulkbar .adm-inline-error {
+  margin: 0;
+  color: #ffd2cb;
+}
+
+.adm-inline-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.adm-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.adm-mt {
+  margin-top: 14px;
+}
+
+.adm-input-num {
+  width: 120px;
+}
+
+/* ── Timeline ── */
+.adm-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.adm-timeline-day {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) 56px 120px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--a-radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.adm-timeline-day:hover,
+.adm-timeline-day.is-on {
+  background: var(--a-sunken);
+}
+
+.adm-timeline-day.is-on .adm-timeline-date {
+  font-weight: 700;
+}
+
+.adm-timeline-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--a-sunken);
+  overflow: hidden;
+}
+
+.adm-timeline-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--a-text-2);
+}
+
+.adm-timeline-extra {
+  font-size: 12px;
+}
+
+/* ── Guest drawer ── */
+.adm-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+
+.adm-facts dt {
+  font-size: 12px;
+  color: var(--a-muted);
+}
+
+.adm-facts dd {
+  margin: 0;
+  font-weight: 500;
+}
+
+.adm-next {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--a-sunken);
+  border-radius: var(--a-radius);
+}
+
+.adm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.adm-chip {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--a-line-strong);
+  border-radius: 999px;
+  background: var(--a-surface);
+  color: var(--a-text);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.adm-chip.is-on {
+  background: var(--a-accent);
+  border-color: var(--a-accent);
+  color: #fff;
+}
+
+.adm-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.adm-history-item {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 10px 0;
+  border-top: 1px solid var(--a-line);
+}
+
+.adm-history-when {
+  font-size: 12px;
+  color: var(--a-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-history-title {
+  font-weight: 500;
+}
+
+.adm-history-detail {
+  font-size: 13px;
+  color: var(--a-text-2);
+  white-space: pre-wrap;
+}
+
+.adm-plain-list {
+  margin: 0;
+  padding-inline-start: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.adm-fieldset {
+  margin: 22px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.adm-fieldset legend {
+  margin-bottom: 8px;
+}
+
+.adm-danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 12px 14px;
+  border: 1px solid var(--a-bad-bg);
+  border-radius: var(--a-radius);
+}
+
+.adm-danger-zone p {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+
+.adm-created p {
+  margin-top: 0;
+}
+
+@media (max-width: 1100px) {
+  .adm-hide-md {
+    display: none;
+  }
+  .adm-stats-5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .adm-stats-3,
+  .adm-stats-4,
+  .adm-stats-5 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .adm-datebar-nav {
+    width: 100%;
+  }
+  .adm-datebar-nav .adm-input {
+    flex: 1 1 140px;
+  }
+  .adm-bulkbar {
+    top: 53px;
+  }
+  /* טבלת משימות → רשומות */
+  .adm-tasks {
+    border: 0;
+    background: none;
+  }
+  .adm-tasks thead {
+    display: none;
+  }
+  .adm-tasks table,
+  .adm-tasks tbody {
+    display: block;
+  }
+  .adm-tasks tbody tr {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 2px 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: var(--a-surface);
+    border: 1px solid var(--a-line);
+    border-radius: var(--a-radius);
+  }
+  .adm-tasks tbody td {
+    padding: 0;
+    border: 0;
+  }
+  .adm-tasks td.adm-col-check {
+    grid-row: 1 / span 3;
+  }
+  .adm-tasks td[data-label='אורח'] {
+    grid-column: 2;
+  }
+  .adm-tasks td[data-label='סטטוס'] {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .adm-tasks td[data-label='אירוע'],
+  .adm-tasks td[data-label='סבב'],
+  .adm-tasks td[data-label='טלפן'] {
+    grid-column: 2 / span 2;
+    font-size: 13px;
+    color: var(--a-text-2);
+  }
+  .adm-tasks td[data-label='אירוע'] .adm-cell-title {
+    font-weight: 400;
+  }
+  .adm-tasks td[data-label='טלפן']:empty,
+  .adm-tasks td[data-label='טלפן'] .adm-muted {
+    display: none;
+  }
+  .adm-tasks td[data-label='טלפן']::before {
+    content: 'טלפן: ';
+    color: var(--a-muted);
+  }
+  .adm-timeline-day {
+    grid-template-columns: 90px minmax(0, 1fr) 44px;
+  }
+  .adm-timeline-extra {
+    display: none;
+  }
+  .adm-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .adm-history-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
   }
 }

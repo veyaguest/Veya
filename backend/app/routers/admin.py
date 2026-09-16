@@ -13,7 +13,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app import (
-    admin_audit, admin_rbac, audit, auth, cache, call_center, communication, event_terms, messaging, models, roles,
+    admin_audit, admin_rbac, audit, auth, cache, call_center, call_ops, communication, event_terms, messaging, models, roles,
     schemas, venues,
 )
 from app.account import delete_event_cascade
@@ -825,6 +825,7 @@ def _delete_user_impl(db: Session, admin: models.User, target: models.User, mode
         ca.assigned_by_id = None
 
     admin_audit.detach_user(db, user_id)
+    call_ops.detach_user(db, user_id)
 
     db.delete(target)
     return len(owned_events)

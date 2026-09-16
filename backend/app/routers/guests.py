@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session
 
-from app import audit, call_center, invitations, models, permissions, schemas
+from app import audit, call_center, call_ops, invitations, models, permissions, schemas
 from app.auth import get_current_owner
 from app.database import get_db
 from app.deps import EventAccess
@@ -394,5 +394,6 @@ def delete_guest(
         select(models.CallLog).where(models.CallLog.guest_id == guest_id)
     ).all():
         db.delete(call)
+    call_ops.delete_for_guest(db, guest_id)
     db.delete(guest)
     db.commit()

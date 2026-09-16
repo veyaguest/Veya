@@ -37,6 +37,10 @@ def delete_event_cascade(db: Session, event: "models.Event") -> None:
         select(models.CallLog).where(models.CallLog.event_id == event_id)
     ).all():
         db.delete(call)
+    # משימות השיחה ושליטת הסבבים (מרכז הטלפנים) — מצביעות על guests ו-events.
+    from app import call_ops
+
+    call_ops.delete_for_event(db, event_id)
     # הקצאות הטלפנים לאירוע — נמחקות איתו (אין אירוע, אין למי להתקשר).
     for assignment in db.scalars(
         select(models.CallAssignment).where(models.CallAssignment.event_id == event_id)
