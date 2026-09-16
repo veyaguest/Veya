@@ -1500,6 +1500,67 @@
         .ev-bar .ev-name, .ev-bat .ev-name { font-size: var(--fs-xl); }
       }
 
+      /* ---- השאירו פרטים ----
+         שני טורים ב-RTL: הטקסט מימין, הטופס משמאלו. בלי כרטיס בתוך כרטיס —
+         השדות יושבים ישר על רקע הסקשן, עם קו דק אחד שמפריד. */
+      #leads { direction: rtl; }
+      .lead-grid {
+        display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        gap: clamp(30px, 4vw, 64px); align-items: start; max-width: 940px; margin-inline: auto;
+      }
+      .lead-mark { display: block; width: 40px; height: auto; margin: 0 0 18px; opacity: 0.9; }
+      .lead-text .section-title { text-align: start; text-wrap: balance; }
+      .lead-lead { margin: 14px 0 0; font-size: var(--fs-lg); line-height: 1.75; color: var(--body); max-width: 34ch; }
+
+      /* מצב ההצלחה יושב *מעל* הטופס ולא במקומו: הטופס נשאר בזרימה (מוסתר
+         ו-inert), ולכן גובה הסקשן לא משתנה ושום דבר בעמוד לא זז. */
+      .lead-slot { position: relative; display: grid; align-content: start; }
+      .lead-form { display: grid; gap: 18px; }
+      .lead-field { display: grid; gap: 7px; }
+      .lead-field label { font-size: var(--fs-sm); font-weight: 700; color: var(--charcoal); }
+      .lead-field input,
+      .lead-field select {
+        width: 100%; min-height: 52px; padding: 12px 14px; font: inherit; font-size: var(--fs-md);
+        color: var(--charcoal); background: var(--cream); border: 1px solid var(--line); border-radius: 8px;
+        transition: border-color 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out);
+      }
+      .lead-field input::placeholder { color: #9a917f; }
+      /* חץ קטן ל-select — SVG בגוון הזהב של המותג, בצד ההתחלה של השדה */
+      .lead-field select {
+        appearance: none; padding-inline-end: 38px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5 6 6.5l5-5' stroke='%23836a26' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: left 14px center;
+      }
+      .lead-field input:hover, .lead-field select:hover { border-color: rgba(201, 162, 39, 0.6); }
+      .lead-field input:focus-visible, .lead-field select:focus-visible { border-color: var(--gold-deep); box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.22); }
+      .lead-field.is-bad input, .lead-field.is-bad select { border-color: var(--error-border); background: var(--error-bg); }
+      .lead-err { margin: 0; font-size: var(--fs-sm); color: var(--error); }
+      .lead-actions { display: grid; gap: 10px; justify-items: start; margin-top: 4px; }
+      .lead-go { min-height: 52px; min-width: 190px; }
+      .lead-go[disabled] { opacity: 0.72; cursor: default; }
+      .lead-fine { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
+      .lead-err-form { margin-top: 2px; }
+
+      .lead-form[inert] { visibility: hidden; }
+      .lead-done {
+        position: absolute; inset: 0; display: grid; align-content: center; justify-items: start;
+        padding-block: clamp(20px, 4vw, 48px);
+      }
+      .lead-done[hidden] { display: none; }
+      .lead-done-title { margin: 0 0 8px; font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); }
+      .lead-done-body { margin: 0; font-size: var(--fs-lg); color: var(--body); }
+
+      @media (max-width: 860px) {
+        .lead-grid { grid-template-columns: minmax(0, 1fr); gap: 26px; max-width: 520px; }
+        .lead-lead { max-width: none; }
+        .lead-go { width: 100%; }
+        .lead-actions { justify-items: stretch; }
+        .lead-fine { text-align: center; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .lead-field input, .lead-field select { transition: none; }
+      }
+
       /* ---- CTA משני בתוך סקשן (למחשבון) ---- */
       .section-cta { text-align: center; margin-top: 32px; }
       .section-cta .cta-hint { display: block; font-size: var(--fs-xs); color: var(--muted); margin-top: 10px; }
@@ -2367,7 +2428,7 @@
 
       #why, section.ps, #deadline, #rsvp, section.gh, #calls, #showcase, #impact,
       p.bridge.bridge-dark, #seating, #gifts, #giftcard, #after, #how, #guides, #calculators,
-      #check, section.faq-wrap, section.band-wrap {
+      #check, section.faq-wrap, section.leads, section.band-wrap {
         --sm-up: var(--sm-c); --sm-dn: var(--sm-c); --sm-hu: 0px; --sm-hd: 0px;
         position: relative;
         background: linear-gradient(180deg,
@@ -2393,7 +2454,7 @@
 
       /* הגוון של כל משטח */
       #why, section.ps, #rsvp, #calls, #gifts, #calculators, section.faq-wrap, section.band-wrap { --sm-c: var(--bg-paper); }
-      #deadline, section.gh, #impact, p.bridge.bridge-dark, #guides, #check { --sm-c: var(--bg-linen); }
+      #deadline, section.gh, #impact, p.bridge.bridge-dark, #guides, #check, section.leads { --sm-c: var(--bg-linen); }
       #after { --sm-c: var(--bg-sand); }
       #showcase { --sm-c: var(--bg-night-2); color: var(--cream-text); }
       #seating, #how { --sm-c: var(--bg-night); }
@@ -2490,10 +2551,12 @@
       #guides { --sm-up: var(--bg-night); --sm-hu: var(--seam-deep); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); padding-top: var(--seam-pad); }
       #calculators { --sm-up: var(--bg-linen); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-linen); --sm-hd: var(--seam-soft); }
       #check { --sm-up: var(--bg-paper); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); }
-      section.faq-wrap { --sm-up: var(--bg-linen); --sm-hu: var(--seam-soft); }
+      section.faq-wrap { --sm-up: var(--bg-linen); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-linen); --sm-hd: var(--seam-soft); }
+      section.leads { --sm-up: var(--bg-paper); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); }
 
       /* ── סוף העמוד: השנהב נמס ללילה של הפוטר, כולו בתוך הסקשן האחרון ── */
       section.band-wrap {
+        --sm-up: var(--bg-linen); --sm-hu: var(--seam-soft);
         --sm-dn: var(--bg-night); --sm-full: 300px;
         background: linear-gradient(180deg,
           var(--sm-c) 0px,
@@ -2590,6 +2653,8 @@
     
     
 
+    
+    
     
     
     
@@ -3845,6 +3910,74 @@
       </section>
 
       <!-- ═════ CTA סוגר ═════ -->
+      <!-- ═════ השאירו פרטים ═══════════════════════════════════════════════
+           הטופס נשלח ל-POST /public/leads (app/routers/public_leads.py):
+           נתיב אנונימי, מוגבל-קצב, שכותב שורה ב-``landing_leads`` — שם,
+           טלפון מנורמל, סוג אירוע ותאריך. סוגי האירוע הם אלה של המוצר
+           (event_terms.EVENT_TERMS), לא רשימה שנכתבה לדף. -->
+      <section class="leads" id="leads" aria-labelledby="leads-title">
+        <div class="wrap">
+          <div class="lead-grid">
+            <div class="lead-text reveal">
+              <img class="lead-mark" src="/logo_nobg.png" alt="" aria-hidden="true" width="40" height="40" loading="lazy" decoding="async" />
+              <h2 id="leads-title" class="section-title">רוצים להתחיל לסדר את האירוע?</h2>
+              <p class="lead-lead">
+                השאירו לנו פרטים ונחזור אליכם. נראה יחד איך VEYA יכולה לעשות
+                לכם סדר במוזמנים, באישורי ההגעה ובהושבה.
+              </p>
+            </div>
+
+            <div class="lead-slot reveal d1">
+              <form class="lead-form" data-lead-form novalidate>
+                <div class="lead-field">
+                  <label for="lead-name">שם</label>
+                  <input type="text" id="lead-name" name="name" autocomplete="name" placeholder="איך קוראים לכם?" required aria-describedby="lead-name-err" />
+                  <p class="lead-err" id="lead-name-err" data-err-for="name" hidden></p>
+                </div>
+
+                <div class="lead-field">
+                  <label for="lead-phone">טלפון</label>
+                  <input type="tel" id="lead-phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="050-0000000" required aria-describedby="lead-phone-err" />
+                  <p class="lead-err" id="lead-phone-err" data-err-for="phone" hidden></p>
+                </div>
+
+                <div class="lead-field">
+                  <label for="lead-type">סוג האירוע</label>
+                  <select id="lead-type" name="event_type" required aria-describedby="lead-type-err">
+                    <option value="" selected>בחרו סוג אירוע</option>
+                    <option value="wedding">חתונה</option>
+                    <option value="bar_mitzvah">בר מצווה</option>
+                    <option value="bat_mitzvah">בת מצווה</option>
+                    <option value="henna">חינה</option>
+                    <option value="brit">ברית</option>
+                    <option value="brita">בריתה</option>
+                    <option value="business">אירוע עסקי</option>
+                  </select>
+                  <p class="lead-err" id="lead-type-err" data-err-for="event_type" hidden></p>
+                </div>
+
+                <div class="lead-field">
+                  <label for="lead-date">תאריך האירוע</label>
+                  <input type="date" id="lead-date" name="event_date" required aria-describedby="lead-date-err" />
+                  <p class="lead-err" id="lead-date-err" data-err-for="event_date" hidden></p>
+                </div>
+
+                <div class="lead-actions">
+                  <button type="submit" class="btn btn-primary lead-go" data-lead-go>דברו איתי</button>
+                  <p class="lead-fine">בלי התחייבות. רק להבין אם VEYA מתאימה לכם.</p>
+                  <p class="lead-err lead-err-form" data-err-for="form" hidden></p>
+                </div>
+              </form>
+
+              <div class="lead-done" data-lead-done role="status" hidden>
+                <p class="lead-done-title">קיבלנו 🙌</p>
+                <p class="lead-done-body">הפרטים אצלנו. נחזור אליכם בהקדם.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="band-wrap" aria-labelledby="cta-title">
         <div class="wrap">
           <div class="band reveal">
@@ -4037,6 +4170,110 @@
          ראשון, בלי דרך חזרה. עכשיו מנסים שוב פעם אחת, ואם גם זה נכשל
          המסגרת פשוט נשארת במקומה. */
 
+
+      /* ---- השאירו פרטים ----
+         ולידציה בעברית לפני שליחה, מצב שליחה יחיד (בלי לחיצה כפולה), ואז
+         מצב הצלחה שמחליף את הטופס באותו מקום. הכתובת היא אותו API של
+         המוצר; הטלפון נבדק כאן ומנורמל שוב בשרת (validators.py), כדי
+         שלא ייווצר כלל שני. אין כאן focus אוטומטי ואין גלילה. */
+      (function () {
+        var form = document.querySelector('[data-lead-form]');
+        if (!form) return;
+        var done = document.querySelector('[data-lead-done]');
+        var go = form.querySelector('[data-lead-go]');
+        var raw = '%VITE_API_URL%';
+        var API = /^https?:\/\//.test(raw) ? raw.replace(/\/$/, '') : 'http://localhost:8000';
+        var sending = false;
+
+        function errEl(name) { return form.querySelector('[data-err-for="' + name + '"]'); }
+        function setErr(name, msg) {
+          var el = errEl(name);
+          if (!el) return;
+          var field = el.closest('.lead-field');
+          if (msg) {
+            el.textContent = msg;
+            el.hidden = false;
+            el.setAttribute('role', 'alert');
+            if (field) field.classList.add('is-bad');
+          } else {
+            el.hidden = true;
+            el.textContent = '';
+            el.removeAttribute('role');
+            if (field) field.classList.remove('is-bad');
+          }
+        }
+        function clearAll() {
+          ['name', 'phone', 'event_type', 'event_date', 'form'].forEach(function (n) { setErr(n, ''); });
+        }
+        /* אותו כלל של המוצר: +972/972 הופכים ל-0, ואז 9 או 10 ספרות. */
+        function normalizePhone(v) {
+          var digits = (v || '').replace(/\D/g, '');
+          if (digits.indexOf('972') === 0) digits = '0' + digits.slice(3);
+          return digits;
+        }
+
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          if (sending) return;
+          clearAll();
+
+          var name = form.elements.name.value.trim();
+          var phone = normalizePhone(form.elements.phone.value);
+          var type = form.elements.event_type.value;
+          var dateStr = form.elements.event_date.value;
+          var bad = null;
+
+          if (name.length < 2) { setErr('name', 'נשמח לדעת איך קוראים לכם'); bad = bad || 'name'; }
+          if (phone.charAt(0) !== '0' || (phone.length !== 9 && phone.length !== 10)) {
+            setErr('phone', 'נראה שהמספר לא תקין — בואו נבדוק שוב'); bad = bad || 'phone';
+          }
+          if (!type) { setErr('event_type', 'בחרו סוג אירוע מהרשימה'); bad = bad || 'event_type'; }
+          if (!dateStr) {
+            setErr('event_date', 'בחרו את תאריך האירוע'); bad = bad || 'event_date';
+          } else {
+            var today = new Date(); today.setHours(0, 0, 0, 0);
+            var picked = new Date(dateStr + 'T00:00:00');
+            if (isNaN(picked.getTime()) || picked < today) {
+              setErr('event_date', 'בחרו תאריך מהיום והלאה'); bad = bad || 'event_date';
+            }
+          }
+          if (bad) { form.elements[bad].focus({ preventScroll: true }); return; }
+
+          sending = true;
+          go.disabled = true;
+          go.textContent = 'שולחים…';
+
+          fetch(API + '/public/leads', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, phone: phone, event_type: type, event_date: dateStr })
+          }).then(function (res) {
+            if (res.ok) {
+              // הטופס נשאר במקומו (בלי גובה שמשתנה), אבל יוצא מהמסך,
+              // מהמקלדת ומקוראי המסך. ההודעה מוכרזת דרך role="status".
+              form.setAttribute('inert', '');
+              form.setAttribute('aria-hidden', 'true');
+              // inert לבדו לא נתמך בכל דפדפן; disabled מוציא את השדות
+              // ממסלול ה-Tab בוודאות.
+              [].forEach.call(form.querySelectorAll('input, select, button'), function (el) { el.disabled = true; });
+              done.hidden = false;
+              return;
+            }
+            // 429 = יותר מדי פניות מאותו IP; כל השאר — תקלה זמנית.
+            setErr('form', res.status === 429
+              ? 'כבר קיבלנו מכם פנייה. אנחנו על זה — נחזור אליכם.'
+              : 'משהו השתבש בשליחה. אפשר לנסות שוב בעוד רגע.');
+            sending = false;
+            go.disabled = false;
+            go.textContent = 'דברו איתי';
+          }).catch(function () {
+            setErr('form', 'אין חיבור לרגע. אפשר לנסות שוב.');
+            sending = false;
+            go.disabled = false;
+            go.textContent = 'דברו איתי';
+          });
+        });
+      })();
 
       /* ---- "הוסיפו למסך הבית" ----
          ההסבר עצמו הוא זה של המוצר (InstallPrompt): אותם שלושה צעדים.

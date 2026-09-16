@@ -41,6 +41,7 @@ from app.routers import (
     postpone,
     postpone_admin,
     public_calc,
+    public_leads,
     public_library,
     seating,
     stats,
@@ -122,6 +123,8 @@ app.include_router(postpone_admin.router)
 app.include_router(public_calc.router)
 # ספריית הנוסחים הציבורית — קריאה בלבד מאותן שורות של המוצר (public_library.py).
 app.include_router(public_library.router)
+# "השאירו פרטים ונחזור אליכם" מדף הנחיתה — אנונימי, מוגבל-קצב, כתיבה בלבד.
+app.include_router(public_leads.router)
 
 # הגשת קבצי תמונות שהועלו (הזמנה/סקיצת אולם) מתוך backend/uploads.
 from app.media import UPLOADS_DIR  # noqa: E402
@@ -1503,6 +1506,7 @@ _RLS_MIGRATION_FILES = (
     "15_postponement_rls.sql",
     "16_finance_rls.sql",
     "17_expense_payments_rls.sql",
+    "18_landing_leads_rls.sql",
 )
 
 #: הפונקציות שקובצי 15–17 נשענים עליהן (קבצים 01 ו-08). בלעדיהן

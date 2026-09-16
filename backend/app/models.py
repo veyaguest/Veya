@@ -1376,3 +1376,42 @@ class GiftEnvelope(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
+
+class LandingLead(Base):
+    """ליד שהושאר בדף הנחיתה — "תחזרו אליי".
+
+    ## למה טבלה נפרדת ולא ``User`` בלי סיסמה
+
+    מי שמשאיר פרטים בדף הנחיתה עוד לא נרשם, לא אישר תנאי שימוש ואין לו
+    אירוע. שורה ב-``users`` הייתה יוצרת חשבון-רפאים שאי אפשר להיכנס אליו,
+    מזהמת ספירות משתמשים, ומחייבת החלטה מה קורה כשאותו אדם *כן* נרשם
+    מאוחר יותר עם אותו טלפון. ליד הוא פנייה, לא חשבון.
+
+    ## מה נשמר, ובמכוון מה לא
+
+    שם, טלפון, סוג אירוע ותאריך — בדיוק מה שצריך כדי לחזור לאדם ולדעת על
+    מה מדברים. **אין כאן אימייל, אין כתובת, אין מספר מוזמנים ואין טקסט
+    חופשי**: כל שדה נוסף הוא מידע אישי שנשמר בלי צורך אמיתי.
+
+    ``source`` קיים כדי שאפשר יהיה להבדיל בעתיד בין פניות מדף הנחיתה לבין
+    מקורות אחרים, בלי לנחש לפי תאריך.
+    """
+
+    __tablename__ = "landing_leads"
+    __table_args__ = (
+        # השאילתה היחידה: "הפניות האחרונות, מהחדשה לישנה".
+        Index("ix_landing_leads_created", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    #: מנורמל דרך ``validators.normalize_israeli_phone`` — אותה פונקציה
+    #: שמנרמלת טלפון של מוזמן, כדי שלא ייווצר פורמט שני במערכת.
+    phone: Mapped[str] = mapped_column(String, nullable=False)
+    #: מפתח מ-``event_terms.EVENT_TERMS`` (wedding / bar_mitzvah / ...).
+    event_type: Mapped[str] = mapped_column(String, default="wedding")
+    #: ``YYYY-MM-DD``, מחרוזת כמו ``Event.event_date`` ומאותה סיבה: אין
+    #: כאן אזור זמן ואין חישוב.
+    event_date: Mapped[str] = mapped_column(String, default="")
+    source: Mapped[str] = mapped_column(String, default="landing_page")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
