@@ -95,6 +95,84 @@ function pageTemplate({ title, bodyHtml }) {
 `
 }
 
+/**
+ * עמוד האודות הוא סיפור מותג, לא מסמך משפטי — ולכן תבנית משלו: בלי כרטיס
+ * לבן, עם הטיפוגרפיה של האתר (Frank Ruhl Libre לכותרות, Assistant לגוף),
+ * טור צר, הרבה אוויר וקו זהב דק שמפריד בין הפרקים. שאר המסמכים ב-DOCS
+ * ממשיכים לקבל את התבנית המשפטית כרגיל.
+ */
+function aboutTemplate({ title, bodyHtml }) {
+  return `<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>${title} · VEYA</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500&display=swap"
+/>
+<style>
+  :root {
+    color-scheme: light;
+    --ivory: #fbf6ee; --charcoal: #2b2620; --body: #4a4438; --muted: #6a6252;
+    --line: #e5dec9; --gold-deep: #6f5b26;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0 20px 96px; background: var(--ivory); color: var(--body);
+    font-family: Assistant, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    font-size: 17px; line-height: 1.9;
+  }
+  .about-topbar {
+    max-width: 680px; margin: 0 auto; padding: 22px 0 8px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .about-topbar a { color: var(--gold-deep); text-decoration: none; font-weight: 600; font-size: 14.5px; }
+  .about-topbar a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .about-topbar a:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 3px; border-radius: 4px; }
+  .about-doc { max-width: 680px; margin: 0 auto; }
+  .about-doc h1 {
+    margin: clamp(28px, 6vw, 56px) 0 clamp(26px, 4vw, 44px);
+    font-family: "Frank Ruhl Libre", Georgia, serif; font-weight: 500; line-height: 1.12;
+    font-size: clamp(2.1rem, 6vw, 3.1rem); color: var(--charcoal);
+  }
+  /* כל פרק נפתח בקו זהב דק — ההפרדה היחידה, בלי מסגרות ובלי כרטיסים */
+  .about-doc h2 {
+    margin: clamp(48px, 7vw, 82px) 0 clamp(16px, 2vw, 22px); padding-top: clamp(24px, 3vw, 34px);
+    border-top: 1px solid rgba(131, 106, 38, 0.3);
+    font-family: "Frank Ruhl Libre", Georgia, serif; font-weight: 500; line-height: 1.25;
+    font-size: clamp(1.45rem, 3.4vw, 2rem); color: var(--charcoal);
+  }
+  .about-doc p { margin: 0 0 1.2em; max-width: 34rem; }
+  .about-doc ul { margin: 0 0 1.2em; padding-inline-start: 1.1em; }
+  .about-doc li { margin-bottom: 0.4em; }
+  .about-doc a { color: var(--gold-deep); }
+  .about-doc hr { border: none; border-top: 1px solid var(--line); margin: clamp(40px, 5vw, 64px) 0 26px; }
+  .about-doc hr + p { font-size: 15px; color: var(--muted); }
+  @media (max-width: 600px) {
+    body { font-size: 16.5px; line-height: 1.85; padding-bottom: 72px; }
+    .about-doc p { max-width: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="about-topbar">
+    <a href="/">← חזרה ל-VEYA</a>
+    <a href="/app">כניסה למערכת</a>
+  </div>
+  <article class="about-doc">
+    ${bodyHtml}
+  </article>
+</body>
+</html>
+`
+}
+
 mkdirSync(OUT_DIR, { recursive: true })
 
 for (const [file, slug, title] of DOCS) {
@@ -106,6 +184,7 @@ for (const [file, slug, title] of DOCS) {
     md = md.replace('## דברו איתנו', '<a id="contact"></a>\n\n## דברו איתנו')
   }
   const bodyHtml = marked.parse(md, { gfm: true })
-  writeFileSync(path.join(OUT_DIR, `${slug}.html`), pageTemplate({ title, bodyHtml }))
+  const render = slug === 'about' ? aboutTemplate : pageTemplate
+  writeFileSync(path.join(OUT_DIR, `${slug}.html`), render({ title, bodyHtml }))
   console.log(`✓ legal/${file} → public/legal/${slug}.html`)
 }

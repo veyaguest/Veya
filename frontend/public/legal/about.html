@@ -5,90 +5,93 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex" />
 <title>אודות VEYA · VEYA</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500&display=swap"
+/>
 <style>
-  :root { color-scheme: light; }
+  :root {
+    color-scheme: light;
+    --ivory: #fbf6ee; --charcoal: #2b2620; --body: #4a4438; --muted: #6a6252;
+    --line: #e5dec9; --gold-deep: #6f5b26;
+  }
+  * { box-sizing: border-box; }
   body {
-    margin: 0; padding: 0 20px 64px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Heebo, Arial, sans-serif;
-    background: #fbf9f5; color: #2a2420; line-height: 1.75; font-size: 16.5px;
+    margin: 0; padding: 0 20px 96px; background: var(--ivory); color: var(--body);
+    font-family: Assistant, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    font-size: 17px; line-height: 1.9;
   }
-  .legal-topbar {
-    max-width: 780px; margin: 0 auto; padding: 22px 0 10px;
-    display: flex; align-items: center; justify-content: space-between;
+  .about-topbar {
+    max-width: 680px; margin: 0 auto; padding: 22px 0 8px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
   }
-  .legal-topbar a { color: #9a7b1f; text-decoration: none; font-weight: 600; font-size: 14.5px; }
-  .legal-doc { max-width: 780px; margin: 0 auto; background: #fff; border: 1px solid #ece4d3;
-    border-radius: 14px; padding: 40px clamp(20px, 5vw, 56px); }
-  .legal-doc h1 { font-size: 1.7rem; margin-top: 0; }
-  .legal-doc h2 { font-size: 1.28rem; margin-top: 2.1em; border-top: 1px solid #f0e9da; padding-top: 1em; }
-  .legal-doc h3 { font-size: 1.08rem; margin-top: 1.6em; }
-  .legal-doc a { color: #9a7b1f; }
-  .legal-doc table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: 0.95em; }
-  .legal-doc th, .legal-doc td { border: 1px solid #ece4d3; padding: 8px 10px; text-align: right; vertical-align: top; }
-  .legal-doc th { background: #f7f2e8; }
-  .legal-doc code { background: #f3ede0; padding: 1px 6px; border-radius: 5px; font-size: 0.92em; }
-  .legal-doc hr { border: none; border-top: 1px solid #ece4d3; margin: 2em 0; }
-  @media (prefers-color-scheme: dark) {
-    body { background: #16130f; color: #e9e1d2; }
-    .legal-doc { background: #1e1a14; border-color: #322c22; }
-    .legal-doc h2 { border-top-color: #322c22; }
-    .legal-doc th, .legal-doc td { border-color: #322c22; }
-    .legal-doc th { background: #241f18; }
-    .legal-doc code { background: #241f18; }
-    .legal-doc hr { border-top-color: #322c22; }
+  .about-topbar a { color: var(--gold-deep); text-decoration: none; font-weight: 600; font-size: 14.5px; }
+  .about-topbar a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .about-topbar a:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 3px; border-radius: 4px; }
+  .about-doc { max-width: 680px; margin: 0 auto; }
+  .about-doc h1 {
+    margin: clamp(28px, 6vw, 56px) 0 clamp(26px, 4vw, 44px);
+    font-family: "Frank Ruhl Libre", Georgia, serif; font-weight: 500; line-height: 1.12;
+    font-size: clamp(2.1rem, 6vw, 3.1rem); color: var(--charcoal);
+  }
+  /* כל פרק נפתח בקו זהב דק — ההפרדה היחידה, בלי מסגרות ובלי כרטיסים */
+  .about-doc h2 {
+    margin: clamp(48px, 7vw, 82px) 0 clamp(16px, 2vw, 22px); padding-top: clamp(24px, 3vw, 34px);
+    border-top: 1px solid rgba(131, 106, 38, 0.3);
+    font-family: "Frank Ruhl Libre", Georgia, serif; font-weight: 500; line-height: 1.25;
+    font-size: clamp(1.45rem, 3.4vw, 2rem); color: var(--charcoal);
+  }
+  .about-doc p { margin: 0 0 1.2em; max-width: 34rem; }
+  .about-doc ul { margin: 0 0 1.2em; padding-inline-start: 1.1em; }
+  .about-doc li { margin-bottom: 0.4em; }
+  .about-doc a { color: var(--gold-deep); }
+  .about-doc hr { border: none; border-top: 1px solid var(--line); margin: clamp(40px, 5vw, 64px) 0 26px; }
+  .about-doc hr + p { font-size: 15px; color: var(--muted); }
+  @media (max-width: 600px) {
+    body { font-size: 16.5px; line-height: 1.85; padding-bottom: 72px; }
+    .about-doc p { max-width: none; }
   }
 </style>
 </head>
 <body>
-  <div class="legal-topbar">
+  <div class="about-topbar">
     <a href="/">← חזרה ל-VEYA</a>
     <a href="/app">כניסה למערכת</a>
   </div>
-  <article class="legal-doc">
+  <article class="about-doc">
     <h1>אודות VEYA</h1>
-<h2>האירוע שלכם, מסודר</h2>
-<p>יש רגע שבו כל אירוע — חתונה, בר מצווה, חינה, ברית, או כל שמחה אחרת —
-הופך מרשימה של פרטים למשהו שצריך לנהל: מי מגיע, איפה יושבים, מי עדיין
-לא ענה, ומי לא לשבת ליד מי. VEYA קיימת כדי שהחלק הזה יפסיק לגזול מכם
-זמן ולחץ, ויתחיל להרגיש פשוט.</p>
-<p>VEYA היא מערכת ניהול אירועים חכמה — מקום אחד שבו רשימת המוזמנים,
-אישורי ההגעה, ההודעות למוזמנים וסידור ההושבה מדברים אחד עם השני,
-במקום להתפזר בין קובץ Excel, קבוצת WhatsApp ודף ובעיפרון.</p>
-<h2>למה בנינו את VEYA</h2>
-<p>כי ראינו את זה קורה שוב ושוב: זוגות ומשפחות שמוציאים ימים שלמים על
-עדכון גיליון אלקטרוני, שמנסים לזכור מי אישר הגעה ומי לא, ושמגיעים
-לשבוע לפני האירוע עם סידור הושבה שמשתנה בכל שיחת טלפון. התהליך הזה
-אמור לשרת את השמחה — לא להכביד עליה.</p>
-<p>VEYA נבנתה סביב עיקרון פשוט: <strong>המערכת אמורה לעשות את העבודה, לא
-אתם.</strong> רשימת מוזמנים אחת שמתעדכנת אוטומטית, תזכורות שנשלחות לבד
-בזמן הנכון, ומנוע הושבה חכם שמכבד את מי שרוצים לשבת ביחד ואת מי
-שממש לא — כדי שההחלטות הקטנות לא יאכלו את הזמן שמגיע לתכנון הדברים
-שבאמת חשובים.</p>
-<h2>איך זה עובד, בקצרה</h2>
-<ul>
-<li><strong>ניהול מוזמנים במקום אחד</strong> — הוספה ידנית, ייבוא מ-Excel, או
-הדבקה ישירה מרשימה קיימת. מקור אמת יחיד לכל הפרטים.</li>
-<li><strong>אישורי הגעה אוטומטיים</strong> — הזמנות ותזכורות נשלחות למוזמנים,
-ותשובותיהם מתעדכנות בזמן אמת — בלי לספור בעיפרון.</li>
-<li><strong>סידור הושבה חכם</strong> — עורך מפת אולם חזותי, לצד מנוע שמסייע בשיבוץ
-תוך שמירה על כללים חשובים (מי צריך לשבת יחד, מי לא) — ההחלטה תמיד
-נשארת בידיים שלכם.</li>
-</ul>
-<h2>אירוע אחד עשיר, מערכת אחת גמישה</h2>
-<p>חתונה היא נקודת ההתחלה החזקה ביותר של VEYA — ולכן היא זוכה לתשומת
-הלב העמוקה ביותר במערכת. אבל VEYA נבנתה כמערכת ניהול אירועים אחת,
-לא כמערכת חתונות בלבד: אותה מערכת מתאימה את עצמה גם לבר/בת מצווה,
-חינה, ברית, אירוע משפחתי או אירוע עסקי — כל אחד בשפה ובתהליך
-המתאימים לו.</p>
-<h2>איך אנחנו חושבים על המוצר</h2>
-<p>כל מסך, כל הודעה וכל פיצ&#39;ר ב-VEYA נבחנים מול אותה שאלה: <strong>האם זה
-חוסך זמן, מוריד לחץ, ומשאיר את התחושה של אירוע מוקפד — לא של עוד
-תוכנה שצריך להתמודד איתה?</strong> מובייל קודם, פשטות קודם, ואוטומציה בכל
-מקום שבו אפשר לחסוך למארגני האירוע עבודה ידנית.</p>
-<h2>לאן אנחנו הולכים</h2>
-<p>VEYA נמצאת בתחילת הדרך שלה — מוצר פעיל שנבנה ומשתפר כל הזמן, לא
-פרויקט סגור. אנחנו מוסיפים בזהירות, שומרים על הפשטות שבליבת המוצר,
-ומקשיבים לכל זוג ומשפחה שסומכים עלינו עם היום הכי חשוב שלהם.</p>
+<h2>זה התחיל מבעיה שלא הייתה אמורה להיות בעיה</h2>
+<p>כשמארגנים אירוע, יש רגע שבו הכול מתחיל להתחבר.<br>רשימת המוזמנים כבר כמעט סגורה.<br>אנשים מתחילים לענות.<br>פתאום צריך לחשוב מי יושב עם מי.<br>ואז המספרים משתנים שוב.</p>
+<p>מישהו שהיה &quot;אולי&quot; הפך ל&quot;מגיע&quot;.<br>משפחה ביקשה לשבת יחד.<br>מישהו צריך לשבת רחוק מהרמקולים.<br>שולחן אחד התמלא, אחר נשאר עם מקום.</p>
+<p>ובמקביל, צריך לדעת מה קורה מול האולם:<br>כמה אנשים יש כרגע, על כמה התחייבתם, ומה המשמעות של כל שינוי במספר הזה.</p>
+<p>ואז גילינו משהו שהיה לנו קשה להבין:<br>למה כל הדבר הזה מנוהל בנפרד?</p>
+<p>רשימת מוזמנים במקום אחד.<br>הושבה במקום אחר.<br>והמספרים של האירוע במקום אחר.<br>כל שינוי קטן דורש לבדוק שוב אם הכול עדיין מסתדר.</p>
+<h2>אז החלטנו לחבר את הדברים</h2>
+<p>VEYA נבנתה מתוך רעיון פשוט:<br>רשימת המוזמנים לא צריכה להיות רק רשימה. היא צריכה להיות הבסיס של כל האירוע.</p>
+<p>אותם מוזמנים שמקבלים את ההזמנה הם אלה שמאשרים הגעה.<br>אותם אנשים נכנסים לתכנון ההושבה.<br>ואותם נתונים ממשיכים גם למאזן האירוע.</p>
+<p>כך, כשמישהו משנה תשובה — הנתונים משתנים בהתאם.<br>כשמתכננים את השולחנות — עובדים עם המספרים האמיתיים.<br>וכשמגיעים למאזן — לא צריך להתחיל לחבר הכול מחדש.</p>
+<h2>VEYA נולדה כדי לעשות סדר בדבר הכי חשוב</h2>
+<p>לא בעוד מערכת שצריך ללמוד.<br>לא בעוד טבלה שצריך לתחזק.<br>ולא בעוד מקום שבו שומרים מידע שכבר נמצא במקום אחר.</p>
+<p>אלא במקום אחד שמחבר את הדברים שבאמת משפיעים אחד על השני במהלך האירוע.</p>
+<p>מוזמנים. אישורי הגעה. הושבה. ומאזן האירוע.<br>הכול סביב אותו אירוע, עם אותם נתונים.</p>
+<h2>כי בסוף, כל מספר מספר משהו</h2>
+<p>כל אישור הגעה הוא לא רק &quot;כן&quot; או &quot;לא&quot;.<br>הוא משפיע על כמה אנשים יגיעו.<br>על כמה מקומות צריך.<br>על איך ייראו השולחנות.<br>ועל המספרים שמאחורי האירוע.</p>
+<p>לכן בנינו את VEYA כך שהמידע לא ייעצר ברשימת המוזמנים.<br>הוא ממשיך איתכם לאורך כל הדרך.</p>
+<h2>נבנתה מתוך החיים האמיתיים של אירועים בישראל</h2>
+<p>VEYA נועדה להתאים לאיך שבאמת מארגנים אירוע כאן.</p>
+<p>משפחות שמנהלות הכול יחד.<br>קבוצות וואטסאפ.<br>שינויים של הרגע האחרון.<br>בקשות מיוחדות של מוזמנים.<br>והצורך לדעת בכל רגע איפה הדברים עומדים.</p>
+<p>בלי להפוך את ארגון האירוע לפרויקט טכנולוגי.<br>פשוט לפתוח, להבין ולהתקדם.</p>
+<h2>ומה קורה אחרי האירוע?</h2>
+<p>מבחינתנו, האירוע לא נגמר ברגע שהאורות נכבים.<br>רשימת המוזמנים, הנתונים והדוח נשארים אצלכם.</p>
+<p>כי אותם אנשים יכולים להופיע שוב בחיים שלכם — בחתונה של אח, בבר מצווה של ילד, באירוע משפחתי או בכל אירוע אחר.<br>במקום להתחיל כל פעם מאפס, המידע נשאר אצלכם.</p>
+<p>כי רשימת מוזמנים טובה היא לא משהו שזורקים אחרי האירוע.</p>
+<h2>VEYA היום</h2>
+<p>מה שהתחיל מהרצון לעשות סדר בכמה רשימות הפך למערכת שמלווה את האירוע מההכנות ועד אחרי שהוא נגמר.</p>
+<p>אנחנו ממשיכים לבנות אותה סביב אותה שאלה שהתחילה הכול:<br>איך אפשר לגרום לכל החלקים של האירוע פשוט לעבוד יחד?</p>
+<p>זו הסיבה ש-VEYA קיימת.<br>לא כדי להוסיף לכם עוד דבר לנהל.<br>אלא כדי שיהיה לכם פחות מה לנהל.</p>
 <p><a id="contact"></a></p>
 <h2>דברו איתנו</h2>
 <p>יש לכם שאלה, רעיון, או פשוט רוצים לספר לנו איך היה האירוע? נשמח

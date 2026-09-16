@@ -1500,6 +1500,77 @@
         .ev-bar .ev-name, .ev-bat .ev-name { font-size: var(--fs-xl); }
       }
 
+      /* ---- למה בנינו את VEYA ----
+         סקשן סיפור, לא סקשן פיצ'רים: טור טקסט צר, פסקאות קצרות והרבה אוויר.
+         אין כאן כרטיסים, מוקאפים או אייקונים — רק טיפוגרפיה וקו דק אחד. */
+      #story { direction: rtl; }
+      .story-title {
+        max-width: 22ch; margin: 0 0 clamp(30px, 4vw, 48px);
+        font-family: var(--font-display); font-weight: 500; line-height: 1.12;
+        font-size: clamp(2.1rem, 4.6vw, 3.25rem); color: var(--cream-text);
+      }
+      .story-body { max-width: 34rem; }
+      .story-body p { margin: 0 0 1.15em; font-size: var(--fs-lg); line-height: 1.95; color: #d8ceb9; }
+      .story-open { font-size: var(--fs-xl) !important; color: var(--cream-text) !important; }
+      .story-cue { margin-bottom: 0.5em !important; color: #b6aa93 !important; }
+      .story-ask {
+        margin: 0 0 1.3em !important; font-family: var(--font-display);
+        font-size: clamp(1.55rem, 3.2vw, 2.2rem) !important; line-height: 1.3 !important;
+        color: var(--gold-light) !important;
+      }
+      .story-born {
+        margin: 1.6em 0 0 !important; font-family: var(--font-display);
+        font-size: var(--fd-sm) !important; color: var(--cream-text) !important;
+      }
+
+      /* המעבר מהסיפור למה שזה אומר בפועל — אותו רצף, בלי כותרת חדשה */
+      .story-bridge {
+        max-width: 40rem; margin: clamp(46px, 6vw, 76px) 0 0;
+        padding-top: clamp(26px, 3.4vw, 40px); border-top: 1px solid rgba(228, 201, 107, 0.28);
+        font-family: var(--font-display); font-size: var(--fd-sm); line-height: 1.5; color: var(--cream-text);
+      }
+
+      .story-three { display: grid; gap: clamp(34px, 4.4vw, 56px); margin-top: clamp(40px, 5vw, 64px); }
+      .story-part { max-width: 38rem; }
+      .story-part h3 {
+        margin: 0 0 12px; font-family: var(--font-display); font-weight: 500;
+        font-size: var(--fs-2xl); line-height: 1.25; color: var(--gold-light);
+      }
+      .story-part p { margin: 0 0 0.85em; font-size: var(--fs-md); line-height: 1.85; color: #d8ceb9; }
+      .story-part p:last-child { margin-bottom: 0; }
+
+      .story-close { margin-top: clamp(52px, 6.5vw, 88px); max-width: 40rem; }
+      .story-close > p { margin: 0; font-size: var(--fs-lg); line-height: 1.9; color: #d8ceb9; }
+      /* ארבע המילים על קו דק אחד — הקשר עצמו, בלי תרשים */
+      .story-chain {
+        list-style: none; margin: clamp(26px, 3vw, 38px) 0; padding: 0;
+        display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px clamp(18px, 2.4vw, 30px);
+        position: relative;
+      }
+      .story-chain::before {
+        content: ""; position: absolute; inset-inline: 0; top: -14px; height: 1px;
+        background: linear-gradient(90deg, rgba(228, 201, 107, 0), rgba(228, 201, 107, 0.5) 12%, rgba(228, 201, 107, 0.5) 88%, rgba(228, 201, 107, 0));
+      }
+      .story-chain li {
+        position: relative; font-family: var(--font-display); font-size: var(--fs-2xl);
+        color: var(--cream-text); line-height: 1.2;
+      }
+      .story-chain li::before {
+        content: ""; position: absolute; top: -14px; inset-inline-start: 0; width: 5px; height: 5px;
+        transform: translate(50%, -50%) rotate(45deg); background: var(--gold-light);
+      }
+      .story-final { margin: 0 !important; font-family: var(--font-display); font-size: var(--fd-sm); color: var(--cream-text); line-height: 1.5; }
+
+      @media (max-width: 720px) {
+        .story-body p { font-size: var(--fs-md); line-height: 1.9; }
+        .story-open { font-size: var(--fs-lg) !important; }
+        .story-chain { flex-direction: column; align-items: flex-start; gap: 14px; padding-inline-start: 18px; }
+        .story-chain::before { inset-inline: auto; inset-inline-start: 2px; top: 6px; bottom: 6px; width: 1px; height: auto;
+          background: linear-gradient(180deg, rgba(228, 201, 107, 0), rgba(228, 201, 107, 0.5) 10%, rgba(228, 201, 107, 0.5) 90%, rgba(228, 201, 107, 0)); }
+        .story-chain li::before { top: 50%; inset-inline-start: -18px; transform: translate(50%, -50%) rotate(45deg); }
+        .story-chain li { font-size: var(--fs-xl); }
+      }
+
       /* ---- השאירו פרטים ----
          שני טורים ב-RTL: הטקסט מימין, הטופס משמאלו. בלי כרטיס בתוך כרטיס —
          השדות יושבים ישר על רקע הסקשן, עם קו דק אחד שמפריד. */
@@ -2428,7 +2499,7 @@
 
       #why, section.ps, #deadline, #rsvp, section.gh, #calls, #showcase, #impact,
       p.bridge.bridge-dark, #seating, #gifts, #giftcard, #after, #how, #guides, #calculators,
-      #check, section.faq-wrap, section.leads, section.band-wrap {
+      #check, section.faq-wrap, #story, section.leads, section.band-wrap {
         --sm-up: var(--sm-c); --sm-dn: var(--sm-c); --sm-hu: 0px; --sm-hd: 0px;
         position: relative;
         background: linear-gradient(180deg,
@@ -2551,8 +2622,13 @@
       #guides { --sm-up: var(--bg-night); --sm-hu: var(--seam-deep); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); padding-top: var(--seam-pad); }
       #calculators { --sm-up: var(--bg-linen); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-linen); --sm-hd: var(--seam-soft); }
       #check { --sm-up: var(--bg-paper); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); }
-      section.faq-wrap { --sm-up: var(--bg-linen); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-linen); --sm-hd: var(--seam-soft); }
-      section.leads { --sm-up: var(--bg-paper); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); }
+      section.faq-wrap { --sm-up: var(--bg-linen); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-night); --sm-hd: var(--seam-deep); padding-bottom: var(--seam-pad); }
+      #story {
+        --sm-c: var(--bg-night); --sm-up: var(--bg-paper); --sm-hu: var(--seam-deep);
+        --sm-dn: var(--bg-linen); --sm-hd: var(--seam-deep);
+        padding-top: var(--seam-pad); padding-bottom: var(--seam-pad);
+      }
+      section.leads { --sm-up: var(--bg-night); --sm-hu: var(--seam-deep); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); padding-top: var(--seam-pad); }
 
       /* ── סוף העמוד: השנהב נמס ללילה של הפוטר, כולו בתוך הסקשן האחרון ── */
       section.band-wrap {
@@ -2653,6 +2729,8 @@
     
     
 
+    
+    
     
     
     
@@ -3910,6 +3988,106 @@
       </section>
 
       <!-- ═════ CTA סוגר ═════ -->
+      <!-- ═════ למה בנינו את VEYA ═══════════════════════════════════════════
+           סיפור המותג ומיד אחריו מה זה אומר בפועל — יחידה אחת, בלי כותרת
+           שנייה שמתחילה סקשן חדש. בלי מוקאפ, בלי כרטיסים, בלי נתונים. -->
+      <section class="story on-dark" id="story" aria-labelledby="story-title">
+        <div class="wrap">
+          <h2 id="story-title" class="story-title">למה בנינו את VEYA</h2>
+
+          <div class="story-body reveal">
+            <p class="story-open">
+              זה היה אחד מהרגעים האלה שבהם אתה מסתכל על רשימת המוזמנים וחושב:
+              איך הגענו למצב שיש לנו כל כך הרבה גרסאות של אותו אירוע?
+            </p>
+            <p>
+              אחד אומר שהוא מגיע עם שלושה.<br />
+              אחר ביקש לשבת ליד המשפחה.<br />
+              מישהו שהיה "אולי" הפך ל"מגיע", ובדיוק השולחן שלו כבר היה מלא.
+            </p>
+            <p>
+              פותחים את רשימת המוזמנים, אחר כך את ההושבה, ואז מנסים להבין אם
+              המספרים בכלל מסתדרים עם מה שסגרנו מול האולם.
+            </p>
+            <p>
+              ופתאום משהו שהיה אמור להיות פשוט — לדעת כמה אנשים מגיעים לאירוע
+              שלכם — הופך לחיבור של כמה רשימות, מספרים והערות.
+            </p>
+            <p class="story-cue">ושם נפל לנו האסימון:</p>
+            <p class="story-ask">למה כל הדברים האלה לא מחוברים מלכתחילה?</p>
+            <p>
+              אם מישהו מאשר, זה צריך להשפיע על ההושבה.<br />
+              אם ההושבה משתנה, צריך לראות את התמונה האמיתית של השולחנות.<br />
+              ואם מספר המגיעים משתנה, גם מאזן האירוע צריך להשתנות בהתאם.
+            </p>
+            <p>
+              לא רצינו לבנות עוד מקום שבו שומרים רשימת מוזמנים.<br />
+              רצינו לבנות מקום שבו רשימת המוזמנים היא הדבר שמחבר את כל האירוע.
+            </p>
+            <p class="story-born">מכאן נולדה VEYA.</p>
+          </div>
+
+          <p class="story-bridge reveal">
+            ואז הבנו שאם רשימת המוזמנים היא באמת הבסיס של האירוע, היא צריכה
+            להמשיך הרבה מעבר לאישור ההגעה.
+          </p>
+
+          <div class="story-three">
+            <section class="story-part reveal" aria-labelledby="story-part-1">
+              <h3 id="story-part-1">ההושבה מתחילה באנשים, לא בשולחנות</h3>
+              <p>לא רק כמה מקומות יש בכל שולחן, אלא מי צריך לשבת עם מי.</p>
+              <p>
+                בקשות של מוזמנים, משפחות שרוצות להיות יחד, אנשים שעדיף להרחיק
+                מהרמקולים, קבוצות שצריך לשמור יחד — כל הדברים האלה צריכים
+                להיות חלק מתכנון ההושבה.
+              </p>
+              <p>
+                המטרה היא שההושבה תתבסס על האנשים האמיתיים שמגיעים לאירוע, ולא
+                רק על מספרים של מקומות.
+              </p>
+            </section>
+
+            <section class="story-part reveal" aria-labelledby="story-part-2">
+              <h3 id="story-part-2">מאזן האירוע נשען על אותם נתונים</h3>
+              <p>כשמספר המגיעים משתנה, גם התמונה של האירוע משתנה.</p>
+              <p>
+                לא צריך לקחת את רשימת המוזמנים, לפתוח עוד טבלה ולהתחיל לחשב
+                הכול מחדש.
+              </p>
+              <p>
+                הנתונים של המוזמנים ואישורי ההגעה ממשיכים איתכם גם למספרים
+                שמאחורי האירוע, כך שאפשר להבין איפה האירוע עומד בלי לחבר בין
+                כמה מקומות שונים.
+              </p>
+            </section>
+
+            <section class="story-part reveal" aria-labelledby="story-part-3">
+              <h3 id="story-part-3">והאירוע לא נגמר כשהאירוע נגמר</h3>
+              <p>הנתונים נשארים אצלכם גם אחרי האירוע.</p>
+              <p>
+                רשימת המוזמנים, הנתונים והדוח נשארים מסודרים, כך שאפשר לחזור
+                אליהם גם בהמשך — ולא להתחיל מאפס באירוע הבא.
+              </p>
+            </section>
+          </div>
+
+          <div class="story-close reveal">
+            <p>
+              זו הסיבה ש־VEYA לא נבנתה רק כדי לנהל מוזמנים.<br />
+              היא נבנתה כדי לחבר את הדברים שבאמת משפיעים אחד על השני באירוע.
+            </p>
+            <!-- האלמנט הוויזואלי היחיד: ארבע המילים עצמן על קו דק אחד. -->
+            <ol class="story-chain">
+              <li>מוזמנים.</li>
+              <li>אישורי הגעה.</li>
+              <li>הושבה.</li>
+              <li>ומאזן האירוע.</li>
+            </ol>
+            <p class="story-final">הכול מחובר לאותו אירוע, עם אותם נתונים.</p>
+          </div>
+        </div>
+      </section>
+
       <!-- ═════ השאירו פרטים ═══════════════════════════════════════════════
            הטופס נשלח ל-POST /public/leads (app/routers/public_leads.py):
            נתיב אנונימי, מוגבל-קצב, שכותב שורה ב-``landing_leads`` — שם,
