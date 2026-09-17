@@ -683,50 +683,6 @@
       .why-inner .section-title { margin-bottom: 22px; }
       .why-inner p { font-size: var(--fs-lg); margin-bottom: 16px; }
       .why .why-list { font-family: 'Frank Ruhl Libre', Georgia, serif; font-size: var(--fd-sm); line-height: 1.55; color: var(--charcoal); }
-      /* שורת הפואנטה — מה שנשאר בראש אחרי שגוללים הלאה */
-      .why .why-punch,
-      /* ---- מחשבונים: צילום של הכלי האמיתי, ומתחתיו הדרך אליו ---- */
-      /* שתי גרסאות של אותו צילום: הפריסה הרחבה בחלון דפדפן במחשב, והפריסה
-         של הטלפון באייפון בטלפון — אותו מחשבון, רק הרספונסיביות שלו עצמו. */
-      /* קומפוזיציה: המחשבון בדפדפן מעט מאחור, ואותו מחשבון בטלפון חופף לפניו.
-         RTL: הטלפון בצד ההתחלה. */
-      .cl-shot {
-        --ph-w: clamp(132px, 14vw, 178px);
-        position: relative; max-width: 700px; margin: 0 auto 22px;
-        padding-bottom: calc(var(--ph-w) * 1.2); perspective: 2200px;
-      }
-      .cl-desk { width: 86%; margin-inline-start: auto; transform: rotateY(-8deg) rotateX(2deg); transform-origin: 70% 50%; }
-      .cl-desk .mk-browser-view > img { aspect-ratio: 1200 / 943; }
-      .cl-shot .cl-mob {
-        position: absolute; z-index: 2; bottom: 0; inset-inline-start: 3%;
-        transform: rotateY(7deg) rotate(-1.5deg);
-      }
-      @media (max-width: 600px) {
-        .cl-shot { --ph-w: clamp(140px, 40vw, 166px); padding-bottom: calc(var(--ph-w) * 1.6); }
-        .cl-desk { width: 80%; }
-        .cl-shot .cl-mob { inset-inline-start: 0; }
-      }
-      .cl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; max-width: 440px; margin: 0 auto; }
-      a.cl-card {
-        display: grid; align-content: start; gap: 8px; text-decoration: none;
-        padding: 20px 22px 18px; background: var(--cream); border: 1px solid var(--line);
-        border-radius: var(--radius-lg);
-        transition: border-color var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
-      }
-      a.cl-card h3 { margin: 0; font-size: var(--fs-lg); color: var(--charcoal); }
-      a.cl-card p { margin: 0; font-size: var(--fs-sm); color: var(--muted); line-height: 1.65; }
-      .cl-go { margin-top: 4px; font-size: var(--fs-sm); font-weight: 600; color: var(--gold-deep); }
-      .cl-go .arw { display: inline-block; transition: transform var(--motion-fast) var(--ease-out); }
-      @media (hover: hover) {
-        a.cl-card:hover { border-color: var(--gold); box-shadow: var(--shadow-md); transform: translateY(-2px); }
-        a.cl-card:hover .cl-go .arw { transform: translateX(-3px); }
-      }
-      a.cl-card:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
-      a.cl-card:active { transform: translateY(1px); }
-      @media (prefers-reduced-motion: reduce) {
-        a.cl-card, .cl-go .arw { transition: none; }
-        a.cl-card:hover, a.cl-card:active { transform: none; }
-      }
       /* ---- רמזים: פעם אחת, וברגע שנגעו — נעלמים ----
          הרמז הוא מילה אחת ותנועה קטנה. אין כאן חצים, ידיים או לולאות. */
       .hint {
@@ -891,32 +847,6 @@
         .dl-what { font-size: var(--fs-sm); }
       }
       @media (prefers-reduced-motion: reduce) { .dl-stop.is-fresh .dl-date { animation: none; } }
-
-      /* ---- איפה אתם עומדים: ארבע שאלות ותשובה ---- */
-      .ck-box { max-width: 620px; margin: 0 auto; padding: 24px; display: grid; gap: 18px; background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
-      .ck-q { display: grid; gap: 8px; }
-      .ck-label { font-size: var(--fs-md); color: var(--charcoal); font-weight: 600; }
-      .ck-input {
-        min-height: 50px; padding: 0 16px; font: inherit; font-size: var(--fs-lg);
-        color: var(--charcoal); background: #fff; border: 1px solid var(--line);
-        border-radius: var(--radius-md); font-variant-numeric: tabular-nums; direction: ltr; text-align: start;
-      }
-      .ck-input:focus-visible { outline: none; border-color: var(--gold); box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.18); }
-      .ck-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-      .ck-opt {
-        min-height: 50px; padding: 0 14px; font: inherit; font-weight: 600; color: var(--body);
-        background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md); cursor: pointer;
-        transition: border-color var(--motion-fast) var(--ease-out), background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
-      }
-      .ck-opt.is-on { background: rgba(201, 162, 39, 0.16); border-color: var(--gold); color: var(--charcoal); }
-      .ck-opt:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
-      .ck-go { min-height: 50px; }
-      .ck-out { max-width: 620px; margin: 22px auto 0; text-align: center; }
-      .ck-verdict { margin: 0 0 14px; font-family: var(--font-display); font-size: var(--fd-lg); color: var(--charcoal); line-height: 1.25; }
-      .ck-todo { list-style: none; margin: 0 auto 14px; padding: 0; display: grid; gap: 8px; max-width: 34ch; }
-      .ck-todo li { padding: 11px 16px; background: var(--cream); border: 1px solid var(--line); border-radius: var(--radius-md); color: var(--body); }
-      .ck-end { margin: 0 0 20px; font-size: var(--fs-lg); color: var(--charcoal); }
-      @media (prefers-reduced-motion: reduce) { .ck-opt { transition: none; } }
 
       /* ---- מה קורה כשמשהו זז: בוחרים מקרה, רואים מה זז איתו ---- */
       .ch { max-width: 720px; margin: 0 auto; }
@@ -1125,36 +1055,6 @@
         margin: 26px auto 0; max-width: 52ch; text-align: center;
         font-family: var(--font-display); font-size: var(--fd-md);
         color: var(--charcoal); line-height: 1.35;
-      }
-      /* ---- מדריכים: כרטיס לכל מדריך אמיתי ---- */
-      .gd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
-      @media (min-width: 861px) { .gd-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-      a.gd-card {
-        display: grid; align-content: start; gap: 8px; text-decoration: none;
-        padding: 22px 22px 18px; background: var(--cream); border: 1px solid var(--line);
-        border-radius: var(--radius-lg);
-        transition: border-color var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
-      }
-      .gd-ico {
-        display: inline-grid; place-items: center; width: 40px; height: 40px; margin-bottom: 4px;
-        border-radius: 50%; background: rgba(201, 162, 39, 0.12); color: var(--gold-deep);
-        transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
-      }
-      a.gd-card h3 { margin: 0; font-size: var(--fs-lg); color: var(--charcoal); }
-      a.gd-card p { margin: 0; font-size: var(--fs-sm); color: var(--muted); line-height: 1.65; }
-      .gd-go { margin-top: 6px; font-size: var(--fs-sm); font-weight: 600; color: var(--gold-deep); }
-      .gd-go .arw { display: inline-block; transition: transform var(--motion-fast) var(--ease-out); }
-      @media (hover: hover) {
-        a.gd-card:hover { border-color: var(--gold); box-shadow: var(--shadow-md); transform: translateY(-2px); }
-        a.gd-card:hover .gd-ico { background: var(--gold); color: var(--charcoal); }
-        a.gd-card:hover .gd-go .arw { transform: translateX(-3px); }
-      }
-      a.gd-card:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
-      a.gd-card:active { transform: translateY(1px); }
-      .gd-all { margin: 20px 0 0; text-align: center; }
-      @media (prefers-reduced-motion: reduce) {
-        a.gd-card, .gd-go .arw { transition: none; }
-        a.gd-card:hover, a.gd-card:active { transform: none; }
       }
       /* ---- אזור האורחים: טקסט קצר לצד צילום מסך גדול ----
          בטלפון הסדר הוא טקסט → צילום מסך → כפתור, כמו שהתוכן נקרא.
@@ -1420,7 +1320,7 @@
       /* ---- מפת סוגי האירוע ----
          לא מסלול ולא שלבים: אוסף לא סימטרי שבו לחתונה יש משקל אחר משאר
          הסוגים. RTL: הגריד נקרא מימין (העמודה הראשונה היא הימנית), וכל
-         המיקומים לוגיים. שתי המחשות בלבד, שתיהן חיתוך ממסך אמיתי. */
+         המיקומים לוגיים. טקסט בלבד, בלי המחשות מסך. */
       #events { direction: rtl; }
       .ev-head { max-width: 46ch; margin: 0 0 clamp(34px, 5vw, 56px); text-align: start; }
       #events .section-title { text-wrap: balance; }
@@ -1440,38 +1340,22 @@
       .ev-meta dd { margin: 0; font-size: var(--fs-sm); color: var(--muted); line-height: 1.6; }
 
       /* חתונה — הבלוק הדומיננטי */
-      .ev-main { grid-column: 1 / span 7; grid-row: span 2; }
+      .ev-main { grid-column: 1 / span 12; }
       .ev-main .ev-k { margin: 0 0 6px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.08em; color: var(--gold-deep); }
       .ev-main .ev-name { font-size: clamp(2.4rem, 5vw, 3.6rem); }
       .ev-main .ev-line { font-size: var(--fs-xl); max-width: 30ch; }
       .ev-main .ev-meta { margin-top: 20px; max-width: 46ch; }
-      /* פרט קטן מתוך רשימת המוזמנים — לא מסך שלם ולא מכשיר */
-      .ev-detail {
-        margin: 26px 0 0; width: min(100%, 300px); overflow: hidden;
-        border: 1px solid var(--line); border-radius: 10px; background: #fff;
-        box-shadow: 0 1px 2px rgba(43, 38, 32, 0.05), 0 18px 34px -28px rgba(43, 38, 32, 0.4);
-      }
-      .ev-detail img { display: block; width: 100%; height: auto; }
-
-      /* המסך שבו בוחרים סוג אירוע */
-      .ev-shot { grid-column: 8 / span 5; margin: 0; }
-      .ev-shot img {
-        display: block; width: 100%; height: auto; border-radius: 10px;
-        border: 1px solid rgba(43, 38, 32, 0.18);
-        box-shadow: 0 2px 4px rgba(43, 38, 32, 0.1), 0 26px 46px -30px rgba(43, 38, 32, 0.55);
-      }
-      .ev-shot figcaption { margin-top: 12px; font-size: var(--fs-sm); color: var(--muted); line-height: 1.6; max-width: 34ch; }
 
       /* שאר הסוגים — גדלים ומיקומים שונים, לא גריד אחיד */
-      .ev-henna { grid-column: 8 / span 5; }
+      .ev-henna { grid-column: 1 / span 5; }
       .ev-henna .ev-name { font-size: var(--fd-sm); }
       .ev-henna .ev-line { font-size: var(--fs-lg); }
-      .ev-bar { grid-column: 1 / span 4; }
-      .ev-bat { grid-column: 5 / span 4; }
+      .ev-bar { grid-column: 6 / span 4; }
+      .ev-bat { grid-column: 10 / span 3; }
       .ev-bar .ev-name, .ev-bat .ev-name { font-size: var(--fs-2xl); }
       .ev-bar .ev-line, .ev-bat .ev-line { font-size: var(--fs-md); }
-      .ev-brit { grid-column: 10 / span 3; }
-      .ev-brita { grid-column: 3 / span 5; }
+      .ev-brit { grid-column: 1 / span 3; }
+      .ev-brita { grid-column: 4 / span 5; }
       .ev-brit .ev-name, .ev-brita .ev-name { font-size: var(--fs-xl); }
       .ev-brit .ev-line, .ev-brita .ev-line { font-size: var(--fs-sm); }
       .ev-brit .ev-meta, .ev-brita .ev-meta { margin-top: 10px; }
@@ -1484,10 +1368,8 @@
 
       @media (max-width: 900px) {
         .ev { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 30px 20px; }
-        .ev-main { grid-column: 1 / span 6; grid-row: auto; }
+        .ev-main { grid-column: 1 / span 6; }
         .ev-main .ev-line { max-width: none; }
-        .ev-detail { width: min(100%, 300px); }
-        .ev-shot { grid-column: 1 / span 6; }
         .ev-henna { grid-column: 1 / span 6; }
         .ev-bar { grid-column: 1 / span 3; }
         .ev-bat { grid-column: 4 / span 3; }
@@ -1504,10 +1386,22 @@
          סקשן סיפור, לא סקשן פיצ'רים: טור טקסט צר, פסקאות קצרות והרבה אוויר.
          אין כאן כרטיסים, מוקאפים או אייקונים — רק טיפוגרפיה וקו דק אחד. */
       #story { direction: rtl; }
+      /* הכותרת היא יחידה אחת: הלוגו המקורי (873×1186, ביחס המקורי שלו)
+         ואחריו המילים — לא לוגו וכותרת שמונחים זה לצד זה. */
       .story-title {
         max-width: 22ch; margin: 0 0 clamp(30px, 4vw, 48px);
         font-family: var(--font-display); font-weight: 500; line-height: 1.12;
         font-size: clamp(2.1rem, 4.6vw, 3.25rem); color: var(--cream-text);
+        display: flex; flex-wrap: wrap; align-items: baseline;
+        gap: 0 clamp(11px, 1.4vw, 18px);
+      }
+      /* הלוגו יושב על אותו קו בסיס של המילים: המילה VEYA שבתוכו היא השורה,
+         והחותם מעליה. המכפיל 0.078 הוא המרחק מתחתית הקובץ לקו הבסיס של
+         המילה בתוכו (1093 מתוך 1186), כדי שהשורה תהיה באמת אחת. */
+      .story-mark {
+        --logo-h: clamp(92px, 11vw, 148px);
+        flex: none; display: block; width: auto; height: var(--logo-h);
+        margin-bottom: calc(var(--logo-h) * -0.078);
       }
       .story-body { max-width: 34rem; }
       .story-body p { margin: 0 0 1.15em; font-size: var(--fs-lg); line-height: 1.95; color: #d8ceb9; }
@@ -1562,6 +1456,9 @@
       .story-final { margin: 0 !important; font-family: var(--font-display); font-size: var(--fd-sm); color: var(--cream-text); line-height: 1.5; }
 
       @media (max-width: 720px) {
+        /* בטלפון נשארת שורה אחת — אותו יחס בין החותם למילים. אם הטקסט
+           גדל ולא נכנס, ה-wrap מוריד את המילים לשורה שנייה מתחת ללוגו. */
+        .story-mark { --logo-h: clamp(78px, 22vw, 96px); }
         .story-body p { font-size: var(--fs-md); line-height: 1.9; }
         .story-open { font-size: var(--fs-lg) !important; }
         .story-chain { flex-direction: column; align-items: flex-start; gap: 14px; padding-inline-start: 18px; }
@@ -2532,8 +2429,8 @@
       }
 
       #why, section.ps, #deadline, #rsvp, section.gh, #calls, #showcase, #impact,
-      p.bridge.bridge-dark, #seating, #gifts, #giftcard, #after, #how, #guides, #calculators,
-      #check, section.faq-wrap, #story, section.leads, section.band-wrap {
+      p.bridge.bridge-dark, #seating, #gifts, #giftcard, #after, #how,
+      section.faq-wrap, #story, section.leads, section.band-wrap {
         --sm-up: var(--sm-c); --sm-dn: var(--sm-c); --sm-hu: 0px; --sm-hd: 0px;
         position: relative;
         background: linear-gradient(180deg,
@@ -2558,8 +2455,8 @@
       }
 
       /* הגוון של כל משטח */
-      #why, section.ps, #rsvp, #calls, #gifts, #calculators, section.faq-wrap, section.band-wrap { --sm-c: var(--bg-paper); }
-      #deadline, section.gh, #impact, p.bridge.bridge-dark, #guides, #check, section.leads { --sm-c: var(--bg-linen); }
+      #why, section.ps, #rsvp, #calls, #gifts, section.faq-wrap, section.band-wrap { --sm-c: var(--bg-paper); }
+      #deadline, section.gh, #impact, p.bridge.bridge-dark, section.leads { --sm-c: var(--bg-linen); }
       #after { --sm-c: var(--bg-sand); }
       #showcase { --sm-c: var(--bg-night-2); color: var(--cream-text); }
       #seating, #how { --sm-c: var(--bg-night); }
@@ -2652,15 +2549,10 @@
         padding-top: var(--seam-pad); padding-bottom: var(--seam-pad);
       }
       #how .section-sub { color: #d8ceb9; }
-      /* הקישור השקט בנוי למשטח כהה; כאן הוא על פשתן, ולכן בזהב העמוק */
-      #guides .link-quiet { color: var(--gold-deep); opacity: 1; }
-      #guides { --sm-up: var(--bg-night-2); --sm-hu: var(--seam-deep); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); padding-top: var(--seam-pad); }
-      #calculators { --sm-up: var(--bg-linen); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-linen); --sm-hd: var(--seam-soft); }
-      #check { --sm-up: var(--bg-paper); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); }
-      section.faq-wrap { --sm-up: var(--bg-linen); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-linen); --sm-hd: var(--seam-soft); }
+      section.faq-wrap { --sm-up: var(--bg-night-2); --sm-hu: var(--seam-deep); padding-top: var(--seam-pad); --sm-dn: var(--bg-linen); --sm-hd: var(--seam-soft); }
       #story {
         --sm-c: var(--bg-night-2); --sm-up: var(--bg-night); --sm-hu: var(--seam-soft);
-        --sm-dn: var(--bg-linen); --sm-hd: var(--seam-deep);
+        --sm-dn: var(--bg-paper); --sm-hd: var(--seam-deep);
         padding-top: var(--seam-pad); padding-bottom: var(--seam-pad);
       }
       section.leads { --sm-up: var(--bg-paper); --sm-hu: var(--seam-soft); --sm-dn: var(--bg-paper); --sm-hd: var(--seam-soft); }
@@ -2764,6 +2656,7 @@
     
     
 
+    
     
     
     
@@ -3625,8 +3518,7 @@
                כל מה שכתוב כאן מגיע מהלקסיקון של המוצר עצמו:
                ‎frontend/src/strings/eventTypes.ts ו-backend/app/event_terms.py
                (sideLabels ו-groupOptions לכל סוג), ותבניות ההוצאות
-               ב-finance_categories.py. שתי ההמחשות הן חיתוכים אמיתיים:
-               מסך בחירת סוג האירוע, ופרט מתוך רשימת המוזמנים. -->
+               ב-finance_categories.py. -->
           <div class="ev">
             <article class="ev-main reveal">
               <p class="ev-k">הרשימה הגדולה ביותר</p>
@@ -3636,15 +3528,7 @@
                 <div><dt>צדדים</dt><dd>חתן · כלה</dd></div>
                 <div><dt>קבוצות</dt><dd>משפחה קרובה · משפחה רחוקה · חברים · עבודה · צבא · מהלימודים · חברי ילדות · שכנים</dd></div>
               </dl>
-              <figure class="ev-detail">
-                <img src="/product/detail-guests-groups.jpg" alt="פרט מתוך רשימת המוזמנים ב־VEYA: לכל מוזמן שם, צד (חתן או כלה) והקבוצה שלו" width="638" height="672" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
-              </figure>
             </article>
-
-            <figure class="ev-shot reveal d1">
-              <img src="/product/event-type-picker.jpg" alt="בחירת סוג האירוע ב־VEYA: חתונה, בר מצווה, בת מצווה, חינה, ברית, בריתה ואירוע עסקי" width="1284" height="400" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
-              <figcaption>זה המסך שקובע. מכאן משתנים הצדדים, הקבוצות והשפה בכל המערכת.</figcaption>
-            </figure>
 
             <article class="ev-item ev-henna reveal d1">
               <h3 class="ev-name"><a href="/events/henna/">חינה</a></h3>
@@ -3849,15 +3733,23 @@
         </div>
       </section>
 
-      <!-- ═════ 12. מדריכים ════════════════════════════════════════════
-           חמשת המדריכים האמיתיים של האתר, עם המשפט שכל אחד מהם עונה עליו.
-           לא "תוכן שיווקי": כל כרטיס מוביל למדריך שנכתב במלואו. -->
       <!-- ═════ למה בנינו את VEYA ═══════════════════════════════════════════
            סיפור המותג ומיד אחריו מה זה אומר בפועל — יחידה אחת, בלי כותרת
            שנייה שמתחילה סקשן חדש. בלי מוקאפ, בלי כרטיסים, בלי נתונים. -->
       <section class="story on-dark" id="story" aria-labelledby="story-title">
         <div class="wrap">
-          <h2 id="story-title" class="story-title">למה בנינו את VEYA</h2>
+          <h2 id="story-title" class="story-title">
+            <img
+              class="story-mark"
+              src="/veya_combined.png"
+              alt="VEYA"
+              width="873"
+              height="1186"
+              loading="lazy"
+              decoding="async"
+            />
+            <span>למה בנינו</span>
+          </h2>
 
           <div class="story-body reveal">
             <p class="story-open">
@@ -3948,158 +3840,6 @@
               <li>ומאזן האירוע.</li>
             </ol>
             <p class="story-final">הכול מחובר לאותו אירוע, עם אותם נתונים.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="gd tone-alt" id="guides" aria-labelledby="gd-title">
-        <div class="wrap">
-          <div class="section-head reveal">
-            <span class="kicker">מדריכים</span>
-            <h2 id="gd-title" class="section-title">השאלות שחוזרות אצל כל זוג, עם תשובות.</h2>
-            <p class="section-sub">
-              מתי לשלוח את בקשת האישור הראשונה, איך מחזיקים רזרבה בלי לשבור
-              את ההושבה, ומה בעצם נשאר בסוף. כתוב בעברית פשוטה, בלי הבטחות
-              ובלי נתונים שאי אפשר לעמוד מאחוריהם.
-            </p>
-          </div>
-          <div class="gd-grid">
-            <a class="gd-card reveal d2" href="/guides/rezerva-be-erua/">
-              <span class="gd-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 11V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4"/><path d="M3 11h18v5H3z"/><path d="M6 16v3M18 16v3"/></svg></span>
-              <h3>רזרבה באירוע</h3>
-              <p>מקומות פנויים מפוזרים בין השולחנות, או שולחן שלם ששומרים בצד. כל אחד פותר בעיה אחרת.</p>
-              <span class="gd-go" aria-hidden="true">לקריאה <span class="arw">←</span></span>
-            </a>
-            <a class="gd-card reveal d3" href="/guides/luach-zmanim-ishurey-hagaa/">
-              <span class="gd-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>
-              <h3>לוח הזמנים של האישורים</h3>
-              <p>בונים אותו לאחור, מהיום שבו צריך למסור לאולם מספר — ולא קדימה מהיום שנזכרתם.</p>
-              <span class="gd-go" aria-hidden="true">לקריאה <span class="arw">←</span></span>
-            </a>
-            <a class="gd-card reveal d4" href="/guides/haim-haerua-mechase-atzmo/">
-              <span class="gd-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.6 6.2 8.4 6 8.4-6"/><path d="M12 15.5v3"/></svg></span>
-              <h3>האם האירוע מכסה את עצמו</h3>
-              <p>ההפרש בין מה שהתקבל לבין מה שיצא — ואיפה הצפי נוטה להתנפח בדרך.</p>
-              <span class="gd-go" aria-hidden="true">לקריאה <span class="arw">←</span></span>
-            </a>
-          </div>
-          <p class="gd-all reveal d3"><a class="link-quiet" href="/guides/">כל המדריכים <span class="arw" aria-hidden="true">←</span></a></p>
-        </div>
-      </section>
-
-      <!-- ═════ 12ב. מחשבונים ══════════════════════════════════════════
-           צילום מסך של המחשבון האמיתי אחרי חישוב — אותו חישוב שרץ בתוך
-           VEYA על נתוני האירוע. המספרים בצילום הם הקלט והפלט של הכלי
-           עצמו, לא נתוני שוק ולא דוגמה שיווקית. -->
-      <section class="cl tone-light" id="calculators" aria-labelledby="cl-title">
-        <div class="wrap">
-          <div class="section-head reveal">
-            <span class="kicker">מחשבון</span>
-            <h2 id="cl-title" class="section-title">חישוב אחד שאפשר לעשות כבר עכשיו.</h2>
-            <p class="section-sub">
-              בלי הרשמה ובלי להשאיר פרטים. מזינים תאריך אירוע, ורואים מתי
-              יוצאת כל בקשה, כל תזכורת וכל סבב טלפונים — עד היום שסוגרים
-              את הרשימה.
-            </p>
-          </div>
-
-          <div class="cl-shot reveal d1">
-            <div class="mk-browser cl-desk">
-              <div class="mk-browser-bar" aria-hidden="true">
-                <span class="mk-browser-lights"><i></i><i></i><i></i></span>
-                <span class="mk-browser-nav"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5" /></svg></span>
-                <span class="mk-browser-url"><svg viewBox="0 0 10 12" fill="currentColor"><path d="M2 5V3.6a3 3 0 0 1 6 0V5h.4c.6 0 1.1.5 1.1 1.1v4.8c0 .6-.5 1.1-1.1 1.1H1.6C1 12 .5 11.5.5 10.9V6.1C.5 5.5 1 5 1.6 5H2Zm1.3 0h3.4V3.6a1.7 1.7 0 0 0-3.4 0V5Z" /></svg><span>veyaguest.co.il/calculators/rsvp-timeline</span></span>
-                <span class="mk-browser-tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V1.8M5.2 4.4 8 1.6l2.8 2.8M5.5 6.5H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-1.5" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 2.5v11M2.5 8h11" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2" y="4.5" width="9.5" height="9.5" rx="1.6" /><path d="M4.5 2h8a1.5 1.5 0 0 1 1.5 1.5v8" /></svg></span>
-              </div>
-              <div class="mk-browser-view">
-                <img
-                  src="/product/calculator.jpg"
-                  alt="מחשבון לוח הזמנים של VEYA אחרי חישוב: תאריך האירוע מימין, ומשמאל מועד סגירת הרשימה ושבעת השלבים בתאריכים אמיתיים"
-                  width="1200" height="943" loading="lazy" decoding="async"
-                  onerror="veyaRetryImage(this)"
-                />
-              </div>
-            </div>
-            <div class="mk-phone mk-phone--fit cl-mob">
-              <span class="mk-phone-keys"></span>
-              <span class="mk-phone-island"></span>
-              <span class="mk-phone-status">
-                <span class="mk-phone-time">9:41</span>
-                <svg class="mk-phone-icons" viewBox="0 0 64 12" fill="currentColor">
-                  <rect x="0" y="8" width="3" height="4" rx="0.8" /><rect x="4.6" y="5.8" width="3" height="6.2" rx="0.8" /><rect x="9.2" y="3.4" width="3" height="8.6" rx="0.8" /><rect x="13.8" y="1" width="3" height="11" rx="0.8" />
-                  <path d="M29 3.1a10.4 10.4 0 0 1 7.1 2.8l1.2-1.3a12.2 12.2 0 0 0-16.6 0l1.2 1.3A10.4 10.4 0 0 1 29 3.1Zm0 3.6a6.6 6.6 0 0 1 4.5 1.8l1.2-1.3a8.4 8.4 0 0 0-11.4 0l1.2 1.3A6.6 6.6 0 0 1 29 6.7Zm0 3.6a2.8 2.8 0 0 1 1.9.7L29 12.2 27.1 11a2.8 2.8 0 0 1 1.9-.7Z" />
-                  <rect x="42.5" y="1.3" width="18.5" height="9.4" rx="2.8" fill="none" stroke="currentColor" stroke-opacity="0.4" />
-                  <rect x="44.3" y="3.1" width="14.9" height="5.8" rx="1.5" />
-                  <path d="M62.2 4.4c.8.3 1.3 1 1.3 1.6s-.5 1.3-1.3 1.6Z" fill-opacity="0.45" />
-                </svg>
-              </span>
-              <span class="mk-phone-glare"></span>
-              <img
-                class="mk-phone-screen"
-                src="/product/calculator-mobile.jpg"
-                alt="מחשבון לוח הזמנים של VEYA אחרי חישוב: תאריך האירוע מימין, ומשמאל מועד סגירת הרשימה ושבעת השלבים בתאריכים אמיתיים"
-                width="640" height="1440" loading="lazy" decoding="async"
-                onerror="veyaRetryImage(this)"
-              />
-            </div>
-          </div>
-
-          <div class="cl-grid">
-            <a class="cl-card reveal d2" href="/calculators/rsvp-timeline/">
-              <h3>מחשבון לוח הזמנים</h3>
-              <p>מתי לשלוח כל בקשה, כל תזכורת וכל סבב טלפונים — לאחור מהיום שסוגרים את הרשימה.</p>
-              <span class="cl-go" aria-hidden="true">לחישוב <span class="arw">←</span></span>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <!-- ═════ איפה אתם עומדים עכשיו ════════════════════════════════
-           ארבע שאלות קצרות, ותשובה שמשתנה לפי מה שסימנו. אין כאן שמירה
-           של נתונים ואין שליחה לשום מקום — הכול נשאר בדפדפן. -->
-      <section class="ck tone-alt" id="check" aria-labelledby="ck-title">
-        <div class="wrap">
-          <div class="section-head reveal">
-            <h2 id="ck-title" class="section-title">איפה אתם עומדים עכשיו?</h2>
-          </div>
-
-          <form class="ck-box reveal d1" data-check>
-            <div class="ck-q">
-              <label class="ck-label" for="ck-guests">כמה מוזמנים יש לכם?</label>
-              <input class="ck-input" id="ck-guests" type="number" inputmode="numeric" min="0" max="5000" value="300" data-ck-guests />
-            </div>
-
-            <div class="ck-q">
-              <label class="ck-label" for="ck-pending">כמה עדיין לא אישרו?</label>
-              <input class="ck-input" id="ck-pending" type="number" inputmode="numeric" min="0" max="5000" value="80" data-ck-pending />
-            </div>
-
-            <div class="ck-q">
-              <span class="ck-label" id="ck-seating-label">יש כבר סידור הושבה?</span>
-              <div class="ck-pair" role="group" aria-labelledby="ck-seating-label">
-                <button type="button" class="ck-opt" data-ck-seating="yes">כן</button>
-                <button type="button" class="ck-opt is-on" data-ck-seating="no">לא</button>
-              </div>
-            </div>
-
-            <div class="ck-q">
-              <span class="ck-label" id="ck-date-label">יש לכם תאריך לסגירת הרשימה?</span>
-              <div class="ck-pair" role="group" aria-labelledby="ck-date-label">
-                <button type="button" class="ck-opt" data-ck-date="yes">כן</button>
-                <button type="button" class="ck-opt is-on" data-ck-date="no">עדיין לא</button>
-              </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary ck-go">בואו נראה</button>
-          </form>
-
-          <div class="ck-out reveal d2" data-ck-out hidden>
-            <p class="ck-verdict" data-ck-verdict></p>
-            <ul class="ck-todo" data-ck-todo></ul>
-            <p class="ck-end" data-ck-end></p>
-            <div class="section-cta">
-              <a href="/app?auth=register" class="btn btn-primary">יאללה, מתחילים <span class="arw" aria-hidden="true">←</span></a>
-            </div>
           </div>
         </div>
       </section>
@@ -4798,74 +4538,6 @@
         // רמז אחד, פעם אחת. בלי לשנות את התאריך בשביל הגולש.
         window.veyaHint.onceInView(box, function () {
           if (!touched) window.veyaHint.show(box);
-        });
-      })();
-
-      /* ---- איפה אתם עומדים ----
-         ארבע שאלות, ותשובה שנבנית ממה שסימנו: מה פתוח, לפי הסדר שבו
-         באמת מטפלים בזה. שום דבר לא נשלח לשום מקום. */
-      (function () {
-        var form = document.querySelector('[data-check]');
-        if (!form) return;
-        var out = document.querySelector('[data-ck-out]');
-        var verdict = out.querySelector('[data-ck-verdict]');
-        var todo = out.querySelector('[data-ck-todo]');
-        var end = out.querySelector('[data-ck-end]');
-        var state = { seating: 'no', date: 'no' };
-
-        function wire(attr, key) {
-          var buttons = [].slice.call(form.querySelectorAll('[data-ck-' + attr + ']'));
-          buttons.forEach(function (b) {
-            b.addEventListener('click', function () {
-              state[key] = b.getAttribute('data-ck-' + attr);
-              buttons.forEach(function (x) { x.classList.toggle('is-on', x === b); });
-            });
-          });
-        }
-        wire('seating', 'seating');
-        wire('date', 'date');
-
-        // רק מראים שהאפשרויות לחיצות — בלי לבחור בשביל הגולש.
-        window.veyaHint.onceInView(form, function () {
-          if (window.veyaHint.reduced) return;
-          var opt = form.querySelector('[data-ck-seating="yes"]');
-          if (!opt) return;
-          opt.classList.add('is-glow');
-          setTimeout(function () { opt.classList.remove('is-glow'); }, 1200);
-        });
-        form.addEventListener('pointerdown', function () { window.veyaHint.clear(form); }, { once: true });
-
-        form.addEventListener('submit', function (e) {
-          e.preventDefault();
-          var guests = parseInt(form.querySelector('[data-ck-guests]').value, 10) || 0;
-          var pending = parseInt(form.querySelector('[data-ck-pending]').value, 10) || 0;
-          if (pending > guests) pending = guests;
-          var items = [];
-          if (state.date === 'no') items.push('לקבוע מתי סוגרים את הרשימה.');
-          if (pending > 0) items.push('לסגור את אישורי ההגעה.');
-          if (guests && pending / guests >= 0.2) items.push('לחזור למי שעדיין לא ענה.');
-          if (state.seating === 'no') items.push('להתחיל את ההושבה.');
-
-          if (!items.length) {
-            verdict.textContent = 'נשמע שאתם במקום טוב.';
-            end.textContent = 'אז נשאר רק לשמור על זה ככה עד האירוע.';
-          } else if (items.length <= 2) {
-            verdict.textContent = 'נשמע שנשאר לכם עוד קצת לסגור.';
-            end.textContent = 'זה בדיוק מה ש־VEYA באה לעשות.';
-          } else {
-            verdict.textContent = 'נשמע שיש לכם עוד כמה דברים לסגור.';
-            end.textContent = 'זה בדיוק מה ש־VEYA באה לעשות.';
-          }
-          todo.innerHTML = '';
-          items.forEach(function (text) {
-            var li = document.createElement('li');
-            li.textContent = text;
-            todo.appendChild(li);
-          });
-          // בכוונה בלי גלילה אוטומטית: התוצאה נפתחת בדיוק מתחת לכפתור,
-          // והגלילה נשארת של הגולש.
-          out.hidden = false;
-          out.classList.add('in');
         });
       })();
 
