@@ -1325,20 +1325,30 @@
       /* פתיחת הסקשן היא רגע מותג, לא כותרת: שורה אחת שמובילה למטה, ומתחתיה
          הלוגו המקורי (873×1186, ביחס שלו) בגודל אמיתי — הוא האלמנט המרכזי.
          מסביב אוויר, בלי קישוט, בלי כרטיס ובלי קו. */
+      /* כל הקומפוזיציה נגזרת ממידה אחת — גובה הלוגו. גודל השורה, המרווח
+         ביניהם והריווח סביבם מחושבים ממנה, כך שהיחס בין השורה לחותם נשמר
+         זהה בכל רוחב מסך: שורה שמובילה פנימה, ומתחתיה הלוגו. */
       .story-title {
+        --logo-h: clamp(240px, 24vw, 328px);
         max-width: none; margin: 0 0 clamp(72px, 9.5vw, 132px);
         padding-top: clamp(12px, 3.6vw, 52px);
         display: grid; justify-items: center; text-align: center;
-        gap: clamp(12px, 1.7vw, 26px);
+        gap: calc(var(--logo-h) * 0.067);
       }
+      /* השורה בנויה על הריתמוס של המילה שבלוגו: אותו דיו, ריווח אותיות
+         קרוב לשלה ורוחב שורה שנגזר מרוחב הלוגו — כדי שהשתיים ייקראו כבלוק
+         אחד ולא ככותרת עם לוגו מתחתיה. */
       .story-title-lead {
         display: block;
         font-family: var(--font-display); font-weight: 500;
-        font-size: clamp(1.75rem, 4vw, 3rem); line-height: 1.2;
-        color: var(--cream-text);
+        font-size: calc(var(--logo-h) * 0.127); line-height: 1.2;
+        letter-spacing: 0.04em; color: var(--cream-text);
       }
       .story-mark {
-        display: block; width: auto; height: clamp(178px, 24vw, 328px);
+        display: block; width: auto; height: var(--logo-h);
+        /* לקובץ הלוגו יש שוליים שקופים — החותם עצמו מתחיל ב-11% מגובהו.
+           מנטרלים אותם, כך שהמרחק שרואים בין השורה לחותם הוא ה-gap עצמו. */
+        margin-top: calc(var(--logo-h) * -0.11);
       }
       .story-body { max-width: 34rem; }
       .story-body p { margin: 0 0 1.15em; font-size: var(--fs-lg); line-height: 1.95; color: #d8ceb9; }
@@ -1395,8 +1405,7 @@
       @media (max-width: 720px) {
         /* בטלפון הקומפוזיציה נשארת אותה קומפוזיציה, רק קומפקטית יותר —
            אותו יחס בין השורה, הלוגו והאוויר סביבם. */
-        .story-title { margin-bottom: clamp(56px, 15vw, 78px); gap: clamp(10px, 3vw, 18px); }
-        .story-mark { height: clamp(150px, 44vw, 196px); }
+        .story-title { --logo-h: clamp(168px, 50vw, 240px); margin-bottom: clamp(56px, 15vw, 78px); }
         .story-body p { font-size: var(--fs-md); line-height: 1.9; }
         .story-open { font-size: var(--fs-lg) !important; }
         .story-chain { flex-direction: column; align-items: flex-start; gap: 14px; padding-inline-start: 18px; }
@@ -3582,7 +3591,7 @@
       <section class="story on-dark" id="story" aria-labelledby="story-title">
         <div class="wrap">
           <h2 id="story-title" class="story-title reveal">
-            <span class="story-title-lead">למה בנינו את</span>
+            <span class="story-title-lead">הסיבה שבנינו את</span>
             <img
               class="story-mark"
               src="/veya_combined.png"
