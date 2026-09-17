@@ -63,10 +63,21 @@ CLOSED_REASON_LABELS = {
     "schedule_changed": "לוח הזמנים השתנה",
     "round_stopped": "הסבב נעצר",
     "manual": "בוטלה ידנית",
+    "feature_off": "הטלפנים כבויים לאירוע",
 }
 
-# ניסיונות שמהם המוזמן נחשב "דורש טיפול נוסף" (לאורך כל המחזור).
+# ניסיונות שמהם המוזמן נחשב "דורש טיפול נוסף" (לאורך כל המחזור). ברירת
+# מחדל — ניתן לשינוי ב"כללי המערכת" (``calls.many_attempts``).
 MANY_ATTEMPTS = 3
+
+
+def many_attempts() -> int:
+    try:
+        from app import settings_registry
+
+        return int(settings_registry.value("calls.many_attempts"))
+    except Exception:  # noqa: BLE001
+        return MANY_ATTEMPTS
 UNREACHABLE_OUTCOMES = ("no_answer", "busy")
 
 AVAILABILITY_LABELS = {"active": "פעיל", "inactive": "לא פעיל", "vacation": "בחופשה"}
@@ -223,9 +234,11 @@ def sync(
         if not event_ids:
             return stats
         ev_stmt = ev_stmt.where(models.Event.id.in_(event_ids))
+    from app import features
+
     events = [
         e for e in db.scalars(ev_stmt).all()
-        if not call_center.event_has_ended(e, today)
+        if not call_center.event_has_ended(e, today) and features.enabled("calls", e)
     ]
     active_ids = {e.id for e in events}
     stats.events = len(events)
@@ -388,7 +401,12 @@ def sync(
             ev = inactive_events.get(t.event_id)
             if ev is None:
                 ev = inactive_events[t.event_id] = db.get(models.Event, t.event_id)
-            reason = "event_passed" if ev is not None and call_center.event_has_ended(ev, today) else "track_inactive"
+            if ev is not None and call_center.event_has_ended(ev, today):
+                reason = "event_passed"
+            elif ev is not None and not features.enabled("calls", ev):
+                reason = "feature_off"
+            else:
+                reason = "track_inactive"
         elif guest is None:
             continue
         elif guest.rsvp_status not in call_center.OPEN_STATUSES:
@@ -535,6 +553,15 @@ def delete_for_event(db: Session, event_id: int) -> None:
         select(models.CallRoundControl).where(models.CallRoundControl.event_id == event_id)
     ).all():
         db.delete(c)
+    # Overrides וכללי פיצ'רים של האירוע — אין להם FK, אבל אין סיבה להשאיר שאריות.
+    for o in db.scalars(select(models.SettingOverride).where(
+        models.SettingOverride.scope_type == "event", models.SettingOverride.scope_id == event_id,
+    )).all():
+        db.delete(o)
+    for r in db.scalars(select(models.FeatureRule).where(
+        models.FeatureRule.scope_type == "event", models.FeatureRule.scope_id == event_id,
+    )).all():
+        db.delete(r)
 
 
 def detach_user(db: Session, user_id: int) -> None:
@@ -576,7 +603,7 @@ def group_filter(group: str, day_iso: str, today_iso: str):
         return or_(
             and_(T.status == OPEN, T.reason == "callback", T.due_date == day_iso),
             and_(T.planned_date == day_iso, T.last_outcome == call_center.WRONG_NUMBER, T.status == DONE),
-            and_(T.planned_date == day_iso, T.attempts >= MANY_ATTEMPTS),
+            and_(T.planned_date == day_iso, T.attempts >= many_attempts()),
         )
     if group == "cancelled":
         return and_(T.planned_date == day_iso, T.status.in_((CANCELLED, SKIPPED)))

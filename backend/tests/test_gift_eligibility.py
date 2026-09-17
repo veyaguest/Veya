@@ -161,7 +161,7 @@ def test_a_higher_precedence_resolver_overrides_everything(monkeypatch=None) -> 
         "fake_plan", lambda ev: True, precedence=10
     )
     try:
-        assert gift_eligibility.registered_resolvers() == ("fake_plan", "global_switch")
+        assert gift_eligibility.registered_resolvers() == ("fake_plan", "admin_features", "global_switch")
         d = gift_eligibility.resolve(event)
         assert d.eligible is True and d.source == "fake_plan"
         # והצרכן — מסע האורח — התעדכן מאליו.

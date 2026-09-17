@@ -141,6 +141,7 @@ export interface AuditQuery {
   date_to?: string
   target_type?: string
   target_id?: string
+  event_id?: number
   limit?: number
   offset?: number
 }

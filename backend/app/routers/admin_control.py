@@ -11,7 +11,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from app import admin_audit, admin_rbac, local_time, models
@@ -214,6 +214,7 @@ def admin_audit_log(
     date_to: Optional[str] = None,
     target_type: str = "",
     target_id: str = "",
+    event_id: Optional[int] = None,
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
@@ -233,6 +234,8 @@ def admin_audit_log(
         filters.append(M.target_type == target_type)
     if target_id:
         filters.append(M.target_id == target_id)
+    if event_id is not None:
+        filters.append(or_(M.event_id == event_id, and_(M.target_type == "event", M.target_id == str(event_id))))
     d_from, d_to = _parse_day(date_from), _parse_day(date_to)
     if d_from:
         filters.append(M.created_at >= local_time.israel_day_start_utc(d_from))

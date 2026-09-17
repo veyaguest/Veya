@@ -1690,3 +1690,365 @@ textarea.adm-input {
     gap: 2px;
   }
 }
+
+/* ============================================================
+   כללי מערכת, פיצ'רים, מרכז שליטה לאירוע
+   ============================================================ */
+.adm-settings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--a-surface);
+  border: 1px solid var(--a-line);
+  border-radius: var(--a-radius);
+}
+
+.adm-setting {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+}
+
+.adm-setting + .adm-setting {
+  border-top: 1px solid var(--a-line);
+}
+
+.adm-setting.is-dirty {
+  background: #fdf8ec;
+}
+
+.adm-setting-label {
+  font-weight: 500;
+}
+
+.adm-setting-help {
+  font-size: 13px;
+  color: var(--a-muted);
+}
+
+.adm-setting-ro {
+  margin-top: 2px;
+}
+
+.adm-setting-control {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.adm-setting-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adm-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.adm-stepper .adm-input {
+  width: 56px;
+  text-align: center;
+}
+
+.adm-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 11px;
+  background: var(--a-line-strong);
+  cursor: pointer;
+}
+
+.adm-switch.is-on {
+  background: var(--a-ok);
+}
+
+.adm-switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.adm-switch-knob {
+  position: absolute;
+  top: 3px;
+  inset-inline-start: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: inset-inline-start 120ms ease;
+}
+
+.adm-switch.is-on .adm-switch-knob {
+  inset-inline-start: 21px;
+}
+
+.adm-savebar {
+  position: sticky;
+  bottom: 16px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: var(--a-accent);
+  color: #fff;
+  border-radius: var(--a-radius);
+}
+
+.adm-savebar > span {
+  margin-inline-end: auto;
+  font-weight: 500;
+}
+
+.adm-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border-radius: var(--a-radius);
+}
+
+.adm-banner-bad {
+  background: var(--a-bad-bg);
+  color: var(--a-bad);
+}
+
+.adm-danger-top {
+  margin: 0 0 16px;
+}
+
+.adm-warn-text {
+  color: var(--a-warn);
+}
+
+.adm-rule-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.adm-rule-form .adm-input {
+  flex: 1 1 110px;
+}
+
+.adm-crumbs {
+  font-size: 13px;
+  color: var(--a-muted);
+  margin-bottom: 6px;
+}
+
+.adm-crumbs a {
+  color: inherit;
+}
+
+.adm-people-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin-bottom: 18px;
+}
+
+.adm-people-row > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.adm-control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.adm-control {
+  padding: 14px 16px;
+  background: var(--a-surface);
+  border: 1px solid var(--a-line);
+  border-radius: var(--a-radius);
+}
+
+.adm-control-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.adm-kv {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
+  margin: 0;
+}
+
+.adm-kv > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px dashed var(--a-line);
+  min-width: 0;
+}
+
+.adm-kv dt {
+  color: var(--a-muted);
+  font-size: 13px;
+}
+
+.adm-kv dd {
+  margin: 0;
+  font-weight: 500;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-control-link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+@media (max-width: 1280px) {
+  .adm-kv {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .adm-control-grid,
+  .adm-kv {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .adm-setting {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .adm-setting-control {
+    align-items: flex-start;
+    min-width: 0;
+  }
+  .adm-savebar {
+    bottom: 8px;
+  }
+}
+
+/* ── מאגר אולמות ── */
+.adm-col-thumb {
+  width: 56px;
+}
+
+.adm-thumb {
+  display: block;
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: var(--a-radius-sm);
+  background: var(--a-sunken);
+}
+
+.adm-verified {
+  margin-inline-start: 8px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--a-ok);
+  background: var(--a-ok-bg);
+  vertical-align: 1px;
+}
+
+.adm-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.adm-form-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+}
+
+.adm-internal {
+  background: var(--a-sunken);
+}
+
+.adm-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.adm-gallery {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.adm-gallery img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--a-radius-sm);
+  background: var(--a-sunken);
+}
+
+.adm-gallery-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.adm-file {
+  position: relative;
+  overflow: hidden;
+}
+
+.adm-file input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+@media (max-width: 1000px) {
+  .adm-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .adm-form-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

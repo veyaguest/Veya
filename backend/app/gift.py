@@ -42,7 +42,7 @@ class GiftQuote:
     gift_amount_agorot: int   # מה שהזוג יקבל
     fee_agorot: int           # עמלת השירות, על האורח
     total_agorot: int         # מה שהאורח משלם בפועל
-    fee_percent: int = GIFT_FEE_PERCENT
+    fee_percent: float = GIFT_FEE_PERCENT
 
 
 def parse_amount_agorot(raw: object) -> int:
@@ -82,16 +82,26 @@ def fee_for(gift_amount_agorot: int) -> int:
     ב-float: מוסיפים חצי-אגורה לפני החלוקה השלמה. דטרמיניסטי לחלוטין —
     אותו קלט תמיד ייתן אותה תוצאה, בכל מכונה ובכל גרסת פייתון.
     """
-    return (gift_amount_agorot * GIFT_FEE_PERCENT + 50) // 100
+    from app import commerce
+
+    policy = commerce.gift_fee_policy()
+    if policy.source == "code":
+        return (gift_amount_agorot * GIFT_FEE_PERCENT + 50) // 100
+    # עמלה שנקבעה במסך "עמלות" — אותו עיקרון: שלמים בלבד, מתווספת על האורח.
+    return commerce.compute_fee(gift_amount_agorot, policy)
 
 
 def quote(gift_amount_agorot: int) -> GiftQuote:
     """מחשב את הפירוט המלא מהסכום שהזוג אמור לקבל."""
+    from app import commerce
+
     fee = fee_for(gift_amount_agorot)
+    policy = commerce.gift_fee_policy()
     return GiftQuote(
         gift_amount_agorot=gift_amount_agorot,
         fee_agorot=fee,
         total_agorot=gift_amount_agorot + fee,
+        fee_percent=GIFT_FEE_PERCENT if policy.source == "code" else commerce.percent_display(policy.percent_bp),
     )
 
 

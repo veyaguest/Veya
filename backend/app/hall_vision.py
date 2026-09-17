@@ -116,6 +116,10 @@ def analyze_sketch(raw: bytes, content_type: str) -> list[dict]:
     ל-Claude (תומך בפורמט הזה מובנה) — בלי המרה מקומית. בקובץ מרובה-עמודים
     מנותח רק העמוד הראשון (מגבלה ידועה).
     """
+    from app import features
+
+    if not features.enabled("hall_vision"):
+        raise HallVisionError("זיהוי סקיצה אוטומטי כבוי כרגע")
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
     if not api_key:
         raise HallVisionError("ניתוח AI אינו מוגדר בשרת (חסר מפתח API)")

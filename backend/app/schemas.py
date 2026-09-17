@@ -1,7 +1,7 @@
 """סכימות Pydantic — ולידציה של קלט/פלט ל-API של המוזמנים."""
 import re
 from datetime import date, datetime
-from typing import Optional
+from typing import Optional, Union
 
 from typing import Literal
 
@@ -1430,7 +1430,7 @@ class GiftQuoteRead(BaseModel):
     gift_amount_agorot: int    # מה שהזוג יקבל — במלואו, בלי ניכוי
     fee_agorot: int            # עמלת השירות, משולמת ע"י האורח
     total_agorot: int          # מה שהאורח מחויב בפועל
-    fee_percent: int           # 4 — נשלח כדי שהטקסט במסך לא יקבע מספר משלו
+    fee_percent: Union[int, float]  # 4 / 3.5 — נשלח כדי שהטקסט במסך לא יקבע מספר משלו
 
 
 class GiftCheckoutRequest(BaseModel):

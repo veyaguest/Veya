@@ -5,7 +5,7 @@
 אולם, ``search_venues`` מציע התאמות עם הכתובת — כדי לחסוך הקלדה ולהפעיל
 ניווט אוטומטי. אין קריאות רשת/LLM, אין תלות ב-API בתשלום.
 """
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app import cache, models
@@ -39,10 +39,12 @@ def record_venue(db: Session, name: str, address: str) -> None:
     existing = db.scalar(select(models.Venue).where(models.Venue.dedup_key == key))
     if existing:
         existing.usage_count = (existing.usage_count or 1) + 1
-        if address:
+        # אולם שאומת במאגר המנוהל — הכתובת שלו נקבעה ע"י VEYA, וזוג שהקליד
+        # כתובת אחרת לא דורס אותה.
+        if address and not existing.verified:
             existing.address = address
     else:
-        db.add(models.Venue(name=name, address=address, dedup_key=key))
+        db.add(models.Venue(name=name, address=address, dedup_key=key, source="auto"))
     # המאגר השתנה (שימוש חדש/רשומה חדשה) — מנקים את מטמון החיפוש/הרשימה כדי
     # שהזוג/האדמין הבא יראו את המידע העדכני, לא נתונים ישנים מהמטמון.
     cache.invalidate_prefix("venues:")
@@ -62,8 +64,14 @@ def search_venues(db: Session, query: str, limit: int = 8) -> list[models.Venue]
         pattern = f"%{q.lower()}%"
         rows = db.scalars(
             select(models.Venue)
-            .where(func.lower(models.Venue.name).like(pattern))
-            .order_by(models.Venue.usage_count.desc(), models.Venue.name.asc())
+            .where(
+                func.lower(models.Venue.name).like(pattern),
+                # אולם שהוסתר או שעדיין טיוטה במאגר המנוהל — לא מוצע לזוגות.
+                or_(models.Venue.status == "active", models.Venue.status.is_(None)),
+            )
+            .order_by(
+                models.Venue.priority.desc(), models.Venue.usage_count.desc(), models.Venue.name.asc(),
+            )
             .limit(limit)
         ).all()
         return cache.snapshot_all(rows)

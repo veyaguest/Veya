@@ -88,6 +88,57 @@ _LAST_CALL_ROUND_IDX = max(
 # לאשר) → סבב השיחות ביום הסגירה → ואז לסירוגין תזכורת/שיחה.
 STEP_PRIORITY: tuple[int, ...] = (0, _LAST_CALL_ROUND_IDX, 1, 2, 3, 4, 5)
 
+@dataclass(frozen=True)
+class Policy:
+    """הפרמטרים של המסלול שאפשר לשלוט בהם מהאדמין (``settings_registry``).
+
+    ברירות המחדל = הקבועים שלמעלה, כך שבלי שום הגדרה במסד התוצאה זהה בדיוק
+    להתנהגות הקודמת.
+    """
+
+    reminders: int = 3
+    calls: int = 3
+    max_window_days: int = MAX_WINDOW_DAYS
+    near_commit_days: int = DEFAULT_NEAR_COMMIT_DAYS
+
+
+DEFAULT_POLICY = Policy()
+
+
+def policy_for(event: models.Event) -> Policy:
+    """המדיניות לאירוע: ערכי מערכת + Override לאירוע. תקלה → ברירות המחדל."""
+    try:
+        from app import settings_registry as sr
+
+        eid = getattr(event, "id", None)
+        return Policy(
+            reminders=int(sr.value("rsvp.whatsapp_reminders", eid)),
+            calls=int(sr.value("calls.rounds", eid)),
+            max_window_days=int(sr.value("rsvp.max_window_days", eid)),
+            near_commit_days=int(sr.value("rsvp.near_commit_days", eid)),
+        )
+    except Exception:  # noqa: BLE001 — לוח הזמנים לעולם לא נופל בגלל הגדרה
+        return DEFAULT_POLICY
+
+
+def _cycle_for(policy: Policy) -> tuple[list[dict], Optional[int], tuple[int, ...]]:
+    """הסבב לפי המדיניות: N התזכורות הראשונות, M סבבי השיחות **האחרונים**
+    (סבב השיחות האחרון נשאר תמיד ביום סגירת הרשימה)."""
+    if policy.reminders == 3 and policy.calls == 3:
+        return CYCLE, _LAST_CALL_ROUND_IDX, STEP_PRIORITY
+    reminder_idx = [i for i, st in enumerate(CYCLE) if st["type"] == "reminder"][: max(0, policy.reminders)]
+    all_calls = [i for i, st in enumerate(CYCLE) if st["type"] == "call_round"]
+    call_idx = all_calls[len(all_calls) - max(0, min(policy.calls, len(all_calls))):] if policy.calls > 0 else []
+    keep = sorted({0, *reminder_idx, *call_idx})
+    cycle = [CYCLE[i] for i in keep]
+    calls_new = [j for j, st in enumerate(cycle) if st["type"] == "call_round"]
+    last = calls_new[-1] if calls_new else None
+    priority = (0,) + ((last,) if last is not None else ()) + tuple(
+        j for j in range(1, len(cycle)) if j != last
+    )
+    return cycle, last, priority
+
+
 _REMINDER_LABELS = ("תזכורת ראשונה", "תזכורת שנייה", "תזכורת שלישית")
 _CALL_LABELS = ("סבב שיחות ראשון", "סבב שיחות שני")
 _LAST_CALL_LABEL = "סבב שיחות אחרון"
@@ -241,8 +292,9 @@ def resolve_commit_days(
     if event.venue_commit_days_before is not None:
         return event.venue_commit_days_before, False
     today = local_time.israel_date(now)
-    if 0 < (event_date - today).days < MAX_WINDOW_DAYS:
-        return DEFAULT_NEAR_COMMIT_DAYS, True
+    policy = policy_for(event)
+    if 0 < (event_date - today).days < policy.max_window_days:
+        return policy.near_commit_days, True
     return None, False
 
 
@@ -251,18 +303,20 @@ def max_commit_days(event_date: date, today: date) -> int:
     return max(0, min(MAX_COMMIT_DAYS, (event_date - today).days))
 
 
-def _choose_steps(active_days: int) -> list[int]:
-    """אילו שלבים מ-``CYCLE`` נכנסים לחלון (אינדקסים, בסדר הזמן)."""
-    return sorted(STEP_PRIORITY[: min(active_days, len(CYCLE))])
+def _choose_steps(
+    active_days: int, cycle: list[dict] = CYCLE, priority: tuple[int, ...] = STEP_PRIORITY,
+) -> list[int]:
+    """אילו שלבים מ-``cycle`` נכנסים לחלון (אינדקסים, בסדר הזמן)."""
+    return sorted(priority[: min(active_days, len(cycle))])
 
 
-def _spread(chosen: list[int]) -> list[float]:
+def _spread(chosen: list[int], cycle: list[dict] = CYCLE) -> list[float]:
     """מיקום יחסי (0..1) לכל שלב נבחר, לפי הפער הרצוי בין שלבים סמוכים."""
     if len(chosen) == 1:
         return [0.0]
     cum = [0]
     for prev, cur in zip(chosen, chosen[1:]):
-        same_family = (CYCLE[prev]["type"] == "call_round") == (CYCLE[cur]["type"] == "call_round")
+        same_family = (cycle[prev]["type"] == "call_round") == (cycle[cur]["type"] == "call_round")
         cum.append(cum[-1] + (GAP_WA_WA if same_family else GAP_WA_CALL))
     return [c / cum[-1] for c in cum]
 
@@ -282,13 +336,17 @@ def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Opt
     if event_date is None or commit_days is None:
         return None
 
+    policy = policy_for(event)
+    cycle, last_call_idx, priority = _cycle_for(policy)
+    max_window = policy.max_window_days
+
     started_on = _started_on(event)
     reference = started_on or today
     if is_default and started_on is not None:
         # מסלול שהופעל כשהאירוע עוד היה רחוק, בלי בחירת מועד סגירה: ברירת
         # המחדל "נולדה" ביום שבו האירוע נעשה קרוב — לא מוקדם מזה, כדי שלא
         # יופיעו פתאום סבבים בתאריכים שכבר עברו.
-        reference = max(started_on, event_date - timedelta(days=MAX_WINDOW_DAYS - 1))
+        reference = max(started_on, event_date - timedelta(days=max_window - 1))
 
     # ---- מועד סגירת הרשימה ----
     # תאריך האירוע פחות הימים, מוזז אחורה אם נפל על שישי/שבת. זהו **תאריך
@@ -301,17 +359,17 @@ def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Opt
         commitment_date = max(commitment_date, reference)
 
     # ---- החלון: עד MAX_WINDOW_DAYS ימים, לא לפני יום הייחוס ----
-    window_start = max(commitment_date - timedelta(days=MAX_WINDOW_DAYS), reference)
+    window_start = max(commitment_date - timedelta(days=max_window), reference)
     window_days = (commitment_date - window_start).days
-    compressed = window_days < MAX_WINDOW_DAYS
+    compressed = window_days < max_window
     active = [
         d for d in (window_start + timedelta(days=i) for i in range(window_days + 1))
         if not _is_weekend(d)
     ]
 
     # ---- בחירת השלבים ופריסתם ----
-    chosen = _choose_steps(len(active))
-    positions = _spread(chosen) if chosen else []
+    chosen = _choose_steps(len(active), cycle, priority)
+    positions = _spread(chosen, cycle) if chosen else []
     slots = len(active) - 1
     idx = [round(p * slots) for p in positions]
     # כל שלב ביום פעיל משלו: קדימה — לפחות אחד אחרי הקודם; אחורה — השלב האחרון
@@ -323,11 +381,11 @@ def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Opt
     for j in range(len(idx) - 2, -1, -1):
         idx[j] = min(idx[j], idx[j + 1] - 1)
 
-    reminders = [i for i in chosen if CYCLE[i]["type"] == "reminder"]
-    calls = [i for i in chosen if CYCLE[i]["type"] == "call_round"]
+    reminders = [i for i in chosen if cycle[i]["type"] == "reminder"]
+    calls = [i for i in chosen if cycle[i]["type"] == "call_round"]
     placements: list[Placement] = []
     for j, step_idx in enumerate(chosen):
-        step = dict(CYCLE[step_idx])
+        step = dict(cycle[step_idx])
         rn: Optional[int] = None
         reminder_n: Optional[int] = None
         if step["type"] == "reminder":
@@ -336,9 +394,9 @@ def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Opt
         elif step["type"] == "call_round":
             rn = calls.index(step_idx) + 1
             step["label"] = (
-                _LAST_CALL_LABEL if step_idx == _LAST_CALL_ROUND_IDX else _CALL_LABELS[rn - 1]
+                _LAST_CALL_LABEL if step_idx == last_call_idx else _CALL_LABELS[rn - 1]
             )
-        if step_idx == _LAST_CALL_ROUND_IDX:
+        if step_idx == last_call_idx:
             moved = _is_weekend(raw_commitment)
         else:
             natural = window_start + timedelta(days=round(positions[j] * window_days))

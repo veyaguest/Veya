@@ -442,4 +442,7 @@ def test_existing_call_history_is_respected_when_task_is_created() -> None:
 
 
 def teardown_module(module) -> None:  # noqa: ARG001
+    from app import call_ops
+
+    call_ops.SYNC_TTL_SECONDS = 45
     shutdown()

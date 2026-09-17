@@ -694,8 +694,33 @@ def _to_e164(phone: str) -> str:
     return digits
 
 
+class StoppedProvider:
+    """עצירת חירום מהאדמין (``whatsapp.emergency_stop``): שום הודעה לא יוצאת.
+
+    כל ניסיון נרשם כנכשל עם סיבה ברורה — כך בעלי האירוע והאדמין רואים שהשליחה
+    לא קרתה, ואפשר לשלוח שוב אחרי שהעצירה מוסרת.
+    """
+
+    name = "stopped"
+
+    def send_invitation(self, phone: str, text: str) -> SendResult:  # noqa: ARG002
+        return SendResult(ok=False, provider="stopped", status="failed",
+                          detail="השליחה נעצרה זמנית על ידי VEYA (עצירת חירום)")
+
+
+def emergency_stop_active() -> bool:
+    try:
+        from app import settings_registry
+
+        return bool(settings_registry.value("whatsapp.emergency_stop"))
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def get_provider():
-    """בוחר ספק לפי המצב הנוכחי."""
+    """בוחר ספק לפי המצב הנוכחי. עצירת חירום גוברת על הכול."""
+    if emergency_stop_active():
+        return StoppedProvider()
     return MetaProvider() if current_mode() == "live" else MockProvider()
 
 

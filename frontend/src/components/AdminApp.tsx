@@ -201,7 +201,7 @@ function DeleteUserDialog({
 }
 
 /** כרטיס משתמש מלא — פרופיל, עריכה, אירועים, היסטוריית התחברות, ופעולות אדמין. */
-function AdminUserDialog({
+export function AdminUserDialog({
   userId,
   onClose,
   onChanged,

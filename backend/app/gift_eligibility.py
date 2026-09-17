@@ -130,6 +130,22 @@ def _from_global_switch(event: Optional[models.Event]) -> Optional[bool]:
 register_resolver("global_switch", _from_global_switch, precedence=100)
 
 
+def _from_admin_features(event: Optional[models.Event]) -> Optional[bool]:
+    """הכרעת האדמין ("פיצ'רים והרשאות"): כלל לאירוע/לבעלים או סטטוס הפיצ'ר.
+
+    בלי הכרעה (אין שורה במסד) → ``None``, ומתג הסביבה ממשיך להכריע כמו תמיד.
+    """
+    try:
+        from app import features
+
+        return features.decide("gifts", event).enabled
+    except Exception:  # noqa: BLE001 — שירות כסף לא נפתח בגלל תקלה; המתג מכריע
+        return None
+
+
+register_resolver("admin_features", _from_admin_features, precedence=50)
+
+
 # ── ה-API של המודול ──────────────────────────────────────────────────────
 
 

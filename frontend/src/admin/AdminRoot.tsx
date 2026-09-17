@@ -8,8 +8,6 @@ import { useEffect, useState, type ReactNode } from 'react'
 import type { User } from '../types'
 import { AdminPayoutReview } from '../components/AdminPayoutReview'
 import { AdminPostponements } from '../components/AdminPostponements'
-import { MessageDefaultOptionsManager, MessageDefaultsManager } from '../components/AdminPage'
-import { AdminEventsView, AdminUsersView, AdminVenuesView } from '../components/AdminApp'
 import { fetchAdminMe, type AdminOverview } from './adminApi'
 import { AdminShell, pageAllowed } from './AdminShell'
 import { navigate, useAdminRoute, type AdminRoute } from './route'
@@ -17,13 +15,17 @@ import { AdminSettingsPage } from './pages/AdminSettingsPage'
 import { AuditPage } from './pages/AuditPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { CallOpsPage } from './pages/calls/CallOpsPage'
+import { PeoplePage } from './pages/people/PeoplePage'
+import { FeaturesPage } from './pages/rules/FeaturesPage'
+import { RulesPage } from './pages/rules/RulesPage'
+import { RsvpPage } from './pages/rsvp/RsvpPage'
+import { VenuesPage } from './pages/venues/VenuesPage'
 import {
   EmptyState,
   ErrorState,
   Loading,
   PageHeader,
   PermissionContext,
-  Tabs,
   ToastProvider,
   useAsync,
   useCan,
@@ -37,7 +39,7 @@ export function AdminApp({
 }: {
   user: User
   onLogout: () => void
-  onImpersonate: (userId: number) => Promise<void>
+  onImpersonate: (userId: number, eventId?: number) => Promise<void>
 }) {
   const route = useAdminRoute()
   const me = useAsync(fetchAdminMe, [])
@@ -101,7 +103,7 @@ function Page({
   onOverview,
 }: {
   route: AdminRoute
-  onImpersonate: (userId: number) => Promise<void>
+  onImpersonate: (userId: number, eventId?: number) => Promise<void>
   onOverview: (o: AdminOverview) => void
 }) {
   switch (route.page) {
@@ -110,18 +112,9 @@ function Page({
     case 'people':
       return <PeoplePage route={route} onImpersonate={onImpersonate} />
     case 'venues':
-      return (
-        <LegacyPage title="מאגר אולמות">
-          <AdminVenuesView />
-        </LegacyPage>
-      )
+      return <VenuesPage route={route} />
     case 'rsvp':
-      return (
-        <LegacyPage title="אישורי הגעה" subtitle="ספריית ההודעות וברירות המחדל לכל סוג אירוע">
-          <MessageDefaultsManager />
-          <MessageDefaultOptionsManager />
-        </LegacyPage>
-      )
+      return <RsvpPage route={route} />
     case 'calls':
       return <CallOpsPage route={route} />
     case 'postponements':
@@ -137,7 +130,9 @@ function Page({
     case 'settings':
       return <AdminSettingsPage />
     case 'features':
+      return <FeaturesPage />
     case 'rules':
+      return <RulesPage route={route} />
     case 'plans':
     case 'addons':
     case 'coupons':
@@ -151,35 +146,6 @@ function LegacyPage({ title, subtitle, children }: { title: string; subtitle?: s
     <div className="adm-page adm-legacy">
       <PageHeader title={title} subtitle={subtitle} />
       {children}
-    </div>
-  )
-}
-
-function PeoplePage({
-  route,
-  onImpersonate,
-}: {
-  route: AdminRoute
-  onImpersonate: (userId: number) => Promise<void>
-}) {
-  const tab = route.id?.startsWith('e') || route.params.get('tab') === 'events' ? 'events' : 'users'
-  return (
-    <div className="adm-page adm-legacy">
-      <PageHeader title="משתמשים ואירועים" />
-      <Tabs
-        label="משתמשים ואירועים"
-        tabs={[
-          { key: 'users', label: 'משתמשים' },
-          { key: 'events', label: 'אירועים' },
-        ]}
-        active={tab}
-        onChange={(k) => navigate('people', null, { tab: k }, { replace: true })}
-      />
-      {tab === 'users' ? (
-        <AdminUsersView onImpersonate={onImpersonate} />
-      ) : (
-        <AdminEventsView onImpersonate={onImpersonate} />
-      )}
     </div>
   )
 }

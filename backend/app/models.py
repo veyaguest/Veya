@@ -845,6 +845,45 @@ class Venue(Base):
     usage_count: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
+    # ── CMS (מאגר אולמות מנוהל) — כל העמודות אופציונליות; אולם שנוצר אוטומטית
+    # מאירוע נשאר תקין בלעדיהן. ``status`` קובע אם האולם מוצע בהשלמה האוטומטית.
+    status: Mapped[str] = mapped_column(String, default="active")          # active / hidden / draft
+    description: Mapped[str] = mapped_column(Text, default="")
+    phone: Mapped[str] = mapped_column(String, default="")
+    website: Mapped[str] = mapped_column(String, default="")
+    venue_kind: Mapped[str] = mapped_column(String, default="")            # hall / garden / complex / restaurant / other
+    event_types: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    capacity_min: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    capacity_max: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    capacity_by_type: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    kashrut: Mapped[str] = mapped_column(String, default="")
+    parking: Mapped[str] = mapped_column(String, default="")
+    accessibility: Mapped[str] = mapped_column(String, default="")
+    is_open: Mapped[bool] = mapped_column(Boolean, default=True)
+    # מידע פנימי ל-VEYA — לא מוצג לזוגות
+    contact_name: Mapped[str] = mapped_column(String, default="")
+    contact_phone: Mapped[str] = mapped_column(String, default="")
+    source: Mapped[str] = mapped_column(String, default="")               # auto / admin / partner / import
+    internal_notes: Mapped[str] = mapped_column(Text, default="")
+    partnership: Mapped[str] = mapped_column(String, default="")
+    verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    priority: Mapped[int] = mapped_column(Integer, default=0)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class VenueImage(Base):
+    """תמונה באולם. הקובץ עצמו ב-``media_blobs`` (אותו אחסון של תמונות ההזמנה)."""
+
+    __tablename__ = "venue_images"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    venue_id: Mapped[int] = mapped_column(ForeignKey("venues.id"), index=True)
+    stored: Mapped[str] = mapped_column(String)                            # /media/<id>
+    caption: Mapped[str] = mapped_column(String, default="")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_main: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
 
 class MediaBlob(Base):
     """אחסון קבוע של קובצי תמונה (הזמנה/סקיצת אולם) בתוך מסד הנתונים.
@@ -1554,3 +1593,195 @@ class CallRoundControl(Base):
     reason: Mapped[str] = mapped_column(Text, default="")
     set_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class SystemSetting(Base):
+    """ערך מערכת להגדרה מ-``app/settings_registry.py``. אין שורה = ברירת המחדל בקוד."""
+
+    __tablename__ = "system_settings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String, unique=True, index=True)
+    value: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    updated_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class SettingOverride(Base):
+    """ערך שונה מברירת המערכת להיקף מסוים: ``event`` היום; ``plan``/``user`` שמורים לעתיד."""
+
+    __tablename__ = "setting_overrides"
+    __table_args__ = (
+        UniqueConstraint("scope_type", "scope_id", "key", name="uq_setting_override"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    scope_type: Mapped[str] = mapped_column(String, index=True)
+    scope_id: Mapped[int] = mapped_column(Integer, index=True)
+    key: Mapped[str] = mapped_column(String)
+    value: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    reason: Mapped[str] = mapped_column(Text, default="")
+    created_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class FeatureFlag(Base):
+    """פיצ'ר ב-VEYA: מובנה (מוגדר בקוד, ``app/features.py``) או חדש שנוצר מהאדמין."""
+
+    __tablename__ = "feature_flags"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String, unique=True, index=True)
+    label: Mapped[str] = mapped_column(String, default="")
+    description: Mapped[str] = mapped_column(Text, default="")
+    # active / beta / off
+    status: Mapped[str] = mapped_column(String, default="off")
+    created_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class FeatureRule(Base):
+    """למי פיצ'ר פתוח/סגור מעבר לסטטוס שלו: משתמש / אירוע (ובעתיד מסלול)."""
+
+    __tablename__ = "feature_rules"
+    __table_args__ = (
+        UniqueConstraint("feature_key", "scope_type", "scope_id", name="uq_feature_rule"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    feature_key: Mapped[str] = mapped_column(String, index=True)
+    scope_type: Mapped[str] = mapped_column(String)      # user / event / plan
+    scope_id: Mapped[int] = mapped_column(Integer, index=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    limits: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+# ── מסחר ─────────────────────────────────────────────────────────────────────
+# מודל עסקי נעול: רכישה חד-פעמית לאירוע (לא מנוי חודשי). "מנויים" במסך =
+# הרכישות/הזכאויות של אירועים. אין סליקה מחוברת — כל שורה כאן היא נתון ניהולי
+# אמיתי, לא חיוב כספי.
+
+class Plan(Base):
+    __tablename__ = "plans"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String, unique=True, index=True)
+    name: Mapped[str] = mapped_column(String)
+    description: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String, default="draft")       # active / hidden / draft / archived
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    current_version_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class PlanVersion(Base):
+    """גרסה של מסלול — **לא משתנה אחרי שנוצרה.** שינוי מחיר/תכולה = גרסה חדשה.
+
+    אירוע שרכש גרסה 1 נשאר עליה גם אחרי שגרסה 2 נוצרה.
+    """
+
+    __tablename__ = "plan_versions"
+    __table_args__ = (UniqueConstraint("plan_id", "version", name="uq_plan_version"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    plan_id: Mapped[int] = mapped_column(ForeignKey("plans.id"), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    price_agorot: Mapped[int] = mapped_column(Integer, default=0)
+    guest_limit: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    event_limit: Mapped[int] = mapped_column(Integer, default=1)
+    trial_days: Mapped[int] = mapped_column(Integer, default=0)
+    features: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)          # מפתחות פיצ'רים כלולים
+    included_addons: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    available_addons: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    limits: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    change_note: Mapped[str] = mapped_column(Text, default="")
+    created_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Addon(Base):
+    __tablename__ = "addons"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String, unique=True, index=True)
+    name: Mapped[str] = mapped_column(String)
+    description: Mapped[str] = mapped_column(Text, default="")
+    price_agorot: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String, default="draft")       # active / hidden / draft
+    standalone: Mapped[bool] = mapped_column(Boolean, default=True)     # ניתן לרכישה בנפרד
+    feature_key: Mapped[str] = mapped_column(String, default="")        # הפיצ'ר שהתוסף פותח
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class FeeRule(Base):
+    """עמלה. היסטוריה נשמרת: שינוי = שורה חדשה, הקודמת מסומנת ``active=False``.
+
+    ``direction`` תמיד ``added`` למתנות באשראי — החלטה נעולה (העמלה על הנותן).
+    """
+
+    __tablename__ = "fee_rules"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String, index=True, default="gift_card")
+    scope_type: Mapped[str] = mapped_column(String, default="system")   # system / plan / event_type
+    scope_key: Mapped[str] = mapped_column(String, default="")
+    percent_bp: Mapped[int] = mapped_column(Integer, default=400)        # 400 = 4%
+    fixed_agorot: Mapped[int] = mapped_column(Integer, default=0)
+    min_agorot: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    max_agorot: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    direction: Mapped[str] = mapped_column(String, default="added")
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Coupon(Base):
+    __tablename__ = "coupons"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String, unique=True, index=True)
+    description: Mapped[str] = mapped_column(Text, default="")
+    kind: Mapped[str] = mapped_column(String, default="percent")        # percent / amount
+    value: Mapped[int] = mapped_column(Integer, default=0)              # אחוזים שלמים / אגורות
+    starts_on: Mapped[str] = mapped_column(String, default="")
+    ends_on: Mapped[str] = mapped_column(String, default="")
+    max_uses: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    uses_count: Mapped[int] = mapped_column(Integer, default=0)
+    plan_keys: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    addon_keys: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    audience: Mapped[str] = mapped_column(String, default="")
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class EventEntitlement(Base):
+    """מסלול שאירוע קיבל (רכישה / הטבה / ניסיון), נעול לגרסת מסלול."""
+
+    __tablename__ = "event_entitlements"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("events.id"), index=True)
+    plan_version_id: Mapped[int] = mapped_column(ForeignKey("plan_versions.id"), index=True)
+    status: Mapped[str] = mapped_column(String, default="active")      # active / trial / paused / cancelled / expired
+    price_agorot: Mapped[int] = mapped_column(Integer, default=0)        # המחיר שנקבע לאירוע (אחרי הטבה)
+    addons: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    coupon_code: Mapped[str] = mapped_column(String, default="")
+    source: Mapped[str] = mapped_column(String, default="admin")         # admin / purchase (עתידי)
+    starts_on: Mapped[str] = mapped_column(String, default="")
+    trial_ends_on: Mapped[str] = mapped_column(String, default="")
+    renews_on: Mapped[str] = mapped_column(String, default="")            # ריק — רכישה חד-פעמית
+    cancelled_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

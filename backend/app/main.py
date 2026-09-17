@@ -20,6 +20,10 @@ from app.database import (
 from app.routers import (
     admin,
     admin_control,
+    admin_people,
+    admin_rules,
+    admin_rsvp,
+    admin_venues,
     auth,
     automation,
     call_center,
@@ -98,6 +102,10 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(admin_control.router)
+app.include_router(admin_people.router)
+app.include_router(admin_rules.router)
+app.include_router(admin_rsvp.router)
+app.include_router(admin_venues.router)
 app.include_router(call_center.router)
 app.include_router(call_ops.router)
 app.include_router(events.router)
@@ -248,6 +256,29 @@ _EXTRA_COLUMNS = {
     },
     "venues": {
         "city": "VARCHAR DEFAULT ''",
+        # מאגר אולמות מנוהל (CMS). ברירות המחדל שומרות את האולמות הקיימים
+        # פעילים ומוצעים בדיוק כמו קודם.
+        "status": "VARCHAR DEFAULT 'active'",
+        "description": "TEXT DEFAULT ''",
+        "phone": "VARCHAR DEFAULT ''",
+        "website": "VARCHAR DEFAULT ''",
+        "venue_kind": "VARCHAR DEFAULT ''",
+        "event_types": "JSON",
+        "capacity_min": "INTEGER",
+        "capacity_max": "INTEGER",
+        "capacity_by_type": "JSON",
+        "kashrut": "VARCHAR DEFAULT ''",
+        "parking": "VARCHAR DEFAULT ''",
+        "accessibility": "VARCHAR DEFAULT ''",
+        "is_open": "BOOLEAN DEFAULT TRUE",
+        "contact_name": "VARCHAR DEFAULT ''",
+        "contact_phone": "VARCHAR DEFAULT ''",
+        "source": "VARCHAR DEFAULT ''",
+        "internal_notes": "TEXT DEFAULT ''",
+        "partnership": "VARCHAR DEFAULT ''",
+        "verified": "BOOLEAN DEFAULT FALSE",
+        "priority": "INTEGER DEFAULT 0",
+        "updated_at": "TIMESTAMP",
     },
     "postponement_requests": {
         # צילום מורחב של המחזור הנסגר (אולם/כתובת/מועד סגירה) — נוסף אחרי
@@ -1515,6 +1546,8 @@ _RLS_MIGRATION_FILES = (
     "18_landing_leads_rls.sql",
     "19_admin_control_rls.sql",
     "20_call_ops_rls.sql",
+    "21_rules_features_rls.sql",
+    "22_venue_images_rls.sql",
 )
 
 #: הפונקציות שקובצי 15–17 נשענים עליהן (קבצים 01 ו-08). בלעדיהן
@@ -1584,7 +1617,8 @@ def _ensure_rls_policies() -> None:
                 "  AND c.relname IN "
                 "      ('postponement_requests', 'event_cycles', 'guest_cycle_rsvp', "
                 "       'event_expenses', 'gift_envelopes', 'expense_payments', "
-                "       'admin_audit_logs', 'call_tasks', 'caller_profiles', 'call_round_controls') "
+                "       'admin_audit_logs', 'call_tasks', 'caller_profiles', 'call_round_controls', "
+                "       'system_settings', 'setting_overrides', 'feature_flags', 'feature_rules', 'venue_images') "
                 "ORDER BY 1"
             ).all()
             summary = " · ".join(

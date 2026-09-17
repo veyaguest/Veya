@@ -1325,30 +1325,21 @@
       /* פתיחת הסקשן היא רגע מותג, לא כותרת: שורה אחת שמובילה למטה, ומתחתיה
          הלוגו המקורי (873×1186, ביחס שלו) בגודל אמיתי — הוא האלמנט המרכזי.
          מסביב אוויר, בלי קישוט, בלי כרטיס ובלי קו. */
-      /* כל הקומפוזיציה נגזרת ממידה אחת — גובה הלוגו. גודל השורה, המרווח
-         ביניהם והריווח סביבם מחושבים ממנה, כך שהיחס בין השורה לחותם נשמר
-         זהה בכל רוחב מסך: שורה שמובילה פנימה, ומתחתיה הלוגו. */
+      /* הפתיחה: משפט אחד רציף בזהב המותג, ומתחתיו החותם לבדו כמפריד.
+         שלושתם — כותרת, חותם ותחילת הסיפור — במרחקים שווים. */
       .story-title {
-        --logo-h: clamp(240px, 24vw, 328px);
-        max-width: none; margin: 0 0 clamp(72px, 9.5vw, 132px);
+        max-width: 24ch; margin: 0 auto 28px;
         padding-top: clamp(12px, 3.6vw, 52px);
-        display: grid; justify-items: center; text-align: center;
-        gap: calc(var(--logo-h) * 0.067);
-      }
-      /* השורה בנויה על הריתמוס של המילה שבלוגו: אותו דיו, ריווח אותיות
-         קרוב לשלה ורוחב שורה שנגזר מרוחב הלוגו — כדי שהשתיים ייקראו כבלוק
-         אחד ולא ככותרת עם לוגו מתחתיה. */
-      .story-title-lead {
-        display: block;
         font-family: var(--font-display); font-weight: 500;
-        font-size: calc(var(--logo-h) * 0.127); line-height: 1.2;
-        letter-spacing: 0.04em; color: var(--cream-text);
+        font-size: clamp(2rem, 4.4vw, 3.4rem); line-height: 1.25;
+        text-align: center; color: var(--gold);
       }
-      .story-mark {
-        display: block; width: auto; height: var(--logo-h);
-        /* לקובץ הלוגו יש שוליים שקופים — החותם עצמו מתחיל ב-11% מגובהו.
-           מנטרלים אותם, כך שהמרחק שרואים בין השורה לחותם הוא ה-gap עצמו. */
-        margin-top: calc(var(--logo-h) * -0.11);
+      /* החותם בלבד (logo_nobg), בגודל שהוא 75% מהחותם שהיה בקומפוזיציה
+         הקודמת. בקובץ יש שוליים שקופים של 12.5%, ולכן הגובה המוגדר גדול
+         מהחותם שנראה בפועל. */
+      .story-seal {
+        display: block; width: auto; height: clamp(112px, 10.5vw, 152px);
+        margin: 0 auto 28px;
       }
       .story-body { max-width: 34rem; }
       .story-body p { margin: 0 0 1.15em; font-size: var(--fs-lg); line-height: 1.95; color: #d8ceb9; }
@@ -1405,7 +1396,8 @@
       @media (max-width: 720px) {
         /* בטלפון הקומפוזיציה נשארת אותה קומפוזיציה, רק קומפקטית יותר —
            אותו יחס בין השורה, הלוגו והאוויר סביבם. */
-        .story-title { --logo-h: clamp(168px, 50vw, 240px); margin-bottom: clamp(56px, 15vw, 78px); }
+        .story-title { font-size: clamp(1.55rem, 6.4vw, 2.3rem); }
+        .story-seal { height: clamp(78px, 23vw, 112px); }
         .story-body p { font-size: var(--fs-md); line-height: 1.9; }
         .story-open { font-size: var(--fs-lg) !important; }
         .story-chain { flex-direction: column; align-items: flex-start; gap: 14px; padding-inline-start: 18px; }
@@ -1518,7 +1510,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2645,6 +2637,8 @@
     
     
     
+    
+    
     </style>
     <script>
       /* צילום שנקטע בטעינה: ניסיון חוזר אחד, והמסגרת נשארת. מוגדר ב-head כדי
@@ -3590,18 +3584,17 @@
            שנייה שמתחילה סקשן חדש. בלי מוקאפ, בלי כרטיסים, בלי נתונים. -->
       <section class="story on-dark" id="story" aria-labelledby="story-title">
         <div class="wrap">
-          <h2 id="story-title" class="story-title reveal">
-            <span class="story-title-lead">הסיבה שבנינו את</span>
-            <img
-              class="story-mark"
-              src="/veya_combined.png"
-              alt="VEYA"
-              width="873"
-              height="1186"
-              loading="lazy"
-              decoding="async"
-            />
-          </h2>
+          <h2 id="story-title" class="story-title reveal">הסיבה שבנינו את VEYA</h2>
+          <img
+            class="story-seal reveal"
+            src="/logo_nobg.png"
+            alt=""
+            aria-hidden="true"
+            width="512"
+            height="512"
+            loading="lazy"
+            decoding="async"
+          />
 
           <div class="story-body reveal">
             <p class="story-open">

@@ -13,7 +13,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app import (
-    admin_audit, admin_rbac, audit, auth, cache, call_center, call_ops, communication, event_terms, messaging, models, roles,
+    admin_audit, admin_rbac, audit, auth, cache, call_center, call_ops, communication, event_terms, media, messaging, models, roles,
     schemas, venues,
 )
 from app.account import delete_event_cascade
@@ -1537,6 +1537,10 @@ def delete_venue(
         summary=f"מחק/ה את האולם {venue.name}", target_type="venue", target_id=venue.id,
         target_label=venue.name, request=request,
     )
+    for img in db.scalars(select(models.VenueImage).where(models.VenueImage.venue_id == venue.id)).all():
+        media.delete_stored(db, img.stored)
+        db.delete(img)
+    db.flush()
     audit.record(
         db, "admin_delete_venue",
         user_id=admin.id,
@@ -1568,6 +1572,10 @@ def merge_venue(
         raise HTTPException(status_code=400, detail="אי אפשר למזג אולם לתוך עצמו")
 
     target.usage_count += source.usage_count
+    # תמונות האולם הכפול עוברות לאולם היעד (לא נמחקות).
+    for img in db.scalars(select(models.VenueImage).where(models.VenueImage.venue_id == source.id)).all():
+        img.venue_id = target.id
+        img.is_main = False
     admin_audit.record(
         db, admin, domain="venues", action="venue.merge",
         summary=f"מיזג/ה את האולם {source.name} לתוך {target.name}", target_type="venue",

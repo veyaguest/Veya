@@ -201,7 +201,7 @@ def _task_rows(db: Session, pairs: list[tuple[models.CallTask, models.Guest, mod
             handled_by_name=names.get(t.handled_by_id, "") if t.handled_by_id else "",
             closed_reason_label=call_ops.CLOSED_REASON_LABELS.get(t.closed_reason, "") if t.closed_reason else "",
             needs_attention=(
-                (t.attempts or 0) >= call_ops.MANY_ATTEMPTS
+                (t.attempts or 0) >= call_ops.many_attempts()
                 or t.last_outcome == call_center.WRONG_NUMBER
                 or (t.status == call_ops.OPEN and t.due_date < today_iso)
             ),
@@ -453,10 +453,11 @@ def _exceptions(db: Session, today: date) -> list[ExceptionItem]:
                 assignee="none", event_ids=orphan,
             ))
 
-    many = db.scalar(select(func.count(T.id)).where(T.status == call_ops.OPEN, T.attempts >= call_ops.MANY_ATTEMPTS)) or 0
+    threshold = call_ops.many_attempts()
+    many = db.scalar(select(func.count(T.id)).where(T.status == call_ops.OPEN, T.attempts >= threshold)) or 0
     if many:
         items.append(ExceptionItem(
-            key="many_attempts", severity="info", title=f"אורחים עם {call_ops.MANY_ATTEMPTS} ניסיונות ומעלה",
+            key="many_attempts", severity="info", title=f"אורחים עם {threshold} ניסיונות ומעלה",
             detail="שווה לבדוק מול בעלי האירוע אם יש דרך אחרת להשיג", count=many, group="followup",
         ))
 

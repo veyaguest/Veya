@@ -341,13 +341,15 @@ function App() {
 
   // אדמין "מתחבר כמשתמש": שומר את טוקן האדמין בצד, מכניס טוקן משתמש במקומו,
   // וטוען מחדש את הממשק בעיני אותו משתמש. שגיאות מוחזרות לקורא (AdminApp).
-  async function handleImpersonate(userId: number) {
+  // ``eventId`` — כניסה לתמיכה באירוע מסוים (ממרכז השליטה לאירוע): האירוע
+  // נבחר מראש כך שבעל/ת האירוע והאדמין רואים בדיוק את אותו מסך.
+  async function handleImpersonate(userId: number, eventId?: number) {
     const adminToken = getToken()
     if (!adminToken) return
     const res = await adminImpersonate(userId)
     setAdminToken(adminToken)
     setToken(res.token)
-    setEventId(null)
+    setEventId(eventId ?? null)
     setImpersonating(true)
     setPage('dashboard')
     const u = await getMe()
