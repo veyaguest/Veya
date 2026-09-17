@@ -1317,91 +1317,28 @@
       .step-two p { font-size: var(--fs-sm); color: var(--muted); margin: 0; }
       @media (max-width: 620px) { .steps-two { grid-template-columns: 1fr; } }
 
-      /* ---- מפת סוגי האירוע ----
-         לא מסלול ולא שלבים: אוסף לא סימטרי שבו לחתונה יש משקל אחר משאר
-         הסוגים. RTL: הגריד נקרא מימין (העמודה הראשונה היא הימנית), וכל
-         המיקומים לוגיים. טקסט בלבד, בלי המחשות מסך. */
-      #events { direction: rtl; }
-      .ev-head { max-width: 46ch; margin: 0 0 clamp(34px, 5vw, 56px); text-align: start; }
-      #events .section-title { text-wrap: balance; }
-      .ev-head .section-sub { margin-inline: 0; text-align: start; }
-      .ev {
-        display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
-        gap: clamp(26px, 3.4vw, 44px) clamp(20px, 2.6vw, 36px); align-items: start;
-      }
-      .ev-name { margin: 0 0 8px; font-family: var(--font-display); font-weight: 500; line-height: 1.1; color: var(--charcoal); }
-      .ev-name a { color: inherit; text-decoration: none; }
-      .ev-name a:hover { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
-      .ev-name a:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 4px; border-radius: 4px; }
-      .ev-line { margin: 0; color: var(--body); line-height: 1.65; }
-      .ev-meta { margin: 14px 0 0; display: grid; gap: 7px; }
-      .ev-meta > div { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr); gap: 10px; align-items: baseline; }
-      .ev-meta dt { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.1em; color: var(--gold-deep); }
-      .ev-meta dd { margin: 0; font-size: var(--fs-sm); color: var(--muted); line-height: 1.6; }
-
-      /* חתונה — הבלוק הדומיננטי */
-      .ev-main { grid-column: 1 / span 12; }
-      .ev-main .ev-k { margin: 0 0 6px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.08em; color: var(--gold-deep); }
-      .ev-main .ev-name { font-size: clamp(2.4rem, 5vw, 3.6rem); }
-      .ev-main .ev-line { font-size: var(--fs-xl); max-width: 30ch; }
-      .ev-main .ev-meta { margin-top: 20px; max-width: 46ch; }
-
-      /* שאר הסוגים — גדלים ומיקומים שונים, לא גריד אחיד */
-      .ev-henna { grid-column: 1 / span 5; }
-      .ev-henna .ev-name { font-size: var(--fd-sm); }
-      .ev-henna .ev-line { font-size: var(--fs-lg); }
-      .ev-bar { grid-column: 6 / span 4; }
-      .ev-bat { grid-column: 10 / span 3; }
-      .ev-bar .ev-name, .ev-bat .ev-name { font-size: var(--fs-2xl); }
-      .ev-bar .ev-line, .ev-bat .ev-line { font-size: var(--fs-md); }
-      .ev-brit { grid-column: 1 / span 3; }
-      .ev-brita { grid-column: 4 / span 5; }
-      .ev-brit .ev-name, .ev-brita .ev-name { font-size: var(--fs-xl); }
-      .ev-brit .ev-line, .ev-brita .ev-line { font-size: var(--fs-sm); }
-      .ev-brit .ev-meta, .ev-brita .ev-meta { margin-top: 10px; }
-
-      .ev-end {
-        margin: clamp(56px, 7vw, 84px) 0 0; max-width: 34ch; text-align: start;
-        font-family: var(--font-display); font-size: var(--fd-sm); line-height: 1.35; color: var(--body);
-      }
-      .ev-end strong { display: inline-block; margin-top: 4px; font-weight: 500; color: var(--charcoal); font-size: var(--fd-md); }
-
-      @media (max-width: 900px) {
-        .ev { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 30px 20px; }
-        .ev-main { grid-column: 1 / span 6; }
-        .ev-main .ev-line { max-width: none; }
-        .ev-henna { grid-column: 1 / span 6; }
-        .ev-bar { grid-column: 1 / span 3; }
-        .ev-bat { grid-column: 4 / span 3; }
-        .ev-brit { grid-column: 1 / span 3; }
-        .ev-brita { grid-column: 4 / span 3; }
-        .ev-meta > div { grid-template-columns: 4.2rem minmax(0, 1fr); gap: 8px; }
-      }
-      @media (max-width: 520px) {
-        .ev-bar, .ev-bat, .ev-brit, .ev-brita { grid-column: 1 / span 6; }
-        .ev-bar .ev-name, .ev-bat .ev-name { font-size: var(--fs-xl); }
-      }
 
       /* ---- למה בנינו את VEYA ----
          סקשן סיפור, לא סקשן פיצ'רים: טור טקסט צר, פסקאות קצרות והרבה אוויר.
          אין כאן כרטיסים, מוקאפים או אייקונים — רק טיפוגרפיה וקו דק אחד. */
       #story { direction: rtl; }
-      /* הכותרת היא יחידה אחת: הלוגו המקורי (873×1186, ביחס המקורי שלו)
-         ואחריו המילים — לא לוגו וכותרת שמונחים זה לצד זה. */
+      /* פתיחת הסקשן היא רגע מותג, לא כותרת: שורה אחת שמובילה למטה, ומתחתיה
+         הלוגו המקורי (873×1186, ביחס שלו) בגודל אמיתי — הוא האלמנט המרכזי.
+         מסביב אוויר, בלי קישוט, בלי כרטיס ובלי קו. */
       .story-title {
-        max-width: 22ch; margin: 0 0 clamp(30px, 4vw, 48px);
-        font-family: var(--font-display); font-weight: 500; line-height: 1.12;
-        font-size: clamp(2.1rem, 4.6vw, 3.25rem); color: var(--cream-text);
-        display: flex; flex-wrap: wrap; align-items: baseline;
-        gap: 0 clamp(11px, 1.4vw, 18px);
+        max-width: none; margin: 0 0 clamp(72px, 9.5vw, 132px);
+        padding-top: clamp(12px, 3.6vw, 52px);
+        display: grid; justify-items: center; text-align: center;
+        gap: clamp(12px, 1.7vw, 26px);
       }
-      /* הלוגו יושב על אותו קו בסיס של המילים: המילה VEYA שבתוכו היא השורה,
-         והחותם מעליה. המכפיל 0.078 הוא המרחק מתחתית הקובץ לקו הבסיס של
-         המילה בתוכו (1093 מתוך 1186), כדי שהשורה תהיה באמת אחת. */
+      .story-title-lead {
+        display: block;
+        font-family: var(--font-display); font-weight: 500;
+        font-size: clamp(1.75rem, 4vw, 3rem); line-height: 1.2;
+        color: var(--cream-text);
+      }
       .story-mark {
-        --logo-h: clamp(92px, 11vw, 148px);
-        flex: none; display: block; width: auto; height: var(--logo-h);
-        margin-bottom: calc(var(--logo-h) * -0.078);
+        display: block; width: auto; height: clamp(178px, 24vw, 328px);
       }
       .story-body { max-width: 34rem; }
       .story-body p { margin: 0 0 1.15em; font-size: var(--fs-lg); line-height: 1.95; color: #d8ceb9; }
@@ -1456,9 +1393,10 @@
       .story-final { margin: 0 !important; font-family: var(--font-display); font-size: var(--fd-sm); color: var(--cream-text); line-height: 1.5; }
 
       @media (max-width: 720px) {
-        /* בטלפון נשארת שורה אחת — אותו יחס בין החותם למילים. אם הטקסט
-           גדל ולא נכנס, ה-wrap מוריד את המילים לשורה שנייה מתחת ללוגו. */
-        .story-mark { --logo-h: clamp(78px, 22vw, 96px); }
+        /* בטלפון הקומפוזיציה נשארת אותה קומפוזיציה, רק קומפקטית יותר —
+           אותו יחס בין השורה, הלוגו והאוויר סביבם. */
+        .story-title { margin-bottom: clamp(56px, 15vw, 78px); gap: clamp(10px, 3vw, 18px); }
+        .story-mark { height: clamp(150px, 44vw, 196px); }
         .story-body p { font-size: var(--fs-md); line-height: 1.9; }
         .story-open { font-size: var(--fs-lg) !important; }
         .story-chain { flex-direction: column; align-items: flex-start; gap: 14px; padding-inline-start: 18px; }
@@ -1571,7 +1509,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2523,27 +2461,16 @@
       /* ── כסף: הלילה מתבהר לשנהב, ואז חול למאזן ── */
       #gifts { --sm-up: var(--bg-night); --sm-hu: var(--seam-deep); --sm-dn: var(--bg-sand); --sm-hd: var(--seam-soft); padding-top: var(--seam-pad); }
       #giftcard { --sm-c: var(--bg-paper); --sm-dn: var(--bg-sand); --sm-hd: var(--seam-soft); padding-top: 24px; }
-      #after { --sm-up: var(--bg-paper); --sm-hu: var(--seam-soft); }
-      #events {
-        --sm-c: var(--bg-paper); --sm-dn: var(--bg-night); --sm-hd: var(--seam-deep);
-        position: relative; padding-bottom: var(--seam-pad);
-        background: linear-gradient(180deg,
-          var(--bg-sand) 0%,
-          var(--bg-paper) 38%,
-          var(--sm-c) calc(100% - var(--sm-hd) * 0.5),
-          color-mix(in oklab, var(--sm-dn) 1.6%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.425),
-          color-mix(in oklab, var(--sm-dn) 6.1%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.35),
-          color-mix(in oklab, var(--sm-dn) 12.9%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.275),
-          color-mix(in oklab, var(--sm-dn) 21.6%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.2),
-          color-mix(in oklab, var(--sm-dn) 28.2%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.15),
-          color-mix(in oklab, var(--sm-dn) 35.2%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.1),
-          color-mix(in oklab, var(--sm-dn) 42.5%, var(--sm-c)) calc(100% - var(--sm-hd) * 0.05),
-          color-mix(in oklab, var(--sm-dn) 50%, var(--sm-c)) 100%);
+      /* ── אחרי האירוע: החול מתכהה ישר ללילה של "איך זה עובד" ── */
+      #after {
+        --sm-up: var(--bg-paper); --sm-hu: var(--seam-soft);
+        --sm-dn: var(--bg-night); --sm-hd: var(--seam-deep);
+        padding-bottom: var(--seam-pad);
       }
 
       /* ── המסע בתוך VEYA: אותו לילה, נכנסים ויוצאים ממנו לאט ── */
       #how {
-        --sm-up: var(--bg-paper); --sm-hu: var(--seam-deep);
+        --sm-up: var(--bg-sand); --sm-hu: var(--seam-deep);
         /* אחריו בא סיפור המותג, כהה גם הוא — מעבר גוון רך בין שני משטחי לילה */
         --sm-dn: var(--bg-night-2); --sm-hd: var(--seam-soft);
         padding-top: var(--seam-pad); padding-bottom: var(--seam-pad);
@@ -3496,91 +3423,6 @@
         </div>
       </section>
 
-      <!-- ═════ 11. סוגי אירוע ═════ -->
-      <!-- אירוע אחר, אותה VEYA: בוחרים אירוע, ואותו מסך של VEYA מראה את
-           ההיגיון שלו — בחתונה צדדים → קבוצות → מוזמנים → שולחנות, בחינה
-           הערות ומי יושבת עם מי, בבר מצווה קבוצות שמתנהלות אחרת, בבת מצווה
-           שולחן החברות מול שולחנות המשפחה, בברית לוח אישורים שמתכווץ כשהאירוע
-           קרוב, ובבריתה אירוע נפרד עם רשימה והושבה משלו. התוויות הן המונחים של
-           המוצר (event_terms.py, rsvp_timeline.py — עד 14 יום); השמות להמחשה.
-           כל הלוחות באותו תא, כך שגובה הסקשן לא זז כשמחליפים אירוע. -->
-      <section class="eventtypes tone-light" id="events" aria-labelledby="events-title">
-        <div class="wrap">
-          <div class="ev-head reveal">
-            <h2 id="events-title" class="section-title">כל אירוע נראה אחרת.<br />VEYA מתאימה את עצמה.</h2>
-            <p class="section-sub">
-              הצדדים, הקבוצות, השפה ותבנית ההוצאות נגזרים מסוג האירוע שבחרתם —
-              לא רק הכותרת שמופיעה למעלה.
-            </p>
-          </div>
-
-          <!-- ═════ מפת סוגי האירוע ═══════════════════════════════════════
-               כל מה שכתוב כאן מגיע מהלקסיקון של המוצר עצמו:
-               ‎frontend/src/strings/eventTypes.ts ו-backend/app/event_terms.py
-               (sideLabels ו-groupOptions לכל סוג), ותבניות ההוצאות
-               ב-finance_categories.py. -->
-          <div class="ev">
-            <article class="ev-main reveal">
-              <p class="ev-k">הרשימה הגדולה ביותר</p>
-              <h3 class="ev-name"><a href="/events/wedding/">חתונה</a></h3>
-              <p class="ev-line">שתי משפחות, רשימה ארוכה, וכל אישור הגעה שמשנה מספר בשקלים.</p>
-              <dl class="ev-meta">
-                <div><dt>צדדים</dt><dd>חתן · כלה</dd></div>
-                <div><dt>קבוצות</dt><dd>משפחה קרובה · משפחה רחוקה · חברים · עבודה · צבא · מהלימודים · חברי ילדות · שכנים</dd></div>
-              </dl>
-            </article>
-
-            <article class="ev-item ev-henna reveal d1">
-              <h3 class="ev-name"><a href="/events/henna/">חינה</a></h3>
-              <p class="ev-line">אירוע נפרד עם רשימה, תאריך והוצאות משלו — לרוב שבוע לפני החתונה.</p>
-              <dl class="ev-meta">
-                <div><dt>צדדים</dt><dd>חתן · כלה</dd></div>
-                <div><dt>קבוצות</dt><dd>משפחה · צד משפחתי מורחב · חברים</dd></div>
-              </dl>
-            </article>
-
-            <article class="ev-item ev-bar reveal d2">
-              <h3 class="ev-name"><a href="/events/bar-mitzvah/">בר מצווה</a></h3>
-              <p class="ev-line">החוגג במרכז, והקבוצות מגיעות גם מהכיתה ומהחוגים.</p>
-              <dl class="ev-meta">
-                <div><dt>צדדים</dt><dd>משפחת האב · משפחת האם</dd></div>
-                <div><dt>קבוצות</dt><dd>משפחת האב · משפחת האם · חברים · כיתה · צוות/חוגים</dd></div>
-              </dl>
-            </article>
-
-            <article class="ev-item ev-bat reveal d2">
-              <h3 class="ev-name"><a href="/events/bat-mitzvah/">בת מצווה</a></h3>
-              <p class="ev-line">אותה מפה של משפחה וחברים — בשפה של החוגגת.</p>
-              <dl class="ev-meta">
-                <div><dt>צדדים</dt><dd>משפחת האב · משפחת האם</dd></div>
-                <div><dt>קבוצות</dt><dd>משפחת האב · משפחת האם · חברים · כיתה · צוות/חוגים</dd></div>
-              </dl>
-            </article>
-
-            <article class="ev-item ev-brit reveal d3">
-              <h3 class="ev-name"><a href="/events/brit/">ברית</a></h3>
-              <p class="ev-line">האירוע עם הכי פחות זמן — הרשימה נבנית לפעמים תוך יומיים.</p>
-              <dl class="ev-meta">
-                <div><dt>קבוצות</dt><dd>משפחה · חברים</dd></div>
-              </dl>
-            </article>
-
-            <article class="ev-item ev-brita reveal d3">
-              <h3 class="ev-name"><a href="/events/brita/">בריתה</a></h3>
-              <p class="ev-line">סוג אירוע עצמאי במערכת, עם נוסחים משלו — לא ברית עם כותרת אחרת.</p>
-              <dl class="ev-meta">
-                <div><dt>קבוצות</dt><dd>משפחה · חברים</dd></div>
-              </dl>
-            </article>
-          </div>
-
-          <p class="ev-end reveal">
-            חתונה גדולה או אירוע משפחתי קטן —<br />
-            <strong>השיטה נשארת. הפרטים משתנים.</strong>
-          </p>
-        </div>
-      </section>
-
       <!-- ═════ 12. איך זה עובד ═════ -->
       <section class="how on-dark" id="how" aria-labelledby="how-title">
         <div class="wrap">
@@ -3738,7 +3580,8 @@
            שנייה שמתחילה סקשן חדש. בלי מוקאפ, בלי כרטיסים, בלי נתונים. -->
       <section class="story on-dark" id="story" aria-labelledby="story-title">
         <div class="wrap">
-          <h2 id="story-title" class="story-title">
+          <h2 id="story-title" class="story-title reveal">
+            <span class="story-title-lead">למה בנינו את</span>
             <img
               class="story-mark"
               src="/veya_combined.png"
@@ -3748,7 +3591,6 @@
               loading="lazy"
               decoding="async"
             />
-            <span>למה בנינו</span>
           </h2>
 
           <div class="story-body reveal">
