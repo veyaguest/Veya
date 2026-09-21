@@ -2052,3 +2052,12 @@ textarea.adm-input {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.adm-notice {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: var(--a-radius);
+  background: var(--a-info-bg);
+  color: var(--a-info);
+  font-size: 13px;
+}

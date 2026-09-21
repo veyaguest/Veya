@@ -562,6 +562,8 @@ def delete_for_event(db: Session, event_id: int) -> None:
         models.FeatureRule.scope_type == "event", models.FeatureRule.scope_id == event_id,
     )).all():
         db.delete(r)
+    for ent in db.scalars(select(models.EventEntitlement).where(models.EventEntitlement.event_id == event_id)).all():
+        db.delete(ent)
 
 
 def detach_user(db: Session, user_id: int) -> None:

@@ -24,6 +24,7 @@ from app.routers import (
     admin_rules,
     admin_rsvp,
     admin_venues,
+    admin_commerce,
     auth,
     automation,
     call_center,
@@ -106,6 +107,7 @@ app.include_router(admin_people.router)
 app.include_router(admin_rules.router)
 app.include_router(admin_rsvp.router)
 app.include_router(admin_venues.router)
+app.include_router(admin_commerce.router)
 app.include_router(call_center.router)
 app.include_router(call_ops.router)
 app.include_router(events.router)
@@ -1548,6 +1550,7 @@ _RLS_MIGRATION_FILES = (
     "20_call_ops_rls.sql",
     "21_rules_features_rls.sql",
     "22_venue_images_rls.sql",
+    "23_commerce_rls.sql",
 )
 
 #: הפונקציות שקובצי 15–17 נשענים עליהן (קבצים 01 ו-08). בלעדיהן

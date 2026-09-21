@@ -6,7 +6,6 @@
  */
 import { useEffect, useState, type ReactNode } from 'react'
 import type { User } from '../types'
-import { AdminPayoutReview } from '../components/AdminPayoutReview'
 import { AdminPostponements } from '../components/AdminPostponements'
 import { fetchAdminMe, type AdminOverview } from './adminApi'
 import { AdminShell, pageAllowed } from './AdminShell'
@@ -20,6 +19,7 @@ import { FeaturesPage } from './pages/rules/FeaturesPage'
 import { RulesPage } from './pages/rules/RulesPage'
 import { RsvpPage } from './pages/rsvp/RsvpPage'
 import { VenuesPage } from './pages/venues/VenuesPage'
+import { AddonsPage, CouponsPage, FeesPage, PlansPage, SubscriptionsPage } from './pages/commerce/CommercePages'
 import {
   EmptyState,
   ErrorState,
@@ -28,7 +28,6 @@ import {
   PermissionContext,
   ToastProvider,
   useAsync,
-  useCan,
 } from './ui'
 import './admin.css'
 
@@ -134,10 +133,13 @@ function Page({
     case 'rules':
       return <RulesPage route={route} />
     case 'plans':
+      return <PlansPage />
     case 'addons':
+      return <AddonsPage />
     case 'coupons':
+      return <CouponsPage />
     case 'subscriptions':
-      return <InProgressPage page={route.page} />
+      return <SubscriptionsPage />
   }
 }
 
@@ -146,41 +148,6 @@ function LegacyPage({ title, subtitle, children }: { title: string; subtitle?: s
     <div className="adm-page adm-legacy">
       <PageHeader title={title} subtitle={subtitle} />
       {children}
-    </div>
-  )
-}
-
-function FeesPage() {
-  const can = useCan()
-  return (
-    <div className="adm-page adm-legacy">
-      <PageHeader title="עמלות" subtitle="עמלת המתנות ואישור פרטי חשבון לקבלת כספים" />
-      {can('payouts.review') ? (
-        <AdminPayoutReview />
-      ) : (
-        <EmptyState title="אישור פרטי חשבון זמין ל-Super Admin בלבד" />
-      )}
-    </div>
-  )
-}
-
-const IN_PROGRESS: Record<string, string> = {
-  features: "פיצ'רים והרשאות",
-  rules: 'כללי המערכת',
-  plans: 'מסלולים ומחירים',
-  addons: 'תוספים',
-  coupons: 'קופונים והטבות',
-  subscriptions: 'מנויים',
-}
-
-function InProgressPage({ page }: { page: string }) {
-  return (
-    <div className="adm-page">
-      <PageHeader title={IN_PROGRESS[page] ?? ''} />
-      <EmptyState
-        title="המסך הזה עדיין לא מחובר"
-        text="אין עדיין נתונים או פעולות אמיתיות מאחוריו, ולכן הוא לא מציג כלום במקום להציג נתונים מזויפים."
-      />
     </div>
   )
 }
