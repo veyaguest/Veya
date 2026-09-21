@@ -334,8 +334,11 @@ def test_scenario_7_8_schedule_change_recomputes_future_rounds() -> None:
 
 def test_reassign_is_audited_and_caller_sees_only_own_tasks() -> None:
     api, _ = bootstrap()
-    a = api.add_guest("לדני", _phone(8001))
-    b = api.add_guest("ליוסי", _phone(8002))
+    # מסד הבדיקות נשמר בין ריצות — שמות ייחודיים. אותיות בלבד: ספרות בחיפוש
+    # מתפרשות גם כחלק ממספר טלפון.
+    tag = "".join("abcdefghijklmnop"[int(c, 16)] for c in uuid.uuid4().hex[:8])
+    a = api.add_guest(f"לדני {tag}", _phone(8001))
+    b = api.add_guest(f"ליוסי {tag}", _phone(8002))
     configure_track(api)
     _, admin = _admin()
     danny_id, danny = phone_agent(api, display_name="דני")
@@ -362,8 +365,8 @@ def test_reassign_is_audited_and_caller_sees_only_own_tasks() -> None:
         db.close()
     assert logs and "ליוסי" in logs[-1].summary and logs[-1].changes[0]["after"] == "יוסי"
 
-    mine = api.client.get("/admin/call-ops/my/tasks?q=לדני", headers=danny).json()
-    others = api.client.get("/admin/call-ops/my/tasks?q=ליוסי", headers=danny).json()
+    mine = api.client.get(f"/admin/call-ops/my/tasks?q=לדני {tag}", headers=danny).json()
+    others = api.client.get(f"/admin/call-ops/my/tasks?q=ליוסי {tag}", headers=danny).json()
     assert others["total"] == 0, "טלפן רואה משימה שהוקצתה לטלפן אחר"
     mine_ids = [row["guest_id"] for row in mine["items"]]
     assert a["id"] in mine_ids and b["id"] not in mine_ids, "טלפן רואה משימה שהוקצתה לטלפן אחר"

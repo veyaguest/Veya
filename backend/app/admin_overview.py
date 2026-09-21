@@ -154,16 +154,24 @@ def attention(db: Session, now: Optional[datetime] = None) -> list[AttentionItem
         items.append(AttentionItem(
             "failed_messages", "critical", "הודעות WhatsApp שנכשלו",
             f"ב-{len(failed_by_event)} אירועים, ב-{FAILED_MESSAGE_DAYS} הימים האחרונים",
-            sum(failed_by_event.values()), "events", sorted(failed_by_event),
+            sum(failed_by_event.values()), "rsvp", sorted(failed_by_event),
         ))
 
-    not_handled = call_center.build_queues_for_scope(db, call_center.NOT_HANDLED, now=now)
-    overdue = sum(len(q.guests) for q in not_handled)
+    # אותו מקור כמו מרכז הטלפנים (פנקס המשימות), כדי ששני המסכים לא יסתרו.
+    from app import call_ops
+
+    today_iso = local_time.israel_date(now).isoformat()
+    overdue_rows = db.execute(
+        select(models.CallTask.event_id, func.count(models.CallTask.id)).where(
+            models.CallTask.status == call_ops.OPEN, models.CallTask.due_date < today_iso,
+        ).group_by(models.CallTask.event_id)
+    ).all()
+    overdue = sum(n for _, n in overdue_rows)
     if overdue:
         items.append(AttentionItem(
             "overdue_calls", "critical", "שיחות שהיו צריכות להתבצע ולא טופלו",
-            f"ב-{len(not_handled)} אירועים", overdue, "calls",
-            sorted(q.event.id for q in not_handled),
+            f"ב-{len(overdue_rows)} אירועים", overdue, "calls",
+            sorted(e for e, _ in overdue_rows),
         ))
 
     wrong_logs = db.scalars(
@@ -234,6 +242,12 @@ def pulse(db: Session, items: list[AttentionItem], mods: list[ModuleStatus],
 
 def overview(db: Session) -> dict:
     now = datetime.utcnow()
+    # פתיחת הדשבורד היא גם "טריגר יומי": בלי cron, זה מה שמבטיח שתכנון השיחות
+    # של היום נשמר גם אם אף אחד לא נכנס למרכז הטלפנים.
+    from app import call_ops
+
+    call_ops.sync(db)
+    db.commit()
     mods = modules(db)
     items = attention(db, now)
     return {
@@ -345,6 +359,29 @@ def search(db: Session, q: str) -> list[dict]:
         groups.append({"type": "venue", "label": "אולמות", "items": [
             {"id": v.id, "title": v.name, "subtitle": " · ".join(filter(None, [v.city, v.address]))}
             for v in venues
+        ]})
+
+    feature_hits = []
+    from app import features as feature_registry
+
+    ql = q.lower()
+    for key, f in feature_registry.BUILTIN.items():
+        if ql in f.label.lower() or ql in key:
+            feature_hits.append({"id": key, "title": f.label, "subtitle": "פיצ'ר"})
+    for flag in db.scalars(select(models.FeatureFlag).where(
+        or_(models.FeatureFlag.label.ilike(like), models.FeatureFlag.key.ilike(like))
+    ).limit(SEARCH_LIMIT)).all():
+        if flag.key not in feature_registry.BUILTIN:
+            feature_hits.append({"id": flag.key, "title": flag.label or flag.key, "subtitle": "פיצ'ר"})
+    if feature_hits:
+        groups.append({"type": "feature", "label": "פיצ'רים", "items": feature_hits[:SEARCH_LIMIT]})
+
+    plans = db.scalars(select(models.Plan).where(
+        or_(models.Plan.name.ilike(like), models.Plan.key.ilike(like))
+    ).limit(SEARCH_LIMIT)).all()
+    if plans:
+        groups.append({"type": "plan", "label": "מסלולים", "items": [
+            {"id": p.id, "title": p.name, "subtitle": p.key} for p in plans
         ]})
 
     logs = db.scalars(
