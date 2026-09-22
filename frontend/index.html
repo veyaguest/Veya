@@ -586,14 +586,26 @@
       .cookie-banner-static-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
       /* ===== Hero product mockup ===== */
-      /* ═════ Hero: MacBook מאחור + iPhone חופף מלפנים ═════════════════
+      /* ═════ Hero: iPhone משמאל, MacBook מימין — זה לצד זה ═════════════
          קומפוזיציה אחת. כל המידות נגזרות מרוחב הקומפוזיציה (cqw), כך
-         שהיחס בין המכשירים זהה בכל רוחב. RTL: ה-MacBook נדחף לצד הסוף
-         (שמאל), והטלפון עומד בצד ההתחלה (ימין) וחופף את הפינה שלו. */
-      .dv { container-type: inline-size; position: relative; max-width: 760px; margin: 0 auto; padding-bottom: 3cqw; }
+         שהיחס בין המכשירים זהה בכל רוחב. שני המכשירים יושבים על אותו
+         קו תחתון (align-items: flex-end), ובאותה נטייה בדיוק: הטיה אחורה
+         קלה אחת, סביב הקצה התחתון, מאותה נקודת מבט (perspective על ההורה).
+         בלי סיבוב לצד — כך שהקווים האופקיים נשארים אופקיים ומקבילים.
+         השמאל/ימין פיזיים (direction: ltr על השורה בלבד); בתוך המכשירים
+         הכיוון נשאר של הדף.
+         המידות: המחשב 71.4cqw והטלפון 17cqw מתוך 892px — אותו גודל בפיקסלים
+         כמו קודם (638px ו-152px). בסיס המחשב רחב ב-6% מכל צד מהמכסה, ולכן
+         הרווח ביניהם מחשב גם אותו, ושוליים מימין מאזנים את מרכז הקומפוזיציה. */
+      .dv {
+        container-type: inline-size; position: relative; max-width: 892px; margin: 0 auto; padding-bottom: 3cqw;
+        display: flex; align-items: flex-end; justify-content: center;
+        direction: ltr; perspective: 2600px; perspective-origin: 50% 100%;
+      }
+      .dv > * { direction: rtl; }
       .mbp {
-        position: relative; width: 84cqw; margin-inline-start: auto;
-        transform: perspective(2600px) rotateY(-5deg) rotateX(2deg); transform-origin: 70% 60%;
+        position: relative; flex: none; width: 71.4cqw; margin-right: 4.3cqw;
+        transform: rotateX(2deg); transform-origin: 50% 100%;
       }
       /* המכסה: זכוכית שחורה דקה בתוך שפת אלומיניום */
       .mbp-lid {
@@ -637,23 +649,25 @@
         content: ""; position: absolute; z-index: -1; left: -2%; right: -2%; bottom: -2.6cqw; height: 4.2cqw;
         background: radial-gradient(50% 50% at 50% 50%, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0) 100%);
       }
-      /* הטלפון: חופף את פינת ה-MacBook, בזווית של כ-7 מעלות */
+      /* הטלפון: משמאל למחשב, על אותו קו תחתון ובאותה נטייה בדיוק */
       .dv .dv-phone {
-        --ph-w: 20cqw; position: absolute; z-index: 3; inset-inline-start: 3cqw; bottom: 0;
-        transform: rotate(-7deg); transform-origin: 50% 90%;
+        /* הרווח יושב על הטלפון ולא כ-gap על ההורה: cqw בתוך .dv עצמו נמדד
+           מול הדף, לא מול הקומפוזיציה. */
+        --ph-w: 17cqw; position: relative; flex: none; order: -1; z-index: 3; margin-right: 7.3cqw;
+        transform: rotateX(2deg); transform-origin: 50% 100%;
       }
       .dv .dv-phone::after {
         content: ""; position: absolute; z-index: -1; left: -12%; right: -12%; bottom: -3.5%; height: 7%;
         background: radial-gradient(50% 50% at 50% 50%, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0) 100%);
       }
       @media (max-width: 600px) {
-        /* בטלפון: המכשירים גדולים יותר ביחס, והטלפון יורד מתחת לפינת המחשב */
-        .dv { padding-top: 0; padding-bottom: 50cqw; }
-        .mbp { width: 90cqw; }
-        .dv .dv-phone { --ph-w: 32cqw; inset-inline-start: 2cqw; bottom: 0; transform: rotate(-6deg); }
+        /* בטלפון: אותה שורה ואותו קו תחתון; הטלפון גדל מעט ביחס, כדי
+           שיישאר קריא ליד המחשב. */
+        .mbp { width: 68cqw; margin-right: 4.1cqw; }
+        .dv .dv-phone { --ph-w: 20.5cqw; margin-right: 7.1cqw; }
       }
 
-      .hero-devices { position: relative; max-width: 760px; margin: 56px auto 0; }
+      .hero-devices { position: relative; max-width: 892px; margin: 56px auto 0; }
       .hero-devices.reveal { transform: translateY(20px) scale(0.96); }
       .hero-devices.reveal.in { transform: none; }
 
