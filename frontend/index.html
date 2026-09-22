@@ -559,6 +559,9 @@
       /* החלק הזהוב נשאר יחידה אחת: אם הכותרת נשברת, הוא עובר שלם לשורה משלו
          ולא נחתך באמצע (ואם הוא ארוך מהשורה, הוא נשבר בתוך עצמו). */
       .ttl-accent { display: inline-block; color: var(--gold-deep); }
+      /* חלק ראשון שחייב להישאר שלם (כשהאיזון היה מושך ממנו מילה לשורה השנייה) */
+      .ttl-lead { display: inline-block; }
+      @media (max-width: 560px) { .ttl-lead { display: inline; } }
       .on-dark .ttl-accent, .band .ttl-accent { color: var(--gold-light); }
       .band p { color: #cabfa9; max-width: 540px; margin: 0 auto 30px; font-size: var(--fs-lg); }
 
@@ -1097,12 +1100,7 @@
          בדסקטופ הצילום עובר לצד שמאל ותופס את שתי השורות, כך שהוא
          נשאר הדבר הגדול בסקשן. */
       .gh-grid { display: grid; gap: 26px; align-items: center; }
-      /* הבלוק תופס את כל העמודה, והפסקאות נשארות במידה שהייתה לו (46ch של
-         גוף הטקסט = 22.6rem). הכותרת נמדדת לפי רוחב העמודה, כדי שהחלק הראשון
-         שלה ייכנס בשורה אחת גם בעמודה של חצי מסך. */
-      .gh-text { container-type: inline-size; }
-      .gh-text > p { max-width: min(22.6rem, 100%); }
-      .gh-text .section-title { font-size: clamp(2.3rem, 10.4cqi, 3.6rem); }
+      .gh-text { max-width: min(46ch, 100%); }
       .gh-lead { font-size: var(--fs-lg); color: var(--body); line-height: 1.7; margin: 0 0 18px; }
       .gh-less { font-size: var(--fs-lg); color: var(--charcoal); line-height: 2; margin: 0 0 20px; }
       .gh-punch {
@@ -1548,7 +1546,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2682,6 +2680,7 @@
     
     
     
+    
     </style>
     <script>
       /* צילום שנקטע בטעינה: ניסיון חוזר אחד, והמסגרת נשארת. מוגדר ב-head כדי
@@ -2986,9 +2985,11 @@
            הרץ על אירוע דמו, ולכן אין בו פרטים של אף אדם אמיתי. -->
       <section class="gh tone-alt" aria-labelledby="gh-title">
         <div class="wrap">
+          <div class="section-head reveal">
+            <h2 id="gh-title" class="section-title"><span class="ttl-lead">כל מה שהאורחים צריכים,</span> <span class="ttl-accent">בקישור אחד.</span></h2>
+          </div>
           <div class="gh-grid">
             <div class="gh-text reveal">
-              <h2 id="gh-title" class="section-title">כל מה שהאורחים צריכים, <span class="ttl-accent">בקישור אחד.</span></h2>
               <p class="gh-lead">
                 ההזמנה, הפרטים, איך מגיעים ואיפה מאשרים שמגיעים — הכול נמצא שם.
               </p>
