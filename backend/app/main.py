@@ -40,6 +40,7 @@ from app.routers import (
     guests,
     hall,
     import_guests,
+    jobs,
     media_serve,
     messaging,
     partner,
@@ -139,6 +140,7 @@ app.include_router(public_calc.router)
 app.include_router(public_library.router)
 # "השאירו פרטים ונחזור אליכם" מדף הנחיתה — אנונימי, מוגבל-קצב, כתיבה בלבד.
 app.include_router(public_leads.router)
+app.include_router(jobs.router)
 
 # הגשת קבצי תמונות שהועלו (הזמנה/סקיצת אולם) מתוך backend/uploads.
 from app.media import UPLOADS_DIR  # noqa: E402
@@ -299,6 +301,13 @@ _EXTRA_COLUMNS = {
         # נוסף אחרי הטבלה עצמה — מאפשר ל"מספר שגוי" להיסגר אוטומטית כשהמספר
         # מתעדכן (ראו models.CallLog.phone_at_call).
         "phone_at_call": "TEXT DEFAULT ''",
+        # מחזור האירוע של השיחה + המשימה שבמסגרתה בוצעה. שיחות קיימות מקבלות
+        # מחזור 1 וה-``_migrate_call_log_cycles`` מתקן את אלה של אירועים שנדחו.
+        "event_cycle": "INTEGER DEFAULT 1",
+        "task_id": "INTEGER",
+    },
+    "call_tasks": {
+        "callback_at": "TIMESTAMP",
     },
     "payout_accounts": {
         # הטבלה נפרסה לייצור לפני שנוסף לה מסלול הסטטוסים. ברירת המחדל
@@ -662,6 +671,41 @@ def _migrate_expense_payments() -> None:
         if created:
             db.commit()
             print(f"[migrations] {created} תשלומים הומרו ליומן התשלומים (חד-פעמי)")
+
+
+def _migrate_call_log_cycles() -> None:
+    """משייך שיחות ישנות למחזור האירוע הנכון — **בטוח לחזרה.**
+
+    עד שנוספה ``call_logs.event_cycle`` כל שיחה נרשמה בלי מחזור, ולכן אחרי
+    דחיית אירוע שיחות מהמחזור הקודם נספרו גם במחזור החדש. המחזור של שיחה
+    נגזר מהעובדה היציבה היחידה: כמה מחזורים של האירוע נסגרו לפני שהשיחה
+    התקיימה (``event_cycles.closed_at``). רק אירועים שנדחו (``cycle_number``
+    > 1) נסרקים, והחישוב דטרמיניסטי — הרצה חוזרת לא משנה דבר.
+    """
+    with MigrationSessionLocal() as db:
+        try:
+            postponed = db.query(models.Event.id).filter(models.Event.cycle_number > 1).all()
+            ids = [e for (e,) in postponed]
+            if not ids:
+                return
+            closed: dict[int, list] = {}
+            for c in db.query(models.EventCycle).filter(models.EventCycle.event_id.in_(ids)).all():
+                if c.closed_at is not None:
+                    closed.setdefault(c.event_id, []).append(c.closed_at)
+            fixed = 0
+            for log in db.query(models.CallLog).filter(models.CallLog.event_id.in_(ids)).all():
+                if log.created_at is None:
+                    continue
+                cycle = 1 + sum(1 for t in closed.get(log.event_id, []) if t <= log.created_at)
+                if (log.event_cycle or 1) != cycle:
+                    log.event_cycle = cycle
+                    fixed += 1
+            db.commit()
+            if fixed:
+                print(f"[veya:migrate] שויכו {fixed} שיחות למחזור האירוע הנכון", flush=True)
+        except Exception as exc:  # noqa: BLE001 — לא מפיל את עליית השרת
+            db.rollback()
+            print(f"[veya:migrate] שיוך שיחות למחזור נכשל: {exc!r}", flush=True)
 
 
 def _migrate_brita_split() -> None:
@@ -1551,11 +1595,12 @@ _RLS_MIGRATION_FILES = (
     "21_rules_features_rls.sql",
     "22_venue_images_rls.sql",
     "23_commerce_rls.sql",
+    "24_agent_task_access_rls.sql",
 )
 
 #: הפונקציות שקובצי 15–17 נשענים עליהן (קבצים 01 ו-08). בלעדיהן
 #: ``CREATE POLICY`` ייכשל — ואז עדיף לדלג בקול מאשר להשאיר מדיניות חלקית.
-_RLS_REQUIRED_FUNCTIONS = ("app_manages_event", "app_is_admin", "app_agent_assigned_to_event")
+_RLS_REQUIRED_FUNCTIONS = ("app_manages_event", "app_is_admin", "app_agent_assigned_to_event", "app_is_phone_agent")
 
 
 def _ensure_rls_policies() -> None:
@@ -1802,6 +1847,8 @@ def on_startup() -> None:
     # "בריתה" כ-event_type עצמאי משלה (2026-08-10) — מתקנת שיירי דאטה
     # משני תיקוני הכיוון הקודמים. חייבת לרוץ לפני הזריעה למטה.
     _migrate_brita_split()
+    # שיחות ממחזור קודם של אירוע שנדחה — לא נספרות במחזור הנוכחי.
+    _migrate_call_log_cycles()
     # זורע את קטלוג ברירות המחדל הגלובלי לרצף התקשורת (7 סוגי אירוע × 6
     # סוגי הודעה, ריק) אם ריק.
     seed_message_defaults()

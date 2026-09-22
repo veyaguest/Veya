@@ -1,16 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  callCenterGuest,
-  callCenterOverview,
-  callCenterQueue,
-  callCenterRecordOutcome,
-} from '../api'
-import type {
-  CallCenterGuestDetail,
-  CallCenterGuestRow,
-  CallOutcome,
-  User,
-} from '../types'
+import { useCallback, useEffect, useState } from 'react'
+import { callOps, type MyDay, type TaskDetail, type TaskRow } from '../admin/callOpsApi'
+import type { CallOutcome, User } from '../types'
 import { AccountCenter } from './AccountCenter'
 import './PhoneAgentApp.css'
 
@@ -18,33 +8,46 @@ import './PhoneAgentApp.css'
  * מסך הטלפן — "שיחות להיום".
  *
  * זה **כל** הממשק שמשתמש עם תפקיד ``phone_agent`` רואה: אין סרגל אדמין, אין
- * ניהול מוזמנים, אין הושבה ואין הגדרות. הוא מדבר עם אותן ארבע נקודות קצה
- * שמסך ה-Call Center של האדמין משתמש בהן (``/admin/call-center``), כי הלוגיקה
- * זהה — רק התצוגה שונה: פשוטה, מובייל-פירסט, ובנויה לרצף שיחות ארוך.
+ * ניהול מוזמנים, אין הושבה ואין הגדרות.
  *
- * חשוב: ההסתרה כאן היא **נוחות, לא אבטחה**. ההרשאה עצמה נאכפת בשרת
- * (backend/app/roles.py, EventAccess, get_current_caller) — גם קריאה ישירה
- * ל-API מחוץ למסך הזה תיחסם.
+ * מקור האמת היחיד הוא פנקס המשימות (``call_tasks``, ``/admin/call-ops/my/*``):
+ * הטלפן רואה **רק משימות שהוקצו לו**, והמסך לא מחשב תור בעצמו — הסדר, הסבב,
+ * המחזור והשיחות החוזרות נקבעים בשרת. כל תוצאה נרשמת על המשימה עצמה.
+ *
+ * חשוב: ההסתרה כאן היא **נוחות, לא אבטחה**. ההרשאה נאכפת בשרת
+ * (get_current_caller + סינון לפי assignee_id + RLS).
  */
 
-const PAGE_SIZE = 200
-
-/** חמש הפעולות שהטלפן מבצע אחרי שיחה (§3 באפיון). */
+/** תוצאות השיחה (§B באיחוד מרכז הטלפנים). */
 const AGENT_OUTCOMES: {
   key: CallOutcome
   icon: string
   label: string
   tone: 'good' | 'bad' | 'neutral'
 }[] = [
-  { key: 'confirmed', icon: '✅', label: 'הגיע', tone: 'good' },
+  { key: 'confirmed', icon: '✅', label: 'מגיע', tone: 'good' },
   { key: 'declined', icon: '❌', label: 'לא מגיע', tone: 'bad' },
+  { key: 'maybe', icon: '🤔', label: 'עדיין לא בטוח', tone: 'neutral' },
+  { key: 'answered', icon: '💬', label: 'ענה, בלי החלטה', tone: 'neutral' },
   { key: 'no_answer', icon: '📞', label: 'לא ענה', tone: 'neutral' },
+  { key: 'busy', icon: '⏳', label: 'לא זמין / תפוס', tone: 'neutral' },
   { key: 'wrong_number', icon: '📵', label: 'מספר שגוי', tone: 'neutral' },
+  { key: 'note', icon: '📝', label: 'הערה בלבד', tone: 'neutral' },
   { key: 'callback', icon: '📅', label: 'לחזור מאוחר יותר', tone: 'neutral' },
 ]
 
+/** תוצאות שצריכות פרט נוסף לפני שמירה. השאר נשמרות בלחיצה אחת. */
+const NEEDS_DETAIL: CallOutcome[] = ['confirmed', 'callback', 'note']
+
 /** כמה אנשים מגיעים — בחירה מהירה, בלי מקלדת. */
 const PARTY_CHOICES = [1, 2, 3, 4, 5, 6, 7, 8]
+
+const RSVP_LABELS: Record<string, string> = {
+  pending: 'טרם השיב',
+  maybe: 'עדיין לא בטוח',
+  confirmed: 'מגיע',
+  declined: 'לא מגיע',
+}
 
 function telHref(phone: string): string {
   return `tel:${phone.replace(/[^\d+]/g, '')}`
@@ -62,8 +65,7 @@ function eventDateText(iso: string): string {
 const LOCAL_TIMEZONE = 'Asia/Jerusalem'
 
 /** מפרש ISO string שמגיע מה-Backend כ-UTC נאיבי (בלי Z/offset). בלי הסימון
- * המפורש הזה, ``new Date()`` היה מפרש את המחרוזת כזמן מקומי של המכשיר
- * במקום UTC (ראו ההסבר המלא ב-AdminCallCenter.tsx::parseNaiveUtc). */
+ * המפורש הזה, ``new Date()`` היה מפרש את המחרוזת כזמן מקומי של המכשיר. */
 function parseNaiveUtc(iso: string): Date {
   const hasZone = /[Zz]|[+-]\d{2}:?\d{2}$/.test(iso)
   return new Date(hasZone ? iso : `${iso}Z`)
@@ -88,32 +90,31 @@ export function PhoneAgentApp({
   onLogout: () => void
   onUserUpdated: (user: User) => void
 }) {
-  const [rows, setRows] = useState<CallCenterGuestRow[] | null>(null)
-  const [done, setDone] = useState(0)
+  const [work, setWork] = useState<TaskRow[] | null>(null)
+  const [later, setLater] = useState<TaskRow[]>([])
+  const [day, setDay] = useState<MyDay | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [openGuestId, setOpenGuestId] = useState<number | null>(null)
-  // מצב עבודה רציף: אחרי שמירה עוברים אוטומטית למוזמן הבא, בלי לחזור לרשימה.
+  const [openTaskId, setOpenTaskId] = useState<number | null>(null)
+  // מצב עבודה רציף: אחרי שמירה עוברים אוטומטית למשימה הבאה, בלי לחזור לרשימה.
   const [streak, setStreak] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
 
-  // "שיחות להיום" בעיני הטלפן = שיחות של היום ממש + שיחות ישנות שעדיין לא
-  // טופלו ("לא טופל", ראו backend/app/call_center.py). היא לא צריכה לדעת
-  // על החלוקה הזו — שתי הבקשות ממוזגות לרשימת עבודה אחת, ישנות קודם (הכי
-  // דחוף), כדי שאף מוזמן לא ייעלם לה רק כי scope=today הפך למחמיר יותר.
+  // השרת מחזיר את רשימת העבודה מוכנה: ``work`` = מה לחייג עכשיו (כולל
+  // באיחור, בלי שיחות חוזרות שמועדן לא הגיע ובלי סבבים מושהים), ``later`` =
+  // שיחות חוזרות שנקבעו לשעה מאוחרת יותר. אין כאן מיזוג או חישוב תור.
   const load = useCallback(async () => {
     try {
-      const [todayOverview, overdueOverview, todayPage, overduePage] = await Promise.all([
-        callCenterOverview('today'),
-        callCenterOverview('not_handled'),
-        callCenterQueue({ scope: 'today', q: query, limit: PAGE_SIZE, offset: 0 }),
-        callCenterQueue({ scope: 'not_handled', q: query, limit: PAGE_SIZE, offset: 0 }),
+      const [summary, workPage, laterPage] = await Promise.all([
+        callOps.myDay(),
+        callOps.myTasks('work', query),
+        callOps.myTasks('later', query),
       ])
-      const merged = [...overduePage.items, ...todayPage.items]
-      setDone(todayOverview.done + overdueOverview.done)
-      setRows(merged)
+      setDay(summary)
+      setWork(workPage.items)
+      setLater(laterPage.items)
       setError(null)
-      return merged
+      return workPage.items
     } catch (err) {
       setError(err instanceof Error ? err.message : 'טעינת רשימת השיחות נכשלה')
       return null
@@ -125,31 +126,29 @@ export function PhoneAgentApp({
     return () => window.clearTimeout(timer)
   }, [load, query])
 
-  const followups = useMemo(
-    () => (rows ?? []).filter((r) => r.is_followup).length,
-    [rows],
-  )
-
-  /** אחרי תיעוד שיחה: רענון, ואם אנחנו ברצף — קפיצה למוזמן הבא. */
-  async function afterOutcome(savedGuestId: number) {
+  /** אחרי תיעוד שיחה: רענון, ואם אנחנו ברצף — קפיצה למשימה הבאה. */
+  async function afterOutcome(savedTaskId: number, keepOpen: boolean) {
     const fresh = await load()
+    if (keepOpen) return
     if (!streak || !fresh) {
-      setOpenGuestId(null)
+      setOpenTaskId(null)
       return
     }
-    const next = fresh.find((r) => r.guest_id !== savedGuestId)
-    setOpenGuestId(next ? next.guest_id : null)
+    const next = fresh.find((r) => r.task_id !== null && r.task_id !== savedTaskId)
+    setOpenTaskId(next?.task_id ?? null)
     if (!next) setStreak(false)
   }
 
   function startStreak() {
-    const first = rows?.[0]
-    if (!first) return
+    const first = work?.find((r) => r.task_id !== null)
+    if (!first?.task_id) return
     setStreak(true)
-    setOpenGuestId(first.guest_id)
+    setOpenTaskId(first.task_id)
   }
 
-  const waiting = rows?.length ?? 0
+  const waiting = day?.counts.work ?? work?.length ?? 0
+  const made = day?.counts.calls_made ?? 0
+  const waitingLater = day?.counts.later ?? later.length
 
   return (
     <div className="pa-app" dir="rtl">
@@ -174,65 +173,82 @@ export function PhoneAgentApp({
         <div className="pa-head">
           <h1 className="pa-title">שיחות להיום</h1>
           <p className="pa-sub">
-            שלום {user.display_name || 'לך'} — {waiting + done} שיחות היום
+            שלום {user.display_name || 'לך'} — אלה השיחות שהוקצו לך
           </p>
         </div>
 
         <div className="pa-stats">
-          <Stat value={waiting} label="ממתינות" tone="warn" />
-          <Stat value={done} label="טופלו" tone="good" />
-          <Stat value={followups} label="שיחות המשך" />
+          <Stat value={waiting} label="לחייג עכשיו" tone="warn" />
+          <Stat value={made} label="שיחות שביצעת היום" tone="good" />
+          <Stat value={waitingLater} label="לחזור מאוחר יותר" />
         </div>
 
         {error && <div className="pa-error">{error}</div>}
 
-        {rows === null ? (
+        {work === null ? (
           <div className="pa-loading">טוען…</div>
-        ) : rows.length === 0 ? (
-          <div className="pa-empty">
-            <div className="pa-empty-icon">☕</div>
-            <h2>אין שיחות ממתינות</h2>
-            <p>
-              {query
-                ? 'אין מוזמן שמתאים לחיפוש הזה.'
-                : 'כל השיחות שהיו מוכנות להיום טופלו. כשייפתח סבב חדש, המוזמנים יופיעו כאן אוטומטית.'}
-            </p>
-          </div>
         ) : (
           <>
-            <div className="pa-toolbar">
-              <button type="button" className="pa-start" onClick={startStreak}>
-                ▶ התחל שיחות
-              </button>
-              <input
-                type="search"
-                className="pa-search"
-                placeholder="חיפוש לפי שם או טלפון…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
+            {(work.length > 0 || query) && (
+              <div className="pa-toolbar">
+                <button type="button" className="pa-start" onClick={startStreak} disabled={work.length === 0}>
+                  ▶ התחל שיחות
+                </button>
+                <input
+                  type="search"
+                  className="pa-search"
+                  placeholder="חיפוש לפי שם או טלפון…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
+            )}
 
-            <ul className="pa-list">
-              {rows.map((row) => (
-                <li key={row.guest_id}>
-                  <TaskCard row={row} onOpen={() => setOpenGuestId(row.guest_id)} />
-                </li>
-              ))}
-            </ul>
+            {work.length === 0 ? (
+              <div className="pa-empty">
+                <div className="pa-empty-icon">☕</div>
+                <h2>אין שיחות ממתינות</h2>
+                <p>
+                  {query
+                    ? 'אין מוזמן שמתאים לחיפוש הזה.'
+                    : 'כל השיחות שהוקצו לך להיום טופלו. כשתוקצה לך משימה חדשה, היא תופיע כאן.'}
+                </p>
+              </div>
+            ) : (
+              <ul className="pa-list">
+                {work.map((row) => (
+                  <li key={row.task_id ?? `g${row.guest_id}`}>
+                    <TaskCard row={row} onOpen={() => row.task_id && setOpenTaskId(row.task_id)} />
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {later.length > 0 && (
+              <>
+                <h2 className="pa-section pa-later-title">שיחות חוזרות מאוחר יותר</h2>
+                <ul className="pa-list">
+                  {later.map((row) => (
+                    <li key={row.task_id ?? `g${row.guest_id}`}>
+                      <TaskCard row={row} onOpen={() => row.task_id && setOpenTaskId(row.task_id)} />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </>
         )}
       </main>
 
-      {openGuestId !== null && (
+      {openTaskId !== null && (
         <CallSheet
-          guestId={openGuestId}
+          taskId={openTaskId}
           streak={streak}
           onClose={() => {
-            setOpenGuestId(null)
+            setOpenTaskId(null)
             setStreak(false)
           }}
-          onSaved={() => afterOutcome(openGuestId)}
+          onSaved={(keepOpen) => afterOutcome(openTaskId, keepOpen)}
         />
       )}
 
@@ -266,19 +282,20 @@ function Stat({
 }
 
 /** כרטיס משימה אחת — כל מה שצריך כדי להתחיל לחייג. */
-function TaskCard({ row, onOpen }: { row: CallCenterGuestRow; onOpen: () => void }) {
+function TaskCard({ row, onOpen }: { row: TaskRow; onOpen: () => void }) {
+  const followup = row.is_followup || row.reason === 'callback' || row.reason === 'manual'
   return (
-    <div className={`pa-card ${row.is_followup ? 'pa-card-followup' : ''}`}>
+    <div className={`pa-card ${followup ? 'pa-card-followup' : ''}`}>
       <button type="button" className="pa-card-main" onClick={onOpen}>
         <div className="pa-card-name">
-          {row.full_name}
-          {row.is_followup && <span className="pa-badge">שיחת המשך</span>}
+          {row.guest_name}
+          {followup && <span className="pa-badge">{row.reason_label}</span>}
         </div>
         <div className="pa-card-phone" dir="ltr">
           {row.phone}
         </div>
         <div className="pa-card-meta">
-          <span>{row.event_hosts}</span>
+          <span>{row.event_label}</span>
           {row.event_date && (
             <>
               <span className="pa-dot">·</span>
@@ -287,9 +304,15 @@ function TaskCard({ row, onOpen }: { row: CallCenterGuestRow; onOpen: () => void
           )}
         </div>
         <div className="pa-card-meta pa-card-sub">
-          <span>סבב טלפונים {row.round_number}</span>
+          <span>{row.round_label}</span>
           <span className="pa-dot">·</span>
           <span>{row.party_size} מוזמנים</span>
+          {row.attempts > 0 && (
+            <>
+              <span className="pa-dot">·</span>
+              <span>ניסיון {row.attempts + 1}</span>
+            </>
+          )}
           {row.callback_at && (
             <>
               <span className="pa-dot">·</span>
@@ -299,7 +322,7 @@ function TaskCard({ row, onOpen }: { row: CallCenterGuestRow; onOpen: () => void
         </div>
       </button>
       <div className="pa-card-actions">
-        <a className="pa-dial" href={telHref(row.phone)} aria-label={`חיוג ל${row.full_name}`}>
+        <a className="pa-dial" href={telHref(row.phone)} aria-label={`חיוג ל${row.guest_name}`}>
           📞 חייג
         </a>
         <button type="button" className="pa-open" onClick={onOpen}>
@@ -311,57 +334,68 @@ function TaskCard({ row, onOpen }: { row: CallCenterGuestRow; onOpen: () => void
 }
 
 /**
- * גיליון ביצוע השיחה. במובייל הוא נפתח מלמטה כמעט על כל המסך — כי זו העבודה
- * עצמה, לא חלון צדדי.
+ * גיליון ביצוע השיחה על משימה אחת. במובייל הוא נפתח מלמטה כמעט על כל המסך —
+ * כי זו העבודה עצמה, לא חלון צדדי.
  */
 function CallSheet({
-  guestId,
+  taskId,
   streak,
   onClose,
   onSaved,
 }: {
-  guestId: number
+  taskId: number
   streak: boolean
   onClose: () => void
-  onSaved: () => void
+  /** ``keepOpen`` — אחרי "הערה בלבד" המשימה עדיין פתוחה, נשארים בה. */
+  onSaved: (keepOpen: boolean) => void
 }) {
-  const [detail, setDetail] = useState<CallCenterGuestDetail | null>(null)
+  const [detail, setDetail] = useState<TaskDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [pending, setPending] = useState<CallOutcome | null>(null)
   const [count, setCount] = useState(1)
   const [callbackAt, setCallbackAt] = useState('')
+  const [note, setNote] = useState('')
+
+  const fetchDetail = useCallback(() => {
+    return callOps
+      .myTask(taskId)
+      .then((d) => {
+        setDetail(d)
+        setCount(d.card.confirmed_count ?? d.task.party_size ?? 1)
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'טעינת המשימה נכשלה'))
+  }, [taskId])
 
   useEffect(() => {
     setDetail(null)
     setPending(null)
     setCallbackAt('')
+    setNote('')
     setError(null)
-    callCenterGuest(guestId)
-      .then((d) => {
-        setDetail(d)
-        setCount(d.confirmed_count ?? d.party_size ?? 1)
-      })
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : 'טעינת פרטי המוזמן נכשלה'),
-      )
-  }, [guestId])
+    void fetchDetail()
+  }, [fetchDetail])
 
-  async function save(outcome: CallOutcome, people?: number) {
+  async function save(outcome: CallOutcome) {
     setBusy(true)
     setError(null)
     try {
-      await callCenterRecordOutcome(guestId, {
+      await callOps.myTaskOutcome(taskId, {
         outcome,
-        count: outcome === 'confirmed' ? (people ?? count) : null,
+        count: outcome === 'confirmed' ? count : null,
         guest_note: null,
-        note: '',
+        note: note.trim(),
         callback_at:
-          outcome === 'callback' && callbackAt
-            ? new Date(callbackAt).toISOString()
-            : null,
+          outcome === 'callback' && callbackAt ? new Date(callbackAt).toISOString() : null,
       })
-      onSaved()
+      if (outcome === 'note') {
+        setNote('')
+        setPending(null)
+        await fetchDetail()
+        onSaved(true)
+      } else {
+        onSaved(false)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שמירת תוצאת השיחה נכשלה')
     } finally {
@@ -369,9 +403,8 @@ function CallSheet({
     }
   }
 
-  /** תוצאה שדורשת פרט נוסף נפתחת; השאר נשמרות בלחיצה אחת. */
   function pick(outcome: CallOutcome) {
-    if (outcome === 'confirmed' || outcome === 'callback') {
+    if (NEEDS_DETAIL.includes(outcome)) {
       setPending(pending === outcome ? null : outcome)
       return
     }
@@ -391,12 +424,16 @@ function CallSheet({
     )
   }
 
+  const task = detail?.task
+  const card = detail?.card
+  const closed = task ? task.status !== 'open' : false
+
   return (
     <div className="pa-overlay" onClick={onClose}>
       <div className="pa-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="pa-sheet-head">
           <div>
-            <h2 className="pa-sheet-title">{detail?.full_name ?? 'ביצוע שיחה'}</h2>
+            <h2 className="pa-sheet-title">{task?.guest_name ?? 'ביצוע שיחה'}</h2>
             {streak && <span className="pa-streak">מצב רצף — עובר אוטומטית לבא</span>}
           </div>
           <button type="button" className="pa-x" onClick={onClose} aria-label="סגירה">
@@ -404,117 +441,193 @@ function CallSheet({
           </button>
         </div>
 
-        {!detail ? (
+        {!task || !card ? (
           <div className="pa-sheet-body">
             {error ? <div className="pa-error">{error}</div> : <div className="pa-loading">טוען…</div>}
           </div>
         ) : (
           <div className="pa-sheet-body">
-            <a className="pa-dial pa-dial-big" href={telHref(detail.phone)} dir="ltr">
-              📞 {detail.phone || '—'}
+            <a className="pa-dial pa-dial-big" href={telHref(task.phone)} dir="ltr">
+              📞 {task.phone || '—'}
             </a>
+
+            <div className="pa-next">
+              <span className="pa-next-label">מה עושים עכשיו</span>
+              <strong>{card.next_action}</strong>
+            </div>
 
             <dl className="pa-facts">
               <div>
                 <dt>האירוע</dt>
-                <dd>{detail.hosts}</dd>
+                <dd>{task.event_label}</dd>
               </div>
               <div>
                 <dt>תאריך</dt>
                 <dd>
-                  {eventDateText(detail.event_date) || '—'}
-                  {detail.event_time ? ` · ${detail.event_time}` : ''}
+                  {eventDateText(task.event_date) || '—'}
+                  {task.event_time ? ` · ${task.event_time}` : ''}
                 </dd>
               </div>
               <div>
                 <dt>אולם</dt>
-                <dd>{detail.venue_name || '—'}</dd>
+                <dd>{task.venue_name || '—'}</dd>
               </div>
               <div>
                 <dt>מוזמנים</dt>
-                <dd>{detail.party_size}</dd>
+                <dd>{task.party_size}</dd>
+              </div>
+              <div>
+                <dt>סבב</dt>
+                <dd>{task.round_label}</dd>
+              </div>
+              <div>
+                <dt>למה מתקשרים</dt>
+                <dd>{task.reason_label}</dd>
+              </div>
+              <div>
+                <dt>מצב</dt>
+                <dd>
+                  {task.status_label}
+                  {task.attempts > 0 ? ` · ${task.attempts} ניסיונות` : ''}
+                </dd>
+              </div>
+              <div>
+                <dt>תשובה עד עכשיו</dt>
+                <dd>{RSVP_LABELS[card.rsvp_status] ?? card.rsvp_status}</dd>
+              </div>
+              {task.callback_at && (
+                <div>
+                  <dt>ביקש שנחזור</dt>
+                  <dd>{formatDateTime(task.callback_at)}</dd>
+                </div>
+              )}
+              <div>
+                <dt>מספר משימה</dt>
+                <dd dir="ltr">#{task.task_id}</dd>
               </div>
             </dl>
 
-            {(detail.guest_note || detail.notes_raw) && (
+            {(card.guest_note || card.owner_notes || task.note) && (
               <div className="pa-notes">
-                {detail.guest_note && <p>{detail.guest_note}</p>}
-                {detail.notes_raw && <p>{detail.notes_raw}</p>}
+                {card.guest_note && <p>המוזמן כתב: {card.guest_note}</p>}
+                {card.owner_notes && <p>{card.owner_notes}</p>}
+                {task.note && <p className="pa-pre">{task.note}</p>}
               </div>
             )}
 
-            <h3 className="pa-section">תוצאת השיחה</h3>
-            <div className="pa-outcomes">
-              {AGENT_OUTCOMES.map((b) => (
-                <button
-                  key={b.key}
-                  type="button"
-                  className={`pa-outcome pa-outcome-${b.tone} ${pending === b.key ? 'open' : ''}`}
-                  onClick={() => pick(b.key)}
-                  disabled={busy}
-                >
-                  <span aria-hidden>{b.icon}</span> {b.label}
-                </button>
-              ))}
-            </div>
-
-            {pending === 'confirmed' && (
-              <div className="pa-extra">
-                <span className="pa-extra-label">כמה אנשים מגיעים?</span>
-                <div className="pa-counts">
-                  {PARTY_CHOICES.map((n) => (
+            {closed ? (
+              <div className="pa-notes">המשימה כבר טופלה ({task.status_label}).</div>
+            ) : (
+              <>
+                <h3 className="pa-section">תוצאת השיחה</h3>
+                <div className="pa-outcomes">
+                  {AGENT_OUTCOMES.map((b) => (
                     <button
-                      key={n}
+                      key={b.key}
                       type="button"
-                      className={`pa-count ${count === n ? 'active' : ''}`}
-                      onClick={() => setCount(n)}
+                      className={`pa-outcome pa-outcome-${b.tone} ${pending === b.key ? 'open' : ''}`}
+                      onClick={() => pick(b.key)}
                       disabled={busy}
                     >
-                      {n}
+                      <span aria-hidden>{b.icon}</span> {b.label}
                     </button>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  className="pa-save"
-                  onClick={() => save('confirmed')}
-                  disabled={busy}
-                >
-                  {busy ? 'רגע…' : `שמירה — ${count} מגיעים`}
-                </button>
-              </div>
-            )}
 
-            {pending === 'callback' && (
-              <div className="pa-extra">
-                <span className="pa-extra-label">מתי לחזור אליו?</span>
-                <div className="pa-presets">
-                  <button type="button" className="pa-preset" onClick={() => setCallbackPreset('today')}>
-                    היום
-                  </button>
-                  <button type="button" className="pa-preset" onClick={() => setCallbackPreset('tomorrow')}>
-                    מחר
-                  </button>
-                </div>
-                <input
-                  className="pa-input"
-                  type="datetime-local"
-                  value={callbackAt}
-                  onChange={(e) => setCallbackAt(e.target.value)}
-                  aria-label="מועד לחזור אל המוזמן"
-                />
-                <button
-                  type="button"
-                  className="pa-save"
-                  onClick={() => save('callback')}
-                  disabled={busy || !callbackAt}
-                >
-                  {busy ? 'רגע…' : 'שמירה'}
-                </button>
-              </div>
+                {pending === 'confirmed' && (
+                  <div className="pa-extra">
+                    <span className="pa-extra-label">כמה אנשים מגיעים?</span>
+                    <div className="pa-counts">
+                      {PARTY_CHOICES.map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          className={`pa-count ${count === n ? 'active' : ''}`}
+                          onClick={() => setCount(n)}
+                          disabled={busy}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                    <button type="button" className="pa-save" onClick={() => save('confirmed')} disabled={busy}>
+                      {busy ? 'רגע…' : `שמירה — ${count} מגיעים`}
+                    </button>
+                  </div>
+                )}
+
+                {pending === 'callback' && (
+                  <div className="pa-extra">
+                    <span className="pa-extra-label">מתי לחזור אליו?</span>
+                    <div className="pa-presets">
+                      <button type="button" className="pa-preset" onClick={() => setCallbackPreset('today')}>
+                        היום
+                      </button>
+                      <button type="button" className="pa-preset" onClick={() => setCallbackPreset('tomorrow')}>
+                        מחר
+                      </button>
+                    </div>
+                    <input
+                      className="pa-input"
+                      type="datetime-local"
+                      value={callbackAt}
+                      onChange={(e) => setCallbackAt(e.target.value)}
+                      aria-label="מועד לחזור אל המוזמן"
+                    />
+                    <button
+                      type="button"
+                      className="pa-save"
+                      onClick={() => save('callback')}
+                      disabled={busy || !callbackAt}
+                    >
+                      {busy ? 'רגע…' : 'שמירה'}
+                    </button>
+                  </div>
+                )}
+
+                <label className="pa-extra">
+                  <span className="pa-extra-label">
+                    {pending === 'note' ? 'מה לרשום?' : 'הערה לשיחה (לא נשלחת למוזמן)'}
+                  </span>
+                  <textarea
+                    className="pa-input pa-textarea"
+                    rows={2}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                  />
+                  {pending === 'note' && (
+                    <button
+                      type="button"
+                      className="pa-save"
+                      onClick={() => save('note')}
+                      disabled={busy || !note.trim()}
+                    >
+                      {busy ? 'רגע…' : 'שמירת הערה'}
+                    </button>
+                  )}
+                </label>
+              </>
             )}
 
             {error && <div className="pa-error">{error}</div>}
+
+            {card.history.length > 0 && (
+              <>
+                <h3 className="pa-section">היסטוריית קשר</h3>
+                <ol className="pa-history">
+                  {card.history.slice(0, 12).map((h, i) => (
+                    <li key={i}>
+                      <span className="pa-history-when">{formatDateTime(h.at)}</span>
+                      <span className="pa-history-title">
+                        {h.title}
+                        {h.actor ? ` · ${h.actor}` : ''}
+                      </span>
+                      {h.detail && <span className="pa-history-detail">{h.detail}</span>}
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
           </div>
         )}
       </div>

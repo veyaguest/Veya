@@ -13,10 +13,13 @@ const RSVP_LABELS: Record<string, string> = {
 const OUTCOMES: { key: CallOutcome; label: string }[] = [
   { key: 'confirmed', label: 'אישר/ה הגעה' },
   { key: 'declined', label: 'לא מגיע/ה' },
+  { key: 'maybe', label: 'עדיין לא בטוח/ה' },
+  { key: 'answered', label: 'ענה/תה, בלי החלטה' },
   { key: 'no_answer', label: 'לא ענה/תה' },
   { key: 'busy', label: 'לא ניתן להשיג' },
   { key: 'callback', label: 'שיחה חוזרת' },
   { key: 'wrong_number', label: 'מספר לא תקין' },
+  { key: 'note', label: 'הערה בלבד' },
 ]
 
 export function GuestCallDrawer({
@@ -97,10 +100,11 @@ function GuestBody({
   }
 
   async function saveOutcome() {
-    if (!outcome) return
+    if (!outcome || !current?.task_id) return
+    const taskId = current.task_id
     await run(
       () =>
-        callOps.recordOutcome(data.guest_id, {
+        callOps.taskOutcome(taskId, {
           outcome,
           note,
           count: outcome === 'confirmed' ? count : null,
@@ -152,7 +156,7 @@ function GuestBody({
 
       {error && <p className="adm-inline-error" role="alert">{error}</p>}
 
-      {open && current && (
+      {open && current?.task_id && (
         <section className="adm-section">
           <h3 className="adm-section-title">תיעוד שיחה</h3>
           <div className="adm-chips" role="group" aria-label="תוצאת השיחה">
@@ -201,7 +205,7 @@ function GuestBody({
                 <button
                   type="button"
                   className="adm-btn adm-btn-primary"
-                  disabled={busy || (outcome === 'callback' && !callbackAt)}
+                  disabled={busy || (outcome === 'callback' && !callbackAt) || (outcome === 'note' && !note.trim())}
                   onClick={saveOutcome}
                 >
                   שמירת תוצאה

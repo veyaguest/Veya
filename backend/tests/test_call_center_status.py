@@ -208,7 +208,9 @@ def test_unknown_outcome_is_rejected() -> None:
         configure_track(api)
         guest = api.add_guest("אורח", "0507000010", party_size=1)
 
-        for bad in ("pending", "maybe", "answered", ""):
+        # "maybe" ו-"answered" הן תוצאות שיחה מוכרות מאז איחוד מרכז הטלפנים
+        # (call_center.OUTCOMES). כאן נבדק שאין דרך להמציא ערך חדש.
+        for bad in ("pending", "confirmed_twice", "open", ""):
             r = api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
                                 headers=headers, json={"outcome": bad})
             assert r.status_code == 400, f"'{bad}' התקבל: {r.status_code}"

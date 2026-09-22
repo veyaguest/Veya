@@ -787,6 +787,13 @@ class CallLog(Base):
     created_by_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id"), nullable=True, index=True
     )
+    # מחזור האירוע שבו התקיימה השיחה (``Event.cycle_number`` באותו רגע). אחרי
+    # דחיית אירוע, שיחה ממחזור קודם **לעולם** לא נחשבת שיחה של המחזור הנוכחי —
+    # כל חישוב תור/ניסיונות/Follow-up מסנן לפי העמודה הזו. ההיסטוריה נשמרת.
+    event_cycle: Mapped[int] = mapped_column(Integer, default=1, index=True)
+    # משימת השיחה שהשיחה בוצעה במסגרתה (``call_tasks``). nullable: שיחות שקדמו
+    # לפנקס המשימות אין להן משימה.
+    task_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
@@ -1540,6 +1547,9 @@ class CallTask(Base):
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     last_outcome: Mapped[str] = mapped_column(String, default="")
     last_attempt_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # שיחה חוזרת: הרגע המדויק (UTC נאיבי) שהמוזמן ביקש. עד אליו המשימה לא
+    # מוצגת לטלפן כעבודה לביצוע. ``due_date`` = היום בישראל של אותו רגע.
+    callback_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     # מי סגר/טיפל לאחרונה (טלפן או אדמין). nullable — מחיקת משתמש לא מוחקת היסטוריה.
     handled_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

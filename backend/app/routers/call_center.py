@@ -324,72 +324,19 @@ def record_outcome(
     if not call_center.can_access_event(db, agent, event.id):
         raise HTTPException(status_code=404, detail="המוזמן לא נמצא")
 
-    callback_at = payload.callback_at if payload.outcome == "callback" else None
-    if payload.outcome == "callback" and callback_at is None:
-        raise HTTPException(status_code=400, detail="צריך לבחור מתי לחזור אל המוזמן")
-    # הדפדפן שולח זמן עם אזור זמן; כל הזמנים במערכת נשמרים כ-UTC נאיבי
-    # (``datetime.utcnow``). בלי הנרמול הזה ההשוואה בתור השיחות הייתה
-    # נופלת על השוואת זמן "מודע" מול "נאיבי".
-    if callback_at is not None and callback_at.tzinfo is not None:
-        callback_at = callback_at.astimezone(timezone.utc).replace(tzinfo=None)
-
-    placement = rsvp_timeline.due_call_round(event)
-    if placement is None:
-        raise HTTPException(
-            status_code=400,
-            detail="לא פתוח סבב שיחות לאירוע הזה לפי מסלול אישורי ההגעה",
+    # נתיב ישן (תאימות לאפליקציות שמורות בדפדפן). כל ההיגיון — אחד:
+    # ``call_ops.record_call`` על המשימה הנוכחית של האורח.
+    try:
+        task = call_ops.task_for_guest_now(db, guest, event)
+        result = call_ops.record_call(
+            db, task=task, outcome=payload.outcome, agent=agent, note=payload.note or "",
+            count=payload.count, guest_note=payload.guest_note, callback_at=payload.callback_at,
+            ip=request.client.host if request.client else None,
         )
-
-    # שיחת המשך = השיחה הזו מגיעה אחרי בקשת "חזרו אליי" פתוחה. נבדק *לפני*
-    # שנרשמת התוצאה החדשה, אחרת הבקשה החדשה תסתיר את הקודמת.
-    is_followup = call_center.has_pending_followup(db, guest.id)
-
-    if payload.outcome in call_center.DECISION_OUTCOMES:
-        rsvp_response.apply_response(
-            guest, payload.outcome, count=payload.count, note=payload.guest_note,
-        )
-
-    ip = request.client.host if request.client else None
-    # יומן הפעילות של בעל/ת האירוע — המנגנון הקיים (AuditLog), בניסוח אנושי.
-    # קודם שיחת ההמשך (היא קרתה ראשונה), ואחריה מה שהתברר בשיחה.
-    if is_followup:
-        audit.record(
-            db, call_center.FOLLOWUP_ACTION,
-            event_id=event.id, user_id=agent.id,
-            detail=call_center.followup_message(guest.full_name),
-            ip=ip,
-        )
-    audit.record(
-        db, call_center.FEED_ACTIONS[payload.outcome],
-        event_id=event.id, user_id=agent.id,
-        detail=call_center.feed_message(
-            payload.outcome,
-            guest.full_name,
-            confirmed_count=guest.confirmed_count,
-            callback_at=callback_at,
-            note=payload.note or "",
-        ),
-        ip=ip,
-    )
-
-    db.add(models.CallLog(
-        event_id=event.id,
-        guest_id=guest.id,
-        round_number=placement.round_number,
-        outcome=payload.outcome,
-        note=payload.note or "",
-        callback_at=callback_at,
-        # המספר שאליו חייגנו — הבסיס להשוואה שסוגרת התראת "מספר שגוי"
-        # אוטומטית כשבעל/ת האירוע מעדכן/ת מספר (ראו call_center.py).
-        phone_at_call=guest.phone or "",
-        created_by_id=agent.id,
-    ))
-    # פנקס המשימות של מרכז השליטה — אותה שיחה, בלי מסלול תיעוד נוסף.
-    call_ops.on_outcome(
-        db, guest=guest, event=event, round_number=placement.round_number,
-        outcome=payload.outcome, callback_at=callback_at, agent=agent,
-    )
+    except call_ops.CallError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     db.commit()
+    callback_at = result.log.callback_at if result.log else None
 
     return schemas.CallOutcomeResult(
         guest_id=guest.id,

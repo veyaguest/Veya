@@ -1,0 +1,40 @@
+# תכנון שיחות הטלפנים היומי — מריץ את ה-sync בשרת גם אם אף אדמין לא נכנס.
+#
+# הגדרה חד-פעמית (GitHub → Settings → Secrets and variables → Actions):
+#   VEYA_API_URL     כתובת השרת, למשל https://veya-backend.onrender.com
+#   VEYA_JOB_SECRET  אותו ערך כמו משתנה הסביבה VEYA_JOB_SECRET ב-Render
+#
+# הזמנים ב-UTC: 21:05 = 00:05 בישראל (שעון קיץ; 23:05 בחורף), 04:30 = 07:30.
+# השרת החינמי ב-Render "נרדם" — לכן יש המתנה ארוכה וניסיון חוזר.
+name: call-sync
+
+on:
+  schedule:
+    - cron: "5 21 * * *"
+    - cron: "30 4 * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Run call sync
+        env:
+          API: ${{ secrets.VEYA_API_URL }}
+          SECRET: ${{ secrets.VEYA_JOB_SECRET }}
+        run: |
+          if [ -z "$API" ] || [ -z "$SECRET" ]; then
+            echo "VEYA_API_URL / VEYA_JOB_SECRET לא מוגדרים — מדלג"; exit 0
+          fi
+          curl -sS --max-time 90 "$API/health" > /dev/null || true
+          for i in 1 2 3; do
+            code=$(curl -sS -o out.json -w "%{http_code}" --max-time 180 -X POST \
+              -H "X-Veya-Job-Secret: $SECRET" "$API/internal/jobs/call-sync") || code=000
+            echo "attempt $i → HTTP $code"; cat out.json 2>/dev/null; echo
+            [ "$code" = "200" ] && exit 0
+            sleep 30
+          done
+          exit 1

@@ -347,7 +347,12 @@ def complete(
         g.confirmed_count = None
         g.guest_note = None
 
-    # 4 — המחזור החדש.
+    # 4 — המחזור החדש. משימות שיחה פתוחות של המחזור הישן נסגרות ("האירוע
+    # נדחה"): הן נשארות בהיסטוריה, אבל לעולם לא עבודה במחזור החדש. השיחות
+    # עצמן (``call_logs``) נשארות משויכות למחזור שבו התקיימו.
+    from app import call_ops
+
+    call_ops.close_cycle(db, event.id, old_cycle)
     event.cycle_number = old_cycle + 1
 
     # 5 — האוטומציות מתחילות מחדש מהתאריך החדש.

@@ -29,6 +29,9 @@ from app.automation import parse_event_date
 OUTCOMES: dict[str, str] = {
     "confirmed": "אישר הגעה",
     "declined": "לא מגיע",
+    "maybe": "עדיין לא בטוח",
+    "answered": "ענה, בלי החלטה",
+    "note": "הערה",
     "no_answer": "לא ענה",
     "busy": "תפוס",
     "wrong_number": "מספר שגוי",
@@ -49,6 +52,10 @@ WRONG_NUMBER = "wrong_number"
 
 # תוצאות שמעדכנות את סטטוס אישור ההגעה עצמו (דרך rsvp_response).
 DECISION_OUTCOMES = ("confirmed", "declined")
+# "אולי" מעדכן גם הוא את rsvp_status (ל-maybe), אבל המוזמן נשאר פתוח לסבב הבא.
+RSVP_OUTCOMES = ("confirmed", "declined", "maybe")
+# הערה בלבד — לא ניסיון שיחה ולא משנה את מצב המשימה.
+NOTE_ONLY = "note"
 
 # סטטוסים שעדיין דורשים שיחה — מי שאישר או ביטל כבר סגור.
 OPEN_STATUSES = ("pending", "maybe")
@@ -232,9 +239,15 @@ def build_queues(
         select(models.Guest).where(*filters).order_by(models.Guest.full_name)
     ).all()
 
-    logs = db.scalars(
-        select(models.CallLog).where(models.CallLog.event_id.in_(event_ids))
-    ).all()
+    # רק שיחות של המחזור הנוכחי של כל אירוע — אחרי דחייה, שיחה מהמחזור הקודם
+    # לא "מסתירה" מוזמן בסבב של המחזור החדש.
+    cycle_of = {e.id: (e.cycle_number or 1) for e, _ in due}
+    logs = [
+        lg for lg in db.scalars(
+            select(models.CallLog).where(models.CallLog.event_id.in_(event_ids))
+        ).all()
+        if (lg.event_cycle or 1) == cycle_of.get(lg.event_id)
+    ]
     phone_by_guest = {g.id: g.phone or "" for g in guests}
     hidden = _handled_guest_ids(list(logs), current_round, now, phone_by_guest)
 
@@ -318,11 +331,11 @@ def _pending_followup_dates(db: Session, guest_ids: list[int]) -> dict[int, date
     ``has_pending_followup`` הקיים (אותה סמנטיקה בדיוק: "האחרון מנצח")."""
     if not guest_ids:
         return {}
-    logs = db.scalars(
+    logs = current_cycle_only(db, db.scalars(
         select(models.CallLog)
         .where(models.CallLog.guest_id.in_(guest_ids))
         .order_by(models.CallLog.guest_id, models.CallLog.created_at, models.CallLog.id)
-    ).all()
+    ).all())
     latest: dict[int, models.CallLog] = {}
     for log in logs:
         latest[log.guest_id] = log  # הרשימה ממוינת עולה לפי זמן — האחרון מנצח
@@ -435,6 +448,8 @@ def build_queues_for_scope(
 FEED_ACTIONS: dict[str, str] = {
     "confirmed": "guest_call_confirmed",
     "declined": "guest_call_declined",
+    "maybe": "guest_call_maybe",
+    "answered": "guest_call_answered",
     "no_answer": "guest_call_no_answer",
     "busy": "guest_call_busy",
     "wrong_number": "guest_call_wrong_number",
@@ -484,6 +499,10 @@ def feed_message(
             line += f" – {confirmed_count} אנשים"
     elif outcome == "declined":
         line = f"{name} עדכן/ה שלא יגיע/ה"
+    elif outcome == "maybe":
+        line = f"{name} עדיין לא בטוח/ה אם יגיע/ה"
+    elif outcome == "answered":
+        line = f"בוצעה שיחה עם {name}"
     elif outcome == "no_answer":
         line = f"לא התקבלה תשובה מ{name}"
     elif outcome == "busy":
@@ -509,13 +528,12 @@ def followup_message(guest_name: str) -> str:
 def has_pending_followup(db: Session, guest_id: int) -> bool:
     """האם למוזמן יש בקשת "חזרו אליי" פתוחה — כלומר השיחה הבאה אליו היא
     שיחת המשך. "פתוחה" = בקשת ה-callback היא הפעולה האחרונה שנרשמה לו."""
-    last = db.scalars(
+    logs = current_cycle_only(db, db.scalars(
         select(models.CallLog)
         .where(models.CallLog.guest_id == guest_id)
         .order_by(models.CallLog.created_at.desc(), models.CallLog.id.desc())
-        .limit(1)
-    ).first()
-    return last is not None and last.outcome == "callback"
+    ).all())
+    return bool(logs) and logs[0].outcome == "callback"
 
 
 @dataclass
@@ -534,7 +552,7 @@ def phone_fix_alerts(db: Session, event_id: int) -> list[PhoneFixAlert]:
     השתנה, הוא לא סומן "לא מגיע" והוא לא נמחק — פשוט אי אפשר להשיג אותו.
     ההתראה נסגרת מעצמה ברגע שהמספר מתעדכן (ראו ``unresolved_wrong_numbers``).
     """
-    logs = list(db.scalars(
+    logs = current_cycle_only(db, db.scalars(
         select(models.CallLog)
         .where(models.CallLog.event_id == event_id)
         .where(models.CallLog.outcome == WRONG_NUMBER)
@@ -572,8 +590,25 @@ def phone_fix_alerts(db: Session, event_id: int) -> list[PhoneFixAlert]:
     return alerts
 
 
+def current_cycle_only(db: Session, logs) -> list[models.CallLog]:
+    """מסנן שיחות למחזור הנוכחי של האירוע שלהן (``Event.cycle_number``).
+
+    כל שאלה תפעולית ("האם כבר התקשרו בסבב הזה", "האם יש Follow-up פתוח",
+    "האם המספר שגוי") נשאלת רק על המחזור הפעיל. ההיסטוריה המלאה נשארת
+    ב-``guest_call_history``.
+    """
+    logs = list(logs)
+    if not logs:
+        return []
+    cycles = dict(db.execute(
+        select(models.Event.id, models.Event.cycle_number)
+        .where(models.Event.id.in_({lg.event_id for lg in logs}))
+    ).all())
+    return [lg for lg in logs if (lg.event_cycle or 1) == (cycles.get(lg.event_id) or 1)]
+
+
 def guest_call_history(db: Session, guest_id: int) -> list[models.CallLog]:
-    """כל השיחות שבוצעו למוזמן, מהישנה לחדשה."""
+    """כל השיחות שבוצעו למוזמן, מהישנה לחדשה — מכל המחזורים (היסטוריה)."""
     return list(db.scalars(
         select(models.CallLog)
         .where(models.CallLog.guest_id == guest_id)

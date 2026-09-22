@@ -1520,10 +1520,14 @@ export interface SeatingUndoState {
 export type CallOutcome =
   | 'confirmed'
   | 'declined'
+  | 'maybe'
+  | 'answered'
   | 'no_answer'
   | 'busy'
   | 'wrong_number'
   | 'callback'
+  /** הערה בלבד — לא נספרת כניסיון שיחה ולא סוגרת את המשימה. */
+  | 'note'
 
 /** טווח התצוגה במסך השיחות — היום (ברירת המחדל) / מחר / בהמשך / לא טופל
  * (שיחה מתאריך שעבר, באירוע פעיל, שעדיין לא בוצעה). אירוע שתאריכו כבר עבר

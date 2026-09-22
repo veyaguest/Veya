@@ -98,6 +98,8 @@ const GROUP_LABELS: Record<TaskGroup, string> = {
   overdue: 'באיחור',
   cancelled: 'בוטלו',
   all: 'הכול',
+  work: 'לחייג עכשיו',
+  later: 'שיחות חוזרות מאוחר יותר',
 }
 
 function ControlView({

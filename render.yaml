@@ -45,3 +45,8 @@ services:
       # (המצב היום, לפני שה-RLS מופעל בפועל).
       - key: MIGRATIONS_DATABASE_URL
         sync: false
+      # סוד להפעלת המשימה היומית של תכנון השיחות (POST /internal/jobs/call-sync).
+      # אותו ערך בדיוק נשמר כ-Secret בשם VEYA_JOB_SECRET ב-GitHub Actions.
+      # בלי הערך — הנתיב לא קיים (404). לפחות 24 תווים.
+      - key: VEYA_JOB_SECRET
+        sync: false

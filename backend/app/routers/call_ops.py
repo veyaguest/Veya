@@ -79,11 +79,19 @@ def _names(db: Session, ids) -> dict[int, str]:
 
 
 def _sync_for(db: Session, user: models.User) -> None:
-    allowed = None if user.is_admin else call_center.visible_event_ids(db, user)
-    if allowed is None:
+    """אדמין: sync מלא (מוגבל בזמן). טלפן: רק האירועים שיש לו בהם עבודה —
+    משימות שהוקצו לו או אירועים שהוא הטלפן הקבוע שלהם."""
+    if user.is_admin:
         call_ops.sync(db)
     else:
-        call_ops.sync(db, event_ids=allowed)
+        ids = set(db.scalars(select(models.CallTask.event_id).where(
+            models.CallTask.assignee_id == user.id, models.CallTask.status == call_ops.OPEN,
+        )).all())
+        ids |= set(db.scalars(select(models.CallAssignment.event_id).where(
+            models.CallAssignment.user_id == user.id,
+        )).all())
+        if ids:
+            call_ops.sync(db, event_ids=ids)
     db.commit()
 
 
@@ -118,6 +126,13 @@ class TaskRow(BaseModel):
     closed_reason_label: str
     needs_attention: bool
     round_state: str = ""
+    callback_at: Optional[datetime] = None
+    is_followup: bool = False
+    party_size: int = 1
+    event_time: str = ""
+    venue_name: str = ""
+    note: str = ""
+    event_cycle: int = 1
 
 
 class TaskPage(BaseModel):
@@ -137,6 +152,8 @@ _OUTCOME_LABEL = {
     "busy": ("לא ניתן להשיג", "warn"),
     "wrong_number": ("מספר לא תקין", "bad"),
     "callback": ("ביקש/ה שיחה חוזרת", "info"),
+    "maybe": ("עדיין לא בטוח/ה", "info"),
+    "answered": ("ענה/תה, בלי החלטה", "neutral"),
 }
 
 
@@ -145,6 +162,8 @@ def _status(task: Optional[models.CallTask], today_iso: str) -> tuple[str, str]:
         return "מתוכנן", "neutral"
     if task.status == call_ops.OPEN:
         if task.reason == "callback":
+            if task.callback_at is not None:
+                return f"שיחה חוזרת ב-{local_time.to_israel(task.callback_at).strftime('%d.%m %H:%M')}", "info"
             return "ביקש/ה שיחה חוזרת", "info"
         if task.due_date < today_iso:
             return "באיחור", "bad"
@@ -206,6 +225,9 @@ def _task_rows(db: Session, pairs: list[tuple[models.CallTask, models.Guest, mod
                 or (t.status == call_ops.OPEN and t.due_date < today_iso)
             ),
             round_state=plans.get(t.round_number).state if plans.get(t.round_number) else "",
+            callback_at=t.callback_at, is_followup=t.reason in ("callback", "manual"),
+            party_size=g.party_size or 1, event_time=e.event_time or "", venue_name=e.venue_name or "",
+            note=t.note or "", event_cycle=t.event_cycle,
         ))
     return rows
 
@@ -216,9 +238,17 @@ def _task_query(
 ):
     T, G, E = models.CallTask, models.Guest, models.Event
     today_iso = _today().isoformat()
+    if group == "work":
+        cond = call_ops.work_filter(datetime.utcnow())
+    elif group == "later":
+        cond = call_ops.later_callbacks_filter(datetime.utcnow())
+    else:
+        cond = call_ops.group_filter(group, day.isoformat(), today_iso)
     stmt = (
         select(T, G, E).join(G, T.guest_id == G.id).join(E, T.event_id == E.id)
-        .where(call_ops.group_filter(group, day.isoformat(), today_iso))
+        .where(cond)
+        # התור התפעולי מבוסס רק על המחזור הפעיל של כל אירוע.
+        .where(or_(T.event_cycle == E.cycle_number, T.status != call_ops.OPEN))
     )
     visible = call_ops._visible_filter(user, db)
     if visible is not None:
@@ -594,12 +624,16 @@ def list_tasks(
 
 
 def _list_tasks_impl(db, user, date_, group, event_id, assignee, round_number, event_type, q, limit, offset) -> TaskPage:
-    if group not in call_ops.GROUPS:
+    if group not in call_ops.GROUPS and group not in ("work", "later"):
         raise HTTPException(status_code=400, detail="קבוצה לא מוכרת")
     _sync_for(db, user)
     today = _today()
     day = _day(date_)
-    if _mode(day, today) == "preview":
+    if _mode(day, today) == "preview" and group not in ("work", "later"):
+        if not user.is_admin:
+            # לטלפן אין תצוגה מקדימה של אורחים שעוד לא הוקצו לו.
+            return TaskPage(date=day.isoformat(), mode="preview", group=group, total=0, limit=limit,
+                            offset=offset, items=[])
         rows = _preview_rows(db, day, user, event_id, q)
         if assignee == "none":
             rows = [r for r in rows if r.assignee_id is None]
@@ -611,9 +645,10 @@ def _list_tasks_impl(db, user, date_, group, event_id, assignee, round_number, e
                        round_number=round_number, event_type=event_type, q=q)
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     T, G, E = models.CallTask, models.Guest, models.Event
-    pairs = db.execute(
-        stmt.order_by(T.due_date, E.event_date, E.id, G.full_name, T.id).limit(limit).offset(offset)
-    ).all()
+    order = (T.due_date, E.event_date, E.id, G.full_name, T.id)
+    if group == "later":
+        order = (T.callback_at, T.id)
+    pairs = db.execute(stmt.order_by(*order).limit(limit).offset(offset)).all()
     return TaskPage(date=day.isoformat(), mode="tasks", group=group, total=total, limit=limit,
                     offset=offset, items=_task_rows(db, [tuple(p) for p in pairs]))
 
@@ -700,6 +735,8 @@ class GuestCard(BaseModel):
     tasks: list[TaskRow]
     history: list[HistoryItem]
     next_action: str
+    guest_note: str = ""     # מה שהמוזמן כתב בעצמו בקישור
+    owner_notes: str = ""    # הערות בעל/ת האירוע על המוזמן
 
 
 _KIND_LABELS = {
@@ -722,12 +759,14 @@ def _guest_card(db: Session, user: models.User, guest_id: int) -> GuestCard:
         raise HTTPException(status_code=404, detail="האורח לא נמצא")
     T = models.CallTask
     tasks = db.scalars(select(T).where(T.guest_id == guest_id).order_by(T.event_cycle, T.round_number)).all()
-    if not user.is_admin:
-        visible = call_center.can_access_event(db, user, event.id) or any(t.assignee_id == user.id for t in tasks)
-        if not visible:
-            raise HTTPException(status_code=404, detail="האורח לא נמצא")
-    rows = _task_rows(db, [(t, guest, event) for t in tasks])
-    current = next((r for r in rows if r.status == call_ops.OPEN), None)
+    if not user.is_admin and not any(t.assignee_id == user.id for t in tasks):
+        # טלפן רואה רק אורחים שיש לו משימה עליהם. 404 ולא 403 — לא מאשרים קיום.
+        raise HTTPException(status_code=404, detail="האורח לא נמצא")
+    cycle = event.cycle_number or 1
+    current_tasks = [t for t in tasks if t.event_cycle == cycle]
+    rows = _task_rows(db, [(t, guest, event) for t in current_tasks])
+    mine = [r for r in rows if r.status == call_ops.OPEN and (user.is_admin or r.assignee_id == user.id)]
+    current = min(mine, key=lambda r: (r.round_number == call_ops.MANUAL_ROUND, r.due_date)) if mine else None
 
     history: list[HistoryItem] = []
     for m in db.scalars(select(models.Message).where(models.Message.guest_id == guest_id)).all():
@@ -741,13 +780,16 @@ def _guest_card(db: Session, user: models.User, guest_id: int) -> GuestCard:
     logs = call_center.guest_call_history(db, guest_id)
     names = _names(db, {lg.created_by_id for lg in logs})
     for lg in logs:
-        label, tone = _OUTCOME_LABEL.get(lg.outcome, (lg.outcome, "neutral"))
+        label, tone = _OUTCOME_LABEL.get(lg.outcome, (call_center.OUTCOMES.get(lg.outcome, lg.outcome), "neutral"))
         detail = lg.note or ""
         if lg.outcome == "callback" and lg.callback_at:
             detail = (f"לחזור ב-{local_time.to_israel(lg.callback_at).strftime('%d.%m %H:%M')}. " + detail).strip()
+        old_cycle = (lg.event_cycle or 1) != cycle
         history.append(HistoryItem(
-            at=lg.created_at, channel="phone", title=f"שיחה — {label}", detail=detail,
-            actor=names.get(lg.created_by_id, ""), tone=tone,
+            at=lg.created_at, channel="phone",
+            title=("הערה" if lg.outcome == call_center.NOTE_ONLY else f"שיחה — {label}")
+            + (f" (מחזור {lg.event_cycle or 1}, לפני הדחייה)" if old_cycle else ""),
+            detail=detail, actor=names.get(lg.created_by_id, ""), tone="neutral" if old_cycle else tone,
         ))
     history.sort(key=lambda h: h.at or datetime.min, reverse=True)
 
@@ -770,6 +812,7 @@ def _guest_card(db: Session, user: models.User, guest_id: int) -> GuestCard:
         party_size=guest.party_size or 1, confirmed_count=guest.confirmed_count, event_id=event.id,
         event_label=_hosts(event), event_date=event.event_date or "", event_type=event.event_type,
         current=current, tasks=rows, history=history, next_action=next_action,
+        guest_note=guest.guest_note or "", owner_notes=guest.notes_raw or "",
     )
 
 
@@ -1146,8 +1189,8 @@ def add_manual_task(
     guest = db.get(models.Guest, payload.guest_id)
     if guest is None:
         raise HTTPException(status_code=404, detail="האורח לא נמצא")
-    if not (guest.phone or "").strip():
-        raise HTTPException(status_code=400, detail="לאורח אין מספר טלפון")
+    if not call_ops.phone_ok(guest):
+        raise HTTPException(status_code=400, detail="לאורח אין מספר טלפון תקין")
     event = db.get(models.Event, guest.event_id)
     day = _day(payload.due_date)
     if day < _today():
@@ -1466,34 +1509,135 @@ def my_day(
     db: Session = Depends(get_db),
     agent: models.User = Depends(get_current_caller),
 ):
+    """המספרים של הטלפן — רק המשימות שהוקצו לו."""
     _sync_for(db, agent)
     today = _today()
     day = _day(date_)
-    if _mode(day, today) == "preview":
-        allowed = None if agent.is_admin else call_center.visible_event_ids(db, agent)
-        n = len(call_ops.preview(db, day, allowed_event_ids=allowed))
-        counts = {"planned": n, "handled": 0, "pending": n}
-    else:
-        counts = call_ops.day_counts(db, day, today, call_ops._visible_filter(agent, db))
+    visible = call_ops._visible_filter(agent, db)
+    counts = call_ops.day_counts(db, day, today, visible)
+    T, E = models.CallTask, models.Event
+    now = datetime.utcnow()
+
+    def count(cond) -> int:
+        stmt = select(func.count(T.id)).join(E, T.event_id == E.id).where(cond, T.event_cycle == E.cycle_number)
+        if visible is not None:
+            stmt = stmt.where(visible)
+        return db.scalar(stmt) or 0
+
+    counts["work"] = count(call_ops.work_filter(now))
+    counts["later"] = count(call_ops.later_callbacks_filter(now))
+    start, end = local_time.israel_day_bounds_utc(day)
+    done_stmt = select(func.count(models.CallLog.id)).where(
+        models.CallLog.created_at >= start, models.CallLog.created_at < end,
+        models.CallLog.outcome != call_center.NOTE_ONLY,
+    )
+    if not agent.is_admin:
+        done_stmt = done_stmt.where(models.CallLog.created_by_id == agent.id)
+    counts["calls_made"] = db.scalar(done_stmt) or 0
     return MyDay(date=day.isoformat(), today=today.isoformat(), relation=_relation(day, today), counts=counts)
 
 
 @router.get("/my/tasks", response_model=TaskPage)
 def my_tasks(
     date_: Optional[str] = Query(None, alias="date"),
-    group: str = "pending",
+    group: str = "work",
     q: str = Query("", max_length=100),
     limit: int = Query(50, ge=1, le=MAX_LIMIT),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     agent: models.User = Depends(get_current_caller),
 ):
+    """רשימת העבודה של הטלפן. ברירת מחדל ``work``: מה שצריך לחייג עכשיו
+    (כולל באיחור, בלי שיחות חוזרות שמועדן לא הגיע, בלי סבבים מושהים).
+    ``later`` — שיחות חוזרות שנקבעו לשעה מאוחרת יותר."""
     page = _list_tasks_impl(db, agent, date_, group, None, None, None, "", q, limit, offset)
     if not agent.is_admin:
-        for row in page.items:  # הטלפן לא צריך לראות מי עוד עובד על מה
+        for row in page.items:
             if row.assignee_id not in (None, agent.id):
                 row.assignee_name = ""
     return page
+
+
+class TaskDetail(BaseModel):
+    task: TaskRow
+    card: GuestCard
+
+
+def _task_for(db: Session, user: models.User, task_id: int) -> tuple[models.CallTask, models.Guest, models.Event]:
+    task = db.get(models.CallTask, task_id)
+    if task is None or (not user.is_admin and task.assignee_id != user.id):
+        # 404 ולא 403 — טלפן לא מקבל אישור לקיום משימה שלא שלו.
+        raise HTTPException(status_code=404, detail="המשימה לא נמצאה")
+    guest, event = db.get(models.Guest, task.guest_id), db.get(models.Event, task.event_id)
+    if guest is None or event is None:
+        raise HTTPException(status_code=404, detail="המשימה לא נמצאה")
+    return task, guest, event
+
+
+@router.get("/my/tasks/{task_id}", response_model=TaskDetail)
+def my_task_detail(
+    task_id: int,
+    db: Session = Depends(get_db),
+    agent: models.User = Depends(get_current_caller),
+):
+    task, guest, event = _task_for(db, agent, task_id)
+    return TaskDetail(task=_task_rows(db, [(task, guest, event)])[0], card=_guest_card(db, agent, guest.id))
+
+
+class TaskOutcomeWrite(BaseModel):
+    outcome: str
+    note: str = Field(default="", max_length=1000)
+    count: Optional[int] = Field(default=None, ge=1, le=100)
+    guest_note: Optional[str] = Field(default=None, max_length=500)
+    callback_at: Optional[datetime] = None
+
+
+class TaskOutcomeResult(BaseModel):
+    task: TaskRow
+    outcome_label: str
+    rsvp_status: str
+
+
+def _record(db: Session, user: models.User, task_id: int, payload: TaskOutcomeWrite, request: Request) -> TaskOutcomeResult:
+    task, guest, event = _task_for(db, user, task_id)
+    try:
+        call_ops.record_call(
+            db, task=task, outcome=payload.outcome, agent=user, note=payload.note, count=payload.count,
+            guest_note=payload.guest_note, callback_at=payload.callback_at,
+            ip=request.client.host if request.client else None,
+        )
+    except call_ops.CallError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    db.commit()
+    db.refresh(task)
+    return TaskOutcomeResult(
+        task=_task_rows(db, [(task, guest, event)])[0],
+        outcome_label=call_center.OUTCOMES.get(payload.outcome, payload.outcome),
+        rsvp_status=guest.rsvp_status,
+    )
+
+
+@router.post("/my/tasks/{task_id}/outcome", response_model=TaskOutcomeResult)
+def my_task_outcome(
+    task_id: int,
+    payload: TaskOutcomeWrite,
+    request: Request,
+    db: Session = Depends(get_db),
+    agent: models.User = Depends(get_current_caller),
+):
+    """תיעוד שיחה על משימה שהוקצתה לטלפן. הסבב והמחזור — מהמשימה."""
+    return _record(db, agent, task_id, payload, request)
+
+
+@router.post("/tasks/{task_id}/outcome", response_model=TaskOutcomeResult)
+def admin_task_outcome(
+    task_id: int,
+    payload: TaskOutcomeWrite,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(admin_rbac.require("calls.operate")),
+):
+    return _record(db, admin, task_id, payload, request)
 
 
 @router.get("/my/guests/{guest_id}", response_model=GuestCard)

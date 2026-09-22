@@ -174,9 +174,9 @@ def attention(db: Session, now: Optional[datetime] = None) -> list[AttentionItem
             sorted(e for e, _ in overdue_rows),
         ))
 
-    wrong_logs = db.scalars(
+    wrong_logs = call_center.current_cycle_only(db, db.scalars(
         select(models.CallLog).where(models.CallLog.outcome == call_center.WRONG_NUMBER)
-    ).all()
+    ).all())
     if wrong_logs:
         phones = dict(db.execute(
             select(models.Guest.id, models.Guest.phone)

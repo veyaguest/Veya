@@ -1,5 +1,4 @@
 /** API של מרכז השליטה בטלפנים (``/admin/call-ops``). */
-import { callCenterRecordOutcome } from '../api'
 import type { CallOutcomeRequest } from '../types'
 import { adminHttp, qs } from './adminApi'
 
@@ -14,6 +13,9 @@ export type TaskGroup =
   | 'followup'
   | 'overdue'
   | 'cancelled'
+  /** מסך הטלפן: מה לחייג עכשיו / שיחות חוזרות שמועדן עוד לא הגיע. */
+  | 'work'
+  | 'later'
 
 export type Tone = 'ok' | 'warn' | 'bad' | 'neutral' | 'info'
 
@@ -46,6 +48,13 @@ export interface TaskRow {
   closed_reason_label: string
   needs_attention: boolean
   round_state: string
+  callback_at: string | null
+  is_followup: boolean
+  party_size: number
+  event_time: string
+  venue_name: string
+  note: string
+  event_cycle: number
 }
 
 export interface TaskPage {
@@ -146,6 +155,26 @@ export interface GuestCard {
   tasks: TaskRow[]
   history: HistoryItem[]
   next_action: string
+  guest_note: string
+  owner_notes: string
+}
+
+export interface MyDay {
+  date: string
+  today: string
+  relation: 'past' | 'today' | 'tomorrow' | 'future'
+  counts: Record<string, number> & { work: number; later: number; calls_made: number }
+}
+
+export interface TaskDetail {
+  task: TaskRow
+  card: GuestCard
+}
+
+export interface TaskOutcomeResult {
+  task: TaskRow
+  outcome_label: string
+  rsvp_status: string
 }
 
 export interface GuestHit {
@@ -261,7 +290,17 @@ export const callOps = {
   }) => sendJson<{ caller: CallerRow; temporary_password: string }>('/admin/call-ops/callers', 'POST', data),
   updateCaller: (id: number, data: Partial<Omit<CallerRow, 'id'>>) =>
     sendJson<CallerRow>(`/admin/call-ops/callers/${id}`, 'PATCH', data),
-  recordOutcome: (guestId: number, data: CallOutcomeRequest) => callCenterRecordOutcome(guestId, data),
+  /** תיעוד שיחה על משימה (אדמין). הסבב והמחזור נלקחים מהמשימה עצמה. */
+  taskOutcome: (taskId: number, data: CallOutcomeRequest) =>
+    sendJson<TaskOutcomeResult>(`/admin/call-ops/tasks/${taskId}/outcome`, 'POST', data),
+
+  // ── הטלפן — רק משימות שהוקצו לו ──
+  myDay: () => getJson<MyDay>('/admin/call-ops/my/day'),
+  myTasks: (group: 'work' | 'later', q = '', limit = 200) =>
+    getJson<TaskPage>(`/admin/call-ops/my/tasks${qs({ group, q, limit })}`),
+  myTask: (taskId: number) => getJson<TaskDetail>(`/admin/call-ops/my/tasks/${taskId}`),
+  myTaskOutcome: (taskId: number, data: CallOutcomeRequest) =>
+    sendJson<TaskOutcomeResult>(`/admin/call-ops/my/tasks/${taskId}/outcome`, 'POST', data),
 }
 
 // ── תאריכים (שעון ישראל) ──────────────────────────────────────────────
