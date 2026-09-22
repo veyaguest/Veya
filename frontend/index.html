@@ -604,7 +604,8 @@
       .dv > * { direction: rtl; }
       .mbp {
         position: relative; flex: none; width: 71.4cqw; margin-right: 4.3cqw;
-        transform: perspective(2600px) rotateY(-5deg) rotateX(2deg); transform-origin: 70% 60%;
+        /* זווית שלושת-רבעי רכה, עם נטייה קלה שמתכתבת עם הטלפון שלצדו */
+        transform: perspective(2300px) rotateY(-8deg) rotateX(3deg) rotateZ(-1.6deg); transform-origin: 62% 68%;
       }
       /* המכסה: זכוכית שחורה דקה בתוך שפת אלומיניום */
       .mbp-lid {
@@ -618,13 +619,19 @@
       .mbp-screen { position: relative; aspect-ratio: 1.56; overflow: hidden; border-radius: 1.1cqw 1.1cqw 0.2cqw 0.2cqw; background: #fbf7ee; }
       .mbp-notch {
         position: absolute; z-index: 3; top: 0; left: 50%; transform: translateX(-50%);
-        width: 8.4cqw; height: 1.7cqw; background: #0a0a0b; border-radius: 0 0 0.9cqw 0.9cqw;
+        width: 7.2cqw; height: 1.15cqw; background: #0a0a0b; border-radius: 0 0 0.7cqw 0.7cqw;
       }
       .mbp-notch::after {
         content: ""; position: absolute; left: 50%; top: 42%; width: 0.55cqw; height: 0.55cqw; transform: translate(-50%, -50%);
         border-radius: 50%; background: radial-gradient(circle at 40% 40%, #2d3340, #0c0d10 70%);
       }
       .mbp-safari { height: 100%; border-radius: 0; box-shadow: none; display: flex; flex-direction: column; }
+      /* שורת הדפדפן בהירו נמוכה יותר מברירת המחדל, כדי שהמסך עצמו יקבל
+         יותר מקום ויהיה ברור יותר. שאר החלונות בדף לא מושפעים. */
+      .mbp-safari .mk-browser-bar { height: clamp(18px, 2.7cqi, 26px); padding-top: 1.15cqw; gap: clamp(6px, 1.3cqi, 13px); }
+      .mbp-safari .mk-browser-url { width: min(100%, 360px); height: clamp(15px, 2.1cqi, 20px); font-size: clamp(8px, 1.05cqi, 11px); }
+      .mbp-safari .mk-browser-lights i { width: clamp(6px, 0.95cqi, 9px); }
+      .mbp-safari .mk-browser-nav svg, .mbp-safari .mk-browser-tools svg { width: clamp(8px, 1.15cqi, 12px); }
       .on-dark .mbp-safari { box-shadow: none; }
       .mbp-safari .mk-browser-view { flex: 1; min-height: 0; }
       .mbp-safari .mk-browser-view img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
