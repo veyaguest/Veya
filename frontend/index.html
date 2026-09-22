@@ -848,46 +848,26 @@
       }
       @media (prefers-reduced-motion: reduce) { .dl-stop.is-fresh .dl-date { animation: none; } }
 
-      /* ---- מה קורה כשמשהו זז: בוחרים מקרה, רואים מה זז איתו ---- */
-      .ch { max-width: 720px; margin: 0 auto; }
-      .ch-picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
-      .ch-pick {
-        min-height: 50px; padding: 0 10px; font: inherit; font-weight: 600; font-size: var(--fs-sm);
-        color: var(--body); background: var(--cream); border: 1px solid var(--line);
-        border-radius: var(--radius-md); cursor: pointer;
-        transition: background var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
+      /* ---- מתחילים לראות את האירוע: מעבר קצר מהמספרים אל האולם ----
+         טור טקסט אחד וממורכז, בלי כרטיסים ובלי המחשה. השורות של "עוד
+         באוויר" בדיו מושתק, השורות של "התמונה מתחדדת" בדיו מלא — ההתבהרות
+         עוברת בטיפוגרפיה עצמה. בסוף קו זהב דק (כמו בשורות המעבר) שיורד
+         אל ההושבה. */
+      .clr { max-width: 36rem; margin: 0 auto; text-align: center; }
+      .clr .section-title { margin-bottom: clamp(22px, 3vw, 30px); }
+      .clr-body { margin: 0 0 1.1em; font-size: var(--fs-lg); line-height: 1.9; }
+      .clr-haze { color: var(--muted); }
+      .clr-sharp { color: var(--charcoal); }
+      .clr-end {
+        position: relative; margin: clamp(26px, 3.4vw, 36px) 0 0; padding-bottom: 46px;
+        font-family: var(--font-display); font-size: var(--fd-sm); line-height: 1.5; color: var(--charcoal);
       }
-      .ch-pick.is-on { background: rgba(201, 162, 39, 0.16); border-color: var(--gold); color: var(--charcoal); }
-      .ch-pick:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
-      /* גובה קבוע בין המקרים: מעבר בין כרטיסים לא מזיז את הסקשן. */
-      .ch-panel {
-        padding: 6px 22px 10px; min-height: 268px; background: var(--cream);
-        border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+      .clr-end::after {
+        content: ""; position: absolute; inset-inline-start: 50%; bottom: 0;
+        width: 1px; height: 30px; background: linear-gradient(180deg, var(--gold), transparent);
+        opacity: 0.5;
       }
-      .ch-panel[hidden] { display: none; }
-      .ch-lines { list-style: none; margin: 0; padding: 0; display: grid; }
-      .ch-line {
-        display: grid; grid-template-columns: 8.5rem 1fr; align-items: baseline; gap: 14px;
-        padding: 18px 0; border-bottom: 1px solid var(--line);
-        opacity: 0; transform: translateY(6px);
-        animation: ch-in var(--motion-normal) var(--ease-out) forwards;
-      }
-      .ch-line:nth-child(2) { animation-delay: 90ms; }
-      .ch-line:nth-child(3) { animation-delay: 180ms; }
-      .ch-line:last-child { border-bottom: 0; }
-      @keyframes ch-in { to { opacity: 1; transform: none; } }
-      .ch-what { font-family: var(--font-display); font-size: var(--fd-sm); color: var(--gold-deep); line-height: 1.2; }
-      .ch-does { font-size: var(--fs-md); color: var(--body); line-height: 1.6; }
-      .im-punch { margin: 26px auto 0; max-width: 46ch; text-align: center; font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); }
-      @media (max-width: 560px) {
-        .ch-picks { grid-template-columns: 1fr; }
-        .ch-line { grid-template-columns: 1fr; gap: 4px; padding: 15px 0; }
-        .ch-panel { min-height: 0; padding: 4px 18px 8px; }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .ch-line { opacity: 1; transform: none; animation: none; }
-        .ch-pick { transition: none; }
-      }
+      @media (max-width: 560px) { .clr-body { font-size: var(--fs-md); } }
 
       /* ---- הושבה: מהסקיצה למפה — שלושה מסכים אמיתיים בקומפוזיציה ----
          RTL: השלבים בטור הימני, הקומפוזיציה משמאלם. הסקיצה מאחור ומוטה
@@ -1507,7 +1487,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2364,8 +2344,8 @@
         :root { --seam-soft: 100px; --seam-deep: 210px; --seam-pad: 104px; }
       }
 
-      #why, section.ps, #deadline, #rsvp, section.gh, #calls, #showcase, #impact,
-      p.bridge.bridge-dark, #seating, #gifts, #giftcard, #after, #how,
+      #why, section.ps, #deadline, #rsvp, section.gh, #calls, #showcase, #clarity,
+      #seating, #gifts, #giftcard, #after, #how,
       section.faq-wrap, #story, section.leads, section.band-wrap {
         --sm-up: var(--sm-c); --sm-dn: var(--sm-c); --sm-hu: 0px; --sm-hd: 0px;
         position: relative;
@@ -2392,7 +2372,7 @@
 
       /* הגוון של כל משטח */
       #why, section.ps, #rsvp, #calls, #gifts, section.faq-wrap, section.band-wrap { --sm-c: var(--bg-paper); }
-      #deadline, section.gh, #impact, p.bridge.bridge-dark, section.leads { --sm-c: var(--bg-linen); }
+      #deadline, section.gh, #clarity, section.leads { --sm-c: var(--bg-linen); }
       #after { --sm-c: var(--bg-sand); }
       #showcase { --sm-c: var(--bg-night-2); color: var(--cream-text); }
       #seating, #how { --sm-c: var(--bg-night); }
@@ -2419,8 +2399,7 @@
       #why { --sm-up: var(--bg-night); --sm-hu: var(--seam-deep); padding-top: var(--seam-pad); }
 
       /* שורות המעבר לרוחב מלא */
-      p.bridge.bridge-soft,
-      p.bridge.bridge-dark {
+      p.bridge.bridge-soft {
         max-width: none; margin: -1px 0 0;
         padding-inline: max(20px, calc((100% - 540px) / 2));
       }
@@ -2446,10 +2425,12 @@
       #showcase .sh-mobile { border-top-color: rgba(245, 239, 226, 0.16); }
       #showcase .sh-mobile-title { color: var(--cream-text); }
       #showcase .sh-mobile-body { color: #d8ceb9; }
-      #impact { --sm-up: var(--bg-night-2); --sm-hu: var(--seam-deep); padding-top: var(--seam-pad); }
-
-      /* ── אל ההושבה: הפשתן מתכהה לאט אל הלילה ── */
-      p.bridge.bridge-dark { --sm-dn: var(--bg-night); --sm-hd: var(--seam-deep); padding-bottom: var(--seam-pad); margin-bottom: 0; }
+      /* ── מתחילים לראות את האירוע: מתבהר מהלילה לפשתן, ומתכהה לאט אל ההושבה ── */
+      #clarity {
+        --sm-up: var(--bg-night-2); --sm-hu: var(--seam-deep);
+        --sm-dn: var(--bg-night); --sm-hd: var(--seam-deep);
+        padding-top: var(--seam-pad); padding-bottom: var(--seam-pad);
+      }
       #seating {
         --sm-up: var(--bg-linen); --sm-hu: var(--seam-deep);
         --sm-dn: var(--bg-paper); --sm-hd: var(--seam-deep);
@@ -2581,6 +2562,7 @@
     
     
 
+    
     
     
     
@@ -3115,85 +3097,22 @@
         </div>
       </section>
 
-    <!-- ═════ מה קורה כשמשהו זז ════════════════════════════════════════
-         הסקשן הזה לא חוזר על "לדעת כמה מגיעים" (הסקשנים שלפניו) ולא
-         על "הכול במקום אחד" (אותו אירוע, שתי דרכים). הוא מוסיף את ציר
-         הזמן: אירוע אמיתי משתנה, וגם דחייה של התאריך לא מוחקת את מה
-         שכבר נאסף. שלושת המקרים הם התנהגות אמיתית של המוצר. -->
-    <section class="im tone-alt" id="impact" aria-labelledby="im-title">
+    <!-- ═════ מתחילים לראות את האירוע ═══════════════════════════════════
+         מעבר קצר בין "תמונת מצב" להושבה: מהמספרים אל האולם. טקסט בלבד —
+         בלי mockup ובלי נתונים. הסקשן נושא גם את המעבר מהפשתן אל הלילה של
+         ההושבה, ולכן אין אחריו שורת מעבר נפרדת. -->
+    <section class="clr-wrap tone-alt" id="clarity" aria-labelledby="clarity-title">
       <div class="wrap">
-        <div class="section-head reveal">
-          <h2 id="im-title" class="section-title">ומה קורה כשמשהו זז?</h2>
-          <p class="section-sub">
-            אף אירוע לא נשאר בדיוק כמו שתכננתם.<br />
-            השאלה היא כמה עבודה כל שינוי כזה עולה לכם.
-          </p>
+        <div class="clr">
+          <h2 id="clarity-title" class="section-title reveal">מתחילים לראות את האירוע באמת.</h2>
+          <p class="clr-body clr-haze reveal d1">בהתחלה הכול עוד באוויר.<br />חלק כבר ענו, חלק מתלבטים, ואחרים עדיין לא חזרו.</p>
+          <p class="clr-body clr-sharp reveal d2">אבל ככל שהתשובות נכנסות, התמונה מתחדדת.<br />המספרים הופכים לאנשים. הרשימה הופכת לתמונה אמיתית של הערב.</p>
+          <p class="clr-end reveal d3">ועכשיו, כשכבר יודעים מי מגיע —<br />אפשר להתחיל לסדר את האולם בהתאם.</p>
         </div>
-
-        <div class="ch reveal d1" data-change>
-          <div class="ch-picks" role="group" aria-label="מה השתנה">
-              <button type="button" class="ch-pick is-on" data-ch-pick="cancel" aria-pressed="true">משפחה ביטלה</button>
-              <button type="button" class="ch-pick" data-ch-pick="add" aria-pressed="false">מוסיפים עוד שניים</button>
-              <button type="button" class="ch-pick" data-ch-pick="move" aria-pressed="false">האירוע נדחה</button>
-          </div>
-
-            <div class="ch-panel is-on" data-ch-panel="cancel">
-              <ul class="ch-lines">
-                <li class="ch-line">
-                  <span class="ch-what">הרשימה</span>
-                  <span class="ch-does">הסטטוס משתנה, והמספר בתמונת המצב יורד איתו</span>
-                </li>
-                <li class="ch-line">
-                  <span class="ch-what">ההושבה</span>
-                  <span class="ch-does">השולחן שלהם מסמן שהמקומות התפנו</span>
-                </li>
-                <li class="ch-line">
-                  <span class="ch-what">מי שמחכה</span>
-                  <span class="ch-does">אף אחד לא ממשיך לקבל תזכורות בטעות</span>
-                </li>
-              </ul>
-            </div>
-            <div class="ch-panel" data-ch-panel="add" hidden>
-              <ul class="ch-lines">
-                <li class="ch-line">
-                  <span class="ch-what">הרשימה</span>
-                  <span class="ch-does">שני אנשים נוספים לאותה שורה, לא שורה חדשה</span>
-                </li>
-                <li class="ch-line">
-                  <span class="ch-what">ההושבה</span>
-                  <span class="ch-does">השולחן יודע שצריך עוד שני מקומות</span>
-                </li>
-                <li class="ch-line">
-                  <span class="ch-what">הכסף</span>
-                  <span class="ch-does">המנות והעלות לאדם מתעדכנות מעצמן</span>
-                </li>
-              </ul>
-            </div>
-            <div class="ch-panel" data-ch-panel="move" hidden>
-              <ul class="ch-lines">
-                <li class="ch-line">
-                  <span class="ch-what">הרשימה</span>
-                  <span class="ch-does">נשארת. לא מתחילים לאסוף שמות מחדש</span>
-                </li>
-                <li class="ch-line">
-                  <span class="ch-what">התשובות</span>
-                  <span class="ch-does">מה שכבר ענו נשמר בארכיון ולא נמחק</span>
-                </li>
-                <li class="ch-line">
-                  <span class="ch-what">מה שממשיך</span>
-                  <span class="ch-does">נפתח סבב חדש מול התאריך החדש, ורק ממנו מבקשים תשובה</span>
-                </li>
-              </ul>
-            </div>
-        </div>
-
-        <p class="im-punch reveal d2">לא מתחילים מהתחלה. ממשיכים מאיפה שהייתם.</p>
       </div>
     </section>
 
       <!-- ═════ 9. הושבה ═════ -->
-      <!-- מעבר סיפורי (§4): סוגר את הסקשן הקודם ופותח את הבא. -->
-    <p class="bridge bridge-dark" aria-hidden="true">הרשימה מסודרת. ועכשיו — איפה כולם יושבים?</p>
 
     <section class="seating on-dark" id="seating" aria-labelledby="seating-title">
         <div class="wrap">
@@ -4378,56 +4297,6 @@
           if (!touched) window.veyaHint.show(box);
         });
       })();
-
-      /* ---- מה קורה כשמשהו זז ----
-         שלושה מקרים אמיתיים מחיי אירוע. הבחירה מחליפה את הכרטיס שמתחת,
-         והרמז החד-פעמי מסמן שאפשר לבחור. שום דבר כאן לא נוגע בגלילה. */
-      (function () {
-        var box = document.querySelector('[data-change]');
-        if (!box) return;
-        var picks = [].slice.call(box.querySelectorAll('[data-ch-pick]'));
-        var panels = [].slice.call(box.querySelectorAll('[data-ch-panel]'));
-        var touched = false;
-
-        function show(key) {
-          picks.forEach(function (p) {
-            var on = p.getAttribute('data-ch-pick') === key;
-            p.classList.toggle('is-on', on);
-            p.setAttribute('aria-pressed', on ? 'true' : 'false');
-          });
-          panels.forEach(function (panel) {
-            var on = panel.getAttribute('data-ch-panel') === key;
-            panel.hidden = !on;
-            if (!on) return;
-            // מפעילים מחדש את כניסת השורות, כדי שהמעבר ייראה כמו תשובה.
-            [].slice.call(panel.querySelectorAll('.ch-line')).forEach(function (li) {
-              li.style.animation = 'none';
-              void li.offsetWidth;
-              li.style.animation = '';
-            });
-          });
-        }
-
-        picks.forEach(function (p) {
-          p.addEventListener('click', function () {
-            touched = true;
-            window.veyaHint.clear(box);
-            show(p.getAttribute('data-ch-pick'));
-          });
-        });
-
-        // רמז חד-פעמי: המקרה השני נדלק לרגע, כדי לומר "אפשר לבחור".
-        window.veyaHint.onceInView(box, function () {
-          if (window.veyaHint.reduced) return;
-          setTimeout(function () {
-            if (touched) return;
-            picks[1].classList.add('is-glow');
-            setTimeout(function () { picks[1].classList.remove('is-glow'); }, 1100);
-          }, 600);
-        });
-      })();
-
-
 
       // Cookie Banner — אותו מפתח localStorage כמו ה-SPA (src/cookieConsent.ts),
       // כדי שבחירה בדף הנחיתה לא תבקש שוב אישור אחרי מעבר ל-/app.
