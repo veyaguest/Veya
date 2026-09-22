@@ -827,43 +827,93 @@
          פותחת את הבוחר. */
       .dl-pick input::-webkit-calendar-picker-indicator { opacity: 0; position: absolute; inset-inline-end: 0; width: 100%; height: 100%; cursor: pointer; }
       .dl-pick-field { position: relative; }
-      /* מספר השלבים משתנה לפי המועד (עד 7 + סגירה). הגובה שמור מראש כדי
-         שהחלפת תאריך לא תזיז את העמוד. */
-      .dl-line { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; align-content: start; min-height: 530px; }
       .dl-err { margin: 14px 0 0; text-align: center; font-size: var(--fs-sm); color: var(--body); }
-      /* ההמלצה: מובחנת, אבל המלצה — לא שדה חובה ולא אזהרה */
-      .dl-rec { max-width: 560px; margin: 0 auto 26px; padding: 14px 18px; text-align: center; border: 1px solid rgba(201, 162, 39, 0.45); border-radius: var(--radius-md); background: var(--cream); }
-      .dl-rec-main { margin: 0; font-size: var(--fs-md); color: var(--charcoal); }
-      .dl-rec-main strong { font-weight: 700; }
-      .dl-rec-star { color: var(--gold-deep); margin-inline-end: 6px; }
-      .dl-rec-why { margin: 4px 0 0; font-size: var(--fs-sm); color: var(--body); }
-      /* הסבב האחרון: התזכורת האחרונה וסבב הטלפונים שסוגר את הרשימה */
-      .dl-tag { grid-column: 1 / -1; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.04em; color: var(--gold-deep); }
-      .dl-stop.is-final { border-color: rgba(201, 162, 39, 0.55); }
-      .dl-stop {
-        display: grid; grid-template-columns: 5.6rem 1fr; align-items: center; gap: 14px;
-        padding: 14px 18px; background: var(--cream); border: 1px solid var(--line);
-        border-radius: var(--radius-md);
+      /* בחרו שישי/שבת: המנוע מקדים את הסגירה ליום הפעיל שלפני — אומרים את זה
+         ליד התאריך, במשפט אחד, כדי שהתאריך בציר לא ייראה כמו טעות. */
+      .dl-shift { margin: -12px auto 22px; max-width: 34rem; text-align: center; font-size: var(--fs-sm); color: var(--body); }
+
+      /* ---- המסלול אל מועד הסגירה ----
+         המסלול המלא תמיד מצויר (בקשה, תזכורת, סבב שיחות... ואז הסגירה),
+         והתאריכים על השלבים מגיעים מהמנוע. שלב שלא נכנס בזמן שנשאר נשאר
+         ריק: נקודה חלולה ובלי תאריך. מועד הסגירה הוא הנקודה האחרונה והגדולה,
+         והקו נמשך ממנו לאחור. שבעה מקומות קבועים — החלפת תאריך לא מזיזה
+         את העמוד. */
+      .dlt { position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--dlt-n, 7), minmax(0, 1fr)); }
+      .dlt::before, .dlt::after {
+        content: ""; position: absolute; top: 11px; height: 2px;
+        inset-inline: calc(100% / (var(--dlt-n, 7) * 2));
       }
-      .dl-stop.is-close { background: rgba(201, 162, 39, 0.1); border-color: rgba(201, 162, 39, 0.4); }
-      .dl-date {
-        font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal);
-        font-variant-numeric: tabular-nums; line-height: 1;
+      .dlt::before { background: var(--line); }
+      .dlt::after { background: var(--gold); opacity: 0.6; transform-origin: left center; }
+      .dlt-node {
+        position: relative; z-index: 1; display: grid; justify-items: center; align-content: start;
+        gap: 3px; padding: 0 4px; text-align: center;
       }
-      .dl-stop.is-close .dl-date { color: var(--gold-deep); }
-      .dl-what { font-size: var(--fs-md); color: var(--body); }
-      .dl-stop.is-close .dl-what, .dl-stop.is-final .dl-what { font-weight: 600; color: var(--charcoal); }
-      /* עדכון תאריך: הבהוב עדין אחד, לא אנימציה. */
-      .dl-stop.is-fresh .dl-date { animation: dl-fresh 420ms var(--ease-out); }
-      @keyframes dl-fresh { from { opacity: 0.25; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
-      .dl-say { margin: 22px 0 0; text-align: center; font-size: var(--fs-md); color: var(--muted); }
-      @media (min-width: 861px) {
-        .dl-line { grid-template-columns: repeat(var(--dl-n, 7), minmax(0, 1fr)); gap: 10px; min-height: 104px; }
-        .dl-stop { grid-template-columns: 1fr; justify-items: center; align-content: center; text-align: center; gap: 6px; padding: 16px 8px; min-height: 142px; }
-        .dl-date { font-size: var(--fd-sm); }
-        .dl-what { font-size: var(--fs-sm); }
+      .dlt-dot {
+        width: 14px; height: 14px; margin: 5px 0 12px; border-radius: 50%;
+        background: var(--gold-deep); box-shadow: 0 0 0 4px var(--sm-c, var(--bg-linen));
       }
-      @media (prefers-reduced-motion: reduce) { .dl-stop.is-fresh .dl-date { animation: none; } }
+      .dlt-date { font-family: var(--font-display); font-size: var(--fd-sm); line-height: 1; color: var(--charcoal); font-variant-numeric: tabular-nums; }
+      .dlt-day { font-size: var(--fs-2xs); color: var(--muted); }
+      .dlt-what { margin-top: 4px; font-size: var(--fs-sm); font-weight: 600; color: var(--body); line-height: 1.35; }
+      /* שלב שלא נכנס הפעם */
+      .dlt-node.is-off .dlt-dot { background: var(--sm-c, var(--bg-linen)); border: 1.5px dashed var(--muted); }
+      .dlt-node.is-off .dlt-what { font-weight: 500; color: var(--muted); }
+      /* היעד: מועד סגירת הרשימה */
+      .dlt-node.is-goal .dlt-dot {
+        width: 24px; height: 24px; margin: 0 0 10px;
+        background: var(--gold); box-shadow: 0 0 0 4px var(--sm-c, var(--bg-linen)), 0 0 0 9px rgba(201, 162, 39, 0.18);
+      }
+      .dlt-goal-k { margin-bottom: 2px; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.08em; color: var(--gold-deep); }
+      .dlt-node.is-goal .dlt-date { font-size: var(--fd-md); color: var(--gold-deep); }
+      .dlt-node.is-goal .dlt-what { font-weight: 700; color: var(--charcoal); }
+      .dlt-sub { min-height: 1.5em; font-size: var(--fs-xs); color: var(--body); }
+      .dlt-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      .dl-note { margin: 26px auto 0; max-width: 36rem; text-align: center; font-size: var(--fs-md); color: var(--body); line-height: 1.7; }
+
+      /* הקו נמשך מהיעד לאחור, והשלבים מצטרפים אליו מהסוף להתחלה. פעם אחת
+         כשהציר נכנס למסך, ושוב בכל החלפת תאריך. רק opacity ו-transform. */
+      .dlt.is-wait::after { transform: scaleX(0); }
+      .dlt.is-wait .dlt-node { opacity: 0; }
+      .dlt.is-play::after { animation: dlt-fill-x 900ms var(--ease-out) both; }
+      .dlt.is-play .dlt-node { animation: dlt-in 420ms var(--ease-out) both; animation-delay: calc(var(--rev, 0) * 90ms); }
+      @keyframes dlt-fill-x { from { transform: scaleX(0); } to { transform: none; } }
+      @keyframes dlt-fill-y { from { transform: scaleY(0); } to { transform: none; } }
+      @keyframes dlt-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+      /* טלפון: אותו מסלול לאורך, מלמעלה (הבקשה) למטה (היעד). */
+      @media (max-width: 860px) {
+        .dlt { grid-template-columns: 1fr; gap: 0; max-width: 26rem; margin: 0 auto; }
+        /* בטלפון ההערה יכולה לתפוס שתי שורות — שומרים להן מקום מראש. */
+        .dl-note { min-height: 3.4em; }
+        .dlt::before, .dlt::after {
+          top: 20px; bottom: 34px; height: auto; width: 2px;
+          inset-inline: auto; inset-inline-start: 12px;
+        }
+        .dlt::after { transform-origin: center bottom; }
+        .dlt.is-wait::after { transform: scaleY(0); }
+        .dlt.is-play::after { animation-name: dlt-fill-y; }
+        .dlt-node {
+          grid-template-columns: 26px 4.6rem 1fr; justify-items: start; align-items: center;
+          column-gap: 12px; row-gap: 0; padding: 9px 0; text-align: start;
+        }
+        .dlt-dot { grid-column: 1; grid-row: 1 / span 2; justify-self: center; margin: 0; }
+        .dlt-date { grid-column: 2; grid-row: 1; }
+        .dlt-day { grid-column: 2; grid-row: 2; }
+        .dlt-what { grid-column: 3; grid-row: 1 / span 2; margin: 0; }
+        .dlt-node.is-goal { margin-top: 8px; padding: 14px 0 0; border-top: 1px solid var(--line); }
+        .dlt-node.is-goal .dlt-dot { margin: 0; }
+        .dlt-goal-k { grid-column: 2 / span 2; grid-row: 1; margin: 0 0 4px; }
+        .dlt-node.is-goal .dlt-date { grid-row: 2; }
+        .dlt-node.is-goal .dlt-day { grid-row: 3; }
+        .dlt-node.is-goal .dlt-what { grid-row: 2; }
+        .dlt-node.is-goal .dlt-sub { grid-column: 3; grid-row: 3; }
+        .dlt-node.is-goal .dlt-dot { grid-row: 2 / span 2; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .dlt.is-wait::after, .dlt.is-play::after { transform: none; animation: none; }
+        .dlt.is-wait .dlt-node, .dlt.is-play .dlt-node { opacity: 1; animation: none; }
+      }
 
       /* ---- מתחילים לראות את האירוע: מעבר קצר מהמספרים אל האולם ----
          טור טקסט אחד וממורכז, בלי כרטיסים ובלי המחשה. השורות של "עוד
@@ -2543,7 +2593,6 @@
 
       /* תגיות זהב על גוון זהב: רקע רך מעט יותר, כדי שהטקסט יישאר קריא */
       .numcard-tag { background: rgba(201, 162, 39, 0.1); }
-      .dl-stop.is-close { background: rgba(201, 162, 39, 0.08); }
 
       /* ── חתימות המותג ─────────────────────────────────────────────────
          שלוש נקודות בלבד, לפי הסיפור: הסמל במעבר מ"הבעיה" ל-VEYA, הסמל
@@ -2911,22 +2960,23 @@
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">מועד סגירת הרשימה</span>
-            <h2 id="deadline-title" class="section-title">מתי אתם סוגרים את רשימת המוזמנים?</h2>
+            <h2 id="deadline-title" class="section-title">קובעים מתי סוגרים את הרשימה. <span class="ttl-accent">VEYA בונה את הדרך לשם.</span></h2>
             <p class="section-sub">
-              לא מתישהו לפני האירוע.<br />
-              תאריך ברור.<br />
-              מכאן כבר אפשר לעבוד מסודר.
+              בוחרים את היום שבו הרשימה נסגרת.<br />
+              VEYA בודקת כמה זמן נשאר עד אליו, ובונה ממנו לאחור את מסלול
+              אישורי ההגעה — מלא כשיש זמן, קצר יותר כשאין.
             </p>
           </div>
 
-          <!-- ═════ בוחרים תאריך, והציר נבנה לאחור ═══════════════════════
+          <!-- ═════ בוחרים תאריך, והמסלול נבנה לאחור ═════════════════════
                התאריכים לא מחושבים כאן: הם מגיעים ממנוע לוח הזמנים של VEYA
-               (rsvp_timeline.compute_schedule) דרך אותו endpoint ציבורי של
-               מחשבון לוח הזמנים. אותו חלון של עד 14 יום, אותו דילוג על שישי
-               ושבת, אותו כיווץ כשהמועד קרוב, ואותו מספר סבבים. -->
+               (rsvp_timeline.compute_schedule) דרך /public/calculators/rsvp-timeline.
+               מה שמצויר קבוע הוא רק המסלול המלא; אילו שלבים נכנסים ובאיזה
+               תאריך — זו התשובה של המנוע לזמן שנשאר. אין כאן המלצה על מועד:
+               המוצר לא נותן כזו. -->
           <div class="dl reveal d1" data-deadline>
             <label class="dl-pick">
-              <span class="dl-pick-label">סגירת הרשימה</span>
+              <span class="dl-pick-label">מתי סוגרים את הרשימה?</span>
               <span class="hint" data-hint hidden>נסו לשנות את התאריך ←</span>
               <span class="dl-pick-field">
                 <span class="dl-pick-ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span>
@@ -2934,15 +2984,12 @@
               </span>
             </label>
 
-            <div class="dl-rec">
-              <p class="dl-rec-main"><span class="dl-rec-star" aria-hidden="true">★</span><strong>ההמלצה שלנו:</strong> לסגור את הרשימה <span dir="ltr">2–3</span> ימים לפני האירוע.</p>
-              <p class="dl-rec-why">ככה נשאר לכם זמן להשלים אישורים, לסגור הושבה ולהגיע לאירוע עם מספרים ברורים.</p>
-            </div>
+            <p class="dl-shift" data-dl-shift hidden></p>
 
-            <ol class="dl-line" data-dl-line aria-live="polite"></ol>
+            <ol class="dlt" data-dl-line aria-label="מסלול אישורי ההגעה עד מועד הסגירה"></ol>
             <p class="dl-err" data-dl-err hidden>לא הצלחנו לחשב את לוח הזמנים כרגע. אפשר לנסות שוב בעוד רגע.</p>
 
-            <p class="dl-say">הודעות, תזכורות, טלפונים. כל סבב בזמן שלו.</p>
+            <p class="dl-note" data-dl-note aria-live="polite"></p>
           </div>
 
           <p class="flow-punch reveal d2">
@@ -3043,8 +3090,8 @@
           <div class="section-head reveal">
             <h2 id="calls-title" class="section-title">ומי שלא עונה?</h2>
             <p class="section-sub">
-              לא צריך שאתם תרדפו אחריו. VEYA מסדרת את <b>התהליך</b> כדי שאף אחד
-              לא ייפול בין הכיסאות.
+              VEYA ממשיכה איתו — מתזכורות ועד <b>סבבי שיחות אנושיים</b>, עד
+              שמגיעים למועד סגירת הרשימה. לא צריך שאתם תרדפו אחריו.
             </p>
           </div>
           <!-- בלי המחשה בכוונה (החלטת בעלים 2026-09-15): לא האנימציה ולא
@@ -3053,7 +3100,7 @@
             <article class="supporting-item reveal">
               <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div>
               <h3>הודעות שלא נענו? עוברים לשיחות אנושיות.</h3>
-              <p>התהליך מתקדם בסדר ברור:<br /><b>הודעה → סבב שיחות → הודעה → סבב שיחות → הודעה → סבב שיחות.</b><br />בכל סבב, <b>טלפנים מתקשרים אישית</b> למי שעדיין לא ענה.<br />מי שכבר אישר או אמר שלא מגיע — יורד מהתהליך. נגמר הסיפור.</p>
+              <p>המסלול מתקדם בסדר קבוע:<br /><b>בקשת אישור ← תזכורת ← סבב שיחות ← תזכורת ← סבב שיחות ← תזכורת ← סבב שיחות אחרון.</b><br />בכל סבב שיחות, <b>טלפנים מתקשרים אישית</b> למי שעדיין לא ענה. כשנשאר פחות זמן עד סגירת הרשימה, המסלול מתקצר.<br />מי שכבר אישר או אמר שלא מגיע — יורד מהתהליך. נגמר הסיפור.</p>
             </article>
             <article class="supporting-item reveal d1">
               <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6.5a3 3 0 0 1 0 5.8"/><path d="M20.5 20a5.5 5.5 0 0 0-4-5.3"/></svg></div>
@@ -4256,22 +4303,32 @@
         window.veyaHint.onceInView(box, play);
       })();
 
-      /* ---- מועד סגירת הרשימה: הציר נבנה לאחור מהתאריך שנבחר ----
+      /* ---- מועד סגירת הרשימה: המסלול נבנה לאחור מהתאריך שנבחר ----
          אין כאן לוח זמנים משלנו. כל תאריך מגיע ממנוע לוח הזמנים של VEYA
          (rsvp_timeline.compute_schedule) דרך /public/calculators/rsvp-timeline —
          אותו endpoint של מחשבון לוח הזמנים. המנוע מקבל תאריך אירוע וכמה
          ימים לפניו נסגרת הרשימה; מועד שבחרו כאן הוא "יום לפני אירוע" שחל
-         למחרת, ולכן מועד הסגירה והסבבים יוצאים בדיוק כמו במערכת. */
+         למחרת, ולכן מועד הסגירה והשלבים יוצאים בדיוק כמו במערכת.
+
+         מה שקבוע כאן הוא רק *הציור* של המסלול המלא. השלבים שהמנוע החזיר
+         מונחים עליו לפי הסדר, וסבב השיחות שביום הסגירה מתלבש על היעד.
+         מקום במסלול שהמנוע לא מילא — נשאר ריק. אם התשובה לא מתיישבת על
+         המסלול המוכר (למשל הגדרות מערכת אחרות), מציגים רק את מה שהמנוע
+         החזיר, בלי מקומות ריקים. */
       (function () {
         var box = document.querySelector('[data-deadline]');
         if (!box) return;
         var input = box.querySelector('[data-dl-input]');
         var line = box.querySelector('[data-dl-line]');
         var err = box.querySelector('[data-dl-err]');
+        var note = box.querySelector('[data-dl-note]');
+        var shift = box.querySelector('[data-dl-shift]');
         if (!input || !line) return;
         var raw = '%VITE_API_URL%';
         var API = /^https?:\/\//.test(raw) ? raw.replace(/\/$/, '') : 'http://localhost:8000';
-        var LABEL = { whatsapp_first: 'מתחילים', reminder: 'תזכורת', call_round: 'טלפונים' };
+        var NAME = { whatsapp_first: 'בקשת אישור', reminder: 'תזכורת', call_round: 'סבב שיחות' };
+        // המסלול המלא עד היעד. סבב השיחות האחרון הוא היעד עצמו (יום הסגירה).
+        var PATH = ['whatsapp_first', 'reminder', 'call_round', 'reminder', 'call_round', 'reminder'];
 
         function iso(d) {
           return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -4280,43 +4337,95 @@
           var p = isoDate.split('-');
           return p[2] + '.' + p[1];
         }
-        function stop(date, what, cls, tag) {
-          var li = document.createElement('li');
-          li.className = 'dl-stop' + (cls ? ' ' + cls : '');
-          if (tag) { var t = document.createElement('span'); t.className = 'dl-tag'; t.textContent = tag; li.appendChild(t); }
-          var d = document.createElement('span'); d.className = 'dl-date'; d.textContent = ddmm(date);
-          var w = document.createElement('span'); w.className = 'dl-what'; w.textContent = what;
-          li.appendChild(d); li.appendChild(w);
+        function el(tag, cls, text) {
+          var n = document.createElement(tag);
+          if (cls) n.className = cls;
+          if (text) n.textContent = text;
+          return n;
+        }
+        function node(type, st) {
+          var li = el('li', 'dlt-node' + (st ? '' : ' is-off'));
+          li.appendChild(el('span', 'dlt-dot'));
+          // שלב שלא נכנס שומר על אותו מבנה (בלי תאריך), כדי שהשורות יישארו
+          // באותו גובה והתוויות באותו קו.
+          li.appendChild(el('span', 'dlt-date', st ? ddmm(st.date) : '\u00a0'));
+          li.appendChild(el('span', 'dlt-day', st ? st.weekday : '\u00a0'));
+          li.appendChild(el('span', 'dlt-what', NAME[type] || type));
+          if (!st) li.appendChild(el('span', 'dlt-sr', 'לא נכנס בזמן שנשאר'));
           return li;
+        }
+
+        // מניח את השלבים שהמנוע החזיר על המסלול המלא, לפי הסדר.
+        function place(data) {
+          var steps = data.placements.slice();
+          var tail = steps[steps.length - 1];
+          var closingCall = null;
+          if (tail && tail.type === 'call_round' && tail.date === data.commitment_date) closingCall = steps.pop();
+          var slots = PATH.map(function () { return null; });
+          var j = 0;
+          for (var i = 0; i < steps.length; i += 1) {
+            while (j < PATH.length && PATH[j] !== steps[i].type) j += 1;
+            if (j >= PATH.length) return null;
+            slots[j] = steps[i];
+            j += 1;
+          }
+          return { slots: slots, closingCall: closingCall };
+        }
+
+        var seen = false, ready = false;
+        function play() {
+          if (window.veyaHint.reduced) { line.classList.remove('is-wait'); return; }
+          line.classList.remove('is-wait', 'is-play');
+          void line.offsetWidth;
+          line.classList.add('is-play');
         }
 
         var seq = 0, timer = null;
         function render(data, fresh) {
-          var steps = data.placements.slice();
+          var placed = place(data);
           var items = [];
-          var last = steps[steps.length - 1];
-          // המנוע שם את סבב הטלפונים האחרון על מועד הסגירה עצמו, ואת התזכורת
-          // האחרונה ביום פעיל שלפניו. יחד הם "הסבב האחרון": הודעה, ואז טלפונים.
-          if (last && last.date === data.commitment_date && last.type === 'call_round') {
-            steps.pop();
-            items.push(stop(data.commitment_date, 'סבב טלפונים · סוגרים רשימה', 'is-close is-final', 'הסבב האחרון'));
-            var prev = steps[steps.length - 1];
-            if (prev && prev.type === 'reminder') {
-              steps.pop();
-              items.push(stop(prev.date, 'תזכורת אחרונה', 'is-final', 'הסבב האחרון'));
-            }
+          if (placed) {
+            placed.slots.forEach(function (st, i) { items.push(node(PATH[i], st)); });
           } else {
-            items.push(stop(data.commitment_date, 'סוגרים רשימה', 'is-close'));
+            data.placements.forEach(function (st) {
+              if (st.type === 'call_round' && st.date === data.commitment_date) return;
+              items.push(node(st.type, st));
+            });
           }
-          for (var i = steps.length - 1; i >= 0; i -= 1) {
-            var st = steps[i];
-            var label = st.type === 'call_round' ? 'סבב טלפונים' : (LABEL[st.type] || st.label);
-            items.push(stop(st.date, label, ''));
-          }
-          line.style.setProperty('--dl-n', String(items.length));
+          var closingCall = placed ? placed.closingCall : data.placements.filter(function (st) {
+            return st.type === 'call_round' && st.date === data.commitment_date;
+          })[0];
+
+          var goal = el('li', 'dlt-node is-goal');
+          goal.appendChild(el('span', 'dlt-dot'));
+          goal.appendChild(el('span', 'dlt-goal-k', 'היעד'));
+          goal.appendChild(el('span', 'dlt-date', ddmm(data.commitment_date)));
+          goal.appendChild(el('span', 'dlt-day', data.commitment_weekday));
+          goal.appendChild(el('span', 'dlt-what', 'סוגרים את הרשימה'));
+          // השורה נשארת גם כשאין סבב שיחות ביום הסגירה — כדי שהגובה לא ישתנה.
+          goal.appendChild(el('span', 'dlt-sub', closingCall ? 'אחרי סבב שיחות אחרון' : ''));
+          items.push(goal);
+
+          // היעד מופיע ראשון, והשלבים מצטרפים אליו לאחור.
+          items.forEach(function (li, i) { li.style.setProperty('--rev', String(items.length - 1 - i)); });
+          line.style.setProperty('--dlt-n', String(items.length));
           line.replaceChildren.apply(line, items);
-          if (!fresh) return;
-          items.forEach(function (li) { li.classList.add('is-fresh'); });
+
+          var full = placed && closingCall && placed.slots.every(Boolean);
+          note.textContent = full
+            ? 'יש מספיק זמן: המסלול המלא נכנס עד יום הסגירה.'
+            : 'נשאר פחות זמן, אז המסלול מתקצר לימים שיש. שלב שלא נכנס נשאר ריק.';
+
+          // המנוע מקדים סגירה שנופלת בשישי/שבת ליום הפעיל שלפניה.
+          var picked = input.value;
+          if (shift) {
+            var moved = picked && data.commitment_date < picked;
+            shift.hidden = !moved;
+            if (moved) shift.textContent = 'הרשימה תיסגר ביום הפעילות האחרון שלפני התאריך שבחרתם: ' + data.commitment_weekday + ', ' + ddmm(data.commitment_date) + '.';
+          }
+
+          ready = true;
+          if (fresh || seen) play();
         }
         function load(fresh) {
           var picked = new Date(input.value + 'T12:00:00');
@@ -4344,9 +4453,16 @@
           timer = setTimeout(function () { load(fresh); }, 250);
         }
 
+        // עד שהציר נכנס למסך הוא מחכה במצב ההתחלה, ואז נבנה פעם אחת.
+        if (!window.veyaHint.reduced) line.classList.add('is-wait');
+        window.veyaHint.onceInView(line, function () {
+          seen = true;
+          if (ready && !line.classList.contains('is-play')) play();
+        });
+
         var today = new Date();
         input.min = iso(today);
-        // ברירת מחדל: כחודש קדימה — כך שגם מי שלא נגע רואה לוח מלא.
+        // ברירת מחדל: כחודש קדימה — כך שגם מי שלא נגע רואה את המסלול המלא.
         input.value = iso(new Date(today.getTime() + 30 * 86400000));
         load(false);
         // לחיצה על כל השדה — לא רק על האייקון הזעיר — פותחת את לוח השנה.
