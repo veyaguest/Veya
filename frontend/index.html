@@ -807,8 +807,11 @@
 
       /* ---- מועד סגירת הרשימה: בוחרים תאריך, הציר נבנה לאחור ---- */
       .dl { max-width: 940px; margin: 0 auto; }
-      .dl-pick { display: grid; gap: 8px; justify-items: center; margin-bottom: 26px; }
-      .dl-pick-label { font-size: var(--fs-sm); font-weight: 600; color: var(--muted); }
+      .dl-pick { position: relative; display: grid; gap: 10px; justify-items: center; margin-bottom: 34px; }
+      /* השאלה של הסקשן — מה בוחרים. צמודה לשדה, לא תווית אפורה. */
+      .dl-pick-label { font-size: var(--fs-md); font-weight: 700; color: var(--charcoal); }
+      /* הרמז החד-פעמי יושב מתחת לשדה ולא תופס מקום בזרימה */
+      .dl-pick .hint { position: absolute; top: calc(100% + 6px); inset-inline: 0; text-align: center; }
       .dl-pick-field {
         display: inline-flex; align-items: center; gap: 10px; min-height: 52px;
         padding: 6px 16px; background: var(--cream); border: 1px solid var(--line);
@@ -835,38 +838,58 @@
       /* ---- המסלול אל מועד הסגירה ----
          המסלול המלא תמיד מצויר (בקשה, תזכורת, סבב שיחות... ואז הסגירה),
          והתאריכים על השלבים מגיעים מהמנוע. שלב שלא נכנס בזמן שנשאר נשאר
-         ריק: נקודה חלולה ובלי תאריך. מועד הסגירה הוא הנקודה האחרונה והגדולה,
-         והקו נמשך ממנו לאחור. שבעה מקומות קבועים — החלפת תאריך לא מזיזה
-         את העמוד. */
-      .dlt { position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--dlt-n, 7), minmax(0, 1fr)); }
-      .dlt::before, .dlt::after {
-        content: ""; position: absolute; top: 11px; height: 2px;
-        inset-inline: calc(100% / (var(--dlt-n, 7) * 2));
+         ריק ושקט: נקודה חלולה ובלי תאריך. מועד הסגירה הוא היעד: העמודה
+         הרחבה בסוף, הנקודה הגדולה והתאריך הגדול — והקו נמשך ממנו לאחור.
+         שני סוגי שלבים: הודעה (נקודה קטנה ובהירה) וסבב שיחות (נקודה גדולה
+         וכהה, שם מודגש). בדסקטופ "מה" מעל הקו ו"מתי" מתחתיו.
+         שבעה מקומות קבועים — החלפת תאריך לא מזיזה את העמוד. */
+      .dlt {
+        --dot-box: 28px; --what-h: 20px;
+        position: relative; list-style: none; margin: 0; padding: 0; display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr)) minmax(0, 1.6fr);
       }
+      .dlt::before, .dlt::after {
+        content: ""; position: absolute; height: 2px;
+        top: calc(var(--what-h) + 8px + var(--dot-box) / 2 - 1px);
+        /* ממרכז העמודה הראשונה (0.5 מתוך 7.6) עד מרכז היעד (0.8 מתוך 7.6) */
+        inset-inline-start: calc(100% * 0.5 / 7.6); inset-inline-end: calc(100% * 0.8 / 7.6);
+      }
+      .dlt.is-free { grid-template-columns: repeat(var(--dlt-n, 7), minmax(0, 1fr)); }
+      .dlt.is-free::before, .dlt.is-free::after { inset-inline: calc(100% / (var(--dlt-n, 7) * 2)); }
       .dlt::before { background: var(--line); }
       .dlt::after { background: var(--gold); opacity: 0.6; transform-origin: left center; }
       .dlt-node {
         position: relative; z-index: 1; display: grid; justify-items: center; align-content: start;
-        gap: 3px; padding: 0 4px; text-align: center;
+        padding: 0 4px; text-align: center;
+      }
+      .dlt-what {
+        order: -1; height: var(--what-h); margin-bottom: 8px; line-height: var(--what-h);
+        font-size: var(--fs-sm); font-weight: 500; color: var(--body); white-space: nowrap;
       }
       .dlt-dot {
-        width: 14px; height: 14px; margin: 5px 0 12px; border-radius: 50%;
-        background: var(--gold-deep); box-shadow: 0 0 0 4px var(--sm-c, var(--bg-linen));
+        --d: 10px;
+        width: var(--d); height: var(--d);
+        margin: calc((var(--dot-box) - var(--d)) / 2) 0 calc((var(--dot-box) - var(--d)) / 2 + 10px);
+        border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px var(--sm-c, var(--bg-linen));
       }
-      .dlt-date { font-family: var(--font-display); font-size: var(--fd-sm); line-height: 1; color: var(--charcoal); font-variant-numeric: tabular-nums; }
-      .dlt-day { font-size: var(--fs-2xs); color: var(--muted); }
-      .dlt-what { margin-top: 4px; font-size: var(--fs-sm); font-weight: 600; color: var(--body); line-height: 1.35; }
-      /* שלב שלא נכנס הפעם */
-      .dlt-node.is-off .dlt-dot { background: var(--sm-c, var(--bg-linen)); border: 1.5px dashed var(--muted); }
-      .dlt-node.is-off .dlt-what { font-weight: 500; color: var(--muted); }
+      .dlt-node.is-call .dlt-dot { --d: 16px; background: var(--gold-deep); }
+      .dlt-node.is-call .dlt-what { font-weight: 700; color: var(--charcoal); }
+      .dlt-date { font-family: var(--font-display); font-size: var(--fd-sm); line-height: 1.1; color: var(--charcoal); font-variant-numeric: tabular-nums; }
+      .dlt-day { margin-top: 2px; font-size: var(--fs-2xs); color: var(--muted); }
+      /* שלב שלא נכנס הפעם — שקט, בלי תאריך */
+      .dlt-node.is-off .dlt-dot { background: var(--sm-c, var(--bg-linen)); border: 1.5px dashed rgba(106, 98, 82, 0.7); }
+      .dlt-node.is-off .dlt-what { font-size: var(--fs-xs); font-weight: 500; color: var(--muted); }
       /* היעד: מועד סגירת הרשימה */
       .dlt-node.is-goal .dlt-dot {
-        width: 24px; height: 24px; margin: 0 0 10px;
-        background: var(--gold); box-shadow: 0 0 0 4px var(--sm-c, var(--bg-linen)), 0 0 0 9px rgba(201, 162, 39, 0.18);
+        --d: var(--dot-box);
+        background: var(--gold); box-shadow: 0 0 0 4px var(--sm-c, var(--bg-linen)), 0 0 0 10px rgba(201, 162, 39, 0.18);
       }
-      .dlt-goal-k { margin-bottom: 2px; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.08em; color: var(--gold-deep); }
-      .dlt-node.is-goal .dlt-date { font-size: var(--fd-md); color: var(--gold-deep); }
-      .dlt-node.is-goal .dlt-what { font-weight: 700; color: var(--charcoal); }
+      .dlt-goal-k {
+        order: -1; height: var(--what-h); margin-bottom: 8px; line-height: var(--what-h);
+        font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.08em; color: var(--gold-deep);
+      }
+      .dlt-node.is-goal .dlt-what { order: 0; height: auto; margin: 6px 0 0; line-height: 1.35; white-space: normal; font-size: var(--fs-md); font-weight: 700; color: var(--charcoal); }
+      .dlt-node.is-goal .dlt-date { font-size: clamp(1.6rem, 2.4vw, 2.05rem); color: var(--gold-deep); }
       .dlt-sub { min-height: 1.5em; font-size: var(--fs-xs); color: var(--body); }
       .dlt-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
       .dl-note { margin: 26px auto 0; max-width: 36rem; text-align: center; font-size: var(--fs-md); color: var(--body); line-height: 1.7; }
@@ -883,32 +906,32 @@
 
       /* טלפון: אותו מסלול לאורך, מלמעלה (הבקשה) למטה (היעד). */
       @media (max-width: 860px) {
-        .dlt { grid-template-columns: 1fr; gap: 0; max-width: 26rem; margin: 0 auto; }
+        .dlt, .dlt.is-free { grid-template-columns: 1fr; gap: 0; max-width: 26rem; margin: 0 auto; }
         /* בטלפון ההערה יכולה לתפוס שתי שורות — שומרים להן מקום מראש. */
         .dl-note { min-height: 3.4em; }
-        .dlt::before, .dlt::after {
-          top: 20px; bottom: 34px; height: auto; width: 2px;
-          inset-inline: auto; inset-inline-start: 12px;
+        .dlt::before, .dlt::after, .dlt.is-free::before, .dlt.is-free::after {
+          top: 24px; bottom: 44px; height: auto; width: 2px;
+          inset-inline: auto; inset-inline-start: 13px;
         }
         .dlt::after { transform-origin: center bottom; }
         .dlt.is-wait::after { transform: scaleY(0); }
         .dlt.is-play::after { animation-name: dlt-fill-y; }
         .dlt-node {
-          grid-template-columns: 26px 4.6rem 1fr; justify-items: start; align-items: center;
+          grid-template-columns: 28px 4.6rem 1fr; justify-items: start; align-items: center;
           column-gap: 12px; row-gap: 0; padding: 9px 0; text-align: start;
         }
+        .dlt-what { order: 0; height: auto; margin: 0; line-height: 1.35; white-space: normal; }
         .dlt-dot { grid-column: 1; grid-row: 1 / span 2; justify-self: center; margin: 0; }
         .dlt-date { grid-column: 2; grid-row: 1; }
-        .dlt-day { grid-column: 2; grid-row: 2; }
-        .dlt-what { grid-column: 3; grid-row: 1 / span 2; margin: 0; }
-        .dlt-node.is-goal { margin-top: 8px; padding: 14px 0 0; border-top: 1px solid var(--line); }
-        .dlt-node.is-goal .dlt-dot { margin: 0; }
-        .dlt-goal-k { grid-column: 2 / span 2; grid-row: 1; margin: 0 0 4px; }
-        .dlt-node.is-goal .dlt-date { grid-row: 2; }
-        .dlt-node.is-goal .dlt-day { grid-row: 3; }
-        .dlt-node.is-goal .dlt-what { grid-row: 2; }
-        .dlt-node.is-goal .dlt-sub { grid-column: 3; grid-row: 3; }
+        .dlt-day { grid-column: 2; grid-row: 2; margin: 0; }
+        .dlt-what { grid-column: 3; grid-row: 1 / span 2; }
+        .dlt-node.is-goal { margin-top: 8px; padding: 16px 0 0; border-top: 1px solid var(--line); }
+        .dlt-goal-k { order: 0; height: auto; line-height: 1.4; grid-column: 2 / span 2; grid-row: 1; margin: 0 0 4px; }
         .dlt-node.is-goal .dlt-dot { grid-row: 2 / span 2; }
+        .dlt-node.is-goal .dlt-date { grid-row: 2; font-size: var(--fd-md); }
+        .dlt-node.is-goal .dlt-day { grid-row: 3; }
+        .dlt-node.is-goal .dlt-what { grid-row: 2; margin: 0; }
+        .dlt-node.is-goal .dlt-sub { grid-column: 3; grid-row: 3; }
       }
       @media (prefers-reduced-motion: reduce) {
         .dlt.is-wait::after, .dlt.is-play::after { transform: none; animation: none; }
@@ -4344,7 +4367,7 @@
           return n;
         }
         function node(type, st) {
-          var li = el('li', 'dlt-node' + (st ? '' : ' is-off'));
+          var li = el('li', 'dlt-node ' + (type === 'call_round' ? 'is-call' : 'is-msg') + (st ? '' : ' is-off'));
           li.appendChild(el('span', 'dlt-dot'));
           // שלב שלא נכנס שומר על אותו מבנה (בלי תאריך), כדי שהשורות יישארו
           // באותו גובה והתוויות באותו קו.
@@ -4408,6 +4431,7 @@
 
           // היעד מופיע ראשון, והשלבים מצטרפים אליו לאחור.
           items.forEach(function (li, i) { li.style.setProperty('--rev', String(items.length - 1 - i)); });
+          line.classList.toggle('is-free', !placed);
           line.style.setProperty('--dlt-n', String(items.length));
           line.replaceChildren.apply(line, items);
 
