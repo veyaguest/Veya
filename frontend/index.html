@@ -478,7 +478,8 @@
 
       /* ===== Sections ===== */
       section { padding: clamp(64px, 9vw, 108px) 0; }
-      .section-head { text-align: center; max-width: 620px; margin: 0 auto 52px; }
+      .section-head { text-align: center; max-width: 760px; margin: 0 auto 52px; }
+      .section-head > p { max-width: 620px; margin-inline: auto; }
       .kicker { display: inline-block; font-size: var(--fs-2xs); letter-spacing: 3px; color: var(--gold-deep); text-transform: uppercase; margin-bottom: 14px; }
       .section-title { font-size: var(--fd-xl); margin-bottom: 14px; }
       .section-sub { color: var(--muted); font-size: var(--fs-lg); }
@@ -546,6 +547,19 @@
       .band::before { content: ""; position: absolute; inset: 0; background: radial-gradient(50% 60% at 50% 0%, rgba(201, 162, 39, 0.20), rgba(201, 162, 39, 0) 70%); pointer-events: none; }
       .band > * { position: relative; z-index: 1; }
       .band h2 { color: var(--cream-text); font-size: var(--fd-xl); margin-bottom: 14px; }
+
+      /* ---- כותרות הסקשנים: אותה כותרת בכל הדף ----
+         כמו "גם מתנות? ישירות ל־VEYA." — גדולה מכותרת סקשן רגילה וקטנה מה-H1.
+         בכותרת עם שני חלקים, החלק השני בזהב (.ttl-accent), כמו ה-accent בהירו:
+         זהב עמוק על רקע בהיר, זהב בהיר על רקע כהה. כותרות משנה (h3) לא משתנות. */
+      h2.section-title, .gifts-scene .section-head h2, .band h2 {
+        font-family: var(--font-display); font-weight: 500;
+        font-size: clamp(2.3rem, 5.6vw, 3.6rem); line-height: 1.12; text-wrap: balance;
+      }
+      /* החלק הזהוב נשאר יחידה אחת: אם הכותרת נשברת, הוא עובר שלם לשורה משלו
+         ולא נחתך באמצע (ואם הוא ארוך מהשורה, הוא נשבר בתוך עצמו). */
+      .ttl-accent { display: inline-block; color: var(--gold-deep); }
+      .on-dark .ttl-accent, .band .ttl-accent { color: var(--gold-light); }
       .band p { color: #cabfa9; max-width: 540px; margin: 0 auto 30px; font-size: var(--fs-lg); }
 
       /* Footer */
@@ -946,7 +960,6 @@
         margin: 0 0 16px; font-family: var(--font-display); font-weight: 500;
         font-size: clamp(2.3rem, 5.6vw, 3.6rem); line-height: 1.12; color: var(--charcoal); text-wrap: balance;
       }
-      .gcard-accent { color: var(--gold-deep); }
       .gcard-sub { margin: 0 auto; max-width: 46ch; font-size: var(--fs-xl); line-height: 1.7; color: var(--body); text-wrap: balance; }
       .gcard-hl {
         font-weight: 700; color: var(--charcoal);
@@ -1084,7 +1097,12 @@
          בדסקטופ הצילום עובר לצד שמאל ותופס את שתי השורות, כך שהוא
          נשאר הדבר הגדול בסקשן. */
       .gh-grid { display: grid; gap: 26px; align-items: center; }
-      .gh-text { max-width: min(46ch, 100%); }
+      /* הבלוק תופס את כל העמודה, והפסקאות נשארות במידה שהייתה לו (46ch של
+         גוף הטקסט = 22.6rem). הכותרת נמדדת לפי רוחב העמודה, כדי שהחלק הראשון
+         שלה ייכנס בשורה אחת גם בעמודה של חצי מסך. */
+      .gh-text { container-type: inline-size; }
+      .gh-text > p { max-width: min(22.6rem, 100%); }
+      .gh-text .section-title { font-size: clamp(2.3rem, 10.4cqi, 3.6rem); }
       .gh-lead { font-size: var(--fs-lg); color: var(--body); line-height: 1.7; margin: 0 0 18px; }
       .gh-less { font-size: var(--fs-lg); color: var(--charcoal); line-height: 2; margin: 0 0 20px; }
       .gh-punch {
@@ -1530,7 +1548,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2663,6 +2681,7 @@
     
     
     
+    
     </style>
     <script>
       /* צילום שנקטע בטעינה: ניסיון חוזר אחד, והמסגרת נשארת. מוגדר ב-head כדי
@@ -2943,7 +2962,7 @@
         <div class="wrap">
           <div class="rsvp-inner reveal">
             <span class="kicker">אישורי הגעה</span>
-            <h2 id="rsvp-title" class="section-title">לא רק לדעת מי ענה. לדעת איפה הרשימה עומדת.</h2>
+            <h2 id="rsvp-title" class="section-title">לא רק לדעת מי ענה. <span class="ttl-accent">לדעת איפה הרשימה עומדת.</span></h2>
             <p>
               אישורי הגעה הם לא סוף התהליך — הם הדרך להגיע למספר שאפשר לקבל איתו החלטה.
               כל תשובה נרשמת על המוזמן עצמו, וממשיכה משם להושבה ולחשבון של האירוע.
@@ -2969,7 +2988,7 @@
         <div class="wrap">
           <div class="gh-grid">
             <div class="gh-text reveal">
-              <h2 id="gh-title" class="section-title">כל מה שהאורחים צריכים, בקישור אחד.</h2>
+              <h2 id="gh-title" class="section-title">כל מה שהאורחים צריכים, <span class="ttl-accent">בקישור אחד.</span></h2>
               <p class="gh-lead">
                 ההזמנה, הפרטים, איך מגיעים ואיפה מאשרים שמגיעים — הכול נמצא שם.
               </p>
@@ -3055,7 +3074,7 @@
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">תמונת מצב</span>
-            <h2 id="showcase-title" class="section-title">נכנסים ל־VEYA — ויודעים איפה אתם עומדים.</h2>
+            <h2 id="showcase-title" class="section-title">נכנסים ל־VEYA — <span class="ttl-accent">ויודעים איפה אתם עומדים.</span></h2>
             <p class="section-sub">
               כמה מוזמנים, כמה אישרו, מי עדיין לא ענה וכמה נשאר עד שסוגרים את
               הרשימה — כבר במסך הראשון שנפתח.
@@ -3162,7 +3181,7 @@
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">הושבה</span>
-            <h2 id="seating-title" class="section-title">יש לכם סקיצה? בואו נהפוך אותה למפת אולם.</h2>
+            <h2 id="seating-title" class="section-title">יש לכם סקיצה? <span class="ttl-accent">בואו נהפוך אותה למפת אולם.</span></h2>
             <p class="section-sub">
               מעלים את הסקיצה שקיבלתם מהאולם — אפילו אם היא רק צילום או קובץ. VEYA מנתחת אותה,
               מזהה את השולחנות והמבנה והופכת אותה למפה שאפשר באמת לעבוד איתה.
@@ -3251,7 +3270,7 @@
     <section class="gcard" id="giftcard" aria-labelledby="giftcard-title">
       <div class="wrap">
         <header class="gcard-head reveal">
-          <h2 id="giftcard-title" class="gcard-title">גם מתנות? <span class="gcard-accent">ישירות ל־VEYA.</span></h2>
+          <h2 id="giftcard-title" class="gcard-title">גם מתנות? <span class="ttl-accent">ישירות ל־VEYA.</span></h2>
           <p class="gcard-sub">המתנות נכנסות ישירות ל־VEYA, <strong class="gcard-hl">בלי עמלה לבעלי האירוע</strong>.</p>
         </header>
 
@@ -3305,7 +3324,7 @@
       <div class="wrap">
         <div class="section-head">
           <span class="kicker">ספירת המעטפות</span>
-          <h2 id="gifts-title">לא רק סופרים מעטפות. יודעים ממי הגיעה כל מתנה.</h2>
+          <h2 id="gifts-title">לא רק סופרים מעטפות. <span class="ttl-accent">יודעים ממי הגיעה כל מתנה.</span></h2>
           <p>
             כל הערב אנשים הביאו מעטפות. עכשיו הן על השולחן, ובכל אחת יש שם.
             עם VEYA פותחים את ספירת המעטפות, בוחרים ממי כל מעטפה ומזינים
@@ -3357,7 +3376,7 @@
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">אחרי האירוע</span>
-            <h2 id="after-title" class="section-title">ובסוף, מאזן אחד לכל האירוע.</h2>
+            <h2 id="after-title" class="section-title">ובסוף, <span class="ttl-accent">מאזן אחד לכל האירוע.</span></h2>
             <p class="section-sub">
               כמה עלה האירוע, כמה עולה לכם כל אורח, כמה נכנס במתנות — ובסוף
               כמה באמת הרווחתם או הפסדתם. בלי לחבר שום דבר ביד.
@@ -3396,7 +3415,7 @@
         <div class="wrap">
           <div class="section-head reveal">
             <span class="kicker">איך זה עובד</span>
-            <h2 id="how-title" class="section-title">מהרשימה הראשונה ועד הדוח שנשאר אחריו.</h2>
+            <h2 id="how-title" class="section-title">מהרשימה הראשונה <span class="ttl-accent">ועד הדוח שנשאר אחריו.</span></h2>
             <p class="section-sub">
               הרשימה שהבאתם, האישורים שאספתם, ההושבה, ההוצאות והמתנות —
               כולם מגיעים לאותו מקום בסוף: הדוח של האירוע.
