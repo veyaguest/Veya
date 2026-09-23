@@ -153,6 +153,13 @@ const NETWORK_ERROR_MESSAGE = 'החיבור לשרת נכשל. בדקו את ה�
 const SERVER_ERROR_MESSAGE = 'משהו השתבש. נסו שוב בעוד רגע.'
 const PERMISSION_ERROR_MESSAGE = 'אין לכם הרשאה לבצע פעולה זו.'
 const AUTH_ERROR_MESSAGE = 'אתם צריכים להתחבר מחדש.'
+// במקום "שגיאה 404" וכדומה — מה קרה ומה עושים, בלי קוד טכני.
+const NOT_FOUND_MESSAGE = 'לא מצאנו את מה שחיפשתם — ייתכן שהוא נמחק. רעננו את המסך ונסו שוב.'
+const CONFLICT_MESSAGE = 'משהו השתנה בינתיים. רעננו את המסך ונסו שוב.'
+const RATE_LIMIT_MESSAGE = 'יותר מדי ניסיונות ברצף. חכו רגע ונסו שוב.'
+const VALIDATION_ERROR_MESSAGE = 'חלק מהפרטים לא מולאו נכון. בדקו את השדות ונסו שוב.'
+const GENERIC_ERROR_MESSAGE = 'הפעולה לא הצליחה. נסו שוב, ואם זה חוזר — כתבו לנו.'
+const HEBREW = /[\u0590-\u05FF]/
 
 /**
  * שכבת שגיאות אחידה: כל מסך במערכת מקבל הודעת שגיאה בעברית שאפשר להבין
@@ -198,7 +205,9 @@ async function publicFetch(path: string, init?: RequestInit): Promise<Response> 
 /** מנקה קידומות טכניות שפיידנטיק (Pydantic) מוסיף לשגיאות ולידציה
  * מותאמות-אישית (למשל "Value error, הסיסמה חייבת..." → "הסיסמה חייבת..."). */
 function cleanDetailMessage(msg: string): string {
-  return msg.replace(/^(value error|assertion error)\s*,\s*/i, '').trim()
+  const cleaned = msg.replace(/^(value error|assertion error)\s*,\s*/i, '').trim()
+  // הודעת ולידציה טכנית באנגלית ("Field required") — לא מציגים כמו שהיא.
+  return cleaned && !HEBREW.test(cleaned) ? VALIDATION_ERROR_MESSAGE : cleaned
 }
 
 /** מחלץ הודעת שגיאה קריאה מתשובת FastAPI (כולל שגיאות ולידציה 422). */
@@ -214,10 +223,11 @@ export async function toError(res: Response): Promise<Error> {
       return new Error(cleanDetailMessage(body.detail))
     }
     if (Array.isArray(body.detail) && body.detail.length) {
-      const msgs = body.detail
-        .map((d: { msg: string }) => cleanDetailMessage(d.msg))
-        .filter(Boolean)
-        .join(', ')
+      const msgs = [
+        ...new Set<string>(
+          body.detail.map((d: { msg: string }) => cleanDetailMessage(d.msg)).filter(Boolean),
+        ),
+      ].join(', ')
       if (msgs) return new Error(msgs)
     }
   } catch {
@@ -225,7 +235,11 @@ export async function toError(res: Response): Promise<Error> {
   }
   if (res.status === 401) return new Error(AUTH_ERROR_MESSAGE)
   if (res.status === 403) return new Error(PERMISSION_ERROR_MESSAGE)
-  return new Error(`שגיאה ${res.status}`)
+  if (res.status === 404) return new Error(NOT_FOUND_MESSAGE)
+  if (res.status === 409) return new Error(CONFLICT_MESSAGE)
+  if (res.status === 422) return new Error(VALIDATION_ERROR_MESSAGE)
+  if (res.status === 429) return new Error(RATE_LIMIT_MESSAGE)
+  return new Error(GENERIC_ERROR_MESSAGE)
 }
 
 export async function healthCheck(): Promise<boolean> {

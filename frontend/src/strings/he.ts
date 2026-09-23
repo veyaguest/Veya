@@ -208,7 +208,7 @@ export const strings = {
       'בחרו נוסח מוכן מהספרייה, או ערכו אותו בעצמכם. כך זה ייראה למוזמנים ב-WhatsApp.',
     subtitleInvitation:
       'בחרו נוסח הזמנה מוכן מהספרייה, או כתבו את שלכם. כך זה ייראה למוזמנים ב-WhatsApp.',
-    emptyState: 'ההודעות ייווצרו אוטומטית ברגע שתפעילו את מסלול אישורי ההגעה.',
+    emptyState: 'עוד אין כאן הודעות. הן מופיעות ברגע שנפתח אירוע, ואפשר לבחור לכל אחת נוסח.',
 
     // כרטיס בחירת ההודעה
     pickerTitle: 'איזו הודעה עורכים',
@@ -367,7 +367,7 @@ export const strings = {
     cookieBack: 'חזרה',
     // ReconsentModal
     reconsentTitle: 'עדכנו את תנאי השימוש',
-    reconsentBody: 'עדכנו את תנאי השימוש של VEYA כדי לשקף את השינויים והעדכונים במערכת.',
+    reconsentBody: 'עדכנו את תנאי השימוש של VEYA כך שישקפו את השינויים שעשינו לאחרונה.',
     reconsentHint: 'מומלץ לעבור על התנאים המעודכנים לפני שממשיכים.',
     reconsentTermsLink: 'תנאי השימוש',
     reconsentPrivacyLink: 'מדיניות הפרטיות',
@@ -1044,6 +1044,10 @@ export const strings = {
     filterLabelPending: 'ממתינים לתשובה',
     filterLabelNoTable: 'ללא שולחן',
     filterLabelBadPhone: 'בלי מספר טלפון תקין',
+    // התראה מסבב שיחות: המספר שבידינו לא הגיע לאדם הנכון.
+    phoneFixTitle: 'כדאי לבדוק כמה מספרי טלפון',
+    phoneFixText: (name: string) =>
+      `ניסינו להתקשר ל${name} והמספר לא הוביל אליו. אפשר לעדכן את המספר, ו-VEYA תמשיך איתו מהסבב הבא.`,
     filteredNotice: (label: string) => `הרשימה מסוננת: ${label}`,
     clearFilter: 'ניקוי סינון',
     emptyFilterTitle: (label: string) => `אין כרגע מוזמנים בסינון "${label}"`,
@@ -1391,11 +1395,11 @@ export const strings = {
     // מהיר", ואישור הצעה חכמה. לעולם לא חוסמת, ולעולם לא נוגעת ב-RSVP —
     // רק שואלת. "לא מגיע" מקבל ניסוח חד יותר מ"עדיין לא אישר".
     seatWarningTitle: (isDeclined: boolean) =>
-      isDeclined ? 'המוזמן מסומן כ"לא מגיע"' : 'המוזמן עדיין לא אישר הגעה',
+      isDeclined ? 'לפי הרשימה, לא מגיעים' : 'עדיין לא אישרו הגעה',
     seatWarningMessageSingle: (name: string, isDeclined: boolean) =>
       isDeclined
-        ? `${name} מסומן/ת כ"לא מגיע/ה". האם בכל זאת להושיב אותו/ה?`
-        : `${name} עדיין לא אישר/ה את הגעתו/ה. האם בכל זאת להושיב אותו/ה?`,
+        ? `לפי הרשימה, ${name} לא מגיעים. להושיב בכל זאת?`
+        : `${name} עדיין לא אישרו הגעה. להושיב בכל זאת? אפשר לשנות גם אחר כך.`,
     seatWarningMessageMulti: (names: string[]) => {
       const shown = names.slice(0, 3).join(', ')
       const restCount = names.length - 3
@@ -1415,7 +1419,7 @@ export const strings = {
       `נבדקו ${guests} · ${found} העדפות זוהו · ${pending} ממתינות להבהרה`,
     constraintsNonePending: 'אין הבהרות ממתינות',
     clarificationQuestion: (who: string, what: string, target: string) =>
-      `${who} ביקש/ה ${what} "${target}" — למי הכוונה?`,
+      `בהערה של ${who}: ${what} "${target}" — למי הכוונה?`,
     clarificationNone: 'אף אחד מהם',
 
     // סיבוב שולחן — גרירת הידית מעל השולחן, בדיוק כמו אלמנטי המפה (בר וכו')

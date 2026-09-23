@@ -250,14 +250,13 @@ export function GuestsPage({
         <section className="data-alert" role="status">
           <div className="data-alert-head">
             <span aria-hidden>⚠️</span>
-            <strong>נדרש תיקון מספר טלפון</strong>
+            <strong>{t.phoneFixTitle}</strong>
           </div>
           <ul className="data-alert-list">
             {phoneAlerts.map((a) => (
               <li key={a.guest_id}>
                 <div className="data-alert-text">
-                  ל{a.full_name} יש מספר טלפון שגוי (<span dir="ltr">{a.phone}</span>).
-                  לא הצלחנו ליצור איתו קשר — יש לעדכן את המספר.
+                  {t.phoneFixText(a.full_name)} (<span dir="ltr">{a.phone}</span>)
                 </div>
                 <button
                   type="button"
