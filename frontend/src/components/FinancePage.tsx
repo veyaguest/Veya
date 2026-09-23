@@ -227,7 +227,9 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
         />
       )}
 
-      {tab === 'summary' && <SummaryTab data={data} terms={terms} />}
+      {tab === 'summary' && (
+        <SummaryTab data={data} terms={terms} onGoToCost={() => setTab('cost')} />
+      )}
 
       {editing !== undefined && (
         <ExpenseEditor
@@ -322,6 +324,10 @@ function FinanceHero({ data }: { data: FinanceSummary }) {
   const estimated = !data.attendance.is_final
   const label = estimated ? t.estimatedCostLabel : t.totalCostLabel
 
+  // עוד אין הוצאות — "עלות משוערת 0 ₪" מעל מצב ריק שמסביר מה עושים הוא
+  // רעש, לא נתון. הגיבור מופיע ברגע שיש מה לסכם.
+  if (!started) return null
+
   return (
     <section className="fin-hero" aria-label={label}>
       <p className="fin-hero-label">{label}</p>
@@ -354,7 +360,11 @@ function FinanceHero({ data }: { data: FinanceSummary }) {
       {estimated && started && <p className="fin-hero-note">{t.estimatedCostNote}</p>}
 
       <div className="fin-hero-facts fin-hero-facts-quiet">
-        <Fact label={t.attendeesLabel} value={String(cost.attendees)} />
+        {/* מאיפה המספר: לפני האירוע — מי שאישרו הגעה; אחרי שהוזן — מי שהגיעו. */}
+        <Fact
+          label={estimated ? t.attendeesConfirmedLabel : t.attendeesFinalLabel}
+          value={String(cost.attendees)}
+        />
         {/* אין מגיעים ⇒ אין ממוצע, ואין הוצאות ⇒ אין מה לחלק. "0 ₪
             לאדם" במסך שעוד לא מולא הוא רעש, לא נתון. */}
         {started && (
@@ -1223,11 +1233,16 @@ function ByGuestList({ rows }: { rows: GuestGiftRow[] }) {
 function SummaryTab({
   data,
   terms,
+  onGoToCost,
 }: {
   data: FinanceSummary
   terms: ReturnType<typeof activeEventTerms>
+  onGoToCost: () => void
 }) {
   const bottom = data.bottom_line_agorot
+  // עוד אין הוצאות ואין מתנות — "יצאתם בדיוק מאוזנים 0 ₪" וקיר של אפסים
+  // הם מסקנה שקרית, לא סיכום. אומרים מה יופיע כאן ומה עושים עכשיו.
+  const nothingYet = data.cost.total_agorot === 0 && (data.income.total_agorot ?? 0) === 0
 
   // הדוח המלא נטען לפי דרישה, לא עם המסך: הוא מכיל שורה לכל מוזמן
   // (מאות שורות באירוע טיפוסי), ואיש לא מסתכל עליו רוב הזמן.
@@ -1242,6 +1257,20 @@ function SummaryTab({
       .then(setReport)
       .catch((e) => setReportError(e instanceof Error ? e.message : t.reportError))
       .finally(() => setLoadingReport(false))
+  }
+
+  if (nothingYet) {
+    return (
+      <div className="empty fin-summary-empty">
+        <strong className="empty-title">{t.summaryEmptyTitle}</strong>
+        <span className="empty-desc">{t.summaryEmptyDesc}</span>
+        <div className="empty-actions">
+          <button type="button" className="btn-primary btn-sm" onClick={onGoToCost}>
+            {t.summaryEmptyCta}
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -1352,10 +1381,14 @@ function SummaryTab({
       <section className="fin-card">
         <h2 className="fin-card-title">{t.rsvpTitle}</h2>
         <div className="fin-hero-facts">
+          {/* כולם במוזמנים (שורות ברשימה), כדי שהמספרים יסתכמו לסה"כ;
+              מספר האנשים שאישרו — בנפרד ובשמו. */}
           <Fact label={t.rsvpGuests} value={String(data.rsvp.total_guests)} />
-          <Fact label={t.rsvpConfirmed} value={String(data.rsvp.confirmed_people)} />
+          <Fact label={t.rsvpConfirmed} value={String(data.rsvp.confirmed_guests)} />
+          <Fact label={t.rsvpMaybe} value={String(data.rsvp.maybe_guests)} />
           <Fact label={t.rsvpDeclined} value={String(data.rsvp.declined_guests)} />
           <Fact label={t.rsvpPending} value={String(data.rsvp.pending_guests)} />
+          <Fact label={t.rsvpConfirmedPeople} value={String(data.rsvp.confirmed_people)} />
         </div>
       </section>
 

@@ -1563,6 +1563,8 @@ export const strings = {
     fixedLabel: 'הוצאות קבועות',
     variableLabel: 'הוצאות לפי כמות',
     attendeesLabel: 'מגיעים',
+    attendeesConfirmedLabel: 'אנשים שאישרו הגעה',
+    attendeesFinalLabel: 'אנשים שהגיעו בפועל',
     perPersonLabel: 'עלות ממוצעת לאדם',
     // אין מגיעים ⇒ אין ממוצע. "0 ₪ לאדם" הוא מספר מומצא, ובמסך כספי
     // מספר מומצא גרוע מהיעדרו.
@@ -1932,7 +1934,13 @@ export const strings = {
     // פילוח אישורי ההגעה בסיכום. המונחים זהים למסך אישורי ההגעה
     // ולתמונת המצב — מונח אחד לכל מושג, בכל מסך.
     rsvpTitle: 'אישורי הגעה',
-    rsvpGuests: 'מוזמנים',
+    rsvpGuests: 'מוזמנים ברשימה',
+    rsvpMaybe: 'לא החליטו',
+    rsvpConfirmedPeople: 'אנשים שאישרו הגעה',
+    summaryEmptyTitle: 'הסיכום יתמלא בהמשך',
+    summaryEmptyDesc:
+      'כשתוסיפו הוצאות, ואחרי האירוע תספרו את המתנות, כאן תראו כמה האירוע עלה, כמה התקבל ומה נשאר.',
+    summaryEmptyCta: 'להוספת הוצאות',
     rsvpConfirmed: 'אישרו הגעה',
     rsvpDeclined: 'לא מגיעים',
     rsvpPending: 'ממתינים לתשובה',
