@@ -12,7 +12,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Optional
 
 import re
@@ -21,8 +21,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import (
-    automation, event_cycle, event_terms, gift_eligibility, message_status,
-    messaging, models, rsvp_timeline,
+    automation, event_cycle, event_terms, gift_eligibility, invitations,
+    message_status, messaging, models, rsvp_timeline,
 )
 from app.guest_journey import israel_timezone, now_in_israel
 
@@ -62,9 +62,9 @@ MESSAGE_TYPE_LABELS: dict[str, str] = {
 }
 
 # עוגן תזמון ברירת מחדל לכל סוג (ימים ביחס לעוגן הקבוע של הסוג — ראו
-# _is_due_now). הזמנה נשלחת ידנית (לא דרך תור ה-due), ולכן אין לה עוגן.
+# ``send_window``). הזמנה נשלחת ידנית (לא דרך תור ה-due), ולכן אין לה עוגן.
 # "בקשת אישור ראשונה" ושלוש התזכורות מעוגנות ללוח הזמנים (``rsvp_timeline``),
-# לא להיסט — ראו _due_now, ``rsvp_timeline.rsvp_request_date`` ו-``reminder_date``.
+# לא להיסט — ראו ``send_window`` ו-``rsvp_timeline.whatsapp_rounds``.
 # ההיסטים שלהן נשמרים בשורות ה-DB לתאימות בלבד ואינם משפיעים על השליחה.
 DEFAULT_TRIGGER_OFFSET_DAYS: dict[str, int] = {
     "invitation": 0,
@@ -97,11 +97,11 @@ DEFAULT_TARGET_AUDIENCE: dict[str, str] = {
 
 # ---- שעת שליחה (שעון ישראל, ללא תאריך/אזור-זמן) ----
 #
-# הזוג בוחר שעה אחת ("HH:MM") שחלה על כל הודעות מסלול אישורי-ההגעה
-# (rsvp_request/reminder_1/reminder_2/final_reminder/event_day — invitation
-# נשלחת ידנית ולא דרך תור ה-due, ולכן אין לה שעה) — ``Event.rsvp_send_time``. הודעת
-# התודה מקבלת הגדרת שעה נפרדת משלה — ``Event.thank_you_send_time`` — כי
-# היא נשלחת יום אחרי האירוע, בהקשר שונה לגמרי מהתזכורות.
+# לכל סבב שעה משלו (``EventMessage.send_time``, 2026-09-23). כשלא נבחרה —
+# שעת ברירת המחדל של האירוע: ``Event.rsvp_send_time`` לסבבי המסלול וליום
+# האירוע, ``Event.thank_you_send_time`` להודעת התודה (``effective_send_time``).
+# ההזמנה נשלחת ידנית ומיד, ולכן אין לה שעה. **התאריך** של כל סבב נקבע תמיד
+# ע"י לוח הזמנים (``rsvp_timeline``) — רק השעה ניתנת לעריכה.
 #
 # הטווח המותר תואם לשעות סבירות לשליחת הודעות למוזמנים — לא לפנות בוקר
 # ולא בלילה.
@@ -414,21 +414,14 @@ class DueMessageAction:
     preview: str
 
 
-def _first_sent_at(messages: list[models.Message], kind: str) -> dict[int, datetime]:
-    """הרגע המוקדם ביותר שבו נשלחה למוזמן הודעה מסוג ``kind`` (status="sent").
-
-    משמש לעיגון התזכורות: הן נספרות ``+N`` ימים מ**בקשת האישור הראשונה**
-    (``kind="rsvp_request"``), לא מיום שליחת ההזמנה — שיכולה לצאת חודש מראש.
-    """
-    out: dict[int, datetime] = {}
-    for m in messages:
-        if m.guest_id is None:
-            continue
-        if m.direction == "outbound" and m.kind == kind and m.status == "sent":
-            prev = out.get(m.guest_id)
-            if prev is None or m.created_at < prev:
-                out[m.guest_id] = m.created_at
-    return out
+def effective_send_time(event: models.Event, em: models.EventMessage) -> str:
+    """השעה שבה הסבב יוצא: השעה של ההודעה עצמה, ואם לא נבחרה — ברירת המחדל
+    של האירוע (התודה — שעת התודה; כל השאר — שעת המסלול)."""
+    if (em.send_time or "").strip():
+        return em.send_time
+    if em.message_type == "thank_you":
+        return event.thank_you_send_time
+    return event.rsvp_send_time
 
 
 def _already_sent(messages: list[models.Message]) -> set[tuple[int, int]]:
@@ -451,51 +444,57 @@ def matches_audience(guest: models.Guest, audience: str) -> bool:
     return guest.rsvp_status == audience
 
 
-def _due_now(
+#: סבבי המסלול עצמו (לא יום האירוע/תודה): מוזמן מצטרף רק לסבבים שהגיעו
+#: אחרי שנוסף — בלי שליחה בדיעבד.
+TRACK_ROUND_TYPES: frozenset[str] = frozenset({"rsvp_request", *REMINDER_NUMBER})
+
+#: הודעות שיוצאות אוטומטית בתאריך שנקבע ע"י המערכת — ולכן יש להן שעת שליחה.
+SCHEDULED_TYPES: frozenset[str] = TRACK_ROUND_TYPES | {"event_day", "thank_you"}
+
+
+def send_window(
     message_type: str,
     em: models.EventMessage,
-    guest: models.Guest,
-    now: datetime,
-    event_date,
-    rsvp_requested_at: dict[int, datetime],
     event: models.Event,
-) -> bool:
-    """האם ההודעה הגיע זמנה עבור המוזמן הזה — עוגן קבוע לפי סוג ההודעה, עד
-    היום; משם ואילך גם שעת השליחה שהזוג בחר (שעון ישראל, ראו
-    ``_scheduled_moment``). "תודה" משתמשת בשעה הנפרדת שלה
-    (``thank_you_send_time``); שאר סוגי ההודעה במסלול משתמשים באותה שעה
-    אחת (``rsvp_send_time``).
+    now: Optional[datetime] = None,
+) -> Optional[tuple[datetime, datetime]]:
+    """החלון שבו מותר לשלוח את ההודעה — ``(מתי, עד מתי)`` בשעון ישראל — או
+    ``None`` אם אין לה מועד (אין לוח זמנים / הסבב לא נכנס למסלול).
+
+    - **סבבי WhatsApp** — מיום הסבב בשעה שנבחרה, עד שמתחיל השלב הבא במסלול
+      (``rsvp_timeline.WhatsAppRound.until``). אחרי זה הסבב "עבר": לא שולחים
+      אותו בדיעבד, גם אם המשימה המתוזמנת לא רצה בזמן.
+    - **יום האירוע / תודה** — ביום שלהן בלבד (אותה דחיית סוף שבוע כמו קודם).
     """
-    now_il = now_in_israel(now)
-    if message_type == "rsvp_request":
-        # מעוגנת ללוח הזמנים של אישורי-ההגעה (מועד סגירת הרשימה), לא להיסט
-        # ולא לשליחת ההזמנה — ראו ``rsvp_timeline.rsvp_request_date``.
-        request_day = rsvp_timeline.rsvp_request_date(event, now)
-        if request_day is None:
-            return False
-        return now_il >= _scheduled_moment(request_day, event.rsvp_send_time)
-    if message_type in REMINDER_NUMBER:
-        # התזכורות נשלחות **בתאריך שלהן בלוח הזמנים** (``rsvp_timeline``) — אותו
-        # לוח שהזוג רואה ושממנו נגזרים סבבי השיחות. כך תזכורת לעולם לא יוצאת
-        # אחרי מועד סגירת הרשימה או ביום של סבב שיחות. תזכורת שלא נכנסה ללוח
-        # (אין מספיק ימים) — לא נשלחת. ורק למי שכבר קיבל בקשת אישור ראשונה.
-        if guest.id not in rsvp_requested_at:
-            return False
-        reminder_day = rsvp_timeline.reminder_date(event, REMINDER_NUMBER[message_type], now)
-        if reminder_day is None:
-            return False
-        return now_il >= _scheduled_moment(reminder_day, event.rsvp_send_time)
-    if message_type == "event_day":
+    send_time = effective_send_time(event, em)
+    tz = israel_timezone()
+    if message_type in TRACK_ROUND_TYPES:
+        rnd = next(
+            (r for r in rsvp_timeline.whatsapp_rounds(event, now) if r.message_type == message_type),
+            None,
+        )
+        if rnd is None:
+            return None
+        start = _scheduled_moment(rnd.day, send_time)
+        return start, datetime.combine(rnd.until, time(0, 0), tzinfo=tz)
+    if message_type in ("event_day", "thank_you"):
+        event_date = automation.parse_event_date(event.event_date)
         if event_date is None:
-            return False
-        trigger_day = event_date + timedelta(days=em.trigger_offset_days)
-        return now_il >= _scheduled_moment(trigger_day, event.rsvp_send_time)
-    if message_type == "thank_you":
-        if event_date is None:
-            return False
-        trigger_day = event_date + timedelta(days=em.trigger_offset_days)
-        return now_il >= _scheduled_moment(trigger_day, event.thank_you_send_time)
-    return False
+            return None
+        start = _scheduled_moment(event_date + timedelta(days=em.trigger_offset_days), send_time)
+        return start, datetime.combine(start.date() + timedelta(days=1), time(0, 0), tzinfo=tz)
+    return None
+
+
+def _existed_by(guest: models.Guest, moment: datetime) -> bool:
+    """האם המוזמן כבר היה ברשימה ברגע ``moment`` (שעון ישראל). ``created_at``
+    נשמר ב-UTC בלי אזור זמן. בלי ערך — נחשב קיים (מוזמן ישן)."""
+    created = guest.created_at
+    if created is None:
+        return True
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=timezone.utc)
+    return created <= moment
 
 
 def compute_due_messages(
@@ -506,10 +505,20 @@ def compute_due_messages(
     messages: Optional[list[models.Message]] = None,
     now: Optional[datetime] = None,
 ) -> list[DueMessageAction]:
-    """מחשב את תור הפעולות שהגיע זמנן, לכל סוגי ההודעה חוץ מ"הזמנה" (שנשלחת
-    ידנית). ללא תופעות לוואי — רק חישוב, בדיוק כמו ``automation.compute_due_actions``.
+    """מחשב את תור ההודעות שהגיע זמנן, לכל סוגי ההודעה חוץ מ"הזמנה" (שנשלחת
+    ידנית). ללא תופעות לוואי — רק חישוב. השליחה עצמה: ``send_due_messages``,
+    ומי שמפעיל אותה: ``rsvp_scheduler`` (לא כניסה למסך).
+
+    כללים (החלטת המייסד 2026-09-23):
+    - המסלול פועל רק כש-``rsvp_timeline.track_enabled`` — **לא** לפי שליחת הזמנה.
+    - כל הודעה רק בחלון שלה (``send_window``) — אין שליחה בדיעבד.
+    - מוזמן מצטרף לסבב רק אם כבר היה ברשימה כשהסבב יצא.
+    - מספר חסר/לא תקין — לא מנסים לשלוח WhatsApp עד שהמספר מתוקן.
+    - קהל היעד נבדק מול הסטטוס העדכני: מי שאישר/לא מגיע לא מקבל עוד סבבים.
     """
     now = now or datetime.utcnow()
+    if not rsvp_timeline.track_enabled(event):
+        return []
     if guests is None:
         guests = list(db.scalars(
             select(models.Guest).where(models.Guest.event_id == event.id)
@@ -523,8 +532,7 @@ def compute_due_messages(
             .where(event_cycle.current_sends(event))
         ).all())
 
-    event_date = automation.parse_event_date(event.event_date)
-    rsvp_requested_at = _first_sent_at(messages, "rsvp_request")
+    now_il = now_in_israel(now)
     sent = _already_sent(messages)
 
     by_type = event_messages_by_type(db, event.id)
@@ -535,12 +543,17 @@ def compute_due_messages(
         em = by_type.get(message_type)
         if em is None or not em.is_active or not em.content:
             continue
+        window = send_window(message_type, em, event, now)
+        if window is None or not (window[0] <= now_il < window[1]):
+            continue
         for guest in guests:
-            if (em.id, guest.id) in sent or not guest.phone:
+            if (em.id, guest.id) in sent:
+                continue
+            if invitations.classify_phone(guest.phone) != "valid":
                 continue
             if not matches_audience(guest, em.target_audience):
                 continue
-            if not _due_now(message_type, em, guest, now, event_date, rsvp_requested_at, event):
+            if message_type in TRACK_ROUND_TYPES and not _existed_by(guest, window[0]):
                 continue
             preview = render_message(
                 em.content, communication_values(event, guest), message_type=message_type

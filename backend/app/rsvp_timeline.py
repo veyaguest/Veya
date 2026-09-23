@@ -15,24 +15,31 @@
    - לא בחר והאירוע רחוק → אין עדיין לוח זמנים; בעל האירוע בוחר.
    אין כאן שום מספר לפי סוג אירוע: ברית, בריתה וחתונה עוברות אותו חישוב,
    וההבדל נובע רק מתאריך האירוע האמיתי.
-4. **החלון** = מיום הייחוס (היום / יום הפעלת המסלול) עד מועד הסגירה, ולכל
-   היותר ``MAX_WINDOW_DAYS`` ימים. 14 = מקסימום, לא חובה.
-5. **הסבבים נבנים בתוך החלון האמיתי** (``compute_schedule``):
-   - **מועד סגירת הרשימה הוא גם יום סבב השיחות האחרון** — תאריך אחד ויחיד
-     (``Schedule.commitment_date``).
-   - שישי/שבת: לא מתזמנים בהם פעולות.
-   - **כל שלב ביום פעיל משלו** — לכן אף פעם לא WhatsApp וסבב טלפונים באותו
-     יום, אף פעם לא תאריך בעבר ואף פעם לא אחרי מועד הסגירה. כשיש מקום נשמר
-     יום מפריד בין WhatsApp לשיחות (``GAP_WA_CALL`` / ``GAP_WA_WA``).
-   - זמן קצר (``compressed=true``): התהליך נדחס לימים הקיימים. אם אין מספיק
-     ימים פעילים לכל השלבים, נבחרים החשובים ביותר לפי ``STEP_PRIORITY`` —
-     המסלול מתקצר, לא נשבר.
+4. **החלון** = מ-``MAX_WINDOW_DAYS`` (14) ימים לפני מועד הסגירה ועד מועד
+   הסגירה — ולא לפני יום הייחוס. יום הייחוס הוא היום, עד שהמסלול מתחיל
+   בפועל; מאז הוא קפוא (``rsvp_track_started_at``, נקבע ע"י המשימה המתוזמנת
+   ב-``rsvp_scheduler``), כדי שהתאריכים לא "יברחו" קדימה. **שליחת הזמנה אינה
+   נקודת האפס** — העוגן הוא מועד הסגירה בלבד.
+5. **כמה סבבים** (``rounds_for_window``) — סבב אחד לכל יומיים בחלון, כמו
+   במסלול המלא (7 סבבים ב-14 ימים), ולכל היותר ``Policy.max_rounds``. חלון
+   קצר מקבל **פחות סבבים**, לא מסלול דחוס.
+6. **איזה סבבים** (``SEQUENCES``) — המסלול המלא הוא
+   WhatsApp → WhatsApp → שיחות → WhatsApp → שיחות → WhatsApp → שיחות.
+   מתחת ל-7 הסבבים מתחלפים (WhatsApp → שיחות → WhatsApp …), בלי שני סבבים
+   מאותו סוג רק כדי "למלא" זמן. החלטת המייסד 2026-09-23.
+7. **פריסה לתאריכים** (``_place``):
+   - הסבב האחרון נופל ביום סגירת הרשימה (``Schedule.commitment_date``).
+   - כל סבב ביום משלו — אף פעם שתי פעולות באותו יום, אף פעם לא אחרי מועד
+     הסגירה, והסדר לעולם לא מתהפך.
+   - שישי/שבת: אין פעולות. סבב שנופל עליהם עובר לחמישי שלפניו, ואם חמישי
+     כבר תפוס (או מחוץ לחלון) — לראשון שאחריו.
+   - אם אי אפשר לפרוס את כל הסבבים בלי לשבור את הכללים — יורדים לסבב אחד
+     פחות ופורסים מחדש.
 
 המודול עצמו טהור — רק *מחשב* תאריכים. אבל התאריכים האלה הם מקור האמת לשליחה
-בפועל: שלבי ה-WhatsApp (``whatsapp_first`` + ``reminder``) מחוברים למנגנון
-השליחה דרך ``rsvp_request_date`` / ``reminder_date`` ו-``communication.py``
-(סוג ההודעה ``rsvp_request`` והתזכורות). סבבי השיחות (``call_round``) נשארים
-פעולת מוקד ידנית (Call Center של האדמין).
+בפועל: שלבי ה-WhatsApp (``whatsapp_first`` + ``reminder``) נשלחים ע"י
+``rsvp_scheduler`` דרך ``communication.compute_due_messages``. סבבי השיחות
+(``call_round``) הם פעולת מוקד (Call Center של האדמין, ``call_ops``).
 """
 from __future__ import annotations
 
@@ -69,35 +76,42 @@ DEFAULT_NEAR_COMMIT_DAYS = 1
 # טווח הבחירה הידנית של "כמה ימים לפני האירוע" (נאכף ב-``routers/event.py``).
 MAX_COMMIT_DAYS = 10
 
-# הפער הרצוי בין שלבים סמוכים, בימים *פעילים*, כשיש מקום בחלון:
+# הפער הרצוי בין שלבים סמוכים, ביחידות יחסיות בתוך החלון:
 #   · WhatsApp <-> סבב טלפונים  → ``GAP_WA_CALL`` (2 = יום מפריד ביניהם)
 #   · WhatsApp <-> WhatsApp     → ``GAP_WA_WA``  (1 — מותר סמוך)
-# בלוח דחוס הפער מצטמצם, אבל שני שלבים לעולם לא נופלים על אותו יום.
+# שני שלבים לעולם לא נופלים על אותו יום.
 GAP_WA_CALL = 2
 GAP_WA_WA = 1
 
-# האינדקס של סבב השיחות האחרון ב-``CYCLE``. הוא תמיד מוצמד למועד סגירת
-# הרשימה (ראו ``compute_schedule``): יום סגירת הרשימה = יום סבב השיחות
-# האחרון, תאריך אחד ויחיד.
-_LAST_CALL_ROUND_IDX = max(
-    i for i, s in enumerate(CYCLE) if s["type"] == "call_round"
-)
+# ---- כמה סבבים ובאיזה סדר (החלטת המייסד 2026-09-23) ----
+# W = WhatsApp (בקשת אישור ראשונה / תזכורת), P = סבב שיחות. 7 = המסלול המלא.
+# מתחת ל-7 הסבבים מתחלפים — בלי שני סבבים מאותו סוג רק כדי למלא זמן.
+MAX_ROUNDS = 7
+SEQUENCES: dict[int, tuple[str, ...]] = {
+    7: ("W", "W", "P", "W", "P", "W", "P"),
+    6: ("W", "P", "W", "P", "W", "P"),
+    5: ("W", "P", "W", "P", "W"),
+    4: ("W", "P", "W", "P"),
+    3: ("W", "P", "W"),
+    2: ("W", "P"),
+    1: ("W",),
+}
 
-# כשאין מספיק ימים פעילים לכל השלבים — אילו נשמרים קודם (אינדקסים ב-``CYCLE``).
-# החלטת המייסד (2026-09-15): בקשת האישור הראשונה (בלעדיה המוזמנים לא יכולים
-# לאשר) → סבב השיחות ביום הסגירה → ואז לסירוגין תזכורת/שיחה.
-STEP_PRIORITY: tuple[int, ...] = (0, _LAST_CALL_ROUND_IDX, 1, 2, 3, 4, 5)
+# צפיפות המסלול המלא: סבב אחד לכל ``DAYS_PER_ROUND`` ימים בחלון (7 ב-14).
+# חלון קצר לא נעשה צפוף יותר — הוא מקבל פחות סבבים.
+DAYS_PER_ROUND = 2
+
 
 @dataclass(frozen=True)
 class Policy:
     """הפרמטרים של המסלול שאפשר לשלוט בהם מהאדמין (``settings_registry``).
 
-    ברירות המחדל = הקבועים שלמעלה, כך שבלי שום הגדרה במסד התוצאה זהה בדיוק
-    להתנהגות הקודמת.
+    ``max_rounds`` בוחר שורה מ-``SEQUENCES`` — כך שגם הגדרת אדמין לא יכולה
+    לייצר מסלול שסותר את האיזון בין WhatsApp לשיחות. ברירות המחדל = המסלול
+    המלא, כך שבלי שום הגדרה במסד התוצאה היא המסלול הרגיל.
     """
 
-    reminders: int = 3
-    calls: int = 3
+    max_rounds: int = MAX_ROUNDS
     max_window_days: int = MAX_WINDOW_DAYS
     near_commit_days: int = DEFAULT_NEAR_COMMIT_DAYS
 
@@ -112,8 +126,7 @@ def policy_for(event: models.Event) -> Policy:
 
         eid = getattr(event, "id", None)
         return Policy(
-            reminders=int(sr.value("rsvp.whatsapp_reminders", eid)),
-            calls=int(sr.value("calls.rounds", eid)),
+            max_rounds=max(1, min(MAX_ROUNDS, int(sr.value("rsvp.max_rounds", eid)))),
             max_window_days=int(sr.value("rsvp.max_window_days", eid)),
             near_commit_days=int(sr.value("rsvp.near_commit_days", eid)),
         )
@@ -121,22 +134,33 @@ def policy_for(event: models.Event) -> Policy:
         return DEFAULT_POLICY
 
 
-def _cycle_for(policy: Policy) -> tuple[list[dict], Optional[int], tuple[int, ...]]:
-    """הסבב לפי המדיניות: N התזכורות הראשונות, M סבבי השיחות **האחרונים**
-    (סבב השיחות האחרון נשאר תמיד ביום סגירת הרשימה)."""
-    if policy.reminders == 3 and policy.calls == 3:
-        return CYCLE, _LAST_CALL_ROUND_IDX, STEP_PRIORITY
-    reminder_idx = [i for i, st in enumerate(CYCLE) if st["type"] == "reminder"][: max(0, policy.reminders)]
-    all_calls = [i for i, st in enumerate(CYCLE) if st["type"] == "call_round"]
-    call_idx = all_calls[len(all_calls) - max(0, min(policy.calls, len(all_calls))):] if policy.calls > 0 else []
-    keep = sorted({0, *reminder_idx, *call_idx})
-    cycle = [CYCLE[i] for i in keep]
-    calls_new = [j for j, st in enumerate(cycle) if st["type"] == "call_round"]
-    last = calls_new[-1] if calls_new else None
-    priority = (0,) + ((last,) if last is not None else ()) + tuple(
-        j for j in range(1, len(cycle)) if j != last
-    )
-    return cycle, last, priority
+def rounds_for_window(window_days: int, policy: Policy = DEFAULT_POLICY) -> int:
+    """כמה סבבים נכנסים לחלון של ``window_days`` ימים (מיום ההתחלה עד יום
+    הסגירה). סבב לכל יומיים, לפחות אחד, לכל היותר ``policy.max_rounds``.
+    ``window_days < 0`` (מועד הסגירה כבר עבר) → 0."""
+    if window_days < 0:
+        return 0
+    return max(1, min(policy.max_rounds, -(-window_days // DAYS_PER_ROUND)))
+
+
+def _steps_for(kinds: tuple[str, ...]) -> list[dict]:
+    """ממיר רצף W/P לשלבים עם תוויות: W ראשון = בקשת אישור ראשונה, שאר ה-W
+    = תזכורות (ממוספרות), P = סבבי שיחות (האחרון — "סבב שיחות אחרון")."""
+    steps: list[dict] = []
+    reminders = 0
+    calls_total = kinds.count("P")
+    calls = 0
+    for i, kind in enumerate(kinds):
+        if kind == "W" and i == 0:
+            steps.append(dict(CYCLE[0]))
+        elif kind == "W":
+            reminders += 1
+            steps.append({**CYCLE[1], "label": _REMINDER_LABELS[reminders - 1]})
+        else:
+            calls += 1
+            label = _LAST_CALL_LABEL if calls == calls_total else _CALL_LABELS[calls - 1]
+            steps.append({**CYCLE[2], "label": label})
+    return steps
 
 
 _REMINDER_LABELS = ("תזכורת ראשונה", "תזכורת שנייה", "תזכורת שלישית")
@@ -216,6 +240,89 @@ def reminder_date(
         (p.date for p in schedule.placements if p.reminder_number == number),
         None,
     )
+
+
+# סוג ההודעה של כל תזכורת לפי מספרה בלוח (1/2/3). אותו מיפוי כמו
+# ``communication.REMINDER_NUMBER`` — כאן בכיוון ההפוך, בלי תלות מעגלית.
+REMINDER_MESSAGE_TYPES: dict[int, str] = {1: "reminder_1", 2: "reminder_2", 3: "final_reminder"}
+
+
+def track_enabled(event: models.Event) -> bool:
+    """האם מסלול אישורי ההגעה של האירוע רשאי לפעול (לשלוח, לפתוח אישור
+    למוזמנים, ליצור משימות שיחה).
+
+    החלטת המייסד (2026-09-23): **שליחת הזמנה לא קובעת את זה.** המסלול פועל
+    כשבעל האירוע בחר מועד סגירת רשימה בעצמו — זו ההסכמה שלו לשליחה בשמו —
+    או כשהמסלול כבר התחיל בעבר (``rsvp_track_active``, כולל אירועים שהתחילו
+    לפני השינוי). ברירת המחדל האוטומטית לאירוע קרוב מוצגת בלוח, אבל לבדה
+    לא מתחילה לשלוח.
+    """
+    return event.venue_commit_days_before is not None or bool(event.rsvp_track_active)
+
+
+def track_enabled_clause():
+    """אותו תנאי כמו ``track_enabled``, כשאילתת SQL — לסינון אירועים במסד
+    (משימה מתוזמנת, Call Center). מקור אמת אחד לשאלה "האם המסלול פועל"."""
+    from sqlalchemy import or_
+
+    return or_(
+        models.Event.venue_commit_days_before.is_not(None),
+        models.Event.rsvp_track_active.is_(True),
+    )
+
+
+@dataclass(frozen=True)
+class WhatsAppRound:
+    """סבב WhatsApp אחד במסלול, עם החלון שבו מותר לשלוח אותו.
+
+    ``day`` — יום הסבב. ``until`` — היום שבו מתחיל השלב הבא במסלול (כל סוג),
+    או היום שאחרי הסגירה לסבב האחרון. אחרי ``until`` הסבב "עבר" — לא שולחים
+    אותו בדיעבד (לא למוזמן חדש ולא אחרי תקלה).
+    """
+
+    message_type: str
+    day: date
+    until: date
+
+
+def whatsapp_rounds(event: models.Event, now: Optional[datetime] = None) -> list[WhatsAppRound]:
+    """סבבי ה-WhatsApp של המסלול, לפי הסדר, כל אחד עם סוג ההודעה שלו."""
+    schedule = compute_schedule(event, now)
+    if schedule is None:
+        return []
+    placements = schedule.placements
+    rounds: list[WhatsAppRound] = []
+    for i, p in enumerate(placements):
+        if p.step["type"] == "whatsapp_first":
+            message_type = "rsvp_request"
+        elif p.step["type"] == "reminder" and p.reminder_number in REMINDER_MESSAGE_TYPES:
+            message_type = REMINDER_MESSAGE_TYPES[p.reminder_number]
+        else:
+            continue
+        until = (
+            placements[i + 1].date if i + 1 < len(placements)
+            else schedule.commitment_date + timedelta(days=1)
+        )
+        rounds.append(WhatsAppRound(message_type, p.date, until))
+    return rounds
+
+
+def track_phase(event: models.Event, now: Optional[datetime] = None) -> str:
+    """באיזה שלב המסלול, לתצוגה: ``unscheduled`` (אין לוח זמנים) ·
+    ``waiting`` (יש לוח, אבל עוד לא נבחר מועד סגירה — לא יישלח כלום) ·
+    ``before`` (הסבב הראשון עוד לא הגיע) · ``running`` · ``ended`` (מועד
+    הסגירה עבר)."""
+    schedule = compute_schedule(event, now)
+    if schedule is None:
+        return "unscheduled"
+    if not track_enabled(event):
+        return "waiting"
+    today = local_time.israel_date(now)
+    if today > schedule.commitment_date:
+        return "ended"
+    if not schedule.placements or today < schedule.placements[0].date:
+        return "before"
+    return "running"
 
 
 def _ddmm(d: date) -> str:
@@ -303,31 +410,89 @@ def max_commit_days(event_date: date, today: date) -> int:
     return max(0, min(MAX_COMMIT_DAYS, (event_date - today).days))
 
 
-def _choose_steps(
-    active_days: int, cycle: list[dict] = CYCLE, priority: tuple[int, ...] = STEP_PRIORITY,
-) -> list[int]:
-    """אילו שלבים מ-``cycle`` נכנסים לחלון (אינדקסים, בסדר הזמן)."""
-    return sorted(priority[: min(active_days, len(cycle))])
-
-
-def _spread(chosen: list[int], cycle: list[dict] = CYCLE) -> list[float]:
-    """מיקום יחסי (0..1) לכל שלב נבחר, לפי הפער הרצוי בין שלבים סמוכים."""
-    if len(chosen) == 1:
+def _spread(kinds: tuple[str, ...]) -> list[float]:
+    """מיקום יחסי (0..1) לכל סבב, לפי הפער הרצוי בין סבבים סמוכים."""
+    if len(kinds) == 1:
         return [0.0]
     cum = [0]
-    for prev, cur in zip(chosen, chosen[1:]):
-        same_family = (cycle[prev]["type"] == "call_round") == (cycle[cur]["type"] == "call_round")
-        cum.append(cum[-1] + (GAP_WA_WA if same_family else GAP_WA_CALL))
+    for prev, cur in zip(kinds, kinds[1:]):
+        cum.append(cum[-1] + (GAP_WA_WA if prev == cur else GAP_WA_CALL))
     return [c / cum[-1] for c in cum]
 
 
+def _thursday_before(d: date) -> date:
+    """חמישי שלפני שישי/שבת (שישי → אתמול, שבת → שלשום)."""
+    return d - timedelta(days=d.weekday() - 3)
+
+
+def _active_days_after(d: date, end: date) -> int:
+    """כמה ימים פעילים יש אחרי ``d`` ועד ``end`` (כולל)."""
+    count, cur = 0, d + timedelta(days=1)
+    while cur <= end:
+        if not _is_weekend(cur):
+            count += 1
+        cur += timedelta(days=1)
+    return count
+
+
+def _place(
+    kinds: tuple[str, ...], start: date, end: date,
+) -> Optional[list[tuple[date, date]]]:
+    """פורס את הסבבים לתאריכים — ``[(תאריך בפועל, תאריך טבעי), ...]`` — או
+    ``None`` אם אי אפשר בלי לשבור את הכללים (ואז הקורא יורד לסבב אחד פחות).
+
+    כללים: הסבב האחרון ביום הסגירה (``end``; סבב יחיד — בתחילת החלון); כל סבב ביום פעיל משלו, אחרי
+    הקודם ולא אחרי ``end``; שישי/שבת → חמישי שלפני, ואם הוא תפוס/מחוץ לחלון
+    → ראשון שאחרי. אם גם הם לא מתאימים (התנגשות עיגול) — היום הפעיל הבא
+    שעדיין משאיר מקום לסבבים שאחריו.
+    """
+    n = len(kinds)
+    span = (end - start).days
+    positions = _spread(kinds)
+    placed: list[tuple[date, date]] = []
+    prev: Optional[date] = None
+    for k in range(n):
+        remaining = n - 1 - k
+        if k == n - 1 and n > 1:
+            natural = end
+            candidates = [end]
+        else:
+            # סבב יחיד יוצא כמה שיותר מוקדם בחלון — כדי שלמוזמנים יהיה זמן
+            # לענות לפני הסגירה (ולא ביום הסגירה עצמו).
+            natural = start + timedelta(days=round(positions[k] * span))
+            candidates = (
+                [_thursday_before(natural), _next_active_day(natural)]
+                if _is_weekend(natural) else [natural]
+            )
+            cur = max(candidates) + timedelta(days=1)
+            while cur <= end:
+                candidates.append(cur)
+                cur += timedelta(days=1)
+        chosen: Optional[date] = None
+        for c in candidates:
+            if _is_weekend(c) or c < start or c > end:
+                continue
+            if prev is not None and c <= prev:
+                continue
+            if k < n - 1 and (c >= end or _active_days_after(c, end) < remaining):
+                continue
+            chosen = c
+            break
+        if chosen is None:
+            return None
+        placed.append((chosen, natural))
+        prev = chosen
+    return placed
+
+
 def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Optional[Schedule]:
-    """פורס את שלבי ``CYCLE`` לתאריכים עבור אירוע. ``None`` = אין מה לחשב
+    """פורס את סבבי המסלול לתאריכים עבור אירוע. ``None`` = אין מה לחשב
     (חסר תאריך אירוע, או אירוע רחוק שעוד לא נבחר לו מועד סגירת רשימה).
 
-    יום הייחוס: היום שבו מסלול אישורי-ההגעה הופעל בפועל
-    (``rsvp_track_started_at``), כדי שהתאריכים יהיו יציבים ולא "יברחו" קדימה
-    בכל יום שעובר. לפני ההפעלה — היום (לוח הזמנים הצפוי מהיום).
+    העוגן הוא מועד הסגירה. יום הייחוס (הגבול התחתון של החלון) הוא היום —
+    עד שהמסלול מתחיל בפועל; מאז הוא קפוא (``rsvp_track_started_at``, נקבע
+    ע"י ``rsvp_scheduler``), כדי שהתאריכים יהיו יציבים ולא "יברחו" קדימה בכל
+    יום שעובר. שליחת הזמנה לא משפיעה על לוח הזמנים.
     """
     now = now or datetime.utcnow()
     today = local_time.israel_date(now)
@@ -337,73 +502,55 @@ def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Opt
         return None
 
     policy = policy_for(event)
-    cycle, last_call_idx, priority = _cycle_for(policy)
     max_window = policy.max_window_days
 
     started_on = _started_on(event)
     reference = started_on or today
     if is_default and started_on is not None:
-        # מסלול שהופעל כשהאירוע עוד היה רחוק, בלי בחירת מועד סגירה: ברירת
+        # מסלול שהתחיל כשהאירוע עוד היה רחוק, בלי בחירת מועד סגירה: ברירת
         # המחדל "נולדה" ביום שבו האירוע נעשה קרוב — לא מוקדם מזה, כדי שלא
         # יופיעו פתאום סבבים בתאריכים שכבר עברו.
         reference = max(started_on, event_date - timedelta(days=max_window - 1))
 
     # ---- מועד סגירת הרשימה ----
     # תאריך האירוע פחות הימים, מוזז אחורה אם נפל על שישי/שבת. זהו **תאריך
-    # אחד ויחיד**: גם יום סבב השיחות האחרון וגם היום שבו סוגרים את הרשימה.
+    # אחד ויחיד**: יום הסבב האחרון וגם היום שבו סוגרים את הרשימה.
     # לעולם לא לפני יום הייחוס (אירוע מחר → הרשימה נסגרת היום). אירוע שכבר
-    # הגיע לפני יום הייחוס לא "נגרר" קדימה — פשוט לא נשארים בו שלבים.
+    # הגיע לפני יום הייחוס לא "נגרר" קדימה — פשוט לא נשארים בו סבבים.
     raw_commitment = event_date - timedelta(days=commit_days)
     commitment_date = _prev_active_day(raw_commitment)
     if reference < event_date:
         commitment_date = max(commitment_date, reference)
 
-    # ---- החלון: עד MAX_WINDOW_DAYS ימים, לא לפני יום הייחוס ----
+    # ---- החלון: עד max_window ימים לפני הסגירה, לא לפני יום הייחוס ----
     window_start = max(commitment_date - timedelta(days=max_window), reference)
     window_days = (commitment_date - window_start).days
     compressed = window_days < max_window
-    active = [
-        d for d in (window_start + timedelta(days=i) for i in range(window_days + 1))
-        if not _is_weekend(d)
-    ]
 
-    # ---- בחירת השלבים ופריסתם ----
-    chosen = _choose_steps(len(active), cycle, priority)
-    positions = _spread(chosen, cycle) if chosen else []
-    slots = len(active) - 1
-    idx = [round(p * slots) for p in positions]
-    # כל שלב ביום פעיל משלו: קדימה — לפחות אחד אחרי הקודם; אחורה — השלב האחרון
-    # על היום האחרון בחלון (מועד הסגירה), וכל שלב לפחות אחד לפני הבא.
-    for j in range(1, len(idx)):
-        idx[j] = max(idx[j], idx[j - 1] + 1)
-    if idx:
-        idx[-1] = slots
-    for j in range(len(idx) - 2, -1, -1):
-        idx[j] = min(idx[j], idx[j + 1] - 1)
+    # ---- כמה סבבים: לפי החלון; אם אי אפשר לפרוס — סבב אחד פחות ----
+    kinds: tuple[str, ...] = ()
+    dates: list[tuple[date, date]] = []
+    for n in range(rounds_for_window(window_days, policy), 0, -1):
+        attempt = _place(SEQUENCES[n], window_start, commitment_date)
+        if attempt is not None:
+            kinds, dates = SEQUENCES[n], attempt
+            break
 
-    reminders = [i for i in chosen if cycle[i]["type"] == "reminder"]
-    calls = [i for i in chosen if cycle[i]["type"] == "call_round"]
     placements: list[Placement] = []
-    for j, step_idx in enumerate(chosen):
-        step = dict(cycle[step_idx])
+    reminder_n = round_n = 0
+    for step, (actual, natural) in zip(_steps_for(kinds), dates):
         rn: Optional[int] = None
-        reminder_n: Optional[int] = None
+        rem: Optional[int] = None
         if step["type"] == "reminder":
-            reminder_n = reminders.index(step_idx) + 1
-            step["label"] = _REMINDER_LABELS[reminder_n - 1]
+            reminder_n += 1
+            rem = reminder_n
         elif step["type"] == "call_round":
-            rn = calls.index(step_idx) + 1
-            step["label"] = (
-                _LAST_CALL_LABEL if step_idx == last_call_idx else _CALL_LABELS[rn - 1]
-            )
-        if step_idx == last_call_idx:
-            moved = _is_weekend(raw_commitment)
-        else:
-            natural = window_start + timedelta(days=round(positions[j] * window_days))
-            moved = _is_weekend(natural)
+            round_n += 1
+            rn = round_n
+        moved = _is_weekend(raw_commitment) if actual == commitment_date else _is_weekend(natural)
         placements.append(Placement(
-            step=step, date=active[idx[j]], moved_from_weekend=moved,
-            round_number=rn, reminder_number=reminder_n,
+            step=step, date=actual, moved_from_weekend=moved,
+            round_number=rn, reminder_number=rem,
         ))
 
     return Schedule(
@@ -459,6 +606,8 @@ def _empty_view(event: models.Event) -> dict:
         "current_stage": None,
         "next_action_date": None,
         "next_action_label": None,
+        "track_phase": "unscheduled",
+        "track_enabled": track_enabled(event),
         "days": [],
     }
 
@@ -497,10 +646,6 @@ def compute_timeline(
 
     commitment_date = schedule.commitment_date
     compressed = schedule.compressed
-    _last_round_number = max(
-        (p.round_number for p in schedule.placements if p.round_number is not None),
-        default=0,
-    )
 
     # ---- פריסת שלבי הסבב לתאריכים ----
     # מפה iso -> {"date":.., "actions":[...]}. יום אחד יכול לשאת כמה פעולות
@@ -515,14 +660,13 @@ def compute_timeline(
 
     for placement in schedule.placements:
         step = placement.step
-        # סבב השיחות האחרון = גם יום סגירת הרשימה. כרטיס אחד: אחרי הסבב,
-        # הרשימה נסגרת. אין שורת "סגירת רשימת המוזמנים" נפרדת.
-        is_last_round = (
-            step["type"] == "call_round"
-            and placement.round_number == _last_round_number
-        )
-        label = "סבב שיחות אחרון וסגירת הרשימה" if is_last_round else step["label"]
-        note = "אחרי הסבב, רשימת המוזמנים נסגרת." if is_last_round else ""
+        # הסבב שביום סגירת הרשימה = גם הסגירה עצמה. כרטיס אחד: אחרי הסבב,
+        # הרשימה נסגרת. אין שורת "סגירת רשימת המוזמנים" נפרדת. במסלול קצר
+        # הסבב הזה יכול להיות גם WhatsApp (למשל 5 סבבים: W P W P W).
+        closes = placement.date == commitment_date
+        is_last_call = closes and step["type"] == "call_round"
+        label = "סבב שיחות אחרון וסגירת הרשימה" if is_last_call else step["label"]
+        note = "אחרי הסבב, רשימת המוזמנים נסגרת." if closes else ""
         ensure_day(placement.date)["actions"].append({
             "type": step["type"],
             "icon": step["icon"],
@@ -631,5 +775,7 @@ def compute_timeline(
         "current_stage": current_stage,
         "next_action_date": next_action_date,
         "next_action_label": next_action_label,
+        "track_phase": track_phase(event, now),
+        "track_enabled": track_enabled(event),
         "days": days,
     }

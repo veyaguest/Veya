@@ -277,9 +277,19 @@ def test_rsvp_window() -> None:
     assert gj.rsvp_is_open(on, now=il(opens)) is True, "יום בקשת האישור הראשונה — נפתח"
     assert gj.rsvp_is_open(on, now=il(opens + timedelta(days=10))) is True
 
-    # מסלול לא פעיל — סגור, גם אחרי מועד הפתיחה.
-    off = FakeEvent(rsvp_track_active=False, rsvp_track_started_at=None)
-    assert gj.rsvp_is_open(off, now=il(opens + timedelta(days=3))) is False
+    # לא נשלחה אף הזמנה (המסלול עוד לא "התחיל") — זה לא עוצר את אישורי ההגעה:
+    # נבחר מועד סגירה, ולכן האישור נפתח לפי לוח הזמנים (החלטת המייסד 2026-09-23).
+    no_invites = FakeEvent(rsvp_track_active=False, rsvp_track_started_at=None)
+    assert gj.rsvp_is_open(no_invites, now=il(opens + timedelta(days=3))) is True
+
+    # אירוע קרוב שבעליו לא בחרו מועד סגירה: יש לוח זמנים לתצוגה (ברירת
+    # מחדל — יום לפני), אבל המסלול לא רשאי לפעול — ולכן האישור סגור.
+    waiting = FakeEvent(
+        rsvp_track_active=False, rsvp_track_started_at=None, venue_commit_days_before=None,
+    )
+    near = il(EVENT_DAY - timedelta(days=5))
+    assert gj.rsvp_open_date(waiting, now=near) is not None
+    assert gj.rsvp_is_open(waiting, now=near) is False
 
     # אין מועד סגירת רשימה — אין לוח, אין פתיחה.
     nocommit = FakeEvent(venue_commit_days_before=None)

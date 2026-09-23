@@ -12,7 +12,8 @@
    ולא יהיה.
 4. **פתיחת מחזור חדש מנתקת את האוטומציות מהתאריך הישן** — ``rsvp_track_active``
    ו-``rsvp_track_started_at`` מתאפסים, ולכן כל לוח הזמנים של אישורי-ההגעה
-   נבנה מחדש מהתאריך החדש ולא ממשיך לפי הישן.
+   נבנה מחדש מהתאריך החדש ולא ממשיך לפי הישן. בזמן שיש בקשה חיה המשימה
+   המתוזמנת (``rsvp_scheduler``) לא שולחת כלום.
 
 **מה שאין כאן:** קביעת תאריך חדש. הבקשה אינה מכילה תאריך, האישור אינו קובע
 תאריך, והמערכת אינה מבקשת מהזוג לדעת מתי האירוע יתקיים כשהוא מבקש לדחות
@@ -88,8 +89,13 @@ def event_stage(db: Session, event: models.Event) -> str:
             return STAGE_NEW_DATE
         return STAGE_OPEN
     # אין בקשה חיה. אירוע שעבר דחייה וטרם שלח הזמנה חדשה — מחזור פתוח מחדש.
-    if (event.cycle_number or 1) > 1 and not event.rsvp_track_active:
-        return STAGE_RSVP_REOPENED
+    # נבדק לפי ההזמנות שנשלחו במחזור הנוכחי, ולא לפי ``rsvp_track_active``:
+    # מ-2026-09-23 המסלול מתחיל לפי מועד הסגירה ולא לפי שליחת הזמנה.
+    if (event.cycle_number or 1) > 1:
+        from app import invitations
+
+        if not invitations.invited_guest_ids(db, event.id, event):
+            return STAGE_RSVP_REOPENED
     return STAGE_NORMAL
 
 

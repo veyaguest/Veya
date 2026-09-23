@@ -52,9 +52,10 @@ DOMAINS = {
 
 _SETTINGS: list[Setting] = [
     # ── אישורי הגעה ──
-    Setting("rsvp.whatsapp_reminders", "rsvp", "מספר תזכורות WhatsApp",
-            "תזכורות אחרי בקשת האישור הראשונה, למי שעדיין לא השיב.", "int", 3, 0, 3,
-            event_override=True, unit="תזכורות"),
+    Setting("rsvp.max_rounds", "rsvp", "מספר סבבים מקסימלי",
+            "כמה סבבים לכל היותר במסלול אישורי ההגעה (WhatsApp ושיחות יחד). 7 = המסלול המלא. "
+            "מתחת ל-7 הסבבים מתחלפים — WhatsApp, שיחות, WhatsApp… — וחלון קצר מקבל פחות סבבים ממילא.",
+            "int", 7, 1, 7, event_override=True, unit="סבבים"),
     Setting("rsvp.max_window_days", "rsvp", "אורך תהליך אישורי ההגעה",
             "כמה ימים לכל היותר לפני סגירת הרשימה מתחיל התהליך. אירוע קרוב יותר מקבל תהליך דחוס.",
             "int", 14, 7, 21, event_override=True, unit="ימים"),
@@ -74,8 +75,6 @@ _SETTINGS: list[Setting] = [
     Setting("whatsapp.send_time", "whatsapp", "שעת שליחה לאירוע חדש", "שעת השליחה היומית של הודעות האישור.",
             "text", "16:00", live=False, readonly_reason="נקבעת לכל אירוע בנפרד בהגדרות האירוע"),
     # ── טלפנים ──
-    Setting("calls.rounds", "calls", "מספר סבבי טלפונים",
-            "סבב השיחות האחרון תמיד ביום סגירת הרשימה.", "int", 3, 0, 3, event_override=True, unit="סבבים"),
     Setting("calls.many_attempts", "calls", "ניסיונות עד 'דורש טיפול'",
             "אורח עם מספר ניסיונות כזה ומעלה מסומן לבדיקה.", "int", 3, 2, 10, unit="ניסיונות"),
     Setting("calls.attempts_per_round", "calls", "ניסיונות שיחה בכל סבב",
@@ -91,6 +90,16 @@ _SETTINGS: list[Setting] = [
 ]
 
 SETTINGS: dict[str, Setting] = {s.key: s for s in _SETTINGS}
+
+# הגדרות שהוחלפו (2026-09-23): "מספר תזכורות WhatsApp" + "מספר סבבי טלפונים"
+# אפשרו מסלול שסותר את האיזון בין WhatsApp לשיחות. הן אוחדו ל-``rsvp.max_rounds``
+# — ערכים שנשמרו מומרים פעם אחת בעליית השרת (``main._migrate_rsvp_round_settings``).
+RETIRED_ROUND_KEYS = ("rsvp.whatsapp_reminders", "calls.rounds")
+
+
+def max_rounds_from_retired(reminders: int, calls: int) -> int:
+    """המרה מההגדרות הישנות: בקשת אישור + התזכורות + סבבי השיחות, עד 7."""
+    return max(1, min(7, 1 + max(0, int(reminders)) + max(0, int(calls))))
 
 
 def validate(setting: Setting, value: Any) -> Any:

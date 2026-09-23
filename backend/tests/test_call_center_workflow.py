@@ -31,25 +31,66 @@ def _rounds_at(event, when: datetime) -> list:
 
 
 def test_track_start_is_set_once_and_never_moves() -> None:
-    """ההפעלה קובעת עוגן פעם אחת; הפעלה חוזרת לא דורסת אותו."""
+    """שליחת הזמנה לא קובעת עוגן (2026-09-23). העוגן נקבע פעם אחת, ע"י
+    המשימה המתוזמנת, ביום שבו הסבב הראשון מגיע — וריצות חוזרות לא דורסות אותו."""
     api, teardown = bootstrap()
     try:
+        from app import rsvp_scheduler
+        from app.database import SessionLocal
+        from app import models
+
         api.add_guest("אורח", "0501111111", party_size=2)
         api.client.patch("/event", headers=api.headers, json={
             "event_date": (date.today() + timedelta(days=30)).isoformat(),
             "event_time": "19:00",
+            "venue_commit_days_before": 3,
         })
 
         r1 = api.client.post("/automation/track/activate", headers=api.headers, json={})
         assert r1.status_code == 200, r1.text
+        assert r1.json()["newly_activated"] is False
+        assert event_of(api).rsvp_track_started_at is None, "שליחת הזמנה קבעה עוגן"
+        assert event_of(api).rsvp_track_active is False, "שליחת הזמנה הפעילה את המסלול"
+
+        # 30 יום לפני האירוע — הסבב הראשון עוד רחוק: המשימה לא מתחילה כלום.
+        db = SessionLocal()
+        try:
+            ev = db.get(models.Event, api.event_id)
+            rsvp_scheduler.process_event(db, ev, datetime.utcnow())
+            db.commit()
+        finally:
+            db.close()
+        assert event_of(api).rsvp_track_started_at is None
+
+        # ביום הסבב הראשון — המסלול מתחיל, פעם אחת.
+        from app import rsvp_timeline
+
+        first_day = rsvp_timeline.compute_schedule(event_of(api)).placements[0].date
+        at_first = datetime.combine(first_day, datetime.min.time()) + timedelta(hours=9)
+        db = SessionLocal()
+        try:
+            ev = db.get(models.Event, api.event_id)
+            started, _, _ = rsvp_scheduler.process_event(db, ev, at_first)
+            db.commit()
+        finally:
+            db.close()
+        assert started is True
         first_anchor = event_of(api).rsvp_track_started_at
         assert first_anchor is not None
 
-        # הפעלה חוזרת (המשתמש לוחץ שוב / המסך נטען שוב) — העוגן לא זז.
+        # ריצה חוזרת, הזמנה חוזרת, כניסה למסך — העוגן לא זז.
+        db = SessionLocal()
+        try:
+            ev = db.get(models.Event, api.event_id)
+            started, _, _ = rsvp_scheduler.process_event(db, ev, at_first + timedelta(days=1))
+            db.commit()
+        finally:
+            db.close()
+        assert started is False
         api.client.post("/automation/track/activate", headers=api.headers, json={})
         api.client.post("/automation/track/advance", headers=api.headers)
         assert event_of(api).rsvp_track_started_at == first_anchor
-        print("✓ rsvp_track_started_at נקבע פעם אחת ולא נדרס")
+        print("✓ rsvp_track_started_at נקבע פעם אחת (ע\"י המשימה המתוזמנת) ולא נדרס")
     finally:
         teardown()
 

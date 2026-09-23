@@ -88,7 +88,16 @@ def update_message(
 ):
     _assert_known_type(db, event, message_type)
     em = _get_message(db, event, message_type)
-    for key, value in payload.model_dump(exclude_unset=True).items():
+    changes = payload.model_dump(exclude_unset=True)
+    if "send_time" in changes:
+        if message_type not in communication.SCHEDULED_TYPES:
+            raise HTTPException(status_code=400, detail="להודעה הזו אין שעת שליחה — היא נשלחת ידנית")
+        if changes["send_time"] is not None:
+            try:
+                changes["send_time"] = communication.validate_send_time(changes["send_time"])
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+    for key, value in changes.items():
         setattr(em, key, value)
     db.commit()
     return em

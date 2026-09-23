@@ -27,6 +27,7 @@ from tests.call_center_helpers import (  # noqa: E402
     assign_events,
     call_logs_of,
     configure_track,
+    days_ago_for_round_before_today,
     guest_of,
     phone_agent,
     standalone_admin,
@@ -533,7 +534,7 @@ def test_ended_event_disappears_from_every_scope_even_unhandled() -> None:
         admin = standalone_admin(api)
         api.add_guest("לא נענה מעולם", "0509400022", party_size=1)
         # סבב פעיל שכבר עבר (backlog) — לפני שהאירוע "מסתיים".
-        configure_track(api, days_to_event=8, commit_days=3, started_days_ago=12)
+        configure_track(api, days_to_event=8, commit_days=3, started_days_ago=days_ago_for_round_before_today(8, 3))
         assert _queue(api, admin, scope="not_handled", event_id=api.event_id)["items"], (
             "הבדיקה מצפה שהשיחה תופיע ב'לא טופל' לפני שהאירוע מסתיים"
         )
@@ -555,7 +556,7 @@ def test_active_event_with_old_unhandled_call_appears_in_not_handled_only() -> N
     try:
         admin = standalone_admin(api)
         api.add_guest("ממתין הרבה זמן", "0509400023", party_size=1)
-        configure_track(api, days_to_event=8, commit_days=3, started_days_ago=12)
+        configure_track(api, days_to_event=8, commit_days=3, started_days_ago=days_ago_for_round_before_today(8, 3))
 
         not_handled = _queue(api, admin, scope="not_handled", event_id=api.event_id)["items"]
         assert [g["full_name"] for g in not_handled] == ["ממתין הרבה זמן"]
@@ -652,11 +653,11 @@ def test_phone_agent_and_admin_get_the_same_event_status_filtering() -> None:
 
         # אירוע A: פעיל, עם backlog — אמור להופיע לשניהם ב'לא טופל'.
         api_a.add_guest("פעיל עם עבר", "0509400027", party_size=1)
-        configure_track(api_a, days_to_event=8, commit_days=3, started_days_ago=12)
+        configure_track(api_a, days_to_event=8, commit_days=3, started_days_ago=days_ago_for_round_before_today(8, 3))
 
         # אירוע B: הסתיים — לא אמור להופיע לאף אחד, גם עם backlog.
         api_b.add_guest("אירוע שנגמר", "0509400028", party_size=1)
-        configure_track(api_b, days_to_event=8, commit_days=3, started_days_ago=12)
+        configure_track(api_b, days_to_event=8, commit_days=3, started_days_ago=days_ago_for_round_before_today(8, 3))
         _set_event_date(api_b.event_id, (date.today() - timedelta(days=3)).isoformat())
 
         agent_id, agent = phone_agent(api_a)

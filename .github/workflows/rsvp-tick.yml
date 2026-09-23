@@ -1,0 +1,44 @@
+# מסלול אישורי ההגעה — שולח את הסבבים האוטומטיים (WhatsApp, יום האירוע, תודה)
+# גם אם אף אחד לא נכנס למערכת. בלי המשימה הזו לא יוצא אף סבב.
+#
+# הגדרה: אותם Secrets כמו call-sync.yml (VEYA_API_URL, VEYA_JOB_SECRET).
+#
+# הזמנים ב-UTC: כל 15 דקות בין 06:00 ל-17:45 UTC — מכסה את טווח שעות השליחה
+# (10:00–19:00 שעון ישראל) גם בשעון קיץ (UTC+3) וגם בשעון חורף (UTC+2).
+# GitHub מריץ משימות מתוזמנות באיחור של כמה דקות לפעמים — זה בסדר: כל סבב
+# פתוח לשליחה עד שמתחיל השלב הבא, והשרת לא שולח פעמיים.
+name: rsvp-tick
+
+on:
+  schedule:
+    - cron: "*/15 6-17 * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: rsvp-tick
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Run RSVP tick
+        env:
+          API: ${{ secrets.VEYA_API_URL }}
+          SECRET: ${{ secrets.VEYA_JOB_SECRET }}
+        run: |
+          if [ -z "$API" ] || [ -z "$SECRET" ]; then
+            echo "VEYA_API_URL / VEYA_JOB_SECRET לא מוגדרים — מדלג"; exit 0
+          fi
+          curl -sS --max-time 90 "$API/health" > /dev/null || true
+          for i in 1 2 3; do
+            code=$(curl -sS -o out.json -w "%{http_code}" --max-time 180 -X POST \
+              -H "X-Veya-Job-Secret: $SECRET" "$API/internal/jobs/rsvp-tick") || code=000
+            echo "attempt $i → HTTP $code"; cat out.json 2>/dev/null; echo
+            [ "$code" = "200" ] && exit 0
+            sleep 30
+          done
+          exit 1

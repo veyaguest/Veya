@@ -362,6 +362,8 @@ class EventMessageRead(BaseModel):
     is_active: bool
     trigger_offset_days: int
     target_audience: str
+    # שעת השליחה של הסבב ("HH:MM"). None = שעת ברירת המחדל של האירוע.
+    send_time: Optional[str] = None
     updated_at: datetime
 
 
@@ -371,6 +373,9 @@ class EventMessageUpdate(BaseModel):
     is_active: Optional[bool] = None
     trigger_offset_days: Optional[int] = None
     target_audience: Optional[TargetAudience] = None
+    # שעת השליחה של הסבב ("HH:MM", 10:00–19:00). null = חזרה לשעת ברירת
+    # המחדל של האירוע. התאריך לא ניתן לעריכה — הוא נקבע ע"י לוח הזמנים.
+    send_time: Optional[str] = None
 
 
 class CommunicationPreview(BaseModel):
@@ -1800,6 +1805,11 @@ class RsvpTimelineView(BaseModel):
     current_stage: Optional[str] = None
     next_action_date: Optional[str] = None
     next_action_label: Optional[str] = None
+    # שלב המסלול לתצוגה (``rsvp_timeline.track_phase``): unscheduled / waiting /
+    # before / running / ended. ``track_enabled`` — האם המסלול רשאי לשלוח (נבחר
+    # מועד סגירה, או שהמסלול כבר התחיל). שליחת הזמנה לא משפיעה על אף אחד מהם.
+    track_phase: str = "unscheduled"
+    track_enabled: bool = False
     days: list[TimelineDay] = []
 
 

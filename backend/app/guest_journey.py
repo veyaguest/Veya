@@ -183,14 +183,15 @@ def rsvp_is_open(event: models.Event | None, *, now: datetime | None = None) -> 
     אישורי ההגעה נפתחים ביום שבקשת האישור הראשונה יוצאת לפי לוח הזמנים
     (``rsvp_open_date``). עד אז ה-Guest Hub במצב צפייה בלבד (הזמנה / יומן /
     ניווט), והודעת ההזמנה הראשונה אינה מבקשת אישור. רצפת ביטחון: לא נפתח
-    לפני שההזמנות נשלחו בכלל (``rsvp_track_active``).
+    לאירוע שהמסלול שלו לא רשאי לפעול (``rsvp_timeline.track_enabled`` — לא
+    נבחר מועד סגירה). שליחת הזמנה לא משפיעה על זה (2026-09-23).
 
     ``event is None`` — הקשר תצוגה מקדימה (אין אירוע): מחזיר ``True``, כמו
     ``compute_actions(None)``.
     """
     if event is None:
         return True
-    if not event.rsvp_track_active:
+    if not rsvp_timeline.track_enabled(event):
         return False
     opens_on = rsvp_open_date(event, now=now)
     if opens_on is None:

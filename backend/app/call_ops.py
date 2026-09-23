@@ -155,6 +155,14 @@ def _insert_tasks(db: Session, rows: list[dict]) -> None:
         )
 
 
+def _existed_on(guest: models.Guest, day: date) -> bool:
+    """האם המוזמן כבר היה ברשימה ביום ``day`` (שעון ישראל). בלי ``created_at``
+    — נחשב קיים (מוזמן ישן)."""
+    if guest.created_at is None:
+        return True
+    return local_time.israel_date(guest.created_at) <= day
+
+
 def _try_sync_lock(db: Session) -> bool:
     """Postgres: רק sync מלא אחד בכל רגע (נשחרר ב-commit). SQLite: תמיד כן."""
     if db.get_bind().dialect.name != "postgresql":
@@ -301,7 +309,7 @@ def sync(
     stamp = datetime.utcnow()
 
     ev_stmt = select(models.Event).where(
-        models.Event.rsvp_track_active.is_(True), models.Event.event_date != "",
+        rsvp_timeline.track_enabled_clause(), models.Event.event_date != "",
     )
     if event_ids is not None:
         if not event_ids:
@@ -424,6 +432,10 @@ def sync(
                 task = by_key.get(key)
                 if task is None:
                     if g.id in unresolved_wrong or key in pending_keys:
+                        continue
+                    # מוזמן שנוסף אחרי שהסבב הזה כבר יצא לא מצטרף אליו בדיעבד —
+                    # הוא ייכנס לסבב השיחות הבא (החלטת המייסד 2026-09-23).
+                    if not _existed_on(g, plan.date):
                         continue
                     assignee = pick_default(e.id, plan.date)
                     row = dict(
@@ -915,7 +927,7 @@ def preview(
     now = now or datetime.utcnow()
     today = local_time.israel_date(now)
     stmt = select(models.Event).where(
-        models.Event.rsvp_track_active.is_(True), models.Event.event_date != "",
+        rsvp_timeline.track_enabled_clause(), models.Event.event_date != "",
     )
     if event_id is not None:
         stmt = stmt.where(models.Event.id == event_id)
@@ -1080,7 +1092,7 @@ def preview_counts(db: Session, days: list[date], *, now: Optional[datetime] = N
     wanted = set(days)
     events = [
         e for e in db.scalars(select(models.Event).where(
-            models.Event.rsvp_track_active.is_(True), models.Event.event_date != "",
+            rsvp_timeline.track_enabled_clause(), models.Event.event_date != "",
         )).all()
         if not call_center.event_has_ended(e, today)
     ]

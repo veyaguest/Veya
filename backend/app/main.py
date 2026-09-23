@@ -221,6 +221,12 @@ _EXTRA_COLUMNS = {
         # לפני נוהל הדחייה הן של המחזור המקורי.
         "cycle_number": "INTEGER DEFAULT 1",
     },
+    # שעת שליחה לכל סבב (2026-09-23). NULL = שעת ברירת המחדל של האירוע
+    # (``events.rsvp_send_time`` / ``thank_you_send_time``) — אירועים קיימים
+    # ממשיכים בדיוק באותה שעה.
+    "event_messages": {
+        "send_time": "TEXT",
+    },
     "automation_rules": {
         "action_kind": "TEXT DEFAULT 'send'",
     },
@@ -1677,6 +1683,74 @@ def _ensure_rls_policies() -> None:
         print(f"[veya:rls] נכשל (השרת ממשיך לעלות): {exc!r}", flush=True)
 
 
+def _migrate_rsvp_round_settings() -> None:
+    """ממיר את ההגדרות הישנות "מספר תזכורות WhatsApp" + "מספר סבבי טלפונים"
+    (``settings_registry.RETIRED_ROUND_KEYS``) להגדרה האחת ``rsvp.max_rounds``
+    — ברמת המערכת ולכל Override של אירוע. ערך חסר = ברירת המחדל הישנה (3).
+
+    idempotent: ממיר רק כשיש שורה ישנה, ואז מוחק אותה (ההגדרה כבר לא קיימת
+    בקוד ואין מה שיקרא אותה). ערך ``max_rounds`` קיים לא נדרס.
+    """
+    from sqlalchemy import select
+
+    from app import settings_registry as sr
+
+    db = MigrationSessionLocal()
+    try:
+        def convert(rows: list, existing_new):
+            vals = {r.key: r.value for r in rows}
+            if existing_new is not None:
+                return None
+            return sr.max_rounds_from_retired(
+                vals.get("rsvp.whatsapp_reminders", 3), vals.get("calls.rounds", 3)
+            )
+
+        old_sys = list(db.scalars(
+            select(models.SystemSetting).where(models.SystemSetting.key.in_(sr.RETIRED_ROUND_KEYS))
+        ).all())
+        if old_sys:
+            existing = db.scalars(
+                select(models.SystemSetting).where(models.SystemSetting.key == "rsvp.max_rounds")
+            ).first()
+            value = convert(old_sys, existing)
+            if value is not None and value != 7:
+                db.add(models.SystemSetting(key="rsvp.max_rounds", value=value))
+            for r in old_sys:
+                db.delete(r)
+
+        old_ev = list(db.scalars(
+            select(models.SettingOverride)
+            .where(models.SettingOverride.scope_type == "event")
+            .where(models.SettingOverride.key.in_(sr.RETIRED_ROUND_KEYS))
+        ).all())
+        by_event: dict[int, list] = {}
+        for r in old_ev:
+            by_event.setdefault(r.scope_id, []).append(r)
+        for event_id, rows in by_event.items():
+            existing = db.scalars(
+                select(models.SettingOverride)
+                .where(models.SettingOverride.scope_type == "event")
+                .where(models.SettingOverride.scope_id == event_id)
+                .where(models.SettingOverride.key == "rsvp.max_rounds")
+            ).first()
+            value = convert(rows, existing)
+            if value is not None:
+                db.add(models.SettingOverride(
+                    scope_type="event", scope_id=event_id, key="rsvp.max_rounds", value=value,
+                    reason="הומר אוטומטית מ'מספר תזכורות' + 'מספר סבבי טלפונים'",
+                ))
+            for r in rows:
+                db.delete(r)
+        db.commit()
+        if old_sys or old_ev:
+            sr.invalidate()
+    except Exception as exc:  # noqa: BLE001 — הגדרה ישנה לא מפילה את עליית השרת
+        db.rollback()
+        print(f"[veya:startup] המרת הגדרות הסבבים נכשלה: {exc!r}", flush=True)
+    finally:
+        db.close()
+
+
 def _ensure_rsvp_request_message_default() -> None:
     """משלים את התשתית של ``rsvp_request`` ("בקשת אישור ראשונה") בפרודקשן —
     סוג הודעה שנולד אחרי שהקטלוג כבר נזרע, ולכן ``seed_message_defaults`` /
@@ -1858,6 +1932,8 @@ def on_startup() -> None:
     # משלים שורת "בקשת אישור ראשונה" (rsvp_request) לכל סוג אירוע — סוג הודעה
     # שנולד אחרי שהקטלוג נזרע בפרודקשן. משלים חסר בלבד, לא דורס.
     _ensure_rsvp_request_message_default()
+    # "מספר תזכורות" + "מספר סבבי טלפונים" → "מספר סבבים מקסימלי" (2026-09-23).
+    _migrate_rsvp_round_settings()
     # נוסחי "אירוע נדחה". בנפרד מהזריעה שמעל, כי היא רצה רק על טבלה ריקה —
     # ובייצור הטבלה מלאה מזמן. הזריעה כאן משלימה חסר ולעולם לא דורסת.
     _seed_postponement_options()

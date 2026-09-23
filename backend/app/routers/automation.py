@@ -17,7 +17,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from datetime import datetime
 
 from app import (
     audit,
@@ -88,10 +87,7 @@ def _track_status(
         and m.status == "sent" and m.guest_id is not None
     }
 
-    due = (
-        communication.compute_due_messages(db, event, guests=guests, messages=messages)
-        if event.rsvp_track_active else []
-    )
+    due = communication.compute_due_messages(db, event, guests=guests, messages=messages)
 
     return schemas.RsvpTrackStatus(
         active=bool(event.rsvp_track_active),
@@ -219,24 +215,22 @@ def activate_track(
     event: models.Event = Depends(_access),
     user: models.User = Depends(get_current_owner),
 ):
-    """שולח הזמנות ומפעיל את מסלול אישורי-ההגעה (מקצה את רצף ההודעות, idempotent).
+    """שולח הזמנות — פעולה ידנית ומיידית בלבד (מקצה את רצף ההודעות, idempotent).
+
+    **אינו מפעיל את מסלול אישורי ההגעה** (החלטת המייסד 2026-09-23). המסלול
+    נקבע רק לפי מועד סגירת הרשימה ורץ מ-``rsvp_scheduler``. הנתיב נשאר בשם
+    ``/track/activate`` לתאימות בלבד; ``newly_activated`` תמיד False.
 
     היקף השליחה נקבע ב-``payload``:
     - ``retry_ids``   — שליחה חוזרת רק למוזמנים אלה (ניסיון חוזר לנכשלים). גובר על scope.
     - ``scope=all``   — שליחה מחדש לכל מי שיש לו טלפון תקין.
     - ``scope=new``   — (ברירת מחדל) רק מי שעדיין לא קיבל הזמנה.
 
-    מוזמנים בלי טלפון / עם מספר לא תקין מדולגים ונספרים בנפרד. הטיימר (עוגן
-    האוטומציות) נדלק בקריאה הראשונה; מכאן כל התזכורות מחושבות מזמן השליחה בפועל.
+    מוזמנים בלי טלפון / עם מספר לא תקין מדולגים ונספרים בנפרד.
     """
     payload = payload or schemas.RsvpTrackActivateRequest()
     messages_created = communication.provision_event_messages(db, event)
-
-    newly_activated = not event.rsvp_track_active
-    if not event.rsvp_track_active:
-        event.rsvp_track_active = True
-    if event.rsvp_track_started_at is None:
-        event.rsvp_track_started_at = datetime.utcnow()
+    newly_activated = False
 
     already_invited = invitations.invited_guest_ids(db, event.id, event)
     guests = _guests(db, event.id)
@@ -326,14 +320,6 @@ def activate_track(
             detail=f"{resend_skipped} מוזמנים כבר קיבלו הזמנה קודם — לא נשלחה שוב",
             ip=ip,
         )
-    if newly_activated:
-        audit.record(
-            db, "rsvp_track_activate",
-            event_id=event.id, user_id=user.id,
-            detail="מערכת אישורי ההגעה הופעלה",
-            ip=ip,
-        )
-
     db.commit()
 
     status = _track_status(db, event)
@@ -357,27 +343,13 @@ def advance_track(
     event: models.Event = Depends(_access),
     user: models.User = Depends(get_current_owner),
 ):
-    """מקדם את המסלול אוטומטית: תזכורות/יום-אירוע/תודה שהגיע זמנן נשלחות
-    (mock/live). רק ממתינים/מאושרים לפי קהל היעד של כל הודעה; מי שכבר ענה
-    יוצא מהתזכורות. idempotent — dedup לפי event_message_id מונע כפילות,
-    כך שאפשר לקרוא לזה שוב ושוב (בכל טעינת מסך RSVP) בלי נזק."""
-    sent = failed = 0
-    if event.rsvp_track_active:
-        actions = communication.compute_due_messages(db, event)
-        if actions:
-            r = communication.send_due_messages(db, event, actions)
-            sent, failed = r["sent"], r["failed"]
-            audit.record(
-                db, "rsvp_track_advance",
-                event_id=event.id, user_id=user.id,
-                detail=f"התקדמות מסלול: נשלחו {sent}, נכשלו {failed}",
-                ip=request.client.host if request.client else None,
-            )
-            db.commit()
-
+    """תאימות בלבד — **לא שולח כלום**. עד 2026-09-23 כל טעינת מסך "הודעות" /
+    "אישורים" קראה לנתיב הזה והוא זה ששלח את הסבבים; מעכשיו השליחה רצה
+    מ-``rsvp_scheduler`` (משימה מתוזמנת), וכניסה למסך לא משפיעה עליה.
+    מחזיר את הסטטוס הנוכחי עם ``sent=0``."""
     status = _track_status(db, event)
     return schemas.RsvpTrackAdvanceResult(
-        **status.model_dump(), sent=sent, phoned=0, failed=failed,
+        **status.model_dump(), sent=0, phoned=0, failed=0,
     )
 
 

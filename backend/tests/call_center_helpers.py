@@ -10,6 +10,8 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from typing import Optional
 
+from sqlalchemy import select
+
 # הפרמטרים האלה נבחרו כך שסבב שיחות כבר ייפתח בבטחה בכל יום בשבוע
 # (ראו tests/test_call_center.py — נבדק מול המנוע עצמו).
 DEFAULT_DAYS_TO_EVENT = 8
@@ -49,6 +51,32 @@ def days_ago_for_round_due_today(
             return started_days_ago
     raise AssertionError(
         f"לא נמצא started_days_ago שמעמיד סבב 1 בדיוק היום "
+        f"(days_to_event={days_to_event}, commit_days={commit_days})"
+    )
+
+
+def days_ago_for_round_before_today(
+    days_to_event: int = DEFAULT_DAYS_TO_EVENT,
+    commit_days: int = DEFAULT_COMMIT_DAYS,
+) -> int:
+    """מוצא ``started_days_ago`` כך שסבב השיחות הפעיל (האחרון שהגיע) נפל
+    **לפני היום** — תרחיש "לא טופל" (backlog). כמו ``days_ago_for_round_due_today``:
+    דרך המנוע האמיתי, כך שהבדיקה לא תלויה ביום בשבוע שבו היא רצה."""
+    from app import models, rsvp_timeline
+
+    for started_days_ago in range(0, 60):
+        probe = models.Event(
+            event_date=(date.today() + timedelta(days=days_to_event)).isoformat(),
+            event_time="19:00",
+            venue_commit_days_before=commit_days,
+            rsvp_track_active=True,
+            rsvp_track_started_at=datetime.utcnow() - timedelta(days=started_days_ago),
+        )
+        due = rsvp_timeline.due_call_round(probe)
+        if due is not None and due.date < date.today():
+            return started_days_ago
+    raise AssertionError(
+        f"לא נמצא started_days_ago שמשאיר סבב שיחות שעבר "
         f"(days_to_event={days_to_event}, commit_days={commit_days})"
     )
 
@@ -188,6 +216,16 @@ def configure_track(
         event.rsvp_track_started_at = (
             datetime.utcnow() - timedelta(days=started_days_ago) if activate else None
         )
+        # מסלול "שהתחיל לפני X ימים": המוזמנים שכבר ברשימה היו בה אז. בלי זה
+        # הם נחשבים "נוספו היום", ומ-2026-09-23 מוזמן חדש לא מצטרף בדיעבד
+        # לסבב שיחות שכבר עבר (``call_ops._existed_on``).
+        if activate:
+            existed = event.rsvp_track_started_at - timedelta(days=1)
+            for guest in db.scalars(
+                select(models.Guest).where(models.Guest.event_id == event.id)
+            ).all():
+                if guest.created_at is None or guest.created_at > existed:
+                    guest.created_at = existed
         db.commit()
     finally:
         db.close()

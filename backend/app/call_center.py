@@ -102,12 +102,13 @@ class EventQueue:
 def due_events(db: Session, now: Optional[datetime] = None) -> list[tuple[models.Event, rsvp_timeline.Placement]]:
     """האירועים שבהם סבב שיחות כבר הגיע, עם הסבב הפעיל שלהם.
 
-    רק אירועים שמסלול אישורי-ההגעה שלהם הופעל (ההזמנות נשלחו) — לפני זה אין
-    בכלל עוגן התחלה לסבב, ואין למי להתקשר.
+    רק אירועים שמסלול אישורי-ההגעה שלהם רשאי לפעול
+    (``rsvp_timeline.track_enabled``: נבחר מועד סגירה, או שהמסלול כבר התחיל).
+    שליחת הזמנה לא קובעת את זה (2026-09-23).
     """
     events = db.scalars(
         select(models.Event).where(
-            models.Event.rsvp_track_active.is_(True),
+            rsvp_timeline.track_enabled_clause(),
             # בלי סינון לפי מועד סגירה: אירוע קרוב שלא נבחר לו מועד מקבל
             # ברירת מחדל (יום לפני) — ``compute_schedule`` מחליט אם יש לוח.
             models.Event.event_date != "",

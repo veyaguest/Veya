@@ -737,6 +737,10 @@ class EventMessage(Base):
     trigger_offset_days: Mapped[int] = mapped_column(Integer, default=0)
     # all / pending / confirmed / declined — קהל היעד לשליחה.
     target_audience: Mapped[str] = mapped_column(String, default="pending")
+    # שעת השליחה של הסבב הזה ("HH:MM", שעון ישראל). NULL = שעת ברירת המחדל
+    # של האירוע (``Event.rsvp_send_time`` / ``thank_you_send_time``). התאריך
+    # עצמו נקבע תמיד ע"י לוח הזמנים — אי אפשר לערוך אותו.
+    send_time: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()

@@ -69,7 +69,7 @@ def test_no_settings_means_identical_schedule() -> None:
 
     ev = _event(api.event_id)
     assert rsvp_timeline.policy_for(ev) == rsvp_timeline.DEFAULT_POLICY
-    assert len(rsvp_timeline.call_rounds(ev)) == 3
+    assert rsvp_timeline.policy_for(ev).max_rounds == 7
 
 
 def test_system_rounds_change_is_applied_and_audited() -> None:
@@ -78,18 +78,19 @@ def test_system_rounds_change_is_applied_and_audited() -> None:
     admin = _admin()
     from app import rsvp_timeline
 
-    r = api.client.put("/admin/rules", headers=admin, json={"changes": {"calls.rounds": 2}, "reason": "פחות שיחות"})
+    r = api.client.put("/admin/rules", headers=admin, json={"changes": {"rsvp.max_rounds": 4}, "reason": "פחות סבבים"})
     assert r.status_code == 200, r.text
     ev = _event(api.event_id)
-    rounds = rsvp_timeline.call_rounds(ev)
-    assert len(rounds) == 2
-    assert rounds[-1].date == rsvp_timeline.compute_schedule(ev).commitment_date, "הסבב האחרון זז מיום הסגירה"
+    sched = rsvp_timeline.compute_schedule(ev)
+    kinds = ["P" if p.step["type"] == "call_round" else "W" for p in sched.placements]
+    assert kinds == list(rsvp_timeline.SEQUENCES[4]), kinds
+    assert sched.placements[-1].date == sched.commitment_date, "הסבב האחרון זז מיום הסגירה"
 
     log = api.client.get("/admin/audit?domain=settings", headers=admin).json()["items"][0]
-    assert log["changes"] == [{"field": "calls.rounds", "label": "מספר סבבי טלפונים", "before": "3 סבבים", "after": "2 סבבים"}]
+    assert log["changes"] == [{"field": "rsvp.max_rounds", "label": "מספר סבבים מקסימלי", "before": "7 סבבים", "after": "4 סבבים"}]
     # חזרה לברירת המחדל מוחקת את השורה
-    api.client.put("/admin/rules", headers=admin, json={"changes": {"calls.rounds": 3}})
-    rows = [s for s in api.client.get("/admin/rules", headers=admin).json()["settings"] if s["key"] == "calls.rounds"]
+    api.client.put("/admin/rules", headers=admin, json={"changes": {"rsvp.max_rounds": 7}})
+    rows = [s for s in api.client.get("/admin/rules", headers=admin).json()["settings"] if s["key"] == "rsvp.max_rounds"]
     assert rows[0]["source"] == "code"
 
 
@@ -98,31 +99,60 @@ def test_event_override_source_and_reset() -> None:
     configure_track(api, days_to_event=16, commit_days=2, started_days_ago=0)
     admin = _admin()
     r = api.client.put(f"/admin/rules/events/{api.event_id}", headers=admin,
-                       json={"changes": {"rsvp.whatsapp_reminders": 1}, "reason": "בקשת הזוג"})
+                       json={"changes": {"rsvp.max_rounds": 2}, "reason": "בקשת הזוג"})
     assert r.status_code == 200, r.text
-    row = next(s for s in r.json()["settings"] if s["key"] == "rsvp.whatsapp_reminders")
-    assert (row["value"], row["source"], row["system_value"]) == (1, "event", 3)
+    row = next(s for s in r.json()["settings"] if s["key"] == "rsvp.max_rounds")
+    assert (row["value"], row["source"], row["system_value"]) == (2, "event", 7)
     from app import rsvp_timeline
 
     sched = rsvp_timeline.compute_schedule(_event(api.event_id))
-    assert sum(1 for p in sched.placements if p.reminder_number) == 1
+    assert [p.step["type"] for p in sched.placements] == ["whatsapp_first", "call_round"]
 
     r = api.client.put(f"/admin/rules/events/{api.event_id}", headers=admin,
-                       json={"changes": {"rsvp.whatsapp_reminders": None}})
-    row = next(s for s in r.json()["settings"] if s["key"] == "rsvp.whatsapp_reminders")
-    assert (row["value"], row["source"]) == (3, "code")
+                       json={"changes": {"rsvp.max_rounds": None}})
+    row = next(s for s in r.json()["settings"] if s["key"] == "rsvp.max_rounds")
+    assert (row["value"], row["source"]) == (7, "code")
+
+
+def test_retired_round_settings_are_converted() -> None:
+    """"מספר תזכורות" + "מספר סבבי טלפונים" (ישנות) → "מספר סבבים מקסימלי"."""
+    api, _ = bootstrap()
+    from app import main, models, settings_registry as sr
+    from app.database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        db.add(models.SystemSetting(key="calls.rounds", value=2))
+        db.add(models.SettingOverride(scope_type="event", scope_id=api.event_id,
+                                      key="rsvp.whatsapp_reminders", value=1))
+        db.commit()
+    finally:
+        db.close()
+    main._migrate_rsvp_round_settings()
+    main._migrate_rsvp_round_settings()  # idempotent
+    sr.invalidate()
+    assert sr.value("rsvp.max_rounds") == 1 + 3 + 2
+    assert sr.value("rsvp.max_rounds", api.event_id) == 1 + 1 + 3
+    db = SessionLocal()
+    try:
+        from sqlalchemy import select
+
+        left = db.scalars(select(models.SettingOverride.key)).all() + db.scalars(select(models.SystemSetting.key)).all()
+        assert not set(left) & set(sr.RETIRED_ROUND_KEYS), left
+    finally:
+        db.close()
 
 
 def test_permissions_for_rules() -> None:
     api, _ = bootstrap()
     support, admin_role = _admin("support"), _admin("admin")
     assert api.client.get("/admin/rules", headers=support).status_code == 200
-    assert api.client.put("/admin/rules", headers=support, json={"changes": {"calls.rounds": 2}}).status_code == 403
+    assert api.client.put("/admin/rules", headers=support, json={"changes": {"rsvp.max_rounds": 2}}).status_code == 403
     r = api.client.put("/admin/rules", headers=admin_role, json={"changes": {"whatsapp.emergency_stop": True}})
     assert r.status_code == 403, "Admin (לא Super) הפעיל עצירת חירום"
     r = api.client.put("/admin/rules", headers=admin_role, json={"changes": {"whatsapp.mode": "live"}})
     assert r.status_code == 400, "הגדרה שלא מחוברת נשמרה"
-    r = api.client.put("/admin/rules", headers=admin_role, json={"changes": {"calls.rounds": 9}})
+    r = api.client.put("/admin/rules", headers=admin_role, json={"changes": {"rsvp.max_rounds": 9}})
     assert r.status_code == 400
 
 

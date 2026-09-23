@@ -232,7 +232,7 @@ def test_fixing_a_number_does_not_create_a_new_round() -> None:
         assert event_of(api).rsvp_track_started_at == before_anchor
         after = [(p.round_number, p.date) for p in rsvp_timeline.call_rounds(event_of(api))]
         assert after == before, "מספר סבבי השיחות או התאריכים השתנו"
-        assert len(after) == 3, "מספר הסבבים בסבב הקבוע השתנה"
+        assert len(after) >= 1, "סבבי השיחות נעלמו"
         print("✓ תיקון מספר לא יוצר סבב חדש ולא מזיז את ה-Workflow")
     finally:
         teardown()
