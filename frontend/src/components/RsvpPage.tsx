@@ -5,6 +5,7 @@ import {
   getCommunicationSequence,
   getMessageStatus,
   getMessageStatusByType,
+  getRsvpTimeline,
   getRsvpTrack,
   getStats,
   listGuests,
@@ -22,7 +23,14 @@ import { DeliveryIcon } from './DeliveryIcon'
 import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { GuestTimelineModal } from './GuestTimelineModal'
-import { RsvpTimeline } from './RsvpTimeline'
+import { PhaseCard, RsvpTimeline } from './RsvpTimeline'
+import type { GuestFilter } from '../api'
+import type { RsvpTimelineView } from '../types'
+
+type RsvpNavigate = (
+  page: 'guests' | 'messages' | 'hall',
+  options?: { guestFilter?: GuestFilter },
+) => void
 
 /**
  * מסך אישורי ההגעה: "מה מצב המוזמנים שלי?" — מי אישר, מי לא ענה, מעקב
@@ -35,7 +43,7 @@ export function RsvpPage({
   onNavigate,
 }: {
   isAdmin: boolean
-  onNavigate?: (page: 'guests' | 'messages' | 'hall') => void
+  onNavigate?: RsvpNavigate
 }) {
   if (!isAdmin) return <CoupleRsvpView onNavigate={onNavigate} />
   return <AdminRsvpShell onNavigate={onNavigate} />
@@ -49,7 +57,7 @@ export function RsvpPage({
 function AdminRsvpShell({
   onNavigate,
 }: {
-  onNavigate?: (page: 'guests' | 'messages' | 'hall') => void
+  onNavigate?: RsvpNavigate
 }) {
   const [view, setView] = useState<'couple' | 'admin'>('couple')
   return (
@@ -110,26 +118,19 @@ function AdminRsvpView({ onGoToMessages }: { onGoToMessages?: () => void }) {
  * בדיוק כמו במד בתמונת מצב, כדי שלא ייווצרו שני מספרים סותרים למי
  * שעובר בין המסכים.
  */
-function RsvpSummaryStrip() {
-  const [stats, setStats] = useState<DashboardStats | null>(null)
-
-  useEffect(() => {
-    let alive = true
-    // כישלון שקט: הסיכום הוא תוספת הקשר, לא תוכן המסך. שגיאה כאן לא
-    // אמורה להציג הודעה מעל לוח הזמנים שכן נטען בהצלחה.
-    getStats()
-      .then((d) => alive && setStats(d))
-      .catch(() => undefined)
-    return () => {
-      alive = false
-    }
-  }, [])
-
+function RsvpSummaryStrip({
+  stats,
+  onOpen,
+}: {
+  stats: DashboardStats | null
+  onOpen?: (filter: GuestFilter) => void
+}) {
   if (!stats || stats.total_guests === 0) return null
 
-  // אותן תוויות בדיוק כמו במד בתמונת מצב — לא ניסוח מקביל.
+  // אותן תוויות בדיוק כמו במד בתמונת מצב — לא ניסוח מקביל. כל מספר מוביל
+  // לרשימת המוזמנים שמאחוריו.
   const d = strings.dashboard
-  const items = [
+  const items: { key: GuestFilter; value: number; label: string }[] = [
     { key: 'confirmed', value: stats.confirmed_people, label: d.kpiConfirmed },
     { key: 'pending', value: stats.pending_people, label: d.kpiPending },
     { key: 'maybe', value: stats.maybe_people, label: d.gaugeStatusMaybe },
@@ -141,8 +142,15 @@ function RsvpSummaryStrip() {
       <ul className="rsvp-summary-list">
         {items.map((item) => (
           <li key={item.key} className={`rsvp-summary-item is-${item.key}`}>
-            <span className="rsvp-summary-num">{item.value}</span>
-            <span className="rsvp-summary-label">{item.label}</span>
+            <button
+              type="button"
+              className="rsvp-summary-btn"
+              onClick={() => onOpen?.(item.key)}
+              aria-label={d.gaugeCardAria(item.value, item.label)}
+            >
+              <span className="rsvp-summary-num">{item.value}</span>
+              <span className="rsvp-summary-label">{item.label}</span>
+            </button>
           </li>
         ))}
       </ul>
@@ -153,14 +161,58 @@ function RsvpSummaryStrip() {
   )
 }
 
+/** "צריכים אתכם" במסך אישורי ההגעה: VEYA מטפלת בעצמה ברוב המוזמנים —
+ *  כאן מופיעים רק מי שתלויים בבעל האירוע, כל קבוצה עם הדרך לרשימה שלה. */
+function RsvpNeedsYou({
+  stats,
+  view,
+  onOpen,
+}: {
+  stats: DashboardStats | null
+  view: RsvpTimelineView | null
+  onOpen?: (filter: GuestFilter) => void
+}) {
+  if (!stats) return null
+  const n = strings.messages.needsYou
+  const ended = view?.track_phase === 'ended'
+  const items: { key: GuestFilter; title: string; desc: string }[] = []
+  const bad = stats.bad_phone_guests ?? 0
+  if (bad > 0) items.push({ key: 'bad_phone', title: n.badPhones(bad), desc: n.badPhonesDesc })
+  if (ended && stats.pending > 0) {
+    items.push({ key: 'pending', title: n.noAnswer(stats.pending), desc: n.noAnswerDesc })
+  }
+  if (ended && stats.maybe > 0) {
+    items.push({ key: 'maybe', title: n.undecided(stats.maybe), desc: n.undecidedDesc })
+  }
+  if (items.length === 0) return null
+  return (
+    <section className="dash-stack dash-actions rsvp-needs" aria-label={n.label}>
+      <h2 className="rsvp-needs-title">{n.label}</h2>
+      {items.map((it) => (
+        <div key={it.key} className="invite-banner">
+          <div className="invite-banner-text">
+            <p className="invite-banner-title">{it.title}</p>
+            <p className="invite-banner-desc">{it.desc}</p>
+          </div>
+          <button type="button" className="invite-banner-btn" onClick={() => onOpen?.(it.key)}>
+            {n.cta}
+          </button>
+        </div>
+      ))}
+    </section>
+  )
+}
+
 // ============ מסך הזוג — מעקב אישורי הגעה ============
 
 function CoupleRsvpView({
   onNavigate,
 }: {
-  onNavigate?: (page: 'guests' | 'messages' | 'hall') => void
+  onNavigate?: RsvpNavigate
 }) {
   const [track, setTrack] = useState<RsvpTrackStatus | null>(null)
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [view, setView] = useState<RsvpTimelineView | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -169,7 +221,14 @@ function CoupleRsvpView({
   const load = useCallback(async () => {
     setError('')
     try {
-      setTrack(await getRsvpTrack())
+      const [tr, st, vw] = await Promise.all([
+        getRsvpTrack(),
+        getStats().catch(() => null),
+        getRsvpTimeline().catch(() => null),
+      ])
+      setTrack(tr)
+      setStats(st)
+      setView(vw)
     } catch (err) {
       setError(err instanceof Error ? err.message : strings.errors.loadGenericRetry)
     } finally {
@@ -180,6 +239,8 @@ function CoupleRsvpView({
   useEffect(() => {
     load()
   }, [load])
+
+  const openGuests = (filter: GuestFilter) => onNavigate?.('guests', { guestFilter: filter })
 
   if (loading) {
     return (
@@ -196,15 +257,27 @@ function CoupleRsvpView({
       {error && <p className="form-error" role="alert">{error}</p>}
 
       {/* התשובה לשאלה ששם המסך מבטיח — ראשונה, לפני הפירוט. */}
-      <RsvpSummaryStrip />
+      <RsvpSummaryStrip stats={stats} onOpen={openGuests} />
 
-      {/* איפה המסלול עכשיו: לפני / בדרך / הסתיים — והלוח עצמו. */}
-      <RsvpTimeline onGoToSeating={onNavigate ? () => onNavigate('hall') : undefined} />
+      {/* קודם: איפה המסלול עכשיו (לפני / בדרך / הסתיים) ומה הצעד הבא. */}
+      {view && (
+        <PhaseCard
+          view={view}
+          onGoToSeating={onNavigate ? () => onNavigate('hall') : undefined}
+        />
+      )}
+
+      {/* אחר כך: מי באמת צריך אתכם — בשאר המוזמנים VEYA מטפלת בעצמה. */}
+      <RsvpNeedsYou stats={stats} view={view} onOpen={openGuests} />
+
+      {/* ולבסוף הלוח עצמו, יום אחרי יום. */}
+      <RsvpTimeline view={view ?? undefined} hidePhase={!!view} />
 
       {track && (
         <TrackStatusCard
           track={track}
           onResend={onNavigate ? () => onNavigate('messages') : undefined}
+          onOpenGuests={openGuests}
         />
       )}
 
@@ -317,9 +390,11 @@ interface MessageRow {
 function TrackStatusCard({
   track,
   onResend,
+  onOpenGuests,
 }: {
   track: RsvpTrackStatus
   onResend?: () => void
+  onOpenGuests?: (filter: GuestFilter) => void
 }) {
   const [summary, setSummary] = useState<MessageStatusSummary | null>(null)
   const [rows, setRows] = useState<MessageRow[] | null>(null)
@@ -455,6 +530,7 @@ function TrackStatusCard({
           label={t.invalidPhone}
           hint={t.invalidPhoneHint}
           tone={invalidTotal > 0 ? 'err' : undefined}
+          onClick={invalidTotal > 0 && onOpenGuests ? () => onOpenGuests('bad_phone') : undefined}
         />
       </div>
 
@@ -738,15 +814,18 @@ function MessageStatusTile({
   label,
   hint,
   tone,
+  onClick,
 }: {
   icon: ReactNode
   num: number | undefined | null
   label: string
   hint: string
   tone?: 'ok' | 'err' | 'wait'
+  /** כשיש מה לטפל בו — המדד מוביל לרשימת המוזמנים שמאחוריו. */
+  onClick?: () => void
 }) {
-  return (
-    <div className={`stat-card msg-status-tile ${tone ?? ''}`} title={hint}>
+  const body = (
+    <>
       <span className="stat-num">{num ?? '—'}</span>
       <span className="stat-label">
         <span className="msg-status-icon" aria-hidden="true">
@@ -754,6 +833,23 @@ function MessageStatusTile({
         </span>{' '}
         {label}
       </span>
+    </>
+  )
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={`stat-card msg-status-tile is-link ${tone ?? ''}`}
+        title={hint}
+        onClick={onClick}
+      >
+        {body}
+      </button>
+    )
+  }
+  return (
+    <div className={`stat-card msg-status-tile ${tone ?? ''}`} title={hint}>
+      {body}
     </div>
   )
 }

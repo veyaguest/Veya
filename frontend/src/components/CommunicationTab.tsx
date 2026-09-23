@@ -4,6 +4,7 @@ import {
   getCommunicationSequence,
   getEvent,
   getMessageOptions,
+  getRsvpTimeline,
   mediaUrl,
   previewCommunicationMessage,
   rsvpSummary,
@@ -16,6 +17,7 @@ import type {
   EventMessage,
   MessageDefaultOption,
   MessageType,
+  RsvpTimelineView,
   TargetAudience,
 } from '../types'
 import { MANUAL_SEND_TYPES, SCHEDULED_TYPES, TARGET_AUDIENCE_LABELS } from '../types'
@@ -113,12 +115,37 @@ function asReadableText(content: string, values: Record<string, string>): string
 
 const t = strings.messagesPage
 
-export function CommunicationTab() {
+/** מתי כל הודעה יוצאת, לפי לוח אישורי ההגעה (אותו לוח שבמסך "אישורי הגעה").
+ *  ``null`` = אין לוח (לא נבחר מועד סגירה / אין תאריך). */
+type ScheduleInfo = Partial<Record<MessageType, { date: string; past: boolean }>> & {
+  configured: boolean
+  enabled: boolean
+}
+
+function scheduleFromTimeline(view: RsvpTimelineView | null): ScheduleInfo {
+  const info: ScheduleInfo = { configured: !!view?.configured, enabled: !!view?.track_enabled }
+  if (!view?.configured) return info
+  const reminderTypes: MessageType[] = ['reminder_1', 'reminder_2', 'final_reminder']
+  let reminders = 0
+  for (const day of view.days) {
+    for (const a of day.actions) {
+      const when = { date: `${day.weekday} ${day.date}`, past: day.is_past }
+      if (a.type === 'whatsapp_first') info.rsvp_request = when
+      else if (a.type === 'reminder' && reminders < reminderTypes.length) info[reminderTypes[reminders++]] = when
+      else if (a.type === 'day_of') info.event_day = when
+      else if (a.type === 'thank_you') info.thank_you = when
+    }
+  }
+  return info
+}
+
+export function CommunicationTab({ only }: { only?: MessageType[] } = {}) {
   // המונח נשאב מהלקסיקון: באירוע עסקי "מוזמנים" הופך ל"משתתפים".
   const guestsLabel = activeEventTerms().guestsLabel
   const [messages, setMessages] = useState<EventMessage[] | null>(null)
   const [event, setEvent] = useState<EventDetails | null>(null)
-  const [activeType, setActiveType] = useState<MessageType>('invitation')
+  const [activeType, setActiveType] = useState<MessageType>(only?.[0] ?? 'invitation')
+  const [schedule, setSchedule] = useState<ScheduleInfo>({ configured: false, enabled: false })
   const [error, setError] = useState('')
   // האם וואטסאפ מחובר (לא mock) — קובע אם הקישור בתצוגה המקדימה מוצג
   // ככפתור CTA במקום כשורת URL בטקסט. ברירת מחדל: לא מחובר.
@@ -126,11 +153,13 @@ export function CommunicationTab() {
 
   const refresh = async () => {
     try {
-      const [seq, ev] = await Promise.all([
+      const [seq, ev, view] = await Promise.all([
         getCommunicationSequence(),
         getEvent().catch(() => null),
+        getRsvpTimeline().catch(() => null),
       ])
-      setMessages(seq)
+      setMessages(only ? seq.filter((m) => only.includes(m.message_type)) : seq)
+      setSchedule(scheduleFromTimeline(view))
       if (ev) setEvent(ev)
       rsvpSummary()
         .then((s) => setWaConnected(s.mode !== 'mock'))
@@ -176,6 +205,7 @@ export function CommunicationTab() {
           {active && (
             <MessagePanel
               key={active.message_type}
+              schedule={schedule}
               message={active}
               event={event}
               waConnected={waConnected}
@@ -186,6 +216,20 @@ export function CommunicationTab() {
       )}
     </div>
   )
+}
+
+/** שורה אחת לכל הודעה: מתי היא יוצאת, או למה עוד אין לה מועד. */
+function whenText(type: MessageType, schedule: ScheduleInfo): string {
+  const w = strings.messages.when
+  if (type === 'invitation') return w.invitation
+  if (type === 'postponement') return w.manual
+  const at = schedule[type]
+  if (at) {
+    if (!schedule.enabled) return w.waiting(at.date)
+    return at.past ? w.sent(at.date) : w.scheduled(at.date)
+  }
+  if (!schedule.configured) return w.noSchedule
+  return w.notInTrack
 }
 
 type Mode = 'view' | 'browse' | 'edit'
@@ -257,11 +301,13 @@ function RoundSendTime({
 }
 
 function MessagePanel({
+  schedule,
   message,
   event,
   waConnected,
   onSaved,
 }: {
+  schedule: ScheduleInfo
   message: EventMessage
   event: EventDetails | null
   waConnected: boolean
@@ -337,6 +383,7 @@ function MessagePanel({
           </span>
           <h3 className="gm2-card-title">{message.title}</h3>
         </header>
+        <p className="gm2-when">{whenText(message.message_type, schedule)}</p>
 
         {mode === 'view' && (
           <>

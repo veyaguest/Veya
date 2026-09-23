@@ -13,9 +13,19 @@ import { strings } from '../strings/he'
  * הלוח נמשך גם אחרי האירוע: הודעת יום-האירוע והודעת התודה (יום אחרי) מוצגות
  * כשלבים אחרונים במסלול, לפי אותו תזמון שבו הן נשלחות בפועל.
  */
-export function RsvpTimeline({ onGoToSeating }: { onGoToSeating?: () => void } = {}) {
-  const [view, setView] = useState<RsvpTimelineView | null>(null)
-  const [loading, setLoading] = useState(true)
+export function RsvpTimeline({
+  onGoToSeating,
+  view: preloaded,
+  hidePhase = false,
+}: {
+  onGoToSeating?: () => void
+  /** כשהמסך מציג את כרטיס השלב בעצמו, למעלה (מסך אישורי ההגעה). */
+  hidePhase?: boolean
+  /** לוח שכבר נטען במסך (מסך אישורי ההגעה) — כדי לא לטעון פעמיים. */
+  view?: RsvpTimelineView
+} = {}) {
+  const [view, setView] = useState<RsvpTimelineView | null>(preloaded ?? null)
+  const [loading, setLoading] = useState(!preloaded)
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
@@ -30,8 +40,8 @@ export function RsvpTimeline({ onGoToSeating }: { onGoToSeating?: () => void } =
   }, [])
 
   useEffect(() => {
-    load()
-  }, [load])
+    if (!preloaded) load()
+  }, [load, preloaded])
 
   if (loading) {
     return <p className="load-text">מכינים את לוח אישורי ההגעה…</p>
@@ -67,7 +77,7 @@ export function RsvpTimeline({ onGoToSeating }: { onGoToSeating?: () => void } =
 
   return (
     <div className="tl-wrap">
-      <PhaseCard view={view} onGoToSeating={onGoToSeating} />
+      {!hidePhase && <PhaseCard view={view} onGoToSeating={onGoToSeating} />}
       <TimelineHeader view={view} />
       {/* כרטיס "מה קורה היום" — רק כשבאמת יש פעילות היום. אין פעילות → אין
           מה להציג (הודעה "אין פעילות מתוכננת" היא רעש טכני לבעל האירוע). */}
@@ -79,7 +89,7 @@ export function RsvpTimeline({ onGoToSeating }: { onGoToSeating?: () => void } =
 
 /** איפה המסלול עכשיו — לפני / בדרך / הסתיים. שליחת הזמנה לא משנה את זה:
  *  המסלול נקבע רק לפי מועד סגירת הרשימה (2026-09-23). */
-function PhaseCard({
+export function PhaseCard({
   view,
   onGoToSeating,
 }: {
@@ -149,15 +159,13 @@ function TimelineHeader({ view }: { view: RsvpTimelineView }) {
         כאן תוכלו לראות את השלבים הקרובים עד סגירת רשימת המוזמנים.
       </p>
 
-      <div className="tl-header-stats">
-        <TlStat
-          num={days != null && days >= 0 ? days : '—'}
-          label="ימים למועד סגירת הרשימה"
-        />
-        <TlStat num={view.confirmed_count} label="אישרו הגעה" tone="ok" />
-        <TlStat num={view.pending_count} label="ממתינים לתשובה" tone="wait" />
-        <TlStat num={view.total_guests} label="סה״כ מוזמנים" />
-      </div>
+      {/* הספירות (אישרו/ממתינים/סה"כ) כבר מופיעות בראש המסך — כאן רק מה
+          שהלוח מוסיף: כמה ימים נשארו עד סגירת הרשימה. */}
+      {days != null && days >= 0 && (
+        <div className="tl-header-stats">
+          <TlStat num={days} label="ימים למועד סגירת הרשימה" />
+        </div>
+      )}
 
       {view.compressed && (
         <div className="tl-compressed">

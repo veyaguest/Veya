@@ -555,10 +555,10 @@ function SendConfirmStep({
           <span className="mb-preview-label">למי לשלוח</span>
           <div className="send-recipients-quick">
             <button className="btn-text" onClick={selectNotSent}>
-              בחר את כל מי שעדיין לא קיבל
+              כל מי שעוד לא קיבל הזמנה
             </button>
             <button className="btn-text" onClick={() => setSelected(new Set())}>
-              נקה
+              ביטול הבחירה
             </button>
           </div>
         </div>
@@ -587,10 +587,10 @@ function SendConfirmStep({
                   />
                   <span className="rsvp-name">{g.full_name}</span>
                   {alreadySent && (
-                    <span className="send-recipient-tag">כבר קיבל/ה — פעם אחת בלבד</span>
+                    <span className="send-recipient-tag">כבר קיבלו הזמנה</span>
                   )}
                   {!canReceive(g) && (
-                    <span className="send-recipient-tag warn">חסר טלפון</span>
+                    <span className="send-recipient-tag warn">אין מספר טלפון תקין</span>
                   )}
                 </label>
               </li>
@@ -726,12 +726,13 @@ function FirstInviteWizard({
           <span className="wiz-panel-badge">שלב 1 מתוך 3</span>
           <h2 className="wiz-title">עיצוב ההזמנה</h2>
           <p className="wiz-sub">
-            ערכו את נוסח ההזמנה בכרטיס הראשון למטה. תראו תצוגה מקדימה חיה
-            בדיוק כפי שהמוזמנים יראו ב-WhatsApp.
+            בחרו נוסח מוכן או ערכו אותו בעצמכם. בתצוגה המקדימה רואים בדיוק
+            איך המוזמנים יקבלו את ההזמנה בוואטסאפ.
           </p>
         </div>
+        {/* רק כרטיס ההזמנה: בשלב הזה שולחים הזמנה, לא עורכים את כל הרצף. */}
         <div id="mb-anchor">
-          <CommunicationTab />
+          <CommunicationTab only={['invitation']} />
         </div>
         <div className="wiz-nav">
           <span />
@@ -836,10 +837,6 @@ function FirstInviteWizard({
         </div>
 
         <ul className="wiz-review-list">
-          <li>
-            <span>ההזמנה מוכנה לשליחה</span>
-            <span className="wiz-review-ok">✓</span>
-          </li>
           <li>
             <span>מוזמנים שיקבלו את ההזמנה</span>
             <strong>{sendable}</strong>
