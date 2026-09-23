@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   applyNoteSplit,
@@ -111,6 +112,8 @@ export function GuestsPage({
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [suggestionsCount, setSuggestionsCount] = useState(0)
   const fileInput = useRef<HTMLInputElement>(null)
+  // "חזור" בטלפון סוגר את חלון עריכת המוזמן.
+  useBackToClose(editGuest !== null, () => setEditGuest(null))
 
   // טעינת העמוד הראשון (וגם רענון אחרי שינוי/חיפוש).
   const load = useCallback(async (q: string) => {

@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   analyzeConstraints,
@@ -3809,6 +3810,13 @@ export function HallPage({
     if (trigger && document.contains(trigger)) trigger.focus()
     panelTriggerRef.current = null
   }, [])
+
+  // בטלפון: "חזור" סוגר את המגירה/הגיליון הפתוחים במקום לצאת מסידור ההושבה.
+  useBackToClose(!isDesktop && panel !== 'hall', closePanel)
+  useBackToClose(!isDesktop && sheetTable !== null, () => {
+    setSheetTable(null)
+    setSheetEdit(false)
+  })
 
   /** תחילת/סוף גרירה של מוזמן מהסרגל.
    *  בסוף גרירה — גם כשבוטלה מחוץ לכל שולחן — מנקים את הדגשת השולחן

@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useCallback, useEffect, useState } from 'react'
 import { bulkGroup, groupSuggestions } from '../api'
 import type { GroupSuggestion } from '../types'
@@ -24,6 +25,8 @@ interface Props {
  * מוצג רק לפי דרישה (כפתור "הצעות לאיחוד" בעמוד), לא אוטומטית בכניסה לעמוד.
  */
 export function GroupSuggestions({ refreshToken, open, onClose, onCountChange, onApplied }: Props) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(open, onClose)
   const [items, setItems] = useState<GroupSuggestion[]>([])
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState<string | null>(null)

@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   activateRsvpTrack,
@@ -131,6 +132,9 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
   const [preview, setPreview] = useState<InvitationSendPreview | null>(null)
   const [result, setResult] = useState<RsvpTrackActivateResult | null>(null)
   const [dialogError, setDialogError] = useState('')
+  // "חזור" בטלפון סוגר את חלון השליחה (לא בזמן שהשליחה עצמה רצה).
+  useBackToClose(phase === 'confirm' || phase === 'summary', () => closeDialogRef.current())
+  const closeDialogRef = useRef<() => void>(() => undefined)
 
   // בטעינה: סטטוס ההזמנות וספירה מקדימה. **כניסה למסך לא שולחת כלום** —
   // סבבי אישורי ההגעה יוצאים מהמשימה המתוזמנת בשרת (``rsvp_scheduler``),
@@ -200,6 +204,7 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
     }
   }
 
+  closeDialogRef.current = () => closeDialog()
   function closeDialog() {
     setPhase('idle')
     setPreview(null)
@@ -672,6 +677,7 @@ function FirstInviteWizard({
   const [showPaste, setShowPaste] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [addNote, setAddNote] = useState('')
+  useBackToClose(showAdd, () => setShowAdd(false))
   const fileInput = useRef<HTMLInputElement | null>(null)
 
   function afterGuestsChanged(msg: string) {

@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useState } from 'react'
 import { commitImport, pasteImportPreview } from '../api'
 import type { GroupType, GuestCreate, Side } from '../types'
@@ -36,6 +37,8 @@ export function isContactPickerSupported(): boolean {
 type Stage = 'intro' | 'picking' | 'reviewing'
 
 export function ContactsImportDialog({ onClose, onImported }: Props) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(true, onClose)
   const [stage, setStage] = useState<Stage>('intro')
   const [rows, setRows] = useState<EditRow[]>([])
   // מספר אנשי הקשר שהוסתרו כי הם כבר קיימים ברשימת המוזמנים.

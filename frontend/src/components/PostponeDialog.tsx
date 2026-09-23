@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useState } from 'react'
 import { completePostponement, requestPostponement } from '../api'
 import type { Postponement } from '../types'
@@ -19,6 +20,8 @@ export function PostponeRequestDialog({
   onDone: (p: Postponement) => void
   onClose: () => void
 }) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(true, onClose)
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
@@ -93,6 +96,8 @@ export function PostponeFinishDialog({
   onDone: (p: Postponement) => void
   onClose: () => void
 }) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(true, onClose)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 

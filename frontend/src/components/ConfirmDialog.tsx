@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { strings } from '../strings/he'
 
 interface Props {
@@ -23,6 +24,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: Props) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(true, onCancel)
   return (
     <div className="overlay confirm-overlay" onClick={onCancel}>
       <div className="dialog confirm-dialog" onClick={(e) => e.stopPropagation()}>

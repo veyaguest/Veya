@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useEffect, useState } from 'react'
 import { commitImport, previewImport } from '../api'
 import type { GuestCreate, ImportPreview } from '../types'
@@ -15,6 +16,8 @@ interface Props {
 }
 
 export function ImportDialog({ file, onClose, onImported }: Props) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(true, onClose)
   const [preview, setPreview] = useState<ImportPreview | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)

@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   CalcMethod,
@@ -87,6 +88,8 @@ export function ExpenseEditor({
   onDelete,
   onCancel,
 }: Props) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(true, onCancel)
   const editing = expense !== null
 
   const [categoryKey, setCategoryKey] = useState(expense?.category ?? '')

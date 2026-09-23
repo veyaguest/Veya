@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { strings } from '../strings/he'
 
 const t = strings.guests
@@ -26,6 +27,8 @@ interface Props {
  * PasteImportDialog/ImportDialog/ContactsImportDialog נפתחים אחר כך.
  */
 export function OnboardingDialog({ onClose, onPaste, onExcel, onContacts, onManual }: Props) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(true, onClose)
   function choose(action: () => void) {
     onClose()
     action()

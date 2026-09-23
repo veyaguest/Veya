@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useEffect, useState } from 'react'
 import {
   cancelPartnerInvite,
@@ -34,6 +35,8 @@ export function AccountCenter({
   onUpdated: (user: User) => void
   onLogout: () => void
 }) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(true, onClose)
   const [overview, setOverview] = useState<AccountOverview | null>(null)
   const [loading, setLoading] = useState(true)
 

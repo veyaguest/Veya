@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useEffect, useState } from 'react'
 import { getGroupNotes, setGroupNote } from '../api'
 import type { GroupInUse } from '../types'
@@ -16,6 +17,8 @@ interface Props {
  * ותסייע בהמשך בסידור ההושבה. שמירה אוטומטית בעת יציאה מהשדה.
  */
 export function GroupNotesPanel({ onClose }: Props) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(true, onClose)
   const [groups, setGroups] = useState<GroupInUse[]>([])
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)

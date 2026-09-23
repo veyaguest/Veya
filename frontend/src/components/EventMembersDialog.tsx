@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useEffect, useState } from 'react'
 import { addEventMember, listEventMembers, removeEventMember, updateEventMember } from '../api'
 import type { EventMemberRead } from '../types'
@@ -106,6 +107,8 @@ export function EventMembersDialog({
   eventId: number
   onClose: () => void
 }) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(true, onClose)
   const [members, setMembers] = useState<EventMemberRead[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [email, setEmail] = useState('')

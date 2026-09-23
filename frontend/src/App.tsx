@@ -23,6 +23,7 @@ import {
 } from './authStore'
 import { getEventTerms, hostNames } from './strings/eventTypes'
 import { strings } from './strings/he'
+import { consumeModalPop } from './lib/backToClose'
 import { AccountCenter } from './components/AccountCenter'
 import { AuthPage } from './components/AuthPage'
 import { CompleteProfilePage } from './components/CompleteProfilePage'
@@ -369,7 +370,8 @@ function App() {
   // למסך שהכתובת מצביעה עליו.
   useEffect(() => {
     const onPop = () => {
-      setProfileOpen(false)
+      // "חזור" שרק סגר חלון פתוח (lib/backToClose) — לא מנווטים.
+      if (consumeModalPop()) return
       setGuestSearch('')
       setGuestFilter('all')
       setPage(pageFromPath(window.location.pathname))
@@ -437,19 +439,14 @@ function App() {
     }
   }
 
-  // "החשבון שלי" נפתח עם רשומת היסטוריה משלו, כדי ש"חזור" בטלפון יסגור אותו
-  // במקום לצאת מהמסך. סגירה מהכפתור מסירה את הרשומה (history.back).
+  // "החשבון שלי" — "חזור" בטלפון סוגר אותו (AccountCenter משתמש ב-
+  // lib/backToClose, כמו כל החלונות).
   function openProfile() {
-    window.history.pushState({ profile: true }, '', window.location.pathname)
     setProfileOpen(true)
   }
 
   function closeProfile() {
-    if (window.history.state?.profile) {
-      window.history.back() // ה-popstate סוגר את החלון
-    } else {
-      setProfileOpen(false)
-    }
+    setProfileOpen(false)
   }
 
   async function handleAuth(u: User) {

@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
@@ -332,6 +333,8 @@ function MessagePanel({
   }, [showPreview])
 
   const wide = useWideScreen()
+  // בטלפון התצוגה המקדימה היא יריעה — "חזור" סוגר אותה.
+  useBackToClose(!wide && showPreview, () => setShowPreview(false))
 
   const values = useMemo(() => eventFieldValues(event), [event])
   const readable = asReadableText(message.content, values)

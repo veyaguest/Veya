@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useEffect, useMemo, useState } from 'react'
 import { bulkGroup, listGuests } from '../api'
 import type { Guest } from '../types'
@@ -18,6 +19,8 @@ interface Props {
  * ליצור קבוצה ידנית — מעבר להצעות האוטומטיות ולבחירה בטופס הוספת מוזמן.
  */
 export function CreateGroupDialog({ onClose, onCreated }: Props) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(true, onClose)
   const [name, setName] = useState('')
   const [guests, setGuests] = useState<Guest[]>([])
   const [selected, setSelected] = useState<Set<number>>(new Set())

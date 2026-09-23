@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useState } from 'react'
 import { commitImport, pasteImportPreview } from '../api'
 import type { GroupType, GuestCreate, Side } from '../types'
@@ -15,6 +16,8 @@ interface Props {
 }
 
 export function PasteImportDialog({ onClose, onImported }: Props) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(true, onClose)
   const [text, setText] = useState('')
   const [rows, setRows] = useState<EditRow[] | null>(null)
   const [error, setError] = useState('')

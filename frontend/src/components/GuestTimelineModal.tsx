@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useEffect, useState } from 'react'
 import { getGuestTimeline } from '../api'
 import type { GuestTimeline, TimelineEvent } from '../types'
@@ -31,6 +32,8 @@ export function GuestTimelineModal({
   guestId: number
   onClose: () => void
 }) {
+  // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
+  useBackToClose(true, onClose)
   const [data, setData] = useState<GuestTimeline | null>(null)
   const [error, setError] = useState('')
 
