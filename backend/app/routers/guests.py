@@ -116,6 +116,15 @@ def list_guests(
         filters.append(models.Guest.table_number.is_(None))
     elif filter_status in ("confirmed", "declined", "maybe", "pending"):
         filters.append(models.Guest.rsvp_status == filter_status)
+    elif filter_status == "bad_phone":
+        # בלי מספר, או מספר שלא נראה תקין — אותו כלל כמו השליחה
+        # (``invitations.classify_phone``). מוזמנים כאלה לא מקבלים WhatsApp,
+        # ולכן זו רשימת "צריכים אתכם" שמגיעים אליה מהדשבורד ומאישורי ההגעה.
+        rows = db.execute(
+            select(models.Guest.id, models.Guest.phone).where(models.Guest.event_id == event.id)
+        ).all()
+        bad = [gid for gid, phone in rows if invitations.classify_phone(phone) != "valid"]
+        filters.append(models.Guest.id.in_(bad or [0]))
 
     if sort == "status":
         order_by = (_STATUS_SORT_RANK, models.Guest.full_name.asc())

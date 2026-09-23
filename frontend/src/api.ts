@@ -625,7 +625,8 @@ export interface GuestListPage {
 }
 
 export type GuestSort = 'name' | 'status' | 'table' | 'party_size' | 'recent'
-export type GuestFilter = 'all' | 'confirmed' | 'declined' | 'maybe' | 'pending' | 'no_table'
+export type GuestFilter =
+  | 'all' | 'confirmed' | 'declined' | 'maybe' | 'pending' | 'no_table' | 'bad_phone'
 
 export async function listGuests(
   q?: string,

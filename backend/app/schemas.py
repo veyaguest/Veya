@@ -532,6 +532,8 @@ class DashboardStats(BaseModel):
     group_notes_count: int = 0
     # האם כבר הועלתה סקיצת אולם — לצ'ק-ליסט של כרטיס "הושבה בקליק" בתמונת המצב
     has_hall_sketch: bool = False
+    # מוזמנים בלי מספר טלפון תקין (חסר / לא נראה תקין) — לא מקבלים WhatsApp.
+    bad_phone_guests: int = 0
     # פרטי אירוע
     groom_name: str
     bride_name: str

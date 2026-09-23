@@ -113,6 +113,7 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
             onChange={(e) => update('full_name', e.target.value)}
             placeholder={t.fullNamePlaceholder}
           />
+          <span className="field-hint">{t.fullNameHint}</span>
         </label>
         <label>
           {t.phoneLabel}
@@ -167,6 +168,7 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
             value={form.party_size}
             onChange={(e) => update('party_size', Number(e.target.value))}
           />
+          <span className="field-hint">{t.partySizeHint}</span>
         </label>
         {editing && (
           <label>

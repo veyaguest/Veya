@@ -294,13 +294,8 @@ function RsvpFaq() {
 // (יש מספר תקין אבל טרם נשלח) לא נחשב — עדיין אין מה להראות עליו.
 const SENT_STATUSES = new Set(['sent', 'delivered', 'read', 'failed', 'no_valid_number', 'blocked'])
 
-// תווית קצרה לסטטוס אישור ההגעה של מוזמן בודד (יחיד, לא רבים כמו RSVP_LABELS).
-const RSVP_ROW_LABEL: Record<RsvpStatus, string> = {
-  pending: 'ממתינים לאישור',
-  confirmed: 'אישר הגעה',
-  declined: 'לא מגיע',
-  maybe: 'טרם החליט',
-}
+// אותם מונחים בדיוק כמו בכל המערכת (``RSVP_LABELS``) — סטטוס אחד, שם אחד.
+const RSVP_ROW_LABEL: Record<RsvpStatus, string> = RSVP_LABELS
 
 interface MessageRow {
   guestId: number

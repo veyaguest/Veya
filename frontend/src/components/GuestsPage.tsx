@@ -20,6 +20,7 @@ import { GroupNotesPanel } from './GroupNotesPanel'
 import { GroupSuggestions } from './GroupSuggestions'
 import { ImportDialog } from './ImportDialog'
 import { ImportMenu } from './ImportMenu'
+import { ActionsMenu } from './ActionsMenu'
 import { OnboardingDialog } from './OnboardingDialog'
 import { PasteImportDialog } from './PasteImportDialog'
 import './GuestDataAlert.css'
@@ -38,12 +39,15 @@ const FILTER_LABELS: Record<GuestFilter, string> = {
   maybe: t.filterLabelMaybe,
   pending: t.filterLabelPending,
   no_table: t.filterLabelNoTable,
+  bad_phone: t.filterLabelBadPhone,
 }
 
 interface GuestsPageProps {
   /** חיפוש התחלתי — מגיע מסידור ההושבה ("עריכה בניהול המוזמנים" על
       מוזמן מסוים), כדי לנחות ישר על השורה שלו. */
   initialSearch?: string
+  /** סינון מוכן בכניסה (למשל "ממתינים לתשובה" מהדשבורד). */
+  initialFilter?: GuestFilter
   /** האם המשתמש כבר ראה את מסך ההיכרות פעם — ברמת חשבון, מגיע מ-``user``
       ב-App.tsx (מקור האמת בשרת, לא localStorage). */
   guestsPopupSeen?: boolean
@@ -53,6 +57,7 @@ interface GuestsPageProps {
 
 export function GuestsPage({
   initialSearch = '',
+  initialFilter = 'all',
   guestsPopupSeen = false,
   onGuestsPopupSeen,
 }: GuestsPageProps = {}) {
@@ -64,7 +69,7 @@ export function GuestsPage({
   // מיון/סינון תצוגתיים בלבד — לא נשמרים ל-localStorage, כך שרענון דף
   // מחזיר אוטומטית לברירת המחדל (א-ב, כל המוזמנים).
   const [sort, setSort] = useState<GuestSort>('name')
-  const [filterStatus, setFilterStatus] = useState<GuestFilter>('all')
+  const [filterStatus, setFilterStatus] = useState<GuestFilter>(initialFilter)
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -302,6 +307,7 @@ export function GuestsPage({
           <option value="maybe">{t.filterButton}: {t.filterLabelMaybe}</option>
           <option value="pending">{t.filterButton}: {t.filterLabelPending}</option>
           <option value="no_table">{t.filterButton}: {t.filterLabelNoTable}</option>
+          <option value="bad_phone">{t.filterButton}: {t.filterLabelBadPhone}</option>
         </select>
         {/* פעולות מקובצות: הפעולה הראשית (הוספת מוזמן) אחרונה ובולטת,
             והפעולות המשניות לפניה. הקבוצה נשארת יחידה אחת בעטיפת שורות,
@@ -312,21 +318,20 @@ export function GuestsPage({
             onPaste={() => setShowPaste(true)}
             onContacts={contactsSupported ? () => setShowContacts(true) : undefined}
           />
-          <button className="btn-ghost" onClick={() => setShowCreateGroup(true)}>
-            {t.groupButton}
-          </button>
-          <button className="btn-ghost" onClick={() => setShowNotes(true)}>
-            {t.notesButton}
-          </button>
-          <button
-            className="btn-ghost toolbar-suggestions"
-            onClick={() => setShowSuggestions(true)}
-          >
-            {t.suggestionsButton}
-            {suggestionsCount > 0 && (
-              <span className="toolbar-badge">{suggestionsCount}</span>
-            )}
-          </button>
+          {/* שלושת כלי הקבוצות בתפריט אחד — כדי שבסרגל יישארו החיפוש,
+              הסינון, הייבוא וההוספה, ולא שמונה כפתורים שנשברים לשורות. */}
+          <ActionsMenu
+            label={t.groupsMenuButton}
+            items={[
+              { label: t.groupButton, onClick: () => setShowCreateGroup(true) },
+              { label: t.notesButton, onClick: () => setShowNotes(true) },
+              {
+                label: t.suggestionsButton,
+                onClick: () => setShowSuggestions(true),
+                badge: suggestionsCount,
+              },
+            ]}
+          />
           <button className="btn-primary" onClick={() => setShowForm((s) => !s)}>
             {showForm ? t.closeForm : t.addGuestButton}
           </button>
@@ -564,14 +569,14 @@ export function GuestsPage({
               ))}
             {guests.map((g) => (
               <tr key={g.id}>
-                <td>{g.full_name}</td>
-                <td dir="ltr" className="phone">
+                <td className="cell-name" data-label={t.colFullName}>{g.full_name}</td>
+                <td dir="ltr" className="phone" data-label={t.colPhone}>
                   {g.phone}
                 </td>
-                <td>{sideLabel(g.side)}</td>
-                <td>{groupLabel(g.group_type)}</td>
-                <td className="center">{g.party_size}</td>
-                <td>
+                <td data-label={t.colSide}>{sideLabel(g.side)}</td>
+                <td data-label={t.colGroup}>{groupLabel(g.group_type)}</td>
+                <td className="center" data-label={t.colCount}>{g.party_size}</td>
+                <td data-label={t.colRsvp}>
                   <span className={`badge ${g.rsvp_status}`}>
                     {RSVP_LABELS[g.rsvp_status]}
                   </span>
@@ -581,15 +586,15 @@ export function GuestsPage({
                     כתגית-גלולה זהה בשתי עמודות סמוכות, ואי אפשר היה
                     להבדיל ביניהם במבט. כאן זה נקודה + טקסט שקט — היררכיה
                     ברורה: הבחירה של המוזמן בולטת, מצב המסירה משני. */}
-                <td>
+                <td data-label={t.colInviteStatus}>
                   <span className={`delivery delivery-${g.invite_status ?? 'not_sent'}`}>
                     <span className="delivery-dot" aria-hidden="true" />
                     {INVITE_STATUS_LABELS[g.invite_status ?? 'not_sent']}
                   </span>
                 </td>
-                <td className="center">{g.table_number ?? '—'}</td>
-                <td className="notes seating">{g.seating_notes ?? ''}</td>
-                <td className="notes">{g.notes_raw ?? ''}</td>
+                <td className="center" data-label={t.colTable}>{g.table_number ?? '—'}</td>
+                <td className="notes seating" data-label={t.colSeatingNotes}>{g.seating_notes ?? ''}</td>
+                <td className="notes" data-label={t.colNotes}>{g.notes_raw ?? ''}</td>
                 <td className="row-actions">
                   <button className="btn-edit" onClick={() => setEditGuest(g)}>
                     {t.editRow}
@@ -608,15 +613,23 @@ export function GuestsPage({
         {!loading && guests.length === 0 && (
           <div className="empty">
             <strong className="empty-title">
-              {search ? t.emptySearchTitle : t.emptyListTitle}
+              {search
+                ? t.emptySearchTitle
+                : filterStatus !== 'all'
+                  ? t.emptyFilterTitle(FILTER_LABELS[filterStatus])
+                  : t.emptyListTitle}
             </strong>
             <span className="empty-desc">
-              {search ? t.emptySearchDesc : t.emptyListDesc}
+              {search ? t.emptySearchDesc : filterStatus !== 'all' ? t.emptyFilterDesc : t.emptyListDesc}
             </span>
             <div className="empty-actions">
               {search ? (
                 <button className="btn-ghost btn-sm" onClick={() => setSearch('')}>
                   {t.clearSearch}
+                </button>
+              ) : filterStatus !== 'all' ? (
+                <button className="btn-ghost btn-sm" onClick={() => setFilterStatus('all')}>
+                  {t.clearFilter}
                 </button>
               ) : (
                 <button className="btn-primary btn-sm" onClick={() => setShowForm(true)}>

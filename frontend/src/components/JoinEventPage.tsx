@@ -1,3 +1,4 @@
+import { strings } from '../strings/he'
 import { useEffect, useState } from 'react'
 import { acceptInvitation, previewInvitation } from '../api'
 import { getToken } from '../authStore'
@@ -95,15 +96,15 @@ export function JoinEventPage({
   const deadEnd: Partial<Record<string, { title: string; text: string }>> = {
     expired: {
       title: 'ההזמנה כבר לא בתוקף',
-      text: 'הקישור הזה פג. אפשר לבקש מבן/בת הזוג לשלוח הזמנה חדשה.',
+      text: `הקישור הזה פג. ${strings.partner.askSender}`,
     },
     used: {
       title: 'ההזמנה כבר נוצלה',
-      text: 'הקישור הזה כבר שימש להצטרפות. אם זה לא הייתם אתם, כדאי לבדוק מול בן/בת הזוג.',
+      text: 'הקישור הזה כבר שימש להצטרפות. אם זה לא הייתם אתם, כדאי לבדוק מול מי ששלח לכם את ההזמנה.',
     },
     cancelled: {
       title: 'ההזמנה בוטלה',
-      text: 'אפשר לבקש מבן/בת הזוג לשלוח הזמנה חדשה.',
+      text: strings.partner.askSender,
     },
     invalid: {
       title: 'הקישור הזה לא תקין',

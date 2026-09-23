@@ -7,6 +7,7 @@ import {
   getMe,
   healthCheck,
   listMyEvents,
+  markGuestsPopupSeen,
 } from './api'
 import {
   clearAdminToken,
@@ -40,6 +41,7 @@ import { OnboardingWizard } from './components/OnboardingWizard'
 import { ReconsentModal } from './components/ReconsentModal'
 import { RsvpPage } from './components/RsvpPage'
 import { VeyaLoader } from './components/VeyaLoader'
+import type { GuestFilter } from './api'
 import type { EventSummary, User } from './types'
 import type { EventTerms } from './strings/eventTypes'
 
@@ -101,6 +103,8 @@ function pageFromPath(pathname: string): Page {
  *  (למשל "עריכה בניהול המוזמנים" על מוזמן מתוך סידור ההושבה). */
 export interface NavOptions {
   guestSearch?: string
+  /** כניסה לניהול המוזמנים עם סינון מוכן — למשל מ"4 ממתינים לתשובה". */
+  guestFilter?: GuestFilter
 }
 
 // כותרות/ניווט תלויי-סוג-אירוע: "מוזמנים" הופך ל"משתתפים" באירוע עסקי וכו'.
@@ -232,6 +236,7 @@ function App() {
   // בסידור ההושבה). נקרא פעם אחת בטעינת המסך — ``<main key>`` מחליף אותו
   // בכל מעבר עמוד.
   const [guestSearch, setGuestSearch] = useState('')
+  const [guestFilter, setGuestFilter] = useState<GuestFilter>('all')
 
   const [user, setUser] = useState<User | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -366,6 +371,7 @@ function App() {
     const onPop = () => {
       setProfileOpen(false)
       setGuestSearch('')
+      setGuestFilter('all')
       setPage(pageFromPath(window.location.pathname))
     }
     window.addEventListener('popstate', onPop)
@@ -415,6 +421,7 @@ function App() {
    *  כדי ש"חזור" יחזיר למסך הקודם. */
   function goTo(target: Page, options: NavOptions = {}) {
     setGuestSearch(target === 'guests' ? options.guestSearch ?? '' : '')
+    setGuestFilter(target === 'guests' ? options.guestFilter ?? 'all' : 'all')
     setPage(target)
     if (window.location.pathname !== PAGE_PATHS[target]) {
       window.history.pushState({ page: target }, '', PAGE_PATHS[target])
@@ -450,14 +457,17 @@ function App() {
     await loadEvents(u)
   }
 
-  async function handleEventCreated(ev: EventSummary) {
+  async function handleEventCreated(ev: EventSummary, next: 'guests' | 'dashboard' = 'guests') {
     setEvents((prev) => [ev, ...prev.filter((e) => e.id !== ev.id)])
     setActiveEventId(ev.id)
     setEventId(ev.id)
-    // ישר להוספת מוזמנים (לא לתמונת מצב) — ההמשך הטבעי של Onboarding מיד
-    // אחרי יצירת האירוע; GuestsPage מציג את OnboardingDialog (פעם ראשונה
-    // בלבד, דגל localStorage) עם אפשרויות הייבוא הקיימות.
-    goTo('guests')
+    // האשף כבר הציע את כל דרכי הייבוא — לא מקפיצים אותן שוב בחלון במסך
+    // המוזמנים מיד אחריו.
+    if (user && !user.guests_popup_seen) {
+      markGuestsPopupSeen().catch(() => undefined)
+      setUser({ ...user, guests_popup_seen: true })
+    }
+    goTo(next)
   }
 
   function handleLogout() {
@@ -821,6 +831,7 @@ function App() {
             {page === 'guests' && (
               <GuestsPage
                 initialSearch={guestSearch}
+                initialFilter={guestFilter}
                 guestsPopupSeen={user.guests_popup_seen}
                 onGuestsPopupSeen={() => setUser({ ...user, guests_popup_seen: true })}
               />

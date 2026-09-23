@@ -15,6 +15,8 @@ import type {
   Postponement,
 } from '../types'
 import type { ReadinessPage } from '../readiness'
+import type { GuestFilter } from '../api'
+import { ConfirmDialog } from './ConfirmDialog'
 import {
   payoutDisplayStatus,
   payoutStage,
@@ -34,7 +36,7 @@ import './PostponeDialog.css'
 
 interface Props {
   // ניווט למסך אחר (מוזמנים / מפת אולם) — עבור הבאנר וכרטיס ההושבה.
-  onNavigate?: (page: ReadinessPage) => void
+  onNavigate?: (page: ReadinessPage, options?: { guestFilter?: GuestFilter }) => void
   /**
    * האם האירוע זכאי לשירות "מתנות באשראי".
    *
@@ -262,7 +264,8 @@ function useCountdown(targetMs: number | null) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (targetMs === null) return
-    const id = setInterval(() => setNow(Date.now()), 1_000)
+    // בלי שניות על המסך — עדכון פעם בחצי דקה מספיק, בלי רינדור כל שנייה.
+    const id = setInterval(() => setNow(Date.now()), 30_000)
     return () => clearInterval(id)
   }, [targetMs])
 
@@ -307,15 +310,13 @@ function CountdownTimer({ date, time }: { date?: string; time?: string }) {
     <div
       className="countdown-timer"
       role="timer"
-      aria-label={t.countdownAriaLabel(cd.days, cd.hours, cd.minutes, cd.seconds)}
+      aria-label={t.countdownAriaLabelNoSeconds(cd.days, cd.hours, cd.minutes)}
     >
       <CountdownCell value={cd.days} label={t.countdownDays} />
       <span className="countdown-sep" aria-hidden="true">:</span>
       <CountdownCell value={cd.hours} label={t.countdownHours} />
       <span className="countdown-sep" aria-hidden="true">:</span>
       <CountdownCell value={cd.minutes} label={t.countdownMinutes} />
-      <span className="countdown-sep" aria-hidden="true">:</span>
-      <CountdownCell value={cd.seconds} label={t.countdownSeconds} />
     </div>
   )
 }
@@ -371,6 +372,55 @@ function formatDateValue(iso: string): string {
   return m ? `${m[3]}.${m[2]}.${m[1]}` : iso
 }
 
+/** "צריכים אתכם" — מה בתמונת המצב באמת תלוי בבעל האירוע עכשיו. כל פריט
+ *  מסביר בשורה אחת מה קורה ולמה זה חשוב, ומוביל לפעולה שפותרת אותו. כשאין
+ *  מה לעשות — לא מוצג כלום. */
+function NeedsYou({
+  event,
+  stats,
+  onEditDetails,
+  onNavigate,
+}: {
+  event: EventDetails
+  stats: DashboardStats
+  onEditDetails: () => void
+  onNavigate?: Props['onNavigate']
+}) {
+  const n = t.needsYou
+  const items: { key: string; title: string; desc: string; cta: string; onClick: () => void }[] = []
+  if (!event.event_date) {
+    items.push({ key: 'date', title: n.noDateTitle, desc: n.noDateDesc, cta: n.noDateCta, onClick: onEditDetails })
+  } else if (event.venue_commit_days_before === null && !event.venue_commit_locked) {
+    items.push({ key: 'commit', title: n.noCommitTitle, desc: n.noCommitDesc, cta: n.noCommitCta, onClick: onEditDetails })
+  }
+  const bad = stats.bad_phone_guests ?? 0
+  if (bad > 0) {
+    items.push({
+      key: 'phones',
+      title: n.badPhonesTitle(bad),
+      desc: n.badPhonesDesc,
+      cta: n.badPhonesCta,
+      onClick: () => onNavigate?.('guests', { guestFilter: 'bad_phone' }),
+    })
+  }
+  if (items.length === 0) return null
+  return (
+    <section className="dash-stack dash-actions" aria-label={n.label}>
+      {items.map((it) => (
+        <div key={it.key} className="invite-banner">
+          <div className="invite-banner-text">
+            <p className="invite-banner-title">{it.title}</p>
+            <p className="invite-banner-desc">{it.desc}</p>
+          </div>
+          <button type="button" className="invite-banner-btn" onClick={it.onClick}>
+            {it.cta}
+          </button>
+        </div>
+      ))}
+    </section>
+  )
+}
+
 export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId }: Props) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [event, setEvent] = useState<EventDetails | null>(null)
@@ -398,6 +448,8 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
   // אמת אחד בשרת, לא הרכבה מחדש כאן.
   const [postpone, setPostpone] = useState<Postponement | null>(null)
   const [postponeDialog, setPostponeDialog] = useState<'request' | 'finish' | null>(null)
+  // מועד הסגירה ננעל אחרי השמירה — מבקשים אישור שמסביר מה יקרה.
+  const [confirmCommit, setConfirmCommit] = useState(false)
   // אפשרויות שהיו סוגרות את הרשימה בתאריך שכבר עבר — מושבתות בבורר.
   const commitMax = maxCommitDays(form.event_date)
 
@@ -448,7 +500,21 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
     }
   }, [giftsEligible])
 
+  // שמירה: אם נבחר עכשיו מועד סגירה (שננעל אחרי השמירה) — קודם אישור.
+  function requestSave() {
+    const choosingCommit =
+      !commitLocked &&
+      form.venue_commit_days_before !== '' &&
+      (event?.venue_commit_days_before ?? null) === null
+    if (choosingCommit) {
+      setConfirmCommit(true)
+      return
+    }
+    onSaveEvent()
+  }
+
   async function onSaveEvent() {
+    setConfirmCommit(false)
     setError('')
     try {
       const payload: Parameters<typeof updateEvent>[0] = {
@@ -683,7 +749,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
             </div>
 
             <div className="event-edit-actions">
-              <button className="btn-primary" onClick={onSaveEvent}>
+              <button className="btn-primary" onClick={requestSave}>
                 {strings.common.save}
               </button>
               <button className="btn-text" onClick={() => setEditing(false)}>
@@ -763,12 +829,41 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
                 {when ? ` · ${when}` : ''}
               </p>
               <CountdownTimer date={event?.event_date} time={event?.event_time} />
+              {event && (
+                <button
+                  type="button"
+                  className="btn-ghost dash-edit-details"
+                  onClick={() => setEditing(true)}
+                >
+                  {t.editDetailsButton}
+                </button>
+              )}
             </div>
           </div>
         )}
       </div>
 
-      {error && <p className="form-error" role="alert">{error}</p>}
+      {error && (
+        <div className="form-error dash-error" role="alert">
+          <span>{error}</span>
+          {!stats && (
+            <button type="button" className="btn-text" onClick={() => refresh()}>
+              {strings.common.retry}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* "צריכים אתכם" — רק מה שבאמת תלוי בבעל האירוע, כל פריט עם הפעולה
+          שפותרת אותו. בשאר המוזמנים VEYA מטפלת בעצמה. */}
+      {event && stats && !editing && (
+        <NeedsYou
+          event={event}
+          stats={stats}
+          onEditDetails={() => setEditing(true)}
+          onNavigate={onNavigate}
+        />
+      )}
 
       {/* מצב האירוע — מוצג רק כשיש מה לומר (אירוע רגיל לא מקבל באנר).
           הפעולה הבאה נשלחת פנימה, כדי שהמשתמש תמיד יראה "מה עכשיו". */}
@@ -796,6 +891,16 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
           ) : null
         }
       />
+
+      {confirmCommit && (
+        <ConfirmDialog
+          title={t.commitConfirmTitle}
+          message={t.commitConfirmBody(Number(form.venue_commit_days_before))}
+          confirmLabel={t.commitConfirmCta}
+          onConfirm={onSaveEvent}
+          onCancel={() => setConfirmCommit(false)}
+        />
+      )}
 
       {postponeDialog === 'request' && (
         <PostponeRequestDialog
@@ -867,12 +972,23 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
                 centerValue={stats.confirmed_people}
                 centerLabel={t.gaugeLabel}
               />
+              {/* כל מספר מוביל לרשימה שמאחוריו: "4 ממתינים לתשובה" → ניהול
+                  המוזמנים, מסונן לממתינים. */}
               <ul className="gauge-status-grid">
                 {rsvpSegments.map((seg) => (
-                  <li key={seg.key} className="gauge-status-card">
-                    <span className="gauge-status-dot" style={{ background: seg.color }} />
-                    <span className="gauge-status-num">{seg.value}</span>
-                    <span className="gauge-status-label">{seg.label}</span>
+                  <li key={seg.key}>
+                    <button
+                      type="button"
+                      className="gauge-status-card"
+                      onClick={() =>
+                        onNavigate?.('guests', { guestFilter: seg.key as GuestFilter })
+                      }
+                      aria-label={t.gaugeCardAria(seg.value, seg.label)}
+                    >
+                      <span className="gauge-status-dot" style={{ background: seg.color }} />
+                      <span className="gauge-status-num">{seg.value}</span>
+                      <span className="gauge-status-label">{seg.label}</span>
+                    </button>
                   </li>
                 ))}
               </ul>

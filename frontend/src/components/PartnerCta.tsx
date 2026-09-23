@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getAccountOverview, invitePartner } from '../api'
+import { activeEventTerms } from '../strings/eventTypes'
+import { strings } from '../strings/he'
 import './PartnerCta.css'
 
 /** דגל דפדפן: הזוג בחר "לא עכשיו". מסתיר את הכרטיס לצמיתות במכשיר הזה —
@@ -82,19 +84,20 @@ export function PartnerCta() {
     )
   }
 
+  const two = activeEventTerms().hasTwoHosts
   return (
     <div className="pcta">
       <div className="pcta-main">
         <h3 className="pcta-title">מנהלים את האירוע יחד?</h3>
         <p className="pcta-text">
-          הזמינו את בן/בת הזוג כדי שתוכלו לעבוד יחד על אותו אירוע.
+          {strings.partner.lead(two)}
         </p>
       </div>
 
       {!open ? (
         <div className="pcta-actions">
           <button type="button" className="btn-primary pcta-btn" onClick={() => setOpen(true)}>
-            הזמנת בן/בת זוג
+            {strings.partner.cta(two)}
           </button>
           <button type="button" className="btn-text pcta-dismiss" onClick={dismiss}>
             לא עכשיו
@@ -103,7 +106,7 @@ export function PartnerCta() {
       ) : (
         <form className="pcta-form" onSubmit={send}>
           <label className="pcta-label" htmlFor="pcta-email">
-            האימייל של בן/בת הזוג
+            {strings.partner.emailLabel(two)}
           </label>
           <div className="pcta-row">
             <input

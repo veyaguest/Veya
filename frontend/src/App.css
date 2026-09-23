@@ -1147,6 +1147,9 @@ summary:focus-visible,
   cursor: pointer;
   transition: background var(--transition-fast);
 }
+.import-menu-item .toolbar-badge {
+  margin-inline-start: 8px;
+}
 .import-menu-item:hover {
   background: rgba(201, 162, 39, 0.08);
 }
@@ -3870,6 +3873,17 @@ td.notes.seating {
   transform: translateY(-2px);
   box-shadow: var(--shadow-card-hover);
   border-color: var(--line);
+}
+/* הכרטיס הוא כפתור (מוביל לרשימה המסוננת) — איפוס סגנון הכפתור. */
+button.gauge-status-card {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+button.gauge-status-card:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
 .gauge-status-dot {
   width: 10px;
@@ -7246,6 +7260,12 @@ td.notes.seating {
 .auth-field label {
   font-size: 13px;
   color: var(--body);
+}
+/* הסבר קבוע מתחת לשדה (למשל חוקי הסיסמה) — לא placeholder שנעלם בהקלדה. */
+.auth-field-hint {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
 }
 .auth-field input {
   height: 48px;
@@ -15326,5 +15346,109 @@ td.notes.seating {
      שהמשתמש כותב בו. חוזר מיד כשהמקלדת נסגרת. */
   .veya-kb-open .side-nav {
     display: none;
+  }
+}
+
+/* אשף פתיחת אירוע — מה חובה, ומה כבר נשמר (2026-09-23). */
+.onboard-required-note,
+.onboard-saved-note {
+  font-size: 13px;
+  line-height: 1.6;
+  opacity: 0.85;
+  margin: 0 0 12px;
+}
+
+/* תמונת מצב — כפתור עריכת פרטי האירוע, ושגיאת טעינה עם "ניסיון חוזר". */
+.dash-edit-details {
+  margin-top: 14px;
+  align-self: flex-start;
+}
+.dash-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ---- רשימת המוזמנים בטלפון: כרטיס לכל מוזמן במקום טבלה של 11 עמודות ----
+   אותם נתונים ואותן פעולות — רק בלי גלילה הצידה. כל ערך מקבל את שם
+   העמודה שלו (data-label), השם הוא כותרת הכרטיס, ותאים ריקים (הערות שלא
+   מולאו) לא תופסים מקום. עריכה/מחיקה גלויות תמיד, ברוחב נוח לאצבע. */
+@media (max-width: 700px) {
+  .table-wrap {
+    overflow-x: visible;
+    background: none;
+    border: none;
+    box-shadow: none;
+  }
+  .guests-table,
+  .guests-table tbody {
+    display: block;
+    width: 100%;
+  }
+  .guests-table thead {
+    display: none;
+  }
+  .guests-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+    background: var(--cream);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .guests-table tbody tr.skeleton-row {
+    display: block;
+  }
+  .guests-table td {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0;
+    border: none;
+    min-width: 0;
+    width: auto;
+    white-space: normal;
+    text-align: start;
+  }
+  .guests-table td[data-label]::before {
+    content: attr(data-label);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .guests-table td.cell-name {
+    grid-column: 1 / -1;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--charcoal);
+  }
+  .guests-table td.cell-name::before {
+    display: none;
+  }
+  .guests-table td.notes {
+    grid-column: 1 / -1;
+  }
+  .guests-table td.notes:empty {
+    display: none;
+  }
+  .guests-table td.row-actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--line-2);
+    opacity: 1;
+  }
+  .guests-table td.row-actions button {
+    min-height: 40px;
+    padding: 6px 16px;
+  }
+  .table-wrap .empty {
+    background: var(--cream);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
   }
 }

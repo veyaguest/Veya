@@ -10,6 +10,7 @@ import {
 } from '../api'
 import { setToken } from '../authStore'
 import type { AccountOverview, User } from '../types'
+import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { ConfirmDialog } from './ConfirmDialog'
 import './AccountCenter.css'
@@ -325,11 +326,13 @@ export function AccountCenter({
                 <div className="acc-invite">
                   <p className="acc-invite-lead">מנהלים את האירוע יחד?</p>
                   <p className="acc-invite-sub">
-                    הזמינו את בן/בת הזוג כדי שתוכלו לנהל יחד את אותו אירוע.
+                    {strings.partner.lead(activeEventTerms().hasTwoHosts)}
                   </p>
                   <form className="acc-invite-form" onSubmit={sendInvite}>
                     <div className="acc-field">
-                      <label htmlFor="acc-partner">האימייל של בן/בת הזוג</label>
+                      <label htmlFor="acc-partner">
+                        {strings.partner.emailLabel(activeEventTerms().hasTwoHosts)}
+                      </label>
                       <input
                         id="acc-partner"
                         type="email"
@@ -345,7 +348,7 @@ export function AccountCenter({
                       className="acc-btn acc-btn-primary"
                       disabled={inviting}
                     >
-                      {inviting ? 'שולח…' : 'הזמנת בן/בת זוג'}
+                      {inviting ? 'שולח…' : strings.partner.cta(activeEventTerms().hasTwoHosts)}
                     </button>
                   </form>
                 </div>

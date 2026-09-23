@@ -71,9 +71,11 @@ export const INVITE_STATUS_LABELS: Record<InviteStatus, string> = {
   sent: 'נשלחה הזמנה',
   delivered: 'נמסרה',
   read: 'נקראה',
-  awaiting: 'ממתין למענה',
-  confirmed: 'אישר הגעה',
-  declined: 'סירב להגיע',
+  // העמודה הזו מתארת את *ההזמנה* בלבד; מה המוזמן ענה — בעמודת "אישור הגעה"
+  // שלידה. לכן "ענו" ולא "אישר"/"סירב", שחזרו על אותו מידע במילים אחרות.
+  awaiting: 'נשלחה',
+  confirmed: 'ענו',
+  declined: 'ענו',
 }
 
 /**
@@ -534,6 +536,8 @@ export interface DashboardStats {
   guests_with_notes: number
   group_notes_count: number
   has_hall_sketch: boolean
+  // מוזמנים בלי מספר טלפון תקין — לא מקבלים WhatsApp
+  bad_phone_guests?: number
   groom_name: string
   bride_name: string
   venue_name: string

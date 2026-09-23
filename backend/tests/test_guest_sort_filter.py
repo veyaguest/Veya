@@ -128,3 +128,31 @@ if __name__ == "__main__":
         print("OK — מיון וסינון בניהול מוזמנים עובדים כמפרט.")
     finally:
         shutdown()
+
+
+def test_filter_guests_without_a_valid_phone_and_dashboard_count() -> None:
+    """סינון "בלי מספר טלפון תקין" (מהדשבורד/אישורי ההגעה) + הספירה בדשבורד."""
+    api, teardown = bootstrap()
+    try:
+        from app import models
+        from app.database import SessionLocal
+
+        api.add_guest("תקין", "0501234567", party_size=1)
+        bad = api.add_guest("שגוי", "0501111111", party_size=1)
+        empty = api.add_guest("חסר", "0502222222", party_size=1)
+        db = SessionLocal()
+        try:
+            db.get(models.Guest, bad["id"]).phone = "12345"
+            db.get(models.Guest, empty["id"]).phone = ""
+            db.commit()
+        finally:
+            db.close()
+
+        r = api.client.get("/guests", headers=api.headers, params={"filter_status": "bad_phone"})
+        assert r.status_code == 200, r.text
+        assert sorted(_names(r.json()["items"])) == ["חסר", "שגוי"]
+        stats = api.client.get("/stats", headers=api.headers).json()
+        assert stats["bad_phone_guests"] == 2
+        print("✓ סינון 'בלי מספר טלפון תקין' + ספירה בדשבורד")
+    finally:
+        teardown()

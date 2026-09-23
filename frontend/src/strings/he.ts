@@ -40,6 +40,42 @@ export const strings = {
     logout: 'יציאה מהחשבון',
   },
 
+  // ---- ניהול משותף — מי מנהל איתכם את האירוע ----
+  // "בן/בת הזוג" רק כשלאירוע יש שני בעלי אירוע (חתונה/חינה — ``hasTwoHosts``
+  // בלקסיקון). בבר מצווה, ברית או אירוע עסקי — ניסוח כללי. Event-first.
+  partner: {
+    lead: (two: boolean) =>
+      two
+        ? 'הזמינו את בן/בת הזוג כדי שתוכלו לנהל יחד את אותו אירוע.'
+        : 'מנהלים את האירוע עם מישהו נוסף? הזמינו אותו לנהל איתכם את אותו אירוע.',
+    emailLabel: (two: boolean) =>
+      two ? 'האימייל של בן/בת הזוג' : 'האימייל של מי שמנהל איתכם את האירוע',
+    cta: (two: boolean) => (two ? 'הזמנת בן/בת הזוג' : 'הזמנה לניהול משותף'),
+    stepDesc: (two: boolean) =>
+      two ? 'להזמין את בן/בת הזוג' : 'להזמין מי שמנהל איתכם את האירוע',
+    askSender: 'אפשר לבקש ממי ששלח לכם את ההזמנה לשלוח הזמנה חדשה.',
+  },
+
+  // ---- אשף פתיחת אירוע ----
+  onboarding: {
+    requiredNote: 'רק השמות חובה. את כל השאר אפשר להשלים גם אחר כך, בתמונת המצב.',
+    commitExplain:
+      'כמה ימים לפני האירוע צריך למסור לאולם מספר סופי? זה היום שבו רשימת המוזמנים נסגרת. 14 ימים לפניו VEYA מתחילה לשלוח למוזמנים בקשות לאישור הגעה — ורק אחרי שבחרתם יום. אחרי השמירה אי אפשר לשנות את הבחירה, אז אם עוד לא בטוחים, עדיף לבחור בהמשך.',
+    savedNote: 'פרטי האירוע נשמרו. אפשר לערוך אותם בכל רגע בתמונת המצב.',
+    finishToGuests: 'סיום — לרשימת המוזמנים',
+    finishLater: 'אוסיף מוזמנים אחר כך',
+  },
+
+  // ---- התחברות / הרשמה ----
+  auth: {
+    passwordRule: 'לפחות 8 תווים, עם אות אחת וספרה אחת לפחות.',
+    termsRequired: 'כדי לפתוח חשבון צריך לאשר את תנאי השימוש ומדיניות הפרטיות.',
+    alreadyRegistered:
+      'כבר יש חשבון עם הכתובת הזו. אפשר להתחבר כאן, ואם שכחתם את הסיסמה — "שכחתם סיסמה?" ישלח קישור לאיפוס.',
+    resetSent:
+      'אם יש חשבון עם הכתובת הזו, שלחנו אליה קישור לאיפוס הסיסמה. לא הגיע תוך כמה דקות? כדאי לבדוק גם בתיקיית הספאם.',
+  },
+
   // ========================================================================
   //  errors — הודעות שגיאה מרוכזות (מוצגות למשתמש דרך setError/toast).
   //  מפתחות נפרדים גם לניסוחים דומים עד סימן פיסוק אחד — כי הטקסט המדויק
@@ -473,7 +509,7 @@ export const strings = {
     segDeclined: 'לא מגיעים',
     segPending: 'ממתינים לתשובה',
     centerLabel: 'אישרו הגעה',
-    legendMaybe: 'לא החליטו (אולי)',
+    legendMaybe: 'לא החליטו',
     statTotalGuests: 'מוזמנים ברשימה',
     statTotalPeople: 'סך האנשים',
     statConfirmed: 'אישרו הגעה',
@@ -492,6 +528,28 @@ export const strings = {
     countdownHours: 'שעות',
     countdownMinutes: 'דקות',
     countdownSeconds: 'שניות',
+    countdownAriaLabelNoSeconds: (days: number, hours: number, minutes: number) =>
+      `נותרו ${days} ימים, ${hours} שעות ו-${minutes} דקות לאירוע`,
+    editDetailsButton: 'עריכת פרטי האירוע',
+    gaugeCardAria: (n: number, label: string) => `${n} ${label} — להצגת הרשימה`,
+    commitConfirmTitle: 'לקבוע את מועד סגירת הרשימה?',
+    commitConfirmBody: (days: number) =>
+      `הרשימה תיסגר ${days === 1 ? 'יום אחד' : `${days} ימים`} לפני האירוע, ו-14 ימים לפני כן VEYA תתחיל לשלוח למוזמנים בקשות לאישור הגעה. אחרי השמירה אי אפשר לשנות את הבחירה.`,
+    commitConfirmCta: 'כן, לשמור',
+    needsYou: {
+      label: 'צריכים אתכם',
+      noDateTitle: 'עוד לא הזנתם תאריך לאירוע',
+      noDateDesc: 'בלי תאריך אי אפשר לבנות את לוח אישורי ההגעה ולשלוח תזכורות.',
+      noDateCta: 'הוספת תאריך',
+      noCommitTitle: 'עוד לא בחרתם מועד סגירת רשימה',
+      noCommitDesc:
+        'זה היום שבו מוסרים לאולם מספר סופי. רק אחרי שתבחרו אותו VEYA תתחיל לשלוח למוזמנים בקשות לאישור הגעה.',
+      noCommitCta: 'בחירת מועד',
+      badPhonesTitle: (n: number) =>
+        n === 1 ? 'למוזמן אחד אין מספר טלפון תקין' : `ל-${n} מוזמנים אין מספר טלפון תקין`,
+      badPhonesDesc: 'הם לא יקבלו הזמנה ובקשות לאישור הגעה בוואטסאפ עד שהמספר יתוקן.',
+      badPhonesCta: 'לתיקון המספרים',
+    },
     countdownAriaLabel: (days: number, hours: number, minutes: number, seconds: number) =>
       `נותרו ${days} ימים, ${hours} שעות, ${minutes} דקות ו-${seconds} שניות לאירוע`,
     rsvpSummary: (confirmed: number, total: number) =>
@@ -900,12 +958,15 @@ export const strings = {
     loadError: 'לא הצלחנו לטעון את הרשימה, ננסה שוב',
     deleteError: 'לא הצלחנו להסיר, נסו שוב',
     deleteTitle: 'הסרת מוזמן',
-    deleteConfirm: (name: string) => `להסיר את ${name} מהרשימה?`,
+    // לא רק "אתם בטוחים?" — מה בדיוק יקרה.
+    deleteConfirm: (name: string) =>
+      `${name} יוסר מרשימת המוזמנים, מסידור ההושבה ומההודעות שעוד לא יצאו. אי אפשר לבטל את זה.`,
     deleteConfirmButton: 'כן, להסיר',
     searchPlaceholder: 'חיפוש לפי שם או טלפון…',
     importMenuButton: 'ייבוא מוזמנים',
     pasteButton: 'הדבקה מרשימה קיימת',
-    notesButton: 'העדפות קבוצה',
+    notesButton: 'העדפות ישיבה לקבוצות',
+    groupsMenuButton: 'קבוצות',
     uploadButton: 'ייבוא מקובץ Excel / CSV',
     contactsButton: 'ייבוא מאנשי קשר',
     closeForm: 'סגירת הטופס',
@@ -913,21 +974,23 @@ export const strings = {
     dupSuffix: (n: number) => ` (${n} כבר היו אצלכם)`,
     importedToast: (created: number, dupSuffix: string) =>
       `הוספנו ${created} מוזמנים לרשימה${dupSuffix}`,
+    // "מוזמנים" = שורות ברשימה (משפחה אחת = שורה אחת); "אנשים" = סכום
+    // הכמויות. שניהם מופיעים כדי שלא יצטרכו לנחש למה המספרים שונים.
     summary: (total: number, totalPeople: number, confirmedPeople: number, guestsLabel = 'מוזמנים') =>
-      `${total} ${guestsLabel} · ${totalPeople} אנשים הוזמנו · ${confirmedPeople} אישרו הגעה`,
+      `${total} ${guestsLabel} ברשימה · ${totalPeople} אנשים בסך הכול · ${confirmedPeople} אנשים אישרו הגעה`,
     colFullName: 'שם מלא',
     colPhone: 'טלפון',
     colSide: 'צד',
     colGroup: 'קבוצה',
-    colCount: 'כמות',
+    colCount: 'אנשים',
     colRsvp: 'אישור הגעה',
     colInviteStatus: 'סטטוס הזמנה',
     colTable: 'שולחן',
-    colNotes: 'הערה פנימית',
+    colNotes: 'הערה לעצמכם',
     colSeatingNotes: 'הערות הושבה',
     deleteRow: 'מחיקה',
     editRow: 'עריכה',
-    groupButton: 'קבוצה חדשה',
+    groupButton: 'יצירת קבוצה חדשה',
     emptySearchTitle: 'אין מוזמנים שמתאימים לחיפוש',
     emptySearchDesc: 'אפשר לנסות שם אחר, או חלק ממספר טלפון.',
     emptyListTitle: 'עדיין אין מוזמנים',
@@ -952,26 +1015,31 @@ export const strings = {
     filterLabelMaybe: 'לא החליטו',
     filterLabelPending: 'ממתינים לתשובה',
     filterLabelNoTable: 'ללא שולחן',
+    filterLabelBadPhone: 'בלי מספר טלפון תקין',
     filteredNotice: (label: string) => `הרשימה מסוננת: ${label}`,
     clearFilter: 'ניקוי סינון',
+    emptyFilterTitle: (label: string) => `אין כרגע מוזמנים בסינון "${label}"`,
+    emptyFilterDesc: 'אפשר לנקות את הסינון ולראות את כל הרשימה.',
     clearSearch: 'ניקוי החיפוש',
 
     // AddGuestForm
     saveErrorGeneric: 'לא הצלחנו לשמור, נסו שוב',
     fullNameLabel: 'שם מלא *',
     fullNamePlaceholder: 'לדוגמה: דני כהן',
+    fullNameHint: 'בהודעות למוזמן נפנה אליו בשם הפרטי בלבד ("היי דני").',
     phoneLabel: 'טלפון *',
     phonePlaceholder: '050-123-4567',
     sideLabel: 'צד',
     groupLabelText: 'קבוצה',
     newGroupOption: 'קבוצה חדשה…',
     newGroupPlaceholder: 'שם הקבוצה, למשל: חברים מהצבא',
-    partySizeLabel: 'כמות אנשים',
+    partySizeLabel: 'כמה אנשים בהזמנה',
+    partySizeHint: 'כולל המוזמן עצמו. למשל: זוג = 2, משפחה עם שני ילדים = 4.',
     rsvpStatusLabel: 'סטטוס אישור הגעה',
     isChildLabel: 'ילד/ה',
     // שני שדות הערות נפרדים. ההפרדה קיימת כדי שהערה תפעולית ("צריך לחזור
     // אליו") לא תתפרש בטעות כאילוץ ישיבה — רק השדה השני מגיע למנוע.
-    notesFieldLabel: 'הערה פנימית',
+    notesFieldLabel: 'הערה לעצמכם',
     notesFieldPlaceholder: 'לדוגמה: דיברנו איתו, צריך לחזור אליו',
     notesFieldHint: 'לשימושכם בלבד. לא משפיעה על סידור ההושבה.',
     seatingNotesLabel: 'הערות הושבה',
@@ -984,7 +1052,7 @@ export const strings = {
         ? 'מצאנו הערה אחת שנראית כמו העדפת ישיבה'
         : `מצאנו ${n} הערות שנראות כמו העדפות ישיבה`,
     noteSplitBody:
-      'הן שמורות כהערה פנימית, ולכן לא נלקחות בחשבון בסידור ההושבה. אפשר להעביר אותן לשדה "הערות הושבה".',
+      'הן שמורות כ"הערה לעצמכם", ולכן לא נלקחות בחשבון בסידור ההושבה. אפשר להעביר אותן לשדה "הערות הושבה".',
     noteSplitPreview: 'הצגת ההערות',
     noteSplitHide: 'הסתרה',
     noteSplitApply: 'העברה להערות הושבה',
@@ -1034,7 +1102,7 @@ export const strings = {
     // GroupNotesPanel
     notesLoadError: 'לא הצלחנו לטעון כרגע, ננסה שוב',
     notesSaveError: 'לא הצלחנו לשמור, נסו שוב',
-    notesTitle: 'העדפות קבוצה',
+    notesTitle: 'העדפות ישיבה לקבוצות',
     notesHint:
       'לכל קבוצה אפשר לרשום העדפה קצרה — למשל "רחוק מהרעש" או "קרוב לרחבה". נשמור אותה לכל חברי הקבוצה כדי לעזור בסידור ההושבה.',
     notesEmpty: 'עדיין אין קבוצות. הוסיפו מוזמנים ושייכו אותם לקבוצות כדי להגדיר העדפות.',
@@ -1050,11 +1118,11 @@ export const strings = {
     suggestionCreating: 'יוצר…',
     suggestionCreateGroup: 'צור קבוצה',
     suggestionNotNow: 'לא עכשיו',
-    suggestionsButton: 'הצעות לאיחוד',
-    suggestionsTitle: 'הצעות לאיחוד',
+    suggestionsButton: 'הצעות לקבוצות משפחתיות',
+    suggestionsTitle: 'הצעות לקבוצות משפחתיות',
     suggestionsHint:
-      'מצאנו מוזמנים שעשויים להיות מאותה משפחה או כפילות ברשימה. כדאי לעבור על ההצעות ולאשר רק את האיחודים שמתאימים לך.',
-    suggestionsEmpty: 'אין כרגע הצעות לאיחוד.',
+      'מצאנו מוזמנים שעשויים להיות מאותה משפחה, או שמופיעים ברשימה פעמיים. כדאי לעבור על ההצעות ולאשר רק את מה שמתאים לכם.',
+    suggestionsEmpty: 'אין כרגע הצעות. נציע כאן כשנמצא מוזמנים שנראים מאותה משפחה.',
 
     // PasteImportDialog
     rowIssueNoName: 'חסר שם',
@@ -1768,10 +1836,10 @@ export const strings = {
     // שהתלבט יכול בהחלט לשלוח מתנה, ולכן החיפוש רץ על כל המוזמנים.
     // מונחים זהים למסך אישורי ההגעה — מונח אחד לכל מושג.
     rsvpLabels: {
-      confirmed: 'מגיע',
-      declined: 'לא מגיע',
-      maybe: 'לא החליט',
-      pending: 'ממתין לתשובה',
+      confirmed: 'אישרו הגעה',
+      declined: 'לא מגיעים',
+      maybe: 'לא החליטו',
+      pending: 'ממתינים לתשובה',
     } as Record<string, string>,
     // בסוף הספירה: כמה עוד לא נספרו. ניסוח תיאורי, בלי דחיפות.
     countedProgress: (counted: number, total: number) =>

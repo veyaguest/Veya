@@ -1,3 +1,4 @@
+import { strings } from '../strings/he'
 import { useState } from 'react'
 import { forgotPassword } from '../api'
 import { Footer } from './Footer'
@@ -49,7 +50,7 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
               <div className="verify-check" aria-hidden="true">✓</div>
               <h1 className="verify-title">בדקו את תיבת הדואר</h1>
               <p className="verify-sub">
-                אם קיימת כתובת עם החשבון הזה, שלחנו אליה קישור לאיפוס הסיסמה.
+                {strings.auth.resetSent}
               </p>
               <div className="verify-secondary">
                 <button type="button" className="auth-link-btn" onClick={onBack}>

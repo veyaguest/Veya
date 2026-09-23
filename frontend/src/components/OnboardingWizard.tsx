@@ -18,16 +18,20 @@ const t = strings.guests
 const contactsSupported = isContactPickerSupported()
 
 interface Props {
-  onCreated: (ev: EventSummary) => void
+  /** ``next`` — לאן ממשיכים אחרי האשף: לרשימת המוזמנים (אם התחילו להוסיף)
+   *  או לתמונת המצב ("אוסיף אחר כך"). */
+  onCreated: (ev: EventSummary, next: 'guests' | 'dashboard') => void
 }
 
 type StepKey = 'details' | 'partner' | 'guests'
 
-const STEPS: { key: StepKey; label: string; desc: string }[] = [
-  { key: 'details', label: 'פרטי האירוע', desc: 'שמות, אולם, תאריך ותמונת ההזמנה' },
-  { key: 'partner', label: 'ניהול משותף', desc: 'להזמין את בן/בת הזוג' },
-  { key: 'guests', label: 'הוספת מוזמנים', desc: 'אפשר להוסיף עוד בהמשך' },
-]
+function stepsFor(twoHosts: boolean): { key: StepKey; label: string; desc: string }[] {
+  return [
+    { key: 'details', label: 'פרטי האירוע', desc: 'שמות, אולם, תאריך ותמונת ההזמנה' },
+    { key: 'partner', label: 'ניהול משותף', desc: strings.partner.stepDesc(twoHosts) },
+    { key: 'guests', label: 'הוספת מוזמנים', desc: 'אפשר להוסיף עוד בהמשך' },
+  ]
+}
 
 /**
  * אשף פתיחה מדורג לזוג חדש שאין לו עדיין אירוע — שני שלבים:
@@ -151,10 +155,11 @@ export function OnboardingWizard({ onCreated }: Props) {
     }
   }
 
-  function finish() {
-    if (event) onCreated(event)
+  function finish(next: 'guests' | 'dashboard') {
+    if (event) onCreated(event, next)
   }
 
+  const STEPS = stepsFor(terms.hasTwoHosts)
   const stepIndex = STEPS.findIndex((s) => s.key === step)
 
   return (
@@ -207,15 +212,19 @@ export function OnboardingWizard({ onCreated }: Props) {
               </div>
             </div>
 
+            <p className="onboard-required-note">{strings.onboarding.requiredNote}</p>
+
             <div className="event-fields">
               <input
                 placeholder={terms.hostAField}
+                aria-label={terms.hostAField}
                 value={form.groom_name}
                 onChange={(e) => setForm({ ...form, groom_name: e.target.value })}
               />
               {terms.hasTwoHosts && (
                 <input
                   placeholder={terms.hostBField}
+                  aria-label={terms.hostBField}
                   value={form.bride_name}
                   onChange={(e) => setForm({ ...form, bride_name: e.target.value })}
                 />
@@ -234,6 +243,7 @@ export function OnboardingWizard({ onCreated }: Props) {
               />
               <input
                 placeholder="כתובת האולם (לניווט בהודעות)"
+                aria-label="כתובת האולם"
                 value={form.venue_address}
                 onChange={(e) => setForm({ ...form, venue_address: e.target.value })}
               />
@@ -261,10 +271,7 @@ export function OnboardingWizard({ onCreated }: Props) {
 
             <div className="commit-field">
               <span className="field-label">מועד סגירת הרשימה</span>
-              <p className="commit-explain">
-                כמה ימים לפני האירוע אתם צריכים למסור לאולם מספר סופי? זה היום
-                שבו כל אישורי ההגעה נסגרים. אפשר גם להשלים את זה מאוחר יותר.
-              </p>
+              <p className="commit-explain">{strings.onboarding.commitExplain}</p>
               <select
                 className="commit-select"
                 value={form.venue_commit_days_before}
@@ -276,7 +283,7 @@ export function OnboardingWizard({ onCreated }: Props) {
                   })
                 }
               >
-                <option value="">בחרו מספר ימים… (אפשר גם בהמשך)</option>
+                <option value="">אבחר בהמשך</option>
                 {Array.from({ length: MAX_COMMIT_DAYS }, (_, i) => i + 1).map((n) => (
                   <option key={n} value={n} disabled={n > maxCommitDays(form.event_date)}>
                     {strings.dashboard.commitOptionLabel(n)}
@@ -325,7 +332,7 @@ export function OnboardingWizard({ onCreated }: Props) {
 
             <div className="onboard-actions">
               <button type="submit" className="btn-primary" disabled={busy}>
-                {busy ? 'רגע…' : 'להוספת מוזמנים →'}
+                {busy ? 'שומרים את האירוע…' : 'שמירה והמשך'}
               </button>
             </div>
           </form>
@@ -352,13 +359,13 @@ export function OnboardingWizard({ onCreated }: Props) {
               </>
             ) : (
               <>
+                <p className="onboard-saved-note">{strings.onboarding.savedNote}</p>
                 <p className="onboard-subtitle onboard-guest-intro">
-                  VEYA נועדה לעזור לשניכם לנהל את האירוע. הזמינו את בן/בת הזוג
-                  כדי שתוכלו לעבוד יחד על אותו אירוע.
+                  {strings.partner.lead(terms.hasTwoHosts)}
                 </p>
                 <form className="event-edit" onSubmit={sendPartnerInvite}>
                   <label className="field-group">
-                    <span className="field-label">האימייל של בן/בת הזוג</span>
+                    <span className="field-label">{strings.partner.emailLabel(terms.hasTwoHosts)}</span>
                     <input
                       type="email"
                       dir="ltr"
@@ -441,16 +448,22 @@ export function OnboardingWizard({ onCreated }: Props) {
                 {t.onboardingManualCta}
               </button>
             ) : (
-              <AddGuestForm onAdded={() => setGuestCount((c) => c + 1)} onCancel={() => {}} />
+              <AddGuestForm
+                onAdded={() => setGuestCount((c) => c + 1)}
+                onCancel={() => setShowManualForm(false)}
+              />
             )}
 
             <div className="onboard-actions">
-              <button type="button" className="btn-primary" onClick={finish}>
-                סיימנו — קדימה ללוח הבקרה
-              </button>
-              <button type="button" className="onboard-skip" onClick={finish}>
-                נמשיך אחר כך
-              </button>
+              {guestCount > 0 ? (
+                <button type="button" className="btn-primary" onClick={() => finish('guests')}>
+                  {strings.onboarding.finishToGuests}
+                </button>
+              ) : (
+                <button type="button" className="onboard-skip" onClick={() => finish('dashboard')}>
+                  {strings.onboarding.finishLater}
+                </button>
+              )}
             </div>
           </div>
         )}

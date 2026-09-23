@@ -89,6 +89,7 @@ export function AuthPage({
    * בשרת, כך שגם קריאת API ישירה נחסמת. */
   function localValidationError(): string | null {
     if (mode === 'login') return null
+    if (!acceptedTerms) return strings.auth.termsRequired
     if (!displayName.trim()) return 'צריך למלא שם מלא'
     if (displayName.trim().length < 2) return 'השם קצר מדי — אפשר למלא שם מלא'
     if (!phone.trim()) return 'צריך למלא מספר טלפון'
@@ -119,7 +120,16 @@ export function AuthPage({
       setToken(res.access_token)
       onAuth(res.user)
     } catch (err) {
-      setError(err instanceof Error ? err.message : strings.errors.authLoginFailed)
+      const message = err instanceof Error ? err.message : strings.errors.authLoginFailed
+      // כבר יש חשבון עם הכתובת — לא משאירים את המשתמש בטופס ההרשמה: עוברים
+      // להתחברות עם אותה כתובת, ואומרים מה קרה ומה עושים אם שכחו סיסמה.
+      if (mode === 'register' && message.includes('כבר רשומה')) {
+        setMode('login')
+        setPassword('')
+        setNote(strings.auth.alreadyRegistered)
+      } else {
+        setError(message)
+      }
     } finally {
       setBusy(false)
     }
@@ -266,16 +276,21 @@ export function AuthPage({
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={isLogin ? '••••••••' : 'לפחות 8 תווים, אות וספרה'}
                 autoComplete={isLogin ? 'current-password' : 'new-password'}
+                aria-describedby={isLogin ? undefined : 'auth-pass-hint'}
                 required
               />
+              {!isLogin && (
+                <span id="auth-pass-hint" className="auth-field-hint">
+                  {strings.auth.passwordRule}
+                </span>
+              )}
             </div>
 
             {isLogin && (
               <div className="auth-row">
-                <label className="auth-remember">
-                  <input type="checkbox" defaultChecked />
-                  זכור אותי
-                </label>
+                {/* "זכור אותי" הוסר (2026-09-23): התיבה לא הייתה מחוברת לשום
+                    דבר — ההתחברות נשמרת במכשיר בכל מקרה. */}
+                <span />
                 <button
                   type="button"
                   className="auth-link-btn"
@@ -293,7 +308,6 @@ export function AuthPage({
                     type="checkbox"
                     checked={acceptedTerms}
                     onChange={(e) => setAcceptedTerms(e.target.checked)}
-                    required
                   />
                   <span>
                     {strings.legal.authAgreePrefix}{' '}
@@ -323,7 +337,7 @@ export function AuthPage({
             <button
               type="submit"
               className="auth-submit"
-              disabled={busy || (!isLogin && !acceptedTerms)}
+              disabled={busy}
             >
               {busy ? 'רגע…' : isLogin ? 'התחברות' : 'יצירת חשבון'}
             </button>

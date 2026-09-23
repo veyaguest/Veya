@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import event_cycle, event_terms, models, permissions, schemas
+from app import event_terms, invitations, models, permissions, schemas
 from app.database import get_db
 from app.deps import EventAccess
 
@@ -66,14 +66,13 @@ def dashboard(
     guests_with_notes = sum(1 for g in guests if (g.seating_notes or "").strip())
     group_notes_count = len(event.group_notes or {})
 
-    invitations_sent = db.scalar(
-        select(func.count()).select_from(models.Message)
-        .where(models.Message.event_id == event.id)
-        .where(event_cycle.current_sends(event))
-        .where(models.Message.direction == "outbound")
-        .where(models.Message.kind == "invitation")
-        .where(models.Message.status == "sent")
-    ) or 0
+    # כמה *מוזמנים* קיבלו הזמנה במחזור הנוכחי — לא כמה שורות הודעה, ולא רק
+    # בסטטוס "sent": הזמנה שנמסרה/נקראה עדיין נשלחה (``invitations``).
+    invitations_sent = len(invitations.invited_guest_ids(db, event.id, event))
+    # מוזמנים בלי מספר תקין — לא מקבלים WhatsApp; "צריכים אתכם" בדשבורד.
+    bad_phone_guests = sum(
+        1 for g in guests if invitations.classify_phone(g.phone) != "valid"
+    )
 
     pending_clar = db.scalar(
         select(func.count()).select_from(models.Clarification)
@@ -94,6 +93,7 @@ def dashboard(
         pending_people=pending_people,
         response_rate=response_rate,
         invitations_sent=invitations_sent,
+        bad_phone_guests=bad_phone_guests,
         by_side=by_side,
         by_group=by_group,
         tables_assigned=tables_assigned,
