@@ -1402,7 +1402,7 @@ export const strings = {
       const rest = restCount > 0 ? ` ועוד ${restCount}` : ''
       return `${shown}${rest} לא אישרו הגעה (או סימנו שלא מגיעים). האם בכל זאת להושיב את כולם?`
     },
-    seatWarningConfirm: 'כן, הושב בכל זאת',
+    seatWarningConfirm: 'כן, להושיב בכל זאת',
 
     // דרישה 7 — לשונית ההגדרות.
     settingsTab: 'הגדרות הושבה',
@@ -1425,6 +1425,22 @@ export const strings = {
     tableDetails: 'פרטי שולחן',
     duplicateTable: 'שכפול שולחן',
     deleteTable: 'מחיקת שולחן',
+    confirmDeleteTableTitle: (n: number) => `למחוק את שולחן ${n}?`,
+    confirmDeleteTableBody: (n: number, seated: number) =>
+      `${seated === 1 ? 'מוזמן אחד יושב' : `${seated} מוזמנים יושבים`} בשולחן ${n}. השולחן יימחק מהמפה, והם יחזרו לרשימת "ללא שולחן" — אפשר להושיב אותם מחדש.`,
+    confirmDeleteTableCta: 'כן, למחוק את השולחן',
+    confirmRemoveSketchTitle: 'להסיר את הסקיצה?',
+    confirmRemoveSketchBody:
+      'תמונת הסקיצה תוסר מרקע המפה. השולחנות והשיבוץ נשארים כמו שהם. כדי להחזיר אותה צריך להעלות אותה שוב.',
+    confirmRemoveSketchCta: 'כן, להסיר',
+    confirmOneClickTitle: 'לסדר מחדש את ההושבה?',
+    confirmOneClickBody: (seated: number) =>
+      `כבר ${seated === 1 ? 'מוזמן אחד משובץ' : `${seated} מוזמנים משובצים`}. הושבה בקליק עשויה להזיז אותם לשולחנות אחרים (שולחנות נעולים לא זזים). אחרי ההרצה אפשר להחזיר את הסידור הקודם. רוצים רק להושיב את מי שעוד בלי שולחן? בחרו "השלמת מי שללא שולחן".`,
+    confirmOneClickCta: 'כן, לסדר מחדש',
+    confirmUndoTitle: 'להחזיר את הסידור הקודם?',
+    confirmUndoBody:
+      'ההושבה תחזור בדיוק למה שהיה לפני ההושבה בקליק. שינויים שעשיתם בסידור מאז — יבוטלו.',
+    confirmUndoCta: 'כן, להחזיר',
     // כפתור-גשר: כשהגיליון נפתח מרשימת השולחנות/מהחיפוש (לא מהקשה על
     // המפה), עדיין אין שולחן "נבחר" על המפה. סוגר את הגיליון ובוחר אותו,
     // כדי שידית הסיבוב וסרגל הפעולות יופיעו מיד.

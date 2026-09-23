@@ -1738,6 +1738,15 @@ export function HallPage({
     guestIds: number[]
     onConfirm: () => void
   } | null>(null)
+  // אישור לפני פעולה שמשנה/מוחקת עבודה (מחיקת שולחן עם מוזמנים, הסרת
+  // הסקיצה, הושבה בקליק מעל שיבוץ קיים). ההודעה אומרת מה בדיוק יקרה.
+  const [pendingConfirm, setPendingConfirm] = useState<{
+    title: string
+    message: string
+    confirmLabel: string
+    danger?: boolean
+    onConfirm: () => void
+  } | null>(null)
 
   // ---- אילוצים מההערות (לולאת הבהרות) ----
   const [clarifications, setClarifications] = useState<Clarification[]>([])
@@ -2730,7 +2739,24 @@ export function HallPage({
     setDirty(true)
   }
 
+  /** מחיקת שולחן. שולחן שיש בו מוזמנים — קודם אישור שאומר מה יקרה להם. */
   function deleteTable(tnum: number) {
+    const src = tables.find((t) => t.table_number === tnum)
+    const seated = src?.guests.length ?? 0
+    if (seated > 0) {
+      setPendingConfirm({
+        title: hallT.confirmDeleteTableTitle(tnum),
+        message: hallT.confirmDeleteTableBody(tnum, seated),
+        confirmLabel: hallT.confirmDeleteTableCta,
+        danger: true,
+        onConfirm: () => deleteTableNow(tnum),
+      })
+      return
+    }
+    deleteTableNow(tnum)
+  }
+
+  function deleteTableNow(tnum: number) {
     const src = tables.find((t) => t.table_number === tnum)
     setTables((prev) => prev.filter((t) => t.table_number !== tnum))
     if (src && src.guests.length) setUnassigned((prev) => [...prev, ...src.guests])
@@ -3101,7 +3127,17 @@ export function HallPage({
     void runSketchAnalysis(dataUrl)
   }
 
+  /** הסרת הסקיצה מהמפה — עם אישור (צריך להעלות אותה שוב כדי להחזיר). */
   function removeSketch() {
+    setPendingConfirm({
+      title: hallT.confirmRemoveSketchTitle,
+      message: hallT.confirmRemoveSketchBody,
+      confirmLabel: hallT.confirmRemoveSketchCta,
+      onConfirm: removeSketchNow,
+    })
+  }
+
+  function removeSketchNow() {
     setSketch(null)
     setSketchTransform(null)
     setSketchSelected(false)
@@ -3393,7 +3429,22 @@ export function HallPage({
   // "הושבה בקליק" — הפעולה המרכזית של המסך. onlyUnassigned=true משבץ רק את
   // מי שאין לו שולחן (אף אחד מהמשובצים לא זז). שני המצבים רצים על **אותו**
   // מנוע בשרת — לא על שני אלגוריתמים שונים שנותנים תשובות שונות.
-  async function onOneClickSeating(onlyUnassigned = false) {
+  /** "הושבה בקליק": כשכבר יש מוזמנים משובצים — קודם מסבירים שהסידור הקיים
+   *  עשוי להשתנות (חוץ משולחנות נעולים), ושאפשר להחזיר אותו אחר כך. */
+  function onOneClickSeating(onlyUnassigned = false) {
+    if (!onlyUnassigned && seatedGuestCount > 0) {
+      setPendingConfirm({
+        title: hallT.confirmOneClickTitle,
+        message: hallT.confirmOneClickBody(seatedGuestCount),
+        confirmLabel: hallT.confirmOneClickCta,
+        onConfirm: () => runOneClickSeating(false),
+      })
+      return
+    }
+    runOneClickSeating(onlyUnassigned)
+  }
+
+  async function runOneClickSeating(onlyUnassigned = false) {
     setLoading(true)
     setError('')
     setSeatingReport(null)
@@ -3442,7 +3493,18 @@ export function HallPage({
 
   // "החזרת הסידור הקודם" — Undo ייעודי (דרישה 6). התצלום נשמר בשרת, ולכן
   // הכפתור זמין גם אחרי רענון דף.
-  async function onUndoSeating() {
+  /** החזרת הסידור הקודם — מבטלת גם שינויים ידניים שנעשו אחרי ההושבה בקליק,
+   *  ולכן קודם אישור. */
+  function onUndoSeating() {
+    setPendingConfirm({
+      title: hallT.confirmUndoTitle,
+      message: hallT.confirmUndoBody,
+      confirmLabel: hallT.confirmUndoCta,
+      onConfirm: runUndoSeating,
+    })
+  }
+
+  async function runUndoSeating() {
     setUndoing(true)
     setError('')
     try {
@@ -5886,6 +5948,20 @@ export function HallPage({
               )}
             </div>
           </div>
+        )}
+
+        {pendingConfirm && (
+          <ConfirmDialog
+            title={pendingConfirm.title}
+            message={pendingConfirm.message}
+            confirmLabel={pendingConfirm.confirmLabel}
+            danger={pendingConfirm.danger}
+            onConfirm={() => {
+              pendingConfirm.onConfirm()
+              setPendingConfirm(null)
+            }}
+            onCancel={() => setPendingConfirm(null)}
+          />
         )}
 
         {/* ---- אזהרת הושבה ידנית של מי שלא "מגיע" (Audit RSVP↔הושבה) ---- */}

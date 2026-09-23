@@ -24,7 +24,7 @@ export function ConfirmDialog({
   onCancel,
 }: Props) {
   return (
-    <div className="overlay" onClick={onCancel}>
+    <div className="overlay confirm-overlay" onClick={onCancel}>
       <div className="dialog confirm-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
           <h2>{title}</h2>

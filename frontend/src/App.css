@@ -1686,6 +1686,11 @@ td.notes.seating {
   padding: 24px;
   z-index: 50;
 }
+/* דיאלוג אישור הוא תמיד השאלה האחרונה שנשאלת — מעל כל שכבה אחרת במסך
+   (למשל חלון פרטי השולחן במפת האולם, שיושב מעל 1000). */
+.overlay.confirm-overlay {
+  z-index: 1500;
+}
 .dialog {
   background: var(--cream);
   border-radius: var(--radius-xl);
