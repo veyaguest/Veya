@@ -344,6 +344,22 @@ def test_emergency_stop_and_open_postponement_send_nothing() -> None:
     print("✓ עצירת חירום / נוהל דחייה — לא נשלח כלום, והסבב נשמר לחלון שלו")
 
 
+def test_delivered_invitation_still_counts_as_invited() -> None:
+    """הזמנה שעודכנה ל"נמסרה"/"נקראה" עדיין נחשבת כנשלחה — אחרת "הזמנה אחת
+    לכל מוזמן" נשברת ברגע שוואטסאפ מחובר, ומסך ההודעות חוזר לאשף."""
+    from app import invitations
+
+    db = _db()
+    ev = _event(db)
+    guests = [_guest(db, ev, f"אורח {i}", f"050111111{i}") for i in range(4)]
+    for g, status in zip(guests, ("sent", "delivered", "read", "failed")):
+        db.add(models.Message(event_id=ev.id, guest_id=g.id, direction="outbound", kind="invitation",
+                              body="הזמנה", channel="whatsapp", status=status))
+    db.commit()
+    assert invitations.invited_guest_ids(db, ev.id, ev) == {g.id for g in guests[:3]}
+    print("✓ הזמנה שנמסרה/נקראה נחשבת כנשלחה; שנכשלה — לא")
+
+
 if __name__ == "__main__":
     test_schedule_fixture_is_the_full_track()
     test_track_runs_without_screens_and_without_invitation()
@@ -360,4 +376,5 @@ if __name__ == "__main__":
     test_invitation_send_does_not_start_or_feed_the_track()
     test_event_day_and_thank_you_are_sent_by_the_scheduler()
     test_emergency_stop_and_open_postponement_send_nothing()
+    test_delivered_invitation_still_counts_as_invited()
     print("\nכל בדיקות המשימה המתוזמנת עברו ✓")

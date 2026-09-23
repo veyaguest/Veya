@@ -13,7 +13,7 @@ import { strings } from '../strings/he'
  * הלוח נמשך גם אחרי האירוע: הודעת יום-האירוע והודעת התודה (יום אחרי) מוצגות
  * כשלבים אחרונים במסלול, לפי אותו תזמון שבו הן נשלחות בפועל.
  */
-export function RsvpTimeline() {
+export function RsvpTimeline({ onGoToSeating }: { onGoToSeating?: () => void } = {}) {
   const [view, setView] = useState<RsvpTimelineView | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -67,12 +67,74 @@ export function RsvpTimeline() {
 
   return (
     <div className="tl-wrap">
+      <PhaseCard view={view} onGoToSeating={onGoToSeating} />
       <TimelineHeader view={view} />
       {/* כרטיס "מה קורה היום" — רק כשבאמת יש פעילות היום. אין פעילות → אין
           מה להציג (הודעה "אין פעילות מתוכננת" היא רעש טכני לבעל האירוע). */}
       {view.today_summary && <TodayCard view={view} />}
       <DayScale view={view} />
     </div>
+  )
+}
+
+/** איפה המסלול עכשיו — לפני / בדרך / הסתיים. שליחת הזמנה לא משנה את זה:
+ *  המסלול נקבע רק לפי מועד סגירת הרשימה (2026-09-23). */
+function PhaseCard({
+  view,
+  onGoToSeating,
+}: {
+  view: RsvpTimelineView
+  onGoToSeating?: () => void
+}) {
+  const t = strings.messages.trackPhase
+  const phase = view.track_phase ?? 'unscheduled'
+  if (phase === 'unscheduled') return null
+
+  let title = ''
+  let body = ''
+  if (phase === 'waiting') {
+    title = t.waitingTitle
+    body = t.waitingBody
+  } else if (phase === 'before') {
+    title = t.beforeTitle(view.rsvp_start_date ?? '')
+    body = t.beforeBody
+  } else if (phase === 'running') {
+    title = t.runningTitle
+    body = t.runningBody
+  } else {
+    title = t.endedTitle
+    body = t.endedBody(view.commitment_date ?? '')
+  }
+
+  return (
+    <section className={`tl-phase tl-phase--${phase}`} aria-live="polite">
+      <h2 className="tl-phase-title">{title}</h2>
+      <p className="tl-phase-body">{body}</p>
+      {phase === 'running' && (
+        <dl className="tl-phase-steps">
+          {view.current_stage && (
+            <div>
+              <dt>{t.nowLabel}</dt>
+              <dd>{view.current_stage}</dd>
+            </div>
+          )}
+          {view.next_action_label && (
+            <div>
+              <dt>{t.nextLabel}</dt>
+              <dd>
+                {view.next_action_label}
+                {view.next_action_date ? ` · ${view.next_action_date}` : ''}
+              </dd>
+            </div>
+          )}
+        </dl>
+      )}
+      {phase === 'ended' && onGoToSeating && (
+        <button type="button" className="btn-primary tl-phase-cta" onClick={onGoToSeating}>
+          {t.endedCta}
+        </button>
+      )}
+    </section>
   )
 }
 
@@ -100,9 +162,7 @@ function TimelineHeader({ view }: { view: RsvpTimelineView }) {
       {view.compressed && (
         <div className="tl-compressed">
           <strong className="tl-compressed-title">נשאר מעט זמן עד סגירת הרשימה</strong>
-          <p className="tl-compressed-text">
-            נמשיך מכאן עם הצעדים החשובים כדי להגיע לכמה שיותר תשובות בזמן.
-          </p>
+          <p className="tl-compressed-text">{strings.messages.trackPhase.shortNote}</p>
         </div>
       )}
     </div>

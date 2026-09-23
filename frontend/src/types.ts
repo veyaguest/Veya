@@ -1181,6 +1181,8 @@ export interface EventMessage {
   is_active: boolean
   trigger_offset_days: number
   target_audience: TargetAudience
+  // שעת השליחה של הסבב ("HH:MM"). null = שעת ברירת המחדל של האירוע.
+  send_time?: string | null
   updated_at: string
 }
 
@@ -1190,6 +1192,8 @@ export interface EventMessageInput {
   is_active?: boolean
   trigger_offset_days?: number
   target_audience?: TargetAudience
+  // null = חזרה לשעת ברירת המחדל של האירוע
+  send_time?: string | null
 }
 
 export interface CommunicationDue {
@@ -1421,6 +1425,12 @@ export interface MessageTypeStatus {
 /** סוגי הודעה שהזוג שולח ידנית (ולא לפי לוח זמנים). */
 export const MANUAL_SEND_TYPES: MessageType[] = ['postponement']
 
+// הודעות שיוצאות לבד בתאריך שנקבע ע"י לוח הזמנים — ולכן יש להן שעת שליחה.
+// ההזמנה לא כאן: היא נשלחת ידנית ומיד (``communication.SCHEDULED_TYPES`` בשרת).
+export const SCHEDULED_TYPES: MessageType[] = [
+  'rsvp_request', 'reminder_1', 'reminder_2', 'final_reminder', 'event_day', 'thank_you',
+]
+
 // ספירה מקדימה לדיאלוג האישור לפני שליחת הזמנות ידנית.
 export interface InvitationSendPreview {
   total_guests: number
@@ -1488,6 +1498,10 @@ export interface RsvpTimelineView {
   current_stage: string | null
   next_action_date: string | null
   next_action_label: string | null
+  // שלב המסלול: unscheduled (אין לוח) · waiting (לא נבחר מועד סגירה — לא
+  // יישלח כלום) · before · running · ended. שליחת הזמנה לא משפיעה עליו.
+  track_phase?: 'unscheduled' | 'waiting' | 'before' | 'running' | 'ended'
+  track_enabled?: boolean
   days: TimelineDay[]
 }
 

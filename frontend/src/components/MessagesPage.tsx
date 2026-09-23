@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   activateRsvpTrack,
-  advanceRsvpTrack,
   getEvent,
   getRsvpTrack,
   listGuests,
   mediaUrl,
   previewCommunicationMessage,
   previewSend,
-  updateEvent,
 } from '../api'
 import type {
   EventDetails,
@@ -27,7 +25,6 @@ import { CommunicationTab } from './CommunicationTab'
 import { ImportDialog } from './ImportDialog'
 import { MessageLibrary } from './MessageLibrary'
 import { PasteImportDialog } from './PasteImportDialog'
-import { TimePicker } from './TimePicker'
 import { VeyaLoader } from './VeyaLoader'
 
 type Tab = 'communication' | 'library'
@@ -135,24 +132,17 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
   const [result, setResult] = useState<RsvpTrackActivateResult | null>(null)
   const [dialogError, setDialogError] = useState('')
 
-  // בטעינה: טוענים סטטוס, ואם המסלול פעיל — מקדמים אותו אוטומטית (idempotent,
-  // אותו קריאה שגם מסך "אישורי הגעה" מבצע — כך התזכורות ממשיכות לצאת גם
-  // כשמבקרים רק כאן).
+  // בטעינה: סטטוס ההזמנות וספירה מקדימה. **כניסה למסך לא שולחת כלום** —
+  // סבבי אישורי ההגעה יוצאים מהמשימה המתוזמנת בשרת (``rsvp_scheduler``),
+  // בלי קשר למי נכנס לאן (2026-09-23).
   const load = useCallback(async () => {
     setError('')
     try {
       getEvent().then(setEvent).catch(() => undefined)
-      const status = await getRsvpTrack()
-      if (status.active) {
-        const [, p] = await Promise.all([advanceRsvpTrack(), previewSend()])
-        setTrack(status)
-        setNewCount(p.not_yet_sent)
-      } else {
-        // לפני שליחה ראשונה: טוענים ספירה מקדימה כדי להזין את שלבי הוויזארד.
-        const p = await previewSend()
-        setTrack(status)
-        setPreview(p)
-      }
+      const [status, p] = await Promise.all([getRsvpTrack(), previewSend()])
+      setTrack(status)
+      setPreview(p)
+      setNewCount(p.not_yet_sent)
     } catch (err) {
       setError(err instanceof Error ? err.message : strings.errors.loadGenericRetry)
     } finally {
@@ -239,7 +229,9 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
     )
   }
 
-  const active = track?.active
+  // האם כבר יצאו הזמנות — קובע אם מציגים את אשף ההזמנה הראשונה. זה **לא**
+  // מצב מסלול אישורי ההגעה: המסלול נקבע רק לפי מועד סגירת הרשימה.
+  const active = (track?.invited ?? 0) > 0
 
   return (
     <div className="rsvp-page couple-rsvp">
@@ -290,11 +282,6 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
         </>
       )}
 
-      {/* שעת שליחה — מתי ביום יוצאות הודעות המסלול והתודה. בתחתית העמוד, כי
-          זו הגדרה שקובעים פעם אחת ולא נוגעים בה שוב. רלוונטי גם לפני הפעלת
-          המסלול, כדי שהזוג יוכל לקבוע אותה מראש. */}
-      <SendTimeSettings />
-
       {phase !== 'idle' && preview && (
         <SendInvitationsDialog
           phase={phase}
@@ -308,118 +295,6 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
           onClose={closeDialog}
         />
       )}
-    </div>
-  )
-}
-
-/**
- * שעת שליחה — מתי ביום יוצאות הודעות מסלול אישורי ההגעה, ומתי יוצאת הודעת
- * התודה (שעה נפרדת). הטווח (10:00–19:00) ולוגיקת שישי/שבת+שעון ישראל
- * נאכפים בשרת (app/communication.py) — כאן רק שני שדות שעה ושמירה.
- */
-function SendTimeSettings() {
-  const t = strings.messages.sendTime
-  const [event, setEvent] = useState<EventDetails | null>(null)
-  const [rsvpTime, setRsvpTime] = useState('')
-  const [thankYouTime, setThankYouTime] = useState('')
-  const [loadError, setLoadError] = useState('')
-  const [saveError, setSaveError] = useState('')
-  const [saved, setSaved] = useState(false)
-  const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    let alive = true
-    getEvent()
-      .then((e) => {
-        if (!alive) return
-        setEvent(e)
-        setRsvpTime(e.rsvp_send_time)
-        setThankYouTime(e.thank_you_send_time)
-      })
-      .catch((err) => {
-        if (alive) setLoadError(err instanceof Error ? err.message : t.loadError)
-      })
-    return () => {
-      alive = false
-    }
-  }, [t.loadError])
-
-  const dirty =
-    !!event && (rsvpTime !== event.rsvp_send_time || thankYouTime !== event.thank_you_send_time)
-
-  async function save() {
-    setBusy(true)
-    setSaveError('')
-    setSaved(false)
-    try {
-      const e = await updateEvent({
-        rsvp_send_time: rsvpTime,
-        thank_you_send_time: thankYouTime,
-      })
-      setEvent(e)
-      setRsvpTime(e.rsvp_send_time)
-      setThankYouTime(e.thank_you_send_time)
-      setSaved(true)
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : t.saveError)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  if (loadError) return <p className="form-error" role="alert">{loadError}</p>
-  if (!event) return null
-
-  return (
-    <div className="commit-field">
-      <span className="field-label">{t.label}</span>
-      <p className="commit-explain">{t.explain}</p>
-      <div className="event-datetime">
-        <div className="field-group">
-          <span className="field-label">{t.trackLabel}</span>
-          <TimePicker
-            value={rsvpTime}
-            min="10:00"
-            max="19:00"
-            onChange={(time) => {
-              setSaved(false)
-              setRsvpTime(time)
-            }}
-            ariaLabel={t.trackLabel}
-          />
-        </div>
-        <div className="field-group">
-          <span className="field-label">{t.thankYouLabel}</span>
-          <TimePicker
-            value={thankYouTime}
-            min="10:00"
-            max="19:00"
-            onChange={(time) => {
-              setSaved(false)
-              setThankYouTime(time)
-            }}
-            ariaLabel={t.thankYouLabel}
-          />
-        </div>
-      </div>
-      {/* מגבלת טווח היא מידע, לא אזהרה. הכיתוב הזה הוצג ב-.commit-warn
-          (זהב, מודגש) — אותו סגנון בדיוק של אזהרה אמיתית במסך, ולכן נקרא
-          כאילו משהו לא בסדר. */}
-      <span className="field-hint">{t.rangeHint}</span>
-      {saveError && <p className="form-error" role="alert">{saveError}</p>}
-      {saved && !dirty && <p className="rsvp-note">{t.saved}</p>}
-      {/* כפתור מושבת בלי הסבר נקרא כתקלה. כשאין מה לשמור — אומרים זאת. */}
-      <div className="event-edit-actions">
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={!dirty || busy}
-          onClick={save}
-        >
-          {busy ? t.saving : t.save}
-        </button>
-        {!dirty && !busy && <span className="field-hint">{t.noChanges}</span>}
-      </div>
     </div>
   )
 }
@@ -484,9 +359,6 @@ function SendInvitationsDialog({
               <p className="send-summary-err">
                 {result.failed} שליחות נכשלו. אפשר לנסות שוב רק עבורן.
               </p>
-            )}
-            {result.newly_activated && (
-              <p className="send-summary-ok">מערכת אישורי ההגעה הופעלה ✓</p>
             )}
             <div className="send-dialog-actions">
               {result.failed > 0 && result.failed_ids.length > 0 && (
@@ -745,7 +617,7 @@ function SendConfirmStep({
         </p>
       )}
       <p className="clar-sub">
-        לאחר השליחה יתחיל טיימר אישורי ההגעה, וכל התזכורות יחושבו מרגע זה.
+        {strings.messages.inviteIsSeparate}
       </p>
 
       {error && <p className="form-error" role="alert">{error}</p>}
@@ -981,8 +853,7 @@ function FirstInviteWizard({
         </ul>
 
         <p className="clar-sub">
-          מיד לאחר השליחה יתחיל טיימר אישורי ההגעה וייפתח מסך המעקב המלא — תזכורות
-          ומעקב טלפוני יתנהלו אוטומטית.
+          {strings.messages.inviteIsSeparate}
         </p>
 
         <div className="wiz-nav">

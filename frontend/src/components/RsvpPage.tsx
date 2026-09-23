@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
-  advanceRsvpTrack,
   getAutomationDashboard,
   getCommunicationSequence,
   getMessageStatus,
@@ -36,7 +35,7 @@ export function RsvpPage({
   onNavigate,
 }: {
   isAdmin: boolean
-  onNavigate?: (page: 'guests' | 'messages') => void
+  onNavigate?: (page: 'guests' | 'messages' | 'hall') => void
 }) {
   if (!isAdmin) return <CoupleRsvpView onNavigate={onNavigate} />
   return <AdminRsvpShell onNavigate={onNavigate} />
@@ -50,7 +49,7 @@ export function RsvpPage({
 function AdminRsvpShell({
   onNavigate,
 }: {
-  onNavigate?: (page: 'guests' | 'messages') => void
+  onNavigate?: (page: 'guests' | 'messages' | 'hall') => void
 }) {
   const [view, setView] = useState<'couple' | 'admin'>('couple')
   return (
@@ -159,35 +158,18 @@ function RsvpSummaryStrip() {
 function CoupleRsvpView({
   onNavigate,
 }: {
-  onNavigate?: (page: 'guests' | 'messages') => void
+  onNavigate?: (page: 'guests' | 'messages' | 'hall') => void
 }) {
   const [track, setTrack] = useState<RsvpTrackStatus | null>(null)
   const [loading, setLoading] = useState(true)
-  const [note, setNote] = useState('')
   const [error, setError] = useState('')
 
-  // בטעינה: טוענים סטטוס, ואם המסלול פעיל — מקדמים אותו אוטומטית (idempotent;
-  // אותה קריאה שגם מסך "ניהול הודעות" מבצע, כך התזכורות ממשיכות לצאת גם
-  // כשמבקרים רק בעמוד אחד מהשניים).
+  // קריאה בלבד. **כניסה למסך לא שולחת כלום** — סבבי המסלול יוצאים מהמשימה
+  // המתוזמנת בשרת (``rsvp_scheduler``), גם אם אף אחד לא נכנס (2026-09-23).
   const load = useCallback(async () => {
     setError('')
     try {
-      const status = await getRsvpTrack()
-      if (status.active) {
-        const advanced = await advanceRsvpTrack()
-        setTrack(advanced)
-        const moved = advanced.sent + advanced.phoned
-        if (moved > 0) {
-          setNote(
-            `המסלול התקדם: ${advanced.sent} הודעות חדשות נשלחו` +
-              (advanced.phoned
-                ? ` · ${advanced.phoned} נוספו לרשימת המעקב הטלפוני`
-                : ''),
-          )
-        }
-      } else {
-        setTrack(status)
-      }
+      setTrack(await getRsvpTrack())
     } catch (err) {
       setError(err instanceof Error ? err.message : strings.errors.loadGenericRetry)
     } finally {
@@ -207,31 +189,23 @@ function CoupleRsvpView({
     )
   }
 
-  const active = track?.active
-
+  // המסך זמין גם לפני שליחת הזמנה: לוח הזמנים נגזר ממועד סגירת הרשימה בלבד,
+  // ומצב ההודעות מוצג ברגע שיצאה הודעה כלשהי.
   return (
     <div className="rsvp-page couple-rsvp">
       {error && <p className="form-error" role="alert">{error}</p>}
-      {note && <p className="rsvp-note">{note}</p>}
 
-      {/* התשובה לשאלה ששם המסך מבטיח — ראשונה, לפני ההגדרות. */}
+      {/* התשובה לשאלה ששם המסך מבטיח — ראשונה, לפני הפירוט. */}
       <RsvpSummaryStrip />
 
-      {!active ? (
-        <RsvpEmptyState
-          onGoToMessages={onNavigate ? () => onNavigate('messages') : undefined}
+      {/* איפה המסלול עכשיו: לפני / בדרך / הסתיים — והלוח עצמו. */}
+      <RsvpTimeline onGoToSeating={onNavigate ? () => onNavigate('hall') : undefined} />
+
+      {track && (
+        <TrackStatusCard
+          track={track}
+          onResend={onNavigate ? () => onNavigate('messages') : undefined}
         />
-      ) : (
-        <>
-          {/* יומן המשימות היומי — לוח הזמנים שנבנה לאחור ממועד סגירת הרשימה. */}
-          <RsvpTimeline />
-          {track && (
-            <TrackStatusCard
-              track={track}
-              onResend={onNavigate ? () => onNavigate('messages') : undefined}
-            />
-          )}
-        </>
       )}
 
       <RsvpFaq />
@@ -239,41 +213,17 @@ function CoupleRsvpView({
   )
 }
 
-/** מצב לפני שליחת הזמנה ראשונה — אישורי ההגעה עוד לא התחילו לרוץ. */
-function RsvpEmptyState({ onGoToMessages }: { onGoToMessages?: () => void }) {
-  return (
-    <div className="tl-empty">
-      <span className="tl-empty-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3.5" y="5.5" width="17" height="15" rx="2.5" />
-          <path d="M3.5 10h17M8.5 3.5v4M15.5 3.5v4" />
-        </svg>
-      </span>
-      <h3 className="tl-empty-title">אישורי ההגעה יתחילו לרוץ ברגע שתשלחו הזמנה</h3>
-      <p className="tl-empty-sub">
-        כאן תראו בכל רגע מי אישר, מי עדיין לא ענה ומי לא מגיע — וגם את לוח
-        הזמנים שבנינו לכם עד מועד סגירת הרשימה.
-      </p>
-      {onGoToMessages && (
-        <button className="btn-primary tl-empty-cta" onClick={onGoToMessages}>
-          לניהול הודעות ושליחת הזמנות
-        </button>
-      )}
-    </div>
-  )
-}
 
-/** שאלות נפוצות על אישורי הגעה — עברית פשוטה, בלי מונחים טכניים.
- *  כל תשובה היא מערך פסקאות; שורה שמתחילה באימוג'י מוצגת כפריט ברשימה. */
 const RSVP_FAQ: { q: string; a: string[] }[] = [
   {
-    q: 'איך עובד אישורי ההגעה ב-VEYA?',
+    q: 'איך עובדים אישורי ההגעה ב-VEYA?',
     a: [
-      'VEYA בונה את כל תהליך אישורי ההגעה לפי תאריך האירוע ומועד סגירת הרשימה. לפי מועד סגירת הרשימה, VEYA מחשבת את חלון אישורי ההגעה ומנהלת את התהליך לאחור.',
-      '14 ימים לפני מועד סגירת הרשימה מתחיל תהליך אישורי ההגעה, שבמהלכו מתבצעים:',
-      '💬 3 סבבי הודעות WhatsApp',
-      '📞 3 סבבי תזכורות טלפוניות',
-      'המטרה היא להגיע עד מועד סגירת הרשימה לכמות מוזמנים מדויקת ככל האפשר.',
+      'VEYA בונה את מסלול אישורי ההגעה לאחור ממועד סגירת הרשימה, ומנהלת אותו לבד. אין צורך להפעיל שום סבב.',
+      '14 ימים לפני מועד סגירת הרשימה המסלול מתחיל, ובמהלכו:',
+      '💬 בקשת אישור הגעה ראשונה ועוד 3 סבבי WhatsApp',
+      '📞 3 סבבי שיחות',
+      'כשנשארים פחות מ-14 ימים, המסלול מתקצר לפחות סבבים, ולא נעשה צפוף יותר.',
+      'ההזמנה עצמה נפרדת: היא יוצאת מיד כשאתם שולחים אותה, והיא לא משנה את לוח הזמנים.',
     ],
   },
   {
@@ -287,7 +237,7 @@ const RSVP_FAQ: { q: string; a: string[] }[] = [
     q: 'האם יש גם תזכורות טלפוניות אנושיות?',
     a: [
       'כן.',
-      'בנוסף ל-3 סבבי WhatsApp, יש 3 סבבי תזכורות טלפוניות במהלך 14 ימי אישורי ההגעה.',
+      'בנוסף לסבבי ה-WhatsApp, יש 3 סבבי שיחות במהלך 14 ימי אישורי ההגעה.',
       'כלומר, VEYA לא מסתמכת רק על הודעות — המוזמנים שלא השלימו את האישור מקבלים גם טיפול טלפוני כחלק מהתהליך.',
     ],
   },
@@ -454,15 +404,16 @@ function TrackStatusCard({
     : 0
   const deliveredTotal = summary ? summary.delivered + summary.read : 0
   const readTotal = summary ? summary.read : 0
-  const failedTotal = summary
-    ? summary.failed + summary.no_valid_number + summary.blocked
-    : 0
+  const failedTotal = summary ? summary.failed + summary.blocked : 0
+  // מספר לא תקין — סטטוס עצמאי, לא חלק מ"לא נמסרו": מוזמן כזה לא מקבל
+  // WhatsApp בכלל, והוא נספר כאן גם אם דילגנו עליו בשליחה (השרת גוזר אותו
+  // מתקינות המספר, לא מהודעה שנשלחה).
+  const invalidTotal = summary ? summary.no_valid_number : 0
 
   return (
     <div className="track-status">
       <div className="track-status-head">
         <div>
-          <span className="track-hero-badge ok">פעיל</span>
           <h2 className="track-hero-title">{t.title}</h2>
         </div>
         {track.mode === 'mock' && (
@@ -502,6 +453,13 @@ function TrackStatusCard({
           label={t.failed}
           hint={t.failedHint}
           tone={failedTotal > 0 ? 'err' : undefined}
+        />
+        <MessageStatusTile
+          icon={<DeliveryIcon name="no_number" />}
+          num={invalidTotal}
+          label={t.invalidPhone}
+          hint={t.invalidPhoneHint}
+          tone={invalidTotal > 0 ? 'err' : undefined}
         />
       </div>
 

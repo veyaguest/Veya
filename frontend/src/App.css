@@ -10415,14 +10415,19 @@ td.notes.seating {
 }
 
 /* --- כרטיס "מעקב אחרי המוזמנים" — מצב הודעות, לא RSVP --- */
+/* חמישה מדדים: נשלחו · נמסרו · נקראו · לא נמסרו · מספר לא תקין. */
 .msg-status-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
 }
 @media (max-width: 700px) {
   .msg-status-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  /* המדד החמישי ברוחב מלא — לא נשאר לבד בחצי שורה. */
+  .msg-status-grid > :last-child {
+    grid-column: span 2;
   }
 }
 .msg-status-tile .stat-label {
@@ -11465,6 +11470,49 @@ td.notes.seating {
 }
 
 /* מצב ריק — עדיין לא הוגדר יום התחייבות */
+/* ---- איפה מסלול אישורי ההגעה עכשיו (לפני / בדרך / הסתיים) ---- */
+.tl-phase {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+.tl-phase--ended {
+  border-color: var(--gold-deep);
+}
+.tl-phase-title {
+  font-size: 18px;
+  margin: 0 0 6px;
+  color: var(--charcoal);
+}
+.tl-phase-body {
+  margin: 0;
+  color: var(--body);
+  line-height: 1.6;
+}
+.tl-phase-steps {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+}
+.tl-phase-steps > div {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.tl-phase-steps dt {
+  font-weight: 600;
+  min-width: 72px;
+}
+.tl-phase-steps dd {
+  margin: 0;
+}
+.tl-phase-cta {
+  margin-top: 14px;
+}
+
 .tl-empty {
   background: var(--cream);
   border: 1px solid var(--line);

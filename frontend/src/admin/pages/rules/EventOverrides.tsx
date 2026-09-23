@@ -118,8 +118,8 @@ export function EventOverrides({ eventId }: { eventId: number }) {
           </li>
         ))}
       </ul>
-      {d.track_active && changed.some(([k]) => k === 'calls.rounds' || k === 'rsvp.whatsapp_reminders') && (
-        <p className="adm-inline-error">מסלול אישורי ההגעה כבר פעיל — שינוי במספר הסבבים מחשב מחדש את התאריכים ואת מספור הסבבים מהיום.</p>
+      {d.track_active && changed.some(([k]) => k === 'rsvp.max_rounds') && (
+        <p className="adm-inline-error">מסלול אישורי ההגעה כבר התחיל — שינוי במספר הסבבים מחשב מחדש את הסבבים שעוד לא הגיעו. סבבים שכבר עברו לא נשלחים שוב.</p>
       )}
       {changed.length > 0 && (
         <div className="adm-row-actions">

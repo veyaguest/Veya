@@ -40,6 +40,12 @@ def classify_phone(raw: str | None) -> str:
     return "valid"
 
 
+# הזמנה ש"יצאה": נשלחה, ובהמשך אולי גם נמסרה/נקראה (עדכון מ-webhook). עד
+# 2026-09-23 נספר כאן רק "sent" — ולכן הזמנה שעודכנה ל"נמסרה" הפסיקה להיחשב,
+# ו"הזמנה אחת לכל מוזמן" הייתה נשברת ברגע שוואטסאפ מחובר באמת.
+DELIVERED_OR_BETTER = ("sent", "delivered", "read")
+
+
 def invited_guest_ids(db: Session, event_id: int, event=None) -> set[int]:
     """מזהי המוזמנים שכבר נשלחה אליהם הזמנה (הודעת invitation יוצאת שנשלחה).
 
@@ -55,7 +61,7 @@ def invited_guest_ids(db: Session, event_id: int, event=None) -> set[int]:
         .where(event_cycle.current_sends(event))
         .where(models.Message.direction == "outbound")
         .where(models.Message.kind == "invitation")
-        .where(models.Message.status == "sent")
+        .where(models.Message.status.in_(DELIVERED_OR_BETTER))
         .where(models.Message.guest_id.is_not(None))
     ).all()
     return {gid for gid in rows if gid is not None}

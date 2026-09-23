@@ -84,7 +84,7 @@ def _track_status(
     invited_ids = {
         m.guest_id for m in messages
         if m.direction == "outbound" and m.kind == "invitation"
-        and m.status == "sent" and m.guest_id is not None
+        and m.status in invitations.DELIVERED_OR_BETTER and m.guest_id is not None
     }
 
     due = communication.compute_due_messages(db, event, guests=guests, messages=messages)
@@ -437,7 +437,7 @@ def dashboard(
     invited_ids = {
         m.guest_id for m in messages
         if m.direction == "outbound" and m.kind == "invitation"
-        and m.status == "sent" and m.guest_id is not None
+        and m.status in invitations.DELIVERED_OR_BETTER and m.guest_id is not None
     }
     # ממתינים שכבר קיבלו לפחות מעקב אחד (תזכורת כלשהי ברצף).
     followed_ids = {

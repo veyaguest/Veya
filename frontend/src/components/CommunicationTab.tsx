@@ -18,8 +18,9 @@ import type {
   MessageType,
   TargetAudience,
 } from '../types'
-import { MANUAL_SEND_TYPES, TARGET_AUDIENCE_LABELS } from '../types'
+import { MANUAL_SEND_TYPES, SCHEDULED_TYPES, TARGET_AUDIENCE_LABELS } from '../types'
 import { MessageTypeIcon } from './MessageTypeIcon'
+import { TimePicker } from './TimePicker'
 import { activeEventTerms, EVENT_TERMS } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import './PostponeDialog.css'
@@ -188,6 +189,72 @@ export function CommunicationTab() {
 }
 
 type Mode = 'view' | 'browse' | 'edit'
+
+/** שעת השליחה של סבב אחד. בלי שעה משלו — שעת ברירת המחדל של האירוע
+ *  (תודה: שעת התודה; כל השאר: שעת המסלול), בדיוק כמו בשרת. */
+function RoundSendTime({
+  message,
+  event,
+  onSaved,
+}: {
+  message: EventMessage
+  event: EventDetails | null
+  onSaved: () => void
+}) {
+  const rt = strings.messages.roundTime
+  const fallback =
+    (message.message_type === 'thank_you' ? event?.thank_you_send_time : event?.rsvp_send_time) ||
+    '16:00'
+  const current = message.send_time || fallback
+  const [value, setValue] = useState(current)
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState('')
+
+  useEffect(() => setValue(current), [current])
+
+  async function save() {
+    setBusy(true)
+    setNote('')
+    try {
+      await updateCommunicationMessage(message.message_type, { send_time: value })
+      setNote(rt.saved)
+      onSaved()
+    } catch (err) {
+      setNote(err instanceof Error ? err.message : rt.saveError)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="commit-field gm2-round-time">
+      <span className="field-label">{rt.label}</span>
+      <p className="commit-explain">{rt.hint}</p>
+      <div className="event-datetime">
+        <TimePicker
+          value={value}
+          min="10:00"
+          max="19:00"
+          onChange={(time) => {
+            setNote('')
+            setValue(time)
+          }}
+          ariaLabel={`${rt.label} · ${message.title}`}
+        />
+        <button
+          type="button"
+          className="gm2-btn"
+          disabled={busy || value === current}
+          onClick={save}
+        >
+          {busy ? rt.saving : rt.save}
+        </button>
+      </div>
+      <span className="field-hint">{rt.rangeHint}</span>
+      {note && <p className="gm2-note" role="status">{note}</p>}
+    </div>
+  )
+}
 
 function MessagePanel({
   message,
@@ -385,6 +452,12 @@ function MessagePanel({
         )}
 
         {note && <p className="gm2-note">{note}</p>}
+
+        {/* שעת השליחה של הסבב. היום עצמו נקבע ע"י לוח הזמנים (לא ניתן
+            לעריכה); ההזמנה לא כאן — היא נשלחת ידנית ומיד. */}
+        {mode === 'view' && SCHEDULED_TYPES.includes(message.message_type) && (
+          <RoundSendTime message={message} event={event} onSaved={onSaved} />
+        )}
 
         {/* הודעות שנשלחות ידנית (היום: "אירוע נדחה") מקבלות כאן את פעולת
             השליחה. הודעות הרצף לא — הן יוצאות לפי לוח הזמנים, ואין להן
