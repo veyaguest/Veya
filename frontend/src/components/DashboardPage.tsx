@@ -246,7 +246,9 @@ function SeatingHelperCard({ stats, onNavigate }: { stats: DashboardStats; onNav
       <button
         type="button"
         className="seating-helper-cta"
-        onClick={() => onNavigate?.(allDone ? 'hall' : 'guests')}
+        // לצעד הראשון שעוד לא הושלם: קבוצות/הערות → ניהול המוזמנים; סקיצה →
+        // סידור ההושבה (לפני כן כל מה שלא הושלם הוביל למוזמנים, גם הסקיצה).
+        onClick={() => onNavigate?.(allDone || (done[0] && done[1]) ? 'hall' : 'guests')}
       >
         {allDone ? s.ctaReady : s.cta}
       </button>
