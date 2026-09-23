@@ -77,6 +77,26 @@ const bootFallback = (
 // ההושבה מסדרים במקום אחר, והם מחוברים דרך אותם נתונים — לא דרך מסך משותף.
 type Page = 'dashboard' | 'guests' | 'messages' | 'rsvp' | 'hall' | 'gifts' | 'finance'
 
+// לכל מסך כתובת משלו (``/app/guests`` וכו'), כדי שכפתור "חזור" של הטלפון
+// יחזור למסך הקודם במקום לצאת מ-VEYA, ורענון יישאר באותו מסך. תמונת המצב
+// היא ``/app`` עצמו. ``/app/*`` כבר מוגש כאפליקציה (vercel.json + vite.config).
+const PAGE_PATHS: Record<Page, string> = {
+  dashboard: '/app',
+  guests: '/app/guests',
+  messages: '/app/messages',
+  rsvp: '/app/rsvp',
+  hall: '/app/hall',
+  gifts: '/app/gifts',
+  finance: '/app/finance',
+}
+
+/** המסך שהכתובת מצביעה עליו. כתובת לא מוכרת (כולל /app/join וכו') → תמונת מצב. */
+function pageFromPath(pathname: string): Page {
+  const clean = pathname.replace(/\/+$/, '') || '/app'
+  const hit = (Object.keys(PAGE_PATHS) as Page[]).find((p) => PAGE_PATHS[p] === clean)
+  return hit ?? 'dashboard'
+}
+
 /** אפשרויות ניווט. ``guestSearch`` — כניסה לניהול המוזמנים עם חיפוש מוכן
  *  (למשל "עריכה בניהול המוזמנים" על מוזמן מתוך סידור ההושבה). */
 export interface NavOptions {
@@ -207,7 +227,7 @@ function NavIcon({ page }: { page: Page }) {
 
 function App() {
   const [online, setOnline] = useState<boolean | null>(null)
-  const [page, setPage] = useState<Page>('dashboard')
+  const [page, setPage] = useState<Page>(() => pageFromPath(window.location.pathname))
   // חיפוש מוכן לכניסה לניהול המוזמנים (מגיע מ"עריכה בניהול המוזמנים"
   // בסידור ההושבה). נקרא פעם אחת בטעינת המסך — ``<main key>`` מחליף אותו
   // בכל מעבר עמוד.
@@ -339,6 +359,19 @@ function App() {
     return () => window.removeEventListener('veya-unauthorized', handler)
   }, [])
 
+  // כפתור "חזור"/"קדימה" של הדפדפן והטלפון. אם "החשבון שלי" פתוח — "חזור"
+  // סוגר אותו (הוא נפתח עם רשומת היסטוריה משלו, באותה כתובת); אחרת עוברים
+  // למסך שהכתובת מצביעה עליו.
+  useEffect(() => {
+    const onPop = () => {
+      setProfileOpen(false)
+      setGuestSearch('')
+      setPage(pageFromPath(window.location.pathname))
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
   // אדמין "מתחבר כמשתמש": שומר את טוקן האדמין בצד, מכניס טוקן משתמש במקומו,
   // וטוען מחדש את הממשק בעיני אותו משתמש. שגיאות מוחזרות לקורא (AdminApp).
   // ``eventId`` — כניסה לתמיכה באירוע מסוים (ממרכז השליטה לאירוע): האירוע
@@ -351,7 +384,7 @@ function App() {
     setToken(res.token)
     setEventId(eventId ?? null)
     setImpersonating(true)
-    setPage('dashboard')
+    resetPage()
     const u = await getMe()
     setUser(u)
     await loadEvents(u)
@@ -368,7 +401,7 @@ function App() {
       setEventId(null)
       setEvents([])
       setActiveEventId(null)
-      setPage('dashboard')
+      resetPage()
       const u = await getMe()
       setUser(u)
     } catch {
@@ -378,10 +411,38 @@ function App() {
     }
   }
 
-  /** הניווט של האפליקציה — כל מעבר בין מסכים עובר כאן. */
+  /** הניווט של האפליקציה — כל מעבר בין מסכים עובר כאן, ונרשם בהיסטוריה
+   *  כדי ש"חזור" יחזיר למסך הקודם. */
   function goTo(target: Page, options: NavOptions = {}) {
     setGuestSearch(target === 'guests' ? options.guestSearch ?? '' : '')
     setPage(target)
+    if (window.location.pathname !== PAGE_PATHS[target]) {
+      window.history.pushState({ page: target }, '', PAGE_PATHS[target])
+    }
+  }
+
+  /** חזרה למסך בלי רשומת היסטוריה חדשה (יציאה, התחזות, מסך שלא זמין). */
+  function resetPage(target: Page = 'dashboard') {
+    setGuestSearch('')
+    setPage(target)
+    if (window.location.pathname !== PAGE_PATHS[target]) {
+      window.history.replaceState({ page: target }, '', PAGE_PATHS[target])
+    }
+  }
+
+  // "החשבון שלי" נפתח עם רשומת היסטוריה משלו, כדי ש"חזור" בטלפון יסגור אותו
+  // במקום לצאת מהמסך. סגירה מהכפתור מסירה את הרשומה (history.back).
+  function openProfile() {
+    window.history.pushState({ profile: true }, '', window.location.pathname)
+    setProfileOpen(true)
+  }
+
+  function closeProfile() {
+    if (window.history.state?.profile) {
+      window.history.back() // ה-popstate סוגר את החלון
+    } else {
+      setProfileOpen(false)
+    }
   }
 
   async function handleAuth(u: User) {
@@ -404,7 +465,8 @@ function App() {
     setUser(null)
     setEvents([])
     setActiveEventId(null)
-    setPage('dashboard')
+    setProfileOpen(false)
+    resetPage()
   }
 
   // עדיין בודקים אם יש טוקן תקין.
@@ -417,9 +479,14 @@ function App() {
   // האפליקציה ל-ErrorBoundary.
   const activeEventForGifts = events.find((e) => e.id === activeEventId) ?? null
   const giftsEligible = activeEventForGifts?.gift_service_eligible ?? false
+  // רק כשהאירוע כבר נטען: ברענון של /app/gifts האירועים עוד לא הגיעו, ובלי
+  // התנאי הזה המסך היה "בורח" לתמונת המצב לפני שידוע אם הוא זכאי.
   useEffect(() => {
-    if (page === 'gifts' && !giftsEligible) setPage('dashboard')
-  }, [page, giftsEligible])
+    if (page === 'gifts' && activeEventForGifts && !giftsEligible) {
+      setPage('dashboard')
+      window.history.replaceState({ page: 'dashboard' }, '', PAGE_PATHS.dashboard)
+    }
+  }, [page, giftsEligible, activeEventForGifts])
 
   if (!authChecked) {
     return (
@@ -702,8 +769,9 @@ function App() {
           <button
             type="button"
             className="user-chip"
-            onClick={() => setProfileOpen(true)}
-            title="החשבון שלי"
+            onClick={openProfile}
+            title={strings.common.myAccount}
+            aria-label={strings.common.myAccount}
           >
             <span className="user-avatar">{userInitial}</span>
             <span className="user-meta">
@@ -783,12 +851,9 @@ function App() {
       {profileOpen && (
         <AccountCenter
           user={user}
-          onClose={() => setProfileOpen(false)}
+          onClose={closeProfile}
           onUpdated={(u) => setUser(u)}
-          onLogout={() => {
-            setProfileOpen(false)
-            handleLogout()
-          }}
+          onLogout={handleLogout}
         />
       )}
 

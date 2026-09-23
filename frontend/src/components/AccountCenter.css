@@ -193,6 +193,9 @@
 .acc-btn-block {
   width: 100%;
 }
+.acc-btn-block + .acc-btn-block {
+  margin-top: 8px;
+}
 
 .acc-btn-primary {
   align-self: flex-start;

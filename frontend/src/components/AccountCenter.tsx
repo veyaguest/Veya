@@ -387,6 +387,16 @@ export function AccountCenter({
 
             <div className="acc-divider" />
 
+            {/* יציאה רגילה. בטלפון זה המקום היחיד שלה — היא הוצאה מהפס העליון,
+                שם היה קל ללחוץ עליה בטעות. */}
+            <button
+              type="button"
+              className="acc-btn acc-btn-ghost acc-btn-block"
+              onClick={onLogout}
+              disabled={busy}
+            >
+              {strings.common.logout}
+            </button>
             <button
               type="button"
               className="acc-btn acc-btn-ghost acc-btn-block"

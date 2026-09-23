@@ -835,12 +835,24 @@ summary:focus-visible,
     border-top: none;
     background: none;
   }
+  /* בטלפון: כפתור עגול עם האות הראשונה פותח את "החשבון שלי" (פרטים, ניהול
+     משותף, סיסמה, יציאה). "מחובר" ו"יציאה" לא מוצגים בפס העליון — "יציאה"
+     הייתה קלה ללחיצה בטעות, ו"מחובר" הוא מידע טכני. היציאה עצמה בתוך
+     "החשבון שלי". */
   .user-chip {
+    width: auto;
+    margin: 0;
+    margin-inline-start: auto;
+    padding: 5px;
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .user-chip .user-meta {
     display: none;
   }
   .sidebar-foot-row {
-    flex: 1;
-    gap: 12px;
+    display: none;
   }
   .page-header {
     padding: 18px 18px 0;
