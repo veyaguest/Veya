@@ -578,6 +578,15 @@
       .site-footer nav[aria-label="קישורים משפטיים"] { flex-basis: 100%; gap: 8px 18px; }
       .site-footer nav[aria-label="קישורים משפטיים"] a { font-size: var(--fs-xs); color: #9b907c; }
 
+      /* קישורים משלימים מתוך תוכן דף הבית. הם נותנים לדפים העמוקים נתיב
+         ניווט שימושי, בלי להחזיר את הסקשנים שהוסרו מהעמוד. */
+      .home-resources { background: var(--ivory-2); border-top: 1px solid var(--line); padding: 24px 0; }
+      .home-resources .wrap { display: flex; align-items: center; justify-content: center; gap: 10px 18px; flex-wrap: wrap; }
+      .home-resources strong { color: var(--charcoal); font-size: var(--fs-sm); }
+      .home-resources a { color: var(--gold-deep); font-size: var(--fs-sm); font-weight: 600; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+      .home-resources a:hover { color: var(--charcoal); }
+      .home-resources a:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 3px; border-radius: 3px; }
+
       /* Cookie Banner (דף נחיתה סטטי — ראו CookieBanner.tsx לגרסת ה-SPA) */
       .cookie-banner-static { position: fixed; inset-inline: 0; bottom: 0; z-index: 100; background: var(--ink); border-top: 1px solid rgba(201,162,39,0.35); padding: env(safe-area-inset-bottom, 0px) 0 0; }
       .cookie-banner-static-inner { max-width: 1100px; margin: 0 auto; padding: 16px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; justify-content: space-between; }
@@ -1640,7 +1649,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -2774,6 +2783,12 @@
     
     
     
+    
+    
+    
+    
+    
+    
     </style>
     <script>
       /* צילום שנקטע בטעינה: ניסיון חוזר אחד, והמסגרת נשארת. מוגדר ב-head כדי
@@ -2927,7 +2942,7 @@
           <div class="why-inner reveal">
             <h2 id="why-title" class="section-title">לא צריך לנחש כמה יגיעו.</h2>
             <p class="why-list">
-              רשימת המוזמנים משתנה כל הזמן. אנשים מאשרים, לא עונים, משנים תוכניות ולפעמים פשוט לא מגיעים.
+              רשימת המוזמנים משתנה כל הזמן. אנשים מאשרים, <a href="/features/calls/">לא עונים</a>, משנים תוכניות ולפעמים פשוט לא מגיעים.
             </p>
             <!-- הועבר מההירו (2026-09-15). -->
             <p class="why-close">
@@ -3135,7 +3150,7 @@
             <h2 id="calls-title" class="section-title">ומי שלא עונה?</h2>
             <p class="section-sub">
               VEYA ממשיכה איתו — מתזכורות ועד <b>סבבי שיחות אנושיים</b>, עד
-              שמגיעים למועד סגירת הרשימה. לא צריך שאתם תרדפו אחריו.
+              שמגיעים למועד סגירת הרשימה. לא צריך שאתם תרדפו אחריו. <a href="/features/calls/">כך עובד המעקב אחרי מי שלא אישר</a>.
             </p>
           </div>
           <!-- בלי המחשה בכוונה (החלטת בעלים 2026-09-15): לא האנימציה ולא
@@ -3276,7 +3291,7 @@
             <h2 id="seating-title" class="section-title">יש לכם סקיצה? <span class="ttl-accent">בואו נהפוך אותה למפת אולם.</span></h2>
             <p class="section-sub">
               מעלים את הסקיצה שקיבלתם מהאולם — אפילו אם היא רק צילום או קובץ. VEYA מנתחת אותה,
-              מזהה את השולחנות והמבנה והופכת אותה למפה שאפשר באמת לעבוד איתה.
+              מזהה את השולחנות והמבנה והופכת אותה ל<a href="/features/seating/">מפת אולם שאפשר באמת לעבוד איתה</a>.
             </p>
           </div>
 
@@ -3883,6 +3898,16 @@
         </div>
       </section>
     </main>
+
+    <nav class="home-resources" aria-label="כלים ומידע לתכנון האירוע">
+      <div class="wrap">
+        <strong>לתכנון האירוע:</strong>
+        <a href="/nuschim/">נוסחים להודעות למוזמנים</a>
+        <a href="/guides/">מדריכים לארגון אירוע</a>
+        <a href="/events/wedding/">ניהול חתונה</a>
+        <a href="/events/bar-mitzvah/">ניהול בר מצווה</a>
+      </div>
+    </nav>
 
     <footer class="site-footer">
       <div class="wrap">

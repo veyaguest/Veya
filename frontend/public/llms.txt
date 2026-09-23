@@ -36,6 +36,9 @@
 ## הודעות למוזמנים
 - [הודעות — מה המוזמנים מקבלים](https://veyaguest.co.il/nuschim/)
 
+## על VEYA
+- [אודות VEYA](https://veyaguest.co.il/legal/about.html)
+
 ## תנאים ומדיניות
 - [תנאי שימוש](https://veyaguest.co.il/legal/terms.html)
 - [מדיניות פרטיות](https://veyaguest.co.il/legal/privacy.html)

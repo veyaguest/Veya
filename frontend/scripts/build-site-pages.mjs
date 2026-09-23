@@ -1082,6 +1082,9 @@ function llmsTxt(routes) {
 > אישורי הגעה, סידור הושבה ומאזן האירוע. שבעה סוגי אירוע: חתונה,
 > בר מצווה, בת מצווה, חינה, ברית, בריתה ואירוע עסקי. בעברית, בישראל.
 ${group('יכולות', (r) => r.startsWith('/features/'))}${group('מחשבונים', (r) => r.startsWith('/calculators/'))}${group('סוגי אירוע', (r) => r.startsWith('/events/'))}${group('מדריכים', (r) => r.startsWith('/guides/'))}${group('הודעות למוזמנים', (r) => r.startsWith('/nuschim'))}
+## על VEYA
+- [אודות VEYA](${SITE}/legal/about.html)
+
 ## תנאים ומדיניות
 - [תנאי שימוש](${SITE}/legal/terms.html)
 - [מדיניות פרטיות](${SITE}/legal/privacy.html)
@@ -1103,6 +1106,7 @@ function sitemap(routes) {
 
   const entries = [
     url('/', '1.0', 'weekly'),
+    url('/legal/about.html', '0.5', 'monthly'),
     ...routes.map((r) => {
       if (r.startsWith('/features/')) return url(r, '0.9', 'monthly')
       if (r === '/calculators/') return url(r, '0.8', 'monthly')
@@ -1140,7 +1144,7 @@ for (const g of guides) emit(`/guides/${g.slug}/`, guideHtml(g))
 for (const p of await buildNuschim(API_URL)) emit(p.path, p.html)
 
 writeFileSync(path.join(PUB, 'sitemap.xml'), sitemap(written))
-console.log(`✓ sitemap.xml (${written.length + 1} כתובות)`)
+console.log(`✓ sitemap.xml (${written.length + 2} כתובות)`)
 writeFileSync(path.join(PUB, 'llms.txt'), llmsTxt(written))
 console.log(`✓ llms.txt`)
 console.log(`\nAPI לעמודי המחשבון: ${API_URL}`)
