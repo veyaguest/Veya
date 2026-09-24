@@ -398,7 +398,7 @@ export const strings = {
     reconsentHint: 'מומלץ לעבור על התנאים המעודכנים לפני שממשיכים.',
     reconsentTermsLink: 'תנאי השימוש',
     reconsentPrivacyLink: 'מדיניות הפרטיות',
-    reconsentSubmit: 'קראתי ואני מאשר/ת',
+    reconsentSubmit: 'קראתי ואישרתי',
     // Footer
     footerLinksLabel: 'קישורים משפטיים',
     footerTerms: 'תנאי שימוש',
@@ -408,12 +408,12 @@ export const strings = {
     footerContact: 'יצירת קשר',
     footerCopy: '© VEYA · מערכת לניהול אירועים',
     // AuthPage — checkboxes המשפטיים (Frontend #2 בטסקליסט)
-    authAgreePrefix: 'אני מאשר/ת את',
+    authAgreePrefix: 'קראתי ואישרתי את',
     authAgreeAnd: 'ואת',
     authTermsLink: 'תנאי השימוש',
     authPrivacyLink: 'מדיניות הפרטיות',
-    authMarketingOptIn: 'אני מעוניין/ת לקבל עדכונים מ-VEYA',
-    authGoogleAgreePrefix: 'בהתחברות עם גוגל אני מאשר/ת את',
+    authMarketingOptIn: 'אשמח לקבל עדכונים מ-VEYA',
+    authGoogleAgreePrefix: 'בהתחברות עם גוגל אתם מאשרים את',
   },
 
 
@@ -1028,7 +1028,7 @@ export const strings = {
     deleteTitle: 'הסרת מוזמן',
     // לא רק "אתם בטוחים?" — מה בדיוק יקרה.
     deleteConfirm: (name: string) =>
-      `${name} יוסר מרשימת המוזמנים, מסידור ההושבה ומההודעות שעוד לא יצאו. אי אפשר לבטל את זה.`,
+      `נסיר את ${name} מרשימת המוזמנים, מסידור ההושבה ומההודעות שעוד לא יצאו. אי אפשר לבטל את זה.`,
     deleteConfirmButton: 'כן, להסיר',
     searchPlaceholder: 'חיפוש לפי שם או טלפון…',
     importMenuButton: 'ייבוא מוזמנים',
@@ -1041,11 +1041,19 @@ export const strings = {
     addGuestButton: 'הוספת מוזמן',
     dupSuffix: (n: number) => ` (${n} כבר היו אצלכם)`,
     importedToast: (created: number, dupSuffix: string) =>
-      `הוספנו ${created} מוזמנים לרשימה${dupSuffix}`,
+      created === 1
+        ? `הוספנו מוזמן אחד לרשימה${dupSuffix}`
+        : `הוספנו ${created} מוזמנים לרשימה${dupSuffix}`,
+    // אחרי הוספה ידנית. invitesOut — כבר יצאו הזמנות, והחדש לא יקבל לבד.
+    addedToast: (name: string, invitesOut: boolean) =>
+      `${name} ברשימה עכשיו.` +
+      (invitesOut ? ' ההזמנה לא נשלחת לבד — שולחים אותה ממסך "הודעות".' : ''),
+    savedToast: (name: string) => `הפרטים של ${name} נשמרו.`,
+    deletedToast: (name: string) => `${name} כבר לא ברשימה.`,
     // "מוזמנים" = שורות ברשימה (משפחה אחת = שורה אחת); "אנשים" = סכום
     // הכמויות. שניהם מופיעים כדי שלא יצטרכו לנחש למה המספרים שונים.
     summary: (total: number, totalPeople: number, confirmedPeople: number, guestsLabel = 'מוזמנים') =>
-      `${total} ${guestsLabel} ברשימה · ${totalPeople === 1 ? 'אדם אחד' : `${totalPeople} אנשים`} בסך הכול · ${confirmedPeople === 1 ? 'אדם אחד אישר' : `${confirmedPeople} אנשים אישרו`} הגעה`,
+      `${total === 1 ? (guestsLabel === 'משתתפים' ? 'משתתף אחד' : 'מוזמן אחד') : `${total} ${guestsLabel}`} ברשימה · ${totalPeople === 1 ? 'אדם אחד' : `${totalPeople} אנשים`} בסך הכול · ${confirmedPeople === 1 ? 'אדם אחד אישר' : `${confirmedPeople} אנשים אישרו`} הגעה`,
     colFullName: 'שם מלא',
     colPhone: 'טלפון',
     colSide: 'צד',
@@ -1108,7 +1116,7 @@ export const strings = {
     partySizeLabel: 'כמה אנשים בהזמנה',
     partySizeHint: 'כולל המוזמן עצמו. למשל: זוג = 2, משפחה עם שני ילדים = 4.',
     rsvpStatusLabel: 'סטטוס אישור הגעה',
-    isChildLabel: 'ילד/ה',
+    isChildLabel: 'ילד או ילדה',
     // שני שדות הערות נפרדים. ההפרדה קיימת כדי שהערה תפעולית ("צריך לחזור
     // אליו") לא תתפרש בטעות כאילוץ ישיבה — רק השדה השני מגיע למנוע.
     notesFieldLabel: 'הערה לעצמכם',

@@ -9,7 +9,8 @@ const t = strings.guests
 const tc = strings.common
 
 interface Props {
-  onAdded: () => void
+  /** name — השם שנשמר, בשביל הודעת האישור במסך שפתח את הטופס. */
+  onAdded: (name: string) => void
   onCancel: () => void
   guest?: Guest // אם קיים — מצב עריכה של מוזמן קיים
 }
@@ -77,6 +78,7 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
     setSaving(true)
     try {
       const group = (form.group_type || '').trim() || 'other'
+      const savedName = form.full_name.trim()
       if (guest) {
         await updateGuest(guest.id, {
           ...form,
@@ -95,7 +97,7 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
         setForm(EMPTY)
         setCustomGroup(false)
       }
-      onAdded()
+      onAdded(savedName)
     } catch (err) {
       setError(err instanceof Error ? err.message : t.saveErrorGeneric)
     } finally {

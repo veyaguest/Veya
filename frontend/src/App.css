@@ -15431,6 +15431,21 @@ button.gauge-status-card:focus-visible {
     white-space: normal;
     text-align: start;
   }
+  /* רוחבי העמודות של הטבלה (td:nth-child → width: 1%) לא חלים על כרטיס —
+     בלי זה כל תא נדחס לפיקסל והטלפון נחתך. */
+  .guests-table td:nth-child(n) {
+    width: auto;
+    min-width: 0;
+    white-space: normal;
+  }
+  /* התא של הטלפון הוא dir="ltr" (בשביל הספרות) — מיישרים אותו לימין כמו
+     שאר הכרטיס. */
+  .guests-table td.phone {
+    align-items: flex-end;
+  }
+  .guests-table td.center {
+    text-align: start;
+  }
   .guests-table td[data-label]::before {
     content: attr(data-label);
     font-size: 11px;

@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   confirmIcsUrl,
@@ -181,6 +182,7 @@ function ChoiceSheet({
   options: { label: string; href: string; className?: string; download?: boolean }[]
   onClose: () => void
 }) {
+  useBackToClose(true, onClose)
   const sheetRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -288,6 +290,7 @@ function GiftPanel({
   guestName: string
   onClose: () => void
 }) {
+  useBackToClose(true, onClose)
   const hub = strings.guestHub
   const panelRef = useRef<HTMLDivElement>(null)
 

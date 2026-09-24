@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 /**
  * בחירת שולחן למוזמן — המסלול שאינו גרירה.
  *
@@ -38,6 +39,8 @@ export function SeatTablePickerDialog({
 }: Props) {
   const [query, setQuery] = useState('')
   const dialogRef = useRef<HTMLDivElement | null>(null)
+  // "חזור" בטלפון סוגר את החלון, ולא יוצא מהמסך.
+  useBackToClose(true, onClose)
   const listRef = useRef<HTMLDivElement | null>(null)
   // האלמנט שפתח את הדיאלוג — הפוקוס חוזר אליו בסגירה (§26).
   const openerRef = useRef<Element | null>(null)

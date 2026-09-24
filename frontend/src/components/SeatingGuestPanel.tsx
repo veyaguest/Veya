@@ -1,3 +1,4 @@
+import { useBackToClose } from '../lib/backToClose'
 /**
  * סרגל המוזמנים של מרחב ההושבה — הצד שממנו מסדרים, לצד סקיצת האולם.
  *
@@ -293,6 +294,8 @@ function FilterPopover({
   onClose: () => void
 }) {
   const [draft, setDraft] = useState<WorkspaceFilter>(value)
+  // "חזור" בטלפון סוגר את החלון, ולא יוצא מהמסך.
+  useBackToClose(true, onClose)
   const ref = useRef<HTMLDivElement | null>(null)
   const titleId = useId()
 

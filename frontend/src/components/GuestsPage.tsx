@@ -114,6 +114,7 @@ export function GuestsPage({
   const fileInput = useRef<HTMLInputElement>(null)
   // "חזור" בטלפון סוגר את חלון עריכת המוזמן.
   useBackToClose(editGuest !== null, () => setEditGuest(null))
+  useBackToClose(showForm, () => setShowForm(false))
 
   // טעינת העמוד הראשון (וגם רענון אחרי שינוי/חיפוש).
   const load = useCallback(async (q: string) => {
@@ -203,11 +204,17 @@ export function GuestsPage({
     setDeleteTarget(g)
   }
 
+  function flashToast(message: string) {
+    setToast(message)
+    setTimeout(() => setToast(''), 4000)
+  }
+
   async function confirmDelete() {
     if (!deleteTarget) return
     setDeleteBusy(true)
     try {
       await deleteGuest(deleteTarget.id)
+      flashToast(t.deletedToast(deleteTarget.full_name))
       setDeleteTarget(null)
       load(search)
     } catch (err) {
@@ -503,8 +510,9 @@ export function GuestsPage({
             </div>
             <AddGuestForm
               guest={editGuest}
-              onAdded={() => {
+              onAdded={(name) => {
                 setEditGuest(null)
+                flashToast(t.savedToast(name))
                 load(search)
                 // אם המספר תוקן — ההתראה נסגרת מעצמה בטעינה הזו.
                 loadDataAlerts()
@@ -517,8 +525,14 @@ export function GuestsPage({
 
       {showForm && (
         <AddGuestForm
-          onAdded={() => {
+          onAdded={(name) => {
             setShowForm(false)
+            flashToast(
+              t.addedToast(
+                name,
+                guests.some((g) => !!g.invite_status && g.invite_status !== 'not_sent'),
+              ),
+            )
             load(search)
           }}
           onCancel={() => setShowForm(false)}
