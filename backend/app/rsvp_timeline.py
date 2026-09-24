@@ -337,9 +337,9 @@ def _audience_label(audience: str) -> str:
     if audience == "all":
         return "כל המוזמנים"
     if audience == "pending":
-        return "מי שעדיין לא אישר"
+        return "מי שעוד לא ענו"
     if audience == "confirmed":
-        return "מי שאישר הגעה"
+        return "מי שאישרו הגעה"
     return ""
 
 
@@ -666,7 +666,10 @@ def compute_timeline(
         closes = placement.date == commitment_date
         is_last_call = closes and step["type"] == "call_round"
         label = "סבב שיחות אחרון וסגירת הרשימה" if is_last_call else step["label"]
-        note = "אחרי הסבב, רשימת המוזמנים נסגרת." if closes else ""
+        note = (
+            ("אחרי השיחות האחרונות" if is_last_call else "אחרי ההודעה הזו")
+            + ", רשימת המוזמנים נסגרת."
+        ) if closes else ""
         ensure_day(placement.date)["actions"].append({
             "type": step["type"],
             "icon": step["icon"],

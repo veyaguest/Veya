@@ -89,12 +89,28 @@ export function RsvpTimeline({
 
 /** איפה המסלול עכשיו — לפני / בדרך / הסתיים. שליחת הזמנה לא משנה את זה:
  *  המסלול נקבע רק לפי מועד סגירת הרשימה (2026-09-23). */
+/** תווית שלב כפי שהזוג רואה אותה — בלי ז'רגון המוקד ("סבב שיחות"). */
+export function plainStepLabel(label: string): string {
+  return strings.messages.trackPhase.stepLabels[label] ?? label
+}
+
+/** "15/10/2026" (כך מגיע מהשרת) → "יום חמישי, 15 באוקטובר". */
+function friendlyDate(ddmmyyyy: string): string {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(ddmmyyyy)
+  if (!m) return ddmmyyyy
+  const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]))
+  return d.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
 export function PhaseCard({
   view,
   onGoToSeating,
+  onOpenRsvp,
 }: {
   view: RsvpTimelineView
   onGoToSeating?: () => void
+  /** בתמונת המצב: קישור ללוח המלא במסך אישורי ההגעה. */
+  onOpenRsvp?: () => void
 }) {
   const t = strings.messages.trackPhase
   const phase = view.track_phase ?? 'unscheduled'
@@ -106,14 +122,14 @@ export function PhaseCard({
     title = t.waitingTitle
     body = t.waitingBody
   } else if (phase === 'before') {
-    title = t.beforeTitle(view.rsvp_start_date ?? '')
+    title = t.beforeTitle(friendlyDate(view.rsvp_start_date ?? ''))
     body = t.beforeBody
   } else if (phase === 'running') {
     title = t.runningTitle
     body = t.runningBody
   } else {
     title = t.endedTitle
-    body = t.endedBody(view.commitment_date ?? '')
+    body = t.endedBody(friendlyDate(view.commitment_date ?? ''))
   }
 
   return (
@@ -125,15 +141,15 @@ export function PhaseCard({
           {view.current_stage && (
             <div>
               <dt>{t.nowLabel}</dt>
-              <dd>{view.current_stage}</dd>
+              <dd>{plainStepLabel(view.current_stage)}</dd>
             </div>
           )}
           {view.next_action_label && (
             <div>
               <dt>{t.nextLabel}</dt>
               <dd>
-                {view.next_action_label}
-                {view.next_action_date ? ` · ${view.next_action_date}` : ''}
+                {plainStepLabel(view.next_action_label)}
+                {view.next_action_date ? ` · ${friendlyDate(view.next_action_date)}` : ''}
               </dd>
             </div>
           )}
@@ -142,6 +158,11 @@ export function PhaseCard({
       {phase === 'ended' && onGoToSeating && (
         <button type="button" className="btn-primary tl-phase-cta" onClick={onGoToSeating}>
           {t.endedCta}
+        </button>
+      )}
+      {onOpenRsvp && (
+        <button type="button" className="btn-text tl-phase-link" onClick={onOpenRsvp}>
+          {t.openRsvp}
         </button>
       )}
     </section>
@@ -184,7 +205,7 @@ function TodayCard({ view }: { view: RsvpTimelineView }) {
     <div className="tl-now">
       <div className="tl-now-card today">
         <span className="tl-now-tag">היום · {view.today}</span>
-        <p className="tl-now-text">{view.today_summary}</p>
+        <p className="tl-now-text">{view.today_summary.split(" · ").map(plainStepLabel).join(" · ")}</p>
       </div>
     </div>
   )
@@ -195,7 +216,7 @@ function DayScale({ view }: { view: RsvpTimelineView }) {
   if (view.days.length === 0) return null
   return (
     <div className="tl-scale">
-      <h3 className="clar-title">מסלול אישורי הגעה</h3>
+      <h3 className="clar-title">יום אחרי יום</h3>
       <ol className="tl-days">
         {view.days.map((day) => (
           <DayRow key={day.iso} day={day} />
@@ -267,11 +288,11 @@ function ActionRow({ action }: { action: TimelineAction }) {
         </svg>
       </span>
       <span className="tl-action-main">
-        <span className="tl-action-label">{action.label}</span>
+        <span className="tl-action-label">{plainStepLabel(action.label)}</span>
         <span className="tl-action-meta">
           {/* התאריך שבו ההודעה תישלח בפועל מוצג בכותרת היום. פרטים פנימיים
               של תזמון (הזזה מסוף שבוע וכו') לא רלוונטיים לבעל האירוע. */}
-          {action.audience} · {action.audience_count} מוזמנים
+          {action.audience} · {strings.messages.trackPhase.guestsCount(action.audience_count)}
         </span>
         {action.note && <span className="tl-action-note">{action.note}</span>}
       </span>

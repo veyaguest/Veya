@@ -17,6 +17,7 @@ import type {
   RsvpTrackStatus,
   SendScope,
 } from '../types'
+import type { GuestFilter } from '../api'
 import { activeEventTerms } from '../strings/eventTypes'
 import { splitMessageLinks } from '../lib/messagePreview'
 import { strings } from '../strings/he'
@@ -49,7 +50,7 @@ export function MessagesPage({
   onNavigate,
 }: {
   isAdmin: boolean
-  onNavigate?: (page: 'guests') => void
+  onNavigate?: GuestsNav
 }) {
   if (!isAdmin) return <CoupleMessagesView onNavigate={onNavigate} />
   return <AdminMessagesShell onNavigate={onNavigate} />
@@ -59,7 +60,7 @@ export function MessagesPage({
  * מעטפת לאדמין: כברירת מחדל מציגה את חוויית הזוג, ומתג קטן מאפשר לעבור
  * לפאנל הניהול הטכני (תקשורת עם אורחים / ספריית הודעות מוכנות).
  */
-function AdminMessagesShell({ onNavigate }: { onNavigate?: (page: 'guests') => void }) {
+function AdminMessagesShell({ onNavigate }: { onNavigate?: GuestsNav }) {
   const [view, setView] = useState<'couple' | 'admin'>('couple')
   return (
     <>
@@ -118,7 +119,7 @@ function AdminMessagesView() {
 // שלבי דיאלוג השליחה: סגור / אישור / שולח (התקדמות) / סיכום.
 type SendPhase = 'idle' | 'confirm' | 'sending' | 'summary'
 
-function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => void }) {
+function CoupleMessagesView({ onNavigate }: { onNavigate?: GuestsNav }) {
   const [track, setTrack] = useState<RsvpTrackStatus | null>(null)
   // נטען רק כדי לדעת אם זו הזמנה ראשונה או הזמנה חדשה אחרי דחייה.
   const [event, setEvent] = useState<EventDetails | null>(null)
@@ -263,7 +264,11 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
           preview={preview}
           onSend={openSendDialog}
           onAddGuests={onNavigate ? () => onNavigate('guests') : undefined}
+          onFixPhones={
+            onNavigate ? () => onNavigate('guests', { guestFilter: 'bad_phone' }) : undefined
+          }
           onGuestsChanged={refreshPreview}
+          missingDetails={missingInviteDetails(event)}
         />
       ) : (
         /* אחרי השליחה — כרטיס ההודעות הרגיל, עם אפשרות תמיד פתוחה לשלוח
@@ -273,7 +278,7 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
             <NewGuestsBanner count={newCount} onSend={openSendDialog} />
           )}
           <div id="mb-anchor">
-            <CommunicationTab />
+            <CommunicationTab invitedCount={preview?.already_sent} />
           </div>
           <div className="track-resend">
             <button className="btn-ghost" onClick={openSendDialog}>
@@ -303,6 +308,20 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: (page: 'guests') => v
     </div>
   )
 }
+
+/** פרטי האירוע שההזמנה מציגה ועדיין לא מולאו. */
+function missingInviteDetails(event: EventDetails | null): string[] {
+  if (!event) return []
+  const f = strings.messages.inviteMissingField
+  const out: string[] = []
+  if (!event.event_time?.trim()) out.push(f.time)
+  if (!event.venue_name?.trim()) out.push(f.venue)
+  if (!event.venue_address?.trim()) out.push(f.address)
+  return out
+}
+
+/** מעבר למסך המוזמנים — אפשר עם סינון (למשל רק מספרים לא תקינים). */
+type GuestsNav = (page: 'guests', options?: { guestFilter?: GuestFilter }) => void
 
 /**
  * דיאלוג שליחת ההזמנות — עובר בין 3 מצבים:
@@ -351,20 +370,28 @@ function SendInvitationsDialog({
               {result.failed > 0 ? strings.errors.rsvpSendPartialFail : strings.toasts.invitationsSent}
             </h3>
             <p className="send-summary-main">
-              נשלחו <strong>{result.invitations_sent}</strong> הזמנות
+              {result.invitations_sent === 1 ? (
+                <>נשלחה הזמנה <strong>אחת</strong></>
+              ) : (
+                <>נשלחו <strong>{result.invitations_sent}</strong> הזמנות</>
+              )}
               {mode === 'mock' && ' (עדיין לא נשלחות הודעות אמיתיות)'}
             </p>
             {(result.skipped_missing + result.skipped_invalid) > 0 && (
               <p className="send-summary-warn">
-                {result.skipped_missing + result.skipped_invalid} מוזמנים לא קיבלו
-                הזמנה עקב מספר טלפון חסר או לא תקין.
+                {result.skipped_missing + result.skipped_invalid === 1
+                  ? 'מוזמן אחד לא קיבל הזמנה, כי מספר הטלפון שלו חסר או לא תקין.'
+                  : `${result.skipped_missing + result.skipped_invalid} מוזמנים לא קיבלו הזמנה, כי מספר הטלפון שלהם חסר או לא תקין.`}
               </p>
             )}
             {result.failed > 0 && (
               <p className="send-summary-err">
-                {result.failed} שליחות נכשלו. אפשר לנסות שוב רק עבורן.
+                {result.failed === 1
+                  ? 'שליחה אחת לא הצליחה. אפשר לנסות שוב רק אותה.'
+                  : `${result.failed} שליחות לא הצליחו. אפשר לנסות שוב רק אותן.`}
               </p>
             )}
+            <p className="clar-sub">{strings.messages.inviteSentNext}</p>
             <div className="send-dialog-actions">
               {result.failed > 0 && result.failed_ids.length > 0 && (
                 <button
@@ -608,17 +635,25 @@ function SendConfirmStep({
       </div>
 
       <p className="send-confirm-line">
-        יישלח ל־<strong>{selectedCount}</strong> מוזמנים.
+        {selectedCount === 1 ? (
+          <>ההזמנה תישלח למוזמן <strong>אחד</strong>.</>
+        ) : (
+          <>ההזמנה תישלח ל־<strong>{selectedCount}</strong> מוזמנים.</>
+        )}
       </p>
       {preview.already_sent > 0 && (
         <p className="clar-sub">
-          {preview.already_sent} מוזמנים כבר קיבלו הזמנה — כל מוזמן מקבל הזמנה פעם
-          אחת בלבד, ולכן לא תישלח אליהם שוב.
+          {preview.already_sent === 1
+            ? 'מוזמן אחד כבר קיבל הזמנה'
+            : `${preview.already_sent} מוזמנים כבר קיבלו הזמנה`}{' '}
+          — כל מוזמן מקבל הזמנה פעם אחת בלבד, ולכן היא לא תישלח שוב.
         </p>
       )}
       {missingPhone > 0 && (
         <p className="clar-sub">
-          {missingPhone} מוזמנים ללא מספר טלפון אינם ניתנים לבחירה.
+          {missingPhone === 1
+            ? 'מוזמן אחד בלי מספר טלפון לא יקבל את ההזמנה — אי אפשר לבחור בו עד שיתווסף מספר.'
+            : `${missingPhone} מוזמנים בלי מספר טלפון לא יקבלו את ההזמנה — אי אפשר לבחור בהם עד שיתווסף מספר.`}
         </p>
       )}
       <p className="clar-sub">
@@ -663,11 +698,16 @@ function FirstInviteWizard({
   preview,
   onSend,
   onAddGuests,
+  onFixPhones,
   onGuestsChanged,
+  missingDetails = [],
 }: {
   preview: InvitationSendPreview | null
   onSend: () => void
   onAddGuests?: () => void
+  onFixPhones?: () => void
+  /** פרטים שההזמנה מציגה ועדיין ריקים — אזהרה בשלב הסקירה. */
+  missingDetails?: string[]
   onGuestsChanged?: () => void
 }) {
   const [step, setStep] = useState(1)
@@ -773,9 +813,23 @@ function FirstInviteWizard({
           </p>
         ) : (
           <p className="clar-sub wiz-guests-note">
-            <strong>{sendable}</strong> מוזמנים יקבלו את ההזמנה כעת.
+            {sendable === 1 ? (
+              <>מוזמן <strong>אחד</strong> יקבל את ההזמנה עכשיו.</>
+            ) : (
+              <><strong>{sendable}</strong> מוזמנים יקבלו את ההזמנה עכשיו.</>
+            )}
             {badPhone > 0 &&
-              ` ${badPhone} ללא טלפון תקין לא ייכללו — אפשר לתקן במסך המוזמנים.`}
+              (badPhone === 1
+                ? ' מוזמן אחד בלי טלפון תקין לא ייכלל.'
+                : ` ${badPhone} מוזמנים בלי טלפון תקין לא ייכללו.`)}
+            {badPhone > 0 && onFixPhones && (
+              <>
+                {' '}
+                <button type="button" className="btn-text" onClick={onFixPhones}>
+                  לתיקון המספרים
+                </button>
+              </>
+            )}
           </p>
         )}
 
@@ -854,6 +908,12 @@ function FirstInviteWizard({
             </li>
           )}
         </ul>
+
+        {missingDetails.length > 0 && (
+          <p className="wiz-warn" role="note">
+            {strings.messages.inviteMissingDetails(missingDetails)}
+          </p>
+        )}
 
         <p className="clar-sub">
           {strings.messages.inviteIsSeparate}

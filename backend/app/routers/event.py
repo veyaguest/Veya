@@ -182,6 +182,9 @@ def update_event(
     unlocked = postponement_service.edit_unlocked(db, event)
     if not unlocked:
         _assert_core_unchanged(event, changed)
+    # הטופס שולח את כל השדות, גם כאלה שלא נגעו בהם — ביומן נרשם רק מה
+    # שבאמת השתנה (אחרת בחירת מועד סגירה נרשמה גם כ"תאריך ושעת האירוע").
+    before = {key: getattr(event, key, None) for key in changed}
     for key, value in changed.items():
         if key == "invite_image":
             # תמונה: data URL → קובץ; ריק → מחיקה; URL קיים → ללא שינוי.
@@ -243,7 +246,10 @@ def update_event(
     audit.record(
         db, "update_event",
         event_id=event.id, user_id=user.id,
-        detail=_describe_changed_fields(changed),
+        detail=_describe_changed_fields({
+            key: value for key, value in changed.items()
+            if (getattr(event, key, None) or None) != (before[key] or None)
+        }),
         ip=request.client.host if request.client else None,
     )
     db.commit()

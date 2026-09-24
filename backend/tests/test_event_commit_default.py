@@ -76,11 +76,40 @@ def test_timeline_shows_default_schedule() -> None:
     print("✓ לוח הזמנים מוצג לאירוע קרוב גם בלי בחירה")
 
 
+def test_activity_log_names_only_what_changed() -> None:
+    """הטופס שולח את כל השדות. ביומן נרשם רק מה שבאמת השתנה."""
+    from app import models
+    from app.database import SessionLocal, set_request_identity
+
+    api, _ = bootstrap()
+    _set_event_date(api, 30)
+    ev = _get(api)
+    r = api.client.patch("/event", headers=api.headers, json={
+        "event_date": ev["event_date"], "event_time": ev["event_time"],
+        "venue_name": ev["venue_name"], "venue_commit_days_before": 3,
+    })
+    assert r.status_code == 200, r.text
+    set_request_identity(None)
+    db = SessionLocal()
+    try:
+        row = (
+            db.query(models.AuditLog)
+            .filter_by(event_id=api.event_id, action="update_event")
+            .order_by(models.AuditLog.id.desc())
+            .first()
+        )
+        assert row is not None and row.detail == "מועד סגירת הרשימה", row and row.detail
+    finally:
+        db.close()
+    print("✓ ביומן הפעילות רק מה שהשתנה")
+
+
 if __name__ == "__main__":
     try:
         test_default_only_for_near_event_without_choice()
         test_commit_in_the_past_is_rejected()
         test_timeline_shows_default_schedule()
+        test_activity_log_names_only_what_changed()
         print("\nכל בדיקות ברירת המחדל של מועד הסגירה עברו ✓")
     finally:
         shutdown()

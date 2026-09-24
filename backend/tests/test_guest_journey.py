@@ -389,7 +389,7 @@ def test_last_round_and_list_closing_are_one_card() -> None:
     labels = [a["label"] for a in commit_day["actions"]]
     assert "סבב שיחות אחרון וסגירת הרשימה" in labels
     merged = next(a for a in commit_day["actions"] if a["label"] == "סבב שיחות אחרון וסגירת הרשימה")
-    assert merged["note"] == "אחרי הסבב, רשימת המוזמנים נסגרת."
+    assert merged["note"] == "אחרי השיחות האחרונות, רשימת המוזמנים נסגרת."
     # המספר דינמי — כמה שעדיין לא אישרו.
     assert merged["audience_count"] == 7
     print("✓ סבב שיחות אחרון + סגירת הרשימה = כרטיס אחד")

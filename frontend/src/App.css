@@ -12072,6 +12072,16 @@ button.gauge-status-card:focus-visible {
   }
   .onboard-steps {
     flex-direction: column;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  /* בטלפון רשימת השלבים לא דוחפת את הטופס מחוץ למסך: רק השלב הנוכחי
+     מציג את ההסבר שלו, והשאר נשארים שורה אחת קומפקטית. */
+  .onboard-step-pill {
+    padding: 8px 12px;
+  }
+  .onboard-step-pill:not(.current) .wizard-step-desc {
+    display: none;
   }
 }
 
@@ -15509,4 +15519,13 @@ button.gauge-status-card:focus-visible {
   font-size: 13px;
   color: var(--body);
   line-height: 1.5;
+}
+
+/* קישור ללוח המלא מכרטיס "איפה אישורי ההגעה" בתמונת המצב */
+.tl-phase-link {
+  display: inline-block;
+  margin-top: 10px;
+}
+.tl-phase-cta + .tl-phase-link {
+  margin-inline-start: 12px;
 }

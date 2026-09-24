@@ -4,6 +4,7 @@ import {
   getEvent,
   getPayoutAccount,
   getPostponement,
+  getRsvpTimeline,
   getStats,
   mediaUrl,
   updateEvent,
@@ -13,6 +14,7 @@ import type {
   EventDetails,
   PayoutAccount,
   Postponement,
+  RsvpTimelineView,
 } from '../types'
 import type { ReadinessPage } from '../readiness'
 import type { GuestFilter } from '../api'
@@ -26,6 +28,7 @@ import { ActivityLog } from './ActivityLog'
 import { EventStateBanner } from './EventStateBanner'
 import { PartnerCta } from './PartnerCta'
 import { PostponeFinishDialog, PostponeRequestDialog } from './PostponeDialog'
+import { PhaseCard } from './RsvpTimeline'
 import { VenueAutocomplete } from './VenueAutocomplete'
 import { TimePicker } from './TimePicker'
 import { getEventTerms } from '../strings/eventTypes'
@@ -374,6 +377,24 @@ function formatDateValue(iso: string): string {
   return m ? `${m[3]}.${m[2]}.${m[1]}` : iso
 }
 
+/** גוף אישור מועד הסגירה — עם התאריך עצמו, כדי שלא יצטרכו לחשב לאחור. */
+function commitConfirmMessage(eventDate: string, days: number): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(eventDate.trim())
+  if (!m) return t.commitConfirmBody(days, '', false, false)
+  const close = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]) - days)
+  // כמו בשרת (rsvp_timeline): סגירה בשישי/שבת עוברת לחמישי שלפניהם.
+  let moved = false
+  while (close.getDay() === 5 || close.getDay() === 6) {
+    close.setDate(close.getDate() - 1)
+    moved = true
+  }
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const daysLeft = Math.round((close.getTime() - today.getTime()) / 86_400_000)
+  const label = close.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })
+  return t.commitConfirmBody(days, label, moved, daysLeft < 14)
+}
+
 /** "צריכים אתכם" — מה בתמונת המצב באמת תלוי בבעל האירוע עכשיו. כל פריט
  *  מסביר בשורה אחת מה קורה ולמה זה חשוב, ומוביל לפעולה שפותרת אותו. כשאין
  *  מה לעשות — לא מוצג כלום. */
@@ -449,6 +470,8 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
   // מחזור חדש". **מצב האירוע עצמו מגיע מ-``event.event_stage``** — מקור
   // אמת אחד בשרת, לא הרכבה מחדש כאן.
   const [postpone, setPostpone] = useState<Postponement | null>(null)
+  // איפה אישורי ההגעה עומדים — "מה יקרה אחר כך" בתמונת המצב. כישלון = בלי כרטיס.
+  const [rsvpView, setRsvpView] = useState<RsvpTimelineView | null>(null)
   const [postponeDialog, setPostponeDialog] = useState<'request' | 'finish' | null>(null)
   // מועד הסגירה ננעל אחרי השמירה — מבקשים אישור שמסביר מה יקרה.
   const [confirmCommit, setConfirmCommit] = useState(false)
@@ -457,16 +480,18 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
 
   const refresh = useCallback(async () => {
     try {
-      const [s, e, p] = await Promise.all([
+      const [s, e, p, v] = await Promise.all([
         getStats(),
         getEvent(),
         // נכשל בשקט למי שאינו בעלים (הנתיב owner-only) — ואז פשוט אין
         // אזור נוהל דחייה, בלי לשבור את הדשבורד.
         getPostponement().catch(() => null),
+        getRsvpTimeline().catch(() => null),
       ])
       setStats(s)
       setEvent(e)
       setPostpone(p)
+      setRsvpView(v)
       setForm({
         groom_name: e.groom_name,
         bride_name: e.bride_name,
@@ -897,7 +922,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
       {confirmCommit && (
         <ConfirmDialog
           title={t.commitConfirmTitle}
-          message={t.commitConfirmBody(Number(form.venue_commit_days_before))}
+          message={commitConfirmMessage(form.event_date, Number(form.venue_commit_days_before))}
           confirmLabel={t.commitConfirmCta}
           onConfirm={onSaveEvent}
           onCancel={() => setConfirmCommit(false)}
@@ -995,6 +1020,16 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
                 ))}
               </ul>
             </section>
+
+            {/* ---- מה יקרה אחר כך: מתי יוצאות בקשות אישור ההגעה / מה הצעד
+                 הבא / שהן הסתיימו. "לא נקבע מועד" כבר מופיע ב"צריכים אתכם". ---- */}
+            {rsvpView && rsvpView.track_phase !== 'waiting' && (
+              <PhaseCard
+                view={rsvpView}
+                onGoToSeating={() => onNavigate?.('hall')}
+                onOpenRsvp={() => onNavigate?.('rsvp')}
+              />
+            )}
 
             {/* ---- מה דורש פעולה עכשיו ----
                  "135 מוזמנים נוספו ועדיין לא קיבלו הזמנה" הוא הדבר במסך

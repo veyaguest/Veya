@@ -81,7 +81,8 @@ function eventFieldValues(event: EventDetails | null): Record<string, string> {
     bride_name: b,
     event_type: terms.celebration,
     event_type_definite: terms.celebrationDefinite || terms.celebration,
-    event_date: event.event_date || '',
+    // כמו בהודעה שהמוזמן מקבל בפועל (automation.event_date_display): DD/MM/YYYY.
+    event_date: (event.event_date || '').replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$3/$2/$1'),
     event_time: event.event_time || '',
     venue_name: event.venue_name || '',
     address: event.venue_address || '',
@@ -118,9 +119,11 @@ const t = strings.messagesPage
 
 /** מתי כל הודעה יוצאת, לפי לוח אישורי ההגעה (אותו לוח שבמסך "אישורי הגעה").
  *  ``null`` = אין לוח (לא נבחר מועד סגירה / אין תאריך). */
-type ScheduleInfo = Partial<Record<MessageType, { date: string; past: boolean }>> & {
+type ScheduleInfo = Partial<Record<MessageType, { date: string; past: boolean; audience: string }>> & {
   configured: boolean
   enabled: boolean
+  /** כמה מוזמנים כבר קיבלו הזמנה (לשורה של כרטיס ההזמנה). */
+  invited?: number
 }
 
 function scheduleFromTimeline(view: RsvpTimelineView | null): ScheduleInfo {
@@ -130,7 +133,7 @@ function scheduleFromTimeline(view: RsvpTimelineView | null): ScheduleInfo {
   let reminders = 0
   for (const day of view.days) {
     for (const a of day.actions) {
-      const when = { date: `${day.weekday} ${day.date}`, past: day.is_past }
+      const when = { date: `${day.weekday} ${day.date}`, past: day.is_past, audience: a.audience }
       if (a.type === 'whatsapp_first') info.rsvp_request = when
       else if (a.type === 'reminder' && reminders < reminderTypes.length) info[reminderTypes[reminders++]] = when
       else if (a.type === 'day_of') info.event_day = when
@@ -140,7 +143,10 @@ function scheduleFromTimeline(view: RsvpTimelineView | null): ScheduleInfo {
   return info
 }
 
-export function CommunicationTab({ only }: { only?: MessageType[] } = {}) {
+export function CommunicationTab({
+  only,
+  invitedCount,
+}: { only?: MessageType[]; invitedCount?: number } = {}) {
   // המונח נשאב מהלקסיקון: באירוע עסקי "מוזמנים" הופך ל"משתתפים".
   const guestsLabel = activeEventTerms().guestsLabel
   const [messages, setMessages] = useState<EventMessage[] | null>(null)
@@ -206,7 +212,7 @@ export function CommunicationTab({ only }: { only?: MessageType[] } = {}) {
           {active && (
             <MessagePanel
               key={active.message_type}
-              schedule={schedule}
+              schedule={{ ...schedule, invited: invitedCount }}
               message={active}
               event={event}
               waConnected={waConnected}
@@ -222,12 +228,12 @@ export function CommunicationTab({ only }: { only?: MessageType[] } = {}) {
 /** שורה אחת לכל הודעה: מתי היא יוצאת, או למה עוד אין לה מועד. */
 function whenText(type: MessageType, schedule: ScheduleInfo): string {
   const w = strings.messages.when
-  if (type === 'invitation') return w.invitation
+  if (type === 'invitation') return schedule.invited ? w.invitationSent(schedule.invited) : w.invitation
   if (type === 'postponement') return w.manual
   const at = schedule[type]
   if (at) {
     if (!schedule.enabled) return w.waiting(at.date)
-    return at.past ? w.sent(at.date) : w.scheduled(at.date)
+    return at.past ? w.sent(at.date, at.audience) : w.scheduled(at.date, at.audience)
   }
   if (!schedule.configured) return w.noSchedule
   return w.notInTrack

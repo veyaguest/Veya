@@ -533,13 +533,27 @@ def render_automation_template(
 
     text = body or DEFAULT_TEMPLATE
     out_lines: list[str] = []
+    # לכל שורה שנשמרה: האם היא "כותרת" (טקסט קבוע שמסתיים בנקודתיים, כמו
+    # "לניווט:") ואילו שורות מתחתיה נמחקו/נשמרו — כדי להסיר כותרת שכל מה
+    # שהיא הציגה נמחק (אחרת המוזמן מקבל "לניווט:" בלי קישור).
+    label_rows: list[dict] = []
+    open_label: Optional[dict] = None
     dropped_any = False
     for line in text.split("\n"):
         present = [tok for tok in values if tok in line]
         # תוכן חכם: אם בשורה יש משתנים והם *כולם* ריקים — מוחקים את השורה.
         if present and all(values[tok] == "" for tok in present):
             dropped_any = True
+            if open_label is not None:
+                open_label["dropped"] += 1
             continue
+        if not line.strip():
+            open_label = None
+        elif not present and line.rstrip().endswith(":"):
+            open_label = {"index": len(out_lines), "dropped": 0, "kept": 0}
+            label_rows.append(open_label)
+        elif open_label is not None:
+            open_label["kept"] += 1
         # שורה מעורבת (חלק מהערכים קיימים וחלק ריקים): מוחקים כל טוקן ריק
         # *יחד עם המפריד שנשען עליו*, לפני ההחלפה הרגילה. בלי זה נשארות
         # שאריות שהזוג לא כתב — "דנה ויואב · " או "📍 אולמי הגן,".
@@ -554,7 +568,10 @@ def render_automation_template(
         if present:
             line = _MULTI_SPACE.sub(" ", line).rstrip()
         out_lines.append(line)
-    text = "\n".join(out_lines)
+    for row in label_rows:
+        if row["dropped"] and not row["kept"]:
+            out_lines[row["index"]] = None  # type: ignore[call-overload]
+    text = "\n".join(line for line in out_lines if line is not None)
 
     # אם התוכן החכם מחק את כל השורות — מחזירים ריק (בלי ליפול לתבנית ברירת המחדל).
     if not text.strip():

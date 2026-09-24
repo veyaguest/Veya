@@ -398,9 +398,6 @@ export function OnboardingWizard({ onCreated }: Props) {
               יש לכם רשימה מוכנה? מייבאים אותה בלחיצה אחת — מוואטסאפ, מאקסל או
               מאנשי הקשר. אפשר גם להוסיף מוזמנים אחד-אחד.
             </p>
-            {guestCount > 0 && (
-              <p className="onboard-guest-count">הוספתם {guestCount} מוזמנים ✓</p>
-            )}
 
             <div className="onboarding-import-options">
               <button
@@ -452,6 +449,14 @@ export function OnboardingWizard({ onCreated }: Props) {
                 onAdded={() => setGuestCount((c) => c + 1)}
                 onCancel={() => setShowManualForm(false)}
               />
+            )}
+
+            {/* ליד כפתור הסיום (ולא בראש השלב): בטלפון הטופס דוחף את ראש
+                השלב מחוץ למסך, והמשוב חייב להיות איפה שהעיניים נמצאות. */}
+            {guestCount > 0 && (
+              <p className="onboard-guest-count" role="status">
+                {strings.onboarding.guestsAdded(guestCount)}
+              </p>
             )}
 
             <div className="onboard-actions">
