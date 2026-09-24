@@ -243,7 +243,26 @@
         .hero-caps { grid-template-columns: repeat(2, max-content); gap: 11px 26px; font-size: var(--fs-xs); margin: 22px auto 32px; }
         .hero-caps svg { width: 16px; height: 16px; }
       }
-      .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+      .cta-row { display: flex; gap: 14px 22px; justify-content: center; align-items: center; flex-wrap: wrap; }
+      /* ---- היררכיית הפעולה ----
+         כפתור ראשי אחד גדול ובולט, ולצדו קישור שקט. שתי מסגרות באותו גודל
+         גרמו לשתי הפעולות להיראות שקולות, ואחת מהן מוציאה מהדף. */
+      .btn-lg { padding: 16px 34px; font-size: var(--fs-lg); border-radius: 12px; min-height: 56px; }
+      .cta-alt {
+        display: inline-flex; align-items: center; gap: 7px; min-height: 44px;
+        font-size: var(--fs-md); font-weight: 600; color: var(--gold-deep); text-decoration: none;
+        border-bottom: 1px solid transparent; transition: border-color 0.18s var(--ease-out);
+      }
+      .cta-alt:hover { border-bottom-color: currentColor; }
+      .cta-alt:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 4px; border-radius: 4px; }
+      .cta-alt .arw { transition: transform 0.18s var(--ease-out); }
+      @media (hover: hover) { .cta-alt:hover .arw { transform: translateX(-3px); } }
+      .on-dark .cta-alt { color: var(--gold-light); }
+      /* המשפט שמתחת לכפתור: מה באמת קורה אחרי הלחיצה */
+      .cta-note { margin: 16px auto 0; max-width: 42ch; font-size: var(--fs-sm); line-height: 1.65; color: #b6aa93; }
+      .how-cta-line { margin: 0 0 18px; font-family: var(--font-display); font-size: var(--fd-sm); color: var(--cream-text); }
+      .how .section-cta .cta-hint, .on-dark .section-cta .cta-hint { color: #b6aa93; }
+      @media (prefers-reduced-motion: reduce) { .cta-alt .arw { transition: none; } }
             /* ═════ מסלול האירוע (§16) ═════════════════════════════════════
          שרשרת שמראה את סדר הזמנים האמיתי של אירוע ומובילה את העין לגלילה.
          במובייל היא נגללת לרוחב בתוך עצמה — שישה שלבים ב-375px נדחסים
@@ -1635,7 +1654,8 @@
       .fab:active { transform: translateY(1px); }
       .fab:focus-visible { outline: 2px solid var(--charcoal) !important; outline-offset: 3px; }
       @media (max-width: 600px) {
-        .fab { min-height: 42px; padding: 0 14px; gap: 6px; font-size: var(--fs-xs); border-radius: 999px; }
+        /* 44px הוא המינימום לאזור נגיעה — כפתור הפעולה לא יורד מתחתיו */
+        .fab { min-height: 44px; padding: 0 16px; gap: 6px; font-size: var(--fs-xs); border-radius: 999px; }
         .fab-ic { width: 13px; height: 13px; }
       }
       @media (prefers-reduced-motion: reduce) {
@@ -2847,9 +2867,12 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2" /><circle cx="12" cy="12" r="2.6" /><path d="M5.5 9.5v.01M18.5 14.5v.01" /></svg>מאזן האירוע</li>
           </ul>
           <div class="cta-row reveal d2">
-            <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
-            <a href="/calculators/rsvp-timeline/" class="btn btn-ghost">לראות את לוח הזמנים</a>
+            <a href="/app?auth=register" class="btn btn-primary btn-lg">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+            <a href="/calculators/rsvp-timeline/" class="cta-alt">לראות קודם את לוח הזמנים <span class="arw" aria-hidden="true">←</span></a>
           </div>
+          <!-- מה באמת קורה אחרי הלחיצה: הרשמה → פתיחת אירוע → הרשימה.
+               בלי הבטחות: אין כאן שדה תשלום ואין התחייבות במוצר. -->
+          <p class="cta-note reveal d2">פותחים אירוע ומתחילים מרשימת המוזמנים — אפשר גם רשימה חלקית, ולהוסיף בהמשך.</p>
 
           <div class="hero-devices reveal d3">
             <!-- ═════ MacBook מאחור + iPhone חופף מלפנים ══════════════════
@@ -3139,7 +3162,7 @@
               </div>
             </div>
             <div class="gh-cta reveal d2">
-              <a href="/features/rsvp/" class="btn btn-primary">תראו איך זה נראה <span class="arw" aria-hidden="true">←</span></a>
+              <a href="/features/rsvp/" class="cta-alt">תראו איך זה נראה אצל המוזמנים <span class="arw" aria-hidden="true">←</span></a>
             </div>
           </div>
         </div>
@@ -3475,9 +3498,6 @@
           </p>
         </div>
 
-        <div class="gc-cta">
-          <a href="/app?auth=register" class="btn btn-primary">מתחילים את האירוע ב־VEYA <span class="arw" aria-hidden="true">←</span></a>
-        </div>
       </div>
     </section>
 
@@ -3664,6 +3684,14 @@
               </div>
             </li>
           </ol>
+          <!-- ה-CTA המשמעותי בדף: כאן הגולש כבר ראה את כל המסע במסכים
+               האמיתיים. משפט אחד + כפתור, בלי סקשן חדש. -->
+          <div class="section-cta reveal d2">
+            <p class="how-cta-line">זה כל המסע. הוא מתחיל ברשימת המוזמנים שלכם.</p>
+            <a href="/app?auth=register" class="btn btn-primary btn-lg">מתחילים מהרשימה שלכם <span class="arw" aria-hidden="true">←</span></a>
+            <span class="cta-hint">הרשמה, פתיחת אירוע, ומשם מייבאים או מדביקים את הרשימה.</span>
+          </div>
+
           <div class="brand-sign brand-sign--word" aria-hidden="true">
             <span class="brand-line"></span>
             <img src="/veya_text.png" alt="" width="128" height="35" loading="lazy" decoding="async" />
