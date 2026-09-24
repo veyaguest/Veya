@@ -1564,9 +1564,11 @@
       .lead-form { display: grid; gap: 18px; }
       .lead-field { display: grid; gap: 7px; }
       .lead-field label { font-size: var(--fs-sm); font-weight: 700; color: var(--charcoal); }
+      /* 16px לפחות בשדות: מתחת לזה ספארי באייפון מזמזם (zoom) אוטומטית על
+         הדף ברגע שנוגעים בשדה, והגולש נשאר עם דף מוגדל. */
       .lead-field input,
       .lead-field select {
-        width: 100%; min-height: 52px; padding: 12px 14px; font: inherit; font-size: var(--fs-md);
+        width: 100%; min-height: 52px; padding: 12px 14px; font: inherit; font-size: max(16px, var(--fs-md));
         color: var(--charcoal); background: var(--cream); border: 1px solid var(--line); border-radius: 8px;
         transition: border-color 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out);
       }
