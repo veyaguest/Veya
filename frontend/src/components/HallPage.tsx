@@ -4750,10 +4750,7 @@ export function HallPage({
 
             {showSmart && (
               <>
-              <p className="assistant-ai-disclosure">
-                המלצות המערכת מבוססות AI ונועדו לסיוע בלבד. האחריות לקבלת
-                החלטות נשארת בידי המשתמש.
-              </p>
+              <p className="assistant-ai-disclosure">{hallT.oneClickDisclosure}</p>
               <div className="hm-progress">
                 <span className="hm-progress-num">
                   {smartStats.seatedPeople} / {smartStats.totalPeople}

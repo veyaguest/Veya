@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tests.e2e_seating import bootstrap, shutdown  # noqa: E402
 from tests.call_center_helpers import (  # noqa: E402
+    add_existing_guest,
     call_logs_of,
     configure_track,
     plain_headers,
@@ -51,7 +52,7 @@ def test_regular_user_is_blocked_from_every_call_center_endpoint() -> None:
     api, teardown = bootstrap()
     try:
         configure_track(api)
-        guest = api.add_guest("אורח", "0509000001", party_size=1)
+        guest = add_existing_guest(api, "אורח", "0509000001", party_size=1)
         # בעל האירוע — משתמש רגיל, בלי הרשאת אדמין.
         plain = plain_headers(api)
 
@@ -90,8 +91,8 @@ def test_two_tenants_do_not_leak_guests_or_call_logs() -> None:
     try:
         configure_track(api_a)
         configure_track(api_b)
-        guest_a = api_a.add_guest("אורח של A", "0509000002", party_size=2)
-        guest_b = api_b.add_guest("אורח של B", "0509000003", party_size=2)
+        guest_a = add_existing_guest(api_a, "אורח של A", "0509000002", party_size=2)
+        guest_b = add_existing_guest(api_b, "אורח של B", "0509000003", party_size=2)
 
         # אדמין (משתמש נפרד) מתעד שיחה בכל אירוע.
         admin = standalone_admin(api_a)
@@ -135,8 +136,8 @@ def test_queue_filter_cannot_mix_events() -> None:
     try:
         configure_track(api_a)
         configure_track(api_b)
-        api_a.add_guest("רק של A", "0509000004", party_size=1)
-        api_b.add_guest("רק של B", "0509000005", party_size=1)
+        add_existing_guest(api_a, "רק של A", "0509000004", party_size=1)
+        add_existing_guest(api_b, "רק של B", "0509000005", party_size=1)
         admin = standalone_admin(api_a)
 
         qa = api_a.client.get("/admin/call-center/queue", headers=admin,
@@ -159,7 +160,7 @@ def test_deleting_a_guest_removes_its_call_logs() -> None:
     try:
         admin = standalone_admin(api)
         configure_track(api)
-        guest = api.add_guest("יימחק", "0509000006", party_size=1)
+        guest = add_existing_guest(api, "יימחק", "0509000006", party_size=1)
         api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
                         headers=admin, json={"outcome": "no_answer"})
         assert len(call_logs_of(api, guest["id"])) == 1
@@ -180,8 +181,8 @@ def test_deleting_an_event_removes_its_call_logs() -> None:
         admin = standalone_admin(api_a)
         configure_track(api_a)
         configure_track(api_b)
-        guest_a = api_a.add_guest("של A", "0509000007", party_size=1)
-        guest_b = api_b.add_guest("של B", "0509000008", party_size=1)
+        guest_a = add_existing_guest(api_a, "של A", "0509000007", party_size=1)
+        guest_b = add_existing_guest(api_b, "של B", "0509000008", party_size=1)
         api_a.client.post(f"/admin/call-center/guests/{guest_a['id']}/outcome",
                           headers=admin, json={"outcome": "busy"})
         api_a.client.post(f"/admin/call-center/guests/{guest_b['id']}/outcome",

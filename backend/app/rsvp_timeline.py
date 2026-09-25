@@ -333,6 +333,9 @@ def _weekday(d: date) -> str:
     return _HEB_WEEKDAY.get(d.weekday(), "")
 
 
+_CALL_AUDIENCE_LABEL = "מי שעוד לא ענו או לא החליטו"
+
+
 def _audience_label(audience: str) -> str:
     if audience == "all":
         return "כל המוזמנים"
@@ -612,12 +615,31 @@ def _empty_view(event: models.Event) -> dict:
     }
 
 
+def step_key(placement: "Placement") -> Optional[str]:
+    """מפתח ההיסטוריה של שלב: סוג ההודעה (``rsvp_request``/``reminder_1``…)
+    לשלבי WhatsApp, ``call_<n>`` לסבב שיחות."""
+    step_type = placement.step["type"]
+    if step_type == "whatsapp_first":
+        return "rsvp_request"
+    if step_type == "reminder":
+        return REMINDER_MESSAGE_TYPES.get(placement.reminder_number or 0)
+    if step_type == "call_round":
+        return f"call_{placement.round_number}"
+    return None
+
+
 def compute_timeline(
     event: models.Event,
     guests: list[models.Guest],
     now: Optional[datetime] = None,
+    history: Optional[dict[str, int]] = None,
 ) -> dict:
     """מחשב את לוח הזמנים המלא של אישורי-ההגעה עבור אירוע. טהור, בלי תופעות לוואי.
+
+    ``history`` — לשלבים שכבר עברו: כמה מוזמנים באמת היו בשלב (קיבלו את
+    ההודעה / נכנסו לסבב השיחות), לפי ``step_key`` וגם ``event_day``/``thank_you``.
+    שלב שעבר מציג את המספר ההיסטורי שלו, לא את הסטטוס של היום. ``None`` =
+    אין היסטוריה (מספרים עדכניים לכל השלבים).
 
     מחזיר dict שמתאים ל-``schemas.RsvpTimelineView`` (ה-router עוטף אותו).
     """
@@ -633,7 +655,14 @@ def compute_timeline(
 
     total = len(guests)
     pending = sum(1 for g in guests if g.rsvp_status == "pending")
+    maybe = sum(1 for g in guests if g.rsvp_status == "maybe")
     confirmed = sum(1 for g in guests if g.rsvp_status == "confirmed")
+
+    def shown_count(key: Optional[str], day: date, current: int) -> int:
+        """שלב שעבר — כמה היו בו בפועל; שלב של היום/עתידי — המצב העדכני."""
+        if history is not None and key is not None and day < today:
+            return history.get(key, 0)
+        return current
 
     def count_for(audience: str) -> int:
         if audience == "all":
@@ -670,12 +699,17 @@ def compute_timeline(
             ("אחרי השיחות האחרונות" if is_last_call else "אחרי ההודעה הזו")
             + ", רשימת המוזמנים נסגרת."
         ) if closes else ""
+        # סבב שיחות: גם מי שלא החליטו ממשיכים לשיחות (``call_center.OPEN_STATUSES``).
+        is_call = step["type"] == "call_round"
         ensure_day(placement.date)["actions"].append({
             "type": step["type"],
             "icon": step["icon"],
             "label": label,
-            "audience": _audience_label(step["audience"]),
-            "audience_count": count_for(step["audience"]),
+            "audience": _CALL_AUDIENCE_LABEL if is_call else _audience_label(step["audience"]),
+            "audience_count": shown_count(
+                step_key(placement), placement.date,
+                pending + maybe if is_call else count_for(step["audience"]),
+            ),
             "moved_from_weekend": placement.moved_from_weekend,
             "note": note,
         })
@@ -689,7 +723,7 @@ def compute_timeline(
         "icon": "❤️",
         "label": "הודעת 'היום מתראים' עם מספר השולחן",
         "audience": _audience_label("confirmed"),
-        "audience_count": confirmed,
+        "audience_count": shown_count("event_day", event_date, confirmed),
         "moved_from_weekend": False,
     })
 
@@ -703,7 +737,7 @@ def compute_timeline(
         "icon": "🙏",
         "label": "הודעת תודה למוזמנים",
         "audience": _audience_label("confirmed"),
-        "audience_count": confirmed,
+        "audience_count": shown_count("thank_you", thank_you_date, confirmed),
         "moved_from_weekend": thank_you_date != thank_you_natural,
     })
 

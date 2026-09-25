@@ -486,6 +486,39 @@ def send_window(
     return None
 
 
+def call_round_cutoff(
+    db: Session, event: models.Event, call_day: date, now: Optional[datetime] = None,
+) -> Optional[datetime]:
+    """עד מתי מוזמן היה צריך להיות ברשימה כדי להיכנס לסבב השיחות של
+    ``call_day`` — רגע היציאה של סבב ה-WhatsApp האחרון שלפניו (UTC, בלי אזור
+    זמן, כמו ``Guest.created_at``).
+
+    החלטת המייסד (2026-09-25): מוזמן חדש לא נכנס ישר לשיחות. הוא מצטרף
+    לתזכורת הקרובה, ומשם ממשיך במסלול — גם כשסבב שיחות כבר רץ, הוא מחכה
+    לתזכורת הבאה. ``None`` = אין סבב WhatsApp לפני היום הזה (אין מגבלה).
+    """
+    rounds = [r for r in rsvp_timeline.whatsapp_rounds(event, now) if r.day <= call_day]
+    if not rounds:
+        return None
+    last = rounds[-1]
+    em = event_messages_by_type(db, event.id).get(last.message_type)
+    if em is not None:
+        start = _scheduled_moment(last.day, effective_send_time(event, em))
+    else:
+        start = datetime.combine(last.day, time(23, 59), tzinfo=israel_timezone())
+    return start.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def joined_before(guest: models.Guest, cutoff: Optional[datetime]) -> bool:
+    """האם המוזמן היה ברשימה עד ``cutoff`` (ראו ``call_round_cutoff``)."""
+    if cutoff is None or guest.created_at is None:
+        return True
+    created = guest.created_at
+    if created.tzinfo is not None:
+        created = created.astimezone(timezone.utc).replace(tzinfo=None)
+    return created <= cutoff
+
+
 def _existed_by(guest: models.Guest, moment: datetime) -> bool:
     """האם המוזמן כבר היה ברשימה ברגע ``moment`` (שעון ישראל). ``created_at``
     נשמר ב-UTC בלי אזור זמן. בלי ערך — נחשב קיים (מוזמן ישן)."""
@@ -512,6 +545,7 @@ def compute_due_messages(
     כללים (החלטת המייסד 2026-09-23):
     - המסלול פועל רק כש-``rsvp_timeline.track_enabled`` — **לא** לפי שליחת הזמנה.
     - כל הודעה רק בחלון שלה (``send_window``) — אין שליחה בדיעבד.
+    - סבבי המסלול לא יוצאים בשישי/שבת, גם אם החלון שלהם עובר דרכם.
     - מוזמן מצטרף לסבב רק אם כבר היה ברשימה כשהסבב יצא.
     - מספר חסר/לא תקין — לא מנסים לשלוח WhatsApp עד שהמספר מתוקן.
     - קהל היעד נבדק מול הסטטוס העדכני: מי שאישר/לא מגיע לא מקבל עוד סבבים.
@@ -545,6 +579,10 @@ def compute_due_messages(
             continue
         window = send_window(message_type, em, event, now)
         if window is None or not (window[0] <= now_il < window[1]):
+            continue
+        # החלון של סבב נמשך עד השלב הבא — ואם הוא עובר דרך שישי/שבת (סבב
+        # בחמישי, הבא בראשון) ריצה שפוספסה בחמישי לא תשלח בסוף השבוע.
+        if message_type in TRACK_ROUND_TYPES and rsvp_timeline.is_weekend(now_il.date()):
             continue
         for guest in guests:
             if (em.id, guest.id) in sent:

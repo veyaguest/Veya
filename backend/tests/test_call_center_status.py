@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tests.e2e_seating import bootstrap, shutdown  # noqa: E402
 from tests.call_center_helpers import (  # noqa: E402
+    add_existing_guest,
     admin_headers,
     call_logs_of,
     configure_track,
@@ -37,7 +38,7 @@ def test_call_only_outcomes_never_touch_rsvp_status() -> None:
 
         for outcome in LOG_ONLY_OUTCOMES:
             for start_status in ("pending", "maybe"):
-                guest = api.add_guest(
+                guest = add_existing_guest(api, 
                     f"{outcome}-{start_status}", f"05{abs(hash(outcome + start_status)) % 10**8:08d}",
                     party_size=2,
                 )
@@ -69,7 +70,7 @@ def test_no_answer_does_not_reset_a_decided_guest() -> None:
     try:
         headers = admin_headers(api)
         configure_track(api)
-        guest = api.add_guest("כבר אישר", "0507000001", party_size=3)
+        guest = add_existing_guest(api, "כבר אישר", "0507000001", party_size=3)
         # מאשר דרך הקישור האישי — הדרך האמיתית שבה נקבע confirmed_count
         # (``GuestUpdate`` בכוונה לא חושף את השדה הזה לעריכה ידנית).
         token = guest_of(api, guest["id"]).guest_token
@@ -94,8 +95,8 @@ def test_confirm_by_phone_matches_the_public_link_exactly() -> None:
         headers = admin_headers(api)
         configure_track(api)
 
-        by_phone = api.add_guest("אישר בטלפון", "0507000002", party_size=4)
-        by_link = api.add_guest("אישר בקישור", "0507000003", party_size=4)
+        by_phone = add_existing_guest(api, "אישר בטלפון", "0507000002", party_size=4)
+        by_link = add_existing_guest(api, "אישר בקישור", "0507000003", party_size=4)
 
         api.client.post(f"/admin/call-center/guests/{by_phone['id']}/outcome",
                         headers=headers,
@@ -121,7 +122,7 @@ def test_decline_by_phone_uses_the_existing_status() -> None:
     try:
         headers = admin_headers(api)
         configure_track(api)
-        guest = api.add_guest("מבטל בטלפון", "0507000004", party_size=5)
+        guest = add_existing_guest(api, "מבטל בטלפון", "0507000004", party_size=5)
 
         api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
                         headers=headers, json={"outcome": "declined"})
@@ -141,7 +142,7 @@ def test_confirm_count_is_clamped_like_the_public_page() -> None:
     try:
         headers = admin_headers(api)
         configure_track(api)
-        guest = api.add_guest("כמות חריגה", "0507000005", party_size=2)
+        guest = add_existing_guest(api, "כמות חריגה", "0507000005", party_size=2)
 
         api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
                         headers=headers, json={"outcome": "confirmed", "count": 999})
@@ -161,9 +162,9 @@ def test_decided_guests_leave_the_queue_whoever_decided() -> None:
     try:
         headers = admin_headers(api)
         configure_track(api)
-        open_guest = api.add_guest("נשאר בתור", "0507000006", party_size=1)
-        via_owner = api.add_guest("בעל האירוע עדכן", "0507000007", party_size=1)
-        via_link = api.add_guest("ענה בקישור", "0507000008", party_size=1)
+        open_guest = add_existing_guest(api, "נשאר בתור", "0507000006", party_size=1)
+        via_owner = add_existing_guest(api, "בעל האירוע עדכן", "0507000007", party_size=1)
+        via_link = add_existing_guest(api, "ענה בקישור", "0507000008", party_size=1)
 
         # בעל/ת האירוע מעדכן ידנית במסך המוזמנים.
         api.client.patch(f"/guests/{via_owner['id']}", headers=api.headers,
@@ -188,7 +189,7 @@ def test_maybe_guests_stay_in_the_queue() -> None:
     try:
         headers = admin_headers(api)
         configure_track(api)
-        guest = api.add_guest("מתלבט", "0507000009", party_size=2)
+        guest = add_existing_guest(api, "מתלבט", "0507000009", party_size=2)
         api.client.patch(f"/guests/{guest['id']}", headers=api.headers,
                          json={"rsvp_status": "maybe"})
 
@@ -206,7 +207,7 @@ def test_unknown_outcome_is_rejected() -> None:
     try:
         headers = admin_headers(api)
         configure_track(api)
-        guest = api.add_guest("אורח", "0507000010", party_size=1)
+        guest = add_existing_guest(api, "אורח", "0507000010", party_size=1)
 
         # "maybe" ו-"answered" הן תוצאות שיחה מוכרות מאז איחוד מרכז הטלפנים
         # (call_center.OUTCOMES). כאן נבדק שאין דרך להמציא ערך חדש.

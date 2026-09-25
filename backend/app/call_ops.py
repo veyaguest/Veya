@@ -416,6 +416,17 @@ def sync(
             if (lg.event_cycle or 1) == cycle_of.get(lg.event_id):
                 prior_logs[(lg.guest_id, lg.round_number)].append(lg)
 
+    # עד מתי מוזמן היה צריך להיות ברשימה כדי להיכנס לסבב השיחות של יום מסוים.
+    from app import communication  # כאן ולא למעלה: communication → guest_journey → call_center
+
+    cutoffs: dict[tuple[int, date], Optional[datetime]] = {}
+
+    def cutoff_for(event: models.Event, day: date) -> Optional[datetime]:
+        key = (event.id, day)
+        if key not in cutoffs:
+            cutoffs[key] = communication.call_round_cutoff(db, event, day, now)
+        return cutoffs[key]
+
     # 1) יצירה / עדכון מועד / פתיחה מחדש אחרי תיקון מספר
     new_rows: list[dict] = []
     pending_keys: set[tuple[int, int, int]] = set()
@@ -433,9 +444,12 @@ def sync(
                 if task is None:
                     if g.id in unresolved_wrong or key in pending_keys:
                         continue
-                    # מוזמן שנוסף אחרי שהסבב הזה כבר יצא לא מצטרף אליו בדיעבד —
-                    # הוא ייכנס לסבב השיחות הבא (החלטת המייסד 2026-09-23).
-                    if not _existed_on(g, plan.date):
+                    # מוזמן שנוסף אחרי שהסבב הזה כבר יצא לא מצטרף אליו בדיעבד
+                    # (2026-09-23), וגם לא נכנס ישר לשיחות: קודם התזכורת
+                    # הקרובה, ומשם הלאה במסלול (2026-09-25).
+                    if not _existed_on(g, plan.date) or not communication.joined_before(
+                        g, cutoff_for(e, plan.date)
+                    ):
                         continue
                     assignee = pick_default(e.id, plan.date)
                     row = dict(
@@ -959,12 +973,18 @@ def preview(
         models.CallLog.event_id.in_(rounds.keys()), models.CallLog.outcome == call_center.WRONG_NUMBER,
     )).all()
     unresolved = call_center.unresolved_wrong_numbers(list(wrong), {g.id: g.phone or "" for g in guests})
+    # כמו ביצירת המשימות: מוזמן חדש מחכה לתזכורת הקרובה ולא נכנס ישר לשיחות.
+    from app import communication  # כאן ולא למעלה: communication → guest_journey → call_center
+
+    cutoff = {eid: communication.call_round_cutoff(db, by_id[eid], day, now) for eid in rounds}
     return [
         PreviewRow(
             by_id[g.event_id], g, rounds[g.event_id],
             defaults[g.event_id][0] if len(defaults.get(g.event_id, [])) == 1 else None,
         )
-        for g in guests if g.id not in unresolved
+        for g in guests
+        if g.id not in unresolved
+        and communication.joined_before(g, cutoff[g.event_id])
     ]
 
 

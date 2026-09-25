@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tests.e2e_seating import bootstrap  # noqa: E402
 from tests.call_center_helpers import (  # noqa: E402
+    add_existing_guest,
     call_logs_of,
     configure_track,
     phone_agent,
@@ -105,7 +106,7 @@ def test_calls_made_counter_uses_existing_call_logs() -> None:
         configure_track(api)
         admin = standalone_admin(api)
         agent_id, agent = phone_agent(api)
-        guest = api.add_guest("ישראל כהן", "0509300001", party_size=2)
+        guest = add_existing_guest(api, "ישראל כהן", "0509300001", party_size=2)
 
         api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
                         headers=agent, json={"outcome": "no_answer"})
@@ -140,7 +141,7 @@ def test_disabled_caller_cannot_log_in_or_act() -> None:
         assert _login(api, email).status_code in (401, 403)
         # ...וגם הטוקן שכבר היה בידו (token_version עלה).
         assert api.client.get("/admin/call-center", headers=live).status_code == 401
-        guest = api.add_guest("לא ייענה", "0509300002", party_size=1)
+        guest = add_existing_guest(api, "לא ייענה", "0509300002", party_size=1)
         blocked = api.client.post(
             f"/admin/call-center/guests/{guest['id']}/outcome",
             headers=live, json={"outcome": "no_answer"},
@@ -188,7 +189,7 @@ def test_disabling_a_caller_keeps_all_history() -> None:
         login = _login(api, email)
         agent = {"Authorization": f"Bearer {login.json()['access_token']}"}
 
-        guest = api.add_guest("רותם ברק", "0509300003", party_size=3)
+        guest = add_existing_guest(api, "רותם ברק", "0509300003", party_size=3)
         r = api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
                             headers=agent, json={"outcome": "confirmed", "count": 2})
         assert r.status_code == 200, r.text
@@ -228,8 +229,8 @@ def test_admin_assigns_and_removes_events() -> None:
     try:
         configure_track(api_a)
         configure_track(api_b)
-        api_a.add_guest("אורח A", "0509300010", party_size=1)
-        api_b.add_guest("אורח B", "0509300011", party_size=1)
+        add_existing_guest(api_a, "אורח A", "0509300010", party_size=1)
+        add_existing_guest(api_b, "אורח B", "0509300011", party_size=1)
         admin = standalone_admin(api_a)
         agent_id, agent = phone_agent(api_a)
 

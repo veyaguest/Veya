@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tests.e2e_seating import bootstrap, shutdown  # noqa: E402
 from tests.call_center_helpers import (  # noqa: E402
+    add_existing_guest,
     admin_headers,
     call_logs_of,
     configure_track,
@@ -32,7 +33,7 @@ def test_followup_hides_then_returns_the_guest_marked() -> None:
     try:
         headers = admin_headers(api)
         configure_track(api)
-        guest = api.add_guest("ביקש שנחזור", "0508000001", party_size=2)
+        guest = add_existing_guest(api, "ביקש שנחזור", "0508000001", party_size=2)
 
         when = datetime.utcnow() + timedelta(hours=4)
         r = api.client.post(
@@ -69,7 +70,7 @@ def test_followup_note_and_time_are_persisted_in_call_logs() -> None:
     try:
         headers = admin_headers(api)
         configure_track(api)
-        guest = api.add_guest("עם הערה", "0508000002", party_size=1)
+        guest = add_existing_guest(api, "עם הערה", "0508000002", party_size=1)
 
         when = datetime.utcnow() + timedelta(days=1)
         api.client.post(
@@ -99,7 +100,7 @@ def test_callback_requires_a_time() -> None:
     try:
         headers = admin_headers(api)
         configure_track(api)
-        guest = api.add_guest("בלי מועד", "0508000003", party_size=1)
+        guest = add_existing_guest(api, "בלי מועד", "0508000003", party_size=1)
 
         r = api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
                             headers=headers, json={"outcome": "callback"})
@@ -116,7 +117,7 @@ def test_repeated_followups_accumulate_and_latest_wins() -> None:
     try:
         headers = admin_headers(api)
         configure_track(api)
-        guest = api.add_guest("דחיין סדרתי", "0508000004", party_size=2)
+        guest = add_existing_guest(api, "דחיין סדרתי", "0508000004", party_size=2)
 
         for i in range(3):
             # כל פעם הוא חוזר לתור, ואנחנו דוחים שוב.
@@ -149,7 +150,7 @@ def test_pending_followup_survives_a_new_round() -> None:
     try:
         headers = admin_headers(api)
         configure_track(api)
-        guest = api.add_guest("דחה רחוק", "0508000005", party_size=1)
+        guest = add_existing_guest(api, "דחה רחוק", "0508000005", party_size=1)
 
         api.client.post(
             f"/admin/call-center/guests/{guest['id']}/outcome",
@@ -179,7 +180,7 @@ def test_followup_does_not_change_the_workflow_schedule() -> None:
 
         headers = admin_headers(api)
         configure_track(api)
-        guest = api.add_guest("אורח", "0508000006", party_size=1)
+        guest = add_existing_guest(api, "אורח", "0508000006", party_size=1)
 
         before_anchor = event_of(api).rsvp_track_started_at
         before = [(p.round_number, p.date) for p in rsvp_timeline.call_rounds(event_of(api))]
@@ -212,7 +213,7 @@ def test_followup_then_decision_closes_the_guest() -> None:
     try:
         headers = admin_headers(api)
         configure_track(api)
-        guest = api.add_guest("סוגר בסוף", "0508000007", party_size=3)
+        guest = add_existing_guest(api, "סוגר בסוף", "0508000007", party_size=3)
 
         api.client.post(
             f"/admin/call-center/guests/{guest['id']}/outcome",
@@ -241,9 +242,9 @@ def test_waiting_and_done_never_double_count() -> None:
     try:
         headers = admin_headers(api)
         configure_track(api)
-        back = api.add_guest("חזר מ-Follow-up", "0508000008", party_size=1)
-        api.add_guest("עוד ממתין", "0508000009", party_size=1)
-        done = api.add_guest("לא ענה", "0508000010", party_size=1)
+        back = add_existing_guest(api, "חזר מ-Follow-up", "0508000008", party_size=1)
+        add_existing_guest(api, "עוד ממתין", "0508000009", party_size=1)
+        done = add_existing_guest(api, "לא ענה", "0508000010", party_size=1)
 
         api.client.post(f"/admin/call-center/guests/{done['id']}/outcome",
                         headers=headers, json={"outcome": "no_answer"})

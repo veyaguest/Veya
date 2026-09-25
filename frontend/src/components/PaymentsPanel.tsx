@@ -56,6 +56,9 @@ export function PaymentsPanel({ expense, onChanged }: Props) {
 
   return (
     <section className="fin-payments">
+      {/* בלי מחיר ובלי תשלום — שלושה "0 ₪" הם לא נתון. היומן עצמו נשאר
+          זמין: אפשר לרשום מקדמה עוד לפני שהמחיר הסופי ידוע. */}
+      {(expense.total_agorot > 0 || expense.paid_agorot > 0) && (
       <div className="fin-payments-head">
         <Figure label={t.totalCostLabel} value={expense.total_display} />
         <Figure label={t.summaryPaidLabel} value={expense.paid_display} />
@@ -67,6 +70,7 @@ export function PaymentsPanel({ expense, onChanged }: Props) {
           tone={settled ? 'done' : 'due'}
         />
       </div>
+      )}
 
       {/* נרשמו תשלומים מעל עלות ההוצאה. מוסבר במקום להשאיר את הזוג מול
           שני מספרים שלא מסתדרים — היומן מציג 14,500 והסיכום 12,000. */}
@@ -199,19 +203,31 @@ function PaymentForm({
 
   const shekels = parseInt(amount || '0', 10)
 
+  function save() {
+    if (!shekels || busy) return
+    onSave({
+      amount_agorot: shekels * 100,
+      payee: payee.trim(),
+      paid_on: paidOn,
+      kind,
+      note: note.trim() || null,
+    })
+  }
+
+  // לא <form>: היומן יושב בתוך טופס ההוצאה, וטופס בתוך טופס אינו חוקי ב-HTML —
+  // הדפדפן שלח את הטופס הלא נכון והמסך נטען מחדש בלי לשמור את התשלום.
+  // Enter בשדה של התשלום שומר את התשלום, ולא את ההוצאה שמסביבו.
   return (
-    <form
+    <div
       className="fin-payment-form"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (!shekels) return
-        onSave({
-          amount_agorot: shekels * 100,
-          payee: payee.trim(),
-          paid_on: paidOn,
-          kind,
-          note: note.trim() || null,
-        })
+      role="group"
+      aria-label={t.savePayment}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') {
+          e.preventDefault()
+          e.stopPropagation()
+          save()
+        }
       }}
     >
       <div className="fin-row">
@@ -286,14 +302,14 @@ function PaymentForm({
       </label>
 
       <div className="fin-payment-form-actions">
-        <button type="submit" className="btn-primary btn-sm" disabled={busy || !shekels}>
+        <button type="button" className="btn-primary btn-sm" onClick={save} disabled={busy || !shekels}>
           {busy ? strings.common.saving : t.savePayment}
         </button>
         <button type="button" className="btn-ghost btn-sm" onClick={onCancel} disabled={busy}>
           {strings.common.cancel}
         </button>
       </div>
-    </form>
+    </div>
   )
 }
 

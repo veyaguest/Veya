@@ -974,6 +974,9 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
         // "תמונת מצב" סופרת אנשים (SUM party_size), לא רשומות מוזמן — מוזמן
         // אחד עם party_size=4 שאישר מייצג 4, לא 1. חל רק כאן (העוגה + הכרטיסים);
         // שאר המערכת (למשל סיכום "ניהול מוזמנים") ממשיכה לספור מוזמנים כרגיל.
+        // "עוד לא קיבלו הזמנה" רלוונטי רק עד סגירת הרשימה — אחריה זו לא משימה.
+        const uninvited =
+          rsvpView?.track_phase === 'ended' ? 0 : stats.total_guests - stats.invitations_sent
         const rsvpSegments = [
           { key: 'confirmed', label: t.kpiConfirmed, value: stats.confirmed_people, color: 'var(--gauge-confirmed)' },
           { key: 'maybe', label: t.gaugeStatusMaybe, value: stats.maybe_people, color: 'var(--gauge-maybe)' },
@@ -1035,10 +1038,10 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
                  "135 מוזמנים נוספו ועדיין לא קיבלו הזמנה" הוא הדבר במסך
                  שבאמת מחייב פעולה — מיד אחרי הסטטוס. הסקשן מרונדר רק כשיש
                  בו תוכן (שני הרכיבים מחזירים null כשאין מה להציג). ---- */}
-            {(stats.total_guests - stats.invitations_sent > 0 || giftsEligible) && (
+            {(uninvited > 0 || giftsEligible) && (
               <div className="dash-stack dash-actions">
                 <InviteBanner
-                  count={stats.total_guests - stats.invitations_sent}
+                  count={uninvited}
                   onSend={() => onNavigate?.('messages')}
                 />
                 {giftsEligible && (

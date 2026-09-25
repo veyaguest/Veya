@@ -14,7 +14,7 @@ from __future__ import annotations
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 
@@ -416,7 +416,44 @@ def rsvp_timeline_view(
     ובלי כתיבה. אם אין עדיין תאריך אירוע או מועד סגירת רשימה, מוחזר מצב 'לא הוגדר'.
     """
     guests = _guests(db, event.id)
-    return schemas.RsvpTimelineView(**rsvp_timeline.compute_timeline(event, guests))
+    return schemas.RsvpTimelineView(
+        **rsvp_timeline.compute_timeline(event, guests, history=_step_history(db, event))
+    )
+
+
+def _step_history(db: Session, event: models.Event) -> dict[str, int]:
+    """כמה מוזמנים היו בפועל בכל שלב שכבר קרה, במחזור הנוכחי: קיבלו את
+    ההודעה (WhatsApp), או נכנסו לרשימת סבב השיחות (משימה או שיחה מתועדת)."""
+    kinds = ("rsvp_request", "reminder_1", "reminder_2", "final_reminder", "event_day", "thank_you")
+    out: dict[str, int] = {}
+    for kind, n in db.execute(
+        select(models.Message.kind, func.count(func.distinct(models.Message.guest_id)))
+        .where(
+            models.Message.event_id == event.id,
+            models.Message.direction == "outbound",
+            models.Message.kind.in_(kinds),
+            event_cycle.current_sends(event),
+        )
+        .group_by(models.Message.kind)
+    ).all():
+        out[kind] = n
+    cycle = event_cycle.of(event)
+    called: dict[int, set[int]] = {}
+    for rnd, gid in db.execute(
+        select(models.CallTask.round_number, models.CallTask.guest_id).where(
+            models.CallTask.event_id == event.id, models.CallTask.event_cycle == cycle,
+        )
+    ).all():
+        called.setdefault(rnd, set()).add(gid)
+    for rnd, gid, log_cycle in db.execute(
+        select(models.CallLog.round_number, models.CallLog.guest_id, models.CallLog.event_cycle)
+        .where(models.CallLog.event_id == event.id)
+    ).all():
+        if (log_cycle or 1) == cycle and rnd is not None:
+            called.setdefault(rnd, set()).add(gid)
+    for rnd, gids in called.items():
+        out[f"call_{rnd}"] = len(gids)
+    return out
 
 
 # ---- דשבורד "ניהול אישורי הגעה" ----

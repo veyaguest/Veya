@@ -66,6 +66,13 @@ type Tab = 'cost' | 'counting' | 'summary'
  * שם העמוד עצמו (``t.navTitle``) הוא היוצא מן הכלל: "מאזן האירוע" קבוע
  * וזהה בכל סוגי האירוע (החלטת בעלים 2026-09-15) — לא נגזר מהלקסיקון.
  */
+const TABS: readonly Tab[] = ['cost', 'counting', 'summary']
+
+function tabFromUrl(): Tab | null {
+  const value = new URLSearchParams(window.location.search).get('tab')
+  return TABS.includes(value as Tab) ? (value as Tab) : null
+}
+
 export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') => void }) {
   const terms = activeEventTerms()
 
@@ -74,7 +81,14 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
   const [counting, setCounting] = useState<GiftCounting | null>(null)
   const [byGuest, setByGuest] = useState<GuestGiftRow[] | null>(null)
 
-  const [tab, setTab] = useState<Tab | null>(null)
+  // הלשונית נשמרת בכתובת (?tab=) — כך רענון ו"חזור" מחזירים לאותה לשונית.
+  const [tab, setTabState] = useState<Tab | null>(() => tabFromUrl())
+  const setTab = useCallback((next: Tab) => {
+    setTabState(next)
+    const url = new URL(window.location.href)
+    url.searchParams.set('tab', next)
+    window.history.replaceState(window.history.state, '', url.pathname + url.search)
+  }, [])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
@@ -83,6 +97,8 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
   // הקבוצה שממנה נלחץ "הוספה ל…" — הקטלוג נפתח עליה במקום על תשע קבוצות.
   const [addCategory, setAddCategory] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  // הקבוצה של ההוצאה שנשמרה אחרונה — נפתחת, כדי שהשורה תיראה מיד.
+  const [lastSavedCategory, setLastSavedCategory] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [countingNow, setCountingNow] = useState(false)
   const [deletingEnvelope, setDeletingEnvelope] = useState<GiftEntry | null>(null)
@@ -101,7 +117,7 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
         setCounting(count)
         // הלשונית הראשונה נבחרת פעם אחת בלבד, לפי מצב האירוע — ואחר כך
         // בחירת המשתמש מנצחת ולא נדרסת בכל רענון.
-        setTab((prev) => prev ?? (count.counting_open ? 'counting' : 'cost'))
+        setTabState((prev) => prev ?? (count.counting_open ? 'counting' : 'cost'))
       })
       .catch((e) => alive && setError(e instanceof Error ? e.message : t.loadError))
       .finally(() => alive && setLoading(false))
@@ -139,6 +155,7 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
       }
       setEditing(undefined)
       setAddCategory(null)
+      setLastSavedCategory(input.category)
       refresh()
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : t.saveError)
@@ -207,6 +224,7 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
           }}
           onEdit={setEditing}
           onTemplateApplied={refresh}
+          openCategory={lastSavedCategory}
         />
       )}
 
@@ -233,6 +251,13 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
 
       {editing !== undefined && (
         <ExpenseEditor
+          // מפתח לפי השורה: מעבר מ"הוספה" לשורה קיימת מתחיל טופס נקי.
+          key={editing?.id ?? 'new'}
+          existing={data.expenses}
+          onOpenExisting={(e) => {
+            setAddCategory(null)
+            setEditing(e)
+          }}
           categories={categories}
           expense={editing}
           initialCategory={addCategory}
@@ -399,9 +424,11 @@ function CostTab({
   onTemplateApplied,
   onAttendance,
   onNavigate,
+  openCategory,
 }: {
   data: FinanceSummary
   terms: ReturnType<typeof activeEventTerms>
+  openCategory?: string | null
   onAdd: (category?: string) => void
   onEdit: (e: Expense) => void
   onTemplateApplied: () => void
@@ -410,12 +437,26 @@ function CostTab({
 }) {
   const { cost } = data
   const grouped = useMemo(() => groupByCategory(data.expenses), [data.expenses])
+  // הוצאות שעדיין בלי סכום — בסדר שבו הן מוצגות (לפי קבוצה), כדי ש"הבא"
+  // יהיה באמת הבא ברשימה.
+  const missing = useMemo(
+    () =>
+      cost.categories
+        .flatMap((c) => grouped.get(c.key) ?? [])
+        .filter((e) => !e.amount_agorot && !e.total_agorot && !(e.calc_method === 'percent' && e.quantity)),
+    [cost.categories, grouped],
+  )
+  // עוד אף הוצאה לא הגיעה לסכום (גם שורת אחוז — היא אחוז מכלום).
+  const noAmountsYet = cost.total_agorot === 0
   const [applying, setApplying] = useState(false)
   // איזו קבוצה פתוחה. **סגורות כברירת מחדל**: אירוע טיפוסי הוא 16
   // שורות בתשע קבוצות, ואף אחד לא נכנס לכאן כדי לקרוא 16 שורות — הוא
   // נכנס לבדוק סעיף אחד. מי שכן רוצה את הכול מקבל "פתיחת הכול".
   const [open, setOpen] = useState<Set<string>>(new Set())
   const allOpen = cost.categories.length > 0 && open.size === cost.categories.length
+  useEffect(() => {
+    if (openCategory) setOpen((prev) => new Set(prev).add(openCategory))
+  }, [openCategory, data])
 
   function toggle(key: string) {
     setOpen((prev) => {
@@ -441,6 +482,20 @@ function CostTab({
       {cost.commitments.map((c) => (
         <CommitmentCard key={c.expense_id} commitment={c} attendance={data.attendance} />
       ))}
+
+      {missing.length > 0 && (
+        <section className="fin-card fin-missing" aria-live="polite">
+          <h2 className="fin-card-title">
+            {noAmountsYet ? t.missingAllTitle : t.missingSomeTitle(missing.length)}
+          </h2>
+          <p className="fin-hint">
+            {noAmountsYet ? t.missingAllBody : t.missingSomeBody}
+          </p>
+          <button type="button" className="btn-primary btn-sm" onClick={() => onEdit(missing[0])}>
+            {t.missingCta}
+          </button>
+        </section>
+      )}
 
       <section className="fin-section">
         <div className="fin-section-head">
@@ -918,7 +973,8 @@ function ExpenseRow({ expense, onEdit }: { expense: Expense; onEdit: () => void 
               {t.remainingBadge(expense.remaining_display)}
             </span>
           )}
-          {expense.is_estimated && (
+          {/* "הערכה" על שורה בלי סכום היא תג על כלום. */}
+          {expense.is_estimated && expense.total_agorot > 0 && (
             <span className="fin-badge">{t.estimatedLabel}</span>
           )}
           {expense.note && <span className="fin-expense-note">{expense.note}</span>}
@@ -929,6 +985,8 @@ function ExpenseRow({ expense, onEdit }: { expense: Expense; onEdit: () => void 
         <span className={`fin-expense-total ${expense.total_agorot ? '' : 'is-empty'}`}>
           {expense.total_agorot ? expense.total_display : t.expenseNoAmount}
         </span>
+        {/* כל השורה לחיצה — וזה נאמר במילה, לא רק בסמן העכבר. */}
+        <span className="fin-expense-edit" aria-hidden="true">{t.editRowLabel}</span>
       </button>
     </li>
   )
@@ -1249,6 +1307,7 @@ function SummaryTab({
   // עוד אין הוצאות ואין מתנות — "יצאתם בדיוק מאוזנים 0 ₪" וקיר של אפסים
   // הם מסקנה שקרית, לא סיכום. אומרים מה יופיע כאן ומה עושים עכשיו.
   const nothingYet = data.cost.total_agorot === 0 && (data.income.total_agorot ?? 0) === 0
+  const noGiftsYet = (data.income.total_agorot ?? 0) === 0
 
   // הדוח המלא נטען לפי דרישה, לא עם המסך: הוא מכיל שורה לכל מוזמן
   // (מאות שורות באירוע טיפוסי), ואיש לא מסתכל עליו רוב הזמן.
@@ -1304,7 +1363,7 @@ function SummaryTab({
         </div>
         <div className="fin-summary-row">
           <span>{t.summaryGiftsLabel}</span>
-          <strong>{data.income.total_display || '—'}</strong>
+          <strong>{noGiftsYet ? t.giftsNotCountedYet : data.income.total_display || '—'}</strong>
         </div>
 
         <div className="fin-summary-bottom">
@@ -1312,6 +1371,10 @@ function SummaryTab({
             // צד ההכנסות חסום חלקית ⇒ אין תוצאה. מספר שמוצג כ"התוצאה
             // הכספית של האירוע" ומחושב מנתון חלקי הוא הטעיה, לא קירוב.
             <p className="fin-hint">{t.bottomLineLocked}</p>
+          ) : noGiftsYet ? (
+            // עוד לא נספרה אף מתנה — "חסר" בגובה כל העלות הוא לא תחזית, אלא
+            // אפס בצד אחד של המאזן.
+            <p className="fin-hint">{t.bottomLineAfterGifts}</p>
           ) : (
             <>
               <span className="fin-summary-bottom-label">
@@ -1332,7 +1395,7 @@ function SummaryTab({
           )}
         </div>
 
-        {!data.counting_open && <p className="fin-hint">{t.forecastNote}</p>}
+        {!data.counting_open && !noGiftsYet && <p className="fin-hint">{t.forecastNote}</p>}
         {/* השורה שמונעת את השאלה "רגע, כמה ירד לנו?". */}
         <p className="fin-hint">{t.noFeeNote}</p>
       </section>
@@ -1355,7 +1418,8 @@ function SummaryTab({
       </section>
 
       {/* הפער בין הגעה למתנות — שני מספרים זה לצד זה שדוח כספי רגיל
-          לא מציג בכלל. */}
+          לא מציג בכלל. בלי מתנות — כרטיס של אפסים, ולכן לא מוצג. */}
+      {!noGiftsYet && (
       <section className="fin-card">
         <h2 className="fin-card-title">{t.breakdownTitle}</h2>
         <div className="fin-hero-facts">
@@ -1383,6 +1447,7 @@ function SummaryTab({
           />
         </div>
       </section>
+      )}
 
       <section className="fin-card">
         <h2 className="fin-card-title">{t.rsvpTitle}</h2>
@@ -1569,8 +1634,10 @@ function groupByCategory(expenses: Expense[]): Map<string, Expense[]> {
 function describeCalc(e: Expense): string {
   const price = `${Math.trunc(e.amount_agorot / 100).toLocaleString('he-IL')} ₪`
 
-  if (e.calc_method === 'percent') return t.calcPercent(e.quantity ?? 0)
+  if (e.calc_method === 'percent') return e.quantity ? t.calcPercent(e.quantity) : ''
   if (e.calc_method === 'fixed') return ''
+  // בלי מחיר אין חישוב — "0 ₪ × 3 מגיעים" נראה כמו נתון.
+  if (!e.amount_agorot) return ''
   if (e.billed_quantity === null) return ''
 
   if (e.calc_method === 'per_attendee') {

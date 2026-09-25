@@ -276,7 +276,10 @@ function CoupleRsvpView({
       {track && (
         <TrackStatusCard
           track={track}
-          onResend={onNavigate ? () => onNavigate('messages') : undefined}
+          // אחרי סגירת הרשימה אין טעם להציע לשלוח הזמנות למוזמנים חדשים.
+          onResend={
+            onNavigate && view?.track_phase !== 'ended' ? () => onNavigate('messages') : undefined
+          }
           onOpenGuests={openGuests}
         />
       )}

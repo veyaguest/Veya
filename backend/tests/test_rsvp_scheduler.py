@@ -203,6 +203,92 @@ def test_new_guest_skips_past_call_round() -> None:
     print("✓ (8) מוזמן חדש מצטרף לסבב השיחות הבא, לא לזה שעבר")
 
 
+def _called_on(db: Session, day: date) -> set[str]:
+    """מי ברשימת השיחות של סבב השיחות שביום ``day`` (אחרי יציאת הסבב)."""
+    from app import call_center
+
+    queues = call_center.build_queues(db, now=_at(day, 10))
+    return {g.full_name for q in queues for g in q.guests}
+
+
+def test_new_guest_waits_for_the_next_reminder_before_calls() -> None:
+    """(2026-09-25) מוזמן חדש לא נכנס ישר לשיחות: קודם התזכורת הקרובה, ומשם
+    במסלול. גם כשסבב שיחות כבר רץ — הוא מחכה לתזכורת הבאה.
+
+    לוח: W 15/9 · P 17/9 · W 20/9 (12:00) · P 23/9 · W 24/9 · P 28/9.
+    """
+    db = _db()
+    ev = _event(db)
+    _guest(db, ev, "ותיק")
+    before_call = _guest(db, ev, "לפני השיחות", "0501010101", created=_at(date(2026, 9, 16), 7))
+    during_call = _guest(db, ev, "בזמן השיחות", "0502020202", created=_at(date(2026, 9, 17), 7))
+    # 20/9 בשעה 10:00 בישראל — לפני יציאת תזכורת 2 (12:00): מקבל אותה.
+    before_send = _guest(db, ev, "לפני השליחה", "0503030303", created=_at(date(2026, 9, 20), 7))
+    # 20/9 בשעה 15:00 בישראל — אחרי שתזכורת 2 יצאה: מחכה לתזכורת 3.
+    after_send = _guest(db, ev, "אחרי השליחה", "0504040404", created=_at(date(2026, 9, 20), 12))
+
+    # המשימה המתוזמנת רצה כרגיל (היא זו שמקבעת את יום תחילת המסלול).
+    _run_every_day(db, date(2026, 9, 14), date(2026, 9, 17))
+    assert _called_on(db, date(2026, 9, 17)) == {"ותיק"}, _called_on(db, date(2026, 9, 17))
+    _run_every_day(db, date(2026, 9, 18), date(2026, 9, 23))
+    assert _called_on(db, date(2026, 9, 23)) == {"ותיק", "לפני השיחות", "בזמן השיחות", "לפני השליחה"}
+    _run_every_day(db, date(2026, 9, 24), date(2026, 9, 28))
+    assert "אחרי השליחה" in _called_on(db, date(2026, 9, 28))
+    _run_every_day(db, date(2026, 9, 29), date(2026, 9, 29))
+    assert _kinds_for(db, before_call) == ["reminder_2", "final_reminder"]
+    assert _kinds_for(db, during_call) == ["reminder_2", "final_reminder"]
+    assert _kinds_for(db, before_send) == ["reminder_2", "final_reminder"]
+    assert _kinds_for(db, after_send) == ["final_reminder"]
+    print("✓ מוזמן חדש: קודם התזכורת הקרובה, ורק אחריה שיחות")
+
+
+def test_maybe_goes_to_calls_and_answered_leave() -> None:
+    """אישר / לא מגיע — יוצאים גם מהשיחות. לא החליט — ממשיך לשיחות. לא ענה — ממשיך."""
+    db = _db()
+    ev = _event(db)
+    for name, status in (("אישר", "confirmed"), ("לא מגיע", "declined"),
+                         ("לא החליט", "maybe"), ("לא ענה", "pending")):
+        _guest(db, ev, name, status=status)
+    _run_every_day(db, date(2026, 9, 14), date(2026, 9, 17))
+    assert _called_on(db, date(2026, 9, 17)) == {"לא החליט", "לא ענה"}
+    print("✓ לא החליט / לא ענה — לשיחות; אישר / לא מגיע — לא")
+
+
+def test_track_rounds_are_never_sent_on_friday_or_saturday() -> None:
+    """תזכורת 3 בחמישי 24/9, השלב הבא בשני 28/9. אם הריצה של חמישי פוספסה —
+    שישי ושבת לא שולחים; ראשון (עדיין בתוך החלון) כן."""
+    db = _db()
+    ev = _event(db)
+    g = _guest(db, ev, "אורח")
+    _run_every_day(db, date(2026, 9, 14), date(2026, 9, 23))
+    _tick(db, _at(date(2026, 9, 25)))  # שישי
+    _tick(db, _at(date(2026, 9, 26)))  # שבת
+    assert "final_reminder" not in _kinds_for(db, g), "נשלח בסוף שבוע"
+    _tick(db, _at(date(2026, 9, 27)))  # ראשון
+    assert _kinds_for(db, g)[-1] == "final_reminder"
+    print("✓ שישי/שבת: אין שליחה, גם כשחלון הסבב עובר דרכם")
+
+
+def test_past_steps_show_their_historical_count() -> None:
+    """שלב שעבר מציג כמה באמת היו בו — לא את הסטטוס של היום."""
+    from app.routers.automation import _step_history
+
+    db = _db()
+    ev = _event(db)
+    a = _guest(db, ev, "א", "0501111111")
+    _guest(db, ev, "ב", "0502222222")
+    _run_every_day(db, date(2026, 9, 14), date(2026, 9, 15))
+    a.rsvp_status = "confirmed"  # אישר אחרי שקיבל את הבקשה ואת תזכורת 1
+    db.commit()
+    guests = list(db.scalars(select(models.Guest).where(models.Guest.event_id == ev.id)).all())
+    view = rsvp_timeline.compute_timeline(ev, guests, _at(date(2026, 9, 16)), history=_step_history(db, ev))
+    counts = {a_["label"]: a_["audience_count"] for d in view["days"] for a_ in d["actions"]}
+    assert counts["בקשת אישור ראשונה ב-WhatsApp"] == 2, counts  # היסטורי
+    assert counts["תזכורת ראשונה"] == 2, counts                  # היסטורי
+    assert counts["תזכורת שנייה"] == 1, counts                   # עתידי — המצב של היום
+    print("✓ שלב שעבר — המספר ההיסטורי; שלב עתידי — המצב העדכני")
+
+
 def test_no_replay_after_a_missed_round() -> None:
     """(18) המשימה לא רצה בזמן תזכורת 1 — כשהיא חוזרת, בחלון של תזכורת 2,
     תזכורת 1 לא נשלחת בדיעבד."""
@@ -377,4 +463,8 @@ if __name__ == "__main__":
     test_event_day_and_thank_you_are_sent_by_the_scheduler()
     test_emergency_stop_and_open_postponement_send_nothing()
     test_delivered_invitation_still_counts_as_invited()
+    test_new_guest_waits_for_the_next_reminder_before_calls()
+    test_maybe_goes_to_calls_and_answered_leave()
+    test_track_rounds_are_never_sent_on_friday_or_saturday()
+    test_past_steps_show_their_historical_count()
     print("\nכל בדיקות המשימה המתוזמנת עברו ✓")

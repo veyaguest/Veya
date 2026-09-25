@@ -49,6 +49,12 @@ def _configure_track(api, *, days_to_event: int, commit_days: int, started_days_
         event.venue_commit_days_before = commit_days
         event.rsvp_track_active = True
         event.rsvp_track_started_at = datetime.utcnow() - timedelta(days=started_days_ago)
+        # המוזמנים כבר היו ברשימה כשהמסלול התחיל — מוזמן "שנוסף היום" מחכה
+        # לתזכורת הקרובה ולא נכנס ישר לשיחות (2026-09-25), כמו ב-call_center_helpers.
+        existed = event.rsvp_track_started_at - timedelta(days=1)
+        for guest in db.query(models.Guest).filter_by(event_id=event.id).all():
+            if guest.created_at is None or guest.created_at > existed:
+                guest.created_at = existed
         db.commit()
     finally:
         db.close()

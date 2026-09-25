@@ -296,3 +296,24 @@ def shift_callback(guest_id: int, *, minutes_from_now: int) -> None:
         db.commit()
     finally:
         db.close()
+
+
+def add_existing_guest(api, full_name: str, phone: str, **kwargs):
+    """מוזמן שכבר היה ברשימה לפני שהמסלול התחיל (נוסף לפני חודש).
+
+    מ-2026-09-25 מוזמן "שנוסף היום" לא נכנס ישר לשיחות — הוא מחכה לתזכורת
+    הקרובה (``communication.call_round_cutoff``). בדיקות של תור השיחות עצמו
+    (הרשאות, סינון, תוצאות שיחה) צריכות מוזמן שכבר במסלול, לא מוזמן חדש.
+    """
+    from app.database import SessionLocal
+    from app import models
+
+    guest = api.add_guest(full_name, phone, **kwargs)
+    db = SessionLocal()
+    try:
+        row = db.get(models.Guest, guest["id"])
+        row.created_at = datetime.utcnow() - timedelta(days=30)
+        db.commit()
+    finally:
+        db.close()
+    return guest

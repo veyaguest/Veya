@@ -252,9 +252,15 @@ def build_queues(
     phone_by_guest = {g.id: g.phone or "" for g in guests}
     hidden = _handled_guest_ids(list(logs), current_round, now, phone_by_guest)
 
+    # מוזמן חדש לא נכנס ישר לשיחות — רק מי שהיה ברשימה כשיצאה התזכורת
+    # האחרונה לפני הסבב (``communication.call_round_cutoff``, 2026-09-25).
+    from app import communication  # כאן ולא למעלה: communication → guest_journey → call_center
+
+    cutoff = {e.id: communication.call_round_cutoff(db, e, p.date, now) for e, p in due}
+
     waiting_by_event: dict[int, list[models.Guest]] = {eid: [] for eid in event_ids}
     for guest in guests:
-        if guest.id not in hidden:
+        if guest.id not in hidden and communication.joined_before(guest, cutoff[guest.event_id]):
             waiting_by_event[guest.event_id].append(guest)
 
     done_by_event: dict[int, set[int]] = {eid: set() for eid in event_ids}

@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tests.e2e_seating import bootstrap, shutdown  # noqa: E402
-from tests.call_center_helpers import configure_track, phone_agent  # noqa: E402
+from tests.call_center_helpers import add_existing_guest, configure_track, phone_agent  # noqa: E402
 
 
 def setup_module(module) -> None:  # noqa: ARG001
@@ -159,8 +159,8 @@ def test_scenario_1_three_hundred_guests_all_listed_once() -> None:
 
 def test_scenario_2_confirmed_guest_never_stays_in_queue() -> None:
     api, _ = bootstrap()
-    early = api.add_guest("אישרה מוקדם", _phone(2001))
-    late = api.add_guest("מאשר אחרי", _phone(2002))
+    early = add_existing_guest(api, "אישרה מוקדם", _phone(2001))
+    late = add_existing_guest(api, "מאשר אחרי", _phone(2002))
     _set_guest(early["id"], rsvp_status="confirmed")
     configure_track(api)
     _, admin = _admin()
@@ -179,7 +179,7 @@ def test_scenario_2_confirmed_guest_never_stays_in_queue() -> None:
 
 def test_scenario_3_no_answer_moves_to_next_round() -> None:
     api, _ = bootstrap()
-    g = api.add_guest("לא עונה", _phone(3001))
+    g = add_existing_guest(api, "לא עונה", _phone(3001))
     configure_track(api)
     _, admin = _admin()
     _sync(api.event_id)
@@ -208,8 +208,8 @@ def test_scenario_3_no_answer_moves_to_next_round() -> None:
 
 def test_scenario_4_inactive_caller_gets_no_tasks() -> None:
     api, _ = bootstrap()
-    api.add_guest("אורח א", _phone(4001))
-    api.add_guest("אורח ב", _phone(4002))
+    add_existing_guest(api, "אורח א", _phone(4001))
+    add_existing_guest(api, "אורח ב", _phone(4002))
     configure_track(api)
     _, admin = _admin()
     idle_id, _ = phone_agent(api, display_name="לא פעיל")
@@ -243,7 +243,7 @@ def test_scenario_4_inactive_caller_gets_no_tasks() -> None:
 
 def test_scenario_5_yesterday_unhandled_is_findable() -> None:
     api, _ = bootstrap()
-    g = api.add_guest("נשכח אתמול", _phone(5001))
+    g = add_existing_guest(api, "נשכח אתמול", _phone(5001))
     configure_track(api)
     _, admin = _admin()
     _sync(api.event_id)
@@ -274,7 +274,7 @@ def test_scenario_6_tomorrow_follows_real_schedule() -> None:
     ago = _started_days_ago_for_round_on(tomorrow)
     configure_track(api, started_days_ago=ago)
     for i in range(5):
-        api.add_guest(f"מחר {i}", _phone(6000 + i))
+        add_existing_guest(api, f"מחר {i}", _phone(6000 + i))
     _, admin = _admin()
     rounds = _rounds(api.event_id)
     tomorrow_round = next(p for p in rounds if p.date == tomorrow)
@@ -297,7 +297,7 @@ def test_scenario_7_8_schedule_change_recomputes_future_rounds() -> None:
     tomorrow = date.today() + timedelta(days=1)
     ago = _started_days_ago_for_round_on(tomorrow)
     configure_track(api, started_days_ago=ago)
-    api.add_guest("עתידי", _phone(7001))
+    add_existing_guest(api, "עתידי", _phone(7001))
     _, admin = _admin()
     _sync(api.event_id)
     before = {t.round_number: t for t in _tasks(api.event_id)}
@@ -337,8 +337,8 @@ def test_reassign_is_audited_and_caller_sees_only_own_tasks() -> None:
     # מסד הבדיקות נשמר בין ריצות — שמות ייחודיים. אותיות בלבד: ספרות בחיפוש
     # מתפרשות גם כחלק ממספר טלפון.
     tag = "".join("abcdefghijklmnop"[int(c, 16)] for c in uuid.uuid4().hex[:8])
-    a = api.add_guest(f"לדני {tag}", _phone(8001))
-    b = api.add_guest(f"ליוסי {tag}", _phone(8002))
+    a = add_existing_guest(api, f"לדני {tag}", _phone(8001))
+    b = add_existing_guest(api, f"ליוסי {tag}", _phone(8002))
     configure_track(api)
     _, admin = _admin()
     danny_id, danny = phone_agent(api, display_name="דני")
@@ -377,7 +377,7 @@ def test_reassign_is_audited_and_caller_sees_only_own_tasks() -> None:
 
 def test_support_cannot_stop_rounds_or_manage_callers() -> None:
     api, _ = bootstrap()
-    api.add_guest("סבב", _phone(9001))
+    add_existing_guest(api, "סבב", _phone(9001))
     configure_track(api)
     _, support = _admin("support")
     caller_id, _ = phone_agent(api)
@@ -392,7 +392,7 @@ def test_support_cannot_stop_rounds_or_manage_callers() -> None:
 
 def test_stop_and_resume_round() -> None:
     api, _ = bootstrap()
-    api.add_guest("עצירה", _phone(9101))
+    add_existing_guest(api, "עצירה", _phone(9101))
     configure_track(api)
     _, admin = _admin()
     _sync(api.event_id)
@@ -408,7 +408,7 @@ def test_stop_and_resume_round() -> None:
 
 def test_deleting_guest_and_event_removes_tasks() -> None:
     api, _ = bootstrap()
-    g = api.add_guest("למחיקה", _phone(9201))
+    g = add_existing_guest(api, "למחיקה", _phone(9201))
     configure_track(api)
     _sync(api.event_id)
     assert _tasks(api.event_id)
@@ -420,8 +420,8 @@ def test_deleting_guest_and_event_removes_tasks() -> None:
 def test_existing_call_history_is_respected_when_task_is_created() -> None:
     """שיחות שתועדו לפני שהמשימה נוצרה (callback / לא ענה) לא נמחקות מהתמונה."""
     api, _ = bootstrap()
-    cb = api.add_guest("ביקש לחזור", _phone(9301))
-    na = api.add_guest("לא ענה קודם", _phone(9302))
+    cb = add_existing_guest(api, "ביקש לחזור", _phone(9301))
+    na = add_existing_guest(api, "לא ענה קודם", _phone(9302))
     configure_track(api)
     _, admin = _admin()
     later = (datetime.utcnow() + timedelta(days=2)).replace(microsecond=0).isoformat() + "Z"

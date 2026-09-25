@@ -32,6 +32,10 @@ interface Props {
   onPaymentsChanged: (expense: Expense) => void
   onDelete?: () => void
   onCancel: () => void
+  /** ההוצאות שכבר ברשימה — פריט שכבר יש לו שורה לא נוצר פעמיים. */
+  existing?: Expense[]
+  /** פתיחת שורה קיימת לעריכה (במקום ליצור כפולה). */
+  onOpenExisting?: (expense: Expense) => void
 }
 
 /**
@@ -87,6 +91,8 @@ export function ExpenseEditor({
   onPaymentsChanged,
   onDelete,
   onCancel,
+  existing = [],
+  onOpenExisting,
 }: Props) {
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onCancel)
@@ -150,6 +156,8 @@ export function ExpenseEditor({
   // שדה ההתחייבות נפתח לשורה שמחושבת לפי מגיעים — שם, ורק שם, יש חוזה
   // שנוקב בכמות מינימלית.
   const supportsCommitment = method === 'per_attendee'
+  const showPreview =
+    method !== 'fixed' && (method === 'percent' ? toCount(quantity) > 0 : toAgorot(amount) > 0)
 
   // ── חיפוש בקטלוג ──────────────────────────────────────────────────
   // כל מילה בשאילתה חייבת להימצא בשם הפריט או בשם הקבוצה, כך ש"צילום
@@ -171,7 +179,19 @@ export function ExpenseEditor({
       .slice(0, 12)
   }, [query, categories])
 
+  // פריט מהקטלוג → השורה שכבר קיימת עבורו (אם יש).
+  const listedByItem = useMemo(() => {
+    const map = new Map<string, Expense>()
+    for (const e of existing) if (e.item_key) map.set(`${e.category}:${e.item_key}`, e)
+    return map
+  }, [existing])
+
   function pickItem(cat: ExpenseCategory, item: ExpenseCatalogItem | null, name = '') {
+    const listed = item ? listedByItem.get(`${cat.key}:${item.key}`) : undefined
+    if (listed && onOpenExisting) {
+      onOpenExisting(listed)
+      return
+    }
     setCategoryKey(cat.key)
     setItemKey(item?.key ?? '')
     setLabel(item?.label ?? name)
@@ -229,7 +249,7 @@ export function ExpenseEditor({
       <div className="overlay" onClick={onCancel}>
         <div className="dialog fin-editor" onClick={(e) => e.stopPropagation()}>
           <div className="dialog-head">
-            <h2>{t.addExpense}</h2>
+            <h2>{t.pickTitle}</h2>
             <button className="x" onClick={onCancel} aria-label={strings.common.cancel}>
               ✕
             </button>
@@ -271,7 +291,11 @@ export function ExpenseEditor({
                           onClick={() => pickItem(cat, item)}
                         >
                           <span className="fin-result-name">{item.label}</span>
-                          <span className="fin-result-meta">{cat.label}</span>
+                          <span className="fin-result-meta">
+                            {listedByItem.has(`${cat.key}:${item.key}`)
+                              ? `${cat.label} · ${t.alreadyListed}`
+                              : cat.label}
+                          </span>
                         </button>
                       </li>
                     ))
@@ -320,6 +344,9 @@ export function ExpenseEditor({
                               onClick={() => pickItem(cat, item)}
                             >
                               {item.label}
+                              {listedByItem.has(`${cat.key}:${item.key}`) && (
+                                <span className="fin-chip-listed"> · {t.alreadyListed}</span>
+                              )}
                             </button>
                           ))}
 
@@ -332,6 +359,9 @@ export function ExpenseEditor({
                                 onClick={() => pickItem(cat, item)}
                               >
                                 {item.label}
+                                {listedByItem.has(`${cat.key}:${item.key}`) && (
+                                  <span className="fin-chip-listed"> · {t.alreadyListed}</span>
+                                )}
                               </button>
                             ))}
 
@@ -397,7 +427,9 @@ export function ExpenseEditor({
             {/* הקבוצה כ-metadata: מוצגת כדי שהבחירה תהיה שקופה, לא כדי
                 שתתקבל שוב. "שינוי" מחזיר לקטלוג. */}
             <p className="fin-form-meta">
-              <span className="fin-form-group">{category?.label ?? t.customItem}</span>
+              <span className="fin-form-group">
+                {t.belongsTo} {category?.label ?? t.customItem}
+              </span>
               {!editing && (
                 <button type="button" className="btn-link" onClick={() => setPicking(true)}>
                   {t.changeItem}
@@ -477,6 +509,9 @@ export function ExpenseEditor({
             )}
 
             {/* ── "כך זה יחושב" — הכלל במילים, בלי מכפלה ──────────── */}
+            {/* רק כשיש מחיר, ורק כשהחישוב אינו "מחיר קבוע" — שם המשפט היה
+                חוזר על המחיר עצמו ולא מוסיף כלום. */}
+            {showPreview && (
             <section className="fin-preview" aria-live="polite">
               <h3 className="fin-preview-title">{t.previewTitle}</h3>
               <p className="fin-preview-line">
@@ -499,16 +534,8 @@ export function ExpenseEditor({
                   {t.previewMinTotal(shekels(toAgorot(minTotal)))}
                 </p>
               )}
-              {!methodOpen && (
-                <button
-                  type="button"
-                  className="btn-link fin-preview-change"
-                  onClick={() => setMethodOpen(true)}
-                >
-                  {t.calcMethodChange}
-                </button>
-              )}
             </section>
+            )}
 
             {methodOpen && (
               <fieldset className="fin-method">
@@ -546,20 +573,7 @@ export function ExpenseEditor({
                 <h3 className="fin-subtitle">{t.paymentsTitle}</h3>
                 <PaymentsPanel expense={expense} onChanged={onPaymentsChanged} />
               </>
-            ) : (
-              <label className="field">
-                <span className="field-label">{t.prepaidLabel}</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={prepaid}
-                  onChange={(e) => setPrepaid(digitsOnly(e.target.value))}
-                  placeholder="0"
-                  dir="ltr"
-                />
-                <span className="field-hint">{t.prepaidHint}</span>
-              </label>
-            )}
+            ) : null}
 
             {/* ── מה שנשאר מקופל ──────────────────────────────────── */}
             {!detailsOpen ? (
@@ -568,10 +582,26 @@ export function ExpenseEditor({
                 className="btn-link fin-more-details"
                 onClick={() => setDetailsOpen(true)}
               >
-                {t.moreDetails}
+                {editing ? t.moreDetailsEdit : t.moreDetails}
               </button>
             ) : (
               <div className="fin-more-block">
+                {/* מקדמה ששולמה — רק בהוספה; בעריכה יש יומן תשלומים מלא. */}
+                {!editing && (
+                  <label className="field">
+                    <span className="field-label">{t.prepaidLabel}</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={prepaid}
+                      onChange={(e) => setPrepaid(digitsOnly(e.target.value))}
+                      placeholder="0"
+                      dir="ltr"
+                    />
+                    <span className="field-hint">{t.prepaidHint}</span>
+                  </label>
+                )}
+
                 <label className="field">
                   <span className="field-label">{t.vendorLabel}</span>
                   <input
@@ -593,6 +623,17 @@ export function ExpenseEditor({
                     maxLength={500}
                   />
                 </label>
+
+                {/* אופן החישוב נגזר מהפריט; שינוי שלו הוא פעולה נדירה. */}
+                {!methodOpen && (
+                  <button
+                    type="button"
+                    className="btn-link fin-preview-change"
+                    onClick={() => setMethodOpen(true)}
+                  >
+                    {t.calcMethodChange}
+                  </button>
+                )}
 
                 {/* תיבת סימון ולא מתג: זו עובדה על המחיר, לא בורר בין
                     שני מצבים שווי-משקל. */}
@@ -655,7 +696,7 @@ export function ExpenseEditor({
 
             <div className="dialog-foot">
               <button type="submit" className="btn-primary" disabled={busy || !label.trim()}>
-                {busy ? strings.common.saving : t.saveExpense}
+                {busy ? strings.common.saving : editing ? t.saveExpenseChanges : t.saveExpense}
               </button>
               <button type="button" className="btn-ghost" onClick={onCancel} disabled={busy}>
                 {strings.common.cancel}
@@ -667,7 +708,7 @@ export function ExpenseEditor({
                   onClick={() => setConfirmDelete(true)}
                   disabled={busy}
                 >
-                  {strings.common.delete}
+                  {t.deleteExpenseButton}
                 </button>
               )}
             </div>
@@ -678,8 +719,8 @@ export function ExpenseEditor({
       {confirmDelete && onDelete && (
         <ConfirmDialog
           title={t.deleteExpenseTitle}
-          message={t.deleteExpenseBody(expense?.label ?? '')}
-          confirmLabel={strings.common.delete}
+          message={t.deleteExpenseBody(expense?.label ?? '', expense?.payments.length ?? 0)}
+          confirmLabel={t.deleteExpenseButton}
           danger
           busy={busy}
           onConfirm={onDelete}

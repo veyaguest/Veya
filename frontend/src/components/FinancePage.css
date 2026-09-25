@@ -397,7 +397,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
     'name total'
-    'calc total';
+    'calc edit';
   align-items: center;
   gap: 2px 12px;
   width: 100%;
@@ -453,6 +453,29 @@
   direction: ltr;
   unicode-bidi: isolate;
   white-space: nowrap;
+}
+
+/* "עריכה" — כל השורה לחיצה, והמילה אומרת את זה. בצבע קישור, בלי מסגרת. */
+.fin-expense-edit {
+  grid-area: edit;
+  justify-self: end;
+  font-size: var(--text-xs);
+  color: var(--gold-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* "מה עוד חסר" — כמה הוצאות בלי סכום, והצעד הבא. */
+.fin-missing {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.fin-missing .fin-card-title {
+  margin: 0;
+}
+.fin-missing .fin-hint {
+  margin: 0;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1767,8 +1790,8 @@
   }
 
   .fin-expense-btn {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-areas: 'name calc total';
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    grid-template-areas: 'name calc total edit';
     gap: 16px;
   }
 
@@ -1969,4 +1992,10 @@
 .fin-chip-suggested {
   border-color: var(--gold-deep);
   color: var(--charcoal);
+}
+
+/* בקטלוג: פריט שכבר יש לו שורה ברשימה. */
+.fin-chip-listed {
+  font-size: var(--text-2xs);
+  color: var(--muted);
 }

@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tests.e2e_seating import bootstrap  # noqa: E402
 from tests.call_center_helpers import (  # noqa: E402
+    add_existing_guest,
     assign_events,
     call_logs_of,
     configure_track,
@@ -37,8 +38,8 @@ def test_unassigned_agent_gets_the_shared_queue() -> None:
     try:
         configure_track(api_a)
         configure_track(api_b)
-        api_a.add_guest("אורח A", "0509200001", party_size=1)
-        api_b.add_guest("אורח B", "0509200002", party_size=1)
+        add_existing_guest(api_a, "אורח A", "0509200001", party_size=1)
+        add_existing_guest(api_b, "אורח B", "0509200002", party_size=1)
         _, agent = phone_agent(api_a)
 
         # הסקירה (לא מדפדפת) — שני האירועים נמצאים בה.
@@ -66,8 +67,8 @@ def test_assigned_agent_sees_only_assigned_events() -> None:
     try:
         configure_track(api_a)
         configure_track(api_b)
-        api_a.add_guest("אורח A", "0509200003", party_size=1)
-        api_b.add_guest("אורח B", "0509200004", party_size=1)
+        add_existing_guest(api_a, "אורח A", "0509200003", party_size=1)
+        add_existing_guest(api_b, "אורח B", "0509200004", party_size=1)
         agent_id, agent = phone_agent(api_a)
         assign_events(agent_id, [api_a.event_id])
 
@@ -89,8 +90,8 @@ def test_assigned_agent_cannot_reach_a_guest_of_another_event() -> None:
     try:
         configure_track(api_a)
         configure_track(api_b)
-        api_a.add_guest("אורח A", "0509200005", party_size=1)
-        guest_b = api_b.add_guest("אורח B", "0509200006", party_size=1)
+        add_existing_guest(api_a, "אורח A", "0509200005", party_size=1)
+        guest_b = add_existing_guest(api_b, "אורח B", "0509200006", party_size=1)
         agent_id, agent = phone_agent(api_a)
         assign_events(agent_id, [api_a.event_id])
 
@@ -123,8 +124,8 @@ def test_display_filter_cannot_widen_an_agent_scope() -> None:
     try:
         configure_track(api_a)
         configure_track(api_b)
-        api_a.add_guest("אורח A", "0509200007", party_size=1)
-        api_b.add_guest("אורח B", "0509200008", party_size=1)
+        add_existing_guest(api_a, "אורח A", "0509200007", party_size=1)
+        add_existing_guest(api_b, "אורח B", "0509200008", party_size=1)
         agent_id, agent = phone_agent(api_a)
         assign_events(agent_id, [api_a.event_id])
 
@@ -147,8 +148,8 @@ def test_two_agents_do_not_see_each_other_events() -> None:
     try:
         configure_track(api_a)
         configure_track(api_b)
-        api_a.add_guest("אורח A", "0509200009", party_size=1)
-        api_b.add_guest("אורח B", "0509200010", party_size=1)
+        add_existing_guest(api_a, "אורח A", "0509200009", party_size=1)
+        add_existing_guest(api_b, "אורח B", "0509200010", party_size=1)
         id1, agent1 = phone_agent(api_a, display_name="טלפן 1")
         id2, agent2 = phone_agent(api_a, display_name="טלפן 2")
         assign_events(id1, [api_a.event_id])
@@ -174,8 +175,8 @@ def test_admin_still_sees_everything() -> None:
 
         configure_track(api_a)
         configure_track(api_b)
-        api_a.add_guest("אורח A", "0509200011", party_size=1)
-        api_b.add_guest("אורח B", "0509200012", party_size=1)
+        add_existing_guest(api_a, "אורח A", "0509200011", party_size=1)
+        add_existing_guest(api_b, "אורח B", "0509200012", party_size=1)
         agent_id, _ = phone_agent(api_a)
         assign_events(agent_id, [api_a.event_id])
 

@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tests.e2e_seating import bootstrap  # noqa: E402
 from tests.call_center_helpers import (  # noqa: E402
+    add_existing_guest,
     call_logs_of,
     configure_track,
     guest_of,
@@ -31,7 +32,7 @@ def test_phone_agent_sees_the_call_queue() -> None:
     api, teardown = bootstrap()
     try:
         configure_track(api)
-        guest = api.add_guest("ישראל כהן", "0509100001", party_size=3)
+        guest = add_existing_guest(api, "ישראל כהן", "0509100001", party_size=3)
         _, agent = phone_agent(api)
 
         overview = api.client.get("/admin/call-center", headers=agent)
@@ -75,7 +76,7 @@ def test_phone_agent_can_record_every_outcome() -> None:
             ("callback", {"callback_at": "2099-01-01T10:00:00"}),
         ]
         for i, (outcome, extra) in enumerate(cases):
-            guest = api.add_guest(f"מוזמן {i}", f"05091001{i:02d}", party_size=4)
+            guest = add_existing_guest(api, f"מוזמן {i}", f"05091001{i:02d}", party_size=4)
             body = {"outcome": outcome}
             body.update(extra)
             r = api.client.post(
@@ -95,7 +96,7 @@ def test_phone_agent_confirm_updates_rsvp_through_the_shared_logic() -> None:
     api, teardown = bootstrap()
     try:
         configure_track(api)
-        guest = api.add_guest("רותם ברק", "0509100020", party_size=5)
+        guest = add_existing_guest(api, "רותם ברק", "0509100020", party_size=5)
         _, agent = phone_agent(api)
 
         r = api.client.post(
@@ -120,7 +121,7 @@ def test_phone_agent_wrong_number_raises_the_owner_alert() -> None:
     api, teardown = bootstrap()
     try:
         configure_track(api)
-        guest = api.add_guest("עמית גל", "0509100030", party_size=1)
+        guest = add_existing_guest(api, "עמית גל", "0509100030", party_size=1)
         _, agent = phone_agent(api)
 
         r = api.client.post(
@@ -166,7 +167,7 @@ def test_phone_agent_is_blocked_from_every_management_area() -> None:
     api, teardown = bootstrap()
     try:
         configure_track(api)
-        guest = api.add_guest("לא נגיש", "0509100040", party_size=2)
+        guest = add_existing_guest(api, "לא נגיש", "0509100040", party_size=2)
         _, agent = phone_agent(api)
         scoped = dict(agent)
         scoped["X-Event-Id"] = str(api.event_id)
@@ -220,7 +221,7 @@ def test_phone_agent_cannot_change_a_guest_phone_number() -> None:
     api, teardown = bootstrap()
     try:
         configure_track(api)
-        guest = api.add_guest("מספר שמור", "0509100050", party_size=1)
+        guest = add_existing_guest(api, "מספר שמור", "0509100050", party_size=1)
         _, agent = phone_agent(api)
         scoped = dict(agent)
         scoped["X-Event-Id"] = str(api.event_id)
@@ -332,7 +333,7 @@ def test_no_unlisted_endpoint_answers_a_phone_agent() -> None:
     api, teardown = bootstrap()
     try:
         configure_track(api)
-        api.add_guest("סריקה", "0509100060", party_size=1)
+        add_existing_guest(api, "סריקה", "0509100060", party_size=1)
         _, agent = phone_agent(api)
         scoped = dict(agent)
         scoped["X-Event-Id"] = str(api.event_id)

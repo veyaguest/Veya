@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tests.e2e_seating import bootstrap, shutdown  # noqa: E402
 from tests.call_center_helpers import (  # noqa: E402
+    add_existing_guest,
     call_logs_of,
     configure_track,
     event_of,
@@ -41,7 +42,7 @@ def test_wrong_number_is_recorded_as_a_call_result() -> None:
     try:
         admin = standalone_admin(api)
         configure_track(api)
-        guest = api.add_guest("מספר שגוי", "0501230001", party_size=2)
+        guest = add_existing_guest(api, "מספר שגוי", "0501230001", party_size=2)
 
         r = api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
                             headers=admin,
@@ -69,7 +70,7 @@ def test_wrong_number_raises_an_alert_for_the_owner() -> None:
     try:
         admin = standalone_admin(api)
         configure_track(api)
-        guest = api.add_guest("ישראל כהן", "0501230002", party_size=3)
+        guest = add_existing_guest(api, "ישראל כהן", "0501230002", party_size=3)
         assert _alerts(api)["total"] == 0
 
         api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
@@ -98,8 +99,8 @@ def test_wrong_number_guest_does_not_return_to_the_queue() -> None:
 
         admin = standalone_admin(api)
         configure_track(api)
-        guest = api.add_guest("לא יחזור", "0501230003", party_size=1)
-        api.add_guest("כן ממתין", "0501230004", party_size=1)
+        guest = add_existing_guest(api, "לא יחזור", "0501230003", party_size=1)
+        add_existing_guest(api, "כן ממתין", "0501230004", party_size=1)
 
         api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
                         headers=admin, json={"outcome": "wrong_number"})
@@ -127,7 +128,7 @@ def test_wrong_number_does_not_change_rsvp_or_delete_the_guest() -> None:
         admin = standalone_admin(api)
         configure_track(api)
         for idx, start in enumerate(("pending", "maybe")):
-            guest = api.add_guest(f"שומר סטטוס {start}", f"05012319{idx:02d}", party_size=2)
+            guest = add_existing_guest(api, f"שומר סטטוס {start}", f"05012319{idx:02d}", party_size=2)
             api.client.patch(f"/guests/{guest['id']}", headers=api.headers,
                              json={"rsvp_status": start})
 
@@ -150,7 +151,7 @@ def test_owner_can_fix_the_phone_number() -> None:
     try:
         admin = standalone_admin(api)
         configure_track(api)
-        guest = api.add_guest("צריך תיקון", "0501230005", party_size=1)
+        guest = add_existing_guest(api, "צריך תיקון", "0501230005", party_size=1)
         api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
                         headers=admin, json={"outcome": "wrong_number"})
 
@@ -169,7 +170,7 @@ def test_alert_closes_itself_after_the_number_is_fixed() -> None:
     try:
         admin = standalone_admin(api)
         configure_track(api)
-        guest = api.add_guest("יתוקן", "0501230006", party_size=1)
+        guest = add_existing_guest(api, "יתוקן", "0501230006", party_size=1)
         api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
                         headers=admin, json={"outcome": "wrong_number"})
         assert _alerts(api)["total"] == 1
@@ -191,7 +192,7 @@ def test_fixed_number_returns_the_guest_to_the_queue() -> None:
     try:
         admin = standalone_admin(api)
         configure_track(api)
-        guest = api.add_guest("חוזר אחרי תיקון", "0501230007", party_size=2)
+        guest = add_existing_guest(api, "חוזר אחרי תיקון", "0501230007", party_size=2)
 
         api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
                         headers=admin, json={"outcome": "wrong_number"})
@@ -219,7 +220,7 @@ def test_fixing_a_number_does_not_create_a_new_round() -> None:
 
         admin = standalone_admin(api)
         configure_track(api)
-        guest = api.add_guest("אורח", "0501230008", party_size=1)
+        guest = add_existing_guest(api, "אורח", "0501230008", party_size=1)
 
         before_anchor = event_of(api).rsvp_track_started_at
         before = [(p.round_number, p.date) for p in rsvp_timeline.call_rounds(event_of(api))]
@@ -244,7 +245,7 @@ def test_repeated_wrong_numbers_are_counted() -> None:
     try:
         admin = standalone_admin(api)
         configure_track(api)
-        guest = api.add_guest("שוב שגוי", "0501230009", party_size=1)
+        guest = add_existing_guest(api, "שוב שגוי", "0501230009", party_size=1)
 
         api.client.post(f"/admin/call-center/guests/{guest['id']}/outcome",
                         headers=admin, json={"outcome": "wrong_number"})
@@ -272,8 +273,8 @@ def test_alerts_are_scoped_to_the_owning_event() -> None:
         admin = standalone_admin(api_a)
         configure_track(api_a)
         configure_track(api_b)
-        guest_a = api_a.add_guest("של A", "0501230010", party_size=1)
-        api_b.add_guest("של B", "0501230011", party_size=1)
+        guest_a = add_existing_guest(api_a, "של A", "0501230010", party_size=1)
+        add_existing_guest(api_b, "של B", "0501230011", party_size=1)
 
         api_a.client.post(f"/admin/call-center/guests/{guest_a['id']}/outcome",
                           headers=admin, json={"outcome": "wrong_number"})
@@ -304,10 +305,10 @@ def test_counts_stay_correct_with_every_outcome_mixed() -> None:
     try:
         admin = standalone_admin(api)
         configure_track(api)
-        api.add_guest("ממתין נקי", "0501240001", party_size=1)
-        no_answer = api.add_guest("לא ענה", "0501240002", party_size=1)
-        followup = api.add_guest("חזר מ-Follow-up", "0501240003", party_size=1)
-        wrong = api.add_guest("מספר שגוי", "0501240004", party_size=1)
+        add_existing_guest(api, "ממתין נקי", "0501240001", party_size=1)
+        no_answer = add_existing_guest(api, "לא ענה", "0501240002", party_size=1)
+        followup = add_existing_guest(api, "חזר מ-Follow-up", "0501240003", party_size=1)
+        wrong = add_existing_guest(api, "מספר שגוי", "0501240004", party_size=1)
 
         api.client.post(f"/admin/call-center/guests/{no_answer['id']}/outcome",
                         headers=admin, json={"outcome": "no_answer"})
@@ -353,7 +354,7 @@ def test_wrong_number_is_not_an_rsvp_status() -> None:
     # וגם: לא ניתן להזריק אותו כסטטוס דרך ה-API.
     api, teardown = bootstrap()
     try:
-        guest = api.add_guest("אורח", "0501230012", party_size=1)
+        guest = add_existing_guest(api, "אורח", "0501230012", party_size=1)
         r = api.client.patch(f"/guests/{guest['id']}", headers=api.headers,
                              json={"rsvp_status": "wrong_number"})
         assert r.status_code == 422, r.status_code
