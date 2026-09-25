@@ -530,6 +530,11 @@ function seatPositions(type: TableType, capacity: number, w: number, h: number, 
 /** אייקונים קוויים נקיים למסך המובייל — במקום אימוג'ים, באותו סגנון של סרגל הצד. */
 type HmIconName =
   | 'hall'
+  | 'eye'
+  | 'eye-off'
+  | 'lock'
+  | 'unlock'
+  | 'opacity'
   | 'tables'
   | 'guests'
   | 'smart'
@@ -701,6 +706,44 @@ function HmIcon({ name, size = 22 }: { name: HmIconName; size?: number }) {
         <svg {...common}>
           <path d="M5 5h11l3 3v11H5z" />
           <path d="M8 5v5h7V5M8 19v-5h8v5" />
+        </svg>
+      )
+    case 'eye':
+      return (
+        <svg {...common}>
+          <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      )
+    case 'eye-off':
+      return (
+        <svg {...common}>
+          <path d="M9.9 5.7A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a16 16 0 0 1-2.6 3.4" />
+          <path d="M6.3 7.3C3.9 9 2.5 12 2.5 12S6 18.5 12 18.5a9 9 0 0 0 4.6-1.3" />
+          <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+          <path d="M3 3l18 18" />
+        </svg>
+      )
+    case 'lock':
+      return (
+        <svg {...common}>
+          <rect x="5" y="11" width="14" height="9.5" rx="2" />
+          <path d="M8 11V7.5a4 4 0 0 1 8 0V11" />
+        </svg>
+      )
+    case 'unlock':
+      return (
+        <svg {...common}>
+          <rect x="5" y="11" width="14" height="9.5" rx="2" />
+          <path d="M8 11V7.5a4 4 0 0 1 7.7-1.5" />
+        </svg>
+      )
+    case 'opacity':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 3.5v17" />
+          <path d="M12 7h5.5M12 11h7.6M12 15h7M12 19h3.5" />
         </svg>
       )
     case 'refresh':
@@ -4552,7 +4595,7 @@ export function HallPage({
               {sketch && !sketchTransform?.hidden && sketchSelected && (
                 <div className="element-toolbar sketch-toolbar" onPointerDown={(e) => e.stopPropagation()}>
                   <span className="sketch-opacity-row" title="שקיפות">
-                    🔅
+                    <HmIcon name="opacity" size={18} />
                     <input
                       type="range"
                       min={0.1}
@@ -4562,14 +4605,19 @@ export function HallPage({
                       onChange={(e) => patchSketchTransform({ opacity: Number(e.target.value) })}
                     />
                   </span>
-                  <button type="button" title={sketchTransform?.locked ? 'שחרר נעילה' : 'נעל'} onClick={toggleSketchLock}>
-                    {sketchTransform?.locked ? '🔓' : '🔒'}
+                  <button
+                    type="button"
+                    title={sketchTransform?.locked ? 'שחרר נעילה' : 'נעל'}
+                    aria-label={sketchTransform?.locked ? 'שחרר נעילה' : 'נעל'}
+                    onClick={toggleSketchLock}
+                  >
+                    <HmIcon name={sketchTransform?.locked ? 'lock' : 'unlock'} size={18} />
                   </button>
-                  <button type="button" title="הסתרה" onClick={toggleSketchHidden}>
-                    🙈
+                  <button type="button" title="הסתרה" aria-label="הסתרת הסקיצה" onClick={toggleSketchHidden}>
+                    <HmIcon name="eye-off" size={18} />
                   </button>
-                  <button type="button" title="איפוס מיקום/גודל/סיבוב" onClick={resetSketchTransform}>
-                    ↺
+                  <button type="button" title="איפוס מיקום/גודל/סיבוב" aria-label="איפוס מיקום, גודל וסיבוב" onClick={resetSketchTransform}>
+                    <HmIcon name="refresh" size={18} />
                   </button>
                   <button
                     type="button"
@@ -4986,7 +5034,8 @@ export function HallPage({
                         מהסרגל הצף על הלוח) — כי כשהשכבה מוסתרת אין דרך אחרת
                         להגיע אליה כדי להחזיר אותה. */}
                     <button className="hm-ghost-btn" onClick={toggleSketchHidden}>
-                      {sketchTransform?.hidden ? '👁️ הצגת הסקיצה' : '🙈 הסתרת הסקיצה'}
+                      <HmIcon name={sketchTransform?.hidden ? 'eye' : 'eye-off'} size={18} />
+                      {sketchTransform?.hidden ? 'הצגת הסקיצה' : 'הסתרת הסקיצה'}
                     </button>
                     <button className="hm-ghost-btn" onClick={removeSketch}>
                       הסרת הסקיצה
@@ -5366,7 +5415,9 @@ export function HallPage({
                 ×
               </button>
               <div className="hm-explain-head">
-                <span className="hm-explain-spark">✨</span>
+                <span className="hm-explain-spark">
+                  <HmIcon name="smart" size={20} />
+                </span>
                 <div>
                   <h3 className="hm-explain-title">סידרנו לפי ההערות שלכם</h3>
                   <p className="hm-explain-sub">
@@ -5446,11 +5497,11 @@ export function HallPage({
                     </li>
                   </ul>
                   <p className="hm-guide-hint">
-                    💡 <b>טיפ קטן:</b> פשוט גררו את השולחנות למקום הרצוי — אנחנו כבר
+                    <b>טיפ קטן:</b> פשוט גררו את השולחנות למקום הרצוי — אנחנו כבר
                     נדאג לגודל המתאים בשבילכם.
                   </p>
                   <p className="hm-guide-reassure">
-                    אין צורך בזום, אין גלילות — רק לסדר את האולם כמו שאתם רוצים 😊
+                    אין צורך בזום, אין גלילות — רק לסדר את האולם כמו שאתם רוצים.
                   </p>
                 </div>
 
@@ -5706,7 +5757,7 @@ export function HallPage({
                   </div>
 
                   <p className="hm-guide-hint">
-                    💡 <b>טיפ:</b> אם קיבלתם מהאולם סקיצה מוכנה — אין צורך לבנות הכול מחדש
+                    <b>טיפ:</b> אם קיבלתם מהאולם סקיצה מוכנה — אין צורך לבנות הכול מחדש
                     ידנית. פשוט מעלים אותה ונותנים ל-VEYA להתחיל משם.
                   </p>
 

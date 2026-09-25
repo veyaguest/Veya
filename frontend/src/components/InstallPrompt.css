@@ -19,7 +19,6 @@
   padding: 18px 18px 16px;
   border-radius: var(--radius-xl);
   border: 1px solid rgba(var(--gold-rgb), 0.35);
-  border-top: 3px solid var(--gold);
   background:
     radial-gradient(circle at 12% 0%, rgba(var(--gold-rgb), 0.12), transparent 62%),
     var(--charcoal);

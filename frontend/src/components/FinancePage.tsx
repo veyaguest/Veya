@@ -457,9 +457,13 @@ function CostTab({
                 {allOpen ? t.collapseAll : t.expandAll}
               </button>
             )}
-            <button type="button" className="btn-primary btn-sm" onClick={() => onAdd()}>
-              {t.addExpense}
-            </button>
+            {/* כשאין עדיין הוצאות, המסך הריק למטה כבר מציע גם "הוספת הוצאה" —
+                שני כפתורים זהים זה מעל זה מבלבלים מה הצעד הראשון. */}
+            {data.expenses.length > 0 && (
+              <button type="button" className="btn-primary btn-sm" onClick={() => onAdd()}>
+                {t.addExpense}
+              </button>
+            )}
           </div>
         </div>
 

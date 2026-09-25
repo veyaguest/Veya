@@ -6,9 +6,8 @@
    ========================================================================== */
 
 .data-alert {
-  background: var(--cream);
-  border: 1px solid var(--gold-light);
-  border-inline-start: 4px solid var(--gold);
+  background: color-mix(in srgb, var(--gold-light) 14%, var(--cream));
+  border: 1px solid color-mix(in srgb, var(--gold) 38%, transparent);
   border-radius: var(--radius-m);
   box-shadow: var(--shadow-card);
   padding: 14px 16px;

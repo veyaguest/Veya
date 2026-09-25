@@ -16,6 +16,13 @@
   box-shadow: var(--shadow-card);
 }
 
+/* בטלפון השכנים עוברים ל-16px (App.css, max-width: 700px) — גם הכרטיס הזה. */
+@media (max-width: 700px) {
+  .pcta {
+    margin: 0 16px;
+  }
+}
+
 .pcta-title {
   margin: 0;
   font-size: 17px;

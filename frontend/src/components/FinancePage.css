@@ -192,10 +192,11 @@
    ההתחייבות מול הספק — האזור החשוב ביותר לפני האירוע
    ════════════════════════════════════════════════════════════════════ */
 
-/* פס זהב דק בקצה ההתחלה (RTL: מימין). מספיק כדי שהעין תמצא את הכרטיס
-   הזה ראשון, בלי להפוך אותו להתראה. */
+/* משטח זהב עדין ומסגרת זהב מלאה — מספיק כדי שהעין תמצא את הכרטיס הזה
+   ראשון, בלי להפוך אותו להתראה (ובלי פס צד, שנראה כמו תבנית גנרית). */
 .fin-commitment {
-  border-inline-start: 3px solid var(--gold);
+  background: color-mix(in srgb, var(--gold-light) 10%, var(--cream));
+  border: 1px solid color-mix(in srgb, var(--gold) 38%, transparent);
 }
 
 .fin-commitment-grid {
@@ -527,12 +528,11 @@
   width: 100%;
 }
 
-/* מצב הספירה מקבל משטח משלו ופס זהב: כשהוא פתוח הוא **המסך**, ולא
+/* מצב הספירה מקבל משטח משלו וצל מורם: כשהוא פתוח הוא **המסך**, ולא
    עוד כרטיס ברשימה. */
 .fin-counter {
   background: var(--cream);
   border: 1px solid var(--line);
-  border-top: 3px solid var(--gold);
   border-radius: var(--radius-l);
   box-shadow: var(--shadow-card-hover);
   overflow: hidden;
@@ -1535,8 +1535,7 @@
    שקובע כמה באמת משלמים. */
 .fin-commitment-fields {
   padding: 14px;
-  border: 1px solid var(--line);
-  border-inline-start: 3px solid var(--gold);
+  border: 1px solid color-mix(in srgb, var(--gold) 38%, transparent);
   border-radius: var(--radius-m);
   background: var(--surface-hi);
 }

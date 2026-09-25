@@ -94,15 +94,23 @@ export function GuestsPage({
   // ברגע שהדיאלוג מוצג — לא רק כשסוגרים אותו. בלי זה, מי שנכנס למסך
   // המוזמנים ועובר לטאב אחר דרך הניווט בלי לסגור (מה שגורם ל-remount מלא,
   // ראו key ב-App.tsx) היה רואה את הדיאלוג שוב בכל כניסה.
+  // החלון מיועד לאירוע שעוד אין בו מוזמנים. מי שהצטרף/ה לאירוע קיים (שותף/ה
+  // לניהול) לא צריך/ה "הוסיפו את המוזמנים שלכם" מעל רשימה של 135 איש — ולא
+  // מסמנים "נראה", כדי שהחלון עוד יופיע באירוע ריק משלו/ה.
+  const onboardingVisible =
+    showOnboarding && !loading && total === 0 && !search && filterStatus === 'all'
   useEffect(() => {
-    if (!showOnboarding) return
+    if (showOnboarding && !loading && total > 0) setShowOnboarding(false)
+  }, [showOnboarding, loading, total])
+  useEffect(() => {
+    if (!onboardingVisible) return
     markGuestsPopupSeen()
       .then(() => onGuestsPopupSeen?.())
       .catch(() => {
         /* שקט — במקרה הגרוע ביותר המסך יוצג שוב בכניסה הבאה */
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showOnboarding])
+  }, [onboardingVisible])
   const [toast, setToast] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Guest | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
@@ -472,7 +480,7 @@ export function GuestsPage({
         />
       )}
 
-      {showOnboarding && (
+      {onboardingVisible && (
         <OnboardingDialog
           onClose={() => setShowOnboarding(false)}
           onPaste={() => setShowPaste(true)}
@@ -608,7 +616,12 @@ export function GuestsPage({
                     {INVITE_STATUS_LABELS[g.invite_status ?? 'not_sent']}
                   </span>
                 </td>
-                <td className="center" data-label={t.colTable}>{g.table_number ?? '—'}</td>
+                <td
+                  className={`center${g.table_number == null ? ' is-empty' : ''}`}
+                  data-label={t.colTable}
+                >
+                  {g.table_number ?? '—'}
+                </td>
                 <td className="notes seating" data-label={t.colSeatingNotes}>{g.seating_notes ?? ''}</td>
                 <td className="notes" data-label={t.colNotes}>{g.notes_raw ?? ''}</td>
                 <td className="row-actions">
