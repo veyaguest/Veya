@@ -510,7 +510,9 @@ function CostTab({
         )}
       </section>
 
-      {data.expenses.length > 0 && <WhatIfSection cost={cost} />}
+      {/* רק כשיש לפחות סכום אחד — אחרת כל התרחישים יוצאים "0 ₪", וזה נראה
+          כמו נתון ("לא עולה כלום") כשבפועל עוד אין נתונים. */}
+      {data.expenses.some((e) => e.amount_agorot > 0 || e.total_agorot > 0) && <WhatIfSection cost={cost} />}
     </>
   )
 }
