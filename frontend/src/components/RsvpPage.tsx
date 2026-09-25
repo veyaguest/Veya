@@ -175,14 +175,14 @@ function RsvpNeedsYou({
   if (!stats) return null
   const n = strings.messages.needsYou
   const ended = view?.track_phase === 'ended'
-  const items: { key: GuestFilter; title: string; desc: string }[] = []
+  const items: { key: GuestFilter; title: string; desc: string; cta: string }[] = []
   const bad = stats.bad_phone_guests ?? 0
-  if (bad > 0) items.push({ key: 'bad_phone', title: n.badPhones(bad), desc: n.badPhonesDesc })
+  if (bad > 0) items.push({ key: 'bad_phone', title: n.badPhones(bad), desc: n.badPhonesDesc, cta: n.badPhonesListCta })
   if (ended && stats.pending > 0) {
-    items.push({ key: 'pending', title: n.noAnswer(stats.pending), desc: n.noAnswerDesc })
+    items.push({ key: 'pending', title: n.noAnswer(stats.pending), desc: n.noAnswerDesc, cta: n.noAnswerCta })
   }
   if (ended && stats.maybe > 0) {
-    items.push({ key: 'maybe', title: n.undecided(stats.maybe), desc: n.undecidedDesc })
+    items.push({ key: 'maybe', title: n.undecided(stats.maybe), desc: n.undecidedDesc, cta: n.undecidedCta })
   }
   if (items.length === 0) return null
   return (
@@ -195,7 +195,7 @@ function RsvpNeedsYou({
             <p className="invite-banner-desc">{it.desc}</p>
           </div>
           <button type="button" className="invite-banner-btn" onClick={() => onOpen?.(it.key)}>
-            {n.cta}
+            {it.cta}
           </button>
         </div>
       ))}

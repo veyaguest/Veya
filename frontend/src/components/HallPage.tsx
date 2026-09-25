@@ -1615,6 +1615,13 @@ export function HallPage({
   // מחדש" — שתי הבחירות רק פותחות מנגנון קיים (wizardOpen / sketchUploadOpen),
   // בלי שום שינוי בהם.
   const [startChoiceOpen, setStartChoiceOpen] = useState(false)
+  const startChoiceAfterGuide = useRef(false)
+  useEffect(() => {
+    if (!guideOpen && startChoiceAfterGuide.current) {
+      startChoiceAfterGuide.current = false
+      setStartChoiceOpen(true)
+    }
+  }, [guideOpen])
   const [wzRegular, setWzRegular] = useState(0)
   const [wzKnights, setWzKnights] = useState(0)
   const [wzDance, setWzDance] = useState(true)
@@ -1901,8 +1908,11 @@ export function HallPage({
       }
       // אולם ריק לגמרי (בלי שולחנות ובלי אלמנטים) => פותחים את אשף הבנייה
       // אוטומטית, כדי שהזוג יתחיל מסקיצה מסודרת ולא ממסך ריק.
+      // בביקור הראשון המדריך פתוח — הבחירה נפתחת רק אחרי שסוגרים אותו, ולא
+      // שני חלונות זה על זה.
       if (h.tables.length === 0 && (h.elements?.length ?? 0) === 0) {
-        setStartChoiceOpen(true)
+        if (!h.guide_seen) startChoiceAfterGuide.current = true
+        else setStartChoiceOpen(true)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : strings.errors.hallLoadFailed)
@@ -4723,12 +4733,16 @@ export function HallPage({
                 </div>
               </div>
 
+              {smartStats.totalPeople === 0 && (
+                <p className="hm-oneclick-hint" role="note">{hallT.nobodyToSeat}</p>
+              )}
+
               {/* ---- הושבה בקליק: הפעולה המרכזית של המסך (דרישות 1, 5, 6) ---- */}
               <div className="hm-oneclick">
                 <button
                   className="hm-primary-btn hm-oneclick-btn"
                   onClick={() => onOneClickSeating(false)}
-                  disabled={loading}
+                  disabled={loading || smartStats.totalPeople === 0}
                 >
                   <HmIcon name="smart" size={18} />{' '}
                   {loading ? hallT.oneClickRunning : hallT.oneClickButton}

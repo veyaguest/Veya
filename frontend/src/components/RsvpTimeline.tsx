@@ -175,9 +175,13 @@ function TimelineHeader({ view }: { view: RsvpTimelineView }) {
   return (
     <div className="tl-header">
       <span className="track-hero-badge">יומן אישורי ההגעה</span>
-      <h2 className="tl-header-title">עד שנדע כמה מגיעים</h2>
+      <h2 className="tl-header-title">
+        {view.track_phase === 'ended' ? 'איך התנהלו אישורי ההגעה' : 'עד שנדע כמה מגיעים'}
+      </h2>
       <p className="tl-header-sub">
-        כאן תוכלו לראות את השלבים הקרובים עד סגירת רשימת המוזמנים.
+        {view.track_phase === 'ended'
+          ? 'הלוח המלא, יום אחרי יום, עד סגירת הרשימה.'
+          : 'כאן תוכלו לראות את השלבים הקרובים עד סגירת רשימת המוזמנים.'}
       </p>
 
       {/* הספירות (אישרו/ממתינים/סה"כ) כבר מופיעות בראש המסך — כאן רק מה
