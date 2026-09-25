@@ -20,21 +20,19 @@
    בפועל; מאז הוא קפוא (``rsvp_track_started_at``, נקבע ע"י המשימה המתוזמנת
    ב-``rsvp_scheduler``), כדי שהתאריכים לא "יברחו" קדימה. **שליחת הזמנה אינה
    נקודת האפס** — העוגן הוא מועד הסגירה בלבד.
-5. **כמה סבבים** (``rounds_for_window``) — סבב אחד לכל יומיים בחלון, כמו
-   במסלול המלא (7 סבבים ב-14 ימים), ולכל היותר ``Policy.max_rounds``. חלון
-   קצר מקבל **פחות סבבים**, לא מסלול דחוס.
-6. **איזה סבבים** (``SEQUENCES``) — המסלול המלא הוא
+5. **השלבים** — תמיד כל המסלול, באותו סדר:
    WhatsApp → WhatsApp → שיחות → WhatsApp → שיחות → WhatsApp → שיחות.
-   מתחת ל-7 הסבבים מתחלפים (WhatsApp → שיחות → WhatsApp …), בלי שני סבבים
-   מאותו סוג רק כדי "למלא" זמן. החלטת המייסד 2026-09-23.
-7. **פריסה לתאריכים** (``_place``):
-   - הסבב האחרון נופל ביום סגירת הרשימה (``Schedule.commitment_date``).
-   - כל סבב ביום משלו — אף פעם שתי פעולות באותו יום, אף פעם לא אחרי מועד
-     הסגירה, והסדר לעולם לא מתהפך.
-   - שישי/שבת: אין פעולות. סבב שנופל עליהם עובר לחמישי שלפניו, ואם חמישי
+   חלון קצר **לא** מקבל פחות שלבים — המסלול נדחס (החלטת המייסד 2026-09-25).
+   ``Policy.max_rounds`` < 7 הוא רק הגדרת אדמין מפורשת לאירוע (``SEQUENCES``).
+6. **פריסה לתאריכים** (``_place_track``):
+   - השלב האחרון נופל ביום סגירת הרשימה (``Schedule.commitment_date``),
+     אף פעם לא אחרי מועד הסגירה, והסדר לעולם לא מתהפך.
+   - יש מספיק ימים — כל שלב ביום משלו (``_place``; מסלול של 14 יום).
+   - אין — תזכורת והשיחה שאחריה באותו יום (קודם התזכורת). בקשת האישור
+     הראשונה תמיד ביום משלה, ואין שתי הודעות WhatsApp או שתי שיחות ביום.
+   - שישי/שבת: אין פעולות. שלב שנופל עליהם עובר לחמישי שלפניו, ואם חמישי
      כבר תפוס (או מחוץ לחלון) — לראשון שאחריו.
-   - אם אי אפשר לפרוס את כל הסבבים בלי לשבור את הכללים — יורדים לסבב אחד
-     פחות ופורסים מחדש.
+   - פחות מ-4 ימים פעילים עד הסגירה — כמה שיותר שלבים מתחילת המסלול.
 
 המודול עצמו טהור — רק *מחשב* תאריכים. אבל התאריכים האלה הם מקור האמת לשליחה
 בפועל: שלבי ה-WhatsApp (``whatsapp_first`` + ``reminder``) נשלחים ע"י
@@ -79,13 +77,14 @@ MAX_COMMIT_DAYS = 10
 # הפער הרצוי בין שלבים סמוכים, ביחידות יחסיות בתוך החלון:
 #   · WhatsApp <-> סבב טלפונים  → ``GAP_WA_CALL`` (2 = יום מפריד ביניהם)
 #   · WhatsApp <-> WhatsApp     → ``GAP_WA_WA``  (1 — מותר סמוך)
-# שני שלבים לעולם לא נופלים על אותו יום.
+# בפריסה הרגילה כל שלב ביום משלו; רק מסלול דחוס מאחד תזכורת ושיחה ליום אחד.
 GAP_WA_CALL = 2
 GAP_WA_WA = 1
 
-# ---- כמה סבבים ובאיזה סדר (החלטת המייסד 2026-09-23) ----
-# W = WhatsApp (בקשת אישור ראשונה / תזכורת), P = סבב שיחות. 7 = המסלול המלא.
-# מתחת ל-7 הסבבים מתחלפים — בלי שני סבבים מאותו סוג רק כדי למלא זמן.
+# ---- הסדר (החלטת המייסד 2026-09-23, 2026-09-25) ----
+# W = WhatsApp (בקשת אישור ראשונה / תזכורת), P = סבב שיחות. 7 = המסלול המלא,
+# ותמיד הוא — גם בחלון קצר (נדחס, לא מתקצר). השורות הקצרות משמשות רק הגדרת
+# אדמין מפורשת לאירוע (``rsvp.max_rounds``).
 MAX_ROUNDS = 7
 SEQUENCES: dict[int, tuple[str, ...]] = {
     7: ("W", "W", "P", "W", "P", "W", "P"),
@@ -97,9 +96,6 @@ SEQUENCES: dict[int, tuple[str, ...]] = {
     1: ("W",),
 }
 
-# צפיפות המסלול המלא: סבב אחד לכל ``DAYS_PER_ROUND`` ימים בחלון (7 ב-14).
-# חלון קצר לא נעשה צפוף יותר — הוא מקבל פחות סבבים.
-DAYS_PER_ROUND = 2
 
 
 @dataclass(frozen=True)
@@ -132,15 +128,6 @@ def policy_for(event: models.Event) -> Policy:
         )
     except Exception:  # noqa: BLE001 — לוח הזמנים לעולם לא נופל בגלל הגדרה
         return DEFAULT_POLICY
-
-
-def rounds_for_window(window_days: int, policy: Policy = DEFAULT_POLICY) -> int:
-    """כמה סבבים נכנסים לחלון של ``window_days`` ימים (מיום ההתחלה עד יום
-    הסגירה). סבב לכל יומיים, לפחות אחד, לכל היותר ``policy.max_rounds``.
-    ``window_days < 0`` (מועד הסגירה כבר עבר) → 0."""
-    if window_days < 0:
-        return 0
-    return max(1, min(policy.max_rounds, -(-window_days // DAYS_PER_ROUND)))
 
 
 def _steps_for(kinds: tuple[str, ...]) -> list[dict]:
@@ -299,9 +286,11 @@ def whatsapp_rounds(event: models.Event, now: Optional[datetime] = None) -> list
             message_type = REMINDER_MESSAGE_TYPES[p.reminder_number]
         else:
             continue
-        until = (
-            placements[i + 1].date if i + 1 < len(placements)
-            else schedule.commitment_date + timedelta(days=1)
+        # עד היום שבו מתחיל השלב הבא. שיחה באותו יום (מסלול דחוס) לא סוגרת
+        # את החלון — התזכורת יוצאת קודם, והשיחה אחריה באותו יום.
+        until = next(
+            (q.date for q in placements[i + 1:] if q.date > p.date),
+            schedule.commitment_date + timedelta(days=1),
         )
         rounds.append(WhatsAppRound(message_type, p.date, until))
     return rounds
@@ -442,7 +431,7 @@ def _place(
     kinds: tuple[str, ...], start: date, end: date,
 ) -> Optional[list[tuple[date, date]]]:
     """פורס את הסבבים לתאריכים — ``[(תאריך בפועל, תאריך טבעי), ...]`` — או
-    ``None`` אם אי אפשר בלי לשבור את הכללים (ואז הקורא יורד לסבב אחד פחות).
+    ``None`` אם אי אפשר בלי לשבור את הכללים (ואז ``_place_track`` דוחס).
 
     כללים: הסבב האחרון ביום הסגירה (``end``; סבב יחיד — בתחילת החלון); כל סבב ביום פעיל משלו, אחרי
     הקודם ולא אחרי ``end``; שישי/שבת → חמישי שלפני, ואם הוא תפוס/מחוץ לחלון
@@ -488,6 +477,87 @@ def _place(
     return placed
 
 
+def _merge_slots(kinds: tuple[str, ...], merged: set[int]) -> list[list[int]]:
+    """מקבץ שלבים לימים: שלב שב-``merged`` נופל ביום של השלב שלפניו."""
+    slots: list[list[int]] = []
+    for i in range(len(kinds)):
+        if i in merged and slots:
+            slots[-1].append(i)
+        else:
+            slots.append([i])
+    return slots
+
+
+def _expand(slots: list[list[int]], placed: list[tuple[date, date]]) -> list[tuple[date, date]]:
+    """תאריך של כל יום → תאריך של כל שלב שבו."""
+    return [placed[k] for k, slot in enumerate(slots) for _ in slot]
+
+
+def _active_days(start: date, end: date) -> list[date]:
+    """כל הימים הפעילים (לא שישי/שבת) מ-``start`` עד ``end``, כולל."""
+    out, cur = [], start
+    while cur <= end:
+        if not _is_weekend(cur):
+            out.append(cur)
+        cur += timedelta(days=1)
+    return out
+
+
+def _spread_evenly(count: int, days: list[date]) -> Optional[list[tuple[date, date]]]:
+    """``count`` ימים מתוך ``days``, בפיזור שווה: הראשון בתחילת החלון, האחרון
+    ביום הסגירה (יום אחד — בתחילת החלון). ``None`` אם אין מספיק ימים."""
+    if count == 0 or count > len(days):
+        return None
+    if count == 1:
+        return [(days[0], days[0])]
+    step = (len(days) - 1) / (count - 1)
+    return [(days[round(k * step)], days[round(k * step)]) for k in range(count)]
+
+
+def _place_track(
+    kinds: tuple[str, ...], start: date, end: date,
+) -> tuple[tuple[str, ...], list[tuple[date, date]]]:
+    """פורס את המסלול לחלון — **תמיד כל השלבים ובאותו סדר**, דוחס לפי הצורך
+    (החלטת המייסד 2026-09-25).
+
+    1. הפריסה הרגילה (``_place``) — כל שלב ביום משלו, בדיוק כמו במסלול של
+       14 יום. מסלול מלא לא משתנה בכלל.
+    2. לא הצליחה, אבל יש מספיק ימים פעילים — כל שלב ביום משלו, בפיזור שווה.
+    3. אין מספיק ימים — תזכורת והשיחה שאחריה באותו יום (קודם התזכורת, אחר
+       כך השיחה). מאחדים זוג אחרי זוג, מהסוף להתחלה, עד שהמסלול נכנס. בקשת
+       האישור הראשונה תמיד ביום משלה; אין שתי הודעות WhatsApp או שתי שיחות
+       באותו יום.
+    4. גם כך לא נכנס (פחות מ-4 ימים פעילים) — כמה שיותר שלבים מתחילת
+       המסלול, באותו סדר.
+    שישי/שבת לעולם לא נבחרים. מחזיר ``(השלבים, [(תאריך, תאריך טבעי), ...])``.
+    """
+    placed = _place(kinds, start, end)
+    if placed is not None:
+        return kinds, placed
+
+    days = _active_days(start, end)
+    placed = _spread_evenly(len(kinds), days)
+    if placed is not None:
+        return kinds, placed
+
+    # זוגות "תזכורת ← שיחה" (לא בקשת האישור הראשונה), מהאחרון לראשון.
+    pairs = [i for i in range(2, len(kinds)) if kinds[i] == "P" and kinds[i - 1] == "W"]
+    merged: set[int] = set()
+    slots = _merge_slots(kinds, merged)
+    for p_idx in reversed(pairs):
+        merged.add(p_idx)
+        slots = _merge_slots(kinds, merged)
+        placed = _spread_evenly(len(slots), days)
+        if placed is not None:
+            return kinds, _expand(slots, placed)
+
+    fit = min(len(slots), len(days))
+    if fit == 0:
+        return (), []
+    last = slots[fit - 1][-1]
+    return kinds[: last + 1], _expand(slots[:fit], _spread_evenly(fit, days) or [])
+
+
 def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Optional[Schedule]:
     """פורס את סבבי המסלול לתאריכים עבור אירוע. ``None`` = אין מה לחשב
     (חסר תאריך אירוע, או אירוע רחוק שעוד לא נבחר לו מועד סגירת רשימה).
@@ -530,14 +600,10 @@ def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Opt
     window_days = (commitment_date - window_start).days
     compressed = window_days < max_window
 
-    # ---- כמה סבבים: לפי החלון; אם אי אפשר לפרוס — סבב אחד פחות ----
-    kinds: tuple[str, ...] = ()
-    dates: list[tuple[date, date]] = []
-    for n in range(rounds_for_window(window_days, policy), 0, -1):
-        attempt = _place(SEQUENCES[n], window_start, commitment_date)
-        if attempt is not None:
-            kinds, dates = SEQUENCES[n], attempt
-            break
+    # ---- הסבבים: תמיד כל המסלול, דחוס לחלון שנשאר (החלטת המייסד 2026-09-25) ----
+    # חלון קצר לא מקבל פחות שלבים. ``max_rounds`` < 7 הוא רק הגדרת אדמין
+    # מפורשת לאירוע, ואז הרצף שלה מ-``SEQUENCES``.
+    kinds, dates = _place_track(SEQUENCES[policy.max_rounds], window_start, commitment_date)
 
     placements: list[Placement] = []
     reminder_n = round_n = 0
@@ -687,12 +753,15 @@ def compute_timeline(
             by_iso[iso] = {"date": d, "actions": []}
         return by_iso[iso]
 
-    for placement in schedule.placements:
+    placements = schedule.placements
+    for idx, placement in enumerate(placements):
         step = placement.step
-        # הסבב שביום סגירת הרשימה = גם הסגירה עצמה. כרטיס אחד: אחרי הסבב,
-        # הרשימה נסגרת. אין שורת "סגירת רשימת המוזמנים" נפרדת. במסלול קצר
-        # הסבב הזה יכול להיות גם WhatsApp (למשל 5 סבבים: W P W P W).
-        closes = placement.date == commitment_date
+        # השלב האחרון ביום סגירת הרשימה = גם הסגירה עצמה. כרטיס אחד: אחריו
+        # הרשימה נסגרת. במסלול דחוס יש ביום הסגירה גם תזכורת וגם שיחה — רק
+        # האחרון מביניהם (השיחה) נושא את הסגירה.
+        closes = placement.date == commitment_date and (
+            idx == len(placements) - 1 or placements[idx + 1].date != placement.date
+        )
         is_last_call = closes and step["type"] == "call_round"
         label = "סבב שיחות אחרון וסגירת הרשימה" if is_last_call else step["label"]
         note = (

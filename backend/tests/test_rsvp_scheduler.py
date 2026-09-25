@@ -269,6 +269,35 @@ def test_track_rounds_are_never_sent_on_friday_or_saturday() -> None:
     print("✓ שישי/שבת: אין שליחה, גם כשחלון הסבב עובר דרכם")
 
 
+def test_compressed_track_sends_all_reminders_even_on_call_days() -> None:
+    """(2026-09-25) חלון קצר: כל 7 השלבים. תזכורת ושיחה באותו יום — התזכורת
+    יוצאת (החלון שלה לא נסגר בגלל השיחה), ומוזמן חדש עדיין מתחיל בתזכורת.
+
+    אירוע שני 21/9, סגירה יום לפני → ראשון 20/9 (5 ימים פעילים):
+    W 14 · W 15 · P 16 · W+P 17 · W+P 20.
+    """
+    db = _db()
+    ev = _event(db, event_date="2026-09-21", venue_commit_days_before=1)
+    old = _guest(db, ev, "ותיק")
+    # חמישי 17/9 10:00 בישראל — לפני תזכורת 2 (12:00): מקבל אותה ונכנס לשיחה שאחריה.
+    morning = _guest(db, ev, "בוקר", "0507070707", created=_at(date(2026, 9, 17), 7))
+    # חמישי 17/9 15:00 — אחרי התזכורת: מחכה לתזכורת 3 ביום ראשון.
+    afternoon = _guest(db, ev, "צהריים", "0508080808", created=_at(date(2026, 9, 17), 12))
+
+    _run_every_day(db, date(2026, 9, 14), date(2026, 9, 17))
+    kinds = [p.step["type"] for p in rsvp_timeline.compute_schedule(ev, _at(date(2026, 9, 17))).placements]
+    assert kinds == ["whatsapp_first", "reminder", "call_round", "reminder", "call_round",
+                     "reminder", "call_round"], kinds
+    assert _called_on(db, date(2026, 9, 17)) == {"ותיק", "בוקר"}
+    _run_every_day(db, date(2026, 9, 18), date(2026, 9, 20))
+    assert "צהריים" in _called_on(db, date(2026, 9, 20))
+
+    assert _kinds_for(db, old) == ["rsvp_request", "reminder_1", "reminder_2", "final_reminder"]
+    assert _kinds_for(db, morning) == ["reminder_2", "final_reminder"]
+    assert _kinds_for(db, afternoon) == ["final_reminder"]
+    print("✓ מסלול דחוס: כל התזכורות יוצאות גם ביום של שיחות; מוזמן חדש — קודם תזכורת")
+
+
 def test_past_steps_show_their_historical_count() -> None:
     """שלב שעבר מציג כמה באמת היו בו — לא את הסטטוס של היום."""
     from app.routers.automation import _step_history
@@ -467,4 +496,5 @@ if __name__ == "__main__":
     test_maybe_goes_to_calls_and_answered_leave()
     test_track_rounds_are_never_sent_on_friday_or_saturday()
     test_past_steps_show_their_historical_count()
+    test_compressed_track_sends_all_reminders_even_on_call_days()
     print("\nכל בדיקות המשימה המתוזמנת עברו ✓")
