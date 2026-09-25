@@ -941,7 +941,6 @@
       .dlt-node.is-goal .dlt-date { font-size: clamp(1.6rem, 2.4vw, 2.05rem); color: var(--gold-deep); }
       .dlt-sub { min-height: 1.5em; font-size: var(--fs-xs); color: var(--body); }
       .dlt-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-      .dl-note { margin: 26px auto 0; max-width: 36rem; text-align: center; font-size: var(--fs-md); color: var(--body); line-height: 1.7; }
 
       /* הקו נמשך מהיעד לאחור, והשלבים מצטרפים אליו מהסוף להתחלה. פעם אחת
          כשהציר נכנס למסך, ושוב בכל החלפת תאריך. רק opacity ו-transform. */
@@ -956,8 +955,6 @@
       /* טלפון: אותו מסלול לאורך, מלמעלה (הבקשה) למטה (היעד). */
       @media (max-width: 860px) {
         .dlt, .dlt.is-free { grid-template-columns: 1fr; gap: 0; max-width: 26rem; margin: 0 auto; }
-        /* בטלפון ההערה יכולה לתפוס שתי שורות — שומרים להן מקום מראש. */
-        .dl-note { min-height: 3.4em; }
         .dlt::before, .dlt::after, .dlt.is-free::before, .dlt.is-free::after {
           top: 24px; bottom: 44px; height: auto; width: 2px;
           inset-inline: auto; inset-inline-start: 13px;
@@ -3072,8 +3069,6 @@
 
             <ol class="dlt" data-dl-line aria-label="מסלול אישורי ההגעה עד מועד הסגירה"></ol>
             <p class="dl-err" data-dl-err hidden>לא הצלחנו לחשב את לוח הזמנים כרגע. אפשר לנסות שוב בעוד רגע.</p>
-
-            <p class="dl-note" data-dl-note aria-live="polite"></p>
           </div>
 
           <p class="flow-punch reveal d2">
@@ -4420,7 +4415,6 @@
         var input = box.querySelector('[data-dl-input]');
         var line = box.querySelector('[data-dl-line]');
         var err = box.querySelector('[data-dl-err]');
-        var note = box.querySelector('[data-dl-note]');
         var shift = box.querySelector('[data-dl-shift]');
         if (!input || !line) return;
         var raw = '%VITE_API_URL%';
@@ -4510,11 +4504,6 @@
           line.classList.toggle('is-free', !placed);
           line.style.setProperty('--dlt-n', String(items.length));
           line.replaceChildren.apply(line, items);
-
-          var full = placed && closingCall && placed.slots.every(Boolean);
-          note.textContent = full
-            ? 'יש מספיק זמן: המסלול המלא נכנס עד יום הסגירה.'
-            : 'נשאר פחות זמן, אז המסלול מתקצר לימים שיש. שלב שלא נכנס נשאר ריק.';
 
           // המנוע מקדים סגירה שנופלת בשישי/שבת ליום הפעיל שלפניה.
           var picked = input.value;
