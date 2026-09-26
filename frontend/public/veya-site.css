@@ -236,6 +236,20 @@ a.evt-card:focus-visible { outline: 3px solid var(--gold-light); outline-offset:
 .article ul, .article ol { padding-inline-start: 22px; }
 /* צילום מסך בתוך מדריך: מסך אמיתי של VEYA שמראה בדיוק את מה שהפסקה מסבירה,
    עם כיתוב שמסביר מה רואים. לא תמונת אווירה. */
+/* קבוצות המוזמנים ותבנית ההוצאות בעמוד סוג אירוע: שני בלוקים שנגזרים
+   מהמוצר עצמו ויושבים בתוך זרימת הטקסט, לא ככרטיסיות נפרדות. */
+.evt-groups, .evt-exp { margin: 26px 0; padding: 20px 22px; background: var(--cream); border: 1px solid var(--line); border-radius: 12px; }
+.evt-groups-k, .evt-exp-k { margin: 0 0 12px; font-size: var(--fs-sm); font-weight: 700; color: var(--charcoal); }
+.evt-groups-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.evt-groups-list li { padding: 6px 14px; background: var(--ivory-2, #f6efe2); border: 1px solid var(--line); border-radius: 999px; font-size: var(--fs-sm); color: var(--charcoal); }
+.evt-groups-note, .evt-exp-note { margin: 14px 0 0; font-size: var(--fs-sm); line-height: 1.6; color: var(--muted); }
+.evt-exp dl { margin: 0; }
+.evt-exp-row { display: grid; grid-template-columns: 10rem 1fr; gap: 6px 14px; padding: 10px 0; border-top: 1px solid var(--line); }
+.evt-exp-row:first-child { border-top: 0; padding-top: 0; }
+.evt-exp-row dt { font-weight: 700; font-size: var(--fs-sm); color: var(--charcoal); }
+.evt-exp-row dd { margin: 0; font-size: var(--fs-sm); line-height: 1.6; color: var(--body); }
+@media (max-width: 560px) { .evt-exp-row { grid-template-columns: 1fr; gap: 2px; } }
+
 .g-shot { margin: 30px 0; }
 .g-shot .mk-browser { margin: 0; }
 .g-shot figcaption { margin-top: 10px; font-size: var(--fs-sm); line-height: 1.6; color: var(--muted); }

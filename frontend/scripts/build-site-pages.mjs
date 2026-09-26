@@ -14,13 +14,14 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { marked } from 'marked'
 import { page, pageHero, faqHtml, esc, SITE, CTA_PRIMARY, shot } from './site-shell.mjs'
-import { EVENT_TYPES, GROUPS, EXPENSES, FOCUS } from '../content/event-types.mjs'
+import { EVENT_TYPES, GROUPS, EXPENSES } from '../content/event-types.mjs'
 import { featureRsvp, featureCalls, featureGuests, featureSeating } from './build-features.mjs'
 import { buildNuschim } from './build-nuschim.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PUB = path.resolve(__dirname, '../public')
 const GUIDES_SRC = path.resolve(__dirname, '../content/guides')
+const EVENTS_SRC = path.resolve(__dirname, '../content/events')
 
 const API_URL = process.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -919,30 +920,50 @@ ${faqHtml(faq)}
    ותבנית ההוצאות) מגיע ממה שהמערכת באמת עושה אחרת בכל סוג אירוע.
    ════════════════════════════════════════════════════════════════════ */
 
+/** גוף העמוד של סוג אירוע — Markdown ייחודי לכל אירוע. */
+function loadEventBody(slug) {
+  const file = path.join(EVENTS_SRC, `${slug}.md`)
+  if (!existsSync(file)) return { body: '', faq: [] }
+  const { body: full } = parseFrontmatter(readFileSync(file, 'utf8'))
+  return extractFaq(full)
+}
+
+/** הקבוצות ותבנית ההוצאות — שני הבלוקים שנגזרים מהמוצר עצמו ולא נכתבים
+ *  בעמוד. כל אירוע ממקם אותם היכן שהם משרתים את הטקסט שלו, דרך אסימון
+ *  ‎{{GROUPS}} / {{EXPENSES}} בתוך ה-Markdown. */
+function groupsBlock(t, groups) {
+  if (!groups.length) return ''
+  return `<div class="evt-groups">
+            <p class="evt-groups-k">${esc('קבוצות ה' + t.guests + ' ש' + pref('ל', t.the) + ', כפי שהן נפתחות במערכת')}</p>
+            <ul class="evt-groups-list">
+${groups.map((g) => `              <li>${esc(g)}</li>`).join('\n')}
+            </ul>
+            <p class="evt-groups-note">הקבוצה אינה תווית בלבד: היא מזינה את הסינון, את הספירה ואת סידור ההושבה.</p>
+          </div>`
+}
+
+function expensesBlock(expenses) {
+  if (!expenses.length) return ''
+  return `<div class="evt-exp">
+            <p class="evt-exp-k">הסעיפים שנפתחים מיד עם סוג האירוע</p>
+            <dl>
+${expenses.map(([cat, items]) => `              <div class="evt-exp-row"><dt>${esc(cat)}</dt><dd>${esc(items.join(' · '))}</dd></div>`).join('\n')}
+            </dl>
+            <p class="evt-exp-note">זו נקודת פתיחה ולא רשימה סגורה — אפשר להוסיף, למחוק ולשנות הכול.</p>
+          </div>`
+}
+
 function eventPage(t) {
   const groups = GROUPS[t.slug] || []
   const expenses = EXPENSES[t.slug] || []
+  const { body: md, faq } = loadEventBody(t.slug)
 
-  const faq = [
-    {
-      q: `במה ${t.the} שונה מסוגי אירוע אחרים במערכת?`,
-      a: `זו אותה מערכת, אבל השפה, קבוצות ה${t.guests} ותבנית ההוצאות מותאמות ${pref("ל", t.the)}. אין כאן "מצב חתונה" עם כותרת אחרת.`,
-    },
-    {
-      q: `אילו קבוצות ${t.guests} יש ${pref("ב", t.the)}?`,
-      a: groups.length
-        ? `${groups.join(', ')} — ואפשר לשייך כל מוזמן לקבוצה שמתאימה לו.`
-        : 'אפשר ליצור קבוצות שמתאימות לאירוע שלכם.',
-    },
-    {
-      q: 'האם אפשר לנהל כמה אירועים באותו חשבון?',
-      a: 'כן. כל אירוע עומד בפני עצמו — רשימה משלו, לוח זמנים משלו ותמונה כספית משלו.',
-    },
-    {
-      q: 'מי עוד יכול לגשת לאירוע?',
-      a: 'אפשר לצרף בן/בת זוג, בני משפחה או מפיק, כך שכולם עובדים על אותה רשימה.',
-    },
-  ]
+  const article = marked
+    .parse(guideBlocks(md), { gfm: true })
+    .replace(/<table>/g, '<div class="table-scroll"><table>')
+    .replace(/<\/table>/g, '</table></div>')
+    .replace(/<p>\{\{GROUPS\}\}<\/p>/g, groupsBlock(t, groups))
+    .replace(/<p>\{\{EXPENSES\}\}<\/p>/g, expensesBlock(expenses))
 
   const body = `${pageHero({
     eyebrow: t.name,
@@ -952,88 +973,15 @@ function eventPage(t) {
     cta: CTA_PRIMARY,
   })}
 
-      <section class="commit tone-alt">
+      <section class="article-wrap">
         <div class="wrap">
-          <div class="section-head">
-            <span class="kicker">${esc(t.name)}</span>
-            <h2 class="section-title">${esc((FOCUS[t.slug] || {}).line || '')}</h2>
-          </div>
-          <div class="evt-focus" data-v-stagger="90">
-${((FOCUS[t.slug] || {}).focus || []).map(([h, d]) => `            <div class="evt-f v-reveal"><span class="evt-f-h">${esc(h)}</span><span class="evt-f-d">${esc(d)}</span></div>`).join('\n')}
-          </div>
-          <div class="note-chips" style="justify-content:center;margin-top:22px">
-${((FOCUS[t.slug] || {}).chips || []).map((c) => `            <span class="note-chip">${esc(c)}</span>`).join('\n')}
-          </div>
-        </div>
-      </section>
-
-      <section class="why">
-        <div class="wrap">
-          <div class="why-inner">
-            <h2 class="section-title">${esc('למה ' + t.the + (t.gender === 'f' ? ' לא מתנהלת' : ' לא מתנהל') + ' כמו כל אירוע אחר')}</h2>
-${t.angle.map((para) => `            <p>${esc(para)}</p>`).join('\n')}
-          </div>
-        </div>
-      </section>
-
-      <section class="features tone-alt">
-        <div class="wrap">
-          <div class="section-head">
-            <h2 class="section-title">${esc('שלושה דברים שהמערכת עושה אחרת ' + pref('ב', t.the))}</h2>
-          </div>
-          <div class="supporting-grid">
-${t.highlights.map(([h, p]) => `            <article class="supporting-item"><h3>${esc(h)}</h3><p>${esc(p)}</p></article>`).join('\n')}
-          </div>
-        </div>
-      </section>
-
-      <section class="commit tone-light">
-        <div class="wrap">
-          <div class="section-head">
-            <span class="kicker">${esc(t.guests)}</span>
-            <h2 class="section-title">${esc('קבוצות ה' + t.guests + ' של ' + t.the)}</h2>
-            <p class="section-sub">
-              הקבוצות האלה אינן תווית בלבד — הן מזינות את הסינון, את הסטטיסטיקות
-              ואת סידור ההושבה.
-            </p>
-          </div>
-          <div class="evt-grid" style="max-width:820px;margin:0 auto">
-${groups.map((g) => `            <div class="evt-card" style="text-align:center"><h3 style="margin:0">${esc(g)}</h3></div>`).join('\n')}
-          </div>
-        </div>
-      </section>
-
-      <section class="after tone-alt">
-        <div class="wrap">
-          <div class="section-head">
-            <span class="kicker">מאזן האירוע</span>
-            <h2 class="section-title">${esc('תבנית ההוצאות של ' + t.the)}</h2>
-            <p class="section-sub">
-              כשפותחים אירוע מהסוג הזה, אלה הסעיפים שמוצעים מיד. אפשר להוסיף,
-              למחוק ולשנות הכול — זו נקודת פתיחה, לא רשימה סגורה.
-            </p>
-          </div>
-          <div class="numcard" style="max-width:660px">
-            <div class="numcard-head">
-              <h3>${esc('מוצע מיד ' + pref('ב', t.the))}</h3>
-              <span class="numcard-tag">ברירת מחדל</span>
-            </div>
-            <dl>
-${expenses.map(([cat, items]) => `              <div class="numrow"><dt>${esc(cat)}</dt><dd style="font-weight:500;font-size:15px;color:var(--body)">${esc(items.join(' · '))}</dd></div>`).join('\n')}
-            </dl>
-            <p class="numcard-note">
-              סעיף שמחושב לפי מספר המגיעים זז עם הרשימה, ולכן העלות שלו
-              מחושבת נכון גם כשמגיעים פחות אנשים ממה שתכננתם.
-            </p>
-          </div>
-          <div class="section-cta">
-            <a href="/features/finance/" class="btn btn-ghost">לעמוד המאזן</a>
-          </div>
+          <article class="article">
+${article}
+          </article>
         </div>
       </section>
 
 ${faqHtml(faq)}
-
       <section class="band-wrap">
         <div class="wrap">
           <div class="band">
