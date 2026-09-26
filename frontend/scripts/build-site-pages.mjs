@@ -876,7 +876,6 @@ ${faqHtml(faq)}
       <section class="band-wrap">
         <div class="wrap">
           <div class="band">
-            <span class="kicker">מתחילים</span>
             <h2>הגיע הזמן להפסיק לנחש את המספר</h2>
             <p class="band-more">
               מתחילים עם רשימת המוזמנים ומגיעים לאירוע עם תמונה ברורה יותר של האנשים,
@@ -965,7 +964,6 @@ ${((FOCUS[t.slug] || {}).chips || []).map((c) => `            <span class="note-
       <section class="why">
         <div class="wrap">
           <div class="why-inner">
-            <span class="kicker">מה מיוחד כאן</span>
             <h2 class="section-title">${esc('למה ' + t.the + (t.gender === 'f' ? ' לא מתנהלת' : ' לא מתנהל') + ' כמו כל אירוע אחר')}</h2>
 ${t.angle.map((para) => `            <p>${esc(para)}</p>`).join('\n')}
           </div>
@@ -975,7 +973,6 @@ ${t.angle.map((para) => `            <p>${esc(para)}</p>`).join('\n')}
       <section class="features tone-alt">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">בפועל</span>
             <h2 class="section-title">${esc('שלושה דברים שהמערכת עושה אחרת ' + pref('ב', t.the))}</h2>
           </div>
           <div class="supporting-grid">
@@ -1034,7 +1031,6 @@ ${faqHtml(faq)}
       <section class="band-wrap">
         <div class="wrap">
           <div class="band">
-            <span class="kicker">מתחילים</span>
             <h2>${esc('פותחים ' + t.name + ' ומתחילים מהרשימה')}</h2>
             <p class="band-more">
               בוחרים את סוג האירוע בפתיחה, והמערכת מתאימה את עצמה — השפה,

@@ -99,7 +99,6 @@ export function featureRsvp() {
       <section class="why">
         <div class="wrap">
           <div class="why-inner">
-            <span class="kicker">הזווית</span>
             <h2 class="section-title">אישור הגעה הוא לא סוף התהליך. הוא ההתחלה של ההחלטות.</h2>
             <p>
               ברוב הכלים, ברגע שמוזמן ענה — הסיפור נגמר. הוא מקבל וי בטבלה, והטבלה
@@ -229,7 +228,6 @@ ${faqHtml(faq)}
       <section class="band-wrap">
         <div class="wrap">
           <div class="band">
-            <span class="kicker">מתחילים</span>
             <h2>מרשימה שמשתנה כל יום — לתמונה אחת</h2>
             <p class="band-more">
               מתחילים עם רשימת המוזמנים, ומגיעים למועד סגירת הרשימה עם מספר שאפשר להסביר.
@@ -308,7 +306,6 @@ export function featureCalls() {
       <section class="why">
         <div class="wrap">
           <div class="why-inner">
-            <span class="kicker">הבעיה</span>
             <h2 class="section-title">בכל רשימה יש קבוצה שפשוט לא עונה</h2>
             <p>
               לא כי הם לא רוצים לבוא. הם ראו את ההודעה, התכוונו לענות אחר כך, ושכחו.
@@ -437,7 +434,6 @@ ${faqHtml(faq)}
       <section class="band-wrap">
         <div class="wrap">
           <div class="band">
-            <span class="kicker">מתחילים</span>
             <h2>שלא יישאר אף אחד באוויר</h2>
             <p class="band-more">
               מי שלא ענה נשאר גלוי, מנוהל ומטופל — עד שיש עליו תשובה.
@@ -506,7 +502,6 @@ export function featureGuests() {
       <section class="why">
         <div class="wrap">
           <div class="why-inner">
-            <span class="kicker">למה זה חשוב</span>
             <h2 class="section-title">אקסל לא נשבר כשהוא גדול. הוא נשבר כשיש ממנו שתי גרסאות.</h2>
             <p>
               ברוב האירועים הרשימה חיה בכמה מקומות במקביל: קובץ אחד אצלכם, קובץ אחר
@@ -590,7 +585,6 @@ ${shot('/product/journey-guests.jpg', 'טבלת המוזמנים ב-VEYA: שם, 
       <section class="features tone-light">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">להתחיל</span>
             <h2 class="section-title">ייבוא הרשימה שלכם</h2>
             <p class="section-sub">
               אם כבר יש רשימה, אין סיבה להקליד אותה מחדש.
@@ -636,7 +630,6 @@ ${faqHtml(faq)}
       <section class="band-wrap">
         <div class="wrap">
           <div class="band">
-            <span class="kicker">מתחילים</span>
             <h2>רשימה אחת, שכל השאר נגזר ממנה</h2>
             <p class="band-more">
               מעלים את הרשימה הקיימת וממשיכים משם — לאישורי ההגעה, להושבה ולחישוב האירוע.
@@ -708,7 +701,6 @@ export function featureSeating() {
       <section class="why">
         <div class="wrap">
           <div class="why-inner">
-            <span class="kicker">הבעיה</span>
             <h2 class="section-title">ההושבה לא קשה כי יש הרבה אנשים. היא קשה כי יש כללים.</h2>
             <p>
               מי יושב עם מי, מי לא יכול לשבת ליד מי, מי צריך להיות רחוק מהרמקול ומי
@@ -853,7 +845,6 @@ ${faqHtml(faq)}
       <section class="band-wrap">
         <div class="wrap">
           <div class="band">
-            <span class="kicker">מתחילים</span>
             <h2>לא להתחיל את ההושבה שבוע לפני</h2>
             <p class="band-more">
               את החלוקה לקבוצות ואת האילוצים אפשר לסדר הרבה קודם. מה שנשאר לסוף

@@ -1651,9 +1651,10 @@
       .fab:active { transform: translateY(1px); }
       .fab:focus-visible { outline: 2px solid var(--charcoal) !important; outline-offset: 3px; }
       @media (max-width: 600px) {
-        /* 44px הוא המינימום לאזור נגיעה — כפתור הפעולה לא יורד מתחתיו */
-        .fab { min-height: 44px; padding: 0 16px; gap: 6px; font-size: var(--fs-xs); border-radius: 999px; }
-        .fab-ic { width: 13px; height: 13px; }
+        /* בטלפון הכותרת הדביקה כבר מציגה "מתחילים לתכנן" כל הזמן — כפתור צף
+           נוסף היה שני כפתורי "להתחיל" על מסך אחד קטן, שמובילים לשני יעדים
+           שונים. בטלפון נשאר כפתור אחד. */
+        .fab { display: none; }
       }
       @media (prefers-reduced-motion: reduce) {
         .fab { transition: none; transform: none; }
@@ -2992,7 +2993,6 @@
       <div class="wrap">
         <div class="section-head reveal">
           <img class="brand-mark" src="/logo_nobg.png" alt="" aria-hidden="true" width="44" height="44" loading="lazy" decoding="async" />
-          <span class="kicker">יש לכם רשימה? פשוט תדביקו.</span>
           <h2 id="ps-title" class="section-title">הכול מתחיל מאותה רשימת מוזמנים</h2>
           <p class="section-sub">
             לא מתחילים מאפס: מביאים את הרשימה שכבר יש לכם, וממשיכים משם.<br />
@@ -3504,7 +3504,6 @@
     <section class="after tone-alt" id="after" aria-labelledby="after-title">
         <div class="wrap">
           <div class="section-head reveal">
-            <span class="kicker">אחרי האירוע</span>
             <h2 id="after-title" class="section-title">ובסוף, <span class="ttl-accent">מאזן אחד לכל האירוע.</span></h2>
             <p class="section-sub">
               כמה עלה האירוע, כמה עולה לכם כל אורח, כמה נכנס במתנות — ובסוף
@@ -3543,7 +3542,6 @@
       <section class="how on-dark" id="how" aria-labelledby="how-title">
         <div class="wrap">
           <div class="section-head reveal">
-            <span class="kicker">איך זה עובד</span>
             <h2 id="how-title" class="section-title">מהרשימה הראשונה <span class="ttl-accent">ועד הדוח שנשאר אחריו.</span></h2>
             <p class="section-sub">
               הרשימה שהבאתם, האישורים שאספתם, ההושבה, ההוצאות והמתנות —
@@ -3813,7 +3811,6 @@
       <section class="faq-wrap" aria-labelledby="faq-title">
         <div class="wrap">
           <div class="section-head reveal">
-            <span class="kicker">שאלות נפוצות</span>
             <h2 id="faq-title" class="section-title">מה שכדאי לדעת לפני שמתחילים</h2>
           </div>
           <div class="faq">
@@ -3917,7 +3914,6 @@
       <section class="band-wrap" aria-labelledby="cta-title">
         <div class="wrap">
           <div class="band reveal">
-            <span class="kicker">מתחילים</span>
             <h2 id="cta-title">הגיע הזמן להפסיק לנחש את המספר.</h2>
             <p class="band-more">
               מתחילים עם רשימת המוזמנים ומגיעים לאירוע עם תמונה ברורה יותר של האנשים,

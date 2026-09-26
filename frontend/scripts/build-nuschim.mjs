@@ -440,7 +440,6 @@ ${list(data)}
       <section class="band-wrap">
         <div class="wrap">
           <div class="band">
-            <span class="kicker">מתחילים</span>
             <h2>ההודעות האלה כבר בפנים</h2>
             <p class="band-more">
               בתוך VEYA בוחרים הודעה לכל שלב, עורכים אותה אם בא לכם, ורואים
