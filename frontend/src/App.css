@@ -1912,9 +1912,16 @@ td.notes.seating {
 }
 
 .file-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 14px;
   color: var(--muted);
   margin: 8px 0 4px;
+}
+.file-name svg {
+  flex: none;
+  color: var(--gold-deep);
 }
 .import-summary {
   font-size: 15px;
@@ -15086,6 +15093,18 @@ button.gauge-status-card:focus-visible {
 /* שורות אימוג'י ("💬 3 סבבי...") — פריטי רשימה צמודים, לא פסקאות נפרדות. */
 .rsvp-faq-a p.is-item {
   margin-top: 4px;
+  position: relative;
+  padding-inline-start: 16px;
+}
+.rsvp-faq-a p.is-item::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 2px;
+  top: 0.65em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
 }
 .rsvp-faq-a p.is-item + p:not(.is-item) {
   margin-top: 10px;

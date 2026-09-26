@@ -53,6 +53,8 @@
 .ws-search-icon {
   position: absolute;
   inset-inline-start: var(--space-3);
+  display: flex;
+  align-items: center;
   font-size: var(--text-sm);
   opacity: 0.6;
   pointer-events: none;

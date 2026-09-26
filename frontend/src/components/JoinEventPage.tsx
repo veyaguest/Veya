@@ -194,7 +194,8 @@ export function JoinEventPage({
   return (
     <Shell>
       <p className="join-kicker">
-        {inviter_name ? `${inviter_name} הזמין אתכם` : 'הוזמנתם'} לנהל יחד את האירוע 💍
+        {/* ניסוח סביל ולא "X הזמין" (לא מניחים מגדר), ובלי 💍 — זה לא תמיד חתונה. */}
+        {inviter_name ? `הוזמנתם על ידי ${inviter_name} לנהל יחד את האירוע` : 'הוזמנתם לנהל יחד את האירוע'}
       </p>
       <h1 className="join-title">{event_title}</h1>
       <p className="join-text">

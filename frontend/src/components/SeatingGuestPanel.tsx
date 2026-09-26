@@ -53,6 +53,26 @@ import { strings } from '../strings/he'
 import { SeatTablePickerDialog } from './SeatTablePickerDialog'
 import './SeatingWorkspace.css'
 
+/** אייקון הערה מצויר (במקום 📝, שמצויר אחרת בכל מערכת הפעלה). */
+function NoteIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5M9 13h6M9 17h4" />
+    </svg>
+  )
+}
+
 const t = strings.hall.workspace
 
 /** ה-MIME שבו נושאים את מזהה המוזמן בגרירה. */
@@ -206,7 +226,7 @@ const GuestRow = memo(function GuestRow({
             aria-label={`${t.noteToggle} — ${g.full_name}`}
             onClick={() => setNotesOpen((v) => !v)}
           >
-            <span aria-hidden="true">📝</span>
+            <NoteIcon />
           </button>
         )}
       </div>
@@ -542,7 +562,10 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
       <div className="ws-toolbar">
         <div className="ws-search">
           <span className="ws-search-icon" aria-hidden="true">
-            🔍
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="m16 16 4.5 4.5" />
+            </svg>
           </span>
           <input
             type="search"
@@ -719,7 +742,7 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
                         </button>
                         {groupNotes[group.key] && (
                           <span className="ws-group-note" title={groupNotes[group.key]}>
-                            <span aria-hidden="true">📝</span>
+                            <NoteIcon />
                             <span className="ws-sr-only">
                               {t.noteGroupTitle}: {groupNotes[group.key]}
                             </span>
