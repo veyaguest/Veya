@@ -15286,10 +15286,26 @@ button.gauge-status-card:focus-visible {
   color: var(--green);
 }
 .rsvp-summary-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: var(--text-sm);
   color: var(--muted);
   line-height: 1.3;
 }
+/* נקודת הצבע של אותו מצב במד שבתמונת המצב — מקשרת בין המסכים בלי להפוך
+   את הסיכום השקט לארבעה מספרים צבעוניים. */
+.rsvp-summary-label::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gauge-pending);
+}
+.rsvp-summary-item.is-confirmed .rsvp-summary-label::before { background: var(--gauge-confirmed); }
+.rsvp-summary-item.is-maybe .rsvp-summary-label::before { background: var(--gauge-maybe); }
+.rsvp-summary-item.is-declined .rsvp-summary-label::before { background: var(--gauge-declined); }
 .rsvp-summary-foot {
   margin: 0;
   font-size: var(--text-sm);
