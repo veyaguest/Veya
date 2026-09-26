@@ -15711,20 +15711,17 @@ button.gauge-status-card:focus-visible {
   .guests-table td.notes:empty {
     display: none;
   }
+  /* כל הכרטיס נלחץ לעריכה (GuestsPage) — אין צורך בשורת כפתורים. */
   .guests-table td.row-actions {
-    order: 10;
-    flex-basis: 100%;
-    display: flex;
-    justify-content: flex-start;
-    gap: 8px;
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px solid var(--line-2);
-    opacity: 1;
+    display: none;
   }
-  .guests-table td.row-actions button {
-    min-height: 40px;
-    padding: 6px 16px;
+  .guests-table tbody tr:not(.skeleton-row) {
+    cursor: pointer;
+    transition: background-color var(--transition-fast), transform var(--transition-fast);
+  }
+  .guests-table tbody tr:not(.skeleton-row):active {
+    background: var(--surface-hi);
+    transform: scale(0.99);
   }
   .table-wrap .empty {
     background: var(--cream);
@@ -15794,4 +15791,24 @@ button.gauge-status-card:focus-visible {
 }
 .tl-phase-cta + .tl-phase-link {
   margin-inline-start: 12px;
+}
+
+/* מחיקה מתוך חלון עריכת מוזמן — פעולה הרסנית שקטה, מתחת לטופס ולא ליד
+   "שמירה" (כדי שלא תילחץ בטעות). אישור נוסף מגיע מ-ConfirmDialog. */
+.edit-guest-delete {
+  display: block;
+  margin: var(--space-4) auto 0;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--error);
+  cursor: pointer;
+  border-radius: var(--radius-s);
+}
+@media (hover: hover) {
+  .edit-guest-delete:hover {
+    text-decoration: underline;
+  }
 }

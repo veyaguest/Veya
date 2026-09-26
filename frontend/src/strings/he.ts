@@ -1069,6 +1069,7 @@ export const strings = {
     colNotes: 'הערה לעצמכם',
     colSeatingNotes: 'הערות הושבה',
     deleteRow: 'מחיקה',
+    deleteGuestInDialog: 'הסרת המוזמן מהרשימה',
     editRow: 'עריכה',
     groupButton: 'יצירת קבוצה חדשה',
     emptySearchTitle: 'אין מוזמנים שמתאימים לחיפוש',

@@ -30,6 +30,8 @@ import './GuestDataAlert.css'
 const contactsSupported = isContactPickerSupported()
 
 const t = strings.guests
+// אותה נקודת מעבר כמו ב-App.css: מתחתיה הטבלה מוצגת ככרטיסים.
+const CARD_LAYOUT_QUERY = '(max-width: 700px)'
 
 const PAGE_SIZE = 50
 
@@ -527,6 +529,17 @@ export function GuestsPage({
               }}
               onCancel={() => setEditGuest(null)}
             />
+            <button
+              type="button"
+              className="edit-guest-delete"
+              onClick={() => {
+                const g = editGuest
+                setEditGuest(null)
+                onDelete(g)
+              }}
+            >
+              {t.deleteGuestInDialog}
+            </button>
           </div>
         </div>
       )}
@@ -592,7 +605,14 @@ export function GuestsPage({
                 </tr>
               ))}
             {guests.map((g) => (
-              <tr key={g.id}>
+              // בטלפון (כרטיסים) כל הכרטיס הוא כפתור העריכה — שורת "עריכה/מחיקה"
+              // נפרדת תפסה כרבע מכל כרטיס. המחיקה עברה לתוך חלון העריכה.
+              <tr
+                key={g.id}
+                onClick={() => {
+                  if (window.matchMedia(CARD_LAYOUT_QUERY).matches) setEditGuest(g)
+                }}
+              >
                 <td className="cell-name" data-label={t.colFullName}>{g.full_name}</td>
                 <td dir="ltr" className="phone" data-label={t.colPhone}>
                   {g.phone}
