@@ -17,6 +17,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# שעון קבוע — גם בהרצה ישירה (``python tests/...``), לא רק דרך pytest.
+from tests import fixed_clock  # noqa: E402
+
+fixed_clock.install()
+
 
 # לקוח יחיד לכל תהליך הבדיקה. חשוב: ``app.database`` יוצר את ה-engine בזמן
 # הייבוא, ולכן אי אפשר להחליף DB בין בדיקה לבדיקה — ניסיון כזה משאיר את

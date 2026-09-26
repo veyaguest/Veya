@@ -258,6 +258,9 @@ export const strings = {
       // audience — מהלוח: "מי שעוד לא ענו" / "מי שאישרו הגעה".
       scheduled: (date: string, audience: string) =>
         `תצא ביום ${date}${audience ? ` ל${audience}` : ''}, בשעה שבחרתם למטה.`,
+      // עוד הודעה של המסלול יוצאת קודם באותו יום (חלון קצר) — זו 3 שעות אחריה.
+      scheduledAfter: (date: string, audience: string) =>
+        `תצא ביום ${date}${audience ? ` ל${audience}` : ''}, 3 שעות אחרי ההודעה הקודמת באותו יום.`,
       sent: (date: string, audience: string) =>
         `יצאה ביום ${date}${audience ? ` ל${audience}` : ''}.`,
       waiting: (date: string) =>
@@ -304,6 +307,11 @@ export const strings = {
       label: 'שעת שליחה',
       hint: 'היום נקבע לפי לוח הזמנים של אישורי ההגעה. כאן בוחרים רק את השעה.',
       rangeHint: 'בין 10:00 ל-19:00.',
+      // כמה הודעות של המסלול באותו יום (נשארו מעט ימים עד סגירת הרשימה).
+      sameDayFirst: (latest: string) =>
+        `ביום הזה יוצאות כמה הודעות: כל אחת 3 שעות אחרי הקודמת. אם תבחרו שעה אחרי ${latest}, ההודעה הזו תצא ב-${latest}, כדי שכולן ייצאו עד 19:00.`,
+      sameDayLater:
+        'ביום הזה יוצאות כמה הודעות, ולכן ההודעה הזו יוצאת אוטומטית 3 שעות אחרי הקודמת. אין צורך לבחור לה שעה.',
       save: 'שמירת השעה',
       saving: 'שומרים…',
       saved: 'השעה נשמרה',

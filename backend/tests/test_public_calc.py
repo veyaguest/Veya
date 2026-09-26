@@ -170,10 +170,11 @@ def test_timeline_stages_are_strictly_ordered():
 
 
 def test_timeline_compresses_when_time_is_short():
-    """אין מספיק ימים → התהליך נדחס: פחות שלבים, אבל אף אחד לא בעבר או אחרי הסגירה."""
+    """אין מספיק ימים → התהליך נדחס: כל 7 השלבים (2026-09-25/26), אף אחד לא
+    בעבר או אחרי הסגירה."""
     d = post("/rsvp-timeline", {"event_date": _future(6), "commit_days_before": 2}).json()
     assert d["compressed"] is True, d
-    assert 1 <= len(d["placements"]) < 7, d
+    assert len(d["placements"]) == 7, d
     assert d["placements"][0]["type"] == "whatsapp_first", d
     for p in d["placements"]:
         assert date.today().isoformat() <= p["date"] <= d["commitment_date"], d

@@ -471,19 +471,6 @@
   text-underline-offset: 3px;
 }
 
-/* "מה עוד חסר" — כמה הוצאות בלי סכום, והצעד הבא. */
-.fin-missing {
-  display: grid;
-  gap: 8px;
-  justify-items: start;
-}
-.fin-missing .fin-card-title {
-  margin: 0;
-}
-.fin-missing .fin-hint {
-  margin: 0;
-}
-
 /* ════════════════════════════════════════════════════════════════════
    תרחישים
    ════════════════════════════════════════════════════════════════════ */

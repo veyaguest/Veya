@@ -49,15 +49,14 @@ def _assert_sane(schedule: rt.Schedule, now: datetime, days_out: int, where: str
     assert all(d <= schedule.commitment_date for d in dates), f"{where}: סבב אחרי הסגירה {dates}"
     assert dates == sorted(dates), f"{where}: סבבים לא בסדר {dates}"
     assert not any(rt.is_weekend(d) for d in dates), f"{where}: סבב בשישי/שבת {dates}"
-    _assert_same_day_rule(schedule, where)
     if dates:
         kinds = _kinds(schedule)
-        # הסדר לעולם לא משתנה: תמיד תחילת המסלול המלא.
-        assert FULL.startswith(kinds), f"{where}: רצף {kinds}"
+        # תמיד כל 7 השלבים, והסדר לעולם לא משתנה (2026-09-26).
+        assert kinds == FULL, f"{where}: רצף {kinds}"
         start = max(schedule.commitment_date - timedelta(days=rt.MAX_WINDOW_DAYS), today)
-        # יש לפחות 4 ימים פעילים — כל 7 השלבים נשמרים (דחוס).
+        # 4 ימים פעילים ומעלה — אין צורך בשתי הודעות WhatsApp או שתי שיחות ביום.
         if len(_active_days(start, schedule.commitment_date)) >= 4:
-            assert kinds == FULL, f"{where}: חסרים שלבים {kinds}"
+            _assert_same_day_rule(schedule, where)
         assert (schedule.commitment_date - dates[0]).days <= rt.MAX_WINDOW_DAYS, f"{where}: חלון מעל 14"
         assert schedule.placements[0].step["type"] == "whatsapp_first", f"{where}: בלי בקשה ראשונה"
         if len(dates) > 1:
@@ -158,25 +157,41 @@ def test_short_window_puts_reminder_and_call_on_the_same_day() -> None:
     print("✓ (2ב) חלון קצר: תזכורת ושיחה באותו יום, כל 7 השלבים")
 
 
+def _by_day(schedule: rt.Schedule) -> list[str]:
+    """הלוח כיום-יום: 'W W P' לכל יום, לפי הסדר."""
+    days: dict = {}
+    for k, p in zip(_kinds(schedule), schedule.placements):
+        days.setdefault(p.date, []).append(k)
+    return [" ".join(v) for _, v in sorted(days.items())]
+
+
 def test_very_short_window() -> None:
-    """(3) חלון קצר מאוד — סבב אחד או שניים, בלי לדחוס."""
+    """(3) פחות מ-4 ימי עבודה — עדיין כל 7 השלבים, באותו סדר, כמה ביום אחד
+    (2026-09-26). כמה שפחות ימים עם שתי הודעות WhatsApp או שתי שיחות."""
     now = MONDAY
-    # פחות מ-4 ימים פעילים — אין דרך לכל 7 בלי שתי הודעות WhatsApp (או
-    # שתי שיחות) באותו יום, ולכן כמה שיותר מתחילת המסלול, באותו סדר.
-    three = rt.compute_schedule(_event(3, now, commit=1), now)  # סגירה רביעי → 3 ימים פעילים
-    assert _kinds(three) == "WWPWP", _kinds(three)
-    two = rt.compute_schedule(_event(2, now, commit=1), now)    # סגירה שלישי → 2 ימים
-    assert _kinds(two) == "WWP", _kinds(two)
+    three = rt.compute_schedule(_event(3, now, commit=1), now)  # סגירה רביעי → 3 ימי עבודה
+    assert _kinds(three) == FULL and _by_day(three) == ["W W P", "W P", "W P"], _by_day(three)
+    two = rt.compute_schedule(_event(2, now, commit=1), now)    # סגירה שלישי → 2 ימי עבודה
+    assert _kinds(two) == FULL and _by_day(two) == ["W W P", "W P W P"], _by_day(two)
+    # לא 3 הודעות WhatsApp ביום אחד כשאפשר 2+2.
+    assert all(day.split().count("W") <= 2 for day in _by_day(two))
     today_close = rt.compute_schedule(_event(1, now), now)      # אירוע מחר → סוגרים היום
-    assert _kinds(today_close) == "W" and today_close.placements[0].date == now.date()
+    assert _kinds(today_close) == FULL and _by_day(today_close) == ["W W P W P W P"]
+    assert {p.date for p in today_close.placements} == {now.date()}
     five_days = rt.compute_schedule(_event(5, now, commit=1), now)  # סגירה שישי→חמישי: 4 ימים
-    assert _kinds(five_days) == FULL, _kinds(five_days)
-    print("✓ (3) חלון קצר מאוד: 4 ימים פעילים = כל 7; פחות מזה — תחילת המסלול")
+    assert _by_day(five_days) == ["W", "W P", "W P", "W P"], _by_day(five_days)
+    # חמישי → סגירה בחמישי: 1 יום עבודה; ראשון-שני אחרי סוף שבוע: שישי/שבת ריקים.
+    thursday = WEEK[3]
+    over_weekend = rt.compute_schedule(_event(4, thursday, commit=1), thursday)  # סגירה ראשון 20/9
+    assert _kinds(over_weekend) == FULL
+    assert not any(rt.is_weekend(p.date) for p in over_weekend.placements)
+    assert [p.date.day for p in over_weekend.placements][0] == 17
+    print("✓ (3) 3/2/1 ימי עבודה: כל 7 השלבים, בסדר, בלי שישי/שבת")
 
 
 def test_order_never_changes_and_short_windows_keep_seven() -> None:
-    """(4) בכל לוח אמיתי הרצף הוא תחילת W W P W P W P — וכל 7 כשיש 4 ימים
-    פעילים ומעלה. חלון קצר נדחס, לא מתקצר ולא מתחלף."""
+    """(4) בכל לוח אמיתי — כל 7 השלבים, W W P W P W P, גם ביום עבודה אחד.
+    חלון קצר נדחס, לא מתקצר ולא מתחלף."""
     assert "".join(rt.SEQUENCES[7]) == FULL
     sevens = 0
     for now in WEEK:
@@ -187,11 +202,8 @@ def test_order_never_changes_and_short_windows_keep_seven() -> None:
                 s = rt.compute_schedule(_event(days_out, now, commit=commit), now)
                 if not s or not s.placements:
                     continue
-                assert FULL.startswith(_kinds(s)), _kinds(s)
-                start = max(s.commitment_date - timedelta(days=rt.MAX_WINDOW_DAYS), now.date())
-                if len(_active_days(start, s.commitment_date)) >= 4:
-                    assert _kinds(s) == FULL, (now, days_out, commit, _kinds(s))
-                    sevens += 1
+                assert _kinds(s) == FULL, (now, days_out, commit, _kinds(s))
+                sevens += 1
     assert sevens > 0
     # תקרת אדמין מפורשת לאירוע — שורה מאותה טבלה, גם היא נדחסת ולא מתקצרת.
     kinds, dates = rt._place_track(rt.SEQUENCES[3], MONDAY.date(), MONDAY.date() + timedelta(days=14))
@@ -285,7 +297,9 @@ def test_near_event_defaults_to_day_before() -> None:
     assert s.commitment_date == now.date() + timedelta(days=2)  # רביעי = יום לפני
     tomorrow = rt.compute_schedule(_event(1, now), now)
     assert tomorrow.commitment_date == now.date(), "אירוע מחר → הרשימה נסגרת היום"
-    assert [p.step["type"] for p in tomorrow.placements] == ["whatsapp_first"]
+    assert [p.step["type"] for p in tomorrow.placements] == [
+        "whatsapp_first", "reminder", "call_round", "reminder", "call_round", "reminder", "call_round",
+    ]
     # ברירת המחדל מוצגת, אבל המסלול לא רשאי לשלוח עד שבוחרים.
     assert rt.track_enabled(_event(3, now)) is False
     assert rt.track_enabled(_event(3, now, commit=1)) is True
@@ -355,9 +369,11 @@ def test_reminder_dates_follow_the_schedule() -> None:
     reminders = [p for p in s.placements if p.step["type"] == "reminder"]
     for n, p in enumerate(reminders, start=1):
         assert rt.reminder_date(ev, n, now) == p.date
-    # אירוע מחר — רק בקשת האישור נכנסת; לתזכורת אין תאריך.
+    # אירוע מחר — כל השלבים באותו יום, גם התזכורות.
     short = _event(1, now, event_type="brita")
-    assert rt.reminder_date(short, 1, now) is None, "תזכורת שלא נכנסה ללוח — אין תאריך"
+    assert rt.reminder_date(short, 3, now) == now.date()
+    # תזכורת שאין לה מקום בלוח (מספר שלא קיים) — אין תאריך.
+    assert rt.reminder_date(short, 4, now) is None
     # חלון קצר — התזכורות נשמרות (דחוס), עם תאריך.
     squeezed = _event(3, now, event_type="brita")  # סגירה רביעי → 3 ימים פעילים
     assert rt.reminder_date(squeezed, 1, now) is not None

@@ -119,7 +119,17 @@ const t = strings.messagesPage
 
 /** מתי כל הודעה יוצאת, לפי לוח אישורי ההגעה (אותו לוח שבמסך "אישורי הגעה").
  *  ``null`` = אין לוח (לא נבחר מועד סגירה / אין תאריך). */
-type ScheduleInfo = Partial<Record<MessageType, { date: string; past: boolean; audience: string }>> & {
+/** ``sameDayIndex``/``sameDayCount`` — מקומה של הודעת WhatsApp בין הודעות המסלול
+ *  שיוצאות באותו יום (חלון קצר): הראשונה בשעה שנבחרה, כל אחת 3 שעות אחרי הקודמת. */
+type ScheduleAt = {
+  date: string
+  past: boolean
+  audience: string
+  sameDayIndex: number
+  sameDayCount: number
+}
+
+type ScheduleInfo = Partial<Record<MessageType, ScheduleAt>> & {
   configured: boolean
   enabled: boolean
   /** כמה מוזמנים כבר קיבלו הזמנה (לשורה של כרטיס ההזמנה). */
@@ -132,8 +142,15 @@ function scheduleFromTimeline(view: RsvpTimelineView | null): ScheduleInfo {
   const reminderTypes: MessageType[] = ['reminder_1', 'reminder_2', 'final_reminder']
   let reminders = 0
   for (const day of view.days) {
+    const whatsapp = day.actions.filter((a) => a.type === 'whatsapp_first' || a.type === 'reminder')
     for (const a of day.actions) {
-      const when = { date: `${day.weekday} ${day.date}`, past: day.is_past, audience: a.audience }
+      const when: ScheduleAt = {
+        date: `${day.weekday} ${day.date}`,
+        past: day.is_past,
+        audience: a.audience,
+        sameDayIndex: whatsapp.indexOf(a),
+        sameDayCount: whatsapp.length,
+      }
       if (a.type === 'whatsapp_first') info.rsvp_request = when
       else if (a.type === 'reminder' && reminders < reminderTypes.length) info[reminderTypes[reminders++]] = when
       else if (a.type === 'day_of') info.event_day = when
@@ -240,7 +257,10 @@ function whenText(type: MessageType, schedule: ScheduleInfo): string {
   const at = schedule[type]
   if (at) {
     if (!schedule.enabled) return w.waiting(at.date)
-    return at.past ? w.sent(at.date, at.audience) : w.scheduled(at.date, at.audience)
+    if (at.past) return w.sent(at.date, at.audience)
+    return at.sameDayIndex > 0
+      ? w.scheduledAfter(at.date, at.audience)
+      : w.scheduled(at.date, at.audience)
   }
   if (!schedule.configured) return w.noSchedule
   return w.notInTrack
@@ -254,10 +274,13 @@ function RoundSendTime({
   message,
   event,
   onSaved,
+  at,
 }: {
   message: EventMessage
   event: EventDetails | null
   onSaved: () => void
+  /** מתי ההודעה יוצאת לפי הלוח — כדי לדעת אם יש לפניה הודעה באותו יום. */
+  at?: ScheduleAt
 }) {
   const rt = strings.messages.roundTime
   const fallback =
@@ -284,10 +307,27 @@ function RoundSendTime({
     }
   }
 
+  // הודעה שנייה (ואילך) באותו יום — השעה שלה נקבעת אוטומטית, 3 שעות אחרי
+  // הקודמת (``communication.track_round_start``). אין מה לבחור.
+  if (at && !at.past && at.sameDayIndex > 0) {
+    return (
+      <div className="commit-field gm2-round-time">
+        <span className="field-label">{rt.label}</span>
+        <p className="commit-explain">{rt.sameDayLater}</p>
+      </div>
+    )
+  }
+  // הראשונה מבין כמה באותו יום — לכל המאוחר כך שהאחרונה תצא עד 19:00.
+  const latestFirst =
+    at && !at.past && at.sameDayCount > 1
+      ? `${String(19 - 3 * (at.sameDayCount - 1)).padStart(2, '0')}:00`
+      : null
+
   return (
     <div className="commit-field gm2-round-time">
       <span className="field-label">{rt.label}</span>
       <p className="commit-explain">{rt.hint}</p>
+      {latestFirst && <p className="commit-explain">{rt.sameDayFirst(latestFirst)}</p>}
       <div className="event-datetime">
         <TimePicker
           value={value}
@@ -519,7 +559,12 @@ function MessagePanel({
         {/* שעת השליחה של הסבב. היום עצמו נקבע ע"י לוח הזמנים (לא ניתן
             לעריכה); ההזמנה לא כאן — היא נשלחת ידנית ומיד. */}
         {mode === 'view' && SCHEDULED_TYPES.includes(message.message_type) && (
-          <RoundSendTime message={message} event={event} onSaved={onSaved} />
+          <RoundSendTime
+            message={message}
+            event={event}
+            onSaved={onSaved}
+            at={schedule[message.message_type]}
+          />
         )}
 
         {/* הודעות שנשלחות ידנית (היום: "אירוע נדחה") מקבלות כאן את פעולת

@@ -32,7 +32,8 @@
      הראשונה תמיד ביום משלה, ואין שתי הודעות WhatsApp או שתי שיחות ביום.
    - שישי/שבת: אין פעולות. שלב שנופל עליהם עובר לחמישי שלפניו, ואם חמישי
      כבר תפוס (או מחוץ לחלון) — לראשון שאחריו.
-   - פחות מ-4 ימים פעילים עד הסגירה — כמה שיותר שלבים מתחילת המסלול.
+   - פחות מ-4 ימים פעילים עד הסגירה — עדיין כל 7 השלבים; כמה שלבים באותו
+     יום, וכמה שפחות ימים עם שתי הודעות WhatsApp או שתי שיחות.
 
 המודול עצמו טהור — רק *מחשב* תאריכים. אבל התאריכים האלה הם מקור האמת לשליחה
 בפועל: שלבי ה-WhatsApp (``whatsapp_first`` + ``reminder``) נשלחים ע"י
@@ -527,8 +528,9 @@ def _place_track(
        כך השיחה). מאחדים זוג אחרי זוג, מהסוף להתחלה, עד שהמסלול נכנס. בקשת
        האישור הראשונה תמיד ביום משלה; אין שתי הודעות WhatsApp או שתי שיחות
        באותו יום.
-    4. גם כך לא נכנס (פחות מ-4 ימים פעילים) — כמה שיותר שלבים מתחילת
-       המסלול, באותו סדר.
+    4. גם כך לא נכנס (פחות מ-4 ימים פעילים) — עדיין כל השלבים, מחולקים
+       לימים שנשארו (``_pack_into_days``): כמה שפחות ימים עם שתי הודעות
+       WhatsApp או שתי שיחות, והסדר לא משתנה.
     שישי/שבת לעולם לא נבחרים. מחזיר ``(השלבים, [(תאריך, תאריך טבעי), ...])``.
     """
     placed = _place(kinds, start, end)
@@ -551,11 +553,42 @@ def _place_track(
         if placed is not None:
             return kinds, _expand(slots, placed)
 
-    fit = min(len(slots), len(days))
-    if fit == 0:
+    # 4. פחות ימים פעילים ממה שנדרש גם אחרי האיחוד (פחות מ-4) — עדיין כל
+    #    השלבים ובאותו סדר (2026-09-26): מחלקים אותם לימים שנשארו, כך שכמה
+    #    שפחות ימים יקבלו שתי הודעות WhatsApp או שתי שיחות.
+    if not days:
         return (), []
-    last = slots[fit - 1][-1]
-    return kinds[: last + 1], _expand(slots[:fit], _spread_evenly(fit, days) or [])
+    slots = _pack_into_days(kinds, len(days))
+    return kinds, _expand(slots, _spread_evenly(len(slots), days) or [])
+
+
+def _pack_into_days(kinds: tuple[str, ...], day_count: int) -> list[list[int]]:
+    """מחלק את השלבים (לפי הסדר) ל-``day_count`` ימים רצופים.
+
+    בוחר את החלוקה עם הכי מעט "כפילויות" — זוגות של הודעות WhatsApp או של
+    שיחות באותו יום. בתיקו — היום העמוס ביותר קל ככל האפשר, ואז יותר שלבים
+    מוקדם (כדי שלמוזמנים יהיה זמן לענות). בקשת האישור הראשונה תמיד פותחת
+    את היום הראשון, והסדר לעולם לא משתנה.
+    """
+    from itertools import combinations
+
+    n = len(kinds)
+    day_count = max(1, min(day_count, n))
+    best: Optional[tuple[tuple[int, int, tuple[int, ...]], list[list[int]]]] = None
+    for cuts in combinations(range(1, n), day_count - 1):
+        bounds = (0, *cuts, n)
+        slots = [list(range(bounds[k], bounds[k + 1])) for k in range(day_count)]
+        # כל זוג הודעות WhatsApp (או שיחות) באותו יום נספר — כך שלוש ביום
+        # אחד "יקרות" יותר משתיים ועוד שתיים בימים נפרדים.
+        doubles = sum(
+            c * (c - 1) // 2
+            for slot in slots for kind in ("W", "P")
+            for c in [sum(kinds[i] == kind for i in slot)]
+        )
+        key = (doubles, max(len(slot) for slot in slots), tuple(-len(slot) for slot in slots))
+        if best is None or key < best[0]:
+            best = (key, slots)
+    return best[1] if best else [list(range(n))]
 
 
 def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Optional[Schedule]:

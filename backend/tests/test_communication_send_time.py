@@ -188,8 +188,8 @@ def test_whatsapp_rounds_follow_the_schedule_and_window() -> None:
 
 
 def test_round_cut_by_short_window_has_no_window() -> None:
-    """חלון קצר → המסלול נדחס ולא מתקצר (2026-09-25): כל התזכורות מקבלות
-    חלון. סבב שבאמת לא נכנס ללוח (אירוע מחר) — אין לו חלון, והוא לא נשלח."""
+    """חלון קצר → המסלול נדחס ולא מתקצר (2026-09-25/26): כל התזכורות מקבלות
+    חלון, גם ביום עבודה אחד. בלי לוח בכלל — אין חלון."""
     ev = _event(event_date="2026-09-20", venue_commit_days_before=2,  # סגירה חמישי 17/9
                 rsvp_track_started_at=datetime(2026, 9, 14, 7, 0))    # שני
     from app import rsvp_timeline
@@ -199,11 +199,16 @@ def test_round_cut_by_short_window_has_no_window() -> None:
     assert c.send_window("reminder_1", _em("reminder_1"), ev) is not None
     assert c.send_window("final_reminder", _em("final_reminder"), ev) is not None
 
+    # אירוע מחר — יום עבודה אחד: עדיין כל התזכורות, באותו יום (2026-09-26).
     tomorrow = _event(event_date="2026-09-15", venue_commit_days_before=1,  # סגירה היום
                       rsvp_track_started_at=datetime(2026, 9, 14, 7, 0))
-    assert [r.message_type for r in rsvp_timeline.whatsapp_rounds(tomorrow)] == ["rsvp_request"]
-    assert c.send_window("reminder_1", _em("reminder_1"), tomorrow) is None
-    print("✓ 8c: חלון קצר — כל התזכורות; סבב שלא נכנס ללוח — לא נשלח")
+    assert [r.message_type for r in rsvp_timeline.whatsapp_rounds(tomorrow)] == [
+        "rsvp_request", "reminder_1", "reminder_2", "final_reminder",
+    ]
+    assert c.send_window("final_reminder", _em("final_reminder"), tomorrow) is not None
+    # אין לוח בכלל (אירוע רחוק בלי מועד סגירה) — אין חלון.
+    assert c.send_window("reminder_1", _em("reminder_1"), _event(event_date="2026-12-30")) is None
+    print("✓ 8c: חלון קצר — כל התזכורות, גם ביום עבודה אחד")
 
 
 def test_rsvp_request_window_needs_a_schedule() -> None:

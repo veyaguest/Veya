@@ -298,6 +298,108 @@ def test_compressed_track_sends_all_reminders_even_on_call_days() -> None:
     print("✓ מסלול דחוס: כל התזכורות יוצאות גם ביום של שיחות; מוזמן חדש — קודם תזכורת")
 
 
+def test_two_working_days_across_a_weekend_send_every_step() -> None:
+    """(2026-09-26) חמישי → סגירה ראשון: 2 ימי עבודה. כל 7 השלבים נשמרים
+    (W W P ביום חמישי, W P W P ביום ראשון), ושישי/שבת בלי שליחה."""
+    db = _db()
+    ev = _event(db, event_date="2026-09-21", venue_commit_days_before=1)  # סגירה ראשון 20/9
+    g = _guest(db, ev, "אורח")
+    placements = rsvp_timeline.compute_schedule(ev, _at(date(2026, 9, 17))).placements
+    assert [(p.step["type"], p.date.day) for p in placements] == [
+        ("whatsapp_first", 17), ("reminder", 17), ("call_round", 17),
+        ("reminder", 20), ("call_round", 20), ("reminder", 20), ("call_round", 20),
+    ]
+    # שתי הודעות ביום חמישי: 12:00, והשנייה 3 שעות אחריה (15:00).
+    _tick(db, _at(date(2026, 9, 17)))          # 12:30
+    assert _kinds_for(db, g) == ["rsvp_request"]
+    _tick(db, _at(date(2026, 9, 17), 12))      # 15:30
+    assert _kinds_for(db, g) == ["rsvp_request", "reminder_1"]
+    for day in (18, 19):                        # שישי, שבת — כל היום
+        for hour in (7, 9, 12, 15):
+            _tick(db, _at(date(2026, 9, day), hour))
+    assert _kinds_for(db, g) == ["rsvp_request", "reminder_1"], "נשלח בסוף שבוע"
+    _tick(db, _at(date(2026, 9, 20)))
+    _tick(db, _at(date(2026, 9, 20), 12))
+    assert _kinds_for(db, g) == ["rsvp_request", "reminder_1", "reminder_2", "final_reminder"]
+    assert "אורח" in _called_on(db, date(2026, 9, 20))
+    print("✓ 2 ימי עבודה סביב סוף שבוע: כל השלבים, בלי שישי/שבת")
+
+
+def _il(day: date, hour: int, minute: int = 30) -> datetime:
+    """שעה בישראל (שעון קיץ, UTC+3) → הרגע ב-UTC שהמשימה מקבלת."""
+    return datetime(day.year, day.month, day.day, hour - 3, minute)
+
+
+def test_two_whatsapp_messages_on_one_day_are_three_hours_apart() -> None:
+    """(2026-09-26) שתי הודעות באותו יום: הראשונה בשעה שנבחרה, השנייה 3 שעות
+    אחריה. שעה שנבחרה מאוחרת מ-16:00 — הראשונה ב-16:00 והשנייה ב-19:00, כדי
+    ששום הודעה לא תצא בערב."""
+    thursday = date(2026, 9, 17)
+    for chosen, first_hour, second_hour in (("12:00", 12, 15), ("18:00", 16, 19)):
+        db = _db()
+        ev = _event(db, event_date="2026-09-21", venue_commit_days_before=1, rsvp_send_time=chosen)
+        g = _guest(db, ev, "אורח")
+        _tick(db, _il(thursday, first_hour - 1))
+        assert _kinds_for(db, g) == [], (chosen, "לפני השעה")
+        _tick(db, _il(thursday, first_hour))
+        assert _kinds_for(db, g) == ["rsvp_request"], chosen
+        _tick(db, _il(thursday, second_hour - 1))
+        assert _kinds_for(db, g) == ["rsvp_request"], (chosen, "השנייה לפני 3 שעות")
+        _tick(db, _il(thursday, second_hour))
+        assert _kinds_for(db, g) == ["rsvp_request", "reminder_1"], chosen
+        _tick(db, _il(thursday, 21))
+        assert len(_kinds_for(db, g)) == 2
+    print("✓ שתי הודעות ביום: 3 שעות ביניהן, ולא אחרי 19:00")
+
+
+def test_one_working_day_sends_four_messages_spaced_until_seven() -> None:
+    """יום עבודה אחד (אירוע מחר): כל 7 השלבים; 4 הודעות WhatsApp — 10:00,
+    13:00, 16:00, 19:00, גם כשהשעה שנבחרה מאוחרת יותר."""
+    monday = date(2026, 9, 14)
+    db = _db()
+    ev = _event(db, event_date="2026-09-15", venue_commit_days_before=1)  # סגירה שני 14/9
+    g = _guest(db, ev, "אורח")
+    kinds = [p.step["type"] for p in rsvp_timeline.compute_schedule(ev, _il(monday, 9)).placements]
+    assert kinds == ["whatsapp_first", "reminder", "call_round", "reminder", "call_round",
+                     "reminder", "call_round"], kinds
+    expected = {10: 1, 12: 1, 13: 2, 15: 2, 16: 3, 18: 3, 19: 4, 21: 4}
+    for hour, count in expected.items():
+        _tick(db, _il(monday, hour))
+        assert len(_kinds_for(db, g)) == count, (hour, _kinds_for(db, g))
+    assert _kinds_for(db, g) == ["rsvp_request", "reminder_1", "reminder_2", "final_reminder"]
+    print("✓ יום עבודה אחד: 4 הודעות בריווח של 3 שעות, האחרונה ב-19:00")
+
+
+def test_no_calls_or_messages_on_friday_or_saturday_in_any_window() -> None:
+    """לכל אורך חלון — מלא, דחוס (5 ימי עבודה) ומאוד דחוס (2 ימים סביב סוף
+    שבוע): אין רשימת שיחות ואין הודעה ביום שישי או שבת. תאריכים מפורשים —
+    לא תלוי ביום שבו הבדיקה רצה."""
+    from app import call_center
+
+    # (תאריך האירוע, ימי סגירה, היום הראשון שבו המשימה רצה)
+    windows = (
+        ("2026-09-30", 2, date(2026, 9, 14)),  # מלא: 14 ימים
+        ("2026-09-21", 1, date(2026, 9, 14)),  # דחוס: 5 ימי עבודה
+        ("2026-09-21", 1, date(2026, 9, 17)),  # חמישי + ראשון בלבד
+    )
+    for event_date, commit, first_day in windows:
+        db = _db()
+        ev = _event(db, event_date=event_date, venue_commit_days_before=commit)
+        g = _guest(db, ev, "אורח")
+        d = first_day
+        while d <= date(2026, 9, 29):
+            before = len(_kinds_for(db, g))
+            for hour in (10, 13, 16, 19):
+                _tick(db, _il(d, hour))
+            queue = call_center.build_queues(db, now=_il(d, 13))
+            if d.weekday() in (4, 5):  # שישי, שבת
+                assert len(_kinds_for(db, g)) == before, f"הודעה ב-{d}"
+                assert not any(q.round_date == d for q in queue), f"סבב שיחות ב-{d}"
+            d += timedelta(days=1)
+        assert _kinds_for(db, g), "לא נשלח כלום בכלל"
+    print("✓ שישי/שבת: אין הודעה ואין סבב שיחות, בכל אורך חלון")
+
+
 def test_past_steps_show_their_historical_count() -> None:
     """שלב שעבר מציג כמה באמת היו בו — לא את הסטטוס של היום."""
     from app.routers.automation import _step_history
@@ -497,4 +599,8 @@ if __name__ == "__main__":
     test_track_rounds_are_never_sent_on_friday_or_saturday()
     test_past_steps_show_their_historical_count()
     test_compressed_track_sends_all_reminders_even_on_call_days()
+    test_two_working_days_across_a_weekend_send_every_step()
+    test_two_whatsapp_messages_on_one_day_are_three_hours_apart()
+    test_one_working_day_sends_four_messages_spaced_until_seven()
+    test_no_calls_or_messages_on_friday_or_saturday_in_any_window()
     print("\nכל בדיקות המשימה המתוזמנת עברו ✓")

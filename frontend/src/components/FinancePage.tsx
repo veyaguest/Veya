@@ -437,17 +437,6 @@ function CostTab({
 }) {
   const { cost } = data
   const grouped = useMemo(() => groupByCategory(data.expenses), [data.expenses])
-  // הוצאות שעדיין בלי סכום — בסדר שבו הן מוצגות (לפי קבוצה), כדי ש"הבא"
-  // יהיה באמת הבא ברשימה.
-  const missing = useMemo(
-    () =>
-      cost.categories
-        .flatMap((c) => grouped.get(c.key) ?? [])
-        .filter((e) => !e.amount_agorot && !e.total_agorot && !(e.calc_method === 'percent' && e.quantity)),
-    [cost.categories, grouped],
-  )
-  // עוד אף הוצאה לא הגיעה לסכום (גם שורת אחוז — היא אחוז מכלום).
-  const noAmountsYet = cost.total_agorot === 0
   const [applying, setApplying] = useState(false)
   // איזו קבוצה פתוחה. **סגורות כברירת מחדל**: אירוע טיפוסי הוא 16
   // שורות בתשע קבוצות, ואף אחד לא נכנס לכאן כדי לקרוא 16 שורות — הוא
@@ -482,20 +471,6 @@ function CostTab({
       {cost.commitments.map((c) => (
         <CommitmentCard key={c.expense_id} commitment={c} attendance={data.attendance} />
       ))}
-
-      {missing.length > 0 && (
-        <section className="fin-card fin-missing" aria-live="polite">
-          <h2 className="fin-card-title">
-            {noAmountsYet ? t.missingAllTitle : t.missingSomeTitle(missing.length)}
-          </h2>
-          <p className="fin-hint">
-            {noAmountsYet ? t.missingAllBody : t.missingSomeBody}
-          </p>
-          <button type="button" className="btn-primary btn-sm" onClick={() => onEdit(missing[0])}>
-            {t.missingCta}
-          </button>
-        </section>
-      )}
 
       <section className="fin-section">
         <div className="fin-section-head">

@@ -452,11 +452,48 @@ TRACK_ROUND_TYPES: frozenset[str] = frozenset({"rsvp_request", *REMINDER_NUMBER}
 SCHEDULED_TYPES: frozenset[str] = TRACK_ROUND_TYPES | {"event_day", "thank_you"}
 
 
+#: שתי הודעות WhatsApp של המסלול באותו יום (חלון קצר מאוד): השנייה יוצאת
+#: ``SAME_DAY_GAP`` אחרי הראשונה (החלטת המייסד 2026-09-26).
+SAME_DAY_GAP = timedelta(hours=3)
+#: הרגע האחרון ביום שבו יוצאת הודעת מסלול — סוף טווח שעות השליחה (10:00–19:00).
+LATEST_SEND = time(19, 0)
+
+
+def track_round_start(
+    message_type: str,
+    event: models.Event,
+    ems: dict[str, models.EventMessage],
+    now: Optional[datetime] = None,
+) -> Optional[datetime]:
+    """הרגע שבו יוצא סבב WhatsApp של המסלול (שעון ישראל), או ``None``.
+
+    סבב יחיד ביום — בשעה שנבחרה לו. כמה סבבים באותו יום (מסלול דחוס מאוד):
+    הראשון בשעה שנבחרה לו, וכל אחד אחריו ``SAME_DAY_GAP`` אחרי הקודם — בלי
+    קשר לשעה של עצמו. כדי שאף אחד לא ייצא אחרי 19:00, הראשון מוקדם לפי
+    הצורך: שתיים ביום — הראשונה לכל המאוחר ב-16:00; שלוש — 13:00; ארבע — 10:00.
+    """
+    rounds = rsvp_timeline.whatsapp_rounds(event, now)
+    rnd = next((r for r in rounds if r.message_type == message_type), None)
+    if rnd is None:
+        return None
+    same_day = [r for r in rounds if r.day == rnd.day]
+    first_em = ems.get(same_day[0].message_type)
+    first_time = effective_send_time(event, first_em) if first_em else event.rsvp_send_time
+    first = _scheduled_moment(rnd.day, first_time)
+    if len(same_day) > 1:
+        latest_first = datetime.combine(
+            rnd.day, LATEST_SEND, tzinfo=israel_timezone()
+        ) - SAME_DAY_GAP * (len(same_day) - 1)
+        first = min(first, latest_first)
+    return first + SAME_DAY_GAP * same_day.index(rnd)
+
+
 def send_window(
     message_type: str,
     em: models.EventMessage,
     event: models.Event,
     now: Optional[datetime] = None,
+    ems: Optional[dict[str, models.EventMessage]] = None,
 ) -> Optional[tuple[datetime, datetime]]:
     """החלון שבו מותר לשלוח את ההודעה — ``(מתי, עד מתי)`` בשעון ישראל — או
     ``None`` אם אין לה מועד (אין לוח זמנים / הסבב לא נכנס למסלול).
@@ -475,7 +512,7 @@ def send_window(
         )
         if rnd is None:
             return None
-        start = _scheduled_moment(rnd.day, send_time)
+        start = track_round_start(message_type, event, {message_type: em, **(ems or {})}, now)
         return start, datetime.combine(rnd.until, time(0, 0), tzinfo=tz)
     if message_type in ("event_day", "thank_you"):
         event_date = automation.parse_event_date(event.event_date)
@@ -501,10 +538,8 @@ def call_round_cutoff(
     if not rounds:
         return None
     last = rounds[-1]
-    em = event_messages_by_type(db, event.id).get(last.message_type)
-    if em is not None:
-        start = _scheduled_moment(last.day, effective_send_time(event, em))
-    else:
+    start = track_round_start(last.message_type, event, event_messages_by_type(db, event.id), now)
+    if start is None:
         start = datetime.combine(last.day, time(23, 59), tzinfo=israel_timezone())
     return start.astimezone(timezone.utc).replace(tzinfo=None)
 
@@ -577,7 +612,7 @@ def compute_due_messages(
         em = by_type.get(message_type)
         if em is None or not em.is_active or not em.content:
             continue
-        window = send_window(message_type, em, event, now)
+        window = send_window(message_type, em, event, now, by_type)
         if window is None or not (window[0] <= now_il < window[1]):
             continue
         # החלון של סבב נמשך עד השלב הבא — ואם הוא עובר דרך שישי/שבת (סבב

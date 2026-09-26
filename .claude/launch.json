@@ -36,6 +36,24 @@
         "export PATH=\"/Users/mac/.local/node/bin:$PATH\" && cd /Users/mac/veya/frontend && VITE_API_URL=http://127.0.0.1:8010 npx vite --host 127.0.0.1 --port 5180 --strictPort"
       ],
       "port": 5180
+    },
+    {
+      "name": "design-backend",
+      "runtimeExecutable": "/bin/zsh",
+      "runtimeArgs": [
+        "-c",
+        "cd /Users/mac/veya/backend && source venv/bin/activate && DATABASE_URL=sqlite:////private/tmp/claude-501/-Users-mac-veya/96ff0d55-9ba8-49bc-85e2-b306a7a2abb8/scratchpad/design.db CORS_ORIGINS=http://127.0.0.1:5195 uvicorn app.main:app --port 8030"
+      ],
+      "port": 8030
+    },
+    {
+      "name": "design-frontend",
+      "runtimeExecutable": "/bin/zsh",
+      "runtimeArgs": [
+        "-c",
+        "export PATH=\"/Users/mac/.local/node/bin:$PATH\" && cd /Users/mac/veya/frontend && VITE_API_URL=http://127.0.0.1:8030 npx vite --host 127.0.0.1 --port 5195 --strictPort"
+      ],
+      "port": 5195
     }
   ]
 }
