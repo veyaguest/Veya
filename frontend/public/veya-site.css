@@ -234,6 +234,11 @@ a.evt-card:focus-visible { outline: 3px solid var(--gold-light); outline-offset:
 .article h3 { font-size: var(--fs-xl); margin-top: 30px; }
 .article p, .article li { font-size: var(--fs-base); line-height: 1.85; color: var(--body); }
 .article ul, .article ol { padding-inline-start: 22px; }
+/* צילום מסך בתוך מדריך: מסך אמיתי של VEYA שמראה בדיוק את מה שהפסקה מסבירה,
+   עם כיתוב שמסביר מה רואים. לא תמונת אווירה. */
+.g-shot { margin: 30px 0; }
+.g-shot .mk-browser { margin: 0; }
+.g-shot figcaption { margin-top: 10px; font-size: var(--fs-sm); line-height: 1.6; color: var(--muted); }
 .article li + li { margin-top: 6px; }
 .article li::marker { color: var(--gold-deep); }
 .article strong { color: var(--charcoal); font-weight: 700; }

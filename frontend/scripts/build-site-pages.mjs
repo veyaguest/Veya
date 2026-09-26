@@ -13,7 +13,7 @@ import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { marked } from 'marked'
-import { page, pageHero, faqHtml, esc, SITE, CTA_PRIMARY } from './site-shell.mjs'
+import { page, pageHero, faqHtml, esc, SITE, CTA_PRIMARY, shot } from './site-shell.mjs'
 import { EVENT_TYPES, GROUPS, EXPENSES, FOCUS } from '../content/event-types.mjs'
 import { featureRsvp, featureCalls, featureGuests, featureSeating } from './build-features.mjs'
 import { buildNuschim } from './build-nuschim.mjs'
@@ -107,8 +107,14 @@ const CLUSTERS = {
    ההמרה קורית **לפני** marked, כי HTML ברמת בלוק עובר דרכו כמו שהוא.
    כך אין תלות בתוסף, והמדריכים נשארים Markdown קריא. */
 function guideBlocks(md) {
-  return md.replace(/^:::(callout|numbers|flow)\n([\s\S]*?)^:::$/gm, (_, kind, raw) => {
+  return md.replace(/^:::(callout|numbers|flow|figure)\n([\s\S]*?)^:::$/gm, (_, kind, raw) => {
     const body = raw.trim()
+    // :::figure  →  src | alt | כיתוב | רוחבxגובה
+    if (kind === 'figure') {
+      const [src, alt, caption, dim] = body.split('|').map((x) => (x || '').trim())
+      const [w, h] = (dim || '').split('x')
+      return `<figure class="g-shot">${shot(src, alt, w, h)}<figcaption>${esc(caption)}</figcaption></figure>`
+    }
     if (kind === 'callout') {
       return `<div class="callout"><p>${esc(body).replace(/\n/g, '<br />')}</p></div>`
     }

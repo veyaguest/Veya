@@ -50,6 +50,18 @@ function faqSchema(faq) {
 }
 
 /** בלוק ה-FAQ הגלוי. אותו מקור נתונים כמו ה-Schema — לעולם לא שניים. */
+// צילום מסך אמיתי של המוצר, בתוך חלון הדפדפן המשותף (.mk-browser ב-brand layer).
+// width/height חובה — בלעדיהם העמוד קופץ כשהתמונה נטענת.
+export const shot = (src, alt, w, h) => `<div class="mk-browser">
+            <div class="mk-browser-bar" aria-hidden="true">
+              <span class="mk-browser-lights"><i></i><i></i><i></i></span>
+              <span class="mk-browser-url"><svg viewBox="0 0 10 12" fill="currentColor"><path d="M2 5V3.6a3 3 0 0 1 6 0V5h.4c.6 0 1.1.5 1.1 1.1v4.8c0 .6-.5 1.1-1.1 1.1H1.6C1 12 .5 11.5.5 10.9V6.1C.5 5.5 1 5 1.6 5H2Zm1.3 0h3.4V3.6a1.7 1.7 0 0 0-3.4 0V5Z" /></svg><span>veyaguest.co.il/app</span></span>
+            </div>
+            <div class="mk-browser-view">
+              <img src="${src}" alt="${esc(alt)}" width="${w}" height="${h}" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+            </div>
+          </div>`
+
 export function faqHtml(faq, { heading = 'שאלות נפוצות' } = {}) {
   if (!faq?.length) return ''
   const chev = `<span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>`
