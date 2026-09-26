@@ -13472,9 +13472,13 @@ button.gauge-status-card:focus-visible {
     left: 46%;
     top: 48%;
     margin: 8px 0 0 6px;
-    font-size: 26px;
-    line-height: 1;
-    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+    /* נקודת מגע מצוירת במקום אימוג'י 👆 (שמצויר אחרת בכל מערכת הפעלה) */
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--gold-deep) 30%, transparent);
+    border: 2px solid var(--gold-deep);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     animation: hmDemoHand 6s ease-in-out infinite;
   }
   .hm-demo-badge {
