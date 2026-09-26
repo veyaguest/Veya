@@ -387,10 +387,10 @@ export const strings = {
     // CookieBanner (legal/03-cookie-policy.md §3)
     cookieAriaLabel: 'הסכמת Cookies',
     cookieBody:
-      'אנחנו משתמשים בעוגיות הכרחיות לתפעול השירות (כמו שמירת החיבור\n              שלך). עוגיות נוספות (סטטיסטיקה/שיפור) יופעלו רק באישורך המפורש.\n              פרטים ב',
+      'אנחנו משתמשים בעוגיות הכרחיות לתפעול השירות (כמו שמירת החיבור\n              שלכם). עוגיות נוספות (סטטיסטיקה/שיפור) יופעלו רק באישורכם המפורש.\n              פרטים ב',
     cookiePolicyLink: 'מדיניות ה-Cookies',
-    cookieAcceptAll: 'קבל הכל',
-    cookieRejectNonEssential: 'דחה לא-הכרחיים',
+    cookieAcceptAll: 'אישור הכול',
+    cookieRejectNonEssential: 'דחיית הלא-הכרחיות',
     cookieCustomize: 'הגדרות מותאמות',
     cookieEssentialLabel: 'עוגיות הכרחיות (חובה לתפעול השירות)',
     cookieAnalyticsLabel: 'עוגיות סטטיסטיקה/שיפור (כרגע אינן בשימוש בפועל)',
@@ -1741,14 +1741,6 @@ export const strings = {
     // בסיכום, לפני שנספרה מתנה אחת: "חסר X" יהיה מסקנה בלי נתונים.
     bottomLineAfterGifts:
       'כמה נשאר לכם או חסר — יופיע אחרי שתספרו את המתנות. עד אז, זו העלות שצריך לכסות.',
-    // "מה עוד חסר" — הוצאות ברשימה שעדיין בלי סכום, והצעד הבא.
-    missingAllTitle: 'הרשימה מוכנה — עכשיו הסכומים',
-    missingAllBody:
-      'התחילו מההוצאות שכבר סגרתם, למשל האולם. העלות הכוללת תתחיל להופיע מהסכום הראשון.',
-    missingSomeTitle: (n: number) =>
-      n === 1 ? 'עוד הוצאה אחת בלי סכום' : `עוד ${n} הוצאות בלי סכום`,
-    missingSomeBody: 'העלות הכוללת תגדל כשתמלאו אותן. הוצאה שלא רלוונטית לכם — אפשר למחוק.',
-    missingCta: 'מילוי הסכום הבא',
     editExpense: 'עריכת הוצאה',
     expenseNameLabel: 'שם ההוצאה',
     expenseNamePlaceholder: 'למשל: DJ',
