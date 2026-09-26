@@ -56,8 +56,8 @@ a { color: inherit; }
 .btn-primary .arw { transition: transform 0.18s var(--ease-out); }
 .btn-ghost { background: transparent; color: var(--charcoal); border: 1px solid var(--line); }
 .btn-ghost:hover { border-color: var(--gold-deep); }
-.on-dark .btn-ghost { color: var(--cream-text); border-color: rgba(245, 239, 226, 0.28); }
-.on-dark .btn-ghost:hover { border-color: var(--gold-light); background: rgba(245, 239, 226, 0.06); }
+.on-dark .btn-ghost, .cookie-banner-static .btn-ghost { color: var(--cream-text); border-color: rgba(245, 239, 226, 0.28); }
+.on-dark .btn-ghost:hover, .cookie-banner-static .btn-ghost:hover { border-color: var(--gold-light); background: rgba(245, 239, 226, 0.06); }
 .site-header { position: sticky; top: 0; z-index: 20; background: rgba(23, 19, 13, 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(201, 162, 39, 0.16); transition: background 0.3s ease; }
 .site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 70px; }
 .header-logo { height: 56px; width: auto; display: block; }

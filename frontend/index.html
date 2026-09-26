@@ -191,8 +191,8 @@
       .btn-ghost { background: transparent; color: var(--charcoal); border: 1px solid var(--line); }
       .btn-ghost:hover { border-color: var(--gold-deep); }
       /* גרסאות כהות לכפתורים על רקע כהה */
-      .on-dark .btn-ghost { color: var(--cream-text); border-color: rgba(245, 239, 226, 0.28); }
-      .on-dark .btn-ghost:hover { border-color: var(--gold-light); background: rgba(245, 239, 226, 0.06); }
+      .on-dark .btn-ghost, .cookie-banner-static .btn-ghost { color: var(--cream-text); border-color: rgba(245, 239, 226, 0.28); }
+      .on-dark .btn-ghost:hover, .cookie-banner-static .btn-ghost:hover { border-color: var(--gold-light); background: rgba(245, 239, 226, 0.06); }
 
       /* ===== Header ===== */
       .site-header { position: sticky; top: 0; z-index: 20; background: rgba(23, 19, 13, 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(201, 162, 39, 0.16); transition: background 0.3s ease; }
@@ -3046,7 +3046,6 @@
     <section class="flow tone-alt" id="deadline" aria-labelledby="deadline-title">
         <div class="wrap">
           <div class="section-head reveal">
-            <span class="kicker">מועד סגירת הרשימה</span>
             <h2 id="deadline-title" class="section-title">קובעים מתי סוגרים את הרשימה. <span class="ttl-accent">VEYA בונה את הדרך לשם.</span></h2>
             <p class="section-sub">
               בוחרים את היום שבו הרשימה נסגרת.<br />
@@ -3092,8 +3091,7 @@
       <section class="rsvp-band tone-light" id="rsvp" aria-labelledby="rsvp-title">
         <div class="wrap">
           <div class="rsvp-inner reveal">
-            <span class="kicker">אישורי הגעה</span>
-            <h2 id="rsvp-title" class="section-title">לא רק לדעת מי ענה. <span class="ttl-accent">לדעת איפה הרשימה עומדת.</span></h2>
+            <h2 id="rsvp-title" class="section-title">לא רק לדעת מי אישר הגעה. <span class="ttl-accent">לדעת איפה הרשימה עומדת.</span></h2>
             <p>
               אישורי הגעה הם לא סוף התהליך — הם הדרך להגיע למספר שאפשר לקבל איתו החלטה.
               כל תשובה נרשמת על המוזמן עצמו, וממשיכה משם להושבה ולחשבון של האירוע.
@@ -3206,7 +3204,6 @@
       <section class="showcase on-dark" id="showcase" aria-labelledby="showcase-title">
         <div class="wrap">
           <div class="section-head reveal">
-            <span class="kicker">תמונת מצב</span>
             <h2 id="showcase-title" class="section-title">נכנסים ל־VEYA — <span class="ttl-accent">ויודעים איפה אתם עומדים.</span></h2>
             <p class="section-sub">
               כמה מוזמנים, כמה אישרו, מי עדיין לא ענה וכמה נשאר עד שסוגרים את
@@ -3313,7 +3310,6 @@
     <section class="seating on-dark" id="seating" aria-labelledby="seating-title">
         <div class="wrap">
           <div class="section-head reveal">
-            <span class="kicker">הושבה</span>
             <h2 id="seating-title" class="section-title">יש לכם סקיצה? <span class="ttl-accent">בואו נהפוך אותה למפת אולם.</span></h2>
             <p class="section-sub">
               מעלים את הסקיצה שקיבלתם מהאולם — אפילו אם היא רק צילום או קובץ. VEYA מנתחת אותה,
@@ -3456,7 +3452,6 @@
     <section id="gifts" class="gifts-scene tone-light" aria-labelledby="gifts-title">
       <div class="wrap">
         <div class="section-head">
-          <span class="kicker">ספירת המעטפות</span>
           <h2 id="gifts-title">לא רק סופרים מעטפות. <span class="ttl-accent">יודעים ממי הגיעה כל מתנה.</span></h2>
           <p>
             כל הערב אנשים הביאו מעטפות. עכשיו הן על השולחן, ובכל אחת יש שם.
