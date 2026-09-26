@@ -96,7 +96,7 @@ export function PartnerCta() {
 
       {!open ? (
         <div className="pcta-actions">
-          <button type="button" className="btn-primary pcta-btn" onClick={() => setOpen(true)}>
+          <button type="button" className="btn-ghost pcta-btn" onClick={() => setOpen(true)}>
             {strings.partner.cta(two)}
           </button>
           <button type="button" className="btn-text pcta-dismiss" onClick={dismiss}>

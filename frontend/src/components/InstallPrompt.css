@@ -154,9 +154,11 @@
   color: var(--charcoal);
 }
 
-.install-cta:hover {
-  background: var(--gold-light);
-  border-color: var(--gold-light);
+@media (hover: hover) {
+  .install-cta:hover {
+    background: var(--gold-light);
+    border-color: var(--gold-light);
+  }
 }
 
 .install-ghost {
@@ -165,8 +167,10 @@
   color: rgba(245, 239, 226, 0.82);
 }
 
-.install-ghost:hover {
-  background: rgba(245, 239, 226, 0.08);
+@media (hover: hover) {
+  .install-ghost:hover {
+    background: rgba(245, 239, 226, 0.08);
+  }
 }
 
 /* ---- סגירה מהירה ---- */
@@ -190,9 +194,11 @@
   cursor: pointer;
 }
 
-.install-x:hover {
-  background: rgba(245, 239, 226, 0.1);
-  color: var(--ivory);
+@media (hover: hover) {
+  .install-x:hover {
+    background: rgba(245, 239, 226, 0.1);
+    color: var(--ivory);
+  }
 }
 
 /* מסך קטן (iPhone SE / mini): מהדקים מרווחים כדי שהכרטיס לא יבלע

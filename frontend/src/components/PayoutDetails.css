@@ -226,7 +226,9 @@
   text-underline-offset: 4px;
   cursor: pointer;
 }
-.payout-secondary:hover { color: var(--charcoal); }
+@media (hover: hover) {
+  .payout-secondary:hover { color: var(--charcoal); }
+}
 
 /* ההסבר תמיד מתחת לפעולות, ולא נדחק לצידן. */
 .payout-foot-note {
@@ -285,7 +287,9 @@
   font-size: 16px;
   transition: border-color var(--transition-fast);
 }
-.payout-input:hover { border-color: var(--faint); }
+@media (hover: hover) {
+  .payout-input:hover { border-color: var(--faint); }
+}
 .payout-input:focus {
   outline: none;
   border-color: var(--gold);
@@ -345,7 +349,9 @@
 }
 /* מקווקו כאן **כן** נכון: זה השדה היחיד במסך שמקבל קובץ, וזו המוסכמה
    שאומרת "מכניסים לכאן משהו" בלי מילה נוספת. */
-.payout-file-btn:hover { border-color: var(--gold); }
+@media (hover: hover) {
+  .payout-file-btn:hover { border-color: var(--gold); }
+}
 .payout-file-input:focus-visible + .payout-file-row .payout-file-btn {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
@@ -379,7 +385,9 @@
   color: var(--body);
   font-weight: var(--weight-medium);
 }
-.payout-cancel:hover:not(:disabled) { border-color: var(--muted); }
+@media (hover: hover) {
+  .payout-cancel:hover:not(:disabled) { border-color: var(--muted); }
+}
 
 /* ---- מובייל -----------------------------------------------------------
    ב-320px הפעולה הראשית נפרשת לכל הרוחב, והמשנית מתיישרת מתחתיה — יעד

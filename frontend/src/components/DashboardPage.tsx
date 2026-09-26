@@ -137,7 +137,7 @@ function InviteBanner({ count, onSend }: { count: number; onSend: () => void }) 
         <p className="invite-banner-title">{t.inviteBannerTitle(count)}</p>
         <p className="invite-banner-desc">{t.inviteBannerDesc}</p>
       </div>
-      <button type="button" className="invite-banner-btn" onClick={onSend}>
+      <button type="button" className="btn-primary invite-banner-btn" onClick={onSend}>
         {t.inviteBannerCta}
       </button>
     </div>
@@ -435,7 +435,7 @@ function NeedsYou({
             <p className="invite-banner-title">{it.title}</p>
             <p className="invite-banner-desc">{it.desc}</p>
           </div>
-          <button type="button" className="invite-banner-btn" onClick={it.onClick}>
+          <button type="button" className="btn-primary invite-banner-btn" onClick={it.onClick}>
             {it.cta}
           </button>
         </div>

@@ -86,9 +86,11 @@
   border-radius: var(--radius-full);
   cursor: pointer;
 }
-.ws-search-clear:hover {
-  background: var(--line-2);
-  color: var(--charcoal);
+@media (hover: hover) {
+  .ws-search-clear:hover {
+    background: var(--line-2);
+    color: var(--charcoal);
+  }
 }
 
 .ws-controls {
@@ -122,8 +124,10 @@
   border-radius: var(--radius-m);
   cursor: pointer;
 }
-.ws-filter-btn:hover {
-  background: var(--surface-hi);
+@media (hover: hover) {
+  .ws-filter-btn:hover {
+    background: var(--surface-hi);
+  }
 }
 /* סינון פעיל מסומן גם במסגרת וגם בנקודה — לא בצבע לבדו (§28).
    הטקסט "סינון פעיל · N ברשימה" מופיע בשורת המונה שמתחת. */
@@ -186,8 +190,10 @@
   border-radius: var(--radius-s);
   cursor: pointer;
 }
-.ws-section-btn:hover {
-  background: var(--surface-hi);
+@media (hover: hover) {
+  .ws-section-btn:hover {
+    background: var(--surface-hi);
+  }
 }
 .ws-section-caret,
 .ws-group-caret {
@@ -245,8 +251,10 @@
   border-radius: var(--radius-s);
   cursor: pointer;
 }
-.ws-group-btn:hover {
-  background: var(--surface-hi);
+@media (hover: hover) {
+  .ws-group-btn:hover {
+    background: var(--surface-hi);
+  }
 }
 .ws-group-label {
   flex: 1 1 auto;
@@ -301,8 +309,10 @@
   border-radius: var(--radius-m);
   cursor: pointer;
 }
-.ws-guest-btn:hover {
-  background: var(--surface-hi);
+@media (hover: hover) {
+  .ws-guest-btn:hover {
+    background: var(--surface-hi);
+  }
 }
 .ws-guest-name {
   display: flex;
@@ -365,9 +375,13 @@
   border-radius: var(--radius-m);
   cursor: pointer;
 }
-.ws-note-btn:hover,
 .ws-note-btn.is-open {
   background: var(--surface-hi);
+}
+@media (hover: hover) {
+  .ws-note-btn:hover {
+    background: var(--surface-hi);
+  }
 }
 
 .ws-notes {
@@ -421,9 +435,11 @@
   border-radius: var(--radius-m);
   cursor: pointer;
 }
-.ws-action:hover {
-  border-color: var(--gold-deep);
-  color: var(--gold-on-tint);
+@media (hover: hover) {
+  .ws-action:hover {
+    border-color: var(--gold-deep);
+    color: var(--gold-on-tint);
+  }
 }
 .ws-action-hint {
   flex: 1 0 100%;
@@ -481,8 +497,10 @@
   background: linear-gradient(140deg, var(--gold-light), var(--gold));
   border: 1px solid var(--gold);
 }
-.ws-btn-primary:hover:not(:disabled) {
-  filter: brightness(1.04);
+@media (hover: hover) {
+  .ws-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.04);
+  }
 }
 .ws-btn-primary:disabled,
 .ws-btn-ghost:disabled {
@@ -494,8 +512,10 @@
   background: var(--cream);
   border: 1px solid var(--line);
 }
-.ws-btn-ghost:hover:not(:disabled) {
-  background: var(--surface-hi);
+@media (hover: hover) {
+  .ws-btn-ghost:hover:not(:disabled) {
+    background: var(--surface-hi);
+  }
 }
 .ws-manage-btn {
   font-size: var(--text-sm);
@@ -629,9 +649,11 @@
   border-radius: var(--radius-full);
   cursor: pointer;
 }
-.ws-dialog-x:hover {
-  background: var(--surface-hi);
-  color: var(--charcoal);
+@media (hover: hover) {
+  .ws-dialog-x:hover {
+    background: var(--surface-hi);
+    color: var(--charcoal);
+  }
 }
 .ws-dialog-search {
   flex: 0 0 auto;
@@ -659,9 +681,11 @@
   border-radius: var(--radius-m);
   cursor: pointer;
 }
-.ws-pick-row:hover {
-  background: var(--surface-hi);
-  border-color: var(--gold-deep);
+@media (hover: hover) {
+  .ws-pick-row:hover {
+    background: var(--surface-hi);
+    border-color: var(--gold-deep);
+  }
 }
 .ws-pick-main {
   flex: 1 1 auto;
@@ -931,9 +955,11 @@
   border-radius: var(--radius-full);
   cursor: pointer;
 }
-.hm-panel-x:hover {
-  background: var(--surface-hi);
-  color: var(--charcoal);
+@media (hover: hover) {
+  .hm-panel-x:hover {
+    background: var(--surface-hi);
+    color: var(--charcoal);
+  }
 }
 
 /* המגירה של סרגל המוזמנים בטלפון: הסרגל עצמו גולל בפנים. */

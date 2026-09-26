@@ -115,8 +115,10 @@
   transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
-.fin-tab:hover {
-  color: var(--body);
+@media (hover: hover) {
+  .fin-tab:hover {
+    color: var(--body);
+  }
 }
 
 .fin-tab.active {
@@ -308,8 +310,10 @@
   transition: background var(--transition-fast);
 }
 
-.fin-group-btn:hover {
-  background: var(--surface-hi);
+@media (hover: hover) {
+  .fin-group-btn:hover {
+    background: var(--surface-hi);
+  }
 }
 
 .fin-group-btn:focus-visible {
@@ -411,8 +415,10 @@
   transition: background var(--transition-fast);
 }
 
-.fin-expense-btn:hover {
-  background: var(--surface-hi);
+@media (hover: hover) {
+  .fin-expense-btn:hover {
+    background: var(--surface-hi);
+  }
 }
 
 .fin-expense-btn:focus-visible {
@@ -678,10 +684,15 @@
   border-top: 1px solid var(--line-2);
 }
 
-.fin-result:hover,
 .fin-result:focus-visible {
   background: var(--surface-hi);
   outline: none;
+}
+@media (hover: hover) {
+  .fin-result:hover {
+    background: var(--surface-hi);
+    outline: none;
+  }
 }
 
 .fin-result-name {
@@ -728,8 +739,10 @@
   padding: 2px;
 }
 
-.fin-guest-chip button:hover {
-  color: var(--charcoal);
+@media (hover: hover) {
+  .fin-guest-chip button:hover {
+    color: var(--charcoal);
+  }
 }
 
 .fin-counter-actions {
@@ -1003,9 +1016,11 @@
   transition: all var(--transition-fast);
 }
 
-.fin-chip:hover {
-  border-color: var(--gold-deep);
-  color: var(--charcoal);
+@media (hover: hover) {
+  .fin-chip:hover {
+    border-color: var(--gold-deep);
+    color: var(--charcoal);
+  }
 }
 
 .fin-chip-custom {
@@ -1424,8 +1439,10 @@
   transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 
-.fin-payment-option:hover {
-  border-color: var(--gold-light);
+@media (hover: hover) {
+  .fin-payment-option:hover {
+    border-color: var(--gold-light);
+  }
 }
 
 /* הרדיו עצמו נשאר במקום ונגיש — הוא רק לא מצויר. הסתרתו ב-display:none
@@ -1904,8 +1921,10 @@
   letter-spacing: 0.02em;
 }
 
-.fin-table tbody tr:hover {
-  background: var(--surface-hi);
+@media (hover: hover) {
+  .fin-table tbody tr:hover {
+    background: var(--surface-hi);
+  }
 }
 
 /* עמודת השם נשארת במקום כשגוללים את שאר העמודות.
@@ -1929,8 +1948,10 @@
   background: var(--surface-hi);
 }
 
-.fin-table tbody tr:hover td:first-child {
-  background: var(--surface-hi);
+@media (hover: hover) {
+  .fin-table tbody tr:hover td:first-child {
+    background: var(--surface-hi);
+  }
 }
 
 .fin-num {

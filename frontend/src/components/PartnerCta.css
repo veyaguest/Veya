@@ -1,7 +1,8 @@
 /* כרטיס "מנהלים את האירוע יחד?" בדשבורד — סקשן מלא בתוך "תמונת מצב", לא
    וידג'ט נספח: אותו radius/padding/shadow/מרווח-אופקי כמו שכניו
-   (.seating-helper-card/.rsvp-feed-card/.gauge-section), ואותו כפתור זהב
-   ראשי (.btn-primary) כמו בכל שאר הדשבורד — בלי צבע/כפתור ייחודיים. */
+   (.seating-helper-card/.rsvp-feed-card/.gauge-section). הכפתור משני
+   (.btn-ghost): הזמנת שותף/ה היא הצעה, לא משימה — הזהב הראשי שמור
+   ל"צריכים אתכם" (בחירת מועד, שליחת הזמנות). */
 
 .pcta {
   box-sizing: border-box;
@@ -60,8 +61,10 @@
   text-decoration: none;
   color: var(--muted);
 }
-.pcta-dismiss:hover {
-  color: var(--body);
+@media (hover: hover) {
+  .pcta-dismiss:hover {
+    color: var(--body);
+  }
 }
 
 .pcta-form {

@@ -125,8 +125,10 @@
   margin-top: 0;
 }
 
-.join-btn-primary:hover:not(:disabled) {
-  filter: brightness(1.08);
+@media (hover: hover) {
+  .join-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
 }
 
 .join-btn-secondary {
@@ -140,9 +142,11 @@
   margin-top: 0;
 }
 
-.join-btn-secondary:hover:not(:disabled) {
-  border-color: var(--gold-light);
-  color: var(--gold-light);
+@media (hover: hover) {
+  .join-btn-secondary:hover:not(:disabled) {
+    border-color: var(--gold-light);
+    color: var(--gold-light);
+  }
 }
 
 .join-loading {
@@ -209,8 +213,10 @@
   transition: color var(--transition-fast);
 }
 
-.join-linkbtn:hover:not(:disabled) {
-  color: var(--gold-light);
+@media (hover: hover) {
+  .join-linkbtn:hover:not(:disabled) {
+    color: var(--gold-light);
+  }
 }
 
 .join-linkbtn:disabled {

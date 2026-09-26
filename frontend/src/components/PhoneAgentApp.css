@@ -61,9 +61,11 @@
   transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
-.pa-top-btn:hover {
-  background: var(--surface-hi);
-  border-color: var(--gold-light);
+@media (hover: hover) {
+  .pa-top-btn:hover {
+    background: var(--surface-hi);
+    border-color: var(--gold-light);
+  }
 }
 
 /* ---- גוף ---- */
@@ -150,8 +152,10 @@
   transition: transform var(--transition-fast), opacity var(--transition-fast);
 }
 
-.pa-start:hover {
-  opacity: 0.92;
+@media (hover: hover) {
+  .pa-start:hover {
+    opacity: 0.92;
+  }
 }
 
 .pa-start:active {

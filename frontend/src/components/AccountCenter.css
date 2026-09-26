@@ -60,9 +60,11 @@
   transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
-.acc-close:hover {
-  color: var(--charcoal);
-  border-color: var(--faint);
+@media (hover: hover) {
+  .acc-close:hover {
+    color: var(--charcoal);
+    border-color: var(--faint);
+  }
 }
 
 /* ---- גוף גליל ---- */
@@ -203,8 +205,10 @@
   background: var(--charcoal);
 }
 
-.acc-btn-primary:hover:not(:disabled) {
-  background: var(--black-soft);
+@media (hover: hover) {
+  .acc-btn-primary:hover:not(:disabled) {
+    background: var(--black-soft);
+  }
 }
 
 .acc-btn-ghost {
@@ -213,9 +217,11 @@
   border-color: var(--line);
 }
 
-.acc-btn-ghost:hover:not(:disabled) {
-  border-color: var(--faint);
-  background: var(--surface-hi);
+@media (hover: hover) {
+  .acc-btn-ghost:hover:not(:disabled) {
+    border-color: var(--faint);
+    background: var(--surface-hi);
+  }
 }
 
 .acc-btn-danger {
@@ -223,8 +229,10 @@
   background: var(--error);
 }
 
-.acc-btn-danger:hover:not(:disabled) {
-  background: #8f4f4a;
+@media (hover: hover) {
+  .acc-btn-danger:hover:not(:disabled) {
+    background: #8f4f4a;
+  }
 }
 
 /* ---- האירוע שלי ---- */

@@ -68,7 +68,9 @@
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.cc-scope-tab:hover { color: var(--charcoal); }
+@media (hover: hover) {
+  .cc-scope-tab:hover { color: var(--charcoal); }
+}
 .cc-scope-tab.active { background: var(--cream); color: var(--charcoal); box-shadow: var(--shadow-card); }
 
 .cc-dot { color: var(--faint); }
@@ -224,7 +226,9 @@
   background: var(--surface-hi);
 }
 
-.cc-call-btn:hover { background: var(--line-2); }
+@media (hover: hover) {
+  .cc-call-btn:hover { background: var(--line-2); }
+}
 
 .cc-pager {
   display: flex;
@@ -315,7 +319,9 @@
   transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 
-.cc-outcome:hover { border-color: var(--gold-light); }
+@media (hover: hover) {
+  .cc-outcome:hover { border-color: var(--gold-light); }
+}
 .cc-outcome.open { border-color: var(--gold); background: var(--surface-hi); }
 .cc-outcome-good { color: var(--green); }
 .cc-outcome-bad { color: var(--error); }

@@ -47,8 +47,10 @@
   text-align: start;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
-.bank-trigger:hover {
-  border-color: var(--gold);
+@media (hover: hover) {
+  .bank-trigger:hover {
+    border-color: var(--gold);
+  }
 }
 .bank-trigger:focus-visible {
   outline: none;
@@ -149,7 +151,9 @@
   line-height: 1;
   cursor: pointer;
 }
-.bank-panel-close:hover { background: var(--surface-hi); color: var(--charcoal); }
+@media (hover: hover) {
+  .bank-panel-close:hover { background: var(--surface-hi); color: var(--charcoal); }
+}
 
 /* ---- חיפוש ------------------------------------------------------------ */
 .bank-search {

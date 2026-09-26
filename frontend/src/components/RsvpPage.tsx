@@ -194,7 +194,7 @@ function RsvpNeedsYou({
             <p className="invite-banner-title">{it.title}</p>
             <p className="invite-banner-desc">{it.desc}</p>
           </div>
-          <button type="button" className="invite-banner-btn" onClick={() => onOpen?.(it.key)}>
+          <button type="button" className="btn-primary invite-banner-btn" onClick={() => onOpen?.(it.key)}>
             {it.cta}
           </button>
         </div>

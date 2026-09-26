@@ -168,8 +168,10 @@
 .verify-secondary .auth-link-btn {
   color: var(--muted);
 }
-.verify-secondary .auth-link-btn:hover {
-  color: var(--gold-light);
+@media (hover: hover) {
+  .verify-secondary .auth-link-btn:hover {
+    color: var(--gold-light);
+  }
 }
 
 /* ---- טופס עדכון הכתובת — .auth-field מ-App.css, רק המרווח כאן ---- */
@@ -191,9 +193,11 @@
   cursor: pointer;
   transition: border-color var(--transition-fast), color var(--transition-fast);
 }
-.verify-cancel:hover:not(:disabled) {
-  border-color: var(--faint);
-  color: var(--charcoal);
+@media (hover: hover) {
+  .verify-cancel:hover:not(:disabled) {
+    border-color: var(--faint);
+    color: var(--charcoal);
+  }
 }
 .verify-cancel:disabled {
   opacity: 0.6;

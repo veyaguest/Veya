@@ -40,7 +40,9 @@
   cursor: pointer;
   transition: color 0.15s ease, border-color 0.15s ease;
 }
-.apr-scope:hover { color: var(--charcoal); }
+@media (hover: hover) {
+  .apr-scope:hover { color: var(--charcoal); }
+}
 .apr-scope--on {
   color: var(--charcoal);
   font-weight: 600;
@@ -180,21 +182,27 @@
   border: 1px solid var(--line);
   color: var(--body);
 }
-.apr-btn-ghost:hover:not(:disabled) { border-color: var(--gold); }
+@media (hover: hover) {
+  .apr-btn-ghost:hover:not(:disabled) { border-color: var(--gold); }
+}
 
 .apr-btn-approve {
   background: var(--charcoal);
   border: 1px solid var(--charcoal);
   color: var(--ivory);
 }
-.apr-btn-approve:hover:not(:disabled) { background: var(--black-soft); }
+@media (hover: hover) {
+  .apr-btn-approve:hover:not(:disabled) { background: var(--black-soft); }
+}
 
 .apr-btn-reject {
   background: none;
   border: 1px solid var(--error);
   color: var(--error);
 }
-.apr-btn-reject:hover:not(:disabled) { background: rgba(166, 96, 90, 0.08); }
+@media (hover: hover) {
+  .apr-btn-reject:hover:not(:disabled) { background: rgba(166, 96, 90, 0.08); }
+}
 
 /* ---- תיבת הדחייה ------------------------------------------------------- */
 .apr-reject-box {
@@ -247,7 +255,9 @@
   margin: -6px -2px;
   list-style-position: inside;
 }
-.apr-tools-summary:hover { color: var(--muted); }
+@media (hover: hover) {
+  .apr-tools-summary:hover { color: var(--muted); }
+}
 .apr-tools-note {
   margin: 8px 0 10px;
   max-width: 60ch;
@@ -272,7 +282,9 @@
   font-size: 12px;
   cursor: pointer;
 }
-.apr-chip:hover:not(:disabled) { border-color: var(--gold); }
+@media (hover: hover) {
+  .apr-chip:hover:not(:disabled) { border-color: var(--gold); }
+}
 .apr-chip:disabled { opacity: 0.5; cursor: default; }
 
 /* ---- מובייל ------------------------------------------------------------ */
