@@ -735,11 +735,11 @@ function FirstInviteWizard({
   const invalid = preview?.invalid_phone ?? 0
   const badPhone = missing + invalid
   const steps = wizardSteps(activeEventTerms().guestsLabel)
-  const pct = ((step - 1) / (steps.length - 1)) * 100
 
   return (
     <div className="invite-wizard">
-      {/* פס התקדמות */}
+      {/* פס השלבים — גם ניווט (לחיצה על שלב) וגם ההתקדמות עצמה: שלב שהושלם
+          מסומן ✓, השלב הנוכחי מודגש. אין צורך בפס התקדמות או תגית "שלב X מתוך 3" נוספים. */}
       <div className="wiz-header">
         <ol className="wiz-steps">
           {steps.map((s) => (
@@ -761,15 +761,11 @@ function FirstInviteWizard({
             </li>
           ))}
         </ol>
-        <div className="wiz-progress">
-          <span className="wiz-progress-fill" style={{ width: `${pct}%` }} />
-        </div>
       </div>
 
       {/* ---- שלב 1: עיצוב ההזמנה ---- */}
       <section className="wiz-panel" hidden={step !== 1}>
         <div className="wiz-panel-head">
-          <span className="wiz-panel-badge">שלב 1 מתוך 3</span>
           <h2 className="wiz-title">עיצוב ההזמנה</h2>
           <p className="wiz-sub">
             בחרו נוסח מוכן או ערכו אותו בעצמכם. בתצוגה המקדימה רואים בדיוק
@@ -791,7 +787,6 @@ function FirstInviteWizard({
       {/* ---- שלב 2: מוזמנים ---- */}
       <section className="wiz-panel" hidden={step !== 2}>
         <div className="wiz-panel-head">
-          <span className="wiz-panel-badge">שלב 2 מתוך 3</span>
           <h2 className="wiz-title">מי מקבל את ההזמנה?</h2>
           <p className="wiz-sub">
             בדקו שהרשימה מוכנה. אפשר להוסיף מוזמנים או לתקן מספרי טלפון במסך ניהול
@@ -888,7 +883,6 @@ function FirstInviteWizard({
       {/* ---- שלב 3: תצוגה ושליחה ---- */}
       <section className="wiz-panel" hidden={step !== 3}>
         <div className="wiz-panel-head">
-          <span className="wiz-panel-badge">שלב 3 מתוך 3</span>
           <h2 className="wiz-title">כמעט שם — סקירה ושליחה</h2>
           <p className="wiz-sub">
             זו הסקירה האחרונה. בלחיצה על "שליחת הזמנות" נציג לכם בדיוק את ההודעה

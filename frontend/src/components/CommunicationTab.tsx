@@ -182,32 +182,39 @@ export function CommunicationTab({
 
   const active = messages?.find((m) => m.message_type === activeType) ?? null
 
+  // כשמוצג סוג הודעה אחד בלבד (למשל ההזמנה בתוך אשף השליחה), הכותרת ו"בורר"
+  // עם כפתור יחיד רק חוזרים על מה שכבר כתוב מעליהם — מציגים ישר את ההודעה.
+  const single = !!only && only.length === 1
   return (
     <div className="gm2-wrap">
-      <div className="gm2-head">
-        <h2 className="gm2-title">{t.communicationTitle(guestsLabel)}</h2>
-      </div>
+      {!single && (
+        <div className="gm2-head">
+          <h2 className="gm2-title">{t.communicationTitle(guestsLabel)}</h2>
+        </div>
+      )}
 
       {error && <p className="form-error" role="alert">{error}</p>}
       {messages === null && !error && <p className="mb-empty">טוענים…</p>}
 
       {messages && (
         <>
-          <nav className="gm2-steps" aria-label="שלבי ההודעות">
-            {messages.map((m) => (
-              <button
-                key={m.message_type}
-                type="button"
-                className={`gm2-step ${m.message_type === activeType ? 'active' : ''}`}
-                onClick={() => setActiveType(m.message_type)}
-              >
-                <span className="gm2-step-icon" aria-hidden="true">
-                  <MessageTypeIcon type={m.message_type} />
-                </span>
-                <span className="gm2-step-name">{m.title}</span>
-              </button>
-            ))}
-          </nav>
+          {!single && (
+            <nav className="gm2-steps" aria-label="שלבי ההודעות">
+              {messages.map((m) => (
+                <button
+                  key={m.message_type}
+                  type="button"
+                  className={`gm2-step ${m.message_type === activeType ? 'active' : ''}`}
+                  onClick={() => setActiveType(m.message_type)}
+                >
+                  <span className="gm2-step-icon" aria-hidden="true">
+                    <MessageTypeIcon type={m.message_type} />
+                  </span>
+                  <span className="gm2-step-name">{m.title}</span>
+                </button>
+              ))}
+            </nav>
+          )}
 
           {active && (
             <MessagePanel

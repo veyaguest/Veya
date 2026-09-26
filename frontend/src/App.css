@@ -10394,26 +10394,22 @@ button.gauge-status-card:focus-visible {
   white-space: nowrap;
 }
 @media (max-width: 560px) {
+  /* בטלפון רק לשלב הנוכחי יש שם (הוא מקבל יותר רוחב); השאר מספרים בלבד. */
   .wiz-step-label {
     display: none;
   }
+  .wiz-step.active {
+    flex-grow: 3;
+  }
+  .wiz-step.active .wiz-step-label {
+    display: inline;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .wiz-step-btn {
     padding: 10px;
+    min-width: 0;
   }
-}
-
-.wiz-progress {
-  height: 6px;
-  background: var(--line);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-}
-.wiz-progress-fill {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, var(--gold), var(--gold-light));
-  border-radius: var(--radius-full);
-  transition: width 0.35s ease;
 }
 
 .wiz-panel {
@@ -10447,17 +10443,6 @@ button.gauge-status-card:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-.wiz-panel-badge {
-  align-self: flex-start;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--gold-deep);
-  background: var(--surface-hi);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-full);
-  padding: 3px 12px;
 }
 .wiz-title {
   font-size: 22px;
