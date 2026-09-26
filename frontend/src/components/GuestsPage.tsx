@@ -514,7 +514,7 @@ export function GuestsPage({
           >
             <div className="dialog-head">
               <h2>{t.editRow}</h2>
-              <button className="x" onClick={() => setEditGuest(null)}>
+              <button className="x" onClick={() => setEditGuest(null)} aria-label={strings.common.close}>
                 ✕
               </button>
             </div>

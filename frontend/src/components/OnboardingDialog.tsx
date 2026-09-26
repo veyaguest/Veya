@@ -40,7 +40,7 @@ export function OnboardingDialog({ onClose, onPaste, onExcel, onContacts, onManu
         className="dialog onboarding-dialog"
         onClick={(e) => e.stopPropagation()}
       >
-        <button className="x" onClick={onClose}>
+        <button className="x" onClick={onClose} aria-label={strings.common.close}>
           ✕
         </button>
 

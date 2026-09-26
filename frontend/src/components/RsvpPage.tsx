@@ -661,7 +661,7 @@ function DashboardTab({
           onClick={() => onGoToMessages?.()}
           title="מעבר לניהול הודעות"
         >
-          {dash?.due_now ?? 0} הודעות ממתינות בתור →
+          {dash?.due_now ?? 0} הודעות ממתינות בתור ←
         </button>
       </div>
 

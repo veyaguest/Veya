@@ -89,7 +89,7 @@ export function CreateGroupDialog({ onClose, onCreated }: Props) {
       <div className="dialog notes-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
           <h2>{t.createGroupTitle}</h2>
-          <button className="x" onClick={onClose}>
+          <button className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>
         </div>

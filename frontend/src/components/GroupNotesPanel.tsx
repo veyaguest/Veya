@@ -58,7 +58,7 @@ export function GroupNotesPanel({ onClose }: Props) {
       <div className="dialog notes-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
           <h2>{t.notesTitle}</h2>
-          <button className="x" onClick={onClose}>
+          <button className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>
         </div>

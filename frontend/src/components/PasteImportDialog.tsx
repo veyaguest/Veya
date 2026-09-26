@@ -130,7 +130,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
       <div className="dialog paste-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
           <h2>{t.pasteTitle}</h2>
-          <button className="x" onClick={onClose}>
+          <button className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>
         </div>

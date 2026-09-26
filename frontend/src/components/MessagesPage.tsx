@@ -779,7 +779,7 @@ function FirstInviteWizard({
         <div className="wiz-nav">
           <span />
           <button className="btn-primary" onClick={() => setStep(2)}>
-            המשך למוזמנים →
+            המשך למוזמנים ←
           </button>
         </div>
       </section>
@@ -862,20 +862,20 @@ function FirstInviteWizard({
 
         {onAddGuests && (
           <button className="btn-text wiz-guests-link" onClick={onAddGuests}>
-            לניהול מלא של המוזמנים — עברו למסך המוזמנים →
+            לניהול מלא של המוזמנים — עברו למסך המוזמנים ←
           </button>
         )}
 
         <div className="wiz-nav">
           <button className="btn-ghost" onClick={() => setStep(1)}>
-            ← חזרה
+            → חזרה
           </button>
           <button
             className="btn-primary"
             disabled={sendable === 0}
             onClick={() => setStep(3)}
           >
-            המשך לתצוגה →
+            המשך לתצוגה ←
           </button>
         </div>
       </section>
@@ -915,7 +915,7 @@ function FirstInviteWizard({
 
         <div className="wiz-nav">
           <button className="btn-ghost" onClick={() => setStep(2)}>
-            ← חזרה
+            → חזרה
           </button>
           <button
             className="btn-primary track-activate-btn"
@@ -959,7 +959,7 @@ function FirstInviteWizard({
           >
             <div className="dialog-head">
               <h2>הוספת מוזמן</h2>
-              <button className="x" onClick={() => setShowAdd(false)}>
+              <button className="x" onClick={() => setShowAdd(false)} aria-label={strings.common.close}>
                 ✕
               </button>
             </div>

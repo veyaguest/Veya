@@ -147,7 +147,7 @@ export function EventMembersDialog({
       <div className="dialog" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()} dir="rtl">
         <div className="dialog-head">
           <h2>ניהול גישה לאירוע</h2>
-          <button type="button" className="x" onClick={onClose}>
+          <button type="button" className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>
         </div>
