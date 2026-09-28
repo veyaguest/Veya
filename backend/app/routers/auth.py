@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app import audit, auth, emailer, legal, models, partners, schemas
 from app.account import delete_event_cascade
 from app.database import get_db, set_request_identity
-from app.ratelimit import auth_limiter, client_ip
+from app.ratelimit import auth_limiter, client_ip, limit_email_send
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -113,6 +113,12 @@ def login(payload: schemas.LoginRequest, request: Request, db: Session = Depends
     user = auth.find_user_by_email(db, payload.email)
     if user is None or not auth.verify_password(payload.password, user.password_hash):
         auth_limiter.record_fail(ip)
+        # יומן אבטחה (A09): ניסיון כושל נראה ביומני השרת — בלי הסיסמה ועם מייל מוסתר.
+        print(
+            f"[veya:security] login_failed ip={ip} email={emailer._mask_email(payload.email)} "
+            f"known_user={user is not None}",
+            flush=True,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="לא הצלחנו לזהות את הפרטים — בדקו את האימייל והסיסמה ונסו שוב",
@@ -280,6 +286,7 @@ def mark_guests_popup_seen(
 
 @router.post("/verify-email/resend", status_code=200)
 def resend_verification(
+    request: Request,
     db: Session = Depends(get_db),
     user: models.User = Depends(auth.get_current_user),
 ):
@@ -294,6 +301,7 @@ def resend_verification(
         # במיגרציה החד-פעמית — אז חשבון ותיק לעולם לא ישלח מייל אימות.
         emailer.debug_log("resend SKIPPED — user already verified; emailer NOT called")
         return {"already_verified": True, "sent": False}
+    limit_email_send(client_ip(request), user.email)
     sent = auth.send_verification_email(db, user)
     db.commit()
     if not sent:
@@ -363,6 +371,8 @@ def change_unverified_email(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="כתובת המייל הזו כבר מאומתת",
         )
+    # כל מסלול כאן שולח מייל — אותה הגבלה כמו "שלחו שוב" (לפי IP ולפי יעד).
+    limit_email_send(client_ip(request), payload.email)
     if payload.email == user.email:
         # אותה כתובת — פשוט שולחים שוב, בלי להיכשל.
         auth.send_verification_email(db, user)
@@ -444,11 +454,15 @@ def forgot_password(
     הסיסמה, מטבע הדבר, לא מחובר).
 
     התגובה זהה תמיד, בלי קשר אם הכתובת קיימת במערכת — כדי לא לחשוף אילו
-    כתובות מייל רשומות (email enumeration). לכן גם לא נקרא ``record_fail``
-    כאן: אין ללקוח דרך להבחין בין "נשלח" ל"לא נמצא", אז אין למה למדוד.
+    כתובות מייל רשומות (email enumeration).
+
+    הגבלת קצב: **כל** בקשה נספרת (לפי IP ולפי הכתובת המבוקשת), בלי קשר אם
+    הכתובת קיימת — כך אי אפשר להציף תיבה של מישהו אחר במיילי איפוס, וההגבלה
+    עצמה לא מסגירה אם הכתובת רשומה (אותה תשובה עד החסימה, ואותה חסימה).
     """
     ip = client_ip(request)
     auth_limiter.check(ip)
+    limit_email_send(ip, payload.email)
     message = "אם קיימת כתובת עם החשבון הזה, שלחנו אליכם קישור לאיפוס הסיסמה."
     user = auth.find_user_by_email(db, payload.email)
     if user is not None and not user.disabled:
@@ -764,7 +778,11 @@ def change_password(
     מחזיר טוקן חדש כדי שהמכשיר הנוכחי יישאר מחובר, בעוד שאר המכשירים נדרשים
     להתחבר מחדש עם הסיסמה החדשה.
     """
+    # מי שמחזיק טוקן גנוב לא יוכל לנחש את הסיסמה הנוכחית בלי הגבלה.
+    guess_key = f"user:{user.id}:current-password"
+    auth_limiter.check(guess_key)
     if not auth.verify_password(payload.current_password, user.password_hash):
+        auth_limiter.record_fail(guess_key)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="הסיסמה הנוכחית שגויה",

@@ -349,8 +349,15 @@ def verify_webhook(request: Request):
     """אימות webhook מול Meta (handshake חד-פעמי בהגדרה)."""
     import os
     params = request.query_params
-    verify_token = os.getenv("WHATSAPP_VERIFY_TOKEN", "veya-verify")
-    if params.get("hub.mode") == "subscribe" and params.get("hub.verify_token") == verify_token:
+    # נכשל-סגור: בלי טוקן מוגדר אין handshake. ברירת מחדל ידועה ("veya-verify")
+    # הייתה מאפשרת לכל אחד להשלים את האימות מול הכתובת שלנו.
+    verify_token = os.getenv("WHATSAPP_VERIFY_TOKEN", "").strip()
+    given = params.get("hub.verify_token") or ""
+    if (
+        verify_token
+        and params.get("hub.mode") == "subscribe"
+        and hmac.compare_digest(given.encode(), verify_token.encode())
+    ):
         return Response(content=params.get("hub.challenge", ""), media_type="text/plain")
     raise HTTPException(status_code=403, detail="אימות webhook נכשל")
 

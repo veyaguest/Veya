@@ -468,15 +468,31 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def create_access_token(user: "models.User") -> str:
-    """יוצר טוקן JWT חתום עבור המשתמש, כולל גרסת הטוקן הנוכחית (``tv``)."""
+# טוקן "כניסה כמשתמש" של אדמין לצורך תמיכה — קצר בכוונה. טוקן רגיל תקף 30
+# יום; התחזות שנשכחה פתוחה בדפדפן של אדמין לא צריכה לחיות חודש.
+IMPERSONATION_EXPIRE = timedelta(hours=2)
+
+
+def create_access_token(
+    user: "models.User",
+    *,
+    expires: Optional[timedelta] = None,
+    impersonated_by: Optional[int] = None,
+) -> str:
+    """יוצר טוקן JWT חתום עבור המשתמש, כולל גרסת הטוקן הנוכחית (``tv``).
+
+    ``impersonated_by`` (מזהה האדמין) נכנס לטוקן כ-``imp`` — כך טוקן התחזות
+    מזוהה ככזה בכל מקום שמפענח אותו.
+    """
     now = datetime.now(timezone.utc)
     payload = {
         "sub": str(user.id),
         "tv": user.token_version,
         "iat": now,
-        "exp": now + timedelta(days=JWT_EXPIRE_DAYS),
+        "exp": now + (expires or timedelta(days=JWT_EXPIRE_DAYS)),
     }
+    if impersonated_by is not None:
+        payload["imp"] = impersonated_by
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 

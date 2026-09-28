@@ -17,6 +17,10 @@ from app import models  # noqa: F401  — נדרש כדי לרשום את הטב
 from app.database import (
     Base, IS_POSTGRES, MigrationSessionLocal, migrations_engine,
 )
+from app.http_security import (
+    SecurityHeadersMiddleware, TrustedProxyMiddleware, docs_settings,
+    is_production, trusted_proxy_hops,
+)
 from app.routers import (
     admin,
     admin_control,
@@ -55,7 +59,8 @@ from app.routers import (
     stats,
     venues,)
 
-app = FastAPI(title="VEYA API", version="0.1.0")
+# בייצור דפי התיעוד האוטומטיים כבויים (ראו app/http_security.py).
+app = FastAPI(title="VEYA API", version="0.1.0", **docs_settings(production=is_production()))
 
 
 class _UnhandledErrorMiddleware(BaseHTTPMiddleware):
@@ -100,6 +105,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# כותרות אבטחה עוטפות גם את תשובות ה-CORS וה-500 (נרשם אחריהן = חיצוני יותר).
+app.add_middleware(SecurityHeadersMiddleware, hsts=is_production())
+# החיצוני ביותר: כתובת ה-IP האמיתית נקבעת לפני כל קוד אחר (הגבלות קצב, יומנים).
+app.add_middleware(TrustedProxyMiddleware, hops=trusted_proxy_hops())
 
 app.include_router(auth.router)
 app.include_router(admin.router)

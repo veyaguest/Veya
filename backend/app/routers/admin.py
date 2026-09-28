@@ -916,7 +916,9 @@ def impersonate_user(
             detail="החשבון מושבת. יש להפעיל אותו לפני התחזות",
         )
 
-    token = auth.create_access_token(target)
+    token = auth.create_access_token(
+        target, expires=auth.IMPERSONATION_EXPIRE, impersonated_by=admin.id,
+    )
     admin_audit.record(
         db, admin, domain="users", action="user.impersonate",
         summary=f"נכנס/ה כמשתמש {target.email} לצורך תמיכה", target_type="user",

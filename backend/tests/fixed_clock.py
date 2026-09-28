@@ -72,6 +72,14 @@ def install() -> None:
     global _installed, _offset
     if _installed or os.environ.get("VEYA_REAL_CLOCK") == "1":
         return
+    # FastAPI 0.120+ טוען את pydantic.v1, שיורש מ-datetime.date/datetime בזמן
+    # הטעינה — אחרי ההחלפה הירושה נתקלת במטא-מחלקה שלנו ("metaclass conflict").
+    # טוענים אותו לפני ההחלפה; קוד האפליקציה עצמו עדיין נטען אחריה ומקבל את
+    # השעון הקבוע.
+    try:
+        import pydantic.v1  # noqa: F401
+    except Exception:  # noqa: BLE001 — גרסת pydantic בלי שכבת v1: אין מה לטעון
+        pass
     _offset = ANCHOR - _RealDateTime.utcnow()
     _dt.date = FixedDate
     _dt.datetime = FixedDateTime

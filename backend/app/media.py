@@ -59,6 +59,14 @@ MAX_IMAGE_DIMENSION = 2500
 IMAGE_QUALITY = 90
 
 _RASTER_CONTENT_TYPES = {"image/png", "image/jpeg", "image/jpg", "image/webp", "image/bmp", "image/tiff"}
+# כל מה שמותר לשמור כ"תמונה". ה-content-type מגיע מה-data URL — כלומר מהלקוח —
+# ולכן בלי הרשימה הזו אפשר היה לשמור ``data:text/html,...`` ולקבל כתובת
+# ``/media/<id>`` ציבורית שמגישה דף HTML עם סקריפט מהדומיין של ה-API.
+# HEIC/HEIF/AVIF — תמונות טלפון; פורמטים "שקטים" (בלי סקריפט) שנשמרים כמו שהם.
+# SVG הוא היחיד כאן שיכול להכיל סקריפט — ולכן כל /media מוגש עם CSP sandbox.
+ALLOWED_IMAGE_TYPES = _RASTER_CONTENT_TYPES | {
+    "image/gif", "image/svg+xml", "image/heic", "image/heif", "image/avif",
+}
 
 
 class _ImageProcessingError(Exception):
@@ -150,6 +158,10 @@ def _write_data_url(db: Session, data_url: str, prefix: str, optimize: bool = Fa
     "כבדה אבל תקינה" מקבלת הזדמנות להידחס לפני שנשקל לדחות אותה.
     """
     content_type, raw = _parse_data_url(data_url)
+    if content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=415, detail="אפשר להעלות רק קובץ תמונה (JPG, PNG, WEBP או GIF)"
+        )
     if len(raw) > MAX_SOURCE_BYTES:
         raise HTTPException(status_code=413, detail="התמונה גדולה מדי — עד 50MB")
     if optimize:

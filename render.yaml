@@ -15,7 +15,9 @@ services:
       # גרסת פייתון יציבה. משאירים כפי שהוא.
       - key: PYTHON_VERSION
         value: 3.11.9
-      # מסמן לשרת שהוא בייצור — מחייב JWT_SECRET אמיתי (לא ברירת המחדל של פיתוח).
+      # מסמן לשרת שהוא בייצור — מחייב JWT_SECRET אמיתי (לא ברירת המחדל של פיתוח),
+      # מכבה את /docs, ומפעיל זיהוי IP אמיתי מאחורי ה-proxy של Render
+      # (VEYA_TRUSTED_PROXY_HOPS, ברירת מחדל 1 — ראו app/http_security.py).
       - key: VEYA_ENV
         value: production
       # מפתח חתימה סודי ל-JWT — Render מייצר אותו אוטומטית ובאופן מאובטח.

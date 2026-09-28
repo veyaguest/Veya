@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app import cache, models
 from app.database import get_db
+from app.media import ALLOWED_IMAGE_TYPES
 
 router = APIRouter(prefix="/media", tags=["media"])
 
@@ -37,9 +38,11 @@ def get_media(blob_id: str, db: Session = Depends(get_db)) -> Response:
         # התהליך היחיד — הם פשוט נטענים מה-DB בכל בקשה, כמו קודם.
         if len(content) <= MAX_CACHEABLE_BYTES:
             cache.set(key, (content, content_type), MEDIA_CACHE_TTL_SECONDS)
-    return Response(
-        content=content,
-        media_type=content_type or "application/octet-stream",
-        # התמונה בלתי-משתנה (מזהה חדש לכל העלאה), אז אפשר לאחסן במטמון לאורך זמן.
-        headers={"Cache-Control": "public, max-age=31536000, immutable"},
-    )
+    # התמונה בלתי-משתנה (מזהה חדש לכל העלאה), אז אפשר לאחסן במטמון לאורך זמן.
+    headers = {"Cache-Control": "public, max-age=31536000, immutable"}
+    if (content_type or "").lower() not in ALLOWED_IMAGE_TYPES:
+        # בלוב שאינו תמונה (נשמר לפני שהייתה בדיקת סוג) — מורד כקובץ, לעולם
+        # לא מוצג כדף. ה-CSP sandbox וה-nosniff מגיעים מ-app/http_security.py.
+        content_type = "application/octet-stream"
+        headers["Content-Disposition"] = "attachment"
+    return Response(content=content, media_type=content_type, headers=headers)
