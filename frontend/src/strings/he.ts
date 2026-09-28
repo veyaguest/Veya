@@ -1049,11 +1049,12 @@ export const strings = {
     groupsMenuButton: 'קבוצות',
     uploadButton: 'ייבוא מקובץ Excel / CSV',
     contactsButton: 'ייבוא מאנשי קשר',
-    // ייצוא לאייפלן — קובץ לאולמות שעושים את ההושבה באייפלן (IPlanExportDialog).
-    iplanButton: 'ייצוא לאייפלן',
-    iplanTitle: 'ייצוא לאייפלן',
+    // ייצוא ל-iPlan — קובץ לאולמות שעושים את ההושבה ב-iPlan (IPlanExportDialog).
+    // השם באותיות לועזיות, כמו שהאולמות והזוגות מכירים אותו (החלטת בעלים 2026-09-28).
+    iplanButton: 'ייצוא ל-iPlan',
+    iplanTitle: 'ייצוא ל-iPlan',
     iplanIntro:
-      'כל רשימת המוזמנים, עם אישורי ההגעה ומספרי השולחנות, בקובץ שאייפלן מכיר — מוכן להעלאה לצורך הושבה באולם.',
+      'כל רשימת המוזמנים, עם אישורי ההגעה ומספרי השולחנות, בקובץ שמוכן להעלאה ל-iPlan לצורך הושבה באולם.',
     iplanLoading: 'בודקים את הרשימה…',
     iplanLoadError: 'לא הצלחנו לבדוק את הרשימה כרגע. נסו שוב',
     iplanSummary: (invitations: number, people: number) =>
@@ -1074,7 +1075,7 @@ export const strings = {
     iplanDownload: 'הורדת הקובץ',
     iplanDownloading: 'מכינים את הקובץ…',
     iplanDownloadError: 'לא הצלחנו להכין את הקובץ. נסו שוב',
-    iplanDownloadedToast: 'הקובץ ירד. אפשר להעלות אותו לאייפלן.',
+    iplanDownloadedToast: 'הקובץ ירד. אפשר להעלות אותו ל-iPlan.',
     closeForm: 'סגירת הטופס',
     addGuestButton: 'הוספת מוזמן',
     dupSuffix: (n: number) => ` (${n} כבר היו אצלכם)`,
