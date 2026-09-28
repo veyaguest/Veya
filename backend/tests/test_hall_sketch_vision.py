@@ -48,6 +48,11 @@ def test_validate_elements_rejects_garbage() -> None:
 
 
 def test_analyze_missing_api_key_gives_clean_error() -> None:
+    # טוענים קודם את ``database`` (שמריץ ``load_dotenv``) — ``features.enabled``
+    # טוען אותו רק בקריאה הראשונה, בתוך ``analyze_sketch``, ואז המפתח חוזר
+    # מ-``.env`` אחרי שהסרנו אותו. בלי זה הבדיקה תלויה בשאלה אם יש ``.env`` מקומי.
+    from app import database  # noqa: F401
+
     old = os.environ.pop("ANTHROPIC_API_KEY", None)
     try:
         try:

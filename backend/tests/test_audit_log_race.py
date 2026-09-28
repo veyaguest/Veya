@@ -144,9 +144,13 @@ def test_2_for_update_closes_the_race(pg_engine):
 
     def owner_deletes_their_event():
         db = Session(pg_engine, autoflush=False, expire_on_commit=False)
-        delete_event_cascade(db, db.get(models.Event, ids["event"]))
+        event = db.get(models.Event, ids["event"])
+        # מחכים שהאדמין ינעל קודם. ``delete_event_cascade`` מבצע flush באמצע
+        # (מאז נוהל הדחייה, 2026-08-25), כך שה-DELETE על audit_logs יוצא כבר
+        # בתוכו ולא רק ב-commit — ולכן מודדים את שניהם יחד.
         b_locked.wait(timeout=5)
         start = time.time()
+        delete_event_cascade(db, event)
         db.commit()
         results["wait_seconds"] = time.time() - start
 

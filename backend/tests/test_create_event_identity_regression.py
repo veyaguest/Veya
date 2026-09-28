@@ -26,6 +26,7 @@ from pathlib import Path
 
 import pytest
 
+from app import communication
 from tests.rls_pg_harness import start_ephemeral_postgres
 
 WORKER = Path(__file__).resolve().parent / "_rls_identity_worker.py"
@@ -93,11 +94,12 @@ def test_fixed_mechanism_survives_commit_and_enforces_rls(pg):
     # 1. זהות שורדת commit() + טרנזקציה חדשה.
     assert result["identity_survives_commit"]["ok"] is True, result["identity_survives_commit"]
 
-    # 2. רגרסיית create_event: ה-API מצליח, ורצף 6 ההודעות נוצר בפועל ב-DB.
+    # 2. רגרסיית create_event: ה-API מצליח, ורצף ההודעות המלא נוצר בפועל ב-DB.
     assert result["create_event_api"]["ok"] is True, result["create_event_api"]
     gt = result["create_event_ground_truth"]
     assert gt["event_row_exists"] is True, gt
-    assert gt["event_messages_count"] == 6, gt
+    # רצף ההודעות המלא של אירוע חדש — מקור האמת הוא ``MESSAGE_TYPES``.
+    assert gt["event_messages_count"] == len(communication.MESSAGE_TYPES), gt
 
     # 3. SELECT מחזיר את הנתונים של הבעלים בלבד — משתמש אחר לא רואה.
     assert result["select_owner_sees_own_event"]["ok"] is True, result["select_owner_sees_own_event"]

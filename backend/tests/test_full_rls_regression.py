@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pytest
 
+from app import communication
 from tests.rls_pg_harness import start_ephemeral_postgres
 
 WORKER = Path(__file__).resolve().parent / "_rls_full_regression_worker.py"
@@ -85,12 +86,13 @@ def test_scenario_ok_under_fixed_mechanism(fixed_result, name):
 
 def test_01_create_event_full_message_sequence(fixed_result):
     e = fixed_result["01_create_event"]
-    assert e["event_messages_count"] == 6, e
+    # רצף ההודעות המלא של אירוע חדש — מקור האמת הוא ``MESSAGE_TYPES``.
+    assert e["event_messages_count"] == len(communication.MESSAGE_TYPES), e
 
 
 def test_02_sequence_read_after_commit_and_isolation(fixed_result):
     e = fixed_result["02_communication_sequence"]
-    assert e["rows_returned"] == 6, e
+    assert e["rows_returned"] == len(communication.MESSAGE_TYPES), e
     assert e.get("other_user_denied") is True, e
 
 
@@ -111,8 +113,11 @@ def test_04_and_05_clarification_lifecycle(fixed_result):
 
 
 def test_06_advance_track_reads_after_commit(fixed_result):
+    """מ-2026-09-23 כניסה למסך לא שולחת כלום — השליחה רצה רק מהמשימה המתוזמנת
+    (``rsvp_scheduler``). הנתיב עדיין קורא את סטטוס המסלול תחת זהות המשתמש."""
     e = fixed_result["06_automation_advance_track"]
-    assert e["sent"] == 1, e
+    assert e["ok"] is True, e
+    assert e["sent"] == 0, e
 
 
 def test_07_admin_create_account_audit_survives_commit(fixed_result):

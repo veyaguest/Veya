@@ -187,5 +187,10 @@ def main() -> None:
     print(f"OK — {total_policies} policies aligned, {len(containments)} containments verified.")
 
 
+def test_permissions_match_rls_policies() -> None:
+    """אותה בדיקה, גם דרך pytest — בלי זה היא רצה רק ידנית ("no tests ran")."""
+    main()
+
+
 if __name__ == "__main__":
     main()

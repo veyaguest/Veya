@@ -126,17 +126,17 @@ def test_bar_mitzvah_celebration_now_correct():
 
 
 def test_all_event_types_no_leftover_tokens():
-    """בכל 8 הסוגים: DEFAULT_TEMPLATE דרך הצינור החדש → אין טוקנים לא-מוחלפים."""
-    from app.message_library import _LIBRARY_BY_TYPE
+    """בכל סוגי האירוע: DEFAULT_TEMPLATE דרך הצינור החדש → אין טוקנים לא-מוחלפים."""
+    from app.event_terms import EVENT_TERMS
 
-    for etype in _LIBRARY_BY_TYPE:
+    for etype in EVENT_TERMS:
         out = messaging.render_automation_template(
             messaging.DEFAULT_TEMPLATE, event_type=etype, **COMMON_KWARGS
         )
         assert _no_leftover_tokens(out), (
             f"{etype}: נשארו טוקנים לא-מוחלפים: {out!r}"
         )
-    print(f"✓ כל {len(_LIBRARY_BY_TYPE)} סוגי האירוע: אין טוקנים לא-מוחלפים")
+    print(f"✓ כל {len(EVENT_TERMS)} סוגי האירוע: אין טוקנים לא-מוחלפים")
 
 
 def test_single_host_event_no_orphan_vav():
