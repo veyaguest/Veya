@@ -660,6 +660,43 @@ export async function listGuests(
   return res.json()
 }
 
+// ---- ייצוא לאייפלן ----
+// הקובץ נבנה בשרת (backend/app/iplan_export.py) לפי התבנית של אייפלן.
+
+export interface IPlanExportIssue {
+  guest_id: number
+  full_name: string
+  kind: 'missing_name' | 'bad_phone'
+  /** true — המוזמן לא נכנס לקובץ; false — נכנס, עם שדה ריק. */
+  excluded: boolean
+}
+
+export interface IPlanExportSummary {
+  invitations: number
+  invited_people: number
+  confirmed_people: number
+  confirmed: number
+  pending: number
+  maybe: number
+  declined: number
+  seated: number
+  issues: IPlanExportIssue[]
+  filename: string
+}
+
+export async function fetchIPlanExportSummary(): Promise<IPlanExportSummary> {
+  const res = await apiFetch('/guests/iplan-export/summary')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** הקובץ עצמו כ-Blob — הנתיב מאומת, ולכן fetch ולא קישור רגיל. */
+export async function fetchIPlanExportFile(): Promise<Blob> {
+  const res = await apiFetch('/guests/iplan-export')
+  if (!res.ok) throw await toError(res)
+  return res.blob()
+}
+
 export async function createGuest(data: GuestCreate): Promise<Guest> {
   const res = await apiFetch('/guests', {
     method: 'POST',

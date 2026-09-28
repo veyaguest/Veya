@@ -224,7 +224,7 @@ def data_alerts(
 class IPlanExportIssue(BaseModel):
     guest_id: int
     full_name: str
-    kind: str  # missing_name / zero_seats / bad_phone
+    kind: str  # missing_name / bad_phone
     excluded: bool
 
 
@@ -232,9 +232,13 @@ class IPlanExportSummary(BaseModel):
     """מה ייכנס לקובץ אייפלן — מוצג למשתמש לפני ההורדה."""
 
     invitations: int  # כמה שורות (הזמנות) בקובץ
-    seats: int  # סך המקומות שאושרו בקובץ
-    not_confirmed: int  # טרם השיבו / אולי — לא בקובץ
-    declined: int  # ביטלו — לא בקובץ
+    invited_people: int  # סך "מס' אורחים שהוזמנו"
+    confirmed_people: int  # סך "אישרו שיגיעו" (effective_seats)
+    confirmed: int  # הזמנות שאישרו
+    pending: int  # עוד לא ענו
+    maybe: int  # מתלבטים
+    declined: int  # לא מגיעים
+    seated: int  # אישרו ויש להם שולחן
     issues: list[IPlanExportIssue]
     filename: str
 
@@ -251,13 +255,17 @@ def iplan_export_summary(
     db: Session = Depends(get_db),
     event: models.Event = Depends(_view),
 ):
-    """סיכום ייצוא לאייפלן: כמה הזמנות ומקומות ייכנסו, ומה חסר בנתונים."""
+    """סיכום ייצוא לאייפלן: כמה הזמנות ואנשים ייכנסו, ומה חסר בנתונים."""
     plan = _iplan_plan(db, event)
     return IPlanExportSummary(
         invitations=len(plan.rows),
-        seats=plan.total_seats,
-        not_confirmed=plan.not_confirmed,
+        invited_people=plan.invited_people,
+        confirmed_people=plan.confirmed_people,
+        confirmed=plan.confirmed,
+        pending=plan.pending,
+        maybe=plan.maybe,
         declined=plan.declined,
+        seated=plan.seated,
         issues=[
             IPlanExportIssue(
                 guest_id=i.guest_id, full_name=i.full_name,
@@ -276,21 +284,21 @@ def iplan_export_file(
     event: models.Event = Depends(_view),
     user: models.User = Depends(get_current_owner),
 ):
-    """קובץ ``.xls`` בפורמט התבנית של אייפלן — מהנתונים העדכניים ברגע ההורדה.
+    """קובץ ``.xls`` במבנה של אייפלן — מהנתונים העדכניים ברגע ההורדה.
 
-    רק מי שאישר הגעה, עם ``effective_seats`` (ראו ``app/iplan_export.py``).
-    אם אין אף מוזמן מאושר — 422 במקום קובץ ריק.
+    כל המוזמנים, עם מצב אישור ההגעה והשולחן (ראו ``app/iplan_export.py``).
+    אם אין אף מוזמן — 422 במקום קובץ ריק.
     """
     plan = _iplan_plan(db, event)
     if not plan.rows:
-        raise HTTPException(status_code=422, detail="עדיין אין מוזמנים שאישרו הגעה")
+        raise HTTPException(status_code=422, detail="עדיין אין מוזמנים ברשימה")
     body = iplan_export.build_workbook(plan)
 
     # רשימת מוזמנים עם טלפונים יוצאת מהמערכת — נרשם ביומן כמו ייצוא מידע אישי.
     audit.record(
         db, "guest_export_iplan",
         event_id=event.id, user_id=user.id,
-        detail=f"ייצוא לאייפלן — {len(plan.rows)} הזמנות, {plan.total_seats} מקומות",
+        detail=f"ייצוא לאייפלן — {len(plan.rows)} הזמנות, {plan.confirmed_people} אישרו",
         ip=request.client.host if request.client else None,
     )
     db.commit()

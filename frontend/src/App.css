@@ -2175,6 +2175,60 @@ td.notes.seating {
 .confirm-dialog {
   max-width: 420px;
 }
+/* ייצוא לאייפלן — סיכום קצר לפני ההורדה (IPlanExportDialog). */
+.iplan-dialog {
+  max-width: 480px;
+}
+.iplan-status {
+  margin: 16px 0 0;
+  color: var(--body);
+  line-height: 1.6;
+}
+.iplan-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.iplan-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface-hi);
+  line-height: 1.5;
+}
+.iplan-summary strong {
+  color: var(--charcoal);
+  font-size: 16px;
+}
+.iplan-breakdown {
+  margin: 4px 0 0;
+  padding-inline-start: 18px;
+  color: var(--body);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.iplan-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.iplan-issues h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: var(--charcoal);
+}
+.iplan-issues p {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--body);
+  overflow-wrap: anywhere;
+}
 .confirm-dialog-message {
   color: var(--body);
   line-height: 1.6;

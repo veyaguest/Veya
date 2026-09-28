@@ -21,6 +21,7 @@ import { GroupNotesPanel } from './GroupNotesPanel'
 import { GroupSuggestions } from './GroupSuggestions'
 import { ImportDialog } from './ImportDialog'
 import { ImportMenu } from './ImportMenu'
+import { IPlanExportDialog } from './IPlanExportDialog'
 import { ActionsMenu } from './ActionsMenu'
 import { OnboardingDialog } from './OnboardingDialog'
 import { PasteImportDialog } from './PasteImportDialog'
@@ -88,6 +89,7 @@ export function GuestsPage({
   const [noteSplitHidden, setNoteSplitHidden] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
   const [showCreateGroup, setShowCreateGroup] = useState(false)
+  const [showIPlan, setShowIPlan] = useState(false)
   const [editGuest, setEditGuest] = useState<Guest | null>(null)
   // מוזמנים שמספר הטלפון שלהם נמצא שגוי בשיחה — דורש תיקון של בעל/ת האירוע.
   const [phoneAlerts, setPhoneAlerts] = useState<GuestDataAlert[]>([])
@@ -337,6 +339,9 @@ export function GuestsPage({
             onPaste={() => setShowPaste(true)}
             onContacts={contactsSupported ? () => setShowContacts(true) : undefined}
           />
+          <button type="button" className="btn-ghost" onClick={() => setShowIPlan(true)}>
+            {t.iplanButton}
+          </button>
           {/* שלושת כלי הקבוצות בתפריט אחד — כדי שבסרגל יישארו החיפוש,
               הסינון, הייבוא וההוספה, ולא שמונה כפתורים שנשברים לשורות. */}
           <ActionsMenu
@@ -493,6 +498,17 @@ export function GuestsPage({
       )}
 
       {showNotes && <GroupNotesPanel onClose={() => setShowNotes(false)} />}
+
+      {showIPlan && (
+        <IPlanExportDialog
+          onClose={() => setShowIPlan(false)}
+          onDownloaded={() => {
+            setShowIPlan(false)
+            setToast(t.iplanDownloadedToast)
+            setTimeout(() => setToast(''), 4000)
+          }}
+        />
+      )}
 
       {showCreateGroup && (
         <CreateGroupDialog

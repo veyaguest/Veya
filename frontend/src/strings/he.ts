@@ -1049,6 +1049,32 @@ export const strings = {
     groupsMenuButton: 'קבוצות',
     uploadButton: 'ייבוא מקובץ Excel / CSV',
     contactsButton: 'ייבוא מאנשי קשר',
+    // ייצוא לאייפלן — קובץ לאולמות שעושים את ההושבה באייפלן (IPlanExportDialog).
+    iplanButton: 'ייצוא לאייפלן',
+    iplanTitle: 'ייצוא לאייפלן',
+    iplanIntro:
+      'כל רשימת המוזמנים, עם אישורי ההגעה ומספרי השולחנות, בקובץ שאייפלן מכיר — מוכן להעלאה לצורך הושבה באולם.',
+    iplanLoading: 'בודקים את הרשימה…',
+    iplanLoadError: 'לא הצלחנו לבדוק את הרשימה כרגע. נסו שוב',
+    iplanSummary: (invitations: number, people: number) =>
+      `ייכנסו לקובץ ${invitations === 1 ? 'מוזמן אחד' : `${invitations} מוזמנים`} · ${people === 1 ? 'אדם אחד' : `${people} אנשים`}`,
+    iplanConfirmed: (n: number, people: number) =>
+      `אישרו הגעה: ${n} (${people === 1 ? 'אדם אחד' : `${people} אנשים`})`,
+    iplanSeated: (n: number) => `כבר משובצים לשולחן: ${n}`,
+    iplanPending: (n: number) => `עוד לא ענו: ${n}`,
+    iplanMaybe: (n: number) => `מתלבטים: ${n}`,
+    iplanDeclined: (n: number) => `לא מגיעים: ${n}`,
+    iplanRefreshHint: 'הקובץ מראה את המצב של עכשיו. אחרי עוד אישורים או שינויי הושבה אפשר לייצא שוב.',
+    iplanIssuesTitle: 'כדאי לבדוק לפני ההורדה',
+    iplanBadPhone: 'בלי מספר טלפון תקין — ייכנסו לקובץ בלי טלפון:',
+    iplanMissingName: (n: number) =>
+      n === 1 ? 'מוזמן אחד בלי שם — לא ייכנס לקובץ.' : `${n} מוזמנים בלי שם — לא ייכנסו לקובץ.`,
+    iplanMoreNames: (n: number) => `ועוד ${n}`,
+    iplanEmpty: 'עדיין אין מוזמנים ברשימה. אחרי שתוסיפו אותם, אפשר יהיה לייצא.',
+    iplanDownload: 'הורדת הקובץ',
+    iplanDownloading: 'מכינים את הקובץ…',
+    iplanDownloadError: 'לא הצלחנו להכין את הקובץ. נסו שוב',
+    iplanDownloadedToast: 'הקובץ ירד. אפשר להעלות אותו לאייפלן.',
     closeForm: 'סגירת הטופס',
     addGuestButton: 'הוספת מוזמן',
     dupSuffix: (n: number) => ` (${n} כבר היו אצלכם)`,
