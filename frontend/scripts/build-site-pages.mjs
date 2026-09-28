@@ -140,20 +140,9 @@ function guideHtml(g) {
     .replace(/<table>/g, '<div class="table-scroll"><table>')
     .replace(/<\/table>/g, '</table></div>')
 
-  // `related` נכתב ב-frontmatter כשורות "url|כותרת" — פורמט אחד, בלי
-  // תלות בספריית YAML.
-  const rel = (g.related || []).map((line) => {
-    const [url, title] = String(line).split('|')
-    return { url: url.trim(), title: (title || url).trim() }
-  })
-  const related = rel.length
-    ? `<div class="guide-cluster">
-          <h2 style="border:0;padding:0;margin-top:0">להמשך</h2>
-          <ul class="guide-list">
-${rel.map((r) => `            <li><a href="${r.url}"><h3>${esc(r.title)}</h3></a></li>`).join('\n')}
-          </ul>
-        </div>`
-    : ''
+  // אין בלוק "להמשך" קבוע בסוף המדריך (2026-09-28): רשימת קישורים זהה בכל
+  // מדריך היא תבנית SEO, לא תוכן. הקישורים הפנימיים יושבים בתוך הטקסט, במקום
+  // שבו הם עונים על השאלה הבאה של הקורא.
 
   return page({
     path: `/guides/${g.slug}/`,
@@ -212,7 +201,6 @@ ${bodyHtml.split('\n').map((l) => '            ' + l).join('\n')}
               <p>${esc(g.cta_text)}</p>
               <a href="${g.cta_url}" class="btn btn-primary">${esc(g.cta_label)} <span class="arw" aria-hidden="true">←</span></a>
             </div>
-${related}
           </article>
         </div>
       </section>
