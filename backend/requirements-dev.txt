@@ -1,0 +1,4 @@
+# תלויות לבדיקות בלבד (לא נדרשות בשרת).
+-r requirements.txt
+# קריאת קבצי .xls בבדיקת הייצוא לאייפלן (tests/test_iplan_export.py).
+xlrd==2.0.1
