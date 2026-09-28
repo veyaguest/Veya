@@ -83,6 +83,9 @@ def test_file_matches_iplan_structure() -> None:
         assert r.headers["content-type"] == "application/vnd.ms-excel"
         disposition = r.headers["content-disposition"]
         assert "attachment" in disposition and ".xls" in disposition
+        # שם הקובץ במבנה של iPlan: "<בעלי האירוע> - הזמנות.xls".
+        assert _summary(api)["filename"] == "דני ורותי - הזמנות.xls"
+        assert "%D7%94%D7%96%D7%9E%D7%A0%D7%95%D7%AA.xls" in disposition
 
         # קובץ Excel 97–2003 אמיתי (חתימת OLE2), לא xlsx/csv.
         assert r.content[:8] == bytes.fromhex("d0cf11e0a1b11ae1")

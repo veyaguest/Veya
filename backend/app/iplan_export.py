@@ -280,8 +280,8 @@ _UNSAFE_FILENAME = re.compile(r'[\\/:*?"<>|\x00-\x1f]+')
 
 
 def export_filename(event: models.Event) -> str:
-    """``VEYA_iPlan_<שם האירוע>.xls`` — השם שמוצג למשתמש בהורדה."""
+    """``<בעלי האירוע> - הזמנות.xls`` — אותו מבנה שם כמו בקובץ ש-iPlan מוציא
+    ("נועה מנצור ואביב מנחם - הזמנות.xls"; החלטת בעלים 2026-09-28)."""
     name = hosts_names(event.event_type, event.groom_name, event.bride_name)
-    name = _UNSAFE_FILENAME.sub(" ", name).strip() or "event"
-    name = re.sub(r"\s+", "_", name)[:60]
-    return f"VEYA_iPlan_{name}.xls"
+    name = re.sub(r"\s+", " ", _UNSAFE_FILENAME.sub(" ", name)).strip()[:60]
+    return f"{name} - הזמנות.xls" if name else "הזמנות.xls"
