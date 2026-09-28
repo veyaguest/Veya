@@ -627,6 +627,13 @@ def compute_schedule(event: models.Event, now: Optional[datetime] = None) -> Opt
     commitment_date = _prev_active_day(raw_commitment)
     if reference < event_date:
         commitment_date = max(commitment_date, reference)
+        # יום הייחוס עצמו בשישי/שבת, והסגירה הטבעית כבר עברה: בלי זה כל החלון
+        # הוא שישי–שבת, אין בו אף יום פעיל, והמסלול יוצא עם 0 שלבים (2026-09-28).
+        # הסגירה עוברת לראשון שאחריו — כל עוד הוא עדיין לפני האירוע.
+        if _is_weekend(commitment_date):
+            next_active = _next_active_day(commitment_date)
+            if next_active < event_date:
+                commitment_date = next_active
 
     # ---- החלון: עד max_window ימים לפני הסגירה, לא לפני יום הייחוס ----
     window_start = max(commitment_date - timedelta(days=max_window), reference)
