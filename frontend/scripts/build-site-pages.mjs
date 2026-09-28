@@ -898,6 +898,12 @@ function featureFinance() {
               <p>מספרי שולחן, הסעות. וטיפים שנגזרים משאר ההוצאות ומתעדכנים איתן.</p>
             </article>
           </div>
+          <p class="fineprint">
+            מספר המגיעים שמזיז את השורות האלה הוא אותו מספר שמתעדכן
+            ב<a href="/features/rsvp/">אישורי ההגעה</a> — לא עותק שלו. ואם בחוזה עם
+            האולם יש התחייבות למספר מנות, התשלום נקבע גם לפיה:
+            <a href="/calculators/venue-commitment/">מה משלמים כשמגיעים פחות או יותר</a>.
+          </p>
         </div>
       </section>
 
@@ -930,6 +936,14 @@ function featureFinance() {
               זו חלוקה תיאורית לדוח, לא שיפוט של אף אחד.
             </p>
           </div>
+          <figure class="g-shot" style="max-width:880px;margin-inline:auto">
+            ${shot('/product/journey-finance.jpg', 'מסך מאזן האירוע ב-VEYA: עלות משוערת, כמה שולם, כמה נשאר לשלם, סך המתנות והשורה התחתונה, ומתחת מבנה העלות ופילוח המתנות לפי הגעה', 1600, 867)}
+            <figcaption>
+              מסך המאזן באירוע לדוגמה. איך לקרוא את השורה התחתונה, ולמה הציפייה
+              ממנה כמעט תמיד גבוהה מדי:
+              <a href="/guides/haim-haerua-mechase-atzmo/">האם האירוע מכסה את עצמו</a>.
+            </figcaption>
+          </figure>
         </div>
       </section>
 

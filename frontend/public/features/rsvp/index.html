@@ -38,7 +38,7 @@
         "@context": "https://schema.org",
         "@graph": [
           {
-            "dateModified": "2026-09-26",
+            "dateModified": "2026-09-28",
             "@type": "WebPage",
             "name": "אישורי הגעה",
             "inLanguage": "he-IL",
@@ -222,7 +222,8 @@
           </div>
           <p class="fineprint">
             מוזמן שאישר מביא את מספר האנשים שהוא ציין. אם לא ציין — נספרת הכמות
-            שהוזמנה עבורו מלכתחילה.
+            שהוזמנה עבורו מלכתחילה, זו שרשומה לו
+            <a href="/features/guests/">ברשימת המוזמנים</a>.
           </p>
         </div>
       </section>
@@ -237,11 +238,26 @@
               בקשת אישור, שלוש תזכורות ושלושה סבבי מעקב, בלי שישי ושבת.
             </p>
           </div>
+          <div class="sc-shot mk-browser">
+            <div class="mk-browser-bar" aria-hidden="true">
+              <span class="mk-browser-lights"><i></i><i></i><i></i></span>
+              <span class="mk-browser-nav"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5" /></svg></span>
+              <span class="mk-browser-url"><svg viewBox="0 0 10 12" fill="currentColor"><path d="M2 5V3.6a3 3 0 0 1 6 0V5h.4c.6 0 1.1.5 1.1 1.1v4.8c0 .6-.5 1.1-1.1 1.1H1.6C1 12 .5 11.5.5 10.9V6.1C.5 5.5 1 5 1.6 5H2Zm1.3 0h3.4V3.6a1.7 1.7 0 0 0-3.4 0V5Z" /></svg><span>veyaguest.co.il/app</span></span>
+              <span class="mk-browser-tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V1.8M5.2 4.4 8 1.6l2.8 2.8M5.5 6.5H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-1.5" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 2.5v11M2.5 8h11" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2" y="4.5" width="9.5" height="9.5" rx="1.6" /><path d="M4.5 2h8a1.5 1.5 0 0 1 1.5 1.5v8" /></svg></span>
+            </div>
+            <div class="mk-browser-view">
+              <img src="/product/journey-messages.jpg" alt="מסך ההודעות ב-VEYA: כל שלב במסלול הוא הודעה נפרדת, עם תצוגה מקדימה של מה שהמוזמן יראה" width="1600" height="1000" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+            </div>
+          </div>
+          <p class="fineprint">
+            כל שלב במסלול הוא הודעה נפרדת שאפשר לפתוח, לראות בדיוק איך היא נראית
+            אצל המוזמן ולערוך את הנוסח — לפני שהתאריך שלה מגיע.
+          </p>
           <div class="supporting-grid">
             <article class="supporting-item">
               <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div>
               <h3>עוגן אחד</h3>
-              <p>מועד סגירת הרשימה נקבע בפתיחת האירוע, וכל השלבים נפרסים אחורה ממנו.</p>
+              <p>מועד סגירת הרשימה הוא תאריך שאתם קובעים, וכל השלבים נפרסים אחורה ממנו.</p>
             </article>
             <article class="supporting-item">
               <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 3z"/><path d="m9 10 2 2 4-4"/></svg></div>
@@ -255,10 +271,15 @@
             </article>
             <article class="supporting-item">
               <div class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 5 6v5.5c0 4.2 2.9 7.7 7 8.9 4.1-1.2 7-4.7 7-8.9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
-              <h3>שום דבר לא יוצא לבד</h3>
-              <p>מה שאמור להישלח מופיע כתור לאישור, ואתם מאשרים לפני שהוא יוצא.</p>
+              <h3>המסלול מתקדם לבד</h3>
+              <p>לא צריך לפתוח מסך כדי שהשלב הבא יקרה. אותו שלב לא חוזר פעמיים לאותו מוזמן, ושלב שהזמן שלו עבר לא מתבצע בדיעבד.</p>
             </article>
           </div>
+          <p class="fineprint">
+            את נוסח ההודעות אפשר לערוך מראש. אם מועד סגירת הרשימה זז, הלוח נבנה
+            מחדש מהתאריך החדש — ומה שכבר יצא לא יוצא שוב. בין התזכורות יושבים
+            סבבי המעקב הטלפוני: <a href="/features/calls/">מה קורה עם מי שלא ענה</a>.
+          </p>
           <div class="section-cta">
             <a href="/calculators/rsvp-timeline/" class="btn btn-ghost">לראות את לוח הזמנים</a>
             <span class="cta-hint">מזינים תאריך אירוע ומקבלים את התאריכים בפועל. בלי הרשמה.</span>
