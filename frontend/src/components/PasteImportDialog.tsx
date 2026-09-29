@@ -5,6 +5,7 @@ import type { GroupType, GuestCreate, Side } from '../types'
 import { GROUP_LABELS } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
+import { useHelpScope } from '../help/useHelpScope'
 import { type EditRow, normalizePhone, rowIssues } from '../lib/importRows'
 
 const t = strings.guests
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function PasteImportDialog({ onClose, onImported }: Props) {
+  useHelpScope('guests.import.paste')
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
   const [text, setText] = useState('')
@@ -140,6 +142,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
             <p className="paste-hint">{t.pasteHint}</p>
             <textarea
               className="paste-area"
+              data-help="paste.textarea"
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={t.pasteAreaPlaceholder}
@@ -150,6 +153,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
             <div className="add-actions">
               <button
                 className="btn-primary"
+                data-help="paste.parse"
                 onClick={doParse}
                 disabled={parsing || text.trim().length === 0}
               >
@@ -321,6 +325,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
             <div className="add-actions">
               <button
                 className="btn-primary"
+                data-help="paste.import"
                 onClick={doImport}
                 disabled={committing || includedReady.length === 0}
               >

@@ -15,6 +15,7 @@ import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { ConfirmDialog } from './ConfirmDialog'
 import './AccountCenter.css'
+import { useHelpScope } from '../help/useHelpScope'
 
 /**
  * "החשבון שלי" — מסך החשבון של VEYA.
@@ -37,6 +38,7 @@ export function AccountCenter({
 }) {
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
+  useHelpScope('account')
   const [overview, setOverview] = useState<AccountOverview | null>(null)
   const [loading, setLoading] = useState(true)
 

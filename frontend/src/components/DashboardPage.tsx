@@ -36,6 +36,7 @@ import { strings } from '../strings/he'
 import { MAX_COMMIT_DAYS, maxCommitDays } from '../lib/commitDays'
 import './CallFeed.css'
 import './PostponeDialog.css'
+import { useHelpScope } from '../help/useHelpScope'
 
 interface Props {
   // ניווט למסך אחר (מוזמנים / מפת אולם) — עבור הבאנר וכרטיס ההושבה.
@@ -448,6 +449,8 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [event, setEvent] = useState<EventDetails | null>(null)
   const [editing, setEditing] = useState(false)
+  useHelpScope('dashboard')
+  useHelpScope(editing ? 'dashboard.editEvent' : null)
   const [form, setForm] = useState({
     groom_name: '',
     bride_name: '',
@@ -701,7 +704,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
             </div>
 
             {/* ---- מועד סגירת הרשימה — בחירה חד-פעמית ובלתי-הפיכה ---- */}
-            <div className="commit-field">
+            <div className="commit-field" data-help="dashboard.commitField">
               <span className="field-label">{t.commitLabel}</span>
               <p className="commit-explain">{t.commitExplain}</p>
               {commitLocked ? (
@@ -776,7 +779,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
             </div>
 
             <div className="event-edit-actions">
-              <button className="btn-primary" onClick={requestSave}>
+              <button className="btn-primary" data-help="dashboard.saveDetails" onClick={requestSave}>
                 {strings.common.save}
               </button>
               <button className="btn-text" onClick={() => setEditing(false)}>
@@ -860,6 +863,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
                 <button
                   type="button"
                   className="btn-ghost dash-edit-details"
+                  data-help="dashboard.editDetails"
                   onClick={() => setEditing(true)}
                 >
                   {t.editDetailsButton}

@@ -28,6 +28,8 @@ import { ImportDialog } from './ImportDialog'
 import { MessageLibrary } from './MessageLibrary'
 import { PasteImportDialog } from './PasteImportDialog'
 import { VeyaLoader } from './VeyaLoader'
+import { useHelpScope } from '../help/useHelpScope'
+import type { ScopeId } from '../help/scopes'
 
 type Tab = 'communication' | 'library'
 
@@ -120,6 +122,7 @@ function AdminMessagesView() {
 type SendPhase = 'idle' | 'confirm' | 'sending' | 'summary'
 
 function CoupleMessagesView({ onNavigate }: { onNavigate?: GuestsNav }) {
+  useHelpScope('messages')
   const [track, setTrack] = useState<RsvpTrackStatus | null>(null)
   // נטען רק כדי לדעת אם זו הזמנה ראשונה או הזמנה חדשה אחרי דחייה.
   const [event, setEvent] = useState<EventDetails | null>(null)
@@ -281,7 +284,7 @@ function CoupleMessagesView({ onNavigate }: { onNavigate?: GuestsNav }) {
             <CommunicationTab invitedCount={preview?.already_sent} />
           </div>
           <div className="track-resend">
-            <button className="btn-ghost" onClick={openSendDialog}>
+            <button className="btn-ghost" data-help="messages.sendMore" onClick={openSendDialog}>
               שליחת הזמנות
             </button>
             <span className="clar-sub">
@@ -348,6 +351,7 @@ function SendInvitationsDialog({
   onEditMessage: () => void
   onClose: () => void
 }) {
+  useHelpScope('messages.sendDialog')
   return (
     <div className="send-dialog-overlay" role="dialog" aria-modal="true">
       <div className="send-dialog">
@@ -665,6 +669,7 @@ function SendConfirmStep({
       <div className="send-dialog-actions">
         <button
           className="btn-primary"
+          data-help="messages.sendConfirm"
           disabled={selectedCount === 0}
           onClick={() => onConfirm({ guestIds: [...selected] })}
         >
@@ -686,6 +691,13 @@ function wizardSteps(guestsLabel: string) {
     { n: 2, label: guestsLabel },
     { n: 3, label: 'תצוגה ושליחה' },
   ]
+}
+
+/** השלב באשף → המקום שהעזרה מכירה (help/scopes.ts). */
+const WIZARD_SCOPES: Record<number, ScopeId> = {
+  1: 'messages.wizard.design',
+  2: 'messages.wizard.recipients',
+  3: 'messages.wizard.review',
 }
 
 /**
@@ -711,6 +723,7 @@ function FirstInviteWizard({
   onGuestsChanged?: () => void
 }) {
   const [step, setStep] = useState(1)
+  useHelpScope(WIZARD_SCOPES[step] ?? null)
 
   // הוספת מוזמנים ישירות מתוך האשף — שימוש חוזר בדיאלוגים הקיימים.
   const [importFile, setImportFile] = useState<File | null>(null)
@@ -778,7 +791,7 @@ function FirstInviteWizard({
         </div>
         <div className="wiz-nav">
           <span />
-          <button className="btn-primary" onClick={() => setStep(2)}>
+          <button className="btn-primary" data-help="messages.wizardToGuests" onClick={() => setStep(2)}>
             המשך למוזמנים ←
           </button>
         </div>
@@ -872,6 +885,7 @@ function FirstInviteWizard({
           </button>
           <button
             className="btn-primary"
+            data-help="messages.wizardToReview"
             disabled={sendable === 0}
             onClick={() => setStep(3)}
           >
@@ -919,6 +933,7 @@ function FirstInviteWizard({
           </button>
           <button
             className="btn-primary track-activate-btn"
+            data-help="messages.wizardSend"
             disabled={sendable === 0}
             onClick={onSend}
           >
@@ -989,7 +1004,7 @@ function NewGuestsBanner({ count, onSend }: { count: number; onSend: () => void 
           {count === 1 ? 'מוזמן חדש שעדיין בלי הזמנה' : 'מוזמנים חדשים שעדיין בלי הזמנה'}
         </span>
       </div>
-      <button className="btn-primary new-guests-banner-btn" onClick={onSend}>
+      <button className="btn-primary new-guests-banner-btn" data-help="messages.sendNewGuests" onClick={onSend}>
         שליחת הזמנות למוזמנים החדשים
       </button>
     </div>

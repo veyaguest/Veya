@@ -38,6 +38,7 @@ export function ImportMenu({ onExcel, onPaste, onContacts }: Props) {
       <button
         type="button"
         className="btn-ghost"
+        data-help="guests.importMenu"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -50,6 +51,7 @@ export function ImportMenu({ onExcel, onPaste, onContacts }: Props) {
             type="button"
             role="menuitem"
             className="import-menu-item"
+            data-help="guests.importExcel"
             onClick={() => {
               setOpen(false)
               onExcel()
@@ -61,6 +63,7 @@ export function ImportMenu({ onExcel, onPaste, onContacts }: Props) {
             type="button"
             role="menuitem"
             className="import-menu-item"
+            data-help="guests.importPaste"
             onClick={() => {
               setOpen(false)
               onPaste()

@@ -26,6 +26,7 @@ import { ActionsMenu } from './ActionsMenu'
 import { OnboardingDialog } from './OnboardingDialog'
 import { PasteImportDialog } from './PasteImportDialog'
 import './GuestDataAlert.css'
+import { useHelpScope } from '../help/useHelpScope'
 
 // נבדק פעם אחת בטעינת המודול — תמיכת הדפדפן בבחירת אנשי קשר לא משתנה תוך כדי שימוש.
 const contactsSupported = isContactPickerSupported()
@@ -65,6 +66,7 @@ export function GuestsPage({
   guestsPopupSeen = false,
   onGuestsPopupSeen,
 }: GuestsPageProps = {}) {
+  useHelpScope('guests')
   const [guests, setGuests] = useState<Guest[]>([])
   const [total, setTotal] = useState(0)
   const [totalPeople, setTotalPeople] = useState(0)
@@ -356,7 +358,11 @@ export function GuestsPage({
               },
             ]}
           />
-          <button className="btn-primary" onClick={() => setShowForm((s) => !s)}>
+          <button
+            className="btn-primary"
+            data-help="guests.addButton"
+            onClick={() => setShowForm((s) => !s)}
+          >
             {showForm ? t.closeForm : t.addGuestButton}
           </button>
         </div>
@@ -625,6 +631,7 @@ export function GuestsPage({
               // נפרדת תפסה כרבע מכל כרטיס. המחיקה עברה לתוך חלון העריכה.
               <tr
                 key={g.id}
+                data-help="guests.row"
                 onClick={() => {
                   if (window.matchMedia(CARD_LAYOUT_QUERY).matches) setEditGuest(g)
                 }}
@@ -661,7 +668,11 @@ export function GuestsPage({
                 <td className="notes seating" data-label={t.colSeatingNotes}>{g.seating_notes ?? ''}</td>
                 <td className="notes" data-label={t.colNotes}>{g.notes_raw ?? ''}</td>
                 <td className="row-actions">
-                  <button className="btn-edit" onClick={() => setEditGuest(g)}>
+                  <button
+                    className="btn-edit"
+                    data-help="guests.editButton"
+                    onClick={() => setEditGuest(g)}
+                  >
                     {t.editRow}
                   </button>
                   <button className="btn-delete" onClick={() => onDelete(g)}>

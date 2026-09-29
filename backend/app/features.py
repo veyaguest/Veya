@@ -49,6 +49,11 @@ BUILTIN: dict[str, FeatureDef] = {f.key: f for f in [
                rule_scopes=("event", "user")),
     FeatureDef("finance", "כספי האירוע", "תקציב, הוצאות וספירת מעטפות.", False, True,
                reason="אין עדיין מתג בקוד — פעיל לכל האירועים."),
+    # עזרה בתוך VEYA (HELP_CENTER_PLAN.md). כבוי כברירת מחדל: נפתח בהדרגה —
+    # אירוע בדיקה → משתמשים נבחרים → כולם — ונסגר מיד אם משהו לא תקין.
+    FeatureDef("help_center", "עזרה בתוך VEYA",
+               "כפתור עזרה שמכיר את המסך, הדרכות צעד-אחר-צעד ובדיקת תקלות.", True, False,
+               rule_scopes=("event", "user")),
 ]}
 
 

@@ -15,6 +15,7 @@ frontend/dist/
 # תיקיות ביניים של בדיקות ה-node (נמחקות בסוף הריצה, אבל לא כשהיא נכשלת)
 frontend/.tmp-test/
 frontend/.tmp-test-ws/
+frontend/.tmp-test-help/
 frontend/.env
 
 # OS / editor

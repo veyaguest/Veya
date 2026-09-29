@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "rootDir": "src",
+    "outDir": ".tmp-test-help"
+  },
+  "include": [
+    "src/help/**/*.ts",
+    "src/strings/he.ts",
+    "src/strings/eventTypes.ts",
+    "src/authStore.ts",
+    "src/types.ts"
+  ],
+  "exclude": ["src/help/useHelpScope.ts"]
+}

@@ -24,6 +24,7 @@ import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { GuestTimelineModal } from './GuestTimelineModal'
 import { PhaseCard, RsvpTimeline } from './RsvpTimeline'
+import { useHelpScope } from '../help/useHelpScope'
 import type { GuestFilter } from '../api'
 import type { RsvpTimelineView } from '../types'
 
@@ -210,6 +211,7 @@ function CoupleRsvpView({
 }: {
   onNavigate?: RsvpNavigate
 }) {
+  useHelpScope('rsvp')
   const [track, setTrack] = useState<RsvpTrackStatus | null>(null)
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [view, setView] = useState<RsvpTimelineView | null>(null)

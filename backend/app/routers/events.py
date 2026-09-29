@@ -13,7 +13,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app import auth as auth_module
-from app import communication, gift_eligibility, models, partners, schemas
+from app import communication, features, gift_eligibility, models, partners, schemas
 from app.account import delete_event_cascade
 from app.auth import get_current_owner
 from app.database import IS_POSTGRES, get_db
@@ -21,13 +21,30 @@ from app.database import IS_POSTGRES, get_db
 router = APIRouter(prefix="/events", tags=["events"])
 
 
-def _summary(event: models.Event) -> schemas.EventSummary:
-    """סיכום אירוע + זכאותו לשירות המתנות.
+def _my_role(db: Session, event: models.Event, user: models.User) -> str:
+    """התפקיד של המשתמש באירוע — אותו סדר בדיקה כמו ``deps.EventAccess``:
+    בעלים → בן/בת זוג → כל חבר-אירוע אחר (מפיק/אולם)."""
+    if event.owner_id == user.id:
+        return "owner"
+    if partners.partner_member(db, event.id, user.id) is not None:
+        return "partner"
+    return "member"
+
+
+def _summary(
+    event: models.Event, db: Session, user: models.User
+) -> schemas.EventSummary:
+    """סיכום אירוע + זכאותו לשירות המתנות + התפקיד של המשתמש בו.
 
     הזכאות נגזרת כאן ולא נשמרת בטבלה: מקור האמת הוא
     ``gift_eligibility.is_eligible``, וכל שכפול שלו לעמודה היה יוצר מצב
     שבו התשובה שהפרונט מקבל והתשובה שהשרת אוכף יכולות להיפרד.
+
+    ``help_enabled`` — "עזרה" מוצגת רק למי שמנהל את האירוע (בעלים / בן-בת
+    זוג) וכשהפיצ'ר ``help_center`` פתוח לאירוע. מפיק/אולם לא מקבלים עזרה
+    בשלב הזה (HELP_CENTER_PLAN.md, החלטת המייסד 2026-09-29).
     """
+    role = _my_role(db, event, user)
     return schemas.EventSummary(
         id=event.id,
         event_type=event.event_type,
@@ -35,6 +52,8 @@ def _summary(event: models.Event) -> schemas.EventSummary:
         bride_name=event.bride_name,
         venue_name=event.venue_name,
         gift_service_eligible=gift_eligibility.is_eligible(event),
+        my_role=role,
+        help_enabled=role in ("owner", "partner") and features.enabled("help_center", event),
     )
 
 
@@ -65,7 +84,7 @@ def list_events(
         .where(models.Event.id.in_(event_ids))
         .order_by(models.Event.id.desc())
     ).all()
-    return [_summary(e) for e in rows]
+    return [_summary(e, db, user) for e in rows]
 
 
 @router.post("", response_model=schemas.EventSummary, status_code=201)
@@ -139,7 +158,7 @@ def create_event(
     # מקצה אוטומטית את רצף "תקשורת עם אורחים" (6 ההודעות) לפי סוג האירוע.
     communication.provision_event_messages(db, event)
     db.commit()
-    return _summary(event)
+    return _summary(event, db, user)
 
 
 @router.delete("/{event_id}", status_code=204)

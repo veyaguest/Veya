@@ -4,6 +4,7 @@ import type { GiftRow, GiftsSummary, PayoutAccount } from '../types'
 import { strings } from '../strings/he'
 import { PayoutDetails } from './PayoutDetails'
 import './GiftsPage.css'
+import { useHelpScope } from '../help/useHelpScope'
 
 const t = strings.gifts
 
@@ -196,6 +197,7 @@ function TotalReceived({ data }: { data: GiftsSummary }) {
 }
 
 export function GiftsPage() {
+  useHelpScope('gifts')
   const [data, setData] = useState<GiftsSummary | null>(null)
   const [account, setAccount] = useState<PayoutAccount | null>(null)
   // האם למשתמש הזה יש בכלל גישה לפרטי קבלת המתנות. חבר-אירוע (מפיק/אולם)

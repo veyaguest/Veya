@@ -5,6 +5,7 @@ import type { GroupType, GuestCreate, Side } from '../types'
 import { GROUP_LABELS } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
+import { useHelpScope } from '../help/useHelpScope'
 import { type EditRow, normalizePhone, rowIssues } from '../lib/importRows'
 
 const t = strings.guests
@@ -37,6 +38,7 @@ export function isContactPickerSupported(): boolean {
 type Stage = 'intro' | 'picking' | 'reviewing'
 
 export function ContactsImportDialog({ onClose, onImported }: Props) {
+  useHelpScope('guests.import.contacts')
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
   const [stage, setStage] = useState<Stage>('intro')

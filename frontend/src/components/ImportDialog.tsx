@@ -5,6 +5,7 @@ import type { GuestCreate, ImportPreview } from '../types'
 import { groupLabel } from '../types'
 import { sideLabel } from '../strings/eventTypes'
 import { strings } from '../strings/he'
+import { useHelpScope } from '../help/useHelpScope'
 
 const t = strings.guests
 const tc = strings.common
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function ImportDialog({ file, onClose, onImported }: Props) {
+  useHelpScope('guests.import.excel')
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
   const [preview, setPreview] = useState<ImportPreview | null>(null)
@@ -138,6 +140,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
             <div className="add-actions">
               <button
                 className="btn-primary"
+                data-help="excel.import"
                 onClick={doImport}
                 disabled={committing || preview.valid_count === 0}
               >

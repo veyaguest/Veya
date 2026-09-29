@@ -37,6 +37,8 @@ import { EnvelopeCounter } from './EnvelopeCounter'
 import { ExpenseEditor } from './ExpenseEditor'
 import { downloadWorkbook, type Cell } from '../lib/xlsx'
 import './FinancePage.css'
+import { useHelpScope } from '../help/useHelpScope'
+import type { ScopeId } from '../help/scopes'
 
 const t = strings.finance
 
@@ -73,6 +75,13 @@ function tabFromUrl(): Tab | null {
   return TABS.includes(value as Tab) ? (value as Tab) : null
 }
 
+/** הלשונית → המקום שהעזרה מכירה (help/scopes.ts). */
+const FINANCE_SCOPES: Record<Tab, ScopeId> = {
+  cost: 'finance.cost',
+  counting: 'finance.counting',
+  summary: 'finance.summary',
+}
+
 export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') => void }) {
   const terms = activeEventTerms()
 
@@ -89,6 +98,8 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
     url.searchParams.set('tab', next)
     window.history.replaceState(window.history.state, '', url.pathname + url.search)
   }, [])
+  useHelpScope('finance')
+  useHelpScope(tab ? FINANCE_SCOPES[tab] : null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)

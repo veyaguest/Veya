@@ -36,6 +36,7 @@ import type {
 import { RSVP_LABELS } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
 import { HALL_DESKTOP_QUERY, useMediaQuery } from '../lib/useMediaQuery'
+import { useHelpScope } from '../help/useHelpScope'
 import { useFocusTrap } from '../lib/useFocusTrap'
 import { strings } from '../strings/he'
 import { getGroupNotes } from '../api'
@@ -1625,6 +1626,7 @@ export function HallPage({
      קנבס במרכז ופאנל לצידו במקביל. זה ההבדל היחיד ש-CSS לא יכול לגשר
      עליו לבדו — הוא קובע *מה מרונדר*, לא רק איפה. */
   const isDesktop = useMediaQuery(HALL_DESKTOP_QUERY)
+  useHelpScope('hall')
   const [sheetTable, setSheetTable] = useState<number | null>(null)
   const [sheetEdit, setSheetEdit] = useState(false)
   // השולחן שנבחר **על המפה** — נפרד מ-sheetTable בכוונה.
@@ -4786,6 +4788,7 @@ export function HallPage({
               <div className="hm-oneclick">
                 <button
                   className="hm-primary-btn hm-oneclick-btn"
+                  data-help="hall.oneClick"
                   onClick={() => onOneClickSeating(false)}
                   disabled={loading || smartStats.totalPeople === 0}
                 >
@@ -4807,6 +4810,7 @@ export function HallPage({
                   <>
                     <button
                       className="hm-ghost-btn hm-undo-btn"
+                      data-help="hall.undo"
                       onClick={onUndoSeating}
                       disabled={undoing}
                     >
@@ -5093,6 +5097,7 @@ export function HallPage({
               key={tab.key}
               type="button"
               className={`hm-tab ${panel === tab.key ? 'active' : ''}`}
+              data-help={tab.key === 'smart' ? 'hall.seatingTab' : undefined}
               aria-expanded={panel === tab.key}
               onClick={() => openPanel(tab.key)}
             >

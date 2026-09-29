@@ -1038,6 +1038,14 @@ class EventSummary(BaseModel):
     #:
     #: זכאות **אינה** אומרת שהשירות פעיל — לשם כך צריך גם חשבון מאומת.
     gift_service_eligible: bool = False
+    #: התפקיד של המשתמש המחובר באירוע הזה: ``owner`` (פתח את האירוע),
+    #: ``partner`` (בן/בת זוג בניהול משותף — שווה לבעלים), או ``member``
+    #: (מפיק/אולם). נוחות לתצוגה בלבד; ההרשאה נאכפת ב-``deps.EventAccess``.
+    my_role: Optional[Literal["owner", "partner", "member"]] = None
+    #: האם להציג את "עזרה" לאירוע הזה: פיצ'ר ``help_center`` פתוח **וגם**
+    #: המשתמש מנהל את האירוע (בעלים/בן-בת זוג). מפיק/אולם לא מקבלים עזרה
+    #: בשלב הזה (החלטת המייסד 2026-09-29 — HELP_CENTER_PLAN.md).
+    help_enabled: bool = False
 
 
 class VenueSuggestion(BaseModel):

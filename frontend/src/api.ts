@@ -111,6 +111,7 @@ import {
   getToken,
   notifyUnauthorized,
 } from './authStore'
+import { reportErrorMessage, reportNetworkFailure, reportResponse } from './help/errorBus'
 
 // כתובת ה-API ניתנת להגדרה בזמן build דרך משתנה סביבה של Vite (VITE_API_URL),
 // כדי שבייצור אפשר להצביע על השרת האמיתי. ברירת מחדל: שרת הפיתוח המקומי.
@@ -181,8 +182,12 @@ export async function apiFetch(path: string, init?: RequestInit): Promise<Respon
     // fetch() עצמו נכשל (אין רשת/שרת לא זמין/CORS) — לא Response בכלל,
     // אלא TypeError גולמי מהדפדפן. זה המקום היחיד לתפוס את זה עבור כל
     // קריאות ה-API במערכת.
+    reportNetworkFailure(init?.method, path)
     throw new Error(NETWORK_ERROR_MESSAGE)
   }
+  // לעזרה (help/errorBus.ts): תקציר התוצאה בזיכרון בלבד — שיטה, נתיב
+  // כתבנית וסטטוס. לא נשלח לשום מקום.
+  reportResponse(init?.method, path, res.status)
   if (res.status === 401) {
     clearAuth()
     notifyUnauthorized()
@@ -212,6 +217,15 @@ function cleanDetailMessage(msg: string): string {
 
 /** מחלץ הודעת שגיאה קריאה מתשובת FastAPI (כולל שגיאות ולידציה 422). */
 export async function toError(res: Response): Promise<Error> {
+  const err = await errorFromResponse(res)
+  // ההודעה שהמשתמש רואה נצמדת לשגיאה שנרשמה ב-apiFetch, כדי שהעזרה תוכל
+  // לזהות "לא זוהו עמודות חובה" וכו'. בזיכרון בלבד (help/errorBus.ts).
+  const path = res.url.startsWith(API_URL) ? res.url.slice(API_URL.length) : res.url
+  reportErrorMessage(path, res.status, err.message)
+  return err
+}
+
+async function errorFromResponse(res: Response): Promise<Error> {
   // שגיאת שרת (5xx): לעולם לא מציגים למשתמש את התוכן הגולמי (יכול להיות
   // traceback/HTML) — רק את ההודעה הידידותית, בלי קשר למה שהשרת החזיר.
   if (res.status >= 500) {

@@ -4,6 +4,7 @@ import type { GroupType, Guest, GuestCreate, RsvpStatus, Side } from '../types'
 import { GROUP_LABELS, RSVP_LABELS } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
+import { useHelpScope } from '../help/useHelpScope'
 
 const t = strings.guests
 const tc = strings.common
@@ -35,6 +36,7 @@ function isCustomGroup(group: string): boolean {
 
 export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
   const editing = !!guest
+  useHelpScope(editing ? 'guests.edit' : 'guests.addForm')
   const [form, setForm] = useState<GuestCreate>(
     guest
       ? {
@@ -111,6 +113,7 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
         <label>
           {t.fullNameLabel}
           <input
+            data-help="guestForm.name"
             value={form.full_name}
             onChange={(e) => update('full_name', e.target.value)}
             placeholder={t.fullNamePlaceholder}
@@ -120,6 +123,7 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
         <label>
           {t.phoneLabel}
           <input
+            data-help="guestForm.phone"
             value={form.phone}
             onChange={(e) => update('phone', e.target.value)}
             placeholder={t.phonePlaceholder}
@@ -221,7 +225,7 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
       {error && <p className="form-error" role="alert">{error}</p>}
 
       <div className="add-actions">
-        <button type="submit" className="btn-primary" disabled={saving}>
+        <button type="submit" className="btn-primary" data-help="guestForm.submit" disabled={saving}>
           {saving ? t.saving : editing ? t.submitEdit : t.submitAdd}
         </button>
         <button type="button" className="btn-ghost" onClick={onCancel}>

@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { reportCrash } from '../help/errorBus'
 
 interface Props {
   children: ReactNode
@@ -22,6 +23,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('VEYA — שגיאה לא צפויה ברינדור:', error, info.componentStack)
+    // לעזרה: "המסך קרס" נרשם בזיכרון בלבד (help/errorBus.ts), בלי פרטי השגיאה.
+    reportCrash()
   }
 
   render() {
