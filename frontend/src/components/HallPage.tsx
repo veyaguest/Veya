@@ -37,6 +37,7 @@ import { RSVP_LABELS } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
 import { HALL_DESKTOP_QUERY, useMediaQuery } from '../lib/useMediaQuery'
 import { useHelpScope } from '../help/useHelpScope'
+import { onGuideRequest } from '../help/bridge'
 import { useFocusTrap } from '../lib/useFocusTrap'
 import { strings } from '../strings/he'
 import { getGroupNotes } from '../api'
@@ -1651,6 +1652,9 @@ export function HallPage({
   // מדריך פתיחה קצר למשתמש. נפתח אוטומטית בביקור הראשון (נשמר ב-localStorage),
   // וניתן לפתוח שוב בכל רגע מכפתור "?" בפס העליון.
   const [guideOpen, setGuideOpen] = useState(false)
+  // "למדריך" מתוך העזרה פותח את אותו מדריך "איך זה עובד?" — חוויית עזרה אחת
+  // במסך ההושבה (help/bridge.ts, החלטת המייסד 2026-09-29).
+  useEffect(() => onGuideRequest('hall', () => setGuideOpen(true)), [])
   // אשף בניית האולם (שלב 2). נפתח אוטומטית כשהאולם ריק, וניתן לפתוח שוב
   // בכל רגע מכפתור "בניית אולם מחדש". שואל כמה שולחנות רגילים (12) ואבירים,
   // ואילו אלמנטים לכלול (רחבה/DJ/בר), ואז מייצר סקיצה התחלתית מסודרת.

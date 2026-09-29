@@ -2195,4 +2195,53 @@ export const strings = {
     printReport: 'הדפסה / PDF',
     reportFileName: (title: string) => `כספים — ${title}.csv`,
   },
+
+  // ==========================================================================
+  //  help — המעטפת של "עזרה" בתוך VEYA (HELP_CENTER_PLAN.md שלב 4).
+  //  רק טקסטי המעטפת. התוכן עצמו (שאלות/תשובות/הדרכות) חי ב-help/kb/.
+  // ==========================================================================
+  help: {
+    launcher: 'עזרה',
+    launcherAria: 'פתיחת העזרה',
+    panelTitle: 'עזרה',
+    close: 'סגירת העזרה',
+    back: 'חזרה',
+    loading: 'רגע…',
+    urgentLabel: 'חשוב עכשיו',
+    somethingWrong: 'משהו לא עובד',
+    somethingWrongTitle: 'מה לא עובד?',
+    recentError: 'ראינו שמשהו לא הצליח עכשיו',
+    recentErrorCta: 'בואו נבדוק',
+    searchLabel: 'חיפוש בעזרה',
+    searchPlaceholder: 'חיפוש שאלה…',
+    searchEmpty: 'לא מצאנו שאלה כזו.',
+    noTopics: 'למסך הזה אין שאלות מוכנות. אפשר לחפש למעלה.',
+    noTrouble: 'למסך הזה אין בדיקות מוכנות. אפשר לחפש למעלה.',
+    showMe: 'תראו לי',
+    check: 'בואו נבדוק',
+    guide: 'למדריך',
+    related: 'שאלות קרובות',
+    feedbackQuestion: 'זה עזר?',
+    feedbackYes: 'כן, תודה',
+    feedbackNo: 'עדיין לא',
+    feedbackThanks: 'שמחים שעזר.',
+    nextTry: 'אפשר לנסות גם:',
+    cantCheck: 'לא הצלחנו לבדוק את זה מכאן.',
+    contextError: 'לא הצלחנו לטעון את מצב האירוע, ולכן חלק מהתשובות לא יוצגו. אפשר לנסות שוב.',
+    // בחירת מוזמן לבדיקה
+    whoTitle: (guest: string) => `על איזה ${guest} מדובר?`,
+    guestSearchLabel: 'חיפוש לפי שם',
+    guestSearchPlaceholder: 'שם — לפחות 2 אותיות',
+    guestNone: 'לא מצאנו בשם הזה.',
+    checking: 'בודקים…',
+    checkError: 'לא הצלחנו לבדוק כרגע. נסו שוב',
+    checkAnother: 'בדיקה של מישהו אחר',
+    // הדרכה על המסך ("תראו לי")
+    tourLabel: 'הדרכה',
+    tourNext: 'הבא',
+    tourExit: 'יציאה מההדרכה',
+    tourDone: 'סיום',
+    tourNotFound: 'לא מצאנו את הכפתור במסך כרגע, ולכן עצרנו את ההדרכה.',
+    tourError: 'משהו לא הצליח בשמירה. בואו נבדוק מה קרה.',
+  },
 }

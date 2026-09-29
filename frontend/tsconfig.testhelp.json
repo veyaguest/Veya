@@ -16,5 +16,9 @@
     "src/authStore.ts",
     "src/types.ts"
   ],
-  "exclude": ["src/help/useHelpScope.ts"]
+  "exclude": [
+    "src/help/useHelpScope.ts",
+    "src/help/HelpHost.tsx",
+    "src/help/ui/**"
+  ]
 }

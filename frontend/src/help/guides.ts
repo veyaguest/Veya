@@ -18,8 +18,10 @@ export const GUIDES = {
     page: 'hall',
     target: 'hall.guideButton',
     opener: 'onClick={() => setGuideOpen(true)}',
+    // המסך מאזין לבקשה מהעזרה (help/bridge.ts) — נבדק שהשורה קיימת.
+    listener: "onGuideRequest('hall', () => setGuideOpen(true))",
     note: 'המדריך של סידור ההושבה — כפתור "איך זה עובד?" בפס העליון של המסך (דסקטופ וטלפון)',
   },
-} as const satisfies Record<string, { file: string; page: HelpPage; target: TargetId; opener: string; note: string }>
+} as const satisfies Record<string, { file: string; page: HelpPage; target: TargetId; opener: string; listener: string; note: string }>
 
 export type GuideId = keyof typeof GUIDES

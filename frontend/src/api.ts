@@ -1951,3 +1951,35 @@ export async function applyExpenseTemplate(): Promise<TemplateApplyResult> {
   if (!res.ok) throw await toError(res)
   return res.json()
 }
+
+// ---- עזרה בתוך VEYA (HELP_CENTER_PLAN.md שלב 3–4) — קריאה בלבד ----
+// שלושה נתיבי GET בלבד. הם עונים רק כשהעזרה פתוחה לאירוע ורק לבעלים/בן-בת
+// זוג; אחרת 404. ``null`` בעובדה = השרת לא יודע בוודאות (לא ניחוש).
+
+export type HelpFactValue = boolean | number | string | null
+
+/** העובדות של מסך אחד — ורק הן (backend/app/help_contexts.json). */
+export async function getHelpContext(
+  screen: string,
+): Promise<{ screen: string; facts: Record<string, HelpFactValue> }> {
+  const res = await apiFetch(`/help/context/${encodeURIComponent(screen)}`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** בחירת מוזמן לבדיקה: מזהה + שם בלבד, עד 8, חיפוש של 2 תווים לפחות. */
+export async function getHelpGuestOptions(q: string): Promise<{ id: number; name: string }[]> {
+  const res = await apiFetch(`/help/guest-options?q=${encodeURIComponent(q)}`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** העובדות של בדיקה אחת על מוזמן אחד — בלי שם, בלי טלפון. */
+export async function getHelpGuestCheck(
+  check: string,
+  guestId: number,
+): Promise<{ check: string; facts: Record<string, HelpFactValue> }> {
+  const res = await apiFetch(`/help/guest-check/${encodeURIComponent(check)}/${guestId}`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}

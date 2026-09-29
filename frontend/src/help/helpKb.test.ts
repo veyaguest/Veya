@@ -259,6 +259,7 @@ function testActionsPointToRealThings(): void {
       // תגית הפתיחה: מ-"<" שלפני ה-data-help ועד 200 תווים אחריו (ה-onClick צמוד אליו).
       const openTag = src.slice(src.lastIndexOf('<', at), at + 200)
       assert(openTag.includes(g.opener), `${where}: הכפתור ${g.target} כבר לא פותח את המדריך (${g.opener})`)
+      assert(src.includes(g.listener), `${where}: המסך לא מאזין לבקשת "למדריך" מהעזרה (${g.listener})`)
     }
   }
   for (const t of TOPICS) {

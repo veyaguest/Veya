@@ -33,7 +33,7 @@ const contactsSupported = isContactPickerSupported()
 
 const t = strings.guests
 // אותה נקודת מעבר כמו ב-App.css: מתחתיה הטבלה מוצגת ככרטיסים.
-const CARD_LAYOUT_QUERY = '(max-width: 700px)'
+export const CARD_LAYOUT_QUERY = '(max-width: 700px)'
 
 const PAGE_SIZE = 50
 

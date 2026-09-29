@@ -42,6 +42,8 @@ import { OnboardingWizard } from './components/OnboardingWizard'
 import { ReconsentModal } from './components/ReconsentModal'
 import { RsvpPage } from './components/RsvpPage'
 import { VeyaLoader } from './components/VeyaLoader'
+import { HelpHost, HelpLauncher } from './help/HelpHost'
+import type { GuestFilter as HelpGuestFilter } from './help/types'
 import type { GuestFilter } from './api'
 import type { EventSummary, User } from './types'
 import type { EventTerms } from './strings/eventTypes'
@@ -238,6 +240,10 @@ function App() {
   // בכל מעבר עמוד.
   const [guestSearch, setGuestSearch] = useState('')
   const [guestFilter, setGuestFilter] = useState<GuestFilter>('all')
+  // עזרה בתוך VEYA: הדרכה שצריכה את אותו מסך עם סינון מוכן (למשל "בלי מספר
+  // טלפון תקין") טוענת אותו מחדש. משתנה **רק** דרך העזרה — בלי העזרה המפתח
+  // קבוע והמוצר מתנהג בדיוק כמו קודם.
+  const [helpNonce, setHelpNonce] = useState(0)
 
   const [user, setUser] = useState<User | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -720,6 +726,16 @@ function App() {
       activeTerms.defaultTitle
     : '—'
   const userInitial = (user.display_name || user.email || '?').trim().charAt(0).toUpperCase()
+  const helpEnabled = activeEvent?.help_enabled === true
+  /** ניווט מתוך העזרה. ``fresh`` — טוען מחדש את המסך גם כשכבר נמצאים בו,
+   *  כדי שסינון מוכן יחול באמת (GuestsPage קורא את הסינון רק כשהוא עולה). */
+  const helpGoTo = (
+    target: Page,
+    options: { guestFilter?: HelpGuestFilter; fresh?: boolean } = {},
+  ) => {
+    if (options.fresh && target === page) setHelpNonce((n) => n + 1)
+    goTo(target, { guestFilter: options.guestFilter })
+  }
 
   return withReconsent(
     withImpersonation(
@@ -773,6 +789,7 @@ function App() {
         </nav>
 
         <div className="sidebar-foot">
+          {helpEnabled && <HelpLauncher />}
           <button
             type="button"
             className="user-chip"
@@ -815,7 +832,7 @@ function App() {
           id="veya-main"
           tabIndex={-1}
           className="content"
-          key={`${page}-${activeEventId}`}
+          key={`${page}-${activeEventId}-${helpNonce}`}
         >
           <ErrorBoundary>
             {page === 'dashboard' && (
@@ -874,6 +891,17 @@ function App() {
           האירוע שלו. הקומפוננטה עצמה מחליטה אם בכלל להופיע (Safari
           באייפון, לא מותקנת, לא נסגרה לאחרונה) — ראו lib/pwa.ts. */}
       <InstallPrompt />
+
+      {/* "עזרה" — רק כשהפיצ'ר פתוח לאירוע ולמנהלי האירוע (השרת קובע). */}
+      {helpEnabled && activeEvent && (
+        <HelpHost
+          page={page}
+          screenTitle={pageTitle[page]}
+          goTo={helpGoTo}
+          event={activeEvent}
+          online={online}
+        />
+      )}
     </div>,
     ),
   )

@@ -1,0 +1,67 @@
+/* כפתור "עזרה" — חלק מסרגל הצד (דסקטופ) / הפס העליון (טלפון). לא צף. */
+.help-launcher {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid rgba(228, 201, 107, 0.28);
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: rgba(245, 239, 226, 0.9);
+  font: inherit;
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.help-launcher.is-open {
+  background: rgba(201, 162, 39, 0.18);
+  border-color: var(--gold-light);
+}
+.help-launcher:focus-visible {
+  outline: 2px solid var(--gold-light);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .help-launcher:hover {
+    background: rgba(201, 162, 39, 0.14);
+    border-color: var(--gold-light);
+  }
+}
+.help-launcher-icon {
+  flex-shrink: 0;
+  color: var(--gold-light);
+}
+
+/* טלפון: אייקון עגול בפס העליון, צמוד לכפתור "החשבון שלי". */
+@media (max-width: 820px) {
+  .help-launcher {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    margin-inline-start: auto;
+  }
+  .help-launcher-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  /* הכפתור של "החשבון שלי" כבר לא דוחף את עצמו לקצה — העזרה עושה את זה. */
+  .help-launcher + .user-chip {
+    margin-inline-start: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .help-launcher {
+    transition: none;
+  }
+}
