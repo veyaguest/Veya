@@ -43,6 +43,7 @@ from app.routers import (
     gifts,
     guests,
     hall,
+    help,
     import_guests,
     jobs,
     media_serve,
@@ -150,6 +151,8 @@ app.include_router(public_library.router)
 # "השאירו פרטים ונחזור אליכם" מדף הנחיתה — אנונימי, מוגבל-קצב, כתיבה בלבד.
 app.include_router(public_leads.router)
 app.include_router(jobs.router)
+# עזרה בתוך VEYA — context מצומצם לקריאה בלבד (HELP_CENTER_PLAN.md שלב 3).
+app.include_router(help.router)
 
 # הגשת קבצי תמונות שהועלו (הזמנה/סקיצת אולם) מתוך backend/uploads.
 from app.media import UPLOADS_DIR  # noqa: E402

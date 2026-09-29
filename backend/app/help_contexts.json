@@ -1,0 +1,91 @@
+{
+  "_about": "העובדות שמערכת העזרה מקבלת מהשרת — לכל מסך ולכל בדיקת מוזמן, ולא יותר. נגזר מבסיס הידע (frontend/src/help/contexts.ts::requiredContexts) ונאכף שהוא זהה (helpContexts.test.ts). שינוי כאן בלי שינוי בידע — נכשל בבדיקה. HELP_CENTER_PLAN.md שלב 3.",
+  "screens": {
+    "dashboard": [
+      "event.can_request_postpone",
+      "event.commit_chosen",
+      "event.days_to_event",
+      "event.edit_unlocked",
+      "event.has_date",
+      "event.postpone",
+      "feature.calls",
+      "guests.bad_phone",
+      "invites.not_yet",
+      "invites.sent",
+      "messaging.mode",
+      "rsvp.commit_date",
+      "rsvp.next_date",
+      "rsvp.next_label",
+      "rsvp.phase",
+      "rsvp.start_date"
+    ],
+    "guests": [
+      "event.days_to_event",
+      "guests.bad_phone",
+      "invites.not_yet",
+      "invites.sent",
+      "messaging.mode"
+    ],
+    "messages": [
+      "event.commit_chosen",
+      "event.days_to_event",
+      "event.has_date",
+      "event.postpone",
+      "guests.bad_phone",
+      "guests.total",
+      "invites.not_yet",
+      "invites.sent",
+      "messaging.emergency_stop",
+      "messaging.invitation_empty",
+      "messaging.mode",
+      "rsvp.commit_date",
+      "rsvp.next_date",
+      "rsvp.next_label",
+      "rsvp.phase",
+      "rsvp.start_date",
+      "rsvp.today_is_weekend"
+    ],
+    "rsvp": [
+      "event.commit_chosen",
+      "event.days_to_event",
+      "event.has_date",
+      "event.postpone",
+      "feature.calls",
+      "guests.bad_phone",
+      "invites.not_yet",
+      "invites.sent",
+      "messaging.emergency_stop",
+      "messaging.mode",
+      "rsvp.commit_date",
+      "rsvp.next_date",
+      "rsvp.next_label",
+      "rsvp.phase",
+      "rsvp.start_date",
+      "rsvp.today_is_weekend"
+    ],
+    "hall": [
+      "event.days_to_event",
+      "guests.confirmed",
+      "seating.undo_available"
+    ],
+    "finance": [
+      "event.days_to_event"
+    ],
+    "gifts": []
+  },
+  "guest_checks": {
+    "invite-not-received": [
+      "guest.invitation",
+      "guest.phone",
+      "messaging.emergency_stop",
+      "messaging.mode"
+    ],
+    "reminder-not-received": [
+      "guest.joined_after_last_round",
+      "guest.phone",
+      "guest.rsvp",
+      "messaging.mode",
+      "rsvp.phase"
+    ]
+  }
+}
