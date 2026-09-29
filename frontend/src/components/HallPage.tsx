@@ -4117,6 +4117,7 @@ export function HallPage({
           )}
           <button
             className="hm-help-btn"
+            data-help="hall.guideButton"
             onClick={() => setGuideOpen(true)}
             aria-label="איך זה עובד? פתיחת המדריך"
             title="איך זה עובד?"

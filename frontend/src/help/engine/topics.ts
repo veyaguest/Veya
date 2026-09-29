@@ -49,6 +49,11 @@ export interface ResolvedTopic {
   title: string
   answer: string[]
   primary: ResolvedAction | null
+  /**
+   * להציג לידו את הודעת "WhatsApp במצב הדגמה" (kb/shared.ts). נקבע רק
+   * מהעובדה ``messaging.mode`` — אף פעם לא מניחים.
+   */
+  mockNotice: boolean
   score: number
   urgent: boolean
   errorHit: boolean
@@ -95,6 +100,7 @@ function resolveAction(
   if (action.kind === 'tour') {
     const flow = ctx.flows[action.flow]
     if (!flow || !holds(flow.when, ctx.facts)) return null
+    if (flow.sendsMessages && messagingMode(ctx.facts) === null) return null
   }
   if (action.label === undefined) return { action, label: null }
   const label = renderText(action.label, ctx.text)
@@ -110,6 +116,9 @@ export function resolveTopic(
   ctx: Pick<RankContext, 'facts' | 'text' | 'flows'>,
 ): Omit<ResolvedTopic, 'score' | 'urgent' | 'errorHit'> | null {
   if (!holds(topic.when, ctx.facts)) return null
+  // נושא על הודעות — רק כשידוע באמת אם הן יוצאות (לא מרמזים שיצאו כשלא).
+  const mode = topic.sendsMessages ? messagingMode(ctx.facts) : null
+  if (topic.sendsMessages && mode === null) return null
   const variant = topic.variants?.find((v) => holds(v.when, ctx.facts))
   if (topic.variants?.length && !variant && topic.answer.length === 0) return null
   const lines = variant ? variant.answer : topic.answer
@@ -122,7 +131,13 @@ export function resolveTopic(
   const title = renderText(topic.title, ctx.text)
   if (title === null || answer.length === 0) return null
   const primaryDef = variant && variant.primary !== undefined ? variant.primary : topic.primary
-  return { topic, title, answer, primary: resolveAction(primaryDef, ctx) }
+  return { topic, title, answer, primary: resolveAction(primaryDef, ctx), mockNotice: mode === 'mock' }
+}
+
+/** מצב השליחה של WhatsApp, רק אם ידוע בוודאות. */
+export function messagingMode(facts: Facts): 'mock' | 'live' | null {
+  const m = facts['messaging.mode']
+  return m === 'mock' || m === 'live' ? m : null
 }
 
 /**

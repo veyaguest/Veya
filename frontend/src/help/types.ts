@@ -16,6 +16,7 @@
 import type { ScopeId } from './scopes'
 import type { HelpPage, TargetId } from './targets'
 import type { FactId } from './facts'
+import type { GuideId } from './guides'
 
 /** תחומי הידע. */
 export type Area = 'event' | 'guests' | 'invitation' | 'rsvp' | 'seating' | 'finance' | 'gifts' | 'account'
@@ -41,6 +42,7 @@ export type Condition =
  * מחרוזת עם טוקנים (engine/text.ts):
  * - ``{guests}`` / ``{guest}`` — "מוזמנים"/"מוזמן" או "משתתפים"/"משתתף" לפי סוג האירוע.
  * - ``{hosts}`` — כינוי בעלי האירוע ("בני הזוג" / "המשפחה"…).
+ * - ``{event}`` — שם האירוע המיודע ("החתונה" / "אירוע בר המצווה" / "האירוע").
  * - ``{ui:guests.addGuestButton}`` — הטקסט **המדויק** של כפתור מ-strings/he.ts.
  *   כך שינוי שם כפתור מתעדכן בעזרה מעצמו, וכפתור שנמחק שובר בדיקה.
  * - ``{n:fact}`` מספר · ``{date:fact}`` תאריך בעברית · ``{text:fact}`` מחרוזת.
@@ -62,6 +64,11 @@ export type HelpAction =
   | { kind: 'navigate'; page: HelpPage; guestFilter?: GuestFilter; label: HelpText }
   /** "בואו נבדוק" — עץ תקלות. */
   | { kind: 'diagnose'; tree: string; label?: HelpText }
+  /**
+   * פתיחת מדריך שכבר קיים במסך (help/guides.ts) — למשל "איך זה עובד?" של
+   * סידור ההושבה. כך אין שתי מערכות עזרה באותו מסך (החלטת המייסד 2026-09-29).
+   */
+  | { kind: 'guide'; guide: GuideId; label?: HelpText }
 
 // ─── נושא ──────────────────────────────────────────────────────────────────
 
@@ -101,6 +108,12 @@ export interface HelpTopic {
   verifiedAt: string
   /** 0–10, שובר שוויון בדירוג. */
   priority?: number
+  /**
+   * הנושא מדבר על הודעות שיוצאות למוזמנים. כש-WhatsApp במצב הדגמה (``mock``)
+   * מוצגת לידו הודעה כנה שההודעות לא נשלחות בפועל; כשהמצב לא ידוע — הנושא
+   * לא מוצג בכלל (החלטת המייסד 2026-09-29: "לא לרמוז שהודעה יצאה").
+   */
+  sendsMessages?: boolean
 }
 
 // ─── הדרכה ("תראו לי") ─────────────────────────────────────────────────────
@@ -143,6 +156,8 @@ export interface GuidedFlow {
   steps: readonly FlowStep[]
   /** מה נחשב "בוצע". */
   success: Extract<Signal, { kind: 'api' }>
+  /** כמו ב-HelpTopic: הודעת "מצב הדגמה" בסיום, ולא מתחילים כשהמצב לא ידוע. */
+  sendsMessages?: boolean
   /** הודעת הסיום. */
   doneText: HelpText
   /** שגיאה בזמן ההדרכה → עץ התקלות המתאים. */
@@ -183,6 +198,10 @@ export interface DiagnosticTree {
   errorMatch?: readonly ErrorMatch[]
   root: string
   nodes: Readonly<Record<string, DiagNode>>
+  /** העץ שואל "על מי מדובר?" ובודק עובדות ``guest.*`` של מוזמן אחד. */
+  needsGuest?: boolean
+  /** כמו ב-HelpTopic. */
+  sendsMessages?: boolean
   sources: readonly string[]
   verifiedAt: string
 }

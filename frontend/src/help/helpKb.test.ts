@@ -17,6 +17,7 @@ import type { Facts } from './facts'
 import { SCOPES } from './scopes'
 import type { ScopeId } from './scopes'
 import { TARGETS } from './targets'
+import { GUIDES } from './guides'
 import type { Condition, DiagnosticTree, GuidedFlow, HelpAction, HelpTopic } from './types'
 import { FLOWS, TOPICS, TREES } from './kb/index'
 import { evaluate, factsOf, holds } from './engine/conditions'
@@ -74,6 +75,7 @@ function termsFor(type: string): TextTerms {
     guests: t.guestsLabel,
     guest: t.guestsLabel === 'משתתפים' ? 'משתתף' : 'מוזמן',
     hosts: t.hostsLabel,
+    event: t.eventNoun,
   }
 }
 
@@ -91,6 +93,31 @@ const FULL_FACTS: Facts = {
   'error.last.path': '/guests',
   'error.last.status': 422,
   'error.last.message': 'הודעה לדוגמה',
+  'guests.confirmed': 80,
+  'event.has_date': true,
+  'event.commit_chosen': true,
+  'event.edit_unlocked': false,
+  'event.postpone': 'none',
+  'event.can_request_postpone': true,
+  'rsvp.phase': 'running',
+  'rsvp.start_date': '2026-10-15',
+  'rsvp.commit_date': '2026-10-29',
+  'rsvp.next_date': '2026-10-20',
+  'rsvp.next_label': 'תזכורת שנייה',
+  'rsvp.today_is_weekend': false,
+  'messaging.mode': 'live',
+  'messaging.emergency_stop': false,
+  'messaging.invitation_empty': false,
+  'invites.sent': 40,
+  'invites.not_yet': 5,
+  'messages.wizardStep': 1,
+  'feature.calls': true,
+  'gifts.eligible': false,
+  'seating.undo_available': true,
+  'guest.phone': 'valid',
+  'guest.invitation': 'sent',
+  'guest.rsvp': 'pending',
+  'guest.joined_after_last_round': false,
 }
 
 function ctxFor(type = 'wedding', facts: Facts = FULL_FACTS): TextContext {
@@ -202,7 +229,7 @@ function testUiTokensResolve(): void {
   for (const { where, text } of userTexts()) {
     for (const tok of tokensOf(text)) {
       assert(
-        ['guests', 'guest', 'hosts', 'ui', 'n', 'date', 'text', 'count'].includes(tok.kind),
+        ['guests', 'guest', 'hosts', 'event', 'ui', 'n', 'date', 'text', 'count'].includes(tok.kind),
         `${where}: טוקן לא מוכר {${tok.kind}}`,
       )
       if (tok.kind === 'ui') {
@@ -222,6 +249,17 @@ function testActionsPointToRealThings(): void {
     if (action.kind === 'tour') assert(!!FLOWS[action.flow], `${where}: הדרכה לא קיימת "${action.flow}"`)
     if (action.kind === 'diagnose') assert(TREES.some((t) => t.id === action.tree), `${where}: עץ לא קיים "${action.tree}"`)
     if (action.kind === 'navigate') assert(appPages.includes(action.page), `${where}: מסך לא קיים "${action.page}"`)
+    if (action.kind === 'guide') {
+      const g = GUIDES[action.guide]
+      assert(!!g, `${where}: מדריך לא קיים "${action.guide}"`)
+      // ה-opener חייב להיות על הכפתור עצמו — בתוך תגית הפתיחה של האלמנט עם ה-data-help שלו.
+      const src = readSrc(g.file)
+      const at = src.indexOf(`data-help="${g.target}"`)
+      assert(at >= 0, `${where}: הכפתור של המדריך (${g.target}) לא נמצא ב-${g.file}`)
+      // תגית הפתיחה: מ-"<" שלפני ה-data-help ועד 200 תווים אחריו (ה-onClick צמוד אליו).
+      const openTag = src.slice(src.lastIndexOf('<', at), at + 200)
+      assert(openTag.includes(g.opener), `${where}: הכפתור ${g.target} כבר לא פותח את המדריך (${g.opener})`)
+    }
   }
   for (const t of TOPICS) {
     for (const r of t.related ?? []) assert(TOPICS.some((x) => x.id === r), `${t.id}: נושא קשור לא קיים "${r}"`)
@@ -388,6 +426,101 @@ function testOnlyManagers(): void {
   }
   for (const f of Object.values(FLOWS)) assert(!holds(f.when, member), `הדרכה ${f.id} זמינה לחבר-אירוע`)
   console.log('✓ פעולות והדרכות — רק למנהלי האירוע (בעלים / בן-בת זוג)')
+}
+
+
+/**
+ * כל מה שמצוטט במירכאות בתשובה ("…") בלי טוקן — חייב להופיע מילה במילה
+ * באחד מקבצי המקור של הפריט. כך אי אפשר לצטט כפתור שלא קיים (או שהשם שלו
+ * השתנה) גם כשהוא כתוב ישירות בקומפוננטה ולא ב-he.ts.
+ */
+function testQuotedLiteralsExist(): void {
+  let n = 0
+  const check = (where: string, text: string, sources: readonly string[]) => {
+    const src = sources.map(readSrc).join('\n')
+    for (const m of text.matchAll(/"([^"]+)"/g)) {
+      const quoted = m[1]
+      if (/\{[^}]*\}/.test(quoted)) continue // כפתור שמגיע מטוקן — נבדק ב-testUiTokensResolve
+      n++
+      assert(src.includes(quoted), `${where}: "${quoted}" לא מופיע בקבצי המקור (${sources.join(', ')})`)
+    }
+  }
+  for (const t of TOPICS) {
+    const texts = [t.title, ...t.answer, ...(t.variants ?? []).flatMap((v) => v.answer)]
+    texts.forEach((x) => check(t.id, x, t.sources))
+  }
+  for (const f of Object.values(FLOWS)) [...f.steps.map((s) => s.text), f.doneText].forEach((x) => check(`הדרכה ${f.id}`, x, f.sources))
+  for (const tr of TREES) {
+    for (const [id, nd] of Object.entries(tr.nodes)) {
+      if (nd.kind === 'outcome') nd.text.forEach((x) => check(`עץ ${tr.id}/${id}`, x, tr.sources))
+      if (nd.kind === 'ask') nd.options.forEach((o) => check(`עץ ${tr.id}/${id}`, o.label, tr.sources))
+      if (nd.kind === 'outcome' && nd.action?.label) check(`עץ ${tr.id}/${id}`, nd.action.label, tr.sources)
+    }
+  }
+  console.log(`✓ כל ${n} הכפתורים/ההודעות שמצוטטים במירכאות קיימים מילה במילה בקוד`)
+}
+
+/**
+ * כנות (החלטת המייסד 2026-09-29): טקסט שמתאר הודעה ש*יוצאת/נשלחת/מתקבלת* —
+ * חייב להיות מסומן sendsMessages (ואז במצב הדגמה מוצגת הודעה כנה), או בעץ
+ * שבודק את מצב השליחה לפני שמגיע לתוצאה. חריגים — רק משפטי שלילה, עם נימוק.
+ */
+const SENDING = /(יוצא|יוצאת|יוצאות|יצאה|יצא\b|נשלח|נשלחת|נשלחות|תצא|ייצאו|מקבלים|יקבלו|קיבל|שולחים)/
+const HONEST_EXCEPTIONS: Record<string, string> = {
+  'guests.fix-phones': 'רק שלילה: "לא נשלחות" — נכון גם במצב הדגמה',
+  'rsvp.maybe': 'רק שלילה: "לא מקבלים עוד תזכורות"',
+  'event.commit-date': 'רק שלילה: "לא יוצאות בקשות"',
+}
+function testSendingTextsAreHonest(): void {
+  // חריג מיותר = חור בכלל. כל חריג חייב לתפוס באמת טקסט על שליחה.
+  for (const id of Object.keys(HONEST_EXCEPTIONS)) {
+    const t = TOPICS.find((x) => x.id === id)
+    assert(!!t, `חריג לנושא שלא קיים: ${id}`)
+    const texts = [t!.title, ...t!.answer, ...(t!.variants ?? []).flatMap((v) => v.answer)]
+    assert(texts.some((x) => SENDING.test(x)), `החריג "${id}" מיותר — אין בו טקסט על שליחה. מוחקים אותו`)
+  }
+  let n = 0
+  for (const t of TOPICS) {
+    if (t.sendsMessages || HONEST_EXCEPTIONS[t.id]) continue
+    const texts = [t.title, ...t.answer, ...(t.variants ?? []).flatMap((v) => v.answer)]
+    for (const x of texts) {
+      assert(!SENDING.test(x), `${t.id}: מדבר על שליחה בלי sendsMessages — "${x}"`)
+    }
+    n++
+  }
+  for (const f of Object.values(FLOWS)) {
+    if (f.sendsMessages) continue
+    for (const x of [...f.steps.map((s) => s.text), f.doneText]) {
+      assert(!SENDING.test(x), `הדרכה ${f.id}: מדברת על שליחה בלי sendsMessages — "${x}"`)
+    }
+  }
+  for (const tr of TREES) {
+    if (tr.sendsMessages) continue
+    const checksMode = (id: string): boolean => {
+      const nd = tr.nodes[id]
+      return nd?.kind === 'check' && 'fact' in nd.test && nd.test.fact === 'messaging.mode'
+    }
+    for (const [id, nd] of Object.entries(tr.nodes)) {
+      if (nd.kind !== 'outcome') continue
+      if (!nd.text.some((x) => SENDING.test(x))) continue
+      // מותר רק אם העץ מתחיל בבדיקת מצב השליחה (ואז התוצאה הזו מגיעה רק במצב אמיתי).
+      assert(checksMode(tr.root), `עץ ${tr.id}/${id}: מדבר על שליחה, והעץ לא בודק קודם את מצב WhatsApp`)
+    }
+  }
+  console.log(`✓ כל טקסט שמתאר שליחה מסומן — במצב הדגמה תוצג הודעה כנה (${n} נושאים בלי שליחה)`)
+}
+
+function testSendingTopicsNeedKnownMode(): void {
+  const base: Facts = { ...FULL_FACTS }
+  delete base['messaging.mode']
+  for (const t of TOPICS.filter((x) => x.sendsMessages)) {
+    eq(resolveTopic(t, { facts: base, text: ctxFor('wedding', base), flows: FLOWS }), null, `${t.id}: מצב שליחה לא ידוע → לא מוצג`)
+    const mock = resolveTopic(t, { facts: { ...FULL_FACTS, 'messaging.mode': 'mock' }, text: ctxFor(), flows: FLOWS })
+    if (mock) eq(mock.mockNotice, true, `${t.id}: במצב הדגמה → הודעה כנה`)
+    const live = resolveTopic(t, { facts: FULL_FACTS, text: ctxFor(), flows: FLOWS })
+    if (live) eq(live.mockNotice, false, `${t.id}: במצב אמיתי → בלי הודעת הדגמה`)
+  }
+  console.log('✓ נושאים על שליחה: לא מוצגים כשהמצב לא ידוע, ובמצב הדגמה — תמיד עם הודעה כנה')
 }
 
 // ═══ חלק ב — המנוע ═════════════════════════════════════════════════════════
@@ -558,7 +691,7 @@ function testSearch(): void {
   eq(search('מחיקת מוזמן', items)[0], 'guests.delete', 'מחיקה')
   eq(search('אקסל', items)[0], 'guests.import-excel', 'אקסל → ייבוא קודם')
   eq(search('איך מה למה', items), [], 'רק מילים ריקות → אין תוצאות')
-  eq(search('שולחן ליד הבר', items), [], 'בלי התאמה אמיתית → אין תוצאה מומצאת')
+  eq(search('מזג אוויר בפריז', items), [], 'בלי התאמה אמיתית → אין תוצאה מומצאת')
   console.log('✓ חיפוש: מוצא לפי מילים אמיתיות, ולא מחזיר תוצאות סרק')
 }
 
@@ -591,6 +724,9 @@ testCopyRules()
 testEveryEventType()
 testGiftsAreGated()
 testOnlyManagers()
+testQuotedLiteralsExist()
+testSendingTextsAreHonest()
+testSendingTopicsNeedKnownMode()
 testConditions()
 testText()
 testRankAddForm()

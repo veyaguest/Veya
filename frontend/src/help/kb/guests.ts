@@ -17,11 +17,7 @@
  * כפתורים מצוטטים דרך ``{ui:…}`` — הטקסט המדויק מ-strings/he.ts.
  */
 import type { DiagnosticTree, GuidedFlow, HelpTopic } from '../types'
-
-const VERIFIED = '2026-09-29'
-
-/** רק מי שמנהל את האירוע (בעלים / בן-בת זוג) — מפיק/אולם לא בשלב הזה. */
-const MANAGER = { fact: 'user.role', op: 'in', value: ['owner', 'partner'] } as const
+import { MANAGER, VERIFIED } from './shared'
 
 const GUEST_SOURCES = [
   'components/GuestsPage.tsx',
@@ -428,7 +424,7 @@ export const GUEST_TREES: readonly DiagnosticTree[] = [
       },
       'out-count': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['בשדה "כמה אנשים בהזמנה" צריך להיות לפחות 1.'],
+        text: ['בשדה "{ui:guests.partySizeLabel}" צריך להיות לפחות 1.'],
       },
       'out-no-error': {
         kind: 'outcome', resolution: 'unknown', offerTeam: true,

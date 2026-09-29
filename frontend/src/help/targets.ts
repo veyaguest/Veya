@@ -140,6 +140,10 @@ export const TARGETS = {
     file: 'components/HallPage.tsx', page: 'hall',
     note: '"החזרת הסידור הקודם" — מופיע רק אחרי הושבה בקליק',
   },
+  'hall.guideButton': {
+    file: 'components/HallPage.tsx', page: 'hall',
+    note: 'סימן השאלה "איך זה עובד?" בפס העליון של מסך ההושבה — פותח את המדריך הקיים (help/guides.ts)',
+  },
 } as const satisfies Record<string, HelpTarget>
 
 export type TargetId = keyof typeof TARGETS

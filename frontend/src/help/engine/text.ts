@@ -15,6 +15,8 @@ export interface TextTerms {
   guest: string
   /** "בני הזוג" / "המשפחה" / "מארגני האירוע"… (hostsLabel). */
   hosts: string
+  /** "החתונה" / "אירוע בר המצווה" / "האירוע" (eventNoun). */
+  event: string
 }
 
 export interface TextContext {
@@ -69,6 +71,8 @@ export function renderText(template: string, ctx: TextContext): string | null {
         return ctx.terms.guest
       case 'hosts':
         return ctx.terms.hosts
+      case 'event':
+        return ctx.terms.event
       case 'ui': {
         const s = arg ? ctx.ui(arg) : undefined
         return typeof s === 'string' && s ? s : fail()
