@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "test:hall-sketch-geometry": "tsc --project tsconfig.testgeom.json && echo '{\"type\":\"commonjs\"}' > .tmp-test/package.json && node .tmp-test/hallSketchGeometry.test.js && rm -rf .tmp-test",
     "test:seating-workspace": "tsc --project tsconfig.testworkspace.json && echo '{\"type\":\"commonjs\"}' > .tmp-test-ws/package.json && node .tmp-test-ws/seatingWorkspace.test.js && rm -rf .tmp-test-ws",
-    "test:help": "tsc --project tsconfig.testhelp.json && echo '{\"type\":\"commonjs\"}' > .tmp-test-help/package.json && node .tmp-test-help/help/helpFoundations.test.js && node .tmp-test-help/help/helpKb.test.js && node .tmp-test-help/help/helpScenarios.test.js && node .tmp-test-help/help/helpContexts.test.js && node .tmp-test-help/help/helpSafety.test.js && rm -rf .tmp-test-help",
+    "test:help": "tsc --project tsconfig.testhelp.json && echo '{\"type\":\"commonjs\"}' > .tmp-test-help/package.json && node .tmp-test-help/help/helpFoundations.test.js && node .tmp-test-help/help/helpKb.test.js && node .tmp-test-help/help/helpScenarios.test.js && node .tmp-test-help/help/helpContexts.test.js && node .tmp-test-help/help/helpSafety.test.js && node .tmp-test-help/help/helpErrors.test.js && rm -rf .tmp-test-help",
     "build:site": "node scripts/build-site-pages.mjs",
     "build:brand": "node scripts/inject-brand-layer.mjs",
     "build:tokens": "node scripts/build-token-doc.mjs"

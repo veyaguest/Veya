@@ -19,6 +19,7 @@
   "exclude": [
     "src/help/useHelpScope.ts",
     "src/help/HelpHost.tsx",
+    "src/help/HelpErrorHint.tsx",
     "src/help/ui/**"
   ]
 }

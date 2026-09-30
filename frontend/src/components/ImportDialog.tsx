@@ -6,6 +6,7 @@ import { groupLabel } from '../types'
 import { sideLabel } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { useHelpScope } from '../help/useHelpScope'
+import { HelpErrorHint } from '../help/HelpErrorHint'
 
 const t = strings.guests
 const tc = strings.common
@@ -79,6 +80,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
 
         {loading && <div className="empty">{t.readingFile}</div>}
         {error && <p className="form-error" role="alert">{error}</p>}
+        <HelpErrorHint message={error} />
 
         {preview && (
           <>

@@ -182,7 +182,7 @@ export async function apiFetch(path: string, init?: RequestInit): Promise<Respon
     // fetch() עצמו נכשל (אין רשת/שרת לא זמין/CORS) — לא Response בכלל,
     // אלא TypeError גולמי מהדפדפן. זה המקום היחיד לתפוס את זה עבור כל
     // קריאות ה-API במערכת.
-    reportNetworkFailure(init?.method, path)
+    reportNetworkFailure(init?.method, path, NETWORK_ERROR_MESSAGE)
     throw new Error(NETWORK_ERROR_MESSAGE)
   }
   // לעזרה (help/errorBus.ts): תקציר התוצאה בזיכרון בלבד — שיטה, נתיב

@@ -37,6 +37,7 @@ import { MAX_COMMIT_DAYS, maxCommitDays } from '../lib/commitDays'
 import './CallFeed.css'
 import './PostponeDialog.css'
 import { useHelpScope } from '../help/useHelpScope'
+import { HelpErrorHint } from '../help/HelpErrorHint'
 
 interface Props {
   // ניווט למסך אחר (מוזמנים / מפת אולם) — עבור הבאנר וכרטיס ההושבה.
@@ -877,6 +878,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
       {error && (
         <div className="form-error dash-error" role="alert">
           <span>{error}</span>
+          <HelpErrorHint message={error} />
           {!stats && (
             <button type="button" className="btn-text" onClick={() => refresh()}>
               {strings.common.retry}

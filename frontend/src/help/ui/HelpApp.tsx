@@ -18,14 +18,15 @@ import { useMediaQuery } from '../../lib/useMediaQuery'
 import { getEventTerms } from '../../strings/eventTypes'
 import { strings } from '../../strings/he'
 import type { EventSummary } from '../../types'
-import { closeHelp, openHelp } from '../helpStore'
+import { closeHelp, openHelp, takeHelpRequest, useHelpRequestVersion } from '../helpStore'
 import { requestGuide } from '../bridge'
 import { GUIDES } from '../guides'
 import type { Facts } from '../facts'
 import type { HelpPage } from '../targets'
 import type { DiagnosticTree, GuestFilter, HelpAction, HelpTopic } from '../types'
 import { activeScopes, subscribeScopes } from '../scopes'
-import { recentErrors } from '../errorBus'
+import { onApiEvent } from '../errorBus'
+import { errorAt as findErrorAt, latestKnownError, openErrors } from '../errorHelp'
 import { FLOWS, TOPICS, TREES } from '../kb/index'
 import { MOCK_NOTICE } from '../kb/shared'
 import { holds } from '../engine/conditions'
@@ -35,7 +36,7 @@ import { search } from '../engine/search'
 import { renderText } from '../engine/text'
 import type { TextContext } from '../engine/text'
 import {
-  errorFactsFor, messagingMode, rankTopics, resolveTopic, scopeScore, treeForRecentError,
+  errorFactsFor, messagingMode, rankTopics, resolveTopic, scopeScore,
 } from '../engine/topics'
 import type { ResolvedAction } from '../engine/topics'
 import { clientFacts, serverFacts } from './facts'
@@ -57,7 +58,7 @@ type View =
   | { kind: 'home' }
   | { kind: 'topic'; id: string }
   | { kind: 'trouble' }
-  | { kind: 'tree'; id: string }
+  | { kind: 'tree'; id: string; errorAt?: number }
 
 const t = strings.help
 const CONTEXT_TTL_MS = 60_000
@@ -76,6 +77,9 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
   const [query, setQuery] = useState('')
   const [notHelped, setNotHelped] = useState<Set<string>>(new Set())
   const [tour, setTour] = useState<string | null>(null)
+  // שגיאה חדשה או שמירה מוצלחת בזמן שהעזרה פתוחה → לחשב מחדש מה "קרה עכשיו".
+  const [, setApiTick] = useState(0)
+  useEffect(() => onApiEvent(() => setApiTick((n) => n + 1)), [])
 
   // ── עובדות השרת למסך הנוכחי (עם מטמון קצר) ──
   const [server, setServer] = useState<{ page: HelpPage; at: number; facts: Facts } | null>(null)
@@ -146,6 +150,14 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
     }
   }, [open])
 
+  // "צריכים עזרה עם זה?" — פתיחה ישר על בדיקת התקלה, מול השגיאה שנלחצה.
+  const requestVersion = useHelpRequestVersion()
+  useEffect(() => {
+    if (!open) return
+    const req = takeHelpRequest()
+    if (req) setStack([{ kind: 'home' }, { kind: 'tree', id: req.tree, errorAt: req.errorAt }])
+  }, [open, requestVersion])
+
   const push = (v: View) => setStack((s) => [...s, v])
   const back = () => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))
 
@@ -177,11 +189,15 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
   }
 
   const now = Date.now()
-  const errors = recentErrors()
+  // רק שגיאות שעוד לא תוקנו: שמירה מוצלחת באותו נתיב אחריהן "סוגרת" אותן.
+  const errors = openErrors()
+  const errorsKey = errors.map((e) => `${e.method} ${e.path} ${e.at}`).join('|')
   const flows = FLOWS
   const rankCtx = { scopes, facts: text.facts, text, recentErrors: errors, now, notHelped, flows }
-  const home = useMemo(() => rankTopics(TOPICS, rankCtx), [text, scopes, notHelped, errors.length]) // eslint-disable-line react-hooks/exhaustive-deps
-  const errorTree = useMemo(() => treeForRecentError(TREES, { facts: text.facts, recentErrors: errors, now }), [text, errors.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  const home = useMemo(() => rankTopics(TOPICS, rankCtx), [text, scopes, notHelped, errorsKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  // רק שגיאה **מזוהה** מ-5 הדקות האחרונות, שעוד לא תוקנה (help/errorHelp.ts) — לא כל שגיאה.
+  const latestError = useMemo(() => latestKnownError(now), [errorsKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const errorTree = latestError ? TREES.find((x) => x.id === latestError.tree) ?? null : null
 
   const treeVisible = (tr: DiagnosticTree) =>
     holds(tr.when, text.facts) && (!tr.sendsMessages || messagingMode(text.facts) !== null)
@@ -287,6 +303,7 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
                   text={text}
                   onTopic={(id) => push({ kind: 'topic', id })}
                   onTree={(id) => push({ kind: 'tree', id })}
+                  onErrorTree={(id) => push({ kind: 'tree', id, errorAt: latestError?.at })}
                   onTrouble={() => push({ kind: 'trouble' })}
                 />
               )}
@@ -322,8 +339,10 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
 
               {view.kind === 'tree' && (
                 <TreeView
-                  key={view.id}
+                  key={`${view.id}-${view.errorAt ?? ''}`}
                   tree={TREES.find((x) => x.id === view.id)!}
+                  errorAt={view.errorAt}
+                  onHome={() => setStack([{ kind: 'home' }])}
                   baseFacts={text.facts}
                   text={text}
                   mockMode={mockMode}
@@ -343,7 +362,7 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
 // ─── הבית ───────────────────────────────────────────────────────────────────
 
 function HomeView({
-  query, onQuery, results, home, errorTree, text, onTopic, onTree, onTrouble,
+  query, onQuery, results, home, errorTree, text, onTopic, onTree, onErrorTree, onTrouble,
 }: {
   query: string
   onQuery: (q: string) => void
@@ -353,6 +372,7 @@ function HomeView({
   text: TextContext
   onTopic: (id: string) => void
   onTree: (id: string) => void
+  onErrorTree: (id: string) => void
   onTrouble: () => void
 }) {
   const titleOf = (id: string) => {
@@ -399,7 +419,7 @@ function HomeView({
             <div className="help-card help-card-alert">
               <p className="help-card-kicker">{t.recentError}</p>
               <p className="help-card-title">{renderText(errorTree.symptom, text)}</p>
-              <button type="button" className="btn-primary help-btn-sm" onClick={() => onTree(errorTree.id)}>
+              <button type="button" className="btn-primary help-btn-sm" onClick={() => onErrorTree(errorTree.id)}>
                 {t.recentErrorCta}
               </button>
             </div>
@@ -524,9 +544,12 @@ function Feedback({ state, onYes, onNo }: { state: 'none' | 'yes' | 'no'; onYes:
 // ─── בדיקת תקלה ────────────────────────────────────────────────────────────
 
 function TreeView({
-  tree, baseFacts, text, mockMode, actionLabel, onAction, canRunAction,
+  tree, errorAt, onHome, baseFacts, text, mockMode, actionLabel, onAction, canRunAction,
 }: {
   tree: DiagnosticTree
+  /** השגיאה שנלחצה ("צריכים עזרה עם זה?") — העץ נבדק מולה בלבד. */
+  errorAt?: number
+  onHome: () => void
   baseFacts: Facts
   text: TextContext
   mockMode: boolean
@@ -539,6 +562,16 @@ function TreeView({
   const [guestFacts, setGuestFacts] = useState<Facts | null>(null)
   const [checkError, setCheckError] = useState(false)
   const [feedback, setFeedback] = useState<'none' | 'yes' | 'no'>('none')
+  // "הסתדר" — רק כשהשרת אישר ניסיון חדש ומוצלח באותה פעולה, אחרי השגיאה.
+  const [resolved, setResolved] = useState(false)
+  useEffect(() => {
+    if (errorAt === undefined) return
+    return onApiEvent((e) => {
+      if (e.ok && e.at > errorAt && (tree.errorMatch ?? []).some((m) => m.method === e.method && m.path === e.path)) {
+        setResolved(true)
+      }
+    })
+  }, [errorAt, tree])
 
   useEffect(() => {
     if (!guest) return
@@ -571,9 +604,16 @@ function TreeView({
     )
   }
 
+  // עובדות השגיאה: אם נפתחנו משגיאה מסוימת — רק ממנה (ורק אם היא עוד "עכשיו");
+  // אחרת — השגיאה האחרונה שמתאימה לעץ, מ-5 הדקות האחרונות. אין → "לא ראינו שגיאה".
+  const pinned = errorAt !== undefined ? findErrorAt(errorAt) : null
+  const errorFacts =
+    errorAt !== undefined
+      ? pinned ? errorFactsFor(tree.errorMatch, [pinned], Date.now()) : {}
+      : errorFactsFor(tree.errorMatch, openErrors(), Date.now())
   const facts: Facts = {
     ...baseFacts,
-    ...errorFactsFor(tree.errorMatch, recentErrors(), Date.now()),
+    ...errorFacts,
     ...(guestFacts ?? {}),
   }
   const { step } = runTree(tree, facts, answers)
@@ -582,6 +622,7 @@ function TreeView({
   return (
     <div className="help-section">
       <h3 className="help-h3">{title}</h3>
+      {resolved && <p className="help-note" role="status">{t.resolvedNote}</p>}
       {guest && <p className="help-muted">{guest.name}</p>}
 
       {step.kind === 'ask' && (
@@ -616,6 +657,11 @@ function TreeView({
             </button>
           )}
           <Feedback state={feedback} onYes={() => setFeedback('yes')} onNo={() => setFeedback('no')} />
+          {feedback === 'no' && (
+            <button type="button" className="help-item help-item-quiet" onClick={onHome}>
+              {t.moreHelp}
+            </button>
+          )}
         </>
       )}
 

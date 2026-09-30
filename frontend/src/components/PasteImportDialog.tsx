@@ -6,6 +6,7 @@ import { GROUP_LABELS } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { useHelpScope } from '../help/useHelpScope'
+import { HelpErrorHint } from '../help/HelpErrorHint'
 import { type EditRow, normalizePhone, rowIssues } from '../lib/importRows'
 
 const t = strings.guests
@@ -150,6 +151,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
               autoFocus
             />
             {error && <p className="form-error" role="alert">{error}</p>}
+            <HelpErrorHint message={error} />
             <div className="add-actions">
               <button
                 className="btn-primary"
@@ -316,6 +318,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
             </div>
 
             {error && <p className="form-error" role="alert">{error}</p>}
+            <HelpErrorHint message={error} />
 
             <p className="import-consent-disclosure">
               המשתמש מאשר כי יש לו הרשאה להשתמש בפרטי הקשר שהועלו למערכת

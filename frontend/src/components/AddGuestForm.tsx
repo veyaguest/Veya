@@ -5,6 +5,7 @@ import { GROUP_LABELS, RSVP_LABELS } from '../types'
 import { activeEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
 import { useHelpScope } from '../help/useHelpScope'
+import { HelpErrorHint } from '../help/HelpErrorHint'
 
 const t = strings.guests
 const tc = strings.common
@@ -223,6 +224,7 @@ export function AddGuestForm({ onAdded, onCancel, guest }: Props) {
       </div>
 
       {error && <p className="form-error" role="alert">{error}</p>}
+      <HelpErrorHint message={error} />
 
       <div className="add-actions">
         <button type="submit" className="btn-primary" data-help="guestForm.submit" disabled={saving}>

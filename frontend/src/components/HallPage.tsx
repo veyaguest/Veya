@@ -38,6 +38,7 @@ import { activeEventTerms } from '../strings/eventTypes'
 import { HALL_DESKTOP_QUERY, useMediaQuery } from '../lib/useMediaQuery'
 import { useHelpScope } from '../help/useHelpScope'
 import { onGuideRequest } from '../help/bridge'
+import { HelpErrorHint } from '../help/HelpErrorHint'
 import { useFocusTrap } from '../lib/useFocusTrap'
 import { strings } from '../strings/he'
 import { getGroupNotes } from '../api'
@@ -4221,6 +4222,7 @@ export function HallPage({
               </button>
             </div>
           )}
+          <HelpErrorHint message={error} />
           {/* באנר "מצב העברה" — פעיל בכל הלשוניות כשנבחר מוזמן להעברה */}
           {selected !== null && (
             <div className="hm-move-banner">

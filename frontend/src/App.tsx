@@ -43,6 +43,7 @@ import { ReconsentModal } from './components/ReconsentModal'
 import { RsvpPage } from './components/RsvpPage'
 import { VeyaLoader } from './components/VeyaLoader'
 import { HelpHost, HelpLauncher } from './help/HelpHost'
+import { setHelpEnabled } from './help/helpStore'
 import type { GuestFilter as HelpGuestFilter } from './help/types'
 import type { GuestFilter } from './api'
 import type { EventSummary, User } from './types'
@@ -494,6 +495,14 @@ function App() {
   const giftsEligible = activeEventForGifts?.gift_service_eligible ?? false
   // רק כשהאירוע כבר נטען: ברענון של /app/gifts האירועים עוד לא הגיעו, ובלי
   // התנאי הזה המסך היה "בורח" לתמונת המצב לפני שידוע אם הוא זכאי.
+  // "עזרה" פתוחה רק כשהשרת אמר שכן לאירוע הזה (help_enabled), ורק במסכי
+  // בעלי האירוע — לא אדמין ולא טלפן. רכיבי "צריכים עזרה עם זה?" קוראים מכאן.
+  const helpOn =
+    !!user && !user.is_admin && user.account_type !== 'phone_agent' &&
+    activeEventForGifts?.help_enabled === true
+  useEffect(() => {
+    setHelpEnabled(helpOn)
+  }, [helpOn])
   useEffect(() => {
     if (page === 'gifts' && activeEventForGifts && !giftsEligible) {
       setPage('dashboard')

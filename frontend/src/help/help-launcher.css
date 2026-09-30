@@ -65,3 +65,27 @@
     transition: none;
   }
 }
+
+/* "צריכים עזרה עם זה?" — שורה קטנה מתחת לשגיאה. לא חלון, לא באנר. */
+.help-error-hint {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--body);
+}
+.help-error-hint-btn {
+  min-height: 32px;
+  padding: 0 var(--space-1);
+  border: none;
+  background: none;
+  color: var(--gold-deep);
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.help-error-hint-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
