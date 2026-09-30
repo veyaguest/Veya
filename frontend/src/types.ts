@@ -2160,6 +2160,10 @@ export interface FinanceSummary {
   income: GiftIncome
   breakdown: GiftBreakdown
   counting_open: boolean
+  /** סומן "סיימנו לספור", ומאז לא נכנסה מתנה ⇒ המאזן סופי. נגזר בשרת. */
+  counting_done: boolean
+  /** סומן, אבל מאז נוספה/שולמה מתנה ⇒ חזרה ל"עד עכשיו". */
+  counting_reopened: boolean
   /** הכנסות פחות הוצאות. ``null`` כשצד ההכנסות חסום חלקית. */
   bottom_line_agorot: number | null
   bottom_line_display: string

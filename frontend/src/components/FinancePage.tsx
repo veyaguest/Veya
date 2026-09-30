@@ -16,6 +16,7 @@ import {
   getGiftsByGuest,
   getRsvpTimeline,
   setAttendance,
+  setCountingDone,
   updateExpense,
   type GuestFilter,
 } from '../api'
@@ -181,6 +182,18 @@ export function FinancePage({
   const [countingNow, setCountingNow] = useState(false)
   const [deletingEnvelope, setDeletingEnvelope] = useState<GiftEntry | null>(null)
   const [applying, setApplying] = useState(false)
+  // "סיימנו לספור" / ביטול — פעולה אחת בכל רגע, ושגיאה שמוצגת ליד הכפתור.
+  const [markingDone, setMarkingDone] = useState(false)
+  const [markError, setMarkError] = useState<string | null>(null)
+  // אחרי סימון/ביטול שמעבירים מסך — גוללים לראש המסך החדש, כדי ש"המאזן
+  // הסופי" ייראה מיד. המעבר עצמו אסינכרוני (history.back ⇒ popstate), ולכן
+  // הגלילה קורית ב-effect של ``view`` ולא מיד אחרי הקריאה.
+  const scrollOnViewChange = useRef(false)
+  useEffect(() => {
+    if (!scrollOnViewChange.current) return
+    scrollOnViewChange.current = false
+    rootRef.current?.scrollIntoView({ block: 'start' })
+  }, [view])
 
   // רשימת ההוצאות המלאה — סגורה כברירת מחדל (רואים את הקבוצות הגדולות),
   // ונפתחת מ"הצגת כל ההוצאות", ממשימה, או אחרי שמירה.
@@ -240,6 +253,27 @@ export function FinancePage({
       document.getElementById('fin-report')?.scrollIntoView({ block: 'start' }),
     )
   }, [])
+
+  /**
+   * "סיימנו לספור" או ביטולו. אחרי הסימון חוזרים לסקירה — שם מופיע "המאזן
+   * הסופי", וזו התוצאה שהמשתמש רצה לראות. "המשך ספירה" מבטל ופותח את
+   * מסך הספירה.
+   */
+  async function markCounting(done: boolean, then?: View) {
+    setMarkingDone(true)
+    setMarkError(null)
+    try {
+      setData(await setCountingDone(done))
+      if (then) {
+        scrollOnViewChange.current = true
+        setView(then)
+      }
+    } catch (e) {
+      setMarkError(e instanceof Error ? e.message : t.saveError)
+    } finally {
+      setMarkingDone(false)
+    }
+  }
 
   function applyTemplate() {
     setApplying(true)
@@ -330,6 +364,10 @@ export function FinancePage({
             onSaved={refresh}
             onLoadByGuest={() => getGiftsByGuest().then(setByGuest).catch(() => setByGuest([]))}
             onDeleteEntry={setDeletingEnvelope}
+            marking={markingDone}
+            markError={markError}
+            onMarkDone={() => markCounting(true, 'overview')}
+            onUndoDone={() => markCounting(false)}
           />
         </>
       ) : (
@@ -337,7 +375,11 @@ export function FinancePage({
           <p className="fin-lede">{o.lede}</p>
 
           {/* 1–2. התשובה: מאזן (או עלות, כשעוד אין מתנות) — ולצידו מתנות מול הוצאות. */}
-          <BalanceHero data={data} />
+          <BalanceHero
+            data={data}
+            continuing={markingDone}
+            onContinueCounting={() => markCounting(false, 'counting')}
+          />
 
           {/* 3. איפה אנחנו בדרך. */}
           <Journey data={data} counting={counting} timeline={timeline} />
@@ -455,7 +497,16 @@ export function FinancePage({
  * אם סכומי האשראי חסומים (``bottom_line_agorot === null``) לא מוצג מאזן
  * בכלל — מספר שמחושב מנתון חלקי הוא הטעיה, לא קירוב.
  */
-function BalanceHero({ data }: { data: FinanceSummary }) {
+function BalanceHero({
+  data,
+  continuing,
+  onContinueCounting,
+}: {
+  data: FinanceSummary
+  continuing: boolean
+  /** "שינוי / המשך ספירה" — מבטל את הסימון ופותח את מסך הספירה. */
+  onContinueCounting: () => void
+}) {
   const [how, setHow] = useState(false)
   const { cost, attendance, rsvp, income } = data
   const final = attendance.is_final
@@ -482,8 +533,10 @@ function BalanceHero({ data }: { data: FinanceSummary }) {
     const tone = bottom > 0 ? 'is-positive' : bottom < 0 ? 'is-negative' : ''
     return (
       <section className="fin-balance" aria-labelledby="fin-balance-title">
+        {/* "המאזן הסופי" רק כשהשרת אומר שסיימתם לספור ומאז לא נכנסה
+            מתנה (``counting_done``) — אף פעם לא רק כי יש מתנות. */}
         <h2 id="fin-balance-title" className="fin-balance-eyebrow">
-          {o.balanceLabel}
+          {data.counting_done ? o.balanceFinalLabel : o.balanceLabel}
         </h2>
         {/* הסכום המוחלט: הסימן נאמר במילים שמתחת, ומינוס לצידו היה אומר
             את אותו דבר פעמיים. */}
@@ -494,8 +547,24 @@ function BalanceHero({ data }: { data: FinanceSummary }) {
           {bottom > 0 ? o.balanceSurplus : bottom < 0 ? o.balanceDeficit : o.balanceEven}
         </p>
         <p className="fin-balance-note">
-          {data.counting_open ? o.balanceBasis : o.balanceBasisEarly}
+          {data.counting_done
+            ? o.balanceFinalNote
+            : data.counting_reopened
+              ? o.reopenedNote
+              : data.counting_open
+                ? o.balanceBasis
+                : o.balanceBasisEarly}
         </p>
+        {data.counting_done && (
+          <button
+            type="button"
+            className="btn-link fin-how-btn"
+            disabled={continuing}
+            onClick={onContinueCounting}
+          >
+            {o.continueCounting}
+          </button>
+        )}
 
         <dl className="fin-balance-vs">
           <div>
@@ -601,8 +670,8 @@ function waitingExpenses(data: FinanceSummary): Expense[] {
 
 /**
  * חמש תחנות, **כל אחת נגזרת מנתון קיים** — אין כאן תחנה שמסומנת "הושלמה"
- * בלי שהנתונים אומרים את זה. "מאזן סופי" לא מסומן כהושלם אף פעם: אין
- * במערכת רגע שבו הספירה "נסגרת", והמסך לא ימציא אותו.
+ * בלי שהנתונים אומרים את זה. "מתנות" ו"מאזן סופי" מסומנים כהושלמו רק לפי
+ * ``counting_done`` מהשרת ("סיימנו לספור", ומאז לא נכנסה מתנה).
  */
 function journeySteps(
   data: FinanceSummary,
@@ -653,18 +722,25 @@ function journeySteps(
     {
       key: 'gifts',
       title: o.stepGifts,
-      detail: !counting.counting_open
-        ? o.stepGiftsLater
-        : hasGifts
-          ? o.stepGiftsCounted(income.total_display)
-          : o.stepGiftsOpen,
-      done: false,
+      detail: data.counting_done
+        ? o.stepGiftsDone
+        : !counting.counting_open
+          ? o.stepGiftsLater
+          : hasGifts
+            ? o.stepGiftsCounted(income.total_display)
+            : o.stepGiftsOpen,
+      // "הושלם" רק לפי הסימון שבשרת — לא כי יש מתנות.
+      done: data.counting_done,
     },
     {
       key: 'balance',
       title: o.stepBalance,
-      detail: hasGifts ? o.stepBalanceLive : o.stepBalanceLater,
-      done: false,
+      detail: data.counting_done
+        ? o.stepBalanceDone
+        : hasGifts
+          ? o.stepBalanceLive
+          : o.stepBalanceLater,
+      done: data.counting_done,
     },
   ]
 }
@@ -762,7 +838,9 @@ function NextSteps({
   const askAttendance = attendance.event_passed && !attendance.is_final
   const items: Todo[] = []
 
-  if (counting.counting_open) {
+  // אחרי "סיימנו לספור" הספירה היא כבר לא משימה פתוחה. מתנה חדשה מחזירה
+  // את המצב (``counting_done`` נהיה false) — והפריט חוזר מעצמו.
+  if (counting.counting_open && !data.counting_done) {
     const hasGifts = income.envelopes_count + income.credit_count > 0
     items.push({
       key: 'count',
@@ -1643,6 +1721,10 @@ function CountingTab({
   onSaved,
   onLoadByGuest,
   onDeleteEntry,
+  marking,
+  markError,
+  onMarkDone,
+  onUndoDone,
 }: {
   data: FinanceSummary
   counting: GiftCounting
@@ -1653,6 +1735,10 @@ function CountingTab({
   onSaved: () => void
   onLoadByGuest: () => void
   onDeleteEntry: (e: GiftEntry) => void
+  marking: boolean
+  markError: string | null
+  onMarkDone: () => void
+  onUndoDone: () => void
 }) {
   // הספירה נפתחת מיום האירוע ואילך. הנעילה **מסבירה את עצמה** ואומרת
   // מתי היא נפתחת — מסך נעול בלי הסבר הוא מסך שבור מבחינת המשתמש.
@@ -1724,6 +1810,45 @@ function CountingTab({
           <button type="button" className="btn-primary" onClick={onStart}>
             {t.startCounting}
           </button>
+        </div>
+      )}
+
+      {/* "סיימנו לספור" — רק כשיש מה לסכם, ולא באמצע הזנת מעטפות. זה סימון
+          "נכון לרגע זה", לא נעילה: הספירה נשארת פתוחה גם אחריו. */}
+      {!countingNow && counting.entries.length > 0 && (
+        <div className="fin-quiet fin-done">
+          {data.counting_done ? (
+            <>
+              <p className="fin-quiet-title">{o.doneBanner}</p>
+              <p className="fin-hint">{o.doneBannerHint}</p>
+              <button
+                type="button"
+                className="btn-link fin-done-btn"
+                disabled={marking}
+                onClick={onUndoDone}
+              >
+                {o.undoDone}
+              </button>
+            </>
+          ) : (
+            <>
+              {data.counting_reopened && <p className="fin-quiet-title">{o.reopenedNote}</p>}
+              <button
+                type="button"
+                className="btn-ghost fin-done-btn"
+                disabled={marking}
+                onClick={onMarkDone}
+              >
+                {o.markDone}
+              </button>
+              <p className="fin-hint">{o.markDoneHint}</p>
+            </>
+          )}
+          {markError && (
+            <p className="form-error" role="alert">
+              {markError}
+            </p>
+          )}
         </div>
       )}
 

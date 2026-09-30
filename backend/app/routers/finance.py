@@ -21,8 +21,8 @@ from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import (
@@ -469,6 +469,7 @@ def summary(
     credit_visible = finance_service.credit_amounts_visible(db, event)
     income = finance_service.gift_income(db, event, credit_visible=credit_visible)
     bottom = finance_service.bottom_line(breakdown, income)
+    counting = finance_service.counting_state(db, event)
 
     return schemas.FinanceSummaryRead(
         rsvp=_rsvp_snapshot(guests),
@@ -479,6 +480,8 @@ def summary(
             finance_service.gift_breakdown(db, event, credit_visible=credit_visible)
         ),
         counting_open=finance_service.counting_open(event),
+        counting_done=counting.done,
+        counting_reopened=counting.reopened,
         bottom_line_agorot=bottom,
         bottom_line_display=finance.format_shekels(bottom),
         expenses=[_expense_read(e, breakdown.lines[e.id], event.event_type) for e in expenses],
@@ -792,6 +795,48 @@ def set_attendance(
         ip=request.client.host if request.client else None,
     )
     db.commit()
+    return summary(db=db, event=event)
+
+
+@router.put("/counting-done", response_model=schemas.FinanceSummaryRead)
+def set_counting_done(
+    payload: schemas.CountingDoneWrite,
+    request: Request,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+    user: models.User = Depends(get_current_user),
+):
+    """"סיימנו לספור" את המתנות — או ביטול הסימון.
+
+    **נכון לאותו רגע, לא נעילה** (החלטת מייסד 2026-09-30). לא נחסם כאן
+    שום דבר: אפשר להמשיך להוסיף מעטפות, ומתנה שנכנסת אחרי הסימון מחזירה
+    את המאזן ל"עד עכשיו" מעצמה (``finance_service.counting_state``).
+
+    החותמת נכתבת משעון מסד הנתונים (``func.now()``) — אותו שעון שממנו
+    מגיעים זמני המעטפות והתשלומים שמושווים אליה. שעון השרת היה יכול
+    לסטות ממנו (אזור זמן, סנכרון), וזו בדיוק ההשוואה שחייבת להיות נכונה.
+
+    לא נוגע בשום סכום: לא בעלות, לא במתנות ולא בשורה התחתונה.
+    """
+    if payload.done and not finance_service.counting_open(event):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="ספירת המתנות נפתחת ביום האירוע, ורק אז אפשר לסמן שסיימתם לספור.",
+        )
+    if payload.done:
+        event.gift_counting_done_at = func.now()
+        event.gift_counting_done_by = user.id
+    else:
+        event.gift_counting_done_at = None
+        event.gift_counting_done_by = None
+    audit.record(
+        db, "finance_counting_done" if payload.done else "finance_counting_reopened",
+        event_id=event.id, user_id=user.id,
+        detail="סומן שספירת המתנות הסתיימה" if payload.done else "בוטל סימון סיום ספירת המתנות",
+        ip=request.client.host if request.client else None,
+    )
+    db.commit()
+    db.refresh(event)
     return summary(db=db, event=event)
 
 

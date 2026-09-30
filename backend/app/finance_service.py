@@ -95,6 +95,58 @@ def counting_open(event: models.Event, *, today: Optional[date] = None) -> bool:
     return days <= 0
 
 
+@dataclass(frozen=True)
+class CountingState:
+    """מצב "סיימנו לספור" — ``done`` ו-``reopened`` לעולם לא שניהם אמת."""
+
+    #: סומן, ומאז לא נוספה ולא שולמה אף מתנה ⇒ המאזן סופי.
+    done: bool
+    #: סומן, אבל מאז נכנסה מתנה ⇒ חזרה ל"עד עכשיו", וזה מה שהמסך אומר.
+    reopened: bool
+
+
+def counting_state(db: Session, event: models.Event) -> CountingState:
+    """האם המאזן סופי — **נגזר, לא שמור.**
+
+    "סיימנו לספור" פירושו "נכון לאותו רגע" (החלטת מייסד 2026-09-30). לכן
+    כל מתנה שנכנסה **אחרי** החותמת מבטלת את הסופיות, בלי שום כתיבה:
+
+    - מעטפה — ``created_at`` מאוחר מהחותמת.
+    - מתנת אשראי ``paid`` — ``updated_at`` מאוחר מהחותמת. זה הזמן שבו
+      העסקה הפכה ל-paid (``app_update_gift_status`` / ``onupdate``). עדכון
+      מאוחר אחר של אותה שורה היה מחזיר ל"עד עכשיו" — כיוון הטעות הבטוח:
+      לעולם לא מציגים "סופי" כשזה לא.
+
+    הגזירה (ולא איפוס החותמת בזמן התשלום) היא מה שמאפשר לכסות גם את
+    האשראי: העסקה נרשמת בסשן של נותן המתנה, שאין לו הרשאה לשורת האירוע.
+
+    לפני יום האירוע אין "סופי" בכלל — גם אם נשארה חותמת מאירוע שנדחה.
+    """
+    done_at = event.gift_counting_done_at
+    if done_at is None or not counting_open(event):
+        return CountingState(done=False, reopened=False)
+
+    newer_envelopes = db.scalar(
+        select(func.count())
+        .select_from(models.GiftEnvelope)
+        .where(
+            models.GiftEnvelope.event_id == event.id,
+            models.GiftEnvelope.created_at > done_at,
+        )
+    )
+    newer_credit = db.scalar(
+        select(func.count())
+        .select_from(models.Gift)
+        .where(
+            models.Gift.event_id == event.id,
+            models.Gift.status == gift_status.PAID,
+            models.Gift.updated_at > done_at,
+        )
+    )
+    reopened = bool(newer_envelopes or newer_credit)
+    return CountingState(done=not reopened, reopened=reopened)
+
+
 # ════════════════════════════════════════════════════════════════════════
 #  הוצאות
 # ════════════════════════════════════════════════════════════════════════

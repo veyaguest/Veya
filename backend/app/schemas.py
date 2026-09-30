@@ -2639,6 +2639,12 @@ class AttendanceRead(BaseModel):
     event_passed: bool = False
 
 
+class CountingDoneWrite(BaseModel):
+    """``True`` — "סיימנו לספור" (נכון לרגע זה). ``False`` — ביטול הסימון."""
+
+    done: bool
+
+
 class AttendanceWrite(BaseModel):
     """``None`` מנקה את המספר ומחזיר את החישוב לאישורי ההגעה."""
 
@@ -2838,6 +2844,10 @@ class FinanceSummaryRead(BaseModel):
     income: GiftIncomeRead
     breakdown: GiftBreakdownRead
     counting_open: bool
+    #: סומן "סיימנו לספור", ומאז לא נוספה ולא שולמה מתנה ⇒ המאזן סופי.
+    counting_done: bool = False
+    #: סומן, אבל מאז נוספה/שולמה מתנה ⇒ חזרה ל"עד עכשיו" (לא ביטול ידני).
+    counting_reopened: bool = False
     #: הכנסות פחות הוצאות. ``None`` כשצד ההכנסות חסום חלקית.
     bottom_line_agorot: Optional[int] = None
     bottom_line_display: str = ""

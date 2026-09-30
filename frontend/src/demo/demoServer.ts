@@ -204,6 +204,8 @@ function summary(): FinanceSummary {
       guests_not_counted: GUESTS.length - counted,
     } as FinanceSummary['breakdown'],
     counting_open: true,
+    counting_done: false,
+    counting_reopened: false,
     bottom_line_agorot: agorot,
     bottom_line_display: formatAgorot(agorot),
     expenses: [],

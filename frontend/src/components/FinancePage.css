@@ -573,6 +573,26 @@
   color: var(--body);
 }
 
+/* "סיימנו לספור" במסך הספירה — מסגרת דקה כמו שאר מצבי "עוד לא". */
+.fin-done {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.fin-done .fin-hint {
+  margin: 0;
+}
+
+.fin-done-btn {
+  min-height: var(--control-h);
+}
+
+.fin-done .btn-link {
+  padding: 0;
+}
+
 /* ── 7. הפירוט המלא ──────────────────────────────────────────────── */
 
 .fin-details-head {

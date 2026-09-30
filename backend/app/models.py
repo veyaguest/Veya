@@ -190,6 +190,18 @@ class Event(Base):
     #: מידע נפרד, ומספר כולל אינו יודע מי מבין המאשרים לא הגיע.
     actual_attendance: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
+    #: מתי סומן "סיימנו לספור" את המתנות, ומי סימן. ``None`` = לא סומן.
+    #:
+    #: **חותמת זמן ולא דגל, ובכוונה.** "סיימנו לספור" פירושו "נכון לאותו
+    #: רגע", לא נעילה (החלטת מייסד 2026-09-30): מתנה שנוספה או שולמה אחרי
+    #: החותמת מחזירה את המאזן ל"עד עכשיו". המצב הזה **נגזר בזמן קריאה**
+    #: (``finance_service.counting_state``) ולא נכתב — כי מתנת אשראי נרשמת
+    #: בסשן של נותן המתנה, שאין לו הרשאה לעדכן את שורת האירוע. החותמת
+    #: נכתבת משעון מסד הנתונים (``func.now()``), אותו שעון של
+    #: ``GiftEnvelope.created_at`` ו-``Gift.updated_at`` שמושווים אליה.
+    gift_counting_done_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    gift_counting_done_by: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
     # מתי נסגר לראשונה מדריך ההדרכה של מפת האולם. None = טרם נסגר. ברמת
     # אירוע (לא משתמש) בכוונה: כל אירוע חדש — גם של אותו בעלים — אמור
     # להראות את המדריך פעם אחת משלו (ראה routers/hall.py::get_hall).

@@ -203,6 +203,9 @@ _EXTRA_COLUMNS = {
         "actual_attendance": "INTEGER",
         # מתי נסגר לראשונה מדריך ההדרכה של מפת האולם. ראו models.Event.
         "seating_guide_seen_at": "TIMESTAMP",
+        # "סיימנו לספור" את המתנות — מתי ומי. NULL = לא סומן. ראו models.Event.
+        "gift_counting_done_at": "TIMESTAMP",
+        "gift_counting_done_by": "INTEGER",
     },
     # כספי האירוע — שדות שנוספו אחרי הטבלה המקורית.
     "event_expenses": {

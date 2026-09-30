@@ -1839,6 +1839,17 @@ export async function setAttendance(actual: number | null): Promise<FinanceSumma
   return res.json()
 }
 
+/** "סיימנו לספור" (נכון לרגע זה) או ביטול הסימון. מחזיר את הסיכום המלא. */
+export async function setCountingDone(done: boolean): Promise<FinanceSummary> {
+  const res = await apiFetch('/finance/counting-done', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ done }),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
 // ---- יומן התשלומים ----
 //
 // שלוש הפעולות מחזירות את **שורת ההוצאה כולה** ולא את התשלום: כך המסך
