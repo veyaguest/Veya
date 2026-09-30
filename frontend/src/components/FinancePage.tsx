@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 // מונוגרם VEYA הרשמי — data URI מוטבע בזמן build, כי חלון ההדפסה נפתח
 // כ-``about:blank`` ולא פותר כתובת יחסית/מוחלטת כמו ``/logo_nobg.png``.
 // ראו ``printReport``.
@@ -14,8 +14,10 @@ import {
   getGiftCounting,
   getFinanceReport,
   getGiftsByGuest,
+  getRsvpTimeline,
   setAttendance,
   updateExpense,
+  type GuestFilter,
 } from '../api'
 import type {
   Attendance,
@@ -29,6 +31,7 @@ import type {
   GiftCounting,
   GiftEntry,
   GuestGiftRow,
+  RsvpTimelineView,
 } from '../types'
 import { strings } from '../strings/he'
 import { activeEventTerms } from '../strings/eventTypes'
@@ -38,68 +41,93 @@ import { ExpenseEditor } from './ExpenseEditor'
 import { downloadWorkbook, type Cell } from '../lib/xlsx'
 import './FinancePage.css'
 import { useHelpScope } from '../help/useHelpScope'
-import type { ScopeId } from '../help/scopes'
 
 const t = strings.finance
-
-type Tab = 'cost' | 'counting' | 'summary'
+const o = t.overview
 
 /**
- * "כספי האירוע" — עלות האירוע, ספירת המתנות שאחריו, והתוצאה.
+ * "מאזן האירוע" — המסך שעונה על ארבע שאלות, בסדר הזה: כמה האירוע עולה,
+ * כמה נכנס, כמה נשאר — ומה עושים עכשיו.
  *
- * ## למה זה מסך אחד עם שלוש לשוניות ולא שלושה מסכים
+ * ## סקירה אחת במקום שלוש לשוניות (2026-09-29)
  *
- * זו שרשרת אחת: מוזמנים ← אישורי הגעה ← עלות ← מתנות ← תוצאה. פיצול
- * לשלושה פריטי ניווט היה מסתיר בדיוק את הקשר הזה, וגם היה מוסיף שלושה
- * פריטים לניווט של חמישה. הלשונית הפעילה נבחרת לפי מצב האירוע: לפני
- * האירוע נפתחים בעלות, מיום האירוע ואילך בספירת המתנות.
+ * עד היום המסך התפצל ל"עלות", "ספירת מתנות" ו"סיכום", ואף לשונית לא ענתה
+ * לבד על "כמה יישאר לנו". עכשיו יש סקירה אחת, מהכללי לפרטני: הגיבור
+ * (מאזן או עלות), אבני הדרך, מה נשאר לעשות, כסף שנכנס, כמה האירוע עולה,
+ * ובסוף הפירוט המלא — מקופל. **שום נתון לא נמחק**: מה שהיה בלשונית
+ * הסיכום יושב בפירוט, וספירת המעטפות היא מסך-עבודה משני (``?tab=counting``)
+ * שנפתח מהסקירה.
+ *
+ * ## אין "הכנסה צפויה"
+ *
+ * VEYA לא יודעת כמה ייתנו, ולא מנחשת (החלטת בעלים 2026-09-29). לפני
+ * ספירת המתנות הגיבור הוא העלות, ומשפט אחד אומר מתי יתברר המאזן; מהמתנה
+ * הראשונה — המאזן עצמו.
  *
  * ## המסך לא מחשב כסף
  *
  * כל מספר כאן מגיע מוכן מהשרת (``total_display``, ``next_attendee_display``
  * וכו'). אותו כלל שכבר נאכף במתנות (``app/gift.py``): שני מקורות חישוב
- * לאותו מספר הם ההגדרה של באג שמתגלה מול חשבונית. היוצא מן הכלל היחיד
- * הוא ייצוא הדוח, שמעצב מחדש מספרים שכבר חושבו.
+ * לאותו מספר הם ההגדרה של באג שמתגלה מול חשבונית. מה שהמסך כן עושה הוא
+ * **לבחור מה להציג** — מיון קבוצות לפי הסכום שהשרת חישב, וספירת שורות
+ * בלי סכום. היוצא מן הכלל היחיד הוא ייצוא הדוח, שמעצב מספרים שכבר חושבו.
  *
  * ## Event-first
  *
- * כותרות הלשוניות נבנות מהלקסיקון (``activeEventTerms().eventNoun``) —
- * "עלות החתונה" בחתונה, "עלות הברית" בברית. אין כאן מילה חתונתית קשיחה.
- * שם העמוד עצמו (``t.navTitle``) הוא היוצא מן הכלל: "מאזן האירוע" קבוע
- * וזהה בכל סוגי האירוע (החלטת בעלים 2026-09-15) — לא נגזר מהלקסיקון.
+ * "האירוע" הוא מונח משותף לכל שבעת הסוגים; מה שתלוי בסוג (תבנית
+ * ההוצאות, כותרות הדוח) עובר דרך הלקסיקון (``activeEventTerms``). שם
+ * העמוד (``t.navTitle``) קבוע: "מאזן האירוע" (החלטת בעלים 2026-09-15).
  */
-const TABS: readonly Tab[] = ['cost', 'counting', 'summary']
+type View = 'overview' | 'counting'
 
-function tabFromUrl(): Tab | null {
-  const value = new URLSearchParams(window.location.search).get('tab')
-  return TABS.includes(value as Tab) ? (value as Tab) : null
+function viewFromUrl(): View {
+  // ``cost``/``summary`` הישנים (לפני 2026-09-29) נופלים לסקירה.
+  return new URLSearchParams(window.location.search).get('tab') === 'counting'
+    ? 'counting'
+    : 'overview'
 }
 
-/** הלשונית → המקום שהעזרה מכירה (help/scopes.ts). */
-const FINANCE_SCOPES: Record<Tab, ScopeId> = {
-  cost: 'finance.cost',
-  counting: 'finance.counting',
-  summary: 'finance.summary',
-}
+/** לאן המסך יכול לשלוח — אותו ``goTo`` של ``App``. */
+export type FinanceNavigate = (
+  target: 'guests' | 'rsvp' | 'dashboard',
+  options?: { guestFilter?: GuestFilter },
+) => void
 
-export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') => void }) {
+export function FinancePage({
+  onNavigate,
+  initialView,
+}: {
+  onNavigate?: FinanceNavigate
+  /** ההדגמה בדף הנחיתה נפתחת ישר על ספירת המעטפות. */
+  initialView?: View
+}) {
   const terms = activeEventTerms()
 
   const [data, setData] = useState<FinanceSummary | null>(null)
   const [categories, setCategories] = useState<ExpenseCategory[]>([])
   const [counting, setCounting] = useState<GiftCounting | null>(null)
   const [byGuest, setByGuest] = useState<GuestGiftRow[] | null>(null)
+  // מועד סגירת הרשימה — מיומן אישורי ההגעה. **תוספת ולא תנאי**: אם הקריאה
+  // נכשלת, פשוט אין אבן דרך/משימה שנשענת עליו. המסך הכספי לא נופל בגללו.
+  const [timeline, setTimeline] = useState<RsvpTimelineView | null>(null)
 
-  // הלשונית נשמרת בכתובת (?tab=) — כך רענון ו"חזור" מחזירים לאותה לשונית.
-  const [tab, setTabState] = useState<Tab | null>(() => tabFromUrl())
-  const setTab = useCallback((next: Tab) => {
-    setTabState(next)
+  // המסך נשמר בכתובת (?tab=counting) — כך רענון מחזיר לאותו מקום.
+  const [view, setViewState] = useState<View>(() => initialView ?? viewFromUrl())
+  const rootRef = useRef<HTMLDivElement>(null)
+  const setView = useCallback((next: View) => {
+    setViewState(next)
     const url = new URL(window.location.href)
-    url.searchParams.set('tab', next)
+    if (next === 'counting') url.searchParams.set('tab', 'counting')
+    else url.searchParams.delete('tab')
     window.history.replaceState(window.history.state, '', url.pathname + url.search)
+    // מעבר מסך מתחיל מראשו — אבל רק אם ראש המסך כבר גלול מעל הקצה, כדי
+    // לא להזיז דף שמטמיע את המסך (ההדגמה בדף הנחיתה).
+    const top = rootRef.current?.getBoundingClientRect().top ?? 0
+    if (top < 0) rootRef.current?.scrollIntoView({ block: 'start' })
   }, [])
   useHelpScope('finance')
-  useHelpScope(tab ? FINANCE_SCOPES[tab] : null)
+  useHelpScope(view === 'counting' ? 'finance.counting' : 'finance.cost')
+  useHelpScope(view === 'counting' ? null : 'finance.summary')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
@@ -108,11 +136,16 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
   // הקבוצה שממנה נלחץ "הוספה ל…" — הקטלוג נפתח עליה במקום על תשע קבוצות.
   const [addCategory, setAddCategory] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  // הקבוצה של ההוצאה שנשמרה אחרונה — נפתחת, כדי שהשורה תיראה מיד.
-  const [lastSavedCategory, setLastSavedCategory] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [countingNow, setCountingNow] = useState(false)
   const [deletingEnvelope, setDeletingEnvelope] = useState<GiftEntry | null>(null)
+  const [applying, setApplying] = useState(false)
+
+  // רשימת ההוצאות המלאה — סגורה כברירת מחדל (רואים את הקבוצות הגדולות),
+  // ונפתחת מ"הצגת כל ההוצאות", ממשימה, או אחרי שמירה.
+  const [showAllExpenses, setShowAllExpenses] = useState(false)
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
+  const expensesRef = useRef<HTMLElement>(null)
 
   // מסלול טעינה אחד בלבד, עם אותו ניקוי — בדיוק כמו ב-GiftsPage. כפתור
   // "ניסיון חוזר" מגדיל את המונה וה-effect רץ מחדש.
@@ -126,12 +159,12 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
         setData(summary)
         setCategories(cats)
         setCounting(count)
-        // הלשונית הראשונה נבחרת פעם אחת בלבד, לפי מצב האירוע — ואחר כך
-        // בחירת המשתמש מנצחת ולא נדרסת בכל רענון.
-        setTabState((prev) => prev ?? (count.counting_open ? 'counting' : 'cost'))
       })
       .catch((e) => alive && setError(e instanceof Error ? e.message : t.loadError))
       .finally(() => alive && setLoading(false))
+    getRsvpTimeline()
+      .then((tl) => alive && setTimeline(tl))
+      .catch(() => undefined)
     return () => {
       alive = false
     }
@@ -150,6 +183,26 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
     if (byGuest !== null) getGiftsByGuest().then(setByGuest).catch(() => undefined)
   }, [byGuest])
 
+  /** פותח את רשימת ההוצאות המלאה (ואת הקבוצות שביקשו) וגולל אליה. */
+  const openExpenses = useCallback((groups: string[] = []) => {
+    setShowAllExpenses(true)
+    setOpenGroups((prev) => new Set([...prev, ...groups]))
+    requestAnimationFrame(() => expensesRef.current?.scrollIntoView({ block: 'start' }))
+  }, [])
+
+  function applyTemplate() {
+    setApplying(true)
+    applyExpenseTemplate()
+      .then(refresh)
+      .catch(() => undefined)
+      .finally(() => setApplying(false))
+  }
+
+  function startAdd(category?: string) {
+    setAddCategory(category ?? null)
+    setEditing(null)
+  }
+
   async function handleSaveExpense(input: ExpenseInput, prepaidAgorot?: number) {
     setSaving(true)
     setSaveError(null)
@@ -166,7 +219,9 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
       }
       setEditing(undefined)
       setAddCategory(null)
-      setLastSavedCategory(input.category)
+      // הקבוצה של ההוצאה שנשמרה נפתחת, כדי שהשורה תיראה מיד.
+      setShowAllExpenses(true)
+      setOpenGroups((prev) => new Set(prev).add(input.category))
       refresh()
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : t.saveError)
@@ -205,59 +260,72 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
   if (!data || !counting) return null
 
   return (
-    <div className="fin-page">
-      {/* גיבור אחד בכל רגע. בלשונית הספירה הגיבור הוא סכום המתנות
-          (בתוך הלשונית עצמה), ובסיכום הוא התוצאה — שני מספרי-ענק זה
-          מעל זה הם היררכיה שבורה, לא צפיפות מידע. */}
-      {tab === 'cost' && <FinanceHero data={data} />}
+    <div className="fin-page" ref={rootRef}>
+      {view === 'counting' ? (
+        <>
+          <button type="button" className="btn-link fin-back" onClick={() => setView('overview')}>
+            {o.back}
+          </button>
+          <CountingTab
+            data={data}
+            counting={counting}
+            byGuest={byGuest}
+            countingNow={countingNow}
+            onStart={() => setCountingNow(true)}
+            onStop={() => {
+              setCountingNow(false)
+              refresh()
+            }}
+            onSaved={refresh}
+            onLoadByGuest={() => getGiftsByGuest().then(setByGuest).catch(() => setByGuest([]))}
+            onDeleteEntry={setDeletingEnvelope}
+          />
+        </>
+      ) : (
+        <>
+          <p className="fin-lede">{o.lede}</p>
 
-      <nav className="fin-tabs" aria-label={t.navTitle}>
-        <TabButton current={tab} value="cost" onSelect={setTab}>
-          {t.costTitle(terms.eventNoun)}
-        </TabButton>
-        <TabButton current={tab} value="counting" onSelect={setTab}>
-          {t.countingTitle}
-        </TabButton>
-        <TabButton current={tab} value="summary" onSelect={setTab}>
-          {t.summaryTitle(terms.eventNoun)}
-        </TabButton>
-      </nav>
+          {/* 1–2. התשובה: מאזן (או עלות, כשעוד אין מתנות) — ולצידו מתנות מול הוצאות. */}
+          <BalanceHero data={data} />
 
-      {tab === 'cost' && (
-        <CostTab
-          data={data}
-          terms={terms}
-          onAttendance={setData}
-          onNavigate={onNavigate}
-          onAdd={(category) => {
-            setAddCategory(category ?? null)
-            setEditing(null)
-          }}
-          onEdit={setEditing}
-          onTemplateApplied={refresh}
-          openCategory={lastSavedCategory}
-        />
-      )}
+          {/* 3. איפה אנחנו בדרך. */}
+          <Journey data={data} counting={counting} timeline={timeline} />
 
-      {tab === 'counting' && (
-        <CountingTab
-          data={data}
-          counting={counting}
-          byGuest={byGuest}
-          countingNow={countingNow}
-          onStart={() => setCountingNow(true)}
-          onStop={() => {
-            setCountingNow(false)
-            refresh()
-          }}
-          onSaved={refresh}
-          onLoadByGuest={() => getGiftsByGuest().then(setByGuest).catch(() => setByGuest([]))}
-          onDeleteEntry={setDeletingEnvelope}
-        />
-      )}
+          {/* 4. הצעד הבא — רק מה שיש לו בסיס בנתונים. */}
+          <NextSteps
+            data={data}
+            counting={counting}
+            timeline={timeline}
+            onOpenExpenses={openExpenses}
+            onCount={() => setView('counting')}
+            onAttendance={setData}
+            onNavigate={onNavigate}
+          />
 
-      {tab === 'summary' && (
-        <SummaryTab data={data} terms={terms} onGoToCost={() => setTab('cost')} />
+          {/* 5. כסף שנכנס. */}
+          <IncomeSection data={data} counting={counting} onCount={() => setView('counting')} />
+
+          {/* 6. כמה האירוע עולה. */}
+          <ExpensesSection
+            sectionRef={expensesRef}
+            data={data}
+            celebration={terms.celebration}
+            applying={applying}
+            onApplyTemplate={applyTemplate}
+            showAll={showAllExpenses}
+            onShowAll={setShowAllExpenses}
+            openGroups={openGroups}
+            onOpenGroups={setOpenGroups}
+            onOpenExpenses={openExpenses}
+            onAdd={startAdd}
+            onEdit={setEditing}
+            onAttendance={setData}
+            onNavigate={onNavigate}
+          />
+
+          {/* 7. הפירוט המלא — מקופל. */}
+          <DetailsSection data={data} terms={terms} />
+        </>
       )}
 
       {editing !== undefined && (
@@ -314,105 +382,543 @@ export function FinancePage({ onNavigate }: { onNavigate?: (target: 'guests') =>
   )
 }
 
-function TabButton({
-  current,
-  value,
-  onSelect,
-  children,
-}: {
-  current: Tab | null
-  value: Tab
-  onSelect: (t: Tab) => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      className={`fin-tab ${current === value ? 'active' : ''}`}
-      aria-current={current === value ? 'page' : undefined}
-      onClick={() => onSelect(value)}
-    >
-      {children}
-    </button>
-  )
-}
-
 // ════════════════════════════════════════════════════════════════════════
-//  הכותרת — העובדה הגדולה
+//  1–2. הגיבור — התשובה לשאלה "איפה אנחנו עומדים"
 // ════════════════════════════════════════════════════════════════════════
 
 /**
- * סה״כ העלות — ומיד אחריה **שתי השאלות שבאמת נשאלות**: כמה כבר שולם,
- * וכמה עוד לפנינו.
+ * הכרטיס היחיד בראש המסך. **שלושה מצבים, לפי מה שבאמת ידוע:**
  *
- * **אזור ולא כרטיס** — אותה החלטה כמו במסך המתנות באשראי: זו העובדה
- * היחידה שראויה לגודל, ומסגרת סביבה רק הייתה מקטינה אותה.
+ * 1. **אין עדיין לא הוצאות ולא מתנות** — משפט, לא קיר של אפסים.
+ * 2. **יש הוצאות, אין עדיין מתנות** — המספר הגדול הוא העלות ("צפוי
+ *    לעלות" עד שמוזן כמה הגיעו), ומשפט אחד אומר מתי יתברר המאזן. מאזן
+ *    "חסר ₪63,850" כאן היה אפס בצד אחד של המשוואה, לא תחזית.
+ * 3. **נספרו מתנות** — המאזן עצמו, ומתחתיו מתנות מול עלות.
  *
- * הפילוח החשבונאי (קבוע מול לפי-כמות) ירד מכאן לסיכום. הוא מספר נכון,
- * אבל הוא לא שאלה של זוג — ובכותרת הוא רק דחק את "נשאר לשלם" למקום
- * השישי. שישה מספרים באותו גודל אינם היררכיה.
+ * אם סכומי האשראי חסומים (``bottom_line_agorot === null``) לא מוצג מאזן
+ * בכלל — מספר שמחושב מנתון חלקי הוא הטעיה, לא קירוב.
  */
-function FinanceHero({ data }: { data: FinanceSummary }) {
-  const { cost } = data
-  const started = cost.total_agorot > 0
-  // כל עוד לא הוזן כמה הגיעו בפועל, המספר נשען על אישורי הגעה שעוד
-  // יזוזו. אומרים את זה בכותרת ולא בהערת שוליים.
-  const estimated = !data.attendance.is_final
-  const label = estimated ? t.estimatedCostLabel : t.totalCostLabel
+function BalanceHero({ data }: { data: FinanceSummary }) {
+  const [how, setHow] = useState(false)
+  const { cost, attendance, rsvp, income } = data
+  const final = attendance.is_final
+  const locked = data.bottom_line_agorot === null
+  const bottom = data.bottom_line_agorot ?? 0
+  const hasCost = cost.total_agorot > 0
+  const hasGifts = !locked && (income.total_agorot ?? 0) > 0
+  // "המספר עוד ישתנה" — רק לפני האירוע, ורק כשבאמת יש מי שלא ענה.
+  const pending = attendance.event_passed ? 0 : rsvp.pending_guests
 
-  // עוד אין הוצאות — "עלות משוערת 0 ₪" מעל מצב ריק שמסביר מה עושים הוא
-  // רעש, לא נתון. הגיבור מופיע ברגע שיש מה לסכם.
-  if (!started) return null
+  if (!hasCost && !hasGifts) {
+    return (
+      <section className="fin-balance" aria-labelledby="fin-balance-title">
+        <p className="fin-balance-eyebrow">{o.earlyLabel}</p>
+        <h2 id="fin-balance-title" className="fin-balance-early">
+          {o.earlyTitle}
+        </h2>
+        <p className="fin-balance-note">{locked ? t.bottomLineLocked : o.earlyBody}</p>
+      </section>
+    )
+  }
+
+  if (hasGifts) {
+    const tone = bottom > 0 ? 'is-positive' : bottom < 0 ? 'is-negative' : ''
+    return (
+      <section className="fin-balance" aria-labelledby="fin-balance-title">
+        <h2 id="fin-balance-title" className="fin-balance-eyebrow">
+          {o.balanceLabel}
+        </h2>
+        {/* הסכום המוחלט: הסימן נאמר במילים שמתחת, ומינוס לצידו היה אומר
+            את אותו דבר פעמיים. */}
+        <p className={`fin-balance-value ${bottom < 0 ? 'is-negative' : ''}`}>
+          {stripSign(data.bottom_line_display)}
+        </p>
+        <p className={`fin-balance-status ${tone}`}>
+          {bottom > 0 ? o.balanceSurplus : bottom < 0 ? o.balanceDeficit : o.balanceEven}
+        </p>
+        <p className="fin-balance-note">
+          {data.counting_open ? o.balanceBasis : o.balanceBasisEarly}
+        </p>
+
+        <dl className="fin-balance-vs">
+          <div>
+            <dt>{o.vsGifts}</dt>
+            <dd>{income.total_display}</dd>
+          </div>
+          <div>
+            <dt>{final ? o.vsCostFinal : o.vsCostEstimated}</dt>
+            <dd className={hasCost ? '' : 'is-empty'}>
+              {hasCost ? cost.total_display : o.stepExpensesNone}
+            </dd>
+          </div>
+        </dl>
+
+        <HowWeCalc open={how} onToggle={() => setHow((v) => !v)}>
+          <p>{o.howBalance}</p>
+          <p>{final ? o.howCost : `${o.howCost} ${o.howCostAfter}`}</p>
+          <p>{t.noFeeNote}</p>
+        </HowWeCalc>
+      </section>
+    )
+  }
+
+  const basis = final
+    ? o.costBasisActual(attendance.actual ?? 0)
+    : cost.attendees > 0
+      ? o.costBasisConfirmed(cost.attendees)
+      : o.costBasisNobody
 
   return (
-    <section className="fin-hero" aria-label={label}>
-      <p className="fin-hero-label">{label}</p>
-      <p className="fin-hero-value">{cost.total_display}</p>
+    <section className="fin-balance" aria-labelledby="fin-balance-title">
+      <h2 id="fin-balance-title" className="fin-balance-eyebrow">
+        {final ? o.costLabelFinal : o.costLabelEstimated}
+      </h2>
+      <p className="fin-balance-value">{cost.total_display}</p>
+      <p className="fin-balance-status">{locked ? t.bottomLineLocked : o.balanceLater}</p>
+      <p className="fin-balance-note">
+        {basis}
+        {!final && pending > 0 && ` ${o.pendingNote(pending)}`}
+      </p>
 
-      {/* שולם / נשאר לשלם — זוג מספרים אחד, לא שתי עובדות מפוזרות.
-          הפס מתחתיו הוא היחס ביניהם ותו לא: הוא לא מוסיף מידע, הוא
-          חוסך את החישוב בראש. */}
-      {started && (
-        <div className="fin-paybar">
-          <div className="fin-paybar-track" aria-hidden="true">
-            <div
-              className="fin-paybar-fill"
-              style={{ width: `${Math.min(100, (cost.paid_agorot / cost.total_agorot) * 100)}%` }}
-            />
-          </div>
-          <div className="fin-paybar-legend">
-            <span className="fin-paybar-paid">
-              <span className="fin-paybar-label">{t.paidSummary}</span>
-              <strong>{cost.paid_display}</strong>
-            </span>
-            <span className="fin-paybar-left">
-              <span className="fin-paybar-label">{t.unpaidSummary}</span>
-              <strong>{cost.unpaid_display}</strong>
-            </span>
-          </div>
-        </div>
-      )}
-
-      {estimated && started && <p className="fin-hero-note">{t.estimatedCostNote}</p>}
-
-      <div className="fin-hero-facts fin-hero-facts-quiet">
-        {/* מאיפה המספר: לפני האירוע — מי שאישרו הגעה; אחרי שהוזן — מי שהגיעו. */}
-        <Fact
-          label={estimated ? t.attendeesConfirmedLabel : t.attendeesFinalLabel}
-          value={String(cost.attendees)}
-        />
-        {/* אין מגיעים ⇒ אין ממוצע, ואין הוצאות ⇒ אין מה לחלק. "0 ₪
-            לאדם" במסך שעוד לא מולא הוא רעש, לא נתון. */}
-        {started && (
-          <Fact
-            label={t.perPersonLabel}
-            value={cost.cost_per_attendee_display || t.perPersonEmpty}
-          />
-        )}
-      </div>
+      <HowWeCalc open={how} onToggle={() => setHow((v) => !v)}>
+        <p>{o.howCost}</p>
+        {!final && <p>{o.howCostAfter}</p>}
+      </HowWeCalc>
     </section>
   )
 }
+
+/** "איך חישבנו?" — מי שלא שואל לא רואה את החישוב. */
+function HowWeCalc({
+  open,
+  onToggle,
+  children,
+}: {
+  open: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div className="fin-how">
+      <button
+        type="button"
+        className="btn-link fin-how-btn"
+        aria-expanded={open}
+        aria-controls="fin-how-body"
+        onClick={onToggle}
+      >
+        {open ? o.howClose : o.howToggle}
+      </button>
+      {open && (
+        <div id="fin-how-body" className="fin-how-body">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  3. אבני הדרך
+// ════════════════════════════════════════════════════════════════════════
+
+type StepState = 'done' | 'current' | 'upcoming'
+
+interface JourneyStep {
+  key: string
+  title: string
+  detail: string
+  done: boolean
+}
+
+/** כמה ימים עד סגירת הרשימה — ``null`` כשאין מועד (או שהיומן לא נטען). */
+function daysToClosing(timeline: RsvpTimelineView | null): number | null {
+  if (!timeline?.commitment_date || timeline.days_to_commitment === null) return null
+  return timeline.days_to_commitment
+}
+
+/** הוצאות שנפתחו (למשל מהתבנית) ועדיין בלי סכום. ספירה, לא חישוב כספי. */
+function waitingExpenses(data: FinanceSummary): Expense[] {
+  return data.expenses.filter((e) => e.total_agorot === 0)
+}
+
+/**
+ * חמש תחנות, **כל אחת נגזרת מנתון קיים** — אין כאן תחנה שמסומנת "הושלמה"
+ * בלי שהנתונים אומרים את זה. "מאזן סופי" לא מסומן כהושלם אף פעם: אין
+ * במערכת רגע שבו הספירה "נסגרת", והמסך לא ימציא אותו.
+ */
+function journeySteps(
+  data: FinanceSummary,
+  counting: GiftCounting,
+  timeline: RsvpTimelineView | null,
+): JourneyStep[] {
+  const { rsvp, attendance, cost, income } = data
+  const closing = daysToClosing(timeline)
+  const listClosed = attendance.event_passed || (closing !== null && closing < 0)
+  const waiting = waitingExpenses(data).length
+  const hasGifts = (income.total_agorot ?? 0) > 0
+
+  let finalDetail: string
+  let finalDone = false
+  if (attendance.is_final) {
+    finalDetail = o.stepFinalActual(attendance.actual ?? 0)
+    finalDone = true
+  } else if (attendance.event_passed) {
+    finalDetail = o.stepFinalAskActual
+  } else if (closing !== null && closing < 0) {
+    finalDetail = o.stepFinalClosed(timeline!.commitment_date!)
+    finalDone = true
+  } else if (closing !== null) {
+    finalDetail = o.stepFinalCloses(timeline!.commitment_date!)
+  } else {
+    // בלי יומן (לא נטען) לא טוענים שלא נבחר מועד — אומרים רק מה שידוע.
+    finalDetail = timeline ? o.stepFinalNoDate : ''
+  }
+
+  let expensesDetail: string
+  let expensesDone = false
+  if (data.expenses.length === 0) expensesDetail = o.stepExpensesNone
+  else if (cost.total_agorot === 0) expensesDetail = o.stepExpensesWaiting(waiting)
+  else if (cost.unpaid_agorot === 0 && waiting === 0) {
+    expensesDetail = o.stepExpensesPaid
+    expensesDone = true
+  } else expensesDetail = o.stepExpensesEntered(cost.total_display)
+
+  return [
+    {
+      key: 'rsvp',
+      title: o.stepRsvp,
+      detail: rsvp.total_guests === 0 ? o.stepRsvpNone : o.stepRsvpConfirmed(rsvp.confirmed_people),
+      done: rsvp.total_guests > 0 && (listClosed || rsvp.pending_guests === 0),
+    },
+    { key: 'final', title: o.stepFinal, detail: finalDetail, done: finalDone },
+    { key: 'expenses', title: o.stepExpenses, detail: expensesDetail, done: expensesDone },
+    {
+      key: 'gifts',
+      title: o.stepGifts,
+      detail: !counting.counting_open
+        ? o.stepGiftsLater
+        : hasGifts
+          ? o.stepGiftsCounted(income.total_display)
+          : o.stepGiftsOpen,
+      done: false,
+    },
+    {
+      key: 'balance',
+      title: o.stepBalance,
+      detail: hasGifts ? o.stepBalanceLive : o.stepBalanceLater,
+      done: false,
+    },
+  ]
+}
+
+/**
+ * התקדמות, לא צ'קליסט: ✓ מה שמאחוריכם, ● איפה אתם, ○ מה לפניכם. "איפה
+ * אתם" היא התחנה הראשונה שעוד לא הושלמה — נקודה אחת, כדי שהעין תדע
+ * לאן להסתכל.
+ */
+function Journey({
+  data,
+  counting,
+  timeline,
+}: {
+  data: FinanceSummary
+  counting: GiftCounting
+  timeline: RsvpTimelineView | null
+}) {
+  const steps = journeySteps(data, counting, timeline)
+  const currentIndex = steps.findIndex((s) => !s.done)
+
+  return (
+    <section className="fin-journey" aria-labelledby="fin-journey-title">
+      <h2 id="fin-journey-title" className="fin-section-title">
+        {o.journeyTitle}
+      </h2>
+      <ol className="fin-journey-list">
+        {steps.map((s, i) => {
+          const state: StepState = s.done ? 'done' : i === currentIndex ? 'current' : 'upcoming'
+          return (
+            <li
+              key={s.key}
+              className={`fin-mile is-${state}`}
+              aria-current={state === 'current' ? 'step' : undefined}
+            >
+              <span className="fin-mile-marker" aria-hidden="true" />
+              <span className="fin-mile-text">
+                <span className="fin-mile-title">
+                  {s.title}
+                  <span className="fin-sr"> · {o.stepState[state]}</span>
+                </span>
+                {s.detail && <span className="fin-mile-detail">{s.detail}</span>}
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+    </section>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  4. מה נשאר לעשות?
+// ════════════════════════════════════════════════════════════════════════
+
+interface Todo {
+  key: string
+  title: string
+  desc: string
+  cta: string
+  onClick: () => void
+}
+
+/** עד כמה ימים לפני הסגירה היא נחשבת "משימה" ולא סתם תאריך בלוח. */
+const CLOSING_SOON_DAYS = 14
+
+/**
+ * הצעד הבא — **רק פריטים שיש להם בסיס בנתונים**, כל אחד עם הפעולה
+ * שפותרת אותו. אותו עיקרון כמו "צריכים אתכם" בתמונת המצב: מה שתלוי
+ * בבעלי האירוע, ולא מה שהמערכת עושה לבד.
+ *
+ * אחרי האירוע הצעד הראשון הוא "כמה הגיעו בפועל" — ולכן הטופס עצמו יושב
+ * כאן, ולא מאחורי כפתור. אחרי השמירה הוא יורד לאזור העלות.
+ */
+function NextSteps({
+  data,
+  counting,
+  timeline,
+  onOpenExpenses,
+  onCount,
+  onAttendance,
+  onNavigate,
+}: {
+  data: FinanceSummary
+  counting: GiftCounting
+  timeline: RsvpTimelineView | null
+  onOpenExpenses: (groups?: string[]) => void
+  onCount: () => void
+  onAttendance: (data: FinanceSummary) => void
+  onNavigate?: FinanceNavigate
+}) {
+  const { attendance, rsvp, income } = data
+  const askAttendance = attendance.event_passed && !attendance.is_final
+  const items: Todo[] = []
+
+  if (counting.counting_open) {
+    const hasGifts = income.envelopes_count + income.credit_count > 0
+    items.push({
+      key: 'count',
+      title: hasGifts
+        ? o.todoCountMore(income.total_display || income.envelopes_display)
+        : o.todoCountStart,
+      desc: o.todoCountDesc,
+      cta: hasGifts ? o.todoCountMoreCta : o.todoCountCta,
+      onClick: onCount,
+    })
+  }
+
+  if (!attendance.event_passed && rsvp.pending_guests > 0 && onNavigate) {
+    items.push({
+      key: 'pending',
+      title: o.todoPending(rsvp.pending_guests),
+      desc: o.todoPendingDesc,
+      cta: o.todoPendingCta,
+      onClick: () => onNavigate('guests', { guestFilter: 'pending' }),
+    })
+  }
+
+  const waiting = waitingExpenses(data)
+  if (data.expenses.length === 0) {
+    items.push({
+      key: 'expenses',
+      title: o.todoNoExpenses,
+      desc: o.todoNoExpensesDesc,
+      // התבנית עצמה יושבת באזור ההוצאות — כאן רק מובילים אליה, כדי שלא
+      // יהיו שני כפתורי "להתחיל מתבנית" באותו מסך.
+      cta: t.summaryEmptyCta,
+      onClick: () => onOpenExpenses(),
+    })
+  } else if (waiting.length > 0) {
+    items.push({
+      key: 'expenses',
+      title: o.todoEmptyRows(waiting.length),
+      desc: o.todoEmptyRowsDesc,
+      cta: o.todoEmptyRowsCta,
+      onClick: () => onOpenExpenses([...new Set(waiting.map((e) => e.category))]),
+    })
+  }
+
+  const closing = daysToClosing(timeline)
+  if (!attendance.event_passed && onNavigate) {
+    if (closing !== null && closing >= 0 && closing <= CLOSING_SOON_DAYS) {
+      items.push({
+        key: 'closing',
+        title: o.todoClosing(closing),
+        desc: o.todoClosingDesc,
+        cta: o.todoClosingCta,
+        onClick: () => onNavigate('rsvp'),
+      })
+    } else if (timeline?.track_phase === 'waiting') {
+      items.push({
+        key: 'closing',
+        title: o.todoNoClosing,
+        desc: o.todoNoClosingDesc,
+        cta: o.todoNoClosingCta,
+        onClick: () => onNavigate('dashboard'),
+      })
+    }
+  }
+
+  return (
+    <section className="fin-section fin-todo" aria-labelledby="fin-todo-title">
+      <h2 id="fin-todo-title" className="fin-section-title">
+        {o.todoTitle}
+      </h2>
+
+      {askAttendance && (
+        <AttendanceCard attendance={attendance} onSaved={onAttendance} onNavigate={onNavigate} />
+      )}
+
+      {items.length > 0 ? (
+        <ul className="fin-card fin-todo-list">
+          {items.map((it, i) => (
+            <li key={it.key} className="fin-todo-item">
+              <div className="fin-todo-text">
+                <p className="fin-todo-title">{it.title}</p>
+                <p className="fin-todo-desc">{it.desc}</p>
+              </div>
+              <button
+                type="button"
+                // פעולה ראשית אחת — הראשונה ברשימה, אלא אם הטופס שמעל הוא הצעד.
+                className={`${i === 0 && !askAttendance ? 'btn-primary' : 'btn-ghost'} btn-sm fin-todo-btn`}
+                onClick={it.onClick}
+              >
+                {it.cta}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        !askAttendance && <p className="fin-todo-empty">{o.todoEmpty}</p>
+      )}
+    </section>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  5. כסף שנכנס
+// ════════════════════════════════════════════════════════════════════════
+
+/**
+ * המתנות. לפני יום האירוע — מתי ואיפה, **בלי "0 ₪"**; מיום האירוע — כמה
+ * נספר, ממה, וכפתור לספירה. אין כאן "הכנסה צפויה": VEYA לא מנחשת כמה
+ * ייתנו.
+ */
+function IncomeSection({
+  data,
+  counting,
+  onCount,
+}: {
+  data: FinanceSummary
+  counting: GiftCounting
+  onCount: () => void
+}) {
+  const { income } = data
+
+  if (!counting.counting_open) {
+    const days = counting.days_until_open
+    return (
+      <section className="fin-section" aria-labelledby="fin-income-title">
+        <h2 id="fin-income-title" className="fin-section-title">
+          {o.incomeTitle}
+        </h2>
+        <div className="fin-quiet">
+          <p className="fin-quiet-title">{o.incomeBeforeTitle}</p>
+          <p className="fin-hint">
+            {days !== null && days > 0 && `${o.incomeBeforeDays(days)} `}
+            {o.incomeBeforeBody}
+          </p>
+          {/* מתנה באשראי יכולה להגיע גם לפני האירוע. */}
+          {income.credit_count > 0 && (
+            <dl className="fin-kv">
+              <div>
+                <dt>{o.incomeCreditEarly}</dt>
+                <dd>{income.credit_display || String(income.credit_count)}</dd>
+              </div>
+            </dl>
+          )}
+        </div>
+      </section>
+    )
+  }
+
+  const hasGifts = income.envelopes_count + income.credit_count > 0
+  const { guests_counted: counted } = data.breakdown
+
+  return (
+    <section className="fin-section" aria-labelledby="fin-income-title">
+      <div className="fin-section-head">
+        <h2 id="fin-income-title" className="fin-section-title">
+          {o.incomeTitle}
+        </h2>
+        <button type="button" className="btn-ghost btn-sm" onClick={onCount}>
+          {o.todoCountCta}
+        </button>
+      </div>
+
+      {hasGifts ? (
+        <div className="fin-card">
+          <div className="fin-amount">
+            <span className="fin-amount-label">{o.incomeTotal}</span>
+            <span className="fin-amount-value">
+              {income.total_display || income.envelopes_display}
+            </span>
+          </div>
+          <p className="fin-hint">{t.countedProgress(counted, data.rsvp.total_guests)}</p>
+          <dl className="fin-kv">
+            <div>
+              <dt>{t.envelopesLabel}</dt>
+              <dd>{income.envelopes_display}</dd>
+            </div>
+            {counting.credit_service_active && (
+              <div>
+                <dt>{t.creditLabel}</dt>
+                {/* הסכום חסום ⇒ המניין ולא "0 ₪": אפס היה טענה אחרת לגמרי. */}
+                <dd>{income.credit_display || String(income.credit_count)}</dd>
+              </div>
+            )}
+            {income.external_count > 0 && (
+              <div>
+                <dt>{t.externalLabel}</dt>
+                <dd>{income.external_display}</dd>
+              </div>
+            )}
+          </dl>
+          {income.total_agorot === null && <p className="fin-hint">{t.totalPartialNote}</p>}
+          {income.credit_count > 0 && !counting.credit_amounts_visible && (
+            <p className="fin-hint">{t.creditLockedNote}</p>
+          )}
+          {income.unidentified_count > 0 && (
+            <p className="fin-hint fin-unidentified">
+              {t.unidentifiedSummary(income.unidentified_count, income.unidentified_display)}
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="fin-quiet">
+          <p className="fin-quiet-title">{o.incomeNone}</p>
+          <p className="fin-hint">{t.giftsEmptyBody}</p>
+        </div>
+      )}
+    </section>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  6. כמה האירוע עולה
+// ════════════════════════════════════════════════════════════════════════
+
+/** כמה קבוצות מוצגות לפני "הצגת כל ההוצאות". */
+const TOP_GROUPS = 5
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
@@ -423,142 +929,212 @@ function Fact({ label, value }: { label: string; value: string }) {
   )
 }
 
-// ════════════════════════════════════════════════════════════════════════
-//  לשונית "עלות האירוע"
-// ════════════════════════════════════════════════════════════════════════
-
-function CostTab({
+/**
+ * **סכום קודם, פירוט אחר כך.** ברירת המחדל היא הסכום, כמה שולם, וחמש
+ * הקבוצות הגדולות — שורה אחת לכל אחת. הרשימה המלאה (קבוצות מקופלות,
+ * עריכת שורות) נפתחת ב"הצגת כל ההוצאות", מלחיצה על קבוצה, או ממשימה.
+ *
+ * הסכום של כל קבוצה מגיע **מהשרת** (``cost.categories``); המסך רק ממיין.
+ */
+function ExpensesSection({
+  sectionRef,
   data,
-  terms,
+  celebration,
+  applying,
+  onApplyTemplate,
+  showAll,
+  onShowAll,
+  openGroups,
+  onOpenGroups,
+  onOpenExpenses,
   onAdd,
   onEdit,
-  onTemplateApplied,
   onAttendance,
   onNavigate,
-  openCategory,
 }: {
+  sectionRef: React.RefObject<HTMLElement | null>
   data: FinanceSummary
-  terms: ReturnType<typeof activeEventTerms>
-  openCategory?: string | null
+  celebration: string
+  applying: boolean
+  onApplyTemplate: () => void
+  showAll: boolean
+  onShowAll: (v: boolean) => void
+  openGroups: Set<string>
+  onOpenGroups: (groups: Set<string>) => void
+  onOpenExpenses: (groups?: string[]) => void
   onAdd: (category?: string) => void
   onEdit: (e: Expense) => void
-  onTemplateApplied: () => void
   onAttendance: (data: FinanceSummary) => void
-  onNavigate?: (target: 'guests') => void
+  onNavigate?: FinanceNavigate
 }) {
-  const { cost } = data
+  const { cost, attendance } = data
   const grouped = useMemo(() => groupByCategory(data.expenses), [data.expenses])
-  const [applying, setApplying] = useState(false)
-  // איזו קבוצה פתוחה. **סגורות כברירת מחדל**: אירוע טיפוסי הוא 16
-  // שורות בתשע קבוצות, ואף אחד לא נכנס לכאן כדי לקרוא 16 שורות — הוא
-  // נכנס לבדוק סעיף אחד. מי שכן רוצה את הכול מקבל "פתיחת הכול".
-  const [open, setOpen] = useState<Set<string>>(new Set())
-  const allOpen = cost.categories.length > 0 && open.size === cost.categories.length
-  useEffect(() => {
-    if (openCategory) setOpen((prev) => new Set(prev).add(openCategory))
-  }, [openCategory, data])
+  const top = useMemo(
+    () =>
+      cost.categories
+        .filter((c) => c.total_agorot > 0)
+        .sort((a, b) => b.total_agorot - a.total_agorot)
+        .slice(0, TOP_GROUPS),
+    [cost.categories],
+  )
+  const allOpen = cost.categories.length > 0 && openGroups.size >= cost.categories.length
+  const hasCost = cost.total_agorot > 0
 
   function toggle(key: string) {
-    setOpen((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
+    const next = new Set(openGroups)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    onOpenGroups(next)
   }
 
   return (
-    <>
-      {/* אחרי האירוע — השאלה הראשונה, לפני כל מספר אחר: כמה באמת הגיעו.
-          לפניו אין מה לשאול, והכרטיס לא מופיע בכלל. */}
-      {data.attendance.event_passed && (
-        <AttendanceCard
-          attendance={data.attendance}
-          onSaved={onAttendance}
-          onNavigate={onNavigate}
-        />
-      )}
+    <section
+      ref={sectionRef}
+      className="fin-section fin-cost"
+      aria-labelledby="fin-cost-title"
+    >
+      <div className="fin-section-head">
+        <h2 id="fin-cost-title" className="fin-section-title">
+          {o.costTitle}
+        </h2>
+        {/* כשאין עדיין הוצאות, המסך הריק למטה כבר מציע גם "הוספת הוצאה" —
+            שני כפתורים זהים זה מעל זה מבלבלים מה הצעד הראשון. */}
+        {data.expenses.length > 0 && (
+          <button type="button" className="btn-ghost btn-sm" onClick={() => onAdd()}>
+            {o.addExpense}
+          </button>
+        )}
+      </div>
 
-      {cost.commitments.map((c) => (
-        <CommitmentCard key={c.expense_id} commitment={c} attendance={data.attendance} />
-      ))}
+      {data.expenses.length === 0 ? (
+        // מסך ריק שמבקש להמציא רשימת הוצאות של אירוע הוא מסך שנשאר ריק.
+        // התבנית של סוג האירוע נותנת נקודת פתיחה — בסכום 0, כי VEYA יודעת
+        // **מה** משלמים ולא **כמה**.
+        <div className="fin-quiet">
+          <p className="fin-quiet-title">{t.expensesEmptyTitle}</p>
+          <p className="fin-hint">{t.expensesEmptyBody}</p>
+          <div className="empty-actions fin-quiet-actions">
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={applying}
+              onClick={onApplyTemplate}
+            >
+              {applying ? t.templateApplying : t.templateCta(celebration)}
+            </button>
+            <button type="button" className="btn-ghost" onClick={() => onAdd()}>
+              {t.addExpense}
+            </button>
+          </div>
+          <p className="fin-hint">{t.templateHint}</p>
+        </div>
+      ) : (
+        <>
+          {hasCost ? (
+            <div className="fin-amount">
+              <span className="fin-amount-label">
+                {attendance.is_final ? t.totalCostLabel : t.estimatedCostLabel}
+              </span>
+              <span className="fin-amount-value">{cost.total_display}</span>
+            </div>
+          ) : (
+            <p className="fin-hint">{o.costWaiting}</p>
+          )}
 
-      <section className="fin-section">
-        <div className="fin-section-head">
-          <h2 className="fin-section-title">{t.expensesTitle}</h2>
-          <div className="fin-section-actions">
-            {cost.categories.length > 1 && (
+          {/* שולם / נשאר לשלם — זוג מספרים אחד. הפס הוא היחס ביניהם ותו
+              לא: הוא לא מוסיף מידע, הוא חוסך את החישוב בראש. */}
+          {hasCost && (
+            <div className="fin-paybar">
+              <div className="fin-paybar-track" aria-hidden="true">
+                <div
+                  className="fin-paybar-fill"
+                  style={{ width: `${Math.min(100, (cost.paid_agorot / cost.total_agorot) * 100)}%` }}
+                />
+              </div>
+              <div className="fin-paybar-legend">
+                <span className="fin-paybar-paid">
+                  <span className="fin-paybar-label">{t.paidSummary}</span>
+                  <strong>{cost.paid_display}</strong>
+                </span>
+                <span className="fin-paybar-left">
+                  <span className="fin-paybar-label">{t.unpaidSummary}</span>
+                  <strong>{cost.unpaid_display}</strong>
+                </span>
+              </div>
+            </div>
+          )}
+
+          {showAll ? (
+            <div className="fin-card fin-groups">
+              {cost.categories.map((group) => (
+                <ExpenseGroup
+                  key={group.key}
+                  group={group}
+                  rows={grouped.get(group.key) ?? []}
+                  open={openGroups.has(group.key)}
+                  onToggle={() => toggle(group.key)}
+                  onEdit={onEdit}
+                  onAdd={() => onAdd(group.key)}
+                />
+              ))}
+            </div>
+          ) : (
+            top.length > 0 && (
+              <ul className="fin-card fin-top">
+                {top.map((g) => (
+                  <li key={g.key}>
+                    <button
+                      type="button"
+                      className="fin-top-row"
+                      onClick={() => onOpenExpenses([g.key])}
+                    >
+                      <span className="fin-top-name">{g.label}</span>
+                      <span className="fin-top-total">{g.total_display}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )
+          )}
+
+          <div className="fin-cost-actions">
+            <button type="button" className="btn-link" onClick={() => onShowAll(!showAll)}>
+              {showAll ? o.hideAllExpenses : o.showAllExpenses(data.expenses.length)}
+            </button>
+            {showAll && cost.categories.length > 1 && (
               <button
                 type="button"
                 className="btn-link"
                 onClick={() =>
-                  setOpen(allOpen ? new Set() : new Set(cost.categories.map((c) => c.key)))
+                  onOpenGroups(allOpen ? new Set() : new Set(cost.categories.map((c) => c.key)))
                 }
               >
                 {allOpen ? t.collapseAll : t.expandAll}
               </button>
             )}
-            {/* כשאין עדיין הוצאות, המסך הריק למטה כבר מציע גם "הוספת הוצאה" —
-                שני כפתורים זהים זה מעל זה מבלבלים מה הצעד הראשון. */}
-            {data.expenses.length > 0 && (
-              <button type="button" className="btn-primary btn-sm" onClick={() => onAdd()}>
-                {t.addExpense}
-              </button>
-            )}
           </div>
-        </div>
 
-        {data.expenses.length === 0 ? (
-          // מסך ריק שמבקש מזוג להמציא רשימת הוצאות של אירוע הוא מסך
-          // שנשאר ריק. התבנית של סוג האירוע נותנת נקודת פתיחה — בסכום
-          // 0, כי VEYA יודעת **מה** משלמים ולא **כמה**.
-          <div className="fin-card fin-card-empty">
-            <div className="empty">
-              <p className="empty-title">{t.expensesEmptyTitle}</p>
-              <p className="empty-desc">{t.expensesEmptyBody}</p>
-              <div className="empty-actions">
-                <button
-                  type="button"
-                  className="btn-primary"
-                  disabled={applying}
-                  onClick={() => {
-                    setApplying(true)
-                    applyExpenseTemplate()
-                      .then(onTemplateApplied)
-                      .catch(() => undefined)
-                      .finally(() => setApplying(false))
-                  }}
-                >
-                  {applying ? t.templateApplying : t.templateCta(terms.celebration)}
-                </button>
-                <button type="button" className="btn-ghost" onClick={() => onAdd()}>
-                  {t.addExpense}
-                </button>
-              </div>
-              <p className="fin-hint">{t.templateHint}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="fin-card fin-groups">
-            {cost.categories.map((group) => (
-              <ExpenseGroup
-                key={group.key}
-                group={group}
-                rows={grouped.get(group.key) ?? []}
-                open={open.has(group.key)}
-                onToggle={() => toggle(group.key)}
-                onEdit={onEdit}
-                onAdd={() => onAdd(group.key)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+          {/* ההתחייבות מול הספק — במשפט אחד כאן; המספרים המלאים בפירוט. */}
+          {cost.commitments.map((c) => (
+            <p key={c.expense_id} className="fin-hint fin-commit-line">
+              <strong>{c.label}:</strong>{' '}
+              {c.unused_quantity > 0
+                ? t.underCommitment(c.committed_quantity, c.attendees)
+                : c.over_commitment > 0
+                  ? t.overCommitment(c.attendees, c.over_commitment)
+                  : t.exactCommitment}
+            </p>
+          ))}
+        </>
+      )}
 
-      {/* רק כשיש לפחות סכום אחד — אחרת כל התרחישים יוצאים "0 ₪", וזה נראה
-          כמו נתון ("לא עולה כלום") כשבפועל עוד אין נתונים. */}
-      {data.expenses.some((e) => e.amount_agorot > 0 || e.total_agorot > 0) && <WhatIfSection cost={cost} />}
-    </>
+      {/* אחרי האירוע, כשכבר הוזן כמה הגיעו — המספר שהעלות נשענת עליו, עם
+          אפשרות לשנות. בסוף האזור ולא בראשו: הסכום קודם. לפני שהוזן, הטופס
+          נמצא ב"מה נשאר לעשות". */}
+      {attendance.event_passed && attendance.is_final && (
+        <AttendanceCard attendance={attendance} onSaved={onAttendance} onNavigate={onNavigate} />
+      )}
+    </section>
   )
 }
 
@@ -678,6 +1254,9 @@ function AttendanceCard({
     attendance.actual != null ? String(attendance.actual) : '',
   )
   const [editing, setEditing] = useState(!attendance.is_final)
+  // מיקוד רק אחרי "שינוי" — לא בטעינה. הטופס יושב בסקירה, ומיקוד אוטומטי
+  // היה גולל את המסך אל מתחת למאזן ופותח מקלדת בטלפון.
+  const [focusInput, setFocusInput] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dismissed, setDismissed] = useState(false)
@@ -721,7 +1300,7 @@ function AttendanceCard({
                   onChange={(e) => setValue(e.target.value.replace(/[^\d]/g, ''))}
                   placeholder={String(attendance.confirmed_people)}
                   dir="ltr"
-                  autoFocus
+                  autoFocus={focusInput}
                 />
               </label>
               <button
@@ -754,7 +1333,14 @@ function AttendanceCard({
                   : t.attendanceConfirmedNote(attendance.confirmed_people)}
             </span>
             <span className="fin-attendance-actions">
-              <button type="button" className="btn-link" onClick={() => setEditing(true)}>
+              <button
+                type="button"
+                className="btn-link"
+                onClick={() => {
+                  setFocusInput(true)
+                  setEditing(true)
+                }}
+              >
                 {t.attendanceEdit}
               </button>
               <button
@@ -803,36 +1389,33 @@ function AttendanceCard({
   )
 }
 
-function CommitmentCard({
+/**
+ * ההתחייבות מול הספק — בפירוט המלא. בסקירה היא משפט אחד (באזור העלות);
+ * כאן — המספרים שמאחוריו, בשורות ולא ברשת תאים.
+ */
+function CommitmentDetail({
   commitment: c,
   attendance,
 }: {
   commitment: Commitment
   attendance: Attendance
 }) {
+  // שלושה מספרים ולא חמישה. "משלמים על" ו"לא ינוצלו" נגזרים שניהם מאותם
+  // שני נתונים, והמשפט שמתחת אומר אותם במילים.
+  const rows: [string, string][] = [
+    [t.committedLabel, String(c.committed_quantity)],
+    [t.attendingNowLabel, String(c.attendees)],
+  ]
+  // רזרבה — ליד ההתחייבות כי זו אותה שיחה מול הספק, אבל **לא נספרת בעלות**.
+  if (c.reserve_quantity) rows.push([t.reserveFact, String(c.reserve_quantity)])
+  rows.push([attendance.is_final ? t.commitmentCostLabel : t.estimatedCostLabel, c.total_display])
+
   return (
-    <section className="fin-card fin-commitment">
-      <h2 className="fin-card-title">
+    <div className="fin-detail">
+      <h3 className="fin-subtitle">
         {t.commitmentTitle} · {c.label}
-      </h2>
-
-      {/* שלושה מספרים ולא חמישה. "משלמים על" ו"לא ינוצלו" נגזרים שניהם
-          מאותם שני נתונים, והמשפט שמתחת אומר אותם במילים — עדיף משפט
-          אחד ברור מאשר עוד שני תאים שצריך להצליב. */}
-      <div className="fin-commitment-grid">
-        <Fact label={t.committedLabel} value={String(c.committed_quantity)} />
-        <Fact label={t.attendingNowLabel} value={String(c.attendees)} />
-        {/* רזרבה — מוצגת ליד ההתחייבות כי זו אותה שיחה מול הספק, אבל
-            **לא נספרת בעלות**. המשפט שמתחת אומר את זה במילים. */}
-        {!!c.reserve_quantity && (
-          <Fact label={t.reserveFact} value={String(c.reserve_quantity)} />
-        )}
-        <Fact
-          label={attendance.is_final ? t.commitmentCostLabel : t.estimatedCostLabel}
-          value={c.total_display}
-        />
-      </div>
-
+      </h3>
+      <KeyValues rows={rows} />
       <p className="fin-commitment-note">
         {c.unused_quantity > 0
           ? t.underCommitment(c.committed_quantity, c.attendees)
@@ -840,48 +1423,9 @@ function CommitmentCard({
             ? t.overCommitment(c.attendees, c.over_commitment)
             : t.exactCommitment}
       </p>
-
-      {!!c.reserve_quantity && (
-        <p className="fin-hint">{t.reserveNote(c.reserve_quantity)}</p>
-      )}
+      {!!c.reserve_quantity && <p className="fin-hint">{t.reserveNote(c.reserve_quantity)}</p>}
       {c.min_total_applied && <p className="fin-hint">{t.minTotalApplied}</p>}
-    </section>
-  )
-}
-
-/**
- * "מה קורה אם יגיעו יותר או פחות" — **אזור אחד, סגור כברירת מחדל.**
- *
- * "כמה מוסיף אדם נוסף" ולוח התרחישים עונים על אותה שאלה בשתי רזולוציות,
- * ושניהם שאלה שנשאלת פעם בשבוע — לא בכל כניסה למסך. כשהם ישבו פתוחים
- * מעל ההוצאות הם דחקו את רשימת ההוצאות מתחת לקו הקיפול, וזה בדיוק הפוך
- * מסדר החשיבות.
- */
-function WhatIfSection({ cost }: { cost: FinanceSummary['cost'] }) {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <section className={`fin-card fin-whatif ${open ? 'open' : ''}`}>
-      <h2 className="fin-card-title">
-        <button
-          type="button"
-          className="fin-whatif-btn"
-          aria-expanded={open}
-          aria-controls="fin-whatif-body"
-          onClick={() => setOpen((v) => !v)}
-        >
-          <span className="fin-group-chevron" aria-hidden="true" />
-          <span>{t.whatIfTitle}</span>
-        </button>
-      </h2>
-
-      {open && (
-        <div id="fin-whatif-body" className="fin-whatif-body">
-          <NextPersonCard cost={cost} />
-          {cost.scenarios.length > 0 && <ScenariosList scenarios={cost.scenarios} />}
-        </div>
-      )}
-    </section>
+    </div>
   )
 }
 
@@ -1277,22 +1821,39 @@ function ByGuestList({ rows }: { rows: GuestGiftRow[] }) {
 }
 
 // ════════════════════════════════════════════════════════════════════════
-//  לשונית "סיכום"
+//  7. הפירוט המלא
 // ════════════════════════════════════════════════════════════════════════
 
-function SummaryTab({
+/** שורות "תווית ····· ערך" — במקום רשת של תאים בגודל שווה. */
+function KeyValues({ rows }: { rows: [string, string][] }) {
+  return (
+    <dl className="fin-kv">
+      {rows.map(([k, v]) => (
+        <div key={k}>
+          <dt>{k}</dt>
+          <dd>{v}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+/**
+ * **כל מה שהיה בלשונית "סיכום" — ועוד — מקופל לאזור אחד.** מבנה העלות,
+ * ההתחייבות מול הספק, "מה אם", מתנות מול הגעה, אישורי ההגעה והדוח המלא.
+ * אלה מספרים נכונים ושימושיים, אבל הם לא התשובה לשאלה "איפה אנחנו עומדים"
+ * — ולכן הם כאן, ולא למעלה באותו גודל כמו המאזן.
+ */
+function DetailsSection({
   data,
   terms,
-  onGoToCost,
 }: {
   data: FinanceSummary
   terms: ReturnType<typeof activeEventTerms>
-  onGoToCost: () => void
 }) {
-  const bottom = data.bottom_line_agorot
-  // עוד אין הוצאות ואין מתנות — "יצאתם בדיוק מאוזנים 0 ₪" וקיר של אפסים
-  // הם מסקנה שקרית, לא סיכום. אומרים מה יופיע כאן ומה עושים עכשיו.
-  const nothingYet = data.cost.total_agorot === 0 && (data.income.total_agorot ?? 0) === 0
+  const [open, setOpen] = useState(false)
+  const { cost, rsvp, breakdown } = data
+  const hasAmounts = data.expenses.some((e) => e.amount_agorot > 0 || e.total_agorot > 0)
   const noGiftsYet = (data.income.total_agorot ?? 0) === 0
 
   // הדוח המלא נטען לפי דרישה, לא עם המסך: הוא מכיל שורה לכל מוזמן
@@ -1310,193 +1871,147 @@ function SummaryTab({
       .finally(() => setLoadingReport(false))
   }
 
-  if (nothingYet) {
-    return (
-      <div className="empty fin-summary-empty">
-        <strong className="empty-title">{t.summaryEmptyTitle}</strong>
-        <span className="empty-desc">{t.summaryEmptyDesc}</span>
-        <div className="empty-actions">
-          <button type="button" className="btn-primary btn-sm" onClick={onGoToCost}>
-            {t.summaryEmptyCta}
-          </button>
-        </div>
-      </div>
-    )
+  const costRows: [string, string][] = [
+    [data.attendance.is_final ? t.totalCostLabel : t.estimatedCostLabel, cost.total_display],
+    [t.paidSummary, cost.paid_display],
+    [t.unpaidSummary, cost.unpaid_display],
+    [t.fixedLabel, cost.fixed_display],
+    [t.variableLabel, cost.variable_display],
+    [t.perPersonLabel, cost.cost_per_attendee_display || t.perPersonEmpty],
+  ]
+  if (cost.estimated_agorot > 0) costRows.push([t.estimatedSummary, cost.estimated_display])
+
+  const giftRows: [string, string][] = [
+    [t.fromAttendees, breakdown.from_attendees_display],
+    [t.fromNonAttendees, breakdown.from_non_attendees_display],
+  ]
+  if (breakdown.from_external_agorot > 0) {
+    giftRows.push([t.externalLabel, breakdown.from_external_display])
   }
+  if (breakdown.unattributed_agorot > 0) {
+    giftRows.push([t.unattributedLabel, breakdown.unattributed_display])
+  }
+  giftRows.push(
+    [t.guestsCounted, String(breakdown.guests_counted)],
+    [t.guestsNotCounted, String(breakdown.guests_not_counted)],
+  )
 
   return (
-    <>
-      {/* ── עמוד השדרה ────────────────────────────────────────────
-          חמש שורות בסדר שבו הזוג קורא אותן: כמה זה עולה, כמה כבר יצא,
-          כמה עוד לפנינו, מה נכנס — ומה נשאר. הסדר הזה הוא כל ההבדל בין
-          "דוח" לבין תשובה. */}
-      <section className="fin-card fin-summary">
-        <div className="fin-summary-row">
-          <span>
-            {data.attendance.is_final
-              ? t.summaryCostLabel(terms.eventNoun)
-              : t.estimatedCostLabel}
+    <section className={`fin-card fin-details ${open ? 'open' : ''}`}>
+      <h2 className="fin-card-title">
+        <button
+          type="button"
+          className="fin-whatif-btn fin-details-btn"
+          aria-expanded={open}
+          aria-controls="fin-details-body"
+          onClick={() => setOpen((v) => !v)}
+        >
+          <span className="fin-group-chevron" aria-hidden="true" />
+          <span className="fin-details-head">
+            <span>{o.detailsTitle}</span>
+            <span className="fin-details-hint">{o.detailsHint}</span>
           </span>
-          <strong>{data.cost.total_display}</strong>
-        </div>
-        <div className="fin-summary-row">
-          <span>{t.summaryPaidLabel}</span>
-          <strong>{data.cost.paid_display}</strong>
-        </div>
-        <div className="fin-summary-row fin-summary-row-strong">
-          <span>{t.summaryUnpaidLabel}</span>
-          <strong>{data.cost.unpaid_display}</strong>
-        </div>
-        <div className="fin-summary-row">
-          <span>{t.summaryGiftsLabel}</span>
-          <strong>{noGiftsYet ? t.giftsNotCountedYet : data.income.total_display || '—'}</strong>
-        </div>
+        </button>
+      </h2>
 
-        <div className="fin-summary-bottom">
-          {bottom === null ? (
-            // צד ההכנסות חסום חלקית ⇒ אין תוצאה. מספר שמוצג כ"התוצאה
-            // הכספית של האירוע" ומחושב מנתון חלקי הוא הטעיה, לא קירוב.
-            <p className="fin-hint">{t.bottomLineLocked}</p>
-          ) : noGiftsYet ? (
-            // עוד לא נספרה אף מתנה — "חסר" בגובה כל העלות הוא לא תחזית, אלא
-            // אפס בצד אחד של המאזן.
-            <p className="fin-hint">{t.bottomLineAfterGifts}</p>
-          ) : (
-            <>
-              <span className="fin-summary-bottom-label">
-                {/* לפני האירוע זו תחזית ואחריו זו התוצאה. ההבדל נאמר
-                    בכותרת ולא בהערת שוליים — הוא משנה איך קוראים את
-                    המספר, לא רק כמה סומכים עליו. */}
-                {!data.counting_open && <em className="fin-tag">{t.resultExpected}</em>}
-                {bottom > 0 ? t.surplus : bottom < 0 ? t.deficit : t.balanced}
-              </span>
-              <span
-                className={`fin-summary-bottom-value ${bottom < 0 ? 'negative' : ''}`}
-              >
-                {/* הסכום המוחלט: הסימן כבר נאמר במילים ("נשאר לכם" /
-                    "חסר"), ומינוס לצידו היה אומר את אותו דבר פעמיים. */}
-                {stripSign(data.bottom_line_display)}
-              </span>
-            </>
+      {open && (
+        <div id="fin-details-body" className="fin-details-body">
+          <div className="fin-detail">
+            <h3 className="fin-subtitle">{t.costSplitTitle}</h3>
+            <KeyValues rows={costRows} />
+          </div>
+
+          {cost.commitments.map((c) => (
+            <CommitmentDetail key={c.expense_id} commitment={c} attendance={data.attendance} />
+          ))}
+
+          {/* רק כשיש לפחות סכום אחד — אחרת כל התרחישים יוצאים "0 ₪", וזה
+              נראה כמו נתון ("לא עולה כלום") כשבפועל עוד אין נתונים. */}
+          {hasAmounts && (
+            <div className="fin-detail">
+              <h3 className="fin-subtitle">{t.whatIfTitle}</h3>
+              <NextPersonCard cost={cost} />
+              {cost.scenarios.length > 0 && <ScenariosList scenarios={cost.scenarios} />}
+            </div>
           )}
-        </div>
 
-        {!data.counting_open && !noGiftsYet && <p className="fin-hint">{t.forecastNote}</p>}
-        {/* השורה שמונעת את השאלה "רגע, כמה ירד לנו?". */}
-        <p className="fin-hint">{t.noFeeNote}</p>
-      </section>
-
-      {/* הפילוח החשבונאי ירד לכאן מהכותרת: הוא נכון ומעניין פעם אחת,
-          והוא לא שאלה שנשאלת בכל כניסה למסך. */}
-      <section className="fin-card">
-        <h2 className="fin-card-title">{t.costSplitTitle}</h2>
-        <div className="fin-hero-facts">
-          <Fact label={t.fixedLabel} value={data.cost.fixed_display} />
-          <Fact label={t.variableLabel} value={data.cost.variable_display} />
-          <Fact
-            label={t.perPersonLabel}
-            value={data.cost.cost_per_attendee_display || t.perPersonEmpty}
-          />
-          {data.cost.estimated_agorot > 0 && (
-            <Fact label={t.estimatedSummary} value={data.cost.estimated_display} />
+          {/* הפער בין הגעה למתנות. בלי מתנות — שורות של אפסים, ולכן לא מוצג. */}
+          {!noGiftsYet && (
+            <div className="fin-detail">
+              <h3 className="fin-subtitle">{t.breakdownTitle}</h3>
+              <KeyValues rows={giftRows} />
+            </div>
           )}
-        </div>
-      </section>
 
-      {/* הפער בין הגעה למתנות — שני מספרים זה לצד זה שדוח כספי רגיל
-          לא מציג בכלל. בלי מתנות — כרטיס של אפסים, ולכן לא מוצג. */}
-      {!noGiftsYet && (
-      <section className="fin-card">
-        <h2 className="fin-card-title">{t.breakdownTitle}</h2>
-        <div className="fin-hero-facts">
-          <Fact label={t.fromAttendees} value={data.breakdown.from_attendees_display} />
-          <Fact
-            label={t.fromNonAttendees}
-            value={data.breakdown.from_non_attendees_display}
-          />
-          {data.breakdown.from_external_agorot > 0 && (
-            <Fact
-              label={t.externalLabel}
-              value={data.breakdown.from_external_display}
+          <div className="fin-detail">
+            <h3 className="fin-subtitle">{t.rsvpTitle}</h3>
+            {/* כולם במוזמנים (שורות ברשימה), כדי שהמספרים יסתכמו לסה"כ;
+                מספר האנשים שאישרו — בנפרד ובשמו. */}
+            <KeyValues
+              rows={[
+                [t.rsvpGuests, String(rsvp.total_guests)],
+                [t.rsvpConfirmed, String(rsvp.confirmed_guests)],
+                [t.rsvpMaybe, String(rsvp.maybe_guests)],
+                [t.rsvpDeclined, String(rsvp.declined_guests)],
+                [t.rsvpPending, String(rsvp.pending_guests)],
+                [t.rsvpConfirmedPeople, String(rsvp.confirmed_people)],
+              ]}
             />
-          )}
-          {data.breakdown.unattributed_agorot > 0 && (
-            <Fact
-              label={t.unattributedLabel}
-              value={data.breakdown.unattributed_display}
-            />
-          )}
-          <Fact label={t.guestsCounted} value={String(data.breakdown.guests_counted)} />
-          <Fact
-            label={t.guestsNotCounted}
-            value={String(data.breakdown.guests_not_counted)}
-          />
+          </div>
+
+          {/* ── הדוח המלא ─────────────────────────────────────────── */}
+          <div className="fin-detail fin-report">
+            <div className="fin-section-head">
+              <h3 className="fin-subtitle">{t.reportTitle}</h3>
+              {!report && (
+                <button
+                  type="button"
+                  className="btn-ghost btn-sm"
+                  onClick={loadReport}
+                  disabled={loadingReport}
+                >
+                  {loadingReport ? t.reportLoading : t.byGuestLoad}
+                </button>
+              )}
+            </div>
+            <p className="fin-hint">{t.reportIntro}</p>
+
+            {reportError && (
+              <p className="form-error" role="alert">
+                {reportError}
+              </p>
+            )}
+
+            {report && (
+              <>
+                <div className="fin-report-card">
+                  <ReportTable report={report} />
+                </div>
+                <div className="fin-download">
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => downloadReport(report, terms.eventNoun)}
+                  >
+                    {t.downloadReport}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => printReport(report)}
+                  >
+                    {t.printReport}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* השורה שמונעת את השאלה "רגע, כמה ירד לנו?". */}
+          <p className="fin-hint">{t.noFeeNote}</p>
         </div>
-      </section>
       )}
-
-      <section className="fin-card">
-        <h2 className="fin-card-title">{t.rsvpTitle}</h2>
-        <div className="fin-hero-facts">
-          {/* כולם במוזמנים (שורות ברשימה), כדי שהמספרים יסתכמו לסה"כ;
-              מספר האנשים שאישרו — בנפרד ובשמו. */}
-          <Fact label={t.rsvpGuests} value={String(data.rsvp.total_guests)} />
-          <Fact label={t.rsvpConfirmed} value={String(data.rsvp.confirmed_guests)} />
-          <Fact label={t.rsvpMaybe} value={String(data.rsvp.maybe_guests)} />
-          <Fact label={t.rsvpDeclined} value={String(data.rsvp.declined_guests)} />
-          <Fact label={t.rsvpPending} value={String(data.rsvp.pending_guests)} />
-          <Fact label={t.rsvpConfirmedPeople} value={String(data.rsvp.confirmed_people)} />
-        </div>
-      </section>
-
-      {/* ── הדוח המלא ────────────────────────────────────────────── */}
-      <section className="fin-section">
-        <div className="fin-section-head">
-          <h2 className="fin-section-title">{t.reportTitle}</h2>
-          {!report && (
-            <button
-              type="button"
-              className="btn-ghost btn-sm"
-              onClick={loadReport}
-              disabled={loadingReport}
-            >
-              {loadingReport ? t.reportLoading : t.byGuestLoad}
-            </button>
-          )}
-        </div>
-        <p className="fin-hint">{t.reportIntro}</p>
-
-        {reportError && (
-          <p className="form-error" role="alert">
-            {reportError}
-          </p>
-        )}
-
-        {report && (
-          <>
-            <div className="fin-card fin-report-card">
-              <ReportTable report={report} />
-            </div>
-            <div className="fin-download">
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => downloadReport(report, terms.eventNoun)}
-              >
-                {t.downloadReport}
-              </button>
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => printReport(report)}
-              >
-                {t.printReport}
-              </button>
-            </div>
-          </>
-        )}
-      </section>
-    </>
+    </section>
   )
 }
 

@@ -3,7 +3,7 @@
  *
  * ## מה מוצג כאן
  *
- * ``FinancePage`` האמיתי, בלשונית ספירת המתנות: מסך הזנת המעטפות
+ * ``FinancePage`` האמיתי, במסך ספירת המתנות: מסך הזנת המעטפות
  * (``EnvelopeCounter``) ומתחתיו יומן המתנות — שני הרכיבים של המוצר,
  * כמו שהם. הקובץ הזה לא מצייר מסך משלו ולא מעתיק שורה מהם.
  *
@@ -220,17 +220,22 @@ export function DemoGiftCounting() {
       // שאר הערימה נספרת בשקט, והדוח מציג את כל המעטפות.
       seedRemainingEnvelopes()
 
-      // ובסוף — הדוח האמיתי של המוצר. עוברים ללשונית הסיכום ולוחצים
-      // "הצגת הדוח", בדיוק כמו הזוג אחרי האירוע. הטבלה שנפתחת היא
-      // ``ReportTable`` של ``FinancePage``, עם העמודות שלה.
+      // ובסוף — הדוח האמיתי של המוצר. חוזרים לסקירת המאזן, פותחים את
+      // "פירוט ההכנסות וההוצאות" ולוחצים "הצגת הרשימה" בדוח המלא, בדיוק
+      // כמו הזוג אחרי האירוע. הטבלה שנפתחת היא ``ReportTable`` של
+      // ``FinancePage``, עם העמודות שלה.
       await pause(700)
-      const tabs = [].slice.call(document.querySelectorAll('.fin-tabs button')) as HTMLButtonElement[]
-      const summaryTab = tabs[tabs.length - 1]
-      if (summaryTab) {
-        await moveTo(summaryTab, 500)
-        await press(summaryTab)
+      const back = document.querySelector<HTMLButtonElement>('.fin-back')
+      if (back) {
+        await moveTo(back, 500)
+        await press(back)
       }
-      const show = await waitFor<HTMLButtonElement>('.fin-section-head button, .fin-report button')
+      const details = await waitFor<HTMLButtonElement>('.fin-details-btn')
+      if (details) {
+        await moveTo(details, 500)
+        await press(details)
+      }
+      const show = await waitFor<HTMLButtonElement>('.fin-report button')
       if (show) {
         await moveTo(show, 500)
         await press(show)
@@ -270,7 +275,7 @@ export function DemoGiftCounting() {
   return (
     <div className="demo-stage" ref={stageRef}>
       <div className="demo-track" ref={trackRef}>
-        <FinancePage />
+        <FinancePage initialView="counting" />
       </div>
       <div className="demo-cursor" ref={cursorRef} aria-hidden="true" />
     </div>

@@ -1640,6 +1640,133 @@ export const strings = {
     // קבוע בכל סוגי האירוע — לא לבנות שוב מהלקסיקון (ראו הערה למעלה).
     navTitle: 'מאזן האירוע',
     navShort: 'מאזן',
+
+    // ---- מסך הסקירה (2026-09-29) ----
+    // המסך עונה על ארבע שאלות, בסדר הזה: כמה האירוע עולה, כמה נכנס, כמה
+    // נשאר — ומה עושים עכשיו. **אין כאן "הכנסה צפויה"**: VEYA לא מנחשת
+    // כמה ייתנו (החלטת בעלים 2026-09-29). לפני ספירת המתנות הגיבור הוא
+    // העלות, ומשפט אחד אומר מתי יתברר המאזן. מונחים: "מוזמנים" לרשומות,
+    // "אנשים" לכמויות (``confirmed_people`` = ``effective_seats``).
+    overview: {
+      lede: 'בואו נראה איך האירוע שלכם מתקדם מבחינה כספית.',
+
+      // הגיבור — שלושה מצבים, לפי מה שבאמת ידוע.
+      earlyLabel: 'המאזן',
+      earlyTitle: 'עדיין מוקדם לחשב את המאזן',
+      earlyBody: 'ככל שיצטברו אישורי הגעה והוצאות, נוכל לתת לכם תמונה מדויקת יותר.',
+      costLabelEstimated: 'האירוע צפוי לעלות',
+      costLabelFinal: 'האירוע עלה',
+      balanceLater: 'כמה יישאר לכם — נדע אחרי ספירת המתנות.',
+      costBasisConfirmed: (n: number) =>
+        n === 1 ? 'לפי אדם אחד שאישר הגעה עד עכשיו.' : `לפי ${n} אנשים שאישרו הגעה עד עכשיו.`,
+      costBasisActual: (n: number) => `לפי ${n} שהגיעו בפועל.`,
+      costBasisNobody: 'העלות תתעדכן ככל שיגיעו אישורי הגעה.',
+      // "המספר עוד ישתנה" — נאמר רק כשיש באמת ממתינים, לא כסף קטן תמידי.
+      pendingNote: (n: number) =>
+        n === 1
+          ? 'מוזמן אחד עוד ממתין לתשובה, כך שהמספר עוד יכול להשתנות.'
+          : `${n} מוזמנים עוד ממתינים לתשובה, כך שהמספר עוד יכול להשתנות.`,
+      balanceLabel: 'המאזן עד עכשיו',
+      balanceSurplus: 'נשארים לכם אחרי כל ההוצאות',
+      balanceDeficit: 'חסרים לכיסוי ההוצאות',
+      balanceEven: 'המתנות כיסו בדיוק את ההוצאות',
+      balanceBasis: 'לפי המתנות שנספרו עד עכשיו. המספר יתעדכן עם כל מתנה שתיספר.',
+      balanceBasisEarly: 'לפי המתנות שהתקבלו עד עכשיו. ספירת המעטפות נפתחת ביום האירוע.',
+      vsGifts: 'מתנות שהתקבלו',
+      vsCostEstimated: 'עלות צפויה',
+      vsCostFinal: 'עלות האירוע',
+      giftsLockedValue: 'יוצגו בהמשך',
+      howToggle: 'איך חישבנו?',
+      howClose: 'סגירת ההסבר',
+      howCost:
+        'סכום כל ההוצאות שהזנתם. הוצאה לפי אדם מוכפלת במספר האנשים שאישרו הגעה, ואם יש התחייבות מול הספק — משלמים לפי הגבוה מבין השניים.',
+      howCostAfter: 'אחרי האירוע תזינו כמה הגיעו בפועל, והעלות תהפוך לסופית.',
+      howBalance: 'כל המתנות שנספרו — מעטפות ואשראי — פחות עלות האירוע.',
+
+      // אבני הדרך — חמש תחנות, כל אחת עם שורת מצב אחת מהנתונים.
+      journeyTitle: 'הדרך למאזן הסופי',
+      stepState: { done: 'הושלם', current: 'כאן אתם עכשיו', upcoming: 'בהמשך' },
+      stepRsvp: 'אישורי הגעה',
+      stepRsvpNone: 'עוד אין מוזמנים ברשימה',
+      stepRsvpConfirmed: (n: number) =>
+        n === 1 ? 'אדם אחד אישר הגעה' : `${n} אנשים אישרו הגעה`,
+      stepFinal: 'רשימה סופית',
+      stepFinalActual: (n: number) => `${n} הגיעו בפועל`,
+      stepFinalAskActual: 'מחכה למספר שהגיעו בפועל',
+      stepFinalClosed: (date: string) => `הרשימה נסגרה ב\u2011${date}`,
+      // מקף שאינו נשבר — אחרת "ב-" נשאר לבד בסוף שורה והתאריך יורד.
+      stepFinalCloses: (date: string) => `הרשימה נסגרת ב\u2011${date}`,
+      stepFinalNoDate: 'עוד לא נבחר מועד לסגירה',
+      stepExpenses: 'הוצאות',
+      stepExpensesNone: 'עדיין לא הוזנו',
+      stepExpensesWaiting: (n: number) =>
+        n === 1 ? 'הוצאה אחת ממתינה לסכום' : `${n} הוצאות ממתינות לסכום`,
+      stepExpensesEntered: (amount: string) => `${amount} הוזנו`,
+      stepExpensesPaid: 'הכול שולם',
+      stepGifts: 'מתנות',
+      stepGiftsLater: 'יעודכנו אחרי האירוע',
+      stepGiftsOpen: 'אפשר להתחיל לספור',
+      stepGiftsCounted: (amount: string) => `${amount} נספרו`,
+      stepBalance: 'מאזן סופי',
+      stepBalanceLater: 'יחושב אחרי האירוע',
+      stepBalanceLive: 'מתעדכן עם כל מתנה',
+
+      // "מה נשאר לעשות?" — רק פריטים שיש להם בסיס בנתונים, כל אחד עם
+      // הפעולה שפותרת אותו. אין פריט ⇒ משפט אחד שקט.
+      todoTitle: 'מה נשאר לעשות?',
+      todoEmpty: 'אין כרגע משהו שמחכה לכם כאן.',
+      todoPending: (n: number) =>
+        n === 1 ? 'מוזמן אחד עוד ממתין לתשובה' : `עדיין ${n} מוזמנים ממתינים לתשובה`,
+      todoPendingDesc: 'כל תשובה מדייקת את העלות הצפויה.',
+      todoPendingCta: 'לבדיקת אישורי ההגעה',
+      todoEmptyRows: (n: number) =>
+        n === 1 ? 'הוצאה אחת עדיין בלי סכום' : `${n} הוצאות עדיין בלי סכום`,
+      todoEmptyRowsDesc: 'בלי סכום הן לא נכנסות לחישוב.',
+      todoEmptyRowsCta: 'לעדכון ההוצאות',
+      todoNoExpenses: 'עדיין לא הוזנו הוצאות',
+      todoNoExpensesDesc: 'מההוצאות נדע כמה האירוע עולה וכמה יישאר לכם.',
+      todoClosing: (days: number) =>
+        days === 0
+          ? 'הרשימה נסגרת היום'
+          : days === 1
+            ? 'הרשימה נסגרת מחר'
+            : `הרשימה נסגרת בעוד ${days} ימים`,
+      todoClosingDesc: 'המספר הסופי נמסר לאולם, והוא שקובע את עלות המנות.',
+      todoClosingCta: 'לאישורי ההגעה',
+      todoNoClosing: 'עוד לא נבחר מועד לסגירת הרשימה',
+      todoNoClosingDesc: 'ממנו נגזר מתי נמסר המספר הסופי לאולם.',
+      todoNoClosingCta: 'לבחירת מועד',
+      todoCountStart: 'אפשר להתחיל לספור את המתנות',
+      todoCountMore: (amount: string) => `${amount} נספרו עד עכשיו`,
+      todoCountDesc: 'כל מתנה שנספרת נכנסת מיד למאזן.',
+      todoCountCta: 'לספירת המתנות',
+      todoCountMoreCta: 'להמשך הספירה',
+
+      // כסף שנכנס — המתנות. לפני האירוע: מתי והיכן, בלי "0 ₪".
+      incomeTitle: 'כסף שנכנס',
+      incomeBeforeTitle: 'המתנות ייספרו מיום האירוע',
+      incomeBeforeDays: (days: number) =>
+        days === 1 ? 'הספירה נפתחת מחר.' : `הספירה נפתחת בעוד ${days} ימים.`,
+      incomeBeforeBody: 'מאותו יום תוכלו לספור כאן את המעטפות ולשייך כל אחת למי שנתן.',
+      incomeCreditEarly: 'כבר התקבלו באשראי',
+      incomeTotal: 'מתנות שנספרו',
+      incomeNone: 'עוד לא נספרו מתנות',
+
+      // כמה האירוע עולה.
+      costTitle: 'כמה האירוע עולה',
+      addExpense: '+ הוספת הוצאה',
+      costWaiting: 'הסכומים יופיעו כאן כשתמלאו אותם.',
+      showAllExpenses: (n: number) =>
+        n === 1 ? 'הצגת ההוצאה' : `הצגת כל ההוצאות (${n})`,
+      hideAllExpenses: 'הסתרת הפירוט',
+
+      // הפירוט המלא — כל מה שהיה במסך הקודם, מקופל.
+      detailsTitle: 'פירוט ההכנסות וההוצאות',
+      detailsHint: 'מבנה העלות, ההתחייבות מול הספק, תרחישים והדוח המלא.',
+
+      back: 'חזרה למאזן',
+    },
+
     costTitle: (eventNoun: string) => `עלות ${eventNoun}`,
     countingTitle: 'ספירת מתנות',
     summaryTitle: (eventNoun: string) => `סיכום ${eventNoun}`,

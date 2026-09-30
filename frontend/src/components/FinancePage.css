@@ -1,5 +1,6 @@
 /**
- * "כספי האירוע" — עלות, ספירת מתנות וסיכום.
+ * "מאזן האירוע" — סקירה אחת (מאזן, אבני דרך, מה נשאר, מתנות, עלות,
+ * פירוט), ומסך ספירת המעטפות.
  *
  * הכול נשען על טוקני המערכת מ-``App.css`` (--ivory / --cream / --line /
  * --gold-deep / --charcoal / --radius-* / --shadow-card / --text-*). אין
@@ -17,9 +18,603 @@
 .fin-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 28px;
+  /* טור קריאה אחד — בדסקטופ רחב, שורות "תווית ····· ערך" לרוחב 1100px
+     מרחיקות את התווית מהמספר שלה. */
+  max-width: 820px;
   padding-bottom: 32px;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   סקירת המאזן (2026-09-29) — מהכללי לפרטני
+   ════════════════════════════════════════════════════════════════════
+
+   כרטיס אחד בולט (הגיבור) ומעט משטחים אחריו. כל השאר — שורות על רקע
+   העמוד, עם הרבה אוויר. צבע נושא משמעות בלבד: ירוק לעודף, אדמדם מאופק
+   לחוסר, זהב ל"איפה אתם". שום מספר לא צבוע סתם. */
+
+.fin-lede {
+  margin: -6px 0 0;
+  font-size: var(--text-md);
+  color: var(--muted);
+  line-height: var(--leading-normal);
+}
+
+/* טקסט לקוראי מסך בלבד — מצב התחנה ("כאן אתם עכשיו") שהעין מבינה מהסימון. */
+.fin-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── 1–2. הגיבור ─────────────────────────────────────────────────── */
+
+.fin-balance {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: 22px 20px 18px;
+}
+
+.fin-balance-eyebrow {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--muted);
+}
+
+.fin-balance-value {
+  margin: 6px 0 0;
+  font-family: var(--font-display);
+  font-size: 44px;
+  line-height: 1.1;
+  color: var(--charcoal);
+  font-variant-numeric: tabular-nums;
+  /* המספר בלבד ב-LTR — אחרת השורה נצמדת לשמאל ויוצאת מיישור עם התווית. */
+  direction: ltr;
+  text-align: right;
+  unicode-bidi: isolate;
+}
+
+.fin-balance-value.is-negative {
+  color: var(--error);
+}
+
+.fin-balance-early {
+  margin: 6px 0 0;
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-snug);
+  color: var(--charcoal);
+}
+
+.fin-balance-status {
+  margin: 8px 0 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  color: var(--body);
+}
+
+.fin-balance-status.is-positive {
+  color: var(--green);
+}
+
+.fin-balance-status.is-negative {
+  color: var(--error);
+}
+
+.fin-balance-note {
+  margin: 4px 0 0;
+  max-width: 56ch;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--muted);
+}
+
+/* מתנות מול עלות — שני מספרים באותו משקל, מתחת לקו דק. */
+.fin-balance-vs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-2);
+}
+
+.fin-balance-vs > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fin-balance-vs > div + div {
+  padding-inline-start: 14px;
+  border-inline-start: 1px solid var(--line-2);
+}
+
+.fin-balance-vs dt {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.fin-balance-vs dd {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  text-align: right;
+  unicode-bidi: isolate;
+}
+
+.fin-balance-vs dd.is-empty {
+  direction: rtl;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+  color: var(--muted);
+}
+
+.fin-how {
+  margin-top: 10px;
+}
+
+.fin-how-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h);
+  padding: 0;
+  font-size: var(--text-sm);
+}
+
+.fin-how-body {
+  padding: 12px 14px;
+  border-radius: var(--radius-m);
+  background: var(--surface-hi);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--body);
+}
+
+.fin-how-body p {
+  margin: 0;
+}
+
+.fin-how-body p + p {
+  margin-top: 6px;
+}
+
+/* ── 3. אבני הדרך ────────────────────────────────────────────────── */
+
+/* בטלפון — אנכי, עם קו שמחבר את התחנות. בדסקטופ — שורה אחת (למטה). */
+.fin-journey {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fin-journey-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fin-mile {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 12px;
+  padding-bottom: 16px;
+}
+
+.fin-mile:last-child {
+  padding-bottom: 0;
+}
+
+.fin-mile::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 10px;
+  top: 26px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--line-2);
+}
+
+.fin-mile:last-child::before {
+  display: none;
+}
+
+.fin-mile.is-done::before {
+  background: color-mix(in srgb, var(--gold) 55%, var(--line-2));
+}
+
+.fin-mile-marker {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--cream);
+}
+
+.fin-mile.is-done .fin-mile-marker {
+  border-color: var(--gold);
+  background: var(--gold);
+}
+
+/* סימן ✓ ב-CSS — גבולות פיזיים בכוונה, הזווית לא תלויה בכיוון הכתיבה. */
+.fin-mile.is-done .fin-mile-marker::after {
+  content: '';
+  width: 5px;
+  height: 9px;
+  border: solid var(--cream);
+  border-width: 0 2px 2px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
+
+.fin-mile.is-current .fin-mile-marker {
+  border-color: var(--gold-deep);
+}
+
+.fin-mile.is-current .fin-mile-marker::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold-deep);
+}
+
+.fin-mile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.fin-mile-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+}
+
+.fin-mile.is-upcoming .fin-mile-title {
+  font-weight: var(--weight-medium);
+  color: var(--muted);
+}
+
+.fin-mile-detail {
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  color: var(--muted);
+}
+
+.fin-mile.is-current .fin-mile-detail {
+  color: var(--body);
+}
+
+/* ── 4. מה נשאר לעשות ────────────────────────────────────────────── */
+
+.fin-todo-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fin-todo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.fin-todo-item + .fin-todo-item {
+  border-top: 1px solid var(--line-2);
+}
+
+.fin-todo-title {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+}
+
+.fin-todo-desc {
+  margin: 2px 0 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--muted);
+}
+
+/* בטלפון — יעד מגע בגובה בקרה רגיל, לא 34px של btn-sm. */
+.fin-todo-btn {
+  align-self: flex-start;
+  min-height: var(--control-h);
+}
+
+.fin-todo-empty {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+/* ── 5–6. כסף שנכנס · כמה האירוע עולה ─────────────────────────────── */
+
+/* מצב "עוד אין" — מסגרת דקה בלי צל ובלי מילוי: שקט יותר מכרטיס. */
+.fin-quiet {
+  padding: 16px 18px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-l);
+}
+
+.fin-quiet-title {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+}
+
+.fin-quiet-actions {
+  justify-content: flex-start;
+  margin-top: 12px;
+}
+
+.fin-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.fin-amount-label {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.fin-amount-value {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  line-height: var(--leading-tight);
+  color: var(--charcoal);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.fin-cost .fin-paybar {
+  margin-top: 4px;
+}
+
+/* שורות "תווית ····· ערך" — במקום רשת תאים. */
+.fin-kv {
+  display: flex;
+  flex-direction: column;
+  margin: 10px 0 0;
+}
+
+.fin-kv > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+}
+
+.fin-kv > div + div {
+  border-top: 1px solid var(--line-2);
+}
+
+.fin-kv dt {
+  font-size: var(--text-base);
+  color: var(--body);
+}
+
+.fin-kv dd {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+}
+
+/* חמש הקבוצות הגדולות — שורה לכל אחת, כל השורה לחיצה. */
+.fin-top {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+}
+
+.fin-top li + li {
+  border-top: 1px solid var(--line-2);
+}
+
+.fin-top-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--control-h-lg);
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+@media (hover: hover) {
+  .fin-top-row:hover {
+    background: var(--surface-hi);
+  }
+}
+
+.fin-top-row:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.fin-top-name {
+  min-width: 0;
+  font-size: var(--text-md);
+  color: var(--body);
+}
+
+.fin-top-total {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.fin-cost-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 20px;
+  margin-top: -4px;
+}
+
+.fin-commit-line {
+  margin: 0;
+}
+
+.fin-commit-line strong {
+  font-weight: var(--weight-semibold);
+  color: var(--body);
+}
+
+/* ── 7. הפירוט המלא ──────────────────────────────────────────────── */
+
+.fin-details-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fin-details-hint {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  color: var(--muted);
+}
+
+.fin-details-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 0 16px 16px;
+}
+
+.fin-detail + .fin-detail {
+  padding-top: 18px;
+  border-top: 1px solid var(--line-2);
+}
+
+.fin-detail .fin-report-card {
+  margin-top: 10px;
+  padding: 0;
+}
+
+.fin-detail .fin-download {
+  margin-top: 14px;
+}
+
+/* ── מסך הספירה — חזרה לסקירה ─────────────────────────────────────── */
+
+.fin-back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--control-h);
+  padding: 0;
+}
+
+.fin-back::before {
+  content: '→' / '';
+}
+
+@media (min-width: 700px) {
+  .fin-page {
+    gap: 36px;
+  }
+
+  .fin-balance {
+    padding: 28px 28px 22px;
+  }
+
+  .fin-balance-value {
+    font-size: 56px;
+  }
+
+  .fin-balance-vs dd {
+    font-size: var(--text-xl);
+  }
+
+  /* התחנות בשורה אחת; הקו רץ בין סימון לסימון. */
+  .fin-journey-list {
+    flex-direction: row;
+  }
+
+  .fin-mile {
+    flex: 1 1 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 0 0 0 0;
+    padding-inline-end: 12px;
+  }
+
+  .fin-mile::before {
+    top: 10px;
+    bottom: auto;
+    inset-inline-start: 30px;
+    inset-inline-end: 8px;
+    width: auto;
+    height: 2px;
+  }
+
+  .fin-todo-item {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 16px 20px;
+  }
+
+  .fin-todo-btn {
+    flex: none;
+    align-self: center;
+  }
+
+  .fin-top-row {
+    padding: 12px 20px;
+  }
+
+  .fin-details-body {
+    padding: 0 20px 20px;
+  }
+}
+
 
 /* ════════════════════════════════════════════════════════════════════
    הכותרת — העובדה הגדולה
@@ -84,56 +679,6 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   לשוניות
-   ════════════════════════════════════════════════════════════════════ */
-
-.fin-tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--line);
-  /* בטלפון שלוש לשוניות בעברית לא תמיד נכנסות — גלילה אופקית עדיפה על
-     שבירה לשתי שורות שמזיזה את כל המסך למטה. */
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.fin-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.fin-tab {
-  flex: 0 0 auto;
-  padding: 10px 14px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: none;
-  font-family: inherit;
-  font-size: var(--text-base);
-  color: var(--muted);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: color var(--transition-fast), border-color var(--transition-fast);
-}
-
-@media (hover: hover) {
-  .fin-tab:hover {
-    color: var(--body);
-  }
-}
-
-.fin-tab.active {
-  color: var(--charcoal);
-  font-weight: 600;
-  border-bottom-color: var(--gold-deep);
-}
-
-.fin-tab:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
-  border-radius: var(--radius-s);
-}
-
-/* ════════════════════════════════════════════════════════════════════
    כרטיסים וסקשנים
    ════════════════════════════════════════════════════════════════════ */
 
@@ -194,18 +739,6 @@
    ההתחייבות מול הספק — האזור החשוב ביותר לפני האירוע
    ════════════════════════════════════════════════════════════════════ */
 
-/* משטח זהב עדין ומסגרת זהב מלאה — מספיק כדי שהעין תמצא את הכרטיס הזה
-   ראשון, בלי להפוך אותו להתראה (ובלי פס צד, שנראה כמו תבנית גנרית). */
-.fin-commitment {
-  background: color-mix(in srgb, var(--gold-light) 10%, var(--cream));
-  border: 1px solid color-mix(in srgb, var(--gold) 38%, transparent);
-}
-
-.fin-commitment-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 16px;
-}
 
 .fin-commitment-note {
   margin: 14px 0 0;
@@ -336,7 +869,7 @@
 }
 
 .fin-group.open .fin-group-chevron,
-.fin-whatif.open .fin-group-chevron {
+.fin-details.open .fin-group-chevron {
   transform: rotate(-45deg);
 }
 
@@ -906,55 +1439,6 @@
    הסיכום הסופי
    ════════════════════════════════════════════════════════════════════ */
 
-.fin-summary-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
-  font-size: var(--text-base);
-  color: var(--body);
-}
-
-.fin-summary-row + .fin-summary-row {
-  border-top: 1px solid var(--line-2);
-}
-
-.fin-summary-row strong {
-  color: var(--charcoal);
-  direction: ltr;
-  unicode-bidi: isolate;
-}
-
-.fin-summary-bottom {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-}
-
-.fin-summary-bottom-label {
-  font-size: var(--text-md);
-  color: var(--muted);
-}
-
-.fin-summary-bottom-value {
-  font-family: var(--font-display);
-  font-size: var(--text-3xl);
-  color: var(--charcoal);
-  direction: ltr;
-  unicode-bidi: isolate;
-}
-
-/* הפסד מסומן בצבע מאופק ולא באדום צעקני: זו עובדה שצריך לראות, לא
-   התראה שצריך להיבהל ממנה. */
-.fin-summary-bottom-value.negative {
-  color: var(--error);
-}
-
 .fin-download {
   display: flex;
   justify-content: center;
@@ -1200,13 +1684,6 @@
 }
 
 /* הערת "עלות משוערת" מתחת למספר הגדול בכותרת. */
-.fin-hero-note {
-  margin: 10px 0 0;
-  max-width: 52ch;
-  font-size: var(--text-sm);
-  color: var(--muted);
-  line-height: var(--leading-normal);
-}
 
 /* ════════════════════════════════════════════════════════════════════
    נותן מתנה שאינו ברשימת המוזמנים
@@ -1645,14 +2122,14 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   "מה קורה אם יגיעו יותר או פחות" — אזור סגור
+   הפירוט המלא — אזור סגור (הכפתור משותף ל"מה קורה אם")
    ════════════════════════════════════════════════════════════════════ */
 
-.fin-whatif {
+.fin-details {
   padding: 0;
 }
 
-.fin-whatif .fin-card-title {
+.fin-details .fin-card-title {
   margin: 0;
 }
 
@@ -1676,11 +2153,7 @@
   outline-offset: -2px;
 }
 
-.fin-whatif-body {
-  padding: 0 16px 16px;
-}
-
-.fin-whatif-body .fin-scenarios {
+.fin-detail .fin-scenarios {
   margin-top: 22px;
   padding-top: 18px;
   border-top: 1px solid var(--line-2);
@@ -1690,16 +2163,11 @@
    פרטים קטנים
    ════════════════════════════════════════════════════════════════════ */
 
-.fin-section-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
 
 /* קישורי טקסט בתוך המסך הזה נלחצים באצבע על מסך טלפון, ולא רק בעכבר.
    גובה הבקרה הסטנדרטי של VEYA הופך אותם ליעד מגע אמיתי בלי לשנות את
    ``btn-link`` הגלובלי — שמשמש גם בהקשרים צפופים במסכים אחרים. */
-.fin-section-actions .btn-link,
+.fin-cost-actions .btn-link,
 .fin-gift-delete,
 .fin-group-add,
 .fin-preview-change,
@@ -1761,11 +2229,6 @@
   margin: 0;
 }
 
-/* "נשאר לשלם" בסיכום — השורה שהעין נעצרת בה בין העלות למתנות. */
-.fin-summary-row-strong strong {
-  color: var(--gold-deep);
-}
-
 /* ════════════════════════════════════════════════════════════════════
    מדסקטופ ומעלה
    ════════════════════════════════════════════════════════════════════ */
@@ -1773,10 +2236,6 @@
 @media (min-width: 700px) {
   .fin-hero-value {
     font-size: 52px;
-  }
-
-  .fin-commitment-grid {
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   }
 
   .fin-group-btn {

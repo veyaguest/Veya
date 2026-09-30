@@ -183,7 +183,13 @@ function summary(): FinanceSummary {
       unpaid_display: zero,
       estimated_agorot: 0,
       estimated_display: zero,
-    } as FinanceSummary['cost'],
+      // בלי ``as``: המבנה המלא נאכף, כדי שמסך המאזן לא ייפול בהדגמה על
+      // שדה שחסר כאן (כך קרה עם ``categories`` כשהסקירה נוספה).
+      steps: [],
+      scenarios: [],
+      commitments: [],
+      categories: [],
+    },
     income: income(),
     breakdown: {
       from_attendees_agorot: agorot,
