@@ -1482,6 +1482,44 @@ class LandingLead(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class SupportRequest(Base):
+    """פנייה לצוות VEYA מתוך "עזרה" (HELP_CENTER_PLAN.md §10, שלב 7).
+
+    ## מה נשמר, ובמכוון מה לא
+
+    - ``message`` — מה שבעל/ת האירוע כתבו, עד 1000 תווים. מוצג לצוות כטקסט.
+    - ``context`` — תמונת מצב בפורמט קבוע (רשימה לבנה, ``help_support.py``):
+      באיזה מסך, איזה נושא/בדיקה ומה יצא, שגיאות אחרונות **אחרי ניקוי**, וה-
+      עובדות שהשרת עצמו חישב למסך (ספירות ודגלים). **בלי** שמות/טלפונים של
+      מוזמנים ובלי תוכן הודעות.
+    - אין כאן אימייל או שם: הם כבר בחשבון (``user``), והצוות עונה במייל של
+      החשבון (החלטת המייסד 2026-09-29: ערוץ מייל בלבד, לא שואלים מה שידוע).
+
+    מחיקת חשבון/אירוע מוחקת את הפניות שלו (``account.py``).
+    """
+
+    __tablename__ = "support_requests"
+    __table_args__ = (
+        Index("ix_support_requests_status_created", "status", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("events.id"), index=True, nullable=True)
+    #: new → in_progress → resolved (הצוות יכול גם להחזיר אחורה).
+    status: Mapped[str] = mapped_column(String, default="new")
+    #: high = עד יומיים לאירוע (נקבע בשרת, לא בדפדפן).
+    urgency: Mapped[str] = mapped_column(String, default="normal")
+    topic_id: Mapped[str] = mapped_column(String, default="")
+    tree_id: Mapped[str] = mapped_column(String, default="")
+    message: Mapped[str] = mapped_column(Text, default="")
+    contact_channel: Mapped[str] = mapped_column(String, default="email")
+    context: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    handled_by_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
 class AdminAuditLog(Base):
     """יומן פעולות אדמין — **רק** פעולות ניהול משמעותיות, עם לפני/אחרי.
 

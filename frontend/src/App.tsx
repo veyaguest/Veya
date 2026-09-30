@@ -909,6 +909,8 @@ function App() {
           goTo={helpGoTo}
           event={activeEvent}
           online={online}
+          account={{ name: user.display_name ?? '', email: user.email ?? '' }}
+          canContactTeam={!impersonating}
         />
       )}
     </div>,

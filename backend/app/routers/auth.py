@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import audit, auth, emailer, legal, models, partners, schemas
-from app.account import delete_event_cascade
+from app.account import delete_event_cascade, delete_support_requests_for_user
 from app.database import get_db, set_request_identity
 from app.ratelimit import auth_limiter, client_ip, limit_email_send
 
@@ -586,6 +586,9 @@ def export_my_data(
     logins = db.scalars(
         select(models.LoginEvent).where(models.LoginEvent.user_id == user.id)
     ).all()
+    support_requests = db.scalars(
+        select(models.SupportRequest).where(models.SupportRequest.user_id == user.id)
+    ).all()
 
     audit.record(db, "data_export", user_id=user.id, detail="ייצוא מידע אישי (GET /auth/me/export)")
     db.commit()
@@ -616,6 +619,15 @@ def export_my_data(
                 "ip": lg.ip,
             }
             for lg in logins
+        ],
+        # פניות לצוות VEYA מתוך "עזרה" — מה שכתבתם, מתי ומה הסטטוס.
+        "support_requests": [
+            {
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "status": r.status,
+                "message": r.message,
+            }
+            for r in support_requests
         ],
     }
 
@@ -714,6 +726,7 @@ def delete_my_account(
         select(models.LoginEvent).where(models.LoginEvent.user_id == user.id)
     ).all():
         db.delete(login_event)
+    delete_support_requests_for_user(db, user.id)
 
     # יומן הסכמות/אבטחה נשארים לצורך שקיפות ותיעוד, אך מנותקים מהמשתמש
     # שנמחק (בדומה לתבנית הקיימת ב-admin.py::delete_user).

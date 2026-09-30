@@ -80,13 +80,36 @@ function testOnlyReadOnlyApiImports(): void {
       if (m[1]) continue // ייבוא טיפוסים בלבד
       const names = m[2].split(',').map((s) => s.trim().replace(/^type\s+/, '')).filter(Boolean)
       for (const n of names) {
+        // שלב 7: הכתיבה היחידה — פנייה לצוות — ורק מקובץ הטופס (נבדק למטה).
+        if (n === 'sendHelpSupportRequest' && f === 'ui/TeamRequest.tsx') continue
         assert(/^getHelp/.test(n) || /^type\s/.test(n) || /^[A-Z]/.test(n), `help/${f}: מייבא "${n}" מ-api.ts — לעזרה מותר רק getHelp…`)
       }
     }
   }
-  console.log('✓ העזרה קוראת לשרת רק דרך שלושת נתיבי ה-GET שלה')
+  console.log('✓ העזרה קוראת לשרת רק דרך נתיבי ה-GET שלה, וכותבת רק פנייה לצוות')
+}
+
+/** שלב 7: הפנייה נשלחת רק כשהמשתמש לוחץ "שליחה" בטופס — אף פעם לבד. */
+function testSupportRequestOnlyOnUserSubmit(): void {
+  const src = code(fs.readFileSync(`${HELP}/ui/TeamRequest.tsx`, 'utf8'))
+  const calls = src.match(/sendHelpSupportRequest\(/g) ?? []
+  assert(calls.length === 1, `sendHelpSupportRequest נקרא ${calls.length} פעמים — מותר פעם אחת, בתוך submit`)
+  const submitAt = src.indexOf('const submit = async (e: FormEvent)')
+  const callAt = src.indexOf('sendHelpSupportRequest(')
+  const bodyEnd = src.indexOf('\n  }\n', submitAt)
+  assert(submitAt > 0 && callAt > submitAt && callAt < bodyEnd, 'השליחה לא נמצאת בתוך submit')
+  assert(/<form[^>]*onSubmit=\{submit\}/.test(src), 'submit לא מחובר ל-onSubmit של הטופס')
+  assert(/<button type="submit"/.test(src), 'אין כפתור שליחה שהמשתמש לוחץ עליו')
+  assert(!/useEffect\([^)]*submit/.test(src), 'submit לא נקרא מתוך useEffect')
+  // שום קובץ עזרה אחר לא נוגע בשליחה.
+  for (const f of helpFiles()) {
+    if (f === 'ui/TeamRequest.tsx') continue
+    assert(!/sendHelpSupportRequest/.test(code(fs.readFileSync(`${HELP}/${f}`, 'utf8'))), `help/${f}: נוגע בשליחת פנייה`)
+  }
+  console.log('✓ פנייה לצוות נשלחת רק מכפתור "שליחה" בטופס — לא אוטומטית ולא מקובץ אחר')
 }
 
 testNoActionOnBehalfOfUser()
 testOnlyReadOnlyApiImports()
+testSupportRequestOnlyOnUserSubmit()
 console.log('OK — העזרה לא מבצעת שום פעולה בשם המשתמש.')

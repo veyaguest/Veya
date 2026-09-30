@@ -62,6 +62,8 @@ PERMISSIONS: dict[str, str] = {
     "venues.delete": SUPER_ADMIN,
     "messages.edit": ADMIN,           # ספריית ההודעות וברירות המחדל
     "postponements.review": ADMIN,
+    "support.view": SUPPORT,          # פניות לצוות מתוך "עזרה" (שלב 7)
+    "support.handle": SUPPORT,        # שינוי סטטוס פנייה
     "audit.view": ADMIN,
     # שליטה ב-VEYA
     "settings.view": SUPPORT,

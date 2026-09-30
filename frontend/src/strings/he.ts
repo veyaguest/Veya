@@ -2475,6 +2475,29 @@ export const strings = {
     tourDone: 'סיום',
     tourNotFound: 'לא מצאנו את הכפתור במסך כרגע, ולכן עצרנו את ההדרכה.',
     tourBackToHelp: 'חזרה לעזרה',
+    // שלב 7 — פנייה לצוות VEYA (ערוץ מייל בלבד, החלטת המייסד 2026-09-29).
+    // בלי זמני מענה: עוד לא הוחלט עליהם, ולכן לא מבטיחים.
+    team: {
+      cta: 'לדבר עם צוות VEYA',
+      notSolved: 'עוד לא הסתדר?',
+      title: 'לדבר עם צוות VEYA',
+      checkedTitle: 'מה כבר בדקנו כאן',
+      messageLabel: 'במה אפשר לעזור?',
+      messageHint: 'כמה מילים על מה שקרה ומה ניסיתם.',
+      counter: (n: number) => `${n}/1000`,
+      tooShort: 'כתבו בכמה מילים במה אפשר לעזור',
+      replyTo: (name: string, email: string) =>
+        name ? `נחזור אל ${name} במייל: ${email}` : `נחזור אליכם במייל: ${email}`,
+      privacy: 'יחד עם הפנייה יגיע לצוות גם מה שבדקנו כאן, בלי פרטים של מוזמנים.',
+      submit: 'שליחה לצוות VEYA',
+      sending: 'שולחים…',
+      sendError: 'לא הצלחנו לשלוח את הפנייה. אפשר לנסות שוב בעוד רגע.',
+      sentTitle: 'הפנייה אצלנו',
+      sentBody: (email: string) => `נחזור אליכם במייל לכתובת ${email}.`,
+      mineTitle: 'הפניות שלי',
+      mineItem: (id: number, date: string) => `פנייה #${id} · ${date}`,
+      status: { new: 'התקבלה', in_progress: 'בטיפול', resolved: 'טופלה' },
+    },
     tourError: 'משהו לא הצליח בשמירה. בואו נבדוק מה קרה.',
     // שלב 5 — עזרה ליד שגיאה שקרתה עכשיו
     errorHint: 'צריכים עזרה עם זה?',

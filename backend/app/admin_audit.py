@@ -28,6 +28,7 @@ DOMAIN_LABELS = {
     "commerce": "מסחר",
     "payouts": "קבלת מתנות",
     "postponements": "בקשות דחייה",
+    "support": "פניות תמיכה",
 }
 
 

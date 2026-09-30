@@ -304,3 +304,84 @@ button.help-card {
 .help-coach .btn-text {
   color: var(--gold-light);
 }
+
+/* ── צוות VEYA (שלב 7) ─────────────────────────────────────────────────── */
+.help-team-entry {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.help-team-entry.is-prominent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.help-team-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.help-team-checked ul {
+  margin: 0;
+  padding-inline-start: var(--space-4);
+  font-size: var(--text-sm);
+}
+.help-team-label {
+  font-weight: var(--weight-semibold);
+  margin-top: var(--space-2);
+}
+.help-team-hint,
+.help-team-counter {
+  margin: 0;
+}
+.help-team-counter {
+  text-align: end;
+  font-size: var(--text-xs);
+}
+.help-team-textarea {
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-hi);
+  color: inherit;
+  font: inherit;
+  font-size: 16px; /* בלי זום אוטומטי באייפון */
+  line-height: var(--leading-snug);
+}
+.help-team-textarea:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+.help-team-reply {
+  margin: 0;
+}
+.help-team-privacy {
+  margin: 0;
+  font-size: var(--text-xs);
+}
+.help-team-mine {
+  margin-top: var(--space-3);
+}
+.help-team-mine-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  font-size: var(--text-sm);
+}
+.help-team-status {
+  flex-shrink: 0;
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: var(--text-xs);
+}
+.help-team-status.is-resolved {
+  color: var(--success);
+  border-color: currentColor;
+}

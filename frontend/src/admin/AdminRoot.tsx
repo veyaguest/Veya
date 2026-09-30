@@ -12,6 +12,7 @@ import { AdminShell, pageAllowed } from './AdminShell'
 import { navigate, useAdminRoute, type AdminRoute } from './route'
 import { AdminSettingsPage } from './pages/AdminSettingsPage'
 import { AuditPage } from './pages/AuditPage'
+import { SupportPage } from './pages/support/SupportPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { CallOpsPage } from './pages/calls/CallOpsPage'
 import { PeoplePage } from './pages/people/PeoplePage'
@@ -116,6 +117,8 @@ function Page({
       return <RsvpPage route={route} />
     case 'calls':
       return <CallOpsPage route={route} />
+    case 'support':
+      return <SupportPage route={route} onImpersonate={onImpersonate} />
     case 'postponements':
       return (
         <LegacyPage title="בקשות דחייה">

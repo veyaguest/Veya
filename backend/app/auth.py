@@ -504,6 +504,21 @@ def _decode_token(token: str) -> Optional[dict]:
         return None
 
 
+def token_impersonator_id(
+    creds: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+) -> Optional[int]:
+    """Dependency: מזהה האדמין אם הבקשה מגיעה מטוקן "כניסה כמשתמש" (``imp``),
+    אחרת ``None``. לא מאמת את המשתמש — משתמשים בו **יחד** עם
+    ``get_current_user``, רק כדי לחסום פעולות שאסור לצוות לבצע בשם הלקוח
+    (למשל פנייה לצוות מתוך "עזרה").
+    """
+    if creds is None or not creds.credentials:
+        return None
+    payload = _decode_token(creds.credentials) or {}
+    imp = payload.get("imp")
+    return int(imp) if isinstance(imp, int) else None
+
+
 def get_current_user(
     creds: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
     db: Session = Depends(get_db),

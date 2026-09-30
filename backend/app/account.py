@@ -130,4 +130,23 @@ def delete_event_cascade(db: Session, event: "models.Event") -> None:
         .where(models.PostponementRequest.event_id == event_id)
     ).all():
         db.delete(row)
+    # פניות לצוות VEYA על האירוע (עזרה, שלב 7) — אין אירוע, אין על מה לענות.
+    for row in db.scalars(
+        select(models.SupportRequest).where(models.SupportRequest.event_id == event_id)
+    ).all():
+        db.delete(row)
     db.delete(event)
+
+
+def delete_support_requests_for_user(db: Session, user_id: int) -> None:
+    """לפני מחיקת משתמש: הפניות **שלו** לצוות נמחקות (מידע אישי שלו), ופניות
+    שהוא טיפל בהן כאיש צוות נשארות — רק מנותקות ממנו. בלי commit.
+    """
+    for row in db.scalars(
+        select(models.SupportRequest).where(models.SupportRequest.user_id == user_id)
+    ).all():
+        db.delete(row)
+    for row in db.scalars(
+        select(models.SupportRequest).where(models.SupportRequest.handled_by_id == user_id)
+    ).all():
+        row.handled_by_id = None

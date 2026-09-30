@@ -162,3 +162,50 @@ export interface AdminAccount {
 export const fetchAdmins = () => getJson<AdminAccount[]>('/admin/admins')
 export const setAdminRole = (userId: number, role: AdminRole | null, reason: string) =>
   sendJson<AdminAccount>(`/admin/admins/${userId}/role`, 'PUT', { role, reason })
+
+// ── פניות תמיכה (עזרה, שלב 7) ───────────────────────────────────────────
+export type SupportStatus = 'new' | 'in_progress' | 'resolved'
+
+export interface SupportPerson {
+  id: number
+  name: string
+  email: string
+}
+
+export interface SupportRequestRow {
+  id: number
+  status: SupportStatus
+  urgency: 'normal' | 'high'
+  about: string
+  created_at: string | null
+  updated_at: string | null
+  user: SupportPerson | null
+  event: { id: number; title: string; event_date: string | null; days_to_event: number | null; owner_id: number | null } | null
+}
+
+export interface SupportRequestDetail extends SupportRequestRow {
+  message: string
+  context: {
+    event_type?: string
+    role?: string
+    screen?: string | null
+    topic_id?: string | null
+    tree_id?: string | null
+    outcome?: string | null
+    tour_flow?: string | null
+    days_to_event?: number | null
+    platform?: string
+    recent_errors?: { method: string; path: string; status: number; message?: string }[]
+    facts?: Record<string, boolean | number | string | null>
+  }
+  handled_by: SupportPerson | null
+}
+
+export const fetchSupportRequests = (status: SupportStatus | 'open' | 'all' = 'open') =>
+  getJson<SupportRequestRow[]>(`/admin/support/requests?status=${status}`)
+
+export const fetchSupportRequest = (id: number) =>
+  getJson<SupportRequestDetail>(`/admin/support/requests/${id}`)
+
+export const setSupportStatus = (id: number, status: SupportStatus) =>
+  sendJson<SupportRequestDetail>(`/admin/support/requests/${id}/status`, 'POST', { status })

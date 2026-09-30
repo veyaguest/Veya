@@ -2061,3 +2061,30 @@ textarea.adm-input {
   color: var(--a-info);
   font-size: 13px;
 }
+
+/* ── פניות תמיכה (עזרה, שלב 7) ── */
+.adm-support-message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface-hi, #fbf6ee);
+  border: 1px solid var(--line, #e5dec9);
+}
+.adm-support-subtitle {
+  margin: 16px 0 6px;
+  font-size: 14px;
+}
+.adm-support-errors {
+  margin: 0;
+  padding-inline-start: 18px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.adm-support-facts {
+  margin-top: 12px;
+}
+.adm-support-facts summary {
+  cursor: pointer;
+}

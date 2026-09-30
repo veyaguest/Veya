@@ -14,6 +14,7 @@ export type AdminPageKey =
   | 'rsvp'
   | 'calls'
   | 'postponements'
+  | 'support'
   | 'features'
   | 'rules'
   | 'plans'
@@ -31,7 +32,7 @@ export interface AdminRoute {
 }
 
 const PAGES: AdminPageKey[] = [
-  'home', 'people', 'venues', 'rsvp', 'calls', 'postponements', 'features', 'rules',
+  'home', 'people', 'venues', 'rsvp', 'calls', 'postponements', 'support', 'features', 'rules',
   'plans', 'addons', 'fees', 'coupons', 'subscriptions', 'audit', 'settings',
 ]
 

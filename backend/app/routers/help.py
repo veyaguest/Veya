@@ -1,6 +1,6 @@
 """עזרה בתוך VEYA — ה-context שהעזרה צריכה, ורק הוא (HELP_CENTER_PLAN.md שלב 3).
 
-שלושה נתיבים, כולם **קריאה בלבד**:
+שלושה נתיבים של **קריאה בלבד**:
 
 - ``GET /help/context/{screen}`` — העובדות של מסך אחד (help_contexts.json).
 - ``GET /help/guest-options?q=`` — בחירת מוזמן לבדיקה: מזהה + שם בלבד.
@@ -13,20 +13,30 @@
 ב-``EventAccess``. אדמין שנכנס עם הטוקן שלו לא עובר (הוא לא מנהל האירוע);
 בכניסה לאירוע לתמיכה (התחזות) הוא משתמש בטוקן של בעל/ת האירוע.
 
-שום דבר כאן לא נשמר ולא נשלח לשירות חיצוני. ה-context נבנה בכל בקשה ונזרק.
+שום דבר מהם לא נשמר ולא נשלח לשירות חיצוני. ה-context נבנה בכל בקשה ונזרק.
+
+ושני נתיבים של פנייה לצוות (שלב 7, ``help_support.py``):
+
+- ``POST /help/requests`` — המשתמש לוחץ בעצמו "שליחה לצוות". הודעה עד 1000
+  תווים + תמונת מצב בפורמט קבוע. 5 בשעה למשתמש. **חסום בכניסה לתמיכה**
+  (צוות לא פונה לצוות בשם הלקוח).
+- ``GET /help/requests/mine`` — הפניות שלי באירוע הזה והסטטוס שלהן.
 """
 from __future__ import annotations
 
-from typing import Optional, Union
+from datetime import datetime
+from typing import Literal, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import features, help_context, models, partners
-from app.auth import get_current_user
+from app import features, help_context, help_support, models, partners
+from app.auth import get_current_user, token_impersonator_id
 from app.database import get_db
 from app.deps import EventAccess
+from app.ratelimit import RateLimiter
 
 router = APIRouter(prefix="/help", tags=["help"])
 
@@ -102,3 +112,103 @@ def get_guest_check(
     return HelpGuestCheckRead(
         check=check, facts=help_context.guest_check_facts(db, event, guest, check),
     )
+
+
+# ─── פנייה לצוות VEYA (שלב 7) ──────────────────────────────────────────────
+
+support_limiter = RateLimiter(
+    max_hits=5, window=3600, message="נשלחו כמה פניות בשעה האחרונה. אפשר לשלוח שוב בעוד קצת.",
+)
+
+#: מזהי נושא/בדיקה/תוצאה/הדרכה מבסיס הידע — אותיות קטנות, ספרות, נקודה ומקף.
+_KB_ID = r"^[a-z0-9][a-z0-9.\-]{0,59}$"
+
+
+class SupportErrorIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE", ""]
+    #: תבנית נתיב (בלי מזהים) — כמו ב-errorBus.ts::pathTemplate.
+    path: str = Field(pattern=r"^(/[a-z0-9/{}_\-.]{0,80}|ui:crash)$")
+    status: int = Field(ge=-1, le=599)
+    message: Optional[str] = Field(default=None, max_length=300)
+
+
+class SupportRequestCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    message: str = Field(min_length=1, max_length=1000)
+    screen: Optional[str] = None
+    topic_id: Optional[str] = Field(default=None, pattern=_KB_ID)
+    tree_id: Optional[str] = Field(default=None, pattern=_KB_ID)
+    outcome: Optional[str] = Field(default=None, pattern=_KB_ID)
+    tour_flow: Optional[str] = Field(default=None, pattern=_KB_ID)
+    recent_errors: list[SupportErrorIn] = Field(default_factory=list, max_length=5)
+    platform: Literal["desktop", "mobile"]
+
+    @field_validator("message")
+    @classmethod
+    def _message(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 3:
+            raise ValueError("כתבו בכמה מילים במה אפשר לעזור")
+        return v
+
+    @field_validator("screen")
+    @classmethod
+    def _screen(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in help_context.SCREENS:
+            raise ValueError("מסך לא מוכר")
+        return v
+
+
+class SupportRequestRead(BaseModel):
+    id: int
+    status: str
+    created_at: Optional[datetime]
+
+
+@router.post("/requests", response_model=SupportRequestRead, status_code=201)
+def create_support_request(
+    payload: SupportRequestCreate,
+    event: models.Event = Depends(_help_event),
+    user: models.User = Depends(get_current_user),
+    impersonator: Optional[int] = Depends(token_impersonator_id),
+    db: Session = Depends(get_db),
+) -> SupportRequestRead:
+    if impersonator is not None:
+        raise HTTPException(status_code=403, detail="בכניסה לתמיכה אי אפשר לשלוח פנייה בשם בעלי האירוע")
+    key = f"user:{user.id}"
+    support_limiter.check(key)
+    ctx = help_support.build_context(
+        db, event, user,
+        screen=payload.screen, topic_id=payload.topic_id, tree_id=payload.tree_id,
+        outcome=payload.outcome, tour_flow=payload.tour_flow,
+        recent_errors=[e.model_dump() for e in payload.recent_errors],
+        platform=payload.platform,
+    )
+    row = models.SupportRequest(
+        user_id=user.id, event_id=event.id, status="new",
+        urgency=help_support.urgency_for(event),
+        topic_id=payload.topic_id or "", tree_id=payload.tree_id or "",
+        message=payload.message, contact_channel="email", context=ctx,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    support_limiter.record_fail(key)
+    help_support.notify_team(row)
+    return SupportRequestRead(id=row.id, status=row.status, created_at=row.created_at)
+
+
+@router.get("/requests/mine", response_model=list[SupportRequestRead])
+def my_support_requests(
+    event: models.Event = Depends(_help_event),
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[SupportRequestRead]:
+    rows = db.scalars(
+        select(models.SupportRequest)
+        .where(models.SupportRequest.user_id == user.id, models.SupportRequest.event_id == event.id)
+        .order_by(models.SupportRequest.id.desc())
+        .limit(20)
+    ).all()
+    return [SupportRequestRead(id=r.id, status=r.status, created_at=r.created_at) for r in rows]

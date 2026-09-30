@@ -16,7 +16,7 @@ from app import (
     admin_audit, admin_rbac, audit, auth, cache, call_center, call_ops, communication, event_terms, media, messaging, models, roles,
     schemas, venues,
 )
-from app.account import delete_event_cascade
+from app.account import delete_event_cascade, delete_support_requests_for_user
 from app.database import get_db
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -773,6 +773,8 @@ def _delete_user_impl(db: Session, admin: models.User, target: models.User, mode
         select(models.LoginEvent).where(models.LoginEvent.user_id == user_id)
     ).all():
         db.delete(lg)
+    # פניות לצוות (עזרה): של המשתמש — נמחקות; שטיפל בהן — מתנתקות.
+    delete_support_requests_for_user(db, user_id)
     # יומן אבטחה — נשאר לצורך שקיפות/תיעוד, רק מתנתק מהמשתמש שנמחק.
     #
     # שורות ששייכות לאירוע שנמחק כאן למעלה (delete_event_cascade, מצב

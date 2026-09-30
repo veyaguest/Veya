@@ -1994,3 +1994,43 @@ export async function getHelpGuestCheck(
   if (!res.ok) throw await toError(res)
   return res.json()
 }
+
+// ─── פנייה לצוות VEYA מתוך "עזרה" (HELP_CENTER_PLAN.md שלב 7) ────────────────
+
+export type HelpSupportStatus = 'new' | 'in_progress' | 'resolved'
+
+export interface HelpSupportRequest {
+  id: number
+  status: HelpSupportStatus
+  created_at: string | null
+}
+
+/** מה נשלח עם הפנייה — רשימה סגורה (השרת דוחה כל שדה אחר). */
+export interface HelpSupportRequestBody {
+  message: string
+  screen: string | null
+  topic_id: string | null
+  tree_id: string | null
+  outcome: string | null
+  tour_flow: string | null
+  recent_errors: { method: string; path: string; status: number; message?: string }[]
+  platform: 'desktop' | 'mobile'
+}
+
+/** שליחת פנייה — רק כשהמשתמש לוחץ בעצמו "שליחה לצוות VEYA". */
+export async function sendHelpSupportRequest(body: HelpSupportRequestBody): Promise<HelpSupportRequest> {
+  const res = await apiFetch('/help/requests', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** הפניות שלי באירוע הזה והסטטוס שלהן. */
+export async function getHelpSupportRequests(): Promise<HelpSupportRequest[]> {
+  const res = await apiFetch('/help/requests/mine')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}

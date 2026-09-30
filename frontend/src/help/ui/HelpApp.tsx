@@ -8,10 +8,12 @@
  *   + בדיקה על מוזמן שנבחר. לא ידוע → לא מוצג / "לא הצלחנו לבדוק".
  * - WhatsApp במצב הדגמה → הודעה כנה ליד כל מה שמדבר על שליחה.
  * - שום פעולה כאן לא משנה נתונים. אין שליחה, אין שמירה, אין מחיקה.
- * - צוות VEYA עוד לא מוצג (שלב 7): קודם תשובה → הדרכה → בדיקה → ניסיון נוסף.
+ * - צוות VEYA (שלב 7) — תמיד אחרון בסולם: תשובה → הדרכה → בדיקה → צוות.
+ *   בכניסה לתמיכה (התחזות) לא מוצע בכלל. עד יומיים לאירוע — בולט יותר.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getHelpContext, getHelpGuestCheck, getHelpGuestOptions } from '../../api'
+import { getHelpContext, getHelpGuestCheck, getHelpGuestOptions, getHelpSupportRequests } from '../../api'
+import type { HelpSupportRequest, HelpSupportRequestBody } from '../../api'
 import { useBackToClose } from '../../lib/backToClose'
 import { useFocusTrap } from '../../lib/useFocusTrap'
 import { useMediaQuery } from '../../lib/useMediaQuery'
@@ -41,6 +43,7 @@ import {
 import type { ResolvedAction } from '../engine/topics'
 import { clientFacts, serverFacts } from './facts'
 import TourRunner from './TourRunner'
+import { MyRequests, TeamEntry, TeamForm } from './TeamRequest'
 import './help.css'
 
 export interface HelpAppProps {
@@ -52,6 +55,10 @@ export interface HelpAppProps {
   goTo: (page: HelpPage, options?: { guestFilter?: GuestFilter; fresh?: boolean }) => void
   event: EventSummary
   online: boolean | null
+  /** השם והמייל של החשבון — מוצגים בפנייה לצוות, לא נשאלים. */
+  account: { name: string; email: string }
+  /** אפשר לפנות לצוות (לא בכניסה לתמיכה). */
+  canContactTeam: boolean
 }
 
 type View =
@@ -59,9 +66,13 @@ type View =
   | { kind: 'topic'; id: string }
   | { kind: 'trouble' }
   | { kind: 'tree'; id: string; errorAt?: number }
+  | { kind: 'team'; topicId?: string; treeId?: string; outcome?: string }
 
 const t = strings.help
 const CONTEXT_TTL_MS = 60_000
+/** השרת מקבל רק נתיבים בפורמט הזה (routers/help.py::SupportErrorIn). */
+const SAFE_ERROR_PATH = /^(\/[a-z0-9/{}_\-.]{0,80}|ui:crash)$/
+const SAFE_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', '']
 
 function useScopes() {
   const [scopes, setScopes] = useState(activeScopes)
@@ -69,7 +80,7 @@ function useScopes() {
   return scopes
 }
 
-export default function HelpApp({ open, page, screenTitle, goTo, event, online }: HelpAppProps) {
+export default function HelpApp({ open, page, screenTitle, goTo, event, online, account, canContactTeam }: HelpAppProps) {
   const isNarrow = useMediaQuery('(max-width: 820px)')
   const scopes = useScopes()
   const [stack, setStack] = useState<View[]>([{ kind: 'home' }])
@@ -252,6 +263,53 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
 
   const tourFlow = tour ? FLOWS[tour] : null
 
+  // ── צוות VEYA (שלב 7) — תמיד השלב האחרון, ולא בכניסה לתמיכה ──
+  const [myRequests, setMyRequests] = useState<HelpSupportRequest[]>([])
+  useEffect(() => {
+    if (!open || !canContactTeam) return
+    let alive = true
+    getHelpSupportRequests()
+      .then((r) => alive && setMyRequests(r))
+      .catch(() => {
+        /* בלי הרשימה — הכול עובד כרגיל */
+      })
+    return () => {
+      alive = false
+    }
+  }, [open, canContactTeam])
+  const daysToEvent = text.facts['event.days_to_event']
+  const teamProminent = typeof daysToEvent === 'number' && daysToEvent >= 0 && daysToEvent <= 2
+  const openTeam = canContactTeam
+    ? (from: { topicId?: string; treeId?: string; outcome?: string } = {}) => push({ kind: 'team', ...from })
+    : undefined
+
+  function teamContext(v: Extract<View, { kind: 'team' }>): Omit<HelpSupportRequestBody, 'message'> {
+    return {
+      screen: page,
+      topic_id: v.topicId ?? null,
+      tree_id: v.treeId ?? null,
+      outcome: v.outcome ?? null,
+      tour_flow: null,
+      // השגיאות שעוד "פתוחות" — כבר אחרי ניקוי (errorBus), ורק בפורמט שהשרת מקבל.
+      recent_errors: openErrors()
+        .filter((e) => SAFE_ERROR_PATH.test(e.path) && SAFE_METHODS.includes(e.method))
+        .slice(-5)
+        .map((e) => ({ method: e.method, path: e.path, status: e.status, ...(e.message ? { message: e.message } : {}) })),
+      platform: isNarrow ? 'mobile' : 'desktop',
+    }
+  }
+
+  function teamChecked(v: Extract<View, { kind: 'team' }>): string[] {
+    const lines: string[] = []
+    const topic = v.topicId ? TOPICS.find((x) => x.id === v.topicId) : undefined
+    const tree = v.treeId ? TREES.find((x) => x.id === v.treeId) : undefined
+    const topicTitle = topic ? renderText(topic.title, text) : null
+    const treeTitle = tree ? renderText(tree.symptom, text) : null
+    if (topicTitle) lines.push(topicTitle)
+    if (treeTitle) lines.push(treeTitle)
+    return lines
+  }
+
   return (
     <>
       {tourFlow && (
@@ -323,6 +381,9 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
                   onTree={(id) => push({ kind: 'tree', id })}
                   onErrorTree={(id) => push({ kind: 'tree', id, errorAt: latestError?.at })}
                   onTrouble={() => push({ kind: 'trouble' })}
+                  onTeam={openTeam ? () => openTeam() : undefined}
+                  teamProminent={teamProminent}
+                  myRequests={myRequests}
                 />
               )}
 
@@ -336,6 +397,8 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
                   onTopic={(id) => push({ kind: 'topic', id })}
                   onTrouble={() => push({ kind: 'trouble' })}
                   onNotHelped={(id) => setNotHelped((s) => new Set(s).add(id))}
+                  onTeam={openTeam ? () => openTeam({ topicId: view.id }) : undefined}
+                  teamProminent={teamProminent}
                 />
               )}
 
@@ -367,6 +430,18 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
                   actionLabel={actionLabel}
                   onAction={runAction}
                   canRunAction={(a) => a.kind !== 'tour' || canStartFlow(FLOWS[a.flow], text.facts)}
+                  onTeam={openTeam ? (outcome) => openTeam({ treeId: view.id, outcome }) : undefined}
+                  teamProminent={teamProminent}
+                />
+              )}
+
+              {view.kind === 'team' && canContactTeam && (
+                <TeamForm
+                  key={`${view.topicId ?? ''}-${view.treeId ?? ''}-${view.outcome ?? ''}`}
+                  account={account}
+                  checked={teamChecked(view)}
+                  context={teamContext(view)}
+                  onSent={(r) => setMyRequests((list) => [r, ...list])}
                 />
               )}
             </div>
@@ -380,7 +455,7 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
 // ─── הבית ───────────────────────────────────────────────────────────────────
 
 function HomeView({
-  query, onQuery, results, home, errorTree, text, onTopic, onTree, onErrorTree, onTrouble,
+  query, onQuery, results, home, errorTree, text, onTopic, onTree, onErrorTree, onTrouble, onTeam, teamProminent, myRequests,
 }: {
   query: string
   onQuery: (q: string) => void
@@ -392,6 +467,9 @@ function HomeView({
   onTree: (id: string) => void
   onErrorTree: (id: string) => void
   onTrouble: () => void
+  onTeam?: () => void
+  teamProminent: boolean
+  myRequests: HelpSupportRequest[]
 }) {
   const titleOf = (id: string) => {
     if (id.startsWith('t:')) {
@@ -461,6 +539,8 @@ function HomeView({
           <button type="button" className="help-item help-item-trouble" onClick={onTrouble}>
             {t.somethingWrong}
           </button>
+          {onTeam && <TeamEntry withQuestion prominent={teamProminent} onClick={onTeam} />}
+          {onTeam && <MyRequests items={myRequests} />}
         </>
       )}
     </>
@@ -470,7 +550,7 @@ function HomeView({
 // ─── נושא ───────────────────────────────────────────────────────────────────
 
 function TopicView({
-  topic, ctx, mockMode, actionLabel, onAction, onTopic, onTrouble, onNotHelped,
+  topic, ctx, mockMode, actionLabel, onAction, onTopic, onTrouble, onNotHelped, onTeam, teamProminent,
 }: {
   topic: HelpTopic
   ctx: Parameters<typeof resolveTopic>[1]
@@ -480,6 +560,8 @@ function TopicView({
   onTopic: (id: string) => void
   onTrouble: () => void
   onNotHelped: (id: string) => void
+  onTeam?: () => void
+  teamProminent: boolean
 }) {
   const [feedback, setFeedback] = useState<'none' | 'yes' | 'no'>('none')
   const r = resolveTopic(topic, ctx)
@@ -541,6 +623,7 @@ function TopicView({
               </button>
             </li>
           </ul>
+          {onTeam && <TeamEntry prominent={teamProminent} onClick={onTeam} />}
         </div>
       )}
     </div>
@@ -562,7 +645,7 @@ function Feedback({ state, onYes, onNo }: { state: 'none' | 'yes' | 'no'; onYes:
 // ─── בדיקת תקלה ────────────────────────────────────────────────────────────
 
 function TreeView({
-  tree, errorAt, onHome, baseFacts, text, mockMode, actionLabel, onAction, canRunAction,
+  tree, errorAt, onHome, baseFacts, text, mockMode, actionLabel, onAction, canRunAction, onTeam, teamProminent,
 }: {
   tree: DiagnosticTree
   /** השגיאה שנלחצה ("צריכים עזרה עם זה?") — העץ נבדק מולה בלבד. */
@@ -574,6 +657,9 @@ function TreeView({
   actionLabel: (r: ResolvedAction) => string
   onAction: (a: HelpAction) => void
   canRunAction: (a: HelpAction) => boolean
+  /** פנייה לצוות — עם מזהה התוצאה שהבדיקה הגיעה אליה. */
+  onTeam?: (outcome: string) => void
+  teamProminent: boolean
 }) {
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [guest, setGuest] = useState<{ id: number; name: string } | null>(null)
@@ -674,11 +760,20 @@ function TreeView({
               {actionLabel({ action: step.def.action, label: step.def.action.label ? renderText(step.def.action.label, ctx) : null })}
             </button>
           )}
+          {/* תוצאה שבסיס הידע מסמן "להציע צוות" (לא זיהינו / משהו אצלנו). */}
+          {step.def.offerTeam && onTeam && (
+            <TeamEntry prominent={teamProminent} onClick={() => onTeam(step.node)} />
+          )}
           <Feedback state={feedback} onYes={() => setFeedback('yes')} onNo={() => setFeedback('no')} />
           {feedback === 'no' && (
-            <button type="button" className="help-item help-item-quiet" onClick={onHome}>
-              {t.moreHelp}
-            </button>
+            <>
+              <button type="button" className="help-item help-item-quiet" onClick={onHome}>
+                {t.moreHelp}
+              </button>
+              {!step.def.offerTeam && onTeam && (
+                <TeamEntry prominent={teamProminent} onClick={() => onTeam(step.node)} />
+              )}
+            </>
           )}
         </>
       )}
