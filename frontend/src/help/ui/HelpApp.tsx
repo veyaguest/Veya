@@ -78,15 +78,26 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
   const [notHelped, setNotHelped] = useState<Set<string>>(new Set())
   const [tour, setTour] = useState<string | null>(null)
   // שגיאה חדשה או שמירה מוצלחת בזמן שהעזרה פתוחה → לחשב מחדש מה "קרה עכשיו".
-  const [, setApiTick] = useState(0)
-  useEffect(() => onApiEvent(() => setApiTick((n) => n + 1)), [])
+  // שמירה מוצלחת גם הופכת את עובדות השרת ל"ישנות" (למשל נבחר נוסח להזמנה) —
+  // הן נטענות מחדש בפתיחה הבאה, או מיד אם העזרה פתוחה (נמצא בשלב 6).
+  const [apiTick, setApiTick] = useState(0)
+  const staleRef = useRef(false)
+  useEffect(
+    () =>
+      onApiEvent((e) => {
+        if (e.ok) staleRef.current = true
+        setApiTick((n) => n + 1)
+      }),
+    [],
+  )
 
   // ── עובדות השרת למסך הנוכחי (עם מטמון קצר) ──
   const [server, setServer] = useState<{ page: HelpPage; at: number; facts: Facts } | null>(null)
   const [contextError, setContextError] = useState(false)
   const loadContext = useCallback(
     async (force = false) => {
-      if (!force && server && server.page === page && Date.now() - server.at < CONTEXT_TTL_MS) return
+      if (!force && !staleRef.current && server && server.page === page && Date.now() - server.at < CONTEXT_TTL_MS) return
+      staleRef.current = false
       try {
         const res = await getHelpContext(page)
         setServer({ page, at: Date.now(), facts: serverFacts(res.facts) })
@@ -100,7 +111,7 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
   useEffect(() => {
     if (open) void loadContext()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, page])
+  }, [open, page, apiTick])
   const serverReady = server?.page === page
 
   const facts = useCallback(
@@ -227,6 +238,12 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
     setTour(null)
     void loadContext(true)
   }, [loadContext])
+  // הכפתור לא נמצא → חוזרים לחלונית העזרה של המסך הנוכחי (עם עובדות מעודכנות).
+  const onTourBack = useCallback(() => {
+    setTour(null)
+    void loadContext(true)
+    openHelp()
+  }, [loadContext])
   const onTourTree = useCallback((treeId: string) => {
     setTour(null)
     setStack([{ kind: 'home' }, { kind: 'tree', id: treeId }])
@@ -246,6 +263,7 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online }
           onStart={onTourStart}
           onExit={onTourExit}
           onOpenTree={onTourTree}
+          onBackToHelp={onTourBack}
         />
       )}
       {showPanel && (

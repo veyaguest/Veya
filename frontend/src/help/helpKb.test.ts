@@ -132,13 +132,18 @@ function conditionsOfTopic(t: HelpTopic): (Condition | undefined)[] {
   return [t.when, t.urgentWhen, ...(t.variants ?? []).map((v) => v.when)]
 }
 function conditionsOfFlow(f: GuidedFlow): (Condition | undefined)[] {
-  return [f.when, ...f.steps.map((s) => s.when)]
+  return [f.when, ...f.steps.flatMap((s) => [s.when, s.warning?.when])]
 }
 function conditionsOfTree(t: DiagnosticTree): (Condition | undefined)[] {
   return [t.when, ...Object.values(t.nodes).map((n) => (n.kind === 'check' ? n.test : undefined))]
 }
 
 /** כל הטקסטים שהמשתמש רואה, עם מאיפה הם באו (להודעות שגיאה ברורות). */
+/** כל טקסטי הצעדים של הדרכה — כולל שורות האזהרה. */
+function flowTexts(f: GuidedFlow): string[] {
+  return f.steps.flatMap((s) => (s.warning ? [s.text, s.warning.text] : [s.text]))
+}
+
 function userTexts(): { where: string; text: string }[] {
   const out: { where: string; text: string }[] = []
   const actionLabel = (where: string, a?: HelpAction | null) => {
@@ -155,6 +160,7 @@ function userTexts(): { where: string; text: string }[] {
   }
   for (const f of Object.values(FLOWS)) {
     f.steps.forEach((s) => out.push({ where: `הדרכה ${f.id}`, text: s.text }))
+    f.steps.forEach((s) => s.warning && out.push({ where: `הדרכה ${f.id} (אזהרה)`, text: s.warning.text }))
     out.push({ where: `הדרכה ${f.id}`, text: f.doneText })
   }
   for (const tr of TREES) {
@@ -450,7 +456,7 @@ function testQuotedLiteralsExist(): void {
     const texts = [t.title, ...t.answer, ...(t.variants ?? []).flatMap((v) => v.answer)]
     texts.forEach((x) => check(t.id, x, t.sources))
   }
-  for (const f of Object.values(FLOWS)) [...f.steps.map((s) => s.text), f.doneText].forEach((x) => check(`הדרכה ${f.id}`, x, f.sources))
+  for (const f of Object.values(FLOWS)) [...flowTexts(f), f.doneText].forEach((x) => check(`הדרכה ${f.id}`, x, f.sources))
   for (const tr of TREES) {
     for (const [id, nd] of Object.entries(tr.nodes)) {
       if (nd.kind === 'outcome') nd.text.forEach((x) => check(`עץ ${tr.id}/${id}`, x, tr.sources))
@@ -491,7 +497,7 @@ function testSendingTextsAreHonest(): void {
   }
   for (const f of Object.values(FLOWS)) {
     if (f.sendsMessages) continue
-    for (const x of [...f.steps.map((s) => s.text), f.doneText]) {
+    for (const x of [...flowTexts(f), f.doneText]) {
       assert(!SENDING.test(x), `הדרכה ${f.id}: מדברת על שליחה בלי sendsMessages — "${x}"`)
     }
   }

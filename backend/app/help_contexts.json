@@ -12,6 +12,7 @@
       "guests.bad_phone",
       "invites.not_yet",
       "invites.sent",
+      "messaging.invitation_empty",
       "messaging.mode",
       "rsvp.commit_date",
       "rsvp.next_date",
@@ -24,6 +25,7 @@
       "guests.bad_phone",
       "invites.not_yet",
       "invites.sent",
+      "messaging.invitation_empty",
       "messaging.mode"
     ],
     "messages": [
@@ -55,6 +57,7 @@
       "invites.not_yet",
       "invites.sent",
       "messaging.emergency_stop",
+      "messaging.invitation_empty",
       "messaging.mode",
       "rsvp.commit_date",
       "rsvp.next_date",

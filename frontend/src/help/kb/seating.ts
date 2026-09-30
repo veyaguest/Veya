@@ -133,7 +133,14 @@ export const SEATING_FLOWS: readonly GuidedFlow[] = [
     start: { page: 'hall' },
     steps: [
       { target: 'hall.seatingTab', text: 'לחצו "{ui:hall.workspace.tabSeating}"', advanceOn: { kind: 'visible', target: 'hall.oneClick' } },
-      { target: 'hall.oneClick', text: 'לחצו "{ui:hall.oneClickButton}"', advanceOn: { kind: 'api', method: 'POST', path: '/seating/generate' } },
+      {
+        target: 'hall.oneClick',
+        text: 'לחצו "{ui:hall.oneClickButton}"',
+        advanceOn: { kind: 'api', method: 'POST', path: '/seating/generate' },
+        // כמו בחלון האישור (strings.hall.confirmOneClickBody): מי שכבר משובץ עשוי
+        // לזוז, ואפשר לחזור. לא "אי אפשר לבטל" — כי אפשר.
+        warning: { text: 'אם כבר יש סידור — {guests} שכבר משובצים עשויים לזוז לשולחנות אחרים. אחרי ההרצה אפשר להחזיר את הסידור הקודם.' },
+      },
     ],
     success: { kind: 'api', method: 'POST', path: '/seating/generate' },
     doneText: 'הסידור מוכן. אפשר להזיז כל {guest}, ואם צריך — "החזרת הסידור הקודם".',

@@ -22,7 +22,7 @@ import type { Facts } from '../facts'
 import type { FlowStep, GuidedFlow, Signal } from '../types'
 import { MOCK_NOTICE } from '../kb/shared'
 import {
-  FIND_TIMEOUT_MS, HIGHLIGHT_CLASS, findVisibleTarget, isTextField, isVisible, prefersReducedMotion,
+  FIND_TIMEOUT_MS, HIGHLIGHT_CLASS, TOUR_ATTR, findVisibleTarget, isTextField, isVisible, modalPanelRect, prefersReducedMotion,
 } from './tour'
 
 type Phase =
@@ -41,6 +41,8 @@ interface Props {
   onStart: (flow: GuidedFlow) => void
   onExit: (result: 'completed' | 'abandoned' | 'failed') => void
   onOpenTree: (treeId: string) => void
+  /** חזרה לחלונית העזרה (למשל כשהכפתור לא נמצא) — בלי לנסות שוב לבד. */
+  onBackToHelp: () => void
 }
 
 /** האם האות של צעד כבר מתקיים כשמגיעים אליו — ואז מדלגים עליו. */
@@ -60,7 +62,7 @@ function nextIndex(flow: GuidedFlow, from: number, facts: Facts): number {
   return -1
 }
 
-export default function TourRunner({ flow, facts, text, mockMode, onStart, onExit, onOpenTree }: Props) {
+export default function TourRunner({ flow, facts, text, mockMode, onStart, onExit, onOpenTree, onBackToHelp }: Props) {
   const t = strings.help
   const [phase, setPhase] = useState<Phase | null>(null)
   const [target, setTarget] = useState<HTMLElement | null>(null)
@@ -77,6 +79,12 @@ export default function TourRunner({ flow, facts, text, mockMode, onStart, onExi
     },
     [flow, facts],
   )
+
+  // כל עוד ההדרכה רצה — יעדים שמופיעים רק ב-hover גלויים (help.css).
+  useEffect(() => {
+    document.documentElement.setAttribute(TOUR_ATTR, flow.id)
+    return () => document.documentElement.removeAttribute(TOUR_ATTR)
+  }, [flow.id])
 
   // התחלה: מעבר למסך, ואז (אחרי שהמסך עלה) הצעד הראשון שרלוונטי.
   useEffect(() => {
@@ -209,6 +217,17 @@ export default function TourRunner({ flow, facts, text, mockMode, onStart, onExi
           apply(r.top > 240 ? { insetInline: 12, top: 76 } : { insetInline: 12, bottom: 84 })
         } else {
           const w = card.offsetWidth || 300
+          // בתוך חלון קופץ — לצד החלון, אם יש מקום (לא מכסים את מה שבודקים).
+          const panel = modalPanelRect(target)
+          const sideLeft = panel && panel.left - w - 24 >= 0 ? panel.left - w - 12 : null
+          const sideRight = panel && window.innerWidth - panel.right - w - 24 >= 0 ? panel.right + 12 : null
+          const side = sideLeft ?? sideRight
+          if (side !== null) {
+            const top = Math.round(Math.min(Math.max(12, r.top + r.height / 2 - h / 2), window.innerHeight - h - 12))
+            apply({ top, left: Math.round(side) })
+            raf = window.requestAnimationFrame(place)
+            return
+          }
           const below = window.innerHeight - r.bottom > h + 24
           const top = Math.round(below ? r.bottom + 12 : Math.max(12, r.top - h - 12))
           const left = Math.round(Math.min(Math.max(12, r.right - w), window.innerWidth - w - 12))
@@ -232,6 +251,8 @@ export default function TourRunner({ flow, facts, text, mockMode, onStart, onExi
 
   if (!phase) return null
   const stepText = step ? renderText(step.text, text) : null
+  const warningText =
+    step?.warning && holds(step.warning.when, facts()) ? renderText(step.warning.text, text) : null
 
   return (
     <div
@@ -251,6 +272,8 @@ export default function TourRunner({ flow, facts, text, mockMode, onStart, onExi
           <p className="help-coach-text" aria-live="polite">
             {target ? stepText ?? '' : t.loading}
           </p>
+          {/* פעולה שקשה לבטל — אומרים את זה לפני שהמשתמש לוחץ, רק כשהיעד גלוי. */}
+          {target && warningText && <p className="help-coach-warning">{warningText}</p>}
           <div className="help-coach-actions">
             {step?.advanceOn.kind === 'manual' && target && (
               <button type="button" className="btn-primary help-btn-sm" onClick={() => advanceFrom(phase.index + 1)}>
@@ -278,6 +301,9 @@ export default function TourRunner({ flow, facts, text, mockMode, onStart, onExi
         <>
           <p className="help-coach-text" aria-live="polite">{t.tourNotFound}</p>
           <div className="help-coach-actions">
+            <button type="button" className="btn-primary help-btn-sm" onClick={onBackToHelp}>
+              {t.tourBackToHelp}
+            </button>
             <button type="button" className="btn-text help-btn-sm" onClick={() => onExit('failed')}>
               {strings.common.close}
             </button>

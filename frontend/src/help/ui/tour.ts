@@ -17,13 +17,39 @@ export function isVisible(el: HTMLElement): boolean {
   const style = window.getComputedStyle(el)
   if (style.display === 'none' || style.visibility === 'hidden') return false
   const r = el.getBoundingClientRect()
-  return r.width > 0 && r.height > 0
+  if (r.width <= 0 || r.height <= 0) return false
+  // שקוף = לא גלוי: למשל כפתורי שורה שמופיעים רק ב-hover (נמצא בשלב 6). בזמן
+  // הדרכה הם נחשפים דרך TOUR_ATTR (help.css); כל הסתרה אחרת → "לא נמצא", בכנות.
+  for (let p: HTMLElement | null = el; p; p = p.parentElement) {
+    if (Number(window.getComputedStyle(p).opacity) < 0.1) return false
+  }
+  return true
 }
+
+/**
+ * מאפיין על ``<html>`` כל עוד הדרכה רצה — כדי ש-help.css יחשוף יעדים שבמסך
+ * הרגיל מופיעים רק ב-hover. עיצוב בלבד: לא משנה שום נתון ושום התנהגות.
+ */
+export const TOUR_ATTR = 'data-help-tour'
 
 /** היעד הגלוי הראשון עם ה-``data-help`` הזה, או ``null``. */
 export function findVisibleTarget(id: TargetId): HTMLElement | null {
   const els = document.querySelectorAll<HTMLElement>(`[data-help="${id}"]`)
   for (const el of Array.from(els)) if (isVisible(el)) return el
+  return null
+}
+
+/**
+ * אם היעד בתוך חלון קופץ (משהו שמקובע למסך) — המלבן של החלון עצמו (לא של
+ * המסך הכהה שמאחוריו), כדי שכרטיס ההדרכה יעמוד **לצדו** ולא יכסה את מה
+ * שהצעד מבקש לבדוק (נמצא בשלב 6: חלון השליחה). לא בחלון → ``null``.
+ */
+export function modalPanelRect(el: HTMLElement): DOMRect | null {
+  let panel: HTMLElement | null = null
+  for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+    if (p.getBoundingClientRect().width <= window.innerWidth * 0.7) panel = p
+    if (window.getComputedStyle(p).position === 'fixed') return panel ? panel.getBoundingClientRect() : null
+  }
   return null
 }
 

@@ -4085,6 +4085,7 @@ export function HallPage({
             <button
               type="button"
               className="ws-btn-primary"
+              data-help="hall.oneClick"
               onClick={() => onOneClickSeating(false)}
               disabled={loading}
             >

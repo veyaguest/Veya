@@ -145,6 +145,13 @@ export interface FlowStep {
    * false) מול הקשה על הכרטיס (true). צעד שהתנאי שלו לא מתקיים מדולג.
    */
   when?: Condition
+  /**
+   * שורת אזהרה לצעד שמבצע פעולה שקשה או אי אפשר לבטל (שליחה, קביעה סופית,
+   * סידור מחדש) — HELP_CENTER_PLAN.md §9.2. צעד עם אזהרה ממשיך **רק** לפי
+   * אישור מהשרת (``advanceOn.kind === 'api'``), אף פעם לא "הבא" (נאכף בבדיקות).
+   * הניסוח — כמו שהאפליקציה עצמה אומרת את זה במסך.
+   */
+  warning?: { text: HelpText; when?: Condition }
 }
 
 export interface GuidedFlow {

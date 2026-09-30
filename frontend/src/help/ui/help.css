@@ -248,6 +248,11 @@ button.help-card {
   box-shadow: 0 0 0 7px rgba(var(--gold-rgb), 0.22) !important;
   scroll-margin: 96px;
 }
+/* בזמן הדרכה: כפתורי שורת מוזמן ("עריכה") מופיעים בדסקטופ רק ב-hover
+   (App.css) — כשההדרכה מצביעה עליהם, הם חייבים להיראות. */
+[data-help-tour] .row-actions {
+  opacity: 1;
+}
 .help-coach {
   position: fixed;
   z-index: 1400;
@@ -280,6 +285,15 @@ button.help-card {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.14);
   color: #fbf6ee;
+}
+.help-coach-warning {
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: 3px solid var(--gold-light);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-s);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
 }
 .help-coach-actions {
   display: flex;

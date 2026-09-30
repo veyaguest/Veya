@@ -183,11 +183,13 @@ export const EVENT_FLOWS: readonly GuidedFlow[] = [
     start: { page: 'dashboard' },
     steps: [
       { target: 'dashboard.editDetails', text: 'לחצו "{ui:dashboard.editDetailsButton}"', advanceOn: { kind: 'scope', scope: 'dashboard.editEvent' } },
-      { target: 'dashboard.commitField', text: 'בחרו כמה ימים לפני האירוע — אחרי השמירה אי אפשר לשנות', advanceOn: { kind: 'manual' } },
+      { target: 'dashboard.commitField', text: 'בחרו כמה ימים לפני האירוע, ואז "{ui:help.tourNext}"', advanceOn: { kind: 'manual' } },
       {
         target: 'dashboard.saveDetails',
         text: 'לחצו "{ui:common.save}", ואז "{ui:dashboard.commitConfirmCta}"',
         advanceOn: { kind: 'api', method: 'PATCH', path: '/event' },
+        // מילה במילה מחלון האישור (strings.dashboard.commitConfirmBody).
+        warning: { text: 'אחרי השמירה אי אפשר לשנות את הבחירה.' },
       },
     ],
     success: { kind: 'api', method: 'PATCH', path: '/event' },

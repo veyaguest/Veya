@@ -35,6 +35,16 @@ export const INVITATION_TOPICS: readonly HelpTopic[] = [
     sendsMessages: true,
     answer: [],
     variants: [
+      // בלי נוסח אין מה לשלוח (והחלון יציג את כולם כ"בלי טלפון" — באג ידוע).
+      // לכן קודם הנוסח, ובלי "תראו לי" לשליחה (נמצא בבדיקת שלב 6).
+      {
+        when: { fact: 'messaging.invitation_empty', op: '==', value: true },
+        answer: [
+          'להזמנה עוד אין נוסח, ולכן עדיין אין מה לשלוח.',
+          'קודם בוחרים נוסח בכרטיס ההזמנה: "בחירת הודעה". אחרי זה אפשר לשלוח.',
+        ],
+        primary: null,
+      },
       {
         when: { fact: 'invites.sent', op: '==', value: 0 },
         answer: [
@@ -180,7 +190,14 @@ export const INVITATION_TOPICS: readonly HelpTopic[] = [
 export const INVITATION_FLOWS: readonly GuidedFlow[] = [
   {
     id: 'send-invitations',
-    when: { all: [MANAGER, { fact: 'invites.not_yet', op: '>', value: 0 }] },
+    when: {
+      all: [
+        MANAGER,
+        { fact: 'invites.not_yet', op: '>', value: 0 },
+        // בלי נוסח — השליחה לא שולחת כלום; ההדרכה לא מתחילה.
+        { fact: 'messaging.invitation_empty', op: '==', value: false },
+      ],
+    },
     sendsMessages: true,
     start: { page: 'messages' },
     steps: [
@@ -214,6 +231,8 @@ export const INVITATION_FLOWS: readonly GuidedFlow[] = [
         target: 'messages.sendConfirm',
         text: 'בדקו את ההודעה ואת הנמענים, ולחצו כאן כדי לשלוח',
         advanceOn: { kind: 'api', method: 'POST', path: '/automation/track/activate' },
+        // כמו בחלון השליחה עצמו (MessagesPage — "כל מוזמן מקבל הזמנה פעם אחת בלבד").
+        warning: { text: 'כל {guest} מקבל הזמנה פעם אחת בלבד — אחרי השליחה אי אפשר לשלוח לו אותה שוב.' },
       },
     ],
     success: { kind: 'api', method: 'POST', path: '/automation/track/activate' },
