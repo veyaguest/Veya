@@ -264,7 +264,8 @@ def _cost_summary(
         attendees=attendees,
         invited=invited,
         cost_per_attendee_agorot=breakdown.cost_per_attendee_agorot,
-        cost_per_attendee_display=finance.format_shekels(
+        # ממוצע — בשקלים שלמים. האגורות המדויקות נשארות בשדה שמעל.
+        cost_per_attendee_display=finance.format_shekels_whole(
             breakdown.cost_per_attendee_agorot
         ),
         next_attendee_agorot=breakdown.next_attendee_agorot,

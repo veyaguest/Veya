@@ -114,17 +114,58 @@ export function FinancePage({
   // המסך נשמר בכתובת (?tab=counting) — כך רענון מחזיר לאותו מקום.
   const [view, setViewState] = useState<View>(() => initialView ?? viewFromUrl())
   const rootRef = useRef<HTMLDivElement>(null)
-  const setView = useCallback((next: View) => {
-    setViewState(next)
-    const url = new URL(window.location.href)
-    if (next === 'counting') url.searchParams.set('tab', 'counting')
-    else url.searchParams.delete('tab')
-    window.history.replaceState(window.history.state, '', url.pathname + url.search)
-    // מעבר מסך מתחיל מראשו — אבל רק אם ראש המסך כבר גלול מעל הקצה, כדי
-    // לא להזיז דף שמטמיע את המסך (ההדגמה בדף הנחיתה).
+  /** מעבר מסך מתחיל מראשו — רק אם ראש המסך כבר גלול מעל הקצה, כדי לא
+   *  להזיז דף שמטמיע את המסך (ההדגמה בדף הנחיתה). */
+  const scrollToTop = useCallback(() => {
     const top = rootRef.current?.getBoundingClientRect().top ?? 0
     if (top < 0) rootRef.current?.scrollIntoView({ block: 'start' })
   }, [])
+
+  /**
+   * ## "חזור" של הטלפון מספירת המתנות חוזר לסקירה
+   *
+   * הכניסה לספירה מוסיפה רשומת היסטוריה משלה (``?tab=counting``), ולכן
+   * "חזור" מחזיר לסקירה ולא יוצא מהמאזן. "חזרה למאזן" שבמסך עושה בדיוק
+   * את אותו דבר (``history.back``) — כך אין רשומה יתומה שה"חזור" הבא ייתקע
+   * עליה. מי שנכנס ישר לכתובת הספירה (רענון, קישור) אין לו רשומה כזו,
+   * ואז הכתובת פשוט מתנקה במקום.
+   *
+   * לא ``useBackToClose``: הוא נועד לחלונות באותה כתובת, וכאן הכתובת
+   * עצמה משתנה.
+   */
+  const setView = useCallback(
+    (next: View) => {
+      if (next === 'counting') {
+        const url = new URL(window.location.href)
+        url.searchParams.set('tab', 'counting')
+        window.history.pushState(
+          { ...(window.history.state ?? {}), veyaFinanceCounting: true },
+          '',
+          url.pathname + url.search,
+        )
+        setViewState('counting')
+      } else if (window.history.state?.veyaFinanceCounting) {
+        window.history.back() // ה-popstate למטה מחזיר לסקירה
+      } else {
+        const url = new URL(window.location.href)
+        url.searchParams.delete('tab')
+        window.history.replaceState(window.history.state, '', url.pathname + url.search)
+        setViewState('overview')
+      }
+      scrollToTop()
+    },
+    [scrollToTop],
+  )
+  useEffect(() => {
+    // ההדגמה בדף הנחיתה קובעת את המסך בעצמה ולא מאזינה לכתובת.
+    if (initialView) return
+    const onPop = () => {
+      setViewState(viewFromUrl())
+      scrollToTop()
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [initialView, scrollToTop])
   useHelpScope('finance')
   useHelpScope(view === 'counting' ? 'finance.counting' : 'finance.cost')
   useHelpScope(view === 'counting' ? null : 'finance.summary')
@@ -146,6 +187,8 @@ export function FinancePage({
   const [showAllExpenses, setShowAllExpenses] = useState(false)
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   const expensesRef = useRef<HTMLElement>(null)
+  // הפירוט המלא — מקופל. נפתח בלחיצה, או מ"לדוח המלא" אחרי האירוע.
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   // מסלול טעינה אחד בלבד, עם אותו ניקוי — בדיוק כמו ב-GiftsPage. כפתור
   // "ניסיון חוזר" מגדיל את המונה וה-effect רץ מחדש.
@@ -188,6 +231,14 @@ export function FinancePage({
     setShowAllExpenses(true)
     setOpenGroups((prev) => new Set([...prev, ...groups]))
     requestAnimationFrame(() => expensesRef.current?.scrollIntoView({ block: 'start' }))
+  }, [])
+
+  /** פותח את הפירוט המלא וגולל לדוח. */
+  const openReport = useCallback(() => {
+    setDetailsOpen(true)
+    requestAnimationFrame(() =>
+      document.getElementById('fin-report')?.scrollIntoView({ block: 'start' }),
+    )
   }, [])
 
   function applyTemplate() {
@@ -297,6 +348,7 @@ export function FinancePage({
             counting={counting}
             timeline={timeline}
             onOpenExpenses={openExpenses}
+            onOpenReport={openReport}
             onCount={() => setView('counting')}
             onAttendance={setData}
             onNavigate={onNavigate}
@@ -324,7 +376,12 @@ export function FinancePage({
           />
 
           {/* 7. הפירוט המלא — מקופל. */}
-          <DetailsSection data={data} terms={terms} />
+          <DetailsSection
+            data={data}
+            terms={terms}
+            open={detailsOpen}
+            onToggle={() => setDetailsOpen((v) => !v)}
+          />
         </>
       )}
 
@@ -687,6 +744,7 @@ function NextSteps({
   counting,
   timeline,
   onOpenExpenses,
+  onOpenReport,
   onCount,
   onAttendance,
   onNavigate,
@@ -695,6 +753,7 @@ function NextSteps({
   counting: GiftCounting
   timeline: RsvpTimelineView | null
   onOpenExpenses: (groups?: string[]) => void
+  onOpenReport: () => void
   onCount: () => void
   onAttendance: (data: FinanceSummary) => void
   onNavigate?: FinanceNavigate
@@ -713,6 +772,18 @@ function NextSteps({
       desc: o.todoCountDesc,
       cta: hasGifts ? o.todoCountMoreCta : o.todoCountCta,
       onClick: onCount,
+    })
+  }
+
+  // אחרי האירוע, כשכבר נספרה מתנה — הדוח המלא הוא הצעד שסוגר את הסיפור.
+  // בלי הפריט הזה הוא נשאר קבור בתוך הפירוט המקופל.
+  if (attendance.event_passed && income.envelopes_count + income.credit_count > 0) {
+    items.push({
+      key: 'report',
+      title: o.todoReport,
+      desc: o.todoReportDesc,
+      cta: o.todoReportCta,
+      onClick: onOpenReport,
     })
   }
 
@@ -1847,11 +1918,14 @@ function KeyValues({ rows }: { rows: [string, string][] }) {
 function DetailsSection({
   data,
   terms,
+  open,
+  onToggle,
 }: {
   data: FinanceSummary
   terms: ReturnType<typeof activeEventTerms>
+  open: boolean
+  onToggle: () => void
 }) {
-  const [open, setOpen] = useState(false)
   const { cost, rsvp, breakdown } = data
   const hasAmounts = data.expenses.some((e) => e.amount_agorot > 0 || e.total_agorot > 0)
   const noGiftsYet = (data.income.total_agorot ?? 0) === 0
@@ -1904,7 +1978,7 @@ function DetailsSection({
           className="fin-whatif-btn fin-details-btn"
           aria-expanded={open}
           aria-controls="fin-details-body"
-          onClick={() => setOpen((v) => !v)}
+          onClick={onToggle}
         >
           <span className="fin-group-chevron" aria-hidden="true" />
           <span className="fin-details-head">
@@ -1960,7 +2034,7 @@ function DetailsSection({
           </div>
 
           {/* ── הדוח המלא ─────────────────────────────────────────── */}
-          <div className="fin-detail fin-report">
+          <div id="fin-report" className="fin-detail fin-report">
             <div className="fin-section-head">
               <h3 className="fin-subtitle">{t.reportTitle}</h3>
               {!report && (

@@ -442,3 +442,17 @@ def format_shekels(agorot: Optional[int]) -> str:
     sign = "-" if agorot < 0 else ""
     body = f"{whole:,}" if not remainder else f"{whole:,}.{remainder:02d}"
     return f"{sign}{body} ₪"
+
+
+def format_shekels_whole(agorot: Optional[int]) -> str:
+    """כמו ``format_shekels``, אבל מעוגל לשקל השלם הקרוב — **לממוצעים בלבד**.
+
+    עלות לאדם היא חלוקה, ו-"452.06 ₪" מציג דיוק שאין לו משמעות בממוצע.
+    זו תצוגה ולא חישוב: האגורות המדויקות נשארות בשדה ה-``_agorot`` שלצידה.
+    עיגול חצי-למעלה, בחשבון שלמים (בלי float).
+    """
+    if agorot is None:
+        return ""
+    whole = (abs(agorot) + AGOROT_PER_SHEKEL // 2) // AGOROT_PER_SHEKEL
+    sign = "-" if agorot < 0 and whole else ""
+    return f"{sign}{whole:,}\u202f₪"

@@ -215,6 +215,17 @@ def test_format_shekels_puts_the_sign_after_the_number() -> None:
     assert finance.format_shekels(None) == ""
 
 
+def test_format_shekels_whole_rounds_to_the_nearest_shekel() -> None:
+    """ממוצע (עלות לאדם) מוצג בשקלים שלמים — "452.06 ₪" הוא דיוק מדומה
+    במספר שהוא ממוצע ממילא. **תצוגה בלבד**: האגורות עצמן לא משתנות."""
+    assert finance.format_shekels_whole(45_206) == "452 ₪"
+    assert finance.format_shekels_whole(45_250) == "453 ₪"
+    assert finance.format_shekels_whole(45_249) == "452 ₪"
+    assert finance.format_shekels_whole(160_000 * S) == "160,000 ₪"
+    assert finance.format_shekels_whole(-45_250) == "-453 ₪"
+    assert finance.format_shekels_whole(None) == ""
+
+
 def test_no_floats_anywhere_in_the_result() -> None:
     expenses = [line(1, PER_ATTENDEE, 320, committed_quantity=500), line(2, PER_UNIT, 900, quantity=3)]
     breakdown = finance.cost_breakdown(expenses, 463, 560)

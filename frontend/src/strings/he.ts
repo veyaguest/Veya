@@ -1741,6 +1741,9 @@ export const strings = {
       todoCountDesc: 'כל מתנה שנספרת נכנסת מיד למאזן.',
       todoCountCta: 'לספירת המתנות',
       todoCountMoreCta: 'להמשך הספירה',
+      todoReport: 'אפשר להפיק את הדוח המלא',
+      todoReportDesc: 'שורה לכל מוזמן: מי הגיע ומה נתן, עם הורדה ל-Excel או הדפסה.',
+      todoReportCta: 'לדוח המלא',
 
       // כסף שנכנס — המתנות. לפני האירוע: מתי והיכן, בלי "0 ₪".
       incomeTitle: 'כסף שנכנס',
