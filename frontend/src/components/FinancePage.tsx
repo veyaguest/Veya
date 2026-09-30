@@ -9,6 +9,7 @@ import {
   createPayment,
   deleteEnvelope,
   deleteExpense,
+  updateEnvelope,
   getExpenseCategories,
   getFinance,
   getGiftCounting,
@@ -26,6 +27,7 @@ import type {
   Expense,
   ExpenseCategory,
   ExpenseCategoryTotal,
+  EnvelopeInput,
   ExpenseInput,
   FinanceReport,
   FinanceSummary,
@@ -36,15 +38,16 @@ import type {
 } from '../types'
 import { strings } from '../strings/he'
 import { activeEventTerms } from '../strings/eventTypes'
-import { ConfirmDialog } from './ConfirmDialog'
 import { EnvelopeCounter } from './EnvelopeCounter'
 import { ExpenseEditor, type AfterSave, type Prepaid } from './ExpenseEditor'
+import { GiftEditDialog } from './GiftEditDialog'
 import { downloadWorkbook, type Cell } from '../lib/xlsx'
 import './FinancePage.css'
 import { useHelpScope } from '../help/useHelpScope'
 
 const t = strings.finance
 const o = t.overview
+const g = t.giftsView
 
 /**
  * "מאזן האירוע" — המסך שעונה על ארבע שאלות, בסדר הזה: כמה האירוע עולה,
@@ -147,6 +150,15 @@ export function FinancePage({
         setViewState('counting')
       } else if (window.history.state?.veyaFinanceCounting) {
         window.history.back() // ה-popstate למטה מחזיר לסקירה
+        // רשת ביטחון: אחרי רענון הדף הסימון נשאר על הרשומה, אבל ה"חזור"
+        // לא תמיד מגיע לסקירה. אם עדיין במסך המתנות — עוברים ישירות.
+        window.setTimeout(() => {
+          if (viewFromUrl() !== 'counting') return
+          const url = new URL(window.location.href)
+          url.searchParams.delete('tab')
+          window.history.replaceState(null, '', url.pathname + url.search)
+          setViewState('overview')
+        }, 400)
       } else {
         const url = new URL(window.location.href)
         url.searchParams.delete('tab')
@@ -194,7 +206,10 @@ export function FinancePage({
   }, [])
   useEffect(() => () => window.clearTimeout(toastTimer.current), [])
   const [countingNow, setCountingNow] = useState(false)
-  const [deletingEnvelope, setDeletingEnvelope] = useState<GiftEntry | null>(null)
+  // עריכת מתנה (מעטפה) — חלון אחד: ממי? כמה? הערה, ומחיקה.
+  const [editingGift, setEditingGift] = useState<GiftEntry | null>(null)
+  const [giftBusy, setGiftBusy] = useState(false)
+  const [giftError, setGiftError] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
   // "סיימנו לספור" / ביטול — פעולה אחת בכל רגע, ושגיאה שמוצגת ליד הכפתור.
   const [markingDone, setMarkingDone] = useState(false)
@@ -273,7 +288,7 @@ export function FinancePage({
    * הסופי", וזו התוצאה שהמשתמש רצה לראות. "המשך ספירה" מבטל ופותח את
    * מסך הספירה.
    */
-  async function markCounting(done: boolean, then?: View) {
+  async function markCounting(done: boolean, then?: View): Promise<boolean> {
     setMarkingDone(true)
     setMarkError(null)
     try {
@@ -282,8 +297,10 @@ export function FinancePage({
         scrollOnViewChange.current = true
         setView(then)
       }
+      return true
     } catch (e) {
       setMarkError(e instanceof Error ? e.message : t.saveError)
+      return false
     } finally {
       setMarkingDone(false)
     }
@@ -394,6 +411,56 @@ export function FinancePage({
     }
   }
 
+  /**
+   * אחרי עריכה או מחיקה של מתנה: נטען מחדש, ואם זה החזיר את המאזן מ"הספירה
+   * הסתיימה" ל"עד עכשיו" (תיקון סכום או מחיקה — בשרת), אומרים את זה במילים.
+   */
+  async function afterGiftChange(title: string, detail: string) {
+    const wasDone = data?.counting_done ?? false
+    const [fresh, count] = await Promise.all([getFinance(), getGiftCounting()])
+    setData(fresh)
+    setCounting(count)
+    if (byGuest !== null) getGiftsByGuest().then(setByGuest).catch(() => undefined)
+    flashToast(title, wasDone && !fresh.counting_done ? g.changedBody : detail)
+  }
+
+  async function handleSaveGift(input: EnvelopeInput) {
+    if (!editingGift) return
+    setGiftBusy(true)
+    setGiftError(null)
+    try {
+      const saved = await updateEnvelope(editingGift.id, input)
+      setEditingGift(null)
+      await afterGiftChange(
+        g.savedToast,
+        `${saved.guest_name || g.unknownFrom} · ${saved.amount_display}`,
+      )
+    } catch (e) {
+      setGiftError(e instanceof Error ? e.message : t.saveError)
+    } finally {
+      setGiftBusy(false)
+    }
+  }
+
+  async function handleDeleteGift() {
+    if (!editingGift) return
+    const gone = editingGift
+    setGiftBusy(true)
+    setGiftError(null)
+    try {
+      await deleteEnvelope(gone.id)
+      setEditingGift(null)
+      await afterGiftChange(
+        g.deletedToast,
+        `${gone.guest_name || g.unknownFrom} · ${gone.amount_display}`,
+      )
+    } catch (e) {
+      setGiftError(e instanceof Error ? e.message : t.saveError)
+    } finally {
+      setGiftBusy(false)
+    }
+  }
+
   if (loading) return <p className="load-text">{strings.common.loading}</p>
   if (error) {
     return (
@@ -416,7 +483,7 @@ export function FinancePage({
           <button type="button" className="btn-link fin-back" onClick={() => setView('overview')}>
             {o.back}
           </button>
-          <CountingTab
+          <GiftsView
             data={data}
             counting={counting}
             byGuest={byGuest}
@@ -428,11 +495,19 @@ export function FinancePage({
             }}
             onSaved={refresh}
             onLoadByGuest={() => getGiftsByGuest().then(setByGuest).catch(() => setByGuest([]))}
-            onDeleteEntry={setDeletingEnvelope}
+            onEditEntry={(entry) => {
+              setGiftError(null)
+              setEditingGift(entry)
+            }}
             marking={markingDone}
             markError={markError}
-            onMarkDone={() => markCounting(true, 'overview')}
+            // נשארים במסך המתנות: "הספירה הסתיימה ✓" מופיע כאן, והמאזן
+            // הסופי במרחק לחיצה ("למאזן הסופי").
+            onMarkDone={() =>
+              markCounting(true).then((ok) => ok && flashToast(g.doneToast, g.doneToastDetail))
+            }
             onUndoDone={() => markCounting(false)}
+            onBackToBalance={() => setView('overview')}
           />
         </>
       ) : (
@@ -442,8 +517,7 @@ export function FinancePage({
           {/* 1–2. התשובה: מאזן (או עלות, כשעוד אין מתנות) — ולצידו מתנות מול הוצאות. */}
           <BalanceHero
             data={data}
-            continuing={markingDone}
-            onContinueCounting={() => markCounting(false, 'counting')}
+            onManageGifts={() => setView('counting')}
           />
 
           {/* 3. איפה אנחנו בדרך. */}
@@ -542,21 +616,18 @@ export function FinancePage({
         </div>
       )}
 
-      {deletingEnvelope && (
-        <ConfirmDialog
-          title={t.deleteEnvelopeTitle}
-          message={t.deleteEnvelopeBody(
-            deletingEnvelope.envelope_number ?? 0,
-            deletingEnvelope.amount_display,
-          )}
-          confirmLabel={strings.common.delete}
-          danger
-          onConfirm={async () => {
-            await deleteEnvelope(deletingEnvelope.id).catch(() => undefined)
-            setDeletingEnvelope(null)
-            refresh()
+      {editingGift && (
+        <GiftEditDialog
+          key={editingGift.id}
+          entry={editingGift}
+          busy={giftBusy}
+          error={giftError}
+          onSave={handleSaveGift}
+          onDelete={handleDeleteGift}
+          onClose={() => {
+            setEditingGift(null)
+            setGiftError(null)
           }}
-          onCancel={() => setDeletingEnvelope(null)}
         />
       )}
     </div>
@@ -581,13 +652,12 @@ export function FinancePage({
  */
 function BalanceHero({
   data,
-  continuing,
-  onContinueCounting,
+  onManageGifts,
 }: {
   data: FinanceSummary
-  continuing: boolean
-  /** "שינוי / המשך ספירה" — מבטל את הסימון ופותח את מסך הספירה. */
-  onContinueCounting: () => void
+  /** "ניהול מתנות" — מעבר למסך המתנות. לא מבטל את הסימון: שינוי שם
+   *  מחזיר את המאזן ל"עד עכשיו" מעצמו. */
+  onManageGifts: () => void
 }) {
   const [how, setHow] = useState(false)
   const { cost, attendance, rsvp, income } = data
@@ -641,8 +711,7 @@ function BalanceHero({
           <button
             type="button"
             className="btn-link fin-how-btn"
-            disabled={continuing}
-            onClick={onContinueCounting}
+            onClick={onManageGifts}
           >
             {o.continueCounting}
           </button>
@@ -931,7 +1000,7 @@ function NextSteps({
       title: hasGifts
         ? o.todoCountMore(income.total_display || income.envelopes_display)
         : o.todoCountStart,
-      desc: o.todoCountDesc,
+      desc: hasGifts ? o.todoCountMoreDesc : o.todoCountDesc,
       cta: hasGifts ? o.todoCountMoreCta : o.todoCountCta,
       onClick: onCount,
     })
@@ -1039,13 +1108,13 @@ function NextSteps({
 }
 
 // ════════════════════════════════════════════════════════════════════════
-//  5. כסף שנכנס
+//  5. מתנות — התוצאה
 // ════════════════════════════════════════════════════════════════════════
 
 /**
- * המתנות. לפני יום האירוע — מתי ואיפה, **בלי "0 ₪"**; מיום האירוע — כמה
- * נספר, ממה, וכפתור לספירה. אין כאן "הכנסה צפויה": VEYA לא מנחשת כמה
- * ייתנו.
+ * המתנות — **כתוצאה, לא כמקום ניהול.** לפני יום האירוע: מתי והיכן, בלי
+ * "0 ₪". מיום האירוע: "מתנות שנספרו" ו"ניהול מתנות" — הפירוט, הרשימה
+ * וסטטוסי האשראי יושבים במסך המתנות. אין "הכנסה צפויה".
  */
 function IncomeSection({
   data,
@@ -1086,63 +1155,29 @@ function IncomeSection({
   }
 
   const hasGifts = income.envelopes_count + income.credit_count > 0
-  const { guests_counted: counted } = data.breakdown
 
+  // המאזן מציג את **התוצאה** ומוביל לניהול — הפירוט (מעטפות/אשראי),
+  // הרשימה, ההתקדמות וסטטוסי האשראי יושבים במסך המתנות (2026-09-30).
   return (
     <section className="fin-section" aria-labelledby="fin-income-title">
-      <div className="fin-section-head">
-        <h2 id="fin-income-title" className="fin-section-title">
-          {o.incomeTitle}
-        </h2>
-        <button type="button" className="btn-ghost btn-sm" onClick={onCount}>
-          {o.todoCountCta}
+      <h2 id="fin-income-title" className="fin-section-title">
+        {o.incomeTitle}
+      </h2>
+      <div className="fin-gifts-result">
+        <div className="fin-amount">
+          <span className="fin-amount-label">{g.totalLabel}</span>
+          <span className={hasGifts ? 'fin-amount-value' : 'fin-quiet-title'}>
+            {hasGifts ? income.total_display || income.envelopes_display : g.noneYet}
+          </span>
+          {data.counting_done && <span className="fin-hint">{g.doneTitle}</span>}
+          {income.total_agorot === null && hasGifts && (
+            <span className="fin-hint">{t.totalPartialNote}</span>
+          )}
+        </div>
+        <button type="button" className="btn-ghost" onClick={onCount}>
+          {g.manage}
         </button>
       </div>
-
-      {hasGifts ? (
-        <div className="fin-plain">
-          <div className="fin-amount">
-            <span className="fin-amount-label">{o.incomeTotal}</span>
-            <span className="fin-amount-value">
-              {income.total_display || income.envelopes_display}
-            </span>
-          </div>
-          <p className="fin-hint">{t.countedProgress(counted, data.rsvp.total_guests)}</p>
-          <dl className="fin-kv">
-            <div>
-              <dt>{t.envelopesLabel}</dt>
-              <dd>{income.envelopes_display}</dd>
-            </div>
-            {counting.credit_service_active && (
-              <div>
-                <dt>{t.creditLabel}</dt>
-                {/* הסכום חסום ⇒ המניין ולא "0 ₪": אפס היה טענה אחרת לגמרי. */}
-                <dd>{income.credit_display || String(income.credit_count)}</dd>
-              </div>
-            )}
-            {income.external_count > 0 && (
-              <div>
-                <dt>{t.externalLabel}</dt>
-                <dd>{income.external_display}</dd>
-              </div>
-            )}
-          </dl>
-          {income.total_agorot === null && <p className="fin-hint">{t.totalPartialNote}</p>}
-          {income.credit_count > 0 && !counting.credit_amounts_visible && (
-            <p className="fin-hint">{t.creditLockedNote}</p>
-          )}
-          {income.unidentified_count > 0 && (
-            <p className="fin-hint fin-unidentified">
-              {t.unidentifiedSummary(income.unidentified_count, income.unidentified_display)}
-            </p>
-          )}
-        </div>
-      ) : (
-        <div className="fin-quiet">
-          <p className="fin-quiet-title">{o.incomeNone}</p>
-          <p className="fin-hint">{t.giftsEmptyBody}</p>
-        </div>
-      )}
     </section>
   )
 }
@@ -1153,15 +1188,6 @@ function IncomeSection({
 
 /** כמה קבוצות מוצגות לפני "הצגת כל ההוצאות". */
 const TOP_GROUPS = 5
-
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="fin-fact">
-      <span className="fin-fact-label">{label}</span>
-      <span className="fin-fact-value">{value}</span>
-    </div>
-  )
-}
 
 /**
  * **סכום קודם, פירוט אחר כך.** ברירת המחדל היא הסכום, כמה שולם, וחמש
@@ -1793,10 +1819,27 @@ function ScenariosList({ scenarios }: { scenarios: FinanceSummary['cost']['scena
 }
 
 // ════════════════════════════════════════════════════════════════════════
-//  לשונית "ספירת מתנות"
+//  מסך "מתנות" — המקום שבו מנהלים את המתנות בפועל
 // ════════════════════════════════════════════════════════════════════════
 
-function CountingTab({
+/**
+ * **המאזן מציג את התוצאה; כאן מנהלים את המתנות** (2026-09-30). סדר המסך
+ * עונה על שלוש שאלות, בסדר הזה: כמה נספר → האם סיימנו לספור → ואם לא, מה
+ * עושים עכשיו.
+ *
+ * 1. **למעלה** — "מתנות שנספרו" ושורה אחת: מעטפות · אשראי. "מעטפות" ולא
+ *    "מזומן": במעטפה יכול להיות גם צ'ק (החלטת מייסד).
+ * 2. **"+ הוספת מתנה"** — המונה הקיים (ממי? כמה? שמירה והבאה).
+ * 3. **"סיימתם לספור?"** — מיד אחרי ההוספה, לא בסוף רשימה של 150 שורות.
+ * 4. **כל המתנות** — לחיצה על מעטפה פותחת עריכה (כולל מחיקה). מתנה
+ *    באשראי מגיעה מנותן המתנה ולא נערכת כאן; סטטוסי סליקה נשארים במסך
+ *    "מתנות באשראי".
+ * 5. **לפי מוזמן** — מקופל, עם ההתקדמות ("נספרו X מתוך Y מוזמנים").
+ *
+ * שום מנגנון פנימי לא נאמר כאן: לא "סימון", לא "חותמת". הזוג רואה "הספירה
+ * הסתיימה ✓" — או "נוספה מתנה חדשה" כשהמצב חזר ל"עד עכשיו".
+ */
+function GiftsView({
   data,
   counting,
   byGuest,
@@ -1805,11 +1848,12 @@ function CountingTab({
   onStop,
   onSaved,
   onLoadByGuest,
-  onDeleteEntry,
+  onEditEntry,
   marking,
   markError,
   onMarkDone,
   onUndoDone,
+  onBackToBalance,
 }: {
   data: FinanceSummary
   counting: GiftCounting
@@ -1819,14 +1863,15 @@ function CountingTab({
   onStop: () => void
   onSaved: () => void
   onLoadByGuest: () => void
-  onDeleteEntry: (e: GiftEntry) => void
+  onEditEntry: (e: GiftEntry) => void
   marking: boolean
   markError: string | null
   onMarkDone: () => void
   onUndoDone: () => void
+  onBackToBalance: () => void
 }) {
-  // הספירה נפתחת מיום האירוע ואילך. הנעילה **מסבירה את עצמה** ואומרת
-  // מתי היא נפתחת — מסך נעול בלי הסבר הוא מסך שבור מבחינת המשתמש.
+  // הספירה נפתחת מיום האירוע ואילך (החלטת בעלים). הנעילה **מסבירה את
+  // עצמה** ואומרת מתי היא נפתחת.
   if (!counting.counting_open) {
     return (
       <section className="fin-card fin-locked">
@@ -1841,49 +1886,38 @@ function CountingTab({
   }
 
   const { income } = counting
-  const { guests_counted: counted, guests_not_counted: notCounted } = data.breakdown
+  const total = income.total_display || income.envelopes_display
+  const hasGifts = counting.entries.length > 0
+  const showCredit = counting.credit_service_active || income.credit_count > 0
 
   return (
     <>
-      <section className="fin-hero fin-hero-inner" aria-label={t.countingTotalLabel}>
-        <p className="fin-hero-label">{t.countingTotalLabel}</p>
-        <p className="fin-hero-value">
-          {income.total_display || income.envelopes_display}
-        </p>
-        {/* התקדמות הספירה, לא רק הסכום. ביום שאחרי האירוע השאלה
-            הראשונה היא "כמה עוד נשאר לספור", והיא לא הייתה על המסך. */}
-        <p className="fin-counting-progress">
-          {t.countedProgress(counted, data.rsvp.total_guests)}
-        </p>
-        <div className="fin-hero-facts fin-hero-facts-quiet">
-          <Fact label={t.countedLabel} value={String(counted)} />
-          <Fact label={t.notCountedLabel} value={String(notCounted)} />
-          <Fact label={t.envelopesLabel} value={income.envelopes_display} />
-          {/* נותנים שאינם ברשימת המוזמנים — מוצגים רק כשיש כאלה. שורה
-              של "0 ₪ לא מהרשימה" בכל אירוע היא רעש. */}
-          {income.external_count > 0 && (
-            <Fact label={t.externalLabel} value={income.external_display} />
-          )}
-          {counting.credit_service_active && (
-            <Fact
-              label={t.creditLabel}
-              // הסכום חסום ⇒ מוצג המניין ולא "0 ₪". אפס היה אומר "לא
-              // התקבלו מתנות באשראי", וזו טענה אחרת לגמרי.
-              value={income.credit_display || String(income.credit_count)}
-            />
-          )}
-        </div>
+      {/* ── 1. כמה נספר ─────────────────────────────────────────────── */}
+      <section className="fin-gifts-head" aria-labelledby="fin-gifts-title">
+        <h2 id="fin-gifts-title" className="fin-gifts-title">{g.title}</h2>
+        <p className="fin-balance-value">{hasGifts ? total : g.noneYet}</p>
+        {hasGifts && <p className="fin-balance-eyebrow">{g.totalLabel}</p>}
+        {hasGifts && (
+          <p className="fin-gifts-split">
+            <span>
+              {g.envelopes} · <strong>{income.envelopes_display}</strong>
+            </span>
+            {showCredit && (
+              <span>
+                {g.credit} ·{' '}
+                {/* הסכום חסום ⇒ המניין ולא "0 ₪": אפס היה טענה אחרת. */}
+                <strong>{income.credit_display || String(income.credit_count)}</strong>
+              </span>
+            )}
+          </p>
+        )}
         {income.total_agorot === null && <p className="fin-hint">{t.totalPartialNote}</p>}
         {income.credit_count > 0 && !counting.credit_amounts_visible && (
           <p className="fin-hint">{t.creditLockedNote}</p>
         )}
-        {income.unidentified_count > 0 && (
-          <p className="fin-hint fin-unidentified">
-            {t.unidentifiedSummary(income.unidentified_count, income.unidentified_display)}
-          </p>
-        )}
       </section>
 
+      {/* ── 2. הוספת מתנה ──────────────────────────────────────────── */}
       {countingNow ? (
         <EnvelopeCounter
           startNumber={counting.next_envelope_number}
@@ -1893,40 +1927,46 @@ function CountingTab({
       ) : (
         <div className="fin-counter-cta">
           <button type="button" className="btn-primary" onClick={onStart}>
-            {t.startCounting}
+            {g.add}
           </button>
         </div>
       )}
 
-      {/* "סיימנו לספור" — רק כשיש מה לסכם, ולא באמצע הזנת מעטפות. זה סימון
-          "נכון לרגע זה", לא נעילה: הספירה נשארת פתוחה גם אחריו. */}
-      {!countingNow && counting.entries.length > 0 && (
-        <div className="fin-quiet fin-done">
+      {/* ── 3. סיימתם לספור? — רק כשיש מה לסכם, ולא באמצע הזנה ──────── */}
+      {!countingNow && hasGifts && (
+        <section className="fin-quiet fin-done" aria-live="polite">
           {data.counting_done ? (
             <>
-              <p className="fin-quiet-title">{o.doneBanner}</p>
-              <p className="fin-hint">{o.doneBannerHint}</p>
-              <button
-                type="button"
-                className="btn-link fin-done-btn"
-                disabled={marking}
-                onClick={onUndoDone}
-              >
-                {o.undoDone}
-              </button>
+              <p className="fin-quiet-title">{g.doneTitle}</p>
+              <p className="fin-done-total">{g.doneTotal(total)}</p>
+              <div className="fin-done-actions">
+                <button type="button" className="btn-ghost fin-done-btn" onClick={onBackToBalance}>
+                  {g.toBalance}
+                </button>
+                <button
+                  type="button"
+                  className="btn-link fin-done-btn"
+                  disabled={marking}
+                  onClick={onUndoDone}
+                >
+                  {o.undoDone}
+                </button>
+              </div>
             </>
           ) : (
             <>
-              {data.counting_reopened && <p className="fin-quiet-title">{o.reopenedNote}</p>}
+              <p className="fin-quiet-title">
+                {data.counting_reopened ? g.reopenedTitle : g.askDone}
+              </p>
+              {data.counting_reopened && <p className="fin-hint">{g.reopenedBody}</p>}
               <button
                 type="button"
-                className="btn-ghost fin-done-btn"
+                className="btn-primary fin-done-btn"
                 disabled={marking}
                 onClick={onMarkDone}
               >
                 {o.markDone}
               </button>
-              <p className="fin-hint">{o.markDoneHint}</p>
             </>
           )}
           {markError && (
@@ -1934,23 +1974,28 @@ function CountingTab({
               {markError}
             </p>
           )}
-        </div>
+        </section>
       )}
 
+      {/* ── 4. כל המתנות ───────────────────────────────────────────── */}
       <section className="fin-section">
         <h2 className="fin-section-title">{t.giftsLogTitle}</h2>
-        {counting.entries.length === 0 ? (
-          <div className="fin-card fin-card-empty">
-            <div className="empty">
-              <p className="empty-title">{t.giftsEmptyTitle}</p>
-              <p className="empty-desc">{t.giftsEmptyBody}</p>
-            </div>
+        {!hasGifts ? (
+          <div className="fin-quiet">
+            <p className="fin-quiet-title">{t.giftsEmptyTitle}</p>
+            <p className="fin-hint">{t.giftsEmptyBody}</p>
           </div>
         ) : (
-          <GiftLog entries={counting.entries} onDelete={onDeleteEntry} />
+          <GiftLog entries={counting.entries} onEdit={onEditEntry} />
+        )}
+        {income.unidentified_count > 0 && (
+          <p className="fin-hint fin-unidentified">
+            {t.unidentifiedSummary(income.unidentified_count, income.unidentified_display)}
+          </p>
         )}
       </section>
 
+      {/* ── 5. לפי מוזמן — מקופל ───────────────────────────────────── */}
       <section className="fin-section">
         <div className="fin-section-head">
           <h2 className="fin-section-title">{t.byGuestTitle}</h2>
@@ -1960,6 +2005,9 @@ function CountingTab({
             </button>
           )}
         </div>
+        <p className="fin-hint">
+          {t.countedProgress(data.breakdown.guests_counted, data.rsvp.total_guests)}
+        </p>
         {byGuest !== null && <ByGuestList rows={byGuest} />}
       </section>
     </>
@@ -1967,28 +2015,26 @@ function CountingTab({
 }
 
 /**
- * יומן המתנות — **חלון ולא ארכיון.**
- *
- * אחרי ערב ספירה יש כאן 150 שורות, והן נפתחו כולן. מי שבא לוודא שהמעטפה
- * האחרונה נתפסה צריך את חמש האחרונות; מי שמחפש מוזמן מסוים ימצא אותו
- * ב"לפי מוזמן". לכן ברירת המחדל היא חלון קצר, וההרחבה מפורשת.
+ * יומן המתנות — **חלון ולא ארכיון.** אחרי ערב ספירה יש כאן 150 שורות; מי
+ * שבא לוודא שהמעטפה האחרונה נתפסה צריך את האחרונות. לחיצה על מעטפה פותחת
+ * עריכה; מתנה באשראי היא עסקה של נותן המתנה ולא נערכת כאן.
  */
 function GiftLog({
   entries,
-  onDelete,
+  onEdit,
 }: {
   entries: GiftEntry[]
-  onDelete: (e: GiftEntry) => void
+  onEdit: (e: GiftEntry) => void
 }) {
   const WINDOW = 12
   const [showAll, setShowAll] = useState(false)
   const shown = showAll ? entries : entries.slice(0, WINDOW)
 
   return (
-    <div className="fin-card">
+    <div className="fin-gift-log">
       <ul className="fin-gift-list">
         {shown.map((e) => (
-          <GiftRow key={`${e.source}-${e.id}`} entry={e} onDelete={onDelete} />
+          <GiftRow key={`${e.source}-${e.id}`} entry={e} onEdit={onEdit} />
         ))}
       </ul>
       {entries.length > WINDOW && (
@@ -2007,18 +2053,12 @@ function GiftLog({
   )
 }
 
-function GiftRow({
-  entry,
-  onDelete,
-}: {
-  entry: GiftEntry
-  onDelete: (e: GiftEntry) => void
-}) {
-  return (
-    <li className="fin-gift">
+function GiftRow({ entry, onEdit }: { entry: GiftEntry; onEdit: (e: GiftEntry) => void }) {
+  const content = (
+    <>
       <span className="fin-gift-who">
         {/* מעטפה בלי שיוך מוצגת כ"לא מזוהה" ולא כשורה ריקה: זה מצב
-            מתועד שאפשר לחזור אליו, לא נתון חסר. */}
+            מתועד שאפשר לחזור אליו ולשייך בעריכה. */}
         {entry.guest_name || <em className="fin-unknown">{t.envelopeUnknownBadge}</em>}
         {entry.is_external && (
           <span className="fin-badge fin-badge-external">{t.externalBadge}</span>
@@ -2033,16 +2073,16 @@ function GiftRow({
           ? `${t.sourceEnvelope} #${entry.envelope_number}`
           : t.sourceCredit}
       </span>
-      {/* מתנה באשראי אינה ניתנת למחיקה כאן — היא עסקת סליקה שנוצרה
-          במסלול הציבורי, ולא רישום ידני של הזוג. */}
-      {entry.source === 'envelope' && (
-        <button
-          type="button"
-          className="btn-link fin-gift-delete"
-          onClick={() => onDelete(entry)}
-        >
-          {strings.common.delete}
+    </>
+  )
+  return (
+    <li className="fin-gift-item">
+      {entry.source === 'envelope' ? (
+        <button type="button" className="fin-gift fin-gift-btn" onClick={() => onEdit(entry)}>
+          {content}
         </button>
+      ) : (
+        <div className="fin-gift">{content}</div>
       )}
     </li>
   )

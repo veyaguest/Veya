@@ -2668,6 +2668,8 @@ class GiftEntryRead(BaseModel):
     created_at: datetime
     #: מתנה משותפת — שמות המוזמנים הנוספים. הסכום אינו מפוצל ביניהם.
     shared_names: list[str] = []
+    #: והמזהים שלהם — כדי שעריכה (ששולחת את השורה כולה) לא תמחק אותם.
+    shared_guest_ids: list[int] = []
     #: נותן שאינו ברשימת המוזמנים. ``guest_name`` מחזיק את שמו.
     is_external: bool = False
     external_phone: str = ""

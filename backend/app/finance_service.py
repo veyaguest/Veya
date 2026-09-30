@@ -26,7 +26,7 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Optional
 
@@ -66,6 +66,9 @@ class GiftEntry:
     created_at: datetime
     #: שמות המוזמנים הנוספים במתנה משותפת (לתצוגה בלבד — הסכום לא מפוצל).
     shared_names: list[str]
+    #: המזהים שלהם — עריכה שולחת את השורה כולה, ובלעדיהם תיקון סכום היה
+    #: מוחק בשקט את השותפים למתנה.
+    shared_guest_ids: list[int] = field(default_factory=list)
     #: לשורת אשראי בלבד: הסטטוס מהספק.
     status: Optional[str] = None
     #: נותן שאינו ברשימת המוזמנים. ``guest_name`` מחזיק את שמו.
@@ -145,6 +148,23 @@ def counting_state(db: Session, event: models.Event) -> CountingState:
     )
     reopened = bool(newer_envelopes or newer_credit)
     return CountingState(done=not reopened, reopened=reopened)
+
+
+def reopen_counting(event: models.Event) -> bool:
+    """מבטל "סיימנו לספור" אחרי שינוי שהזוג עשה בסכום שכבר נספר.
+
+    תיקון סכום במעטפה או מחיקתה משנים את המספר הסופי — ולכן הוא כבר לא
+    "סופי" (החלטת מייסד 2026-09-30). **לא נגזר כמו מתנה חדשה**: מחיקה לא
+    משאירה שורה להשוואת זמנים, וזו פעולה של הזוג עצמו במסך — המסך אומר לו
+    מיד שהמאזן עודכן, ואין צורך בהודעה שממתינה לביקור הבא.
+
+    מחזיר האם היה מה לבטל. אינו מבצע commit.
+    """
+    if event.gift_counting_done_at is None:
+        return False
+    event.gift_counting_done_at = None
+    event.gift_counting_done_by = None
+    return True
 
 
 # ════════════════════════════════════════════════════════════════════════
@@ -267,6 +287,7 @@ def gift_entries(
                 note=env.note,
                 created_at=env.created_at,
                 shared_names=shared,
+                shared_guest_ids=[g for g in (env.shared_guest_ids or []) if names.get(g)],
             )
         )
 

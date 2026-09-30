@@ -308,6 +308,7 @@ def _entry_read(entry: finance_service.GiftEntry) -> schemas.GiftEntryRead:
         note=entry.note,
         created_at=entry.created_at,
         shared_names=entry.shared_names,
+        shared_guest_ids=entry.shared_guest_ids,
         is_external=entry.is_external,
         external_phone=entry.external_phone,
         status=entry.status,
@@ -1063,6 +1064,7 @@ def _envelope_entry(
             shared_names=[
                 names[g] for g in (envelope.shared_guest_ids or []) if g in names
             ],
+            shared_guest_ids=[g for g in (envelope.shared_guest_ids or []) if g in names],
         )
     )
 
@@ -1146,6 +1148,10 @@ def update_envelope(
     envelope = _owned_envelope(db, event, envelope_id)
     shared = _validate_guest_links(db, event, payload)
 
+    # סכום שתוקן אחרי "סיימנו לספור" ⇒ המאזן כבר לא סופי. שיוך בלבד (מי
+    # נתן) לא משנה אף סכום, ולכן לא נוגע בסימון.
+    if payload.amount_agorot != envelope.amount_agorot:
+        finance_service.reopen_counting(event)
     envelope.amount_agorot = payload.amount_agorot
     envelope.guest_id = payload.guest_id
     envelope.shared_guest_ids = shared or None
@@ -1185,6 +1191,8 @@ def delete_envelope(
     number = envelope.envelope_number
     amount = envelope.amount_agorot
     db.delete(envelope)
+    # מעטפה שנמחקה אחרי "סיימנו לספור" ⇒ הסכום הסופי השתנה.
+    finance_service.reopen_counting(event)
     audit.record(
         db, "finance_envelope_delete",
         event_id=event.id, user_id=user.id,

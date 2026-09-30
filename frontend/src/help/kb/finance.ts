@@ -3,8 +3,8 @@
  *
  * עובדות (אומתו ב-2026-09-29):
  * - "מאזן האירוע" (מ-2026-09-30): סקירה אחת — מאזן/עלות, אבני דרך, "מה נשאר
- *   לעשות", כסף שנכנס, כמה האירוע עולה, ופירוט מלא מקופל; ספירת המעטפות
- *   נפתחת משם כמסך נפרד (FinancePage + strings.finance.overview).
+ *   לעשות", מתנות (תוצאה), כמה האירוע עולה, ופירוט מלא מקופל; מסך "מתנות"
+ *   (ניהול, עריכה, "סיימנו לספור") נפתח משם (FinancePage + strings.finance).
  * - העלות משוערת לפי אישורי ההגעה, עד שמזינים כמה הגיעו בפועל
  *   (strings.finance.estimatedCostNote).
  * - הכרטיס "כמה אורחים הגיעו בפועל?" מופיע **מיום האירוע** (או כשאין תאריך) —
@@ -26,7 +26,7 @@ export const FINANCE_TOPICS: readonly HelpTopic[] = [
     scopes: [{ scope: 'finance', weight: 60 }],
     answer: [
       'בראש המסך — כמה האירוע עולה, ואחרי ספירת המתנות גם כמה נשאר לכם.',
-      'מתחת: {ui:finance.overview.todoTitle}, ההוצאות והתשלומים, ופירוט מלא. מיום האירוע נפתחת משם {ui:finance.countingTitle}.',
+      'מתחת: {ui:finance.overview.todoTitle}, ההוצאות והתשלומים, ופירוט מלא. מיום האירוע מנהלים משם את המתנות, דרך {ui:finance.giftsView.manage}.',
     ],
     sources: SOURCES,
     verifiedAt: VERIFIED,

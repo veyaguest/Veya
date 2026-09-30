@@ -261,6 +261,7 @@ function createEnvelope(body: {
     shared_names: (body.shared_guest_ids ?? [])
       .map((id) => GUESTS.find((g) => g.id === id)?.full_name ?? '')
       .filter(Boolean),
+    shared_guest_ids: body.shared_guest_ids ?? [],
     is_external: Boolean(body.external_name),
     external_phone: '',
     status: null,

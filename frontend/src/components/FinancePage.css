@@ -474,16 +474,6 @@
 }
 
 /* כסף שנכנס — אותו עיקרון: שורות, לא כרטיס. */
-.fin-plain {
-  display: flex;
-  flex-direction: column;
-}
-
-.fin-plain .fin-kv {
-  border-top: 1px solid var(--line);
-  margin-top: 12px;
-}
-
 .fin-per-person {
   display: flex;
   flex-direction: column;
@@ -571,6 +561,60 @@
 .fin-commit-line strong {
   font-weight: var(--weight-semibold);
   color: var(--body);
+}
+
+/* ── מסך המתנות ── */
+.fin-gifts-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fin-gifts-title {
+  margin: 0 0 4px;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+}
+
+.fin-gifts-split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 6px 0 0;
+  font-size: var(--text-base);
+  color: var(--body);
+}
+
+.fin-gifts-split strong {
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.fin-done-total {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--body);
+}
+
+.fin-done-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 4px;
+}
+
+/* המתנות במאזן — התוצאה, ולצידה הדרך לניהול. */
+.fin-gifts-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 16px;
 }
 
 /* "סיימנו לספור" במסך הספירה — מסגרת דקה כמו שאר מצבי "עוד לא". */
@@ -707,62 +751,6 @@
 
 /* אזור ולא כרטיס: המספר יושב ישירות על רקע העמוד. אותה החלטה בדיוק כמו
    ב-``GiftsPage`` — מסגרת סביב מספר בודד רק מקטינה אותו. */
-.fin-hero {
-  padding: 4px 2px 0;
-}
-
-.fin-hero-inner {
-  padding-top: 8px;
-}
-
-.fin-hero-label {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--muted);
-  letter-spacing: 0.02em;
-}
-
-.fin-hero-value {
-  margin: 2px 0 0;
-  font-family: var(--font-display);
-  font-size: var(--text-4xl);
-  line-height: var(--leading-tight);
-  color: var(--charcoal);
-  /* המספר בלבד ב-LTR, לא הפסקה: אחרת השורה כולה נצמדת לשמאל ויוצאת
-     מיישור עם התווית שמעליה. */
-  direction: ltr;
-  text-align: right;
-  unicode-bidi: isolate;
-}
-
-.fin-hero-facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 20px;
-  margin-top: 14px;
-}
-
-.fin-fact {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 88px;
-}
-
-.fin-fact-label {
-  font-size: var(--text-2xs);
-  color: var(--muted);
-}
-
-.fin-fact-value {
-  font-size: var(--text-md);
-  font-weight: 600;
-  color: var(--body);
-  direction: ltr;
-  text-align: right;
-  unicode-bidi: isolate;
-}
-
 /* ════════════════════════════════════════════════════════════════════
    כרטיסים וסקשנים
    ════════════════════════════════════════════════════════════════════ */
@@ -774,11 +762,6 @@
   box-shadow: var(--shadow-card);
   padding: 16px;
 }
-
-.fin-card-empty {
-  padding: 24px 16px;
-}
-
 .fin-card-title {
   margin: 0 0 12px;
   font-size: var(--text-lg);
@@ -1389,8 +1372,36 @@
   align-items: baseline;
 }
 
-.fin-gift + .fin-gift {
+.fin-gift-item + .fin-gift-item {
   border-top: 1px solid var(--line-2);
+}
+
+/* הרשימה יושבת על רקע העמוד, בין שני קווים — לא כרטיס. */
+.fin-gift-log {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+/* מעטפה — כל השורה לחיצה לעריכה. */
+.fin-gift-btn {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+@media (hover: hover) {
+  .fin-gift-btn:hover {
+    background: var(--surface-hi);
+  }
+}
+
+.fin-gift-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
 }
 
 .fin-gift-who {
@@ -1425,11 +1436,6 @@
 .fin-gift-source {
   font-size: var(--text-2xs);
   color: var(--muted);
-}
-
-.fin-gift-delete {
-  justify-self: end;
-  font-size: var(--text-2xs);
 }
 
 .fin-unidentified {
@@ -2427,14 +2433,6 @@
 }
 
 /* עובדות משנה בכותרת — קטנות ושקטות, כדי שהמספר הגדול יישאר יחיד. */
-.fin-hero-facts-quiet {
-  margin-top: 18px;
-}
-
-.fin-hero-facts-quiet .fin-fact-value {
-  font-size: var(--text-md);
-}
-
 /* ════════════════════════════════════════════════════════════════════
    הפירוט המלא — אזור סגור (הכפתור משותף ל"מה קורה אם")
    ════════════════════════════════════════════════════════════════════ */
@@ -2482,7 +2480,6 @@
    גובה הבקרה הסטנדרטי של VEYA הופך אותם ליעד מגע אמיתי בלי לשנות את
    ``btn-link`` הגלובלי — שמשמש גם בהקשרים צפופים במסכים אחרים. */
 .fin-cost-actions .btn-link,
-.fin-gift-delete,
 .fin-group-add,
 .fin-preview-change,
 .fin-more-details,
@@ -2520,13 +2517,6 @@
   color: var(--gold-on-tint);
   font-size: var(--text-xs);
 }
-
-.fin-counting-progress {
-  margin: 10px 0 0;
-  font-size: var(--text-sm);
-  color: var(--muted);
-}
-
 .fin-gift-more {
   display: flex;
   align-items: center;
@@ -2547,10 +2537,6 @@
    ════════════════════════════════════════════════════════════════════ */
 
 @media (min-width: 700px) {
-  .fin-hero-value {
-    font-size: 52px;
-  }
-
   .fin-group-btn {
     padding: 16px 20px;
   }

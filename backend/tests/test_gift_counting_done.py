@@ -217,6 +217,89 @@ def test_manual_undo_returns_to_so_far_without_a_new_gift_notice() -> None:
     print("✓ ביטול ידני ⇒ 'עד עכשיו', בלי הודעת מתנה חדשה")
 
 
+# ---- 4ב. עריכה ומחיקה אחרי הסימון (החלטת מייסד 2026-09-30) ---------------------
+
+def _edit_envelope(api, envelope_id: int, *, agorot: int, guest_id) -> None:
+    r = api.client.put(
+        f"/finance/envelopes/{envelope_id}", headers=api.headers,
+        json={"amount_agorot": agorot, "guest_id": guest_id},
+    )
+    assert r.status_code == 200, r.text
+
+
+def test_editing_an_amount_after_done_returns_to_so_far() -> None:
+    """הסכום הסופי השתנה ⇒ המאזן כבר לא "סופי"."""
+    api = _event_after()
+    g = api.add_guest("נוי ברק", "0503330008")
+    env = _envelope(api, g["id"], 50_000)
+    _shift(models.GiftEnvelope, env, "created_at", 60)
+    _mark(api, True)
+
+    _edit_envelope(api, env, agorot=40_000, guest_id=g["id"])
+    body = _summary(api)
+    assert body["counting_done"] is False, "סכום שתוקן אחרי הסימון ⇒ 'עד עכשיו'"
+    assert _done_fields(api.event_id) == (None, None)
+    print("✓ תיקון סכום אחרי הסימון ⇒ חזרה ל'עד עכשיו'")
+
+
+def test_attributing_an_envelope_without_changing_its_amount_keeps_done() -> None:
+    """שיוך מעטפה שלא זוהתה למוזמן לא משנה אף סכום — הסימון נשאר."""
+    api = _event_after()
+    g = api.add_guest("טל אור", "0503330009")
+    env = _envelope(api, None, 30_000)
+    _shift(models.GiftEnvelope, env, "created_at", 60)
+    _mark(api, True)
+
+    _edit_envelope(api, env, agorot=30_000, guest_id=g["id"])
+    assert _summary(api)["counting_done"] is True
+    print("✓ שיוך בלי שינוי סכום ⇒ הסימון נשאר")
+
+
+def test_entries_expose_shared_ids_so_an_edit_keeps_them() -> None:
+    """עריכה שולחת את כל השורה — כולל מי נתן יחד. בלי המזהים ברשימה, תיקון
+    סכום היה מוחק בשקט את השותפים למתנה."""
+    api = _event_after()
+    a = api.add_guest("רון מור", "0503330011")
+    b = api.add_guest("שני מור", "0503330012")
+    r = api.client.post(
+        "/finance/envelopes", headers=api.headers,
+        json={"amount_agorot": 60_000, "guest_id": a["id"], "shared_guest_ids": [b["id"]]},
+    )
+    assert r.status_code == 201, r.text
+    entry = r.json()["envelope"]
+    assert entry["shared_guest_ids"] == [b["id"]], "המזהים חוזרים גם ביצירה"
+
+    listed = api.client.get("/finance/gifts", headers=api.headers).json()["entries"]
+    row = next(x for x in listed if x["id"] == entry["id"])
+    assert row["shared_guest_ids"] == [b["id"]], "וגם ברשימה"
+
+    r = api.client.put(
+        f"/finance/envelopes/{entry['id']}", headers=api.headers,
+        json={"amount_agorot": 50_000, "guest_id": a["id"],
+              "shared_guest_ids": row["shared_guest_ids"]},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["shared_names"] == ["שני מור"], "תיקון הסכום לא מחק את השותפה"
+    print("✓ הרשימה מחזירה את מזהי השותפים, ועריכה שומרת עליהם")
+
+
+def test_deleting_an_envelope_after_done_returns_to_so_far() -> None:
+    api = _event_after()
+    g = api.add_guest("עדי רון", "0503330010")
+    env = _envelope(api, g["id"], 50_000)
+    env2 = _envelope(api, g["id"], 10_000)
+    _shift(models.GiftEnvelope, env, "created_at", 60)
+    _shift(models.GiftEnvelope, env2, "created_at", 60)
+    _mark(api, True)
+
+    r = api.client.delete(f"/finance/envelopes/{env2}", headers=api.headers)
+    assert r.status_code == 204, r.text
+    body = _summary(api)
+    assert body["counting_done"] is False, "מחיקה אחרי הסימון ⇒ 'עד עכשיו'"
+    assert body["counting_reopened"] is False, "זו פעולה של הזוג עצמו, לא 'נוספה מתנה'"
+    print("✓ מחיקת מעטפה אחרי הסימון ⇒ חזרה ל'עד עכשיו'")
+
+
 # ---- 5. לפני יום האירוע -----------------------------------------------------------
 
 def test_cannot_mark_done_before_the_event_day() -> None:
@@ -239,6 +322,10 @@ if __name__ == "__main__":
         test_paid_credit_gift_after_done_reopens_the_balance()
         test_pending_credit_gift_does_not_reopen()
         test_manual_undo_returns_to_so_far_without_a_new_gift_notice()
+        test_editing_an_amount_after_done_returns_to_so_far()
+        test_attributing_an_envelope_without_changing_its_amount_keeps_done()
+        test_deleting_an_envelope_after_done_returns_to_so_far()
+        test_entries_expose_shared_ids_so_an_edit_keeps_them()
         test_cannot_mark_done_before_the_event_day()
         print("OK — 'סיימנו לספור' מתנהג לפי החלטות המייסד.")
     finally:

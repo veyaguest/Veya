@@ -74,17 +74,7 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
     // 260 מוזמנים 60 מהם פשוט לא נמצאו בחיפוש. חיפוש שמבטיח "כל
     // המוזמנים" ומחזיר חלק מהם הוא הבטחה שבורה, ובמסך שמשייך כסף היא
     // שולחת מעטפה לערימת "לא מזוהה" בלי סיבה.
-    const PAGE = 200
-    async function loadAll() {
-      const all: Guest[] = []
-      for (let offset = 0; ; offset += PAGE) {
-        const page = await listGuests(undefined, PAGE, offset, 'name')
-        all.push(...page.items)
-        if (all.length >= page.total || page.items.length === 0) break
-      }
-      return all
-    }
-    loadAll()
+    loadAllGuests()
       .then((items) => alive && setGuests(items))
       .catch(() => alive && setError(t.loadError))
     return () => {
@@ -122,17 +112,8 @@ export function EnvelopeCounter({ startNumber, onSaved, onClose }: Props) {
   // באיזה שדה הוא מחפש. כל מילה בשאילתה חייבת להימצא איפשהו ברשומה,
   // כך ש"דני כהן" מוצא גם כשהשם נשמר "כהן דני".
   const results = useMemo(() => {
-    const q = query.trim()
-    if (!q) return []
-    const words = q.split(/\s+/).filter(Boolean)
     const chosen = new Set([guest?.id, ...shared.map((g) => g.id)].filter(Boolean))
-    return guests
-      .filter((g) => {
-        if (chosen.has(g.id)) return false
-        const haystack = `${g.full_name} ${normalizePhone(g.phone)}`
-        return words.every((w) => haystack.includes(normalizePhone(w)) || haystack.includes(w))
-      })
-      .slice(0, 8)
+    return matchGuests(guests, query, chosen)
   }, [query, guests, guest, shared])
 
   function reset(next: number) {
@@ -452,4 +433,37 @@ function GuestChip({ guest, onRemove }: { guest: Guest; onRemove: () => void }) 
 /** משווה טלפונים בלי מקפים/רווחים, כדי ש"050-1234567" יימצא גם כ"0501234567". */
 function normalizePhone(value: string): string {
   return value.replace(/[\s-]/g, '')
+}
+
+/**
+ * **כל** המוזמנים, בדפים של 200 — ``limit`` נחתך בשרת ל-200
+ * (``routers/guests.MAX_PAGE_LIMIT``), ובקשה אחת גדולה החזירה בשקט רק
+ * חלק. משותף למונה ולעריכת מתנה, כדי ששניהם ימצאו בדיוק את אותם אנשים.
+ */
+export async function loadAllGuests(): Promise<Guest[]> {
+  const PAGE = 200
+  const all: Guest[] = []
+  for (let offset = 0; ; offset += PAGE) {
+    const page = await listGuests(undefined, PAGE, offset, 'name')
+    all.push(...page.items)
+    if (all.length >= page.total || page.items.length === 0) break
+  }
+  return all
+}
+
+/**
+ * חיפוש מוזמן בשם פרטי, שם משפחה, שם מלא או טלפון. כל מילה בשאילתה חייבת
+ * להימצא איפשהו ברשומה, כך ש"דני כהן" מוצא גם "כהן דני".
+ */
+export function matchGuests(guests: Guest[], query: string, exclude: Set<unknown> = new Set()): Guest[] {
+  const q = query.trim()
+  if (!q) return []
+  const words = q.split(/\s+/).filter(Boolean)
+  return guests
+    .filter((g) => {
+      if (exclude.has(g.id)) return false
+      const haystack = `${g.full_name} ${normalizePhone(g.phone)}`
+      return words.every((w) => haystack.includes(normalizePhone(w)) || haystack.includes(w))
+    })
+    .slice(0, 8)
 }

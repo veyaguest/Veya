@@ -2027,6 +2027,8 @@ export interface GiftEntry {
   created_at: string
   /** מתנה משותפת — שמות נוספים. הסכום אינו מפוצל ביניהם. */
   shared_names: string[]
+  /** והמזהים שלהם — עריכה שולחת אותם בחזרה, כדי לא למחוק את השותפים. */
+  shared_guest_ids: number[]
   /** נותן שאינו ברשימת המוזמנים. ``guest_name`` מחזיק את שמו. */
   is_external: boolean
   external_phone: string
