@@ -255,14 +255,31 @@ export function FinancePage({
     }
   }, [attempt])
 
+  /**
+   * **רק התשובה האחרונה נכנסת למסך.** שתי טעינות יכולות לרוץ במקביל — למשל
+   * "סגירה" במונה בזמן שמעטפה עוד נשמרת — ותשובה ישנה שמגיעה אחרונה הייתה
+   * דורסת את המספרים החדשים (נמצא בבדיקה: המעטפה נשמרה, והסכום במסך נשאר
+   * ישן). כל טעינה מקבלת מספר, ורק האחרונה מעדכנת. גם כתיבה שמחזירה סיכום
+   * (סיום ספירה, "כמה הגיעו") מקדמת את המונה, כדי שטעינה ישנה לא תדרוס אותה.
+   */
+  const loadSeq = useRef(0)
+  const applySummary = useCallback((summary: FinanceSummary) => {
+    loadSeq.current += 1
+    setData(summary)
+  }, [])
+  const reload = useCallback(async (): Promise<FinanceSummary> => {
+    const seq = ++loadSeq.current
+    const [summary, count] = await Promise.all([getFinance(), getGiftCounting()])
+    if (seq === loadSeq.current) {
+      setData(summary)
+      setCounting(count)
+    }
+    return summary
+  }, [])
+
   /** רענון אחרי כל שינוי — מהשרת, כדי שהסיכום והשורות לא יסטו זה מזה. */
   const refresh = useCallback(() => {
-    Promise.all([getFinance(), getGiftCounting()])
-      .then(([summary, count]) => {
-        setData(summary)
-        setCounting(count)
-      })
-      .catch(() => undefined)
+    reload().catch(() => undefined)
     // "לפי מוזמן" נטען רק אם הוא כבר פתוח — אין טעם למשוך רשימה של 500
     // שורות שאיש לא מסתכל עליה.
     if (byGuest !== null) getGiftsByGuest().then(setByGuest).catch(() => undefined)
@@ -292,7 +309,7 @@ export function FinancePage({
     setMarkingDone(true)
     setMarkError(null)
     try {
-      setData(await setCountingDone(done))
+      applySummary(await setCountingDone(done))
       if (then) {
         scrollOnViewChange.current = true
         setView(then)
@@ -353,9 +370,7 @@ export function FinancePage({
       }
       // הסיכום נטען מחדש **לפני** שממשיכים — המאזן מתעדכן מיד, והתור
       // הבא נבנה מהנתונים האמיתיים ולא מהעותק הישן.
-      const fresh = await getFinance()
-      setData(fresh)
-      getGiftCounting().then(setCounting).catch(() => undefined)
+      const fresh = await reload()
 
       const detail = `${saved.label} · ${saved.total_display}`
       // סוף התור — האישור אומר שהמשימה כולה נגמרה, לא רק השורה הזו.
@@ -417,9 +432,7 @@ export function FinancePage({
    */
   async function afterGiftChange(title: string, detail: string) {
     const wasDone = data?.counting_done ?? false
-    const [fresh, count] = await Promise.all([getFinance(), getGiftCounting()])
-    setData(fresh)
-    setCounting(count)
+    const fresh = await reload()
     if (byGuest !== null) getGiftsByGuest().then(setByGuest).catch(() => undefined)
     flashToast(title, wasDone && !fresh.counting_done ? g.changedBody : detail)
   }
@@ -532,7 +545,7 @@ export function FinancePage({
             onFillWaiting={startFillQueue}
             onOpenReport={openReport}
             onCount={() => setView('counting')}
-            onAttendance={setData}
+            onAttendance={applySummary}
             onNavigate={onNavigate}
           />
 
@@ -553,7 +566,7 @@ export function FinancePage({
             onOpenExpenses={openExpenses}
             onAdd={startAdd}
             onEdit={setEditing}
-            onAttendance={setData}
+            onAttendance={applySummary}
             onNavigate={onNavigate}
           />
 
@@ -1895,8 +1908,18 @@ function GiftsView({
       {/* ── 1. כמה נספר ─────────────────────────────────────────────── */}
       <section className="fin-gifts-head" aria-labelledby="fin-gifts-title">
         <h2 id="fin-gifts-title" className="fin-gifts-title">{g.title}</h2>
-        <p className="fin-balance-value">{hasGifts ? total : g.noneYet}</p>
-        {hasGifts && <p className="fin-balance-eyebrow">{g.totalLabel}</p>}
+        {hasGifts ? (
+          <>
+            <p className="fin-balance-value">{total}</p>
+            <p className="fin-balance-eyebrow">{g.totalLabel}</p>
+          </>
+        ) : (
+          // עוד אין מתנות — משפט אחד, פעם אחת. בלי רשימה ריקה ובלי "0 מתוך 30".
+          <>
+            <p className="fin-quiet-title">{g.noneYet}</p>
+            <p className="fin-hint">{t.giftsEmptyBody}</p>
+          </>
+        )}
         {hasGifts && (
           <p className="fin-gifts-split">
             <span>
@@ -1965,7 +1988,9 @@ function GiftsView({
                 disabled={marking}
                 onClick={onMarkDone}
               >
-                {o.markDone}
+                {/* "כן, …" עונה על השאלה שמעליו. כשנוספה מתנה אין שאלה על
+                    המסך — ואז הכפתור אומר את הפעולה עצמה. */}
+                {data.counting_reopened ? o.markDone : g.markDoneYes}
               </button>
             </>
           )}
@@ -1977,25 +2002,21 @@ function GiftsView({
         </section>
       )}
 
-      {/* ── 4. כל המתנות ───────────────────────────────────────────── */}
+      {/* ── 4. כל המתנות — רק כשיש מה להציג ───────────────────────── */}
+      {hasGifts && (
       <section className="fin-section">
         <h2 className="fin-section-title">{t.giftsLogTitle}</h2>
-        {!hasGifts ? (
-          <div className="fin-quiet">
-            <p className="fin-quiet-title">{t.giftsEmptyTitle}</p>
-            <p className="fin-hint">{t.giftsEmptyBody}</p>
-          </div>
-        ) : (
-          <GiftLog entries={counting.entries} onEdit={onEditEntry} />
-        )}
+        <GiftLog entries={counting.entries} onEdit={onEditEntry} />
         {income.unidentified_count > 0 && (
           <p className="fin-hint fin-unidentified">
             {t.unidentifiedSummary(income.unidentified_count, income.unidentified_display)}
           </p>
         )}
       </section>
+      )}
 
-      {/* ── 5. לפי מוזמן — מקופל ───────────────────────────────────── */}
+      {/* ── 5. לפי מוזמן — מקופל, ורק כשכבר נספרה מתנה ─────────────── */}
+      {hasGifts && (
       <section className="fin-section">
         <div className="fin-section-head">
           <h2 className="fin-section-title">{t.byGuestTitle}</h2>
@@ -2010,6 +2031,7 @@ function GiftsView({
         </p>
         {byGuest !== null && <ByGuestList rows={byGuest} />}
       </section>
+      )}
     </>
   )
 }

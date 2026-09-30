@@ -1805,8 +1805,11 @@ export const strings = {
       envelopes: 'מעטפות',
       credit: 'אשראי',
       add: '+ הוספת מתנה',
-      askDone: 'סיימתם לספור?',
-      doneTitle: 'הספירה הסתיימה ✓',
+      // שאלה + "כן, …" — אותו דפוס כמו "כן, לשמור". בלי "✓" בסוף: ב-RTL
+      // הסימן מוביל את השורה ונקרא ראשון.
+      askDone: 'סיימתם לספור את כל המתנות?',
+      markDoneYes: 'כן, סיימנו לספור',
+      doneTitle: '✓ הספירה הסתיימה',
       doneTotal: (amount: string) => `סה״כ מתנות: ${amount}`,
       toBalance: 'למאזן הסופי',
       reopenedTitle: 'נוספה מתנה חדשה',
