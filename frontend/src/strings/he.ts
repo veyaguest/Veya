@@ -1791,6 +1791,44 @@ export const strings = {
       back: 'חזרה למאזן',
     },
 
+    // ---- טופס ההוצאה (2026-09-30) ----
+    // חלון אחד: על מה? ← כמה? ← פרטים נוספים (לא חובה) ← שמירה. אין "מתי"
+    // להוצאה עצמה — תאריך יש רק לתשלום (החלטת מייסד 2026-09-30), והוא יושב
+    // ב"כבר שילמתם?". הסכום חובה בטופס; שורות בלי סכום נוצרות רק מהתבנית.
+    editor: {
+      addTitle: 'הוספת הוצאה',
+      editTitle: 'עריכת הוצאה',
+      whatTitle: 'על מה?',
+      whatError: 'בחרו על מה ההוצאה',
+      nameError: 'תנו להוצאה שם',
+      moreOptions: 'עוד אפשרויות',
+      fewerOptions: 'פחות אפשרויות',
+      howMuchTitle: 'כמה?',
+      amountError: 'הוסיפו סכום להוצאה',
+      percentError: 'הוסיפו אחוז',
+      quantityError: 'הוסיפו כמות',
+      detailsToggle: 'פרטים נוספים — לא חובה',
+      detailsClose: 'הסתרת הפרטים הנוספים',
+      prepaidDateLabel: 'מתי שילמתם?',
+      paymentsSummary: (paid: string, remaining: string) => `שולם ${paid} · נשאר ${remaining}`,
+      save: 'שמירת ההוצאה',
+      saveChanges: 'שמירת השינויים',
+      saveAndAnother: 'שמירה והוספת עוד',
+      saveAndNext: 'שמירה ומעבר להוצאה הבאה',
+      saveAndFinish: 'שמירה וסיום',
+      queueLeft: (n: number) =>
+        n === 1
+          ? 'אחרי זו נשארת עוד הוצאה אחת בלי סכום.'
+          : `אחרי זו נשארות עוד ${n} הוצאות בלי סכום.`,
+      leaveTitle: 'לצאת בלי לשמור?',
+      leaveBody: 'מה שהזנתם כאן לא יישמר.',
+      leaveConfirm: 'יציאה בלי שמירה',
+      addedToast: 'ההוצאה נוספה',
+      savedToast: 'השינויים נשמרו',
+      deletedToast: 'ההוצאה נמחקה',
+      allFilledToast: 'כל ההוצאות קיבלו סכום',
+    },
+
     costTitle: (eventNoun: string) => `עלות ${eventNoun}`,
     countingTitle: 'ספירת מתנות',
     summaryTitle: (eventNoun: string) => `סיכום ${eventNoun}`,

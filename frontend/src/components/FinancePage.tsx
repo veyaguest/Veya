@@ -38,7 +38,7 @@ import { strings } from '../strings/he'
 import { activeEventTerms } from '../strings/eventTypes'
 import { ConfirmDialog } from './ConfirmDialog'
 import { EnvelopeCounter } from './EnvelopeCounter'
-import { ExpenseEditor } from './ExpenseEditor'
+import { ExpenseEditor, type AfterSave, type Prepaid } from './ExpenseEditor'
 import { downloadWorkbook, type Cell } from '../lib/xlsx'
 import './FinancePage.css'
 import { useHelpScope } from '../help/useHelpScope'
@@ -179,6 +179,20 @@ export function FinancePage({
   const [addCategory, setAddCategory] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  // "מילוי ברצף" — נפתח מ"X הוצאות עדיין בלי סכום": הטופס עובר מהוצאה
+  // להוצאה עד שכולן קיבלו סכום, בלי לחזור לרשימה ולחפש את הבאה.
+  const [fillQueue, setFillQueue] = useState(false)
+  // "שמירה והוספת עוד" — מונה שמרכיב מחדש טופס ריק (מפתח חדש).
+  const [addNonce, setAddNonce] = useState(0)
+  // אישור אחרי שמירה/מחיקה: שורה ראשית + פרט ("DJ · 4,500 ₪").
+  const [toast, setToast] = useState<{ title: string; detail?: string } | null>(null)
+  const toastTimer = useRef<number | undefined>(undefined)
+  const flashToast = useCallback((title: string, detail?: string) => {
+    window.clearTimeout(toastTimer.current)
+    setToast({ title, detail })
+    toastTimer.current = window.setTimeout(() => setToast(null), 4000)
+  }, [])
+  useEffect(() => () => window.clearTimeout(toastTimer.current), [])
   const [countingNow, setCountingNow] = useState(false)
   const [deletingEnvelope, setDeletingEnvelope] = useState<GiftEntry | null>(null)
   const [applying, setApplying] = useState(false)
@@ -288,26 +302,75 @@ export function FinancePage({
     setEditing(null)
   }
 
-  async function handleSaveExpense(input: ExpenseInput, prepaidAgorot?: number) {
+  /** ההוצאות שעדיין בלי סכום, לפי סדר הרשימה — התור של "מילוי ברצף". */
+  function waitingIn(summary: FinanceSummary, exceptId?: number): Expense[] {
+    return summary.expenses.filter((x) => x.total_agorot === 0 && x.id !== exceptId)
+  }
+
+  /** "X הוצאות עדיין בלי סכום" ⇒ ישר לטופס של הראשונה, לא לרשימה. */
+  function startFillQueue() {
+    const first = data ? waitingIn(data)[0] : undefined
+    if (!first) return
+    setAddCategory(null)
+    setSaveError(null)
+    setFillQueue(true)
+    setEditing(first)
+  }
+
+  async function handleSaveExpense(
+    input: ExpenseInput,
+    prepaid: Prepaid | undefined,
+    after: AfterSave,
+  ) {
     setSaving(true)
     setSaveError(null)
     try {
+      let saved: Expense
       if (editing) {
-        await updateExpense(editing.id, input)
+        saved = await updateExpense(editing.id, input)
       } else {
-        const created = await createExpense(input)
-        // "כבר שילמתם משהו?" מהטופס — נרשם כתשלום ראשון. אי אפשר לרשום
-        // תשלום על הוצאה שעוד לא נוצרה, ולכן זה קורה כאן ולא בטופס.
-        if (prepaidAgorot) {
-          await createPayment(created.id, { amount_agorot: prepaidAgorot })
+        saved = await createExpense(input)
+        // "כבר שילמתם?" מהטופס — נרשם כתשלום ראשון, עם התאריך שנבחר. אי
+        // אפשר לרשום תשלום על הוצאה שעוד לא נוצרה, ולכן זה קורה כאן.
+        if (prepaid) saved = await createPayment(saved.id, prepaid)
+      }
+      // הסיכום נטען מחדש **לפני** שממשיכים — המאזן מתעדכן מיד, והתור
+      // הבא נבנה מהנתונים האמיתיים ולא מהעותק הישן.
+      const fresh = await getFinance()
+      setData(fresh)
+      getGiftCounting().then(setCounting).catch(() => undefined)
+
+      const detail = `${saved.label} · ${saved.total_display}`
+      // סוף התור — האישור אומר שהמשימה כולה נגמרה, לא רק השורה הזו.
+      const queueDone = fillQueue && waitingIn(fresh).length === 0
+      flashToast(
+        queueDone
+          ? t.editor.allFilledToast
+          : editing
+            ? t.editor.savedToast
+            : t.editor.addedToast,
+        detail,
+      )
+
+      if (after === 'another') {
+        // טופס ריק, באותו חלון — בלי לסגור ולפתוח מחדש.
+        setAddNonce((n) => n + 1)
+        setEditing(null)
+        return
+      }
+      if (after === 'next') {
+        const next = waitingIn(fresh, saved.id)[0]
+        if (next) {
+          setEditing(next)
+          return
         }
       }
       setEditing(undefined)
       setAddCategory(null)
-      // הקבוצה של ההוצאה שנשמרה נפתחת, כדי שהשורה תיראה מיד.
+      setFillQueue(false)
+      // הקבוצה של ההוצאה שנשמרה נפתחת, כדי שהשורה תיראה במקומה.
       setShowAllExpenses(true)
-      setOpenGroups((prev) => new Set(prev).add(input.category))
-      refresh()
+      setOpenGroups((prev) => new Set(prev).add(saved.category))
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : t.saveError)
     } finally {
@@ -321,7 +384,9 @@ export function FinancePage({
     try {
       await deleteExpense(editing.id)
       setEditing(undefined)
+      setFillQueue(false)
       refresh()
+      flashToast(t.editor.deletedToast, editing.label)
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : t.saveError)
     } finally {
@@ -390,6 +455,7 @@ export function FinancePage({
             counting={counting}
             timeline={timeline}
             onOpenExpenses={openExpenses}
+            onFillWaiting={startFillQueue}
             onOpenReport={openReport}
             onCount={() => setView('counting')}
             onAttendance={setData}
@@ -430,10 +496,11 @@ export function FinancePage({
       {editing !== undefined && (
         <ExpenseEditor
           // מפתח לפי השורה: מעבר מ"הוספה" לשורה קיימת מתחיל טופס נקי.
-          key={editing?.id ?? 'new'}
+          key={editing?.id ?? `new-${addNonce}`}
           existing={data.expenses}
           onOpenExisting={(e) => {
             setAddCategory(null)
+            setFillQueue(false)
             setEditing(e)
           }}
           categories={categories}
@@ -444,6 +511,9 @@ export function FinancePage({
           invited={data.cost.invited}
           busy={saving}
           error={saveError}
+          queueRemaining={
+            fillQueue && editing ? waitingIn(data, editing.id).length : 0
+          }
           onSave={handleSaveExpense}
           // יומן התשלומים משנה את השורה בשרת — הדיאלוג מחזיק את הגרסה
           // המעודכנת, והמסך שמאחור נטען מחדש כדי שהסיכומים לא יסטו.
@@ -455,9 +525,21 @@ export function FinancePage({
           onCancel={() => {
             setEditing(undefined)
             setAddCategory(null)
+            setFillQueue(false)
             setSaveError(null)
           }}
         />
+      )}
+
+      {/* אישור אחרי שמירה — לא משאירים ספק אם זה נשמר. */}
+      {toast && (
+        <div className="toast fin-toast" role="status">
+          <span className="fin-toast-check" aria-hidden="true">✓</span>
+          <span className="toast-text">
+            {toast.title}
+            {toast.detail && <span className="fin-toast-detail">{toast.detail}</span>}
+          </span>
+        </div>
       )}
 
       {deletingEnvelope && (
@@ -820,6 +902,7 @@ function NextSteps({
   counting,
   timeline,
   onOpenExpenses,
+  onFillWaiting,
   onOpenReport,
   onCount,
   onAttendance,
@@ -829,6 +912,7 @@ function NextSteps({
   counting: GiftCounting
   timeline: RsvpTimelineView | null
   onOpenExpenses: (groups?: string[]) => void
+  onFillWaiting: () => void
   onOpenReport: () => void
   onCount: () => void
   onAttendance: (data: FinanceSummary) => void
@@ -892,7 +976,8 @@ function NextSteps({
       title: o.todoEmptyRows(waiting.length),
       desc: o.todoEmptyRowsDesc,
       cta: o.todoEmptyRowsCta,
-      onClick: () => onOpenExpenses([...new Set(waiting.map((e) => e.category))]),
+      // ישר לטופס של הראשונה, ומשם לבאה — בלי לחפש שורות ברשימה.
+      onClick: onFillWaiting,
     })
   }
 
