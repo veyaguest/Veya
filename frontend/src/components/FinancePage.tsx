@@ -937,7 +937,7 @@ function IncomeSection({
       </div>
 
       {hasGifts ? (
-        <div className="fin-card">
+        <div className="fin-plain">
           <div className="fin-amount">
             <span className="fin-amount-label">{o.incomeTotal}</span>
             <span className="fin-amount-value">
@@ -1135,6 +1135,13 @@ function ExpensesSection({
             </div>
           )}
 
+          {/* מה מספר המגיעים אומר על העלות — לפני האירוע בלבד, ובקטן.
+              הממוצע הוא ממוצע; מה שאדם נוסף מוסיף מגיע מ-``next_attendee``
+              (ההפרש המדויק), ולא נגזר מהממוצע — הם שני מספרים שונים. */}
+          {hasCost && !attendance.event_passed && cost.cost_per_attendee_agorot !== null && (
+            <PerPerson cost={cost} />
+          )}
+
           {showAll ? (
             <div className="fin-card fin-groups">
               {cost.categories.map((group) => (
@@ -1151,7 +1158,7 @@ function ExpensesSection({
             </div>
           ) : (
             top.length > 0 && (
-              <ul className="fin-card fin-top">
+              <ul className="fin-top">
                 {top.map((g) => (
                   <li key={g.key}>
                     <button
@@ -1887,6 +1894,36 @@ function ByGuestList({ rows }: { rows: GuestGiftRow[] }) {
       </ul>
 
       <p className="fin-hint">{t.notCountedHint}</p>
+    </div>
+  )
+}
+
+/**
+ * עלות ממוצעת לאדם, ומתחתיה משפט אחד על אדם נוסף — **רק כשהחישוב מצדיק
+ * אותו.** ``next_attendee`` הוא ההפרש בין העלות עם עוד מגיע אחד לבין
+ * העלות עכשיו, ולכן הוא נכון גם מתחת להתחייבות (0) וגם מעליה. בלי
+ * התחייבות ובלי הוצאות לפי אדם, הוא 0 מסיבה אחרת — ואז אין משפט בכלל.
+ */
+function PerPerson({ cost }: { cost: FinanceSummary['cost'] }) {
+  const next = cost.next_attendee_agorot
+  const unused = cost.commitments.find((c) => c.unused_quantity > 0)
+  let line: string | null = null
+  if (next > 0) {
+    line = o.nextAdds(cost.next_attendee_display)
+    if (cost.cost_per_attendee_agorot !== null && next < cost.cost_per_attendee_agorot) {
+      line += ` ${o.nextAddsLessThanAverage}`
+    }
+  } else if (unused) {
+    line = o.nextFree(unused.committed_quantity, unused.label)
+  }
+
+  return (
+    <div className="fin-per-person">
+      <div className="fin-per-person-row">
+        <span>{t.perPersonLabel}</span>
+        <strong>{cost.cost_per_attendee_display}</strong>
+      </div>
+      {line && <p className="fin-hint">{line}</p>}
     </div>
   )
 }

@@ -305,6 +305,25 @@
   color: var(--body);
 }
 
+/* בטלפון — רק לתחנה הנוכחית יש שורת פירוט. חמש שורות פירוט דחפו את
+   "מה נשאר לעשות" אל מתחת למסך הראשון (323px לאבני הדרך לבדן), והצעד הבא
+   הוא מה שצריך להיראות. מה שהושלם כבר נאמר בגיבור שמעל. */
+@media (max-width: 699px) {
+  .fin-mile {
+    align-items: center;
+    padding-bottom: 12px;
+  }
+
+  .fin-mile:not(.is-current) .fin-mile-detail {
+    display: none;
+  }
+
+  .fin-mile::before {
+    top: 24px;
+    bottom: 0;
+  }
+}
+
 /* ── 4. מה נשאר לעשות ────────────────────────────────────────────── */
 
 .fin-todo-list {
@@ -393,6 +412,10 @@
   unicode-bidi: isolate;
 }
 
+.fin-cost {
+  gap: 14px;
+}
+
 .fin-cost .fin-paybar {
   margin-top: 4px;
 }
@@ -440,12 +463,51 @@
   unicode-bidi: isolate;
 }
 
-/* חמש הקבוצות הגדולות — שורה לכל אחת, כל השורה לחיצה. */
+/* חמש הקבוצות הגדולות — שורות על רקע העמוד, בלי כרטיס: כרטיס נוסף כאן
+   היה עוד "אריח" בלוח, וזה בדיוק מה שהמסך הזה מנסה לא להיות. */
 .fin-top {
   margin: 0;
   padding: 0;
   list-style: none;
-  overflow: hidden;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+/* כסף שנכנס — אותו עיקרון: שורות, לא כרטיס. */
+.fin-plain {
+  display: flex;
+  flex-direction: column;
+}
+
+.fin-plain .fin-kv {
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+}
+
+.fin-per-person {
+  display: flex;
+  flex-direction: column;
+}
+
+.fin-per-person-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--text-base);
+  color: var(--body);
+}
+
+.fin-per-person-row strong {
+  font-weight: var(--weight-semibold);
+  color: var(--charcoal);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.fin-per-person .fin-hint {
+  margin-top: 2px;
 }
 
 .fin-top li + li {
@@ -459,7 +521,7 @@
   gap: 12px;
   width: 100%;
   min-height: var(--control-h-lg);
-  padding: 12px 16px;
+  padding: 12px 4px;
   border: 0;
   background: none;
   font: inherit;
@@ -611,10 +673,6 @@
   .fin-todo-btn {
     flex: none;
     align-self: center;
-  }
-
-  .fin-top-row {
-    padding: 12px 20px;
   }
 
   .fin-details-body {

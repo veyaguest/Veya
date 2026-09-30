@@ -2,8 +2,9 @@
  * ידע: מאזן האירוע + מתנות באשראי (HELP_CENTER_PLAN.md — שלב 2, חלק 2).
  *
  * עובדות (אומתו ב-2026-09-29):
- * - "מאזן האירוע": שלוש לשוניות — עלות {האירוע}, ספירת מתנות, סיכום {האירוע}
- *   (FinancePage TABS + strings.finance).
+ * - "מאזן האירוע" (מ-2026-09-30): סקירה אחת — מאזן/עלות, אבני דרך, "מה נשאר
+ *   לעשות", כסף שנכנס, כמה האירוע עולה, ופירוט מלא מקופל; ספירת המעטפות
+ *   נפתחת משם כמסך נפרד (FinancePage + strings.finance.overview).
  * - העלות משוערת לפי אישורי ההגעה, עד שמזינים כמה הגיעו בפועל
  *   (strings.finance.estimatedCostNote).
  * - הכרטיס "כמה אורחים הגיעו בפועל?" מופיע **מיום האירוע** (או כשאין תאריך) —
@@ -24,8 +25,8 @@ export const FINANCE_TOPICS: readonly HelpTopic[] = [
     aliases: ['מאזן', 'כספים', 'תקציב', 'הוצאות'],
     scopes: [{ scope: 'finance', weight: 60 }],
     answer: [
-      'שלוש לשוניות: עלות {event}, {ui:finance.countingTitle} וסיכום {event}.',
-      'בעלות רושמים הוצאות ותשלומים; בספירת המתנות — מעטפות ומתנות.',
+      'בראש המסך — כמה האירוע עולה, ואחרי ספירת המתנות גם כמה נשאר לכם.',
+      'מתחת: {ui:finance.overview.todoTitle}, ההוצאות והתשלומים, ופירוט מלא. מיום האירוע נפתחת משם {ui:finance.countingTitle}.',
     ],
     sources: SOURCES,
     verifiedAt: VERIFIED,
@@ -59,11 +60,11 @@ export const FINANCE_TOPICS: readonly HelpTopic[] = [
     variants: [
       {
         when: { fact: 'event.days_to_event', op: '<=', value: 0 },
-        answer: ['בלשונית "עלות {event}", בכרטיס "{ui:finance.attendanceTitle}".'],
+        answer: ['תחת "{ui:finance.overview.todoTitle}", בכרטיס "{ui:finance.attendanceTitle}".'],
       },
       {
         when: { fact: 'event.days_to_event', op: '>', value: 0 },
-        answer: ['מיום האירוע יופיע בלשונית "עלות {event}" כרטיס "{ui:finance.attendanceTitle}".'],
+        answer: ['מיום האירוע יופיע תחת "{ui:finance.overview.todoTitle}" כרטיס "{ui:finance.attendanceTitle}".'],
       },
     ],
     sources: [...SOURCES, '../../backend/app/finance_service.py'],

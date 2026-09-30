@@ -1654,9 +1654,11 @@ export const strings = {
       earlyLabel: 'המאזן',
       earlyTitle: 'עדיין מוקדם לחשב את המאזן',
       earlyBody: 'ככל שיצטברו אישורי הגעה והוצאות, נוכל לתת לכם תמונה מדויקת יותר.',
-      costLabelEstimated: 'האירוע צפוי לעלות',
-      costLabelFinal: 'האירוע עלה',
-      balanceLater: 'כמה יישאר לכם — נדע אחרי ספירת המתנות.',
+      // החלטת בעלים 2026-09-30: לפני ספירת מתנות — העלות בלבד, בלי שום
+      // מספר שעלול להיקרא ככסף שייכנס.
+      costLabelEstimated: 'עלות האירוע כרגע',
+      costLabelFinal: 'עלות האירוע',
+      balanceLater: 'את המאזן הסופי נדע לאחר ספירת המתנות.',
       costBasisConfirmed: (n: number) =>
         n === 1 ? 'לפי אדם אחד שאישר הגעה עד עכשיו.' : `לפי ${n} אנשים שאישרו הגעה עד עכשיו.`,
       costBasisActual: (n: number) => `לפי ${n} שהגיעו בפועל.`,
@@ -1759,6 +1761,13 @@ export const strings = {
       costTitle: 'כמה האירוע עולה',
       addExpense: '+ הוספת הוצאה',
       costWaiting: 'הסכומים יופיעו כאן כשתמלאו אותם.',
+      // עלות ממוצעת לאדם ≠ מה שאדם נוסף מוסיף: הממוצע הוא סך העלות חלקי
+      // המגיעים, כולל הוצאות קבועות. המשפט על האדם הנוסף נשען רק על
+      // ``next_attendee`` — ההפרש המדויק שהשרת מחשב בין שני מצבים.
+      nextAdds: (amount: string) => `אדם נוסף יוסיף לעלות ${amount}.`,
+      nextAddsLessThanAverage: 'הממוצע גבוה יותר כי הוא כולל גם הוצאות קבועות.',
+      nextFree: (committed: number, label: string) =>
+        `אדם נוסף לא יוסיף לעלות כרגע: ${label} משולם עד ${committed} מגיעים.`,
       showAllExpenses: (n: number) =>
         n === 1 ? 'הצגת ההוצאה' : `הצגת כל ההוצאות (${n})`,
       hideAllExpenses: 'הסתרת הפירוט',
