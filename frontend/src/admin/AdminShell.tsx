@@ -20,6 +20,7 @@ const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
       { key: 'calls', label: 'טלפנים', permission: 'calls.operate' },
       { key: 'postponements', label: 'בקשות דחייה', permission: 'postponements.review' },
       { key: 'support', label: 'פניות תמיכה', permission: 'support.view' },
+      { key: 'insights', label: 'תובנות עזרה', permission: 'help.insights' },
     ],
   },
   {

@@ -2034,3 +2034,23 @@ export async function getHelpSupportRequests(): Promise<HelpSupportRequest[]> {
   if (!res.ok) throw await toError(res)
   return res.json()
 }
+
+// ─── מדידת שימוש בעזרה (HELP_CENTER_PLAN.md שלב 8) ───────────────────────────
+
+export interface HelpEventsBatch {
+  session_id: string
+  platform: 'desktop' | 'mobile'
+  kb_version: string
+  events: { name: string; screen: string; props: Record<string, string | number | boolean> }[]
+}
+
+/** אירועי שימוש בעזרה — בלי זהות ובלי טקסט חופשי. ``keepalive`` — ביציאה מהדף. */
+export async function postHelpEvents(batch: HelpEventsBatch, keepalive = false): Promise<void> {
+  const res = await apiFetch('/help/events', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(batch),
+    keepalive,
+  })
+  if (!res.ok) throw await toError(res)
+}

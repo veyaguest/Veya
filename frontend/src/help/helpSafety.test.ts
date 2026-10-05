@@ -82,6 +82,8 @@ function testOnlyReadOnlyApiImports(): void {
       for (const n of names) {
         // שלב 7: הכתיבה היחידה — פנייה לצוות — ורק מקובץ הטופס (נבדק למטה).
         if (n === 'sendHelpSupportRequest' && f === 'ui/TeamRequest.tsx') continue
+        // שלב 8: מדידה בלי זהות — רק מהתור ב-analytics.ts (נבדק ב-helpAnalytics.test.ts).
+        if (n === 'postHelpEvents' && f === 'analytics.ts') continue
         assert(/^getHelp/.test(n) || /^type\s/.test(n) || /^[A-Z]/.test(n), `help/${f}: מייבא "${n}" מ-api.ts — לעזרה מותר רק getHelp…`)
       }
     }

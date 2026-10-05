@@ -1,0 +1,53 @@
+{
+  "_about": "אוצר המילים הסגור של מדידת השימוש בעזרה (HELP_CENTER_PLAN.md §12, שלב 8). 11 שמות בלבד (החלטת המייסד 2026-09-29 + 2026-09-30: 9 השמות + help_feedback + search_no_results). לכל שדה: רשימת ערכים סגורה, kb_id (מזהה מבסיס הידע), bool או int. '?' בסוף = לא חובה. אין אף שדה של טקסט חופשי, ואין מזהה משתמש או אירוע. השרת (help_analytics.py) והדפדפן (help/analyticsSpec.ts) נבדקים שהם זהים לקובץ הזה.",
+  "screens": ["dashboard", "guests", "messages", "rsvp", "hall", "gifts", "finance"],
+  "platforms": ["desktop", "mobile"],
+  "names": {
+    "help_opened": {
+      "entry": ["launcher", "error_hint", "tour_back"],
+      "had_error": "bool",
+      "had_urgent": "bool"
+    },
+    "topic_selected": {
+      "topic_id": "kb_id",
+      "source": ["home", "search", "related", "urgent"]
+    },
+    "article_opened": {
+      "topic_id": "kb_id",
+      "has_action": "bool"
+    },
+    "guided_help_started": {
+      "flow_id": "kb_id"
+    },
+    "guided_help_completed": {
+      "flow_id": "kb_id",
+      "result": ["completed", "abandoned", "target_missing", "error"],
+      "step": "int"
+    },
+    "troubleshooting_started": {
+      "tree_id": "kb_id",
+      "source": ["trouble", "search", "error", "topic_action", "tour_error"]
+    },
+    "troubleshooting_completed": {
+      "tree_id": "kb_id",
+      "outcome_id": "kb_id",
+      "resolution": ["user_fix", "explained", "veya_side", "unknown"]
+    },
+    "help_feedback": {
+      "target": ["topic", "tree"],
+      "id": "kb_id",
+      "value": ["helped", "not_helped"]
+    },
+    "search_no_results": {},
+    "escalation_started": {
+      "from": ["home", "topic", "tree"],
+      "topic_id": "kb_id?",
+      "tree_id": "kb_id?"
+    },
+    "escalation_submitted": {
+      "from": ["home", "topic", "tree"],
+      "topic_id": "kb_id?",
+      "tree_id": "kb_id?"
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { getCookieConsent, setCookieConsent } from '../cookieConsent'
+import { getCookieConsent, needsAnalyticsReconsent, setCookieConsent } from '../cookieConsent'
 import { strings } from '../strings/he'
 
 /**
@@ -19,12 +19,20 @@ const HEIGHT_VAR = '--cookie-banner-height'
 /**
  * באנר הסכמת Cookies — מוצג בביקור ראשון (כל עוד אין העדפה שמורה), עם שלוש
  * אפשרויות ברורות לפי legal/03-cookie-policy.md §3: אישור הכול / דחיית הלא-הכרחיות /
- * הגדרות מותאמות. VEYA לא מפעילה כיום Cookies שאינם הכרחיים בפועל — הבאנר
- * קיים כדי לתעד את הבחירה מראש לקראת כלים עתידיים (ראו cookieConsent.ts),
- * ולתת גישה ברורה למדיניות.
+ * הגדרות מותאמות. השימוש היחיד בסטטיסטיקה כיום הוא מדידה אנונימית של השימוש
+ * בעזרה (ראו cookieConsent.ts).
+ *
+ * מי שאישר סטטיסטיקה כשהבאנר עוד אמר שהיא "לא בשימוש בפועל" רואה פעם אחת
+ * גרסה קצרה של הבאנר שמבקשת בחירה מחדש — רק לגבי הסטטיסטיקה. בדף אישור
+ * ההגעה של המוזמנים לא שואלים: אין שם עזרה, ולכן אין מה למדוד.
  */
+function reconsentHere(): boolean {
+  return needsAnalyticsReconsent() && !/^\/confirm\//.test(window.location.pathname)
+}
+
 export function CookieBanner() {
-  const [dismissed, setDismissed] = useState(() => getCookieConsent() != null)
+  const [reconsent] = useState(reconsentHere)
+  const [dismissed, setDismissed] = useState(() => getCookieConsent() != null && !reconsent)
   const [customizing, setCustomizing] = useState(false)
   const [analyticsChecked, setAnalyticsChecked] = useState(false)
   const bannerRef = useRef<HTMLDivElement>(null)
@@ -95,6 +103,36 @@ export function CookieBanner() {
     setDismissed(true)
   }
 
+  if (reconsent) {
+    return (
+      <div
+        className="cookie-banner"
+        dir="rtl"
+        role="region"
+        aria-label={strings.legal.cookieAriaLabel}
+        ref={bannerRef}
+      >
+        <div className="cookie-banner-inner">
+          <p className="cookie-banner-text">
+            {strings.legal.cookieReconsentBody}
+            <a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">
+              {strings.legal.cookiePolicyLink}
+            </a>
+            .
+          </p>
+          <div className="cookie-banner-actions">
+            <button type="button" className="btn-primary" onClick={acceptAll}>
+              {strings.legal.cookieReconsentAccept}
+            </button>
+            <button type="button" className="btn-ghost" onClick={rejectNonEssential}>
+              {strings.legal.cookieReconsentDecline}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className="cookie-banner"
@@ -139,7 +177,10 @@ export function CookieBanner() {
                   checked={analyticsChecked}
                   onChange={(e) => setAnalyticsChecked(e.target.checked)}
                 />
-                <span>{strings.legal.cookieAnalyticsLabel}</span>
+                <span>
+                  {strings.legal.cookieAnalyticsLabel}
+                  <span className="cookie-banner-hint">{strings.legal.cookieAnalyticsHint}</span>
+                </span>
               </label>
             </div>
             <div className="cookie-banner-actions">

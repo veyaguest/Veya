@@ -911,6 +911,7 @@ function App() {
           online={online}
           account={{ name: user.display_name ?? '', email: user.email ?? '' }}
           canContactTeam={!impersonating}
+          measureUsage={!impersonating}
         />
       )}
     </div>,

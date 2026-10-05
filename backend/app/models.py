@@ -1520,6 +1520,32 @@ class SupportRequest(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
+class HelpEvent(Base):
+    """מדידת שימוש בעזרה — **בלי זהות** (HELP_CENTER_PLAN.md §12, שלב 8).
+
+    אין כאן ``user_id``, אין ``event_id`` ואין שום טקסט חופשי: שם מתוך אוצר
+    מילים סגור (``help_events_spec.json``), שדות עם ערכים סגורים / מזהי בסיס
+    הידע, ו-``session_id`` אקראי שנוצר מחדש בכל פתיחה של העזרה. סוג האירוע
+    והתפקיד (בעלים / בן-בת זוג) נקבעים בשרת. נשמר 180 יום (``help_analytics``).
+    """
+
+    __tablename__ = "help_events"
+    __table_args__ = (
+        Index("ix_help_events_name_created", "name", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[str] = mapped_column(String, default="")
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    props: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    screen: Mapped[str] = mapped_column(String, default="")
+    event_type: Mapped[str] = mapped_column(String, default="")
+    role: Mapped[str] = mapped_column(String, default="")
+    platform: Mapped[str] = mapped_column(String, default="")
+    kb_version: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class AdminAuditLog(Base):
     """יומן פעולות אדמין — **רק** פעולות ניהול משמעותיות, עם לפני/אחרי.
 

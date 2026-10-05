@@ -121,6 +121,7 @@ app.include_router(admin_rsvp.router)
 app.include_router(admin_venues.router)
 app.include_router(admin_commerce.router)
 app.include_router(admin_support.router)
+app.include_router(admin_support.insights_router)
 app.include_router(call_center.router)
 app.include_router(call_ops.router)
 app.include_router(events.router)
@@ -1620,6 +1621,7 @@ _RLS_MIGRATION_FILES = (
     "23_commerce_rls.sql",
     "24_agent_task_access_rls.sql",
     "25_help_rls.sql",
+    "26_help_events_rls.sql",
 )
 
 #: הפונקציות שקובצי 15–17 נשענים עליהן (קבצים 01 ו-08). בלעדיהן

@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import admin_audit, admin_rbac, help_support, models, partners
+from app import admin_audit, admin_rbac, help_analytics, help_support, models, partners
 from app.database import get_db
 
 router = APIRouter(prefix="/admin/support", tags=["admin"])
@@ -148,3 +148,23 @@ def set_status(
         db.commit()
         db.refresh(r)
     return get_request(request_id, db, admin)
+
+
+
+# ─── תובנות עזרה (שלב 8) — ספירות בלבד, בלי זהות ──────────────────────────
+
+insights_router = APIRouter(prefix="/admin/help", tags=["admin"])
+
+
+@insights_router.get("/insights")
+def help_insights(
+    days: int = Query(default=7),
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(admin_rbac.require("help.insights")),
+) -> dict:
+    if days not in (7, 30):
+        raise HTTPException(status_code=422, detail="אפשר 7 או 30 ימים")
+    # מחיקת אירועים ישנים מ-180 יום — כאן, בזהות אדמין (RLS), לכל היותר פעם בשעה.
+    help_analytics.purge_old(db)
+    db.commit()
+    return help_analytics.insights(db, days)

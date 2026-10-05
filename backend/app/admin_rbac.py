@@ -64,6 +64,7 @@ PERMISSIONS: dict[str, str] = {
     "postponements.review": ADMIN,
     "support.view": SUPPORT,          # פניות לצוות מתוך "עזרה" (שלב 7)
     "support.handle": SUPPORT,        # שינוי סטטוס פנייה
+    "help.insights": ADMIN,           # "תובנות עזרה" — מדידת שימוש בלי זהות (שלב 8)
     "audit.view": ADMIN,
     # שליטה ב-VEYA
     "settings.view": SUPPORT,

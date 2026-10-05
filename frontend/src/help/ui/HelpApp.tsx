@@ -43,6 +43,8 @@ import {
 import type { ResolvedAction } from '../engine/topics'
 import { clientFacts, serverFacts } from './facts'
 import TourRunner from './TourRunner'
+import { setHelpAnalyticsContext, setHelpAnalyticsEnabled, startHelpSession, track, trackOnce } from '../analytics'
+import type { HelpEventName, HelpEventProps } from '../analyticsSpec'
 import { MyRequests, TeamEntry, TeamForm } from './TeamRequest'
 import './help.css'
 
@@ -59,6 +61,8 @@ export interface HelpAppProps {
   account: { name: string; email: string }
   /** אפשר לפנות לצוות (לא בכניסה לתמיכה). */
   canContactTeam: boolean
+  /** מדידת שימוש (שלב 8) — לא בכניסה לתמיכה. בלי זהות, ורק באישור המשתמש. */
+  measureUsage: boolean
 }
 
 type View =
@@ -66,7 +70,7 @@ type View =
   | { kind: 'topic'; id: string }
   | { kind: 'trouble' }
   | { kind: 'tree'; id: string; errorAt?: number }
-  | { kind: 'team'; topicId?: string; treeId?: string; outcome?: string }
+  | { kind: 'team'; from: 'home' | 'topic' | 'tree'; topicId?: string; treeId?: string; outcome?: string }
 
 const t = strings.help
 const CONTEXT_TTL_MS = 60_000
@@ -80,7 +84,9 @@ function useScopes() {
   return scopes
 }
 
-export default function HelpApp({ open, page, screenTitle, goTo, event, online, account, canContactTeam }: HelpAppProps) {
+export default function HelpApp({
+  open, page, screenTitle, goTo, event, online, account, canContactTeam, measureUsage,
+}: HelpAppProps) {
   const isNarrow = useMediaQuery('(max-width: 820px)')
   const scopes = useScopes()
   const [stack, setStack] = useState<View[]>([{ kind: 'home' }])
@@ -92,10 +98,16 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online, 
   // שמירה מוצלחת גם הופכת את עובדות השרת ל"ישנות" (למשל נבחר נוסח להזמנה) —
   // הן נטענות מחדש בפתיחה הבאה, או מיד אם העזרה פתוחה (נמצא בשלב 6).
   const [apiTick, setApiTick] = useState(0)
+  // ── מדידת שימוש (שלב 8): בלי זהות, בלי טקסט חופשי, רק באישור ──
+  useEffect(() => setHelpAnalyticsEnabled(measureUsage), [measureUsage])
+  useEffect(() => setHelpAnalyticsContext(page, isNarrow ? 'mobile' : 'desktop'), [page, isNarrow])
+  const entryRef = useRef<'launcher' | 'error_hint' | 'tour_back'>('launcher')
   const staleRef = useRef(false)
   useEffect(
     () =>
       onApiEvent((e) => {
+        // הקריאות של העזרה עצמה (context, מדידה, פניות) לא "משנות" את האירוע.
+        if (e.path.startsWith('/help/')) return
         if (e.ok) staleRef.current = true
         setApiTick((n) => n + 1)
       }),
@@ -177,15 +189,26 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online, 
   useEffect(() => {
     if (!open) return
     const req = takeHelpRequest()
-    if (req) setStack([{ kind: 'home' }, { kind: 'tree', id: req.tree, errorAt: req.errorAt }])
+    if (req) {
+      entryRef.current = 'error_hint'
+      setStack([{ kind: 'home' }, { kind: 'tree', id: req.tree, errorAt: req.errorAt }])
+    }
   }, [open, requestVersion])
 
   const push = (v: View) => setStack((s) => [...s, v])
+  const openTopic = (id: string, source: 'home' | 'search' | 'related' | 'urgent') => {
+    track('topic_selected', { topic_id: id, source })
+    push({ kind: 'topic', id })
+  }
+  const openTree = (id: string, source: 'trouble' | 'search' | 'error' | 'topic_action', errorAt?: number) => {
+    track('troubleshooting_started', { tree_id: id, source })
+    push({ kind: 'tree', id, errorAt })
+  }
   const back = () => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s))
 
   // ── פעולות: אף אחת מהן לא משנה נתונים ──
   function runAction(a: HelpAction) {
-    if (a.kind === 'diagnose') return push({ kind: 'tree', id: a.tree })
+    if (a.kind === 'diagnose') return openTree(a.tree, 'topic_action')
     if (a.kind === 'tour') {
       setTour(a.flow)
       closeHelp()
@@ -253,9 +276,11 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online, 
   const onTourBack = useCallback(() => {
     setTour(null)
     void loadContext(true)
+    entryRef.current = 'tour_back'
     openHelp()
   }, [loadContext])
   const onTourTree = useCallback((treeId: string) => {
+    track('troubleshooting_started', { tree_id: treeId, source: 'tour_error' })
     setTour(null)
     setStack([{ kind: 'home' }, { kind: 'tree', id: treeId }])
     openHelp()
@@ -280,8 +305,42 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online, 
   const daysToEvent = text.facts['event.days_to_event']
   const teamProminent = typeof daysToEvent === 'number' && daysToEvent >= 0 && daysToEvent <= 2
   const openTeam = canContactTeam
-    ? (from: { topicId?: string; treeId?: string; outcome?: string } = {}) => push({ kind: 'team', ...from })
+    ? (ctx: { topicId?: string; treeId?: string; outcome?: string } = {}) => {
+        const from = ctx.treeId ? 'tree' : ctx.topicId ? 'topic' : 'home'
+        track('escalation_started', { from, topic_id: ctx.topicId, tree_id: ctx.treeId })
+        push({ kind: 'team', from, ...ctx })
+      }
     : undefined
+
+  // פתיחה של העזרה = סשן מדידה חדש (מזהה אקראי). נרשם אחרי ה"בקשה" משגיאה.
+  // רק במעבר אמיתי מסגור לפתוח (לא כשהקומפוננטה נבנית שוב).
+  const wasOpenRef = useRef(false)
+  useEffect(() => {
+    if (!open) {
+      wasOpenRef.current = false
+      return
+    }
+    if (wasOpenRef.current) return
+    wasOpenRef.current = true
+    startHelpSession()
+    track('help_opened', { entry: entryRef.current, had_error: latestError !== null, had_urgent: !!home.urgent })
+    entryRef.current = 'launcher'
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  // חיפוש בלי תוצאות — רק "היה כזה" והמסך. **הטקסט עצמו לא נשלח לעולם.**
+  const noResultsFor = useRef('')
+  useEffect(() => {
+    if (!searchResults || searchResults.length > 0) return
+    const q = query.trim()
+    if (q === noResultsFor.current) return
+    const id = window.setTimeout(() => {
+      noResultsFor.current = q
+      track('search_no_results')
+    }, 1200)
+    return () => window.clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchResults])
 
   function teamContext(v: Extract<View, { kind: 'team' }>): Omit<HelpSupportRequestBody, 'message'> {
     return {
@@ -292,7 +351,7 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online, 
       tour_flow: null,
       // השגיאות שעוד "פתוחות" — כבר אחרי ניקוי (errorBus), ורק בפורמט שהשרת מקבל.
       recent_errors: openErrors()
-        .filter((e) => SAFE_ERROR_PATH.test(e.path) && SAFE_METHODS.includes(e.method))
+        .filter((e) => !e.path.startsWith('/help/') && SAFE_ERROR_PATH.test(e.path) && SAFE_METHODS.includes(e.method))
         .slice(-5)
         .map((e) => ({ method: e.method, path: e.path, status: e.status, ...(e.message ? { message: e.message } : {}) })),
       platform: isNarrow ? 'mobile' : 'desktop',
@@ -377,9 +436,9 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online, 
                   home={home}
                   errorTree={errorTree}
                   text={text}
-                  onTopic={(id) => push({ kind: 'topic', id })}
-                  onTree={(id) => push({ kind: 'tree', id })}
-                  onErrorTree={(id) => push({ kind: 'tree', id, errorAt: latestError?.at })}
+                  onTopic={openTopic}
+                  onTree={(id) => openTree(id, 'search')}
+                  onErrorTree={(id) => openTree(id, 'error', latestError?.at)}
                   onTrouble={() => push({ kind: 'trouble' })}
                   onTeam={openTeam ? () => openTeam() : undefined}
                   teamProminent={teamProminent}
@@ -394,7 +453,7 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online, 
                   mockMode={mockMode}
                   actionLabel={actionLabel}
                   onAction={runAction}
-                  onTopic={(id) => push({ kind: 'topic', id })}
+                  onTopic={(id) => openTopic(id, 'related')}
                   onTrouble={() => push({ kind: 'trouble' })}
                   onNotHelped={(id) => setNotHelped((s) => new Set(s).add(id))}
                   onTeam={openTeam ? () => openTeam({ topicId: view.id }) : undefined}
@@ -409,7 +468,7 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online, 
                   <ul className="help-list">
                     {troubleTrees.map((tr) => (
                       <li key={tr.id}>
-                        <button type="button" className="help-item" onClick={() => push({ kind: 'tree', id: tr.id })}>
+                        <button type="button" className="help-item" onClick={() => openTree(tr.id, 'trouble')}>
                           {renderText(tr.symptom, text)}
                         </button>
                       </li>
@@ -441,7 +500,10 @@ export default function HelpApp({ open, page, screenTitle, goTo, event, online, 
                   account={account}
                   checked={teamChecked(view)}
                   context={teamContext(view)}
-                  onSent={(r) => setMyRequests((list) => [r, ...list])}
+                  onSent={(r) => {
+                    track('escalation_submitted', { from: view.from, topic_id: view.topicId, tree_id: view.treeId })
+                    setMyRequests((list) => [r, ...list])
+                  }}
                 />
               )}
             </div>
@@ -463,7 +525,7 @@ function HomeView({
   home: ReturnType<typeof rankTopics>
   errorTree: DiagnosticTree | null
   text: TextContext
-  onTopic: (id: string) => void
+  onTopic: (id: string, source: 'home' | 'search' | 'urgent') => void
   onTree: (id: string) => void
   onErrorTree: (id: string) => void
   onTrouble: () => void
@@ -501,7 +563,7 @@ function HomeView({
                 <button
                   type="button"
                   className="help-item"
-                  onClick={() => (id.startsWith('t:') ? onTopic(id.slice(2)) : onTree(id.slice(2)))}
+                  onClick={() => (id.startsWith('t:') ? onTopic(id.slice(2), 'search') : onTree(id.slice(2)))}
                 >
                   {titleOf(id)}
                 </button>
@@ -521,7 +583,7 @@ function HomeView({
             </div>
           )}
           {home.urgent && (
-            <button type="button" className="help-card help-card-urgent" onClick={() => onTopic(home.urgent!.topic.id)}>
+            <button type="button" className="help-card help-card-urgent" onClick={() => onTopic(home.urgent!.topic.id, 'urgent')}>
               <span className="help-card-kicker">{t.urgentLabel}</span>
               <span className="help-card-title">{home.urgent.title}</span>
             </button>
@@ -530,7 +592,7 @@ function HomeView({
           <ul className="help-list">
             {home.topics.map((r) => (
               <li key={r.topic.id}>
-                <button type="button" className="help-item" onClick={() => onTopic(r.topic.id)}>
+                <button type="button" className="help-item" onClick={() => onTopic(r.topic.id, 'home')}>
                   {r.title}
                 </button>
               </li>
@@ -566,12 +628,16 @@ function TopicView({
   const [feedback, setFeedback] = useState<'none' | 'yes' | 'no'>('none')
   const r = resolveTopic(topic, ctx)
   if (!r) return <p className="help-muted">{t.searchEmpty}</p>
+  const article = (
+    <TrackOnce onceKey={`article:${topic.id}`} name="article_opened" props={{ topic_id: topic.id, has_action: !!r.primary }} />
+  )
   const related = (topic.related ?? [])
     .map((id) => TOPICS.find((x) => x.id === id))
     .map((x) => (x ? resolveTopic(x, ctx) : null))
     .filter((x): x is NonNullable<typeof x> => x !== null)
   return (
     <div className="help-section">
+      {article}
       <h3 className="help-h3">{r.title}</h3>
       {r.answer.map((line, i) => (
         <p key={i} className="help-answer">{line}</p>
@@ -600,9 +666,13 @@ function TopicView({
 
       <Feedback
         state={feedback}
-        onYes={() => setFeedback('yes')}
+        onYes={() => {
+          setFeedback('yes')
+          track('help_feedback', { target: 'topic', id: topic.id, value: 'helped' })
+        }}
         onNo={() => {
           setFeedback('no')
+          track('help_feedback', { target: 'topic', id: topic.id, value: 'not_helped' })
           onNotHelped(topic.id)
         }}
       />
@@ -628,6 +698,15 @@ function TopicView({
       )}
     </div>
   )
+}
+
+/** רושם אירוע מדידה כשהוא מופיע — לכל היותר פעם אחת בסשן לכל ``onceKey``. */
+function TrackOnce({ onceKey, name, props }: { onceKey: string; name: HelpEventName; props: HelpEventProps }) {
+  useEffect(() => {
+    trackOnce(onceKey, name, props)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onceKey])
+  return null
 }
 
 function Feedback({ state, onYes, onNo }: { state: 'none' | 'yes' | 'no'; onYes: () => void; onNo: () => void }) {
@@ -748,6 +827,11 @@ function TreeView({
 
       {step.kind === 'outcome' && (
         <>
+          <TrackOnce
+            onceKey={`outcome:${tree.id}:${step.node}`}
+            name="troubleshooting_completed"
+            props={{ tree_id: tree.id, outcome_id: step.node, resolution: step.def.resolution }}
+          />
           {step.def.text.map((line, i) => {
             const r = renderText(line, ctx)
             return r ? <p key={i} className="help-answer">{r}</p> : null
@@ -764,7 +848,17 @@ function TreeView({
           {step.def.offerTeam && onTeam && (
             <TeamEntry prominent={teamProminent} onClick={() => onTeam(step.node)} />
           )}
-          <Feedback state={feedback} onYes={() => setFeedback('yes')} onNo={() => setFeedback('no')} />
+          <Feedback
+            state={feedback}
+            onYes={() => {
+              setFeedback('yes')
+              track('help_feedback', { target: 'tree', id: tree.id, value: 'helped' })
+            }}
+            onNo={() => {
+              setFeedback('no')
+              track('help_feedback', { target: 'tree', id: tree.id, value: 'not_helped' })
+            }}
+          />
           {feedback === 'no' && (
             <>
               <button type="button" className="help-item help-item-quiet" onClick={onHome}>

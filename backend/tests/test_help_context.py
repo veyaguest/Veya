@@ -423,9 +423,11 @@ def test_only_get_methods_exist() -> None:
     help_routes = [r for r in app.routes if getattr(r, "path", "").startswith("/help")]
     # שלב 7 הוסיף בדיוק שני נתיבים של פנייה לצוות (tests/test_help_requests.py):
     # כתיבה אחת — רק כשהמשתמש לוחץ "שליחה לצוות" — וקריאה של "הפניות שלי".
-    support = {("/help/requests", frozenset({"POST"})), ("/help/requests/mine", frozenset({"GET"}))}
+    # ושלב 8 — מדידת שימוש בלי זהות (tests/test_help_events.py).
+    support = {("/help/requests", frozenset({"POST"})), ("/help/requests/mine", frozenset({"GET"})),
+               ("/help/events", frozenset({"POST"}))}
     context_routes = [r for r in app.routes if getattr(r, "path", "").startswith("/help")
-                      and not r.path.startswith("/help/requests")]
+                      and not r.path.startswith(("/help/requests", "/help/events"))]
     assert {(r.path, frozenset(r.methods)) for r in help_routes} - {(r.path, frozenset(r.methods)) for r in context_routes} == support
     assert len(context_routes) == 3, [r.path for r in context_routes]
     for r in context_routes:

@@ -21,6 +21,11 @@
   תווים + תמונת מצב בפורמט קבוע. 5 בשעה למשתמש. **חסום בכניסה לתמיכה**
   (צוות לא פונה לצוות בשם הלקוח).
 - ``GET /help/requests/mine`` — הפניות שלי באירוע הזה והסטטוס שלהן.
+
+ונתיב אחד של מדידת שימוש (שלב 8, ``help_analytics.py``):
+
+- ``POST /help/events`` — עד 50 אירועים מאוצר מילים סגור, **בלי זהות ובלי
+  טקסט חופשי**. בכניסה לתמיכה לא נשמר כלום (לא סופרים צוות כמשתמש).
 """
 from __future__ import annotations
 
@@ -32,7 +37,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import features, help_context, help_support, models, partners
+from app import features, help_analytics, help_context, help_support, models, partners
 from app.auth import get_current_user, token_impersonator_id
 from app.database import get_db
 from app.deps import EventAccess
@@ -212,3 +217,56 @@ def my_support_requests(
         .limit(20)
     ).all()
     return [SupportRequestRead(id=r.id, status=r.status, created_at=r.created_at) for r in rows]
+
+
+# ─── מדידת שימוש בעזרה (שלב 8) ──────────────────────────────────────────────
+
+events_limiter = RateLimiter(
+    max_hits=30, window=60, message="יותר מדי בקשות. אפשר לנסות שוב בעוד רגע.",
+)
+
+
+class HelpEventIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(max_length=40)
+    screen: str = Field(max_length=20)
+    props: dict = Field(default_factory=dict)
+
+
+class HelpEventsBatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    session_id: str = Field(pattern=r"^[0-9a-f]{32}$")
+    platform: Literal["desktop", "mobile"]
+    kb_version: str = Field(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+    events: list[HelpEventIn] = Field(min_length=1, max_length=50)
+
+
+@router.post("/events", status_code=204)
+def post_help_events(
+    payload: HelpEventsBatch,
+    event: models.Event = Depends(_help_event),
+    user: models.User = Depends(get_current_user),
+    impersonator: Optional[int] = Depends(token_impersonator_id),
+    db: Session = Depends(get_db),
+) -> Response:
+    # צוות בכניסה לתמיכה — לא נספר כמשתמש. מחזירים 204 בשקט (בלי לשמור).
+    if impersonator is not None:
+        return Response(status_code=204)
+    key = f"user:{user.id}"
+    events_limiter.check(key)
+    events_limiter.record_fail(key)
+    for e in payload.events:
+        if e.screen not in help_analytics.SCREENS:
+            raise HTTPException(status_code=422, detail="מסך לא מוכר")
+        problem = help_analytics.validate_event(e.name, e.props)
+        if problem:
+            raise HTTPException(status_code=422, detail=problem)
+    role = "owner" if event.owner_id == user.id else "partner"
+    for e in payload.events:
+        db.add(models.HelpEvent(
+            session_id=help_analytics.session_key(payload.session_id), name=e.name, props=e.props or None,
+            screen=e.screen, event_type=event.event_type, role=role,
+            platform=payload.platform, kb_version=payload.kb_version,
+        ))
+    db.commit()
+    return Response(status_code=204)

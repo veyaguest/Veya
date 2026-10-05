@@ -676,6 +676,12 @@ textarea {
 .cookie-banner-custom-row .auth-consent-row {
   color: #cfc8b8;
 }
+/* הסבר קצר מתחת ל"סטטיסטיקה ושיפור" — על מה בדיוק מסכימים. */
+.cookie-banner-hint {
+  display: block;
+  font-size: 12px;
+  color: #a89f8c;
+}
 
 .page-title {
   position: relative;

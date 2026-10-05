@@ -209,3 +209,19 @@ export const fetchSupportRequest = (id: number) =>
 
 export const setSupportStatus = (id: number, status: SupportStatus) =>
   sendJson<SupportRequestDetail>(`/admin/support/requests/${id}/status`, 'POST', { status })
+
+// ── תובנות עזרה (שלב 8) — ספירות בלבד, בלי זהות ────────────────────────
+export interface HelpInsights {
+  days: 7 | 30
+  sessions: number
+  events: number
+  opened_by_screen: { screen: string; count: number }[]
+  entries: { entry: string; count: number }[]
+  topics: ({ topic_id: string } & Record<string, number | string>)[]
+  tours: ({ flow_id: string } & Record<string, number | string>)[]
+  trees: ({ tree_id: string } & Record<string, number | string>)[]
+  no_results: { screen: string; count: number }[]
+  escalations: { started: number; submitted: number }
+}
+
+export const fetchHelpInsights = (days: 7 | 30) => getJson<HelpInsights>(`/admin/help/insights?days=${days}`)

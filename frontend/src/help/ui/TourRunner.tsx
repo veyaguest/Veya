@@ -13,6 +13,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { CSSProperties } from 'react'
 import { strings } from '../../strings/he'
 import { onApiEvent } from '../errorBus'
+import { track } from '../analytics'
 import { activeScopes, subscribeScopes } from '../scopes'
 import { holds } from '../engine/conditions'
 import { renderText } from '../engine/text'
@@ -79,6 +80,34 @@ export default function TourRunner({ flow, facts, text, mockMode, onStart, onExi
     },
     [flow, facts],
   )
+
+  // מדידה (שלב 8): התחלה, ואיך נגמרה — פעם אחת בלבד, עם הצעד האחרון שהגיעו אליו.
+  const reportedRef = useRef(false)
+  const lastStepRef = useRef(0)
+  const report = useCallback(
+    (result: 'completed' | 'abandoned' | 'target_missing' | 'error') => {
+      if (reportedRef.current) return
+      reportedRef.current = true
+      track('guided_help_completed', { flow_id: flow.id, result, step: Math.min(lastStepRef.current, 50) })
+    },
+    [flow.id],
+  )
+  const startedRef = useRef(false)
+  useEffect(() => {
+    if (startedRef.current) return
+    startedRef.current = true
+    track('guided_help_started', { flow_id: flow.id })
+  }, [flow.id])
+  // "נעצרה" — רק כשהמשתמש יצא בעצמו (כפתור / Escape), לא כשהרכיב נבנה מחדש.
+  const exitAbandoned = useCallback(() => {
+    report('abandoned')
+    onExit('abandoned')
+  }, [report, onExit])
+  useEffect(() => {
+    if (!phase) return
+    if (phase.kind === 'running') lastStepRef.current = phase.index
+    else report(phase.kind === 'done' ? 'completed' : phase.kind === 'notfound' ? 'target_missing' : 'error')
+  }, [phase, report])
 
   // כל עוד ההדרכה רצה — יעדים שמופיעים רק ב-hover גלויים (help.css).
   useEffect(() => {
@@ -243,11 +272,13 @@ export default function TourRunner({ flow, facts, text, mockMode, onStart, onExi
   // Escape — יציאה מההדרכה.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onExit(phaseRef.current?.kind === 'done' ? 'completed' : 'abandoned')
+      if (e.key !== 'Escape') return
+      if (phaseRef.current?.kind === 'done') onExit('completed')
+      else exitAbandoned()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onExit])
+  }, [onExit, exitAbandoned])
 
   if (!phase) return null
   const stepText = step ? renderText(step.text, text) : null
@@ -280,7 +311,7 @@ export default function TourRunner({ flow, facts, text, mockMode, onStart, onExi
                 {t.tourNext}
               </button>
             )}
-            <button type="button" className="btn-text help-btn-sm" onClick={() => onExit('abandoned')}>
+            <button type="button" className="btn-text help-btn-sm" onClick={exitAbandoned}>
               {t.tourExit}
             </button>
           </div>
