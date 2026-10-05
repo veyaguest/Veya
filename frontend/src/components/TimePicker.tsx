@@ -12,7 +12,8 @@ interface TimePickerProps {
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
-const MINUTES = Array.from({ length: 60 }, (_, i) => i)
+// קפיצות של חצי שעה בלבד — 00 ו-30 (החלטת מוצר: אין צורך בדיוק של דקה בודדת לשעות אירוע).
+const MINUTES = [0, 30]
 
 function pad(n: number): string {
   return String(n).padStart(2, '0')
