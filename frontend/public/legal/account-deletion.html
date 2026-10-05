@@ -16,13 +16,14 @@
     max-width: 780px; margin: 0 auto; padding: 22px 0 10px;
     display: flex; align-items: center; justify-content: space-between;
   }
-  .legal-topbar a { color: #9a7b1f; text-decoration: none; font-weight: 600; font-size: 14.5px; }
+  /* #896e29 (= --gold-deep באפליקציה): ‎#9a7b1f הקודם היה מתחת ל-4.5:1 על לבן. */
+  .legal-topbar a { color: #896e29; text-decoration: none; font-weight: 600; font-size: 14.5px; }
   .legal-doc { max-width: 780px; margin: 0 auto; background: #fff; border: 1px solid #ece4d3;
     border-radius: 14px; padding: 40px clamp(20px, 5vw, 56px); }
   .legal-doc h1 { font-size: 1.7rem; margin-top: 0; }
   .legal-doc h2 { font-size: 1.28rem; margin-top: 2.1em; border-top: 1px solid #f0e9da; padding-top: 1em; }
   .legal-doc h3 { font-size: 1.08rem; margin-top: 1.6em; }
-  .legal-doc a { color: #9a7b1f; }
+  .legal-doc a { color: #896e29; }
   .legal-doc table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: 0.95em; }
   .legal-doc th, .legal-doc td { border: 1px solid #ece4d3; padding: 8px 10px; text-align: right; vertical-align: top; }
   .legal-doc th { background: #f7f2e8; }
@@ -36,16 +37,19 @@
     .legal-doc th { background: #241f18; }
     .legal-doc code { background: #241f18; }
     .legal-doc hr { border-top-color: #322c22; }
+    /* זהב כהה על רקע כהה היה 4.3:1 (axe) — במצב כהה זהב בהיר. */
+    .legal-topbar a, .legal-doc a { color: #d9bc68; }
   }
 </style>
 </head>
 <body>
-  <div class="legal-topbar">
-    <a href="/">← חזרה ל-VEYA</a>
+  <nav class="legal-topbar" aria-label="ניווט באתר">
+    <a href="/"><span aria-hidden="true">→</span> חזרה ל-VEYA</a>
     <a href="/app">כניסה למערכת</a>
-  </div>
-  <article class="legal-doc">
-    <h1>מדיניות מחיקת חשבון</h1>
+  </nav>
+  <main>
+    <article class="legal-doc">
+      <h1>מדיניות מחיקת חשבון</h1>
 <p><strong>עדכון אחרון: [להשלמה: תאריך כניסה לתוקף]</strong></p>
 <p>מסמך זה מפרט כיצד לבקש מחיקת חשבון VEYA, אילו נתונים נמחקים, אילו
 נתונים נשמרים (ולמה), ותוך כמה זמן המחיקה מתבצעת בפועל. מסמך זה משלים
@@ -127,6 +131,7 @@
 <a href="/legal/security.html">מדיניות אבטחת מידע</a> ·
 <a href="10-data-processing-addendum.md">נספח עיבוד נתונים</a></p>
 
-  </article>
+    </article>
+  </main>
 </body>
 </html>
