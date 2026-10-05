@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { searchVenues } from '../api'
 import type { VenueSuggestion } from '../types'
 
@@ -14,12 +14,16 @@ export function VenueAutocomplete({
   onChange,
   onPick,
   placeholder = 'שם האולם',
+  id,
 }: {
   value: string
   onChange: (name: string) => void
   onPick: (name: string, address: string) => void
   placeholder?: string
+  /** לחיבור ``<label htmlFor>`` גלוי מבחוץ. */
+  id?: string
 }) {
+  const listId = useId()
   const [suggestions, setSuggestions] = useState<VenueSuggestion[]>([])
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1)
@@ -86,26 +90,39 @@ export function VenueAutocomplete({
       e.preventDefault()
       choose(suggestions[active])
     } else if (e.key === 'Escape') {
+      // preventDefault: Escape סוגר את הרשימה בלבד — לא את החלון שסביבה.
+      e.preventDefault()
       setOpen(false)
     }
   }
 
   return (
     <div className="venue-ac" ref={boxRef}>
+      {/* combobox: קורא מסך מודיע שיש הצעות, ומקריא את ההצעה המסומנת
+          בחיצים (aria-activedescendant) בלי שהפוקוס עוזב את השדה. */}
       <input
         type="text"
+        id={id}
         value={value}
         placeholder={placeholder}
         autoComplete="off"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={open && suggestions.length > 0}
+        aria-controls={listId}
+        aria-activedescendant={open && active >= 0 ? `${listId}-${active}` : undefined}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => suggestions.length > 0 && setOpen(true)}
         onKeyDown={onKeyDown}
       />
       {open && suggestions.length > 0 && (
-        <ul className="venue-ac-list">
+        <ul className="venue-ac-list" id={listId} role="listbox">
           {suggestions.map((s, i) => (
             <li
               key={`${s.name}-${i}`}
+              id={`${listId}-${i}`}
+              role="option"
+              aria-selected={i === active}
               className={`venue-ac-item ${i === active ? 'active' : ''}`}
               onMouseDown={(e) => {
                 e.preventDefault()

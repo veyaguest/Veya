@@ -44,6 +44,7 @@ import { GiftEditDialog } from './GiftEditDialog'
 import { downloadWorkbook, type Cell } from '../lib/xlsx'
 import './FinancePage.css'
 import { useHelpScope } from '../help/useHelpScope'
+import { announce } from '../lib/announce'
 
 const t = strings.finance
 const o = t.overview
@@ -202,6 +203,8 @@ export function FinancePage({
   const flashToast = useCallback((title: string, detail?: string) => {
     window.clearTimeout(toastTimer.current)
     setToast({ title, detail })
+    // הטוסט נולד מלא, ולכן קורא מסך לא מכריז עליו לבד (lib/announce).
+    announce(detail ? `${title}. ${detail}` : title)
     toastTimer.current = window.setTimeout(() => setToast(null), 4000)
   }, [])
   useEffect(() => () => window.clearTimeout(toastTimer.current), [])
@@ -620,7 +623,7 @@ export function FinancePage({
 
       {/* אישור אחרי שמירה — לא משאירים ספק אם זה נשמר. */}
       {toast && (
-        <div className="toast fin-toast" role="status">
+        <div className="toast fin-toast" aria-hidden="true">
           <span className="fin-toast-check" aria-hidden="true">✓</span>
           <span className="toast-text">
             {toast.title}

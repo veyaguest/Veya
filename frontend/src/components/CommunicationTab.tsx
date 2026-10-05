@@ -578,10 +578,10 @@ function MessagePanel({
       {/* במסך רחב התצוגה פשוט נמצאת שם, בגובה מלא — ולכן אין בה צורך בכפתור.
           במובייל אין מקום לזה לצד הכרטיס, ושם היא נפתחת מהכפתור. */}
       {wide && (
-        <aside className="gm2-side">
+        <div className="gm2-side">
           <PhonePreview message={message} event={event} waConnected={waConnected} />
           <p className="gm2-side-cap">{t.previewCaption(activeEventTerms().guestsLabel)}</p>
-        </aside>
+        </div>
       )}
 
       {/* מוגש ישירות ל-body: אב עם transform (כמו .wiz-panel של אשף

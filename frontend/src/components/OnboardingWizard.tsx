@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { createMyEvent, invitePartner, updateEvent } from '../api'
 import { setActiveEventType, setEventId } from '../authStore'
 import type { EventSummary, EventType } from '../types'
@@ -159,11 +159,12 @@ export function OnboardingWizard({ onCreated }: Props) {
     if (event) onCreated(event, next)
   }
 
+  const venueFieldId = useId()
   const STEPS = stepsFor(terms.hasTwoHosts)
   const stepIndex = STEPS.findIndex((s) => s.key === step)
 
   return (
-    <div className="onboard-wrap" dir="rtl">
+    <main className="onboard-wrap" dir="rtl">
       <div className="onboard-card">
         <div className="onboard-logo">
           <img className="onboard-logo-img" src="/logo.png" alt="VEYA" width={152} height={133} />
@@ -178,8 +179,15 @@ export function OnboardingWizard({ onCreated }: Props) {
           {STEPS.map((s, i) => {
             const state = step === s.key ? 'current' : stepIndex > i ? 'done' : 'todo'
             return (
-              <li key={s.key} className={`onboard-step-pill ${state}`}>
-                <span className="wizard-num">{state === 'done' ? '✓' : i + 1}</span>
+              <li
+                key={s.key}
+                className={`onboard-step-pill ${state}`}
+                aria-current={state === 'current' ? 'step' : undefined}
+              >
+                <span className="wizard-num" aria-hidden={state === 'done' ? true : undefined}>
+                  {state === 'done' ? '✓' : i + 1}
+                </span>
+                {state === 'done' && <span className="sr-only">{strings.onboarding.stepDone}</span>}
                 <span className="wizard-step-text">
                   <span className="wizard-step-label">{s.label}</span>
                   <span className="wizard-step-desc">{s.desc}</span>
@@ -214,23 +222,31 @@ export function OnboardingWizard({ onCreated }: Props) {
 
             <p className="onboard-required-note">{strings.onboarding.requiredNote}</p>
 
+            {/* תווית גלויה מעל כל שדה: placeholder נעלם ברגע שמקלידים. */}
             <div className="event-fields">
-              <input
-                placeholder={terms.hostAField}
-                aria-label={terms.hostAField}
-                value={form.groom_name}
-                onChange={(e) => setForm({ ...form, groom_name: e.target.value })}
-              />
-              {terms.hasTwoHosts && (
+              <label className="field-group">
+                <span className="field-label">{terms.hostAField}</span>
                 <input
-                  placeholder={terms.hostBField}
-                  aria-label={terms.hostBField}
-                  value={form.bride_name}
-                  onChange={(e) => setForm({ ...form, bride_name: e.target.value })}
+                  value={form.groom_name}
+                  onChange={(e) => setForm({ ...form, groom_name: e.target.value })}
                 />
+              </label>
+              {terms.hasTwoHosts && (
+                <label className="field-group">
+                  <span className="field-label">{terms.hostBField}</span>
+                  <input
+                    value={form.bride_name}
+                    onChange={(e) => setForm({ ...form, bride_name: e.target.value })}
+                  />
+                </label>
               )}
-              <VenueAutocomplete
-                value={form.venue_name}
+              <div className="field-group">
+                <label className="field-label" htmlFor={venueFieldId}>
+                  {strings.dashboard.venueLabel}
+                </label>
+                <VenueAutocomplete
+                  id={venueFieldId}
+                  value={form.venue_name}
                 onChange={(name) => setForm({ ...form, venue_name: name })}
                 onPick={(name, address) =>
                   setForm((f) => ({
@@ -239,14 +255,17 @@ export function OnboardingWizard({ onCreated }: Props) {
                     venue_address: f.venue_address.trim() ? f.venue_address : address,
                   }))
                 }
-                placeholder="שם האולם"
-              />
-              <input
-                placeholder="כתובת האולם (לניווט בהודעות)"
-                aria-label="כתובת האולם"
-                value={form.venue_address}
-                onChange={(e) => setForm({ ...form, venue_address: e.target.value })}
-              />
+                  placeholder=""
+                />
+              </div>
+              <label className="field-group">
+                <span className="field-label">{strings.dashboard.venueAddressLabel}</span>
+                <input
+                  placeholder={strings.dashboard.venueAddressHint}
+                  value={form.venue_address}
+                  onChange={(e) => setForm({ ...form, venue_address: e.target.value })}
+                />
+              </label>
             </div>
 
             <div className="event-datetime">
@@ -270,10 +289,14 @@ export function OnboardingWizard({ onCreated }: Props) {
             </div>
 
             <div className="commit-field">
-              <span className="field-label">מועד סגירת הרשימה</span>
-              <p className="commit-explain">{strings.onboarding.commitExplain}</p>
+              <span className="field-label" id={`${venueFieldId}-commit`}>מועד סגירת הרשימה</span>
+              <p className="commit-explain" id={`${venueFieldId}-commit-explain`}>
+                {strings.onboarding.commitExplain}
+              </p>
               <select
                 className="commit-select"
+                aria-labelledby={`${venueFieldId}-commit`}
+                aria-describedby={`${venueFieldId}-commit-explain`}
                 value={form.venue_commit_days_before}
                 onChange={(e) =>
                   setForm({
@@ -507,6 +530,6 @@ export function OnboardingWizard({ onCreated }: Props) {
           }}
         />
       )}
-    </div>
+    </main>
   )
 }

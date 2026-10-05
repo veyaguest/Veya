@@ -123,7 +123,7 @@ export function ActivityLog({ currentUserId }: { currentUserId?: number }) {
 
   return (
     <div className="alog-card">
-      <h3 className="alog-title">{t.title}</h3>
+      <h2 className="alog-title">{t.title}</h2>
       <ul className="alog-list">
         {items.map((row) => {
           const { main, sub } = describe(row, currentUserId)

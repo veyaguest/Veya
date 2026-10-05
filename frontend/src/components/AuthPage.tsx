@@ -156,7 +156,7 @@ export function AuthPage({
         <span className="auth-ring auth-ring-2" aria-hidden="true" />
 
         <div className="auth-logo-lockup" dir="ltr">
-          <span className="auth-monogram">
+          <span className="auth-monogram" aria-hidden="true">
             <span className="auth-monogram-diamond" />
             <span className="auth-monogram-v">V</span>
           </span>
@@ -171,7 +171,9 @@ export function AuthPage({
 
         <div className="auth-hero">
           <div className="auth-hero-text">
-            <h1 className="auth-hero-title">האירוע שלכם, סוף־סוף מסודר</h1>
+            {/* h2 ולא h1: הכותרת הראשית של המסך היא מה שעושים בו
+                (התחברות/הרשמה, למטה) — והפאנל הזה מוסתר בטלפון. */}
+            <h2 className="auth-hero-title">האירוע שלכם, סוף־סוף מסודר</h2>
             <p className="auth-hero-sub">
               רשימת מוזמנים, אישורי הגעה וסידורי הושבה — במקום אחד נקי ופשוט,
               בלי גיליונות אקסל ובלי בלגן.
@@ -199,11 +201,12 @@ export function AuthPage({
       </aside>
 
       {/* ===== פאנל התחברות ===== */}
-      <section className="auth-panel">
+      {/* ``main`` — בלעדיו לקורא מסך אין לאן "לקפוץ לתוכן" במסך הכניסה. */}
+      <main className="auth-panel">
         <div className="auth-panel-inner">
           {/* לוגו VEYA — מוצג בטלפון, שם הפאנל השיווקי (עם הלוגו הגדול) מוסתר */}
-          <div className="auth-panel-logo" dir="ltr" aria-label="VEYA">
-            <span className="auth-monogram">
+          <div className="auth-panel-logo" dir="ltr">
+            <span className="auth-monogram" aria-hidden="true">
               <span className="auth-monogram-diamond" />
               <span className="auth-monogram-v">V</span>
             </span>
@@ -211,9 +214,9 @@ export function AuthPage({
           </div>
 
           <div className="auth-panel-head">
-            <h2 className="auth-panel-title">
+            <h1 className="auth-panel-title">
               {isLogin ? 'ברוכים השבים' : 'הרשמה ל-VEYA'}
-            </h2>
+            </h1>
             <p className="auth-panel-sub">
               {isLogin
                 ? 'התחברו כדי להמשיך לנהל את האירוע שלכם'
@@ -413,7 +416,7 @@ export function AuthPage({
             )}
           </div>
         </div>
-      </section>
+      </main>
     </div>
     <Footer />
     </>

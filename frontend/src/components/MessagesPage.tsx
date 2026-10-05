@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   activateRsvpTrack,
@@ -69,6 +70,7 @@ function AdminMessagesShell({ onNavigate }: { onNavigate?: GuestsNav }) {
       <div className="rsvp-view-toggle" role="tablist">
         <button
           role="tab"
+          aria-selected={view === 'couple'}
           className={`rsvp-view-btn ${view === 'couple' ? 'active' : ''}`}
           onClick={() => setView('couple')}
         >
@@ -76,6 +78,7 @@ function AdminMessagesShell({ onNavigate }: { onNavigate?: GuestsNav }) {
         </button>
         <button
           role="tab"
+          aria-selected={view === 'admin'}
           className={`rsvp-view-btn ${view === 'admin' ? 'active' : ''}`}
           onClick={() => setView('admin')}
         >
@@ -102,6 +105,7 @@ function AdminMessagesView() {
           <button
             key={t.key}
             role="tab"
+            aria-selected={tab === t.key}
             className={`auto-tab ${tab === t.key ? 'active' : ''}`}
             onClick={() => setTab(t.key)}
           >
@@ -352,14 +356,24 @@ function SendInvitationsDialog({
   onClose: () => void
 }) {
   useHelpScope('messages.sendDialog')
+  // בזמן השליחה אין סגירה (גם לא ב-Escape) — כמו שאין כפתור סגירה בשלב הזה.
+  const dlg = useDialog(onClose, { closeOnEscape: phase !== 'sending' })
+  // מעבר שלב (אישור → שליחה → סיכום) מחליף את כל התוכן, והכפתור שהיה
+  // בפוקוס נעלם. מחזירים את הפוקוס לחלון עצמו — קורא המסך מקריא את
+  // הכותרת החדשה ("שולחים את ההזמנות…", "ההזמנות נשלחו").
+  const dialogNode = dlg.props.ref
+  useEffect(() => {
+    const node = dialogNode.current
+    if (node && !node.contains(document.activeElement)) node.focus()
+  }, [phase, dialogNode])
   return (
-    <div className="send-dialog-overlay" role="dialog" aria-modal="true">
-      <div className="send-dialog">
+    <div className="send-dialog-overlay">
+      <div className="send-dialog" {...dlg.props}>
         {/* ---- מצב: התקדמות ---- */}
         {phase === 'sending' && (
           <div className="send-progress">
             <VeyaLoader size="md" decorative className="send-loader" />
-            <h3 className="send-dialog-title">שולחים את ההזמנות…</h3>
+            <h3 className="send-dialog-title" id={dlg.titleId}>שולחים את ההזמנות…</h3>
             <p className="clar-sub">רגע, מעבירים את ההזמנות למוזמנים שלכם.</p>
             <div className="send-progress-bar">
               <span className="send-progress-fill indeterminate" />
@@ -370,7 +384,7 @@ function SendInvitationsDialog({
         {/* ---- מצב: סיכום ---- */}
         {phase === 'summary' && result && (
           <div className="send-summary">
-            <h3 className="send-dialog-title">
+            <h3 className="send-dialog-title" id={dlg.titleId}>
               {result.failed > 0 ? strings.errors.rsvpSendPartialFail : strings.toasts.invitationsSent}
             </h3>
             <p className="send-summary-main">
@@ -415,6 +429,7 @@ function SendInvitationsDialog({
         {/* ---- מצב: אישור לפני שליחה ---- */}
         {phase === 'confirm' && (
           <SendConfirmStep
+            titleId={dlg.titleId}
             preview={preview}
             error={error}
             mode={mode}
@@ -439,7 +454,10 @@ function SendConfirmStep({
   onConfirm,
   onEditMessage,
   onClose,
+  titleId,
 }: {
+  /** id לכותרת — החלון שמעליו מצביע עליה (aria-labelledby). */
+  titleId?: string
   preview: InvitationSendPreview
   error: string
   mode: string
@@ -534,7 +552,7 @@ function SendConfirmStep({
   if (loading) {
     return (
       <div className="send-confirm">
-        <h3 className="send-dialog-title">שליחת הזמנות</h3>
+        <h3 className="send-dialog-title" id={titleId}>שליחת הזמנות</h3>
         <p className="clar-sub">רגע, מכינים את רשימת המוזמנים…</p>
       </div>
     )
@@ -542,7 +560,7 @@ function SendConfirmStep({
 
   return (
     <div className="send-confirm">
-      <h3 className="send-dialog-title">שליחת הזמנות</h3>
+      <h3 className="send-dialog-title" id={titleId}>שליחת הזמנות</h3>
 
       {loadError && <p className="form-error" role="alert">{loadError}</p>}
 
@@ -604,6 +622,7 @@ function SendConfirmStep({
           type="search"
           dir="rtl"
           placeholder="חיפוש לפי שם או טלפון…"
+          aria-label="חיפוש לפי שם או טלפון"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -731,6 +750,7 @@ function FirstInviteWizard({
   const [showAdd, setShowAdd] = useState(false)
   const [addNote, setAddNote] = useState('')
   useBackToClose(showAdd, () => setShowAdd(false))
+  const addDlg = useDialog(() => setShowAdd(false), { open: showAdd })
   const fileInput = useRef<HTMLInputElement | null>(null)
 
   function afterGuestsChanged(msg: string) {
@@ -970,10 +990,11 @@ function FirstInviteWizard({
         <div className="overlay" onClick={() => setShowAdd(false)}>
           <div
             className="dialog edit-guest-dialog"
+            {...addDlg.props}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="dialog-head">
-              <h2>הוספת מוזמן</h2>
+              <h2 id={addDlg.titleId}>הוספת מוזמן</h2>
               <button className="x" onClick={() => setShowAdd(false)} aria-label={strings.common.close}>
                 ✕
               </button>

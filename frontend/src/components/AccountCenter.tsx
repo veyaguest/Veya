@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { useEffect, useState } from 'react'
 import {
   cancelPartnerInvite,
@@ -38,6 +39,7 @@ export function AccountCenter({
 }) {
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
+  const dlg = useDialog(onClose)
   useHelpScope('account')
   const [overview, setOverview] = useState<AccountOverview | null>(null)
   const [loading, setLoading] = useState(true)
@@ -196,13 +198,12 @@ export function AccountCenter({
     <div className="acc-overlay" onClick={onClose}>
       <div
         className="acc-sheet"
+        {...dlg.props}
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
-        role="dialog"
-        aria-label="החשבון שלי"
       >
         <header className="acc-head">
-          <h2>החשבון שלי</h2>
+          <h2 id={dlg.titleId}>החשבון שלי</h2>
           <button type="button" className="acc-close" onClick={onClose} aria-label="סגירה">
             ✕
           </button>

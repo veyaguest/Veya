@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { useState } from 'react'
 import { commitImport, pasteImportPreview } from '../api'
 import type { GroupType, GuestCreate, Side } from '../types'
@@ -41,6 +42,7 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
   useHelpScope('guests.import.contacts')
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
+  const dlg = useDialog(onClose)
   const [stage, setStage] = useState<Stage>('intro')
   const [rows, setRows] = useState<EditRow[]>([])
   // מספר אנשי הקשר שהוסתרו כי הם כבר קיימים ברשימת המוזמנים.
@@ -153,9 +155,9 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="dialog paste-dialog" onClick={(e) => e.stopPropagation()}>
+      <div className="dialog paste-dialog" {...dlg.props} onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
-          <h2>{t.contactsTitle}</h2>
+          <h2 id={dlg.titleId}>{t.contactsTitle}</h2>
           <button className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>
@@ -226,7 +228,9 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
                         <th>{t.colGroup}</th>
                         <th className="center">{t.colCount}</th>
                         <th>{t.colNotes}</th>
-                        <th></th>
+                        <th>
+                          <span className="sr-only">{t.colActions}</span>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -237,6 +241,7 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
                             <td className="center">
                               <input
                                 type="checkbox"
+                                aria-label={`${t.colImport}: ${r.full_name}`}
                                 checked={r.include}
                                 disabled={!canImport}
                                 onChange={(e) => updateRow(r.key, { include: e.target.checked })}
@@ -245,6 +250,7 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
                             <td>
                               <input
                                 className="cell-input"
+                                aria-label={t.colFullName}
                                 value={r.full_name}
                                 onChange={(e) => updateRow(r.key, { full_name: e.target.value })}
                               />
@@ -252,6 +258,7 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
                             <td>
                               <input
                                 className="cell-input phone"
+                                aria-label={`${t.colPhone}: ${r.full_name}`}
                                 dir="ltr"
                                 value={r.phone}
                                 onChange={(e) => updateRow(r.key, { phone: e.target.value })}
@@ -260,6 +267,7 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
                             <td>
                               <select
                                 className="cell-input"
+                                aria-label={`${t.colSide}: ${r.full_name}`}
                                 value={r.side}
                                 onChange={(e) => updateRow(r.key, { side: e.target.value as Side })}
                               >
@@ -273,6 +281,7 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
                             <td>
                               <select
                                 className="cell-input"
+                                aria-label={`${t.colGroup}: ${r.full_name}`}
                                 value={r.group_type in GROUP_LABELS ? r.group_type : 'other'}
                                 onChange={(e) =>
                                   updateRow(r.key, { group_type: e.target.value as GroupType })
@@ -288,6 +297,7 @@ export function ContactsImportDialog({ onClose, onImported }: Props) {
                             <td className="center">
                               <input
                                 className="cell-input count-input"
+                                aria-label={`${t.colCount}: ${r.full_name}`}
                                 type="number"
                                 min={1}
                                 value={r.party_size}

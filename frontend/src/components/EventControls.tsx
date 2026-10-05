@@ -65,29 +65,28 @@ function NewEventFields({
           ))}
         </div>
       </div>
+      {/* תווית גלויה מעל כל שדה: placeholder נעלם ברגע שמקלידים. */}
       <div className="event-new-grid">
-        <input
-          type="text"
-          value={groom}
-          onChange={(e) => setGroom(e.target.value)}
-          placeholder={terms.hostAField}
-        />
+        <label className="field-group">
+          <span className="field-label">{terms.hostAField}</span>
+          <input type="text" value={groom} onChange={(e) => setGroom(e.target.value)} />
+        </label>
         {terms.hasTwoHosts && (
-          <input
-            type="text"
-            value={bride}
-            onChange={(e) => setBride(e.target.value)}
-            placeholder={terms.hostBField}
-          />
+          <label className="field-group">
+            <span className="field-label">{terms.hostBField}</span>
+            <input type="text" value={bride} onChange={(e) => setBride(e.target.value)} />
+          </label>
         )}
-        <input
-          type="text"
-          value={venue}
-          onChange={(e) => setVenue(e.target.value)}
-          placeholder="שם האולם"
-        />
+        <label className="field-group">
+          <span className="field-label">{strings.dashboard.venueLabel}</span>
+          <input type="text" value={venue} onChange={(e) => setVenue(e.target.value)} />
+        </label>
       </div>
-      {error && <div className="auth-error">{error}</div>}
+      {error && (
+        <div className="auth-error" role="alert">
+          {error}
+        </div>
+      )}
       <div className="event-new-actions">
         <button type="submit" className="btn-primary" disabled={busy}>
           {busy ? 'רגע…' : submitLabel}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   dismissPostponementRejection,
   getEvent,
@@ -223,7 +223,7 @@ function SeatingHelperCard({ stats, onNavigate }: { stats: DashboardStats; onNav
   const allDone = done.every(Boolean)
   return (
     <div className="seating-helper-card">
-      <h3 className="seating-helper-title">{s.title}</h3>
+      <h2 className="seating-helper-title">{s.title}</h2>
       <p className="seating-helper-lead">{s.lead}</p>
       <p className="seating-helper-intro">{s.intro}</p>
       <ul className="shc-steps">
@@ -619,6 +619,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
 
   // מנוע המונחים לפי סוג האירוע — קובע תוויות שדות, כותרת ותווית ההזמנה.
   const terms = getEventTerms(event?.event_type)
+  const fieldId = useId()
 
   const couple =
     event && (event.groom_name || event.bride_name)
@@ -637,23 +638,35 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
           <div className="event-edit">
             {locked && <p className="locked-note">{tp.lockedNote}</p>}
 
+            {/* תווית גלויה מעל כל שדה: placeholder נעלם ברגע שמקלידים. */}
             <div className="event-fields">
-              <LockableInput
-                locked={isLocked('groom_name', event?.groom_name)}
-                placeholder={terms.hostAField}
-                value={form.groom_name}
-                onChange={(v) => setForm({ ...form, groom_name: v })}
-              />
-              {terms.hasTwoHosts && (
+              <label className="field-group">
+                <span className="field-label">{terms.hostAField}</span>
                 <LockableInput
-                  locked={isLocked('bride_name', event?.bride_name)}
-                  placeholder={terms.hostBField}
-                  value={form.bride_name}
-                  onChange={(v) => setForm({ ...form, bride_name: v })}
+                  locked={isLocked('groom_name', event?.groom_name)}
+                  placeholder=""
+                  value={form.groom_name}
+                  onChange={(v) => setForm({ ...form, groom_name: v })}
                 />
+              </label>
+              {terms.hasTwoHosts && (
+                <label className="field-group">
+                  <span className="field-label">{terms.hostBField}</span>
+                  <LockableInput
+                    locked={isLocked('bride_name', event?.bride_name)}
+                    placeholder=""
+                    value={form.bride_name}
+                    onChange={(v) => setForm({ ...form, bride_name: v })}
+                  />
+                </label>
               )}
-              <VenueAutocomplete
-                value={form.venue_name}
+              <div className="field-group">
+                <label className="field-label" htmlFor={`${fieldId}-venue`}>
+                  {t.venueLabel}
+                </label>
+                <VenueAutocomplete
+                  id={`${fieldId}-venue`}
+                  value={form.venue_name}
                 onChange={(name) => setForm({ ...form, venue_name: name })}
                 onPick={(name, address) =>
                   setForm((f) => ({
@@ -663,15 +676,19 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
                     venue_address: f.venue_address.trim() ? f.venue_address : address,
                   }))
                 }
-                placeholder={t.venuePlaceholder}
-              />
-              <input
-                placeholder={t.venueAddressPlaceholder}
-                value={form.venue_address}
-                onChange={(e) =>
-                  setForm({ ...form, venue_address: e.target.value })
-                }
-              />
+                  placeholder=""
+                />
+              </div>
+              <label className="field-group">
+                <span className="field-label">{t.venueAddressLabel}</span>
+                <input
+                  placeholder={t.venueAddressHint}
+                  value={form.venue_address}
+                  onChange={(e) =>
+                    setForm({ ...form, venue_address: e.target.value })
+                  }
+                />
+              </label>
             </div>
 
             <div className="event-datetime">
@@ -706,8 +723,8 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
 
             {/* ---- מועד סגירת הרשימה — בחירה חד-פעמית ובלתי-הפיכה ---- */}
             <div className="commit-field" data-help="dashboard.commitField">
-              <span className="field-label">{t.commitLabel}</span>
-              <p className="commit-explain">{t.commitExplain}</p>
+              <span className="field-label" id={`${fieldId}-commit`}>{t.commitLabel}</span>
+              <p className="commit-explain" id={`${fieldId}-commit-explain`}>{t.commitExplain}</p>
               {commitLocked ? (
                 <div className="commit-locked">
                   <span className="commit-locked-value">
@@ -719,6 +736,8 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
                 <>
                   <select
                     className="commit-select"
+                    aria-labelledby={`${fieldId}-commit`}
+                    aria-describedby={`${fieldId}-commit-explain`}
                     value={form.venue_commit_days_before}
                     onChange={(e) =>
                       setForm({
@@ -853,7 +872,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
 
             {/* משמאל: שמות, מיקום ותאריך, וטיימר ספירה לאחור חי */}
             <div className="dash-hero-info">
-              <h2 className="event-couple">{couple ?? terms.defaultTitle}</h2>
+              <h1 className="event-couple">{couple ?? terms.defaultTitle}</h1>
               <p className="event-info-line">
                 {terms.label}
                 {event?.venue_name ? ` · ${event.venue_name}` : ''}
@@ -964,7 +983,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
               <path d="M9 11.5h6M9 15h4" />
             </svg>
           </span>
-          <h3 className="dash-empty-title">{t.emptyTitle}</h3>
+          <h2 className="dash-empty-title">{t.emptyTitle}</h2>
           <p className="dash-empty-desc">{t.emptyDesc}</p>
           <button
             type="button"
@@ -1001,7 +1020,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
                  עוד לא. "חלון ראווה" עצמאי במלוא הרוחב, בלי כרטיסים לצידו. ---- */}
             <section className="gauge-section">
               <div className="gauge-section-head">
-                <h3 className="gauge-section-title">{t.donutCardTitle}</h3>
+                <h2 className="gauge-section-title">{t.donutCardTitle}</h2>
               </div>
               <RsvpGauge
                 segments={rsvpSegments}

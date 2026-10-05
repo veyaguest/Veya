@@ -62,7 +62,7 @@ export function RsvpTimeline({
             <path d="M8.8 14.6l2 2 4-4" />
           </svg>
         </span>
-        <h3 className="tl-empty-title">לוח אישורי ההגעה עוד לא נקבע</h3>
+        <h2 className="tl-empty-title">לוח אישורי ההגעה עוד לא נקבע</h2>
         <p className="tl-empty-sub">
           עדכנו ב<strong>תמונת מצב</strong> את תאריך האירוע, ובחרו כמה ימים
           לפני האירוע צריך למסור לאולם את המספר הסופי.

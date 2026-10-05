@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { useEffect, useState } from 'react'
 import { addEventMember, listEventMembers, removeEventMember, updateEventMember } from '../api'
 import type { EventMemberRead } from '../types'
@@ -109,6 +110,7 @@ export function EventMembersDialog({
 }) {
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
+  const dlg = useDialog(onClose)
   const [members, setMembers] = useState<EventMemberRead[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [email, setEmail] = useState('')
@@ -144,9 +146,9 @@ export function EventMembersDialog({
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="dialog" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()} dir="rtl">
+      <div className="dialog" style={{ maxWidth: 520 }} {...dlg.props} onClick={(e) => e.stopPropagation()} dir="rtl">
         <div className="dialog-head">
-          <h2>ניהול גישה לאירוע</h2>
+          <h2 id={dlg.titleId}>ניהול גישה לאירוע</h2>
           <button type="button" className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>

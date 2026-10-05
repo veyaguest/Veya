@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { useState } from 'react'
 import { completePostponement, requestPostponement } from '../api'
 import type { Postponement } from '../types'
@@ -22,6 +23,7 @@ export function PostponeRequestDialog({
 }) {
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
+  const dlg = useDialog(onClose)
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
@@ -42,9 +44,9 @@ export function PostponeRequestDialog({
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="dialog postpone-dialog" onClick={(e) => e.stopPropagation()}>
+      <div className="dialog postpone-dialog" {...dlg.props} onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
-          <h2>{sent ? t.sentTitle : t.dialogTitle}</h2>
+          <h2 id={dlg.titleId}>{sent ? t.sentTitle : t.dialogTitle}</h2>
           <button className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>
@@ -98,6 +100,7 @@ export function PostponeFinishDialog({
 }) {
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
+  const dlg = useDialog(onClose)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -116,9 +119,9 @@ export function PostponeFinishDialog({
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="dialog postpone-dialog" onClick={(e) => e.stopPropagation()}>
+      <div className="dialog postpone-dialog" {...dlg.props} onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
-          <h2>{t.finishTitle}</h2>
+          <h2 id={dlg.titleId}>{t.finishTitle}</h2>
           <button className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>

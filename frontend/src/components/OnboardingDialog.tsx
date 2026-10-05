@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { strings } from '../strings/he'
 
 const t = strings.guests
@@ -29,6 +30,7 @@ interface Props {
 export function OnboardingDialog({ onClose, onPaste, onExcel, onContacts, onManual }: Props) {
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
+  const dlg = useDialog(onClose)
   function choose(action: () => void) {
     onClose()
     action()
@@ -38,6 +40,7 @@ export function OnboardingDialog({ onClose, onPaste, onExcel, onContacts, onManu
     <div className="overlay" onClick={onClose}>
       <div
         className="dialog onboarding-dialog"
+        {...dlg.props}
         onClick={(e) => e.stopPropagation()}
       >
         <button className="x" onClick={onClose} aria-label={strings.common.close}>
@@ -45,7 +48,7 @@ export function OnboardingDialog({ onClose, onPaste, onExcel, onContacts, onManu
         </button>
 
         <div className="onboarding-head">
-          <h2>{t.onboardingTitle}</h2>
+          <h2 id={dlg.titleId}>{t.onboardingTitle}</h2>
           <p className="onboarding-sub">{t.onboardingSub}</p>
         </div>
 

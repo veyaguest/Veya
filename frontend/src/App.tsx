@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import './App.css'
 import {
@@ -426,11 +426,36 @@ function App() {
     }
   }
 
+  // שם המסך בלשונית הדפדפן (WCAG 2.4.2): זו SPA, וה-<title> נשאר
+  // "VEYA — ניהול אירועים" בכל מסך. קורא מסך מקריא את הכותרת הזו במעבר
+  // לשונית, וגם היסטוריית הדפדפן מציגה אותה.
+  const titleEvent = events.find((e) => e.id === activeEventId) ?? null
+  const docTitle =
+    user && titleEvent ? pageTitles(getEventTerms(titleEvent.event_type))[page] : null
+  useEffect(() => {
+    document.title = docTitle ? `${docTitle} · VEYA` : 'VEYA — ניהול אירועים'
+  }, [docTitle])
+
+  // מעבר מסך מפעולת משתמש: הכפתור שנלחץ לרוב נעלם יחד עם המסך הקודם,
+  // והפוקוס נופל לתחילת העמוד. מעבירים אותו לכותרת המסך החדש (או
+  // לאזור התוכן בתמונת מצב, שאין בה כותרת עמוד) — קורא מסך מקריא איפה
+  // אנחנו, ו-Tab הבא כבר בתוך התוכן.
+  const focusPageOnRenderRef = useRef(false)
+  useEffect(() => {
+    if (!focusPageOnRenderRef.current) return
+    focusPageOnRenderRef.current = false
+    const target =
+      document.querySelector<HTMLElement>('.page-header .page-title') ??
+      document.getElementById('veya-main')
+    target?.focus({ preventScroll: true })
+  }, [page])
+
   /** הניווט של האפליקציה — כל מעבר בין מסכים עובר כאן, ונרשם בהיסטוריה
    *  כדי ש"חזור" יחזיר למסך הקודם. */
   function goTo(target: Page, options: NavOptions = {}) {
     setGuestSearch(target === 'guests' ? options.guestSearch ?? '' : '')
     setGuestFilter(target === 'guests' ? options.guestFilter ?? 'all' : 'all')
+    if (target !== page) focusPageOnRenderRef.current = true
     setPage(target)
     if (window.location.pathname !== PAGE_PATHS[target]) {
       window.history.pushState({ page: target }, '', PAGE_PATHS[target])
@@ -769,10 +794,10 @@ function App() {
       >
         {strings.common.skipToContent}
       </a>
-      {/* ``role="banner"`` — הסרגל הוא אזור הכותרת של האפליקציה (לוגו,
-          ניווט ראשי, חשבון). בלעדיו קורא מסך לא מוצא landmark של
-          banner בכלל, כי ``.page-header`` לא מרונדר בתמונת מצב. */}
-      <aside className="sidebar" role="banner">
+      {/* ``<header>`` (= landmark מסוג banner) — הסרגל הוא אזור הכותרת של
+          האפליקציה (לוגו, ניווט ראשי, חשבון). קודם זה היה ``<aside
+          role="banner">``, ש-ARIA לא מתירה (aside הוא complementary). */}
+      <header className="sidebar">
         <div className="sidebar-logo" dir="ltr">
           <span className="auth-monogram">
             <span className="auth-monogram-diamond" />
@@ -787,6 +812,7 @@ function App() {
               key={item.key}
               type="button"
               className={`nav-item ${page === item.key ? 'active' : ''}`}
+              aria-current={page === item.key ? 'page' : undefined}
               onClick={() => goTo(item.key)}
             >
               <span className="nav-bullet" aria-hidden="true" />
@@ -826,20 +852,23 @@ function App() {
             </button>
           </div>
         </div>
-      </aside>
+      </header>
 
       <div className="main-area">
+        {/* ``<main>`` עוטף גם את כותרת המסך: כך "דלג לתוכן" ומעבר בין
+            אזורים בקורא מסך נוחתים על הכותרת ולא אחריה, והכותרת לא
+            "מרחפת" מחוץ לכל אזור. ``tabIndex={-1}`` כדי שקישור הדילוג יוכל
+            להעביר לכאן פוקוס בפועל — בלעדיו הדפדפן מגלגל את העמוד אבל
+            הפוקוס נשאר מאחור, וקורא מסך ממשיך להקריא מהניווט. */}
+        <main id="veya-main" tabIndex={-1} className="main-landmark">
         {page !== 'dashboard' && (
-          <header className="page-header">
-            <h1 className="page-title">{pageTitle[page]}</h1>
-          </header>
+          <div className="page-header">
+            <h1 className="page-title" tabIndex={-1}>
+              {pageTitle[page]}
+            </h1>
+          </div>
         )}
-        {/* ``tabIndex={-1}`` כדי שקישור הדילוג יוכל להעביר לכאן פוקוס
-            בפועל — בלעדיו הדפדפן מגלגל את העמוד אבל הפוקוס נשאר מאחור,
-            וקורא מסך ממשיך להקריא מהניווט. */}
-        <main
-          id="veya-main"
-          tabIndex={-1}
+        <div
           className="content"
           key={`${page}-${activeEventId}-${helpNonce}`}
         >
@@ -878,6 +907,7 @@ function App() {
               </Suspense>
             )}
           </ErrorBoundary>
+        </div>
         </main>
         <Footer />
       </div>

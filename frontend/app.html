@@ -6,9 +6,12 @@
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <!-- בלי maximum-scale / user-scalable=no: הגדלה בצביטה היא דרישת נגישות
+         (WCAG 1.4.4) — גם בדף אישור ההגעה של המוזמנים, שנטען מכאן. רק מפת
+         האולם, שיש לה זום משלה, חוסמת את הזום של הדפדפן (main.tsx). -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="mobile-web-app-capable" content="yes" />
     <!-- ==== התקנה כאפליקציה על מסך הבית (iPhone) ====================

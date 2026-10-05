@@ -6,6 +6,7 @@ import {
   type IPlanExportSummary,
 } from '../api'
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { strings } from '../strings/he'
 
 const t = strings.guests
@@ -22,6 +23,7 @@ interface Props {
  *  הנתונים נבדקים בשרת בכל פתיחה, כך שהסיכום תמיד תואם לקובץ שיורד. */
 export function IPlanExportDialog({ onClose, onDownloaded }: Props) {
   useBackToClose(true, onClose)
+  const dlg = useDialog(onClose)
   const [summary, setSummary] = useState<IPlanExportSummary | null>(null)
   const [loadError, setLoadError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -70,13 +72,11 @@ export function IPlanExportDialog({ onClose, onDownloaded }: Props) {
     <div className="overlay" onClick={onClose}>
       <div
         className="dialog iplan-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="iplan-title"
+        {...dlg.props}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="dialog-head">
-          <h2 id="iplan-title">{t.iplanTitle}</h2>
+          <h2 id={dlg.titleId}>{t.iplanTitle}</h2>
           <button className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>

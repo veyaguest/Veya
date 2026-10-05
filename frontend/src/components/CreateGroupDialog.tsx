@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { useEffect, useMemo, useState } from 'react'
 import { bulkGroup, listGuests } from '../api'
 import type { Guest } from '../types'
@@ -21,6 +22,7 @@ interface Props {
 export function CreateGroupDialog({ onClose, onCreated }: Props) {
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
+  const dlg = useDialog(onClose)
   const [name, setName] = useState('')
   const [guests, setGuests] = useState<Guest[]>([])
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -86,9 +88,9 @@ export function CreateGroupDialog({ onClose, onCreated }: Props) {
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="dialog notes-dialog" onClick={(e) => e.stopPropagation()}>
+      <div className="dialog notes-dialog" {...dlg.props} onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
-          <h2>{t.createGroupTitle}</h2>
+          <h2 id={dlg.titleId}>{t.createGroupTitle}</h2>
           <button className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>
@@ -117,6 +119,8 @@ export function CreateGroupDialog({ onClose, onCreated }: Props) {
         {!loading && guests.length > 0 && (
           <input
             className="cell-input cg-search"
+            type="search"
+            aria-label={t.searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t.searchPlaceholder}

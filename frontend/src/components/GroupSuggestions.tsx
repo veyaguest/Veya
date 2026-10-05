@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { useCallback, useEffect, useState } from 'react'
 import { bulkGroup, groupSuggestions } from '../api'
 import type { GroupSuggestion } from '../types'
@@ -27,6 +28,7 @@ interface Props {
 export function GroupSuggestions({ refreshToken, open, onClose, onCountChange, onApplied }: Props) {
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(open, onClose)
+  const dlg = useDialog(onClose, { open })
   const [items, setItems] = useState<GroupSuggestion[]>([])
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState<string | null>(null)
@@ -71,9 +73,9 @@ export function GroupSuggestions({ refreshToken, open, onClose, onCountChange, o
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="dialog suggestions-dialog" onClick={(e) => e.stopPropagation()}>
+      <div className="dialog suggestions-dialog" {...dlg.props} onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
-          <h2>{t.suggestionsTitle}</h2>
+          <h2 id={dlg.titleId}>{t.suggestionsTitle}</h2>
           <button className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>

@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { useState } from 'react'
 import { commitImport, pasteImportPreview } from '../api'
 import type { GroupType, GuestCreate, Side } from '../types'
@@ -21,6 +22,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
   useHelpScope('guests.import.paste')
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
+  const dlg = useDialog(onClose)
   const [text, setText] = useState('')
   const [rows, setRows] = useState<EditRow[] | null>(null)
   const [error, setError] = useState('')
@@ -130,9 +132,9 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="dialog paste-dialog" onClick={(e) => e.stopPropagation()}>
+      <div className="dialog paste-dialog" {...dlg.props} onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
-          <h2>{t.pasteTitle}</h2>
+          <h2 id={dlg.titleId}>{t.pasteTitle}</h2>
           <button className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>
@@ -140,10 +142,13 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
 
         {!rows && (
           <>
-            <p className="paste-hint">{t.pasteHint}</p>
+            <p className="paste-hint" id={`${dlg.titleId}-hint`}>{t.pasteHint}</p>
+            {/* הדוגמה ב-placeholder אינה תווית — היא נעלמת עם ההקלדה. */}
             <textarea
               className="paste-area"
               data-help="paste.textarea"
+              aria-label={t.pasteTitle}
+              aria-describedby={`${dlg.titleId}-hint`}
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={t.pasteAreaPlaceholder}
@@ -218,6 +223,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                         <td className="center">
                           <input
                             type="checkbox"
+                            aria-label={`${t.colImport}: ${r.full_name}`}
                             checked={r.include}
                             disabled={!canImport}
                             onChange={(e) =>
@@ -228,6 +234,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                         <td>
                           <input
                             className="cell-input"
+                            aria-label={t.colFullName}
                             value={r.full_name}
                             onChange={(e) =>
                               updateRow(r.key, { full_name: e.target.value })
@@ -237,6 +244,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                         <td>
                           <input
                             className="cell-input phone"
+                            aria-label={`${t.colPhone}: ${r.full_name}`}
                             dir="ltr"
                             value={r.phone}
                             onChange={(e) =>
@@ -247,6 +255,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                         <td>
                           <select
                             className="cell-input"
+                            aria-label={`${t.colSide}: ${r.full_name}`}
                             value={r.side}
                             onChange={(e) =>
                               updateRow(r.key, { side: e.target.value as Side })
@@ -262,6 +271,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                         <td>
                           <select
                             className="cell-input"
+                            aria-label={`${t.colGroup}: ${r.full_name}`}
                             value={
                               r.group_type in GROUP_LABELS
                                 ? r.group_type
@@ -286,6 +296,7 @@ export function PasteImportDialog({ onClose, onImported }: Props) {
                         <td className="center">
                           <input
                             className="cell-input count-input"
+                            aria-label={`${t.colCountTotal}: ${r.full_name}`}
                             type="number"
                             min={1}
                             placeholder="?"

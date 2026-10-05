@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useMenu } from '../lib/useMenu'
 import { strings } from '../strings/he'
 
 const t = strings.guests
@@ -12,50 +12,27 @@ interface Props {
 
 /** כפתור "ייבוא מוזמנים" מרכזי עם תפריט נפתח לכל דרכי הייבוא. */
 export function ImportMenu({ onExcel, onPaste, onContacts }: Props) {
-  const [open, setOpen] = useState(false)
-  const wrapRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function onDocClick(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('mousedown', onDocClick)
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('mousedown', onDocClick)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [open])
+  const menu = useMenu()
 
   return (
-    <div className="import-menu" ref={wrapRef}>
+    <div className="import-menu" ref={menu.wrapRef}>
       <button
         type="button"
         className="btn-ghost"
         data-help="guests.importMenu"
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="menu"
-        aria-expanded={open}
+        {...menu.triggerProps}
       >
         {t.importMenuButton}
       </button>
-      {open && (
-        <div className="import-menu-list" role="menu">
+      {menu.open && (
+        <div className="import-menu-list" {...menu.listProps}>
           <button
             type="button"
             role="menuitem"
             className="import-menu-item"
             data-help="guests.importExcel"
-            onClick={() => {
-              setOpen(false)
-              onExcel()
-            }}
+            tabIndex={-1}
+            onClick={menu.select(onExcel)}
           >
             {t.uploadButton}
           </button>
@@ -64,10 +41,8 @@ export function ImportMenu({ onExcel, onPaste, onContacts }: Props) {
             role="menuitem"
             className="import-menu-item"
             data-help="guests.importPaste"
-            onClick={() => {
-              setOpen(false)
-              onPaste()
-            }}
+            tabIndex={-1}
+            onClick={menu.select(onPaste)}
           >
             {t.pasteButton}
           </button>
@@ -76,10 +51,8 @@ export function ImportMenu({ onExcel, onPaste, onContacts }: Props) {
               type="button"
               role="menuitem"
               className="import-menu-item"
-              onClick={() => {
-                setOpen(false)
-                onContacts()
-              }}
+              tabIndex={-1}
+              onClick={menu.select(onContacts)}
             >
               {t.contactsButton}
             </button>

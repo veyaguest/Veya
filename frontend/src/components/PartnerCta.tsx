@@ -88,7 +88,7 @@ export function PartnerCta() {
   return (
     <div className="pcta">
       <div className="pcta-main">
-        <h3 className="pcta-title">מנהלים את האירוע יחד?</h3>
+        <h2 className="pcta-title">מנהלים את האירוע יחד?</h2>
         <p className="pcta-text">
           {strings.partner.lead(two)}
         </p>

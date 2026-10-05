@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { useEffect, useState } from 'react'
 import { getGroupNotes, setGroupNote } from '../api'
 import type { GroupInUse } from '../types'
@@ -19,6 +20,7 @@ interface Props {
 export function GroupNotesPanel({ onClose }: Props) {
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
+  const dlg = useDialog(onClose)
   const [groups, setGroups] = useState<GroupInUse[]>([])
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
@@ -55,9 +57,9 @@ export function GroupNotesPanel({ onClose }: Props) {
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="dialog notes-dialog" onClick={(e) => e.stopPropagation()}>
+      <div className="dialog notes-dialog" {...dlg.props} onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
-          <h2>{t.notesTitle}</h2>
+          <h2 id={dlg.titleId}>{t.notesTitle}</h2>
           <button className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>
@@ -83,6 +85,7 @@ export function GroupNotesPanel({ onClose }: Props) {
                 <div className="note-input-wrap">
                   <input
                     className="cell-input"
+                    aria-label={`${t.notesTitle}: ${groupLabel(g.group_type)}`}
                     defaultValue={notes[g.group_type] ?? ''}
                     placeholder={t.notesInputPlaceholder}
                     onBlur={(e) => {

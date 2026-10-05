@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { acceptConsent } from '../api'
 import { strings } from '../strings/he'
+import { useDialog } from '../lib/useDialog'
 
 /**
  * מודל חוסם: מוצג כש-user.needs_reconsent=true (גרסת תנאים/פרטיות שהמשתמש
@@ -11,6 +12,9 @@ import { strings } from '../strings/he'
 export function ReconsentModal({ onAccepted }: { onAccepted: () => void }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // חלון חוסם: אין סגירה (צריך לאשר כדי להמשיך), ולכן גם לא ב-Escape —
+  // אבל פוקוס, מלכודת Tab ושם נגיש כמו בכל חלון.
+  const dlg = useDialog(() => {}, { closeOnEscape: false })
 
   async function accept() {
     setBusy(true)
@@ -26,8 +30,8 @@ export function ReconsentModal({ onAccepted }: { onAccepted: () => void }) {
 
   return (
     <div className="reconsent-overlay" dir="rtl">
-      <div className="reconsent-card" onClick={(e) => e.stopPropagation()}>
-        <h2 className="reconsent-title">{strings.legal.reconsentTitle}</h2>
+      <div className="reconsent-card" {...dlg.props} onClick={(e) => e.stopPropagation()}>
+        <h2 className="reconsent-title" id={dlg.titleId}>{strings.legal.reconsentTitle}</h2>
         <p className="reconsent-body">{strings.legal.reconsentBody}</p>
         <p className="reconsent-hint">{strings.legal.reconsentHint}</p>
         <p className="reconsent-links">

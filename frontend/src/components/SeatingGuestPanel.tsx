@@ -694,7 +694,7 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
           const bodyId = `${listId}-sec-${section.key}`
           return (
             <section className={`ws-section ws-section-${section.key}`} key={section.key}>
-              <h3 className="ws-section-head">
+              <h2 className="ws-section-head">
                 <button
                   type="button"
                   className="ws-section-btn"
@@ -714,7 +714,7 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
                     <span className="ws-sr-only"> {t.sectionPeople(section.people)}</span>
                   </span>
                 </button>
-              </h3>
+              </h2>
 
               <div id={bodyId} hidden={isCollapsed}>
                 {section.groups.map((group) => {
@@ -723,7 +723,7 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
                   const groupBodyId = `${listId}-grp-${groupKey}`
                   return (
                     <div className="ws-group" key={groupKey}>
-                      <h4 className="ws-group-head">
+                      <h3 className="ws-group-head">
                         <button
                           type="button"
                           className="ws-group-btn"
@@ -748,7 +748,7 @@ export const SeatingGuestPanel = memo(function SeatingGuestPanel({
                             </span>
                           </span>
                         )}
-                      </h4>
+                      </h3>
                       <ul className="ws-guests" id={groupBodyId} hidden={groupCollapsed}>
                         {group.entries.map((entry) => (
                           <GuestRow

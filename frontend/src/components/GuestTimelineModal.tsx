@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { useEffect, useState } from 'react'
 import { getGuestTimeline } from '../api'
 import type { GuestTimeline, TimelineEvent } from '../types'
@@ -34,6 +35,7 @@ export function GuestTimelineModal({
 }) {
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
+  const dlg = useDialog(onClose)
   const [data, setData] = useState<GuestTimeline | null>(null)
   const [error, setError] = useState('')
 
@@ -47,9 +49,9 @@ export function GuestTimelineModal({
 
   return (
     <div className="auto-modal-backdrop" onClick={onClose}>
-      <div className="auto-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="auto-modal" {...dlg.props} onClick={(e) => e.stopPropagation()}>
         <div className="auto-modal-head">
-          <h3 className="clar-title">
+          <h3 className="clar-title" id={dlg.titleId}>
             {t.timelineTitle(data?.guest_name ?? '…')}
           </h3>
           <button type="button" className="x" onClick={onClose} aria-label={t.closeX}>

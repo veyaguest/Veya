@@ -795,7 +795,7 @@ function HallWizard(props: {
     <>
       <div className="hm-wizard-backdrop" onClick={props.onClose} />
       <div className="hm-wizard" role="dialog" aria-label="בניית אולם">
-        <h2 className="hm-wizard-title">בואו נבנה את האולם 🏛️</h2>
+        <h2 className="hm-wizard-title">בואו נבנה את האולם <span aria-hidden="true">🏛️</span></h2>
         <p className="hm-wizard-lead">
           כמה שולחנות יהיו, ומה עוד להוסיף? נכין לכם סקיצה מסודרת להתחיל ממנה —
           תוכלו לגרור, לסובב ולשנות הכול אחר כך.
@@ -804,16 +804,25 @@ function HallWizard(props: {
         <div className="hm-wizard-row">
           <label>שולחנות רגילים (12 מקומות)</label>
           <div className="hm-wizard-stepper">
-            <button type="button" onClick={() => props.onRegular(Math.max(0, props.regular - 1))}>
+            <button
+              type="button"
+              aria-label="פחות שולחנות רגילים"
+              onClick={() => props.onRegular(Math.max(0, props.regular - 1))}
+            >
               −
             </button>
             <input
               type="number"
               min={0}
+              aria-label="שולחנות רגילים (12 מקומות)"
               value={props.regular}
               onChange={(e) => props.onRegular(clampNum(Number(e.target.value)))}
             />
-            <button type="button" onClick={() => props.onRegular(props.regular + 1)}>
+            <button
+              type="button"
+              aria-label="עוד שולחן רגיל"
+              onClick={() => props.onRegular(props.regular + 1)}
+            >
               +
             </button>
           </div>
@@ -822,16 +831,25 @@ function HallWizard(props: {
         <div className="hm-wizard-row">
           <label>שולחנות אבירים (ארוכים, 24)</label>
           <div className="hm-wizard-stepper">
-            <button type="button" onClick={() => props.onKnights(Math.max(0, props.knights - 1))}>
+            <button
+              type="button"
+              aria-label="פחות שולחנות אבירים"
+              onClick={() => props.onKnights(Math.max(0, props.knights - 1))}
+            >
               −
             </button>
             <input
               type="number"
               min={0}
+              aria-label="שולחנות אבירים (ארוכים, 24)"
               value={props.knights}
               onChange={(e) => props.onKnights(clampNum(Number(e.target.value)))}
             />
-            <button type="button" onClick={() => props.onKnights(props.knights + 1)}>
+            <button
+              type="button"
+              aria-label="עוד שולחן אבירים"
+              onClick={() => props.onKnights(props.knights + 1)}
+            >
               +
             </button>
           </div>
@@ -1112,7 +1130,7 @@ function SketchEditor(props: {
       <div className="sk-editor-backdrop" onClick={props.onCancel} />
       <div className="sk-editor" role="dialog" aria-label="עריכת סקיצת האולם">
         <div className="sk-editor-head">
-          <h2>עריכת סקיצת האולם ✂️</h2>
+          <h2>עריכת סקיצת האולם <span aria-hidden="true">✂️</span></h2>
           <p>גררו להזזה · השתמשו בזום כדי להתקרב · סובבו אם צריך. מה שבתוך המסגרת יהפוך לרקע.</p>
         </div>
 
@@ -1441,6 +1459,7 @@ function SketchReviewPanel(props: {
                       </span>
                     )}
                     <select
+                      aria-label="סוג הפריט"
                       value={it.type}
                       onChange={(e) => updateItem(i, { type: e.target.value as DetectedHallElement['type'] })}
                     >
@@ -1452,11 +1471,19 @@ function SketchReviewPanel(props: {
                     </select>
                     {isTable && (
                       <span className="sk-review-capacity">
-                        <button type="button" onClick={() => updateItem(i, { capacity: Math.max(2, (it.capacity ?? 12) - 2) })}>
+                        <button
+                          type="button"
+                          aria-label="פחות מקומות"
+                          onClick={() => updateItem(i, { capacity: Math.max(2, (it.capacity ?? 12) - 2) })}
+                        >
                           −
                         </button>
                         {it.capacity ?? 12}
-                        <button type="button" onClick={() => updateItem(i, { capacity: Math.min(24, (it.capacity ?? 12) + 2) })}>
+                        <button
+                          type="button"
+                          aria-label="עוד מקומות"
+                          onClick={() => updateItem(i, { capacity: Math.min(24, (it.capacity ?? 12) + 2) })}
+                        >
                           +
                         </button>
                       </span>
@@ -1465,6 +1492,7 @@ function SketchReviewPanel(props: {
                       type="button"
                       className="sk-review-icon-btn"
                       title={hallSketchT.rotateItem}
+                      aria-label={hallSketchT.rotateItem}
                       onClick={() => updateItem(i, { rotation: ((it.rotation ?? 0) + 90) % 360 })}
                     >
                       ↻
@@ -1473,6 +1501,7 @@ function SketchReviewPanel(props: {
                       type="button"
                       className="sk-review-icon-btn"
                       title={hallSketchT.removeItem}
+                      aria-label={hallSketchT.removeItem}
                       onClick={() => removeItem(i)}
                     >
                       ✕
@@ -4392,6 +4421,7 @@ export function HallPage({
                           <button
                             type="button"
                             title={el.locked ? 'שחרר נעילה' : 'נעל'}
+                            aria-label={el.locked ? 'שחרר נעילה' : 'נעל'}
                             onClick={(e) => {
                               e.stopPropagation()
                               toggleElementLock(el.id)
@@ -4402,6 +4432,7 @@ export function HallPage({
                           <button
                             type="button"
                             title="מחק"
+                            aria-label="מחיקת הפריט"
                             onClick={(e) => {
                               e.stopPropagation()
                               removeElement(el.id)
@@ -4566,6 +4597,7 @@ export function HallPage({
                             className="tt-btn"
                             onClick={() => openTableSheet(t.table_number)}
                             title={hallT.tableDetails}
+                            aria-label={hallT.tableDetails}
                           >
                             <HmIcon name="edit" size={15} />
                           </button>
@@ -4576,6 +4608,7 @@ export function HallPage({
                                 duplicateTable(t.table_number)
                               }}
                               title={hallT.duplicateTable}
+                              aria-label={hallT.duplicateTable}
                             >
                               <HmIcon name="plus" size={15} />
                             </button>
@@ -4608,6 +4641,7 @@ export function HallPage({
                     <HmIcon name="opacity" size={18} />
                     <input
                       type="range"
+                      aria-label="שקיפות הסקיצה"
                       min={0.1}
                       max={1}
                       step={0.05}
@@ -4632,13 +4666,19 @@ export function HallPage({
                   <button
                     type="button"
                     title="הסרת הסקיצה"
+                    aria-label="הסרת הסקיצה"
                     onClick={() => {
                       removeSketch()
                     }}
                   >
                     🗑
                   </button>
-                  <button type="button" title="סגירה" onClick={() => setSketchSelected(false)}>
+                  <button
+                    type="button"
+                    title="סגירה"
+                    aria-label="סגירת סרגל הסקיצה"
+                    onClick={() => setSketchSelected(false)}
+                  >
                     ×
                   </button>
                 </div>
@@ -5059,7 +5099,11 @@ export function HallPage({
 
               <div className="hm-tools-group">
                 <p className="hm-panel-head">מקומות ברירת מחדל לשולחן</p>
-                <select value={seats} onChange={(e) => setSeats(Number(e.target.value))}>
+                <select
+                  aria-label="מקומות ברירת מחדל לשולחן"
+                  value={seats}
+                  onChange={(e) => setSeats(Number(e.target.value))}
+                >
                   {SEAT_OPTIONS.map((n) => (
                     <option key={n} value={n}>
                       {n} מקומות
@@ -5282,6 +5326,7 @@ export function HallPage({
                       <input
                         type="number"
                         inputMode="numeric"
+                        aria-label="מספר שולחן"
                         value={numDraft}
                         onChange={(e) => setNumDraft(e.target.value)}
                         onKeyDown={(e) => {
@@ -5308,6 +5353,7 @@ export function HallPage({
                     <label>שם (אופציונלי)</label>
                     <input
                       type="text"
+                      aria-label="שם השולחן (אופציונלי)"
                       value={sheetT.name}
                       placeholder="למשל: שולחן המשפחה"
                       onChange={(e) => updateTable(sheetT.table_number, { name: e.target.value })}

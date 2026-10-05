@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { strings } from '../strings/he'
 
 interface Props {
@@ -26,16 +27,26 @@ export function ConfirmDialog({
 }: Props) {
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onCancel)
+  // alertdialog: אישור לפני פעולה בלתי-הפיכה. ההודעה מקושרת כתיאור, כך
+  // שקורא מסך מקריא גם "מה יקרה" ולא רק את הכותרת.
+  const dlg = useDialog(onCancel, { closeOnEscape: !busy })
+  const messageId = `${dlg.titleId}-msg`
   return (
     <div className="overlay confirm-overlay" onClick={onCancel}>
-      <div className="dialog confirm-dialog" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="dialog confirm-dialog"
+        {...dlg.props}
+        role="alertdialog"
+        aria-describedby={messageId}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="dialog-head">
-          <h2>{title}</h2>
+          <h2 id={dlg.titleId}>{title}</h2>
           <button className="x" onClick={onCancel} aria-label={strings.common.cancel}>
             ✕
           </button>
         </div>
-        <p className="confirm-dialog-message">{message}</p>
+        <p className="confirm-dialog-message" id={messageId}>{message}</p>
         <div className="add-actions">
           <button
             className={danger ? 'btn-danger' : 'btn-primary'}

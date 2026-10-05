@@ -135,7 +135,7 @@
 }
 
 .acc-field input::placeholder {
-  color: var(--faint);
+  color: var(--muted);  /* היה --faint (3.2:1) — טקסט צריך 4.5:1 */
 }
 
 .acc-field input:focus {

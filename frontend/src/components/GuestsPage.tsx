@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   applyNoteSplit,
@@ -27,6 +28,7 @@ import { OnboardingDialog } from './OnboardingDialog'
 import { PasteImportDialog } from './PasteImportDialog'
 import './GuestDataAlert.css'
 import { useHelpScope } from '../help/useHelpScope'
+import { announce } from '../lib/announce'
 
 // נבדק פעם אחת בטעינת המודול — תמיכת הדפדפן בבחירת אנשי קשר לא משתנה תוך כדי שימוש.
 const contactsSupported = isContactPickerSupported()
@@ -118,6 +120,10 @@ export function GuestsPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onboardingVisible])
   const [toast, setToast] = useState('')
+  // טוסט שנולד מלא לא מוכרז לבד — מכריזים אותו באזור החי המשותף.
+  useEffect(() => {
+    if (toast) announce(toast)
+  }, [toast])
   const [deleteTarget, setDeleteTarget] = useState<Guest | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
   // עולה בכל טעינה מוצלחת — מפעיל טעינה מחדש של הצעות הקבוצה החכמות.
@@ -128,6 +134,7 @@ export function GuestsPage({
   const fileInput = useRef<HTMLInputElement>(null)
   // "חזור" בטלפון סוגר את חלון עריכת המוזמן.
   useBackToClose(editGuest !== null, () => setEditGuest(null))
+  const editDlg = useDialog(() => setEditGuest(null), { open: editGuest !== null })
   useBackToClose(showForm, () => setShowForm(false))
 
   // טעינת העמוד הראשון (וגם רענון אחרי שינוי/חיפוש).
@@ -389,7 +396,8 @@ export function GuestsPage({
       )}
 
       {toast && (
-        <div className="toast">
+        // מוסתר מקורא המסך: ההודעה מוכרזת דרך lib/announce (ראו effect).
+        <div className="toast" aria-hidden="true">
           <span className="toast-brand" aria-hidden="true">
             <span className="auth-monogram">
               <span className="auth-monogram-diamond" />
@@ -532,10 +540,11 @@ export function GuestsPage({
         <div className="overlay" onClick={() => setEditGuest(null)}>
           <div
             className="dialog edit-guest-dialog"
+            {...editDlg.props}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="dialog-head">
-              <h2>{t.editRow}</h2>
+              <h2 id={editDlg.titleId}>{t.editRow}</h2>
               <button className="x" onClick={() => setEditGuest(null)} aria-label={strings.common.close}>
                 ✕
               </button>
@@ -614,7 +623,9 @@ export function GuestsPage({
               <th>{t.colTable}</th>
               <th>{t.colSeatingNotes}</th>
               <th>{t.colNotes}</th>
-              <th></th>
+              <th>
+                <span className="sr-only">{t.colActions}</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -668,14 +679,21 @@ export function GuestsPage({
                 <td className="notes seating" data-label={t.colSeatingNotes}>{g.seating_notes ?? ''}</td>
                 <td className="notes" data-label={t.colNotes}>{g.notes_raw ?? ''}</td>
                 <td className="row-actions">
+                  {/* השם המלא בשם הנגיש: בקורא מסך עשרות כפתורי "עריכה"
+                      זהים ברשימה לא אומרים של מי כל אחד. */}
                   <button
                     className="btn-edit"
                     data-help="guests.editButton"
+                    aria-label={`${t.editRow} ${g.full_name}`}
                     onClick={() => setEditGuest(g)}
                   >
                     {t.editRow}
                   </button>
-                  <button className="btn-delete" onClick={() => onDelete(g)}>
+                  <button
+                    className="btn-delete"
+                    aria-label={`${t.deleteRow} ${g.full_name}`}
+                    onClick={() => onDelete(g)}
+                  >
                     {t.deleteRow}
                   </button>
                 </td>

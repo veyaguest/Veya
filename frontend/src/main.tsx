@@ -16,16 +16,34 @@ const DemoGiftCounting = lazy(() =>
 import { GOOGLE_CLIENT_ID } from './lib/supabase.ts'
 import { initPwa } from './lib/pwa.ts'
 
-// ---- חסימת Pinch Zoom ברמת המסמך (iOS Safari) ----
-// iOS Safari מתעלם מ-user-scalable=no ב-viewport, ולכן חוסמים ידנית את
-// אירועי ה-Gesture (הצביטה של Safari). Double-Tap Zoom כבר מנוטרל דרך
-// touch-action: manipulation ב-index.css. מפת האולם עובדת ב-Pointer Events
-// בלבד ולא נפגעת; הקלדה וסימון טקסט בשדות ממשיכים כרגיל.
+// ---- חסימת Pinch Zoom — רק על משטחים שמנהלים זום בעצמם (iOS Safari) ----
+// הגדלה בצביטה היא דרישת נגישות (WCAG 1.4.4): מי שרואה פחות טוב חייב
+// להיות מסוגל להגדיל את הטקסט — בכל המערכת ובדף אישור ההגעה של המוזמנים.
+// לכן הזום של הדפדפן פתוח בכל מקום, ונחסם **רק** כשהצביטה מתחילה על משטח
+// עם ``touch-action: none`` (מפת האולם וסקיצת האולם, שמזיזות ומגדילות את
+// הקנבס בעצמן ב-Pointer Events). iOS Safari מתעלם מ-touch-action בצביטה,
+// ולכן נדרש כאן גם חוסם gesture — אבל ממוקד.
+function startsOnSelfZoomingSurface(target: EventTarget | null): boolean {
+  let el = target instanceof Element ? target : null
+  while (el && el !== document.body) {
+    if (getComputedStyle(el).touchAction === 'none') return true
+    el = el.parentElement
+  }
+  return false
+}
+
 function installMobileZoomGuard() {
-  const stop = (e: Event) => e.preventDefault()
-  document.addEventListener('gesturestart', stop, { passive: false })
-  document.addEventListener('gesturechange', stop, { passive: false })
-  document.addEventListener('gestureend', stop, { passive: false })
+  let guarding = false
+  const start = (e: Event) => {
+    guarding = startsOnSelfZoomingSurface(e.target)
+    if (guarding) e.preventDefault()
+  }
+  const during = (e: Event) => {
+    if (guarding) e.preventDefault()
+  }
+  document.addEventListener('gesturestart', start, { passive: false })
+  document.addEventListener('gesturechange', during, { passive: false })
+  document.addEventListener('gestureend', during, { passive: false })
 }
 installMobileZoomGuard()
 

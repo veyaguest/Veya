@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   CalcMethod,
@@ -166,6 +167,9 @@ export function ExpenseEditor({
   }
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, requestClose)
+  // Escape כבר מטופל כאן למטה (עם בדיקת "יש מה לאבד"); מהחלון לוקחים
+  // רק פוקוס, מלכודת Tab והחזרת פוקוס.
+  const dlg = useDialog(requestClose, { closeOnEscape: false })
 
   useEffect(() => {
     function onKey(ev: KeyboardEvent) {
@@ -334,13 +338,11 @@ export function ExpenseEditor({
       <div className="overlay fin-editor-overlay" onClick={requestClose}>
         <div
           className="dialog fin-editor"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="fin-editor-title"
+          {...dlg.props}
           onClick={(ev) => ev.stopPropagation()}
         >
           <div className="dialog-head">
-            <h2 id="fin-editor-title">{editing ? e.editTitle : e.addTitle}</h2>
+            <h2 id={dlg.titleId}>{editing ? e.editTitle : e.addTitle}</h2>
             <button type="button" className="x" onClick={requestClose} aria-label={strings.common.cancel}>
               ✕
             </button>

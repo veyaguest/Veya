@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import { useEffect, useState } from 'react'
 import { commitImport, previewImport } from '../api'
 import type { GuestCreate, ImportPreview } from '../types'
@@ -21,6 +22,7 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
   useHelpScope('guests.import.excel')
   // "חזור" בטלפון סוגר את החלון במקום לנווט אחורה (lib/backToClose).
   useBackToClose(true, onClose)
+  const dlg = useDialog(onClose)
   const [preview, setPreview] = useState<ImportPreview | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -62,9 +64,9 @@ export function ImportDialog({ file, onClose, onImported }: Props) {
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="dialog" onClick={(e) => e.stopPropagation()}>
+      <div className="dialog" {...dlg.props} onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
-          <h2>{t.importTitle}</h2>
+          <h2 id={dlg.titleId}>{t.importTitle}</h2>
           <button className="x" onClick={onClose} aria-label={strings.common.close}>
             ✕
           </button>

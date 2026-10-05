@@ -1,4 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
+import { useFocusTrap } from '../lib/useFocusTrap'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   confirmIcsUrl,
@@ -184,6 +185,9 @@ function ChoiceSheet({
 }) {
   useBackToClose(true, onClose)
   const sheetRef = useRef<HTMLDivElement>(null)
+  // Tab נשאר בתוך המגירה, ובסגירה הפוקוס חוזר לכפתור שפתח אותה.
+  // לפני ה-effect שלמטה בכוונה: כך "מי פתח" נלכד לפני שהפוקוס זז למגירה.
+  useFocusTrap(sheetRef, true)
 
   useEffect(() => {
     // ממקדים את המגירה עצמה ולא את האפשרות הראשונה: קורא מסך מכריז על
@@ -293,6 +297,7 @@ function GiftPanel({
   useBackToClose(true, onClose)
   const hub = strings.guestHub
   const panelRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(panelRef, true)
 
   const [amountText, setAmountText] = useState('')
   const [quote, setQuote] = useState<GiftQuote | null>(null)
@@ -577,6 +582,10 @@ function InviteViewer({
   alt: string
   onClose: () => void
 }) {
+  const viewerRef = useRef<HTMLDivElement>(null)
+  // ההזמנה במסך מלא היא חלון לכל דבר: פוקוס נכנס, Tab לא בורח לעמוד
+  // שמאחור, ובסגירה חוזר לכפתור "צפייה בהזמנה".
+  useFocusTrap(viewerRef, true)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -586,7 +595,14 @@ function InviteViewer({
   }, [onClose])
 
   return (
-    <div className="hub-viewer" role="dialog" aria-modal="true" aria-label={alt}>
+    <div
+      className="hub-viewer"
+      role="dialog"
+      aria-modal="true"
+      aria-label={alt}
+      tabIndex={-1}
+      ref={viewerRef}
+    >
       <button
         type="button"
         className="hub-viewer-close"
@@ -617,7 +633,31 @@ export function ConfirmPage({ token }: { token: string }) {
   const [viewingInvite, setViewingInvite] = useState(false)
   const [giftOpen, setGiftOpen] = useState(false)
 
+  // אחרי "שליחת אישור" הטופס מתחלף בהודעת התודה, והכפתור שהיה בפוקוס
+  // נעלם. בלי העברה מפורשת, מוזמן עם קורא מסך לא שומע שום דבר ולא יודע
+  // שהתשובה נקלטה. אותו דבר הפוך ב"שינוי התשובה". נקבע רק בפעולת משתמש,
+  // ולא בטעינה (מוזמן שכבר ענה לא "נזרק" לאמצע העמוד).
+  const thanksRef = useRef<HTMLParagraphElement>(null)
+  const questionRef = useRef<HTMLDivElement>(null)
+  const focusAfterRef = useRef<'thanks' | 'question' | null>(null)
+  useEffect(() => {
+    const target = focusAfterRef.current
+    focusAfterRef.current = null
+    if (target === 'thanks') thanksRef.current?.focus()
+    else if (target === 'question') questionRef.current?.focus()
+  }, [sent])
+
   const hub = strings.guestHub
+
+  // שם הלשונית: המוזמן לא מכיר את VEYA — "VEYA — ניהול אירועים" לא אומר
+  // לו כלום. שם האירוע הוא מה שהוא מחפש (וגם מה שקורא המסך מקריא ראשון).
+  useEffect(() => {
+    if (!data) return
+    const terms = getEventTerms(data.event.event_type)
+    const hosts =
+      [data.event.groom_name, data.event.bride_name].filter(Boolean).join(' ו') || terms.defaultTitle
+    document.title = data.event.title || terms.celebrationOf(hosts)
+  }, [data])
 
   useEffect(() => {
     let alive = true
@@ -697,6 +737,7 @@ export function ConfirmPage({ token }: { token: string }) {
         note: note.trim() || null,
       })
       setData(res)
+      focusAfterRef.current = 'thanks'
       setSent(true)
     } catch (e) {
       setError(e instanceof Error ? e.message : strings.errors.confirmSubmitFailed)
@@ -707,21 +748,23 @@ export function ConfirmPage({ token }: { token: string }) {
 
   if (loading) {
     return (
-      <div className="confirm-wrap" dir="rtl">
-        <div className="confirm-card confirm-center">{strings.common.loading}</div>
-      </div>
+      <main className="confirm-wrap" dir="rtl">
+        <div className="confirm-card confirm-center" role="status">
+          {strings.common.loading}
+        </div>
+      </main>
     )
   }
 
   if (error && !data) {
     return (
-      <div className="confirm-wrap" dir="rtl">
+      <main className="confirm-wrap" dir="rtl">
         <div className="confirm-card confirm-center">
           <Monogram />
           <h1 className="confirm-title">הקישור אינו תקין</h1>
           <p className="confirm-sub">{error}</p>
         </div>
-      </div>
+      </main>
     )
   }
 
@@ -751,7 +794,7 @@ export function ConfirmPage({ token }: { token: string }) {
         : 'תודה שעדכנתם. נחגוג לחייכם!'
 
   return (
-    <div className="confirm-wrap" dir="rtl">
+    <main className="confirm-wrap" dir="rtl">
       <div className={`confirm-card hub-card ${inviteSrc ? 'has-invite' : ''}`}>
         <div className="confirm-brand">
           <Monogram />
@@ -824,23 +867,39 @@ export function ConfirmPage({ token }: { token: string }) {
           <div className="hub-rsvp">
             {answered ? (
               <div className="hub-answered">
-                <p className="confirm-thankyou">{thankYou}</p>
-                <button className="confirm-change" onClick={() => setSent(false)}>
+                <p className="confirm-thankyou" ref={thanksRef} tabIndex={-1}>
+                  {thankYou}
+                </p>
+                <button
+                  className="confirm-change"
+                  onClick={() => {
+                    focusAfterRef.current = 'question'
+                    setSent(false)
+                  }}
+                >
                   שינוי התשובה
                 </button>
               </div>
             ) : (
               <>
-                <div className="confirm-question">נשמח לדעת — תגיעו לחגוג איתנו?</div>
+                <div
+                  className="confirm-question"
+                  id="confirm-question"
+                  ref={questionRef}
+                  tabIndex={-1}
+                >
+                  נשמח לדעת — תגיעו לחגוג איתנו?
+                </div>
 
-                <div className="confirm-choices">
+                {/* קבוצה עם שם: קורא מסך מקריא את השאלה יחד עם האפשרויות. */}
+                <div className="confirm-choices" role="group" aria-labelledby="confirm-question">
                   <button
                     type="button"
                     className={`confirm-choice yes ${choice === 'confirmed' ? 'active' : ''}`}
                     aria-pressed={choice === 'confirmed'}
                     onClick={() => setChoice('confirmed')}
                   >
-                    ✓ מגיעים
+                    <span aria-hidden="true">✓</span> מגיעים
                   </button>
                   <button
                     type="button"
@@ -848,7 +907,7 @@ export function ConfirmPage({ token }: { token: string }) {
                     aria-pressed={choice === 'maybe'}
                     onClick={() => setChoice('maybe')}
                   >
-                    ? אולי
+                    <span aria-hidden="true">?</span> אולי
                   </button>
                   <button
                     type="button"
@@ -856,13 +915,13 @@ export function ConfirmPage({ token }: { token: string }) {
                     aria-pressed={choice === 'declined'}
                     onClick={() => setChoice('declined')}
                   >
-                    ✕ לא נגיע
+                    <span aria-hidden="true">✕</span> לא נגיע
                   </button>
                 </div>
 
                 {choice === 'confirmed' && (
-                  <div className="confirm-count">
-                    <label>כמה מכם מגיעים?</label>
+                  <div className="confirm-count" role="group" aria-labelledby="confirm-count-label">
+                    <label id="confirm-count-label">כמה מכם מגיעים?</label>
                     <div className="confirm-stepper">
                       <button
                         type="button"
@@ -941,6 +1000,6 @@ export function ConfirmPage({ token }: { token: string }) {
           onClose={() => setGiftOpen(false)}
         />
       )}
-    </div>
+    </main>
   )
 }

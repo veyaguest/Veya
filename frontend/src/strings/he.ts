@@ -18,6 +18,10 @@
 
 export const strings = {
   common: {
+    /** בורר השעה (TimePicker) — לקורא מסך. */
+    timeNotSet: 'לא נבחרה',
+    timeHours: 'שעות',
+    timeMinutes: 'דקות',
     // ---- נגישות (IS 5568) ----
     skipToContent: 'דלג לתוכן הראשי',
     mainNavLabel: 'ניווט ראשי',
@@ -58,6 +62,8 @@ export const strings = {
 
   // ---- אשף פתיחת אירוע ----
   onboarding: {
+    /** לקורא מסך בלבד, ליד ה-✓ של שלב שהושלם באשף. */
+    stepDone: 'הושלם',
     requiredNote: 'רק השמות חובה. את כל השאר אפשר להשלים גם אחר כך, בתמונת המצב.',
     commitExplain:
       'כמה ימים לפני האירוע צריך למסור לאולם מספר סופי? זה היום שבו רשימת המוזמנים נסגרת. 14 ימים לפניו VEYA מתחילה לשלוח למוזמנים בקשות לאישור הגעה — ורק אחרי שבחרתם יום. אחרי השמירה אי אפשר לשנות את הבחירה, אז אם עוד לא בטוחים, עדיף לבחור בהמשך.',
@@ -542,6 +548,11 @@ export const strings = {
     imageSizeError: 'התמונה גדולה מדי — עד 50MB',
     venuePlaceholder: 'שם האולם',
     venueAddressPlaceholder: 'כתובת האולם (לניווט בהזמנות)',
+    /** תוויות גלויות מעל השדות — ה-placeholder נעלם ברגע שמקלידים, ולכן
+     *  אינו יכול להיות התווית היחידה (WCAG 3.3.2). */
+    venueLabel: 'שם האולם',
+    venueAddressLabel: 'כתובת האולם',
+    venueAddressHint: 'לניווט בהזמנות',
     dateLabel: 'תאריך האירוע',
     timeLabel: 'שעת האירוע',
     commitLabel: 'מועד סגירת הרשימה',
@@ -1111,6 +1122,8 @@ export const strings = {
     colNotes: 'הערה לעצמכם',
     colSeatingNotes: 'הערות הושבה',
     deleteRow: 'מחיקה',
+    /** כותרת לקורא מסך בלבד לעמודת כפתורי עריכה/מחיקה (ויזואלית ריקה). */
+    colActions: 'פעולות',
     deleteGuestInDialog: 'הסרת המוזמן מהרשימה',
     editRow: 'עריכה',
     groupButton: 'יצירת קבוצה חדשה',

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useBackToClose } from '../lib/backToClose'
+import { useDialog } from '../lib/useDialog'
 import type { EnvelopeInput, GiftEntry, Guest } from '../types'
 import { strings } from '../strings/he'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -47,6 +48,7 @@ export function GiftEditDialog({ entry, busy, error, onSave, onDelete, onClose }
   const searchRef = useRef<HTMLInputElement>(null)
 
   useBackToClose(true, onClose)
+  const dlg = useDialog(onClose, { closeOnEscape: !busy })
 
   // המוזמנים נטענים רק כשבאמת משנים "ממי" — רוב העריכות הן תיקון סכום.
   useEffect(() => {
@@ -100,13 +102,11 @@ export function GiftEditDialog({ entry, busy, error, onSave, onDelete, onClose }
       <div className="overlay fin-editor-overlay" onClick={() => !busy && onClose()}>
         <div
           className="dialog fin-editor"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="fin-gift-edit-title"
+          {...dlg.props}
           onClick={(ev) => ev.stopPropagation()}
         >
           <div className="dialog-head">
-            <h2 id="fin-gift-edit-title">
+            <h2 id={dlg.titleId}>
               {g.editTitle}
               {entry.envelope_number != null && (
                 <span className="fin-step-sub"> · {t.envelopeNumber(entry.envelope_number)}</span>

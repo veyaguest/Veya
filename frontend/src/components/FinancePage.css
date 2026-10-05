@@ -1215,7 +1215,7 @@
   position: absolute;
   inset-inline-end: 16px;
   font-size: var(--text-xl);
-  color: var(--faint);
+  color: var(--muted);  /* היה --faint (3.2:1) — טקסט צריך 4.5:1 */
   pointer-events: none;
 }
 

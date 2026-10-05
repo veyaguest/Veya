@@ -66,6 +66,7 @@ function AdminRsvpShell({
       <div className="rsvp-view-toggle" role="tablist">
         <button
           role="tab"
+          aria-selected={view === 'couple'}
           className={`rsvp-view-btn ${view === 'couple' ? 'active' : ''}`}
           onClick={() => setView('couple')}
         >
@@ -73,6 +74,7 @@ function AdminRsvpShell({
         </button>
         <button
           role="tab"
+          aria-selected={view === 'admin'}
           className={`rsvp-view-btn ${view === 'admin' ? 'active' : ''}`}
           onClick={() => setView('admin')}
         >
@@ -548,6 +550,7 @@ function TrackStatusCard({
             className="send-recipients-search"
             type="search"
             dir="rtl"
+            aria-label={t.searchPlaceholder}
             placeholder={t.searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
