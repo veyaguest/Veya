@@ -25,6 +25,8 @@ import { strings } from '../strings/he'
 import { GuestTimelineModal } from './GuestTimelineModal'
 import { PhaseCard, RsvpTimeline } from './RsvpTimeline'
 import { useHelpScope } from '../help/useHelpScope'
+import { RSVP_SCREEN_FAQ } from '../help/kb/rsvpFaq'
+import { renderText } from '../help/engine/text'
 import type { GuestFilter } from '../api'
 import type { RsvpTimelineView } from '../types'
 
@@ -294,56 +296,42 @@ function CoupleRsvpView({
 }
 
 
-const RSVP_FAQ: { q: string; a: string[] }[] = [
-  {
-    q: 'איך עובדים אישורי ההגעה ב-VEYA?',
-    a: [
-      'VEYA בונה את לוח אישורי ההגעה לאחור ממועד סגירת הרשימה, ומנהלת אותו לבד. לא צריך להפעיל שום דבר.',
-      '14 ימים לפני מועד סגירת הרשימה יוצאת הבקשה הראשונה, ובמהלך הימים האלה:',
-      '• בקשת אישור הגעה ראשונה ועוד 3 תזכורות ב-WhatsApp',
-      '• שיחות טלפון למי שעוד לא ענו, עד 3 פעמים',
-      'כשנשארים פחות מ-14 ימים, כל השלבים נשארים והלוח נעשה צפוף יותר — לפעמים תזכורת ושיחת טלפון באותו יום.',
-      'ההזמנה עצמה נפרדת: היא יוצאת מיד כשאתם שולחים אותה, והיא לא משנה את לוח הזמנים.',
-    ],
-  },
-  {
-    q: 'מתי נדע כמה מגיעים סופית?',
-    a: [
-      'במועד סגירת הרשימה שהוגדר לאירוע.',
-      'VEYA מנהלת את אישורי ההגעה ב-14 הימים שלפני המועד הזה, בהודעות WhatsApp ובשיחות טלפון, כדי שבסיום יהיה לכם מספר סופי של המוזמנים שמגיעים.',
-    ],
-  },
-  {
-    q: 'האם יש גם תזכורות טלפוניות אנושיות?',
-    a: [
-      'כן.',
-      'בנוסף להודעות ב-WhatsApp, מי שעוד לא ענו מקבלים שיחת טלפון, עד 3 פעמים במהלך 14 ימי אישורי ההגעה.',
-      'כלומר, VEYA לא מסתמכת רק על הודעות — המוזמנים שלא השלימו את האישור מקבלים גם טיפול טלפוני כחלק מהתהליך.',
-    ],
-  },
-  {
-    q: 'מה קורה ביום האירוע?',
-    a: [
-      'ביום האירוע המוזמן מקבל הודעת תזכורת אחרונה, שכוללת את הפרטים החשובים להגעה:',
-      '• מספר השולחן',
-      '• ניווט לאירוע',
-      '• תזכורת לאירוע',
-      'כך המוזמן לא צריך לחפש את פרטי האירוע ברגע האחרון.',
-    ],
-  },
-]
-
 // שורה שמתחילה ב-"• " היא פריט ברשימה (מוצג קומפקטי, עם נקודה מעוצבת) —
 // ולא אימוג'י, שמצויר אחרת בכל מערכת הפעלה (כלל מערכת העיצוב).
 const ITEM_LINE = /^•\s/
 
+/**
+ * השאלות עצמן יושבות בבסיס הידע של העזרה (``help/kb/rsvpFaq.ts``) — מקור אחד
+ * למסך ולעזרה. ``{guests}`` מתמלא מהלקסיקון של סוג האירוע.
+ */
+function useRsvpFaq(): { q: string; a: string[] }[] {
+  return useMemo(() => {
+    const t = activeEventTerms()
+    const ctx = {
+      facts: {},
+      terms: {
+        guests: t.guestsLabel,
+        guest: t.guestsLabel === 'משתתפים' ? 'משתתף' : 'מוזמן',
+        hosts: t.hostsLabel,
+        event: t.eventNoun,
+      },
+      ui: () => undefined,
+    }
+    return RSVP_SCREEN_FAQ.map((item) => ({
+      q: renderText(item.q, ctx) ?? item.q,
+      a: item.a.map((line) => renderText(line, ctx)).filter((line): line is string => line !== null),
+    }))
+  }, [])
+}
+
 function RsvpFaq() {
   const [open, setOpen] = useState<number | null>(null)
+  const faq = useRsvpFaq()
   return (
     <section className="rsvp-faq">
       <h2 className="rsvp-faq-title">שאלות נפוצות על אישורי הגעה</h2>
       <div className="rsvp-faq-list">
-        {RSVP_FAQ.map((item, i) => (
+        {faq.map((item, i) => (
           <div key={i} className="rsvp-faq-item mb-card">
             <button
               type="button"

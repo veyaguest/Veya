@@ -20,6 +20,7 @@ import { TARGETS } from './targets'
 import { GUIDES } from './guides'
 import type { Condition, DiagnosticTree, GuidedFlow, HelpAction, HelpTopic } from './types'
 import { FLOWS, TOPICS, TREES } from './kb/index'
+import { RSVP_SCREEN_FAQ } from './kb/rsvpFaq'
 import { evaluate, factsOf, holds } from './engine/conditions'
 import { hebrewDate, renderText, tokensOf } from './engine/text'
 import type { TextContext, TextTerms } from './engine/text'
@@ -417,6 +418,55 @@ function testEveryEventType(): void {
   console.log(`✓ ${rendered} טקסטים מתרנדרים נכון בכל ${EVENT_TYPES.length} סוגי האירוע`)
 }
 
+/**
+ * שלב 10: "שאלות נפוצות על אישורי הגעה" במסך — מבסיס הידע, לא עותק במסך.
+ * כל שאלה מקושרת לנושא עזרה, אומרת את אותם מספרים, ועובדת לכל סוגי האירוע.
+ */
+function testRsvpScreenFaq(): void {
+  const page = readSrc('components/RsvpPage.tsx')
+  assert(!/const RSVP_FAQ\b/.test(page), 'RsvpPage.tsx מחזיק שוב עותק משלו של השאלות')
+  assert(/RSVP_SCREEN_FAQ/.test(page), 'RsvpPage.tsx לא מציג את השאלות מבסיס הידע')
+
+  const byId = new Map(TOPICS.map((t) => [t.id, t]))
+  const topicText = (id: string) => {
+    const t = byId.get(id)
+    return t ? [t.title, ...t.answer, ...(t.variants ?? []).flatMap((v) => v.answer)].join(' ') : ''
+  }
+  const howItWorks = topicText('rsvp.how-it-works')
+  let lines = 0
+  for (const item of RSVP_SCREEN_FAQ) {
+    assert(byId.has(item.topic), `${item.id}: נושא העזרה "${item.topic}" לא קיים`)
+    assert(/^\d{4}-\d{2}-\d{2}$/.test(item.verifiedAt), `${item.id}: verifiedAt`)
+    for (const src of item.sources) assert(fs.existsSync(`${SRC}/${src}`), `${item.id}: קובץ מקור לא קיים ${src}`)
+    const help = `${topicText(item.topic)} ${howItWorks}`
+    for (const text of [item.q, ...item.a]) {
+      assert(!/מוזמנ|משתתפ/.test(text), `${item.id}: "מוזמנים" קשיח — צריך {guests} — "${text}"`)
+      for (const n of text.match(/\d+/g) ?? []) {
+        assert(new RegExp(`(^|\\D)${n}(\\D|$)`).test(help), `${item.id}: המספר ${n} לא מופיע בעזרה — המסך והעזרה לא מסכימים`)
+      }
+      for (const f of FORBIDDEN) {
+        const hit = typeof f === 'string' ? text.includes(f) : f.test(text)
+        assert(!hit, `${item.id}: מילה/ביטוי שאסור לפי veya-copy (${f}) — "${text}"`)
+      }
+      for (const type of EVENT_TYPES) {
+        const r = renderText(text, ctxFor(type))
+        assert(r !== null, `${item.id}: לא מתרנדר באירוע ${type} — "${text}"`)
+        if (type !== 'wedding' && type !== 'henna') assert(!/חתן|כלה|חתונה/.test(r!), `${item.id}: חתונה באירוע ${type}`)
+      }
+      lines++
+    }
+  }
+  // יום האירוע: רק מי שאישרו — כמו בעזרה וכמו בשרת.
+  const eventDay = RSVP_SCREEN_FAQ.find((i) => i.topic === 'rsvp.event-day')
+  assert(!!eventDay && /שאישרו/.test(eventDay.a.join(' ')) && /אישרו/.test(topicText('rsvp.event-day')), 'יום האירוע: לא אומר שזה רק למי שאישרו')
+  const comm = readSrc('../../backend/app/communication.py')
+  assert(comm.includes('"event_day": "confirmed"'), 'בשרת: הודעת יום האירוע כבר לא רק למי שאישרו — לעדכן את הטקסט')
+  const timeline = readSrc('../../backend/app/rsvp_timeline.py')
+  assert(timeline.includes('MAX_WINDOW_DAYS = 14') && timeline.includes('7: ("W", "W", "P", "W", "P", "W", "P")'),
+    'בשרת: לוח אישורי ההגעה השתנה (14 ימים / 4 הודעות + 3 שיחות) — לעדכן את השאלות ואת העזרה')
+  console.log(`✓ ${RSVP_SCREEN_FAQ.length} שאלות במסך אישורי ההגעה (${lines} שורות) — מבסיס הידע, מסכימות עם העזרה ועם השרת`)
+}
+
 function testGiftsAreGated(): void {
   for (const t of TOPICS.filter((x) => x.area === 'gifts')) {
     assert(factsOf(t.when).includes('gifts.eligible'), `${t.id}: נושא מתנות חייב תנאי זכאות`)
@@ -744,4 +794,5 @@ testDiagnose()
 testErrorFactsAreScoped()
 testSearch()
 testLadder()
+testRsvpScreenFaq()
 console.log('OK — בסיס הידע והמנוע של העזרה תקינים.')

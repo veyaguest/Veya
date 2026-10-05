@@ -22,10 +22,14 @@
 - `constraints.py` · `automation.py` · `messaging.py` · `importer.py` ·
   `communication.py` (רצף "תקשורת עם אורחים" — ראה למטה) · `rsvp_timeline.py` ·
   `venues.py` · `invitations.py`.
+- עזרה בתוך VEYA: `help_context.py` + `help_contexts.json` (עובדות לכל מסך, קריאה
+  בלבד) · `help_support.py` (פנייה לצוות + מייל) · `help_analytics.py` +
+  `help_events_spec.json` (אוצר המילים הסגור של המדידה) · `routers/help.py`
+  (`/help/*`) · `routers/admin_support.py` (`/admin/support`, `/admin/help/insights`).
 - `routers/` — endpoint לכל תחום, prefixים: `/auth` `/admin` `/events`
   `/events/{id}/members` `/guests` `/guests/import` `/seating` `/constraints`
   `/messaging` `/stats` `/event` `/hall` `/confirm` `/automation`
-  `/communication` `/venues` `/media`.
+  `/communication` `/venues` `/media` `/help`.
 
 ## מפת קוד — Frontend (`frontend/src/`)
 - `App.tsx` — שורש, ניתוב עמודים ידני, מצב אדמין/התחזות, טעינת אירוע.
@@ -36,13 +40,19 @@
   `HallPage` `ConfirmPage` `AdminApp/AdminPage` `OnboardingWizard` +
   דיאלוגים/פאנלים (Import, `CommunicationTab` — "תקשורת עם אורחים", PrepWizard,
   SmartAssistantPanel, VenueAutocomplete ועוד).
+- `help/` — עזרה בתוך VEYA: `kb/` (בסיס הידע — מקור הטקסט), `engine/` (טהור:
+  תנאים, דירוג, חיפוש, בדיקות תקלה), `errorBus.ts` (תוצאות API בזיכרון בלבד),
+  `HelpHost.tsx` (הכפתור + טעינה עצלה), `ui/` (חלונית, הדרכות, פנייה לצוות),
+  `analytics.ts`. יעדי הדרכה מסומנים ב-`data-help="…"` במסכים (26). בדיקות:
+  `npm run test:help`.
 - מערכת עיצוב: `App.css` (~9,300 שורות, design tokens ב-`:root`) — ראה `design-system.md`.
 
 ## מודל נתונים (עיקרי)
 `User` (owner/admin, account_type couple/planner/venue) → `Event` (פרטי חתונה,
 מפת אולם JSON, תבנית הודעה, מסלול RSVP) → `Guest` (מקור אמת: צד/קבוצה/כמות/
 הערות/טוקן אישי/confirmed_count/is_child). סביבם: `Message`, `Clarification`,
-`EventMember`, `AuditLog`, `LoginEvent`, `Venue`, `MediaBlob`. תקשורת עם
+`EventMember`, `AuditLog`, `LoginEvent`, `Venue`, `MediaBlob`, `SupportRequest`
+(פניות מהעזרה), `HelpEvent` (מדידה — בלי משתמש ובלי אירוע). תקשורת עם
 אורחים: `MessageDefault` (קטלוג גלובלי event_type×message_type) +
 `EventMessage` (רצף בפועל לכל אירוע) — ראה סעיף ייעודי למטה.
 `MessageTemplate`/`AutomationRule`/`VeyaTemplate`/`VeyaWorkflowStep` **DEPRECATED**

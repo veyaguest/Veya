@@ -37,6 +37,7 @@ description: מוח השפה של VEYA — כל טקסט בעברית שנכתב
 | טקסט בממשק | `frontend/src/strings/he.ts` |
 | מונח תלוי-סוג-אירוע | `frontend/src/strings/eventTypes.ts` · `backend/app/event_terms.py` |
 | הודעת WhatsApp | `backend/app/messaging.py` |
+| טקסט עזרה (נושאים, הדרכות, בדיקות תקלה, שאלות נפוצות במסכים) | `frontend/src/help/kb/*.ts` — מעטפת העזרה (כפתורים, "זה עזר?") ב-`he.ts` תחת `help` |
 
 **אף פעם אל תכתוב טקסט ישירות בתוך קומפוננטה.** אם אין לו מקום בלקסיקון —
 זה סימן שצריך להוסיף לו מקום, לא לקבע אותו.
