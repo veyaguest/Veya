@@ -25,6 +25,7 @@ import { getEventTerms, hostNames } from './strings/eventTypes'
 import { strings } from './strings/he'
 import { consumeModalPop } from './lib/backToClose'
 import { AccountCenter } from './components/AccountCenter'
+import { A11yLauncher } from './components/A11yMenuButton'
 import { AuthPage } from './components/AuthPage'
 import { CompleteProfilePage } from './components/CompleteProfilePage'
 import { DashboardPage } from './components/DashboardPage'
@@ -824,6 +825,7 @@ function App() {
         </nav>
 
         <div className="sidebar-foot">
+          <A11yLauncher />
           {helpEnabled && <HelpLauncher />}
           <button
             type="button"

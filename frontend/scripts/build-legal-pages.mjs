@@ -60,6 +60,8 @@ function pageTemplate({ title, bodyHtml }) {
     display: flex; align-items: center; justify-content: space-between;
   }
   /* #896e29 (= --gold-deep באפליקציה): ‎#9a7b1f הקודם היה מתחת ל-4.5:1 על לבן. */
+  .topbar-end { display: flex; align-items: center; gap: 18px; }
+  .legal-topbar .va11y-link-btn, .about-topbar .va11y-link-btn { color: #896e29; font-weight: 600; font-size: 14.5px; min-height: 32px; }
   .legal-topbar a { color: #896e29; text-decoration: none; font-weight: 600; font-size: 14.5px; }
   .legal-doc { max-width: 780px; margin: 0 auto; background: #fff; border: 1px solid #ece4d3;
     border-radius: 14px; padding: 40px clamp(20px, 5vw, 56px); }
@@ -81,14 +83,19 @@ function pageTemplate({ title, bodyHtml }) {
     .legal-doc code { background: #241f18; }
     .legal-doc hr { border-top-color: #322c22; }
     /* זהב כהה על רקע כהה היה 4.3:1 (axe) — במצב כהה זהב בהיר. */
-    .legal-topbar a, .legal-doc a { color: #d9bc68; }
+    .legal-topbar a, .legal-doc a, .legal-topbar .va11y-link-btn { color: #d9bc68; }
   }
 </style>
+<link rel="stylesheet" href="/veya-a11y.css" />
+<script src="/veya-a11y.js"></script>
 </head>
 <body>
   <nav class="legal-topbar" aria-label="ניווט באתר">
     <a href="/"><span aria-hidden="true">→</span> חזרה ל-VEYA</a>
-    <a href="/app">כניסה למערכת</a>
+    <span class="topbar-end">
+      <button type="button" class="va11y-link-btn" data-veya-a11y-open aria-haspopup="dialog" aria-expanded="false">הגדרות נגישות</button>
+      <a href="/app">כניסה למערכת</a>
+    </span>
   </nav>
   <main>
     <article class="legal-doc">
@@ -145,6 +152,8 @@ function aboutTemplate({ title, bodyHtml }) {
     max-width: 680px; margin: 0 auto; padding: 22px 0 8px;
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
   }
+  .topbar-end { display: flex; align-items: center; gap: 18px; }
+  .about-topbar .va11y-link-btn { color: var(--gold-deep); font-weight: 600; font-size: 14.5px; min-height: 32px; }
   .about-topbar a { color: var(--gold-deep); text-decoration: none; font-weight: 600; font-size: 14.5px; }
   .about-topbar a:hover { text-decoration: underline; text-underline-offset: 3px; }
   .about-topbar a:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 3px; border-radius: 4px; }
@@ -172,11 +181,16 @@ function aboutTemplate({ title, bodyHtml }) {
     .about-doc p { max-width: none; }
   }
 </style>
+<link rel="stylesheet" href="/veya-a11y.css" />
+<script src="/veya-a11y.js"></script>
 </head>
 <body>
   <nav class="about-topbar" aria-label="ניווט באתר">
     <a href="/"><span aria-hidden="true">→</span> חזרה ל-VEYA</a>
-    <a href="/app">כניסה למערכת</a>
+    <span class="topbar-end">
+      <button type="button" class="va11y-link-btn" data-veya-a11y-open aria-haspopup="dialog" aria-expanded="false">הגדרות נגישות</button>
+      <a href="/app">כניסה למערכת</a>
+    </span>
   </nav>
   <main>
     <article class="about-doc">

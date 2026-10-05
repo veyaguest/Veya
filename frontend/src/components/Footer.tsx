@@ -1,4 +1,5 @@
 import { strings } from '../strings/he'
+import { A11yTextButton } from './A11yMenuButton'
 
 /**
  * פוטר משפטי קבוע — מוצג בכל מסכי האפליקציה (לא רק בדף הנחיתה), כדי שקישור
@@ -22,6 +23,7 @@ export function Footer() {
         <a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">
           {strings.legal.footerAccessibility}
         </a>
+        <A11yTextButton className="app-footer-btn" />
         <a href="/legal/about.html#contact" target="_blank" rel="noopener noreferrer">
           {strings.legal.footerContact}
         </a>

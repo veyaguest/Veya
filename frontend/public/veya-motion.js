@@ -20,8 +20,11 @@
 (function () {
   'use strict'
 
+  // גם "עצירת אנימציות" מתפריט הנגישות (veya-a11y.js, נטען לפני הקובץ הזה).
   var reduced =
-    !window.matchMedia || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    !window.matchMedia ||
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+    document.documentElement.hasAttribute('data-a11y-motion')
   var supported = 'IntersectionObserver' in window
 
   // ── עזר: פורמט מספר עברי (מפריד אלפים, בלי לוקאל שמשתנה בין דפדפנים) ──

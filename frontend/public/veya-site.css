@@ -268,7 +268,9 @@ a.evt-card:focus-visible { outline: 3px solid var(--gold-light); outline-offset:
 .article li + li { margin-top: 6px; }
 .article li::marker { color: var(--gold-deep); }
 .article strong { color: var(--charcoal); font-weight: 700; }
-.article a { color: var(--gold-deep); text-underline-offset: 3px; }
+/* :not(.btn) — אחרת כפתור "לבדוק במחשבון" בתוך מדריך קיבל טקסט זהב כהה על
+   רקע זהב (2.14:1, axe). הכפתור שומר על הצבעים של .btn-primary. */
+.article a:not(.btn) { color: var(--gold-deep); text-underline-offset: 3px; }
 .article-lead { font-size: var(--fs-xl); line-height: 1.8; color: var(--charcoal); border-inline-start: 3px solid var(--gold); padding-inline-start: 18px; }
 .article-meta { font-size: var(--fs-xs); color: var(--muted); margin-bottom: 26px; display: flex; gap: 6px 16px; flex-wrap: wrap; }
 

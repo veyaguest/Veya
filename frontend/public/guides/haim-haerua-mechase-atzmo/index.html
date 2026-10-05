@@ -32,6 +32,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/veya-site.css" />
+    <link rel="stylesheet" href="/veya-a11y.css" />
+    <script src="/veya-a11y.js"></script>
 
     <script type="application/ld+json">
       {
@@ -136,6 +138,7 @@
           <img class="header-logo" src="/veya_horizontal.png" alt="VEYA" width="1439" height="600" />
         </a>
         <div class="header-actions">
+          <button type="button" class="va11y-header-btn" data-veya-a11y-open aria-haspopup="dialog" aria-expanded="false" aria-label="הגדרות נגישות" title="הגדרות נגישות"><svg class="va11y-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4.6" r="1.9" /><path d="M5 8.6c2.3.7 4.6 1 7 1s4.7-.3 7-1" /><path d="M12 9.6v4.9" /><path d="m8.6 20.8 3.4-6.3 3.4 6.3" /></svg></button>
           <a href="/app" class="link-quiet" aria-label="כניסה למערכת">כניסה<span class="lq-long"> למערכת</span></a>
           <a href="/app?auth=register" class="btn btn-primary">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
         </div>
@@ -334,6 +337,7 @@
               <li><a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">תנאי שימוש</a></li>
               <li><a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">מדיניות פרטיות</a></li>
               <li><a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">הצהרת נגישות</a></li>
+              <li><button type="button" class="va11y-link-btn" data-veya-a11y-open aria-haspopup="dialog" aria-expanded="false">הגדרות נגישות</button></li>
               <li><a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">מדיניות Cookies</a></li>
               <li><a href="/app">כניסה למערכת</a></li>
             </ul>

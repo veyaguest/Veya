@@ -18,6 +18,9 @@
 
 export const strings = {
   common: {
+    /** כפתורי תפריט הנגישות (public/veya-a11y.js). */
+    a11yMenu: 'הגדרות נגישות',
+    a11yMenuShort: 'נגישות',
     /** בורר השעה (TimePicker) — לקורא מסך. */
     timeNotSet: 'לא נבחרה',
     timeHours: 'שעות',

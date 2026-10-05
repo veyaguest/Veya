@@ -1,5 +1,6 @@
 import { useBackToClose } from '../lib/backToClose'
 import { useFocusTrap } from '../lib/useFocusTrap'
+import { A11yIconButton } from './A11yMenuButton'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   confirmIcsUrl,
@@ -796,6 +797,8 @@ export function ConfirmPage({ token }: { token: string }) {
   return (
     <main className="confirm-wrap" dir="rtl">
       <div className={`confirm-card hub-card ${inviteSrc ? 'has-invite' : ''}`}>
+        {/* הגדרות תצוגה (טקסט גדול, ניגודיות…) — בפינת הכרטיס, לא כפתור צף. */}
+        <A11yIconButton className="hub-a11y-btn" />
         <div className="confirm-brand">
           <Monogram />
           <div className="confirm-brand-name">VEYA</div>

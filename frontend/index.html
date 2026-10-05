@@ -12,6 +12,8 @@
     <link rel="canonical" href="https://veyaguest.co.il/" />
 
     <title>VEYA — כמה אנשים מגיעים לאירוע שלכם, וכמה זה עולה לכם</title>
+    <link rel="stylesheet" href="/veya-a11y.css" />
+    <script src="/veya-a11y.js"></script>
     <meta
       name="description"
       content="ב־VEYA כל אישור הגעה ממשיך הלאה: להושבה, לעלות האירוע, למתנות ולמאזן — עד דוח מסודר אחרי האירוע. לחתונה, בר/בת מצווה, חינה, ברית ואירוע עסקי."
@@ -2865,6 +2867,7 @@
         <div class="wrap">
           <img class="hero-logo reveal" src="/veya_horizontal.png" alt="VEYA — ניהול מוזמנים, אישורי הגעה, הושבה ומאזן האירוע" width="1439" height="600" fetchpriority="high" decoding="async" />
           <h1 id="hero-title" class="reveal d1">כמה אנשים באמת מגיעים לאירוע שלכם —<br /><span class="accent">וכמה זה עולה לכם</span></h1>
+          <button type="button" class="va11y-header-btn" data-veya-a11y-open aria-haspopup="dialog" aria-expanded="false" aria-label="הגדרות נגישות" title="הגדרות נגישות"><svg class="va11y-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4.6" r="1.9" /><path d="M5 8.6c2.3.7 4.6 1 7 1s4.7-.3 7-1" /><path d="M12 9.6v4.9" /><path d="m8.6 20.8 3.4-6.3 3.4 6.3" /></svg></button>
           <!-- יכולות VEYA: האייקונים הם אייקוני הניווט של המוצר עצמו
                (NavIcon ב-src/App.tsx), אחד לכל מסך — לא סט אייקונים לדף. -->
           <ul class="hero-caps reveal d2" aria-label="מה מנהלים ב־VEYA">
@@ -3999,6 +4002,7 @@
     </footer>
 
     <div id="cookie-banner" class="cookie-banner-static" style="display:none" role="region" aria-label="הסכמת Cookies">
+              <li><button type="button" class="va11y-link-btn" data-veya-a11y-open aria-haspopup="dialog" aria-expanded="false">הגדרות נגישות</button></li>
       <div class="cookie-banner-static-inner">
         <p>
           אנחנו משתמשים בעוגיות הכרחיות לתפעול האתר. עוגיות נוספות (סטטיסטיקה/שיפור)
