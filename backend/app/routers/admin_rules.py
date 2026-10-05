@@ -242,11 +242,16 @@ def _feature_rows(db: Session) -> list[dict]:
             from app import gift_eligibility
 
             status, source = ("active" if gift_eligibility.service_switch_on() else "off"), "env"
+        elif f.off_closes_rules:
+            # בלי סטטוס שנקבע — סגור לכולם ופתוח רק לחריגות, כלומר "בטא".
+            # "כבוי" אצלו הוא מתג כיבוי שגובר גם על החריגות (features.py).
+            status, source = "beta", "default"
         else:
             status, source = ("active" if f.default_enabled else "off"), "default"
         rows.append({
             "key": key, "label": f.label, "description": f.description, "builtin": True,
             "controllable": f.controllable, "reason": f.reason, "rule_scopes": list(f.rule_scopes),
+            "off_closes_rules": f.off_closes_rules,
             "status": status, "status_label": STATUS_LABELS.get(status, status), "source": source,
             "rules": rules_by_key.get(key, []), "consumed": True,
         })
@@ -255,7 +260,8 @@ def _feature_rows(db: Session) -> list[dict]:
             continue
         rows.append({
             "key": key, "label": flag.label or key, "description": flag.description or "", "builtin": False,
-            "controllable": True, "reason": "", "rule_scopes": ["event", "user"], "status": flag.status,
+            "controllable": True, "reason": "", "rule_scopes": ["event", "user"], "off_closes_rules": False,
+            "status": flag.status,
             "status_label": STATUS_LABELS.get(flag.status, flag.status), "source": "admin",
             "rules": rules_by_key.get(key, []), "consumed": False,
         })

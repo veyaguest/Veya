@@ -108,7 +108,9 @@ export function FeaturesPage() {
         title={`שינוי סטטוס: ${pending?.f.label ?? ''}`}
         body={
           <p>
-            {pending?.status === 'off'
+            {pending?.status === 'off' && pending.f.off_closes_rules
+              ? "הפיצ'ר ייסגר לכולם — גם למי שיש לו חריגה פתוחה. החריגות נשמרות: מעבר ל'בטא' יחזיר אותן."
+              : pending?.status === 'off'
               ? "הפיצ'ר ייסגר לכולם, חוץ ממי שיש לו חריגה פתוחה."
               : pending?.status === 'beta'
                 ? "הפיצ'ר ייסגר לכולם ויישאר פתוח רק למשתמשים ולאירועים שיש להם חריגה פתוחה."
@@ -174,6 +176,11 @@ function FeatureDetail({
           </p>
         )}
         {f.reason && <p className="adm-muted">{f.reason}</p>}
+        {f.off_closes_rules && (
+          <p className="adm-muted">
+            בטא = פתוח רק למי שיש לו חריגה פתוחה. כבוי = מתג כיבוי: סגור לכולם, גם לחריגות (הן נשמרות, ו"בטא" מחזיר אותן).
+          </p>
+        )}
         {!f.builtin && (
           <p className="adm-muted">
             פיצ'ר חדש נשמר כדגל. הוא ישפיע על המוצר מרגע שקוד כלשהו יבדוק אותו (מפתח: <span className="adm-mono">{f.key}</span>).
@@ -184,6 +191,9 @@ function FeatureDetail({
       {(f.rule_scopes.length > 0 || f.rules.length > 0) && (
         <section className="adm-section">
           <h3 className="adm-section-title">חריגות</h3>
+          {f.off_closes_rules && f.status === 'off' && f.rules.length > 0 && (
+            <p className="adm-muted">כל עוד הסטטוס "כבוי", החריגות לא בתוקף.</p>
+          )}
           {f.rules.length === 0 ? (
             <EmptyState title="אין חריגות" text="כולם מקבלים את הסטטוס הכללי." />
           ) : (

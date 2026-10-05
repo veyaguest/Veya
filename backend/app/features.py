@@ -9,6 +9,11 @@
 סדר ההכרעה לאירוע: כלל לאירוע → כלל לבעלים → סטטוס הפיצ'ר → ברירת המחדל בקוד.
 "בטא" = סגור, חוץ ממי שיש לו כלל פתוח.
 
+``off_closes_rules=True`` — מתג כיבוי: הסטטוס "כבוי" גובר גם על החריגות
+(העזרה — החלטת המייסד 2026-10-05: כיבוי מיידי לכולם באמצע שחרור מדורג).
+החריגות נשמרות, ו"בטא" מחזיר אותן. לפיצ'ר כזה, בלי סטטוס שנקבע באדמין
+ההתנהגות היא של "בטא": סגור לכולם, פתוח רק לחריגות.
+
 ``controllable=False`` — פיצ'ר שהקוד עוד לא יודע לכבות. מוצג במסך לידיעה,
 בלי מתג שלא עושה כלום.
 """
@@ -33,6 +38,7 @@ class FeatureDef:
     default_enabled: Optional[bool]      # None = ההכרעה נשארת במנגנון הקיים (למשל מתג סביבה)
     rule_scopes: tuple[str, ...] = ()
     reason: str = ""
+    off_closes_rules: bool = False
 
 
 BUILTIN: dict[str, FeatureDef] = {f.key: f for f in [
@@ -53,7 +59,7 @@ BUILTIN: dict[str, FeatureDef] = {f.key: f for f in [
     # אירוע בדיקה → משתמשים נבחרים → כולם — ונסגר מיד אם משהו לא תקין.
     FeatureDef("help_center", "עזרה בתוך VEYA",
                "כפתור עזרה שמכיר את המסך, הדרכות צעד-אחר-צעד ובדיקת תקלות.", True, False,
-               rule_scopes=("event", "user")),
+               rule_scopes=("event", "user"), off_closes_rules=True),
 ]}
 
 
@@ -110,6 +116,9 @@ def decide(key: str, event=None) -> Decision:
     _ensure_fresh()
     event_id = getattr(event, "id", None)
     owner_id = getattr(event, "owner_id", None)
+    builtin = BUILTIN.get(key)
+    if builtin is not None and builtin.off_closes_rules and _cache.flags.get(key) == "off":
+        return Decision(False, "status_off")
     if event_id is not None and (key, "event", event_id) in _cache.rules:
         return Decision(_cache.rules[(key, "event", event_id)], "event_rule")
     if owner_id is not None and (key, "user", owner_id) in _cache.rules:
@@ -128,7 +137,6 @@ def decide(key: str, event=None) -> Decision:
         return Decision(True, "status")
     if status in ("off", "beta"):
         return Decision(False, "status")
-    builtin = BUILTIN.get(key)
     return Decision(builtin.default_enabled if builtin else False, "default")
 
 

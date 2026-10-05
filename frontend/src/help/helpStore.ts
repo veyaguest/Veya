@@ -5,6 +5,7 @@
  * בפתיחה הראשונה (React.lazy). כך העזרה כמעט לא מוסיפה משקל לטעינת האפליקציה.
  */
 import { useSyncExternalStore } from 'react'
+import { onApiEvent } from './errorBus'
 
 let open = false
 const listeners = new Set<() => void>()
@@ -41,16 +42,42 @@ export function setHelpEnabled(next: boolean): void {
   for (const fn of enabledListeners) fn()
 }
 
+function subscribeEnabled(fn: () => void): () => void {
+  enabledListeners.add(fn)
+  return () => {
+    enabledListeners.delete(fn)
+  }
+}
+
 export function useHelpEnabled(): boolean {
-  return useSyncExternalStore(
-    (fn) => {
-      enabledListeners.add(fn)
-      return () => {
-        enabledListeners.delete(fn)
-      }
-    },
-    () => enabled,
-  )
+  return useSyncExternalStore(subscribeEnabled, () => enabled && !switchedOff)
+}
+
+// ── העזרה נסגרה באמצע (מתג כיבוי באדמין / חריגה שהוסרה) ──
+// ``help_enabled`` מגיע עם האירוע, ולכן מי שכבר בתוך VEYA לא יודע שהעזרה
+// נסגרה. בנתיבים האלה 404 אומר דבר אחד בלבד — העזרה סגורה לאירוע — ולכן
+// ברגע שהשרת עונה כך, הכפתור, החלונית וההדרכה נעלמים (בלי רענון).
+// ``/help/guest-check`` לא ברשימה: שם 404 יכול להיות גם "המוזמן נמחק".
+const HELP_OFF_PATH = /^\/help\/(context\/[a-z_-]+|events|requests|requests\/mine)$/
+let switchedOff = false
+
+export function isHelpOffSignal(e: { path: string; status: number }): boolean {
+  return e.status === 404 && HELP_OFF_PATH.test(e.path)
+}
+
+onApiEvent((e) => {
+  if (switchedOff || !isHelpOffSignal(e)) return
+  switchedOff = true
+  set(false)
+  for (const fn of enabledListeners) fn()
+})
+
+export function isHelpSwitchedOff(): boolean {
+  return switchedOff
+}
+
+export function useHelpSwitchedOff(): boolean {
+  return useSyncExternalStore(subscribeEnabled, () => switchedOff)
 }
 
 // ── בקשה לפתוח את העזרה ישר על בדיקת תקלה (מ"צריכים עזרה עם זה?") ──

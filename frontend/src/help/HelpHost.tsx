@@ -10,7 +10,7 @@
  */
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { strings } from '../strings/he'
-import { closeHelp, toggleHelp, useHelpOpen } from './helpStore'
+import { closeHelp, toggleHelp, useHelpOpen, useHelpSwitchedOff } from './helpStore'
 import type { HelpAppProps } from './ui/HelpApp'
 import './help-launcher.css'
 
@@ -24,7 +24,9 @@ function preload(): void {
 
 export function HelpLauncher() {
   const open = useHelpOpen()
+  const off = useHelpSwitchedOff()
   const t = strings.help
+  if (off) return null
   return (
     <button
       type="button"
@@ -57,9 +59,11 @@ export function HelpHost(props: Omit<HelpAppProps, 'open'>) {
   }, [open])
   // יציאה / אירוע בלי עזרה → החלונית לא נשארת "פתוחה" לפעם הבאה.
   useEffect(() => () => closeHelp(), [])
+  // העזרה נסגרה באמצע (helpStore) — מורידים הכול, כולל הדרכה שרצה.
+  const off = useHelpSwitchedOff()
   // נשאר טעון אחרי הסגירה הראשונה — כדי שהדרכה ("תראו לי") תמשיך לרוץ
   // כשהחלונית עצמה סגורה.
-  if (!mounted) return null
+  if (!mounted || off) return null
   return (
     <Suspense fallback={null}>
       <HelpApp {...props} open={open} />

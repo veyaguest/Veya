@@ -56,6 +56,8 @@ export interface FeatureRow {
   controllable: boolean
   reason: string
   rule_scopes: ('event' | 'user')[]
+  /** מתג כיבוי: "כבוי" גובר גם על החריגות (העזרה). */
+  off_closes_rules: boolean
   status: 'active' | 'beta' | 'off'
   status_label: string
   source: 'admin' | 'env' | 'default'
