@@ -103,40 +103,72 @@ html[data-a11y-motion] :is(.reveal, .v-reveal) {
   display: block;
   flex-shrink: 0;
 }
-/* כותרת האתר: אייקון עגול לפני "כניסה למערכת". */
-.va11y-header-btn {
+/* ---- כפתור הפתיחה באתר ובדפים המשפטיים ----
+   רכיב אחד, קבוע לאורך כל הגלילה (veya-a11y.js יוצר אותו). קטן ושקט:
+   גלולה כהה בצבעי הכותרת, אייקון זהב + "נגישות". יושב בפינה
+   התחתונה בצד **הסוף** (שמאל ב-RTL) — הצד הנגדי לכפתור ה-CTA הצף של
+   דף הבית (שיושב בצד ההתחלה), כך שהם לא נפגשים לעולם.
+   באנר ה-Cookies: כל עוד הוא מוצג, הכפתור עולה מעליו (--va11y-lift). */
+.va11y-fab {
+  position: fixed;
+  z-index: 90;
+  inset-inline-end: clamp(12px, 2vw, 24px);
+  bottom: calc(clamp(12px, 2vw, 24px) + env(safe-area-inset-bottom, 0px) + var(--va11y-lift, 0px));
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 1px solid rgba(228, 201, 107, 0.32);
-  border-radius: 50%;
-  background: transparent;
-  color: #e4c96b;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px 0 12px;
+  border: 1px solid rgba(228, 201, 107, 0.4);
+  border-radius: 999px;
+  background: rgba(23, 19, 13, 0.9);
+  color: #f5efe2;
+  font-family: 'Heebo', 'Assistant', system-ui, -apple-system, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1;
   cursor: pointer;
+  box-shadow: 0 6px 18px -8px rgba(23, 19, 13, 0.55);
+}
+.va11y-fab .va11y-icon {
+  color: #e4c96b;
 }
 @media (hover: hover) {
-  .va11y-header-btn:hover {
-    background: rgba(201, 162, 39, 0.14);
+  .va11y-fab:hover {
     border-color: #e4c96b;
+    background: #17130d;
   }
 }
-/* קישור-כפתור בפוטר — נראה כמו שאר הקישורים לידו. */
-.va11y-link-btn {
-  padding: 0;
-  border: none;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-decoration: inherit;
-  cursor: pointer;
+.va11y-fab:focus-visible {
+  outline: 2px solid #e4c96b !important;
+  outline-offset: 3px;
 }
-.va11y-header-btn:focus-visible,
-.va11y-link-btn:focus-visible {
-  outline: 2px solid #e4c96b;
-  outline-offset: 2px;
+.va11y-fab[aria-expanded='true'] {
+  border-color: #e4c96b;
+}
+/* טלפון: עיגול 44px עם האייקון בלבד — השם נשאר לקורא המסך
+   (aria-label), ולא תופס רוחב מעל התוכן. */
+@media (max-width: 600px) {
+  .va11y-fab {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .va11y-fab-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media print {
+  .va11y-fab {
+    display: none;
+  }
 }
 
 /* ---- החלון ---- */

@@ -25,6 +25,7 @@
 
   var T = {
     title: 'הגדרות נגישות',
+    fabLabel: 'נגישות',
     sub: 'ההגדרות נשמרות בדפדפן הזה ויחולו בכל העמודים של VEYA.',
     close: 'סגירה',
     sizeLabel: 'גודל טקסט',
@@ -280,6 +281,63 @@
     if (opener && opener.focus && document.contains(opener)) opener.focus()
     opener = null
   }
+
+  // ── כפתור הפתיחה באתר ובדפים המשפטיים ──
+  // באפליקציה יש כפתורים משולבים (סרגל, פוטר, כרטיס המוזמן). באתר יש רכיב
+  // אחד, קבוע לאורך כל הגלילה, שהקובץ הזה יוצר — כך אין כפילות בין כותרת
+  // לפוטר, ו-23 העמודים הסטטיים לא צריכים לשאת markup משלהם.
+  function mountFab() {
+    if (!document.querySelector('.site-header, .legal-topbar, .about-topbar')) return
+    if (document.querySelector('.va11y-fab')) return
+    var btn = el(
+      'button',
+      {
+        type: 'button',
+        class: 'va11y-fab',
+        'data-veya-a11y-open': '',
+        'aria-haspopup': 'dialog',
+        'aria-expanded': 'false',
+        'aria-label': T.title,
+      },
+      [el('span', { class: 'va11y-fab-label', text: T.fabLabel })],
+    )
+    btn.insertAdjacentHTML(
+      'afterbegin',
+      '<svg class="va11y-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" ' +
+        'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<circle cx="12" cy="4.6" r="1.9" /><path d="M5 8.6c2.3.7 4.6 1 7 1s4.7-.3 7-1" />' +
+        '<path d="M12 9.6v4.9" /><path d="m8.6 20.8 3.4-6.3 3.4 6.3" /></svg>',
+    )
+    // מוקדם בסדר ה-Tab (אחרי "דילוג לתוכן"): מי שצריך הגדלה מוצא אותה
+    // בלי לעבור את כל העמוד.
+    var skip = document.querySelector('body > .skip-link')
+    if (skip) skip.insertAdjacentElement('afterend', btn)
+    else document.body.insertBefore(btn, document.body.firstChild)
+
+    // באנר ה-Cookies יושב בתחתית המסך בביקור ראשון — הכפתור עולה מעליו
+    // ולא מסתיר אותו (וחוזר למטה כשהבאנר נסגר).
+    function lift() {
+      var b = document.querySelector('.cookie-banner-static, .cookie-banner')
+      var h = b ? b.getBoundingClientRect().height : 0
+      btn.style.setProperty('--va11y-lift', (h > 0 ? Math.ceil(h) : 0) + 'px')
+    }
+    // צופים רק בבאנר עצמו (ובהוספה/הסרה שלו מה-body) — לא בכל העמוד, שבו
+    // האנימציות משנות מחלקות כל הזמן.
+    var watched = null
+    function watchBanner() {
+      var b = document.querySelector('.cookie-banner-static, .cookie-banner')
+      if (b && b !== watched && window.MutationObserver) {
+        watched = b
+        new MutationObserver(lift).observe(b, { attributes: true, attributeFilter: ['style', 'hidden', 'class'] })
+      }
+      lift()
+    }
+    watchBanner()
+    window.addEventListener('resize', lift)
+    if (window.MutationObserver) new MutationObserver(watchBanner).observe(document.body, { childList: true })
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountFab)
+  else mountFab()
 
   // פתיחה מכל כפתור מסומן — גם כפתורים שנוצרים אחר כך (React).
   document.addEventListener('click', function (e) {
