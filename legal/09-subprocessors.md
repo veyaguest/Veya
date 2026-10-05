@@ -56,7 +56,7 @@
 
 לשאלות בנוגע לספקי המשנה של VEYA:
 
-- דוא"ל: [להשלמה: אימייל לפניות פרטיות/הגנת מידע]
+- דוא"ל: [support@veyaguest.co.il](mailto:support@veyaguest.co.il)
 
 ---
 
