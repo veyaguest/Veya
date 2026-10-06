@@ -355,6 +355,12 @@ _EXTRA_COLUMNS = {
         "provider": "TEXT",
         "provider_account_id": "TEXT",
     },
+    # מייל אישור לפונה (help_support.send_confirmation). פניות שכבר קיימות
+    # מקבלות "" — הן לא יקבלו אישור בדיעבד (נשלח רק ברגע יצירת הפנייה).
+    "support_requests": {
+        "confirmation_status": "TEXT DEFAULT ''",
+        "confirmation_sent_at": "TIMESTAMP",
+    },
 }
 
 

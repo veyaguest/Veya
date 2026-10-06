@@ -19,7 +19,7 @@
 
 - ``POST /help/requests`` — המשתמש לוחץ בעצמו "שליחה לצוות". הודעה עד 1000
   תווים + תמונת מצב בפורמט קבוע. 5 בשעה למשתמש. **חסום בכניסה לתמיכה**
-  (צוות לא פונה לצוות בשם הלקוח).
+  (צוות לא פונה לצוות בשם הלקוח). אחרי השמירה — מייל אישור לפונה, ברקע.
 - ``GET /help/requests/mine`` — הפניות שלי באירוע הזה והסטטוס שלהן.
 
 ונתיב אחד של מדידת שימוש (שלב 8, ``help_analytics.py``):
@@ -32,7 +32,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal, Optional, Union
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -174,6 +174,7 @@ class SupportRequestRead(BaseModel):
 @router.post("/requests", response_model=SupportRequestRead, status_code=201)
 def create_support_request(
     payload: SupportRequestCreate,
+    background: BackgroundTasks,
     event: models.Event = Depends(_help_event),
     user: models.User = Depends(get_current_user),
     impersonator: Optional[int] = Depends(token_impersonator_id),
@@ -201,6 +202,9 @@ def create_support_request(
     db.refresh(row)
     support_limiter.record_fail(key)
     help_support.notify_team(row)
+    # מייל אישור לפונה — ברקע, אחרי שהפנייה נשמרה: לא מעכב את התשובה, וכשל
+    # בו לא נוגע בפנייה (help_support.send_confirmation).
+    background.add_task(help_support.send_confirmation, row.id)
     return SupportRequestRead(id=row.id, status=row.status, created_at=row.created_at)
 
 

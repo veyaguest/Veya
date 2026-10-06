@@ -1518,6 +1518,11 @@ class SupportRequest(Base):
     handled_by_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    #: מייל האישור לפונה (``help_support.send_confirmation``): "" = עוד לא טופל ·
+    #: sending · sent · mock (אין Resend בסביבה) · failed · skipped (מייל לא מאומת).
+    #: המעבר מ-"" ל-sending הוא תפיסה אטומית — כך אישור לא יוצא פעמיים.
+    confirmation_status: Mapped[str] = mapped_column(String, default="")
+    confirmation_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
 class HelpEvent(Base):

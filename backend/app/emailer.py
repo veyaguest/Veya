@@ -111,8 +111,15 @@ class SendResult:
     error: str = ""
 
 
-def send_email(*, to: str, subject: str, html_body: str, text_body: str = "") -> SendResult:
+def send_email(
+    *, to: str, subject: str, html_body: str, text_body: str = "",
+    reply_to: str = "", headers: dict[str, str] | None = None, idempotency_key: str = "",
+) -> SendResult:
     """שולח מייל בודד. לעולם לא זורק חריגה — מחזיר ``SendResult``.
+
+    ``reply_to`` / ``headers`` (למשל ``Auto-Submitted``) עוברים כמו שהם ל-Resend.
+    ``idempotency_key`` — Resend לא ישלח פעמיים את אותו מפתח (הגנה נוספת מפני
+    שליחה כפולה, מעבר לזו שבצד שלנו).
 
     הקורא מחליט מה לעשות בכישלון. במקרה של הזמנת בן/בת זוג אנחנו לא מפילים את
     הבקשה: ההזמנה כבר נשמרה ב-DB ואפשר לשלוח אותה שוב, אז עדיף להחזיר
@@ -140,6 +147,7 @@ def send_email(*, to: str, subject: str, html_body: str, text_body: str = "") ->
             headers={
                 "Authorization": f"Bearer {api_key()}",
                 "Content-Type": "application/json",
+                **({"Idempotency-Key": idempotency_key} if idempotency_key else {}),
             },
             json={
                 "from": from_address(),
@@ -147,6 +155,8 @@ def send_email(*, to: str, subject: str, html_body: str, text_body: str = "") ->
                 "subject": subject,
                 "html": html_body,
                 **({"text": text_body} if text_body else {}),
+                **({"reply_to": reply_to} if reply_to else {}),
+                **({"headers": headers} if headers else {}),
             },
             timeout=15.0,
         )
@@ -522,4 +532,65 @@ def send_password_reset(*, to: str, reset_url: str) -> SendResult:
         subject=subject,
         html_body=_shell(title=subject, preheader="הקישור תקף לשעה", body_html=body),
         text_body=text,
+    )
+
+
+# ── מייל 4: אישור לפונה — "קיבלנו את הפנייה שלך" ──────────────────────────
+# הכתובת הציבורית של צוות VEYA (כמו במסמכים המשפטיים, legal/*.md). זו כתובת
+# לחתימה ולתשובות — לא כתובת ההתראות לצוות (``VEYA_SUPPORT_EMAIL``).
+SUPPORT_ADDRESS = "support@veyaguest.co.il"
+
+# RFC 3834: מייל שנוצר אוטומטית. מענים אוטומטיים מנומסים ("אני בחופשה") לא
+# עונים עליו — כך לא נוצרת שרשרת תשובות אוטומטיות.
+AUTO_SUBMITTED_HEADERS = {"Auto-Submitted": "auto-generated"}
+
+
+def _signature() -> str:
+    """חתימה: "צוות VEYA" + הכתובת הציבורית (קישור זהב, כמו קישורים במסך)."""
+    return (
+        f'<p style="margin:30px 0 0;font:600 14.5px/1.7 {_FONT_SANS};color:{_INK};">צוות VEYA<br>'
+        f'<a href="mailto:{SUPPORT_ADDRESS}" style="color:{_GOLD};text-decoration:none;'
+        f'font-weight:400;direction:ltr;unicode-bidi:embed;">{SUPPORT_ADDRESS}</a></p>'
+    )
+
+
+def support_confirmation_content(request_id: int) -> tuple[str, str, str]:
+    """(נושא, HTML, טקסט) של מייל האישור — בלי שליחה (גם לבדיקות).
+
+    בכוונה **בלי** הטקסט שנכתב בפנייה (פרטיות, ושלא אפשר יהיה להשתמש בפנייה
+    כדי לשלוח תוכן משלך), בלי זמן תגובה מובטח, ובלי שום מידע פנימי.
+    """
+    number = f"#{int(request_id)}"
+    subject = f"קיבלנו את הפנייה שלך ({number})"
+    body = f"""
+{_title("קיבלנו את הפנייה שלך")}
+{_lead("קיבלנו את הפנייה שלך לצוות VEYA והיא נקלטה בהצלחה.")}
+{_accent_line(f"מספר הפנייה: {number}")}
+{_secondary("נחזור אליך במייל לאחר שנבדוק את הפנייה.<br>אין צורך לשלוח את הפנייה שוב.")}
+{_signature()}
+"""
+    text = (
+        "קיבלנו את הפנייה שלך\n\n"
+        "קיבלנו את הפנייה שלך לצוות VEYA והיא נקלטה בהצלחה.\n"
+        f"מספר הפנייה: {number}\n\n"
+        "נחזור אליך במייל לאחר שנבדוק את הפנייה.\n"
+        "אין צורך לשלוח את הפנייה שוב.\n\n"
+        f"צוות VEYA\n{SUPPORT_ADDRESS}"
+    )
+    html_body = _shell(title=subject, preheader="אין צורך לשלוח את הפנייה שוב.", body_html=body)
+    return subject, html_body, text
+
+
+def send_support_request_confirmation(*, to: str, request_id: int) -> SendResult:
+    """מייל אישור אוטומטי לפונה מ"לדבר עם צוות VEYA".
+
+    נשלח מהכתובת המאומתת הקיימת (``from_address``); תשובה עליו מגיעה ל-
+    ``SUPPORT_ADDRESS``. ``Idempotency-Key`` לפי מספר הפנייה — גם אם תופעל
+    שליחה שנייה, Resend לא ישלח שוב.
+    """
+    subject, html_body, text = support_confirmation_content(request_id)
+    return send_email(
+        to=to, subject=subject, html_body=html_body, text_body=text,
+        reply_to=SUPPORT_ADDRESS, headers=dict(AUTO_SUBMITTED_HEADERS),
+        idempotency_key=f"veya-support-confirmation-{int(request_id)}",
     )

@@ -1,6 +1,6 @@
 """פנייה לצוות VEYA מתוך "עזרה" (HELP_CENTER_PLAN.md §10, שלב 7).
 
-שלושה דברים, וכולם כאן כדי שה-router יישאר דק:
+ארבעה דברים, וכולם כאן כדי שה-router יישאר דק:
 
 1. **תמונת מצב בפורמט קבוע** (``build_context``): רשימה לבנה של שדות. מה
    שהדפדפן שולח עובר אימות (``SupportRequestCreate`` ב-routers/help.py, בלי
@@ -13,12 +13,16 @@
    הכתובת **לעולם** לא בקוד. אין כתובת → לא נשלח כלום (ומודפסת שורת יומן).
    במייל: מספר הפנייה, דחיפות, נושא וקישור למסך האדמין — **בלי** הטקסט
    שנכתב ובלי פרטי הלקוח (פחות מידע אישי בתיבות דואר; הכול במסך האדמין).
+4. **אישור לפונה** (``send_confirmation``, 2026-10-06): "קיבלנו את הפנייה
+   שלך" לכתובת המאומתת של החשבון — ברקע, פעם אחת, בלי הטקסט שנכתב. כשל
+   בשליחה לא נוגע בפנייה; התוצאה נרשמת עליה.
 """
 from __future__ import annotations
 
 import html
 import os
 import re
+from datetime import datetime
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -120,3 +124,64 @@ def notify_team(request: models.SupportRequest) -> Optional[emailer.SendResult]:
     )
     text = "\n".join(lines) + f"\n\nלפנייה במסך הניהול: {link}"
     return emailer.send_email(to=to, subject=subject, html_body=body_html, text_body=text)
+
+
+# ── מייל אישור לפונה ("קיבלנו את הפנייה שלך") ──────────────────────────────
+
+def send_confirmation(request_id: int) -> str:
+    """שולח לפונה מייל אישור — **ברקע**, אחרי שהפנייה כבר נשמרה ונענתה.
+
+    - הנמען: כתובת המייל **המאומתת** של החשבון ששלח את הפנייה, מה-DB. לא כתובת
+      מהדפדפן. חשבון בלי מייל מאומת → ``skipped``.
+    - פעם אחת בלבד: המעבר ``"" → sending`` הוא UPDATE מותנה אחד; מי שלא תפס
+      אותו (שליחה שנייה לאותה פנייה) לא שולח. Resend מקבל גם Idempotency-Key.
+    - התוצאה נרשמת על הפנייה (``confirmation_status`` / ``confirmation_sent_at``).
+    - לעולם לא זורק חריגה — הפנייה כבר נשמרה, וכשל במייל לא נוגע בה.
+
+    החיבור: ``MigrationSessionLocal`` — חיבור המערכת שמשמש גם את המשימות
+    המתוזמנות (routers/jobs.py). כאן אין משתמש מחובר, ומדיניות ה-RLS על
+    ``support_requests`` מתירה UPDATE לאדמין בלבד — ולכן לא משנים אותה.
+    מחזיר את הסטטוס הסופי (או ``duplicate`` כשמישהו אחר כבר טיפל).
+    """
+    from sqlalchemy import update
+
+    from app import auth as auth_module
+    from app.database import MigrationSessionLocal
+
+    SR = models.SupportRequest
+    status = "failed"
+    try:
+        with MigrationSessionLocal() as db:
+            claimed = db.execute(
+                update(SR).where(SR.id == request_id, SR.confirmation_status == "")
+                .values(confirmation_status="sending")
+            ).rowcount
+            db.commit()
+            if claimed != 1:
+                return "duplicate"
+            row = db.get(SR, request_id)
+            user = db.get(models.User, row.user_id) if row is not None else None
+            to = (getattr(user, "email", "") or "").strip()
+            if user is None or not to or not auth_module.is_email_verified(user):
+                status = "skipped"
+            else:
+                try:
+                    result = emailer.send_support_request_confirmation(to=to, request_id=request_id)
+                except Exception:  # noqa: BLE001 — emailer לא זורק, אבל לא סומכים על זה
+                    result = None
+                if result is not None and result.ok:
+                    status = "sent" if result.mode == "live" else "mock"
+            db.execute(
+                update(SR).where(SR.id == request_id).values(
+                    confirmation_status=status,
+                    confirmation_sent_at=datetime.utcnow() if status == "sent" else None,
+                )
+            )
+            db.commit()
+    except Exception as exc:  # noqa: BLE001 — מייל אישור לא מפיל כלום
+        print(f"[veya:support] פנייה #{request_id}: אישור לפונה — תקלה ({type(exc).__name__})", flush=True)
+        return "failed"
+    # בלי כתובת המייל בלוג — רק מספר הפנייה והתוצאה.
+    print(f"[veya:support] פנייה #{request_id}: אישור לפונה — {status}", flush=True)
+    return status
+

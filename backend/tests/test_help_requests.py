@@ -14,6 +14,9 @@
      במייל אין את הטקסט שנכתב ואין את פרטי הלקוח.
   9. מסך הצוות: הרשאות Support, שינוי סטטוס נרשם ביומן האדמין.
  10. מחיקת אירוע / חשבון מוחקת את הפניות; ייצוא המידע האישי כולל אותן.
+ 11. מייל אישור לפונה (2026-10-06): לכתובת המאומתת של החשבון בלבד, ברקע,
+     פעם אחת, עם Auto-Submitted, בעיצוב ובלוגו של VEYA, בלי הטקסט שנכתב;
+     כשל ב-Resend לא נוגע בפנייה; התוצאה נרשמת עליה; לא בכניסה לתמיכה.
 
 הרצה: ``venv/bin/python -m pytest tests/test_help_requests.py``
 """
@@ -77,10 +80,22 @@ def _rows(event_id: int | None = None) -> list:
 
 
 class _CaptureEmails:
-    """מחליף את emailer.send_email בזמן הבדיקה (שומר ומחזיר את מה שהיה)."""
+    """מחליף את emailer.send_email בזמן הבדיקה (שומר ומחזיר את מה שהיה).
 
-    def __init__(self) -> None:
+    ``mode="live"`` מדמה Resend שקיבל את המייל; ``fail="reject"`` — Resend
+    דחה (4xx/5xx); ``fail="raise"`` — תקלה לא צפויה בשליחה.
+    """
+
+    def __init__(self, mode: str = "mock", fail: str = "") -> None:
         self.sent: list[dict] = []
+        self.mode = mode
+        self.fail = fail
+
+    def team(self) -> list[dict]:
+        return [m for m in self.sent if not m["subject"].startswith("קיבלנו את הפנייה")]
+
+    def confirmations(self) -> list[dict]:
+        return [m for m in self.sent if m["subject"].startswith("קיבלנו את הפנייה")]
 
     def __enter__(self):
         from app import emailer
@@ -89,7 +104,11 @@ class _CaptureEmails:
 
         def capture(**kw):
             self.sent.append(kw)
-            return emailer.SendResult(ok=True, mode="mock", provider_id="test")
+            if self.fail == "raise":
+                raise RuntimeError("resend down")
+            if self.fail == "reject":
+                return emailer.SendResult(ok=False, mode="live", error="Resend 500: boom")
+            return emailer.SendResult(ok=True, mode=self.mode, provider_id="test")
 
         emailer.send_email = capture
         return self
@@ -335,13 +354,13 @@ def test_team_email_only_to_configured_address_and_without_personal_text() -> No
     s = _setup(client)
     with _with_env("VEYA_SUPPORT_EMAIL", None), _CaptureEmails() as mails:
         assert _post(client, s).status_code == 201
-        assert mails.sent == []  # בלי כתובת — לא נשלח כלום
+        assert mails.team() == []  # בלי כתובת — לא נשלח כלום לצוות
     with _with_env("VEYA_SUPPORT_EMAIL", "team-inbox@veya.test"), _CaptureEmails() as mails:
         _set_event_date(s["event_id"], 1)
         r = _post(client, s)
         assert r.status_code == 201
-        assert len(mails.sent) == 1
-        mail = mails.sent[0]
+        assert len(mails.team()) == 1
+        mail = mails.team()[0]
         assert mail["to"] == "team-inbox@veya.test"
         rid = r.json()["id"]
         assert f"#{rid}" in mail["subject"] and "דחוף" in mail["subject"]
@@ -465,6 +484,149 @@ def test_event_and_account_deletion_remove_requests_and_export_includes_them() -
 
     left = _db(lambda db: db.scalars(select(models.SupportRequest).where(models.SupportRequest.user_id == uid)).all())
     assert left == []
+
+
+# ── 11. מייל אישור לפונה ──────────────────────────────────────────────────
+
+def _confirmation_row(rid: int) -> dict:
+    return next(r for r in _rows() if r["id"] == rid)
+
+
+def test_confirmation_goes_to_the_verified_account_email_in_veya_design() -> None:
+    from app import emailer, models
+
+    _reset_limit()
+    client, _ = make_client()
+    s = _setup(client)
+    owner = _db(lambda db: db.get(models.User, _uid(s["token"])))
+    with _with_env("VEYA_SUPPORT_EMAIL", "team-inbox@veya.test"), _CaptureEmails(mode="live") as mails:
+        r = _post(client, s)
+        assert r.status_code == 201, r.text
+        rid = r.json()["id"]
+        assert len(mails.confirmations()) == 1, "מייל אישור אחד לפונה"
+        assert len(mails.team()) == 1, "ההתראה לצוות לא השתנתה"
+    mail = mails.confirmations()[0]
+    # הנמען: המייל של החשבון — לא משהו שהדפדפן שלח.
+    assert mail["to"] == owner.email
+    assert mail["reply_to"] == emailer.SUPPORT_ADDRESS == "support@veyaguest.co.il"
+    assert mail["headers"] == {"Auto-Submitted": "auto-generated"}
+    assert mail["idempotency_key"] == f"veya-support-confirmation-{rid}"
+    # התוכן: מה שהמייסד ביקש, מספר הפנייה, חתימה.
+    everything = mail["subject"] + mail["html_body"] + mail["text_body"]
+    for line in (
+        "קיבלנו את הפנייה שלך", "קיבלנו את הפנייה שלך לצוות VEYA והיא נקלטה בהצלחה.",
+        "נחזור אליך במייל לאחר שנבדוק את הפנייה.", "אין צורך לשלוח את הפנייה שוב.",
+        f"#{rid}", "צוות VEYA", "support@veyaguest.co.il",
+    ):
+        assert line in mail["html_body"] and line in mail["text_body"], line
+    # בלי הטקסט שנכתב, בלי פרטי מוזמנים, בלי זמן תגובה, בלי מידע פנימי.
+    for secret in (_body()["message"], *[n for n, _ in SECRET_GUESTS], "/admin", "team-inbox"):
+        assert secret not in everything, secret
+    for promise in ("שעות", "ימי עבודה", "תוך", "עד מחר"):
+        assert promise not in everything, f"הבטחת זמן תגובה: {promise}"
+    # העיצוב של VEYA: אותה מעטפת, אותו לוגו (frontend/public/logo.png), RTL.
+    html_body = mail["html_body"]
+    assert '<html dir="rtl" lang="he">' in html_body
+    assert f'src="{emailer.logo_url()}"' in html_body and emailer.logo_url().endswith("/logo.png")
+    assert (Path(__file__).resolve().parents[2] / "frontend" / "public" / "logo.png").is_file()
+    for token in (emailer._SURFACE, emailer._GOLD, "Frank Ruhl Libre", "Assistant", "max-width:460px"):
+        assert token in html_body, token
+    # התוצאה נרשמה על הפנייה.
+    row = _confirmation_row(rid)
+    assert row["confirmation_status"] == "sent" and row["confirmation_sent_at"] is not None
+
+
+def test_request_is_saved_even_when_resend_fails() -> None:
+    _reset_limit()
+    client, _ = make_client()
+    s = _setup(client)
+    for fail in ("reject", "raise"):
+        with _CaptureEmails(mode="live", fail=fail) as mails:
+            r = _post(client, s)
+            assert r.status_code == 201, (fail, r.text)
+            assert len(mails.confirmations()) == 1
+        row = _confirmation_row(r.json()["id"])
+        assert row["message"] == _body()["message"], "הפנייה נשמרה כמו שהיא"
+        assert row["confirmation_status"] == "failed" and row["confirmation_sent_at"] is None, fail
+
+
+def test_confirmation_is_never_sent_twice() -> None:
+    from app import help_support
+
+    _reset_limit()
+    client, _ = make_client()
+    s = _setup(client)
+    with _CaptureEmails(mode="live") as mails:
+        rid = _post(client, s).json()["id"]
+        assert help_support.send_confirmation(rid) == "duplicate"
+        assert help_support.send_confirmation(rid) == "duplicate"
+        assert len(mails.confirmations()) == 1
+    assert _confirmation_row(rid)["confirmation_status"] == "sent"
+    # פנייה שכבר נכשלה — גם היא לא נשלחת שוב אוטומטית.
+    with _CaptureEmails(mode="live", fail="reject") as mails:
+        rid2 = _post(client, s).json()["id"]
+    with _CaptureEmails(mode="live") as mails:
+        assert help_support.send_confirmation(rid2) == "duplicate"
+        assert mails.sent == []
+
+
+def test_recipient_only_from_the_verified_account() -> None:
+    from app import models
+
+    _reset_limit()
+    client, _ = make_client()
+    s = _setup(client)
+    # הדפדפן לא יכול לבחור לאן יישלח האישור.
+    with _CaptureEmails(mode="live") as mails:
+        r = _post(client, s, email="someone-else@example.com")
+        assert r.status_code == 422
+        assert mails.sent == []
+    # חשבון בלי מייל מאומת — הפנייה נשמרת, אישור לא נשלח.
+    uid = _uid(s["token"])
+    verified_at = _db(lambda db: db.get(models.User, uid).email_verified_at)
+    _db(lambda db: setattr(db.get(models.User, uid), "email_verified_at", None))
+    try:
+        with _CaptureEmails(mode="live") as mails:
+            r = _post(client, s)
+            assert r.status_code == 201
+            assert mails.confirmations() == []
+        assert _confirmation_row(r.json()["id"])["confirmation_status"] == "skipped"
+    finally:
+        _db(lambda db: setattr(db.get(models.User, uid), "email_verified_at", verified_at))
+    # בן/בת זוג — האישור הולך לכתובת שלהם, לא לבעלים.
+    partner_token = _add_partner(client, s)
+    partner = _db(lambda db: db.get(models.User, _uid(partner_token)))
+    with _CaptureEmails(mode="live") as mails:
+        assert _post(client, s, partner_token).status_code == 201
+        assert [m["to"] for m in mails.confirmations()] == [partner.email]
+
+
+def test_no_confirmation_in_impersonation_or_when_help_is_off() -> None:
+    from app import auth as auth_module
+    from app import models
+
+    _reset_limit()
+    client, _ = make_client()
+    s = _setup(client)
+    admin_token = _make_admin(client, "super_admin")
+    owner = _db(lambda db: db.get(models.User, _uid(s["token"])))
+    imp = auth_module.create_access_token(owner, expires=auth_module.IMPERSONATION_EXPIRE, impersonated_by=_uid(admin_token))
+    off = _setup(client, help_on=False)
+    with _CaptureEmails(mode="live") as mails:
+        assert _post(client, s, imp).status_code == 403
+        assert _post(client, off).status_code == 404
+        assert mails.sent == []
+
+
+def test_confirmation_columns_migrate_and_rls_is_unchanged() -> None:
+    root = Path(__file__).resolve().parent.parent
+    main_src = (root / "app" / "main.py").read_text(encoding="utf-8")
+    assert '"support_requests": {' in main_src and '"confirmation_status": "TEXT DEFAULT \'\'"' in main_src
+    sql = (root / "rls" / "25_help_rls.sql").read_text(encoding="utf-8")
+    # עדכון פנייה — עדיין אדמין בלבד. מייל האישור נרשם בחיבור המערכת, לא בהרחבת RLS.
+    assert "FOR UPDATE\n  USING (app_is_admin())\n  WITH CHECK (app_is_admin());" in sql
+    src = (root / "app" / "help_support.py").read_text(encoding="utf-8")
+    assert "MigrationSessionLocal" in src and 'SR.confirmation_status == ""' in src
 
 
 def test_rls_file_is_registered_and_forced() -> None:
