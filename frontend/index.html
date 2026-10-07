@@ -1226,24 +1226,77 @@
         mask-image: linear-gradient(to bottom, #000 58%, transparent 96%);
       }
 
-      /* 1. הירו: סצנה אחת — זוג בסלון מול המחשב, ועל המסך שלהם תמונת המצב
-         האמיתית. בלי מסגרת: הקצוות נמסים ללילה של ההירו. */
-      .hero-scene { max-width: 960px; margin-top: 0; margin-bottom: 6px; }
+      /* 1. הירו בנוי על הצילום: זוג בסלון, והמסך האמיתי של VEYA אצלם במחשב.
+         הכותרת יושבת באור המנורה שמעליהם (קצה הצילום נמס מתחתיה), הכפתור
+         בצל שבתחתית, ושש היכולות מקיפות את הסצנה — שלוש מכל צד, כל אחת עם
+         קו זהב דק שמחבר אותה לתמונה. בלי מסגרת ובלי כרטיס. */
+      .hero { padding-top: 34px; }
+      .hero .hero-logo { width: clamp(170px, 16vw, 214px); margin-bottom: 14px; }
+      .hero h1 { font-size: clamp(2.1rem, 4.6vw, 3.35rem); margin-bottom: 0; text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45); }
+      .hp-stage {
+        --hp-w: min(880px, calc((100svh - 300px) * 1.7778), calc(100vw - 440px));
+        position: relative; width: var(--hp-w); max-width: 100%;
+        margin: -64px auto 0;
+      }
       .hs-photo {
+        position: relative; z-index: 0;
         display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover;
         -webkit-mask-image:
-          linear-gradient(to bottom, transparent 0, #000 22%, #000 72%, transparent 100%),
-          linear-gradient(to right, transparent 0, #000 14%, #000 86%, transparent 100%);
+          linear-gradient(to bottom, transparent 0, #000 26%, #000 64%, transparent 100%),
+          linear-gradient(to right, transparent 0, #000 13%, #000 87%, transparent 100%);
         -webkit-mask-composite: source-in;
         mask-image:
-          linear-gradient(to bottom, transparent 0, #000 22%, #000 72%, transparent 100%),
-          linear-gradient(to right, transparent 0, #000 14%, #000 86%, transparent 100%);
+          linear-gradient(to bottom, transparent 0, #000 26%, #000 64%, transparent 100%),
+          linear-gradient(to right, transparent 0, #000 13%, #000 87%, transparent 100%);
         mask-composite: intersect;
       }
-      /* טלפון: חיתוך קרוב יותר סביב המסך, כדי שהמספרים יישארו קריאים */
+      .hp-cta { position: relative; z-index: 2; margin-top: -78px; }
+      .hp-cta .cta-note { margin-top: 12px; }
+
+      /* היכולות סביב התמונה */
+      .hp-caps.hero-caps { margin: 0; }
+      @media (min-width: 1100px) {
+        .hp-caps.hero-caps { display: block; position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+        .hp-caps .cap {
+          position: absolute; display: flex; align-items: center; gap: 11px;
+          font-size: var(--fs-sm); color: #e6dcc6; white-space: nowrap;
+        }
+        .hp-caps svg {
+          width: 36px; height: 36px; padding: 8.5px; opacity: 1; box-sizing: border-box;
+          border: 1px solid rgba(228, 201, 107, 0.38); border-radius: 50%;
+          background: rgba(23, 19, 13, 0.6);
+        }
+        .hp-caps .cap::after {
+          content: ""; position: absolute; top: 50%; width: 34px; height: 1px;
+        }
+        /* ימין: הסמל צמוד לתמונה, הקו יוצא ממנו אליה */
+        .cap-1, .cap-2, .cap-3 { left: calc(100% + 30px); flex-direction: row-reverse; }
+        .cap-1::after, .cap-2::after, .cap-3::after {
+          right: calc(100% + 8px); background: linear-gradient(to left, rgba(228, 201, 107, 0.55), rgba(228, 201, 107, 0));
+        }
+        /* שמאל: אותו דבר במראה */
+        .cap-4, .cap-5, .cap-6 { right: calc(100% + 30px); }
+        .cap-4::after, .cap-5::after, .cap-6::after {
+          left: calc(100% + 8px); background: linear-gradient(to right, rgba(228, 201, 107, 0.55), rgba(228, 201, 107, 0));
+        }
+        /* קשת עדינה: האמצעי רחוק מעט יותר מהתמונה */
+        .cap-1, .cap-4 { top: 24%; }
+        .cap-2, .cap-5 { top: 46%; }
+        .cap-3, .cap-6 { top: 68%; }
+        .cap-2 { left: calc(100% + 52px); }
+        .cap-5 { right: calc(100% + 52px); }
+      }
+      /* מתחת לזה אין מקום בצדדים: היכולות יורדות לרשת מתחת לכפתור */
+      @media (max-width: 1099px) {
+        .hp-stage { --hp-w: min(880px, calc((100svh - 300px) * 1.7778)); display: flex; flex-direction: column; }
+        .hp-cta { order: 1; }
+        .hp-caps.hero-caps { order: 2; margin: 30px auto 0; }
+      }
       @media (max-width: 600px) {
-        .hero-scene { margin-inline: -20px; }
+        .hp-stage { width: auto; margin: -40px -20px 0; }
         .hs-photo { aspect-ratio: 5 / 4; object-position: 50% 50%; }
+        .hp-cta { margin-top: -64px; padding: 0 20px; }
+        .hp-caps.hero-caps { padding: 0 20px; }
       }
 
       /* 2. מועד הסגירה: היא עומדת בקצה המסלול, ליד "היעד" — מחוץ לציר
@@ -2977,21 +3030,13 @@
         <div class="wrap">
           <img class="hero-logo reveal" src="/veya_horizontal.png" alt="VEYA — ניהול מוזמנים, אישורי הגעה, הושבה ומאזן האירוע" width="1439" height="600" fetchpriority="high" decoding="async" />
           <h1 id="hero-title" class="reveal d1">כמה אנשים באמת מגיעים לאירוע שלכם —<br /><span class="accent">וכמה זה עולה לכם</span></h1>
-          <!-- יכולות VEYA: האייקונים הם אייקוני הניווט של המוצר עצמו
-               (NavIcon ב-src/App.tsx), אחד לכל מסך — לא סט אייקונים לדף. -->
-          <ul class="hero-caps reveal d2" aria-label="מה מנהלים ב־VEYA">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0" /><path d="M16 6.5a3 3 0 0 1 0 5.8" /><path d="M17.5 20a5.5 5.5 0 0 0-2.5-4.6" /></svg>ניהול מוזמנים</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2" /><path d="M9 3.5V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v.5" /><path d="M8.5 12.5 11 15l4.5-5" /></svg>אישורי הגעה</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 3z" /><path d="m9 10 2 2 4-4" /></svg>הזמנות והודעות</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="8" r="2.4" /><circle cx="17" cy="8" r="2.4" /><circle cx="12" cy="17" r="2.4" /><path d="M4 20h16" /></svg>הושבה</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="8" width="17" height="4" rx="1" /><path d="M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12" /><path d="M12 8v13" /><path d="M12 8S10.5 3.5 8 3.5a2.5 2.5 0 0 0 0 5M12 8s1.5-4.5 4-4.5a2.5 2.5 0 0 1 0 5" /></svg>מתנות באשראי</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2" /><circle cx="12" cy="12" r="2.6" /><path d="M5.5 9.5v.01M18.5 14.5v.01" /></svg>מאזן האירוע</li>
-          </ul>
-          <div class="hero-devices hero-scene reveal d3">
-            <!-- ═════ זוג אמיתי, והמסך האמיתי שלהם ═════════════════════════
-                 צילום (Higgsfield) של זוג בסלון מול המחשב; על מסך המחשב
-                 הולבש צילום המסך האמיתי של תמונת המצב מאירוע ההדגמה
-                 (journey-dashboard.jpg) בפרספקטיבה. שום UI לא צויר לדף. -->
+          <!-- ═════ ההירו בנוי על הצילום ═════════════════════════════════
+               זוג בסלון מול המחשב (Higgsfield); על מסך המחשב הולבש בפרספקטיבה
+               צילום המסך האמיתי של תמונת המצב מאירוע ההדגמה
+               (journey-dashboard.jpg) — שום UI לא צויר לדף. הכותרת יושבת
+               באור המנורה שמעליהם, הכפתור בצל שבתחתית, והיכולות סביב.
+               האייקונים הם אייקוני הניווט של המוצר עצמו (NavIcon ב-src/App.tsx). -->
+          <div class="hp-stage reveal d2">
             <img class="hs-photo"
               src="/people/hero-scene-1600.webp"
               srcset="/people/hero-scene-960.webp 960w, /people/hero-scene-1600.webp 1600w"
@@ -2999,15 +3044,22 @@
               alt="זוג בסלון בערב מחייך זה לזה מול המחשב. על המסך תמונת המצב של VEYA: דניאל ושרון, ספירה לאחור לאירוע, ו־256 שאישרו הגעה מתוך 644"
               width="1600" height="900" fetchpriority="high" decoding="async"
               onerror="veyaRetryImage(this)" />
+            <ul class="hero-caps hp-caps" aria-label="מה מנהלים ב־VEYA">
+              <li class="cap cap-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0" /><path d="M16 6.5a3 3 0 0 1 0 5.8" /><path d="M17.5 20a5.5 5.5 0 0 0-2.5-4.6" /></svg>ניהול מוזמנים</li>
+              <li class="cap cap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2" /><path d="M9 3.5V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v.5" /><path d="M8.5 12.5 11 15l4.5-5" /></svg>אישורי הגעה</li>
+              <li class="cap cap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 3z" /><path d="m9 10 2 2 4-4" /></svg>הזמנות והודעות</li>
+              <li class="cap cap-4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="8" r="2.4" /><circle cx="17" cy="8" r="2.4" /><circle cx="12" cy="17" r="2.4" /><path d="M4 20h16" /></svg>הושבה</li>
+              <li class="cap cap-5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="8" width="17" height="4" rx="1" /><path d="M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12" /><path d="M12 8v13" /><path d="M12 8S10.5 3.5 8 3.5a2.5 2.5 0 0 0 0 5M12 8s1.5-4.5 4-4.5a2.5 2.5 0 0 1 0 5" /></svg>מתנות באשראי</li>
+              <li class="cap cap-6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2" /><circle cx="12" cy="12" r="2.6" /><path d="M5.5 9.5v.01M18.5 14.5v.01" /></svg>מאזן האירוע</li>
+            </ul>
+            <div class="hp-cta">
+              <div class="cta-row">
+                <a href="/app?auth=register" class="btn btn-primary btn-lg">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+              </div>
+              <!-- מה באמת קורה אחרי הלחיצה: הרשמה → פתיחת אירוע → הרשימה. -->
+              <p class="cta-note">פותחים אירוע ומתחילים מרשימת המוזמנים — אפשר גם רשימה חלקית, ולהוסיף בהמשך.</p>
+            </div>
           </div>
-
-          <div class="cta-row reveal d2">
-            <a href="/app?auth=register" class="btn btn-primary btn-lg">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
-          </div>
-          <!-- מה באמת קורה אחרי הלחיצה: הרשמה → פתיחת אירוע → הרשימה.
-               בלי הבטחות: אין כאן שדה תשלום ואין התחייבות במוצר. -->
-          <p class="cta-note reveal d2">פותחים אירוע ומתחילים מרשימת המוזמנים — אפשר גם רשימה חלקית, ולהוסיף בהמשך.</p>
-
 
           <!-- מסלול האירוע (§16): סדר הזמנים האמיתי של אירוע, לא רשימת
                פיצ'רים. כל שלב הוא קישור אמיתי ומוביל את העין לגלילה. -->
