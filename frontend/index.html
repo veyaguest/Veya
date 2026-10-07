@@ -1301,40 +1301,40 @@
         }
         .hs-photo { aspect-ratio: 5 / 4; object-position: 50% 50%; }
         .hp-cta { margin-top: -30px; padding: 0 20px; }
-        .hp-cta .btn.btn-lg { font-size: 1rem; padding: 13px 30px; box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.7); }
+        .hp-cta .btn.btn-lg { font-size: 1rem; padding: 13px 22px; box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.7); }
 
         /* בלי transform (גם לא של אנימציית הכניסה), כדי שהיכולות יימדדו
            מראש ההירו ולא מהצילום */
         .hp-stage, .hero .hp-stage.reveal.d2 { position: static; transform: none; animation: none; }
-        .hp-caps.hero-caps { display: block; position: absolute; inset: 0; margin: 0; padding: 0; z-index: 1; pointer-events: none; }
+        .hp-caps.hero-caps {
+          display: block; position: absolute; inset: 0; margin: 0; padding: 0; z-index: 1; pointer-events: none;
+          /* ראש הצילום מראש ההירו (171px כשהכותרת בשלוש שורות), גובהו ≈ 78.5vw */
+          --ph-top: 171px;
+          /* גובה הכפתור: הוא יושב 70.5vw מתחת לראש הצילום */
+          --cap-low-r: calc(var(--ph-top) + 70.5vw + 10px);
+          --cap-low-l: calc(var(--ph-top) + 70.5vw + 30px);
+        }
         /* עדינות: בלי מסגרת ובלי רקע — סמל קטן ומילה שקטה, כמו הערת שוליים */
         .hp-caps .cap {
           position: absolute; display: inline-flex; align-items: center; gap: 5px;
-          font-size: 11.5px; letter-spacing: 0.2px; color: rgba(236, 226, 205, 0.62); white-space: nowrap;
-          text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+          font-size: 11px; letter-spacing: 0.3px; color: rgba(236, 226, 205, 0.55); white-space: nowrap;
+          text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75);
         }
-        .hp-caps svg { width: 14px; height: 14px; opacity: 0.6; }
-        /* מפוזרות סביב הכותרת: ארבע לצדי הלוגו ושתיים לצד השורה השנייה —
-           כל אחת בגובה ובמרחק קצת אחר, כדי שלא ייראה כמו טבלה. הכפתור נקי.
-           המיקום נמדד מראש ההירו (.hero .wrap), שם הלוגו ושורות הכותרת
-           יושבים באותו גובה בכל רוחב טלפון. */
-        .cap-1 { right: 6vw; top: 6px; }
-        .cap-3 { right: 2.5vw; top: 46px; }
-        .cap-6 { left: 6vw; top: 18px; }
-        .cap-5 { left: 2.5vw; top: 58px; }
+        .hp-caps svg { width: 13px; height: 13px; opacity: 0.55; }
+        /* המיקום נמדד מראש ההירו (.hero .wrap), שם הלוגו יושב באותו גובה
+           בכל רוחב טלפון. */
+        /* פיזור על כל גובה ההירו כדי שלא תיווצר צפיפות: שתיים לצד הלוגו,
+           שתיים לצד הכותרת ושתיים לצדי הכפתור — כל זוג בהיסט אחר. */
+        .cap-1 { right: 5vw; top: 12px; }
+        .cap-6 { left: 6vw; top: 46px; }
         .cap-2 { right: 3vw; top: 152px; }
-        .cap-4 { left: 6vw; top: 162px; }
+        .cap-4 { left: 6vw; top: 166px; }
+        .cap-3 { right: 2.5vw; top: var(--cap-low-r); }
+        .cap-5 { left: 3vw; top: var(--cap-low-l); }
       }
-      @media (max-width: 370px) {
-        .hp-caps .cap { font-size: 11px; }
-        .cap-2 { right: 1.5vw; }
-      }
-      /* טלפונים זעירים: אין מקום לצד הכותרת */
-      @media (max-width: 350px) {
-        .hp-caps .cap-2, .hp-caps .cap-4 { display: none; }
-        .cap-1 { right: 3vw; }
-      }
-      @media (max-width: 339px) { .hp-caps.hero-caps { display: none; } }
+      @media (min-width: 553px) and (max-width: 600px) { .hp-caps.hero-caps { --ph-top: 129px; } }
+      @media (max-width: 370px) { .hp-caps .cap { font-size: 10.5px; } .cap-2 { right: 1.5vw; } }
+      @media (max-width: 350px) { .hp-caps.hero-caps { display: none; } }
 
       /* 2. מועד הסגירה: היא עומדת בקצה המסלול, ליד "היעד" — מחוץ לציר
          עצמו, כך שאף תאריך ואף תווית לא מוסתרים. */
