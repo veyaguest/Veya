@@ -1315,8 +1315,27 @@
         .hp-stage { --hp-w: min(880px, calc((100svh - 300px) * 1.7778)); }
         .hp-caps.hero-caps { display: none; }
       }
-      /* טלפון: הצילום לרוחב המסך, והכפתור בצל שמתחת למחשב */
+      /* פחות, ברור יותר (טלפון וטאבלט): כל פריט בהירו צריך להצדיק את מקומו.
+         שורות ה-✓ חוזרות על הכותרת ועל רצועת היכולות — הן יורדות. ופעולה
+         ראשית אחת במסך: כשכפתור ההירו גלוי, הכפתור שבכותרת העליונה מחכה,
+         ונכנס בעדינות ברגע שכפתור ההירו יוצא מהמסך (רק opacity + transform). */
+      @media (max-width: 1099px) {
+        .hero .hero-trust { display: none; }
+        .site-header .header-actions .btn-primary {
+          transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1), transform 200ms cubic-bezier(0.23, 1, 0.32, 1), visibility 0s;
+        }
+        .site-header.hero-cta-in-view .header-actions .btn-primary {
+          opacity: 0; transform: translateY(-6px) scale(0.97); visibility: hidden; pointer-events: none;
+          transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1), visibility 0s 160ms;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .site-header .header-actions .btn-primary { transform: none !important; }
+      }
+      /* טלפון: הצילום לרוחב המסך, והכפתור בצל שמתחת למחשב. הלוגו הגדול
+         יורד — הוא כבר בכותרת העליונה, צמוד מעליו. */
       @media (max-width: 600px) {
+        .hero .hero-logo { display: none; }
         .hp-stage { width: auto; max-width: none; margin: -40px -20px 0; }
         .hs-photo { aspect-ratio: 5 / 4; object-position: 50% 50%; }
         .hp-cta { margin-top: -30px; padding: 0 20px; }
@@ -3047,6 +3066,7 @@
         </div>
       </div>
     </header>
+    <script>document.querySelector('.site-header').classList.add('hero-cta-in-view');</script>
 
     <main id="main">
       <!-- ═════ 1. HERO ═════ -->
@@ -4180,6 +4200,21 @@
       </div>
     </div>
 
+    <script>
+      /* פעולה ראשית אחת: הכפתור שבכותרת העליונה נכנס רק כשכפתור ההירו
+         יוצא מהמסך (העיצוב חל רק מתחת ל-1100px). */
+      (function () {
+        var header = document.querySelector('.site-header');
+        var heroCta = document.querySelector('.hp-cta .btn');
+        if (!header || !heroCta || !('IntersectionObserver' in window)) {
+          if (header) header.classList.remove('hero-cta-in-view');
+          return;
+        }
+        new IntersectionObserver(function (entries) {
+          header.classList.toggle('hero-cta-in-view', entries[0].isIntersecting);
+        }, { rootMargin: '-70px 0px 0px 0px' }).observe(heroCta);
+      })();
+    </script>
     <script>
       (function () {
         var els = document.querySelectorAll('.reveal');
