@@ -626,6 +626,15 @@ def export_my_data(
                 "created_at": r.created_at.isoformat() if r.created_at else None,
                 "status": r.status,
                 "message": r.message,
+                # התשובות שצוות VEYA שלח אליכם במייל (רק מה שבאמת נשלח).
+                "replies": [
+                    {"sent_at": rep.sent_at.isoformat() if rep.sent_at else None, "body": rep.body}
+                    for rep in db.scalars(
+                        select(models.SupportReply)
+                        .where(models.SupportReply.request_id == r.id, models.SupportReply.status == "sent")
+                        .order_by(models.SupportReply.id)
+                    ).all()
+                ],
             }
             for r in support_requests
         ],

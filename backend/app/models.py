@@ -1525,6 +1525,33 @@ class SupportRequest(Base):
     confirmation_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
+class SupportReply(Base):
+    """תשובה של צוות VEYA לפנייה, שנשלחה במייל מתוך מסך "פניות תמיכה".
+
+    - ``body`` — מה שהצוות כתב, טקסט בלבד (במייל הוא עובר escaping בתוך תבנית קבועה).
+    - ``status`` — sending → sent / failed. רק ``sent`` = המייל באמת יצא.
+    - ``client_token`` — מזהה חד-פעמי של חלון המענה בדפדפן. ``(request_id,
+      client_token)`` ייחודי, ולכן לחיצה כפולה לא שולחת פעמיים; ניסיון חוזר
+      אחרי כשל משתמש באותה שורה.
+    - **לא** משנה את הסטטוס של הפנייה — "נענתה" ו"טופלה" הם שני דברים נפרדים.
+    """
+
+    __tablename__ = "support_replies"
+    __table_args__ = (
+        UniqueConstraint("request_id", "client_token", name="uq_support_reply_token"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    request_id: Mapped[int] = mapped_column(ForeignKey("support_requests.id"), index=True, nullable=False)
+    admin_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    client_token: Mapped[str] = mapped_column(String, nullable=False)
+    body: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String, default="sending")
+    attempts: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
 class HelpEvent(Base):
     """מדידת שימוש בעזרה — **בלי זהות** (HELP_CENTER_PLAN.md §12, שלב 8).
 

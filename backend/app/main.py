@@ -1628,6 +1628,7 @@ _RLS_MIGRATION_FILES = (
     "24_agent_task_access_rls.sql",
     "25_help_rls.sql",
     "26_help_events_rls.sql",
+    "27_support_replies_rls.sql",
 )
 
 #: הפונקציות שקובצי 15–17 נשענים עליהן (קבצים 01 ו-08). בלעדיהן

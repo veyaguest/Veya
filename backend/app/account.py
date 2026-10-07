@@ -134,19 +134,35 @@ def delete_event_cascade(db: Session, event: "models.Event") -> None:
     for row in db.scalars(
         select(models.SupportRequest).where(models.SupportRequest.event_id == event_id)
     ).all():
+        _delete_support_replies(db, row.id)
         db.delete(row)
     db.delete(event)
 
 
+def _delete_support_replies(db: Session, request_id: int) -> None:
+    """תשובות הצוות לפנייה — נמחקות יחד איתה (לפניה, בגלל המפתח הזר)."""
+    for reply in db.scalars(
+        select(models.SupportReply).where(models.SupportReply.request_id == request_id)
+    ).all():
+        db.delete(reply)
+    db.flush()
+
+
 def delete_support_requests_for_user(db: Session, user_id: int) -> None:
-    """לפני מחיקת משתמש: הפניות **שלו** לצוות נמחקות (מידע אישי שלו), ופניות
-    שהוא טיפל בהן כאיש צוות נשארות — רק מנותקות ממנו. בלי commit.
+    """לפני מחיקת משתמש: הפניות **שלו** לצוות נמחקות (מידע אישי שלו), יחד עם
+    תשובות הצוות אליהן. פניות שהוא טיפל בהן / תשובות שהוא שלח כאיש צוות
+    נשארות — רק מנותקות ממנו. בלי commit.
     """
     for row in db.scalars(
         select(models.SupportRequest).where(models.SupportRequest.user_id == user_id)
     ).all():
+        _delete_support_replies(db, row.id)
         db.delete(row)
     for row in db.scalars(
         select(models.SupportRequest).where(models.SupportRequest.handled_by_id == user_id)
     ).all():
         row.handled_by_id = None
+    for reply in db.scalars(
+        select(models.SupportReply).where(models.SupportReply.admin_id == user_id)
+    ).all():
+        reply.admin_id = None

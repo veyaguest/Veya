@@ -199,6 +199,18 @@ export interface SupportRequestDetail extends SupportRequestRow {
     facts?: Record<string, boolean | number | string | null>
   }
   handled_by: SupportPerson | null
+  /** תשובות הצוות שנשלחו מתוך המסך. לא קשורות לסטטוס ("נענתה" ≠ "טופלה"). */
+  replies: SupportReply[]
+}
+
+export interface SupportReply {
+  id: number
+  /** sent = יצא באמת · mock = נשמר, אין חיבור למייל בסביבה הזו · failed · sending */
+  status: 'sent' | 'mock' | 'failed' | 'sending'
+  body: string
+  created_at: string | null
+  sent_at: string | null
+  admin: SupportPerson | null
 }
 
 export const fetchSupportRequests = (status: SupportStatus | 'open' | 'all' = 'open') =>
@@ -209,6 +221,11 @@ export const fetchSupportRequest = (id: number) =>
 
 export const setSupportStatus = (id: number, status: SupportStatus) =>
   sendJson<SupportRequestDetail>(`/admin/support/requests/${id}/status`, 'POST', { status })
+
+/** "השב לפונה". הנמען נקבע בשרת מהפנייה — אין כאן שדה נמען. ``clientToken``
+ *  אחד לכל פתיחה של חלון המענה: אותו מזהה = אותה תשובה (לחיצה כפולה לא שולחת פעמיים). */
+export const sendSupportReply = (id: number, body: string, clientToken: string) =>
+  sendJson<SupportRequestDetail>(`/admin/support/requests/${id}/replies`, 'POST', { body, client_token: clientToken })
 
 // ── תובנות עזרה (שלב 8) — ספירות בלבד, בלי זהות ────────────────────────
 export interface HelpInsights {

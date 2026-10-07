@@ -594,3 +594,55 @@ def send_support_request_confirmation(*, to: str, request_id: int) -> SendResult
         reply_to=SUPPORT_ADDRESS, headers=dict(AUTO_SUBMITTED_HEADERS),
         idempotency_key=f"veya-support-confirmation-{int(request_id)}",
     )
+
+
+# ── מייל 5: תשובה של צוות VEYA לפנייה (מתוך מסך "פניות תמיכה") ──────────────
+REPLY_MAX_CHARS = 5000
+
+
+def _reply_paragraphs(text: str) -> str:
+    """מה שהצוות כתב — **טקסט בלבד** בתוך תבנית קבועה: הכול עובר escaping
+    (תגית HTML תופיע כטקסט, לא תרונדר). שורה ריקה = פסקה חדשה, ירידת שורה =
+    ``<br>``. מיושר לימין: תשובה ארוכה במרכז קשה לקריאה."""
+    blocks = [b.strip() for b in text.replace("\r\n", "\n").split("\n\n")]
+    return "".join(
+        f'<p style="margin:0 0 14px;font:400 15px/1.8 {_FONT_SANS};color:{_BODY};'
+        f'text-align:right;direction:rtl;">{html.escape(b).replace(chr(10), "<br>")}</p>'
+        for b in blocks if b
+    )
+
+
+def support_reply_content(request_id: int, reply_text: str) -> tuple[str, str, str]:
+    """(נושא, HTML, טקסט) של מייל התשובה לפונה — בלי שליחה (גם לבדיקות).
+
+    המבנה: לוגו → "צוות VEYA חזר אליך" → מספר הפנייה → התשובה → חתימה. בלי
+    שיווק, בלי באנרים ובלי קישורים מלבד כתובת התמיכה.
+    """
+    number = f"#{int(request_id)}"
+    body_text = reply_text.strip()
+    subject = f"צוות VEYA חזר אליך — פנייה {number}"
+    body = f"""
+{_title("צוות VEYA חזר אליך")}
+{_lead(f"בהמשך לפנייה שלך ({number})")}
+<div style="margin:28px 0 0;">{_reply_paragraphs(body_text)}</div>
+{_signature()}
+"""
+    text = (
+        "צוות VEYA חזר אליך\n"
+        f"בהמשך לפנייה שלך ({number})\n\n"
+        f"{body_text}\n\n"
+        f"צוות VEYA\n{SUPPORT_ADDRESS}"
+    )
+    html_body = _shell(title=subject, preheader=f"בהמשך לפנייה שלך ({number})", body_html=body)
+    return subject, html_body, text
+
+
+def send_support_reply(*, to: str, request_id: int, reply_text: str, idempotency_key: str) -> SendResult:
+    """שולח לפונה את תשובת הצוות. מהכתובת המאומתת הקיימת (``from_address``);
+    Reply-To לכתובת התמיכה — כך תשובה של הפונה חוזרת לצוות. בלי
+    ``Auto-Submitted``: זו תשובה של אדם, לא מייל אוטומטי."""
+    subject, html_body, text = support_reply_content(request_id, reply_text)
+    return send_email(
+        to=to, subject=subject, html_body=html_body, text_body=text,
+        reply_to=SUPPORT_ADDRESS, idempotency_key=idempotency_key,
+    )

@@ -2088,3 +2088,39 @@ textarea.adm-input {
 .adm-support-facts summary {
   cursor: pointer;
 }
+
+/* ── מענה לפונה (פניות תמיכה, 2026-10-07) ── */
+.adm-support-replies-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.adm-support-replies {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.adm-support-reply-meta {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--a-muted, #6b6457);
+}
+.adm-support-reply-to {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.adm-support-reply-to dt {
+  font-weight: 600;
+}
+.adm-support-reply-to dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.adm-support-reply-field {
+  margin-top: 16px;
+}
