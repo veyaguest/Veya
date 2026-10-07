@@ -1228,26 +1228,52 @@
 
       /* 1. הירו: הזוג עומד מאחורי המחשב, מימינו, ומביט יחד בטלפון.
          המחשב (עם תמונת המצב האמיתית) נשאר בחזית הסצנה. */
-      .ppl-hero { display: none; }
+      .hero-devices .dv { position: relative; z-index: 1; }
+      .ppl-hero { position: absolute; z-index: 0; }
       @media (min-width: 1240px) {
-        .hero-devices .dv { position: relative; z-index: 1; }
         .ppl-hero {
-          display: block; position: absolute; z-index: 0;
           width: clamp(270px, 23vw, 330px); bottom: -34px;
           right: calc(-1 * clamp(270px, 23vw, 330px) + 100px);
+        }
+      }
+      /* מתחת לזה אין מקום לצד המחשב: הזוג מציץ מעל הפינה הימנית של
+         המכסה, והמחשב מסתיר את שאר הגוף — אותה סצנה, בקטן. */
+      @media (max-width: 1239px) {
+        .hero-devices { margin-top: clamp(112px, 15vw, 152px); }
+        .ppl-hero {
+          width: clamp(136px, 21vw, 236px); right: 2%;
+          top: calc(-1 * clamp(90px, 12.4vw, 148px));
+          -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 70%);
+          mask-image: linear-gradient(to bottom, #000 40%, transparent 70%);
         }
       }
 
       /* 2. מועד הסגירה: היא עומדת בקצה המסלול, ליד "היעד" — מחוץ לציר
          עצמו, כך שאף תאריך ואף תווית לא מוסתרים. */
-      #deadline .wrap { position: relative; }
-      .ppl-deadline { display: none; }
+      .dl { position: relative; }
+      .dl .dlt, .dl .dl-pick { position: relative; z-index: 1; }
+      .ppl-deadline {
+        position: absolute; z-index: 0;
+        -webkit-mask-image: linear-gradient(to bottom, #000 52%, transparent 88%);
+        mask-image: linear-gradient(to bottom, #000 52%, transparent 88%);
+      }
       @media (min-width: 1340px) {
+        .ppl-deadline { width: 182px; left: -180px; top: 43px; }
+      }
+      /* מסלול לרוחב בלי מקום בצדדים: היא בפינה הימנית, מתחת לציר ולצד
+         שורת הסיכום — ומסתכלת פנימה, אל הדף. */
+      @media (min-width: 861px) and (max-width: 1339px) {
         .ppl-deadline {
-          display: block; position: absolute; z-index: 0;
-          width: 182px; left: -110px; top: 322px;
-          -webkit-mask-image: linear-gradient(to bottom, #000 52%, transparent 88%);
-          mask-image: linear-gradient(to bottom, #000 52%, transparent 88%);
+          width: 128px; right: 0; bottom: -236px; transform: scaleX(-1);
+        }
+        .ppl-deadline.reveal { transform: scaleX(-1) translateY(20px); }
+        .ppl-deadline.reveal.in { transform: scaleX(-1); }
+      }
+      /* טלפון: המסלול עומד לאורך והתוויות בצד ימין — היא משמאל לו. */
+      @media (max-width: 860px) {
+        .ppl-deadline {
+          width: clamp(112px, 20vw, 150px); bottom: 118px;
+          left: max(0px, calc(50% - 13rem - 40px));
         }
       }
 
@@ -1279,14 +1305,17 @@
       /* 4. המעבר להושבה: זוג שיושב יחד מול המחשב, משמאל לטקסט. */
       #clarity { overflow: hidden; overflow: clip; }
       #clarity .wrap { position: relative; }
-      .ppl-together { display: none; }
       @media (min-width: 1180px) {
         .ppl-together {
-          display: block; position: absolute; z-index: 0;
+          position: absolute; z-index: 0;
           --w: clamp(300px, 27vw, 420px);
           width: var(--w); top: 50%; transform: translateY(-50%);
           left: calc(50% - 300px - var(--w));
         }
+      }
+      /* בלי מקום בצד: הם יושבים מתחת לשורה "אפשר להתחיל לסדר את האולם". */
+      @media (max-width: 1179px) {
+        .ppl-together { width: min(86%, 400px); margin: 30px auto -8px; }
       }
 
       /* 5. אחרי האירוע: הרגע הרגשי של הדף, מעל "האירוע נגמר" — הקיר
@@ -2969,7 +2998,7 @@
           <p class="cta-note reveal d2">פותחים אירוע ומתחילים מרשימת המוזמנים — אפשר גם רשימה חלקית, ולהוסיף בהמשך.</p>
 
           <div class="hero-devices reveal d3">
-            <picture><source media="(min-width: 1240px)" srcset="/people/hero-couple.webp" /><img class="ppl ppl-hero ppl-fade-b" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="" aria-hidden="true" width="880" height="1113" loading="lazy" decoding="async" fetchpriority="low" /></picture>
+            <img class="ppl ppl-hero ppl-fade-b" src="/people/hero-couple.webp" alt="" aria-hidden="true" width="880" height="1113" loading="lazy" decoding="async" fetchpriority="low" />
             <!-- ═════ MacBook מאחור + iPhone חופף מלפנים ══════════════════
                  שני המסכים אמיתיים מאירוע ההדגמה: תמונת המצב ב-Safari על
                  ה-MacBook (כמה מגיעים), ומאזן האירוע בטלפון (כמה זה עולה).
@@ -3165,6 +3194,7 @@
 
             <ol class="dlt" data-dl-line aria-label="מסלול אישורי ההגעה עד מועד הסגירה"></ol>
             <p class="dl-err" data-dl-err hidden>לא הצלחנו לחשב את לוח הזמנים כרגע. אפשר לנסות שוב בעוד רגע.</p>
+            <img class="ppl ppl-deadline reveal d2" src="/people/closing-date.webp" alt="" aria-hidden="true" width="560" height="996" loading="lazy" decoding="async" />
           </div>
 
           <p class="flow-punch reveal d2">
@@ -3175,7 +3205,6 @@
           <div class="section-cta reveal d2">
             <a href="/app?auth=register" class="btn btn-primary">קובעים מועד סגירה לאירוע שלכם <span class="arw" aria-hidden="true">←</span></a>
           </div>
-          <picture><source media="(min-width: 1340px)" srcset="/people/closing-date.webp" /><img class="ppl ppl-deadline reveal d2" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="" aria-hidden="true" width="560" height="996" loading="lazy" decoding="async" /></picture>
         </div>
       </section>
 
@@ -3397,7 +3426,7 @@
           <p class="clr-body clr-sharp reveal d2">אבל ככל שהתשובות נכנסות, התמונה מתחדדת.<br />המספרים הופכים לאנשים. הרשימה הופכת לתמונה אמיתית של הערב.</p>
           <p class="clr-end reveal d3">ועכשיו, כשכבר יודעים מי מגיע —<br />אפשר להתחיל לסדר את האולם בהתאם.</p>
         </div>
-        <picture><source media="(min-width: 1180px)" srcset="/people/planning-together.webp" /><img class="ppl ppl-together" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="" aria-hidden="true" width="1000" height="799" loading="lazy" decoding="async" /></picture>
+        <img class="ppl ppl-together" src="/people/planning-together.webp" alt="" aria-hidden="true" width="1000" height="799" loading="lazy" decoding="async" />
       </div>
     </section>
 
