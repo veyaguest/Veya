@@ -1211,6 +1211,89 @@
       }
       .af-note { margin: 16px auto 0; max-width: 46ch; text-align: center; font-size: var(--fs-sm); line-height: 1.7; color: var(--body); }
 
+      /* ===== אנשים בתוך הדף (2026-10-07) ===================================
+         חמישה רגעים בלבד: הירו, מועד הסגירה, אישורי ההגעה, המעבר להושבה
+         והרגע שאחרי האירוע. אין כרטיס, מסגרת או צל: הדמויות חתוכות מהרקע
+         (או שהקיר שלהן יושר בדיוק לגוון של הסקשן) ונמסות לדף דרך mask.
+         הן קישוט בלבד — alt ריק, בלי אינטראקציה, ואף פעם לא מעל טקסט:
+         כל מיקום נמדד מול רוחב השורות בפועל, ומתחת לרוחב שבו אין מקום —
+         הדמות פשוט לא מוצגת (וגם לא נטענת, כי היא loading="lazy").
+         המסכים בידיים פונים הרחק מהמצלמה בכוונה: ה-UI היחיד בסצנה הוא
+         ה-UI האמיתי של VEYA שכבר בדף. */
+      .ppl { display: block; height: auto; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+      .ppl-fade-b {
+        -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 96%);
+        mask-image: linear-gradient(to bottom, #000 58%, transparent 96%);
+      }
+
+      /* 1. הירו: הזוג עומד מאחורי המחשב, מימינו, ומביט יחד בטלפון.
+         המחשב (עם תמונת המצב האמיתית) נשאר בחזית הסצנה. */
+      .ppl-hero { display: none; }
+      @media (min-width: 1240px) {
+        .hero-devices .dv { position: relative; z-index: 1; }
+        .ppl-hero {
+          display: block; position: absolute; z-index: 0;
+          width: clamp(270px, 23vw, 330px); bottom: -34px;
+          right: calc(-1 * clamp(270px, 23vw, 330px) + 100px);
+        }
+      }
+
+      /* 2. מועד הסגירה: היא עומדת בקצה המסלול, ליד "היעד" — מחוץ לציר
+         עצמו, כך שאף תאריך ואף תווית לא מוסתרים. */
+      #deadline .wrap { position: relative; }
+      .ppl-deadline { display: none; }
+      @media (min-width: 1340px) {
+        .ppl-deadline {
+          display: block; position: absolute; z-index: 0;
+          width: 182px; left: -110px; top: 322px;
+          -webkit-mask-image: linear-gradient(to bottom, #000 52%, transparent 88%);
+          mask-image: linear-gradient(to bottom, #000 52%, transparent 88%);
+        }
+      }
+
+      /* 3. אישורי הגעה: הרגע שבו רואים את המספרים — היא מימין לכרטיס
+         האמיתי, הטלפון בידה בגובה הכרטיס. */
+      .rs-scene { position: relative; }
+      .rs-scene .rs-shot { position: relative; z-index: 1; }
+      .ppl-rsvp { display: none; }
+      @media (min-width: 1100px) {
+        .ppl-rsvp {
+          display: block; position: absolute; z-index: 0;
+          width: 236px; top: -18px; right: calc(50% - 195px - 236px - 76px);
+          -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 82%);
+          mask-image: linear-gradient(to bottom, #000 50%, transparent 82%);
+        }
+      }
+      /* בטלפון: מציצה מאחורי הכרטיס, ראש וכתפיים מעליו — אותה סצנה, קטנה */
+      @media (max-width: 1099px) {
+        .rs-scene { padding-top: 104px; }
+        .ppl-rsvp {
+          display: block; position: absolute; z-index: 0;
+          width: 132px; top: 0; right: calc(50% - min(50%, 195px) + 14px);
+          -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 72%);
+          mask-image: linear-gradient(to bottom, #000 50%, transparent 72%);
+        }
+        .rs-scene .rs-shot { margin-top: 0; }
+      }
+
+      /* 4. המעבר להושבה: זוג שיושב יחד מול המחשב, משמאל לטקסט. */
+      #clarity { overflow: hidden; overflow: clip; }
+      #clarity .wrap { position: relative; }
+      .ppl-together { display: none; }
+      @media (min-width: 1180px) {
+        .ppl-together {
+          display: block; position: absolute; z-index: 0;
+          --w: clamp(300px, 27vw, 420px);
+          width: var(--w); top: 50%; transform: translateY(-50%);
+          left: calc(50% - 300px - var(--w));
+        }
+      }
+
+      /* 5. אחרי האירוע: הרגע הרגשי של הדף, מעל "האירוע נגמר" — הקיר
+         שלהם הוא בדיוק החול של הסקשן, והספה נמסה אל הדף. */
+      .ppl-after { width: min(100%, 560px); margin: 46px auto -6px; }
+      @media (max-width: 560px) { .ppl-after { margin-top: 34px; } }
+
       .calls-punch {
         margin: 26px auto 0; max-width: 52ch; text-align: center;
         font-family: var(--font-display); font-size: var(--fd-md);
@@ -2886,6 +2969,7 @@
           <p class="cta-note reveal d2">פותחים אירוע ומתחילים מרשימת המוזמנים — אפשר גם רשימה חלקית, ולהוסיף בהמשך.</p>
 
           <div class="hero-devices reveal d3">
+            <picture><source media="(min-width: 1240px)" srcset="/people/hero-couple.webp" /><img class="ppl ppl-hero ppl-fade-b" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="" aria-hidden="true" width="880" height="1113" loading="lazy" decoding="async" fetchpriority="low" /></picture>
             <!-- ═════ MacBook מאחור + iPhone חופף מלפנים ══════════════════
                  שני המסכים אמיתיים מאירוע ההדגמה: תמונת המצב ב-Safari על
                  ה-MacBook (כמה מגיעים), ומאזן האירוע בטלפון (כמה זה עולה).
@@ -3091,6 +3175,7 @@
           <div class="section-cta reveal d2">
             <a href="/app?auth=register" class="btn btn-primary">קובעים מועד סגירה לאירוע שלכם <span class="arw" aria-hidden="true">←</span></a>
           </div>
+          <picture><source media="(min-width: 1340px)" srcset="/people/closing-date.webp" /><img class="ppl ppl-deadline reveal d2" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="" aria-hidden="true" width="560" height="996" loading="lazy" decoding="async" /></picture>
         </div>
       </section>
 
@@ -3106,9 +3191,12 @@
             <!-- ═════ איפה הרשימה עומדת ═════════════════════════════════
                חיתוך אמיתי מראש מסך אישורי ההגעה ב-VEYA (אירוע ההדגמה): כמה
                אנשים אישרו, ממתינים, לא החליטו ולא מגיעים — מתוך כמה הוזמנו. -->
-            <figure class="rs-shot">
-              <img src="/product/rsvp-counts.jpg" alt="ראש מסך אישורי ההגעה ב־VEYA: 256 אישרו הגעה, 274 ממתינים לתשובה, 45 לא החליטו ו־69 לא מגיעים, מתוך 644 אנשים שהוזמנו" width="1170" height="612" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
-            </figure>
+            <div class="rs-scene">
+              <img class="ppl ppl-rsvp" src="/people/rsvp-relief.webp" alt="" aria-hidden="true" width="640" height="1356" loading="lazy" decoding="async" />
+              <figure class="rs-shot">
+                <img src="/product/rsvp-counts.jpg" alt="ראש מסך אישורי ההגעה ב־VEYA: 256 אישרו הגעה, 274 ממתינים לתשובה, 45 לא החליטו ו־69 לא מגיעים, מתוך 644 אנשים שהוזמנו" width="1170" height="612" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+              </figure>
+            </div>
             <p class="why-punch">מרשימה שמשתנה כל יום — לתמונה אחת שאפשר לעבוד לפיה.</p>
           
         </div>
@@ -3309,6 +3397,7 @@
           <p class="clr-body clr-sharp reveal d2">אבל ככל שהתשובות נכנסות, התמונה מתחדדת.<br />המספרים הופכים לאנשים. הרשימה הופכת לתמונה אמיתית של הערב.</p>
           <p class="clr-end reveal d3">ועכשיו, כשכבר יודעים מי מגיע —<br />אפשר להתחיל לסדר את האולם בהתאם.</p>
         </div>
+        <picture><source media="(min-width: 1180px)" srcset="/people/planning-together.webp" /><img class="ppl ppl-together" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="" aria-hidden="true" width="1000" height="799" loading="lazy" decoding="async" /></picture>
       </div>
     </section>
 
@@ -3525,6 +3614,8 @@
               שעוד לא שויכה נשארת <b>"עדיין לא נספרה"</b>, ולא הופכת ל"לא נתן".
             </figcaption>
           </figure>
+
+          <img class="ppl ppl-after reveal d1" src="/people/after-event.webp" alt="" aria-hidden="true" width="1200" height="864" loading="lazy" decoding="async" />
 
           <div class="why-inner reveal d2" style="margin-top: 34px;">
             <h3 class="section-title">האירוע נגמר. הרשימה נשארת.</h3>
