@@ -1228,7 +1228,7 @@
 
       /* 1. הירו: סצנה אחת — זוג בסלון מול המחשב, ועל המסך שלהם תמונת המצב
          האמיתית. בלי מסגרת: הקצוות נמסים ללילה של ההירו. */
-      .hero-scene { max-width: 960px; }
+      .hero-scene { max-width: 960px; margin-top: 0; margin-bottom: 6px; }
       .hs-photo {
         display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover;
         -webkit-mask-image:
@@ -2987,14 +2987,6 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="8" width="17" height="4" rx="1" /><path d="M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12" /><path d="M12 8v13" /><path d="M12 8S10.5 3.5 8 3.5a2.5 2.5 0 0 0 0 5M12 8s1.5-4.5 4-4.5a2.5 2.5 0 0 1 0 5" /></svg>מתנות באשראי</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2" /><circle cx="12" cy="12" r="2.6" /><path d="M5.5 9.5v.01M18.5 14.5v.01" /></svg>מאזן האירוע</li>
           </ul>
-          <div class="cta-row reveal d2">
-            <a href="/app?auth=register" class="btn btn-primary btn-lg">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
-            <a href="/calculators/rsvp-timeline/" class="cta-alt">לראות קודם את לוח הזמנים <span class="arw" aria-hidden="true">←</span></a>
-          </div>
-          <!-- מה באמת קורה אחרי הלחיצה: הרשמה → פתיחת אירוע → הרשימה.
-               בלי הבטחות: אין כאן שדה תשלום ואין התחייבות במוצר. -->
-          <p class="cta-note reveal d2">פותחים אירוע ומתחילים מרשימת המוזמנים — אפשר גם רשימה חלקית, ולהוסיף בהמשך.</p>
-
           <div class="hero-devices hero-scene reveal d3">
             <!-- ═════ זוג אמיתי, והמסך האמיתי שלהם ═════════════════════════
                  צילום (Higgsfield) של זוג בסלון מול המחשב; על מסך המחשב
@@ -3008,6 +3000,14 @@
               width="1600" height="900" fetchpriority="high" decoding="async"
               onerror="veyaRetryImage(this)" />
           </div>
+
+          <div class="cta-row reveal d2">
+            <a href="/app?auth=register" class="btn btn-primary btn-lg">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
+          </div>
+          <!-- מה באמת קורה אחרי הלחיצה: הרשמה → פתיחת אירוע → הרשימה.
+               בלי הבטחות: אין כאן שדה תשלום ואין התחייבות במוצר. -->
+          <p class="cta-note reveal d2">פותחים אירוע ומתחילים מרשימת המוזמנים — אפשר גם רשימה חלקית, ולהוסיף בהמשך.</p>
+
 
           <!-- מסלול האירוע (§16): סדר הזמנים האמיתי של אירוע, לא רשימת
                פיצ'רים. כל שלב הוא קישור אמיתי ומוביל את העין לגלילה. -->
