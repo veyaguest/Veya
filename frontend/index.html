@@ -270,6 +270,31 @@
          במובייל היא נגללת לרוחב בתוך עצמה — שישה שלבים ב-375px נדחסים
          עד שהם בלתי קריאים. */
       .journey-rail { margin-top: 40px; }
+      .jr-caps-rail { display: none; }
+      @media (max-width: 1099px) {
+        .journey-rail:not(.jr-caps-rail) { display: none; }
+        .jr-caps-rail { display: block; margin-top: 30px; }
+        /* שתי שורות של שלוש: שלב ← שלב ← שלב */
+        .jr-caps {
+          display: grid; grid-template-columns: 1fr auto 1fr auto 1fr;
+          align-items: start; row-gap: 18px; column-gap: 2px;
+          max-width: 440px; margin: 0 auto;
+        }
+        .jr-caps .jr-break { display: none; }
+        .jr-caps .jr-arrow { margin-top: 12px; }
+        .jr-cap {
+          display: flex; flex-direction: column; align-items: center; gap: 7px;
+          color: #e2d8c3; text-decoration: none; font-size: 12.5px; line-height: 1.3; text-align: center;
+          animation: jr-in 380ms var(--ease-out) both; animation-delay: calc(260ms + var(--i) * 60ms);
+        }
+        .jr-ico {
+          display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%;
+          border: 1px solid rgba(228, 201, 107, 0.32); background: rgba(201, 162, 39, 0.06);
+        }
+        .jr-ico svg { width: 17px; height: 17px; color: var(--gold-light); opacity: 0.85; }
+        .jr-cap:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 4px; border-radius: 8px; }
+      }
+      @media (prefers-reduced-motion: reduce) { .jr-cap { animation: none; } }
       .jr-track { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 6px; }
       .jr-step {
         display: inline-flex; align-items: center; min-height: 44px;
@@ -1285,56 +1310,18 @@
         .cap-2 { left: calc(100% + 52px); }
         .cap-5 { right: calc(100% + 52px); }
       }
-      /* מתחת לזה אין מקום בצדדים: היכולות יורדות לרשת מתחת לכפתור */
+      /* מתחת לזה אין מקום בצדדים: היכולות עוברות לרצועת המסלול שמתחת לכפתור */
       @media (max-width: 1099px) {
-        .hp-stage { --hp-w: min(880px, calc((100svh - 300px) * 1.7778)); display: flex; flex-direction: column; }
-        .hp-cta { order: 1; }
-        .hp-caps.hero-caps { order: 2; margin: 30px auto 0; }
+        .hp-stage { --hp-w: min(880px, calc((100svh - 300px) * 1.7778)); }
+        .hp-caps.hero-caps { display: none; }
       }
-      /* טלפון: הצילום לרוחב המסך, והיכולות מפוזרות סביבו ועליו — בלי
-         סימטריה, רק על אזורים כהים (שיער, כתפיים) ולא על הפנים או המסך.
-         הכפתור יושב בצל שמתחת למחשב, לא מעל המקלדת. */
+      /* טלפון: הצילום לרוחב המסך, והכפתור בצל שמתחת למחשב */
       @media (max-width: 600px) {
-        .hp-stage {
-          --p: calc(100vw * 0.8);             /* גובה הצילום (5:4 לרוחב המסך) */
-          display: block; width: auto; max-width: none; margin: -40px -20px 0;
-        }
+        .hp-stage { width: auto; max-width: none; margin: -40px -20px 0; }
         .hs-photo { aspect-ratio: 5 / 4; object-position: 50% 50%; }
         .hp-cta { margin-top: -30px; padding: 0 20px; }
-        .hp-cta .btn.btn-lg { font-size: 1rem; padding: 13px 22px; box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.7); }
-
-        /* בלי transform (גם לא של אנימציית הכניסה), כדי שהיכולות יימדדו
-           מראש ההירו ולא מהצילום */
-        .hp-stage, .hero .hp-stage.reveal.d2 { position: static; transform: none; animation: none; }
-        .hp-caps.hero-caps {
-          display: block; position: absolute; inset: 0; margin: 0; padding: 0; z-index: 1; pointer-events: none;
-          /* ראש הצילום מראש ההירו (171px כשהכותרת בשלוש שורות), גובהו ≈ 78.5vw */
-          --ph-top: 171px;
-          /* גובה הכפתור: הוא יושב 70.5vw מתחת לראש הצילום */
-          --cap-low-r: calc(var(--ph-top) + 70.5vw + 10px);
-          --cap-low-l: calc(var(--ph-top) + 70.5vw + 30px);
-        }
-        /* עדינות: בלי מסגרת ובלי רקע — סמל קטן ומילה שקטה, כמו הערת שוליים */
-        .hp-caps .cap {
-          position: absolute; display: inline-flex; align-items: center; gap: 5px;
-          font-size: 11px; letter-spacing: 0.3px; color: rgba(236, 226, 205, 0.55); white-space: nowrap;
-          text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75);
-        }
-        .hp-caps svg { width: 13px; height: 13px; opacity: 0.55; }
-        /* המיקום נמדד מראש ההירו (.hero .wrap), שם הלוגו יושב באותו גובה
-           בכל רוחב טלפון. */
-        /* פיזור על כל גובה ההירו כדי שלא תיווצר צפיפות: שתיים לצד הלוגו,
-           שתיים לצד הכותרת ושתיים לצדי הכפתור — כל זוג בהיסט אחר. */
-        .cap-1 { right: 5vw; top: 12px; }
-        .cap-6 { left: 6vw; top: 46px; }
-        .cap-2 { right: 3vw; top: 152px; }
-        .cap-4 { left: 6vw; top: 166px; }
-        .cap-3 { right: 2.5vw; top: var(--cap-low-r); }
-        .cap-5 { left: 3vw; top: var(--cap-low-l); }
+        .hp-cta .btn.btn-lg { font-size: 1rem; padding: 13px 30px; box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.7); }
       }
-      @media (min-width: 553px) and (max-width: 600px) { .hp-caps.hero-caps { --ph-top: 129px; } }
-      @media (max-width: 370px) { .hp-caps .cap { font-size: 10.5px; } .cap-2 { right: 1.5vw; } }
-      @media (max-width: 350px) { .hp-caps.hero-caps { display: none; } }
 
       /* 2. מועד הסגירה: היא עומדת בקצה המסלול, ליד "היעד" — מחוץ לציר
          עצמו, כך שאף תאריך ואף תווית לא מוסתרים. */
@@ -3109,6 +3096,25 @@
             <a class="jr-step" href="#gifts" style="--i: 3"><span>מתנות</span></a>
             <span class="jr-arrow" aria-hidden="true">←</span>
             <a class="jr-step" href="/features/finance/" style="--i: 4"><span>מאזן</span></a>
+            </div>
+          </nav>
+
+          <!-- טלפון וטאבלט: אותו מסלול, עם שש היכולות ואייקוני הניווט של המוצר —
+               שתי שורות של שלוש, לפי סדר האירוע. במחשב היכולות מקיפות את
+               הצילום, ולכן שם נשארת הרצועה הקצרה שלמעלה. -->
+          <nav class="journey-rail jr-caps-rail reveal d3" aria-label="מה VEYA מלווה, לפי סדר האירוע">
+            <div class="jr-caps">
+              <a class="jr-cap" href="/features/guests/" style="--i: 0"><span class="jr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0" /><path d="M16 6.5a3 3 0 0 1 0 5.8" /><path d="M17.5 20a5.5 5.5 0 0 0-2.5-4.6" /></svg></span><span>ניהול מוזמנים</span></a>
+              <span class="jr-arrow" aria-hidden="true">←</span>
+              <a class="jr-cap" href="#deadline" style="--i: 1"><span class="jr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 3z" /><path d="m9 10 2 2 4-4" /></svg></span><span>הזמנות והודעות</span></a>
+              <span class="jr-arrow" aria-hidden="true">←</span>
+              <a class="jr-cap" href="/features/rsvp/" style="--i: 2"><span class="jr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2" /><path d="M9 3.5V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v.5" /><path d="M8.5 12.5 11 15l4.5-5" /></svg></span><span>אישורי הגעה</span></a>
+              <span class="jr-arrow jr-break" aria-hidden="true">←</span>
+              <a class="jr-cap" href="/features/seating/" style="--i: 3"><span class="jr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="8" r="2.4" /><circle cx="17" cy="8" r="2.4" /><circle cx="12" cy="17" r="2.4" /><path d="M4 20h16" /></svg></span><span>הושבה</span></a>
+              <span class="jr-arrow" aria-hidden="true">←</span>
+              <a class="jr-cap" href="#giftcard" style="--i: 4"><span class="jr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="8" width="17" height="4" rx="1" /><path d="M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12" /><path d="M12 8v13" /><path d="M12 8S10.5 3.5 8 3.5a2.5 2.5 0 0 0 0 5M12 8s1.5-4.5 4-4.5a2.5 2.5 0 0 1 0 5" /></svg></span><span>מתנות באשראי</span></a>
+              <span class="jr-arrow" aria-hidden="true">←</span>
+              <a class="jr-cap" href="/features/finance/" style="--i: 5"><span class="jr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2" /><circle cx="12" cy="12" r="2.6" /><path d="M5.5 9.5v.01M18.5 14.5v.01" /></svg></span><span>מאזן האירוע</span></a>
             </div>
           </nav>
 
