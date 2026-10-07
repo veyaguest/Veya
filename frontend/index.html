@@ -1226,26 +1226,24 @@
         mask-image: linear-gradient(to bottom, #000 58%, transparent 96%);
       }
 
-      /* 1. הירו: הזוג עומד מאחורי המחשב, מימינו, ומביט יחד בטלפון.
-         המחשב (עם תמונת המצב האמיתית) נשאר בחזית הסצנה. */
-      .hero-devices .dv { position: relative; z-index: 1; }
-      .ppl-hero { position: absolute; z-index: 0; }
-      @media (min-width: 1240px) {
-        .ppl-hero {
-          width: clamp(270px, 23vw, 330px); bottom: -34px;
-          right: calc(-1 * clamp(270px, 23vw, 330px) + 100px);
-        }
+      /* 1. הירו: סצנה אחת — זוג בסלון מול המחשב, ועל המסך שלהם תמונת המצב
+         האמיתית. בלי מסגרת: הקצוות נמסים ללילה של ההירו. */
+      .hero-scene { max-width: 960px; }
+      .hs-photo {
+        display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover;
+        -webkit-mask-image:
+          linear-gradient(to bottom, transparent 0, #000 22%, #000 72%, transparent 100%),
+          linear-gradient(to right, transparent 0, #000 14%, #000 86%, transparent 100%);
+        -webkit-mask-composite: source-in;
+        mask-image:
+          linear-gradient(to bottom, transparent 0, #000 22%, #000 72%, transparent 100%),
+          linear-gradient(to right, transparent 0, #000 14%, #000 86%, transparent 100%);
+        mask-composite: intersect;
       }
-      /* מתחת לזה אין מקום לצד המחשב: הזוג מציץ מעל הפינה הימנית של
-         המכסה, והמחשב מסתיר את שאר הגוף — אותה סצנה, בקטן. */
-      @media (max-width: 1239px) {
-        .hero-devices { margin-top: clamp(112px, 15vw, 152px); }
-        .ppl-hero {
-          width: clamp(136px, 21vw, 236px); right: 2%;
-          top: calc(-1 * clamp(90px, 12.4vw, 148px));
-          -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 70%);
-          mask-image: linear-gradient(to bottom, #000 40%, transparent 70%);
-        }
+      /* טלפון: חיתוך קרוב יותר סביב המסך, כדי שהמספרים יישארו קריאים */
+      @media (max-width: 600px) {
+        .hero-scene { margin-inline: -20px; }
+        .hs-photo { aspect-ratio: 5 / 4; object-position: 50% 50%; }
       }
 
       /* 2. מועד הסגירה: היא עומדת בקצה המסלול, ליד "היעד" — מחוץ לציר
@@ -2997,62 +2995,18 @@
                בלי הבטחות: אין כאן שדה תשלום ואין התחייבות במוצר. -->
           <p class="cta-note reveal d2">פותחים אירוע ומתחילים מרשימת המוזמנים — אפשר גם רשימה חלקית, ולהוסיף בהמשך.</p>
 
-          <div class="hero-devices reveal d3">
-            <img class="ppl ppl-hero ppl-fade-b" src="/people/hero-couple.webp" alt="" aria-hidden="true" width="880" height="1113" loading="lazy" decoding="async" fetchpriority="low" />
-            <!-- ═════ MacBook מאחור + iPhone חופף מלפנים ══════════════════
-                 שני המסכים אמיתיים מאירוע ההדגמה: תמונת המצב ב-Safari על
-                 ה-MacBook (כמה מגיעים), ומאזן האירוע בטלפון (כמה זה עולה).
-                 המכשירים בנויים ב-CSS; שום UI כאן לא צויר לדף. -->
-            <div class="dv">
-              <div class="mbp">
-                <div class="mbp-lid">
-                  <div class="mbp-screen">
-                    <span class="mbp-notch" aria-hidden="true"></span>
-                    <div class="mk-browser mbp-safari">
-                      <div class="mk-browser-bar" aria-hidden="true">
-                <span class="mk-browser-lights"><i></i><i></i><i></i></span>
-                <span class="mk-browser-nav"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5" /></svg></span>
-                <span class="mk-browser-url"><svg viewBox="0 0 10 12" fill="currentColor"><path d="M2 5V3.6a3 3 0 0 1 6 0V5h.4c.6 0 1.1.5 1.1 1.1v4.8c0 .6-.5 1.1-1.1 1.1H1.6C1 12 .5 11.5.5 10.9V6.1C.5 5.5 1 5 1.6 5H2Zm1.3 0h3.4V3.6a1.7 1.7 0 0 0-3.4 0V5Z" /></svg><span>veyaguest.co.il/app</span></span>
-                <span class="mk-browser-tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V1.8M5.2 4.4 8 1.6l2.8 2.8M5.5 6.5H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-1.5" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 2.5v11M2.5 8h11" /></svg><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="2" y="4.5" width="9.5" height="9.5" rx="1.6" /><path d="M4.5 2h8a1.5 1.5 0 0 1 1.5 1.5v8" /></svg></span>
-              </div>
-                      <div class="mk-browser-view">
-                        <img
-                          src="/product/journey-dashboard.jpg"
-                          alt="תמונת המצב של VEYA ב־Safari על MacBook: דניאל ושרון, ספירה לאחור לאירוע ומחוון אישורי ההגעה — 256 מתוך 644 אישרו"
-                          width="1600" height="1000"
-                          fetchpriority="high" decoding="async"
-                          onerror="veyaRetryImage(this)"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="mbp-base" aria-hidden="true"><span class="mbp-groove"></span></div>
-              </div>
-
-              <div class="mk-phone dv-phone">
-                <span class="mk-phone-keys"></span>
-                <span class="mk-phone-island"></span>
-                <span class="mk-phone-status">
-                <span class="mk-phone-time">9:41</span>
-                <svg class="mk-phone-icons" viewBox="0 0 64 12" fill="currentColor">
-                  <rect x="0" y="8" width="3" height="4" rx="0.8" /><rect x="4.6" y="5.8" width="3" height="6.2" rx="0.8" /><rect x="9.2" y="3.4" width="3" height="8.6" rx="0.8" /><rect x="13.8" y="1" width="3" height="11" rx="0.8" />
-                  <path d="M29 3.1a10.4 10.4 0 0 1 7.1 2.8l1.2-1.3a12.2 12.2 0 0 0-16.6 0l1.2 1.3A10.4 10.4 0 0 1 29 3.1Zm0 3.6a6.6 6.6 0 0 1 4.5 1.8l1.2-1.3a8.4 8.4 0 0 0-11.4 0l1.2 1.3A6.6 6.6 0 0 1 29 6.7Zm0 3.6a2.8 2.8 0 0 1 1.9.7L29 12.2 27.1 11a2.8 2.8 0 0 1 1.9-.7Z" />
-                  <rect x="42.5" y="1.3" width="18.5" height="9.4" rx="2.8" fill="none" stroke="currentColor" stroke-opacity="0.4" />
-                  <rect x="44.3" y="3.1" width="14.9" height="5.8" rx="1.5" />
-                  <path d="M62.2 4.4c.8.3 1.3 1 1.3 1.6s-.5 1.3-1.3 1.6Z" fill-opacity="0.45" />
-                </svg>
-              </span>
-                <span class="mk-phone-glare"></span>
-                <img
-                  class="mk-phone-screen"
-                  src="/product/hero-phone.jpg"
-                  alt="מאזן האירוע של VEYA בטלפון: עלות משוערת 160,375.60 ₪, שולם 134,616 ₪, נותר לשלם 25,759.60 ₪, 256 מגיעים ועלות ממוצעת לאדם 626.46 ₪"
-                  width="780" height="1688" decoding="async"
-                  onerror="veyaRetryImage(this)"
-                />
-              </div>
-            </div>
+          <div class="hero-devices hero-scene reveal d3">
+            <!-- ═════ זוג אמיתי, והמסך האמיתי שלהם ═════════════════════════
+                 צילום (Higgsfield) של זוג בסלון מול המחשב; על מסך המחשב
+                 הולבש צילום המסך האמיתי של תמונת המצב מאירוע ההדגמה
+                 (journey-dashboard.jpg) בפרספקטיבה. שום UI לא צויר לדף. -->
+            <img class="hs-photo"
+              src="/people/hero-scene-1600.webp"
+              srcset="/people/hero-scene-960.webp 960w, /people/hero-scene-1600.webp 1600w"
+              sizes="(max-width: 960px) 100vw, 960px"
+              alt="זוג בסלון בערב מחייך זה לזה מול המחשב. על המסך תמונת המצב של VEYA: דניאל ושרון, ספירה לאחור לאירוע, ו־256 שאישרו הגעה מתוך 644"
+              width="1600" height="900" fetchpriority="high" decoding="async"
+              onerror="veyaRetryImage(this)" />
           </div>
 
           <!-- מסלול האירוע (§16): סדר הזמנים האמיתי של אירוע, לא רשימת
