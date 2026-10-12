@@ -477,27 +477,39 @@ def _process_webhook_items(items: list[tuple[str, dict]]) -> bool:
 
 
 def _handle_inbound_message(db: Session, msg: dict) -> None:
-    """הודעה נכנסת מאורח. היום מטופלת רק לחיצת כפתור אישור/ביטול הגעה;
-    כל השאר (טקסט חופשי וכו') — בשלב החיבור ל-Meta."""
+    """הודעה נכנסת מאורח.
+
+    - לחיצה על כפתור אישור/ביטול הגעה (``rsvp_yes``/``rsvp_no``, מהנוסח הישן) —
+      לוגיקת ה-RSVP הקיימת (``whatsapp_inbound.record_rsvp_reply``).
+    - כל השאר (טקסט חופשי, תמונה, הקלטה…) — נשמר ביומן ההודעות כ"דורש טיפול",
+      **בלי** לשנות RSVP (``whatsapp_inbound.record_free_message``).
+    """
     wamid = msg.get("id")
     if not isinstance(wamid, str) or not wamid:
         print("[veya:whatsapp] inbound skipped: missing message id", flush=True)
         return
+    from_phone = msg.get("from") if isinstance(msg.get("from"), str) else None
+    context_id = _as_dict(msg.get("context")).get("id")
+    context_id = context_id if isinstance(context_id, str) else None
     button_id = (
         _as_dict(_as_dict(msg.get("interactive")).get("button_reply")).get("id")
         or _as_dict(msg.get("button")).get("payload")
     )
     decision = messaging.rsvp_from_button(button_id if isinstance(button_id, str) else "")
-    if not decision:
-        print(f"[veya:whatsapp] inbound ignored type={msg.get('type') or 'unknown'}", flush=True)
+    if decision:
+        whatsapp_inbound.record_rsvp_reply(
+            db, provider_message_id=wamid, from_phone=from_phone,
+            context_id=context_id, decision=decision,
+        )
         return
-    context_id = _as_dict(msg.get("context")).get("id")
-    whatsapp_inbound.record_rsvp_reply(
-        db,
-        provider_message_id=wamid,
-        from_phone=msg.get("from") if isinstance(msg.get("from"), str) else None,
-        context_id=context_id if isinstance(context_id, str) else None,
-        decision=decision,
+    msg_type = msg.get("type") if isinstance(msg.get("type"), str) else "unknown"
+    text_body = _as_dict(msg.get("text")).get("body")
+    if not isinstance(text_body, str):
+        # כפתור של Template (לא בשימוש היום) — הטקסט שעל הכפתור.
+        text_body = _as_dict(msg.get("button")).get("text")
+    whatsapp_inbound.record_free_message(
+        db, provider_message_id=wamid, from_phone=from_phone, context_id=context_id,
+        message_type=msg_type, text_body=text_body if isinstance(text_body, str) else None,
     )
 
 
@@ -518,17 +530,27 @@ def _handle_status(db: Session, st: dict) -> None:
         except (TypeError, ValueError, OverflowError, OSError):
             ts = None
     reason = (errors[0].get("title") or errors[0].get("message") or "") if errors else ""
-    found = message_status.apply_status_update(
-        db,
-        provider_message_id=provider_message_id,
+    fields = dict(
         status=mapped,
         timestamp=ts,
         reason=str(reason)[:500],
         failure_code=message_status.first_error_code(errors),
         provider_status=raw_status or None,
     )
+    found = message_status.apply_status_update(db, provider_message_id=provider_message_id, **fields)
+    reconciled = False
+    callback = st.get("biz_opaque_callback_data")
+    if not found and isinstance(callback, str) and callback:
+        # הודעה שהתוצאה שלה לא ידועה (``pending`` בלי מזהה Meta) — נסגרת רק
+        # בהתאמה מלאה; אחרת לא נוגעים (``message_status.reconcile_pending``).
+        recipient = st.get("recipient_id")
+        reconciled = message_status.reconcile_pending(
+            db, callback_data=callback, provider_message_id=provider_message_id,
+            recipient_id=recipient if isinstance(recipient, str) else None, **fields,
+        )
     print(
         f"[veya:whatsapp] status {mapped} known={'yes' if found else 'no'}"
+        + (f" reconciled={'yes' if reconciled else 'no'}" if not found and callback else "")
         + (f" code={message_status.first_error_code(errors)}" if errors else ""),
         flush=True,
     )

@@ -19,8 +19,12 @@
    השלמת התוצאה מ-webhook של Meta (לפי מזהה השורה שנשלח יחד עם ההודעה) —
    שלב החיבור ל-Meta.
 
-**מצב ``meta_test``**: נמענים שאינם ברשימה המורשית מסוננים *לפני* שלב 1 —
-לא נרשמים ולא נשלחים (``BatchResult.blocked``).
+**לפני שלב 1** (``provider.accepts``): נמענים שאינם ברשימה המורשית (``meta_test``)
+ושלבים בלי Template מאושר (מצבי Meta) — לא נרשמים ולא נשלחים
+(``BatchResult.blocked`` / ``no_template``).
+
+**תוצאה לא ידועה** (timeout מול Meta): השורה נשארת ``pending`` עם הסבר, לא נשלחת
+שוב, ונסגרת מ-webhook לפי ``callback_ref`` (``message_status.reconcile_pending``).
 
 **נעילה לאירוע** (``lock_event_sends``): שתי שליחות של אותו אירוע במקביל
 (לחיצה כפולה, או שליחה ידנית מהתור באותו רגע שהמשימה המתוזמנת רצה) היו
@@ -58,9 +62,23 @@ class BatchResult:
     failed: int = 0
     # מצב ``meta_test``: נמענים שאינם ברשימה המורשית — לא נרשמו ולא נשלחו.
     blocked: int = 0
+    # מצבי Meta: אין Template מאושר לשלב (או חסר ערך למילוי) — לא נרשמו ולא נשלחו.
+    no_template: int = 0
+    # הבקשה יצאה ולא ידוע אם Meta קיבלה — נשארו ``pending``, לא נשלחים שוב.
+    unknown: int = 0
     failed_guest_ids: list[int] = field(default_factory=list)
     last_detail: str = ""
     messages: list[models.Message] = field(default_factory=list)
+
+
+def callback_ref(row: models.Message) -> str:
+    """הערך שנשלח ל-Meta ב-``biz_opaque_callback_data`` וחוזר בעדכוני הסטטוס.
+
+    מזהה השורה + האירוע + המוזמן — כדי שהשלמה של שורה ``pending`` תדרוש
+    התאמה של שלושתם (``message_status.reconcile_pending``), ולא תסתמך על
+    מספר שורה לבד (שעלול לחזור על עצמו בסביבה אחרת שחולקת את אותו חשבון Meta).
+    """
+    return f"veya:m{row.id}:e{row.event_id}:g{row.guest_id}"
 
 
 def lock_event_sends(db: Session, event_id: int) -> None:
@@ -94,23 +112,35 @@ def send_batch(
     provider = provider or messaging.get_provider()
     external = bool(getattr(provider, "external", False))
 
-    # מצב ``meta_test``: נמען שאינו ברשימה המורשית לא נרשם ולא נשלח — אין
-    # שורה, אין "נכשלה" שהייתה סוגרת לו את הסבב. כך גם הפעלה בטעות מול מסד
-    # הייצור לא נוגעת באורחים אמיתיים. ראו ``messaging.TestRecipientGuard``.
-    allows = getattr(provider, "allows", None)
-    if allows is not None:
-        allowed = [item for item in items if allows(item.phone)]
-        result.blocked = len(items) - len(allowed)
-        if result.blocked:
+    # לפני כל רישום: האם הספק בכלל יכול לשלוח את ההודעה (``provider.accepts``).
+    # - מצב ``meta_test``: נמען שאינו ברשימה המורשית — אין שורה ואין "נכשלה" שהייתה
+    #   סוגרת לו את הסבב. כך גם הפעלה בטעות מול מסד הייצור לא נוגעת באורחים.
+    # - מצבי Meta: שלב בלי Template מאושר — לא נשלח, לא נרשם ולא נחשב כאילו
+    #   הסבב הושלם; כשהתבנית תאושר, הסבב יצא אם החלון שלו עדיין פתוח.
+    accepts = getattr(provider, "accepts", None)
+    if accepts is not None:
+        accepted = []
+        for item in items:
+            reason = accepts(item, event)
+            if reason is None:
+                accepted.append(item)
+            elif reason == messaging.TEST_BLOCKED:
+                result.blocked += 1
+            else:
+                result.no_template += 1
+        if result.blocked or result.no_template:
             print(
-                f"[veya:whatsapp] meta_test blocked event={event.id} recipients={result.blocked}",
+                f"[veya:whatsapp] not sent event={event.id} blocked={result.blocked} "
+                f"no_template={result.no_template}",
                 flush=True,
             )
-        items = allowed
+        items = accepted
         if not items:
             return result
 
     cycle = event_cycle.of(event)
+    # מה שבאמת יוצא: במצבי Meta זה ה-Template ולא הנוסח שבעלי האירוע ערכו.
+    describe = getattr(provider, "describe", None)
     rows: list[models.Message] = []
     for item in items:
         row = models.Message(
@@ -118,7 +148,7 @@ def send_batch(
             guest_id=item.guest.id,
             direction="outbound",
             kind=item.kind,
-            body=item.text,
+            body=describe(item, event) if describe is not None else item.text,
             channel="whatsapp",
             event_message_id=item.event_message_id,
             cycle_number=cycle,
@@ -129,23 +159,33 @@ def send_batch(
         rows.append(row)
     db.commit()  # שלב 1: הרישום שורד גם אם מה שאחריו נופל.
 
+    send_outbound = getattr(provider, "send_outbound", None)
     for row, item in zip(rows, items):
         try:
-            res = provider.send_invitation(item.phone, item.text)
+            if send_outbound is not None:
+                res = send_outbound(item, event, callback_ref(row))
+            else:
+                res = provider.send_invitation(item.phone, item.text)
         except Exception as exc:  # noqa: BLE001 — כשל ספק לא מפיל את שאר המנה
             print(
                 f"[veya:whatsapp] send error event={event.id} message={row.id} "
                 f"error={type(exc).__name__}",
                 flush=True,
             )
+            # מול ספק אמיתי חריגה לא צפויה יכולה לקרות גם אחרי שהבקשה יצאה —
+            # לכן "לא ידוע" (נשאר pending, לא נשלח שוב), ולא "נכשלה".
             res = messaging.SendResult(
-                ok=False, provider=provider.name, status=message_status.FAILED,
-                detail="שגיאה לא צפויה בשליחה",
+                ok=False, provider=provider.name,
+                status=message_status.PENDING if external else message_status.FAILED,
+                detail="שגיאה לא צפויה בשליחה — לא ידוע אם ההודעה יצאה" if external
+                else "שגיאה לא צפויה בשליחה",
             )
         for key, value in message_status.outbound_fields(res).items():
             setattr(row, key, value)
         if res.ok:
             result.sent += 1
+        elif res.status == message_status.PENDING:
+            result.unknown += 1
         else:
             result.failed += 1
             result.failed_guest_ids.append(item.guest.id)

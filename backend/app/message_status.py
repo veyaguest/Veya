@@ -26,6 +26,7 @@
 """
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Optional
 
@@ -85,6 +86,13 @@ def outbound_fields(res) -> dict:
         error_code = getattr(res, "error_code", None)
         if error_code is not None:
             fields["failure_code"] = error_code
+    elif res.status == PENDING:
+        # תוצאה לא ידועה (timeout וכו', ראו ``whatsapp_meta``): נשאר ``pending``
+        # עם הסבר — לא נשלח שוב; webhook עם המזהה שלנו משלים (``reconcile_pending``).
+        fields["failure_reason"] = res.detail
+    provider_status = getattr(res, "provider_status", None)
+    if provider_status:
+        fields["provider_status"] = provider_status
     return fields
 
 
@@ -233,18 +241,99 @@ def apply_status_update(
     )
     if msg is None:
         return False
+    _apply(msg, status, ts, reason, failure_code, provider_status)
+    return True
+
+
+def _apply(msg, status, ts, reason, failure_code, provider_status) -> None:
+    """הכלל המשותף לעדכון סטטוס (מ-webhook): בלי נסיגה, חותמות זמן, סיבת כשל."""
     if provider_status is not None:
         msg.provider_status = provider_status
     if failure_code is not None:
         msg.failure_code = failure_code
     if _should_skip_regression(msg.status, status):
-        return True
+        return
     msg.status = status
     ts_field = _TIMESTAMP_FIELD.get(status)
     if ts_field:
         setattr(msg, ts_field, ts)
     if status in (FAILED, NO_VALID_NUMBER, BLOCKED) and reason:
         msg.failure_reason = reason
+
+
+_CALLBACK_RE = re.compile(r"^veya:m(\d+):e(\d+):g(\d+)$")
+
+
+def reconcile_pending(
+    db: Session,
+    *,
+    callback_data: str,
+    provider_message_id: str,
+    recipient_id: Optional[str],
+    status: str,
+    timestamp: Optional[datetime] = None,
+    reason: str = "",
+    failure_code: Optional[int] = None,
+    provider_status: Optional[str] = None,
+) -> bool:
+    """משלים שורה שנשארה ``pending`` (תוצאת שליחה לא ידועה) לפי עדכון סטטוס
+    מ-Meta שנושא את ה-``biz_opaque_callback_data`` שלנו (``outbound.callback_ref``).
+
+    Meta מחזירה את השדה כמו שנשלח, רק אם שלחנו אותו, ורק בעדכוני הסטטוס של
+    אותה הודעה (נבדק מול התיעוד 2026-10-12; התיעוד לא מתחייב אילו סטטוסים
+    נושאים אותו — לכן לא מניחים סטטוס מסוים). **כל** התנאים חייבים להתקיים,
+    אחרת לא נוגעים בכלום ומחזירים ``False``:
+
+    1. הערך בפורמט שלנו בדיוק: ``veya:m<שורה>:e<אירוע>:g<מוזמן>``.
+    2. השורה קיימת, יוצאת, מ-Meta, **עדיין ``pending``**, ובלי מזהה Meta.
+    3. האירוע והמוזמן בשורה זהים לאלה שבערך.
+    4. הטלפון של המוזמן היום זהה לנמען בעדכון (``recipient_id``).
+    5. מזהה ההודעה של Meta לא שייך כבר לשורה אחרת.
+    """
+    from app.validators import normalize_israeli_phone
+
+    match = _CALLBACK_RE.match(callback_data or "")
+    if not match or not provider_message_id or status not in OUTBOUND_STATUSES:
+        return False
+    row_id, event_id, guest_id = (int(x) for x in match.groups())
+    msg = db.scalar(
+        select(models.Message).where(models.Message.id == row_id).with_for_update()
+    )
+    if (
+        msg is None
+        or msg.direction != "outbound"
+        or msg.provider != "meta"
+        or msg.status != PENDING
+        or msg.provider_message_id
+        or msg.event_id != event_id
+        or msg.guest_id != guest_id
+    ):
+        return False
+    guest = db.get(models.Guest, guest_id)
+    if guest is None or not recipient_id:
+        return False
+    try:
+        same_phone = (
+            normalize_israeli_phone(guest.phone or "")
+            == normalize_israeli_phone(recipient_id)
+        )
+    except ValueError:
+        return False
+    if not same_phone:
+        return False
+    taken = db.scalar(
+        select(models.Message.id).where(models.Message.provider_message_id == provider_message_id)
+    )
+    if taken is not None:
+        return False
+
+    ts = timestamp or datetime.utcnow()
+    msg.provider_message_id = provider_message_id
+    if msg.sent_at is None:
+        msg.sent_at = ts
+    # ההסבר "לא ידוע אם Meta קיבלה" כבר לא נכון — עכשיו ידוע.
+    msg.failure_reason = ""
+    _apply(msg, status, ts, reason, failure_code, provider_status)
     return True
 
 

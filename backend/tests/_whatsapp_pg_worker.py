@@ -12,6 +12,8 @@ advisory):
 6. ה-webhook (עיבוד הפריטים, על חיבור המערכת): תשובה מוחלת, כפילות נקלטת
    פעם אחת — גם כששתי קריאות זהות מגיעות **במקביל**.
 7. מצב ``meta_test`` תחת RLS — רק הנמען המורשה נשלח ונרשם.
+8. Meta (מזויפת) תחת RLS: Template נשלח, timeout נשאר "לא ידוע", ועדכון
+   webhook עם המזהה הפנימי סוגר אותו.
 
 אותה שיטה כמו ``_rls_full_regression_worker.py``: DATABASE_URL = תפקיד
 ``veya_app`` (כפוף ל-RLS), MIGRATIONS_DATABASE_URL = superuser. מדפיס JSON
@@ -436,6 +438,91 @@ async def main() -> None:
         messaging.MetaProvider = real_meta
         os.environ.pop("WHATSAPP_MODE", None)
         os.environ.pop("WHATSAPP_TEST_RECIPIENTS", None)
+
+    # =====================================================================
+    # 9) Meta (מזויפת, בלי רשת) תחת RLS: Template נשלח; timeout נשאר "לא ידוע";
+    #    webhook עם המזהה הפנימי סוגר אותו — על Postgres, עם נעילת שורה
+    # =====================================================================
+    import httpx
+
+    from app import whatsapp_meta, whatsapp_templates
+
+    replies = [
+        httpx.Response(200, json={"messages": [{"id": "wamid.pg-tpl-1", "message_status": "accepted"}]}),
+        "timeout",
+    ]
+
+    def _fake_meta(request):
+        nxt = replies.pop(0)
+        if nxt == "timeout":
+            raise httpx.ReadTimeout("slow", request=request)
+        return nxt
+
+    real_transport = whatsapp_meta._transport
+    saved_templates = dict(whatsapp_templates.TEMPLATES)
+    try:
+        os.environ["WHATSAPP_MODE"] = "meta"
+        os.environ["WHATSAPP_ACCESS_TOKEN"] = "pg-test-token"
+        os.environ["WHATSAPP_PHONE_NUMBER_ID"] = "999"
+        whatsapp_meta._transport = httpx.MockTransport(_fake_meta)
+        whatsapp_templates.TEMPLATES["reminder_3_pg"] = whatsapp_templates.TemplateSpec(
+            name="veya_pg_tpl", body_params=("guest_name",), url_button=True)
+        g = gt()
+        try:
+            for gid in guest_ids[4:6]:
+                g.get(models.Guest, gid).guest_token = f"tok-pg-{gid}"
+            g.commit()
+        finally:
+            g.close()
+
+        def _send(db):
+            event = db.get(models.Event, ev_id)
+            gs = [db.get(models.Guest, gid) for gid in guest_ids[4:6]]
+            res = outbound.send_batch(db, event, [
+                outbound.OutboundItem(guest=x, phone=x.phone, text="x", kind="reminder_3_pg")
+                for x in gs
+            ])
+            db.commit()
+            return res
+
+        res = await as_user(_send)
+        g = gt()
+        try:
+            rows = g.scalars(select(models.Message).where(
+                models.Message.kind == "reminder_3_pg").order_by(models.Message.id)).all()
+            sent_row, unknown_row = rows
+            unknown_id, unknown_gid = unknown_row.id, unknown_row.guest_id
+            unknown_phone = g.get(models.Guest, unknown_gid).phone
+            states = [(r.status, r.provider_message_id) for r in rows]
+        finally:
+            g.close()
+        ref = f"veya:m{unknown_id}:e{ev_id}:g{unknown_gid}"
+        items = messaging_router._webhook_items({"entry": [{"changes": [{"value": {"statuses": [{
+            "id": "wamid.pg-late", "status": "delivered", "timestamp": "1790000000",
+            "recipient_id": "972" + unknown_phone[1:], "biz_opaque_callback_data": ref,
+        }]}}]}]})
+        transient = messaging_router._process_webhook_items(items)
+        g = gt()
+        try:
+            after = g.get(models.Message, unknown_id)
+            final = (after.status, after.provider_message_id)
+        finally:
+            g.close()
+        if ((res.sent, res.unknown) == (1, 1)
+                and states == [("sent", "wamid.pg-tpl-1"), ("pending", None)]
+                and not transient and final == ("delivered", "wamid.pg-late")):
+            _ok("09_meta_template_unknown_then_reconciled", states=states, final=final)
+        else:
+            _fail("09_meta_template_unknown_then_reconciled", sent=res.sent, unknown=res.unknown,
+                  states=states, transient=transient, final=final)
+    except Exception as exc:
+        _fail("09_meta_template_unknown_then_reconciled", error=_err(exc))
+    finally:
+        whatsapp_meta._transport = real_transport
+        whatsapp_templates.TEMPLATES.clear()
+        whatsapp_templates.TEMPLATES.update(saved_templates)
+        for k in ("WHATSAPP_MODE", "WHATSAPP_ACCESS_TOKEN", "WHATSAPP_PHONE_NUMBER_ID"):
+            os.environ.pop(k, None)
 
     print(json.dumps(RESULTS, ensure_ascii=False))
 

@@ -19,7 +19,7 @@ from app.database import (
 )
 from app.http_security import (
     SecurityHeadersMiddleware, TrustedProxyMiddleware, docs_settings,
-    is_production, trusted_proxy_hops,
+    install_log_redaction, is_production, trusted_proxy_hops,
 )
 from app.routers import (
     admin,
@@ -63,6 +63,9 @@ from app.routers import (
 
 # בייצור דפי התיעוד האוטומטיים כבויים (ראו app/http_security.py).
 app = FastAPI(title="VEYA API", version="0.1.0", **docs_settings(production=is_production()))
+
+# טוקן אימות ה-webhook של Meta מגיע בכתובת ה-GET — לא נכתב ללוג (http_security).
+install_log_redaction()
 
 
 class _UnhandledErrorMiddleware(BaseHTTPMiddleware):

@@ -241,3 +241,70 @@ def record_rsvp_reply(
     )
     _log(APPLIED, event=guest.event_id, guest=guest.id, match=match.reason)
     return APPLIED
+
+
+# תוכן הודעה חופשית נשמר במסד (כדי שמישהו יקרא ויטפל) — אף פעם לא בלוג.
+MAX_FREE_TEXT = 1000
+
+_TYPE_LABEL = {
+    "image": "תמונה", "audio": "הקלטה", "video": "סרטון", "document": "מסמך",
+    "sticker": "מדבקה", "location": "מיקום", "contacts": "איש קשר", "reaction": "תגובה (אימוג'י)",
+}
+
+
+def record_free_message(
+    db: Session,
+    *,
+    provider_message_id: str,
+    from_phone: Optional[str],
+    context_id: Optional[str],
+    message_type: str,
+    text_body: Optional[str],
+    provider: str = "meta",
+) -> str:
+    """הודעה חופשית מאורח (טקסט, תמונה, הקלטה…) — נשמרת ביומן ההודעות כ"דורש
+    טיפול". **לעולם לא משנה RSVP** — גם "נגיע 3" לא מתפרש אוטומטית. לא עושה commit.
+
+    שיוך: אותם כללים בדיוק כמו תשובת RSVP (``match_guest``). מוזמן מזוהה — על
+    השורה שלו; עמימות בתוך אירוע אחד — על האירוע, בלי מוזמן; אחרת — רק שורת
+    יומן אבטחה בלי התוכן.
+    """
+    if already_processed(db, provider_message_id):
+        _log(DUPLICATE)
+        return DUPLICATE
+
+    if text_body and text_body.strip():
+        body = text_body.strip()[:MAX_FREE_TEXT]
+    else:
+        body = f"[{_TYPE_LABEL.get(message_type, 'הודעה')}]"
+
+    match = match_guest(db, from_phone, context_id)
+    event_ids = set(match.candidate_event_ids)
+    if match.guest is not None or len(event_ids) == 1:
+        event_id = match.guest.event_id if match.guest is not None else next(iter(event_ids))
+        event = db.get(models.Event, event_id)
+        db.add(models.Message(
+            event_id=event_id,
+            guest_id=match.guest.id if match.guest is not None else None,
+            direction="inbound",
+            kind="inbound",
+            body=body,
+            status=message_status.NEEDS_ATTENTION,
+            provider=provider,
+            channel="whatsapp",
+            provider_message_id=provider_message_id,
+            cycle_number=event_cycle.of(event) if event else 1,
+        ))
+        _flush_inbound(db)
+        _log("free_message", event=event_id,
+             guest=match.guest.id if match.guest is not None else None, match=match.reason)
+        return "recorded"
+
+    reason_text = _UNMATCHED_LABEL.get(match.reason, match.reason)
+    audit.record(
+        db, "whatsapp_message_unmatched",
+        detail=f"הודעת WhatsApp לא שויכה: {reason_text}",
+    )
+    _log("free_message_unmatched", reason=match.reason, candidates=match.candidates or None)
+    return match.reason
+

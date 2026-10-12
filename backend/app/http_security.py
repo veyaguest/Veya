@@ -16,11 +16,18 @@
 
 3. ``docs_settings`` — דפי התיעוד האוטומטיים (/docs, /openapi.json) מפרטים
    את כל ~240 הנתיבים, כולל האדמין. בייצור הם כבויים.
+
+4. ``install_log_redaction`` — Meta מאמתת את ה-webhook בבקשת GET שהטוקן שלנו
+   (``hub.verify_token``) יושב בה בכתובת עצמה, ו-uvicorn רושם ללוג כל כתובת
+   במלואה. המסנן מחליף את הערך ב-``[redacted]`` בשורת הלוג בלבד — הבקשה
+   עצמה, והאימות, לא משתנים.
 """
 from __future__ import annotations
 
 import ipaddress
+import logging
 import os
+import re
 
 _JSON_CSP = b"default-src 'none'; frame-ancestors 'none'"
 _MEDIA_CSP = b"default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox"
@@ -109,3 +116,39 @@ class SecurityHeadersMiddleware:
             await send(message)
 
         await self.app(scope, receive, send_with_headers)
+
+
+# ---- סינון סודות מהלוג ----
+
+_SECRET_QUERY_RE = re.compile(r"(hub(?:\.|%2E)verify_token=)[^&\s\"']*", re.IGNORECASE)
+
+
+def redact_secrets(text: str) -> str:
+    """מסתיר ערכים סודיים שעלולים להופיע בכתובת (היום: ``hub.verify_token``)."""
+    return _SECRET_QUERY_RE.sub(r"\1[redacted]", text)
+
+
+class RedactSecretsFilter(logging.Filter):
+    """מסנן לוג: עובר על ההודעה ועל הארגומנטים שלה (uvicorn.access מעביר את
+    הכתובת כארגומנט) ומסתיר סודות. לא חוסם אף שורה."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.msg, str):
+            record.msg = redact_secrets(record.msg)
+        if isinstance(record.args, tuple) and record.args:
+            record.args = tuple(
+                redact_secrets(a) if isinstance(a, str) else a for a in record.args
+            )
+        return True
+
+
+_REDACTED_LOGGERS = ("uvicorn.access", "uvicorn.error", "uvicorn")
+
+
+def install_log_redaction() -> None:
+    """מתקין את המסנן על הלוגרים של uvicorn. idempotent."""
+    for name in _REDACTED_LOGGERS:
+        logger = logging.getLogger(name)
+        if not any(isinstance(f, RedactSecretsFilter) for f in logger.filters):
+            logger.addFilter(RedactSecretsFilter())
+

@@ -672,6 +672,9 @@ class SendResult:
     # כשלא הצלחנו לפרסר את גוף התגובה. נשמר גולמי על Message.failure_code
     # — לא מפורש כאן, ראו app/message_status.py למיפוי.
     error_code: Optional[int] = None
+    # הסטטוס הגולמי מהספק, כשיש (למשל ``accepted`` / ``held_for_quality_assessment``
+    # בתשובת Meta, או ``send_outcome_unknown`` כשהתוצאה לא ידועה).
+    provider_status: Optional[str] = None
 
 
 class MockProvider:
@@ -691,87 +694,65 @@ class MockProvider:
 
 
 class MetaProvider:
-    """שליחה אמיתית מול WhatsApp Cloud API (Meta). פעיל רק ב-WHATSAPP_MODE=live.
+    """שליחה אמיתית מול WhatsApp Cloud API (Meta) — מצבי ``meta_test`` ו-``meta``.
 
-    דורש משתני סביבה:
-      WHATSAPP_TOKEN         — טוקן גישה קבוע
-      WHATSAPP_PHONE_ID      — מזהה מספר השולח (Phone Number ID)
-    ההודעה נשלחת עם שני כפתורי Quick Reply (interactive) ל-RSVP.
+    שולח **רק Template מאושר** (``whatsapp_templates``) — Meta לא מקבלת הודעה
+    יזומה בטקסט חופשי. הבקשה עצמה, ההגדרות והניסיונות החוזרים: ``whatsapp_meta``.
+
+    - ``accepts`` — האם אפשר בכלל לשלוח את ההודעה (יש Template לשלב ויש כל
+      הערכים). אם לא — ``outbound.send_batch`` לא רושם ולא שולח, והסבב לא "נשרף".
+    - ``send_outbound`` — שליחה של הודעה מהמסלול, עם המזהה הפנימי של השורה
+      ב-``biz_opaque_callback_data`` (להשלמת הודעות שהתוצאה שלהן לא ידועה).
+    - ``send_invitation(phone, text)`` — טקסט חופשי בלי הקשר: לא נשלח במצב Meta.
     """
 
     name = "meta"
     # שליחה אמיתית: כל הודעה נשמרת מיד אחרי שיצאה (``outbound.send_batch``).
     external = True
 
-    def __init__(self) -> None:
-        self.token = os.getenv("WHATSAPP_TOKEN", "")
-        self.phone_id = os.getenv("WHATSAPP_PHONE_ID", "")
+    def _template_values(self, item, event):
+        from app import communication, whatsapp_templates
 
-    def send_invitation(self, phone: str, text: str) -> SendResult:
-        if not self.token or not self.phone_id:
-            return SendResult(
-                ok=False,
-                provider=self.name,
-                status="failed",
-                detail="חסר WHATSAPP_TOKEN או WHATSAPP_PHONE_ID",
-            )
-        try:
-            import httpx  # נטען רק כשצריך — לא נדרש במצב mock
+        spec = whatsapp_templates.template_for(item.kind)
+        if spec is None:
+            return None, whatsapp_templates.NO_TEMPLATE
+        built = whatsapp_templates.build(
+            spec, communication.communication_values(event, item.guest), item.guest.guest_token,
+        )
+        if built is None:
+            return None, whatsapp_templates.MISSING_VALUE
+        return (spec, *built), None
 
-            url = f"https://graph.facebook.com/v20.0/{self.phone_id}/messages"
-            payload = {
-                "messaging_product": "whatsapp",
-                "to": _to_e164(phone),
-                "type": "interactive",
-                "interactive": {
-                    "type": "button",
-                    "body": {"text": text},
-                    "action": {
-                        "buttons": [
-                            {"type": "reply", "reply": {"id": RSVP_YES_ID, "title": RSVP_YES_LABEL}},
-                            {"type": "reply", "reply": {"id": RSVP_NO_ID, "title": RSVP_NO_LABEL}},
-                        ]
-                    },
-                },
-            }
-            headers = {"Authorization": f"Bearer {self.token}"}
-            resp = httpx.post(url, json=payload, headers=headers, timeout=15.0)
-            if resp.status_code // 100 == 2:
-                # תגובת Meta כוללת messages: [{"id": "wamid...."}] — המזהה
-                # שדרכו יגיע webhook עתידי עם עדכון נמסרה/נקראה/נכשלה.
-                wamid = ""
-                try:
-                    wamid = (resp.json().get("messages") or [{}])[0].get("id", "")
-                except Exception:
-                    wamid = ""
-                return SendResult(
-                    ok=True, provider=self.name, status="sent",
-                    provider_message_id=wamid,
-                )
-            # תגובת שגיאה של Meta היא {"error": {"message":..., "code":..., ...}}
-            # (מתועד ב-Cloud API). מפרסרים בעדינות — כשל בפרסור לא אמור
-            # להפיל את הטיפול בשגיאה המקורית.
-            error_code = None
-            try:
-                error_code = resp.json().get("error", {}).get("code")
-                error_code = int(error_code) if error_code is not None else None
-            except Exception:
-                error_code = None
-            return SendResult(
-                ok=False, provider=self.name, status="failed",
-                detail=f"Meta {resp.status_code}: {resp.text[:200]}",
-                error_code=error_code,
-            )
-        except Exception as exc:  # רשת/תלות חסרה — לא מפילים את הבקשה
-            return SendResult(ok=False, provider=self.name, status="failed", detail=str(exc))
+    def accepts(self, item, event) -> Optional[str]:
+        """``None`` = אפשר לשלוח; אחרת הסיבה שלא (בלי לשלוח ובלי לרשום)."""
+        _, reason = self._template_values(item, event)
+        return reason
 
+    def describe(self, item, event) -> str:
+        """מה נרשם ביומן ההודעות: שם ה-Template והערכים (לא הנוסח של הזוג,
+        שלא נשלח במצב Meta). בלי סיומת הקישור — היא הטוקן האישי של האורח."""
+        values, reason = self._template_values(item, event)
+        if values is None:
+            return f"[לא נשלח — {reason}]"
+        spec, body_params, _ = values
+        return f"[Template {spec.name}] " + " · ".join(body_params)
 
-def _to_e164(phone: str) -> str:
-    """המרה גסה למספר בינלאומי ישראלי (0501234567 -> 972501234567)."""
-    digits = "".join(ch for ch in phone if ch.isdigit())
-    if digits.startswith("0"):
-        digits = "972" + digits[1:]
-    return digits
+    def send_outbound(self, item, event, callback_data: str) -> SendResult:
+        from app import whatsapp_meta
+
+        values, reason = self._template_values(item, event)
+        if values is None:
+            return SendResult(ok=False, provider=self.name, status="failed",
+                              detail=f"אין Template מאושר לשלב הזה ({reason})")
+        spec, body_params, url_suffix = values
+        return whatsapp_meta.send_template(
+            phone=item.phone, name=spec.name, language=spec.language,
+            body_params=body_params, url_suffix=url_suffix, callback_data=callback_data,
+        )
+
+    def send_invitation(self, phone: str, text: str) -> SendResult:  # noqa: ARG002
+        return SendResult(ok=False, provider=self.name, status="failed",
+                          detail="במצב Meta נשלחות רק תבניות מאושרות — לא טקסט חופשי")
 
 
 class StoppedProvider:
@@ -799,13 +780,15 @@ def emergency_stop_active() -> bool:
 
 
 TEST_BLOCKED_DETAIL = "נחסם במצב בדיקה — המספר אינו ברשימת הנמענים המורשים"
+# הסיבה ש-``accepts`` מחזיר לנמען שאינו ברשימה (ראו ``outbound.send_batch``).
+TEST_BLOCKED = "test_blocked"
 
 
 class TestRecipientGuard:
     """מצב ``meta_test``: עוטף את ספק Meta ומעביר אליו רק נמענים מהרשימה.
 
     שתי שכבות הגנה, בכוונה:
-    1. ``outbound.send_batch`` שואל את ``allows`` *לפני* שהוא רושם משהו —
+    1. ``outbound.send_batch`` שואל את ``accepts`` *לפני* שהוא רושם משהו —
        נמען חסום לא מקבל שורה במסד ולא נוגעים בו בכלל.
     2. ``send_invitation`` עצמו בודק שוב — לכל קורא שלא עובר דרך
        ``send_batch`` (למשל "שליחת בדיקה" לטלפון של בעלי האירוע).
@@ -825,6 +808,25 @@ class TestRecipientGuard:
             return normalize_israeli_phone(phone or "") in self.allowed
         except ValueError:
             return False
+
+    def accepts(self, item, event) -> Optional[str]:
+        if not self.allows(item.phone):
+            return TEST_BLOCKED
+        inner = getattr(self.inner, "accepts", None)
+        return inner(item, event) if inner is not None else None
+
+    def describe(self, item, event) -> str:
+        inner = getattr(self.inner, "describe", None)
+        return inner(item, event) if inner is not None else item.text
+
+    def send_outbound(self, item, event, callback_data: str) -> SendResult:
+        if not self.allows(item.phone):
+            return SendResult(ok=False, provider=MODE_META_TEST, status="failed",
+                              detail=TEST_BLOCKED_DETAIL)
+        inner = getattr(self.inner, "send_outbound", None)
+        if inner is not None:
+            return inner(item, event, callback_data)
+        return self.inner.send_invitation(item.phone, item.text)
 
     def send_invitation(self, phone: str, text: str) -> SendResult:
         if not self.allows(phone):

@@ -290,7 +290,9 @@ def test_crash_mid_batch_never_resends() -> None:
     print("✓ B2: נפילה באמצע מנה — אין שליחה חוזרת (גם לא למצב 'לא ידוע')")
 
 
-def test_provider_exception_marks_failed_and_continues() -> None:
+def test_provider_exception_is_unknown_and_batch_continues() -> None:
+    """חריגה לא צפויה מספק *אמיתי* יכולה לקרות גם אחרי שהבקשה יצאה — לכן
+    השורה נשארת "לא ידוע" (pending, לא נשלחת שוב) ולא "נכשלה" (שלב 3)."""
     from app import models, outbound
 
     engine = _engine()
@@ -303,12 +305,31 @@ def test_provider_exception_marks_failed_and_continues() -> None:
         for g in guests
     ], provider=spy)
     db.commit()
-    assert (res.sent, res.failed) == (2, 1)
-    assert res.failed_guest_ids == [guests[1].id]
+    assert (res.sent, res.failed, res.unknown) == (2, 0, 1)
+    assert res.failed_guest_ids == [], "לא מוצע לניסיון חוזר"
     rows = db.scalars(select(models.Message).order_by(models.Message.id)).all()
-    assert [r.status for r in rows] == ["sent", "failed", "sent"]
+    assert [r.status for r in rows] == ["sent", "pending", "sent"]
     assert "network" not in rows[1].failure_reason, "פרטי חריגה פנימיים לא נשמרים כסיבה"
-    print("✓ B3: כשל ספק בהודעה אחת — נרשם כנכשל, שאר המנה ממשיכה")
+    print("✓ B3: חריגה בספק אמיתי — 'לא ידוע' (pending), שאר המנה ממשיכה")
+
+
+def test_mock_provider_exception_marks_failed() -> None:
+    from app import messaging, models, outbound
+
+    class _Broken(messaging.MockProvider):
+        def send_invitation(self, phone, text):  # noqa: ARG002
+            raise RuntimeError("boom")
+
+    db = Session(_engine())
+    ev = _event(db)
+    g = _guest(db, ev.id, _phone())
+    res = outbound.send_batch(db, ev, [
+        outbound.OutboundItem(guest=g, phone=g.phone, text="שלום", kind="reminder_1")
+    ], provider=_Broken())
+    db.commit()
+    assert (res.failed, res.unknown) == (1, 0)
+    assert db.scalars(select(models.Message)).one().status == "failed"
+    print("✓ B3b: חריגה בספק בלי תופעת לוואי חיצונית (mock) — נכשלה, כמו קודם")
 
 
 def test_mock_send_outcome_unchanged() -> None:
@@ -662,7 +683,9 @@ def test_webhook_malformed_items_are_skipped() -> None:
     r = _post(api, weird)
     assert r.status_code == 200, r.text
     assert _guest_row(g["id"]).rsvp_status == "confirmed", "הפריט התקין עובד גם בתוך payload פגום"
-    assert len(_inbound_rows(api.event_id)) == 1
+    # מאז שלב 3 גם הטקסט החופשי ("נגיע 3") נשמר — כ"דורש טיפול", בלי לשנות RSVP.
+    rows = _inbound_rows(api.event_id)
+    assert sorted(r.status for r in rows) == ["needs_attention", "received"], [r.status for r in rows]
     print("✓ D8: payload לא צפוי — מה שפגום מדולג, מה שתקין מטופל, 200")
 
 

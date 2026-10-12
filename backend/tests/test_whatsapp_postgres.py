@@ -31,6 +31,7 @@ SCENARIOS = [
     "06_webhook_reply_and_duplicates",
     "07_webhook_concurrent_duplicates",
     "08_meta_test_allowlist_under_rls",
+    "09_meta_template_unknown_then_reconciled",
 ]
 
 
