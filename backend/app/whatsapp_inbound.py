@@ -137,6 +137,17 @@ def already_processed(db: Session, provider_message_id: str) -> bool:
     ) is not None
 
 
+def _flush_inbound(db: Session) -> None:
+    """כותב את ההודעה הנכנסת (ואת עדכון ה-RSVP) עכשיו, לפני ``audit.record``.
+
+    אותה הודעה שמגיעה פעמיים *במקביל* נעצרת באינדקס הייחודי על מזהה Meta.
+    בלי flush כאן, הכתיבה הייתה קורית בתוך ה-SAVEPOINT של ``audit.record``
+    (``begin_nested`` מבצע flush), שבולע כל שגיאה — והטרנזקציה הייתה נשארת
+    "שבורה" עד ה-commit. כך ה-``IntegrityError`` עולה לקורא ומזוהה ככפילות.
+    """
+    db.flush()
+
+
 def _log(outcome: str, **ids) -> None:
     """שורת לוג בלי מידע אישי — רק מזהים פנימיים ותוצאה."""
     parts = " ".join(f"{k}={v}" for k, v in ids.items() if v is not None)
@@ -180,6 +191,7 @@ def record_rsvp_reply(
                 provider_message_id=provider_message_id,
                 cycle_number=event_cycle.of(event) if event else 1,
             ))
+            _flush_inbound(db)
         audit.record(
             db, "whatsapp_reply_unmatched",
             event_id=match.candidate_event_ids[0] if len(set(match.candidate_event_ids)) == 1 else None,
@@ -221,6 +233,7 @@ def record_rsvp_reply(
         provider_message_id=provider_message_id,
         cycle_number=event_cycle.of(event),
     ))
+    _flush_inbound(db)
     audit.record(
         db, "confirm_submit",
         event_id=guest.event_id,

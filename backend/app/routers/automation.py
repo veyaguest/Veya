@@ -230,12 +230,13 @@ def activate_track(
     מוזמנים בלי טלפון / עם מספר לא תקין מדולגים ונספרים בנפרד.
     """
     payload = payload or schemas.RsvpTrackActivateRequest()
+    # לחיצה כפולה / שתי לשוניות: הבקשה השנייה מחכה כאן עד שהראשונה רשמה את
+    # ההזמנות שלה, ורק אז מחשבת מי "כבר קיבל" — ראו ``outbound.lock_event_sends``.
+    # לפני ההקצאה, כי גם היא נכשלת כששתי בקשות יוצרות את אותן שורות במקביל.
+    outbound.lock_event_sends(db, event.id)
     messages_created = communication.provision_event_messages(db, event)
     newly_activated = False
 
-    # לחיצה כפולה / שתי לשוניות: הבקשה השנייה מחכה כאן עד שהראשונה רשמה את
-    # ההזמנות שלה, ורק אז מחשבת מי "כבר קיבל" — ראו ``outbound.lock_event_sends``.
-    outbound.lock_event_sends(db, event.id)
     already_invited = invitations.invited_guest_ids(db, event.id, event, include_uncertain=True)
     guests = _guests(db, event.id)
 

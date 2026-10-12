@@ -756,6 +756,42 @@ def test_activate_track_leaves_no_pending_rows_in_mock() -> None:
     print("✓ E2: שליחת הזמנות במצב mock — 3 נשלחו, אין pending, אין כפילות בלחיצה שנייה")
 
 
+def test_stuck_pending_invitation_is_never_resent_by_couple() -> None:
+    """הזמנה שנתקעה ב-pending (השרת נפל אחרי שאולי יצאה): אף אחת מדרכי
+    השליחה של הזוג — "חדשים", "כולם", "ניסיון חוזר לנכשלים" — לא שולחת שוב."""
+    from app import models
+
+    api, _ = bootstrap()
+    g = api.add_guest("מוזמן תקוע", _phone())
+    db = _db()
+    try:
+        em = db.scalars(select(models.EventMessage).where(
+            models.EventMessage.event_id == api.event_id,
+            models.EventMessage.message_type == "invitation")).first()
+        if em is None:
+            em = models.EventMessage(event_id=api.event_id, message_type="invitation",
+                                     title="הזמנה", content="", is_active=True)
+            db.add(em)
+        em.content = "שלום {{guest_name}}"
+        db.add(models.Message(event_id=api.event_id, guest_id=g["id"], direction="outbound",
+                              kind="invitation", body="x", status="pending", provider="meta"))
+        db.commit()
+    finally:
+        db.close()
+    for body in ({}, {"scope": "all"}, {"retry_ids": [g["id"]]}, {"guest_ids": [g["id"]]}):
+        r = api.client.post("/automation/track/activate", headers=api.headers, json=body)
+        assert r.status_code == 200, r.text
+        assert r.json()["invitations_sent"] == 0, (body, r.json())
+    db = _db()
+    try:
+        rows = db.scalars(select(models.Message).where(
+            models.Message.event_id == api.event_id, models.Message.guest_id == g["id"])).all()
+        assert [m.status for m in rows] == ["pending"], "לא נוצרה שליחה נוספת"
+    finally:
+        db.close()
+    print("✓ E3: הזמנה תקועה ב-pending — אף דרך שליחה של הזוג לא שולחת שוב")
+
+
 if __name__ == "__main__":
     try:
         for name, fn in list(globals().items()):
