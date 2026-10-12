@@ -619,6 +619,8 @@ class MockProvider:
     """מצב בדיקה — לא שולח כלום החוצה, רק מדווח הצלחה כדי לרשום ביומן."""
 
     name = "mock"
+    # אין תופעת לוואי מחוץ למערכת — ראו ``outbound.send_batch``.
+    external = False
 
     def send_invitation(self, phone: str, text: str) -> SendResult:
         # מזהה מדומה (לא אמיתי) — כדי שזרימת ה-provider_message_id תיבדק
@@ -639,6 +641,8 @@ class MetaProvider:
     """
 
     name = "meta"
+    # שליחה אמיתית: כל הודעה נשמרת מיד אחרי שיצאה (``outbound.send_batch``).
+    external = True
 
     def __init__(self) -> None:
         self.token = os.getenv("WHATSAPP_TOKEN", "")
@@ -719,6 +723,7 @@ class StoppedProvider:
     """
 
     name = "stopped"
+    external = False
 
     def send_invitation(self, phone: str, text: str) -> SendResult:  # noqa: ARG002
         return SendResult(ok=False, provider="stopped", status="failed",

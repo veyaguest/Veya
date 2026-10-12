@@ -9,8 +9,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import (
-    audit, communication, event_cycle, invitations, message_status, messaging,
-    models, permissions, postponement_service, schemas,
+    audit, communication, invitations, messaging,
+    models, outbound, permissions, postponement_service, schemas,
 )
 from app.auth import get_current_owner
 from app.database import get_db
@@ -220,9 +220,8 @@ def manual_send(
             if communication.matches_audience(g, payload.audience)
         ]
 
-    provider = messaging.get_provider()
-    sent = failed = skipped = 0
-    last_detail = ""
+    skipped = 0
+    items: list[outbound.OutboundItem] = []
     for g in targets:
         if invitations.classify_phone(g.phone) != "valid":
             skipped += 1
@@ -233,23 +232,11 @@ def manual_send(
         if not text:
             skipped += 1
             continue
-        res = provider.send_invitation(g.phone, text)
-        db.add(models.Message(
-            event_id=event.id,
-            guest_id=g.id,
-            direction="outbound",
-            kind=message_type,
-            body=text,
-            channel="whatsapp",
-            event_message_id=em.id,
-            cycle_number=event_cycle.of(event),
-            **message_status.outbound_fields(res),
+        items.append(outbound.OutboundItem(
+            guest=g, phone=g.phone, text=text, kind=message_type, event_message_id=em.id,
         ))
-        if res.ok:
-            sent += 1
-        else:
-            failed += 1
-            last_detail = res.detail
+    batch = outbound.send_batch(db, event, items)
+    sent, failed, last_detail = batch.sent, batch.failed, batch.last_detail
     audit.record(
         db, "manual_message_send",
         event_id=event.id, user_id=user.id,
@@ -313,6 +300,7 @@ def send_due(
     user: models.User = Depends(get_current_owner),
 ):
     """שולח בפועל את מה שנבחר מהתור — רק אחרי לחיצת אישור של הבעלים."""
+    outbound.lock_event_sends(db, event.id)
     actions = communication.compute_due_messages(db, event)
     if payload.items is not None:
         wanted = set(payload.items)

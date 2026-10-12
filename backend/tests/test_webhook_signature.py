@@ -77,6 +77,8 @@ def _rsvp_payload(from_phone: str, coming: bool = True) -> bytes:
                 "value": {
                     "messages": [{
                         "from": from_phone,
+                        # Meta שולחת תמיד מזהה הודעה — ממנו נגזרת מניעת הכפילויות.
+                        "id": f"wamid-in-{secrets.token_hex(8)}",
                         "interactive": {"button_reply": {"id": button_id}},
                     }]
                 }
@@ -226,6 +228,11 @@ def test_valid_signature_accepted_and_updates_rsvp() -> None:
     (המסלול העסקי לא נשבר ע"י התיקון)."""
     api, teardown = bootstrap()
     try:
+        # מאז 2026-10-12 גם תשובה מ-WhatsApp עוברת את בדיקת חלון אישורי
+        # ההגעה, כמו הקישור האישי — פותחים אותו (ראו test_whatsapp_safety).
+        from tests.test_whatsapp_safety import _open_rsvp
+
+        _open_rsvp(api)
         phone = _fresh_phone()
         guest = api.add_guest("מוזמן ה", phone)
         body = _rsvp_payload(_intl(phone), coming=True)

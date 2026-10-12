@@ -33,7 +33,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import models
-from app.database import IS_POSTGRES
 from app.invitations import classify_phone
 
 # ---- אוצר המילים (מקור אמת יחיד ל-Message.status) ----
@@ -53,6 +52,12 @@ BLOCKED = "blocked"                    # המוזמן חסם את מספר הע�
 OUTBOUND_STATUSES = frozenset(
     {PENDING, QUEUED, SENT, DELIVERED, READ, FAILED, NO_VALID_NUMBER, BLOCKED}
 )
+
+# ---- הודעות נכנסות ----
+RECEIVED = "received"                  # נקלטה וטופלה (תשובת RSVP שהוחלה)
+# נקלטה אבל לא טופלה אוטומטית — שיוך לא חד-משמעי, תשובה לפני שנפתחו
+# אישורי ההגעה וכו'. אף פעם לא משנה RSVP; מחכה לטיפול ידני.
+NEEDS_ATTENTION = "needs_attention"
 
 _TIMESTAMP_FIELD = {DELIVERED: "delivered_at", READ: "read_at"}
 
@@ -193,8 +198,12 @@ def apply_status_update(
     provider_status: Optional[str] = None,
 ) -> bool:
     """מעדכן הודעה יוצאת קיימת לפי מזהה הספק — נקרא מ-webhook. לא עושה
-    commit (כמו ``_record_reply``) — הקריאה אחראית לזה, כדי שכמה עדכונים
-    מאותה בקשת webhook ייכנסו כטרנזקציה אחת.
+    commit — הקורא אחראי לזה.
+
+    רץ על חיבור המערכת (``MigrationSessionLocal``, כמו המשימות המתוזמנות) —
+    ל-webhook אין זהות משתמש שה-RLS יכול לסנן לפיה. עד 2026-10-12 עבר ב-Postgres
+    דרך ``app_update_message_status`` (SQL), שבו "נכשלה" יכלה לדרוס "נמסרה" —
+    בניגוד לכלל כאן. עכשיו יש מסלול אחד, אותו כלל בשני סוגי ה-DB.
 
     ההתאמה היא לפי ``provider_message_id`` בלבד — מזהה ייחודי-גלובלית
     (wamid אצל Meta; אקראי-בפועל במצב mock) הנשמר על אינדקס ייחודי ב-DB
@@ -213,23 +222,14 @@ def apply_status_update(
         return False
     ts = timestamp or datetime.utcnow()
 
-    if IS_POSTGRES:
-        from sqlalchemy import text as _text
-
-        row = db.execute(
-            _text(
-                "SELECT * FROM app_update_message_status"
-                "(:pmid, :status, :ts, :reason, :fcode, :pstatus)"
-            ),
-            {
-                "pmid": provider_message_id, "status": status, "ts": ts, "reason": reason,
-                "fcode": failure_code, "pstatus": provider_status,
-            },
-        ).mappings().first()
-        return bool(row and row.get("id") is not None)
-
+    # ``FOR UPDATE`` (Postgres): שני עדכונים לאותה הודעה שמגיעים במקביל
+    # ("נמסרה" ו"נקראה") נבדקים מול ``_should_skip_regression`` אחד אחרי השני,
+    # ולא שניהם מול אותו מצב ישן. SQLite מתעלם מהנעילה (אין מקביליות כתיבה).
     msg = db.scalar(
-        select(models.Message).where(models.Message.provider_message_id == provider_message_id)
+        select(models.Message)
+        .where(models.Message.provider_message_id == provider_message_id)
+        .where(models.Message.direction == "outbound")
+        .with_for_update()
     )
     if msg is None:
         return False

@@ -33,7 +33,7 @@ from sqlalchemy.orm import Session
 
 from app import (
     audit, automation, communication, local_time, messaging, models,
-    postponement_service, rsvp_timeline,
+    outbound, postponement_service, rsvp_timeline,
 )
 
 # מפתח נעילה ייחודי למשימה הזו (שונה מזה של תכנון השיחות).
@@ -68,7 +68,8 @@ def process_event(
     db: Session, event: models.Event, now: datetime, *, send: bool = True
 ) -> tuple[bool, int, int]:
     """מריץ את המסלול לאירוע אחד: מתחיל אותו אם הגיע היום, ושולח את מה
-    שהגיע זמנו. מחזיר ``(התחיל עכשיו, נשלחו, נכשלו)``. לא עושה commit."""
+    שהגיע זמנו. מחזיר ``(התחיל עכשיו, נשלחו, נכשלו)``. ה-commit הסופי —
+    באחריות הקורא; השליחה עצמה עושה commit לפני ניסיון (``outbound.send_batch``)."""
     today = local_time.israel_date(now)
     event_date = automation.parse_event_date(event.event_date)
     if event_date is None or event_date < today - timedelta(days=_KEEP_AFTER_EVENT_DAYS):
@@ -98,6 +99,8 @@ def process_event(
         return started, 0, 0
     # idempotent — מבטיח שיש שורת הודעה לכל סבב (אירועים ישנים).
     communication.provision_event_messages(db, event)
+    # מול שליחה ידנית מהתור באותו רגע — ראו ``outbound.lock_event_sends``.
+    outbound.lock_event_sends(db, event.id)
     actions = communication.compute_due_messages(db, event, now=now)
     if not actions:
         return started, 0, 0

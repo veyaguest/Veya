@@ -45,13 +45,24 @@ def classify_phone(raw: str | None) -> str:
 # ו"הזמנה אחת לכל מוזמן" הייתה נשברת ברגע שוואטסאפ מחובר באמת.
 DELIVERED_OR_BETTER = ("sent", "delivered", "read")
 
+# "אולי נשלחה": ניסיון שליחה שהתחיל ולא ידוע איך הסתיים (``pending`` — השרת
+# נפל בין השליחה לספק לבין שמירת התוצאה, ראו ``app/outbound.py``). לצורך
+# "הזמנה אחת בלבד לכל אורח" הוא נחשב כאילו נשלח: שליחה חוזרת אוטומטית
+# עלולה לתת לאורח הזמנה כפולה. לספירה ולתצוגה נשאר ``DELIVERED_OR_BETTER``.
+MAY_HAVE_BEEN_SENT = DELIVERED_OR_BETTER + ("pending",)
 
-def invited_guest_ids(db: Session, event_id: int, event=None) -> set[int]:
+
+def invited_guest_ids(
+    db: Session, event_id: int, event=None, *, include_uncertain: bool = False,
+) -> set[int]:
     """מזהי המוזמנים שכבר נשלחה אליהם הזמנה (הודעת invitation יוצאת שנשלחה).
 
     **רק במחזור הנוכחי.** אחרי דחייה, הזמנה שנשלחה למועד הישן אינה נחשבת —
     אחרת ההזמנה החדשה לא הייתה נשלחת לאיש. ``event`` אופציונלי לתאימות
     אחורה עם קוראים ישנים; בלעדיו נטענת שורת האירוע כדי לדעת את המחזור.
+
+    ``include_uncertain`` — גם ניסיונות שתוצאתם לא ידועה (``pending``). רק
+    לצורך מניעת הזמנה כפולה בשליחה; הספירה והתצוגה נשארות על מה שאושר.
     """
     if event is None:
         event = db.get(models.Event, event_id)
@@ -61,7 +72,9 @@ def invited_guest_ids(db: Session, event_id: int, event=None) -> set[int]:
         .where(event_cycle.current_sends(event))
         .where(models.Message.direction == "outbound")
         .where(models.Message.kind == "invitation")
-        .where(models.Message.status.in_(DELIVERED_OR_BETTER))
+        .where(models.Message.status.in_(
+            MAY_HAVE_BEEN_SENT if include_uncertain else DELIVERED_OR_BETTER
+        ))
         .where(models.Message.guest_id.is_not(None))
     ).all()
     return {gid for gid in rows if gid is not None}

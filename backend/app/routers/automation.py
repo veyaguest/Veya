@@ -27,6 +27,7 @@ from app import (
     message_status,
     messaging,
     models,
+    outbound,
     permissions,
     rsvp_timeline,
     schemas,
@@ -232,7 +233,10 @@ def activate_track(
     messages_created = communication.provision_event_messages(db, event)
     newly_activated = False
 
-    already_invited = invitations.invited_guest_ids(db, event.id, event)
+    # לחיצה כפולה / שתי לשוניות: הבקשה השנייה מחכה כאן עד שהראשונה רשמה את
+    # ההזמנות שלה, ורק אז מחשבת מי "כבר קיבל" — ראו ``outbound.lock_event_sends``.
+    outbound.lock_event_sends(db, event.id)
+    already_invited = invitations.invited_guest_ids(db, event.id, event, include_uncertain=True)
     guests = _guests(db, event.id)
 
     # קביעת קהל היעד לפי היקף הבקשה.
@@ -260,9 +264,8 @@ def activate_track(
 
     invitation_msg = communication.event_messages_by_type(db, event.id).get("invitation")
     body = invitation_msg.content if invitation_msg else ""
-    provider = messaging.get_provider()
-    invitations_sent = skipped_missing = skipped_invalid = failed = 0
-    failed_ids: list[int] = []
+    skipped_missing = skipped_invalid = 0
+    items: list[outbound.OutboundItem] = []
     for g in targets:
         kind = invitations.classify_phone(g.phone)
         if kind == "missing":
@@ -277,23 +280,12 @@ def activate_track(
         if not text:
             skipped_missing += 1  # אין עדיין תוכן להזמנה — לא נשלח כלום
             continue
-        res = provider.send_invitation(g.phone, text)
-        db.add(models.Message(
-            event_id=event.id,
-            guest_id=g.id,
-            direction="outbound",
-            kind="invitation",
-            body=text,
-            channel="whatsapp",
+        items.append(outbound.OutboundItem(
+            guest=g, phone=g.phone, text=text, kind="invitation",
             event_message_id=invitation_msg.id if invitation_msg else None,
-            cycle_number=event_cycle.of(event),
-            **message_status.outbound_fields(res),
         ))
-        if res.ok:
-            invitations_sent += 1
-        else:
-            failed += 1
-            failed_ids.append(g.id)
+    batch = outbound.send_batch(db, event, items)
+    invitations_sent, failed, failed_ids = batch.sent, batch.failed, batch.failed_guest_ids
 
     # יומן הפעילות — רישום קריא לזוג (רק מה שקרה בפועל).
     ip = request.client.host if request.client else None

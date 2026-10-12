@@ -70,7 +70,7 @@ def _invitation_time_by_guest(messages: list[models.Message]) -> dict[int, datet
     for m in messages:
         if m.guest_id is None:
             continue
-        if m.direction == "outbound" and m.kind == "invitation" and m.status == "sent":
+        if m.direction == "outbound" and m.kind == "invitation" and m.status in ("sent", "delivered", "read"):
             prev = out.get(m.guest_id)
             if prev is None or m.created_at < prev:
                 out[m.guest_id] = m.created_at

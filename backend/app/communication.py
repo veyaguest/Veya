@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from app import (
     automation, event_cycle, event_terms, gift_eligibility, invitations,
-    message_status, messaging, models, rsvp_timeline,
+    messaging, models, outbound, rsvp_timeline,
 )
 from app.guest_journey import israel_timezone, now_in_israel
 
@@ -640,26 +640,14 @@ def compute_due_messages(
 def send_due_messages(
     db: Session, event: models.Event, actions: list[DueMessageAction],
 ) -> dict:
-    """שולח בפועל (mock/live) את הפעולות שאושרו. לא עושה commit."""
-    provider = messaging.get_provider()
-    sent = failed = 0
-    last_detail = ""
-    for a in actions:
-        res = provider.send_invitation(a.guest.phone, a.preview)
-        db.add(models.Message(
-            event_id=event.id,
-            guest_id=a.guest.id,
-            direction="outbound",
-            kind=a.event_message.message_type,
-            body=a.preview,
-            channel="whatsapp",
-            event_message_id=a.event_message.id,
-            cycle_number=event_cycle.of(event),
-            **message_status.outbound_fields(res),
-        ))
-        if res.ok:
-            sent += 1
-        else:
-            failed += 1
-            last_detail = res.detail
-    return {"sent": sent, "failed": failed, "detail": last_detail}
+    """שולח בפועל (mock/live) את הפעולות שאושרו, דרך ``outbound.send_batch``:
+    כל הודעה נרשמת לפני הניסיון (commit), ומתעדכנת אחריו. ה-commit של
+    העדכון האחרון — באחריות הקורא."""
+    result = outbound.send_batch(db, event, [
+        outbound.OutboundItem(
+            guest=a.guest, phone=a.guest.phone, text=a.preview,
+            kind=a.event_message.message_type, event_message_id=a.event_message.id,
+        )
+        for a in actions
+    ])
+    return {"sent": result.sent, "failed": result.failed, "detail": result.last_detail}

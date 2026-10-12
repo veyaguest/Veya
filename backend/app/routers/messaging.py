@@ -4,22 +4,27 @@
 1. הבעלים לוחץ "שלח הזמנות" → נשלחת הזמנה לכל מוזמן שעדיין לא ענה (או לכולם).
    במצב mock ההודעה רק נרשמת ביומן (בלי שליחה אמיתית ובלי עלות).
 2. המוזמן לוחץ כפתור "מגיע/ה"/"לא מגיע/ה" → מגיע webhook מ-Meta, וה-RSVP
-   מתעדכן אוטומטית. במצב mock אפשר "לדמות" את הלחיצה דרך המסך.
+   מתעדכן דרך אותה לוגיקה של הקישור האישי (``app/whatsapp_inbound.py``). במצב
+   mock אפשר "לדמות" את הלחיצה דרך המסך.
 """
 import hashlib
 import hmac
 import os
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import func, select, text
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from app import (
-    audit, event_cycle, message_status, messaging, models, permissions, schemas,
+    audit, event_cycle, invitations, message_status, messaging, models, outbound,
+    permissions, schemas, whatsapp_inbound,
 )
 from app.auth import get_current_owner
-from app.database import IS_POSTGRES, get_db
+from app.database import IS_POSTGRES, MigrationSessionLocal, get_db
 from app.deps import EventAccess
 
 router = APIRouter(prefix="/messaging", tags=["messaging"])
@@ -37,11 +42,12 @@ _write = EventAccess(permissions.MESSAGES_WRITE)
 
 
 def _record_reply(db: Session, guest: models.Guest, status: str, provider: str) -> None:
-    """מעדכן RSVP של מוזמן ורושם הודעה נכנסת ביומן.
+    """מעדכן RSVP של מוזמן ורושם הודעה נכנסת ביומן — **רק ל"דימוי תשובה" במצב
+    mock** (``/simulate-reply``), שנשאר בדיוק כפי שהיה.
 
-    ה-webhook רץ בלי משתמש מחובר ובלי guest_token, ולכן תחת RLS (Postgres)
-    חייבים לעבור דרך פונקציית app_record_guest_rsvp_reply (SECURITY DEFINER,
-    ראו backend/rls/01_helpers_and_grants.sql) — עדכון ORM רגיל היה נחסם/נכשל.
+    תשובות אמיתיות מ-webhook לא עוברות כאן מאז 2026-10-12, אלא דרך
+    ``whatsapp_inbound.record_rsvp_reply`` (שיוך חד-משמעי, חלון אישורי ההגעה,
+    ``rsvp_response``, יומן פעילות, מניעת כפילויות).
     """
     label = "אישר/ה הגעה" if status == "confirmed" else "ביטל/ה הגעה"
     if IS_POSTGRES:
@@ -86,7 +92,9 @@ def summary(
         .where(event_cycle.current_sends(event))
         .where(models.Message.direction == "outbound")
         .where(models.Message.kind == "invitation")
-        .where(models.Message.status == "sent")
+        # נשלחה — וגם מה שהתקדם ממנה (נמסרה/נקראה, מ-webhook). "sent" לבד
+        # היה מוריד את המספר ברגע ש-Meta מעדכנת מסירה (2026-10-12).
+        .where(models.Message.status.in_(invitations.DELIVERED_OR_BETTER))
     ) or 0
 
     return schemas.RsvpSummary(
@@ -117,9 +125,8 @@ def send_invitations(
     if not guests:
         raise HTTPException(status_code=400, detail="אין מוזמנים לשליחה")
 
-    provider = messaging.get_provider()
-    sent = failed = skipped = 0
-    last_detail = ""
+    skipped = 0
+    items: list[outbound.OutboundItem] = []
 
     template = event.message_template or messaging.default_template_for(event.event_type)
     ev_values = messaging.event_values(event)
@@ -135,21 +142,9 @@ def send_invitations(
             guest_count=g.effective_seats,
             **ev_values,
         )
-        res = provider.send_invitation(g.phone, text)
-        db.add(models.Message(
-            event_id=event.id,
-            guest_id=g.id,
-            direction="outbound",
-            kind="invitation",
-            body=text,
-            cycle_number=event_cycle.of(event),
-            **message_status.outbound_fields(res),
-        ))
-        if res.ok:
-            sent += 1
-        else:
-            failed += 1
-            last_detail = res.detail
+        items.append(outbound.OutboundItem(guest=g, phone=g.phone, text=text, kind="invitation"))
+    batch = outbound.send_batch(db, event, items)
+    sent, failed, last_detail = batch.sent, batch.failed, batch.last_detail
 
     _detail = f"נשלחו {sent} הזמנות"
     if failed:
@@ -186,7 +181,7 @@ def send_reminders(
         .where(models.Message.event_id == event.id)
         .where(models.Message.direction == "outbound")
         .where(models.Message.kind == "invitation")
-        .where(models.Message.status == "sent")
+        .where(models.Message.status.in_(invitations.DELIVERED_OR_BETTER))
         .where(models.Message.guest_id.is_not(None))
     ).all())
 
@@ -210,9 +205,8 @@ def send_reminders(
             detail="אין ממתינים לתזכורת — כולם כבר ענו 🎉",
         )
 
-    provider = messaging.get_provider()
-    sent = failed = skipped = 0
-    last_detail = ""
+    skipped = 0
+    items: list[outbound.OutboundItem] = []
 
     template = event.message_template or messaging.default_template_for(event.event_type)
     ev_values = messaging.event_values(event)
@@ -229,21 +223,9 @@ def send_reminders(
             **ev_values,
         )
         text = f"{messaging.REMINDER_PREFIX}\n\n{base}"
-        res = provider.send_invitation(g.phone, text)
-        db.add(models.Message(
-            event_id=event.id,
-            guest_id=g.id,
-            direction="outbound",
-            kind="reminder",
-            body=text,
-            cycle_number=event_cycle.of(event),
-            **message_status.outbound_fields(res),
-        ))
-        if res.ok:
-            sent += 1
-        else:
-            failed += 1
-            last_detail = res.detail
+        items.append(outbound.OutboundItem(guest=g, phone=g.phone, text=text, kind="reminder"))
+    batch = outbound.send_batch(db, event, items)
+    sent, failed, last_detail = batch.sent, batch.failed, batch.last_detail
 
     audit.record(
         db, "send_reminders",
@@ -388,11 +370,22 @@ def _verify_signature(body: bytes, signature_header: Optional[str]) -> bool:
 
 
 @router.post("/webhook")
-async def receive_webhook(request: Request, db: Session = Depends(get_db)):
-    """Webhook יחיד מ-Meta — כמו בפועל אצל Meta, אותה קריאה נושאת גם תשובות
-    RSVP נכנסות (``messages[]``, מזהה מוזמן לפי טלפון) וגם עדכוני מסירה
-    להודעות יוצאות (``statuses[]``: נשלחה/נמסרה/נקראה/נכשלה, מזהה הודעה
-    לפי provider_message_id — ראו ``app/message_status.py``)."""
+async def receive_webhook(request: Request):
+    """Webhook יחיד מ-Meta — אותה קריאה נושאת גם הודעות נכנסות (``messages[]``)
+    וגם עדכוני מסירה להודעות יוצאות (``statuses[]``).
+
+    עקרונות (2026-10-12):
+    - **כל פריט בטרנזקציה משלו.** כשל באמצע לא מבטל את מה שכבר נקלט, וכשל
+      בפריט אחד לא "מרעיל" את האחרים.
+    - **חסין לכפילויות.** Meta שולחת שוב כשלא קיבלה 200, ולפעמים גם סתם.
+      הודעה נכנסת מזוהה לפי מזהה ה-Meta שלה (``whatsapp_inbound``); עדכון
+      סטטוס חוזר לא משנה דבר (``message_status._should_skip_regression``).
+    - **כשל זמני ב-DB → 500**, כדי ש-Meta תנסה שוב. בזכות שני הסעיפים
+      הקודמים, ניסיון חוזר אחרי הצלחה חלקית לא מכפיל כלום.
+    - **payload לא צפוי → מדולג ונרשם ללוג, 200.** פריט שלא ניתן לפענח לא
+      יצליח גם בניסיון הבא; 500 עליו היה גורם ל-Meta לנסות שוב לנצח.
+    - **בלי מידע אישי בלוג** — לא טלפון, לא שם, לא תוכן ההודעה.
+    """
     # קוראים את הגוף הגולמי (bytes) לפני הפענוח — נדרש לאימות החתימה בדיוק.
     raw_body = await request.body()
     if not _verify_signature(raw_body, request.headers.get("X-Hub-Signature-256")):
@@ -402,85 +395,125 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
         data = json.loads(raw_body or b"{}")
     except Exception:
         # גוף לא-JSON תקין (גם אם החתימה כן תקינה) — 400 מבוקר, לא 500 ולא
-        # traceback/פרטי הפענוח החוצה. שונה במכוון מה-except הרחב יותר למטה
-        # (db.rollback + 200 "received: true"): זה חל על כשל *בעיבוד*
-        # payload שכבר פוענח כ-JSON תקני ("לעולם לא נכשלים ל-Meta" על עיבוד
-        # עסקי) — כאן הגוף עצמו לא ניתן לפענוח בכלל, עוד לפני כל קוד עסקי,
-        # ואין סיבה "לא להיכשל" כלפי בקשה שלא הייתה תקינה מלכתחילה.
+        # traceback/פרטי הפענוח החוצה. JSON תקין-תחבירית שאינו בצורת webhook
+        # מטופל למטה (מדולג, 200).
         raise HTTPException(status_code=400, detail="גוף הבקשה אינו JSON תקין")
-    try:
-        for entry in data.get("entry", []):
-            for change in entry.get("changes", []):
-                value = change.get("value", {})
-                for msg in value.get("messages", []):
-                    from_phone = msg.get("from", "")
-                    button_id = (
-                        msg.get("interactive", {}).get("button_reply", {}).get("id")
-                        or msg.get("button", {}).get("payload")
-                    )
-                    status = messaging.rsvp_from_button(button_id or "")
-                    if not status:
-                        continue
-                    guest = _match_guest_by_phone(db, from_phone)
-                    if guest:
-                        _record_reply(db, guest, status, provider="meta")
-                for st in value.get("statuses", []):
-                    raw_status = st.get("status", "")
-                    errors = st.get("errors") or []
-                    mapped = message_status.map_meta_status(raw_status, errors)
-                    provider_message_id = st.get("id", "")
-                    if not mapped or not provider_message_id:
-                        continue
-                    ts = None
-                    raw_ts = st.get("timestamp")
-                    if raw_ts:
-                        try:
-                            from datetime import datetime as _dt
-                            ts = _dt.utcfromtimestamp(int(raw_ts))
-                        except (TypeError, ValueError):
-                            ts = None
-                    reason = (errors[0].get("title") or errors[0].get("message") or "") if errors else ""
-                    message_status.apply_status_update(
-                        db,
-                        provider_message_id=provider_message_id,
-                        status=mapped,
-                        timestamp=ts,
-                        reason=reason,
-                        failure_code=message_status.first_error_code(errors),
-                        provider_status=raw_status or None,
-                    )
-        db.commit()
-    except Exception:
-        # לעולם לא מחזירים שגיאה ל-Meta — אחרת היא תנסה שוב ושוב.
-        db.rollback()
+
+    items = _webhook_items(data)
+    transient = await run_in_threadpool(_process_webhook_items, items)
+    if transient:
+        raise HTTPException(status_code=500, detail="שגיאה זמנית — ננסה שוב")
     return {"received": True}
 
 
-def _match_guest_by_phone(db: Session, from_phone: str):
-    """מתאים מספר שהגיע מ-Meta (972...) למוזמן לפי הספרות האחרונות.
+def _as_list(value) -> list:
+    return value if isinstance(value, list) else []
 
-    מגבלה ידועה (לטיפול עתידי): הסריקה היא על *כל* המוזמנים בכל האירועים,
-    ומחזירה את ההתאמה הראשונה. אם אותו מספר טלפון מופיע בשני אירועים שונים,
-    תשובת ה-RSVP עלולה להירשם לאירוע הלא-נכון. פתרון עתידי: לשייך את הודעת
-    ה-WhatsApp הנכנסת למספר העסקי/אירוע שאליו נשלחה, ולסנן לפי event_id.
 
-    תחת RLS (Postgres) אין כאן זהות מחוברת ואין guest_token, אז שאילתת ORM
-    רגילה הייתה מחזירה תמיד 0 שורות — לכן עוברים דרך app_find_guest_by_phone
-    (SECURITY DEFINER, ראו backend/rls/01_helpers_and_grants.sql).
+def _as_dict(value) -> dict:
+    return value if isinstance(value, dict) else {}
+
+
+def _webhook_items(data) -> list[tuple[str, dict]]:
+    """מפרק את גוף ה-webhook לפריטים לטיפול: ``("message", msg)`` /
+    ``("status", st)``. סובלני לחלוטין לצורה לא צפויה — מה שלא מתאים מדולג."""
+    items: list[tuple[str, dict]] = []
+    for entry in _as_list(_as_dict(data).get("entry")):
+        for change in _as_list(_as_dict(entry).get("changes")):
+            value = _as_dict(_as_dict(change).get("value"))
+            for msg in _as_list(value.get("messages")):
+                if isinstance(msg, dict):
+                    items.append(("message", msg))
+            for st in _as_list(value.get("statuses")):
+                if isinstance(st, dict):
+                    items.append(("status", st))
+    return items
+
+
+def _process_webhook_items(items: list[tuple[str, dict]]) -> bool:
+    """מעבד את הפריטים, כל אחד ב-commit משלו. מחזיר ``True`` אם הייתה שגיאת
+    DB זמנית (ואז עוצרים — Meta תשלח את כל הקריאה שוב).
+
+    חיבור המערכת (``MigrationSessionLocal``), כמו המשימות המתוזמנות: ל-webhook
+    אין זהות משתמש שה-RLS יכול לסנן לפיה. ההגנה היא החתימה (``_verify_signature``),
+    שנבדקת לפני שמגיעים לכאן.
     """
-    digits = "".join(ch for ch in from_phone if ch.isdigit())
-    tail = digits[-9:]
-    if not tail:
-        return None
-    if IS_POSTGRES:
-        row = db.execute(
-            text("SELECT * FROM app_find_guest_by_phone(:tail)"), {"tail": tail}
-        ).mappings().first()
-        if row is None or row.get("id") is None:
-            return None
-        return models.Guest(**dict(row))
-    for g in db.scalars(select(models.Guest)).all():
-        g_digits = "".join(ch for ch in (g.phone or "") if ch.isdigit())
-        if g_digits.endswith(tail):
-            return g
-    return None
+    with MigrationSessionLocal() as db:
+        for kind, item in items:
+            try:
+                if kind == "message":
+                    _handle_inbound_message(db, item)
+                else:
+                    _handle_status(db, item)
+                db.commit()
+            except IntegrityError:
+                # אותה הודעה נכנסת נקלטה במקביל ע"י קריאה אחרת (אינדקס ייחודי
+                # על מזהה Meta) — כבר טופלה. לא שגיאה.
+                db.rollback()
+                print("[veya:whatsapp] webhook duplicate (concurrent)", flush=True)
+            except SQLAlchemyError as exc:
+                db.rollback()
+                print(f"[veya:whatsapp] webhook db error {type(exc).__name__} — retry", flush=True)
+                return True
+            except Exception as exc:  # noqa: BLE001 — פריט לא צפוי לא עוצר את האחרים
+                db.rollback()
+                print(f"[veya:whatsapp] webhook item skipped {type(exc).__name__}", flush=True)
+    return False
+
+
+def _handle_inbound_message(db: Session, msg: dict) -> None:
+    """הודעה נכנסת מאורח. היום מטופלת רק לחיצת כפתור אישור/ביטול הגעה;
+    כל השאר (טקסט חופשי וכו') — בשלב החיבור ל-Meta."""
+    wamid = msg.get("id")
+    if not isinstance(wamid, str) or not wamid:
+        print("[veya:whatsapp] inbound skipped: missing message id", flush=True)
+        return
+    button_id = (
+        _as_dict(_as_dict(msg.get("interactive")).get("button_reply")).get("id")
+        or _as_dict(msg.get("button")).get("payload")
+    )
+    decision = messaging.rsvp_from_button(button_id if isinstance(button_id, str) else "")
+    if not decision:
+        print(f"[veya:whatsapp] inbound ignored type={msg.get('type') or 'unknown'}", flush=True)
+        return
+    context_id = _as_dict(msg.get("context")).get("id")
+    whatsapp_inbound.record_rsvp_reply(
+        db,
+        provider_message_id=wamid,
+        from_phone=msg.get("from") if isinstance(msg.get("from"), str) else None,
+        context_id=context_id if isinstance(context_id, str) else None,
+        decision=decision,
+    )
+
+
+def _handle_status(db: Session, st: dict) -> None:
+    """עדכון מסירה להודעה יוצאת (נשלחה/נמסרה/נקראה/נכשלה)."""
+    raw_status = st.get("status") if isinstance(st.get("status"), str) else ""
+    errors = [e for e in _as_list(st.get("errors")) if isinstance(e, dict)]
+    mapped = message_status.map_meta_status(raw_status, errors)
+    provider_message_id = st.get("id")
+    if not mapped or not isinstance(provider_message_id, str) or not provider_message_id:
+        print(f"[veya:whatsapp] status skipped raw={raw_status or 'none'}", flush=True)
+        return
+    ts = None
+    raw_ts = st.get("timestamp")
+    if raw_ts:
+        try:
+            ts = datetime.utcfromtimestamp(int(raw_ts))
+        except (TypeError, ValueError, OverflowError, OSError):
+            ts = None
+    reason = (errors[0].get("title") or errors[0].get("message") or "") if errors else ""
+    found = message_status.apply_status_update(
+        db,
+        provider_message_id=provider_message_id,
+        status=mapped,
+        timestamp=ts,
+        reason=str(reason)[:500],
+        failure_code=message_status.first_error_code(errors),
+        provider_status=raw_status or None,
+    )
+    print(
+        f"[veya:whatsapp] status {mapped} known={'yes' if found else 'no'}"
+        + (f" code={message_status.first_error_code(errors)}" if errors else ""),
+        flush=True,
+    )
