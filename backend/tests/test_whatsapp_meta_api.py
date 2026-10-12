@@ -605,6 +605,73 @@ def test_hello_world_script_dry_run_by_default() -> None:
     print("✓ F2: הסקריפט — בלי --send לא שולח; לא מדפיס טוקן, מזהה מספר או טלפון מלא")
 
 
+def _realistic_wamid(local_phone: str) -> str:
+    """כמו מזהה אמיתי של Meta: base64 שמתחיל במספר הנמען (972…)."""
+    import base64
+
+    raw = b"\x18\x0c" + ("972" + local_phone[1:]).encode() + b"\x15\x02\x00\x11\x18\x12" + b"2886F9C247AA2871A8\x00"
+    return "wamid." + base64.b64encode(raw).decode()
+
+
+def _assert_no_sensitive(out: str, phone: str, wamid: str) -> None:
+    import base64
+
+    phone_b64 = base64.b64encode(("972" + phone[1:]).encode()).decode()[:12]
+    for leak, label in (
+        (TOKEN, "טוקן"), ("Bearer", "כותרת הרשאה"), (wamid, "wamid מלא"),
+        (wamid[6:30], "חלק מה-wamid"), (phone_b64, "הטלפון בקידוד base64"),
+        (phone, "טלפון מקומי"), ("972" + phone[1:], "טלפון בינלאומי"), (phone[1:], "ספרות הטלפון"),
+    ):
+        assert leak not in out, f"דליפה בפלט: {label}"
+
+
+def test_hello_world_script_never_prints_full_wamid() -> None:
+    """``wamid`` מכיל את מספר הנמען בקידוד base64 — הכלי מציג רק טביעה מצונזרת,
+    וגם שגיאות/חריגות לא מדפיסות מזהה מלא, טלפון או טוקן."""
+    from app import whatsapp_meta as wm
+    from scripts import whatsapp_hello_world as script
+
+    me = _phone()
+    wamid = _realistic_wamid(me)
+    assert wm.to_wa_number(me)[3:] in __import__("base64").b64decode(wamid[6:]).decode("latin-1")
+
+    # הצלחה — מוצגת טביעה בלבד, יציבה ובת-השוואה.
+    with meta_env(mode="meta_test", recipients=me, fake=FakeMeta(ok(wamid))):
+        code, out = _captured(lambda: script.main(["--to", me, "--send"]))
+    assert code == 0, out
+    _assert_no_sensitive(out, me, wamid)
+    assert script._redact_wamid(wamid) in out and script._redact_wamid(wamid).startswith("wamid#")
+
+    # כשל שתיאור השגיאה שלו (מ-Meta) כולל טלפון ו-wamid.
+    leaky = err(131026, message=f"Message {wamid} undeliverable to +972 {me[1:3]}-{me[3:]} ({TOKEN})")
+    with meta_env(mode="meta_test", recipients=me, fake=FakeMeta(leaky)):
+        code, out = _captured(lambda: script.main(["--to", me, "--send"]))
+    assert code == 1 and "131026" in out, out
+    _assert_no_sensitive(out, me, wamid)
+
+    # תוצאה לא ידועה (timeout).
+    with meta_env(mode="meta_test", recipients=me, fake=FakeMeta("timeout")):
+        code, out = _captured(lambda: script.main(["--to", me, "--send"]))
+    assert code == 3
+    _assert_no_sensitive(out, me, wamid)
+
+    # חריגה לא צפויה — רק סוג החריגה, בלי ההודעה שלה.
+    real = wm.send_hello_world
+
+    def _boom(phone):
+        raise RuntimeError(f"boom {wamid} {phone} {TOKEN}")
+
+    wm.send_hello_world = _boom
+    try:
+        with meta_env(mode="meta_test", recipients=me):
+            code, out = _captured(lambda: script.main(["--to", me, "--send"]))
+    finally:
+        wm.send_hello_world = real
+    assert code == 4 and "RuntimeError" in out and "boom" not in out
+    _assert_no_sensitive(out, me, wamid)
+    print("✓ F4: הכלי לא מדפיס wamid מלא, טלפון או טוקן — בהצלחה, בכשל, ב-timeout ובחריגה")
+
+
 def test_hello_world_script_reads_env_file_before_settings() -> None:
     """הכלי טוען את קובץ ה-.env לפני שהוא קורא הגדרות (אחרת היה מסרב תמיד),
     ומשתנה שכבר מוגדר בסביבה גובר על הקובץ. רץ בתהליך נפרד — סביבה נקייה."""

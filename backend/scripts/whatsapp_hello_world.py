@@ -12,11 +12,14 @@ WHATSAPP_MODE=meta_test · לא VEYA_ENV=production · עצירת חירום כ�
     venv/bin/python scripts/whatsapp_hello_world.py --to 05XXXXXXXX # בדיקת תנאים, בלי שליחה
     venv/bin/python scripts/whatsapp_hello_world.py --to 05XXXXXXXX --send
 
-לא מדפיס טוקנים, סודות או מספרי טלפון מלאים.
+לא מדפיס טוקנים, סודות, מספרי טלפון מלאים או את מזהה ההודעה של Meta (``wamid``
+מכיל את מספר הנמען בקידוד base64) — רק טביעה מצונזרת שלו.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
+import re
 import sys
 from pathlib import Path
 
@@ -42,7 +45,37 @@ def _mask(phone: str) -> str:
     return f"***{digits[-3:]}" if len(digits) >= 3 else "***"
 
 
+_WAMID_RE = re.compile(r"wamid\.[A-Za-z0-9+/=_-]+")
+# רצף של 8 ספרות ומעלה (עם רווחים/מקפים) — טלפון. קודי שגיאה של Meta (עד 7 ספרות) נשארים.
+_LONG_DIGITS_RE = re.compile(r"\+?\d[\d\s-]{6,}\d")
+
+
+def _redact_wamid(wamid: str) -> str:
+    """מזהה ההודעה של Meta מכיל בתוכו את מספר הנמען בקידוד base64 — ולכן לא
+    מוצג. במקומו: טביעה קצרה שאי אפשר לשחזר ממנה דבר, אבל אפשר להשוות אותה
+    (sha256 של המזהה המלא, 10 תווים)."""
+    return "wamid#" + hashlib.sha256(wamid.encode("utf-8")).hexdigest()[:10]
+
+
+def _safe(text: str) -> str:
+    """כל טקסט שמגיע מבחוץ (תיאור שגיאה של Meta וכו') עובר כאן לפני הדפסה."""
+    text = _WAMID_RE.sub(lambda m: _redact_wamid(m.group(0)), text or "")
+    return _LONG_DIGITS_RE.sub("[מספר מוסתר]", text)
+
+
 def main(argv: list[str] | None = None) -> int:
+    """כמו ``_run``, אבל חריגה לא צפויה מודפסת רק כסוג — בלי traceback, שעלול
+    להכיל כתובת בקשה, מזהה הודעה או ערכי הגדרות."""
+    try:
+        return _run(argv)
+    except SystemExit:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        print(f"✗ שגיאה לא צפויה: {type(exc).__name__}")
+        return 4
+
+
+def _run(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="שליחת hello_world למספר בדיקה מורשה")
     parser.add_argument("--to", help="הטלפון שלכם (חייב להיות ב-WHATSAPP_TEST_RECIPIENTS)")
     parser.add_argument("--send", action="store_true", help="לשלוח בפועל (בלי זה — בדיקה בלבד)")
@@ -78,13 +111,13 @@ def main(argv: list[str] | None = None) -> int:
 
     _, result = whatsapp_meta.send_hello_world(args.to)
     if result.ok:
-        print(f"✓ Meta קיבלה את ההודעה (סטטוס: {result.provider_status or 'accepted'}).")
-        print(f"  מזהה הודעה: {result.provider_message_id}")
+        print(f"✓ Meta קיבלה את ההודעה (סטטוס: {_safe(result.provider_status or 'accepted')}).")
+        print(f"  מזהה הודעה (מצונזר): {_redact_wamid(result.provider_message_id)}")
         return 0
     if result.status == "pending":
-        print(f"? {result.detail}")
+        print(f"? {_safe(result.detail)}")
         return 3
-    print(f"✗ נכשל: {result.detail}")
+    print(f"✗ נכשל: {_safe(result.detail)}")
     return 1
 
 
