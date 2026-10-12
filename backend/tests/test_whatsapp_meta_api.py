@@ -43,6 +43,8 @@ from tests.test_whatsapp_safety import (  # noqa: E402
 )
 
 TOKEN = "EAAtest-" + "x" * 40  # טוקן מזויף — לבדוק שהוא לא דולף
+# קובץ הגדרות שלא קיים — כלי hello_world בבדיקות לא קורא את backend/.env האמיתי.
+_NO_ENV = os.path.join(tempfile.gettempdir(), "veya-no-such-env-file.env")
 
 
 # ---- Meta מזויפת ------------------------------------------------------------
@@ -91,7 +93,10 @@ def meta_env(mode="meta", recipients=None, token=TOKEN, phone_id="1234567890", f
     }
     prev = {k: os.environ.get(k) for k in values}
     for k, v in values.items():
-        if v is None:
+        if v is None and k.startswith("WHATSAPP_"):
+            # ריק ולא מחוק: load_dotenv (בכלי hello_world) לא ימלא מהקובץ האמיתי.
+            os.environ[k] = ""
+        elif v is None:
             os.environ.pop(k, None)
         else:
             os.environ[k] = v
@@ -596,11 +601,11 @@ def test_hello_world_script_dry_run_by_default() -> None:
 
     me = _phone()
     with meta_env(mode="meta_test", recipients=me) as fake:
-        code, out = _captured(lambda: script.main(["--to", me]))
+        code, out = _captured(lambda: script.main(["--to", me, "--env-file", _NO_ENV]))
     assert code == 0 and fake.requests == [] and "בדיקה בלבד" in out
     assert TOKEN not in out and me not in out and "1234567890" not in out
     with meta_env(mode="meta_test", recipients=me, fake=FakeMeta(ok("wamid.s"))) as fake:
-        code, out = _captured(lambda: script.main(["--to", me, "--send"]))
+        code, out = _captured(lambda: script.main(["--to", me, "--send", "--env-file", _NO_ENV]))
     assert code == 0 and len(fake.requests) == 1 and TOKEN not in out
     print("✓ F2: הסקריפט — בלי --send לא שולח; לא מדפיס טוקן, מזהה מספר או טלפון מלא")
 
@@ -637,7 +642,7 @@ def test_hello_world_script_never_prints_full_wamid() -> None:
 
     # הצלחה — מוצגת טביעה בלבד, יציבה ובת-השוואה.
     with meta_env(mode="meta_test", recipients=me, fake=FakeMeta(ok(wamid))):
-        code, out = _captured(lambda: script.main(["--to", me, "--send"]))
+        code, out = _captured(lambda: script.main(["--to", me, "--send", "--env-file", _NO_ENV]))
     assert code == 0, out
     _assert_no_sensitive(out, me, wamid)
     assert script._redact_wamid(wamid) in out and script._redact_wamid(wamid).startswith("wamid#")
@@ -645,13 +650,13 @@ def test_hello_world_script_never_prints_full_wamid() -> None:
     # כשל שתיאור השגיאה שלו (מ-Meta) כולל טלפון ו-wamid.
     leaky = err(131026, message=f"Message {wamid} undeliverable to +972 {me[1:3]}-{me[3:]} ({TOKEN})")
     with meta_env(mode="meta_test", recipients=me, fake=FakeMeta(leaky)):
-        code, out = _captured(lambda: script.main(["--to", me, "--send"]))
+        code, out = _captured(lambda: script.main(["--to", me, "--send", "--env-file", _NO_ENV]))
     assert code == 1 and "131026" in out, out
     _assert_no_sensitive(out, me, wamid)
 
     # תוצאה לא ידועה (timeout).
     with meta_env(mode="meta_test", recipients=me, fake=FakeMeta("timeout")):
-        code, out = _captured(lambda: script.main(["--to", me, "--send"]))
+        code, out = _captured(lambda: script.main(["--to", me, "--send", "--env-file", _NO_ENV]))
     assert code == 3
     _assert_no_sensitive(out, me, wamid)
 
@@ -664,7 +669,7 @@ def test_hello_world_script_never_prints_full_wamid() -> None:
     wm.send_hello_world = _boom
     try:
         with meta_env(mode="meta_test", recipients=me):
-            code, out = _captured(lambda: script.main(["--to", me, "--send"]))
+            code, out = _captured(lambda: script.main(["--to", me, "--send", "--env-file", _NO_ENV]))
     finally:
         wm.send_hello_world = real
     assert code == 4 and "RuntimeError" in out and "boom" not in out
@@ -688,6 +693,11 @@ def test_hello_world_script_reads_env_file_before_settings() -> None:
         )
         env = {k: v for k, v in os.environ.items()
                if not k.startswith("WHATSAPP_") and k not in ("VEYA_ENV", "DATABASE_URL")}
+        # מה שלא בקובץ הזמני — ריק, כדי ש-app.database (שטוען את backend/.env
+        # האמיתי) לא ימלא אותו בתהליך-הבת.
+        env.update({k: "" for k in ("WHATSAPP_APP_SECRET", "WHATSAPP_VERIFY_TOKEN",
+                                    "WHATSAPP_BUSINESS_ACCOUNT_ID", "WHATSAPP_GRAPH_API_VERSION",
+                                    "WHATSAPP_TOKEN", "WHATSAPP_PHONE_ID")})
         backend = Path(__file__).resolve().parent.parent
         script = str(backend / "scripts" / "whatsapp_hello_world.py")
         run = lambda extra_env: subprocess.run(  # noqa: E731

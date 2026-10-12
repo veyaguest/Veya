@@ -62,10 +62,8 @@ def _whatsapp(mode, recipients=None):
     prev = {k: os.environ.get(k) for k in keys}
     real_meta = messaging.MetaProvider
     for k, v in zip(keys, (mode, recipients)):
-        if v is None:
-            os.environ.pop(k, None)
-        else:
-            os.environ[k] = v
+        # "לא מוגדר" = ריק ולא מחוק — כך שום load_dotenv לא ממלא מהקובץ האמיתי.
+        os.environ[k] = "" if v is None else v
     messaging.MetaProvider = _FakeMeta
     _FakeMeta.calls = []
     try:

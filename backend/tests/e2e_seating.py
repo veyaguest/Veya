@@ -17,6 +17,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# WhatsApp במצב mock ובלי טוקן אמיתי — גם בהרצה ישירה (``python tests/...``),
+# לא רק דרך pytest (``tests/safe_env.py``).
+from tests import safe_env  # noqa: E402
+
+safe_env.apply()
+
 # שעון קבוע — גם בהרצה ישירה (``python tests/...``), לא רק דרך pytest.
 from tests import fixed_clock  # noqa: E402
 
