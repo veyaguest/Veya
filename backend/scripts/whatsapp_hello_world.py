@@ -20,7 +20,21 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+BACKEND = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BACKEND))
+
+
+def _load_env(env_file: Path) -> bool:
+    """טוען את ``backend/.env`` **לפני** שקוראים הגדרות כלשהן.
+
+    ``app.messaging``/``app.whatsapp_meta`` לא טוענים את הקובץ בעצמם (רק
+    ``app.database`` עושה זאת, וייבוא שלו קורה מאוחר מדי) — בלי זה הכלי היה
+    מדווח "חסר" ומסרב לשלוח גם כשהכול מוגדר. משתנה שכבר מוגדר בסביבה גובר
+    על הקובץ (``override=False``).
+    """
+    from dotenv import load_dotenv
+
+    return load_dotenv(env_file, override=False)
 
 
 def _mask(phone: str) -> str:
@@ -32,7 +46,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="שליחת hello_world למספר בדיקה מורשה")
     parser.add_argument("--to", help="הטלפון שלכם (חייב להיות ב-WHATSAPP_TEST_RECIPIENTS)")
     parser.add_argument("--send", action="store_true", help="לשלוח בפועל (בלי זה — בדיקה בלבד)")
+    parser.add_argument("--env-file", default=str(BACKEND / ".env"), help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
+
+    loaded = _load_env(Path(args.env_file))
+    print(f"קובץ הגדרות: {'נטען' if loaded else 'לא נמצא'} ({Path(args.env_file).name})")
 
     from app import messaging, whatsapp_meta
 

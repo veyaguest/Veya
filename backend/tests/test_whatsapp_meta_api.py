@@ -605,6 +605,38 @@ def test_hello_world_script_dry_run_by_default() -> None:
     print("✓ F2: הסקריפט — בלי --send לא שולח; לא מדפיס טוקן, מזהה מספר או טלפון מלא")
 
 
+def test_hello_world_script_reads_env_file_before_settings() -> None:
+    """הכלי טוען את קובץ ה-.env לפני שהוא קורא הגדרות (אחרת היה מסרב תמיד),
+    ומשתנה שכבר מוגדר בסביבה גובר על הקובץ. רץ בתהליך נפרד — סביבה נקייה."""
+    me = _phone()
+    with tempfile.TemporaryDirectory() as tmp:
+        env_file = Path(tmp) / ".env"
+        env_file.write_text(
+            "WHATSAPP_MODE=meta_test\n"
+            f"WHATSAPP_TEST_RECIPIENTS={me}\n"
+            f"WHATSAPP_ACCESS_TOKEN={TOKEN}\n"
+            "WHATSAPP_PHONE_NUMBER_ID=1234567890\n"
+            f"DATABASE_URL=sqlite:///{tmp}/x.db\n",
+            encoding="utf-8",
+        )
+        env = {k: v for k, v in os.environ.items()
+               if not k.startswith("WHATSAPP_") and k not in ("VEYA_ENV", "DATABASE_URL")}
+        backend = Path(__file__).resolve().parent.parent
+        script = str(backend / "scripts" / "whatsapp_hello_world.py")
+        run = lambda extra_env: subprocess.run(  # noqa: E731
+            [sys.executable, script, "--env-file", str(env_file), "--to", me],
+            cwd=tmp, env={**env, **extra_env}, capture_output=True, text=True, timeout=60,
+        )
+        ok_run = run({})
+        assert ok_run.returncode == 0, ok_run.stdout + ok_run.stderr
+        assert "כל תנאי הבטיחות מתקיימים" in ok_run.stdout and "בדיקה בלבד" in ok_run.stdout
+        assert TOKEN not in ok_run.stdout and me not in ok_run.stdout
+        # משתנה בסביבה גובר על הקובץ: mock בסביבה → מסרב.
+        mock_run = run({"WHATSAPP_MODE": "mock"})
+        assert mock_run.returncode == 2 and "meta_test" in mock_run.stdout
+    print("✓ F3: הכלי טוען את .env לפני ההגדרות; משתנה בסביבה גובר על הקובץ")
+
+
 # ============================================================================
 # G. hub.verify_token בלוג של uvicorn אמיתי
 # ============================================================================

@@ -25,6 +25,9 @@ pytestmark = pytest.mark.skipif(
 
 
 def test_hello_world_reaches_meta() -> None:
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=False)
     from app import messaging, whatsapp_meta
 
     recipients = sorted(messaging.test_recipients())
