@@ -650,4 +650,5 @@ def send_due_messages(
         )
         for a in actions
     ])
-    return {"sent": result.sent, "failed": result.failed, "detail": result.last_detail}
+    return {"sent": result.sent, "failed": result.failed, "blocked": result.blocked,
+            "detail": result.last_detail}

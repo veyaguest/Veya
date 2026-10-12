@@ -105,10 +105,13 @@ def process_event(
     if not actions:
         return started, 0, 0
     result = communication.send_due_messages(db, event, actions)
-    audit.record(
-        db, "rsvp_track_advance", event_id=event.id,
-        detail=f"סבב אוטומטי: נשלחו {result['sent']}, נכשלו {result['failed']}",
-    )
+    # במצב ``meta_test`` כל הנמענים יכולים להיחסם — אז לא קרה כלום, ולא
+    # כותבים שורת יומן כל 15 דקות (גם לא למסד הייצור, אם הופעל בטעות מולו).
+    if result["sent"] or result["failed"]:
+        audit.record(
+            db, "rsvp_track_advance", event_id=event.id,
+            detail=f"סבב אוטומטי: נשלחו {result['sent']}, נכשלו {result['failed']}",
+        )
     return started, result["sent"], result["failed"]
 
 

@@ -19,6 +19,9 @@
    השלמת התוצאה מ-webhook של Meta (לפי מזהה השורה שנשלח יחד עם ההודעה) —
    שלב החיבור ל-Meta.
 
+**מצב ``meta_test``**: נמענים שאינם ברשימה המורשית מסוננים *לפני* שלב 1 —
+לא נרשמים ולא נשלחים (``BatchResult.blocked``).
+
 **נעילה לאירוע** (``lock_event_sends``): שתי שליחות של אותו אירוע במקביל
 (לחיצה כפולה, או שליחה ידנית מהתור באותו רגע שהמשימה המתוזמנת רצה) היו
 מחשבות את אותו קהל לפני שאחת מהן רשמה משהו. הנעילה נלקחת לפני חישוב הקהל
@@ -53,6 +56,8 @@ class OutboundItem:
 class BatchResult:
     sent: int = 0
     failed: int = 0
+    # מצב ``meta_test``: נמענים שאינם ברשימה המורשית — לא נרשמו ולא נשלחו.
+    blocked: int = 0
     failed_guest_ids: list[int] = field(default_factory=list)
     last_detail: str = ""
     messages: list[models.Message] = field(default_factory=list)
@@ -88,6 +93,22 @@ def send_batch(
         return result
     provider = provider or messaging.get_provider()
     external = bool(getattr(provider, "external", False))
+
+    # מצב ``meta_test``: נמען שאינו ברשימה המורשית לא נרשם ולא נשלח — אין
+    # שורה, אין "נכשלה" שהייתה סוגרת לו את הסבב. כך גם הפעלה בטעות מול מסד
+    # הייצור לא נוגעת באורחים אמיתיים. ראו ``messaging.TestRecipientGuard``.
+    allows = getattr(provider, "allows", None)
+    if allows is not None:
+        allowed = [item for item in items if allows(item.phone)]
+        result.blocked = len(items) - len(allowed)
+        if result.blocked:
+            print(
+                f"[veya:whatsapp] meta_test blocked event={event.id} recipients={result.blocked}",
+                flush=True,
+            )
+        items = allowed
+        if not items:
+            return result
 
     cycle = event_cycle.of(event)
     rows: list[models.Message] = []

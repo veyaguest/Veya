@@ -11,6 +11,7 @@ advisory):
 5. ``FOR UPDATE`` — "נמסרה" ו"נקראה" במקביל לאותה הודעה: התוצאה "נקראה".
 6. ה-webhook (עיבוד הפריטים, על חיבור המערכת): תשובה מוחלת, כפילות נקלטת
    פעם אחת — גם כששתי קריאות זהות מגיעות **במקביל**.
+7. מצב ``meta_test`` תחת RLS — רק הנמען המורשה נשלח ונרשם.
 
 אותה שיטה כמו ``_rls_full_regression_worker.py``: DATABASE_URL = תפקיד
 ``veya_app`` (כפוף ל-RLS), MIGRATIONS_DATABASE_URL = superuser. מדפיס JSON
@@ -382,6 +383,59 @@ async def main() -> None:
                   inbound=inbound, audits=audits)
     except Exception as exc:
         _fail("07_webhook_concurrent_duplicates", error=_err(exc))
+
+    # =====================================================================
+    # 8) meta_test תחת RLS — רק הנמען המורשה נשלח ונרשם; לאחרים אין שורה
+    # =====================================================================
+    class _FakeMeta(messaging.MockProvider):
+        name = "meta"
+        external = True
+        calls: list = []
+
+        def send_invitation(self, phone, text_):
+            _FakeMeta.calls.append(phone)
+            return super().send_invitation(phone, text_)
+
+    real_meta = messaging.MetaProvider
+    try:
+        g = gt()
+        try:
+            allowed_phone = g.get(models.Guest, guest_ids[3]).phone
+        finally:
+            g.close()
+        os.environ["WHATSAPP_MODE"] = "meta_test"
+        os.environ["WHATSAPP_TEST_RECIPIENTS"] = allowed_phone
+        messaging.MetaProvider = _FakeMeta
+
+        def _batch_all(db):
+            event = db.get(models.Event, ev_id)
+            gs = [db.get(models.Guest, gid) for gid in guest_ids]
+            res = outbound.send_batch(db, event, [
+                outbound.OutboundItem(guest=x, phone=x.phone, text="בדיקה", kind="reminder_2")
+                for x in gs
+            ])
+            db.commit()
+            return res
+
+        res = await as_user(_batch_all)
+        g = gt()
+        try:
+            rows = g.scalars(select(models.Message.guest_id).where(
+                models.Message.event_id == ev_id, models.Message.kind == "reminder_2")).all()
+        finally:
+            g.close()
+        if (res.sent, res.blocked) == (1, len(guest_ids) - 1) and rows == [guest_ids[3]] \
+                and _FakeMeta.calls == [allowed_phone]:
+            _ok("08_meta_test_allowlist_under_rls", sent=res.sent, blocked=res.blocked)
+        else:
+            _fail("08_meta_test_allowlist_under_rls", sent=res.sent, blocked=res.blocked,
+                  rows=rows, calls=len(_FakeMeta.calls))
+    except Exception as exc:
+        _fail("08_meta_test_allowlist_under_rls", error=_err(exc))
+    finally:
+        messaging.MetaProvider = real_meta
+        os.environ.pop("WHATSAPP_MODE", None)
+        os.environ.pop("WHATSAPP_TEST_RECIPIENTS", None)
 
     print(json.dumps(RESULTS, ensure_ascii=False))
 

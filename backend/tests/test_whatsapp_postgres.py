@@ -3,7 +3,7 @@
 Postgres זמני (``pgserver``, בלי Docker), תפקיד ``veya_app`` כפוף ל-RLS, בדיוק
 כמו ``test_full_rls_regression.py``. מכסה את מה ש-SQLite לא יכול להוכיח:
 נעילה לפי אירוע, שליחות מקבילות, commit-ים באמצע בקשה תחת RLS, "נכשלה" מול
-"נמסרה", נעילת שורה, ו-webhook כפול במקביל.
+"נמסרה", נעילת שורה, webhook כפול במקביל, ומצב ``meta_test`` תחת RLS.
 """
 from __future__ import annotations
 
@@ -30,6 +30,7 @@ SCENARIOS = [
     "05_row_lock_no_regression",
     "06_webhook_reply_and_duplicates",
     "07_webhook_concurrent_duplicates",
+    "08_meta_test_allowlist_under_rls",
 ]
 
 

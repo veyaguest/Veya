@@ -3,12 +3,16 @@
 עיקרון: המערכת שולחת הזמנה עם שני כפתורי Quick Reply — "מגיע/ה" ו"לא מגיע/ה".
 המוזמן לוחץ כפתור, ותשובת ה-RSVP נרשמת אוטומטית. (PRD חלק 5 + החלטה טכנית 3.)
 
-מצבי עבודה (WHATSAPP_MODE):
+מצבי עבודה (WHATSAPP_MODE) — ראו ``whatsapp_mode``:
 - "mock" (ברירת מחדל) — לא נשלחת הודעה אמיתית. ההודעה נרשמת ביומן בלבד, כדי
   שהבעלים יוכל לבדוק את כל הזרימה בלי חשבון Meta ובלי עלות. אפשר "לדמות" תשובת
-  מוזמן דרך המסך.
-- "live" — שליחה אמיתית מול Meta WhatsApp Cloud API. דורש טוקן + מזהה מספר
-  ששמורים במשתני סביבה. (הקוד מוכן; הבעלים צריך להשלים אישור תבנית מול Meta.)
+  מוזמן דרך המסך. גם ערך חסר או לא מוכר נופל לכאן.
+- "meta_test" — שליחה אמיתית דרך Meta, **רק** לטלפונים שב-``WHATSAPP_TEST_RECIPIENTS``.
+  כל נמען אחר נחסם לפני שמשהו יוצא ל-Meta, ובלי לכתוב עליו שום שורה
+  (``TestRecipientGuard``, ``outbound.send_batch``) — כך גם הפעלה בטעות מול
+  מסד הייצור לא מגיעה לאורחים ולא משנה את הנתונים שלהם.
+- "meta" (או "live", הכינוי הוותיק) — שליחה אמיתית לכל המוזמנים. דורש טוקן +
+  מזהה מספר במשתני סביבה ותבניות מאושרות ב-Meta.
 
 הפרדה מכוונת: כל התלות ב-Meta מרוכזת כאן, כדי שאפשר יהיה להחליף/לכבות בקלות.
 """
@@ -29,9 +33,64 @@ RSVP_YES_LABEL = "מגיע/ה ✅"
 RSVP_NO_LABEL = "לא מגיע/ה ❌"
 
 
+MODE_MOCK = "mock"
+MODE_META_TEST = "meta_test"
+MODE_META = "meta"
+_MODES = {MODE_MOCK: MODE_MOCK, MODE_META_TEST: MODE_META_TEST, MODE_META: MODE_META,
+          "live": MODE_META}
+_warned_modes: set[str] = set()
+
+
+def whatsapp_mode() -> str:
+    """המצב הפנימי: ``mock`` / ``meta_test`` / ``meta``.
+
+    חסר → mock. ערך לא מוכר (שגיאת הקלדה וכו') → **mock**, עם אזהרה בלוג:
+    טעות בהגדרה לעולם לא מתחילה שליחה אמיתית.
+    """
+    raw = (os.getenv("WHATSAPP_MODE") or "").strip().lower() or MODE_MOCK
+    mode = _MODES.get(raw)
+    if mode is None:
+        if raw not in _warned_modes:
+            _warned_modes.add(raw)
+            print("[veya:whatsapp] WHATSAPP_MODE לא מוכר — עובדים במצב mock", flush=True)
+        return MODE_MOCK
+    return mode
+
+
 def current_mode() -> str:
-    """מצב הערוץ מתוך משתנה סביבה. ברירת מחדל בטוחה: mock (בלי שליחה אמיתית)."""
-    return os.getenv("WHATSAPP_MODE", "mock").strip().lower()
+    """המצב כפי שהוא נחשף למסכים: ``mock`` / ``meta_test`` / ``live``.
+
+    ``meta`` נשאר ``live`` כלפי חוץ — כך המסכים הקיימים ממשיכים לעבוד בלי
+    שינוי. ``meta_test`` מוצג במסכים כ"לא mock" אצל הזוג ו"הדגמה" אצל האדמין
+    — שניהם נכונים: מתחבר ל-Meta, אבל לא מגיע לאורחים.
+    """
+    mode = whatsapp_mode()
+    return "live" if mode == MODE_META else mode
+
+
+def test_recipients() -> frozenset[str]:
+    """הטלפונים המורשים במצב ``meta_test``, מנורמלים (``05XXXXXXXX``).
+
+    ``WHATSAPP_TEST_RECIPIENTS`` — מופרדים בפסיק/נקודה-פסיק/שורה חדשה (לא
+    ברווח: "+972 52 ..." הוא מספר אחד), בכל פורמט ישראלי (05X / 972 / +972). רשומה לא תקינה מדולגת (והספירה נרשמת בלוג);
+    משתנה חסר או ריק → רשימה ריקה → **הכול חסום**.
+    """
+    from app.validators import normalize_israeli_phone
+
+    raw = os.getenv("WHATSAPP_TEST_RECIPIENTS", "")
+    out: set[str] = set()
+    bad = 0
+    for part in re.split(r"[,;\n]+", raw):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            out.add(normalize_israeli_phone(part))
+        except ValueError:
+            bad += 1
+    if bad:
+        print(f"[veya:whatsapp] WHATSAPP_TEST_RECIPIENTS: {bad} רשומות לא תקינות דולגו", flush=True)
+    return frozenset(out)
 
 
 def build_invitation_text(
@@ -739,11 +798,51 @@ def emergency_stop_active() -> bool:
         return False
 
 
+TEST_BLOCKED_DETAIL = "נחסם במצב בדיקה — המספר אינו ברשימת הנמענים המורשים"
+
+
+class TestRecipientGuard:
+    """מצב ``meta_test``: עוטף את ספק Meta ומעביר אליו רק נמענים מהרשימה.
+
+    שתי שכבות הגנה, בכוונה:
+    1. ``outbound.send_batch`` שואל את ``allows`` *לפני* שהוא רושם משהו —
+       נמען חסום לא מקבל שורה במסד ולא נוגעים בו בכלל.
+    2. ``send_invitation`` עצמו בודק שוב — לכל קורא שלא עובר דרך
+       ``send_batch`` (למשל "שליחת בדיקה" לטלפון של בעלי האירוע).
+    """
+
+    external = True
+
+    def __init__(self, inner, allowed: frozenset[str]) -> None:
+        self.inner = inner
+        self.allowed = allowed
+        self.name = inner.name
+
+    def allows(self, phone: str) -> bool:
+        from app.validators import normalize_israeli_phone
+
+        try:
+            return normalize_israeli_phone(phone or "") in self.allowed
+        except ValueError:
+            return False
+
+    def send_invitation(self, phone: str, text: str) -> SendResult:
+        if not self.allows(phone):
+            return SendResult(ok=False, provider=MODE_META_TEST, status="failed",
+                              detail=TEST_BLOCKED_DETAIL)
+        return self.inner.send_invitation(phone, text)
+
+
 def get_provider():
     """בוחר ספק לפי המצב הנוכחי. עצירת חירום גוברת על הכול."""
     if emergency_stop_active():
         return StoppedProvider()
-    return MetaProvider() if current_mode() == "live" else MockProvider()
+    mode = whatsapp_mode()
+    if mode == MODE_META:
+        return MetaProvider()
+    if mode == MODE_META_TEST:
+        return TestRecipientGuard(MetaProvider(), test_recipients())
+    return MockProvider()
 
 
 def rsvp_from_button(button_id: str) -> str | None:

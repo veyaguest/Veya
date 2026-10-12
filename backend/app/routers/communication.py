@@ -4,6 +4,8 @@
 קבוע לפי event_type (ראו ``app/communication.py``). עקרון "תור לאישור" נשמר:
 ``/due`` רק מחשב, ``/due/send`` שולח בפועל רק אחרי אישור מפורש.
 """
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -20,6 +22,14 @@ router = APIRouter(prefix="/communication", tags=["communication"])
 
 _view = EventAccess(permissions.MESSAGES_VIEW)
 _write = EventAccess(permissions.MESSAGES_WRITE)
+
+
+def _with_blocked(detail: str, blocked: int) -> Optional[str]:
+    """מצב ``meta_test``: מוסיף לתשובה כמה נמענים נחסמו (לא נשלחו ולא נרשמו)."""
+    if not blocked:
+        return detail or None
+    note = f"{blocked} נמענים נחסמו במצב בדיקה (לא ברשימת הנמענים המורשים)"
+    return f"{detail} · {note}" if detail else note
 
 
 def _get_sequence(db: Session, event: models.Event) -> list[models.EventMessage]:
@@ -236,7 +246,8 @@ def manual_send(
             guest=g, phone=g.phone, text=text, kind=message_type, event_message_id=em.id,
         ))
     batch = outbound.send_batch(db, event, items)
-    sent, failed, last_detail = batch.sent, batch.failed, batch.last_detail
+    sent, failed = batch.sent, batch.failed
+    last_detail = _with_blocked(batch.last_detail, batch.blocked) or ""
     audit.record(
         db, "manual_message_send",
         event_id=event.id, user_id=user.id,
@@ -322,5 +333,5 @@ def send_due(
     return schemas.CommunicationSendResult(
         mode=messaging.current_mode(),
         sent=result["sent"], failed=result["failed"],
-        detail=result["detail"] or None,
+        detail=_with_blocked(result["detail"], result["blocked"]),
     )

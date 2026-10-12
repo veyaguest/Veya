@@ -107,6 +107,19 @@ def summary(
     )
 
 
+def _legacy_send_guard() -> None:
+    """שני נתיבי השליחה הישנים כאן (אין להם כפתור במסכים מאז רצף "תקשורת עם
+    אורחים") לא אוכפים "הזמנה אחת לכל אורח" ולא בודקים מי כבר קיבל. במצב
+    mock זה לא מזיק (אין שליחה), ולכן הם נשארים כמו שהם; בכל מצב אחר —
+    חסומים, כדי שאי אפשר יהיה לעקוף דרכם את מניעת הכפילויות."""
+    if messaging.whatsapp_mode() != messaging.MODE_MOCK:
+        raise HTTPException(
+            status_code=409,
+            detail="השליחה מכאן לא זמינה כשהודעות WhatsApp יוצאות באמת. "
+                   "שולחים הזמנות ותזכורות ממסך התקשורת עם האורחים.",
+        )
+
+
 @router.post("/invitations/send", response_model=schemas.SendInvitationsResult)
 def send_invitations(
     payload: schemas.SendInvitationsRequest,
@@ -115,6 +128,7 @@ def send_invitations(
     event: models.Event = Depends(_write),
     user: models.User = Depends(get_current_owner),
 ):
+    _legacy_send_guard()
     stmt = select(models.Guest).where(models.Guest.event_id == event.id)
     if payload.guest_id is not None:
         stmt = stmt.where(models.Guest.id == payload.guest_id)
@@ -175,6 +189,7 @@ def send_reminders(
     זו פעולה ידנית שהבעלים מפעיל בלחיצה — אין worker רקע בשלב הזה.
     תזמון אוטומטי (X ימים אחרי ההזמנה / יום לפני האירוע) יתווסף בעתיד.
     """
+    _legacy_send_guard()
     # מזהי מוזמנים שכבר נשלחה אליהם הזמנה
     invited_ids = set(db.scalars(
         select(models.Message.guest_id)
