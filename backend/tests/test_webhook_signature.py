@@ -236,12 +236,15 @@ def test_valid_signature_accepted_and_updates_rsvp() -> None:
         phone = _fresh_phone()
         guest = api.add_guest("מוזמן ה", phone)
         body = _rsvp_payload(_intl(phone), coming=True)
-        # עדכון RSVP מלחיצת כפתור כבוי כברירת מחדל (2026-10-13) — מדליקים במפורש.
+        # עיבוד הודעות נכנסות ועדכון RSVP מלחיצת כפתור כבויים כברירת מחדל
+        # (2026-10-13) — מדליקים במפורש.
+        os.environ["WHATSAPP_WEBHOOK_INBOUND"] = "1"
         os.environ["WHATSAPP_INBOUND_RSVP"] = "1"
         try:
             with _secret(_REAL_SECRET):
                 r = _post(api, body, _sign(body))
         finally:
+            os.environ["WHATSAPP_WEBHOOK_INBOUND"] = ""
             os.environ["WHATSAPP_INBOUND_RSVP"] = ""
         assert r.status_code == 200, f"ציפינו ל-200, קיבלנו {r.status_code}: {r.text}"
         assert _rsvp_status(api, guest["id"]) == "confirmed", "RSVP היה אמור להתעדכן ל-confirmed"

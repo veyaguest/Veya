@@ -59,6 +59,16 @@ _UNMATCHED_LABEL = {
 }
 
 
+def inbound_enabled() -> bool:
+    """האם ה-webhook מעבד הודעות נכנסות בכלל (שומר אותן במסד).
+
+    **כבוי כברירת מחדל** (``WHATSAPP_WEBHOOK_INBOUND`` ≠ ``1``): ה-webhook מעבד
+    עדכוני סטטוס בלבד, והודעה נכנסת לא נשמרת ולא נוגעת בשום נתון. שלב ראשון
+    של חיבור Meta לייצור — כדי שהודעות בדיקה למספר לא ייכנסו לאירועים אמיתיים.
+    """
+    return (os.getenv("WHATSAPP_WEBHOOK_INBOUND") or "").strip() == "1"
+
+
 def rsvp_replies_enabled() -> bool:
     """האם לחיצה על כפתור אישור/ביטול הגעה ב-WhatsApp מעדכנת RSVP.
 

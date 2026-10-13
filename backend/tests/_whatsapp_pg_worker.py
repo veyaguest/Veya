@@ -338,7 +338,9 @@ async def main() -> None:
         finally:
             s.close()
 
-    # תרחישים 6–7 בודקים את עדכון ה-RSVP מלחיצת כפתור — כבוי כברירת מחדל.
+    # תרחישים 6–7 בודקים עיבוד הודעות נכנסות ועדכון RSVP מלחיצת כפתור —
+    # שניהם כבויים כברירת מחדל.
+    os.environ["WHATSAPP_WEBHOOK_INBOUND"] = "1"
     os.environ["WHATSAPP_INBOUND_RSVP"] = "1"
     try:
         gid = guest_ids[1]
@@ -388,6 +390,7 @@ async def main() -> None:
     except Exception as exc:
         _fail("07_webhook_concurrent_duplicates", error=_err(exc))
     finally:
+        os.environ["WHATSAPP_WEBHOOK_INBOUND"] = ""
         os.environ["WHATSAPP_INBOUND_RSVP"] = ""
 
     # =====================================================================

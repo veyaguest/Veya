@@ -509,13 +509,21 @@ def _handle_inbound_message(db: Session, msg: dict) -> None:
     """הודעה נכנסת מאורח. **היום שום הודעה נכנסת לא משנה RSVP** — אישור הגעה
     רק דרך הקישור האישי (החלטת המייסד, 2026-10-13).
 
-    - כל הודעה (טקסט חופשי, תמונה, הקלטה, וגם לחיצה על כפתור אישור/ביטול
-      מהנוסח הישן) — נשמרת ביומן ההודעות כ"דורש טיפול"
-      (``whatsapp_inbound.record_free_message``).
-    - עדכון RSVP מלחיצת כפתור (``whatsapp_inbound.record_rsvp_reply`` — שיוך
-      חד-משמעי, חלון אישורי ההגעה, ``rsvp_response``) קיים ונבדק, אבל רץ רק
-      כש-``WHATSAPP_INBOUND_RSVP=1`` (``whatsapp_inbound.rsvp_replies_enabled``).
+    שני מתגים, שניהם כבויים כברירת מחדל:
+    - ``WHATSAPP_WEBHOOK_INBOUND`` (``whatsapp_inbound.inbound_enabled``) — כבוי:
+      הודעות נכנסות **לא נשמרות בכלל** ולא נוגעות בשום נתון; רק נספרות בלוג (סוג
+      ההודעה, בלי תוכן ובלי שולח). כך ה-webhook מקבל "עדכוני סטטוס בלבד" — ב-Meta
+      אי אפשר להירשם לסטטוסים בלי הודעות נכנסות (שניהם בשדה ``messages``).
+    - דלוק: כל הודעה (טקסט, תמונה, הקלטה, וגם לחיצת כפתור אישור/ביטול מהנוסח
+      הישן) נשמרת כ"דורש טיפול" (``whatsapp_inbound.record_free_message``).
+      עדכון RSVP מלחיצת כפתור (``record_rsvp_reply``) — רק אם בנוסף
+      ``WHATSAPP_INBOUND_RSVP=1`` (``whatsapp_inbound.rsvp_replies_enabled``).
     """
+    if not whatsapp_inbound.inbound_enabled():
+        msg_type = msg.get("type") if isinstance(msg.get("type"), str) else "unknown"
+        print(f"[veya:whatsapp] inbound skipped (WHATSAPP_WEBHOOK_INBOUND off) "
+              f"type={msg_type[:20]}", flush=True)
+        return
     wamid = msg.get("id")
     if not isinstance(wamid, str) or not wamid:
         print("[veya:whatsapp] inbound skipped: missing message id", flush=True)
