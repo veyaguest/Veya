@@ -145,29 +145,44 @@ export function DemoGiftCounting() {
       await sleep(PAN_MS)
     }
 
-    /** מזיז את הסמן למרכז האלמנט, בקואורדינטות של הבמה. */
-    async function moveTo(el: Element, settle = SETTLE_MS): Promise<void> {
+    /** מציב את הסמן על מרכז האלמנט, בקואורדינטות של הבמה. מחזיר כמה זז. */
+    function place(el: Element): number {
       const stage = stageRef.current
       const cursor = cursorRef.current
-      if (!stage || !cursor) return
-      await whenVisible()
-      await bringIntoView(el)
+      if (!stage || !cursor) return 0
       const s = stage.getBoundingClientRect()
       const r = el.getBoundingClientRect()
-      cursor.style.transform = `translate(${r.left + r.width / 2 - s.left}px, ${
-        r.top + r.height / 2 - s.top
-      }px)`
-      cursor.classList.add('is-on')
+      const x = r.left + r.width / 2 - s.left
+      const y = r.top + r.height / 2 - s.top
+      const prev = cursor.dataset.pos?.split(',').map(Number) ?? [x, y]
+      cursor.dataset.pos = `${x},${y}`
+      cursor.style.transform = `translate(${x}px, ${y}px)`
+      return Math.hypot(x - prev[0], y - prev[1])
+    }
+
+    /** מזיז את הסמן אל האלמנט. אם המסך זז בזמן התנועה (רכיב שהתרנדר,
+     *  סיכום שגדל), הסמן מתיישר שוב — כדי שלא ייעצר ליד הכפתור. */
+    async function moveTo(el: Element, settle = SETTLE_MS): Promise<void> {
+      if (!stageRef.current || !cursorRef.current) return
+      await whenVisible()
+      await bringIntoView(el)
+      place(el)
+      cursorRef.current.classList.add('is-on')
       await sleep(settle)
+      if (place(el) > 3) await sleep(260)
     }
 
     async function press(el: HTMLElement): Promise<void> {
+      place(el)
       cursorRef.current?.classList.add('is-press')
       await sleep(140)
       cursorRef.current?.classList.remove('is-press')
       el.click()
       dropFocus()
       await sleep(160)
+      // שמירה משנה את המסך (הסיכום למעלה גדל והטופס יורד). האצבע "מתרוממת"
+      // במקום להישאר תלויה ליד כפתור שכבר זז; היא חוזרת בצעד הבא.
+      if (!el.isConnected || place(el) > 3) cursorRef.current?.classList.remove('is-on')
     }
 
     async function type(el: HTMLInputElement, text: string, speed: number): Promise<void> {
@@ -176,6 +191,8 @@ export function DemoGiftCounting() {
         await whenVisible()
         setValue(el, text.slice(0, i))
         await sleep(speed)
+        // ההקלדה עצמה יכולה להזיז את השדה (רמז או תוצאות שמופיעים מעליו).
+        if (el.isConnected) place(el)
       }
     }
 

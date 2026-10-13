@@ -93,7 +93,8 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       <AppTree />
-      <CookieBanner />
+      {/* ההדגמות רצות בתוך iframe בדף הנחיתה, ולדף יש באנר משלו. */}
+      {!demoMatch && !demoDashboardMatch && <CookieBanner />}
     </ErrorBoundary>
   </StrictMode>,
 )

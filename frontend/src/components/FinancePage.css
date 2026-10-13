@@ -1195,8 +1195,10 @@
 
 .fin-amount-input input {
   width: 100%;
-  padding: 14px 16px;
-  padding-inline-end: 44px;
+  /* השדה dir="ltr" (מספרים) והסימן ₪ יושב משמאל (inline-end של הקונטיינר
+     העברי). לכן המקום לסימן נשמר משמאל, בכיוון פיזי — inline-end של שדה
+     LTR הוא דווקא ימין, והסימן היה נדבק על הספרה הראשונה. */
+  padding: 14px 16px 14px 44px;
   border: 1px solid var(--line);
   border-radius: var(--radius-m);
   background: var(--surface-hi);

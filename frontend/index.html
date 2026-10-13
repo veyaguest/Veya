@@ -1425,8 +1425,10 @@
         .ppl-rsvp {
           display: block; position: absolute; z-index: 0;
           width: 236px; top: -18px; right: calc(50% - 195px - 236px - 76px);
-          -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 82%);
-          mask-image: linear-gradient(to bottom, #000 50%, transparent 82%);
+          /* הדהייה נגמרת בתוך הסקשן: ב-82% התמונה עברה את קצה הסקשן,
+             והסקשן הבא חתך אותה בקו ישר. */
+          -webkit-mask-image: linear-gradient(to bottom, #000 46%, transparent 70%);
+          mask-image: linear-gradient(to bottom, #000 46%, transparent 70%);
         }
       }
       /* בטלפון: מציצה מאחורי הכרטיס, ראש וכתפיים מעליו — אותה סצנה, קטנה */
