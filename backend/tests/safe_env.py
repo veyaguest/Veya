@@ -32,6 +32,8 @@ WHATSAPP_SAFE_ENV: dict[str, str] = {
     "WHATSAPP_GRAPH_API_VERSION": "",
     # עיבוד הודעות נכנסות ועדכון RSVP מהן — כבויים (בדיקות שבודקות אותם מדליקות במפורש).
     "WHATSAPP_WEBHOOK_INBOUND": "",
+    # ה-webhook דוחה כל אירוע כשאין מזהה מספר מוגדר (בדיקות שבודקות אותו מגדירות במפורש).
+    "WHATSAPP_WEBHOOK_PHONE_NUMBER_ID": "",
     "WHATSAPP_INBOUND_RSVP": "",
 }
 

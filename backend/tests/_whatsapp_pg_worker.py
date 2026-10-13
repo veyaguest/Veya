@@ -36,6 +36,10 @@ from tests._rls_full_regression_worker import RLS_SQL_FILES, _FakeRequest  # noq
 
 RESULTS: dict = {}
 
+# מזהה המספר שאירועי ה-webhook כאן שייכים אליו (``WHATSAPP_WEBHOOK_PHONE_NUMBER_ID``).
+_PNID = "100000000000003"
+os.environ["WHATSAPP_WEBHOOK_PHONE_NUMBER_ID"] = _PNID
+
 
 def _ok(name: str, **kw) -> None:
     RESULTS[name] = {"ok": True, **kw}
@@ -319,7 +323,8 @@ async def main() -> None:
     # 6) webhook — תשובה, כפילות רציפה, כפילות במקביל
     # =====================================================================
     def _items(wamid, phone):
-        return messaging_router._webhook_items({"entry": [{"changes": [{"value": {"messages": [{
+        return messaging_router._webhook_items({"entry": [{"changes": [{"value": {
+            "metadata": {"phone_number_id": _PNID}, "messages": [{
             "from": "972" + phone[1:], "id": wamid, "type": "interactive",
             "interactive": {"button_reply": {"id": "rsvp_yes"}},
         }]}}]}]})
@@ -504,7 +509,8 @@ async def main() -> None:
         finally:
             g.close()
         ref = f"veya:m{unknown_id}:e{ev_id}:g{unknown_gid}"
-        items = messaging_router._webhook_items({"entry": [{"changes": [{"value": {"statuses": [{
+        items = messaging_router._webhook_items({"entry": [{"changes": [{"value": {
+            "metadata": {"phone_number_id": _PNID}, "statuses": [{
             "id": "wamid.pg-late", "status": "delivered", "timestamp": "1790000000",
             "recipient_id": "972" + unknown_phone[1:], "biz_opaque_callback_data": ref,
         }]}}]}]})

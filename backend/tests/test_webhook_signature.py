@@ -40,6 +40,8 @@ from tests.e2e_seating import bootstrap, shutdown  # noqa: E402
 WEBHOOK_URL = "/messaging/webhook"
 _SECRET_ENV = "WHATSAPP_APP_SECRET"
 _REAL_SECRET = "test-whatsapp-app-secret-not-real"
+# מזהה המספר שהאירועים בבדיקות שייכים אליו (``WHATSAPP_WEBHOOK_PHONE_NUMBER_ID``).
+_PHONE_NUMBER_ID = "100000000000002"
 
 
 @contextmanager
@@ -51,6 +53,8 @@ def _secret(value):
     """
     had = _SECRET_ENV in os.environ
     prev = os.environ.get(_SECRET_ENV)
+    prev_pnid = os.environ.get("WHATSAPP_WEBHOOK_PHONE_NUMBER_ID")
+    os.environ["WHATSAPP_WEBHOOK_PHONE_NUMBER_ID"] = _PHONE_NUMBER_ID
     try:
         if value is None:
             os.environ.pop(_SECRET_ENV, None)
@@ -62,6 +66,10 @@ def _secret(value):
             os.environ[_SECRET_ENV] = prev
         else:
             os.environ.pop(_SECRET_ENV, None)
+        if prev_pnid is None:
+            os.environ.pop("WHATSAPP_WEBHOOK_PHONE_NUMBER_ID", None)
+        else:
+            os.environ["WHATSAPP_WEBHOOK_PHONE_NUMBER_ID"] = prev_pnid
 
 
 def _sign(body: bytes, secret: str = _REAL_SECRET) -> str:
@@ -75,6 +83,7 @@ def _rsvp_payload(from_phone: str, coming: bool = True) -> bytes:
         "entry": [{
             "changes": [{
                 "value": {
+                    "metadata": {"phone_number_id": _PHONE_NUMBER_ID},
                     "messages": [{
                         "from": from_phone,
                         # Meta שולחת תמיד מזהה הודעה — ממנו נגזרת מניעת הכפילויות.
@@ -95,6 +104,7 @@ def _status_payload(provider_message_id: str, status: str = "delivered") -> byte
         "entry": [{
             "changes": [{
                 "value": {
+                    "metadata": {"phone_number_id": _PHONE_NUMBER_ID},
                     "statuses": [{
                         "id": provider_message_id,
                         "status": status,

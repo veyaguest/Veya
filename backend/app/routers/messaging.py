@@ -458,19 +458,52 @@ def _as_dict(value) -> dict:
     return value if isinstance(value, dict) else {}
 
 
+def _allowed_phone_number_ids() -> frozenset[str]:
+    """מזהי המספרים (Phone Number ID של Meta) שה-webhook מקבל מהם אירועים.
+
+    ``WHATSAPP_WEBHOOK_PHONE_NUMBER_ID`` — משתנה ייעודי (לא נופל ל-
+    ``WHATSAPP_PHONE_NUMBER_ID`` של השליחה), כמה מזהים מופרדים בפסיק.
+    **לא מוגדר / ריק = שום אירוע לא מתקבל.**
+    """
+    raw = os.getenv("WHATSAPP_WEBHOOK_PHONE_NUMBER_ID") or ""
+    return frozenset(p.strip() for p in raw.split(",") if p.strip())
+
+
 def _webhook_items(data) -> list[tuple[str, dict]]:
     """מפרק את גוף ה-webhook לפריטים לטיפול: ``("message", msg)`` /
-    ``("status", st)``. סובלני לחלוטין לצורה לא צפויה — מה שלא מתאים מדולג."""
+    ``("status", st)``. סובלני לחלוטין לצורה לא צפויה — מה שלא מתאים מדולג.
+
+    **רק אירועים של המספר שלנו.** כל ``change`` נושא ``value.metadata.phone_number_id``
+    — המספר שאליו האירוע שייך. לאותה אפליקציה ב-Meta יכולים להיות כמה מספרים
+    (מספר בדיקה + המספר האמיתי), וכולם נשלחים לאותה כתובת webhook; החתימה מוכיחה
+    רק שהאירוע מהאפליקציה שלנו, לא מאיזה מספר. אם ``WHATSAPP_WEBHOOK_PHONE_NUMBER_ID``
+    לא מוגדר, או שהמזהה חסר באירוע או לא תואם — כל הפריטים של ה-``change`` נדחים
+    בלי לשנות שום נתון (ונספרים בלוג, בלי ערכי המזהים).
+    """
+    allowed = _allowed_phone_number_ids()
     items: list[tuple[str, dict]] = []
+    rejected: dict[str, int] = {}
     for entry in _as_list(_as_dict(data).get("entry")):
         for change in _as_list(_as_dict(entry).get("changes")):
             value = _as_dict(_as_dict(change).get("value"))
-            for msg in _as_list(value.get("messages")):
-                if isinstance(msg, dict):
-                    items.append(("message", msg))
-            for st in _as_list(value.get("statuses")):
-                if isinstance(st, dict):
-                    items.append(("status", st))
+            found = [("message", m) for m in _as_list(value.get("messages")) if isinstance(m, dict)]
+            found += [("status", st) for st in _as_list(value.get("statuses")) if isinstance(st, dict)]
+            if not found:
+                continue
+            pnid = _as_dict(value.get("metadata")).get("phone_number_id")
+            pnid = pnid.strip() if isinstance(pnid, str) else ""
+            reason = (
+                "not_configured" if not allowed
+                else "missing_phone_number_id" if not pnid
+                else "phone_number_id_mismatch" if pnid not in allowed
+                else None
+            )
+            if reason:
+                rejected[reason] = rejected.get(reason, 0) + len(found)
+                continue
+            items.extend(found)
+    for reason, count in rejected.items():
+        print(f"[veya:whatsapp] webhook rejected items={count} reason={reason}", flush=True)
     return items
 
 

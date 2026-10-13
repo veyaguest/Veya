@@ -413,6 +413,7 @@ def _secret(inbound_rsvp: bool = True, inbound: bool = True):
     הבדיקות בקובץ הזה בודקות את הלוגיקה הזו עצמה, ולכן מדליקות במפורש."""
     keys = {
         "WHATSAPP_APP_SECRET": _SECRET,
+        "WHATSAPP_WEBHOOK_PHONE_NUMBER_ID": TEST_PHONE_NUMBER_ID,
         "WHATSAPP_WEBHOOK_INBOUND": "1" if inbound else "",
         "WHATSAPP_INBOUND_RSVP": "1" if inbound_rsvp else "",
     }
@@ -448,10 +449,16 @@ def _reply(from_phone: str, wamid: str, coming: bool = True, context: str | None
     return msg
 
 
-def _payload(*messages, statuses=()) -> dict:
-    return {"entry": [{"changes": [{"value": {
-        "messages": list(messages), "statuses": list(statuses),
-    }}]}]}
+# מזהה המספר (Phone Number ID) שבו מגיעים אירועי ה-webhook בבדיקות — ראו
+# ``WHATSAPP_WEBHOOK_PHONE_NUMBER_ID`` ו-``routers/messaging._webhook_items``.
+TEST_PHONE_NUMBER_ID = "100000000000001"
+
+
+def _payload(*messages, statuses=(), phone_number_id=TEST_PHONE_NUMBER_ID) -> dict:
+    value: dict = {"messages": list(messages), "statuses": list(statuses)}
+    if phone_number_id is not None:
+        value["metadata"] = {"display_phone_number": "15550000000", "phone_number_id": phone_number_id}
+    return {"entry": [{"changes": [{"field": "messages", "value": value}]}]}
 
 
 def _db():
@@ -680,14 +687,14 @@ def test_webhook_malformed_items_are_skipped() -> None:
     weird = {"entry": [
         {"changes": "not-a-list"},
         {"changes": [{"value": {"messages": "nope", "statuses": [42, None]}}]},
-        {"changes": [{"value": {"messages": [
+        {"changes": [{"value": {"metadata": {"phone_number_id": TEST_PHONE_NUMBER_ID}, "messages": [
             {"from": _intl(phone), "interactive": {"button_reply": {"id": "rsvp_yes"}}},  # בלי id
             {"from": 5, "id": 7, "interactive": None},
             {"from": _intl(phone), "id": "wamid-text-" + secrets.token_hex(4), "type": "text",
              "text": {"body": "נגיע 3"}},
         ], "statuses": [{"id": "wamid-unknown", "status": "delivered", "timestamp": "nan"},
                         {"id": "", "status": "read"}, {"status": "weird"}]}}]},
-        {"changes": [{"value": {"messages": [
+        {"changes": [{"value": {"metadata": {"phone_number_id": TEST_PHONE_NUMBER_ID}, "messages": [
             _reply(_intl(phone), "wamid-good-" + secrets.token_hex(6))]}}]},
     ]}
     r = _post(api, weird)

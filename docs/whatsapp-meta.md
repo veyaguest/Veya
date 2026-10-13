@@ -65,6 +65,7 @@ Meta webhook → /messaging/webhook → whatsapp_inbound (שיוך, RSVP, הוד
 | `WHATSAPP_VERIFY_TOKEN` | webhook | מחרוזת שאתם ממציאים ומזינים גם ב-Meta |
 | `WHATSAPP_APP_SECRET` | webhook | App Settings ← Basic. בלעדיו כל webhook נדחה (403) |
 | `WHATSAPP_GRAPH_API_VERSION` | אופציונלי | ריק = `v26.0` (`v20.0` פג ב-24.9.2026) |
+| `WHATSAPP_WEBHOOK_PHONE_NUMBER_ID` | webhook | ה-Phone Number ID שה-webhook מקבל ממנו אירועים (כמה — בפסיק). **לא מוגדר = כל אירוע נדחה**. ייעודי — לא נופל ל-`WHATSAPP_PHONE_NUMBER_ID` |
 | `WHATSAPP_WEBHOOK_INBOUND` | אופציונלי | `1` = ה-webhook שומר הודעות נכנסות. **כבוי** — סטטוסים בלבד |
 | `WHATSAPP_INBOUND_RSVP` | אופציונלי | `1` = לחיצת כפתור ב-WhatsApp מעדכנת RSVP (רק כשגם `WHATSAPP_WEBHOOK_INBOUND=1`). **כבוי** — לא מדליקים בלי החלטה |
 
@@ -165,9 +166,11 @@ ORDER BY created_at;
 |---|---|
 | אימות GET | רק `hub.mode=subscribe` עם `WHATSAPP_VERIFY_TOKEN` המדויק (השוואה בזמן קבוע). בלי הגדרה — 403 |
 | חתימה (POST) | HMAC-SHA256 עם `WHATSAPP_APP_SECRET` על הגוף הגולמי. בלי סוד — 403. כותרת פגומה — 403 (לא 500) |
+| המספר שלנו בלבד | כל `change` נושא `value.metadata.phone_number_id`. לא תואם ל-`WHATSAPP_WEBHOOK_PHONE_NUMBER_ID`, חסר באירוע, או שהמשתנה לא מוגדר — כל הפריטים שלו נדחים בלי שינוי (200; בלוג רק הסיבה והכמות). לאותה אפליקציה יכולים להיות כמה מספרים, והחתימה לא מבדילה ביניהם |
 | גודל | עד 3MB (התקרה של Meta), נבדק לפני החתימה — גם בלי `Content-Length`. מעבר לזה — 413 |
 | עיבוד | כל פריט בטרנזקציה משלו; כשל DB זמני — 500 ו-Meta שולחת שוב; פריט לא צפוי — מדולג, 200 |
-| כפילויות | הודעה נכנסת — לפי מזהה Meta; סטטוס — בלי נסיגה, ועדכון זהה שומר את הזמן המקורי |
+| כפילויות | הודעה נכנסת — לפי מזהה Meta; סטטוס — בלי נסיגה, ועדכון זהה לא משנה את הזמן |
+| סדר | Meta לא מבטיחה סדר. "נקראה" לפני "נמסרה" — `delivered_at` מתמלא בזמן הקריאה; "נמסרה" שמגיעה אחר כך עם זמן מוקדם יותר — מעדכנת את `delivered_at` לזמן האמיתי, בלי להחזיר את הסטטוס אחורה |
 | אישור הגעה | עדכוני סטטוס נוגעים רק בשורת ההודעה — לעולם לא באורח |
 | הודעות נכנסות | כבויות (`WHATSAPP_WEBHOOK_INBOUND`) — לא נשמרות ולא נוגעות בשום נתון |
 | לוג | בלי טוקן, סוד, טלפון, תוכן הודעה או `wamid` |

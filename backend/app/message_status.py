@@ -245,12 +245,28 @@ def apply_status_update(
     return True
 
 
+def _fill_delivered_at(msg, status: str, ts: Optional[datetime]) -> None:
+    """זמן המסירה עקבי גם כשהעדכונים מגיעים לא לפי הסדר (Meta לא מבטיחה סדר).
+
+    - "נקראה" בלי "נמסרה" קודמת: מה שנקרא — נמסר. ``delivered_at`` מתמלא בזמן
+      הקריאה (החסם העליון הידוע) כדי שלא יישאר ריק.
+    - "נמסרה" שמגיעה אחרי "נקראה" (או שוב): הסטטוס לא חוזר אחורה, אבל אם הזמן
+      שלה מוקדם יותר — הוא הזמן האמיתי של המסירה, ו-``delivered_at`` מתעדכן אליו.
+      זמן מאוחר יותר לא דורס.
+    """
+    if ts is None or status not in (DELIVERED, READ):
+        return
+    if msg.delivered_at is None or (status == DELIVERED and ts < msg.delivered_at):
+        msg.delivered_at = ts
+
+
 def _apply(msg, status, ts, reason, failure_code, provider_status) -> None:
     """הכלל המשותף לעדכון סטטוס (מ-webhook): בלי נסיגה, חותמות זמן, סיבת כשל."""
     if provider_status is not None:
         msg.provider_status = provider_status
     if failure_code is not None:
         msg.failure_code = failure_code
+    _fill_delivered_at(msg, status, ts)
     if _should_skip_regression(msg.status, status):
         return
     if msg.status == status:
