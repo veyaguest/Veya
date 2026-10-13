@@ -1420,6 +1420,8 @@ def seed_message_default_options() -> None:
             "event_time", "venue_name", "address", "rsvp_link",
         ]
 
+        # הנוסחים כאן הם הגרסה המקורית; ``_migrate_message_library_wording``
+        # מעדכן אותם מיד אחרי הזריעה לניסוח של 2026-10-13.
         invitation_options = [
             (
                 "חם ומלא פרטים",
@@ -1901,6 +1903,58 @@ def _ensure_rsvp_request_message_default() -> None:
         db.close()
 
 
+#: עדכון ניסוח בספריית הנוסחים, באישור המייסד (2026-10-13): פנייה ברבים
+#: בהזמנות לחתונה, ❤️ רק בהודעת תודה, בלי "!" ו-🥳, ותיקוני ניסוח.
+#: הנוסחים עצמם (ישן → חדש) בקובץ ה-JSON שליד הקובץ הזה.
+_MESSAGE_LIBRARY_WORDING_FILE = Path(__file__).with_name("message_library_wording_2026_10_13.json")
+
+
+def _migrate_message_library_wording() -> None:
+    """מחליף נוסח בספרייה רק כשהוא עדיין **בדיוק** הנוסח הישן.
+
+    האדמין הוא מקור האמת לתוכן הספרייה, ולכן נוסח שנערך בפאנל (כל הבדל
+    מהנוסח הישן) נשאר כמו שהוא. אותו כלל חל על ``MessageDefault`` — הנוסח
+    שמוקצה אוטומטית לאירוע חדש — כשהוא אחד הנוסחים הישנים של אותו סוג.
+    לא נוגע בהודעות של אירועים קיימים (``EventMessage``): אלה של הזוג.
+    idempotent: אחרי הריצה הראשונה אין יותר שורות עם הנוסח הישן.
+    """
+    import json
+
+    from sqlalchemy import select
+
+    db = MigrationSessionLocal()
+    try:
+        changes = json.loads(_MESSAGE_LIBRARY_WORDING_FILE.read_text(encoding="utf-8"))
+        by_option = {(c["event_type"], c["message_type"], c["option_number"]): c for c in changes}
+        by_old = {(c["event_type"], c["message_type"], c["old"]): c["new"] for c in changes}
+
+        options_updated = 0
+        for row in db.scalars(select(models.MessageDefaultOption)):
+            c = by_option.get((row.event_type, row.message_type, row.option_number))
+            if c and row.content == c["old"]:
+                row.content = c["new"]
+                options_updated += 1
+
+        defaults_updated = 0
+        for row in db.scalars(select(models.MessageDefault)):
+            new = by_old.get((row.event_type, row.message_type, row.content or ""))
+            if new is not None:
+                row.content = new
+                defaults_updated += 1
+
+        db.commit()
+        if options_updated or defaults_updated:
+            print(
+                f"[veya:seed] ניסוח ספריית הנוסחים: {options_updated} נוסחים, "
+                f"{defaults_updated} ברירות מחדל", flush=True,
+            )
+    except Exception as exc:  # noqa: BLE001 — לעולם לא מפיל את העלייה
+        db.rollback()
+        print(f"[veya:seed] עדכון ניסוח ספריית הנוסחים נכשל: {exc!r}", flush=True)
+    finally:
+        db.close()
+
+
 def _seed_postponement_options() -> None:
     """זורע את נוסחי הודעת הדחייה. לעולם לא מפיל את עליית השרת."""
     from app.postponement_messages import seed_postponement_options
@@ -1962,6 +2016,8 @@ def on_startup() -> None:
     # משלים שורת "בקשת אישור ראשונה" (rsvp_request) לכל סוג אירוע — סוג הודעה
     # שנולד אחרי שהקטלוג נזרע בפרודקשן. משלים חסר בלבד, לא דורס.
     _ensure_rsvp_request_message_default()
+    # ניסוח מעודכן לספריית הנוסחים (2026-10-13) — רק נוסח שלא נערך בפאנל.
+    _migrate_message_library_wording()
     # "מספר תזכורות" + "מספר סבבי טלפונים" → "מספר סבבים מקסימלי" (2026-09-23).
     _migrate_rsvp_round_settings()
     # נוסחי "אירוע נדחה". בנפרד מהזריעה שמעל, כי היא רצה רק על טבלה ריקה —
