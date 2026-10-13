@@ -35,7 +35,9 @@ from pathlib import Path
 BACKEND = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND))
 
-DEFAULT_URL = "https://veya-backend-u41w.onrender.com/messaging/webhook"
+# כתובת היעד — קבועה בקוד. אין ארגומנט ואין משתנה סביבה שמשנים אותה, וגם
+# הגדרות proxy מהסביבה לא חלות על הבקשה (``trust_env=False``).
+TARGET_URL = "https://veya-backend-u41w.onrender.com/messaging/webhook"
 # מזהה הודעה מדומה: ``wamid.VEYA-PROBE-<uuid>`` — אמיתיים הם base64 (``wamid.HBg…``),
 # כך שאין התנגשות אפשרית עם הודעה אמיתית, וכל הרצה ייחודית.
 PROBE_PREFIX = "wamid.VEYA-PROBE-"
@@ -99,9 +101,11 @@ def redacted_view(payload: dict) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="אירוע סטטוס delivered חתום ומדומה ל-webhook")
+    parser = argparse.ArgumentParser(
+        description="אירוע סטטוס delivered חתום ומדומה ל-webhook", allow_abbrev=False,
+    )
     parser.add_argument("--send", action="store_true", help="לשלוח בפועל (בלי זה — הצגה בלבד)")
-    parser.add_argument("--url", default=DEFAULT_URL, help=argparse.SUPPRESS)
+    # לבדיקות בלבד: מאיזה קובץ לקרוא את הסוד ואת מזהה המספר. לא משפיע על היעד.
     parser.add_argument("--env-file", default=str(BACKEND / ".env"), help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
 
@@ -114,9 +118,6 @@ def main(argv: list[str] | None = None) -> int:
     print(f"קובץ הגדרות: {'נטען' if loaded else 'לא נמצא'}")
     print(f"  WHATSAPP_APP_SECRET: {'מוגדר' if secret else 'חסר'}")
     print(f"  WHATSAPP_WEBHOOK_PHONE_NUMBER_ID: {'מוגדר (' + _mask(pnid) + ')' if pnid else 'חסר'}")
-    if not args.url.startswith("https://"):
-        print("✗ הכתובת חייבת להיות https")
-        return 2
     if not secret or not pnid:
         print("✗ לא נשלח: חסר משתנה מקומי. לא משתמשים בערך ברירת מחדל.")
         return 2
@@ -126,7 +127,7 @@ def main(argv: list[str] | None = None) -> int:
     body = encode(payload)
     signature = sign(body, secret)
 
-    print(f"\nכתובת: POST {args.url}")
+    print(f"\nכתובת: POST {TARGET_URL}")
     print("כותרות: Content-Type: application/json · X-Hub-Signature-256: sha256=<64 תווי hex — לא מוצג>")
     print(f"גודל הגוף: {len(body)} בייטים")
     print("payload (מזהה המספר מצונזר):")
@@ -141,8 +142,9 @@ def main(argv: list[str] | None = None) -> int:
     started = time.time()
     try:
         resp = httpx.post(
-            args.url, content=body, timeout=httpx.Timeout(120.0, connect=30.0),
+            TARGET_URL, content=body, timeout=httpx.Timeout(120.0, connect=30.0),
             headers={"Content-Type": "application/json", "X-Hub-Signature-256": signature},
+            follow_redirects=False, trust_env=False,
         )
     except httpx.HTTPError as exc:
         print(f"\n✗ אין תשובה מהשרת: {type(exc).__name__}")

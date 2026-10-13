@@ -135,6 +135,59 @@ def test_missing_local_values_refuse() -> None:
     print("✓ 4: חסר סוד או מזהה מקומי — לא שולח (גם עם --send), בלי ערך ברירת מחדל")
 
 
+def test_target_url_is_locked() -> None:
+    """היעד קבוע: ``--url`` (וקיצורים שלו) נדחה, משתני סביבה — כולל proxy — לא
+    משנים אותו, והבקשה נשלחת בלי ``trust_env`` ובלי מעקב אחרי הפניות."""
+    import httpx
+
+    from scripts import whatsapp_webhook_probe as probe
+
+    assert probe.TARGET_URL == "https://veya-backend-u41w.onrender.com/messaging/webhook"
+    for bad in (["--url", "https://evil.example/x"], ["--url=https://evil.example/x"], ["--u", "x"]):
+        buf = io.StringIO()
+        try:
+            from contextlib import redirect_stderr
+
+            with redirect_stderr(buf):
+                probe.main(bad + ["--env-file", _NO_ENV])
+            raise AssertionError(f"{bad} היה אמור להידחות")
+        except SystemExit as exc:
+            assert exc.code == 2, bad
+
+    calls = []
+
+    class _Resp:
+        status_code = 200
+        text = '{"received":true}'
+
+    def _capture(url, **kwargs):
+        calls.append((url, kwargs))
+        return _Resp()
+
+    real_post = httpx.post
+    httpx.post = _capture
+    prev = _with_env(
+        WHATSAPP_APP_SECRET=SECRET, WHATSAPP_WEBHOOK_PHONE_NUMBER_ID=PNID,
+        HTTPS_PROXY="http://proxy.invalid:1", HTTP_PROXY="http://proxy.invalid:1",
+        ALL_PROXY="http://proxy.invalid:1", WEBHOOK_URL="https://evil.example/x",
+        VEYA_WEBHOOK_URL="https://evil.example/x", TARGET_URL="https://evil.example/x",
+    )
+    try:
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            code = probe.main(["--send", "--env-file", _NO_ENV])
+    finally:
+        httpx.post = real_post
+        _restore(prev)
+    assert code == 0 and len(calls) == 1, "בקשה אחת בדיוק"
+    url, kwargs = calls[0]
+    assert url == probe.TARGET_URL
+    assert kwargs["trust_env"] is False and kwargs["follow_redirects"] is False
+    assert kwargs["headers"]["X-Hub-Signature-256"] == probe.sign(kwargs["content"], SECRET)
+    assert SECRET not in buf.getvalue() and PNID not in buf.getvalue()
+    print("✓ 5: היעד נעול — --url נדחה, משתני סביבה ו-proxy לא משנים; POST אחד, חתום על אותם בייטים")
+
+
 if __name__ == "__main__":
     try:
         for name, fn in list(globals().items()):
