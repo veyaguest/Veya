@@ -11,13 +11,13 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <title>הודעות — מה המוזמנים מקבלים | VEYA</title>
-    <meta name="description" content="ההודעות שהמוזמנים מקבלים: הזמנה, בקשת אישור הגעה ותזכורות — לפי סוג האירוע, ובדיוק כפי שהן נראות בטלפון. חתונה, בר/בת מצווה, חינה, ברית ואירוע עסקי." />
+    <meta name="description" content="ההודעות שהמוזמנים מקבלים: הזמנה, בקשת אישור הגעה ותזכורות, לפי סוג האירוע, ובדיוק כפי שהן נראות בטלפון. חתונה, בר/בת מצווה, חינה, ברית ואירוע עסקי." />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="VEYA" />
     <meta property="og:locale" content="he_IL" />
     <meta property="og:title" content="הודעות — מה המוזמנים מקבלים | VEYA" />
-    <meta property="og:description" content="ההודעות שהמוזמנים מקבלים: הזמנה, בקשת אישור הגעה ותזכורות — לפי סוג האירוע, ובדיוק כפי שהן נראות בטלפון. חתונה, בר/בת מצווה, חינה, ברית ואירוע עסקי." />
+    <meta property="og:description" content="ההודעות שהמוזמנים מקבלים: הזמנה, בקשת אישור הגעה ותזכורות, לפי סוג האירוע, ובדיוק כפי שהן נראות בטלפון. חתונה, בר/בת מצווה, חינה, ברית ואירוע עסקי." />
     <meta property="og:url" content="https://veyaguest.co.il/nuschim/" />
     <meta property="og:image" content="https://veyaguest.co.il/og-image.png?v=3" />
     <meta property="og:image:width" content="1200" />
@@ -25,7 +25,7 @@
     <meta property="og:image:alt" content="VEYA — מערכת לניהול אירועים" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="הודעות — מה המוזמנים מקבלים | VEYA" />
-    <meta name="twitter:description" content="ההודעות שהמוזמנים מקבלים: הזמנה, בקשת אישור הגעה ותזכורות — לפי סוג האירוע, ובדיוק כפי שהן נראות בטלפון. חתונה, בר/בת מצווה, חינה, ברית ואירוע עסקי." />
+    <meta name="twitter:description" content="ההודעות שהמוזמנים מקבלים: הזמנה, בקשת אישור הגעה ותזכורות, לפי סוג האירוע, ובדיוק כפי שהן נראות בטלפון. חתונה, בר/בת מצווה, חינה, ברית ואירוע עסקי." />
     <meta name="twitter:image" content="https://veyaguest.co.il/og-image.png?v=3" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -40,7 +40,7 @@
         "@context": "https://schema.org",
         "@graph": [
           {
-            "dateModified": "2026-09-26",
+            "dateModified": "2026-10-13",
             "@type": "CollectionPage",
             "name": "הודעות",
             "inLanguage": "he-IL",
@@ -175,7 +175,7 @@
           <p class="crumbs"><a href="/">VEYA</a><span aria-hidden="true">›</span>הודעות</p>
           <span class="eyebrow">מה נשלח למוזמנים</span>
           <h1>ההודעות שהמוזמנים שלכם מקבלים</h1>
-          <p class="lead">הזמנה, בקשת אישור הגעה ותזכורות — לפי סוג האירוע. אלה ההודעות שכבר נמצאות בתוך VEYA, בדיוק כפי שהן נראות בטלפון של המוזמן.</p>
+          <p class="lead">הזמנה, בקשת אישור הגעה ותזכורות, לפי סוג האירוע. אלה ההודעות שכבר נמצאות בתוך VEYA, בדיוק כפי שהן נראות בטלפון של המוזמן.</p>
           
         </div>
       </section>
@@ -1202,7 +1202,7 @@
 
           <p class="calc-note" style="max-width:66ch;margin-top:34px">
             <b>הפרטים בהודעות הם דוגמה.</b> בתוך VEYA השם של כל מוזמן, התאריך,
-            השעה והמקום נכנסים אוטומטית מפרטי האירוע שלכם — לא צריך למלא אותם
+            השעה והמקום נכנסים אוטומטית מפרטי האירוע שלכם. לא צריך למלא אותם
             בכל הודעה מחדש. הכפתורים בתחתית ההודעה הם מה שהמוזמן לוחץ עליו
             בפועל.
           </p>
@@ -1436,7 +1436,7 @@
         function copy(text) {
           var note = document.getElementById('copied');
           function done(ok) {
-            var msg = ok ? 'ההודעה הועתקה' : 'לא הצלחנו להעתיק — אפשר לסמן ולהעתיק ידנית';
+            var msg = ok ? 'ההודעה הועתקה' : 'לא הצלחנו להעתיק. אפשר לסמן ולהעתיק ידנית';
             if (note) note.textContent = msg;
             if (live) live.textContent = msg;
             setTimeout(function () { if (note) note.textContent = ''; if (live) live.textContent = ''; }, 4000);
