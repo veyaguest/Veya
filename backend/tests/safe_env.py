@@ -30,6 +30,8 @@ WHATSAPP_SAFE_ENV: dict[str, str] = {
     "WHATSAPP_APP_SECRET": "",
     "WHATSAPP_VERIFY_TOKEN": "",
     "WHATSAPP_GRAPH_API_VERSION": "",
+    # עדכון RSVP מהודעות נכנסות — כבוי (בדיקות שבודקות אותו מדליקות במפורש).
+    "WHATSAPP_INBOUND_RSVP": "",
 }
 
 

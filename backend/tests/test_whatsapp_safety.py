@@ -406,22 +406,27 @@ def test_status_update_never_touches_inbound_row() -> None:
 # ============================================================================
 
 @contextmanager
-def _secret():
-    prev = os.environ.get("WHATSAPP_APP_SECRET")
-    os.environ["WHATSAPP_APP_SECRET"] = _SECRET
+def _secret(inbound_rsvp: bool = True):
+    """סוד ה-webhook לזמן הקריאה. ``inbound_rsvp`` — מדליק במפורש את עדכון
+    ה-RSVP מלחיצת כפתור (כבוי במערכת כברירת מחדל, ``WHATSAPP_INBOUND_RSVP``):
+    הבדיקות בקובץ הזה בודקות את הלוגיקה הזו עצמה."""
+    keys = {"WHATSAPP_APP_SECRET": _SECRET, "WHATSAPP_INBOUND_RSVP": "1" if inbound_rsvp else ""}
+    prev = {k: os.environ.get(k) for k in keys}
+    os.environ.update(keys)
     try:
         yield
     finally:
-        if prev is None:
-            os.environ.pop("WHATSAPP_APP_SECRET", None)
-        else:
-            os.environ["WHATSAPP_APP_SECRET"] = prev
+        for k, v in prev.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
 
 
-def _post(api, payload: dict):
+def _post(api, payload: dict, inbound_rsvp: bool = True):
     body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
     sig = "sha256=" + hmac.new(_SECRET.encode(), body, hashlib.sha256).hexdigest()
-    with _secret():
+    with _secret(inbound_rsvp):
         return api.client.post(WEBHOOK_URL, content=body, headers={
             "Content-Type": "application/json", "X-Hub-Signature-256": sig,
         })

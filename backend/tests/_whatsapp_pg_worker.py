@@ -338,6 +338,8 @@ async def main() -> None:
         finally:
             s.close()
 
+    # תרחישים 6–7 בודקים את עדכון ה-RSVP מלחיצת כפתור — כבוי כברירת מחדל.
+    os.environ["WHATSAPP_INBOUND_RSVP"] = "1"
     try:
         gid = guest_ids[1]
         g = gt()
@@ -385,6 +387,8 @@ async def main() -> None:
                   inbound=inbound, audits=audits)
     except Exception as exc:
         _fail("07_webhook_concurrent_duplicates", error=_err(exc))
+    finally:
+        os.environ["WHATSAPP_INBOUND_RSVP"] = ""
 
     # =====================================================================
     # 8) meta_test תחת RLS — רק הנמען המורשה נשלח ונרשם; לאחרים אין שורה

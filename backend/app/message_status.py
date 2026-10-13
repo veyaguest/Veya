@@ -253,6 +253,9 @@ def _apply(msg, status, ts, reason, failure_code, provider_status) -> None:
         msg.failure_code = failure_code
     if _should_skip_regression(msg.status, status):
         return
+    if msg.status == status:
+        # אותו עדכון שוב (Meta שולחת כפילויות): נשאר הזמן של הפעם הראשונה.
+        return
     msg.status = status
     ts_field = _TIMESTAMP_FIELD.get(status)
     if ts_field:

@@ -27,6 +27,7 @@
 """
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from typing import Optional
 
@@ -56,6 +57,16 @@ _UNMATCHED_LABEL = {
     INVALID_PHONE: "המספר אינו מספר ישראלי תקין",
     CONTEXT_MISMATCH: "מספר הטלפון של המוזמן השתנה מאז ההודעה",
 }
+
+
+def rsvp_replies_enabled() -> bool:
+    """האם לחיצה על כפתור אישור/ביטול הגעה ב-WhatsApp מעדכנת RSVP.
+
+    **כבוי כברירת מחדל** (``WHATSAPP_INBOUND_RSVP`` ≠ ``1``): אישור הגעה רק
+    דרך הקישור האישי, והודעות נכנסות נשמרות כ"דורש טיפול" בלבד. הלוגיקה
+    (``record_rsvp_reply``) נשארת קיימת ונבדקת, להפעלה מפורשת בעתיד.
+    """
+    return (os.getenv("WHATSAPP_INBOUND_RSVP") or "").strip() == "1"
 
 
 @dataclass

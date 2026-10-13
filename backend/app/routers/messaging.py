@@ -363,25 +363,52 @@ def _verify_signature(body: bytes, signature_header: Optional[str]) -> bool:
     """מאמת שהבקשה נחתמה ע"י Meta עם ה-App Secret (HMAC-SHA256 על גוף הבקשה).
 
     **דוחים תמיד כשאין סוד מוגדר** — לא "מדלגים על האימות". ה-endpoint הזה
-    ציבורי לגמרי (בלי טוקן, בלי guest_token) ומעדכן RSVP של מוזמן לפי
-    התאמת מספר טלפון בלבד, בלי סינון לפי אירוע (ראו ``_match_guest_by_phone``
-    למטה ו-``app_find_guest_by_phone`` ב-backend/rls/01_helpers_and_grants.sql) —
-    כך שחתימה היא שכבת ההגנה **היחידה** נגד בקשות מזויפות, ולא דבר-מה
-    שאפשר לדלג עליו "עד שיוגדר סוד". התנהגות ישנה (החזרת True בלי סוד)
-    אפשרה לכל אחד לשלוח לכאן בקשה לא-חתומה ולזייף אישור/ביטול הגעה לכל
-    מוזמן במערכת, בכל אירוע, רק לפי סיומת מספר הטלפון שלו — Security Audit,
-    שלב 6.
+    ציבורי לגמרי (בלי טוקן, בלי guest_token) והוא רץ על חיבור המערכת למסד
+    (עוקף RLS, ראו ``_process_webhook_items``) — כך שחתימה היא שכבת ההגנה
+    **היחידה** נגד בקשות מזויפות, ולא דבר-מה שאפשר לדלג עליו "עד שיוגדר סוד".
+    התנהגות ישנה (החזרת True בלי סוד) אפשרה לזייף אישור/ביטול הגעה לכל
+    מוזמן במערכת — Security Audit, שלב 6.
+
+    כותרת פגומה (לא hex, אורך שגוי, תווים שאינם ASCII) → ``False``, לא חריגה:
+    ``hmac.compare_digest`` זורק על מחרוזת עם תווים שאינם ASCII, ועד
+    2026-10-13 כל אחד, בלי שום סוד, יכול היה לקבל כאן 500 (ושורת traceback בלוג).
     """
     app_secret = os.getenv("WHATSAPP_APP_SECRET", "").strip()
     if not app_secret:
         return False  # אין סוד מוגדר → דוחים. אין "מצב פיתוח" מיוחס כאן.
     if not signature_header or not signature_header.startswith("sha256="):
         return False
+    provided = signature_header[len("sha256="):].strip().lower()
+    if len(provided) != 64 or not all(c in "0123456789abcdef" for c in provided):
+        return False
     expected = hmac.new(
         app_secret.encode("utf-8"), body, hashlib.sha256
     ).hexdigest()
-    provided = signature_header.split("=", 1)[1]
-    return hmac.compare_digest(expected, provided)
+    return hmac.compare_digest(expected.encode("ascii"), provided.encode("ascii"))
+
+
+# גודל מקסימלי לגוף webhook. Meta מגבילה payload של webhook ל-3MB; כל דבר
+# גדול מזה לא מגיע ממנה — ונקרא *לפני* בדיקת החתימה, כך שבלי תקרה כל אחד
+# יכול היה לשלוח גוף ענק ולהעמיס על הזיכרון של השרת.
+MAX_WEBHOOK_BODY_BYTES = 3 * 1024 * 1024
+
+
+async def _read_capped_body(request: Request) -> Optional[bytes]:
+    """גוף הבקשה, או ``None`` אם הוא חורג מ-``MAX_WEBHOOK_BODY_BYTES``
+    (גם כשאין Content-Length או כשהוא משקר — נקרא בחלקים ונעצר בתקרה)."""
+    declared = request.headers.get("content-length")
+    if declared is not None:
+        try:
+            if int(declared) > MAX_WEBHOOK_BODY_BYTES:
+                return None
+        except ValueError:
+            return None
+    buf = bytearray()
+    async for chunk in request.stream():
+        buf.extend(chunk)
+        if len(buf) > MAX_WEBHOOK_BODY_BYTES:
+            return None
+    return bytes(buf)
 
 
 @router.post("/webhook")
@@ -402,7 +429,9 @@ async def receive_webhook(request: Request):
     - **בלי מידע אישי בלוג** — לא טלפון, לא שם, לא תוכן ההודעה.
     """
     # קוראים את הגוף הגולמי (bytes) לפני הפענוח — נדרש לאימות החתימה בדיוק.
-    raw_body = await request.body()
+    raw_body = await _read_capped_body(request)
+    if raw_body is None:
+        raise HTTPException(status_code=413, detail="גוף הבקשה גדול מדי")
     if not _verify_signature(raw_body, request.headers.get("X-Hub-Signature-256")):
         raise HTTPException(status_code=403, detail="חתימת webhook לא תקינה")
     import json
@@ -477,12 +506,15 @@ def _process_webhook_items(items: list[tuple[str, dict]]) -> bool:
 
 
 def _handle_inbound_message(db: Session, msg: dict) -> None:
-    """הודעה נכנסת מאורח.
+    """הודעה נכנסת מאורח. **היום שום הודעה נכנסת לא משנה RSVP** — אישור הגעה
+    רק דרך הקישור האישי (החלטת המייסד, 2026-10-13).
 
-    - לחיצה על כפתור אישור/ביטול הגעה (``rsvp_yes``/``rsvp_no``, מהנוסח הישן) —
-      לוגיקת ה-RSVP הקיימת (``whatsapp_inbound.record_rsvp_reply``).
-    - כל השאר (טקסט חופשי, תמונה, הקלטה…) — נשמר ביומן ההודעות כ"דורש טיפול",
-      **בלי** לשנות RSVP (``whatsapp_inbound.record_free_message``).
+    - כל הודעה (טקסט חופשי, תמונה, הקלטה, וגם לחיצה על כפתור אישור/ביטול
+      מהנוסח הישן) — נשמרת ביומן ההודעות כ"דורש טיפול"
+      (``whatsapp_inbound.record_free_message``).
+    - עדכון RSVP מלחיצת כפתור (``whatsapp_inbound.record_rsvp_reply`` — שיוך
+      חד-משמעי, חלון אישורי ההגעה, ``rsvp_response``) קיים ונבדק, אבל רץ רק
+      כש-``WHATSAPP_INBOUND_RSVP=1`` (``whatsapp_inbound.rsvp_replies_enabled``).
     """
     wamid = msg.get("id")
     if not isinstance(wamid, str) or not wamid:
@@ -496,7 +528,7 @@ def _handle_inbound_message(db: Session, msg: dict) -> None:
         or _as_dict(msg.get("button")).get("payload")
     )
     decision = messaging.rsvp_from_button(button_id if isinstance(button_id, str) else "")
-    if decision:
+    if decision and whatsapp_inbound.rsvp_replies_enabled():
         whatsapp_inbound.record_rsvp_reply(
             db, provider_message_id=wamid, from_phone=from_phone,
             context_id=context_id, decision=decision,
@@ -507,6 +539,11 @@ def _handle_inbound_message(db: Session, msg: dict) -> None:
     if not isinstance(text_body, str):
         # כפתור של Template (לא בשימוש היום) — הטקסט שעל הכפתור.
         text_body = _as_dict(msg.get("button")).get("text")
+    if decision:
+        # לחיצה על "מגיע/ה"/"לא מגיע/ה" כשעדכון RSVP מהודעות נכנסות כבוי: נשמרת
+        # כ"דורש טיפול" ולא משנה כלום — אישור הגעה רק דרך הקישור האישי.
+        what = "אישור הגעה" if decision == "confirmed" else "ביטול הגעה"
+        text_body = f"לחיצה על כפתור {what} ב-WhatsApp — לא עודכן (אישור הגעה דרך הקישור האישי)"
     whatsapp_inbound.record_free_message(
         db, provider_message_id=wamid, from_phone=from_phone, context_id=context_id,
         message_type=msg_type, text_body=text_body if isinstance(text_body, str) else None,
