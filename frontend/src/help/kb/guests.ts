@@ -40,7 +40,7 @@ export const GUEST_TOPICS: readonly HelpTopic[] = [
     when: MANAGER,
     answer: [
       'לוחצים "{ui:guests.addGuestButton}", ממלאים שם מלא ומספר נייד, ולוחצים שוב "{ui:guests.submitAdd}".',
-      'צד, קבוצה וכמה אנשים בהזמנה — אפשר להשלים גם אחר כך.',
+      'את הצד, הקבוצה וכמה אנשים בהזמנה אפשר להשלים גם אחר כך.',
     ],
     primary: { kind: 'tour', flow: 'add-guest' },
     related: ['guests.add-many', 'guests.phone-format'],
@@ -64,14 +64,14 @@ export const GUEST_TOPICS: readonly HelpTopic[] = [
         when: { fact: 'client.contactPicker', op: '==', value: true },
         answer: [
           'בכפתור "{ui:guests.importMenuButton}" יש שלוש דרכים: {ui:guests.pasteButton}, {ui:guests.uploadButton}, או {ui:guests.contactsButton}.',
-          'הכי מהיר: מעתיקים רשימה מ-WhatsApp או מאקסל ומדביקים — נזהה לבד שם, טלפון וכמות.',
+          'הכי מהיר: מעתיקים רשימה מ-WhatsApp או מאקסל ומדביקים, ואנחנו מזהים לבד שם, טלפון וכמות.',
         ],
       },
       {
         when: { fact: 'client.contactPicker', op: '==', value: false },
         answer: [
           'בכפתור "{ui:guests.importMenuButton}" יש שתי דרכים: {ui:guests.pasteButton}, או {ui:guests.uploadButton}.',
-          'הכי מהיר: מעתיקים רשימה מ-WhatsApp או מאקסל ומדביקים — נזהה לבד שם, טלפון וכמות.',
+          'הכי מהיר: מעתיקים רשימה מ-WhatsApp או מאקסל ומדביקים, ואנחנו מזהים לבד שם, טלפון וכמות.',
         ],
       },
     ],
@@ -246,7 +246,7 @@ export const GUEST_TOPICS: readonly HelpTopic[] = [
     scopes: [{ scope: 'guests', weight: 30 }],
     when: MANAGER,
     answer: [
-      'כן — "{ui:guests.iplanButton}": קובץ עם כל ה{guests}, אישורי ההגעה ומספרי השולחנות, מוכן להעלאה ל-iPlan.',
+      'כן, ב"{ui:guests.iplanButton}": קובץ עם כל ה{guests}, אישורי ההגעה ומספרי השולחנות, מוכן להעלאה ל-iPlan.',
       'זה הייצוא היחיד שיש כרגע.',
     ],
     sources: ['components/IPlanExportDialog.tsx', 'strings/he.ts', '../../backend/app/iplan_export.py'],
@@ -281,12 +281,12 @@ export const GUEST_TOPICS: readonly HelpTopic[] = [
     variants: [
       {
         when: { fact: 'client.contactPicker', op: '==', value: true },
-        answer: ['כן — "{ui:guests.importMenuButton}" ← "{ui:guests.contactsButton}". בוחרים, בודקים ומוסיפים.'],
+        answer: ['כן: "{ui:guests.importMenuButton}" ← "{ui:guests.contactsButton}". בוחרים, בודקים ומוסיפים.'],
       },
       {
         when: { fact: 'client.contactPicker', op: '==', value: false },
         answer: [
-          'בדפדפן הזה אי אפשר לבחור אנשי קשר — זה עובד כרגע רק ב-Chrome באנדרואיד.',
+          'בדפדפן הזה אי אפשר לבחור אנשי קשר. זה עובד כרגע רק ב-Chrome באנדרואיד.',
           'במקום זה: מעתיקים את השמות והמספרים ומשתמשים ב"{ui:guests.pasteButton}".',
         ],
         primary: { kind: 'tour', flow: 'paste-list', label: 'תראו לי איך מדביקים' },
@@ -409,7 +409,7 @@ export const GUEST_TREES: readonly DiagnosticTree[] = [
       count: { kind: 'check', test: { fact: 'error.last.message', op: 'includes', value: 'כמות אנשים' }, yes: 'out-count', no: 'out-unknown' },
       'out-offline': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['נראה שאין חיבור לאינטרנט כרגע. כשהחיבור יחזור — אפשר לשמור שוב.'],
+        text: ['נראה שאין חיבור לאינטרנט כרגע. כשהחיבור יחזור, אפשר לשמור שוב.'],
       },
       'out-phone': {
         kind: 'outcome', resolution: 'user_fix',
@@ -420,7 +420,7 @@ export const GUEST_TREES: readonly DiagnosticTree[] = [
       },
       'out-name': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['צריך למלא שם מלא — בלי שם אי אפשר לשמור.'],
+        text: ['צריך למלא שם מלא. בלי שם אי אפשר לשמור.'],
       },
       'out-count': {
         kind: 'outcome', resolution: 'user_fix',
@@ -430,7 +430,7 @@ export const GUEST_TREES: readonly DiagnosticTree[] = [
         kind: 'outcome', resolution: 'unknown', offerTeam: true,
         text: [
           'לא ראינו שגיאה בשמירה האחרונה.',
-          'אם מופיעה הודעה מתחת לטופס — היא אומרת בדיוק מה לתקן.',
+          'אם מופיעה הודעה מתחת לטופס, היא אומרת בדיוק מה לתקן.',
         ],
       },
       'out-unknown': {
@@ -469,13 +469,13 @@ export const GUEST_TREES: readonly DiagnosticTree[] = [
       unreadable: { kind: 'check', test: { fact: 'error.last.message', op: 'includes', value: 'לא הצלחנו לקרוא' }, yes: 'out-unreadable', no: 'out-unknown' },
       'out-offline': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['נראה שאין חיבור לאינטרנט כרגע. כשהחיבור יחזור — אפשר לנסות שוב.'],
+        text: ['נראה שאין חיבור לאינטרנט כרגע. כשהחיבור יחזור, אפשר לנסות שוב.'],
       },
       'out-columns': {
         kind: 'outcome', resolution: 'user_fix',
         text: [
           'לא מצאנו בשורה הראשונה עמודת שם ועמודת טלפון.',
-          'אפשר להוסיף כותרות "שם" ו"טלפון" בשורה הראשונה, או להדביק את הרשימה — שם לא צריך כותרות.',
+          'אפשר להוסיף כותרות "שם" ו"טלפון" בשורה הראשונה, או להדביק את הרשימה, ושם לא צריך כותרות.',
         ],
         action: { kind: 'tour', flow: 'paste-list', label: 'תראו לי איך מדביקים' },
       },

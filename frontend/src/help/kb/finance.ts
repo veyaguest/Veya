@@ -7,7 +7,7 @@
  *   (ניהול, עריכה, "סיימנו לספור") נפתח משם (FinancePage + strings.finance).
  * - העלות משוערת לפי אישורי ההגעה, עד שמזינים כמה הגיעו בפועל
  *   (strings.finance.estimatedCostNote).
- * - הכרטיס "כמה אורחים הגיעו בפועל?" מופיע **מיום האירוע** (או כשאין תאריך) —
+ * - הכרטיס "כמה אנשים הגיעו בפועל?" מופיע **מיום האירוע** (או כשאין תאריך) —
  *   finance_service.counting_open: days_until_event <= 0.
  * - מתנות באשראי: בנויות אבל לא פעילות; פריט הניווט מופיע רק לאירוע זכאי
  *   (App.tsx, gift_eligibility). העזרה לא מבטיחה דבר מעבר לזה (gifts-copy §7).
@@ -25,7 +25,7 @@ export const FINANCE_TOPICS: readonly HelpTopic[] = [
     aliases: ['מאזן', 'כספים', 'תקציב', 'הוצאות'],
     scopes: [{ scope: 'finance', weight: 60 }],
     answer: [
-      'בראש המסך — כמה האירוע עולה, ואחרי ספירת המתנות גם כמה נשאר לכם.',
+      'בראש המסך: כמה האירוע עולה, ואחרי ספירת המתנות גם כמה נשאר לכם.',
       'מתחת: {ui:finance.overview.todoTitle}, ההוצאות והתשלומים, ופירוט מלא. מיום האירוע מנהלים משם את המתנות, דרך {ui:finance.giftsView.manage}.',
     ],
     sources: SOURCES,
@@ -41,7 +41,7 @@ export const FINANCE_TOPICS: readonly HelpTopic[] = [
       { scope: 'finance', weight: 40 },
     ],
     answer: [
-      'לפי מי שאישרו הגעה עכשיו — ולכן עד האירוע היא משוערת.',
+      'לפי מי שאישרו הגעה עכשיו, ולכן עד האירוע היא משוערת.',
       'אחרי האירוע, כשמזינים כמה הגיעו בפועל, העלות מתעדכנת לסופית.',
     ],
     sources: SOURCES,

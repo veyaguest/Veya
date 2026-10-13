@@ -65,7 +65,7 @@ export const RSVP_SCREEN_FAQ: readonly ScreenFaqItem[] = [
     a: [
       'כן.',
       'בנוסף להודעות ב-WhatsApp, מי שעוד לא ענו מקבלים שיחת טלפון, עד 3 פעמים במהלך 14 ימי אישורי ההגעה.',
-      'כלומר, VEYA לא מסתמכת רק על הודעות — ה{guests} שלא השלימו את האישור מקבלים גם טיפול טלפוני כחלק מהתהליך.',
+      'השיחות הן חלק מהתהליך, ולא צריך להפעיל אותן בנפרד.',
     ],
     sources: [...SERVER, '../../backend/app/call_center.py'],
     verifiedAt: VERIFIED_FAQ,

@@ -105,7 +105,7 @@ export const SEATING_TOPICS: readonly HelpTopic[] = [
     aliases: ['לא נספר', 'מקום פנוי', 'ספירה בשולחן', 'ביטל הגעה'],
     scopes: [{ scope: 'hall', weight: 45 }],
     answer: [
-      'רק מי שאישרו הגעה תופסים מקום. מי שעוד לא ענו, לא החליטו או לא מגיעים — נשארים על השולחן, אבל נספרים כ-0.',
+      'רק מי שאישרו הגעה תופסים מקום. מי שעוד לא ענו, לא החליטו או לא מגיעים נשארים על השולחן, אבל נספרים כ-0.',
       'כשמגיע אישור הגעה, המקום נספר שוב מעצמו.',
     ],
     sources: SERVER,
@@ -139,7 +139,7 @@ export const SEATING_FLOWS: readonly GuidedFlow[] = [
         advanceOn: { kind: 'api', method: 'POST', path: '/seating/generate' },
         // כמו בחלון האישור (strings.hall.confirmOneClickBody): מי שכבר משובץ עשוי
         // לזוז, ואפשר לחזור. לא "אי אפשר לבטל" — כי אפשר.
-        warning: { text: 'אם כבר יש סידור — {guests} שכבר משובצים עשויים לזוז לשולחנות אחרים. אחרי ההרצה אפשר להחזיר את הסידור הקודם.' },
+        warning: { text: 'אם כבר יש סידור, {guests} שכבר משובצים עשויים לזוז לשולחנות אחרים. אחרי ההרצה אפשר להחזיר את הסידור הקודם.' },
       },
     ],
     success: { kind: 'api', method: 'POST', path: '/seating/generate' },
@@ -167,7 +167,7 @@ export const SEATING_TREES: readonly DiagnosticTree[] = [
       reserve: { kind: 'check', test: { fact: 'error.last.message', op: 'includes', value: 'הרזרבה גדולה מדי' }, yes: 'out-reserve', no: 'out-unknown' },
       'out-offline': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['נראה שאין חיבור לאינטרנט כרגע. כשהחיבור יחזור — אפשר לנסות שוב.'],
+        text: ['נראה שאין חיבור לאינטרנט כרגע. כשהחיבור יחזור, אפשר לנסות שוב.'],
       },
       'out-no-guests': {
         kind: 'outcome', resolution: 'user_fix',

@@ -30,8 +30,8 @@ export const EVENT_TOPICS: readonly HelpTopic[] = [
     when: MANAGER,
     answer: [
       'בתמונת המצב: "{ui:dashboard.editDetailsButton}".',
-      'שם המקום, הכתובת ותמונת ההזמנה — אפשר לשנות תמיד.',
-      'סוג האירוע, השמות, התאריך והשעה נעולים אחרי שנקבעו, כדי שאישורי ההגעה והתזכורות יישארו מסונכרנים.',
+      'את שם המקום, הכתובת ותמונת ההזמנה אפשר לשנות תמיד.',
+      'סוג האירוע, השמות, התאריך והשעה נעולים אחרי שנקבעו, כדי שאישורי ההגעה והתזכורות יישארו מתואמים איתם.',
     ],
     related: ['event.change-date'],
     sources: [...SOURCES, ...SERVER],
@@ -66,7 +66,7 @@ export const EVENT_TOPICS: readonly HelpTopic[] = [
       {
         when: { fact: 'event.can_request_postpone', op: '==', value: true },
         answer: [
-          'התאריך נעול אחרי שנקבע, כדי שאישורי ההגעה והתזכורות יישארו מסונכרנים.',
+          'התאריך נעול אחרי שנקבע, כדי שאישורי ההגעה והתזכורות יישארו מתואמים איתם.',
           'אם האירוע זז: ב"{ui:dashboard.editDetailsButton}" ← "{ui:postpone.entryCta}". אחרי אישור קצר של צוות VEYA אפשר לעדכן תאריך, שעה ומקום.',
         ],
       },
@@ -96,7 +96,7 @@ export const EVENT_TOPICS: readonly HelpTopic[] = [
         when: { all: [{ fact: 'event.has_date', op: '==', value: true }, { fact: 'event.commit_chosen', op: '==', value: false }] },
         answer: [
           'היום שבו מוסרים לאולם מספר סופי. ביום הזה אישורי ההגעה נסגרים, והלוח שלהם נבנה לאחור ממנו.',
-          'עוד לא בחרתם — ובלי הבחירה לא יוצאות בקשות אישור הגעה. בוחרים פעם אחת, ואחרי השמירה אי אפשר לשנות.',
+          'עוד לא בחרתם, ובלי הבחירה לא יוצאות בקשות אישור הגעה. בוחרים פעם אחת, ואחרי השמירה אי אפשר לשנות.',
         ],
         primary: { kind: 'tour', flow: 'choose-commit-date' },
       },
@@ -117,7 +117,7 @@ export const EVENT_TOPICS: readonly HelpTopic[] = [
     ],
     when: { all: [MANAGER, { fact: 'event.commit_chosen', op: '==', value: true }] },
     answer: [
-      'לא — הבחירה נעולה, כי כל לוח אישורי ההגעה נבנה סביבה.',
+      'לא. הבחירה נעולה, כי כל לוח אישורי ההגעה נבנה סביבה.',
       'אם האירוע נדחה, בקשה לשינוי מועד פותחת גם אותה מחדש.',
     ],
     sources: [...SOURCES, ...SERVER],
@@ -132,7 +132,7 @@ export const EVENT_TOPICS: readonly HelpTopic[] = [
       { scope: 'dashboard.editEvent', weight: 40 },
       { scope: 'rsvp', weight: 30 },
     ],
-    answer: ['היום שנבחר נופל בשישי או בשבת — ובימים האלה לא פונים ל{guests}, ולכן הרשימה נסגרת בחמישי שלפניו.'],
+    answer: ['היום שנבחר נופל בשישי או בשבת, ובימים האלה לא פונים ל{guests}, ולכן הרשימה נסגרת בחמישי שלפניו.'],
     sources: ['strings/he.ts', '../../backend/app/rsvp_timeline.py'],
     verifiedAt: VERIFIED,
   },
@@ -160,7 +160,7 @@ export const EVENT_TOPICS: readonly HelpTopic[] = [
         // לפני הזמנה ראשונה האשף מציג רק את כרטיס ההזמנה (CommunicationTab only=['invitation']).
         when: { fact: 'invites.sent', op: '==', value: 0 },
         answer: [
-          'אחרי ששולחים את ההזמנה, במסך "ניהול הודעות" מופיעים כל כרטיסי ההודעות — ובכל אחד "{ui:messages.roundTime.label}", בין 10:00 ל-19:00.',
+          'אחרי ששולחים את ההזמנה, במסך "ניהול הודעות" מופיעים כל כרטיסי ההודעות, ובכל אחד "{ui:messages.roundTime.label}", בין 10:00 ל-19:00.',
           'ההזמנה עצמה יוצאת ברגע שלוחצים "שליחת הזמנות".',
         ],
       },
@@ -193,7 +193,7 @@ export const EVENT_FLOWS: readonly GuidedFlow[] = [
       },
     ],
     success: { kind: 'api', method: 'PATCH', path: '/event' },
-    doneText: 'נשמר. עכשיו יש לוח אישורי הגעה — אפשר לראות אותו במסך "אישורי הגעה".',
+    doneText: 'נשמר. עכשיו יש לוח אישורי הגעה, ואפשר לראות אותו במסך "אישורי הגעה".',
     onError: [{ match: { method: 'PATCH', path: '/event' }, tree: 'event-save-failed' }],
     sources: [...SOURCES, ...SERVER],
     verifiedAt: VERIFIED,
@@ -222,7 +222,7 @@ export const EVENT_TREES: readonly DiagnosticTree[] = [
       'send-time': { kind: 'check', test: { fact: 'error.last.message', op: 'includes', value: 'שעת השליחה חייבת' }, yes: 'out-send-time', no: 'out-unknown' },
       'out-offline': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['נראה שאין חיבור לאינטרנט כרגע. כשהחיבור יחזור — אפשר לשמור שוב.'],
+        text: ['נראה שאין חיבור לאינטרנט כרגע. כשהחיבור יחזור, אפשר לשמור שוב.'],
       },
       'out-pending': {
         kind: 'outcome', resolution: 'explained',
@@ -232,12 +232,12 @@ export const EVENT_TREES: readonly DiagnosticTree[] = [
         kind: 'outcome', resolution: 'explained',
         text: [
           'סוג האירוע, השמות, התאריך והשעה נעולים אחרי שנקבעו.',
-          'אם האירוע זז — "{ui:postpone.entryCta}" בתוך "{ui:dashboard.editDetailsButton}".',
+          'אם האירוע זז: "{ui:postpone.entryCta}" בתוך "{ui:dashboard.editDetailsButton}".',
         ],
       },
       'out-commit-set': {
         kind: 'outcome', resolution: 'explained',
-        text: ['מועד סגירת הרשימה כבר נקבע, וכל לוח אישורי ההגעה נבנה סביבו. אם האירוע נדחה — בקשה לשינוי מועד פותחת אותו מחדש.'],
+        text: ['מועד סגירת הרשימה כבר נקבע, וכל לוח אישורי ההגעה נבנה סביבו. אם האירוע נדחה, בקשה לשינוי מועד פותחת אותו מחדש.'],
       },
       'out-commit-past': {
         kind: 'outcome', resolution: 'user_fix',
@@ -251,7 +251,7 @@ export const EVENT_TREES: readonly DiagnosticTree[] = [
         kind: 'outcome', resolution: 'unknown', offerTeam: true,
         text: [
           'לא ראינו שגיאה בשמירה האחרונה.',
-          'סוג האירוע, השמות, התאריך והשעה נעולים אחרי שנקבעו; שם המקום, הכתובת ותמונת ההזמנה פתוחים תמיד.',
+          'סוג האירוע, השמות, התאריך והשעה נעולים אחרי שנקבעו. שם המקום, הכתובת ותמונת ההזמנה פתוחים תמיד.',
         ],
       },
       'out-unknown': {

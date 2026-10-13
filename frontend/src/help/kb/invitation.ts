@@ -54,7 +54,7 @@ export const INVITATION_TOPICS: readonly HelpTopic[] = [
       },
       {
         when: { fact: 'invites.sent', op: '>', value: 0 },
-        answer: ['במסך "ניהול הודעות" לוחצים "שליחת הזמנות" — היא יוצאת רק למי שעוד לא קיבל.'],
+        answer: ['במסך "ניהול הודעות" לוחצים "שליחת הזמנות", והיא יוצאת רק למי שעוד לא קיבל.'],
       },
     ],
     primary: { kind: 'tour', flow: 'send-invitations' },
@@ -95,8 +95,8 @@ export const INVITATION_TOPICS: readonly HelpTopic[] = [
     when: MANAGER,
     sendsMessages: true,
     answer: [
-      'לא — כל {guest} מקבל הזמנה פעם אחת, כדי שאף אחד לא יקבל אותה פעמיים בטעות. בחלון השליחה הם מסומנים "כבר קיבלו הזמנה".',
-      'מי שהשליחה אליו לא הצליחה — כן נכלל שוב ב"שליחת הזמנות".',
+      'לא. כל {guest} מקבל הזמנה פעם אחת, כדי שאף אחד לא יקבל אותה פעמיים בטעות. בחלון השליחה הם מסומנים "כבר קיבלו הזמנה".',
+      'מי שהשליחה אליו לא הצליחה נכלל שוב ב"שליחת הזמנות".',
     ],
     sources: [...SOURCES, ...SERVER],
     verifiedAt: VERIFIED,
@@ -178,7 +178,7 @@ export const INVITATION_TOPICS: readonly HelpTopic[] = [
     when: MANAGER,
     sendsMessages: true,
     answer: [
-      'שעת האירוע, שם המקום או הכתובת עוד לא מולאו — וההזמנה תצא בלעדיהם.',
+      'שעת האירוע, שם המקום או הכתובת עוד לא מולאו, וההזמנה תצא בלעדיהם.',
       'משלימים ב"{ui:dashboard.editDetailsButton}" בתמונת המצב.',
     ],
     primary: { kind: 'navigate', page: 'dashboard', label: 'לתמונת המצב' },
@@ -232,7 +232,7 @@ export const INVITATION_FLOWS: readonly GuidedFlow[] = [
         text: 'בדקו את ההודעה ואת הנמענים, ולחצו כאן כדי לשלוח',
         advanceOn: { kind: 'api', method: 'POST', path: '/automation/track/activate' },
         // כמו בחלון השליחה עצמו (MessagesPage — "כל מוזמן מקבל הזמנה פעם אחת בלבד").
-        warning: { text: 'כל {guest} מקבל הזמנה פעם אחת בלבד — אחרי השליחה אי אפשר לשלוח לו אותה שוב.' },
+        warning: { text: 'כל {guest} מקבל הזמנה פעם אחת בלבד. אחרי השליחה אי אפשר לשלוח לו אותה שוב.' },
       },
     ],
     success: { kind: 'api', method: 'POST', path: '/automation/track/activate' },
@@ -265,7 +265,7 @@ export const INVITATION_TREES: readonly DiagnosticTree[] = [
       'bad-left': { kind: 'check', test: { fact: 'guests.bad_phone', op: '>', value: 0 }, yes: 'out-only-bad', no: 'out-all-sent' },
       'out-offline': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['נראה שאין חיבור לאינטרנט כרגע. כשהחיבור יחזור — אפשר לנסות שוב.'],
+        text: ['נראה שאין חיבור לאינטרנט כרגע. כשהחיבור יחזור, אפשר לנסות שוב.'],
       },
       'out-stopped': {
         kind: 'outcome', resolution: 'veya_side', offerTeam: true,
@@ -280,12 +280,12 @@ export const INVITATION_TREES: readonly DiagnosticTree[] = [
         kind: 'outcome', resolution: 'user_fix',
         text: [
           'להזמנה עוד אין נוסח. בוחרים נוסח בכרטיס ההזמנה, ואז שולחים.',
-          'אם חלון השליחה אמר שחסר מספר טלפון — הסיבה האמיתית היא הנוסח החסר.',
+          'אם חלון השליחה אמר שחסר מספר טלפון, הסיבה האמיתית היא הנוסח החסר.',
         ],
       },
       'out-only-bad': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['כל מי שעוד לא קיבל הזמנה — בלי מספר טלפון תקין. אחרי שהמספר יתוקן, אפשר לשלוח אליו.'],
+        text: ['לכל מי שעוד לא קיבל הזמנה אין מספר טלפון תקין. אחרי שהמספר יתוקן, אפשר לשלוח אליו.'],
         action: { kind: 'tour', flow: 'fix-phone', label: 'תראו לי איך מתקנים' },
       },
       'out-all-sent': {
@@ -328,17 +328,17 @@ export const INVITATION_TREES: readonly DiagnosticTree[] = [
       },
       'out-bad-phone': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['ל{guest} הזה אין מספר טלפון תקין, ולכן ההזמנה לא נשלחה. אחרי שהמספר יתוקן — שולחים.'],
+        text: ['ל{guest} הזה אין מספר טלפון תקין, ולכן ההזמנה לא נשלחה. אחרי שהמספר יתוקן, שולחים אותה.'],
         action: { kind: 'tour', flow: 'fix-phone', label: 'תראו לי איך מתקנים' },
       },
       'out-not-sent': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['ההזמנה עוד לא נשלחה ל{guest} הזה. "שליחת הזמנות" תשלח אותה — רק למי שעוד לא קיבל.'],
+        text: ['ההזמנה עוד לא נשלחה ל{guest} הזה. "שליחת הזמנות" תשלח אותה, רק למי שעוד לא קיבל.'],
         action: { kind: 'tour', flow: 'send-invitations' },
       },
       'out-failed': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['השליחה ל{guest} הזה לא הצליחה. "שליחת הזמנות" תנסה שוב — מי שהשליחה אליו לא הצליחה נכלל בה.'],
+        text: ['השליחה ל{guest} הזה לא הצליחה. "שליחת הזמנות" תנסה שוב: מי שהשליחה אליו לא הצליחה נכלל בה.'],
         action: { kind: 'tour', flow: 'send-invitations' },
       },
       'out-blocked': {
