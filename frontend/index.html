@@ -1396,6 +1396,9 @@
         -webkit-mask-image: linear-gradient(to bottom, #000 52%, transparent 88%);
         mask-image: linear-gradient(to bottom, #000 52%, transparent 88%);
       }
+      /* המיקום שלה נגזר מגובה המסלול. עד שהמסלול מגיע מהשרת (או אם הוא לא
+         הגיע) הוא ריק, והיא הייתה עולה על טקסט הפתיחה — לכן היא מחכה לו. */
+      .dlt:empty ~ .ppl-deadline { visibility: hidden; }
       @media (min-width: 1340px) {
         .ppl-deadline { width: 182px; left: -180px; top: 43px; }
       }
