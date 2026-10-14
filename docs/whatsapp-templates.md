@@ -118,7 +118,7 @@ WhatsApp Manager → **Message templates** → **Create template**:
 המועד החדש: 📅 {{4}}
 כל הפרטים המעודכנים בקישור האישי שלכם.
 ```
-נשלחת **רק** כשנקבע תאריך חדש (`postponement_service.event_stage` → `new_date`).
+נשלחת **רק** כשנקבע תאריך חדש (`postponement_service.event_stage` → `new_date_set`).
 אחרת — תבנית 10.
 
 ### 10. `veya_postponement_no_date` — שינוי מועד, לפני שנקבע תאריך (`postponement`)
