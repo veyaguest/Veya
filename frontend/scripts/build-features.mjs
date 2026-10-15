@@ -118,7 +118,6 @@ export function featureRsvp() {
       <section class="flow tone-alt">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">מה קורה אחרי שמוזמן עונה</span>
             <h2 class="section-title">התשובה לא נשארת בעמודה שלה</h2>
             <p class="section-sub">
               אף מספר לא מוקלד פעמיים. כל שלב לוקח את התשובה מהשלב שלפניו.
@@ -138,7 +137,6 @@ ${flowSteps([
       <section class="commit tone-light">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">סטטוסים</span>
             <h2 class="section-title">ארבעה סטטוסים, ומי מהם נספר</h2>
             <p class="section-sub">
               נשמע טכני, אבל זה מה שקובע אם המספר שתמסרו לאולם נכון.
@@ -172,7 +170,6 @@ ${flowSteps([
       <section class="features tone-alt">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">לוח הזמנים</span>
             <h2 class="section-title">הכול נבנה אחורה מיום סגירת הרשימה</h2>
             <p class="section-sub">
               לא "מתישהו חודש לפני", אלא לאחור מהיום שבו האולם צריך מכם מספר סופי:
@@ -221,7 +218,6 @@ ${shot('/product/journey-messages.jpg', 'מסך ההודעות ב-VEYA: כל ש�
       <section class="commit tone-light">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">החיבור לכסף</span>
             <h2 class="section-title">כי מספר המגיעים הוא גם מספר בשקלים</h2>
           </div>
 ${flowSteps([
@@ -336,7 +332,6 @@ export function featureCalls() {
       <section class="flow tone-alt">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">איפה זה נמצא בתהליך</span>
             <h2 class="section-title">הטלפון הוא חלק מהמסלול, לא תוספת</h2>
             <p class="section-sub">
               הוא שלב בתוך אותו תהליך אישורי הגעה, על אותה רשימת מוזמנים.
@@ -356,7 +351,6 @@ ${flowSteps([
       <section class="commit tone-light">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">שלושה סבבים</span>
             <h2 class="section-title">מתי מתקשרים</h2>
             <p class="section-sub">
               הסבבים פרוסים בין התזכורות, והאחרון נופל בדיוק ביום סגירת
@@ -385,7 +379,6 @@ ${shotTall('/product/rsvp-route.jpg', 'מסלול אישורי ההגעה ב־VE
       <section class="features tone-alt">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">תור העבודה</span>
             <h2 class="section-title">איך נראית שורה בתור</h2>
             <p class="section-sub">
               רק מי שעדיין פתוח מופיע בתור. מי שאישר, או אמר שלא מגיע, יורד ממנו מעצמו.
@@ -533,7 +526,6 @@ export function featureGuests() {
       <section class="features tone-alt">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">מה יש בשורה</span>
             <h2 class="section-title">מוזמן הוא לא רק שם וטלפון</h2>
             <p class="section-sub">
               כל שדה כאן משמש בהמשך: באישורי ההגעה, בסידור ההושבה או בחישוב העלות.
@@ -566,7 +558,6 @@ ${shot('/product/journey-guests.jpg', 'טבלת המוזמנים ב-VEYA: שם, 
       <section class="commit tone-light">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">קבוצות</span>
             <h2 class="section-title">קבוצות שמתאימות לסוג האירוע</h2>
             <p class="section-sub">
               הקבוצות אינן תווית בלבד. הן מזינות את הסינון, את הפילוח ואת סידור ההושבה.
@@ -584,7 +575,6 @@ ${shot('/product/journey-guests.jpg', 'טבלת המוזמנים ב-VEYA: שם, 
       <section class="rsvp-band tone-alt">
         <div class="wrap">
           <div class="rsvp-inner">
-            <span class="kicker">מי באמת נספר</span>
             <h2 class="section-title">בין הרשימה לבין המספר יש הפרש</h2>
             <p>
               זה ההפרש שקובע כמה שולחנות לפתוח וכמה מנות למסור לאולם:
@@ -736,7 +726,6 @@ export function featureSeating() {
       <section class="features tone-alt">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">מפת האולם</span>
             <h2 class="section-title">הסקיצה שקיבלתם הופכת למפה שאפשר לעבוד עליה</h2>
             <p class="section-sub">
               מעלים את הסקיצה של האולם, מסדרים עליה את השולחנות ומסמנים את האזורים:
@@ -758,7 +747,6 @@ ${shot('/product/journey-seating.jpg', 'עורך מפת האולם ב-VEYA: שו
       <section class="commit tone-light">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">אילוצים</span>
             <h2 class="section-title">"לא ליד עומר", ומה VEYA עושה עם זה</h2>
             <p class="section-sub">
               כותבים כמו שאומרים, בהערת ההושבה של המוזמן. אלה הבקשות ש־VEYA
@@ -800,7 +788,6 @@ ${shot('/product/journey-seating.jpg', 'עורך מפת האולם ב-VEYA: שו
       <section class="rsvp-band tone-alt">
         <div class="wrap">
           <div class="rsvp-inner">
-            <span class="kicker">מי מושב</span>
             <h2 class="section-title">רק מי שמסומן "מגיע" נספר לשולחנות</h2>
             <p>
               זה נשמע מובן מאליו, וזה המקום שבו סידורי הושבה נשברים: אם סופרים גם את
@@ -821,7 +808,6 @@ ${shot('/product/journey-seating.jpg', 'עורך מפת האולם ב-VEYA: שו
       <section class="features tone-light">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">אחרי ההרצה</span>
             <h2 class="section-title">הסידור נבדק אחרי שנוצר, לא רק לפני</h2>
           </div>
           <div class="supporting-grid">

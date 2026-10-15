@@ -722,7 +722,6 @@ ${faqHtml(faq)}
       <section class="band-wrap">
         <div class="wrap">
           <div class="band">
-            <span class="kicker">בתוך VEYA</span>
             <h2>הלוח הזה הופך לתוכנית עבודה</h2>
             <p class="band-more">
               ב־VEYA התאריכים האלה מנהלים את התהליך בפועל: מי מקבל מה ומתי, מי עדיין לא
@@ -846,7 +845,6 @@ function featureFinance() {
       <section class="why">
         <div class="wrap">
           <div class="why-inner">
-            <span class="kicker">השרשרת</span>
             <h2 class="section-title">מוזמנים ← מגיעים ← הוצאה ← מתנות ← שורה תחתונה</h2>
             <p class="why-list">
               רוב הכלים עוצרים בשלב השני. אחרי שהמוזמן ענה, המספר שלו הופך לעמודה בטבלה
@@ -861,7 +859,6 @@ function featureFinance() {
       <section class="features tone-alt">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">איך זה מחושב</span>
             <h2 class="section-title">ארבע דרכים לחשב הוצאה, כי לא הכול נמכר אותו דבר</h2>
             <p class="section-sub">
               לכל שורת הוצאה בוחרים איך היא מחושבת. מכאן נגזר הכול: הסיכום, העלות
@@ -898,7 +895,6 @@ function featureFinance() {
       <section class="after tone-alt">
         <div class="wrap">
           <div class="section-head">
-            <span class="kicker">אחרי האירוע</span>
             <h2 class="section-title">ואז מגיעה המעטפה הראשונה</h2>
             <p class="section-sub">
               ספירת המתנות נפתחת מיום האירוע. כל מעטפה מקבלת מספר רץ, אפשר לשייך אותה
@@ -938,7 +934,6 @@ function featureFinance() {
       <section class="why">
         <div class="wrap">
           <div class="why-inner">
-            <span class="kicker">מה שלא נמצא כאן</span>
             <h2 class="section-title">כדי שיהיה ברור</h2>
             <p>
               אין ניהול ספקים, אין חוזים ואין חשבוניות. לכל שורה יש שדה חופשי לזכור מול

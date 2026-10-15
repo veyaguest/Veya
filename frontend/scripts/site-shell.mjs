@@ -68,7 +68,6 @@ export function faqHtml(faq, { heading = 'שאלות נפוצות' } = {}) {
   return `<section class="faq-wrap" aria-labelledby="faq-title">
       <div class="wrap">
         <div class="section-head">
-          <span class="kicker">${esc(heading)}</span>
           <h2 id="faq-title" class="section-title">מה שכדאי לדעת</h2>
         </div>
         <div class="faq">
@@ -141,7 +140,8 @@ export function page(o) {
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;500;600&family=Frank+Ruhl+Libre:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script>document.documentElement.classList.add('js')</script>
     <link rel="stylesheet" href="/veya-site.css" />
     <link rel="stylesheet" href="/veya-a11y.css" />
     <script src="/veya-a11y.js"></script>
@@ -227,8 +227,8 @@ ${o.body}
           </div>
         </div>
       </div>
-      <div class="wrap" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(201,162,39,0.14); font-size: 13px; color: #9b907c;">
-        © VEYA — מערכת לניהול אירועים
+      <div class="wrap">
+        <p class="footer-legal">© VEYA, מערכת לניהול אירועים</p>
       </div>
     </footer>
     <script>
@@ -250,15 +250,17 @@ ${o.scripts || ''}
 `
 }
 
-/** כותרת עמוד פנימי, עם פירורי לחם. */
-export function pageHero({ eyebrow, h1, lead, trail, cta }) {
+/** כותרת עמוד פנימי, עם פירורי לחם.
+ *  `eyebrow` נשאר בחתימה לתאימות אבל לא מוצג: הכותרת נושאת את עצמה.
+ *  `media` — HTML של פיסת מוצר אמיתית (צילום) שיושבת בעמודה השמאלית. */
+export function pageHero({ h1, lead, trail, cta, media }) {
   return `      <section class="page-hero">
         <div class="wrap">
           ${crumbsHtml(trail)}
-          ${eyebrow ? `<span class="eyebrow">${esc(eyebrow)}</span>` : ''}
           <h1>${h1}</h1>
           ${lead ? `<p class="lead">${lead}</p>` : ''}
-          ${cta ? `<div class="cta-row" style="margin-top:26px">${cta}</div>` : ''}
+          ${cta ? `<div class="cta-row">${cta}</div>` : ''}
+          ${media || ''}
         </div>
       </section>`
 }

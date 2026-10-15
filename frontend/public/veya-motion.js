@@ -194,10 +194,31 @@
     for (var j = 0; j < scenes.length; j++) io.observe(scenes[j])
   }
 
+  // ══ 4. הקו הכפול של סיכום ═══════════════════════════════════════════
+  // נמתח פעם אחת כשהשורה התחתונה נכנסת למסך. בתנועה מופחתת או בלי
+  // IntersectionObserver — מסומן מיד, וה-CSS מציג אותו סטטי.
+  function initDoubleRules() {
+    var els = document.querySelectorAll('.why-punch, .flow-punch, .dbl')
+    if (!els.length) return
+    if (reduced || !supported) {
+      for (var i = 0; i < els.length; i++) els[i].classList.add('is-drawn')
+      return
+    }
+    var io = new IntersectionObserver(function (entries) {
+      for (var k = 0; k < entries.length; k++) {
+        if (!entries[k].isIntersecting) continue
+        entries[k].target.classList.add('is-drawn')
+        io.unobserve(entries[k].target)
+      }
+    }, { rootMargin: '0px 0px -12% 0px' })
+    for (var j = 0; j < els.length; j++) io.observe(els[j])
+  }
+
   function boot() {
     initReveal()
     initCounters()
     initScenes()
+    initDoubleRules()
   }
 
   if (document.readyState === 'loading') {
