@@ -1346,3 +1346,29 @@ a.evt-card, .guide-list a { border-radius: 0; box-shadow: none; }
 @media (min-width: 980px) {
   section:has(> .wrap > .section-head) .section-head .section-title { font-size: clamp(1.75rem, 2.7vw, 2.625rem); }
 }
+
+/* ── פריסת מאמר: טקסט ברוחב קריאה, ולצידו עמודת ניווט ── */
+.article-layout { display: grid; grid-template-columns: minmax(0, 70ch) minmax(0, 1fr); column-gap: var(--col-gap); align-items: start; }
+.article-layout > .article { max-width: none; margin: 0; min-width: 0; }
+.article h2[id] { scroll-margin-top: 96px; }
+.article-aside { position: sticky; top: 104px; display: grid; gap: 44px; padding-top: 8px; max-width: 300px; }
+.aside-h { font-weight: 600; font-size: 1rem; color: var(--charcoal); margin: 0 0 12px; }
+.aside-block ol, .aside-block ul { list-style: none; margin: 0; padding: 0; border-inline-start: 1px solid var(--line); }
+.aside-block a {
+  display: block; padding: 7px 18px; margin-inline-start: -1px;
+  border-inline-start: 2px solid transparent;
+  font-size: var(--t-small); line-height: 1.45; color: var(--muted); text-decoration: none;
+  transition: color 160ms var(--ease-out), border-color 160ms var(--ease-out);
+}
+.aside-block a:hover { color: var(--charcoal); }
+.aside-block a[aria-current="page"] { color: var(--charcoal); font-weight: 600; border-inline-start-color: var(--gold); }
+@media (max-width: 979px) {
+  .article-layout { grid-template-columns: minmax(0, 1fr); }
+  .article-aside { position: static; max-width: none; margin-top: 64px; padding-top: 28px; border-top: 2px solid var(--charcoal); }
+  .aside-toc { display: none; }
+  .aside-types ul { border: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .aside-types a { margin: 0; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; font-size: var(--t-small); }
+  .aside-types a[aria-current="page"] { border-color: var(--gold); background: rgba(201, 162, 39, 0.1); }
+}
+/* כותרת שאחריה בא מאמר: המאמר מתחיל מיד, לא אחרי מסך ריק */
+.page-hero:has(+ .article-wrap) { padding-bottom: clamp(28px, 3.5vw, 52px); }

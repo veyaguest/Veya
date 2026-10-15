@@ -110,8 +110,8 @@ const CSS = `    <style>
       .msg-nav { display: grid; gap: 14px; margin-bottom: 26px; }
       .msg-axis { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
       .msg-axis > span.lbl {
-        font-size: var(--fs-2xs); letter-spacing: .14em; font-weight: 700;
-        color: var(--muted); margin-inline-end: 4px;
+        font-size: var(--t-small, .9375rem); font-weight: 600;
+        color: var(--charcoal); margin-inline-end: 6px; min-width: 5.5em;
       }
       button.msg-chip {
         cursor: pointer; font: inherit; font-size: var(--fs-xs); font-weight: 600;
@@ -128,7 +128,7 @@ const CSS = `    <style>
       button.msg-chip:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 2px; }
 
       /* פריסה: מוקאפ + פאנל */
-      .msg-stage { display: grid; grid-template-columns: minmax(0,300px) minmax(0,1fr); gap: 32px; align-items: start; }
+      .msg-stage { display: grid; grid-template-columns: minmax(0,300px) minmax(0,1fr); gap: var(--col-gap, 48px); align-items: start; }
       @media (max-width: 820px) { .msg-stage { grid-template-columns: 1fr; justify-items: center; } }
 
       /* ── מוקאפ הטלפון — זהה לזה שבמערכת ── */
@@ -165,7 +165,7 @@ const CSS = `    <style>
       /* פאנל הצד */
       .msg-panel { min-width: 0; }
       .msg-tone { font-family: var(--font-display); font-size: var(--fd-md); color: var(--charcoal); margin: 0 0 6px; }
-      .msg-sub { font-size: var(--fs-xs); color: var(--muted); margin: 0 0 20px; }
+      .msg-sub { font-size: var(--t-small, .9375rem); color: var(--muted); margin: 0 0 24px; }
       .msg-pager { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
       button.msg-arrow {
         cursor: pointer; width: 44px; height: 44px; border-radius: var(--radius-pill);
@@ -184,11 +184,12 @@ const CSS = `    <style>
 
       /* רשימת המקור — נראית כשאין JavaScript, ומוסתרת ברגע שהמוקאפ עולה.
          היא לא display:none מראש: זה מה שהופך אותה לזמינה לזחלנים. */
-      .msg-source { display: grid; gap: 20px; margin-top: 10px; }
-      .msg-item { border: 1px solid var(--line); border-radius: var(--radius-lg);
-                  background: var(--cream); padding: 18px 20px; }
-      .msg-item-h { font-size: var(--fs-sm); color: var(--gold-deep); margin: 0 0 10px;
-                    font-family: var(--font-body); font-weight: 700; }
+      .msg-source { display: grid; margin-top: 10px; border-top: 2px solid var(--charcoal); }
+      /* בלי זה, display:grid גובר על התכונה hidden והרשימה נשארת גלויה מתחת למוקאפ */
+      .msg-source[hidden] { display: none; }
+      .msg-item { border-bottom: 1px solid var(--line); padding: 22px 0; }
+      .msg-item-h { font-size: 1rem; color: var(--charcoal); margin: 0 0 10px;
+                    font-family: var(--font-body); font-weight: 600; }
       .msg-item-text { margin: 0; white-space: pre-wrap; word-break: break-word;
                        font-family: inherit; font-size: var(--fs-md); line-height: 1.8; color: var(--body); }
     </style>`

@@ -104,7 +104,7 @@ function pageTemplate({ title, bodyHtml }) {
 
 /**
  * עמוד האודות הוא סיפור מותג, לא מסמך משפטי — ולכן תבנית משלו: בלי כרטיס
- * לבן, עם הטיפוגרפיה של האתר (Frank Ruhl Libre לכותרות, Assistant לגוף),
+ * לבן, עם הטיפוגרפיה של האתר (Frank Ruhl Libre לכותרות, IBM Plex Sans Hebrew לגוף),
  * טור צר, הרבה אוויר וקו זהב דק שמפריד בין הפרקים. שאר המסמכים ב-DOCS
  * ממשיכים לקבל את התבנית המשפטית כרגיל.
  */
@@ -129,7 +129,7 @@ function aboutTemplate({ title, bodyHtml }) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
   rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500&display=swap"
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600&family=Frank+Ruhl+Libre:wght@400;500&display=swap"
 />
 <style>
   :root {
@@ -140,8 +140,8 @@ function aboutTemplate({ title, bodyHtml }) {
   * { box-sizing: border-box; }
   body {
     margin: 0; padding: 0 20px 96px; background: var(--ivory); color: var(--body);
-    font-family: Assistant, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-    font-size: 17px; line-height: 1.9;
+    font-family: "IBM Plex Sans Hebrew", Assistant, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    font-size: 18px; line-height: 1.85;
   }
   .about-topbar {
     max-width: 680px; margin: 0 auto; padding: 22px 0 8px;
@@ -154,7 +154,7 @@ function aboutTemplate({ title, bodyHtml }) {
   .about-doc h1 {
     margin: clamp(28px, 6vw, 56px) 0 clamp(26px, 4vw, 44px);
     font-family: "Frank Ruhl Libre", Georgia, serif; font-weight: 500; line-height: 1.12;
-    font-size: clamp(2.1rem, 6vw, 3.1rem); color: var(--charcoal);
+    font-size: clamp(2.5rem, 7vw, 4.25rem); letter-spacing: -0.012em; color: var(--charcoal);
   }
   /* כל פרק נפתח בקו זהב דק — ההפרדה היחידה, בלי מסגרות ובלי כרטיסים */
   .about-doc h2 {

@@ -134,11 +134,62 @@ function guideBlocks(md) {
   })
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   פריסת מאמר: הטקסט בעמודה ימנית ברוחב קריאה, ולצידו (בדסקטופ) עמודה
+   שעושה עבודה: תוכן עניינים של המאמר, או — בעמודי סוג אירוע — רשימת
+   סוגי האירוע עם הנוכחי מסומן. לא קישוט; ניווט.
+   ════════════════════════════════════════════════════════════════════ */
+
+/** מוסיף עוגן לכל h2 שבגוף המאמר ומחזיר את רשימת הכותרות. */
+function withAnchors(html) {
+  const toc = []
+  const out = html.replace(/<h2>([\s\S]*?)<\/h2>/g, (_, inner) => {
+    const id = `s${toc.length + 1}`
+    toc.push({ id, text: inner.replace(/<[^>]+>/g, '').trim() })
+    return `<h2 id="${id}">${inner}</h2>`
+  })
+  return { html: out, toc }
+}
+
+function tocNav(toc) {
+  if (toc.length < 3) return ''
+  return `<nav class="aside-block aside-toc" aria-label="בעמוד הזה">
+              <p class="aside-h">בעמוד הזה</p>
+              <ol>
+${toc.map((t) => `                <li><a href="#${t.id}">${esc(t.text)}</a></li>`).join('\n')}
+              </ol>
+            </nav>`
+}
+
+function eventTypesNav(current) {
+  return `<nav class="aside-block aside-types" aria-label="סוגי אירוע">
+              <p class="aside-h">כל סוג אירוע, בשפה שלו</p>
+              <ul>
+${EVENT_TYPES.map((t) => t.slug === current
+    ? `                <li><a href="/events/${t.slug}/" aria-current="page">${esc(t.name)}</a></li>`
+    : `                <li><a href="/events/${t.slug}/">${esc(t.name)}</a></li>`).join('\n')}
+              </ul>
+            </nav>`
+}
+
+function articleLayout(articleInner, aside) {
+  return `      <section class="article-wrap">
+        <div class="wrap article-layout">
+          <article class="article">
+${articleInner}
+          </article>
+          ${aside ? `<aside class="article-aside">
+            ${aside}
+          </aside>` : ''}
+        </div>
+      </section>`
+}
+
 function guideHtml(g) {
-  const bodyHtml = marked
+  const { html: bodyHtml, toc } = withAnchors(marked
     .parse(guideBlocks(g.body), { gfm: true })
     .replace(/<table>/g, '<div class="table-scroll"><table>')
-    .replace(/<\/table>/g, '</table></div>')
+    .replace(/<\/table>/g, '</table></div>'))
 
   // אין בלוק "להמשך" קבוע בסוף המדריך (2026-09-28): רשימת קישורים זהה בכל
   // מדריך היא תבנית SEO, לא תוכן. הקישורים הפנימיים יושבים בתוך הטקסט, במקום
@@ -186,10 +237,7 @@ function guideHtml(g) {
       ],
     })}
 
-      <section class="article-wrap">
-        <div class="wrap">
-          <article class="article">
-            <p class="article-meta">
+${articleLayout(`            <p class="article-meta">
               <span>צוות VEYA</span>
               <span>עודכן: <time datetime="${g.updated || g.published}">${g.updated_he || g.published_he}</time></span>
             </p>
@@ -200,10 +248,7 @@ ${bodyHtml.split('\n').map((l) => '            ' + l).join('\n')}
               <h2>${esc(g.cta_title)}</h2>
               <p>${esc(g.cta_text)}</p>
               <a href="${g.cta_url}" class="btn btn-primary">${esc(g.cta_label)} <span class="arw" aria-hidden="true">←</span></a>
-            </div>
-          </article>
-        </div>
-      </section>
+            </div>`, tocNav(toc))}
 
 ${faqHtml(g.faq)}`,
   })
@@ -1026,12 +1071,12 @@ function eventPage(t) {
   const expenses = EXPENSES[t.slug] || []
   const { body: md, faq } = loadEventBody(t.slug)
 
-  const article = marked
+  const { html: article, toc } = withAnchors(marked
     .parse(guideBlocks(md), { gfm: true })
     .replace(/<table>/g, '<div class="table-scroll"><table>')
     .replace(/<\/table>/g, '</table></div>')
     .replace(/<p>\{\{GROUPS\}\}<\/p>/g, groupsBlock(t, groups))
-    .replace(/<p>\{\{EXPENSES\}\}<\/p>/g, expensesBlock(expenses))
+    .replace(/<p>\{\{EXPENSES\}\}<\/p>/g, expensesBlock(expenses)))
 
   const body = `${pageHero({
     eyebrow: t.name,
@@ -1041,13 +1086,7 @@ function eventPage(t) {
     cta: CTA_PRIMARY,
   })}
 
-      <section class="article-wrap">
-        <div class="wrap">
-          <article class="article">
-${article}
-          </article>
-        </div>
-      </section>
+${articleLayout(article, eventTypesNav(t.slug) + tocNav(toc))}
 
 ${faqHtml(faq)}
       <section class="band-wrap">
