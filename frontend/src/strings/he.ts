@@ -454,7 +454,7 @@ export const strings = {
   install: {
     ariaLabel: 'הוספת VEYA למסך הבית',
     title: 'הוסיפו את VEYA למסך הבית',
-    body: 'גישה מיידית לאירוע שלכם מהאייפון — נפתחת כמו אפליקציה, בלי לחפש בדפדפן.',
+    body: 'VEYA נפתחת מהאייפון כמו אפליקציה. בלי לחפש בדפדפן.',
     // ה-CTA לא מתקין (iOS לא מאפשר) — הוא פותח את ההסבר. לכן הוא שאלה,
     // בדיוק כמו שמשתמש היה שואל אותה בעצמו.
     how: 'איך מוסיפים?',
@@ -465,7 +465,7 @@ export const strings = {
     step1Suffix: 'בסרגל התחתון של Safari',
     step2Prefix: 'גללו ובחרו',
     step2Action: 'הוספה למסך הבית',
-    step3Prefix: 'אשרו — והאייקון של VEYA יחכה לכם שם',
+    step3Prefix: 'אשרו, והאייקון של VEYA יחכה לכם שם',
     done: 'הבנתי',
   },
 
@@ -525,7 +525,7 @@ export const strings = {
     giftGiverLabel: 'ממי המתנה?',
     giftGiverPlaceholder: 'השם שיוצג לבעלי האירוע',
     giftBlessingLabel: 'ברכה (לא חובה)',
-    giftBlessingPlaceholder: 'כמה מילים מהלב…',
+    giftBlessingPlaceholder: 'כמה מילים שלכם…',
     giftSubmit: 'המשך לתשלום',
     giftCalculating: 'מחשבים…',
 

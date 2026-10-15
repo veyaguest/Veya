@@ -172,7 +172,7 @@ export function OnboardingWizard({ onCreated }: Props) {
 
         <h1 className="onboard-title">ברוכים הבאים ל-VEYA</h1>
         <p className="onboard-subtitle">
-          בואו נכיר את האירוע שלכם — זה ייקח רק כמה דקות
+          ספרו לנו על האירוע. כמה פרטים, ומתחילים.
         </p>
 
         <ol className="onboard-steps">

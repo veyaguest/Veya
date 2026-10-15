@@ -442,24 +442,24 @@ def send_partner_invite(
     *, to: str, inviter_name: str, event_title: str, invite_url: str
 ) -> SendResult:
     """מייל ההזמנה לניהול משותף של האירוע."""
-    inviter = inviter_name.strip() or "בן/בת הזוג שלך"
-    subject = f"{inviter} הזמין אותך לנהל את האירוע ב-VEYA"
+    inviter = inviter_name.strip() or "מישהו מהאירוע שלכם"
+    subject = f"{inviter} רוצה לנהל איתכם את האירוע ב־VEYA"
     event_line = _accent_line(html.escape(event_title)) if event_title else ""
     body = f"""
-{_title("הוזמנת לנהל את האירוע ב־VEYA")}
-{_lead(f"{html.escape(inviter)} הזמין אותך להצטרף לניהול האירוע ב־VEYA.")}
+{_title("הזמנה לנהל יחד את האירוע")}
+{_lead(f"{html.escape(inviter)} רוצה שתעבדו יחד על אותה רשימה ב־VEYA.")}
 {event_line}
 {_button(invite_url, "הצטרפות לאירוע")}
 {_fallback_link(invite_url)}
-{_secondary("נהלו יחד את המוזמנים, אישורי ההגעה, סידור ההושבה ועוד.")}
+{_secondary("אותם מוזמנים, אותם אישורי הגעה ואותו סידור הושבה. מה שאחד מעדכן, השני רואה.")}
 {_fine_print("אם לא ציפיתם להזמנה הזו, אפשר להתעלם מהמייל הזה.")}
 """
     text = (
-        "הוזמנת לנהל את האירוע ב-VEYA\n\n"
-        f"{inviter} הזמין אותך להצטרף לניהול האירוע ב-VEYA.\n"
+        "הזמנה לנהל יחד את האירוע\n\n"
+        f"{inviter} רוצה שתעבדו יחד על אותה רשימה ב־VEYA.\n"
         f"{event_title}\n\n"
         f"להצטרפות: {invite_url}\n\n"
-        "נהלו יחד את המוזמנים, אישורי ההגעה, סידור ההושבה ועוד.\n"
+        "אותם מוזמנים, אותם אישורי הגעה ואותו סידור הושבה. מה שאחד מעדכן, השני רואה.\n"
         "אם לא ציפיתם להזמנה הזו, אפשר להתעלם מהמייל הזה."
     )
     return send_email(
@@ -467,7 +467,7 @@ def send_partner_invite(
         subject=subject,
         html_body=_shell(
             title=subject,
-            preheader=f"{inviter} הזמין אותך להצטרף לניהול האירוע ב-VEYA.",
+            preheader=f"{inviter} רוצה שתעבדו יחד על אותה רשימה ב־VEYA.",
             body_html=body,
         ),
         text_body=text,
@@ -478,22 +478,22 @@ def send_partner_invite(
 def send_email_verification(*, to: str, verify_url: str, code: str) -> SendResult:
     """מייל אימות כתובת המייל אחרי הרשמה — קוד 6 ספרות (ערוץ עיקרי, תקף
     10 דקות) + קישור כ-fallback (תקף 24 שעות) שממשיך לעבוד במקביל."""
-    subject = "קוד האימות שלך ל-VEYA"
+    subject = "הקוד שלכם ל־VEYA"
     body = f"""
 {_title("אימות כתובת המייל")}
-{_lead("שלחנו לך קוד אימות כדי להשלים את ההרשמה ל־VEYA.")}
+{_lead("הנה הקוד להשלמת ההרשמה ל־VEYA.")}
 {_code_block(code)}
 {_button(verify_url, "אימות המייל שלי")}
 {_fallback_link(verify_url)}
-{_fine_print("אם לא ביקשת להירשם ל־VEYA, אפשר להתעלם מהמייל הזה.")}
+{_fine_print("לא נרשמתם ל־VEYA? אפשר להתעלם מהמייל הזה.")}
 """
     text = (
         "אימות כתובת המייל\n\n"
-        "שלחנו לך קוד אימות כדי להשלים את ההרשמה ל-VEYA.\n\n"
+        "הנה הקוד להשלמת ההרשמה ל־VEYA.\n\n"
         f"קוד האימות: {code}\n"
         "הקוד תקף ל-10 דקות.\n\n"
         f"אפשר גם לאמת בלחיצה אחת: {verify_url}\n\n"
-        "אם לא ביקשת להירשם ל-VEYA, אפשר להתעלם מהמייל הזה."
+        "לא נרשמתם ל־VEYA? אפשר להתעלם מהמייל הזה."
     )
     return send_email(
         to=to,
@@ -512,7 +512,7 @@ def send_password_reset(*, to: str, reset_url: str) -> SendResult:
     subject = "איפוס הסיסמה שלך ל-VEYA"
     body = f"""
 {_title("איפוס הסיסמה שלך")}
-{_lead("קיבלנו בקשה לאיפוס הסיסמה שלך ב־VEYA.")}
+{_lead("ביקשתם לאפס את הסיסמה ב־VEYA.")}
 {_lead("לחצו על הכפתור כדי לבחור סיסמה חדשה.")}
 {_button(reset_url, "איפוס הסיסמה")}
 {_secondary("הקישור תקף לשעה.")}
@@ -521,7 +521,7 @@ def send_password_reset(*, to: str, reset_url: str) -> SendResult:
 """
     text = (
         "איפוס הסיסמה שלך\n\n"
-        "קיבלנו בקשה לאיפוס הסיסמה שלך ב-VEYA.\n"
+        "ביקשתם לאפס את הסיסמה ב־VEYA.\n"
         "לחצו על הקישור כדי לבחור סיסמה חדשה:\n\n"
         f"{reset_url}\n\n"
         "הקישור תקף לשעה.\n"

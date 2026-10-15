@@ -792,7 +792,7 @@ export function ConfirmPage({ token }: { token: string }) {
         }.`
       : guest.rsvp_status === 'maybe'
         ? 'סימנו "עוד לא החלטנו". נשמח לעדכון כשתדעו.'
-        : 'תודה שעדכנתם. נחגוג לחייכם!'
+        : 'תודה שעדכנתם. נרים כוסית לחייכם.'
 
   return (
     <main className="confirm-wrap" dir="rtl">

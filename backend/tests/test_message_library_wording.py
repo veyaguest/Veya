@@ -12,7 +12,13 @@ import re
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-os.environ.setdefault("VEYA_DB_URL", "sqlite://")
+# מסד זמני בלבד. המשתנה שהשרת קורא הוא DATABASE_URL (ולא VEYA_DB_URL) — בלי
+# זה הבדיקה כותבת למסד הפיתוח המקומי (backend/.env). load_dotenv לא דורס משתנה קיים.
+import tempfile  # noqa: E402
+
+_TMP_DB = os.path.join(tempfile.mkdtemp(prefix="veya-wording-"), "test.db")
+os.environ["DATABASE_URL"] = f"sqlite:///{_TMP_DB}"
+os.environ["MIGRATIONS_DATABASE_URL"] = f"sqlite:///{_TMP_DB}"
 
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import select  # noqa: E402

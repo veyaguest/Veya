@@ -91,7 +91,7 @@ export function AuthPage({
     if (mode === 'login') return null
     if (!acceptedTerms) return strings.auth.termsRequired
     if (!displayName.trim()) return 'צריך למלא שם מלא'
-    if (displayName.trim().length < 2) return 'השם קצר מדי — אפשר למלא שם מלא'
+    if (displayName.trim().length < 2) return 'השם קצר מדי. אפשר למלא שם מלא'
     if (!phone.trim()) return 'צריך למלא מספר טלפון'
     // אותה בדיקה כמו normalize_israeli_phone בשרת: 9-10 ספרות שמתחילות ב-0
     // (או +972 שמומר לזה). הודעה בשפה טבעית, לא "פורמט לא תקין".
@@ -164,7 +164,7 @@ export function AuthPage({
           <span className="auth-wordmark">
             <span className="auth-wordmark-name">VEYA</span>
             <span className="auth-wordmark-tag" dir="rtl">
-              הדרך הפשוטה לארגן חתונה, ובעצם כל אירוע
+              חתונה, בר מצווה, ברית או כנס
             </span>
           </span>
         </div>
@@ -173,30 +173,30 @@ export function AuthPage({
           <div className="auth-hero-text">
             {/* h2 ולא h1: הכותרת הראשית של המסך היא מה שעושים בו
                 (התחברות/הרשמה, למטה) — והפאנל הזה מוסתר בטלפון. */}
-            <h2 className="auth-hero-title">האירוע שלכם, סוף־סוף מסודר</h2>
+            <h2 className="auth-hero-title">מי מגיע, איפה הוא יושב, וכמה זה עולה</h2>
             <p className="auth-hero-sub">
-              רשימת מוזמנים, אישורי הגעה וסידורי הושבה — במקום אחד נקי ופשוט,
-              בלי גיליונות אקסל ובלי בלגן.
+              מביאים את הרשימה מהוואטסאפ או מהאקסל, ומשם היא מתעדכנת לבד:
+              מי אישר, מי עוד לא ענה, ואיפה כל אחד יושב.
             </p>
           </div>
           <ul className="auth-features">
             <li>
               <span className="auth-bullet" />
-              רשימת מוזמנים חכמה שמתעדכנת בזמן אמת
+              רשימה אחת שכל מי שמנהל איתכם רואה
             </li>
             <li>
               <span className="auth-bullet" />
-              אישורי הגעה דיגיטליים שהמוזמנים באמת ממלאים
+              מי שלא ענה מקבל תזכורת, ואם צריך גם טלפון
             </li>
             <li>
               <span className="auth-bullet" />
-              סידורי הושבה בגרירה ושחרור, בלי כאב ראש
+              סידור הושבה שזוכר מי לא יושב ליד מי
             </li>
           </ul>
         </div>
 
         <div className="auth-copyright">
-          © 2026 VEYA · מלווים אתכם עד היום שלכם
+          © 2026 VEYA · נתראה באירוע
         </div>
       </aside>
 
@@ -219,8 +219,8 @@ export function AuthPage({
             </h1>
             <p className="auth-panel-sub">
               {isLogin
-                ? 'התחברו כדי להמשיך לנהל את האירוע שלכם'
-                : 'פתחו חשבון חדש ותתחילו לנהל את האירוע שלכם'}
+                ? 'הרשימה שלכם מחכה בדיוק איפה שהשארתם אותה'
+                : 'פותחים חשבון, ואז מביאים את הרשימה שכבר יש לכם'}
             </p>
           </div>
 
