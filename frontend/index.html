@@ -2888,6 +2888,14 @@
          בלי רצועות ובלי שורות ✓. המשפט מתחת לכותרת עונה על "מה VEYA עושה";
          הכותרת שואלת את השאלה, והקו הכפול מסמן את התשובה שחשובה. */
       .hero { padding-top: clamp(40px, 6vh, 76px); padding-bottom: clamp(56px, 8vh, 96px); }
+      /* מסך אחד, שלם: ההירו תופס את כל המסך הראשון מתחת לכותרת העליונה (71px),
+         והסקשן הבא מתחיל בדיוק בקצה התחתון — בלי פס שנהב שמציץ, ובלי כותרת
+         שנייה שמתחרה בכותרת הראשית. האוויר הנוסף מתחלק מעל ומתחת לקומפוזיציה. */
+      .hero {
+        min-height: calc(100svh - 71px); box-sizing: border-box;
+        display: flex; flex-direction: column; justify-content: center;
+      }
+      .hero > .wrap { width: 100%; }
       .hero h1 {
         font-size: clamp(2.125rem, 4.9vw, 3.875rem); line-height: 1.12; letter-spacing: -0.012em;
         margin: 0 auto; text-wrap: balance;
@@ -2901,7 +2909,7 @@
       .hp-stage { margin-top: -36px; }
       /* בלי היכולות בצדדים אין צורך לשמור להן 440px — הצילום מקבל את הרוחב.
          תנאי הגובה נשאר: הכפתור בתוך המסך הראשון גם ב-1280×720. */
-      .hp-stage { --hp-w: min(900px, calc((100svh - 340px) * 1.7778), calc(100vw - 96px)); }
+      .hp-stage { --hp-w: min(1040px, calc((100svh - 380px) * 1.7778), calc(100vw - 96px)); }
       /* פעולה ראשית אחת במסך גם במחשב: הכפתור שבכותרת העליונה מחכה עד
          שכפתור ההירו יוצא מהמסך (אותו מנגנון שכבר פעל בטלפון) */
       @media (min-width: 1100px) {
@@ -2919,7 +2927,14 @@
       .hero-lead .hl-what, .hero-lead .hl-how { display: block; }
       @media (max-width: 600px) {
         .hero-lead .hl-how { display: none; }
-        .hero h1 { font-size: 1.9375rem; }
+        /* מסך שלם בטלפון: הכותרת מקבלת את המקום, בשורות קצרות כמו כותרת פוסטר */
+        .hero h1 { font-size: 2.25rem; line-height: 1.14; max-width: 11ch; margin-inline: auto; }
+      }
+      /* טאבלט: מסך גבוה וצר — הכותרת והצילום גדלים כדי למלא אותו, לא האוויר */
+      @media (min-width: 601px) and (max-width: 1099px) {
+        .hero h1 { font-size: 3rem; }
+        .hero-lead { font-size: 1.25rem; max-width: 40ch; }
+        .hp-stage { --hp-w: min(900px, calc((100svh - 380px) * 1.7778), calc(100vw - 32px)); }
       }
       @media (max-width: 600px) {
         .hero { padding-top: 32px; padding-bottom: 48px; }
