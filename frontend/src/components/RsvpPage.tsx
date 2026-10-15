@@ -662,7 +662,7 @@ function DashboardTab({
       {/* המלצות מעקב חכם */}
       {dash && dash.recommendations.length > 0 && (
         <div className="auto-recs">
-          <h3 className="clar-title">מעקב חכם</h3>
+          <h3 className="clar-title">כדאי לשים לב</h3>
           <ul className="auto-rec-list">
             {dash.recommendations.map((r, i) => (
               <li key={i} className={`auto-rec ${r.severity}`}>

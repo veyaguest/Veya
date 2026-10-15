@@ -209,7 +209,7 @@ export function JoinEventPage({
         onClick={join}
         disabled={joining}
       >
-        {joining ? 'מצרף…' : 'הצטרפות לאירוע'}
+        {joining ? 'מצרפים…' : 'הצטרפות לאירוע'}
       </button>
       {!getToken() && (
         <p className="join-text join-text-muted">צריך להיות מחוברים כדי להצטרף.</p>

@@ -400,7 +400,7 @@ export function OnboardingWizard({ onCreated }: Props) {
                   </label>
                   <div className="onboard-actions">
                     <button type="submit" className="btn-primary" disabled={busy}>
-                      {busy ? 'שולח…' : 'שליחת הזמנה'}
+                      {busy ? 'שולחים…' : 'שליחת הזמנה'}
                     </button>
                     <button
                       type="button"

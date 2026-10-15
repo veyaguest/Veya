@@ -354,7 +354,7 @@ export function AccountCenter({
                       className="acc-btn acc-btn-primary"
                       disabled={inviting}
                     >
-                      {inviting ? 'שולח…' : strings.partner.cta(activeEventTerms().hasTwoHosts)}
+                      {inviting ? 'שולחים…' : strings.partner.cta(activeEventTerms().hasTwoHosts)}
                     </button>
                   </form>
                 </div>
@@ -420,8 +420,8 @@ export function AccountCenter({
           <section className="acc-card acc-card-danger">
             <h3 className="acc-card-title">מחיקת החשבון</h3>
             <p className="acc-danger-text">
-              מחיקת החשבון היא פעולה בלתי הפיכה. כל הפרטים שלכם יימחקו לצמיתות
-              ולא נוכל לשחזר אותם.
+              מחיקת החשבון היא סופית. כל הפרטים שלכם יימחקו, ואין דרך
+              לשחזר אותם.
               {hasPartner && ' האירוע עצמו יישאר אצל מי שמנהל אותו איתכם.'}
             </p>
 
@@ -452,7 +452,7 @@ export function AccountCenter({
                     onClick={doDeleteAccount}
                     disabled={deleteConfirmText.trim() !== 'מחק' || deleting}
                   >
-                    {deleting ? 'מוחק…' : 'מחיקה סופית'}
+                    {deleting ? 'מוחקים…' : 'מחיקה סופית'}
                   </button>
                   <button
                     type="button"

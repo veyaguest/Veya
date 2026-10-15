@@ -357,7 +357,7 @@ export function AuthPage({
                     במקום הכפתור, כדי למנוע לחיצה כפולה. */}
                 <div className="auth-google-slot">
                   {googleBusy ? (
-                    <div className="auth-google-busy">מתחבר עם גוגל…</div>
+                    <div className="auth-google-busy">מתחברים עם גוגל…</div>
                   ) : (
                     <GoogleLogin
                       onSuccess={handleGoogleCredential}

@@ -203,7 +203,7 @@ export const strings = {
     profileUpdated: 'הפרטים עודכנו',
     passwordUpdated: 'הסיסמה עודכנה. מכשירים אחרים נותקו.',
     messageSaved: 'ההודעה נשמרה',
-    messageLoaded: 'הודעה נטענה מהספרייה — אפשר לערוך ואז לשמור',
+    messageLoaded: 'הנוסח מהספרייה כאן. אפשר לערוך ולשמור',
     templateCreated: 'התבנית נוצרה',
     templateSaved: 'התבנית נשמרה',
     adminUserDetailsSaved: 'הפרטים נשמרו',
@@ -603,7 +603,7 @@ export const strings = {
     statConfirmed: 'אישרו הגעה',
     statResponseRate: 'שיעור מענה',
     clarificationsAlert: (n: number) =>
-      `⚠ יש ${n} הבהרות שממתינות לכם. נשלים אותן יחד במסך "מפת אולם והושבה".`,
+      `⚠ יש ${n} הבהרות שממתינות לכם. נשלים אותן יחד במסך "סידור הושבה".`,
     bySide: 'לפי צד',
     byGroup: 'לפי קבוצה',
     seatingTitle: 'הושבה',
@@ -631,7 +631,7 @@ export const strings = {
             : `, ${days === 1 ? 'יום אחד' : `${days} ימים`} לפני האירוע. `)
         : `הרשימה תיסגר ${days === 1 ? 'יום אחד' : `${days} ימים`} לפני האירוע. `) +
       (soon
-        ? 'עד אז נשארו פחות משבועיים, ולכן VEYA תתחיל לשלוח למוזמנים בקשות לאישור הגעה כבר בימים הקרובים, בפחות פעמים. '
+        ? 'עד אז נשארו פחות משבועיים, ולכן VEYA תתחיל לשלוח למוזמנים בקשות לאישור הגעה כבר בימים הקרובים, בלוח צפוף יותר. '
         : 'שבועיים לפני כן VEYA תתחיל לשלוח למוזמנים בקשות לאישור הגעה. ') +
       'אחרי השמירה אי אפשר לשנות את הבחירה.',
     commitConfirmCta: 'כן, לשמור',
@@ -727,7 +727,7 @@ export const strings = {
       outcome: {
         emoji: '🪑',
         title: 'כשתהיו מוכנים — הושבה בקליק',
-        desc: 'VEYA תשתמש בכל מה שסידרתם כדי ליצור עבורכם סידור הושבה ראשוני.',
+        desc: 'VEYA תשתמש בכל מה שסידרתם כדי להכין לכם סידור ראשון.',
       },
       closing:
         'ומשם אתם בשליטה. אפשר להזיז, לשנות ולתקן כל מוזמן עד שהכול בדיוק כמו שאתם רוצים.',
@@ -805,7 +805,7 @@ export const strings = {
     dialogSubmit: 'שליחת בקשה לאישור',
     sentTitle: 'הבקשה נשלחה',
     sentBody:
-      'הבקשה ממתינה לאישור מנהל VEYA. לאחר האישור תוכלו לעדכן את פרטי האירוע.',
+      'הבקשה ממתינה לאישור צוות VEYA. לאחר האישור תוכלו לעדכן את פרטי האירוע.',
     sendError: 'לא הצלחנו לשלוח את הבקשה. נסו שוב',
 
     // ---- באנר המצב (חמשת מצבי המערכת) ----
@@ -894,7 +894,7 @@ export const strings = {
     statusCounts: {
       paid: (n: number) => (n === 1 ? 'מתנה אחת התקבלה' : `${n} מתנות התקבלו`),
       pending: (n: number) => (n === 1 ? 'אחת ממתינה' : `${n} ממתינות`),
-      failed: (n: number) => (n === 1 ? 'אחת נכשלה' : `${n} נכשלו`),
+      failed: (n: number) => (n === 1 ? 'אחת לא הושלמה' : `${n} לא הושלמו`),
       cancelled: (n: number) => (n === 1 ? 'אחת בוטלה' : `${n} בוטלו`),
       refunded: (n: number) => (n === 1 ? 'אחת הוחזרה' : `${n} הוחזרו`),
     },
@@ -930,7 +930,7 @@ export const strings = {
     statusLabels: {
       pending: 'ממתינה',
       paid: 'התקבלה',
-      failed: 'נכשלה',
+      failed: 'לא הושלמה',
       cancelled: 'בוטלה',
       refunded: 'הוחזרה',
     },
@@ -1107,7 +1107,7 @@ export const strings = {
     // אחרי הוספה ידנית. invitesOut — כבר יצאו הזמנות, והחדש לא יקבל לבד.
     addedToast: (name: string, invitesOut: boolean) =>
       `${name} ברשימה עכשיו.` +
-      (invitesOut ? ' ההזמנה לא נשלחת לבד — שולחים אותה ממסך "הודעות".' : ''),
+      (invitesOut ? ' ההזמנה לא נשלחת לבד. שולחים אותה ממסך "ניהול הודעות".' : ''),
     savedToast: (name: string) => `הפרטים של ${name} נשמרו.`,
     deletedToast: (name: string) => `${name} כבר לא ברשימה.`,
     // "מוזמנים" = שורות ברשימה (משפחה אחת = שורה אחת); "אנשים" = סכום
@@ -1216,7 +1216,7 @@ export const strings = {
       custom: 'הודעה נשלחה',
     } as Record<string, string>,
     timelineReplied: 'המוזמן הגיב',
-    timelineLoadError: 'שגיאה בטעינת ציר הזמן',
+    timelineLoadError: 'לא הצלחנו לטעון את ציר הזמן',
     timelineTitle: (name: string) => `ציר זמן — ${name}`,
     closeX: 'סגירה',
     currentStatus: 'סטטוס נוכחי:',
@@ -1286,7 +1286,7 @@ export const strings = {
       'הכנו את הרשימה. כדאי לעבור עליה ולוודא שאין טעויות בשם, בטלפון או בכמות. סמנו אילו שורות לייבא.',
     pasteSelectedSummary: (selected: number, total: number) =>
       `נבחרו לייבוא ${selected} מתוך ${total} שורות`,
-    selectAll: 'סמן הכל',
+    selectAll: 'סימון הכול',
     clearAll: 'נקה בחירה',
     colImport: 'ייבוא',
     colCountDetected: 'כמות שהוזנה',
@@ -1343,7 +1343,7 @@ export const strings = {
     nobodyToSeat:
       'עוד אין את מי להושיב: מושיבים רק את מי שאישרו הגעה. כשיגיעו אישורים, הם יופיעו כאן.',
     oneClickHint:
-      'סידור אוטומטי לפי הקבוצות, הערות ההושבה, האילוצים ומבנה האולם — בלחיצה אחת.',
+      'סידור אוטומטי לפי הקבוצות, הערות ההושבה, האילוצים ומבנה האולם.',
     fillEmptyButton: 'השלמת מי שללא שולחן',
     fillEmptyHint: 'משבץ רק את מי שעדיין אין לו שולחן. אף אחד מהמשובצים לא זז.',
 
@@ -1460,14 +1460,14 @@ export const strings = {
 
       // ---- הודעות חיות (aria-live) ----
       seatedAnnounce: (name: string, table: number) =>
-        `${name} הושב לשולחן ${table}.`,
+        `${name} בשולחן ${table}.`,
       seatedOverAnnounce: (name: string, table: number, used: number, capacity: number) =>
-        `${name} הושב לשולחן ${table}. בשולחן ${used} אנשים מתוך ${capacity} מקומות — יש חריגה.`,
+        `${name} בשולחן ${table}. בשולחן ${used} אנשים מתוך ${capacity} מקומות — יש חריגה.`,
       unseatedAnnounce: (name: string) => `${name} הוסר מהשולחן וחזר לרשימה.`,
       filterAnnounce: (n: number, guests: string) =>
         n === 0 ? 'אין תוצאות' : `${n} ${guests} ברשימה`,
       selectedAnnounce: (name: string) =>
-        `${name} נבחר. אפשר להקיש על שולחן במפה, או לבחור שולחן מרשימת הפעולות.`,
+        `בחרתם את ${name}. אפשר להקיש על שולחן במפה, או לבחור שולחן מרשימת הפעולות.`,
       tableSelectedAnnounce: (table: number) => `שולחן ${table} נבחר.`,
 
       // ---- תוצאת "הושבה בקליק" ----
@@ -1529,7 +1529,7 @@ export const strings = {
     settingsTab: 'הגדרות הושבה',
     constraintsTitle: 'אילוצים והעדפות',
     constraintsHint:
-      'אנחנו קוראים את הערות ההושבה והופכים אותן לכללים — מי לשבת עם מי, וממי להרחיק.',
+      'אנחנו קוראים את הערות ההושבה והופכים אותן לכללים: מי יושב עם מי, ואת מי להרחיק ממי.',
     constraintsRecheck: 'בדיקת ההערות',
     constraintsChecking: 'בודקים…',
     constraintsSummary: (guests: number, found: number, pending: number) =>
@@ -1582,7 +1582,7 @@ export const strings = {
 
       // שלב 2: מסך ניתוח (SketchAnalyzingOverlay) — שלוש שורות, לא ספינר גנרי.
       analyzingTitle: 'VEYA מנתחת את הסקיצה…',
-      analyzingStep: 'מזהה שולחנות ואלמנטים באולם',
+      analyzingStep: 'מזהים את השולחנות ושאר הפריטים באולם',
       analyzingHint: 'זה עשוי לקחת כמה שניות',
 
       // כשל בניתוח — לעולם לא טכני (סטטוס/traceback); ראה api.ts:toError.
@@ -1609,7 +1609,7 @@ export const strings = {
       // הסבר בשפה פשוטה ליד פריטים שכדאי לבדוק — לא אחוז/מספר.
       confidenceHintMid: (typeLabel: string) => `נראה שזה ${typeLabel}. כדאי לבדוק שזה נכון.`,
       confidenceHintLow: 'לא הצלחנו לזהות את זה בבירור — בדקו, תקנו או מחקו.',
-      addMissingTable: '＋ הוספת אובייקט',
+      addMissingTable: '＋ הוספת פריט',
       addMissingHint: 'לא מצאתם פריט? ה-AI עלול לפספס כמה — אפשר להוסיף ידנית.',
       removeItem: 'הסרה',
       rotateItem: 'סיבוב',
@@ -1635,7 +1635,7 @@ export const strings = {
       existingAdd: 'הוספה לקיים',
 
       // שלב 4: אישור בנייה (SketchBuildSuccess).
-      builtTitle: 'האולם נבנה בהצלחה',
+      builtTitle: 'האולם מוכן',
       builtOpen: 'פתיחת האולם',
     },
   },

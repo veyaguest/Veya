@@ -119,7 +119,7 @@ export function PartnerCta() {
               required
             />
             <button type="submit" className="btn-primary pcta-btn" disabled={busy}>
-              {busy ? 'שולח…' : 'שליחת הזמנה'}
+              {busy ? 'שולחים…' : 'שליחת הזמנה'}
             </button>
           </div>
           {error && <p className="pcta-error">{error}</p>}

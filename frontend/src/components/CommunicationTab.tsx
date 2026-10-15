@@ -43,8 +43,8 @@ const STEPS_WITH_INVITE_IMAGE: ReadonlySet<MessageType> = new Set<MessageType>([
 
 /** מילה טבעית לכל פרט משתנה — מוצגת כשעדיין אין ערך אמיתי לאירוע. */
 const FIELD_WORD: Record<string, string> = {
-  guest_name: 'שם האורח',
-  guest_names: 'שם האורח',
+  guest_name: 'שם המוזמן',
+  guest_names: 'שם המוזמן',
   host_names: 'השמות שלכם',
   groom_name: 'שם החתן',
   bride_name: 'שם הכלה',
@@ -189,7 +189,7 @@ export function CommunicationTab({
         .then((s) => setWaConnected(s.mode !== 'mock'))
         .catch(() => undefined)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'טעינת ההודעות נכשלה')
+      setError(err instanceof Error ? err.message : 'לא הצלחנו לטעון את ההודעות')
     }
   }
 
@@ -403,7 +403,7 @@ function MessagePanel({
         const at = rows.findIndex((o) => o.content === message.content)
         setIndex(at >= 0 ? at : 0)
       } catch (err) {
-        setNote(err instanceof Error ? err.message : 'טעינת ההודעות נכשלה')
+        setNote(err instanceof Error ? err.message : 'לא הצלחנו לטעון את ההודעות')
       } finally {
         setLoadingOptions(false)
       }
@@ -421,7 +421,7 @@ function MessagePanel({
       setMode('view')
       onSaved()
     } catch (err) {
-      setNote(err instanceof Error ? err.message : 'השמירה נכשלה')
+      setNote(err instanceof Error ? err.message : 'לא הצלחנו לשמור')
     } finally {
       setBusy(false)
     }

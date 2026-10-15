@@ -668,15 +668,15 @@ function SendConfirmStep({
         <p className="clar-sub">
           {preview.already_sent === 1
             ? 'מוזמן אחד כבר קיבל הזמנה'
-            : `${preview.already_sent} מוזמנים כבר קיבלו הזמנה`}{' '}
-          — כל מוזמן מקבל הזמנה פעם אחת בלבד, ולכן היא לא תישלח שוב.
+            : `${preview.already_sent} מוזמנים כבר קיבלו הזמנה`}
+          . כל מוזמן מקבל הזמנה פעם אחת, אז היא לא תישלח שוב.
         </p>
       )}
       {missingPhone > 0 && (
         <p className="clar-sub">
           {missingPhone === 1
-            ? 'מוזמן אחד בלי מספר טלפון לא יקבל את ההזמנה — אי אפשר לבחור בו עד שיתווסף מספר.'
-            : `${missingPhone} מוזמנים בלי מספר טלפון לא יקבלו את ההזמנה — אי אפשר לבחור בהם עד שיתווסף מספר.`}
+            ? 'מוזמן אחד בלי מספר טלפון לא יקבל את ההזמנה. אפשר יהיה לבחור בו אחרי שיתווסף מספר.'
+            : `${missingPhone} מוזמנים בלי מספר טלפון לא יקבלו את ההזמנה. אפשר יהיה לבחור בהם אחרי שיתווסף מספר.`}
         </p>
       )}
       <p className="clar-sub">
@@ -895,7 +895,7 @@ function FirstInviteWizard({
 
         {onAddGuests && (
           <button className="btn-text wiz-guests-link" onClick={onAddGuests}>
-            לניהול מלא של המוזמנים — עברו למסך המוזמנים ←
+            לניהול המוזמנים ←
           </button>
         )}
 
@@ -917,7 +917,7 @@ function FirstInviteWizard({
       {/* ---- שלב 3: תצוגה ושליחה ---- */}
       <section className="wiz-panel" hidden={step !== 3}>
         <div className="wiz-panel-head">
-          <h2 className="wiz-title">כמעט שם — סקירה ושליחה</h2>
+          <h2 className="wiz-title">כמעט שם: בודקים ושולחים</h2>
           <p className="wiz-sub">
             זו הסקירה האחרונה. בלחיצה על "שליחת הזמנות" נציג לכם בדיוק את ההודעה
             ואת רשימת הנמענים לאישור סופי לפני השליחה.

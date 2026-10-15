@@ -271,7 +271,7 @@ export function computeSmartWarnings(
     warnings.push({
       severity: 'red',
       tableNumbers: [cw.tableNumber],
-      text: `${cw.childName} (ילד/ה) יושב/ת בשולחן ${cw.tableNumber} בלי אף מבוגר מהמשפחה`,
+      text: `בשולחן ${cw.tableNumber} אין אף מבוגר מהמשפחה של ${cw.childName}`,
     })
   }
 
@@ -305,7 +305,7 @@ export function computeSmartWarnings(
       warnings.push({
         severity: 'yellow',
         tableNumbers: [t.table_number],
-        text: `בשולחן ${t.table_number} מעורבבים ${groom} מ${sidePhrase('groom')} ו-${bride} מ${sidePhrase('bride')} — כדאי לוודא שזה מכוון`,
+        text: `בשולחן ${t.table_number} מעורבבים ${groom} מ${sidePhrase('groom')} ו-${bride} מ${sidePhrase('bride')}. כדאי לוודא שזה מכוון`,
       })
     }
   }
@@ -334,7 +334,7 @@ export function computeSmartWarnings(
       warnings.push({
         severity: 'yellow',
         tableNumbers: [empty.table_number, target.table_number].sort((a, b) => a - b),
-        text: `שולחן ${empty.table_number} כמעט ריק (${emptyUsed}/${empty.capacity}) ושולחן ${target.table_number} כמעט מלא — אפשר לאחד ולפנות שולחן שלם`,
+        text: `שולחן ${empty.table_number} כמעט ריק (${emptyUsed}/${empty.capacity}) ושולחן ${target.table_number} כמעט מלא. אפשר לאחד ולפנות שולחן שלם`,
       })
     }
   }
@@ -434,7 +434,7 @@ export function computeSuggestions(
     if (toMove.length === 0) continue
     if (wouldConflict(toMove, target)) continue
     suggestions.push({
-      text: `לאחד את משפחת ${fam.surname} — להעביר ${toMove.length} מוזמנים לשולחן ${target.table_number}`,
+      text: `לאחד את משפחת ${fam.surname}: להעביר ${toMove.length} מוזמנים לשולחן ${target.table_number}`,
       moves: toMove.map((id) => ({ guestId: id, toTable: target.table_number })),
     })
   }
@@ -450,7 +450,7 @@ export function computeSuggestions(
     if (toMove.length === 0 || tableFreeCapacity(target) < neededSeats) continue
     if (wouldConflict(toMove, target)) continue
     suggestions.push({
-      text: `לאחד את קבוצת "${sg.label}" — להעביר ${toMove.length} מוזמנים לשולחן ${target.table_number}`,
+      text: `לאחד את קבוצת "${sg.label}": להעביר ${toMove.length} מוזמנים לשולחן ${target.table_number}`,
       moves: toMove.map((id) => ({ guestId: id, toTable: target.table_number })),
     })
   }
@@ -701,14 +701,14 @@ export function liveDragValidation(
   const free = tableFreeCapacity(targetTable)
   if (draggedGuest.seats > free) {
     level = 'red'
-    lines.push(`חריגה מקיבולת — חסרים ${draggedGuest.seats - free} מקומות`)
+    lines.push(`אין מספיק מקום: חסרים ${draggedGuest.seats - free} מקומות`)
   }
 
   const forbiddenSet = pairSetFrom(forbiddenPairs)
   const forbiddenHit = targetTable.guests.find((g) => forbiddenSet.has(pairKey(draggedGuest.id, g.id)))
   if (forbiddenHit) {
     level = 'red'
-    lines.push(`מסומן/ת "לא לשבת יחד" עם ${forbiddenHit.full_name}`)
+    lines.push(`יש הערת "לא לשבת יחד" עם ${forbiddenHit.full_name}`)
   }
 
   if (level !== 'red' && draggedGuest.is_child) {

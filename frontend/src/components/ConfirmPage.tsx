@@ -976,7 +976,7 @@ export function ConfirmPage({ token }: { token: string }) {
                   disabled={!choice || busy}
                   onClick={send}
                 >
-                  {busy ? 'שולח…' : 'שליחת אישור'}
+                  {busy ? 'שולחים…' : 'שליחת אישור'}
                 </button>
               </>
             )}

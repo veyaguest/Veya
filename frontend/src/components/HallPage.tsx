@@ -797,8 +797,8 @@ function HallWizard(props: {
       <div className="hm-wizard" role="dialog" aria-label="בניית אולם">
         <h2 className="hm-wizard-title">בואו נבנה את האולם <span aria-hidden="true">🏛️</span></h2>
         <p className="hm-wizard-lead">
-          כמה שולחנות יהיו, ומה עוד להוסיף? נכין לכם סקיצה מסודרת להתחיל ממנה —
-          תוכלו לגרור, לסובב ולשנות הכול אחר כך.
+          כמה שולחנות, ומה עוד יש באולם? נכין סקיצה להתחלה, ואחר כך אפשר
+          לגרור, לסובב ולשנות הכול.
         </p>
 
         <div className="hm-wizard-row">
@@ -905,7 +905,7 @@ function HallStartChoice(props: { hasContent: boolean; onBuildNew: () => void; o
       <div className="hm-wizard-backdrop" onClick={props.onClose} />
       <div className="hm-start-choice" role="dialog" aria-label="בניית אולם">
         <h2 className="hm-wizard-title">איך בונים את האולם?</h2>
-        <p className="hm-wizard-lead">בחרו את הדרך הנוחה לכם — אפשר תמיד לערוך הכול אחר כך.</p>
+        <p className="hm-wizard-lead">בכל דרך שתבחרו, אפשר לשנות הכול אחר כך.</p>
 
         <div className="hm-start-options">
           <button type="button" className="hm-start-card" onClick={props.onBuildNew}>
@@ -913,7 +913,7 @@ function HallStartChoice(props: { hasContent: boolean; onBuildNew: () => void; o
               <HmIcon name="hall" size={26} />
             </span>
             <span className="hm-start-card-title">בניית אולם חדש</span>
-            <span className="hm-start-card-sub">בנו את האולם שלכם מאפס והוסיפו שולחנות, רחבה ואובייקטים לפי הצורך.</span>
+            <span className="hm-start-card-sub">מתחילים ממסך ריק ומוסיפים שולחנות, רחבה ומה שעוד יש באולם.</span>
           </button>
           <button type="button" className="hm-start-card" onClick={props.onBuildFromSketch}>
             <span className="hm-start-card-ic" aria-hidden="true">
@@ -921,7 +921,7 @@ function HallStartChoice(props: { hasContent: boolean; onBuildNew: () => void; o
             </span>
             <span className="hm-start-card-title">בניית אולם מסקיצה</span>
             <span className="hm-start-card-sub">
-              יש לכם סקיצה מהאולם? העלו אותה ו-VEYA תזהה את השולחנות, המספרים והפריסה ותבנה עבורכם את האולם.
+              יש לכם סקיצה מהאולם? מעלים אותה, ו־VEYA מזהה את השולחנות והמספרים ובונה מהם מפה.
             </span>
           </button>
         </div>
@@ -1204,7 +1204,7 @@ function SketchEditor(props: {
 
         <div className="sk-editor-actions">
           <button className="sk-confirm" onClick={confirm} disabled={!ready || failed}>
-            אישור והוספה לקנבס
+            אישור והוספה למפה
           </button>
           <button className="sk-cancel" onClick={props.onCancel}>
             ביטול
@@ -4162,8 +4162,8 @@ export function HallPage({
           <button
             className="hm-fit-btn"
             onClick={centerContent}
-            aria-label="מרכז את האולם"
-            title="מרכז את האולם"
+            aria-label="האולם למרכז המסך"
+            title="האולם למרכז המסך"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
@@ -4174,7 +4174,7 @@ export function HallPage({
             className="hm-fit-btn"
             onClick={() => recomputeFit()}
             aria-label="התאמת האולם למסך"
-            title="התאם למסך"
+            title="התאמה למסך"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M4 9V5a1 1 0 0 1 1-1h4" />
@@ -4256,7 +4256,7 @@ export function HallPage({
           {/* באנר "מצב העברה" — פעיל בכל הלשוניות כשנבחר מוזמן להעברה */}
           {selected !== null && (
             <div className="hm-move-banner">
-              <span>נבחר מוזמן להעברה — הקישו על שולחן כדי לשבץ אותו.</span>
+              <span>בחרתם מוזמן. עכשיו מקישים על השולחן שלו.</span>
               <button onClick={() => setSelected(null)}>ביטול</button>
             </div>
           )}
@@ -4345,12 +4345,12 @@ export function HallPage({
                       <>
                         <span
                           className="handle handle-rotate"
-                          title="סובב"
+                          title="סיבוב"
                           onPointerDown={onSketchRotatePointerDown}
                         />
                         <span
                           className="handle handle-resize"
-                          title="שנה גודל (שומר על יחס-הממדים)"
+                          title="שינוי גודל (שומר על הפרופורציות)"
                           onPointerDown={onSketchResizePointerDown}
                         />
                       </>
@@ -4420,8 +4420,8 @@ export function HallPage({
                             ))}
                           <button
                             type="button"
-                            title={el.locked ? 'שחרר נעילה' : 'נעל'}
-                            aria-label={el.locked ? 'שחרר נעילה' : 'נעל'}
+                            title={el.locked ? 'שחרור נעילה' : 'נעילה'}
+                            aria-label={el.locked ? 'שחרור נעילה' : 'נעילה'}
                             onClick={(e) => {
                               e.stopPropagation()
                               toggleElementLock(el.id)
@@ -4431,7 +4431,7 @@ export function HallPage({
                           </button>
                           <button
                             type="button"
-                            title="מחק"
+                            title="מחיקה"
                             aria-label="מחיקת הפריט"
                             onClick={(e) => {
                               e.stopPropagation()
@@ -4446,12 +4446,12 @@ export function HallPage({
                         <>
                           <span
                             className="handle handle-rotate"
-                            title="סובב"
+                            title="סיבוב"
                             onPointerDown={(e) => onRotatePointerDown(e, el.id)}
                           />
                           <span
                             className="handle handle-resize"
-                            title="שנה גודל"
+                            title="שינוי גודל"
                             onPointerDown={(e) => onResizePointerDown(e, el.id)}
                           />
                         </>
@@ -4651,8 +4651,8 @@ export function HallPage({
                   </span>
                   <button
                     type="button"
-                    title={sketchTransform?.locked ? 'שחרר נעילה' : 'נעל'}
-                    aria-label={sketchTransform?.locked ? 'שחרר נעילה' : 'נעל'}
+                    title={sketchTransform?.locked ? 'שחרור נעילה' : 'נעילה'}
+                    aria-label={sketchTransform?.locked ? 'שחרור נעילה' : 'נעילה'}
                     onClick={toggleSketchLock}
                   >
                     <HmIcon name={sketchTransform?.locked ? 'lock' : 'unlock'} size={18} />
