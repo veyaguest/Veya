@@ -39,7 +39,7 @@ from typing import Optional
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app import event_cycle, message_status, messaging, models
+from app import event_cycle, message_status, messaging, models, whatsapp_templates
 
 # מפתח ראשי לנעילת השליחה לאירוע (שונה ממפתחות המשימות המתוזמנות).
 _SEND_LOCK_KEY = 815402119
@@ -66,6 +66,10 @@ class BatchResult:
     no_template: int = 0
     # הבקשה יצאה ולא ידוע אם Meta קיבלה — נשארו ``pending``, לא נשלחים שוב.
     unknown: int = 0
+    # תבנית עם תמונת ההזמנה, והתמונה לא ניתנת להמרה / לא הועלתה ל-Meta — לא
+    # נרשמו ולא נשלחו (לא שולחים הזמנה בלי התמונה). ``image_reason``: הסיבה.
+    image_blocked: int = 0
+    image_reason: str = ""
     failed_guest_ids: list[int] = field(default_factory=list)
     last_detail: str = ""
     messages: list[models.Message] = field(default_factory=list)
@@ -126,12 +130,15 @@ def send_batch(
                 accepted.append(item)
             elif reason == messaging.TEST_BLOCKED:
                 result.blocked += 1
+            elif reason in whatsapp_templates.IMAGE_REASONS:
+                result.image_blocked += 1
+                result.image_reason = reason
             else:
                 result.no_template += 1
-        if result.blocked or result.no_template:
+        if result.blocked or result.no_template or result.image_blocked:
             print(
                 f"[veya:whatsapp] not sent event={event.id} blocked={result.blocked} "
-                f"no_template={result.no_template}",
+                f"no_template={result.no_template} image_blocked={result.image_blocked}",
                 flush=True,
             )
         items = accepted

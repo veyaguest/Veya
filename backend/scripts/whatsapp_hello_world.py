@@ -18,6 +18,10 @@ WHATSAPP_MODE=meta_test · לא VEYA_ENV=production · עצירת חירום כ�
         --template veya_inv_pilot --name <שם פרטי> --code <קוד אישי>          # בלי שליחה
     ... אותו דבר + --send                                                     # שליחה
 
+    # תבנית ההזמנה עם תמונה: אותו דבר + קובץ תמונה מקומי (מומר ל-JPEG ומועלה ל-Meta)
+    venv/bin/python scripts/whatsapp_hello_world.py --to 05XXXXXXXX \
+        --template veya_invitation_image --name <שם> --code <קוד> --image <קובץ>
+
 לא מדפיס טוקנים, סודות, מספרי טלפון מלאים או את מזהה ההודעה של Meta (``wamid``
 מכיל את מספר הנמען בקידוד base64) — רק טביעה מצונזרת שלו. גם הקוד האישי לא
 מודפס במלואו (הוא המפתח לדף ההזמנה של המוזמן).
@@ -70,6 +74,19 @@ def _safe(text: str) -> str:
     return _LONG_DIGITS_RE.sub("[מספר מוסתר]", text)
 
 
+def _read_image(path: str | None):
+    """(בייטים, content-type) של קובץ תמונה מקומי, או (None, None)."""
+    import mimetypes
+
+    if not path:
+        return None, None
+    try:
+        data = Path(path).read_bytes()
+    except OSError:
+        return None, None
+    return data, (mimetypes.guess_type(path)[0] or "").lower()
+
+
 def _mask_code(code: str) -> str:
     code = (code or "").strip()
     return f"***{code[-3:]}" if len(code) > 6 else "***"
@@ -91,13 +108,15 @@ def _run(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="שליחת תבנית בדיקה למספר בדיקה מורשה")
     parser.add_argument("--to", help="הטלפון שלכם (חייב להיות ב-WHATSAPP_TEST_RECIPIENTS)")
     parser.add_argument("--send", action="store_true", help="לשלוח בפועל (בלי זה — בדיקה בלבד)")
-    parser.add_argument("--template", choices=("hello_world", "veya_inv_pilot"),
+    parser.add_argument("--template", choices=("hello_world", "veya_inv_pilot", "veya_invitation_image"),
                         default="hello_world", help="איזו תבנית (ברירת מחדל: hello_world)")
     parser.add_argument("--name", help="veya_inv_pilot: השם הפרטי שייכנס להודעה")
     parser.add_argument("--code", help="veya_inv_pilot: הקוד האישי מהקישור /confirm/<קוד>")
+    parser.add_argument("--image", help="veya_invitation_image: קובץ תמונה מקומי")
     parser.add_argument("--env-file", default=str(BACKEND / ".env"), help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
-    pilot = args.template == "veya_inv_pilot"
+    with_image = args.template == "veya_invitation_image"
+    pilot = args.template == "veya_inv_pilot" or with_image
 
     loaded = _load_env(Path(args.env_file))
     print(f"קובץ הגדרות: {'נטען' if loaded else 'לא נמצא'} ({Path(args.env_file).name})")
@@ -122,6 +141,21 @@ def _run(argv: list[str] | None = None) -> int:
     print(f"נמען: {_mask(args.to)}")
     if pilot:
         print(f"קוד אישי בכפתור: {_mask_code(args.code or '')}")
+    image = content_type = None
+    if with_image:
+        image, content_type = _read_image(args.image)
+        if image is None:
+            print("לא נשלח: קובץ התמונה חסר או לא נקרא (--image).")
+            return 2
+        print(f"תמונה: {Path(args.image).name} ({len(image) // 1024}KB)")
+        from app import media
+
+        try:
+            jpeg = media.whatsapp_jpeg(image, content_type)
+        except media.WhatsAppImageError as exc:
+            print(f"לא נשלח: התמונה לא נשלחת ב-WhatsApp ({exc}). צריך JPEG או PNG.")
+            return 2
+        print(f"  הומרה ל-JPEG לשליחה: {len(jpeg) // 1024}KB (עד 5MB)")
     if not check.ok:
         print("לא נשלח. תנאים שלא מתקיימים:")
         for reason in check.reasons:
@@ -132,7 +166,15 @@ def _run(argv: list[str] | None = None) -> int:
         print("בדיקה בלבד — לא נשלח. להוסיף --send כדי לשלוח.")
         return 0
 
-    if pilot:
+    if with_image:
+        check, result = whatsapp_meta.send_invitation_image_test(
+            args.to, args.name or "", args.code or "", image, content_type)
+        if result is None:
+            print("לא נשלח:")
+            for reason in check.reasons:
+                print(f"  ✗ {_safe(reason)}")
+            return 2
+    elif pilot:
         _, result = whatsapp_meta.send_inv_pilot(args.to, args.name or "", args.code or "")
     else:
         _, result = whatsapp_meta.send_hello_world(args.to)

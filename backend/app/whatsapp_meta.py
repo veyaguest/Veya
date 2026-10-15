@@ -233,6 +233,7 @@ def _log(outcome: str, ref: str, **fields) -> None:
 def template_payload(
     *, to: str, name: str, language: str, body_params: list[str],
     url_suffix: Optional[str] = None, callback_data: Optional[str] = None,
+    header_image_id: Optional[str] = None,
 ) -> dict:
     """גוף בקשה לשליחת Template (Cloud API ``type: template``).
 
@@ -240,8 +241,14 @@ def template_payload(
     ``url_suffix`` — הסיומת הדינמית של כפתור הקישור (כפתור ראשון, index 0).
     ``callback_data`` — ``biz_opaque_callback_data``: Meta מחזירה אותו כמו שהוא
     בעדכוני הסטטוס של ההודעה (עד 512 תווים).
+    ``header_image_id`` — מזהה מדיה (``upload_media``) לתבנית עם Header מסוג תמונה.
     """
     components: list[dict] = []
+    if header_image_id:
+        components.append({
+            "type": "header",
+            "parameters": [{"type": "image", "image": {"id": header_image_id}}],
+        })
     if body_params:
         components.append({
             "type": "body",
@@ -270,7 +277,7 @@ def template_payload(
 def send_template(
     *, phone: str, name: str, language: str, body_params: list[str],
     url_suffix: Optional[str] = None, callback_data: Optional[str] = None,
-    config: Optional[MetaConfig] = None,
+    header_image_id: Optional[str] = None, config: Optional[MetaConfig] = None,
 ):
     """שולח Template לטלפון ישראלי. מחזיר ``SendResult``."""
     config = config or load_config()
@@ -279,8 +286,71 @@ def send_template(
         return _result(False, "failed", detail="מספר הטלפון אינו מספר ישראלי תקין")
     return _post_message(config, template_payload(
         to=to, name=name, language=language, body_params=body_params,
-        url_suffix=url_suffix, callback_data=callback_data,
+        url_suffix=url_suffix, callback_data=callback_data, header_image_id=header_image_id,
     ), log_ref=callback_data or "")
+
+
+# ---- העלאת תמונה ל-Meta (Header של תבנית) ----
+#
+# Meta מקבלת תמונה רק כ-JPEG/PNG עד 5MB. מעלים את הבייטים בעצמנו (ולא שולחים
+# קישור): תמונות ההזמנה נשמרות אצלנו כ-WebP, והשרת ב-Render "נרדם" — Meta לא
+# הייתה מצליחה למשוך אותן. המזהה שחוזר תקף 30 יום לפי Meta, אבל **לא נשמר**:
+# מעלים מחדש בכל מנת שליחה (``messaging.MetaProvider``), כך שמזהה ישן לא נשלח.
+
+# שגיאות מדיה של Meta בשליחת הודעה (131052 הורדת מדיה, 131053 העלאת מדיה) —
+# למשל מזהה שפג. אחרי אחת מהן מעלים מחדש לפני ההודעה הבאה (``messaging.MetaProvider``).
+MEDIA_ERROR_CODES = frozenset({131052, 131053})
+
+
+def upload_media(data: bytes, mime_type: str, *, config: Optional[MetaConfig] = None):
+    """``POST /{phone-number-id}/media``. מחזיר ``(media_id, "")`` או ``(None, סיבה)``.
+
+    בלי "לא ידוע": העלאה כפולה לא מזיקה (מזהה נוסף שלא בשימוש), ולכן כל
+    כשל — כולל timeout — הוא פשוט "לא הועלתה", והשליחה לא מתבצעת.
+    """
+    import httpx
+
+    config = config or load_config()
+    missing = config.missing()
+    if missing:
+        return None, "חסרות הגדרות WhatsApp: " + ", ".join(missing)
+    url = f"https://graph.facebook.com/{config.graph_version}/{config.phone_number_id}/media"
+    headers = {"Authorization": f"Bearer {config.access_token}"}
+    detail = "העלאת התמונה ל-Meta נכשלה"
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            with _client() as client:
+                resp = client.post(
+                    url, headers=headers,
+                    data={"messaging_product": "whatsapp", "type": mime_type},
+                    files={"file": ("invitation.jpg", data, mime_type)},
+                )
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout) as exc:
+            _log("media_connect_error", "", attempt=attempt, error=type(exc).__name__)
+            if attempt < MAX_ATTEMPTS:
+                _sleep(BACKOFF_SECONDS[min(attempt - 1, len(BACKOFF_SECONDS) - 1)])
+                continue
+            return None, "לא ניתן להתחבר ל-Meta"
+        except httpx.HTTPError as exc:
+            _log("media_error", "", attempt=attempt, error=type(exc).__name__)
+            return None, detail
+        body = _json(resp)
+        media_id = body.get("id") if isinstance(body, dict) else None
+        if 200 <= resp.status_code < 300 and isinstance(media_id, str) and media_id:
+            _log("media_uploaded", "", attempt=attempt)
+            return media_id, ""
+        error = body.get("error") if isinstance(body, dict) else None
+        error = error if isinstance(error, dict) else {}
+        code = error.get("code")
+        code = int(code) if isinstance(code, (int, str)) and str(code).lstrip("-").isdigit() else None
+        _log("media_error", "", attempt=attempt, http=resp.status_code, code=code)
+        message = error.get("message") if isinstance(error.get("message"), str) else ""
+        detail = _scrub(f"Meta {code if code is not None else resp.status_code}: {message}"[:300], config)
+        if code in RETRYABLE_CODES and attempt < MAX_ATTEMPTS:
+            _sleep(BACKOFF_SECONDS[min(attempt - 1, len(BACKOFF_SECONDS) - 1)])
+            continue
+        return None, detail
+    return None, detail
 
 
 def send_text(*, phone: str, body: str, callback_data: Optional[str] = None,
@@ -403,4 +473,39 @@ def send_inv_pilot(phone: str, guest_name: str, guest_code: str):
     result = send_template(phone=phone, name=name, language=language,
                            body_params=[guest_name.strip()], url_suffix=guest_code.strip(),
                            callback_data="veya:inv_pilot")
+    return check, result
+
+
+# ---- כלי בדיקה ידני: veya_invitation_image ----
+#
+# בדיקה של תבנית ההזמנה עם תמונה, בלי אירוע ובלי מסד: התמונה נלקחת מקובץ
+# מקומי, ופרטי האירוע בגוף הם ערכי הדוגמה שהוגשו עם התבנית ל-Meta. באותם
+# תנאי בטיחות של hello_world. אם ההמרה או ההעלאה נכשלות — לא נשלח כלום.
+
+INVITATION_IMAGE = ("veya_invitation_image", "he")
+INVITATION_TEST_VALUES = ("חתונה", "דניאל ושירה", "12/11/2026")
+
+
+def send_invitation_image_test(phone: str, guest_name: str, guest_code: str,
+                               image: bytes, content_type: str):
+    """מחזיר ``(check, result)``; ``result`` הוא ``None`` אם לא נשלח."""
+    from app import media
+
+    check = inv_pilot_preflight(phone, guest_name, guest_code)
+    if not check.ok:
+        return check, None
+    try:
+        jpeg = media.whatsapp_jpeg(image, content_type)
+    except media.WhatsAppImageError as exc:
+        return HelloWorldCheck(ok=False, reasons=[f"התמונה לא נשלחת ב-WhatsApp: {exc}"]), None
+    media_id, detail = upload_media(jpeg, "image/jpeg")
+    if not media_id:
+        return HelloWorldCheck(ok=False, reasons=[f"העלאת התמונה נכשלה: {detail}"]), None
+    name, language = INVITATION_IMAGE
+    result = send_template(
+        phone=phone, name=name, language=language,
+        body_params=[guest_name.strip(), *INVITATION_TEST_VALUES],
+        url_suffix=guest_code.strip(), callback_data="veya:invitation_image_test",
+        header_image_id=media_id,
+    )
     return check, result

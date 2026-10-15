@@ -6,10 +6,11 @@
 ערכים ממלאים אותו — כך שהנוסח לא כתוב בתוך קריאת ה-API, ואפשר להחליף
 תבנית בלי לגעת בלוגיקת ה-RSVP.
 
-**היום הרשימה ריקה — בכוונה.** אף Template של VEYA עוד לא נוצר ולא אושר
-(נוסחים — רק באישור המייסד). עד אז, במצבי Meta, שלב בלי Template לא נשלח,
-לא נרשם ולא נחשב כאילו הסבב הושלם (``outbound.send_batch``): כשהתבנית תאושר
-ותתווסף כאן, הסבב יצא אם החלון שלו עדיין פתוח.
+**היום ממופה רק ההזמנה** (2026-10-15, ``docs/whatsapp-templates.md``): תבנית
+עם תמונת ההזמנה של האירוע כ-Header, או — לאירוע בלי תמונה — אותו נוסח בלי
+תמונה. שאר השלבים ריקים עד שהתבניות שלהם יאושרו. במצבי Meta, שלב בלי
+Template לא נשלח, לא נרשם ולא נחשב כאילו הסבב הושלם (``outbound.send_batch``):
+כשהתבנית תאושר ותתווסף כאן, הסבב יצא אם החלון שלו עדיין פתוח.
 
 איך מוסיפים Template (אחרי שאושר ב-Meta):
     TEMPLATES["rsvp_request"] = TemplateSpec(
@@ -35,18 +36,45 @@ class TemplateSpec:
     # כפתור "לאישור הגעה" שהקישור שלו נגמר בטוקן האישי של האורח. הכתובת
     # הקבועה (עד ``/confirm/``) מוגדרת ב-Template עצמו ב-Meta.
     url_button: bool = False
+    # Header מסוג תמונה — תמונת ההזמנה של האירוע (``messaging.MetaProvider``
+    # מעלה אותה ל-Meta פעם אחת למנת שליחה). בלי תמונה — לא נשלח.
+    header_image: bool = False
+    # גרסה עם תמונה: נבחרת כשלאירוע יש תמונת הזמנה (``template_for``).
+    with_image: Optional["TemplateSpec"] = None
 
+
+_INVITATION_PARAMS = ("guest_name", "event_type", "host_names", "event_date")
 
 # שלב במסלול (``Message.kind`` / ``EventMessage.message_type``) → Template מאושר.
-TEMPLATES: dict[str, TemplateSpec] = {}
+TEMPLATES: dict[str, TemplateSpec] = {
+    # הזמנה: כפתור "לצפייה בהזמנה" בלבד — אישור ההגעה נפתח לפי הכללים הקיימים
+    # (``guest_journey.rsvp_is_open``), לא מתוך ההזמנה.
+    "invitation": TemplateSpec(
+        name="veya_invitation", body_params=_INVITATION_PARAMS, url_button=True,
+        with_image=TemplateSpec(
+            name="veya_invitation_image", body_params=_INVITATION_PARAMS,
+            url_button=True, header_image=True,
+        ),
+    ),
+}
 
 # סיבות שבגללן הודעה לא יוצאת במצב Meta (ולא נרשמת).
 NO_TEMPLATE = "no_template"
 MISSING_VALUE = "missing_value"
+# לאירוע יש תמונת הזמנה, אבל אי אפשר להמיר אותה ל-JPEG/PNG — חוסמים (לא שולחים בלעדיה).
+IMAGE_UNSUPPORTED = "image_unsupported"
+# התמונה לא הועלתה ל-Meta — חוסמים את כל המנה.
+IMAGE_UNAVAILABLE = "image_unavailable"
+IMAGE_REASONS = frozenset({IMAGE_UNSUPPORTED, IMAGE_UNAVAILABLE})
 
 
-def template_for(kind: Optional[str]) -> Optional[TemplateSpec]:
-    return TEMPLATES.get(kind or "")
+def template_for(kind: Optional[str], event=None) -> Optional[TemplateSpec]:
+    """התבנית לשלב. לשלב עם ``with_image`` ולאירוע עם תמונת הזמנה — הגרסה עם
+    התמונה, תמיד (גם אם ההמרה/ההעלאה תיכשל אחר כך — אז חוסמים, לא נופלים לטקסט)."""
+    spec = TEMPLATES.get(kind or "")
+    if spec is not None and spec.with_image is not None and event is not None and event.invite_image:
+        return spec.with_image
+    return spec
 
 
 def build(spec: TemplateSpec, values: dict[str, str], guest_token: Optional[str]):

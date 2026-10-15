@@ -31,6 +31,7 @@ from app import (
     permissions,
     rsvp_timeline,
     schemas,
+    whatsapp_templates,
 )
 from app.auth import get_current_owner
 from app.database import get_db
@@ -286,6 +287,15 @@ def activate_track(
             event_message_id=invitation_msg.id if invitation_msg else None,
         ))
     batch = outbound.send_batch(db, event, items)
+    if batch.image_blocked and not (batch.sent or batch.failed or batch.unknown):
+        # תבנית ההזמנה עם התמונה, והתמונה לא יצאה — אף הזמנה לא נשלחה ולא
+        # נרשמה. לא שולחים בלי התמונה (החלטת המייסד 2026-10-15); מסבירים לזוג.
+        raise HTTPException(status_code=409, detail=(
+            "ההזמנות לא נשלחו: אי אפשר לצרף את תמונת ההזמנה ב-WhatsApp. "
+            "העלו את התמונה מחדש כקובץ JPEG או PNG ונסו שוב."
+            if batch.image_reason == whatsapp_templates.IMAGE_UNSUPPORTED else
+            "ההזמנות לא נשלחו: לא הצלחנו לצרף את תמונת ההזמנה. נסו שוב בעוד כמה דקות."
+        ))
     invitations_sent, failed, failed_ids = batch.sent, batch.failed, batch.failed_guest_ids
 
     # יומן הפעילות — רישום קריא לזוג (רק מה שקרה בפועל).

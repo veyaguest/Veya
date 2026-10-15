@@ -704,16 +704,60 @@ class MetaProvider:
     - ``send_outbound`` — שליחה של הודעה מהמסלול, עם המזהה הפנימי של השורה
       ב-``biz_opaque_callback_data`` (להשלמת הודעות שהתוצאה שלהן לא ידועה).
     - ``send_invitation(phone, text)`` — טקסט חופשי בלי הקשר: לא נשלח במצב Meta.
+
+    **תמונת ההזמנה (Header):** מועלית ל-Meta פעם אחת למנת שליחה, והמזהה משמש
+    את כל המוזמנים במנה. מופע חדש לכל מנה (``get_provider``), והמזהה נשמר רק
+    במופע — לפי ``(event.id, event.invite_image)`` — כך שמזהה ישן (Meta: 30 יום)
+    לא נשלח, ותמונה של אירוע אחד לא יכולה לצאת באירוע אחר. העלאה נכשלה →
+    אף הודעה לא יוצאת (לא נופלים לנוסח בלי תמונה). שגיאת מדיה בשליחה → מעלים
+    שוב לפני ההודעה הבאה, לכל היותר ``MAX_MEDIA_UPLOADS`` פעמים במנה.
     """
 
     name = "meta"
     # שליחה אמיתית: כל הודעה נשמרת מיד אחרי שיצאה (``outbound.send_batch``).
     external = True
+    MAX_MEDIA_UPLOADS = 2
+
+    def __init__(self) -> None:
+        # (event_id, invite_image) → (media_id, None) או (None, סיבה)
+        self._media: dict[tuple, tuple[Optional[str], Optional[str]]] = {}
+        self._uploads: dict[tuple, int] = {}
+
+    def _event_image(self, event):
+        """מזהה המדיה של תמונת ההזמנה של **האירוע הזה**, או ``(None, סיבה)``."""
+        from sqlalchemy.orm import object_session
+
+        from app import media, whatsapp_meta, whatsapp_templates
+
+        key = (event.id, event.invite_image)
+        if key in self._media:
+            return self._media[key]
+        if self._uploads.get(key, 0) >= self.MAX_MEDIA_UPLOADS:
+            return None, whatsapp_templates.IMAGE_UNAVAILABLE
+        db = object_session(event)
+        try:
+            if db is None:
+                raise media.WhatsAppImageError("אין חיבור למסד")
+            raw, content_type = media.load_stored_image(db, event.invite_image)
+            jpeg = media.whatsapp_jpeg(raw, content_type)
+        except media.WhatsAppImageError as exc:
+            print(f"[veya:whatsapp] invitation image unsupported event={event.id} "
+                  f"reason={type(exc).__name__}", flush=True)
+            self._media[key] = (None, whatsapp_templates.IMAGE_UNSUPPORTED)
+            return self._media[key]
+        self._uploads[key] = self._uploads.get(key, 0) + 1
+        media_id, _ = whatsapp_meta.upload_media(jpeg, "image/jpeg")
+        if not media_id:
+            print(f"[veya:whatsapp] invitation image upload failed event={event.id}", flush=True)
+            self._media[key] = (None, whatsapp_templates.IMAGE_UNAVAILABLE)
+        else:
+            self._media[key] = (media_id, None)
+        return self._media[key]
 
     def _template_values(self, item, event):
         from app import communication, whatsapp_templates
 
-        spec = whatsapp_templates.template_for(item.kind)
+        spec = whatsapp_templates.template_for(item.kind, event)
         if spec is None:
             return None, whatsapp_templates.NO_TEMPLATE
         built = whatsapp_templates.build(
@@ -721,7 +765,12 @@ class MetaProvider:
         )
         if built is None:
             return None, whatsapp_templates.MISSING_VALUE
-        return (spec, *built), None
+        media_id = None
+        if spec.header_image:
+            media_id, reason = self._event_image(event)
+            if media_id is None:
+                return None, reason
+        return (spec, *built, media_id), None
 
     def accepts(self, item, event) -> Optional[str]:
         """``None`` = אפשר לשלוח; אחרת הסיבה שלא (בלי לשלוח ובלי לרשום)."""
@@ -734,21 +783,33 @@ class MetaProvider:
         values, reason = self._template_values(item, event)
         if values is None:
             return f"[לא נשלח — {reason}]"
-        spec, body_params, _ = values
-        return f"[Template {spec.name}] " + " · ".join(body_params)
+        spec, body_params, _, media_id = values
+        image = " · [תמונת ההזמנה]" if media_id else ""
+        return f"[Template {spec.name}] " + " · ".join(body_params) + image
 
     def send_outbound(self, item, event, callback_data: str) -> SendResult:
         from app import whatsapp_meta
 
+        from app import whatsapp_templates
+
         values, reason = self._template_values(item, event)
         if values is None:
-            return SendResult(ok=False, provider=self.name, status="failed",
-                              detail=f"אין Template מאושר לשלב הזה ({reason})")
-        spec, body_params, url_suffix = values
-        return whatsapp_meta.send_template(
+            detail = (
+                "תמונת ההזמנה לא צורפה — ההודעה לא נשלחה"
+                if reason in whatsapp_templates.IMAGE_REASONS
+                else f"אין Template מאושר לשלב הזה ({reason})"
+            )
+            return SendResult(ok=False, provider=self.name, status="failed", detail=detail)
+        spec, body_params, url_suffix, media_id = values
+        result = whatsapp_meta.send_template(
             phone=item.phone, name=spec.name, language=spec.language,
             body_params=body_params, url_suffix=url_suffix, callback_data=callback_data,
+            header_image_id=media_id,
         )
+        if media_id and result.error_code in whatsapp_meta.MEDIA_ERROR_CODES:
+            # המזהה לא תקף (פג/לא נמשך) — ההודעה הבאה תעלה את התמונה מחדש.
+            self._media.pop((event.id, event.invite_image), None)
+        return result
 
     def send_invitation(self, phone: str, text: str) -> SendResult:  # noqa: ARG002
         return SendResult(ok=False, provider=self.name, status="failed",

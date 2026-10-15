@@ -227,3 +227,72 @@ def to_url(stored: Optional[str]) -> Optional[str]:
     ערכי ``data:`` ישנים או URL חיצוני מוחזרים כמו שהם.
     """
     return stored or None
+
+
+# ---- תמונת ההזמנה ל-WhatsApp ----
+#
+# Meta מקבלת בתבנית רק JPEG/PNG עד 5MB, 8-bit RGB/RGBA. אצלנו התמונה נשמרת
+# כ-WebP (``_optimize_image``), ופורמטים "שקטים" (HEIC/AVIF/GIF/SVG) נשמרים כמו
+# שהם. כאן מייצרים עותק JPEG **לשליחה בלבד** — מה ששמור לא משתנה. תמונה שאי
+# אפשר להמיר נחסמת (לא נשלחת הזמנה בלעדיה) — החלטת המייסד 2026-10-15.
+
+WHATSAPP_IMAGE_MAX_BYTES = 5 * 1024 * 1024
+_WHATSAPP_QUALITIES = (88, 80, 70, 60)
+_WHATSAPP_DIMENSIONS = (MAX_IMAGE_DIMENSION, 2000, 1600, 1200)
+
+
+class WhatsAppImageError(Exception):
+    """התמונה לא קיימת אצלנו, או שאי אפשר להמיר אותה ל-JPEG שמתאים ל-Meta."""
+
+
+def load_stored_image(db: Session, stored: Optional[str]) -> tuple[bytes, str]:
+    """הבייטים וה-content-type של תמונה שמורה (``/media/<id>`` או ``data:`` ישן).
+
+    ``/uploads/`` (דיסק זמני של פעם) או כתובת חיצונית — לא נתמכים: אין לנו
+    דרך אמינה לקרוא אותם, ועדיף לבקש העלאה מחדש מלשלוח תמונה לא נכונה.
+    """
+    if stored and stored.startswith("/media/"):
+        blob = db.get(models.MediaBlob, stored.rsplit("/", 1)[-1])
+        if blob is None or not blob.data:
+            raise WhatsAppImageError("התמונה השמורה לא נמצאה")
+        return bytes(blob.data), (blob.content_type or "").lower()
+    if stored and stored.startswith("data:"):
+        content_type, raw = _parse_data_url(stored)
+        return raw, content_type
+    raise WhatsAppImageError("התמונה לא שמורה במסד")
+
+
+def whatsapp_jpeg(raw: bytes, content_type: str) -> bytes:
+    """עותק JPEG (RGB, עד 5MB) של תמונת רסטר. אחרת ``WhatsAppImageError``.
+
+    רק פורמטי רסטר שאנחנו כבר מעבדים בהעלאה (``_RASTER_CONTENT_TYPES``) —
+    GIF/SVG/HEIC/AVIF נחסמים. תמונה מונפשת נחסמת (פריים ראשון אינו "התמונה").
+    """
+    if (content_type or "").lower() not in _RASTER_CONTENT_TYPES:
+        raise WhatsAppImageError(f"פורמט שלא נשלח ב-WhatsApp: {content_type or 'לא ידוע'}")
+    try:
+        img = Image.open(io.BytesIO(raw))
+        if getattr(img, "is_animated", False):
+            raise WhatsAppImageError("תמונה מונפשת")
+        img = ImageOps.exif_transpose(img)
+        if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+            rgba = img.convert("RGBA")
+            img = Image.new("RGB", rgba.size, (255, 255, 255))
+            img.paste(rgba, mask=rgba.split()[3])
+        else:
+            img = img.convert("RGB")
+    except WhatsAppImageError:
+        raise
+    except Exception as exc:
+        raise WhatsAppImageError("קובץ התמונה פגום או בפורמט לא נתמך") from exc
+    for dimension in _WHATSAPP_DIMENSIONS:
+        candidate = img
+        if max(img.size) > dimension:
+            candidate = img.copy()
+            candidate.thumbnail((dimension, dimension), Image.LANCZOS)
+        for quality in _WHATSAPP_QUALITIES:
+            buf = io.BytesIO()
+            candidate.save(buf, format="JPEG", quality=quality, optimize=True)
+            if buf.tell() <= WHATSAPP_IMAGE_MAX_BYTES:
+                return buf.getvalue()
+    raise WhatsAppImageError("התמונה גדולה מדי גם אחרי דחיסה")

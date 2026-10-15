@@ -94,8 +94,13 @@ Meta webhook → /messaging/webhook → whatsapp_inbound (שיוך, RSVP, הוד
 Meta שולחת ביוזמתנו רק Template מאושר. הנוסח שבעלי האירוע עורכים **לא** נשלח כמו שהוא
 במצבי Meta — `whatsapp_templates.TEMPLATES` קובע מה נשלח בכל שלב.
 
-**היום הרשימה ריקה.** לכן במצבי Meta שום שלב לא נשלח — לא נרשם, לא נחשב כאילו נשלח,
-והסבב לא "נשרף": כשהתבנית תאושר ותתווסף, הסבב יוצא אם החלון שלו עדיין פתוח.
+**היום ממופה רק ההזמנה** (2026-10-15): `veya_invitation_image` — עם תמונת ההזמנה של
+האירוע כ-Header — או `veya_invitation` לאירוע בלי תמונה (פירוט: `docs/whatsapp-templates.md`).
+התמונה מומרת ל-JPEG, מועלית ל-Meta פעם אחת למנה (`whatsapp_meta.upload_media`), ואם היא לא
+יוצאת — אף הזמנה לא נשלחת (409 עם הסבר לזוג). **לא להעביר את Render ל-`meta_test`/`meta`
+לפני ששתי התבניות מאושרות ב-Meta** — אחרת Meta תדחה את ההזמנות (132001).
+שאר השלבים — במצבי Meta לא נשלחים: לא נרשמים, לא נחשבים כאילו נשלחו, והסבב לא "נשרף";
+כשהתבנית תאושר ותתווסף, הסבב יוצא אם החלון שלו עדיין פתוח.
 אותו דבר כשחסר ערך למילוי (למשל טוקן אישי) — Meta הייתה דוחה ממילא.
 
 ביומן ההודעות נרשם מה שבאמת יצא: `[Template <name>] <ערכים>` — בלי הטוקן האישי.
@@ -197,6 +202,10 @@ venv/bin/python scripts/whatsapp_hello_world.py --to 05XXXXXXXX --send
 venv/bin/python scripts/whatsapp_hello_world.py --to 05XXXXXXXX \
     --template veya_inv_pilot --name <שם פרטי> --code <קוד אישי>   # + --send לשליחה
 ```
+
+**`veya_invitation_image`** (`--template veya_invitation_image --image <קובץ>`) — אותו דבר
+עם תמונה מקובץ מקומי: בלי `--send` רק בודק שהתמונה ניתנת להמרה (לא מעלה ולא שולח); עם
+`--send` מעלה ל-Meta ושולח. פרטי האירוע בגוף = ערכי הדוגמה של התבנית.
 
 ## בדיקות
 
