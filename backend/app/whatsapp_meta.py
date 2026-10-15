@@ -355,3 +355,52 @@ def send_hello_world(phone: str):
     result = send_template(phone=phone, name=name, language=language, body_params=[],
                            callback_data="veya:hello_world")
     return check, result
+
+
+# ---- כלי בדיקה ידני: veya_inv_pilot ----
+#
+# תבנית ניסוי אחת שאושרה ב-Meta (2026-10-15): הזמנה של אירוע בדיקה, שפרטי
+# האירוע (שמות, תאריך, אולם) כתובים בה כטקסט קבוע. **לא** נמצאת ב-
+# ``whatsapp_templates.TEMPLATES`` ולא מחוברת להזמנות — אורח אמיתי היה מקבל
+# את פרטי אירוע הבדיקה. נשלחת רק מכלי הבדיקה, באותם תנאי בטיחות של hello_world.
+# מבנה (docs/whatsapp-templates.md): {{1}} בגוף = שם פרטי; כפתור ראשון דינמי =
+# הקוד האישי (``/confirm/{{1}}``); כפתור שני (ניווט) קבוע — בלי ערך.
+
+INV_PILOT = ("veya_inv_pilot", "he")
+# קוד אישי של מוזמן: ``secrets.token_urlsafe`` (models.py) — אותיות, ספרות, ``-`` ו-``_``.
+_GUEST_CODE_RE = re.compile(r"^[A-Za-z0-9_-]{6,64}$")
+
+
+def _inv_pilot_value_problems(guest_name: str, guest_code: str) -> list[str]:
+    """Meta דוחה ערך משתנה עם ירידת שורה, טאב או 4 רווחים ברצף; קוד שאינו
+    בפורמט של VEYA היה יוצר קישור שבור בכפתור."""
+    problems: list[str] = []
+    name = (guest_name or "").strip()
+    if not name:
+        problems.append("חסר שם פרטי (--name)")
+    elif len(name) > 60 or re.search(r"[\n\r\t]| {4}", name):
+        problems.append("השם הפרטי ארוך מדי או מכיל ירידת שורה/טאב/רווחים מרובים")
+    if not _GUEST_CODE_RE.match((guest_code or "").strip()):
+        problems.append("הקוד האישי חסר או לא בפורמט של VEYA (--code)")
+    return problems
+
+
+def inv_pilot_preflight(phone: str, guest_name: str, guest_code: str) -> HelloWorldCheck:
+    """תנאי ``hello_world_preflight`` + תקינות השם והקוד."""
+    check = hello_world_preflight(phone)
+    reasons = check.reasons + _inv_pilot_value_problems(guest_name, guest_code)
+    return HelloWorldCheck(ok=not reasons, reasons=reasons)
+
+
+def send_inv_pilot(phone: str, guest_name: str, guest_code: str):
+    """שולח את ``veya_inv_pilot`` — רק אם ``inv_pilot_preflight`` עבר. לא נוגע
+    במסד; ``callback_data`` לא בפורמט ``veya:m…`` ולכן ה-webhook לא ישייך את
+    הסטטוסים לאף הודעה (``known=no``)."""
+    check = inv_pilot_preflight(phone, guest_name, guest_code)
+    if not check.ok:
+        return check, None
+    name, language = INV_PILOT
+    result = send_template(phone=phone, name=name, language=language,
+                           body_params=[guest_name.strip()], url_suffix=guest_code.strip(),
+                           callback_data="veya:inv_pilot")
+    return check, result

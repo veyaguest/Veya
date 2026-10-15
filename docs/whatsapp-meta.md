@@ -189,6 +189,15 @@ venv/bin/python scripts/whatsapp_hello_world.py --to 05XXXXXXXX --send
 `production` · עצירת חירום כבויה · הנמען ברשימה המורשית (שלנו) · טוקן ומזהה מספר מוגדרים.
 מספר בדיקה של Meta שולח רק לנמענים שאושרו גם בדשבורד של Meta (עד 5).
 
+**תבנית הניסוי `veya_inv_pilot`** (`--template veya_inv_pilot`, 2026-10-15) — הזמנה של
+אירוע בדיקה, שפרטיו קבועים בטקסט (`docs/whatsapp-templates.md`). באותם תנאים, ובנוסף:
+`--name` (שם פרטי לגוף) ו-`--code` (הקוד האישי מ-`/confirm/<קוד>`, לכפתור הראשון).
+**לא** מחוברת להזמנות ולא נמצאת ב-`whatsapp_templates.TEMPLATES`. הקוד לא מודפס במלואו.
+```bash
+venv/bin/python scripts/whatsapp_hello_world.py --to 05XXXXXXXX \
+    --template veya_inv_pilot --name <שם פרטי> --code <קוד אישי>   # + --send לשליחה
+```
+
 ## בדיקות
 
 ```bash
