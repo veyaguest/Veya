@@ -2901,7 +2901,7 @@
       .hp-stage { margin-top: -36px; }
       /* בלי היכולות בצדדים אין צורך לשמור להן 440px — הצילום מקבל את הרוחב.
          תנאי הגובה נשאר: הכפתור בתוך המסך הראשון גם ב-1280×720. */
-      .hp-stage { --hp-w: min(900px, calc((100svh - 300px) * 1.7778), calc(100vw - 96px)); }
+      .hp-stage { --hp-w: min(900px, calc((100svh - 340px) * 1.7778), calc(100vw - 96px)); }
       /* פעולה ראשית אחת במסך גם במחשב: הכפתור שבכותרת העליונה מחכה עד
          שכפתור ההירו יוצא מהמסך (אותו מנגנון שכבר פעל בטלפון) */
       @media (min-width: 1100px) {
@@ -2912,6 +2912,14 @@
           opacity: 0; transform: translateY(-6px) scale(0.97); visibility: hidden; pointer-events: none;
           transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out), visibility 0s 160ms;
         }
+      }
+      /* שני משפטים, שתי שורות: כל משפט בשורה משלו ולא שבירה מקרית באמצע.
+         בטלפון רק המשפט הראשון (מה VEYA עושה) — ההירו נשאר כותרת, משפט,
+         צילום וכפתור; ההסבר "איך" מחכה לסקשן הבא. */
+      .hero-lead .hl-what, .hero-lead .hl-how { display: block; }
+      @media (max-width: 600px) {
+        .hero-lead .hl-how { display: none; }
+        .hero h1 { font-size: 1.9375rem; }
       }
       @media (max-width: 600px) {
         .hero { padding-top: 32px; padding-bottom: 48px; }
@@ -3127,8 +3135,8 @@
       <!-- ═════ 1. HERO ═════ -->
       <section class="hero on-dark" aria-labelledby="hero-title">
         <div class="wrap">
-          <h1 id="hero-title" class="reveal d1">כמה באמת מגיעים לאירוע שלכם<br /><span class="accent">וכמה זה עולה לכם</span></h1>
-          <p class="hero-lead reveal d1">כל תשובה של מוזמן ממשיכה לבד: לשולחן שלו, ולחשבון של האירוע.</p>
+          <h1 id="hero-title" class="reveal d1">כשהאולם יבקש מספר סופי<br /><span class="accent">תדעו אותו בעל פה</span></h1>
+          <p class="hero-lead reveal d1"><span class="hl-what">VEYA מחברת את אישורי ההגעה לסידור ההושבה ולחשבון.</span> <span class="hl-how">מוזמן משנה תשובה, והמספר, השולחן והעלות מתעדכנים אחריו.</span></p>
           <!-- ═════ ההירו בנוי על הצילום ═════════════════════════════════
                זוג בסלון מול המחשב (Higgsfield); על מסך המחשב הולבש בפרספקטיבה
                צילום המסך האמיתי של תמונת המצב מאירוע ההדגמה
