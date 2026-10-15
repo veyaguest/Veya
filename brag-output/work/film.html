@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>VEYA — launch film (vertical)</title>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Frank+Ruhl+Libre:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --black:#0B0A0C; --char:#1C1A16; --gold:#C9A227; --gold-l:#E4C96B; --ivory:#FAF7F0; }
+  html, body { margin:0; background:#000; }
+  #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:radial-gradient(90% 60% at 50% 58%, #1F1B16 0%, #121010 55%, var(--black) 100%); }
+  .abs { position:absolute; }
+  .seal { left:50%; top:86px; width:64px; height:64px; margin-left:-32px; background:url(mark.png) center/contain no-repeat; }
+  .head { left:70px; right:70px; top:200px; text-align:center; }
+  .tag { font:700 26px 'Assistant',sans-serif; letter-spacing:5px; color:var(--gold); }
+  .h { font:500 84px/1.16 'Frank Ruhl Libre',serif; color:var(--ivory); letter-spacing:-.5px; }
+  .g { font:500 64px/1.2 'Frank Ruhl Libre',serif; color:var(--gold-l); margin-top:14px; }
+  .rule { left:50%; width:132px; height:1px; margin-left:-66px; background:linear-gradient(90deg, rgba(201,162,39,0), var(--gold) 28%, var(--gold) 72%, rgba(201,162,39,0)); }
+  .rule::after { content:''; position:absolute; left:50%; top:-4px; width:7px; height:7px; margin-left:-3.5px; transform:rotate(45deg); border:1px solid var(--gold); background:#141210; }
+  .card { overflow:hidden; border-radius:30px; box-shadow:0 44px 120px rgba(0,0,0,.62), 0 0 0 1px rgba(228,201,107,.12); transform-origin:50% 50%; }
+  .card img { position:absolute; left:0; top:0; max-width:none; display:block; }
+  .fadeL { -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 110px); mask-image:linear-gradient(90deg, transparent 0, #000 110px); }
+  .tap { width:120px; height:120px; margin:-60px 0 0 -60px; border-radius:50%; border:3px solid rgba(255,255,255,.92); background:rgba(228,201,107,.22); }
+  .center { left:0; right:0; text-align:center; }
+  .logo { left:50%; width:440px; height:240px; margin-left:-220px; background:url(logo.png) center/contain no-repeat; }
+  .cta { left:50%; font:700 36px 'Assistant',sans-serif; color:var(--char); background:linear-gradient(180deg, var(--gold-l), var(--gold)); padding:22px 64px; border-radius:999px; white-space:nowrap; }
+  .sub { font:400 36px/1.45 'Assistant',sans-serif; color:rgba(250,247,240,.72); }
+  .url { font:600 32px 'Assistant',sans-serif; letter-spacing:2px; color:rgba(250,247,240,.7); direction:ltr; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="abs seal" id="seal"></div>
+
+  <!-- every image inside the cards is a frame of a NEW screen recording of VEYA (isolated demo event "עידו ותמר", 7.10.2026) -->
+  <div class="abs card" id="cA" style="left:60px; top:640px; width:960px; height:900px; background:#FFFFFF;"><div class="abs" id="cAin" style="inset:0;"><img id="iA"></div></div>
+  <div class="abs card" id="cB" style="left:260px; top:600px; width:560px; height:1212px; background:#0B0A0C;"><img id="iB"><div class="abs tap" id="tapB"></div></div>
+  <div class="abs card" id="cR" style="left:60px; top:760px; width:960px; height:512px; background:#FBF6EE;"><img id="iR" style="width:960px;"></div>
+  <div class="abs card" id="cC" style="left:150px; top:640px; width:780px; height:880px; background:#FBF6EE;"><img id="iC"></div>
+  <div class="abs tap" id="tapA"></div>
+
+  <!-- headlines -->
+  <div class="abs head" id="h1"><div class="tag">רשימת מוזמנים</div><div class="h" id="h1a" style="margin-top:22px;">„הרשימה אצלנו בוואטסאפ.”</div><div class="g" id="h1b">„מאיפה מתחילים?”</div></div>
+  <div class="abs head" id="h2"><div class="tag">רשימת מוזמנים</div><div class="h" id="h2a" style="margin-top:22px;">מדביקים את הרשימה.</div><div class="g" id="h2b">VEYA מזהה שם, טלפון<br>וכמה אנשים.</div></div>
+  <div class="abs head" id="h3"><div class="tag">אישורי הגעה</div><div class="h" id="h3a" style="margin-top:22px;">האורחים מאשרים מהטלפון.</div><div class="g" id="h3b">בשתי לחיצות.</div></div>
+  <div class="abs head" id="h4"><div class="tag">אישורי הגעה</div><div class="h" id="h4a" style="margin-top:22px;">„אז כמה באמת מגיעים?”</div><div class="g" id="h4b">425 אישרו הגעה.</div></div>
+  <div class="abs rule" id="hr" style="top:590px;"></div>
+
+  <!-- end card: the shared CTA ending of every VEYA asset -->
+  <div class="abs" id="end" style="inset:0; background:radial-gradient(85% 55% at 50% 40%, #1C1A16 0%, #0B0A0C 72%);">
+    <div class="abs logo" id="eLogo" style="top:420px;"></div>
+    <div class="abs rule" id="eRule" style="top:760px;"></div>
+    <div class="abs center h" id="eH" style="top:810px; font-size:86px; line-height:1.13;">תדעו כמה מגיעים.<br><span style="color:var(--gold-l)">וכמה זה עולה.</span></div>
+    <div class="abs center sub" id="eTypes" style="top:1060px; left:100px; right:100px;">חתונה · חינה · בר ובת מצווה · ברית ובריתה · אירוע עסקי</div>
+    <div class="abs cta" id="eCta" style="top:1240px;">מתחילים לתכנן</div>
+    <div class="abs center url" id="eUrl" style="top:1370px;">veyaguest.co.il</div>
+  </div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, k) => a + (b - a) * k;
+const eo = (k) => 1 - Math.pow(1 - k, 3);
+const eio = (k) => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const FPS = 30;
+const fr = (dir, s, n) => `fr/${dir}/${String(clamp(Math.round(s * FPS) + 1, 1, n)).padStart(5, '0')}.jpg`;
+const N = { A: 961, B: 274, C: 253 };
+
+// ---- timeline (video seconds) ----
+const T = { s2: 3.0, s3: 9.8, s4: 14.6, cut4: 17.6, s5: 19.6, end: 24.0 };
+window.T = T;
+
+// desktop paste recording: real-time pieces of ONE take, camera rects in recording pixels (2560×1600)
+const P1 = [1290, 420, 2120, 1198], R1 = [1380, 200, 2120, 894], R2 = [1380, 740, 2120, 1434], L = [995, 380, 2005, 1327];
+const AS = [ // [v0, v1, src0, src1, rectFrom, rectTo]
+  [0.0, 3.0, 10.95, 10.95, P1, P1],          // hook: the real empty paste box (focused)
+  [3.0, 4.8, 10.95, 12.75, P1, P1],          // the paste lands (src 11.83)
+  [4.8, 5.75, 15.45, 16.40, P1, P1],         // "פענוח הרשימה" is clicked
+  [5.75, 7.4, 17.15, 18.80, R1, R1],         // review: 284 of 284 rows, name / phone / people
+  [7.4, 8.4, 23.55, 24.55, R2, R2],          // "ייבוא 284 מוזמנים"
+  [8.4, 9.8, 24.60, 26.00, L, L],            // the list: "הוספנו 284 מוזמנים לרשימה"
+];
+// guest phone recording (780×1688, css×2): shown from css y=120
+const B0 = 1.2, Btap = [[1.97, 305, 613], [4.55, 195, 819]];
+// owner phone: RSVP counters after each real wave (states 00..09)
+const RS = [...Array(10).keys()].map((k) => `img/rsvp_${String(k).padStart(2, '0')}.png`);
+const WAVE = (k) => 15.0 + k * 0.17;       // state k shows from WAVE(k); state 9 at 16.53
+window.WAVES = [...Array(9).keys()].map((i) => WAVE(i + 1));
+window.TAPS = [5.42, 8.3, ...Btap.map(([s]) => T.s3 + (s - B0))];
+
+function show(el, t, a, b, rise = 22, fi = .45, fo = .3) {
+  const k = eo(seg(t, a, a + fi)), out = eio(seg(t, b - fo, b));
+  el.style.opacity = k * (1 - out); el.style.transform = `translateY(${(1 - k) * rise}px)`;
+  return k * (1 - out);
+}
+function card(el, t, a, b, push = .025) {
+  const k = eo(seg(t, a, a + .5)), out = eio(seg(t, b - .3, b));
+  el.style.opacity = k * (1 - out);
+  el.style.transform = `translateY(${(1 - k) * 46 - out * 18}px) scale(${(.965 + .035 * k) * (1 + push * eio(seg(t, a, b)))})`;
+  el.style.display = k * (1 - out) > .001 ? 'block' : 'none';
+}
+function camImg(img, W, H, rect) {
+  const [x0, y0, x1, y1] = rect; const s = W / (x1 - x0);
+  img.style.width = (2560 * s) + 'px'; img.style.left = (-x0 * s) + 'px'; img.style.top = (-y0 * s) + 'px';
+  return s;
+}
+function tapAt(el, t, t0, x, y) {
+  const p = seg(t, t0 - .14, t0 + .5);
+  el.style.left = x + 'px'; el.style.top = y + 'px';
+  el.style.opacity = p > 0 && p < 1 ? (p < .28 ? p / .28 : 1 - (p - .28) / .72) * .9 : 0;
+  el.style.transform = `scale(${p < .28 ? 1 - .3 * p / .28 : .7 + .8 * (p - .28) / .72})`;
+  return p > 0 && p < 1;
+}
+
+function renderAt(t) {
+  $('seal').style.opacity = .9 * eo(seg(t, .1, .6)) * (1 - eio(seg(t, T.s5 - .3, T.s5)));
+
+  // ---- A: desktop paste ----
+  card($('cA'), t, .3, T.s3);
+  const a = AS.find(([v0, v1]) => t >= v0 && t < v1) || AS[AS.length - 1];
+  const k = seg(t, a[0], a[1]);
+  $('iA').src = fr('A', lerp(a[2], a[3], k), N.A);
+  const rect = a[4].map((v, i) => lerp(v, a[5][i], k));
+  camImg($('iA'), 960, 900, rect);
+  $('cAin').className = 'abs fadeL';
+  $('cA').style.background = a[4] === L ? '#FBF7F0' : '#FFFFFF';
+  // pointer press marks on the two real clicks (the recording's own pointer is visible too)
+  const s = 960 / (rect[2] - rect[0]);
+  let on = false;
+  if (t > 5.1 && t < 6.0) on = tapAt($('tapA'), t, 5.42, 60 + (1947 - rect[0]) * s, 640 + (1103 - rect[1]) * s);
+  else if (t > 7.9 && t < 8.85) on = tapAt($('tapA'), t, 8.3, 60 + (1925 - rect[0]) * s, 640 + (1340 - rect[1]) * s);
+  if (!on) $('tapA').style.opacity = 0;
+
+  // ---- B: guest confirms on the phone ----
+  card($('cB'), t, T.s3 + .15, T.s4, .02);
+  const sb = B0 + (t - T.s3);
+  $('iB').src = fr('B', sb, N.B);
+  const kB = 560 / 780; $('iB').style.width = '560px'; $('iB').style.top = '0px';
+  let tb = false;
+  for (const [ts, x, y] of Btap) if (Math.abs(sb - ts) < .6) tb = tapAt($('tapB'), sb, ts, x * 2 * kB, y * 2 * kB) || tb;
+  if (!tb) $('tapB').style.opacity = 0;
+
+  // ---- R: RSVP counters after each wave of real answers ----
+  card($('cR'), t, T.s4 + .15, T.cut4, .02);
+  let st = 0; for (let i = 1; i <= 9; i++) if (t >= WAVE(i)) st = i;
+  $('iR').src = RS[st];
+
+  // ---- C: the couple's dashboard (real scroll to the RSVP gauge) ----
+  card($('cC'), t, T.cut4 + .1, T.s5, .02);
+  const sc = 5.5 + (t - T.cut4); $('iC').src = fr('C', sc, N.C);
+  $('iC').style.width = '780px'; $('iC').style.top = '-400px';
+
+  // ---- headlines ----
+  const vis = (id, a0, b0) => { $(id).style.display = t >= a0 - .05 && t < b0 ? 'block' : 'none'; };
+  vis('h1', 0, T.s2); vis('h2', T.s2, T.s3); vis('h3', T.s3, T.s4); vis('h4', T.s4, T.s5);
+  show($('h1'), t, .1, T.s2, 0); show($('h1a'), t, .15, T.s2); show($('h1b'), t, .8, T.s2);
+  show($('h2'), t, T.s2 + .1, T.s3, 0); show($('h2a'), t, T.s2 + .1, T.s3); show($('h2b'), t, 5.85, T.s3);
+  show($('h3'), t, T.s3 + .1, T.s4, 0); show($('h3a'), t, T.s3 + .1, T.s4); show($('h3b'), t, 13.25, T.s4);
+  show($('h4'), t, T.s4 + .1, T.s5, 0); show($('h4a'), t, T.s4 + .1, T.s5); show($('h4b'), t, 16.62, T.s5);
+  show($('hr'), t, .9, T.s5, 0);
+
+  // ---- end card ----
+  const e = $('end'); e.style.opacity = eio(seg(t, T.s5 - .05, T.s5 + .35)); e.style.display = t >= T.s5 - .1 ? 'block' : 'none';
+  show($('eLogo'), t, T.s5 + .2, 99, 14, .7); show($('eRule'), t, T.s5 + .55, 99, 0);
+  show($('eH'), t, T.s5 + .65, 99, 20, .55); show($('eTypes'), t, T.s5 + 1.25, 99, 14);
+  const kc = eo(seg(t, T.s5 + 1.55, T.s5 + 2.05)); $('eCta').style.opacity = kc; $('eCta').style.transform = `translate(-50%, ${(1 - kc) * 14}px)`;
+  show($('eUrl'), t, T.s5 + 1.8, 99, 10);
+
+  return Promise.all([...document.images].filter((i) => i.offsetParent !== null).map((i) => i.decode().catch(() => {})));
+}
+window.renderAt = renderAt;
+window.ready = (async () => {
+  await Promise.all(['500 84px "Frank Ruhl Libre"', '400 36px Assistant', '600 32px Assistant', '700 36px Assistant'].map((f) => document.fonts.load(f, 'אבג 123 abc')));
+  await document.fonts.ready;
+  await Promise.all(RS.map((u) => { const i = new Image(); i.src = u; return i.decode(); }));
+  await renderAt(0);
+})();
+</script>
+</body>
+</html>

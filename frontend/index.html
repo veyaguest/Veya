@@ -222,29 +222,9 @@
         background: linear-gradient(to bottom, rgba(251, 246, 238, 0) 0%, var(--ivory) 100%);
       }
       .hero .wrap { position: relative; z-index: 1; }
-      /* veya_horizontal לרוחב (1439×600) — רחב ונמוך, ולכן הלוגו תופס בהירו
-         פחות גובה מהגרסאות האנכיות, והכותרת עולה. */
-      .hero-logo { width: clamp(200px, 22vw, 280px); height: auto; margin: 0 auto 26px; display: block; filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.22)); }
       .eyebrow { display: inline-block; font-size: var(--fs-xs); letter-spacing: 3px; color: var(--gold-light); text-transform: uppercase; margin-bottom: 18px; }
       .hero h1 { font-size: clamp(2.25rem, 6.2vw, 3.75rem); color: var(--cream-text); margin-bottom: 20px; font-weight: 500; }
       .hero h1 .accent { color: var(--gold-light); }
-      /* יכולות VEYA מתחת לכותרת: שורה טיפוגרפית קטנה, לא סקשן — בלי כרטיסים,
-         בלי רקע לאייקון. שלוש פריסות קבועות כדי שלא ייווצר פריט יתום בשורה:
-         שורה אחת במחשב, 3×2 בטאבלט, 2×3 בטלפון. */
-      .hero-caps {
-        list-style: none; padding: 0; margin: 26px auto 38px;
-        display: flex; flex-wrap: nowrap; justify-content: center; gap: 10px 28px;
-        font-size: var(--fs-sm); color: #ddd2bd; line-height: 1.4;
-      }
-      .hero-caps li { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
-      .hero-caps svg { width: 17px; height: 17px; flex-shrink: 0; color: var(--gold-light); opacity: 0.8; }
-      @media (max-width: 899px) {
-        .hero-caps { display: grid; grid-template-columns: repeat(3, max-content); gap: 12px 30px; }
-      }
-      @media (max-width: 560px) {
-        .hero-caps { grid-template-columns: repeat(2, max-content); gap: 11px 26px; font-size: var(--fs-xs); margin: 22px auto 32px; }
-        .hero-caps svg { width: 16px; height: 16px; }
-      }
       .cta-row { display: flex; gap: 14px 22px; justify-content: center; align-items: center; flex-wrap: wrap; }
       /* ---- היררכיית הפעולה ----
          כפתור ראשי אחד גדול ובולט, ולצדו קישור שקט. שתי מסגרות באותו גודל
@@ -265,61 +245,6 @@
       .how-cta-line { margin: 0 0 18px; font-family: var(--font-display); font-size: var(--fd-sm); color: var(--cream-text); }
       .how .section-cta .cta-hint, .on-dark .section-cta .cta-hint { color: #b6aa93; }
       @media (prefers-reduced-motion: reduce) { .cta-alt .arw { transition: none; } }
-            /* ═════ מסלול האירוע (§16) ═════════════════════════════════════
-         שרשרת שמראה את סדר הזמנים האמיתי של אירוע ומובילה את העין לגלילה.
-         במובייל היא נגללת לרוחב בתוך עצמה — שישה שלבים ב-375px נדחסים
-         עד שהם בלתי קריאים. */
-      .journey-rail { margin-top: 40px; }
-      .jr-caps-rail { display: none; }
-      @media (max-width: 1099px) {
-        .journey-rail:not(.jr-caps-rail) { display: none; }
-        .jr-caps-rail { display: block; margin-top: 30px; }
-        /* מסלול: שתי שורות של שלוש, מחוברות בקו זהב דק במקום חצים —
-           הקו עובר מאחורי האייקונים לפי סדר האירוע (מימין לשמאל). */
-        .jr-caps {
-          position: relative; display: grid; grid-template-columns: repeat(3, 1fr);
-          grid-auto-rows: 64px; row-gap: 24px; max-width: 400px; margin: 0 auto;
-        }
-        .jr-caps .jr-arrow { display: none; }
-        .jr-caps::before, .jr-caps::after {
-          content: ""; position: absolute; z-index: 0; inset-inline: 16.667%; height: 1px;
-          background: linear-gradient(to left, rgba(228, 201, 107, 0.55), rgba(228, 201, 107, 0.22));
-          transform-origin: right center;
-        }
-        .jr-caps::before { top: 18px; }
-        .jr-caps::after { top: calc(64px + 24px + 18px); }
-        .jr-cap {
-          position: relative; z-index: 1;
-          display: flex; flex-direction: column; align-items: center; gap: 9px;
-          color: #ddd3bd; text-decoration: none; font-size: 12.5px; line-height: 1.3; text-align: center;
-        }
-        .jr-ico {
-          display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
-          background: var(--ink); border: 1px solid rgba(228, 201, 107, 0.34);
-          transition: transform 160ms var(--ease-out), border-color 160ms var(--ease-out);
-        }
-        .jr-ico svg { width: 16px; height: 16px; color: var(--gold-light); opacity: 0.9; }
-        .jr-cap:active .jr-ico { transform: scale(0.95); border-color: var(--gold-light); }
-        .jr-cap:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 4px; border-radius: 8px; }
-
-        /* פעם אחת, כשהמסלול נכנס למסך: הקו נמתח, וכל שלב נדלק כשהקו מגיע
-           אליו. JS מוסיף .is-pending מראש ו-.is-play בהגעה; בלי JS הכול סטטי. */
-        .jr-caps-rail.is-pending .jr-caps::before,
-        .jr-caps-rail.is-pending .jr-caps::after { transform: scaleX(0); }
-        .jr-caps-rail.is-pending .jr-cap { opacity: 0; transform: scale(0.94); }
-        .jr-caps-rail.is-play .jr-caps::before { animation: jr-draw 520ms var(--ease-in-out) both; }
-        .jr-caps-rail.is-play .jr-caps::after { animation: jr-draw 520ms var(--ease-in-out) 560ms both; }
-        .jr-caps-rail.is-play .jr-cap { animation: jr-lit 260ms var(--ease-out) both; }
-        .jr-caps-rail.is-play .jr-cap:nth-of-type(1) { animation-delay: 0ms; }
-        .jr-caps-rail.is-play .jr-cap:nth-of-type(2) { animation-delay: 240ms; }
-        .jr-caps-rail.is-play .jr-cap:nth-of-type(3) { animation-delay: 480ms; }
-        .jr-caps-rail.is-play .jr-cap:nth-of-type(4) { animation-delay: 560ms; }
-        .jr-caps-rail.is-play .jr-cap:nth-of-type(5) { animation-delay: 800ms; }
-        .jr-caps-rail.is-play .jr-cap:nth-of-type(6) { animation-delay: 1040ms; }
-      }
-      @keyframes jr-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-      @keyframes jr-lit { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
-
       /* כניסה למערכת (טלפון וטאבלט): כפתור משני מסודר בקצה, עם סמל משתמש —
          לא מילה שצפה באמצע הכותרת כשהכפתור הראשי מחכה */
       .lq-ico { display: none; }
@@ -334,43 +259,6 @@
         .site-header .header-actions .link-quiet:active { transform: scale(0.97); }
         .lq-ico { display: block; width: 16px; height: 16px; color: var(--gold-light); }
       }
-      @media (prefers-reduced-motion: reduce) {
-        .jr-caps-rail.is-pending .jr-caps::before, .jr-caps-rail.is-pending .jr-caps::after,
-        .jr-caps-rail.is-pending .jr-cap { transform: none; opacity: 1; }
-        .jr-caps-rail.is-play .jr-caps::before, .jr-caps-rail.is-play .jr-caps::after,
-        .jr-caps-rail.is-play .jr-cap { animation: none; }
-      }
-      .jr-track { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 6px; }
-      .jr-step {
-        display: inline-flex; align-items: center; min-height: 44px;
-        padding: 9px 16px; border-radius: var(--radius-pill);
-        border: 1px solid rgba(201, 162, 39, 0.28); background: rgba(201, 162, 39, 0.06);
-        color: var(--cream-text); text-decoration: none;
-        font-size: var(--fs-sm); font-weight: 500; white-space: nowrap;
-        transition: border-color var(--motion-fast) var(--ease-out),
-                    background var(--motion-fast) var(--ease-out),
-                    transform var(--motion-fast) var(--ease-out);
-      }
-      .jr-step:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
-      .jr-arrow { color: var(--gold); font-size: var(--fs-md); line-height: 1; opacity: 0.55; }
-      @media (hover: hover) and (pointer: fine) {
-        .jr-step:hover { border-color: var(--gold); background: rgba(201, 162, 39, 0.14); transform: translateY(-2px); }
-      }
-      .jr-step:active { transform: translateY(1px); }
-      /* הרצועה בהירו, שנכנס באנימציית טעינה — לכן ההשהיה נספרת מתום
-         כניסת ההירו (d3 = 180ms) ולא ממחלקת .in של ה-scroll reveal. */
-      .jr-step { animation: jr-in 380ms var(--ease-out) both; animation-delay: calc(260ms + var(--i) * 70ms); }
-      @keyframes jr-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-      @media (max-width: 700px) {
-        .jr-track { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
-        .jr-track::-webkit-scrollbar { display: none; }
-        .jr-step { flex: 0 0 auto; }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .jr-step { animation: none; }
-        .jr-step:hover, .jr-step:active { transform: none; }
-      }
-
             /* ═════ ספירת המעטפות — סקשן הדגל (§7–§8) ══════════════════════
          ברירת המחדל היא "גלוי, במצב הסופי". ה-JS הוא זה שמסתיר לפני
          שהוא מנגן (``is-armed``) — כך שבלי JS, ובעיני crawler, כל
@@ -563,9 +451,6 @@
         .wj-shot { grid-column: 2; margin-top: 18px; }
       }
 
-      .hero-trust { margin-top: 26px; font-size: var(--fs-sm); color: #b6aa93; display: flex; gap: 10px 22px; justify-content: center; flex-wrap: wrap; }
-      .hero-trust span { display: inline-flex; align-items: center; gap: 7px; }
-      .hero-trust svg { color: var(--gold-light); flex-shrink: 0; }
 
       /* ===== Sections ===== */
       section { padding: clamp(64px, 9vw, 108px) 0; }
@@ -1301,7 +1186,6 @@
          בצל שבתחתית, ושש היכולות מקיפות את הסצנה — שלוש מכל צד, כל אחת עם
          קו זהב דק שמחבר אותה לתמונה. בלי מסגרת ובלי כרטיס. */
       .hero { padding-top: 34px; }
-      .hero .hero-logo { width: clamp(170px, 16vw, 214px); margin-bottom: 14px; }
       .hero h1 { font-size: clamp(2.1rem, 4.6vw, 3.35rem); margin-bottom: 0; text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45); }
       .hp-stage {
         --hp-w: min(880px, calc((100svh - 300px) * 1.7778), calc(100vw - 440px));
@@ -1322,50 +1206,14 @@
       }
       .hp-cta { position: relative; z-index: 2; margin-top: -78px; }
 
-      /* היכולות סביב התמונה */
-      .hp-caps.hero-caps { margin: 0; }
-      @media (min-width: 1100px) {
-        .hp-caps.hero-caps { display: block; position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-        .hp-caps .cap {
-          position: absolute; display: flex; align-items: center; gap: 11px;
-          font-size: var(--fs-sm); color: #e6dcc6; white-space: nowrap;
-        }
-        .hp-caps svg {
-          width: 36px; height: 36px; padding: 8.5px; opacity: 1; box-sizing: border-box;
-          border: 1px solid rgba(228, 201, 107, 0.38); border-radius: 50%;
-          background: rgba(23, 19, 13, 0.6);
-        }
-        .hp-caps .cap::after {
-          content: ""; position: absolute; top: 50%; width: 34px; height: 1px;
-        }
-        /* ימין: הסמל צמוד לתמונה, הקו יוצא ממנו אליה */
-        .cap-1, .cap-2, .cap-3 { left: calc(100% + 30px); flex-direction: row-reverse; }
-        .cap-1::after, .cap-2::after, .cap-3::after {
-          right: calc(100% + 8px); background: linear-gradient(to left, rgba(228, 201, 107, 0.55), rgba(228, 201, 107, 0));
-        }
-        /* שמאל: אותו דבר במראה */
-        .cap-4, .cap-5, .cap-6 { right: calc(100% + 30px); }
-        .cap-4::after, .cap-5::after, .cap-6::after {
-          left: calc(100% + 8px); background: linear-gradient(to right, rgba(228, 201, 107, 0.55), rgba(228, 201, 107, 0));
-        }
-        /* קשת עדינה: האמצעי רחוק מעט יותר מהתמונה */
-        .cap-1, .cap-4 { top: 24%; }
-        .cap-2, .cap-5 { top: 46%; }
-        .cap-3, .cap-6 { top: 68%; }
-        .cap-2 { left: calc(100% + 52px); }
-        .cap-5 { right: calc(100% + 52px); }
-      }
-      /* מתחת לזה אין מקום בצדדים: היכולות עוברות לרצועת המסלול שמתחת לכפתור */
       @media (max-width: 1099px) {
         .hp-stage { --hp-w: min(880px, calc((100svh - 300px) * 1.7778)); }
-        .hp-caps.hero-caps { display: none; }
       }
       /* פחות, ברור יותר (טלפון וטאבלט): כל פריט בהירו צריך להצדיק את מקומו.
          שורות ה-✓ חוזרות על הכותרת ועל רצועת היכולות — הן יורדות. ופעולה
          ראשית אחת במסך: כשכפתור ההירו גלוי, הכפתור שבכותרת העליונה מחכה,
          ונכנס בעדינות ברגע שכפתור ההירו יוצא מהמסך (רק opacity + transform). */
       @media (max-width: 1099px) {
-        .hero .hero-trust { display: none; }
         .site-header .header-actions .btn-primary {
           transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1), transform 200ms cubic-bezier(0.23, 1, 0.32, 1), visibility 0s;
         }
@@ -1380,7 +1228,6 @@
       /* טלפון: הצילום לרוחב המסך, והכפתור בצל שמתחת למחשב. הלוגו הגדול
          יורד — הוא כבר בכותרת העליונה, צמוד מעליו. */
       @media (max-width: 600px) {
-        .hero .hero-logo { display: none; }
         .hp-stage { width: auto; max-width: none; margin: -40px -20px 0; }
         .hs-photo { aspect-ratio: 5 / 4; object-position: 50% 50%; }
         .hp-cta { margin-top: -30px; padding: 0 20px; }
@@ -1679,7 +1526,6 @@
         .header-actions .link-quiet { font-size: var(--fs-xs); padding: 12px 6px; }
         .lq-long { display: none; }
         .header-actions .btn { padding: 12px 14px; font-size: var(--fs-xs); white-space: nowrap; }
-        .hero-trust { gap: 8px 16px; font-size: var(--fs-xs); }
       }
 
       /* ═══════════════════════════════════════════════════════════════
@@ -1927,7 +1773,7 @@
       .fineprint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; max-width: 62ch; margin: 14px auto 0; }
       .seating .fineprint, .how .fineprint { color: #b6aa93; }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
       .tl-item {
         position: relative; display: block;
         padding: 0 0 20px 34px; padding-inline-start: 34px; padding-inline-end: 0;
@@ -3036,6 +2882,42 @@
       .hero { background: radial-gradient(120% 90% at 50% -10%, #2a2115 0%, var(--ink-2) 42%, var(--ink) 100%); }
       .ps-label { font-size: var(--fs-sm); letter-spacing: 0; }
       .dlt-day { font-size: var(--fs-sm); }
+
+      /* ── ההירו: כותרת, משפט אחד, צילום, כפתור. זה הכול (2026-10-15) ──
+         בלי לוגו כפול (הוא כבר בכותרת העליונה), בלי יכולות סביב הצילום,
+         בלי רצועות ובלי שורות ✓. המשפט מתחת לכותרת עונה על "מה VEYA עושה";
+         הכותרת שואלת את השאלה, והקו הכפול מסמן את התשובה שחשובה. */
+      .hero { padding-top: clamp(40px, 6vh, 76px); padding-bottom: clamp(56px, 8vh, 96px); }
+      .hero h1 {
+        font-size: clamp(2.125rem, 4.9vw, 3.875rem); line-height: 1.12; letter-spacing: -0.012em;
+        margin: 0 auto; text-wrap: balance;
+      }
+      .hero-lead {
+        position: relative; z-index: 1;
+        margin: clamp(16px, 1.8vw, 22px) auto 0; max-width: 62ch; text-wrap: balance;
+        font-size: clamp(1.0625rem, 1.3vw, 1.25rem); line-height: 1.6; color: #d8ceb9;
+        text-shadow: 0 1px 18px rgba(0, 0, 0, 0.55);
+      }
+      .hp-stage { margin-top: -36px; }
+      /* בלי היכולות בצדדים אין צורך לשמור להן 440px — הצילום מקבל את הרוחב.
+         תנאי הגובה נשאר: הכפתור בתוך המסך הראשון גם ב-1280×720. */
+      .hp-stage { --hp-w: min(900px, calc((100svh - 300px) * 1.7778), calc(100vw - 96px)); }
+      /* פעולה ראשית אחת במסך גם במחשב: הכפתור שבכותרת העליונה מחכה עד
+         שכפתור ההירו יוצא מהמסך (אותו מנגנון שכבר פעל בטלפון) */
+      @media (min-width: 1100px) {
+        .site-header .header-actions .btn-primary {
+          transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out), visibility 0s;
+        }
+        .site-header.hero-cta-in-view .header-actions .btn-primary {
+          opacity: 0; transform: translateY(-6px) scale(0.97); visibility: hidden; pointer-events: none;
+          transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out), visibility 0s 160ms;
+        }
+      }
+      @media (max-width: 600px) {
+        .hero { padding-top: 32px; padding-bottom: 48px; }
+        .hero-lead { max-width: 30ch; }
+        .hp-stage { margin-top: -28px; }
+      }
       /* אישת אישורי ההגעה (≥1100) גולשת מעט מתחת לסקשן שלה; בלי מעברי הגרדיאנט
          הסקשן הבא מתחיל גבוה יותר, ולכן כאן עוד אוויר — כדי שלא תיגע בכותרת */
       @media (min-width: 1100px) { #rsvp { padding-bottom: calc(var(--seam-pad) + 48px); } }
@@ -3187,6 +3069,20 @@
     
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     </style>
     <script>
       /* צילום שנקטע בטעינה: ניסיון חוזר אחד, והמסגרת נשארת. מוגדר ב-head כדי
@@ -3231,14 +3127,14 @@
       <!-- ═════ 1. HERO ═════ -->
       <section class="hero on-dark" aria-labelledby="hero-title">
         <div class="wrap">
-          <img class="hero-logo reveal" src="/veya_horizontal.png" alt="VEYA — ניהול מוזמנים, אישורי הגעה, הושבה ומאזן האירוע" width="1439" height="600" fetchpriority="high" decoding="async" />
-          <h1 id="hero-title" class="reveal d1">כמה אנשים באמת מגיעים לאירוע שלכם —<br /><span class="accent">וכמה זה עולה לכם</span></h1>
+          <h1 id="hero-title" class="reveal d1">כמה באמת מגיעים לאירוע שלכם<br /><span class="accent">וכמה זה עולה לכם</span></h1>
+          <p class="hero-lead reveal d1">כל תשובה של מוזמן ממשיכה לבד: לשולחן שלו, ולחשבון של האירוע.</p>
           <!-- ═════ ההירו בנוי על הצילום ═════════════════════════════════
                זוג בסלון מול המחשב (Higgsfield); על מסך המחשב הולבש בפרספקטיבה
                צילום המסך האמיתי של תמונת המצב מאירוע ההדגמה
                (journey-dashboard.jpg) — שום UI לא צויר לדף. הכותרת יושבת
-               באור המנורה שמעליהם, הכפתור בצל שבתחתית, והיכולות סביב.
-               האייקונים הם אייקוני הניווט של המוצר עצמו (NavIcon ב-src/App.tsx). -->
+               באור המנורה שמעליהם, משפט אחד מתחתיה, והכפתור בצל שבתחתית.
+               זה הכול: בלי יכולות מסביב ובלי רצועות — ההירו אומר דבר אחד. -->
           <div class="hp-stage reveal d2">
             <img class="hs-photo"
               src="/people/hero-scene-1600.webp"
@@ -3247,66 +3143,11 @@
               alt="זוג בסלון בערב מחייך זה לזה מול המחשב. על המסך תמונת המצב של VEYA: דניאל ושרון, ספירה לאחור לאירוע, ו־256 שאישרו הגעה מתוך 644"
               width="1600" height="900" fetchpriority="high" decoding="async"
               onerror="veyaRetryImage(this)" />
-            <ul class="hero-caps hp-caps" aria-label="מה מנהלים ב־VEYA">
-              <li class="cap cap-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0" /><path d="M16 6.5a3 3 0 0 1 0 5.8" /><path d="M17.5 20a5.5 5.5 0 0 0-2.5-4.6" /></svg>ניהול מוזמנים</li>
-              <li class="cap cap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2" /><path d="M9 3.5V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v.5" /><path d="M8.5 12.5 11 15l4.5-5" /></svg>אישורי הגעה</li>
-              <li class="cap cap-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 3z" /><path d="m9 10 2 2 4-4" /></svg>הזמנות והודעות</li>
-              <li class="cap cap-4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="8" r="2.4" /><circle cx="17" cy="8" r="2.4" /><circle cx="12" cy="17" r="2.4" /><path d="M4 20h16" /></svg>הושבה</li>
-              <li class="cap cap-5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="8" width="17" height="4" rx="1" /><path d="M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12" /><path d="M12 8v13" /><path d="M12 8S10.5 3.5 8 3.5a2.5 2.5 0 0 0 0 5M12 8s1.5-4.5 4-4.5a2.5 2.5 0 0 1 0 5" /></svg>מתנות באשראי</li>
-              <li class="cap cap-6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2" /><circle cx="12" cy="12" r="2.6" /><path d="M5.5 9.5v.01M18.5 14.5v.01" /></svg>מאזן האירוע</li>
-            </ul>
             <div class="hp-cta">
               <div class="cta-row">
                 <a href="/app?auth=register" class="btn btn-primary btn-lg">מתחילים לתכנן <span class="arw" aria-hidden="true">←</span></a>
               </div>
             </div>
-          </div>
-
-          <!-- מסלול האירוע (§16): סדר הזמנים האמיתי של אירוע, לא רשימת
-               פיצ'רים. כל שלב הוא קישור אמיתי ומוביל את העין לגלילה. -->
-          <nav class="journey-rail reveal d3" aria-label="מה VEYA מלווה, לפי סדר האירוע">
-            <div class="jr-track">
-            <a class="jr-step" href="/features/guests/" style="--i: 0"><span>מוזמנים</span></a>
-            <span class="jr-arrow" aria-hidden="true">←</span>
-            <a class="jr-step" href="/features/rsvp/" style="--i: 1"><span>אישורי הגעה</span></a>
-            <span class="jr-arrow" aria-hidden="true">←</span>
-            <a class="jr-step" href="/features/seating/" style="--i: 2"><span>הושבה</span></a>
-            <span class="jr-arrow" aria-hidden="true">←</span>
-            <a class="jr-step" href="#gifts" style="--i: 3"><span>מתנות</span></a>
-            <span class="jr-arrow" aria-hidden="true">←</span>
-            <a class="jr-step" href="/features/finance/" style="--i: 4"><span>מאזן</span></a>
-            </div>
-          </nav>
-
-          <!-- טלפון וטאבלט: אותו מסלול, עם שש היכולות ואייקוני הניווט של המוצר —
-               שתי שורות של שלוש, לפי סדר האירוע. במחשב היכולות מקיפות את
-               הצילום, ולכן שם נשארת הרצועה הקצרה שלמעלה. -->
-          <nav class="journey-rail jr-caps-rail reveal d3" aria-label="מה VEYA מלווה, לפי סדר האירוע">
-            <div class="jr-caps">
-              <a class="jr-cap" href="/features/guests/" style="--i: 0"><span class="jr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0" /><path d="M16 6.5a3 3 0 0 1 0 5.8" /><path d="M17.5 20a5.5 5.5 0 0 0-2.5-4.6" /></svg></span><span>ניהול מוזמנים</span></a>
-              <span class="jr-arrow" aria-hidden="true">←</span>
-              <a class="jr-cap" href="#deadline" style="--i: 1"><span class="jr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 3z" /><path d="m9 10 2 2 4-4" /></svg></span><span>הזמנות והודעות</span></a>
-              <span class="jr-arrow" aria-hidden="true">←</span>
-              <a class="jr-cap" href="/features/rsvp/" style="--i: 2"><span class="jr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2" /><path d="M9 3.5V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v.5" /><path d="M8.5 12.5 11 15l4.5-5" /></svg></span><span>אישורי הגעה</span></a>
-              <span class="jr-arrow jr-break" aria-hidden="true">←</span>
-              <a class="jr-cap" href="/features/seating/" style="--i: 3"><span class="jr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="8" r="2.4" /><circle cx="17" cy="8" r="2.4" /><circle cx="12" cy="17" r="2.4" /><path d="M4 20h16" /></svg></span><span>הושבה</span></a>
-              <span class="jr-arrow" aria-hidden="true">←</span>
-              <a class="jr-cap" href="#giftcard" style="--i: 4"><span class="jr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="8" width="17" height="4" rx="1" /><path d="M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12" /><path d="M12 8v13" /><path d="M12 8S10.5 3.5 8 3.5a2.5 2.5 0 0 0 0 5M12 8s1.5-4.5 4-4.5a2.5 2.5 0 0 1 0 5" /></svg></span><span>מתנות באשראי</span></a>
-              <span class="jr-arrow" aria-hidden="true">←</span>
-              <a class="jr-cap" href="/features/finance/" style="--i: 5"><span class="jr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2" /><circle cx="12" cy="12" r="2.6" /><path d="M5.5 9.5v.01M18.5 14.5v.01" /></svg></span><span>מאזן האירוע</span></a>
-            </div>
-          </nav>
-
-          <!-- ═════ 2. TRUST ═════ -->
-          <div class="hero-trust reveal d3">
-            <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <span>יודעים כמה באמת מגיעים</span>
-            <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <span>אף מוזמן לא נופל בין הכיסאות</span>
-            <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <span>מסדרים שולחנות בלי ערב שלם של פתקים</span>
-            <span aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-            <span>יודעים גם כמה זה עולה, לא רק מי בא</span>
           </div>
         </div>
       </section>
@@ -4356,7 +4197,7 @@
 
     <script>
       /* פעולה ראשית אחת: הכפתור שבכותרת העליונה נכנס רק כשכפתור ההירו
-         יוצא מהמסך (העיצוב חל רק מתחת ל-1100px). */
+         יוצא מהמסך — בכל הרוחבים. */
       (function () {
         var header = document.querySelector('.site-header');
         var heroCta = document.querySelector('.hp-cta .btn');
@@ -4367,21 +4208,6 @@
         new IntersectionObserver(function (entries) {
           header.classList.toggle('hero-cta-in-view', entries[0].isIntersecting);
         }, { rootMargin: '-70px 0px 0px 0px' }).observe(heroCta);
-      })();
-      /* מסלול היכולות: הקו נמתח פעם אחת, כשהוא באמת על המסך */
-      (function () {
-        var rail = document.querySelector('.jr-caps-rail');
-        if (!rail || !('IntersectionObserver' in window)) return;
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        if (!window.matchMedia('(max-width: 1099px)').matches) return;
-        rail.classList.add('is-pending');
-        var io = new IntersectionObserver(function (entries) {
-          if (!entries[0].isIntersecting) return;
-          rail.classList.remove('is-pending');
-          rail.classList.add('is-play');
-          io.disconnect();
-        }, { threshold: 0.6 });
-        io.observe(rail);
       })();
     </script>
     <script>
