@@ -127,7 +127,7 @@
       ]
     },
     {
-      "source": "/legal/(.*)",
+      "source": "/legal/((?!about\\.html).*)",
       "headers": [
         {
           "key": "X-Robots-Tag",
