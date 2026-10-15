@@ -315,7 +315,7 @@ def event_control(
             Fact(label="אישרו", value=f"{rsvp.get('confirmed', 0)} ({people_confirmed} אנשים)", tone="ok"),
             Fact(label="ממתינים", value=str(rsvp.get("pending", 0) + rsvp.get("maybe", 0))),
             Fact(label="לא מגיעים", value=str(rsvp.get("declined", 0))),
-            Fact(label="סגירת הרשימה", value=schedule.commitment_date.strftime("%d.%m.%Y") if schedule else "לא נקבע"),
+            Fact(label="היום האחרון לאישורי הגעה", value=schedule.commitment_date.strftime("%d.%m.%Y") if schedule else "לא נקבע"),
             Fact(label="השלב הבא", value=(
                 f"{next_step.step['label']} · {next_step.date.strftime('%d.%m')}" if next_step else "—"
             )),

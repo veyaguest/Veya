@@ -289,7 +289,7 @@ export function OnboardingWizard({ onCreated }: Props) {
             </div>
 
             <div className="commit-field">
-              <span className="field-label" id={`${venueFieldId}-commit`}>מועד סגירת הרשימה</span>
+              <span className="field-label" id={`${venueFieldId}-commit`}>היום האחרון לאישורי הגעה</span>
               <p className="commit-explain" id={`${venueFieldId}-commit-explain`}>
                 {strings.onboarding.commitExplain}
               </p>

@@ -76,7 +76,7 @@ export const INVITATION_TOPICS: readonly HelpTopic[] = [
     sendsMessages: true,
     answer: [
       'ההזמנה יוצאת כשלוחצים "שליחת הזמנות", והיא לא מבקשת לאשר הגעה — יש בה רק "צפייה בהזמנה".',
-      'בקשות אישור ההגעה יוצאות בנפרד, לפי לוח הזמנים שנבנה ממועד סגירת הרשימה.',
+      'בקשות אישור ההגעה יוצאות בנפרד, לפי לוח זמנים שנבנה לאחור מהיום האחרון לאישורי הגעה.',
     ],
     related: ['rsvp.when-requests'],
     sources: [...SOURCES, '../../backend/app/communication.py'],

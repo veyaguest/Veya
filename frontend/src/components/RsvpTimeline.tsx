@@ -180,21 +180,21 @@ function TimelineHeader({ view }: { view: RsvpTimelineView }) {
       </h2>
       <p className="tl-header-sub">
         {view.track_phase === 'ended'
-          ? 'הלוח המלא, יום אחרי יום, עד סגירת הרשימה.'
-          : 'כאן תוכלו לראות את השלבים הקרובים עד סגירת רשימת המוזמנים.'}
+          ? 'הלוח המלא, יום אחרי יום, עד היום האחרון לאישורי הגעה.'
+          : 'כאן תוכלו לראות את השלבים הקרובים עד היום האחרון לאישורי הגעה.'}
       </p>
 
       {/* הספירות (אישרו/ממתינים/סה"כ) כבר מופיעות בראש המסך — כאן רק מה
           שהלוח מוסיף: כמה ימים נשארו עד סגירת הרשימה. */}
       {days != null && days >= 0 && (
         <div className="tl-header-stats">
-          <TlStat num={days} label="ימים למועד סגירת הרשימה" />
+          <TlStat num={days} label="ימים ליום האחרון לאישורי הגעה" />
         </div>
       )}
 
       {view.compressed && (
         <div className="tl-compressed">
-          <strong className="tl-compressed-title">נשאר מעט זמן עד סגירת הרשימה</strong>
+          <strong className="tl-compressed-title">נשאר מעט זמן עד היום האחרון לאישורי הגעה</strong>
           <p className="tl-compressed-text">{strings.messages.trackPhase.shortNote}</p>
         </div>
       )}

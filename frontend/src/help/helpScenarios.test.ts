@@ -152,7 +152,7 @@ function scenarioRsvpWaiting(): void {
   eq(r.urgent?.topic.id, 'event.commit-date', 'לא נבחר מועד סגירה → "חשוב עכשיו"')
   eq(r.urgent?.primary?.action, { kind: 'tour', flow: 'choose-commit-date' }, 'עם "תראו לי" לבחירת המועד')
   eq(r.topics[0].topic.id, 'rsvp.when-requests', 'הנושא הראשון: מתי יוצאות הבקשות')
-  eq(r.topics[0].answer[0], 'הן יוצאות רק אחרי שתבחרו מועד סגירת רשימה, ב"עריכת פרטי האירוע".', 'מסבירים למה עוד לא יצאו')
+  eq(r.topics[0].answer[0], 'הן יוצאות רק אחרי שתבחרו את היום האחרון לאישורי הגעה, ב"עריכת פרטי האירוע".', 'מסבירים למה עוד לא יצאו')
   console.log('✓ אישורי הגעה בלי מועד סגירה: הדבר הדחוף הוא לבחור מועד — עם הדרכה')
 }
 
@@ -256,8 +256,8 @@ function scenarioEventAndSeatingErrors(): void {
     outcome('event-save-failed', { ...BASE, 'error.last.status': 409, 'error.last.message': message, ...extra })
   eq(e('תאריך האירוע נעול לעריכה, כדי שאישורי ההגעה והתזכורות יישארו מסונכרנים.'), 'out-locked', 'שדה נעול')
   eq(e('תאריך האירוע נעול לעריכה, כדי שאישורי ההגעה והתזכורות יישארו מסונכרנים.', { 'event.postpone': 'pending' }), 'out-pending', 'שדה נעול + בקשה ממתינה')
-  eq(e('מועד סגירת הרשימה כבר נקבע — כל לוח הזמנים של אישורי ההגעה נבנה סביבו.'), 'out-commit-set', 'מועד סגירה נעול')
-  eq(e('בתאריך הזה הרשימה כבר הייתה סגורה. אפשר לבחור פחות ימים לפני האירוע.'), 'out-commit-past', 'מועד סגירה בעבר')
+  eq(e('היום האחרון לאישורי הגעה כבר נקבע — כל לוח הזמנים של אישורי ההגעה נבנה סביבו.'), 'out-commit-set', 'מועד סגירה נעול')
+  eq(e('התאריך הזה כבר עבר. אפשר לבחור פחות ימים לפני האירוע.'), 'out-commit-past', 'מועד סגירה בעבר')
   eq(e('שעת השליחה חייבת להיות בין 10:00 ל-19:00'), 'out-send-time', 'שעת שליחה')
   const s = (message: string) => outcome('seating-failed', { ...BASE, 'error.last.status': 400, 'error.last.message': message })
   eq(s('אין מוזמנים לשיבוץ'), 'out-no-guests', 'אין מוזמנים')

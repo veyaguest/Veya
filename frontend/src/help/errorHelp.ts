@@ -47,7 +47,7 @@ export const ERROR_HELP: readonly ErrorHelpDef[] = [
   {
     tree: 'event-save-failed',
     routes: ['PATCH /event'],
-    known: ['נעול לעריכה', 'מועד סגירת הרשימה כבר נקבע', 'כבר הייתה סגורה', 'שעת השליחה חייבת'],
+    known: ['נעול לעריכה', 'כבר נקבע', 'כבר עבר', 'שעת השליחה חייבת'],
     offline: true,
   },
   {

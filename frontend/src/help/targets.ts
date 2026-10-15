@@ -120,7 +120,7 @@ export const TARGETS = {
   },
   'dashboard.commitField': {
     file: 'components/DashboardPage.tsx', page: 'dashboard',
-    note: 'אזור "מועד סגירת הרשימה" במצב עריכה (בחירה, או ערך נעול)',
+    note: 'אזור "היום האחרון לאישורי הגעה" במצב עריכה (בחירה, או ערך נעול)',
   },
   'dashboard.saveDetails': {
     file: 'components/DashboardPage.tsx', page: 'dashboard',

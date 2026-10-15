@@ -44,12 +44,12 @@ export const RSVP_TOPICS: readonly HelpTopic[] = [
     variants: [
       {
         when: { fact: 'event.has_date', op: '==', value: false },
-        answer: ['קודם מוסיפים תאריך לאירוע, ואז בוחרים מועד סגירת רשימה. בלי שניהם לא יוצאת אף בקשה.'],
+        answer: ['קודם מוסיפים תאריך לאירוע, ואז בוחרים את היום האחרון לאישורי הגעה. בלי שניהם לא יוצאת אף בקשה.'],
         primary: { kind: 'navigate', page: 'dashboard', label: 'לתמונת המצב' },
       },
       {
         when: { fact: 'rsvp.phase', op: 'in', value: ['unscheduled', 'waiting'] },
-        answer: ['הן יוצאות רק אחרי שתבחרו מועד סגירת רשימה, ב"{ui:dashboard.editDetailsButton}".'],
+        answer: ['הן יוצאות רק אחרי שתבחרו את היום האחרון לאישורי הגעה, ב"{ui:dashboard.editDetailsButton}".'],
         primary: { kind: 'tour', flow: 'choose-commit-date' },
       },
       {
@@ -67,7 +67,7 @@ export const RSVP_TOPICS: readonly HelpTopic[] = [
       },
       {
         when: { fact: 'rsvp.phase', op: '==', value: 'ended' },
-        answer: ['הרשימה נסגרה ב{date:rsvp.commit_date}, והמספרים עכשיו סופיים.'],
+        answer: ['היום האחרון לאישורי הגעה היה ב{date:rsvp.commit_date}, והמספרים עכשיו סופיים.'],
         primary: null,
       },
     ],
@@ -91,7 +91,7 @@ export const RSVP_TOPICS: readonly HelpTopic[] = [
       {
         when: CALLS_ON,
         answer: [
-          '14 ימים לפני מועד סגירת הרשימה יוצאת בקשה ראשונה, ואחריה עוד 3 תזכורות ב-WhatsApp למי שעוד לא ענו.',
+          '14 ימים לפני היום האחרון לאישורי הגעה יוצאת בקשה ראשונה, ואחריה עוד 3 תזכורות ב-WhatsApp למי שעוד לא ענו.',
           'מי שלא עונים מקבלים גם שיחת טלפון, עד 3 פעמים.',
           'בשישי ובשבת לא פונים ל{guests}. כשנשאר פחות זמן, הלוח צפוף יותר.',
         ],
@@ -99,7 +99,7 @@ export const RSVP_TOPICS: readonly HelpTopic[] = [
       {
         when: CALLS_OFF,
         answer: [
-          '14 ימים לפני מועד סגירת הרשימה יוצאת בקשה ראשונה, ואחריה עוד 3 תזכורות ב-WhatsApp למי שעוד לא ענו.',
+          '14 ימים לפני היום האחרון לאישורי הגעה יוצאת בקשה ראשונה, ואחריה עוד 3 תזכורות ב-WhatsApp למי שעוד לא ענו.',
           'בשישי ובשבת לא פונים ל{guests}. כשנשאר פחות זמן, הלוח צפוף יותר.',
         ],
       },
@@ -122,14 +122,14 @@ export const RSVP_TOPICS: readonly HelpTopic[] = [
         when: CALLS_ON,
         answer: [
           'הם לא מקבלים עוד תזכורות ב-WhatsApp, אבל כן נשארים ברשימת השיחות.',
-          'אחרי סגירת הרשימה הם מופיעים ב"צריכים אתכם" — כדאי לסגור איתם תשובה לפני ההושבה.',
+          'אחרי היום האחרון לאישורי הגעה הם מופיעים ב"צריכים אתכם" — כדאי לסגור איתם תשובה לפני ההושבה.',
         ],
       },
       {
         when: CALLS_OFF,
         answer: [
           'הם לא מקבלים עוד תזכורות ב-WhatsApp.',
-          'אחרי סגירת הרשימה הם מופיעים ב"צריכים אתכם" — כדאי לסגור איתם תשובה לפני ההושבה.',
+          'אחרי היום האחרון לאישורי הגעה הם מופיעים ב"צריכים אתכם" — כדאי לסגור איתם תשובה לפני ההושבה.',
         ],
       },
     ],
@@ -150,15 +150,15 @@ export const RSVP_TOPICS: readonly HelpTopic[] = [
       {
         when: CALLS_ON,
         answer: [
-          'הם ממשיכים לקבל תזכורות ב-WhatsApp ושיחות טלפון, עד סגירת הרשימה.',
-          'אחרי הסגירה הם מופיעים ב"צריכים אתכם" — אפשר לבדוק איתם ישירות ולעדכן ברשימה.',
+          'הם ממשיכים לקבל תזכורות ב-WhatsApp ושיחות טלפון, עד היום האחרון לאישורי הגעה.',
+          'אחרי היום האחרון לאישורי הגעה הם מופיעים ב"צריכים אתכם" — אפשר לבדוק איתם ישירות ולעדכן ברשימה.',
         ],
       },
       {
         when: CALLS_OFF,
         answer: [
-          'הם ממשיכים לקבל תזכורות ב-WhatsApp, עד סגירת הרשימה.',
-          'אחרי הסגירה הם מופיעים ב"צריכים אתכם" — אפשר לבדוק איתם ישירות ולעדכן ברשימה.',
+          'הם ממשיכים לקבל תזכורות ב-WhatsApp, עד היום האחרון לאישורי הגעה.',
+          'אחרי היום האחרון לאישורי הגעה הם מופיעים ב"צריכים אתכם" — אפשר לבדוק איתם ישירות ולעדכן ברשימה.',
         ],
       },
     ],
@@ -186,7 +186,7 @@ export const RSVP_TOPICS: readonly HelpTopic[] = [
       {
         when: { fact: 'rsvp.phase', op: 'in', value: ['unscheduled', 'waiting'] },
         answer: [
-          'מהיום שבו יוצאת בקשת האישור הראשונה — וזה קורה רק אחרי שתבחרו מועד סגירת רשימה.',
+          'מהיום שבו יוצאת בקשת האישור הראשונה — וזה קורה רק אחרי שתבחרו את היום האחרון לאישורי הגעה.',
           'עד אז הקישור מציג את ההזמנה בלבד.',
         ],
         primary: { kind: 'tour', flow: 'choose-commit-date' },
@@ -251,12 +251,12 @@ export const RSVP_TREES: readonly DiagnosticTree[] = [
       weekend: { kind: 'check', test: { fact: 'rsvp.today_is_weekend', op: '==', value: true }, yes: 'out-weekend', no: 'out-running' },
       'out-no-date': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['לאירוע עוד אין תאריך. בלי תאריך ומועד סגירת רשימה אי אפשר לבנות את הלוח.'],
+        text: ['לאירוע עוד אין תאריך. בלי תאריך ובלי היום האחרון לאישורי הגעה אי אפשר לבנות את הלוח.'],
         action: { kind: 'navigate', page: 'dashboard', label: 'לתמונת המצב' },
       },
       'out-no-commit': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['עוד לא נבחר מועד סגירת רשימה. רק אחרי הבחירה בקשות אישור ההגעה מתחילות לצאת.'],
+        text: ['עוד לא נבחר היום האחרון לאישורי הגעה. רק אחרי הבחירה בקשות אישור ההגעה מתחילות לצאת.'],
         action: { kind: 'tour', flow: 'choose-commit-date' },
       },
       'out-postponed': {
@@ -273,7 +273,7 @@ export const RSVP_TREES: readonly DiagnosticTree[] = [
       },
       'out-ended': {
         kind: 'outcome', resolution: 'explained',
-        text: ['הרשימה נסגרה ב{date:rsvp.commit_date}. אחרי מועד הסגירה לא יוצאות בקשות.'],
+        text: ['היום האחרון לאישורי הגעה היה ב{date:rsvp.commit_date}. אחריו לא יוצאות בקשות.'],
       },
       'out-weekend': {
         kind: 'outcome', resolution: 'explained',
@@ -357,7 +357,7 @@ export const RSVP_TREES: readonly DiagnosticTree[] = [
       before: { kind: 'check', test: { fact: 'rsvp.phase', op: '==', value: 'before' }, yes: 'out-before', no: 'out-other' },
       'out-no-commit': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['אישורי ההגעה נפתחים ביום שבו יוצאת בקשת האישור הראשונה — וזה קורה רק אחרי שתבחרו מועד סגירת רשימה.'],
+        text: ['אישורי ההגעה נפתחים ביום שבו יוצאת בקשת האישור הראשונה — וזה קורה רק אחרי שתבחרו את היום האחרון לאישורי הגעה.'],
         action: { kind: 'tour', flow: 'choose-commit-date' },
       },
       'out-before': {

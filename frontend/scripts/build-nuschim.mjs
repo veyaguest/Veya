@@ -426,7 +426,7 @@ ${list(data)}
 
           <div class="callout" style="max-width:660px;margin-top:30px">
             <p class="callout-h">ומתי שולחים כל אחת מהן?</p>
-            <p>לוח הזמנים של אישורי ההגעה נבנה לאחור ממועד סגירת הרשימה.</p>
+            <p>לוח הזמנים של אישורי ההגעה נבנה לאחור מהיום האחרון לאישורי הגעה.</p>
             <p><a href="/calculators/rsvp-timeline/">לראות את לוח הזמנים</a></p>
           </div>
 

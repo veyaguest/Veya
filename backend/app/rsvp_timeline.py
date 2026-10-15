@@ -805,8 +805,9 @@ def compute_timeline(
         is_last_call = closes and step["type"] == "call_round"
         label = "סבב שיחות אחרון וסגירת הרשימה" if is_last_call else step["label"]
         note = (
-            ("אחרי השיחות האחרונות" if is_last_call else "אחרי ההודעה הזו")
-            + ", רשימת המוזמנים נסגרת."
+            "זה היום האחרון לאישורי הגעה. "
+            + ("אחרי השיחות האחרונות" if is_last_call else "אחרי ההודעה הזו")
+        + " המספרים סופיים."
         ) if closes else ""
         # סבב שיחות: גם מי שלא החליטו ממשיכים לשיחות (``call_center.OPEN_STATUSES``).
         is_call = step["type"] == "call_round"

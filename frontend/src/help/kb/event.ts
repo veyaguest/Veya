@@ -78,8 +78,8 @@ export const EVENT_TOPICS: readonly HelpTopic[] = [
   {
     id: 'event.commit-date',
     area: 'event',
-    title: 'מה זה מועד סגירת הרשימה?',
-    aliases: ['סגירת רשימה', 'מספר סופי לאולם', 'כמה ימים לפני', 'התחייבות לאולם'],
+    title: 'מה זה היום האחרון לאישורי הגעה?',
+    aliases: ['מועד סגירת הרשימה', 'סגירת רשימה', 'מספר סופי לאולם', 'כמה ימים לפני', 'התחייבות לאולם'],
     scopes: [
       { scope: 'dashboard.editEvent', weight: 90 },
       { scope: 'dashboard', weight: 55 },
@@ -109,8 +109,8 @@ export const EVENT_TOPICS: readonly HelpTopic[] = [
   {
     id: 'event.commit-change',
     area: 'event',
-    title: 'אפשר לשנות את מועד סגירת הרשימה?',
-    aliases: ['לשנות סגירה', 'טעיתי במועד', 'מועד נעול'],
+    title: 'אפשר לשנות את היום האחרון לאישורי הגעה?',
+    aliases: ['מועד סגירת הרשימה', 'לשנות סגירה', 'טעיתי במועד', 'מועד נעול'],
     scopes: [
       { scope: 'dashboard.editEvent', weight: 60 },
       { scope: 'rsvp', weight: 30 },
@@ -126,13 +126,13 @@ export const EVENT_TOPICS: readonly HelpTopic[] = [
   {
     id: 'event.commit-weekend',
     area: 'event',
-    title: 'למה הרשימה נסגרת בחמישי ולא ביום שבחרנו?',
+    title: 'למה היום האחרון לאישורי הגעה נופל בחמישי?',
     aliases: ['חמישי', 'שישי', 'שבת', 'סוף שבוע'],
     scopes: [
       { scope: 'dashboard.editEvent', weight: 40 },
       { scope: 'rsvp', weight: 30 },
     ],
-    answer: ['היום שנבחר נופל בשישי או בשבת, ובימים האלה לא פונים ל{guests}, ולכן הרשימה נסגרת בחמישי שלפניו.'],
+    answer: ['היום שנבחר נופל בשישי או בשבת, ובימים האלה לא פונים ל{guests}, ולכן היום האחרון לאישורי הגעה עובר לחמישי שלפניו.'],
     sources: ['strings/he.ts', '../../backend/app/rsvp_timeline.py'],
     verifiedAt: VERIFIED,
   },
@@ -217,8 +217,8 @@ export const EVENT_TREES: readonly DiagnosticTree[] = [
       // הניסוחים שהשרת מחזיר — routers/event.py + communication.validate_send_time.
       locked: { kind: 'check', test: { fact: 'error.last.message', op: 'includes', value: 'נעול לעריכה' }, yes: 'pending', no: 'commit-set', unknown: 'out-unknown' },
       pending: { kind: 'check', test: { fact: 'event.postpone', op: '==', value: 'pending' }, yes: 'out-pending', no: 'out-locked' },
-      'commit-set': { kind: 'check', test: { fact: 'error.last.message', op: 'includes', value: 'מועד סגירת הרשימה כבר נקבע' }, yes: 'out-commit-set', no: 'commit-past' },
-      'commit-past': { kind: 'check', test: { fact: 'error.last.message', op: 'includes', value: 'כבר הייתה סגורה' }, yes: 'out-commit-past', no: 'send-time' },
+      'commit-set': { kind: 'check', test: { fact: 'error.last.message', op: 'includes', value: 'כבר נקבע' }, yes: 'out-commit-set', no: 'commit-past' },
+      'commit-past': { kind: 'check', test: { fact: 'error.last.message', op: 'includes', value: 'כבר עבר' }, yes: 'out-commit-past', no: 'send-time' },
       'send-time': { kind: 'check', test: { fact: 'error.last.message', op: 'includes', value: 'שעת השליחה חייבת' }, yes: 'out-send-time', no: 'out-unknown' },
       'out-offline': {
         kind: 'outcome', resolution: 'user_fix',
@@ -237,11 +237,11 @@ export const EVENT_TREES: readonly DiagnosticTree[] = [
       },
       'out-commit-set': {
         kind: 'outcome', resolution: 'explained',
-        text: ['מועד סגירת הרשימה כבר נקבע, וכל לוח אישורי ההגעה נבנה סביבו. אם האירוע נדחה, בקשה לשינוי מועד פותחת אותו מחדש.'],
+        text: ['היום האחרון לאישורי הגעה כבר נקבע, וכל לוח אישורי ההגעה נבנה סביבו. אם האירוע נדחה, בקשה לשינוי מועד פותחת אותו מחדש.'],
       },
       'out-commit-past': {
         kind: 'outcome', resolution: 'user_fix',
-        text: ['בתאריך הזה הרשימה כבר הייתה סגורה. בוחרים פחות ימים לפני האירוע.'],
+        text: ['התאריך הזה כבר עבר. בוחרים פחות ימים לפני האירוע.'],
       },
       'out-send-time': {
         kind: 'outcome', resolution: 'user_fix',

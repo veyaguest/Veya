@@ -47,7 +47,7 @@ const REAL: [string, string, number, string, string][] = [
   ['POST', '/guests/import/preview', 400, 'פורמט קובץ לא נתמך. נא להעלות קובץ .xlsx או .csv', 'import-failed'],
   ['POST', '/guests/import/paste', 400, 'הרשימה ארוכה מדי. נא לפצל להדבקות קטנות יותר.', 'import-failed'],
   ['PATCH', '/event', 409, 'תאריך האירוע נעול לעריכה, כדי שאישורי ההגעה והתזכורות יישארו מסונכרנים.', 'event-save-failed'],
-  ['PATCH', '/event', 400, 'בתאריך הזה הרשימה כבר הייתה סגורה. אפשר לבחור פחות ימים לפני האירוע.', 'event-save-failed'],
+  ['PATCH', '/event', 400, 'התאריך הזה כבר עבר. אפשר לבחור פחות ימים לפני האירוע.', 'event-save-failed'],
   ['PATCH', '/event', 400, 'שעת השליחה חייבת להיות בין 10:00 ל-19:00', 'event-save-failed'],
   ['POST', '/seating/generate', 400, 'אין מוזמנים שאישרו הגעה לשיבוץ', 'seating-failed'],
   ['POST', '/seating/generate', 400, 'חבורה גדולה ממספר הכיסאות לשולחן: משפחת לוי, דנה כהן', 'seating-failed'],

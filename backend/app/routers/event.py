@@ -111,7 +111,7 @@ def _describe_changed_fields(changed: dict) -> str:
         (("venue_name", "venue_address"), "פרטי האולם"),
         (("event_date", "event_time"), "תאריך ושעת האירוע"),
         (("invite_image",), "תמונת ההזמנה"),
-        (("venue_commit_days_before",), "מועד סגירת הרשימה"),
+        (("venue_commit_days_before",), "היום האחרון לאישורי הגעה"),
         (("rsvp_send_time", "thank_you_send_time"), "שעת שליחת ההודעות"),
     ]
     labels = [label for keys, label in categories if any(k in changed for k in keys)]
@@ -210,9 +210,9 @@ def update_event(
                     raise HTTPException(
                         status_code=400,
                         detail=(
-                            "מועד סגירת הרשימה כבר נקבע — כל לוח הזמנים "
+                            "היום האחרון לאישורי הגעה כבר נקבע — כל לוח הזמנים "
                             "של אישורי ההגעה נבנה סביבו. אם האירוע נדחה, "
-                            "אפשר לבקש שינוי מועד ואז לקבוע מועד חדש."
+                            "אפשר לבקש שינוי מועד ואז לבחור יום חדש."
                         ),
                     )
                 continue
@@ -224,7 +224,7 @@ def update_event(
                 raise HTTPException(
                     status_code=400,
                     detail=(
-                        "בתאריך הזה הרשימה כבר הייתה סגורה. "
+                        "התאריך הזה כבר עבר. "
                         "אפשר לבחור פחות ימים לפני האירוע."
                     ),
                 )

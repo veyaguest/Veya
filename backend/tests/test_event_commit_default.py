@@ -58,7 +58,7 @@ def test_commit_in_the_past_is_rejected() -> None:
     _set_event_date(api, 3)
     r = api.client.patch("/event", headers=api.headers, json={"venue_commit_days_before": 5})
     assert r.status_code == 400, r.text
-    assert "כבר הייתה סגורה" in r.json()["detail"]
+    assert "כבר עבר" in r.json()["detail"]
     assert _get(api)["venue_commit_days_before"] is None, "הבחירה נשמרה למרות הדחייה"
     r = api.client.patch("/event", headers=api.headers, json={"venue_commit_days_before": 3})
     assert r.status_code == 200, "סגירה היום (3 ימים לפני אירוע בעוד 3 ימים) מותרת"
@@ -98,7 +98,7 @@ def test_activity_log_names_only_what_changed() -> None:
             .order_by(models.AuditLog.id.desc())
             .first()
         )
-        assert row is not None and row.detail == "מועד סגירת הרשימה", row and row.detail
+        assert row is not None and row.detail == "היום האחרון לאישורי הגעה", row and row.detail
     finally:
         db.close()
     print("✓ ביומן הפעילות רק מה שהשתנה")
