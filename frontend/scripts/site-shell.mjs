@@ -257,12 +257,21 @@ export function pageHero({ h1, lead, trail, cta, media }) {
   return `      <section class="page-hero">
         <div class="wrap">
           ${crumbsHtml(trail)}
-          <h1>${h1}</h1>
+          <h1${h1.replace(/<[^>]+>/g, '').length <= 22 ? ' class="is-short"' : ''}>${h1}</h1>
           ${lead ? `<p class="lead">${lead}</p>` : ''}
           ${cta ? `<div class="cta-row">${cta}</div>` : ''}
           ${media || ''}
         </div>
       </section>`
+}
+
+/** פיסת מוצר אמיתית לכותרת העמוד: צילום מסך של VEYA עם כיתוב שאומר
+ *  בדיוק מה רואים. `tall` חותך צילום לאורך ליחס 4:5 כדי שלא ישתלט. */
+export function heroShot(src, alt, caption, w, h, { tall = false } = {}) {
+  return `<figure class="hero-media${tall ? ' is-tall' : ''}">
+            <img src="${src}" alt="${esc(alt)}" width="${w}" height="${h}" decoding="async" fetchpriority="high" onerror="veyaRetryImage(this)" />
+            <figcaption>${esc(caption)}</figcaption>
+          </figure>`
 }
 
 export const CTA_PRIMARY =

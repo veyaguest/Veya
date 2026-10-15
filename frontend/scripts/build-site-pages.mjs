@@ -13,7 +13,7 @@ import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { marked } from 'marked'
-import { page, pageHero, faqHtml, esc, SITE, CTA_PRIMARY, shot } from './site-shell.mjs'
+import { page, pageHero, heroShot, faqHtml, esc, SITE, CTA_PRIMARY, shot } from './site-shell.mjs'
 import { EVENT_TYPES, GROUPS, EXPENSES } from '../content/event-types.mjs'
 import { featureRsvp, featureCalls, featureGuests, featureSeating } from './build-features.mjs'
 import { buildNuschim } from './build-nuschim.mjs'
@@ -840,6 +840,7 @@ function featureFinance() {
     lead: 'ההוצאה הגדולה באירוע ישראלי לא נקבעת בטבלה. היא נקבעת לפי כמה אנשים מגיעים. VEYA מחברת בין אישורי ההגעה לסעיפי ההוצאה, עד לשורה התחתונה אחרי האירוע.',
     trail: [{ name: 'VEYA', url: '/' }, { name: 'מאזן האירוע' }],
     cta: CTA_PRIMARY,
+    media: heroShot('/product/finance-summary.jpg', 'מאזן האירוע ב־VEYA: עלות משוערת, כמה שולם עד עכשיו, כמה נשאר לשלם, סך המתנות, ושורה תחתונה של 23,325.60 ₪ חסר כתוצאה צפויה', 'מאזן האירוע באירוע הדמו. עד שהמתנות נספרות, השורה התחתונה היא תחזית.', 1062, 930),
   })}
 
       <section class="why">

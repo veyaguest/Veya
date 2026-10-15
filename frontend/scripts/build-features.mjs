@@ -12,7 +12,7 @@
  *  · "ניהול מוזמנים" אינו מסך נפרד יותר: הרשימה חיה בתוך מרחב ההושבה
  *    (`App.tsx: navItemsFor`), ולכן העמוד מתאר שכבת נתונים ולא פריט ניווט.
  */
-import { page, pageHero, faqHtml, esc, SITE, CTA_PRIMARY } from './site-shell.mjs'
+import { page, pageHero, heroShot, faqHtml, esc, SITE, CTA_PRIMARY } from './site-shell.mjs'
 
 const CTA_TIMELINE =
   '<a href="/calculators/rsvp-timeline/" class="btn btn-ghost">לראות את לוח הזמנים</a>'
@@ -100,6 +100,7 @@ export function featureRsvp() {
     lead: 'כל תשובה נרשמת על המוזמן, וממשיכה משם לבד: לספירה, לסידור ההושבה ולחשבון. ומי שלא ענה מקבל תזכורת, ואם צריך גם טלפון.',
     trail: [{ name: 'VEYA', url: '/' }, { name: 'אישורי הגעה' }],
     cta: `${CTA_PRIMARY}\n            ${CTA_TIMELINE}`,
+    media: heroShot('/product/rsvp-counts.jpg', 'מסך אישורי ההגעה ב־VEYA: 256 אישרו הגעה, 274 ממתינים לתשובה, 45 לא החליטו ו־69 לא מגיעים, מתוך 644 אנשים שהוזמנו', 'מסך אישורי ההגעה, מתוך אירוע הדמו של VEYA.', 1170, 612),
   })}
 
       <section class="why">
@@ -508,6 +509,7 @@ export function featureGuests() {
     lead: 'הצד, הקבוצה, כמה אנשים בכל שורה, מי אישר, ומה כתבתם על מי. ומשם הכול ממשיך לאישורי ההגעה, לסידור ההושבה ולחשבון.',
     trail: [{ name: 'VEYA', url: '/' }, { name: 'רשימת מוזמנים' }],
     cta: `${CTA_PRIMARY}\n            ${CTA_TIMELINE}`,
+    media: heroShot('/product/detail-guests-groups.jpg', 'רשימת המוזמנים ב־VEYA: לכל מוזמן שם מלא, צד וקבוצה, כמו משפחה רחוקה, חברים, עבודה וצבא', 'רשימת המוזמנים: לכל שורה צד וקבוצה. מתוך אירוע הדמו.', 638, 672),
   })}
 
       <section class="why">
@@ -707,6 +709,7 @@ export function featureSeating() {
     lead: 'אתם יודעים מי לא יושב ליד מי. VEYA זוכרת את זה, ומושיבה בהתאם.',
     trail: [{ name: 'VEYA', url: '/' }, { name: 'סידור הושבה' }],
     cta: `${CTA_PRIMARY}\n            <a href="/features/guests/" class="btn btn-ghost">להתחיל מהרשימה</a>`,
+    media: heroShot('/product/hall-map.jpg', 'מפת האולם ב־VEYA: שולחנות ממוספרים, ולכל אחד כמה יושבים בו מתוך כמה מקומות', 'מפת האולם באירוע הדמו: לכל שולחן כמה יושבים מתוך כמה מקומות.', 968, 1612, { tall: true }),
   })}
 
       <section class="why">
