@@ -37,3 +37,8 @@ backend/.env.staging
 
 # מאגר git ריק ומקונן (veyaguest/veya) — לא חלק מהמאגר הזה
 veya/
+
+# מנוע impeccable (קובץ הרצה ~18MB) — הלאנצ'ר מוריד אותו לבד בהרצה הראשונה
+.claude/skills/impeccable/scripts/bin/
+# קבצי עבודה זמניים של taste-skill (draw/inspect)
+.taste-skill/
