@@ -46,7 +46,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500;700&family=Cormorant+Garamond:wght@500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;500;600&family=Frank+Ruhl+Libre:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
 
@@ -2948,6 +2948,115 @@
       :root { --focus-ring: var(--gold-deep); }
       .on-dark, #seating, #how, .site-header, .site-footer, .band, .cookie-banner-static { --focus-ring: var(--gold-light); }
       body :focus-visible { outline-color: var(--focus-ring) !important; }
+
+      /* ═════ אוקטובר 2026 — "הרשימה והשורה התחתונה" ═══════════════════════
+         השכבה האחרונה בדף, ולכן היא מנצחת. אותה שפה כמו העמודים הפנימיים
+         (public/veya-site.css). צבעי המותג לא זזים — רק השימוש בהם.
+           · טיפוגרפיה: IBM Plex Sans Hebrew לגוף, Frank Ruhl Libre לתצוגה.
+           · חיתוך חד בין משטחים: מנגנון התפרים שלמעלה נשאר, ברוחב אפס —
+             בלי חצי מסך של דהייה בין סקשן לסקשן.
+           · זהב בכותרות רק בשורת הכסף של ההירו, ומתחתיה הקו הכפול של סיכום.
+           · בלי צל במנוחה ובלי אריחי אייקון. */
+      :root {
+        --f-display: 'Frank Ruhl Libre', 'David Libre', Georgia, serif;
+        --f-text: 'IBM Plex Sans Hebrew', 'Assistant', system-ui, -apple-system, sans-serif;
+        --font-body: var(--f-text);
+        --font-num: var(--f-text);
+        --seam-soft: 0px;
+        --seam-deep: 0px;
+        --seam-pad: clamp(64px, 8vw, 112px);
+        /* טקסט גוף גדול מעט יותר: 15.5px → 16.5px, 17.5px בפסקאות */
+        --fs-xs: 0.875rem; --fs-sm: 0.9375rem; --fs-md: 1.0313rem;
+        --fs-base: 1.0938rem; --fs-lg: 1.125rem; --fs-xl: 1.25rem;
+      }
+      @media (max-width: 720px) { :root { --seam-soft: 0px; --seam-deep: 0px; --seam-pad: 64px; } }
+      section.band-wrap { --sm-full: 0px; }
+      body, .btn, .sc-tab, .skip-link, .cookie-banner-static { font-family: var(--f-text); }
+      .step .num { font-family: var(--f-display); letter-spacing: 0; }
+      ::selection { background: rgba(201, 162, 39, 0.3); color: var(--charcoal); }
+      input, textarea, select { caret-color: var(--gold-deep); }
+
+      /* ── כותרות: גדולות, הדוקות, בלי שורה שנייה בזהב ── */
+      .section-title { font-size: clamp(1.875rem, 3.7vw, 3.25rem); line-height: 1.1; letter-spacing: -0.01em; text-wrap: balance; }
+      .ttl-accent, .ttl-lead { color: inherit; }
+      .ttl-accent { font-weight: 700; }
+      .section-sub { font-size: var(--fs-lg); line-height: 1.7; }
+      p { text-wrap: pretty; }
+
+      /* ── ההירו: שורת הכסף בזהב, והקו הכפול נמתח תחתיה פעם אחת ── */
+      .hero h1 .accent { position: relative; display: inline-block; padding-bottom: 0.12em; }
+      .hero h1 .accent::after {
+        content: ""; position: absolute; inset-inline: 0; bottom: 0; height: 0.09em; min-height: 5px;
+        border-top: 1px solid var(--gold); border-bottom: 1px solid var(--gold);
+        transform-origin: right center;
+      }
+      .hero h1.reveal .accent::after { transform: scaleX(0); transition: transform 900ms var(--ease-out) 450ms; }
+      .hero h1.reveal.in .accent::after { transform: none; }
+      @media (prefers-reduced-motion: reduce) { .hero h1.reveal .accent::after { transform: none; transition: none; } }
+
+      /* ── כפתורים: מילוי שטוח, בלי צל ובלי ריחוף ── */
+      .btn-primary, .btn-primary:hover { box-shadow: none; }
+      .btn { border-radius: 6px; }
+      @media (hover: hover) and (pointer: fine) {
+        .btn-primary:hover, .btn-ghost:hover { transform: none; }
+      }
+      .btn:active { transform: scale(0.98); }
+
+      /* ── "ומה עם מי שראה ולא ענה?": רשימה, לא שלושה אריחים ── */
+      #calls .supporting-grid {
+        grid-template-columns: minmax(0, 1fr); gap: 0; max-width: 760px; margin-inline: auto;
+        border-top: 2px solid var(--charcoal); text-align: start;
+      }
+      #calls .supporting-item {
+        display: grid; grid-template-columns: 26px minmax(0, 1fr); column-gap: 18px;
+        padding: 26px 0; border-bottom: 1px solid var(--line);
+        background: none; border-radius: 0; box-shadow: none;
+      }
+      #calls .supporting-item .ic { grid-row: 1 / span 2; width: 26px; height: 26px; margin: 2px 0 0; background: none; border-radius: 0; }
+      #calls .supporting-item h3 { font-family: var(--f-text); font-weight: 600; font-size: 1.1875rem; margin: 0 0 8px; }
+      #calls .supporting-item p { font-size: var(--fs-md); line-height: 1.75; margin: 0; }
+
+      /* ── יישור לפי תפקיד ──────────────────────────────────────────────
+         רגעי האנשים (ההירו, ההצהרה, אישורי ההגעה, "להיראות כמו אירוע",
+         אחרי האירוע) נשארים במרכז — הקומפוזיציה בנויה סביב הצילום.
+         הסקשנים שמסבירים איך זה עובד נצמדים לשוליים הימניים, כמו פנקס. */
+      :is(section.ps, section.gh, #calls, #showcase, #seating, #how, section.faq-wrap) .section-head {
+        text-align: start; margin-inline: 0 auto; max-width: 880px;
+      }
+      :is(section.ps, section.gh, #calls, #showcase, #seating, #how, section.faq-wrap) .section-head > p {
+        margin-inline: 0; max-width: 58ch;
+      }
+      #calls .supporting-grid { margin-inline: 0 auto; }
+      /* משטחים בצבע אחיד: מנגנון התפרים כבר ברוחב אפס, אז גם בקוד אין גרדיאנט.
+         ההירו שומר על אור המנורה (radial) — הוא חלק מהצילום, לא קישוט. */
+      #why, section.ps, #deadline, #rsvp, section.gh, #calls, #showcase, #clarity,
+      #seating, #gifts, #giftcard, #after, #how,
+      section.faq-wrap, #story, section.leads, section.band-wrap { background: var(--sm-c); }
+      p.bridge.bridge-soft { background: var(--bg-linen); }
+      .hero { background: radial-gradient(120% 90% at 50% -10%, #2a2115 0%, var(--ink-2) 42%, var(--ink) 100%); }
+      .ps-label { font-size: var(--fs-sm); letter-spacing: 0; }
+      .dlt-day { font-size: var(--fs-sm); }
+      /* אישת אישורי ההגעה (≥1100) גולשת מעט מתחת לסקשן שלה; בלי מעברי הגרדיאנט
+         הסקשן הבא מתחיל גבוה יותר, ולכן כאן עוד אוויר — כדי שלא תיגע בכותרת */
+      @media (min-width: 1100px) { #rsvp { padding-bottom: calc(var(--seam-pad) + 48px); } }
+      #calls .calls-punch { text-align: start; margin-inline: 0; }
+      .on-dark .ttl-accent, .band .ttl-accent { color: inherit; }
+
+      /* ── שאלות נפוצות: אותה עמודת שוליים כמו בעמודים הפנימיים ── */
+      .faq { max-width: 760px; margin: 0; }
+      details { background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 0; margin: 0; }
+      details[open] { border-color: var(--line); box-shadow: none; }
+      .faq details:last-child { border-bottom: 1px solid var(--line); }
+      details summary { font-family: var(--f-text); font-weight: 600; font-size: 1.125rem; padding: 22px 0; }
+      details p { font-size: var(--fs-md); line-height: 1.75; max-width: 62ch; padding-bottom: 24px; }
+      @media (min-width: 980px) {
+        section.faq-wrap > .wrap {
+          display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+          column-gap: clamp(36px, 6vw, 104px); align-items: start;
+        }
+        section.faq-wrap > .wrap > * { grid-column: 2; min-width: 0; }
+        section.faq-wrap > .wrap > .section-head { grid-column: 1; grid-row: 1 / span 12; position: sticky; top: 108px; margin: 0; }
+      }
 
 
     
