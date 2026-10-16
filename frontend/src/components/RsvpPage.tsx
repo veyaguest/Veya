@@ -29,6 +29,7 @@ import { RSVP_SCREEN_FAQ } from '../help/kb/rsvpFaq'
 import { renderText } from '../help/engine/text'
 import type { GuestFilter } from '../api'
 import type { RsvpTimelineView } from '../types'
+import './RsvpPage.css'
 
 type RsvpNavigate = (
   page: 'guests' | 'messages' | 'hall',
@@ -336,11 +337,22 @@ function RsvpFaq() {
             <button
               type="button"
               className="lib2-card-head"
+              aria-expanded={open === i}
               onClick={() => setOpen((cur) => (cur === i ? null : i))}
             >
               <span className="rsvp-faq-q-text">{item.q}</span>
               <span className="lib2-card-arrow" aria-hidden="true">
-                {open === i ? '︿' : '﹀'}
+                <svg
+                  className={`rsvp-faq-chev${open === i ? ' is-open' : ''}`}
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m4 6 4 4 4-4" />
+                </svg>
               </span>
             </button>
             {open === i && (

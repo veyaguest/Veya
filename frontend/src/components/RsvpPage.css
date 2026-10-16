@@ -1,0 +1,517 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   מסך אישורי ההגעה של בעל האירוע — פנקס אחד רציף (2026-10-16)
+
+   המסך היה ערימה של קופסאות: כרטיס לשלב, כרטיס ל"צריכים אתכם", כרטיס לכל
+   יום וכרטיס לכל הודעה בלוח, חמישה אריחים לסטטוס ההודעות, וכרטיס לכל שאלה.
+   כאן הוא נקרא כמו דף אחד: המספרים בראש עם קו כפול של סיכום, ומתחתיהם
+   פרקים שמופרדים בקו דק — בלי מסגרות, בלי צל ובלי רקע לכל פריט.
+
+   הכול תחום ל-.couple-rsvp: PhaseCard, invite-banner ו-stat-card משמשים גם
+   בתמונת מצב ובמסכים אחרים, ושם הם נשארים כמו שהם. אותם טוקנים בלבד.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.couple-rsvp {
+  gap: 0;
+}
+
+/* פרק חדש בפנקס: קו דק מעליו ואוויר משני הצדדים */
+.couple-rsvp .rsvp-needs,
+.couple-rsvp .tl-wrap,
+.couple-rsvp .tl-empty,
+.couple-rsvp .track-status,
+.couple-rsvp .rsvp-faq {
+  margin: var(--space-10) 0 0;
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--line);
+}
+
+/* ── השורה העליונה: ארבעה מספרים וקו כפול של סיכום ── */
+.couple-rsvp .rsvp-summary {
+  gap: var(--space-3);
+}
+.couple-rsvp .rsvp-summary-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  padding-bottom: var(--space-5);
+  border-bottom: 3px double var(--gold);
+}
+.couple-rsvp .rsvp-summary-item {
+  padding-inline: var(--space-6);
+  border-inline-start: 1px solid var(--line);
+}
+.couple-rsvp .rsvp-summary-item:first-child {
+  padding-inline-start: 0;
+  border-inline-start: none;
+}
+.couple-rsvp .rsvp-summary-btn {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+.couple-rsvp .rsvp-summary-num {
+  font-size: var(--text-4xl);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.couple-rsvp .rsvp-summary-label {
+  font-size: var(--text-base);
+}
+
+/* ── איפה המסלול עכשיו: שורה אחת, הפעולה בצד ── */
+.couple-rsvp .tl-phase {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-8);
+  align-items: center;
+  margin: var(--space-8) 0 0;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+.couple-rsvp .tl-phase > * {
+  grid-column: 1;
+}
+.couple-rsvp .tl-phase-title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+}
+.couple-rsvp .tl-phase-body {
+  max-width: 68ch;
+}
+.couple-rsvp .tl-phase-cta {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  margin: 0;
+}
+.couple-rsvp .tl-phase-steps {
+  grid-template-columns: repeat(2, max-content);
+  column-gap: var(--space-8);
+}
+
+/* ── צריכים אתכם: רשימה עם קווים, לא באנרים צבועים ── */
+.couple-rsvp .rsvp-needs {
+  gap: 0;
+  padding-inline: 0;
+}
+.couple-rsvp .rsvp-needs-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+}
+.couple-rsvp .invite-banner {
+  padding: var(--space-5) 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line-2);
+  border-radius: 0;
+}
+.couple-rsvp .invite-banner:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.couple-rsvp .invite-banner-title {
+  font-size: var(--text-lg);
+}
+.couple-rsvp .invite-banner-desc {
+  max-width: 60ch;
+  font-size: var(--text-base);
+}
+
+/* ── לוח הזמנים ── */
+.couple-rsvp .tl-wrap {
+  gap: var(--space-8);
+}
+.couple-rsvp .tl-header {
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+/* תווית הלוח: טקסט שקט, לא תגית */
+.couple-rsvp .track-hero-badge {
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.couple-rsvp .tl-header-title {
+  margin: var(--space-1) 0 var(--space-2);
+  font-size: var(--text-xl);
+}
+.couple-rsvp .tl-header-sub {
+  margin: 0;
+}
+.couple-rsvp .tl-header-stats {
+  display: block;
+  margin-top: var(--space-5);
+}
+.couple-rsvp .tl-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  text-align: start;
+}
+.couple-rsvp .tl-stat-num {
+  font-size: var(--text-3xl);
+  font-variant-numeric: tabular-nums;
+}
+.couple-rsvp .tl-stat-label {
+  margin: 0;
+  font-size: var(--text-base);
+}
+/* הערת "נשאר מעט זמן": שורת הערה עם נקודה, לא קופסה */
+.couple-rsvp .tl-compressed {
+  position: relative;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  padding-inline-start: var(--space-5);
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: var(--body);
+}
+.couple-rsvp .tl-compressed::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 2px;
+  top: 0.6em;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+.couple-rsvp .tl-compressed-title {
+  color: var(--gold-deep);
+}
+
+/* "היום": הרגע היחיד בלוח שמקבל משטח */
+.couple-rsvp .tl-now-card,
+.couple-rsvp .tl-now-card.today {
+  padding: var(--space-4) var(--space-5);
+  border: none;
+  border-radius: var(--radius-s);
+  box-shadow: none;
+}
+
+.couple-rsvp .tl-scale {
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.couple-rsvp .tl-scale .clar-title {
+  margin: 0;
+}
+.couple-rsvp .tl-days {
+  margin-top: var(--space-5);
+}
+
+/* יום בלוח: התאריך בעמודה משלו, המסילה, ומה שקורה באותו יום — בלי כרטיס */
+.couple-rsvp .tl-day {
+  display: grid;
+  grid-template-columns: 11.5rem 16px minmax(0, 1fr);
+  column-gap: var(--space-4);
+  align-items: start;
+}
+.couple-rsvp .tl-day-body {
+  display: contents;
+}
+.couple-rsvp .tl-day-head {
+  grid-column: 1;
+  grid-row: 1;
+  justify-content: flex-start;
+  margin: 0;
+  padding-bottom: var(--space-6);
+}
+.couple-rsvp .tl-day-marker {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  align-self: stretch;
+}
+.couple-rsvp .tl-day-marker::after {
+  top: 18px;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--gold) 45%, var(--line));
+}
+.couple-rsvp .tl-day:not(:last-child) .tl-day-marker::after {
+  bottom: -6px;
+}
+.couple-rsvp .tl-day:last-child .tl-day-marker::after {
+  content: none;
+}
+.couple-rsvp .tl-day-dot {
+  width: 11px;
+  height: 11px;
+  margin-top: 5px;
+  box-sizing: border-box;
+  background: var(--cream);
+  border: 1.5px solid var(--gold-deep);
+}
+.couple-rsvp .tl-day.is-past .tl-day-dot {
+  background: var(--gold-deep);
+}
+.couple-rsvp .tl-day.is-today .tl-day-dot {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.couple-rsvp .tl-day.is-commitment .tl-day-dot {
+  background: var(--green);
+  border-color: var(--green);
+}
+/* ימים שעברו: צבע שקט במקום שקיפות, כדי שהטקסט יישאר קריא */
+.couple-rsvp .tl-day.is-past {
+  opacity: 1;
+}
+.couple-rsvp .tl-day.is-past .tl-day-date,
+.couple-rsvp .tl-day.is-past .tl-action-label {
+  color: var(--body);
+}
+.couple-rsvp .tl-day-date {
+  font-size: var(--text-base);
+  font-variant-numeric: tabular-nums;
+}
+.couple-rsvp .tl-day.is-commitment .tl-day-date {
+  color: var(--green);
+}
+.couple-rsvp .tl-actions,
+.couple-rsvp .tl-day-empty {
+  grid-column: 3;
+  grid-row: 1;
+  padding-bottom: var(--space-6);
+}
+.couple-rsvp .tl-actions {
+  gap: var(--space-3);
+}
+.couple-rsvp .tl-action {
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+.couple-rsvp .tl-action:hover {
+  border: none;
+  box-shadow: none;
+}
+.couple-rsvp .tl-action-label {
+  font-size: var(--text-md);
+}
+
+/* ── סטטוס ההודעות: שורת מספרים אחת וטבלה עם קווים ── */
+.couple-rsvp .track-status {
+  padding-inline: 0;
+  padding-bottom: 0;
+  background: none;
+  border-inline: none;
+  border-bottom: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.couple-rsvp .track-status-head .track-hero-title {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+.couple-rsvp .msg-status-grid {
+  gap: 0;
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--line);
+}
+.couple-rsvp .msg-status-tile {
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: 0 var(--space-5);
+  background: none;
+  border: none;
+  border-inline-start: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
+  text-align: start;
+}
+.couple-rsvp .msg-status-tile:first-child {
+  padding-inline-start: 0;
+  border-inline-start: none;
+}
+.couple-rsvp .msg-status-tile .stat-num {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+.couple-rsvp .msg-status-tile.is-link:hover {
+  border-color: var(--line);
+}
+.couple-rsvp .msg-status-tile.is-link:hover .stat-label {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.couple-rsvp .msg-guest-section {
+  padding-top: 0;
+  border-top: none;
+}
+.couple-rsvp .msg-guest-list {
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+.couple-rsvp .msg-guest-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-2);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line-2);
+  border-radius: 0;
+}
+.couple-rsvp .msg-guest-row-btn:hover {
+  background: var(--surface-hi);
+  border-color: var(--line-2);
+}
+.couple-rsvp .msg-guest-badges {
+  flex: none;
+  justify-content: flex-end;
+  gap: var(--space-6);
+  padding-top: 0;
+  border-top: none;
+}
+.couple-rsvp .msg-guest-rsvp {
+  min-width: 7.5rem;
+  text-align: end;
+}
+
+/* ── שאלות נפוצות: שורות עם קו, לא כרטיסים ── */
+.couple-rsvp .rsvp-faq-list {
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+.couple-rsvp .rsvp-faq-item {
+  padding: var(--space-4) 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
+}
+.couple-rsvp .rsvp-faq-a {
+  max-width: 72ch;
+}
+.couple-rsvp .rsvp-faq-chev {
+  display: block;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  transition: transform var(--transition-fast);
+}
+.couple-rsvp .rsvp-faq-chev.is-open {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .couple-rsvp .rsvp-faq-chev {
+    transition: none;
+  }
+}
+
+/* ── טלפון ── */
+@media (max-width: 720px) {
+  .couple-rsvp .rsvp-needs,
+  .couple-rsvp .tl-wrap,
+  .couple-rsvp .tl-empty,
+  .couple-rsvp .track-status,
+  .couple-rsvp .rsvp-faq {
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+  }
+
+  .couple-rsvp .rsvp-summary-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-5) 0;
+  }
+  .couple-rsvp .rsvp-summary-item,
+  .couple-rsvp .rsvp-summary-item:first-child {
+    padding-inline: 0;
+    border-inline-start: none;
+  }
+  .couple-rsvp .rsvp-summary-item:nth-child(even) {
+    padding-inline-start: var(--space-5);
+    border-inline-start: 1px solid var(--line);
+  }
+  .couple-rsvp .rsvp-summary-num {
+    font-size: var(--text-3xl);
+  }
+
+  .couple-rsvp .tl-phase {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .couple-rsvp .tl-phase-cta {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+    margin-top: var(--space-4);
+  }
+  .couple-rsvp .tl-phase-steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* בטלפון התאריך עולה מעל הפעולות, והמסילה נשארת בצד */
+  .couple-rsvp .tl-day {
+    grid-template-columns: 16px minmax(0, 1fr);
+    column-gap: var(--space-3);
+  }
+  .couple-rsvp .tl-day-marker {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+  .couple-rsvp .tl-day-head {
+    grid-column: 2;
+    padding-bottom: var(--space-2);
+  }
+  .couple-rsvp .tl-actions,
+  .couple-rsvp .tl-day-empty {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .couple-rsvp .msg-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-5) 0;
+  }
+  .couple-rsvp .msg-status-tile,
+  .couple-rsvp .msg-status-tile:first-child {
+    padding-inline: 0;
+    border-inline-start: none;
+  }
+  .couple-rsvp .msg-status-tile:nth-child(even) {
+    padding-inline-start: var(--space-5);
+    border-inline-start: 1px solid var(--line);
+  }
+  .couple-rsvp .msg-status-grid > :last-child {
+    grid-column: auto;
+  }
+
+  .couple-rsvp .msg-guest-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
+  }
+  .couple-rsvp .msg-guest-badges {
+    justify-content: space-between;
+  }
+  .couple-rsvp .msg-guest-rsvp {
+    min-width: 0;
+  }
+}
