@@ -74,6 +74,144 @@ const shotTall = (src, alt, caption, w, h) => `          <figure class="shot-tal
    /features/rsvp
    ════════════════════════════════════════════════════════════════════ */
 
+// העיצוב של /features/rsvp בלבד. רעיון אחד מוביל את העמוד: תשובה אחת
+// שעוברת דרך כל השרשרת. כל סקשן בפריסה משלו, וכל טענה יושבת ליד הצילום
+// האמיתי שמוכיח אותה — בלי אריחי אייקון ובלי כרטיס לבן.
+const RSVP_CSS = `    <style>
+      .page-hero .hero-media { max-width: 580px; }
+
+      .rv-head { max-width: 640px; margin: 0 0 clamp(40px, 5vw, 64px); }
+      .rv-head .section-title { margin-bottom: 14px; }
+      .rv-head-wide { max-width: 820px; }
+      .rv-sub { color: var(--muted); font-size: var(--t-lead); line-height: 1.65; max-width: 46ch; margin: 0; }
+      .rv-fine { font-size: var(--t-small); line-height: 1.7; color: var(--muted); max-width: 60ch; margin: 16px 0 0; }
+      .rv-fine a { text-underline-offset: 3px; }
+      .rv-shot { margin: 0; }
+      .rv-shot img { display: block; width: 100%; height: auto; object-fit: cover; object-position: top; border-radius: 12px; box-shadow: 0 0 0 1px rgba(23, 19, 13, 0.12); }
+      .rv-shot figcaption { margin-top: 12px; font-size: var(--t-small); line-height: 1.6; color: var(--muted); }
+
+      /* פתיחה: הרגע הממורכז היחיד בעמוד */
+      .rv-open { background: var(--ivory-2); text-align: center; padding: clamp(80px, 10vw, 152px) 0; }
+      .rv-open-title {
+        font-family: var(--f-display); font-weight: 500; font-size: clamp(2.375rem, 6vw, 5.25rem);
+        line-height: 1.04; letter-spacing: -0.02em; color: var(--charcoal);
+        max-width: 14ch; margin: 0 auto clamp(28px, 3.4vw, 44px);
+      }
+      .rv-open-text { font-size: var(--t-lead); line-height: 1.75; max-width: 44ch; margin: 0 auto; }
+      .rv-open .rv-open-punch { margin-top: clamp(32px, 4vw, 48px); text-align: center; }
+
+      /* השרשרת: מסילה אחת שהתשובה עוברת בה, ליד הרשימה האמיתית */
+      .rv-chain { background: var(--ivory); }
+      .rv-chain-body { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--col-gap); align-items: start; }
+      .rv-rail { list-style: none; margin: 0; padding: 0; }
+      .rv-rail li { position: relative; padding: 0 40px 36px 0; }
+      .rv-rail li:last-child { padding-bottom: 0; }
+      .rv-rail li::before {
+        content: ""; position: absolute; right: 0; top: 0.6em; z-index: 1;
+        width: 11px; height: 11px; box-sizing: border-box; border-radius: 50%;
+        border: 1.5px solid var(--gold); background: var(--ivory);
+      }
+      .rv-rail li::after {
+        content: ""; position: absolute; right: 5px; top: calc(0.6em + 11px); bottom: -0.6em;
+        width: 1px; background: color-mix(in oklab, var(--gold) 55%, var(--line));
+      }
+      .rv-rail li:last-child::after { display: none; }
+      .rv-rail li:last-child::before { background: var(--gold); }
+      .rv-rail h3 { font-family: var(--f-display); font-weight: 500; font-size: clamp(1.375rem, 2.1vw, 1.75rem); line-height: 1.25; color: var(--charcoal); margin: 0 0 6px; }
+      .rv-rail p { margin: 0; max-width: 44ch; }
+      .rv-chain .rv-chain-punch { margin: 48px 40px 0 0; }
+      .rv-shot-list { position: sticky; top: 104px; justify-self: end; width: 100%; max-width: 400px; }
+      .rv-shot-list img { aspect-ratio: 674 / 940; }
+
+      /* ארבעת הסטטוסים: רצועה כהה, הטלפון האמיתי מול הפנקס */
+      .rv-status { background: var(--ink); color: var(--on-ink-2); }
+      .rv-status .wrap { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); column-gap: var(--col-gap); align-items: center; }
+      .rv-shot-phone { justify-self: start; width: 100%; max-width: 330px; }
+      .rv-shot-phone img { aspect-ratio: 780 / 1290; border-radius: 28px; box-shadow: 0 0 0 1px rgba(245, 239, 226, 0.16); }
+      .rv-status .rv-shot figcaption { color: var(--on-ink-3); }
+      .rv-status .section-title { color: var(--on-ink); margin-bottom: 14px; }
+      .rv-status .rv-sub { color: var(--on-ink-2); }
+      .rv-ledger { max-width: 620px; margin-top: clamp(32px, 4vw, 44px); border-top: 2px solid var(--on-ink); }
+      .rv-ledger-head, .rv-ledger dl > div {
+        display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+        border-bottom: 1px solid rgba(245, 239, 226, 0.16);
+      }
+      .rv-ledger-head { padding: 14px 0; }
+      .rv-ledger-head h3 { margin: 0; font-size: 1rem; font-weight: 600; color: var(--on-ink); }
+      .rv-ledger-head span { font-size: var(--t-small); color: var(--on-ink-3); }
+      .rv-ledger dl { margin: 0; }
+      .rv-ledger dl > div { padding: 16px 0; }
+      .rv-ledger dt { font-family: var(--f-display); font-size: clamp(1.25rem, 1.8vw, 1.5rem); line-height: 1.3; color: var(--on-ink); }
+      .rv-ledger dd { margin: 0; font-weight: 600; color: var(--on-ink-3); }
+      .rv-ledger .is-key { position: relative; border-bottom: 0; padding-bottom: 22px; }
+      .rv-ledger .is-key::after {
+        content: ""; position: absolute; inset-inline: 0; bottom: 0; height: 5px;
+        border-top: 1px solid var(--gold); border-bottom: 1px solid var(--gold);
+      }
+      .rv-ledger .is-key dt, .rv-ledger .is-key dd { color: var(--gold-light); }
+      .rv-status-note { max-width: 56ch; margin: 26px 0 0; color: var(--on-ink-2); }
+      .rv-status-note b { font-weight: 600; color: var(--on-ink); }
+      .rv-status .rv-fine { color: var(--on-ink-3); }
+      .rv-status a { color: var(--gold-light); }
+
+      /* לוח הזמנים: המסלול האמיתי מול ארבעת הכללים, ואז מסך ההודעות ברוחב מלא */
+      .rv-route { background: var(--ivory); }
+      .rv-route-body { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--col-gap); align-items: start; }
+      .rv-shot-route { order: 2; justify-self: end; width: 100%; max-width: 420px; }
+      .rv-shot-route img { aspect-ratio: 1062 / 1300; }
+      .rv-rules { margin: 0; border-top: 2px solid var(--charcoal); }
+      .rv-rules > div { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: 28px; padding: 26px 0; border-bottom: 1px solid var(--line); }
+      .rv-rules dt { font-family: var(--f-display); font-weight: 500; font-size: clamp(1.25rem, 1.8vw, 1.5rem); line-height: 1.3; color: var(--charcoal); }
+      .rv-rules dd { margin: 0; }
+      .rv-wide { margin: clamp(64px, 8vw, 112px) 0 0; }
+      .rv-wide .sc-shot { margin: 0; }
+      .rv-wide figcaption { margin-top: 14px; font-size: var(--t-small); line-height: 1.6; color: var(--muted); max-width: 70ch; }
+      .rv-route-foot { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--col-gap); align-items: end; margin-top: clamp(40px, 5vw, 56px); }
+      .rv-route-foot .rv-fine { margin: 0; }
+      .rv-cta { display: grid; justify-items: end; gap: 10px; }
+      .rv-cta .cta-hint { font-size: var(--t-small); color: var(--muted); }
+
+      /* הכסף: פנקס עם שורת סיכום — הקו הכפול יושב מתחת לשורה התחתונה */
+      .rv-money { background: var(--ivory-2); }
+      .rv-money .rv-money-title { font-size: clamp(2rem, 4.4vw, 3.75rem); line-height: 1.08; max-width: 16ch; margin: 0 0 clamp(40px, 5vw, 64px); }
+      .rv-sum { max-width: 980px; margin: 0; }
+      .rv-sum > div { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: var(--col-gap); align-items: baseline; padding: 22px 0; border-bottom: 1px solid var(--line); }
+      .rv-sum > div:first-child { border-top: 1px solid var(--line); }
+      .rv-sum dt { font-family: var(--f-display); font-weight: 500; font-size: clamp(1.75rem, 3.2vw, 2.75rem); line-height: 1.1; color: var(--charcoal); }
+      .rv-sum dd { margin: 0; font-size: var(--t-lead); line-height: 1.6; }
+      .rv-sum .is-total { margin-top: -1px; padding-top: 30px; border-top: 1.5px solid var(--charcoal); border-bottom: 0; }
+      .rv-sum .is-total .dbl { margin: 0; padding-bottom: 14px; font-size: inherit; line-height: inherit; }
+      .rv-next { margin-top: clamp(44px, 5vw, 64px); }
+      .rv-next p { margin: 0 0 8px; color: var(--muted); }
+      .rv-next a {
+        font-family: var(--f-display); font-size: clamp(1.25rem, 1.9vw, 1.5rem); color: var(--charcoal);
+        text-decoration: underline; text-decoration-color: var(--gold); text-decoration-thickness: 1px; text-underline-offset: 7px;
+        transition: color 160ms var(--ease-out);
+      }
+      .rv-next a:hover { color: var(--gold-deep); }
+
+      .faq-wrap { background: var(--ivory); }
+
+      @media (max-width: 900px) {
+        .rv-chain-body, .rv-status .wrap, .rv-route-body, .rv-route-foot,
+        .rv-rules > div, .rv-sum > div { grid-template-columns: minmax(0, 1fr); }
+        .rv-shot-list { position: static; justify-self: stretch; max-width: 440px; margin-top: 56px; }
+        .rv-shot-list img { aspect-ratio: 674 / 760; }
+        .rv-shot-phone { justify-self: center; max-width: 280px; margin-bottom: 56px; }
+        .rv-shot-route { order: 0; justify-self: stretch; max-width: 440px; margin-bottom: 40px; }
+        .rv-shot-route img { aspect-ratio: 1062 / 1080; }
+        .rv-rules dd, .rv-sum dd { margin-top: 6px; }
+        .rv-cta { justify-items: start; margin-top: 28px; }
+      }
+    </style>
+`
+
+// צילום עם כיתוב, בלי מסגרת דפדפן — לפיסות מסך לאורך.
+const fig = (cls, src, alt, caption, w, h) => `            <figure class="${cls}">
+              <img src="${src}" alt="${esc(alt)}" width="${w}" height="${h}" loading="lazy" decoding="async" onerror="veyaRetryImage(this)" />
+              <figcaption>${esc(caption)}</figcaption>
+            </figure>`
+
 export function featureRsvp() {
   const faq = [
     {
@@ -103,135 +241,124 @@ export function featureRsvp() {
     media: heroShot('/product/rsvp-counts.jpg', 'מסך אישורי ההגעה ב־VEYA: 256 אישרו הגעה, 274 ממתינים לתשובה, 45 לא החליטו ו־69 לא מגיעים, מתוך 644 אנשים שהוזמנו', 'מסך אישורי ההגעה, מתוך אירוע הדמו של VEYA.', 1170, 612),
   })}
 
-      <section class="why">
+      <section class="rv-open">
         <div class="wrap">
-          <div class="why-inner">
-            <h2 class="section-title">ה"כן" של המוזמן הוא רק ההתחלה</h2>
-            <p>
-              בטבלה רגילה, מוזמן שענה מקבל וי וזהו. אבל מהתשובה הזו נגזרות ההחלטות
-              היקרות של האירוע: כמה מנות, כמה שולחנות, וכמה זה יעלה.
-            </p>
-            <p class="why-punch">כמה באמת מגיעים זה כמה שולחנות. וזה גם כמה כסף.</p>
-          </div>
+          <h2 class="rv-open-title">ה"כן" של המוזמן הוא רק ההתחלה</h2>
+          <p class="rv-open-text">
+            בטבלה רגילה, מוזמן שענה מקבל וי וזהו. אבל מהתשובה הזו נגזרות ההחלטות
+            היקרות של האירוע: כמה מנות, כמה שולחנות, וכמה זה יעלה.
+          </p>
+          <p class="dbl rv-open-punch">כמה באמת מגיעים זה כמה שולחנות. וזה גם כמה כסף.</p>
         </div>
       </section>
 
-      <section class="flow tone-alt">
+      <section class="rv-chain">
         <div class="wrap">
-          <div class="section-head">
+          <div class="rv-head">
             <h2 class="section-title">התשובה לא נשארת בעמודה שלה</h2>
-            <p class="section-sub">
+            <p class="rv-sub">
               אף מספר לא מוקלד פעמיים. כל שלב לוקח את התשובה מהשלב שלפניו.
             </p>
           </div>
-${flowSteps([
-  { icon: ic(P.users), h: 'מוזמן עונה', p: 'התשובה נכנסת לשורת המוזמן שלו, כולל כמה אנשים הוא מביא.' },
-  { icon: ic(P.chat), h: 'הסטטוס מתעדכן', p: 'מגיע, לא מגיע, אולי או ממתין לתשובה.' },
-  { icon: ic(P.chart), h: 'תמונת המצב זזה', p: 'כמה אישרו, כמה ממתינים, וכמה אנשים זה בפועל.' },
-  { icon: ic(P.coin), h: 'והעלות זזה איתה', p: 'סעיף שמחושב לפי מספר המגיעים מתעדכן מעצמו.' },
-  { icon: ic(P.table), h: 'וסידור ההושבה יודע כמה מקומות צריך', p: 'רק מי שמסומן "מגיע" נספר כתופס מקום.' },
-])}
-          <p class="flow-punch">מספר אחד עובר דרך כל השרשרת. לא ארבעה מספרים בארבעה מקומות.</p>
+          <div class="rv-chain-body">
+            <div class="rv-chain-text">
+              <ol class="rv-rail">
+                <li><h3>מוזמן עונה</h3><p>התשובה נכנסת לשורת המוזמן שלו, כולל כמה אנשים הוא מביא.</p></li>
+                <li><h3>הסטטוס מתעדכן</h3><p>מגיע, לא מגיע, אולי או ממתין לתשובה.</p></li>
+                <li><h3>תמונת המצב זזה</h3><p>כמה אישרו, כמה ממתינים, וכמה אנשים זה בפועל.</p></li>
+                <li><h3>והעלות זזה איתה</h3><p>סעיף שמחושב לפי מספר המגיעים מתעדכן מעצמו.</p></li>
+                <li><h3>וסידור ההושבה יודע כמה מקומות צריך</h3><p>רק מי שמסומן "מגיע" נספר כתופס מקום.</p></li>
+              </ol>
+              <p class="dbl rv-chain-punch">מספר אחד עובר דרך כל השרשרת. לא ארבעה מספרים בארבעה מקומות.</p>
+            </div>
+${fig('rv-shot rv-shot-list', '/product/seat-panel.jpg', 'רשימת המוזמנים ב־VEYA, ממוינת כך שמי שאישרו הגעה ראשונים: ליד כל מוזמן הסטטוס שלו, מספר האנשים והשולחן', 'רשימת המוזמנים ב־VEYA: ליד כל שם, אם אישר הגעה, כמה אנשים זה, ובאיזה שולחן.', 674, 1130)}
+          </div>
         </div>
       </section>
 
-      <section class="commit tone-light">
+      <section class="rv-status on-dark">
         <div class="wrap">
-          <div class="section-head">
+${fig('rv-shot rv-shot-phone', '/product/dashboard-phone.jpg', 'מסך הבית של VEYA בטלפון: 256 אישרו הגעה, 274 ממתינים לתשובה, 45 לא החליטו ו־69 לא מגיעים, מתוך 644 שהוזמנו', 'תמונת המצב בטלפון, מתוך אירוע הדמו: 256 אישרו הגעה מתוך 644 שהוזמנו.', 780, 1688)}
+          <div class="rv-status-text">
             <h2 class="section-title">ארבעה סטטוסים, ומי מהם נספר</h2>
-            <p class="section-sub">
-              נשמע טכני, אבל זה מה שקובע אם המספר שתמסרו לאולם נכון.
-            </p>
-          </div>
-          <div class="numcard">
-            <div class="numcard-head">
-              <h3>מי נספר כתופס מקום</h3>
-              <span class="numcard-tag">בהושבה ובעלות</span>
+            <p class="rv-sub">נשמע טכני, אבל זה מה שקובע אם המספר שתמסרו לאולם נכון.</p>
+            <div class="rv-ledger">
+              <div class="rv-ledger-head">
+                <h3>מי נספר כתופס מקום</h3>
+                <span>בהושבה ובעלות</span>
+              </div>
+              <dl>
+                <div class="is-key"><dt>מגיע</dt><dd>נספר</dd></div>
+                <div><dt>אולי</dt><dd>לא נספר</dd></div>
+                <div><dt>ממתין לתשובה</dt><dd>לא נספר</dd></div>
+                <div><dt>לא מגיע</dt><dd>לא נספר</dd></div>
+              </dl>
             </div>
-            <dl>
-              <div class="numrow is-key"><dt>מגיע</dt><dd>נספר</dd></div>
-              <div class="numrow"><dt>אולי</dt><dd>לא נספר</dd></div>
-              <div class="numrow"><dt>ממתין לתשובה</dt><dd>לא נספר</dd></div>
-              <div class="numrow"><dt>לא מגיע</dt><dd>לא נספר</dd></div>
-            </dl>
-            <p class="numcard-note">
+            <p class="rv-status-note">
               <b>"אולי" אינו נספר כמגיע.</b> מוזמן שמתלבט עדיין ברשימת המעקב ועדיין
               אפשר לחזור אליו, אבל הוא לא מנפח את המספר שאתם מוסרים. אם הוא יאשר,
               הוא נכנס לספירה מעצמו.
             </p>
+            <p class="rv-fine">
+              מוזמן שאישר מביא את מספר האנשים שהוא ציין. אם לא ציין, נספרת הכמות
+              שהוזמנה עבורו מלכתחילה, זו שרשומה לו
+              <a href="/features/guests/">ברשימת המוזמנים</a>.
+            </p>
           </div>
-          <p class="fineprint">
-            מוזמן שאישר מביא את מספר האנשים שהוא ציין. אם לא ציין, נספרת הכמות
-            שהוזמנה עבורו מלכתחילה, זו שרשומה לו
-            <a href="/features/guests/">ברשימת המוזמנים</a>.
-          </p>
         </div>
       </section>
 
-      <section class="features tone-alt">
+      <section class="rv-route">
         <div class="wrap">
-          <div class="section-head">
+          <div class="rv-head rv-head-wide">
             <h2 class="section-title">הכול נבנה אחורה מהיום האחרון לאישורי הגעה</h2>
-            <p class="section-sub">
+            <p class="rv-sub">
               לא "מתישהו חודש לפני", אלא לאחור מהיום שבו האולם צריך מכם מספר סופי:
               בקשת אישור, שלוש תזכורות ושלושה סבבי מעקב, בלי שישי ושבת.
             </p>
           </div>
-${shot('/product/journey-messages.jpg', 'מסך ההודעות ב-VEYA: כל שלב במסלול הוא הודעה נפרדת, עם תצוגה מקדימה של מה שהמוזמן יראה')}
-          <p class="fineprint">
-            כל שלב במסלול הוא הודעה נפרדת שאפשר לפתוח, לראות בדיוק איך היא נראית
-            אצל המוזמן ולערוך את הנוסח, לפני שהתאריך שלה מגיע.
-          </p>
-          <div class="supporting-grid">
-            <article class="supporting-item">
-              <div class="ic" aria-hidden="true">${ic(P.cal, 22)}</div>
-              <h3>עוגן אחד</h3>
-              <p>היום האחרון לאישורי הגעה הוא תאריך שאתם קובעים, וכל השלבים נפרסים אחורה ממנו.</p>
-            </article>
-            <article class="supporting-item">
-              <div class="ic" aria-hidden="true">${ic(P.chat, 22)}</div>
-              <h3>רק למי שעדיין לא ענה</h3>
-              <p>מי שכבר אישר לא מקבל תזכורות. זה מה שמונע מהתהליך להרגיש נודניקי.</p>
-            </article>
-            <article class="supporting-item">
-              <div class="ic" aria-hidden="true">${ic(P.phone, 22)}</div>
-              <h3>מעקב טלפוני בין השלבים</h3>
-              <p>הסבב האחרון נופל בדיוק ביום האחרון לאישורי הגעה.</p>
-            </article>
-            <article class="supporting-item">
-              <div class="ic" aria-hidden="true">${ic(P.shield, 22)}</div>
-              <h3>המסלול מתקדם לבד</h3>
-              <p>לא צריך לפתוח מסך כדי שהשלב הבא יקרה. אותו שלב לא חוזר פעמיים לאותו מוזמן, ושלב שהזמן שלו עבר לא מתבצע בדיעבד.</p>
-            </article>
+          <div class="rv-route-body">
+${fig('rv-shot rv-shot-route', '/product/rsvp-route.jpg', 'מסלול אישורי ההגעה ב־VEYA: בקשת אישור, תזכורת, סבב שיחות ראשון ותזכורת שנייה, כל אחד בתאריך שלו', 'מסלול אישורי ההגעה ב־VEYA: כל שלב עם התאריך שלו, ורק למי שעדיין לא אישר.', 1062, 1626)}
+            <dl class="rv-rules">
+              <div><dt>עוגן אחד</dt><dd>היום האחרון לאישורי הגעה הוא תאריך שאתם קובעים, וכל השלבים נפרסים אחורה ממנו.</dd></div>
+              <div><dt>רק למי שעדיין לא ענה</dt><dd>מי שכבר אישר לא מקבל תזכורות. זה מה שמונע מהתהליך להרגיש נודניקי.</dd></div>
+              <div><dt>מעקב טלפוני בין השלבים</dt><dd>הסבב האחרון נופל בדיוק ביום האחרון לאישורי הגעה.</dd></div>
+              <div><dt>המסלול מתקדם לבד</dt><dd>לא צריך לפתוח מסך כדי שהשלב הבא יקרה. אותו שלב לא חוזר פעמיים לאותו מוזמן, ושלב שהזמן שלו עבר לא מתבצע בדיעבד.</dd></div>
+            </dl>
           </div>
-          <p class="fineprint">
-            את נוסח ההודעות אפשר לערוך מראש. אם היום האחרון לאישורי הגעה זז, הלוח נבנה
-            מחדש מהתאריך החדש, ומה שכבר יצא לא יוצא שוב. בין התזכורות יושבים
-            סבבי המעקב הטלפוני: <a href="/features/calls/">מה קורה עם מי שלא ענה</a>.
-          </p>
-          <div class="section-cta">
-            ${CTA_TIMELINE}
-            <span class="cta-hint">מזינים תאריך אירוע ומקבלים את התאריכים בפועל. בלי הרשמה.</span>
+          <figure class="rv-wide">
+${shot('/product/journey-messages.jpg', 'מסך ההודעות ב-VEYA: כל שלב במסלול הוא הודעה נפרדת, עם תצוגה מקדימה של מה שהמוזמן יראה')}
+            <figcaption>
+              כל שלב במסלול הוא הודעה נפרדת שאפשר לפתוח, לראות בדיוק איך היא נראית
+              אצל המוזמן ולערוך את הנוסח, לפני שהתאריך שלה מגיע.
+            </figcaption>
+          </figure>
+          <div class="rv-route-foot">
+            <p class="rv-fine">
+              את נוסח ההודעות אפשר לערוך מראש. אם היום האחרון לאישורי הגעה זז, הלוח נבנה
+              מחדש מהתאריך החדש, ומה שכבר יצא לא יוצא שוב. בין התזכורות יושבים
+              סבבי המעקב הטלפוני: <a href="/features/calls/">מה קורה עם מי שלא ענה</a>.
+            </p>
+            <div class="rv-cta">
+              ${CTA_TIMELINE}
+              <span class="cta-hint">מזינים תאריך אירוע ומקבלים את התאריכים בפועל. בלי הרשמה.</span>
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="commit tone-light">
+      <section class="rv-money">
         <div class="wrap">
-          <div class="section-head">
-            <h2 class="section-title">כי מספר המגיעים הוא גם מספר בשקלים</h2>
-          </div>
-${flowSteps([
-  { icon: ic(P.users), h: 'מוזמנים', p: 'הרשימה המלאה, כולל כמה אנשים בכל שורה.' },
-  { icon: ic(P.chat), h: 'מגיעים', p: 'מי שאישר בפועל. זה המספר שממשיך הלאה.' },
-  { icon: ic(P.coin), h: 'עלות', p: 'כל סעיף שמחושב לפי מספר המגיעים זז עם הרשימה.' },
-  { icon: ic(P.chart), h: 'שורה תחתונה', p: 'ואחרי האירוע: ההוצאות מול מה שהתקבל.' },
-])}
-          <div class="callout" style="max-width:620px;margin-inline:auto">
-            <p>
-              אחרי שיודעים כמה מגיעים, אפשר לראות מה זה אומר מבחינת העלות.
-            </p>
-            <p><a href="/features/finance/">מאזן האירוע: כמה האירוע שלכם באמת עולה</a></p>
+          <h2 class="section-title rv-money-title">כי מספר המגיעים הוא גם מספר בשקלים</h2>
+          <dl class="rv-sum">
+            <div><dt>מוזמנים</dt><dd>הרשימה המלאה, כולל כמה אנשים בכל שורה.</dd></div>
+            <div><dt>מגיעים</dt><dd>מי שאישר בפועל. זה המספר שממשיך הלאה.</dd></div>
+            <div><dt>עלות</dt><dd>כל סעיף שמחושב לפי מספר המגיעים זז עם הרשימה.</dd></div>
+            <div class="is-total"><dt><span class="dbl">שורה תחתונה</span></dt><dd>ואחרי האירוע: ההוצאות מול מה שהתקבל.</dd></div>
+          </dl>
+          <div class="rv-next">
+            <p>אחרי שיודעים כמה מגיעים, אפשר לראות מה זה אומר מבחינת העלות.</p>
+            <p><a href="/features/finance/">מאזן האירוע: כמה האירוע שלכם באמת עולה <span aria-hidden="true">←</span></a></p>
           </div>
         </div>
       </section>
@@ -252,6 +379,7 @@ ${faqHtml(faq)}
 
   return page({
     path: '/features/rsvp/',
+    head: RSVP_CSS,
     title: 'אישורי הגעה — מהתשובה עד המספר הסופי | VEYA',
     description:
       'אישורי הגעה ב-VEYA: סטטוס לכל מוזמן, מעקב אחרי מי שלא ענה, ולוח זמנים שנבנה לאחור מהיום האחרון לאישורי הגעה, עד למספר שאפשר למסור לאולם.',
