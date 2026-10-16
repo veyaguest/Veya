@@ -5,7 +5,7 @@ import {
   activateRsvpTrack,
   getEvent,
   getRsvpTrack,
-  listGuests,
+  listAllGuests,
   mediaUrl,
   previewCommunicationMessage,
   previewSend,
@@ -488,18 +488,18 @@ function SendConfirmStep({
     ;(async () => {
       try {
         const [g, text, ev] = await Promise.all([
-          listGuests('', 500, 0),
+          listAllGuests(),
           previewCommunicationMessage('invitation'),
           getEvent(),
         ])
         if (!alive) return
-        setGuests(g.items)
+        setGuests(g)
         setPreviewText(text)
         setEvent(ev)
         // ברירת מחדל: מי שעדיין לא קיבל הזמנה ויש לו טלפון.
         setSelected(
           new Set(
-            g.items
+            g
               .filter((x) => canReceive(x) && x.invite_status === 'not_sent')
               .map((x) => x.id),
           ),

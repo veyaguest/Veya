@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createEnvelope, getGiftsByGuest, listGuests } from '../api'
+import { createEnvelope, getGiftsByGuest, listAllGuests } from '../api'
 import type { EnvelopeInput, Guest, GiftEntry } from '../types'
 import { strings } from '../strings/he'
 
@@ -436,19 +436,11 @@ function normalizePhone(value: string): string {
 }
 
 /**
- * **כל** המוזמנים, בדפים של 200 — ``limit`` נחתך בשרת ל-200
- * (``routers/guests.MAX_PAGE_LIMIT``), ובקשה אחת גדולה החזירה בשקט רק
- * חלק. משותף למונה ולעריכת מתנה, כדי ששניהם ימצאו בדיוק את אותם אנשים.
+ * **כל** המוזמנים, ממוינים לפי שם (הדפדוף ב-200 נעשה ב-``listAllGuests``).
+ * משותף למונה ולעריכת מתנה, כדי ששניהם ימצאו בדיוק את אותם אנשים.
  */
-export async function loadAllGuests(): Promise<Guest[]> {
-  const PAGE = 200
-  const all: Guest[] = []
-  for (let offset = 0; ; offset += PAGE) {
-    const page = await listGuests(undefined, PAGE, offset, 'name')
-    all.push(...page.items)
-    if (all.length >= page.total || page.items.length === 0) break
-  }
-  return all
+export function loadAllGuests(): Promise<Guest[]> {
+  return listAllGuests('name')
 }
 
 /**

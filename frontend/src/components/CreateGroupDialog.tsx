@@ -1,7 +1,7 @@
 import { useBackToClose } from '../lib/backToClose'
 import { useDialog } from '../lib/useDialog'
 import { useEffect, useMemo, useState } from 'react'
-import { bulkGroup, listGuests } from '../api'
+import { bulkGroup, listAllGuests } from '../api'
 import type { Guest } from '../types'
 import { groupLabel } from '../types'
 import { sideLabel } from '../strings/eventTypes'
@@ -31,12 +31,12 @@ export function CreateGroupDialog({ onClose, onCreated }: Props) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  // טוענים את כל המוזמנים (עד 200) לבחירה. לרשימות גדולות יש חיפוש.
+  // טוענים את כל המוזמנים לבחירה. לרשימות גדולות יש חיפוש.
   useEffect(() => {
     let alive = true
-    listGuests('', 200, 0)
-      .then((page) => {
-        if (alive) setGuests(page.items)
+    listAllGuests()
+      .then((all) => {
+        if (alive) setGuests(all)
       })
       .catch((err) =>
         setError(err instanceof Error ? err.message : t.loadError),

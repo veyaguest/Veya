@@ -8,7 +8,7 @@ import {
   getRsvpTimeline,
   getRsvpTrack,
   getStats,
-  listGuests,
+  listAllGuests,
 } from '../api'
 import type {
   AutomationDashboard,
@@ -392,7 +392,7 @@ interface MessageRow {
  * נקראה/לא נמסרה) ו**סטטוס אישור ההגעה** (ממתין/אישר/לא מגיע).
  *
  * הכול נבנה מנתונים קיימים: הסיכום מ-``getMessageStatus``, ורשימת המוזמנים
- * מ-``getMessageStatusByType`` לכל שלב ברצף + ``listGuests`` (לסטטוס ה-RSVP).
+ * מ-``getMessageStatusByType`` לכל שלב ברצף + ``listAllGuests`` (לסטטוס ה-RSVP).
  * בלי API חדש ובלי לגעת בלוגיקת השליחה.
  */
 function TrackStatusCard({
@@ -417,14 +417,14 @@ function TrackStatusCard({
       try {
         const [seq, guestsRes, sum] = await Promise.all([
           getCommunicationSequence(),
-          listGuests('', 1000, 0),
+          listAllGuests(),
           getMessageStatus(),
         ])
         if (cancelled) return
         setSummary(sum)
 
-        const rsvpByGuest = new Map(guestsRes.items.map((g) => [g.id, g.rsvp_status]))
-        const nameByGuest = new Map(guestsRes.items.map((g) => [g.id, g.full_name]))
+        const rsvpByGuest = new Map(guestsRes.map((g) => [g.id, g.rsvp_status]))
+        const nameByGuest = new Map(guestsRes.map((g) => [g.id, g.full_name]))
         const labelByType = new Map<string, string>(seq.map((m) => [m.message_type, m.title]))
         const orderByType = new Map<string, number>(seq.map((m, i) => [m.message_type, i]))
 
@@ -625,10 +625,10 @@ function DashboardTab({
     try {
       const [d, g] = await Promise.all([
         getAutomationDashboard(),
-        listGuests('', 300, 0),
+        listAllGuests(),
       ])
       setDash(d)
-      setGuests(g.items)
+      setGuests(g)
     } catch (err) {
       setError(err instanceof Error ? err.message : strings.errors.rsvpStateLoadFailed)
     }

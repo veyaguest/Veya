@@ -674,6 +674,32 @@ export async function listGuests(
   return res.json()
 }
 
+/** גודל העמוד המרבי שהשרת מחזיר (``routers/guests.MAX_PAGE_LIMIT``). */
+const GUEST_PAGE_MAX = 200
+
+/**
+ * **כל** המוזמנים של האירוע, בדפים של 200. השרת חותך ``limit`` ל-200,
+ * כך שבקשה אחת גדולה (``listGuests('', 1000)``) מחזירה בשקט רק חלק.
+ * העמוד הראשון מגלה את ``total``, והשאר נטענים במקביל.
+ */
+export async function listAllGuests(sort?: GuestSort): Promise<Guest[]> {
+  const first = await listGuests(undefined, GUEST_PAGE_MAX, 0, sort)
+  const offsets: number[] = []
+  for (let o = first.items.length; o < first.total && first.items.length > 0; o += GUEST_PAGE_MAX) {
+    offsets.push(o)
+  }
+  const rest = await Promise.all(offsets.map((o) => listGuests(undefined, GUEST_PAGE_MAX, o, sort)))
+  // מסננים כפילויות למקרה שהרשימה השתנתה בין העמודים.
+  const seen = new Set<number>()
+  const all: Guest[] = []
+  for (const g of [first, ...rest].flatMap((p) => p.items)) {
+    if (seen.has(g.id)) continue
+    seen.add(g.id)
+    all.push(g)
+  }
+  return all
+}
+
 // ---- ייצוא לאייפלן ----
 // הקובץ נבנה בשרת (backend/app/iplan_export.py) לפי התבנית של אייפלן.
 
