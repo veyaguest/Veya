@@ -701,7 +701,8 @@ export function liveDragValidation(
   const free = tableFreeCapacity(targetTable)
   if (draggedGuest.seats > free) {
     level = 'red'
-    lines.push(`אין מספיק מקום: חסרים ${draggedGuest.seats - free} מקומות`)
+    const missing = draggedGuest.seats - free
+    lines.push(`אין מספיק מקום: ${missing === 1 ? 'חסר מקום אחד' : `חסרים ${missing} מקומות`}`)
   }
 
   const forbiddenSet = pairSetFrom(forbiddenPairs)

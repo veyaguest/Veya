@@ -352,6 +352,11 @@ function testAriaLabels(): void {
     guests: [guest('y', 'confirmed', { seats: 8 })],
   }
   assert.match(tableAriaLabel(over, 'שולחן'), /חריגה של 2 מקומות$/)
+  // יחיד: "מקום פנוי אחד" / "חריגה של מקום אחד", לא "1 מקומות"
+  const oneFree: WorkspaceTable = { ...table, guests: [guest('z', 'confirmed', { seats: 9 })] }
+  assert.match(tableAriaLabel(oneFree, 'שולחן'), /, מקום פנוי אחד$/)
+  const oneOver: WorkspaceTable = { ...over, guests: [guest('w', 'confirmed', { seats: 7 })] }
+  assert.match(tableAriaLabel(oneOver, 'שולחן'), /חריגה של מקום אחד$/)
 
   const sections = buildSections([seated, alone])
   assert.equal(sectionAriaLabel(sections[0]), 'אישרו הגעה, 3 אנשים, 1 הושבו')

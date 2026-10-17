@@ -291,8 +291,10 @@ export function tableAriaLabel(table: WorkspaceTable, tableWord: string): string
   const head = table.name
     ? `${tableWord} ${table.table_number}, ${table.name}`
     : `${tableWord} ${table.table_number}`
-  const over = used > table.capacity ? `, חריגה של ${used - table.capacity} מקומות` : ''
-  return `${head}, ${used} מתוך ${table.capacity} מקומות תפוסים, ${free} מקומות פנויים${over}`
+  const excess = used - table.capacity
+  const over = excess > 0 ? `, חריגה של ${excess === 1 ? 'מקום אחד' : `${excess} מקומות`}` : ''
+  const freeText = free === 1 ? 'מקום פנוי אחד' : `${free} מקומות פנויים`
+  return `${head}, ${used} מתוך ${table.capacity} מקומות תפוסים, ${freeText}${over}`
 }
 
 /** "משפחת האב, 18 מוזמנים, 14 הושבו" */

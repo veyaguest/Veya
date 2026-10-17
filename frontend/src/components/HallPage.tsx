@@ -5229,7 +5229,7 @@ export function HallPage({
                         {sheetT.name ? ` · ${sheetT.name}` : ''}
                       </h3>
                       <p className="hm-sheet-sub">
-                        {TABLE_TYPE_LABELS[sheetT.table_type]} · {freeInSheet > 0 ? `${freeInSheet} מקומות פנויים` : 'מלא'}
+                        {TABLE_TYPE_LABELS[sheetT.table_type]} · {freeInSheet > 0 ? strings.hall.workspace.pickerFree(freeInSheet) : 'מלא'}
                       </p>
                     </div>
                     <span className={`hm-sheet-count ${seatedInSheet > sheetT.capacity ? 'over' : ''}`}>
