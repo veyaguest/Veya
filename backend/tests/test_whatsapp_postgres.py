@@ -44,7 +44,10 @@ def results():
         env["MIGRATIONS_DATABASE_URL"] = pg.admin_dsn
         env["JWT_SECRET"] = "test-secret-not-for-production-usage"
         env.pop("VEYA_ENV", None)
-        env.pop("WHATSAPP_MODE", None)
+        # במפורש mock (ולא רק "לא מוגדר"): אחרת ``backend/.env`` המקומי ממלא את
+        # הערך (load_dotenv), ותרחישי ספק ההדגמה רצים במצב "אמיתי" — שבו שורות
+        # הדגמה לא נספרות כשליחות (``event_cycle.current_sends``).
+        env["WHATSAPP_MODE"] = "mock"
         proc = subprocess.run(
             [sys.executable, str(WORKER)], cwd=str(BACKEND_DIR), env=env,
             capture_output=True, text=True, timeout=240,

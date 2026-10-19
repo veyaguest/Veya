@@ -3,8 +3,8 @@
 נועל את ההחלטות (2026-10-19):
 - 131049 (הגבלת שיווק): ההזמנה נשלחת שוב אחרי 24 שעות, ועוד פעם לכל היותר
   אחרי עוד 24 — רק בימי חול, 10:00–19:00, לפני יום האירוע, למי שעוד לא ענה.
-- אף פעם לא פעמיים: ``pending`` לא נשלח שוב; הזמנה שיצאה בינתיים, שליחה אישית
-  של הזוג או ריצה כפולה — לא שולחים.
+- אף פעם לא פעמיים: ``pending`` לא נשלח שוב; הזמנה שיצאה בינתיים או ריצה
+  כפולה — לא שולחים.
 - 131050 / 131026 / כשל אחר — לעולם לא נשלחים שוב אוטומטית.
 
 לוח הזמנים: אירוע רביעי 30/9/2026, סגירה יומיים לפני; סבב ה-WhatsApp הראשון
@@ -195,7 +195,7 @@ def test_resend_only_within_send_hours() -> None:
 
 
 def test_never_twice() -> None:
-    """``pending``, הזמנה שיצאה בינתיים, ושליחה אישית של הזוג — אין שליחה חוזרת."""
+    """``pending``, הזמנה שיצאה בינתיים, או הזמנה שכבר נמסרה — אין שליחה חוזרת."""
     db = _db()
     ev = _event(db)
     later = datetime(2026, 9, 10, 9, 0)
@@ -207,10 +207,6 @@ def test_never_twice() -> None:
     _msg(db, ev, resent_by_hand)
     _msg(db, ev, resent_by_hand, status=ms.SENT, code=None, at=datetime(2026, 9, 8, 12, 0))
 
-    personal = _guest(db, ev, name="אישי ג")
-    _msg(db, ev, personal)
-    personal.personal_whatsapp_at = datetime(2026, 9, 8, 13, 0)
-
     # הזמנה שנמסרה קודם, ושליחה חוזרת ידנית (אדמין) שנעצרה — הוא כבר קיבל.
     had_one = _guest(db, ev, name="קיבל ד")
     _msg(db, ev, had_one, status=ms.DELIVERED, code=None, at=datetime(2026, 9, 7, 9, 0))
@@ -220,7 +216,6 @@ def test_never_twice() -> None:
     _tick(db, later)
     assert len(_invitations(db, pending)) == 1
     assert len(_invitations(db, resent_by_hand)) == 2
-    assert len(_invitations(db, personal)) == 1
     assert len(_invitations(db, had_one)) == 2
 
 
@@ -269,20 +264,6 @@ def test_emergency_stop_postponement_and_event_day() -> None:
     assert di.issues_for_event(db, ev2)[0].resend_at is None
     assert di.resend_due(db, ev2, datetime(2026, 9, 10, 9, 0)) == (0, 0)
     assert len(_invitations(db, g2)) == 1
-
-
-# ---- שליחה אישית ----
-
-def test_personal_text_and_link() -> None:
-    db = _db()
-    ev = _event(db)
-    g = _guest(db, ev, name="רוני לוי", phone="050-1234567")
-    text = di.personal_text(ev, g, rsvp_open=False)
-    assert text.startswith("היי רוני,") and "לחתונה" in text and "/confirm/tokרוני לויx" in text
-    assert "תאשרו" in di.personal_text(ev, g, rsvp_open=True)
-    link = di.wa_me_link(g.phone, text)
-    assert link.startswith("https://wa.me/972501234567?text=")
-    assert di.wa_me_link("123", text) is None
 
 
 # ---- תור השיחות של האדמין ----

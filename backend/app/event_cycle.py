@@ -21,12 +21,19 @@
 
 **כל שאילתה שסופרת שליחות מסננת דרך ``current_sends``.** שאילתה שנוגעת בכל
 ההיסטוריה (מחיקת אירוע, חקירה) לא מסננת — ובמכוון.
+
+## רק שליחות אמיתיות (2026-10-19, החלטת הבעלים)
+
+כש-WhatsApp יוצא באמת (``WHATSAPP_MODE`` = ``meta_test``/``meta``), שורות של מצב
+ההדגמה (``provider == "mock"``) **אינן שליחות**: הן לא נספרות בסטטוס ("נשלחו/
+נמסרו"), לא נחשבות "כבר קיבל הזמנה" ולא "כבר קיבל את התזכורת" — כך מוזמן שקיבל
+רק הזמנת הדגמה מקבל הזמנה אמיתית. במצב mock הכול נשאר כמו שהיה (הדגמה מלאה).
 """
 from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 
 from app import models
 
@@ -53,4 +60,24 @@ def current_sends(event: Optional[models.Event]):
         )
     else:
         cycle = models.Message.cycle_number == number
-    return or_(models.Message.direction != "outbound", cycle)
+    if counts_demo_sends():
+        return or_(models.Message.direction != "outbound", cycle)
+    return or_(
+        models.Message.direction != "outbound",
+        and_(cycle, models.Message.provider != MOCK_PROVIDER),
+    )
+
+
+MOCK_PROVIDER = "mock"
+
+
+def counts_demo_sends() -> bool:
+    """האם שורות של מצב ההדגמה נחשבות שליחות — רק כשאנחנו עצמנו במצב הדגמה."""
+    from app import messaging
+
+    return messaging.whatsapp_mode() == messaging.MODE_MOCK
+
+
+def is_real_send(msg: "models.Message") -> bool:
+    """אותו כלל כמו ``current_sends`` (בלי המחזור), לשורה שכבר נטענה."""
+    return counts_demo_sends() or msg.provider != MOCK_PROVIDER

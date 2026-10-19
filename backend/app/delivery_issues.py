@@ -25,7 +25,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Optional
-from urllib.parse import quote
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -62,6 +61,8 @@ class Issue:
     message: models.Message
     # כמה פעמים ההודעה הזו (אותו סוג) נעצרה על הגבלת השיווק — כולל המקור.
     cap_failures: int = 0
+    # כמה ניסיונות מהסוג הזה לא הגיעו (כל סיבה) — כולל המקור.
+    attempts: int = 1
     # מתי תצא שליחה חוזרת אוטומטית (UTC נאיבי), או ``None`` — לא מתוכננת.
     resend_at: Optional[datetime] = None
 
@@ -145,7 +146,7 @@ def _resend_at(
     """מתי תצא השליחה החוזרת למוזמן הזה, או ``None`` אם היא לא תצא בכלל."""
     if msg.kind not in RESEND_KINDS or cap_failures > MAX_RESENDS:
         return None
-    if guest.rsvp_status != "pending" or sent_personally(guest, msg):
+    if guest.rsvp_status != "pending":
         return None
     if invitations.classify_phone(guest.phone) != "valid" or guest.id in invited:
         return None
@@ -187,6 +188,11 @@ def issues_for_event(
         if reason is None:
             continue
         issue = Issue(guest=g, reason=reason, message=msg)
+        issue.attempts = sum(
+            1 for m in messages
+            if m.guest_id == g.id and m.kind == msg.kind
+            and m.status in (message_status.FAILED, message_status.BLOCKED)
+        )
         if reason == MARKETING_CAP:
             issue.cap_failures = sum(
                 1 for m in messages
@@ -199,6 +205,23 @@ def issues_for_event(
         issues.append(issue)
     issues.sort(key=lambda i: i.guest.full_name or "")
     return issues
+
+
+def _outbound_item(event: models.Event, guest: models.Guest, kind: str, ems: dict):
+    """אותה הודעה שוב, בנוסח העדכני של האירוע — או ``None`` אם אין לה תוכן."""
+    from app import communication, outbound
+
+    em = ems.get(kind)
+    if em is None or not em.content:
+        return None
+    text = communication.render_message(
+        em.content, communication.communication_values(event, guest), message_type=kind,
+    )
+    if not text:
+        return None
+    return outbound.OutboundItem(
+        guest=guest, phone=guest.phone, text=text, kind=kind, event_message_id=em.id,
+    )
 
 
 def resend_due(db: Session, event: models.Event, now: datetime) -> tuple[int, int]:
@@ -225,21 +248,7 @@ def resend_due(db: Session, event: models.Event, now: datetime) -> tuple[int, in
     if not due:
         return 0, 0
     ems = communication.event_messages_by_type(db, event.id)
-    items = []
-    for issue in due:
-        em = ems.get(issue.message.kind)
-        if em is None or not em.content:
-            continue
-        text = communication.render_message(
-            em.content, communication.communication_values(event, issue.guest),
-            message_type=issue.message.kind,
-        )
-        if not text:
-            continue
-        items.append(outbound.OutboundItem(
-            guest=issue.guest, phone=issue.guest.phone, text=text,
-            kind=issue.message.kind, event_message_id=em.id,
-        ))
+    items = [it for it in (_outbound_item(event, i.guest, i.message.kind, ems) for i in due) if it]
     if not items:
         return 0, 0
     result = outbound.send_batch(db, event, items)
@@ -251,35 +260,183 @@ def resend_due(db: Session, event: models.Event, now: datetime) -> tuple[int, in
     return result.sent, result.failed
 
 
-# ---- שליחה אישית מהטלפון של הזוג ----
+# ---- פירוט הסיבה לאדמין ----
 
-def wa_me_link(phone: str, text: str) -> Optional[str]:
-    """קישור שפותח WhatsApp אצל הזוג, עם המוזמן כנמען וההודעה מוכנה."""
-    from app.whatsapp_meta import to_wa_number
-
-    number = to_wa_number(phone)
-    if number is None:
-        return None
-    return f"https://wa.me/{number}?text={quote(text)}"
+GUEST_SIDE = "guest"   # משהו אצל המוזמן — משפיע רק עליו
+VEYA_SIDE = "veya"     # משהו אצלנו (תבנית/חשבון/מגבלה) — משפיע על כולם, לתקן לפני ניסיון נוסף
 
 
-def personal_text(event: models.Event, guest: models.Guest, *, rsvp_open: bool) -> str:
-    """ההודעה שהזוג שולח בעצמו (הנוסח: ``messaging.PERSONAL_RESEND_*``)."""
-    from app import communication, messaging
-
-    values = communication.communication_values(event, guest)
-    name = values.get("guest_name") or ""
-    template = messaging.PERSONAL_RESEND_RSVP_TEXT if rsvp_open else messaging.PERSONAL_RESEND_TEXT
-    return template.format(
-        greeting=f"היי {name}," if name else "היי,",
-        occasion=values.get("event_type") or "האירוע",
-        link=values.get("rsvp_link") or "",
-    )
+@dataclass(frozen=True)
+class ErrorHelp:
+    title: str
+    detail: str
+    side: str
 
 
-def sent_personally(guest: models.Guest, msg: Optional[models.Message]) -> bool:
-    """האם הזוג פתח WhatsApp לשליחה אישית *אחרי* ההודעה הזו (לא במחזור קודם)."""
-    at = guest.personal_whatsapp_at
-    if at is None or msg is None:
-        return False
-    return msg.created_at is None or at >= msg.created_at
+# קודי השגיאה של Meta (statuses[].errors[].code / תגובת ה-API), בעברית לצוות.
+# מקור: developers.facebook.com/docs/whatsapp/cloud-api/support/error-codes.
+META_ERROR_HELP: dict[int, ErrorHelp] = {
+    131049: ErrorHelp(
+        "הגבלת הודעות פרסום של WhatsApp",
+        "WhatsApp מגבילה כמה הודעות שיווק אדם מקבל. VEYA תנסה שוב אוטומטית אחרי 24 שעות "
+        "(עד פעמיים). התזכורות (הודעות שירות) לא מושפעות.", GUEST_SIDE),
+    131050: ErrorHelp(
+        "המוזמן ויתר על הודעות פרסום",
+        "המוזמן ביקש מ-WhatsApp לא לקבל הודעות שיווק. שליחה חוזרת של ההזמנה לא תעזור; "
+        "התזכורות ימשיכו להגיע.", GUEST_SIDE),
+    131026: ErrorHelp(
+        "WhatsApp לא מצליח למסור למספר",
+        "ייתכן שאין במספר WhatsApp, שהגרסה ישנה או שלא אושרו תנאי השימוש — Meta לא אומרת "
+        "איזה מהם. המוזמן נכנס לתור השיחות; כדאי לבדוק את המספר עם בעלי האירוע.", GUEST_SIDE),
+    131021: ErrorHelp(
+        "המספר הוא מספר העסק עצמו",
+        "המוזמן נרשם עם מספר ה-WhatsApp של VEYA. צריך לתקן את המספר.", GUEST_SIDE),
+    131047: ErrorHelp(
+        "עברו 24 שעות מההודעה האחרונה של המוזמן",
+        "הודעה חופשית מותרת רק בתוך 24 שעות מתשובה של המוזמן. צריך לשלוח תבנית מאושרת.",
+        VEYA_SIDE),
+    132000: ErrorHelp(
+        "מספר הערכים לא תואם לתבנית",
+        "חסר או מיותר ערך במשתני התבנית. לבדוק את מיפוי התבנית לפני ניסיון נוסף.", VEYA_SIDE),
+    132001: ErrorHelp(
+        "התבנית לא קיימת או לא אושרה",
+        "התבנית לא נמצאה ב-Meta בשם ובשפה האלה. לבדוק את סטטוס התבנית לפני ניסיון נוסף.",
+        VEYA_SIDE),
+    132012: ErrorHelp(
+        "ערך לא בפורמט שהתבנית מצפה לו",
+        "אחד הערכים (קישור/תמונה/טקסט) לא מתאים להגדרת התבנית ב-Meta.", VEYA_SIDE),
+    131052: ErrorHelp(
+        "Meta לא הצליחה להוריד את התמונה",
+        "תמונת ההזמנה לא נטענה. VEYA מעלה אותה מחדש במנה הבאה; אם חוזר — לבדוק את הקובץ.",
+        VEYA_SIDE),
+    131053: ErrorHelp(
+        "העלאת התמונה ל-Meta נכשלה",
+        "לבדוק שתמונת ההזמנה היא JPEG או PNG עד 5MB.", VEYA_SIDE),
+    130429: ErrorHelp(
+        "מגבלת קצב שליחה של החשבון",
+        "נשלחו יותר מדי הודעות בזמן קצר. כדאי לחכות כמה דקות ולנסות שוב.", VEYA_SIDE),
+    131056: ErrorHelp(
+        "יותר מדי הודעות לאותו מספר בזמן קצר",
+        "Meta מבקשת לחכות לפני הודעה נוספת לאותו מוזמן.", VEYA_SIDE),
+    131048: ErrorHelp(
+        "מגבלת ספאם",
+        "Meta הגבילה את המספר שלנו בגלל איכות. לבדוק את דירוג האיכות ב-WhatsApp Manager.",
+        VEYA_SIDE),
+    131031: ErrorHelp(
+        "חשבון ה-WhatsApp נעול",
+        "Meta נעלה את החשבון (מדיניות/אבטחה). לבדוק ב-WhatsApp Manager — שום הודעה לא תצא.",
+        VEYA_SIDE),
+    368: ErrorHelp(
+        "הגבלה בגלל הפרת מדיניות",
+        "Meta הגבילה את החשבון. לבדוק ב-WhatsApp Manager.", VEYA_SIDE),
+    131042: ErrorHelp(
+        "בעיית תשלום בחשבון Meta",
+        "אמצעי התשלום בחשבון ה-WhatsApp Business לא תקין. שום הודעה בתשלום לא תצא.",
+        VEYA_SIDE),
+    190: ErrorHelp(
+        "הטוקן של WhatsApp פג",
+        "צריך טוקן חדש בהגדרות השרת. שום הודעה לא תצא עד אז.", VEYA_SIDE),
+}
+
+UNKNOWN_HELP = ErrorHelp(
+    "סיבה לא מוכרת", "Meta החזירה קוד שאין לנו עליו הסבר. הפירוט המקורי מופיע למטה.",
+    GUEST_SIDE,
+)
+
+
+def help_for(msg: models.Message) -> ErrorHelp:
+    if msg.status == message_status.BLOCKED:
+        return META_ERROR_HELP[131050]
+    return META_ERROR_HELP.get(msg.failure_code or 0, UNKNOWN_HELP)
+
+
+# ---- התראות לאדמין ----
+
+# כמה אחורה מחפשים אירועים עם הודעות שלא הגיעו.
+ALERT_LOOKBACK_DAYS = 30
+
+
+@dataclass
+class AdminAlert:
+    event: models.Event
+    issue: Issue
+    help: ErrorHelp
+    has_open_call: bool
+
+
+def admin_alerts(db: Session, now: Optional[datetime] = None) -> list[AdminAlert]:
+    """כל המוזמנים (באירועים שעוד לא התקיימו) שההודעה האחרונה אליהם לא הגיעה,
+    ועדיין לא ענו. רק שליחות אמיתיות (``event_cycle.current_sends``)."""
+    now = now or datetime.utcnow()
+    today = local_time.israel_date(now)
+    since = now - timedelta(days=ALERT_LOOKBACK_DAYS)
+    event_ids = set(db.scalars(
+        select(models.Message.event_id).where(
+            models.Message.direction == "outbound",
+            models.Message.status.in_((message_status.FAILED, message_status.BLOCKED)),
+            models.Message.created_at >= since,
+        ).distinct()
+    ).all())
+    if not event_ids:
+        return []
+    events = [
+        e for e in db.scalars(select(models.Event).where(models.Event.id.in_(event_ids))).all()
+        if (_event_day(e) or today) >= today
+    ]
+    open_calls = set(db.scalars(
+        select(models.CallTask.guest_id).where(
+            models.CallTask.event_id.in_([e.id for e in events] or [0]),
+            models.CallTask.status == "open",
+        )
+    ).all())
+    out: list[AdminAlert] = []
+    for e in events:
+        for issue in issues_for_event(db, e, now=now):
+            if issue.guest.rsvp_status in ("confirmed", "declined"):
+                continue  # כבר ענו (למשל בשיחה) — אין מה לפתור
+            out.append(AdminAlert(
+                event=e, issue=issue, help=help_for(issue.message),
+                has_open_call=issue.guest.id in open_calls,
+            ))
+    out.sort(key=lambda a: (a.event.event_date or "", a.event.id, a.issue.guest.full_name or ""))
+    return out
+
+
+class ResendRefused(ValueError):
+    """למה אי אפשר לשלוח שוב עכשיו — טקסט לאדמין."""
+
+
+def resend_one(db: Session, event: models.Event, guest: models.Guest, now: Optional[datetime] = None):
+    """שליחה חוזרת ידנית (כפתור האדמין) של ההודעה האחרונה שלא הגיעה למוזמן.
+
+    כל הבדיקות שוב תחת נעילת השליחה של האירוע: ההודעה האחרונה עדיין לא הגיעה
+    (**לעולם לא** ``pending`` או נשלחה — לחיצה כפולה נעצרת כאן), עצירת חירום,
+    בקשה פתוחה לשינוי מועד, יום האירוע, טלפון תקין, ולהזמנה — שאין לו כבר הזמנה
+    (גם "אולי יצאה"). מחזיר ``outbound.BatchResult``; זורק ``ResendRefused``.
+    """
+    from app import communication, messaging, outbound, postponement_service
+
+    now = now or datetime.utcnow()
+    if messaging.emergency_stop_active():
+        raise ResendRefused("עצירת החירום פעילה — שום הודעה לא יוצאת.")
+    if postponement_service.open_request_of(db, event.id) is not None:
+        raise ResendRefused("יש לאירוע בקשה פתוחה לשינוי מועד — לא שולחים עד שתיסגר.")
+    event_day = _event_day(event)
+    if event_day is not None and local_time.israel_date(now) > event_day:
+        raise ResendRefused("האירוע כבר התקיים.")
+    if invitations.classify_phone(guest.phone) != "valid":
+        raise ResendRefused("למוזמן אין מספר טלפון תקין.")
+    outbound.lock_event_sends(db, event.id)
+    issue = next((i for i in issues_for_event(db, event, guests=[guest], now=now)), None)
+    if issue is None:
+        raise ResendRefused("ההודעה האחרונה למוזמן כבר יצאה או ממתינה לעדכון — לא שולחים שוב.")
+    kind = issue.message.kind
+    if kind == "invitation" and guest.id in invitations.invited_guest_ids(
+        db, event.id, event, include_uncertain=True,
+    ):
+        raise ResendRefused("למוזמן כבר יש הזמנה שיצאה — לא שולחים שוב.")
+    item = _outbound_item(event, guest, kind, communication.event_messages_by_type(db, event.id))
+    if item is None:
+        raise ResendRefused("להודעה הזו אין כרגע תוכן לשליחה.")
+    return outbound.send_batch(db, event, [item])
+

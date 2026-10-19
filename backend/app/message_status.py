@@ -173,9 +173,10 @@ def summarize_by_type(
             status = QUEUED if classify_phone(g.phone) == "valid" else NO_VALID_NUMBER
         else:
             continue
-        if status == PENDING:
-            status = QUEUED
-        counts[status] = counts.get(status, 0) + 1
+        # בספירה pending נכלל ב"ממתינים"; בשורה הוא נשאר pending — "הבקשה יצאה
+        # ועוד אין עדכון מ-WhatsApp" אינו "ממתין לשליחה".
+        key = QUEUED if status == PENDING else status
+        counts[key] = counts.get(key, 0) + 1
         rows.append((g, status, msg))
     return counts, rows
 
@@ -262,6 +263,9 @@ def _fill_delivered_at(msg, status: str, ts: Optional[datetime]) -> None:
 
 def _apply(msg, status, ts, reason, failure_code, provider_status) -> None:
     """הכלל המשותף לעדכון סטטוס (מ-webhook): בלי נסיגה, חותמות זמן, סיבת כשל."""
+    # מתי הגיע מ-Meta עדכון כלשהו על ההודעה (גם כפול/מיושן) — הבסיס לבדיקה
+    # באדמין שעדכוני המסירה באמת מגיעים (``admin_rsvp``).
+    msg.status_updated_at = datetime.utcnow()
     if provider_status is not None:
         msg.provider_status = provider_status
     if failure_code is not None:

@@ -3,19 +3,16 @@ import type { ReactNode } from 'react'
 import {
   getAutomationDashboard,
   getCommunicationSequence,
-  getDeliveryIssues,
   getMessageStatus,
   getMessageStatusByType,
   getRsvpTimeline,
   getRsvpTrack,
   getStats,
   listAllGuests,
-  markSentPersonally,
 } from '../api'
 import type {
   AutomationDashboard,
   DashboardStats,
-  DeliveryIssueRow,
   Guest,
   MessageStatusSummary,
   RsvpStatus,
@@ -376,7 +373,7 @@ function RsvpFaq() {
 
 // סטטוסי הודעה שמשמעותם "ההודעה יצאה" (ולכן המוזמן מופיע ברשימה). ``queued``
 // (יש מספר תקין אבל טרם נשלח) לא נחשב — עדיין אין מה להראות עליו.
-const SENT_STATUSES = new Set(['sent', 'delivered', 'read', 'failed', 'no_valid_number', 'blocked'])
+const SENT_STATUSES = new Set(['sent', 'delivered', 'read', 'failed', 'no_valid_number', 'blocked', 'pending'])
 
 // אותם מונחים בדיוק כמו בכל המערכת (``RSVP_LABELS``) — סטטוס אחד, שם אחד.
 const RSVP_ROW_LABEL: Record<RsvpStatus, string> = RSVP_LABELS
@@ -545,8 +542,6 @@ function TrackStatusCard({
         />
       </div>
 
-      <DeliveryIssuesBlock refreshKey={track.invited} />
-
       <div className="msg-guest-section">
         <h3 className="clar-title">{t.guestListTitle}</h3>
 
@@ -609,118 +604,6 @@ function TrackStatusCard({
       {detailGuest != null && (
         <GuestTimelineModal guestId={detailGuest} onClose={() => setDetailGuest(null)} />
       )}
-    </div>
-  )
-}
-
-// זמני השרת נשמרים ב-UTC בלי אזור זמן — בלי ה-Z הדפדפן היה קורא אותם כשעון מקומי.
-function parseUtc(value: string): Date {
-  return new Date(/[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`)
-}
-
-// "ביום חמישי ב-10:00" — שעון ישראל, כמו שעות השליחה.
-function retryWhen(value: string): string {
-  const d = parseUtc(value)
-  const day = new Intl.DateTimeFormat('he-IL', { weekday: 'long', timeZone: 'Asia/Jerusalem' }).format(d)
-  const time = new Intl.DateTimeFormat('he-IL', {
-    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jerusalem',
-  }).format(d)
-  return `ב${day} ב-${time}`
-}
-
-function shortDate(value: string): string {
-  return new Intl.DateTimeFormat('he-IL', {
-    day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
-    timeZone: 'Asia/Jerusalem',
-  }).format(parseUtc(value))
-}
-
-function issueText(row: DeliveryIssueRow): string {
-  const t = strings.messages.statusCard.issues
-  switch (row.reason) {
-    case 'marketing_cap':
-      return row.resend_at ? t.capRetry(retryWhen(row.resend_at)) : t.capDone
-    case 'marketing_opt_out':
-      return t.optOut
-    case 'undeliverable':
-      return t.undeliverable
-    default:
-      return t.other
-  }
-}
-
-/**
- * "לא קיבלו את ההודעה" — מוזמנים שההודעה האחרונה אליהם לא הגיעה, עם הסיבה
- * בעברית פשוטה ופעולה אחת: לשלוח מה-WhatsApp של בעלי האירוע (קישור wa.me עם
- * הקישור האישי), או להתקשר כש-WhatsApp לא מגיע למספר. לחיצה על WhatsApp
- * נרשמת בשרת ומבטלת את השליחה החוזרת האוטומטית — שלא יקבלו פעמיים.
- * מוסתר לגמרי כשאין כאלה.
- */
-function DeliveryIssuesBlock({ refreshKey }: { refreshKey: number }) {
-  const [rows, setRows] = useState<DeliveryIssueRow[]>([])
-  const t = strings.messages.statusCard.issues
-
-  useEffect(() => {
-    let cancelled = false
-    getDeliveryIssues()
-      .then((res) => {
-        if (!cancelled) setRows(res.issues)
-      })
-      .catch(() => {
-        // רשימה משלימה — אם לא נטענה, שאר הכרטיס ממשיך לעבוד.
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [refreshKey])
-
-  if (rows.length === 0) return null
-
-  const onPersonal = (guestId: number) => {
-    markSentPersonally(guestId)
-      .then((res) => setRows(res.issues))
-      .catch(() => {})
-  }
-
-  return (
-    <div className="msg-guest-section delivery-issues">
-      <h3 className="clar-title">{t.title}</h3>
-      <p className="clar-sub">{t.sub}</p>
-      <ul className="msg-guest-list">
-        {rows.map((r) => {
-          const callFirst = r.reason === 'undeliverable'
-          const wa = r.whatsapp_link && (
-            <a
-              className={callFirst || r.sent_personally_at ? 'btn-ghost btn-sm' : 'btn-primary btn-sm'}
-              href={r.whatsapp_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => onPersonal(r.guest_id)}
-            >
-              {t.sendPersonal}
-            </a>
-          )
-          return (
-            <li key={r.guest_id} className="msg-guest-row delivery-issue-row">
-              <span className="msg-guest-who">
-                <span className="rsvp-name">{r.guest_name}</span>
-                <span className="msg-guest-kind">{issueText(r)}</span>
-                {r.sent_personally_at && (
-                  <span className="msg-guest-kind">{t.sentPersonally(shortDate(r.sent_personally_at))}</span>
-                )}
-              </span>
-              <span className="delivery-issue-actions">
-                {callFirst && r.phone && (
-                  <a className="btn-primary btn-sm" href={`tel:${r.phone}`}>
-                    {t.call}
-                  </a>
-                )}
-                {wa}
-              </span>
-            </li>
-          )
-        })}
-      </ul>
     </div>
   )
 }
@@ -898,6 +781,8 @@ const MSG_STATUS_ONE: Record<string, string> = {
   // 131050: ויתרו על הודעות פרסום ב-WhatsApp — לא חסמו את VEYA.
   blocked: 'לא מקבלים הודעות פרסום',
   queued: 'ממתין לשליחה',
+  // הבקשה יצאה ל-WhatsApp ועוד לא ידוע אם התקבלה — לא "ממתין לשליחה".
+  pending: 'ממתין לעדכון מ-WhatsApp',
 }
 
 /** תג סטטוס ההודעה של מוזמן בודד — אותה שפת אייקונים כמו כרטיסי הסיכום

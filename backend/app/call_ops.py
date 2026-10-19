@@ -1093,7 +1093,10 @@ def delivery_states(db: Session, guests: Iterable[models.Guest]) -> dict[int, st
 
 
 def _in_cycle(msg: models.Message, cycle: int) -> bool:
-    """כמו ``event_cycle.current_sends``: במחזור 1 גם שורות בלי מספר מחזור."""
+    """כמו ``event_cycle.current_sends``: במחזור 1 גם שורות בלי מספר מחזור,
+    ורק שליחות אמיתיות (לא הדגמה) כשה-WhatsApp אמיתי."""
+    if not event_cycle.is_real_send(msg):
+        return False
     if msg.cycle_number is None:
         return cycle == 1
     return msg.cycle_number == cycle

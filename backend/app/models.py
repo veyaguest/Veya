@@ -256,10 +256,6 @@ class Guest(Base):
     # מסומן במפורש כ"ילד/ה" ע"י הבעלים (לא ניחוש) — לשימוש עוזר ההושבה החכם
     # (בדיקת "ילד יושב בלי אף מבוגר מהמשפחה").
     is_child: Mapped[bool] = mapped_column(Boolean, default=False)
-    # מתי בעלי האירוע פתחו WhatsApp מהטלפון שלהם כדי לשלוח למוזמן בעצמם, אחרי
-    # שההודעה של VEYA לא הגיעה (``delivery_issues``). מבטל את השליחה החוזרת
-    # האוטומטית — שהמוזמן לא יקבל את ההזמנה פעמיים.
-    personal_whatsapp_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     event: Mapped["Event"] = relationship(back_populates="guests")
@@ -573,6 +569,10 @@ class Message(Base):
     # ולכן אחרי דחייה כל המוזמנים חוזרים להיות "טרם קיבלו הזמנה" — בלי
     # שנמחקה ולו שורת הודעה אחת.
     cycle_number: Mapped[int] = mapped_column(Integer, default=1, index=True)
+    # מתי הגיע לאחרונה עדכון סטטוס מ-Meta (webhook) על ההודעה הזו — זמן הקבלה
+    # אצלנו, לא הזמן ש-Meta מדווחת. ``None`` = לא הגיע אף עדכון. משמש לבדיקה
+    # באדמין שה-webhook מחובר ושהסטטוסים בעמוד הזוג באמת מתעדכנים.
+    status_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
