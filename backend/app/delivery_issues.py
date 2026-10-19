@@ -145,7 +145,7 @@ def _resend_at(
     """מתי תצא השליחה החוזרת למוזמן הזה, או ``None`` אם היא לא תצא בכלל."""
     if msg.kind not in RESEND_KINDS or cap_failures > MAX_RESENDS:
         return None
-    if guest.rsvp_status != "pending" or guest.personal_whatsapp_at is not None:
+    if guest.rsvp_status != "pending" or sent_personally(guest, msg):
         return None
     if invitations.classify_phone(guest.phone) != "valid" or guest.id in invited:
         return None
@@ -264,14 +264,22 @@ def wa_me_link(phone: str, text: str) -> Optional[str]:
 
 
 def personal_text(event: models.Event, guest: models.Guest, *, rsvp_open: bool) -> str:
-    """ההודעה שהזוג שולח בעצמו. קצרה, בשם פרטי, עם הקישור האישי."""
-    from app import communication
+    """ההודעה שהזוג שולח בעצמו (הנוסח: ``messaging.PERSONAL_RESEND_*``)."""
+    from app import communication, messaging
 
     values = communication.communication_values(event, guest)
     name = values.get("guest_name") or ""
-    greeting = f"היי {name}," if name else "היי,"
-    link = values.get("rsvp_link") or ""
-    occasion = values.get("event_type") or "האירוע"
-    if rsvp_open:
-        return f"{greeting} רצינו לוודא שההזמנה ל{occasion} הגיעה אליכם. נשמח שתאשרו הגעה כאן: {link}"
-    return f"{greeting} רצינו לוודא שההזמנה ל{occasion} הגיעה אליכם. כל הפרטים כאן: {link}"
+    template = messaging.PERSONAL_RESEND_RSVP_TEXT if rsvp_open else messaging.PERSONAL_RESEND_TEXT
+    return template.format(
+        greeting=f"היי {name}," if name else "היי,",
+        occasion=values.get("event_type") or "האירוע",
+        link=values.get("rsvp_link") or "",
+    )
+
+
+def sent_personally(guest: models.Guest, msg: Optional[models.Message]) -> bool:
+    """האם הזוג פתח WhatsApp לשליחה אישית *אחרי* ההודעה הזו (לא במחזור קודם)."""
+    at = guest.personal_whatsapp_at
+    if at is None or msg is None:
+        return False
+    return msg.created_at is None or at >= msg.created_at

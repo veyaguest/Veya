@@ -46,6 +46,20 @@ REASON_LABELS = {
     "callback": "ביקש/ה שיחה חוזרת",
     "manual": "נוספה ידנית",
     "wrong_number_fixed": "מספר הטלפון תוקן",
+    "whatsapp_undeliverable": "WhatsApp לא מגיע למספר הזה",
+}
+
+# משימה שנפתחת מיד כש-Meta לא מצליחה למסור למספר (131026) — בלי לחכות לסבב
+# השיחות (``delivery_issues``). יושבת על המשימה הידנית (``MANUAL_ROUND``) —
+# אחת לכל מוזמן במחזור, וה-UNIQUE במסד מונע כפילות.
+DELIVERY_REASON = "whatsapp_undeliverable"
+
+# למה ההודעות לא הגיעו — מוצג כ"סיבה" בכל משימה של המוזמן (``reason_label``).
+DELIVERY_LABELS = {
+    "undeliverable": "WhatsApp לא מגיע למספר הזה",
+    "marketing_cap": "ההזמנה עוכבה ב-WhatsApp (הגבלת הודעות פרסום)",
+    "marketing_opt_out": "לא מקבל/ת הודעות פרסום ב-WhatsApp",
+    "failed_other": "הודעת WhatsApp לא נמסרה",
 }
 
 CLOSED_REASON_LABELS = {
@@ -68,6 +82,7 @@ CLOSED_REASON_LABELS = {
     "cycle_closed": "האירוע נדחה — מחזור חדש",
     "maybe": "עדיין לא בטוח/ה",
     "answered": "ענה/תה בלי החלטה",
+    "whatsapp_ok": "הודעות WhatsApp מגיעות עכשיו",
 }
 
 # ניסיונות שמהם המוזמן נחשב "דורש טיפול נוסף" (לאורך כל המחזור). ברירת
@@ -497,6 +512,33 @@ def sync(
                     task.updated_at = stamp
                     stats.reopened += 1
 
+    # 1ב) WhatsApp לא מגיע למספר (131026) — שיחה כבר היום, בלי לחכות לסבב.
+    # רק למי שאין לו כבר משימה פתוחה להיום, ורק פעם אחת במחזור (גם אם המשימה
+    # הקודמת כבר נסגרה — לא חוזרים בלולאה).
+    from app import delivery_issues
+
+    delivery = delivery_states(db, all_guests.values())
+    busy_today = {t.guest_id for t in tasks if t.status == OPEN and t.due_date <= today_iso}
+    busy_today |= {r["guest_id"] for r in new_rows if r["due_date"] <= today_iso}
+    for e in events:
+        cycle = cycle_of[e.id]
+        for g in guests_by_event.get(e.id, []):
+            if delivery.get(g.id) != delivery_issues.UNDELIVERABLE or not phone_ok(g):
+                continue
+            key = (g.id, cycle, MANUAL_ROUND)
+            if key in by_key or key in pending_keys or g.id in busy_today or g.id in unresolved_wrong:
+                continue
+            assignee = pick_default(e.id, today)
+            new_rows.append(dict(
+                event_id=e.id, guest_id=g.id, event_cycle=cycle, round_number=MANUAL_ROUND,
+                planned_date=today_iso, due_date=today_iso, reason=DELIVERY_REASON,
+                status=OPEN, assignee_id=assignee, pinned=False, created_at=stamp, updated_at=stamp,
+            ))
+            pending_keys.add(key)
+            if assignee:
+                load[(assignee, today_iso)] += 1
+            stats.created += 1
+
     # יצירה בפועל — עמיד לריצה מקבילה (ON CONFLICT DO NOTHING), ואז טעינה מחדש.
     if new_rows:
         _insert_tasks(db, new_rows)
@@ -538,6 +580,9 @@ def sync(
         elif t.guest_id in unresolved_wrong and t.round_number != MANUAL_ROUND:
             reason = "wrong_number"
             new_status = DONE
+        elif _is_auto_delivery(t) and delivery.get(t.guest_id) != delivery_issues.UNDELIVERABLE:
+            # הודעה מאוחרת יותר כן הגיעה — אין עוד סיבה לשיחה הזו.
+            reason = "whatsapp_ok"
         else:
             plans = plans_by_event.get(t.event_id, [])
             plan = next((p for p in plans if p.round_number == t.round_number), None)
@@ -594,10 +639,26 @@ def sync(
                     t.status, t.closed_reason, t.closed_at, t.updated_at = SKIPPED, "next_round", stamp, stamp
                     stats.skipped += 1
 
+    # סבב שיחות רגיל שהגיע מכסה את המוזמן — משימת ה-WhatsApp נסגרת, כדי שלא
+    # יופיע פעמיים. הסיבה עדיין מוצגת במשימת הסבב (``reason_label``).
+    covered = {
+        t.guest_id for t in by_key.values()
+        if t.status == OPEN and t.round_number != MANUAL_ROUND and t.planned_date <= today_iso
+    }
+    for t in by_key.values():
+        if t.status == OPEN and _is_auto_delivery(t) and t.guest_id in covered:
+            t.status, t.closed_reason, t.closed_at, t.updated_at = SKIPPED, "next_round", stamp, stamp
+            stats.skipped += 1
+
     db.flush()
     if key:
         _last_full_sync[key] = time.monotonic()
     return stats
+
+
+def _is_auto_delivery(task: models.CallTask) -> bool:
+    """משימה שנפתחה אוטומטית כי WhatsApp לא מגיע למספר (ולא שונתה ידנית)."""
+    return task.round_number == MANUAL_ROUND and task.reason == DELIVERY_REASON and not task.pinned
 
 
 def invalidate_sync_cache() -> None:
@@ -1002,11 +1063,52 @@ def last_whatsapp(db: Session, guest_ids: list[int]) -> dict[int, tuple[int, int
     return {k: (v[0], v[1]) for k, v in out.items()}
 
 
-def reason_label(task_reason: str, guest: models.Guest, wa: Optional[tuple[int, int]]) -> str:
-    if task_reason == "no_response":
+def delivery_states(db: Session, guests: Iterable[models.Guest]) -> dict[int, str]:
+    """לכל מוזמן שההודעה האחרונה אליו (במחזור הנוכחי) לא הגיעה — הסיבה
+    (``delivery_issues``). שאילתה אחת לכל הרשימה."""
+    from app import delivery_issues
+
+    guests = list(guests)
+    if not guests:
+        return {}
+    cycles = dict(db.execute(
+        select(models.Event.id, models.Event.cycle_number)
+        .where(models.Event.id.in_({g.event_id for g in guests}))
+    ).all())
+    cycle_of_guest = {g.id: cycles.get(g.event_id) or 1 for g in guests}
+    messages = [
+        m for m in db.scalars(select(models.Message).where(
+            models.Message.guest_id.in_(cycle_of_guest),
+            models.Message.direction == "outbound",
+            models.Message.channel == "whatsapp",
+        )).all()
+        if _in_cycle(m, cycle_of_guest[m.guest_id])
+    ]
+    out: dict[int, str] = {}
+    for gid, msg in delivery_issues.latest_by_guest(messages).items():
+        reason = delivery_issues.classify(msg)
+        if reason:
+            out[gid] = reason
+    return out
+
+
+def _in_cycle(msg: models.Message, cycle: int) -> bool:
+    """כמו ``event_cycle.current_sends``: במחזור 1 גם שורות בלי מספר מחזור."""
+    if msg.cycle_number is None:
+        return cycle == 1
+    return msg.cycle_number == cycle
+
+
+def reason_label(
+    task_reason: str, guest: models.Guest, wa: Optional[tuple[int, int]],
+    delivery: Optional[str] = None,
+) -> str:
+    if task_reason in ("no_response", DELIVERY_REASON):
         if guest.rsvp_status == "maybe":
             return REASON_LABELS["maybe"]
-        if wa and wa[0] > 0 and wa[1] == 0:
+        if delivery in DELIVERY_LABELS:
+            return DELIVERY_LABELS[delivery]
+        if task_reason == "no_response" and wa and wa[0] > 0 and wa[1] == 0:
             return REASON_LABELS["no_whatsapp_reply"]
     return REASON_LABELS.get(task_reason, task_reason)
 

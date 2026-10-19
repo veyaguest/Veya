@@ -202,6 +202,7 @@ def _task_rows(db: Session, pairs: list[tuple[models.CallTask, models.Guest, mod
     rounds = _RoundCache(db)
     names = _names(db, {t.assignee_id for t, _, _ in pairs} | {t.handled_by_id for t, _, _ in pairs})
     wa = call_ops.last_whatsapp(db, [g.id for _, g, _ in pairs])
+    delivery = call_ops.delivery_states(db, {g.id: g for _, g, _ in pairs}.values())
     rows = []
     for t, g, e in pairs:
         plans = rounds.plans(e)
@@ -212,7 +213,7 @@ def _task_rows(db: Session, pairs: list[tuple[models.CallTask, models.Guest, mod
             rsvp_status=g.rsvp_status, event_id=e.id, event_label=_hosts(e), event_type=e.event_type,
             event_date=e.event_date or "", round_number=t.round_number, total_rounds=total,
             round_label=_round_label(t.round_number, total), reason=t.reason,
-            reason_label=call_ops.reason_label(t.reason, g, wa.get(g.id)),
+            reason_label=call_ops.reason_label(t.reason, g, wa.get(g.id), delivery.get(g.id)),
             planned_date=t.planned_date, due_date=t.due_date, assignee_id=t.assignee_id,
             assignee_name=names.get(t.assignee_id, "") if t.assignee_id else "",
             status=t.status, status_label=label, status_tone=tone, attempts=t.attempts or 0,
@@ -283,6 +284,7 @@ def _preview_rows(db: Session, day: date, user: models.User, event_id: Optional[
         needle = q.strip()
         rows = [r for r in rows if needle in (r.guest.full_name or "") or needle in (r.guest.phone or "") or needle in _hosts(r.event)]
     names = _names(db, {r.default_assignee for r in rows})
+    delivery = call_ops.delivery_states(db, [r.guest for r in rows])
     day_iso = day.isoformat()
     return [
         TaskRow(
@@ -292,7 +294,7 @@ def _preview_rows(db: Session, day: date, user: models.User, event_id: Optional[
             round_number=r.round.round_number, total_rounds=r.round.total_rounds,
             round_label=_round_label(r.round.round_number, r.round.total_rounds),
             reason="maybe" if r.guest.rsvp_status == "maybe" else "no_response",
-            reason_label=call_ops.REASON_LABELS["maybe" if r.guest.rsvp_status == "maybe" else "no_response"],
+            reason_label=call_ops.reason_label("no_response", r.guest, None, delivery.get(r.guest.id)),
             planned_date=day_iso, due_date=day_iso, assignee_id=r.default_assignee,
             assignee_name=names.get(r.default_assignee, "") if r.default_assignee else "",
             status="planned", status_label="מתוכנן", status_tone="neutral", attempts=0,

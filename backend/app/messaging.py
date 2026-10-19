@@ -135,6 +135,14 @@ def default_template_for(event_type: str | None) -> str:
 # ("לא עניתם") — זה קו המותג של VEYA מול הסטנדרט בשוק.
 REMINDER_PREFIX = "תזכורת קטנה 🙂 אנחנו סוגרים את הרשימה —"
 
+# ההודעה שבעלי האירוע שולחים בעצמם, מה-WhatsApp שלהם, למוזמן שההודעה של VEYA
+# לא הגיעה אליו (``delivery_issues.personal_text``). הסיבה לפנייה היא שלנו
+# ("רצינו לוודא"), לא של המוזמן. ``{occasion}`` = ``event_type`` מהלקסיקון
+# ("חתונה", "בר המצווה"...), אחרי ל-.
+PERSONAL_RESEND_TEXT = "{greeting} רצינו לוודא שההזמנה ל{occasion} הגיעה אליכם. כל הפרטים כאן: {link}"
+# כשאישורי ההגעה כבר פתוחים (``guest_journey.rsvp_is_open``).
+PERSONAL_RESEND_RSVP_TEXT = "{greeting} רצינו לוודא שההזמנה ל{occasion} הגיעה אליכם. נשמח שתאשרו הגעה כאן: {link}"
+
 # המשתנים הנתמכים — כל אחד עם כמה כינויים (אנגלית + עברית) לנוחות.
 PLACEHOLDERS = [
     {"key": "{name}", "aliases": ["{name}", "{שם}"], "desc": "שם המוזמן"},

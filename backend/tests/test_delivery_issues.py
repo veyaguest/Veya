@@ -283,3 +283,95 @@ def test_personal_text_and_link() -> None:
     link = di.wa_me_link(g.phone, text)
     assert link.startswith("https://wa.me/972501234567?text=")
     assert di.wa_me_link("123", text) is None
+
+
+# ---- תור השיחות של האדמין ----
+
+def _sync(db: Session, now: datetime):
+    from app import call_ops
+
+    stats = call_ops.sync(db, now=now, force=True)
+    db.commit()
+    return stats
+
+
+def _tasks(db: Session, g: models.Guest) -> list[models.CallTask]:
+    return list(db.scalars(
+        select(models.CallTask).where(models.CallTask.guest_id == g.id).order_by(models.CallTask.id)
+    ).all())
+
+
+def test_undeliverable_goes_to_call_queue_today_once() -> None:
+    from app import call_ops
+
+    db = _db()
+    ev = _event(db)
+    g = _guest(db, ev)
+    _msg(db, ev, g, code=di.CODE_UNDELIVERABLE)
+    opted_out = _guest(db, ev, name="פרסום")
+    _msg(db, ev, opted_out, status=ms.BLOCKED, code=None)
+    capped = _guest(db, ev, name="הגבלה")
+    _msg(db, ev, capped)
+
+    now = datetime(2026, 9, 10, 9, 0)              # חמישי — אין עדיין סבב שיחות
+    _sync(db, now)
+    tasks = _tasks(db, g)
+    assert len(tasks) == 1
+    t = tasks[0]
+    assert (t.round_number, t.reason, t.status, t.due_date) == (
+        call_ops.MANUAL_ROUND, call_ops.DELIVERY_REASON, call_ops.OPEN, "2026-09-10")
+    assert _tasks(db, opted_out) == [] and _tasks(db, capped) == []
+    _sync(db, now)
+    _sync(db, datetime(2026, 9, 13, 9, 0))
+    assert len(_tasks(db, g)) == 1
+
+    delivery = call_ops.delivery_states(db, [g, opted_out, capped])
+    assert call_ops.reason_label(t.reason, g, None, delivery.get(g.id)) == "WhatsApp לא מגיע למספר הזה"
+    assert "פרסום" in call_ops.reason_label("no_response", opted_out, None, delivery.get(opted_out.id))
+
+
+def test_call_task_closes_when_answered_or_whatsapp_works() -> None:
+    from app import call_ops
+
+    db = _db()
+    ev = _event(db)
+    answered = _guest(db, ev, name="ענה")
+    _msg(db, ev, answered, code=di.CODE_UNDELIVERABLE)
+    fixed = _guest(db, ev, name="הגיע")
+    _msg(db, ev, fixed, code=di.CODE_UNDELIVERABLE)
+    called = _guest(db, ev, name="התקשרו")
+    _msg(db, ev, called, code=di.CODE_UNDELIVERABLE)
+    now = datetime(2026, 9, 10, 9, 0)
+    _sync(db, now)
+
+    answered.rsvp_status = "confirmed"
+    _msg(db, ev, fixed, status=ms.DELIVERED, code=None, kind="rsvp_request", at=datetime(2026, 9, 10, 9, 30))
+    done = _tasks(db, called)[0]
+    done.status, done.last_outcome = call_ops.DONE, "no_answer"   # כבר ניסו — לא נפתחת שוב
+    db.commit()
+    _sync(db, datetime(2026, 9, 10, 10, 0))
+    assert _tasks(db, answered)[0].status == call_ops.CLOSED_BY_RSVP
+    t = _tasks(db, fixed)[0]
+    assert (t.status, t.closed_reason) == (call_ops.SKIPPED, "whatsapp_ok")
+    assert [x.status for x in _tasks(db, called)] == [call_ops.DONE]
+
+
+def test_regular_call_round_replaces_the_whatsapp_task() -> None:
+    from app import call_ops
+
+    db = _db()
+    # המסלול התחיל ב-14/9 — לוח הזמנים קפוא (סבב שיחות ראשון בחמישי 17/9).
+    ev = _event(db, rsvp_track_active=True, rsvp_track_started_at=datetime(2026, 9, 14, 6, 0))
+    g = _guest(db, ev)
+    _msg(db, ev, g, code=di.CODE_UNDELIVERABLE)
+    _sync(db, datetime(2026, 9, 15, 9, 0))
+    assert [t.round_number for t in _tasks(db, g)] == [0]
+    _sync(db, datetime(2026, 9, 17, 9, 0))
+    tasks = _tasks(db, g)
+    open_ = [t for t in tasks if t.status == call_ops.OPEN]
+    assert len(open_) == 1 and open_[0].round_number != call_ops.MANUAL_ROUND, [
+        (t.round_number, t.status, t.closed_reason) for t in tasks]
+    manual = next(t for t in tasks if t.round_number == call_ops.MANUAL_ROUND)
+    assert (manual.status, manual.closed_reason) == (call_ops.SKIPPED, "next_round")
+    delivery = call_ops.delivery_states(db, [g])
+    assert call_ops.reason_label(open_[0].reason, g, (1, 0), delivery.get(g.id)) == "WhatsApp לא מגיע למספר הזה"
