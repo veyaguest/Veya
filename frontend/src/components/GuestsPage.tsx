@@ -248,6 +248,19 @@ export function GuestsPage({
 
   const hasMore = guests.length < total
 
+  function phoneAlertText(a: GuestDataAlert): string {
+    switch (a.reason) {
+      case 'missing':
+        return t.phoneCheckMissing(a.full_name)
+      case 'invalid':
+        return t.phoneCheckInvalid(a.full_name)
+      case 'whatsapp':
+        return t.phoneCheckWhatsapp(a.full_name)
+      default:
+        return t.phoneFixText(a.full_name)
+    }
+  }
+
   /** פותח את עריכת המוזמן ישירות מתוך ההתראה, כדי לתקן את המספר במקום. */
   function openPhoneFix(alert: GuestDataAlert) {
     const inList = guests.find((g) => g.id === alert.guest_id)
@@ -284,14 +297,19 @@ export function GuestsPage({
             {phoneAlerts.map((a) => (
               <li key={a.guest_id}>
                 <div className="data-alert-text">
-                  {t.phoneFixText(a.full_name)} (<span dir="ltr">{a.phone}</span>)
+                  {phoneAlertText(a)}
+                  {a.phone && (
+                    <>
+                      {' '}(<span dir="ltr">{a.phone}</span>)
+                    </>
+                  )}
                 </div>
                 <button
                   type="button"
                   className="btn-primary data-alert-btn"
                   onClick={() => openPhoneFix(a)}
                 >
-                  תיקון מספר
+                  {a.reason === 'missing' ? t.phoneAddButton : t.phoneFixButton}
                 </button>
               </li>
             ))}

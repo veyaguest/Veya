@@ -3,6 +3,7 @@ import { adminHttp, qs } from '../../adminApi'
 import { addDays, israelToday, weekday } from '../../callOpsApi'
 import { navigate, routeHref, type AdminRoute } from '../../route'
 import { DeliveryAlerts } from './DeliveryAlerts'
+import { PhoneAlerts } from './PhoneAlerts'
 import {
   Advanced,
   EmptyState,
@@ -80,6 +81,7 @@ export function RsvpPage({ route }: { route: AdminRoute }) {
           </p>
 
           <DeliveryAlerts />
+          <PhoneAlerts />
 
           <section className="adm-section">
             <div className="adm-section-head"><h2 className="adm-section-title">מה מתוכנן ביום הזה</h2></div>

@@ -1672,6 +1672,8 @@ export interface CallOutcomeResult {
 
 export interface GuestDataAlert {
   kind: 'phone_fix'
+  /** wrong_number = נמצא שגוי בשיחה; השאר = צוות VEYA התריע (מספר חסר / לא תקין / WhatsApp לא מגיע). */
+  reason: 'wrong_number' | 'missing' | 'invalid' | 'whatsapp'
   guest_id: number
   full_name: string
   phone: string

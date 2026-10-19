@@ -1964,6 +1964,9 @@ class GuestDataAlert(BaseModel):
     """
 
     kind: str = "phone_fix"      # מזהה סוג ההתראה (מקום להתראות דאטה נוספות)
+    # למה: wrong_number (נמצא שגוי בשיחה) · missing / invalid / whatsapp (צוות
+    # VEYA התריע — ``delivery_issues.couple_phone_alerts``).
+    reason: str = "wrong_number"
     guest_id: int
     full_name: str
     phone: str = ""              # המספר השגוי שעליו דווח

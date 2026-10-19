@@ -8,7 +8,10 @@ from pydantic import BaseModel
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session
 
-from app import audit, call_center, call_ops, invitations, iplan_export, models, permissions, schemas
+from app import (
+    audit, call_center, call_ops, delivery_issues, invitations, iplan_export, models, permissions,
+    schemas,
+)
 from app.auth import get_current_owner
 from app.database import get_db
 from app.deps import EventAccess
@@ -218,6 +221,16 @@ def data_alerts(
         )
         for a in alerts
     ]
+    # מוזמנים שצוות VEYA התריע עליהם (מספר חסר / לא תקין / WhatsApp לא מגיע).
+    seen = {r.guest_id for r in rows}
+    for p in delivery_issues.couple_phone_alerts(db, event):
+        if p.guest.id in seen:
+            continue
+        rows.append(schemas.GuestDataAlert(
+            reason=p.problem, guest_id=p.guest.id, full_name=p.guest.full_name,
+            phone=p.guest.phone or "", rsvp_status=p.guest.rsvp_status, attempts=0,
+            reported_at=p.guest.phone_alert_at,
+        ))
     return schemas.GuestDataAlerts(phone_fix=rows, total=len(rows))
 
 

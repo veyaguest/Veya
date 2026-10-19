@@ -440,3 +440,90 @@ def resend_one(db: Session, event: models.Event, guest: models.Guest, now: Optio
         raise ResendRefused("להודעה הזו אין כרגע תוכן לשליחה.")
     return outbound.send_batch(db, event, [item])
 
+
+# ---- מספרים שצריך לתקן (אדמין → בעלי האירוע) ----
+
+PHONE_MISSING = "missing"
+PHONE_INVALID = "invalid"
+PHONE_WHATSAPP = "whatsapp"   # הפורמט תקין, אבל Meta לא מצליחה למסור (131026)
+
+
+def phone_problem(guest: models.Guest, delivery: Optional[str]) -> Optional[str]:
+    """למה צריך לבדוק את המספר של המוזמן, או ``None``."""
+    kind = invitations.classify_phone(guest.phone)
+    if kind == "missing":
+        return PHONE_MISSING
+    if kind == "invalid":
+        return PHONE_INVALID
+    if delivery == UNDELIVERABLE:
+        return PHONE_WHATSAPP
+    return None
+
+
+def alert_active(guest: models.Guest) -> bool:
+    """הצוות התריע, והמספר עוד לא השתנה מאז."""
+    return guest.phone_alert_at is not None and (guest.phone or "") == (guest.phone_alert_phone or "")
+
+
+@dataclass
+class PhoneProblem:
+    guest: models.Guest
+    problem: str
+
+
+def phone_problems(db: Session, now: Optional[datetime] = None) -> list[tuple[models.Event, list[PhoneProblem]]]:
+    """לכל אירוע שעוד לא התקיים: מוזמנים שעוד לא ענו ושהמספר שלהם צריך בדיקה."""
+    from app import call_ops
+
+    now = now or datetime.utcnow()
+    today = local_time.israel_date(now)
+    events = [
+        e for e in db.scalars(select(models.Event).where(models.Event.event_date != "")).all()
+        if (_event_day(e) or today) >= today
+    ]
+    if not events:
+        return []
+    guests = list(db.scalars(select(models.Guest).where(
+        models.Guest.event_id.in_([e.id for e in events]),
+        models.Guest.rsvp_status.in_(("pending", "maybe")),
+    ).order_by(models.Guest.full_name)).all())
+    delivery = call_ops.delivery_states(db, guests)
+    by_event: dict[int, list[PhoneProblem]] = {}
+    for g in guests:
+        problem = phone_problem(g, delivery.get(g.id))
+        if problem:
+            by_event.setdefault(g.event_id, []).append(PhoneProblem(g, problem))
+    out = [(e, by_event[e.id]) for e in events if e.id in by_event]
+    out.sort(key=lambda pair: (pair[0].event_date or "", pair[0].id))
+    return out
+
+
+def raise_phone_alerts(guests: list[models.Guest], now: Optional[datetime] = None) -> int:
+    """מסמן "צוות VEYA ביקש לבדוק את המספר" — מופיע לבעלי האירוע במסך המוזמנים."""
+    now = now or datetime.utcnow()
+    for g in guests:
+        g.phone_alert_at = now
+        g.phone_alert_phone = g.phone or ""
+    return len(guests)
+
+
+def couple_phone_alerts(db: Session, event: models.Event) -> list[PhoneProblem]:
+    """מה בעלי האירוע רואים: מוזמנים שהצוות התריע עליהם, המספר לא השתנה,
+    והבעיה עדיין קיימת."""
+    from app import call_ops
+
+    flagged = [
+        g for g in db.scalars(select(models.Guest).where(
+            models.Guest.event_id == event.id, models.Guest.phone_alert_at.is_not(None),
+        )).all()
+        if alert_active(g)
+    ]
+    delivery = call_ops.delivery_states(db, flagged)
+    out = []
+    for g in flagged:
+        problem = phone_problem(g, delivery.get(g.id))
+        if problem:
+            out.append(PhoneProblem(g, problem))
+    out.sort(key=lambda p: p.guest.full_name or "")
+    return out
+

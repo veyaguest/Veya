@@ -1159,6 +1159,15 @@ export const strings = {
     phoneFixTitle: 'כדאי לבדוק כמה מספרי טלפון',
     phoneFixText: (name: string) =>
       `ניסינו להתקשר ל${name} והמספר לא הוביל אליו. אפשר לעדכן את המספר, ו-VEYA תמשיך איתו בהמשך אישורי ההגעה.`,
+    // צוות VEYA התריע (``delivery_issues.couple_phone_alerts``). בלי מגדר, בלי האשמה.
+    phoneCheckMissing: (name: string) =>
+      `אין לנו מספר טלפון של ${name}. אפשר להוסיף אותו, ו-VEYA תוכל לשלוח את ההודעות.`,
+    phoneCheckInvalid: (name: string) =>
+      `המספר של ${name} לא נראה תקין, ולכן ההודעות לא נשלחות. אפשר לבדוק ולעדכן אותו.`,
+    phoneCheckWhatsapp: (name: string) =>
+      `הודעות WhatsApp לא מגיעות למספר של ${name}. כדאי לבדוק שהמספר נכון.`,
+    phoneFixButton: 'תיקון מספר',
+    phoneAddButton: 'הוספת מספר',
     filteredNotice: (label: string) => `הרשימה מסוננת: ${label}`,
     clearFilter: 'ניקוי סינון',
     emptyFilterTitle: (label: string) => `אין כרגע מוזמנים בסינון "${label}"`,

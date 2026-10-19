@@ -151,3 +151,63 @@ def test_never_resend_pending() -> None:
     r = api.client.post(f"/admin/rsvp/delivery-alerts/{g['id']}/resend", headers=admin)
     assert r.status_code == 409, r.text
     assert g["id"] not in _alerts(admin)
+
+
+# ---- מספרים שצריך לתקן → התראה לבעלי האירוע ----
+
+def _raw_guest(event_id: int, name: str, phone: str) -> int:
+    from app import models
+
+    db = _session()
+    try:
+        ev = db.get(models.Event, event_id)
+        ev.event_date = ev.event_date or "2027-03-01"
+        g = models.Guest(event_id=event_id, full_name=name, phone=phone, side="shared")
+        db.add(g)
+        db.commit()
+        return g.id
+    finally:
+        db.close()
+
+
+def test_admin_alerts_couple_about_phone_numbers() -> None:
+    api, _ = bootstrap()
+    other, _ = bootstrap()
+    support = _admin("support")
+    missing = _raw_guest(api.event_id, "בלי מספר", "")
+    invalid = _raw_guest(api.event_id, "מספר קצר", "123")
+    unreachable = _raw_guest(api.event_id, "לא מגיע", "0507777777")
+    _msg(api.event_id, unreachable, code=131026)
+    _raw_guest(api.event_id, "תקין", "0508888888")
+
+    r = api.client.get("/admin/rsvp/phone-alerts", headers=support)
+    assert r.status_code == 200, r.text
+    ev = next(e for e in r.json()["events"] if e["event_id"] == api.event_id)
+    problems = {g["guest_id"]: g["problem"] for g in ev["guests"]}
+    assert problems == {missing: "missing", invalid: "invalid", unreachable: "whatsapp"}
+    assert all(g["alerted_at"] is None for g in ev["guests"])
+
+    # לפני ההתראה — בעלי האירוע לא רואים כלום.
+    assert api.client.get("/guests/data-alerts", headers=api.headers).json()["total"] == 0
+
+    r = api.client.post("/admin/rsvp/phone-alerts", headers=support,
+                        json={"guest_ids": [missing, invalid, unreachable]})
+    assert r.status_code == 200 and r.json()["alerted"] == 3
+
+    data = api.client.get("/guests/data-alerts", headers=api.headers).json()
+    reasons = {a["guest_id"]: a["reason"] for a in data["phone_fix"]}
+    assert reasons == {missing: "missing", invalid: "invalid", unreachable: "whatsapp"}
+    assert other.client.get("/guests/data-alerts", headers=other.headers).json()["total"] == 0
+
+    # בעלי האירוע מתקנים מספר — ההתראה עליו נסגרת מעצמה.
+    r = api.client.patch(f"/guests/{invalid}", headers=api.headers, json={"phone": "0509999999"})
+    assert r.status_code == 200, r.text
+    data = api.client.get("/guests/data-alerts", headers=api.headers).json()
+    assert invalid not in {a["guest_id"] for a in data["phone_fix"]}
+
+
+def test_phone_alert_requires_permission() -> None:
+    api, _ = bootstrap()
+    g = _raw_guest(api.event_id, "בלי מספר", "")
+    r = api.client.post("/admin/rsvp/phone-alerts", headers=api.headers, json={"guest_ids": [g]})
+    assert r.status_code in (401, 403), r.text

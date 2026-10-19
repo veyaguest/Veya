@@ -1568,6 +1568,16 @@ textarea.adm-input {
   gap: 4px;
 }
 
+/* "מספרים שצריך לתקן" — רשימת המוזמנים מתחת לשורת האירוע. */
+.adm-phone-guests {
+  padding: 0 16px 12px calc(16px + 18px);
+  font-size: 13px;
+}
+.adm-phone-one {
+  margin-inline-start: 8px;
+  font-size: 13px;
+}
+
 .adm-fieldset {
   margin: 22px 0 0;
   padding: 0;

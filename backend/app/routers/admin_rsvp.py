@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -172,4 +173,60 @@ def resend_message(
         "not_sent": result.blocked + result.no_template + result.image_blocked,
         "outcome": outcome, "detail": result.last_detail or result.image_reason or "",
     }
+
+
+# ---- מספרים שצריך לתקן ----
+
+@router.get("/phone-alerts")
+def phone_alerts(
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(admin_rbac.require("settings.view")),
+):
+    """לכל אירוע שעוד לא התקיים: מוזמנים בלי מספר תקין, או ש-WhatsApp לא מגיע
+    אליהם — והאם כבר התרענו לבעלי האירוע."""
+    return {"events": [
+        {
+            "event_id": e.id, "event_label": _hosts(e), "event_date": e.event_date,
+            "guests": [
+                {
+                    "guest_id": p.guest.id, "guest_name": p.guest.full_name, "phone": p.guest.phone or "",
+                    "problem": p.problem,
+                    "alerted_at": p.guest.phone_alert_at if delivery_issues.alert_active(p.guest) else None,
+                }
+                for p in problems
+            ],
+        }
+        for e, problems in delivery_issues.phone_problems(db)
+    ]}
+
+
+class PhoneAlertWrite(BaseModel):
+    guest_ids: list[int] = Field(min_length=1, max_length=500)
+
+
+@router.post("/phone-alerts")
+def raise_phone_alerts(
+    payload: PhoneAlertWrite,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(admin_rbac.require("messages.alert")),
+):
+    """"להתריע לזוג" — המוזמנים יופיעו לבעלי האירוע בהתראה "כדאי לבדוק כמה
+    מספרי טלפון" במסך המוזמנים, עד שהמספר יתעדכן."""
+    guests = list(db.scalars(select(models.Guest).where(models.Guest.id.in_(set(payload.guest_ids)))).all())
+    if not guests:
+        raise HTTPException(status_code=404, detail="המוזמנים לא נמצאו")
+    count = delivery_issues.raise_phone_alerts(guests)
+    by_event: dict[int, list[models.Guest]] = defaultdict(list)
+    for g in guests:
+        by_event[g.event_id].append(g)
+    for event_id, items in by_event.items():
+        names = ", ".join(g.full_name for g in items[:5]) + ("…" if len(items) > 5 else "")
+        admin_audit.record(
+            db, admin, domain="messages", action="phone_alert.raise",
+            summary=f"התריע/ה לבעלי האירוע לבדוק {len(items)} מספרי טלפון ({names})",
+            target_type="event", target_id=event_id, event_id=event_id, request=request,
+        )
+    db.commit()
+    return {"alerted": count}
 
