@@ -378,6 +378,25 @@
   border-bottom: 1px solid var(--line-2);
   border-radius: 0;
 }
+/* "לא קיבלו את ההודעה" — שם + סיבה, והפעולה בצד (במובייל: מתחת). הרשימה
+   קצרה מטבעה, ולכן בלי גלילה פנימית. */
+.couple-rsvp .delivery-issues .msg-guest-list {
+  max-height: none;
+  overflow: visible;
+}
+.couple-rsvp .delivery-issue-row .msg-guest-who {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.delivery-issue-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.delivery-issue-actions a {
+  text-decoration: none;
+}
 .couple-rsvp .msg-guest-row-btn:hover {
   background: var(--surface-hi);
   border-color: var(--line-2);
@@ -510,6 +529,9 @@
   }
   .couple-rsvp .msg-guest-badges {
     justify-content: space-between;
+  }
+  .couple-rsvp .delivery-issue-row {
+    gap: var(--space-2);
   }
   .couple-rsvp .msg-guest-rsvp {
     min-width: 0;

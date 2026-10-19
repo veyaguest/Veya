@@ -96,6 +96,7 @@ import type {
   RsvpTrackStatus,
   MessageStatusSummary,
   MessageTypeStatus,
+  DeliveryIssues,
   InvitationSendPreview,
   SendScope,
   TokenResponse,
@@ -1473,6 +1474,20 @@ export async function getMessageStatus(): Promise<MessageStatusSummary> {
  * "מעקב אחרי המוזמנים" כשבוחרים "מעקב אחר: X". כולל רשימת מוזמנים מלאה. */
 export async function getMessageStatusByType(messageType: string): Promise<MessageTypeStatus> {
   const res = await apiFetch(`/automation/message-status/${messageType}`)
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** "לא קיבלו את ההודעה" — מי, למה, ומה כבר קורה (שליחה חוזרת / שיחה). */
+export async function getDeliveryIssues(): Promise<DeliveryIssues> {
+  const res = await apiFetch('/automation/delivery-issues')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+/** בעלי האירוע פתחו WhatsApp לשליחה אישית — מבטל את השליחה החוזרת האוטומטית. */
+export async function markSentPersonally(guestId: number): Promise<DeliveryIssues> {
+  const res = await apiFetch(`/automation/delivery-issues/${guestId}/personal`, { method: 'POST' })
   if (!res.ok) throw await toError(res)
   return res.json()
 }

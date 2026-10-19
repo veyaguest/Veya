@@ -1416,6 +1416,26 @@ export interface MessageTypeGuestRow {
   updated_at: string | null
 }
 
+// "לא קיבלו את ההודעה" — מוזמן שההודעה האחרונה אליו לא הגיעה
+// (``backend/app/delivery_issues.py``). הזמנים ב-UTC, בלי אזור זמן.
+export type DeliveryIssueReason = 'marketing_cap' | 'marketing_opt_out' | 'undeliverable' | 'failed_other'
+
+export interface DeliveryIssueRow {
+  guest_id: number
+  guest_name: string
+  phone: string
+  message_type: string
+  reason: DeliveryIssueReason
+  cap_failures: number
+  resend_at: string | null
+  sent_personally_at: string | null
+  whatsapp_link: string | null
+}
+
+export interface DeliveryIssues {
+  issues: DeliveryIssueRow[]
+}
+
 // סטטוס ההודעות לפי סוג הודעה נבחר — הכרטיס "מעקב אחרי המוזמנים" מציג
 // הודעה אחת בכל פעם (invitation/reminder_1/.../thank_you), לא סיכום מצטבר.
 // not_sent_yet=true → אף הודעה מהסוג הזה עוד לא נשלחה לאף מוזמן.
