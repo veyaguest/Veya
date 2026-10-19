@@ -51,13 +51,17 @@
 
 ### 2. שמירה ב-Keychain
 
-ב-Terminal (לא בצ'אט), הריצו:
+מעתיקים את הטוקן (Cmd+C), ואז ב-Terminal (לא בצ'אט) מריצים:
 
 ```bash
-security add-generic-password -U -s veya-meta-templates -a veya -w
+security add-generic-password -U -s veya-meta-templates -a veya -w "$(pbpaste | tr -d '[:space:]')" && pbcopy < /dev/null && echo "OK - saved"
 ```
 
-המחשב יבקש להדביק את הטוקן פעמיים (הוא לא מוצג על המסך). זהו.
+הפקודה לוקחת את הטוקן מהלוח, שומרת אותו ב-Keychain ומרוקנת את הלוח. הטוקן לא מוצג
+ולא נשמר בהיסטוריה של ה-Terminal.
+
+> לא להשתמש ב-`-w` בלי ערך (הדבקה בשאלה של המחשב): macOS חותך שם קלט אחרי 128 תווים,
+> וטוקן של Meta ארוך יותר — Meta מחזירה "The access token could not be decrypted".
 
 החלפת טוקן — אותה פקודה. מחיקה:
 

@@ -235,3 +235,12 @@ def test_jsonrpc_handshake_and_list():
     assert {t["name"] for t in tools} == set(server.HANDLERS)
     bad = server.handle({"jsonrpc": "2.0", "id": 3, "method": "nope"})
     assert bad["error"]["code"] == -32601
+
+
+def test_alignment_flags_static_button_with_literal_placeholder(meta):
+    # כמו veya_inv_pilot ב-Meta (2026-10-19): {{1}} הוקלד בשדה של קישור קבוע.
+    meta([_tpl("veya_inv_pilot", "היי {{1}}, מוזמנים", [
+        {"type": "URL", "text": "לצפייה בהזמנה", "url": "https://veyaguest.co.il/confirm/%7B%7B1%7D%7D"}])])
+    r = {x["name"]: x for x in vm.check_alignment(vm.fetch_templates())["checked"]}
+    assert not r["veya_inv_pilot"]["ok"]
+    assert "Static" in r["veya_inv_pilot"]["problems_he"][0]

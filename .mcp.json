@@ -2,7 +2,10 @@
   "mcpServers": {
     "veya-meta-templates": {
       "command": "/Users/mac/veya/backend/venv/bin/python",
-      "args": ["-I", "/Users/mac/veya/tools/meta-templates-mcp/server.py"]
+      "args": ["-I", "/Users/mac/veya/tools/meta-templates-mcp/server.py"],
+      "env": {
+        "VEYA_META_WABA_ID": "1227356696148120"
+      }
     }
   }
 }

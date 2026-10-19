@@ -284,7 +284,14 @@ def connection_status() -> dict:
         out["next_step_he"] = ("אין טוקן ב-Keychain. ההוראות ב-tools/meta-templates-mcp/README.md "
                                "(לא מדביקים טוקן בצ'אט).")
         return out
-    info = token_info()
+    if len(read_token()) == 128:
+        out["warning_he"] = ("הטוקן ב-Keychain באורך 128 תווים בדיוק — כנראה נחתך בהדבקה "
+                             "(macOS חותך שם קלט מוסתר ב-128). שומרים מחדש בפקודה שב-README.")
+    try:
+        info = token_info()
+    except MetaError as exc:
+        out["error"] = exc.info
+        return out
     out["token"] = info
     warnings = []
     if not info["valid"]:
@@ -297,7 +304,10 @@ def connection_status() -> dict:
     if info["expires"] not in ("never", None):
         warnings.append(f"הטוקן יפוג ב-{info['expires']}. עדיף טוקן System User עם תוקף Never.")
     accounts = []
-    for w in info["waba_ids"]:
+    env_waba = (os.getenv("VEYA_META_WABA_ID") or "").strip()
+    if not info["waba_ids"] and not env_waba:
+        warnings.append("Meta לא מקשרת את הטוקן לחשבון מסוים — מגדירים VEYA_META_WABA_ID ב-.mcp.json.")
+    for w in info["waba_ids"] or ([env_waba] if env_waba else []):
         acc = {"waba_id": w}
         try:
             acc.update(get(w, {"fields": "name,currency,timezone_id,account_review_status"}))
@@ -363,6 +373,9 @@ def summarize(tpl: dict, full: bool = False) -> dict:
         "buttons": [{
             "type": b.get("type"), "text": b.get("text"),
             "url": b.get("url"), "dynamic": bool(variables_in(b.get("url") or "")),
+            # {{1}} שהוקלד בשדה של קישור קבוע (Static): Meta שומרת אותו מקודד, והכפתור
+            # שולח את כולם לכתובת אחת שבורה.
+            "literal_placeholder": "%7B%7B" in (b.get("url") or "").upper(),
         } for b in buttons],
     }
     if reason and reason != "NONE":
@@ -486,7 +499,11 @@ def check_alignment(meta_templates: list[dict]) -> dict:
         url_buttons = [b for b in s["buttons"] if b["type"] == "URL"]
         first = s["buttons"][0] if s["buttons"] else None
         if exp.get("url_button"):
-            if not first or first["type"] != "URL" or not first["dynamic"]:
+            if first and first.get("literal_placeholder"):
+                problems.append(f"הכפתור הראשון הוא קישור קבוע (Static) שה-{{{{1}}}} נכתב בתוכו כטקסט "
+                                f"({first['url']}). כל מוזמן יגיע לכתובת שבורה, ו-Meta תדחה את הקוד האישי "
+                                "שהקוד שולח לכפתור. צריך כפתור מסוג Dynamic — תבנית חדשה או עריכה.")
+            elif not first or first["type"] != "URL" or not first["dynamic"]:
                 problems.append("הקוד שולח קישור אישי בכפתור הראשון (index 0), אבל הכפתור הראשון "
                                 "ב-Meta אינו כפתור קישור דינמי.")
             elif first["url"] != VEYA_CONFIRM_URL:
