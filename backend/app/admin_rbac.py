@@ -61,6 +61,8 @@ PERMISSIONS: dict[str, str] = {
     "venues.edit": ADMIN,
     "venues.delete": SUPER_ADMIN,
     "messages.edit": ADMIN,           # ספריית ההודעות וברירות המחדל
+    "messages.resend": ADMIN,         # "לשלוח שוב" הודעה שלא הגיעה — שליחה אמיתית למוזמן
+    "messages.alert": SUPPORT,        # התראה לבעלי האירוע: מספר טלפון שצריך לתקן
     "postponements.review": ADMIN,
     "support.view": SUPPORT,          # פניות לצוות מתוך "עזרה" (שלב 7)
     "support.handle": SUPPORT,        # שינוי סטטוס פנייה

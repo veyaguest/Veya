@@ -1,0 +1,153 @@
+"""התראות האדמין על הודעות שלא הגיעו (``/admin/rsvp/delivery-alerts``).
+
+- לכל מוזמן שההודעה האחרונה אליו לא הגיעה: הסבר בעברית לפי קוד Meta, ו"אצל
+  המוזמן" או "אצלנו"; קוד לא מוכר — עם הטקסט המקורי של Meta.
+- "לשלוח שוב": פעם אחת בלבד (לחיצה כפולה נעצרת), לעולם לא על ``pending``, לא
+  בעצירת חירום; רק Admin ומעלה; נרשם ביומן האדמין.
+"""
+import sys
+import uuid
+from datetime import datetime, timedelta
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from tests.e2e_seating import bootstrap, shutdown  # noqa: E402
+
+
+def teardown_module(module) -> None:  # noqa: ARG001
+    shutdown()
+
+
+def _session():
+    from app.database import SessionLocal
+
+    return SessionLocal()
+
+
+def _admin(role: str):
+    from app import auth, models
+
+    db = _session()
+    try:
+        u = models.User(
+            email=f"alerts-{uuid.uuid4().hex[:10]}@veya.test", password_hash=auth.hash_password("Test12345!"),
+            display_name="צוות", is_admin=True, admin_role=role,
+        )
+        db.add(u)
+        db.commit()
+        return {"Authorization": f"Bearer {auth.create_access_token(u)}"}
+    finally:
+        db.close()
+
+
+def _event_with_messages(api) -> None:
+    from app import communication, models
+
+    db = _session()
+    try:
+        communication.provision_event_messages(db, db.get(models.Event, api.event_id))
+        em = communication.event_messages_by_type(db, api.event_id)["invitation"]
+        em.content = em.content or "שלום {{guest_name}}, מוזמנים!"
+        db.commit()
+    finally:
+        db.close()
+
+
+def _msg(event_id: int, guest_id: int, *, status: str = "failed", code=None, reason: str = "") -> None:
+    from app import models
+
+    db = _session()
+    try:
+        db.add(models.Message(
+            event_id=event_id, guest_id=guest_id, direction="outbound", kind="invitation",
+            channel="whatsapp", status=status, provider="meta", failure_code=code,
+            failure_reason=reason, created_at=datetime.utcnow() - timedelta(hours=3), cycle_number=1,
+        ))
+        db.commit()
+    finally:
+        db.close()
+
+
+def _alerts(headers) -> dict:
+    from tests.e2e_seating import make_client
+
+    client, _ = make_client()
+    r = client.get("/admin/rsvp/delivery-alerts", headers=headers)
+    assert r.status_code == 200, r.text
+    return {a["guest_id"]: a for a in r.json()["alerts"]}
+
+
+def test_alerts_explain_each_failure() -> None:
+    api, _ = bootstrap()
+    support = _admin("support")
+    gone = api.add_guest("טל כהן", "0501111111")
+    template = api.add_guest("רוני לוי", "0502222222")
+    odd = api.add_guest("נועה בר", "0503333333")
+    fine = api.add_guest("איתי גל", "0504444444")
+    _msg(api.event_id, gone["id"], code=131026, reason="Message undeliverable")
+    _msg(api.event_id, template["id"], code=132001, reason="Template name does not exist")
+    _msg(api.event_id, odd["id"], code=999999, reason="Something new from Meta")
+    _msg(api.event_id, fine["id"], status="delivered")
+
+    alerts = _alerts(support)
+    assert fine["id"] not in alerts
+    assert alerts[gone["id"]]["side"] == "guest" and "WhatsApp" in alerts[gone["id"]]["title"]
+    assert alerts[gone["id"]]["reason"] == "undeliverable"
+    assert alerts[template["id"]]["side"] == "veya" and "תבנית" in alerts[template["id"]]["title"]
+    assert alerts[odd["id"]]["title"] == "סיבה לא מוכרת"
+    assert alerts[odd["id"]]["raw_reason"] == "Something new from Meta"
+    assert alerts[odd["id"]]["code"] == 999999 and alerts[odd["id"]]["message_label"] == "הזמנה"
+
+
+def test_resend_once_admin_only_and_logged() -> None:
+    from sqlalchemy import func, select
+
+    from app import messaging, models
+
+    api, _ = bootstrap()
+    _event_with_messages(api)
+    support, admin = _admin("support"), _admin("admin")
+    g = api.add_guest("דנה כהן", "0505555555")
+    _msg(api.event_id, g["id"], code=131000, reason="Something went wrong")
+    url = f"/admin/rsvp/delivery-alerts/{g['id']}/resend"
+
+    assert api.client.post(url, headers=support).status_code == 403
+
+    original = messaging.emergency_stop_active
+    messaging.emergency_stop_active = lambda: True
+    try:
+        r = api.client.post(url, headers=admin)
+    finally:
+        messaging.emergency_stop_active = original
+    assert r.status_code == 409 and "עצירת החירום" in r.json()["detail"]
+
+    r = api.client.post(url, headers=admin)
+    assert r.status_code == 200, r.text
+    assert r.json()["sent"] == 1
+    # לחיצה כפולה — ההודעה כבר יצאה.
+    r = api.client.post(url, headers=admin)
+    assert r.status_code == 409, r.text
+    assert g["id"] not in _alerts(admin)
+
+    db = _session()
+    try:
+        rows = db.scalar(select(func.count()).select_from(models.Message).where(
+            models.Message.guest_id == g["id"], models.Message.kind == "invitation"))
+        logged = db.scalar(select(func.count()).select_from(models.AdminAuditLog).where(
+            models.AdminAuditLog.action == "message.resend"))
+    finally:
+        db.close()
+    assert rows == 2 and logged >= 1
+
+
+def test_never_resend_pending() -> None:
+    api, _ = bootstrap()
+    _event_with_messages(api)
+    admin = _admin("admin")
+    g = api.add_guest("עומר גל", "0506666666")
+    _msg(api.event_id, g["id"], code=131026)
+    _msg(api.event_id, g["id"], status="pending")       # ניסיון שלא ידוע איך הסתיים
+    r = api.client.post(f"/admin/rsvp/delivery-alerts/{g['id']}/resend", headers=admin)
+    assert r.status_code == 409, r.text
+    assert g["id"] not in _alerts(admin)

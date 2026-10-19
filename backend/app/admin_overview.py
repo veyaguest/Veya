@@ -140,21 +140,17 @@ def attention(db: Session, now: Optional[datetime] = None) -> list[AttentionItem
             sorted({a.event_id for a in payouts}),
         ))
 
-    since = now - timedelta(days=FAILED_MESSAGE_DAYS)
-    failed_by_event = dict(db.execute(
-        select(models.Message.event_id, func.count(models.Message.id))
-        .where(
-            models.Message.direction == "outbound",
-            models.Message.status == message_status.FAILED,
-            models.Message.created_at >= since,
-        )
-        .group_by(models.Message.event_id)
-    ).all())
-    if failed_by_event:
+    # מוזמנים (לא שורות) שההודעה האחרונה אליהם לא הגיעה — אותו מקור כמו
+    # "הודעות שלא הגיעו" בעמוד אישורי ההגעה, רק שליחות אמיתיות.
+    from app import delivery_issues
+
+    alerts = delivery_issues.admin_alerts(db, now)
+    if alerts:
+        alert_events = sorted({a.event.id for a in alerts})
         items.append(AttentionItem(
-            "failed_messages", "critical", "הודעות WhatsApp שנכשלו",
-            f"ב-{len(failed_by_event)} אירועים, ב-{FAILED_MESSAGE_DAYS} הימים האחרונים",
-            sum(failed_by_event.values()), "rsvp", sorted(failed_by_event),
+            "failed_messages", "critical", "מוזמנים שהודעת WhatsApp לא הגיעה אליהם",
+            f"ב-{len(alert_events)} אירועים — הסיבה וכפתור 'לשלוח שוב' בעמוד אישורי ההגעה",
+            len(alerts), "rsvp", alert_events,
         ))
 
     # אותו מקור כמו מרכז הטלפנים (פנקס המשימות), כדי ששני המסכים לא יסתרו.

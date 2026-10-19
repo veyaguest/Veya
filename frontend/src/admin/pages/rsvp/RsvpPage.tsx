@@ -2,6 +2,7 @@ import { MessageDefaultOptionsManager, MessageDefaultsManager } from '../../../c
 import { adminHttp, qs } from '../../adminApi'
 import { addDays, israelToday, weekday } from '../../callOpsApi'
 import { navigate, routeHref, type AdminRoute } from '../../route'
+import { DeliveryAlerts } from './DeliveryAlerts'
 import {
   Advanced,
   EmptyState,
@@ -10,7 +11,6 @@ import {
   PageHeader,
   StatusPill,
   fmtDate,
-  fmtDateTime,
   fmtNumber,
   useAsync,
 } from '../../ui'
@@ -24,7 +24,6 @@ interface Overview {
   totals: Partial<Record<'whatsapp' | 'calls', { events: number; guests: number }>>
   steps: { event_id: number; event_label: string; event_date: string; type: string; label: string; audience: number; send_time: string }[]
   sent_today: { total: number; failed: number }
-  failed_recent: { event_id: number; event_label: string; count: number; last_at: string | null; reason: string }[]
   not_started: { event_id: number; event_label: string; event_date: string; guests: number }[]
 }
 
@@ -80,25 +79,7 @@ export function RsvpPage({ route }: { route: AdminRoute }) {
             מצב WhatsApp: {d.whatsapp_mode === 'live' ? 'שליחה אמיתית' : 'הדגמה — ההודעות לא מגיעות למוזמנים'}
           </p>
 
-          {d.failed_recent.length > 0 && (
-            <section className="adm-section">
-              <div className="adm-section-head"><h2 className="adm-section-title">שליחות שנכשלו (7 ימים)</h2></div>
-              <ul className="adm-list">
-                {d.failed_recent.map((f) => (
-                  <li key={f.event_id}>
-                    <a className="adm-list-row" href={routeHref('people', `e${f.event_id}`)}>
-                      <span className="adm-sev adm-sev-critical">נכשל</span>
-                      <span className="adm-list-main">
-                        <span className="adm-list-title">{f.event_label}</span>
-                        <span className="adm-list-sub">{f.reason || 'ללא פירוט מהספק'} · אחרון {fmtDateTime(f.last_at)}</span>
-                      </span>
-                      <span className="adm-list-count">{f.count}</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          <DeliveryAlerts />
 
           <section className="adm-section">
             <div className="adm-section-head"><h2 className="adm-section-title">מה מתוכנן ביום הזה</h2></div>

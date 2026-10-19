@@ -10,11 +10,14 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import admin_rbac, call_center, event_terms, local_time, messaging, models, rsvp_timeline
+from app import (
+    admin_audit, admin_rbac, call_center, communication, delivery_issues, event_cycle, event_terms,
+    local_time, messaging, models, rsvp_timeline,
+)
 from app.database import get_db
 
 router = APIRouter(prefix="/admin/rsvp", tags=["admin"])
@@ -73,20 +76,7 @@ def rsvp_overview(
             totals[key]["guests"] += pending.get(e.id, 0)
     steps.sort(key=lambda s: (STEP_ORDER.get(s["type"], 9), s["event_date"], s["event_id"]))
 
-    since = datetime.utcnow() - timedelta(days=7)
     M = models.Message
-    failed_rows = db.execute(
-        select(M.event_id, func.count(M.id), func.max(M.created_at), func.max(M.failure_reason))
-        .where(M.direction == "outbound", M.status == "failed", M.created_at >= since)
-        .group_by(M.event_id).order_by(func.count(M.id).desc()).limit(20)
-    ).all()
-    events = {e.id: e for e in db.scalars(select(E).where(E.id.in_([r[0] for r in failed_rows] or [0]))).all()}
-    failed = [
-        {"event_id": eid, "event_label": _hosts(events[eid]) if eid in events else f"#{eid}", "count": n,
-         "last_at": last, "reason": reason or ""}
-        for eid, n, last, reason in failed_rows
-    ]
-
     horizon = (today + timedelta(days=45)).isoformat()
     not_started_q = (
         select(E, func.count(G.id)).join(G, G.event_id == E.id)
@@ -98,10 +88,11 @@ def rsvp_overview(
         for e, n in db.execute(not_started_q).all()
     ]
     sent_today_start, sent_today_end = local_time.israel_day_bounds_utc(today)
+    sent_filters = [M.direction == "outbound", M.created_at >= sent_today_start, M.created_at < sent_today_end]
+    if not event_cycle.counts_demo_sends():
+        sent_filters.append(M.provider != event_cycle.MOCK_PROVIDER)  # רק מה שיצא באמת
     sent = dict(db.execute(
-        select(M.status, func.count(M.id)).where(
-            M.direction == "outbound", M.created_at >= sent_today_start, M.created_at < sent_today_end,
-        ).group_by(M.status)
+        select(M.status, func.count(M.id)).where(*sent_filters).group_by(M.status)
     ).all())
 
     return {
@@ -113,9 +104,72 @@ def rsvp_overview(
         "totals": {k: v for k, v in totals.items()},
         "steps": steps,
         "sent_today": {"total": sum(sent.values()), "failed": sent.get("failed", 0)},
-        "failed_recent": failed,
         "not_started": not_started,
     }
 
 
+# ---- הודעות שלא הגיעו ----
+
+def _alert_row(a: delivery_issues.AdminAlert) -> dict:
+    msg, g = a.issue.message, a.issue.guest
+    return {
+        "event_id": a.event.id, "event_label": _hosts(a.event), "event_date": a.event.event_date,
+        "guest_id": g.id, "guest_name": g.full_name, "phone": g.phone or "",
+        "message_type": msg.kind,
+        "message_label": communication.MESSAGE_TYPE_LABELS.get(msg.kind, msg.kind),
+        "failed_at": msg.status_updated_at or msg.created_at,
+        "code": msg.failure_code, "raw_reason": msg.failure_reason or "",
+        "reason": a.issue.reason, "title": a.help.title, "detail": a.help.detail, "side": a.help.side,
+        "attempts": a.issue.attempts, "resend_at": a.issue.resend_at,
+        "has_open_call": a.has_open_call,
+    }
+
+
+@router.get("/delivery-alerts")
+def delivery_alerts(
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(admin_rbac.require("settings.view")),
+):
+    """מוזמנים שההודעה האחרונה אליהם לא הגיעה — מי, למה, מה כבר קורה."""
+    return {"alerts": [_alert_row(a) for a in delivery_issues.admin_alerts(db)]}
+
+
+@router.post("/delivery-alerts/{guest_id}/resend")
+def resend_message(
+    guest_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(admin_rbac.require("messages.resend")),
+):
+    """"לשלוח שוב" — אותה הודעה שלא הגיעה, פעם אחת, אחרי כל בדיקות הבטיחות
+    (``delivery_issues.resend_one``). נרשם ביומן האדמין."""
+    guest = db.get(models.Guest, guest_id)
+    event = db.get(models.Event, guest.event_id) if guest is not None else None
+    if guest is None or event is None:
+        raise HTTPException(status_code=404, detail="המוזמן לא נמצא")
+    try:
+        result = delivery_issues.resend_one(db, event, guest)
+    except delivery_issues.ResendRefused as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(exc))
+    if result.sent:
+        outcome = "ההודעה נשלחה שוב"
+    elif result.unknown:
+        outcome = "ההודעה יצאה, ממתינים לעדכון מ-WhatsApp"
+    elif result.blocked or result.no_template or result.image_blocked:
+        outcome = "ההודעה לא יצאה (חסומה במצב הנוכחי של WhatsApp)"
+    else:
+        outcome = "גם הניסיון הזה לא הגיע"
+    admin_audit.record(
+        db, admin, domain="messages", action="message.resend",
+        summary=f"שלח/ה שוב הודעה ל{guest.full_name} — {outcome}",
+        target_type="guest", target_id=guest.id, target_label=guest.full_name,
+        event_id=event.id, request=request,
+    )
+    db.commit()
+    return {
+        "sent": result.sent, "failed": result.failed, "unknown": result.unknown,
+        "not_sent": result.blocked + result.no_template + result.image_blocked,
+        "outcome": outcome, "detail": result.last_detail or result.image_reason or "",
+    }
 
