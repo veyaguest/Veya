@@ -1726,6 +1726,29 @@ class MessageTypeStatus(BaseModel):
     guests: list[MessageTypeGuestRow]
 
 
+class DeliveryIssueRow(BaseModel):
+    """מוזמן שההודעה האחרונה אליו לא הגיעה (``app/delivery_issues.py``).
+
+    ``reason``: marketing_cap / marketing_opt_out / undeliverable / failed_other —
+    הטקסט לזוג נבחר ב-frontend (``he.ts``). ``resend_at``: מתי VEYA תשלח שוב
+    בעצמה (UTC), או None. ``whatsapp_link``: wa.me עם המוזמן כנמען וההודעה
+    מוכנה, לשליחה מהטלפון של בעלי האירוע."""
+
+    guest_id: int
+    guest_name: str
+    phone: str
+    message_type: str
+    reason: str
+    cap_failures: int = 0
+    resend_at: Optional[datetime] = None
+    sent_personally_at: Optional[datetime] = None
+    whatsapp_link: Optional[str] = None
+
+
+class DeliveryIssues(BaseModel):
+    issues: list[DeliveryIssueRow]
+
+
 class InvitationSendPreview(BaseModel):
     """ספירה מקדימה לדיאלוג האישור לפני שליחת הזמנות ידנית."""
 

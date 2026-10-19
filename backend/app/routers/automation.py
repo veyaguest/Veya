@@ -11,6 +11,7 @@
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -22,7 +23,9 @@ from app import (
     audit,
     automation,
     communication,
+    delivery_issues,
     event_cycle,
+    guest_journey,
     invitations,
     message_status,
     messaging,
@@ -188,6 +191,54 @@ def message_status_by_type(
             for g, status, msg in rows
         ],
     )
+
+
+def _issue_rows(db: Session, event: models.Event) -> list[schemas.DeliveryIssueRow]:
+    rsvp_open = guest_journey.rsvp_is_open(event)
+    rows = []
+    for issue in delivery_issues.issues_for_event(db, event, now=datetime.utcnow()):
+        g = issue.guest
+        if g.rsvp_status in ("confirmed", "declined"):
+            continue  # כבר ענו (למשל בשיחה) — אין מה לטפל
+        rows.append(schemas.DeliveryIssueRow(
+            guest_id=g.id, guest_name=g.full_name, phone=g.phone or "",
+            message_type=issue.message.kind, reason=issue.reason,
+            cap_failures=issue.cap_failures, resend_at=issue.resend_at,
+            sent_personally_at=(
+                g.personal_whatsapp_at if delivery_issues.sent_personally(g, issue.message) else None
+            ),
+            whatsapp_link=delivery_issues.wa_me_link(
+                g.phone or "", delivery_issues.personal_text(event, g, rsvp_open=rsvp_open)
+            ),
+        ))
+    return rows
+
+
+@router.get("/delivery-issues", response_model=schemas.DeliveryIssues)
+def delivery_issues_list(
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+):
+    """"לא קיבלו את ההודעה" — מי, למה, ומה כבר קורה (שליחה חוזרת / שיחה)."""
+    return schemas.DeliveryIssues(issues=_issue_rows(db, event))
+
+
+@router.post("/delivery-issues/{guest_id}/personal", response_model=schemas.DeliveryIssues)
+def mark_sent_personally(
+    guest_id: int,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_access),
+):
+    """בעלי האירוע פתחו WhatsApp כדי לשלוח בעצמם — מבטל את השליחה החוזרת
+    האוטומטית למוזמן הזה, שלא יקבל את ההזמנה פעמיים."""
+    guest = db.get(models.Guest, guest_id)
+    if guest is None or guest.event_id != event.id:
+        raise HTTPException(status_code=404, detail="המוזמן לא נמצא")
+    # תחת נעילת השליחה של האירוע — מול שליחה חוזרת שרצה באותו רגע.
+    outbound.lock_event_sends(db, event.id)
+    guest.personal_whatsapp_at = datetime.utcnow()
+    db.commit()
+    return schemas.DeliveryIssues(issues=_issue_rows(db, event))
 
 
 @router.get("/track/preview", response_model=schemas.InvitationSendPreview)
