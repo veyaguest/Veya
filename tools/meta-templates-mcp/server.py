@@ -17,6 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import veya_meta as vm  # noqa: E402
+import library_sync as ls  # noqa: E402
 
 SERVER_INFO = {"name": "veya-meta-templates", "version": "0.1.0"}
 PROTOCOL_VERSIONS = ("2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05")
@@ -133,6 +134,40 @@ TOOLS = [
         "destructiveHint": True,
     },
     {
+        "name": "check_library_sync",
+        "description": "משווה אחד-לאחד את ספריית הנוסחים של VEYA (אותם נוסחים שבדף veyaguest.co.il/nuschim) "
+                       "לתבניות ב-Meta: זהות, שונות, חסרות, וכאלה שצריכות תיקון בספרייה כדי להיות זהות. "
+                       "סינון לפי סוג אירוע/הודעה. קריאה בלבד.",
+        "inputSchema": {"type": "object", "properties": {
+            "event_type": {"type": "string", "enum": list(ls.EVENT_CODES)},
+            "message_type": {"type": "string", "enum": list(ls.MESSAGE_CODES)},
+            **_WABA,
+        }},
+        "readOnlyHint": True,
+    },
+    {
+        "name": "prepare_library_batch",
+        "description": "מכין מנה של תבניות חסרות מהספרייה (זהות לדף באתר), בודק את תקרת התבניות, ומחזיר "
+                       "batch_id ותצוגה. לא יוצר כלום ב-Meta.",
+        "inputSchema": {"type": "object", "properties": {
+            "event_type": {"type": "string", "enum": list(ls.EVENT_CODES)},
+            "message_type": {"type": "string", "enum": list(ls.MESSAGE_CODES)},
+            "limit": {"type": "integer"},
+            "category": {"type": "string", "enum": ["UTILITY", "MARKETING"], "default": "MARKETING"},
+            **_WABA,
+        }},
+        "readOnlyHint": True,
+    },
+    {
+        "name": "submit_library_batch",
+        "description": "כותב ל-Meta: מגיש את המנה שהוכנה. לקרוא רק אחרי אישור מפורש של הבעלים בצ'אט. "
+                       "confirm = מספר התבניות במנה.",
+        "inputSchema": {"type": "object", "properties": {
+            "batch_id": {"type": "string"}, "confirm": {"type": "string"},
+        }, "required": ["batch_id", "confirm"]},
+        "destructiveHint": False,
+    },
+    {
         "name": "explain_meta_error",
         "description": "מסביר בעברית שגיאה של Meta (קוד, או סיבת דחייה כמו INVALID_FORMAT) ואיך לתקן.",
         "inputSchema": {"type": "object", "properties": {
@@ -218,6 +253,12 @@ HANDLERS = {
     "prepare_template_update": vm.prepare_update,
     "submit_template_update": lambda a: vm.submit_update(a["draft_id"], a["confirm"]),
     "explain_meta_error": t_explain,
+    "check_library_sync": lambda a: ls.check_sync(vm.fetch_templates(a.get("waba_id")), ls.fetch_library(),
+                                                  a.get("event_type"), a.get("message_type")),
+    "prepare_library_batch": lambda a: ls.prepare_batch(a.get("event_type"), a.get("message_type"),
+                                                        a.get("limit"), a.get("category") or "MARKETING",
+                                                        a.get("waba_id")),
+    "submit_library_batch": lambda a: ls.submit_batch(a["batch_id"], a["confirm"]),
 }
 
 
