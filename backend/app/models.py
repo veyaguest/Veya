@@ -256,6 +256,10 @@ class Guest(Base):
     # מסומן במפורש כ"ילד/ה" ע"י הבעלים (לא ניחוש) — לשימוש עוזר ההושבה החכם
     # (בדיקת "ילד יושב בלי אף מבוגר מהמשפחה").
     is_child: Mapped[bool] = mapped_column(Boolean, default=False)
+    # מתי בעלי האירוע פתחו WhatsApp מהטלפון שלהם כדי לשלוח למוזמן בעצמם, אחרי
+    # שההודעה של VEYA לא הגיעה (``delivery_issues``). מבטל את השליחה החוזרת
+    # האוטומטית — שהמוזמן לא יקבל את ההזמנה פעמיים.
+    personal_whatsapp_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     event: Mapped["Event"] = relationship(back_populates="guests")

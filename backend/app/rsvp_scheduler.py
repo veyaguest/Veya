@@ -21,6 +21,8 @@
   הסבב — הוא יוצא כשהעצירה מוסרת, כל עוד החלון שלו פתוח.
 - **נוהל דחייה פתוח:** לא שולחים. התאריך עשוי להשתנות, והמחזור החדש יבנה
   לוח זמנים משלו.
+- **הזמנה שנעצרה על הגבלת השיווק של Meta** (131049): נשלחת שוב אחרי 24 שעות,
+  ועוד פעם לכל היותר — ``delivery_issues.resend_due``.
 """
 from __future__ import annotations
 
@@ -32,7 +34,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app import (
-    audit, automation, communication, local_time, messaging, models,
+    audit, automation, communication, delivery_issues, local_time, messaging, models,
     outbound, postponement_service, rsvp_timeline,
 )
 
@@ -102,17 +104,20 @@ def process_event(
     # מול שליחה ידנית מהתור באותו רגע — ראו ``outbound.lock_event_sends``.
     outbound.lock_event_sends(db, event.id)
     actions = communication.compute_due_messages(db, event, now=now)
-    if not actions:
-        return started, 0, 0
-    result = communication.send_due_messages(db, event, actions)
-    # במצב ``meta_test`` כל הנמענים יכולים להיחסם — אז לא קרה כלום, ולא
-    # כותבים שורת יומן כל 15 דקות (גם לא למסד הייצור, אם הופעל בטעות מולו).
-    if result["sent"] or result["failed"]:
-        audit.record(
-            db, "rsvp_track_advance", event_id=event.id,
-            detail=f"סבב אוטומטי: נשלחו {result['sent']}, נכשלו {result['failed']}",
-        )
-    return started, result["sent"], result["failed"]
+    sent = failed = 0
+    if actions:
+        result = communication.send_due_messages(db, event, actions)
+        sent, failed = result["sent"], result["failed"]
+        # במצב ``meta_test`` כל הנמענים יכולים להיחסם — אז לא קרה כלום, ולא
+        # כותבים שורת יומן כל 15 דקות (גם לא למסד הייצור, אם הופעל בטעות מולו).
+        if sent or failed:
+            audit.record(
+                db, "rsvp_track_advance", event_id=event.id,
+                detail=f"סבב אוטומטי: נשלחו {sent}, נכשלו {failed}",
+            )
+    # הזמנה שנעצרה על הגבלת השיווק של Meta (131049) — ניסיון נוסף אחרי 24 שעות.
+    resent, resend_failed = delivery_issues.resend_due(db, event, now)
+    return started, sent + resent, failed + resend_failed
 
 
 def _try_lock(db: Session) -> Optional[object]:
