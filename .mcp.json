@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "veya-meta-templates": {
+      "command": "/Users/mac/veya/backend/venv/bin/python",
+      "args": ["-I", "/Users/mac/veya/tools/meta-templates-mcp/server.py"]
+    }
+  }
+}

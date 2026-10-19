@@ -22,6 +22,8 @@
 
 ## איך יוצרים תבנית ב-Meta
 
+> אפשר גם דרך Claude: `tools/meta-templates-mcp` (יצירה, מעקב אישור והתאמה לקוד — רק אחרי אישור).
+
 WhatsApp Manager → **Message templates** → **Create template**:
 
 1. **Category:** Utility · **Name:** כמו בטבלה (אותיות קטנות וקו תחתון) · **Language:** Hebrew.
