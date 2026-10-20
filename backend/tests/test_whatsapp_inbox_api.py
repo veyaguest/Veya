@@ -72,9 +72,10 @@ def _reply(client, token: str, tid: int, body: str = "היי, כאן VEYA. בו�
 def test_permissions() -> None:
     client, _ = make_client()
     tid = _thread()
-    _, couple = _register(client, "זוג")
+    # המשתמש הראשון שנרשם במסד ריק הופך לאדמין (auth.py) — לכן הצוות נרשם קודם.
     support = _make_admin(client, "support")
     agent = _phone_agent(client)
+    _, couple = _register(client, "זוג")
     for token in (couple,):
         assert client.get(f"{BASE}/threads", headers=_h(token)).status_code == 403
         assert _reply(client, token, tid).status_code == 403
