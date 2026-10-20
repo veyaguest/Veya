@@ -64,6 +64,9 @@ class BatchResult:
     blocked: int = 0
     # מצבי Meta: אין Template מאושר לשלב (או חסר ערך למילוי) — לא נרשמו ולא נשלחו.
     no_template: int = 0
+    # הסיבה הראשונה ל-``no_template`` (``whatsapp_templates.NOT_APPROVED`` וכו') —
+    # כדי להסביר לזוג למה ההודעות לא יצאו.
+    no_template_reason: str = ""
     # הבקשה יצאה ולא ידוע אם Meta קיבלה — נשארו ``pending``, לא נשלחים שוב.
     unknown: int = 0
     # תבנית עם תמונת ההזמנה, והתמונה לא ניתנת להמרה / לא הועלתה ל-Meta — לא
@@ -135,6 +138,7 @@ def send_batch(
                 result.image_reason = reason
             else:
                 result.no_template += 1
+                result.no_template_reason = result.no_template_reason or reason
         if result.blocked or result.no_template or result.image_blocked:
             print(
                 f"[veya:whatsapp] not sent event={event.id} blocked={result.blocked} "

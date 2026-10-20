@@ -106,6 +106,14 @@ def _track_status(
     )
 
 
+# למה הזמנות לא יצאו במצב WhatsApp אמיתי (``outbound.BatchResult.no_template_reason``).
+_NOT_SENT_INVITATION = {
+    "template_not_approved": "הנוסח שבחרתם עוד ממתין לאישור של WhatsApp. ברגע שיאושר אפשר יהיה לשלוח.",
+    "not_library_wording": "הנוסח של ההזמנה נכתב ידנית. בחרו נוסח מהרשימה במסך ההודעות ונסו שוב.",
+    "missing_value": "חסרים פרטים שמופיעים בנוסח (למשל שעה, אולם או כתובת). השלימו אותם בפרטי האירוע ונסו שוב.",
+}
+
+
 @router.get("/track", response_model=schemas.RsvpTrackStatus)
 def get_track(
     db: Session = Depends(get_db),
@@ -296,6 +304,11 @@ def activate_track(
             if batch.image_reason == whatsapp_templates.IMAGE_UNSUPPORTED else
             "ההזמנות לא נשלחו: לא הצלחנו לצרף את תמונת ההזמנה. נסו שוב בעוד כמה דקות."
         ))
+    if batch.no_template and not (batch.sent or batch.failed or batch.unknown):
+        # במצב WhatsApp אמיתי: אין עדיין תבנית מאושרת לנוסח שנבחר, או חסרים פרטים.
+        # אף הזמנה לא נשלחה ולא נרשמה — אפשר לשלוח שוב כשזה מסתדר.
+        raise HTTPException(status_code=409, detail="ההזמנות לא נשלחו: " + _NOT_SENT_INVITATION.get(
+            batch.no_template_reason, "הנוסח שבחרתם עוד לא מוכן לשליחה ב-WhatsApp. נסו שוב מאוחר יותר."))
     invitations_sent, failed, failed_ids = batch.sent, batch.failed, batch.failed_guest_ids
 
     # יומן הפעילות — רישום קריא לזוג (רק מה שקרה בפועל).

@@ -165,3 +165,42 @@ if __name__ == "__main__":
         if name.startswith("test_") and callable(fn):
             fn()
     print("OK — בחירת תבנית לפי הנוסח")
+
+
+def test_invitations_screen_explains_pending_template() -> None:
+    """(2026-10-20) במצב WhatsApp אמיתי, כשהתבנית של נוסח ההזמנה עוד לא אושרה —
+    409 עם הסבר לזוג, שום בקשה ל-Meta ושום שורה (אפשר לשלוח שוב אחרי האישור)."""
+    from sqlalchemy import select
+
+    from app import models
+    from app import whatsapp_template_status as status
+    from app.database import SessionLocal
+    from tests.e2e_seating import bootstrap
+
+    api, _ = bootstrap()
+    phone = _phone()
+    g = api.add_guest("מורשה בדיקה", phone)
+    db = SessionLocal()
+    try:
+        db.get(models.Event, api.event_id).event_date = "2026-12-01"
+        db.commit()
+        from app import whatsapp_templates as wt
+        spec, _ = wt.resolve("invitation", db.get(models.Event, api.event_id))
+        assert spec is not None, "אירוע חדש מתחיל עם נוסח הזמנה מהספרייה"
+        wt_name = spec.name
+    finally:
+        db.close()
+    status._override = {(wt_name, "he"): "PENDING"}
+    try:
+        with meta_env(mode="meta_test", recipients=phone) as fake:
+            r = api.client.post("/automation/track/activate", headers=api.headers, json={})
+    finally:
+        status._override = None
+    assert r.status_code == 409, r.text
+    assert "ממתין לאישור של WhatsApp" in r.json()["detail"] and fake.requests == []
+    db = SessionLocal()
+    try:
+        assert db.scalars(select(models.Message).where(models.Message.guest_id == g["id"])).all() == []
+    finally:
+        db.close()
+    print("✓ 9: שליחת הזמנות כשהתבנית ממתינה — הסבר לזוג, שום שליחה")
