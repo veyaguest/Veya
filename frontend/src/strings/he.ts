@@ -1168,10 +1168,10 @@ export const strings = {
       `הודעות WhatsApp לא מגיעות למספר של ${name}. כדאי לבדוק שהמספר נכון.`,
     phoneFixButton: 'תיקון מספר',
     phoneAddButton: 'הוספת מספר',
-    // צוות VEYA העביר לשלוח מה-WhatsApp האישי (ההודעה לא הגיעה גם בניסיון החוזר).
+    // צוות VEYA העביר לשלוח מה-WhatsApp האישי (ההודעה לא הגיעה, וניסיון נוסף מ-VEYA לא יעזור).
     sendPersonallyTitle: 'כדאי לשלוח בעצמכם',
     sendPersonallyText: (name: string) =>
-      `ההודעה מ-VEYA לא הגיעה ל${name}, גם בניסיון החוזר. אפשר לשלוח אותה מה-WhatsApp שלכם — ההודעה והקישור האישי כבר מוכנים.`,
+      `ההודעה מ-VEYA לא הגיעה ל${name}. אפשר לשלוח אותה מה-WhatsApp שלכם — ההודעה והקישור האישי כבר מוכנים.`,
     sendPersonallyButton: 'לשלוח מה-WhatsApp שלכם',
     sendPersonallyOpened: (when: string) => `פתחתם WhatsApp לשליחה · ${when}`,
     filteredNotice: (label: string) => `הרשימה מסוננת: ${label}`,
