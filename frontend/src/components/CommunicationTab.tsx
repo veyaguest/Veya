@@ -1,5 +1,5 @@
 import { useBackToClose } from '../lib/backToClose'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   getCommunicationSequence,
@@ -266,7 +266,9 @@ function whenText(type: MessageType, schedule: ScheduleInfo): string {
   return w.notInTrack
 }
 
-type Mode = 'view' | 'browse' | 'edit'
+// מאז 2026-10-20 אין עריכה חופשית: בוחרים נוסח מהרשימה, וכך ההודעה ב-WhatsApp
+// זהה בדיוק למה שהזוג רואה (תבנית לכל נוסח).
+type Mode = 'view' | 'browse'
 
 /** שעת השליחה של סבב אחד. בלי שעה משלו — שעת ברירת המחדל של האירוע
  *  (תודה: שעת התודה; כל השאר: שעת המסלול), בדיוק כמו בשרת. */
@@ -354,6 +356,14 @@ function RoundSendTime({
   )
 }
 
+/** שורת המצב ב-WhatsApp — רק כשהשליחה מחוברת ל-WhatsApp (במצב הדגמה אין לה משמעות). */
+function whatsappStatusLine(message: EventMessage, waConnected: boolean): string | null {
+  if (!waConnected) return null
+  if (message.wording_source === 'edited') return t.editedWarning
+  if (!message.template_name || !message.template_status) return null
+  return message.template_status === 'APPROVED' ? t.statusApproved : t.statusPending
+}
+
 function MessagePanel({
   schedule,
   message,
@@ -391,6 +401,8 @@ function MessagePanel({
 
   const values = useMemo(() => eventFieldValues(event), [event])
   const readable = asReadableText(message.content, values)
+  const fixed = message.wording_source === 'fixed'
+  const waStatus = whatsappStatusLine(message, waConnected)
 
   async function startBrowsing() {
     setMode('browse')
@@ -459,20 +471,18 @@ function MessagePanel({
               </div>
             )}
 
+            {fixed && <p className="gm2-note">{t.fixedNote}</p>}
+            {fixed && message.message_type === 'postponement' && (
+              <p className="gm2-note">{t.postponementDateNote}</p>
+            )}
+            {waStatus && <p className="gm2-note">{waStatus}</p>}
+
             <div className="gm2-actions">
-              <button type="button" className="gm2-btn gm2-btn-main" onClick={startBrowsing}>
-                {readable.trim() ? 'בחירת הודעה אחרת' : 'בחירת הודעה'}
-              </button>
-              <button
-                type="button"
-                className="gm2-btn"
-                onClick={() => {
-                  setNote('')
-                  setMode('edit')
-                }}
-              >
-                עריכה
-              </button>
+              {!fixed && (
+                <button type="button" className="gm2-btn gm2-btn-main" onClick={startBrowsing}>
+                  {readable.trim() ? 'בחירת הודעה אחרת' : 'בחירת הודעה'}
+                </button>
+              )}
               {!wide && (
                 <button
                   type="button"
@@ -542,16 +552,6 @@ function MessagePanel({
               </>
             )}
           </>
-        )}
-
-        {mode === 'edit' && (
-          <Editor
-            content={message.content}
-            values={values}
-            busy={busy}
-            onCancel={() => setMode('view')}
-            onSave={save}
-          />
         )}
 
         {note && <p className="gm2-note">{note}</p>}
@@ -676,97 +676,6 @@ function ManualSendPanel({ message }: { message: EventMessage }) {
       {result && <p className="postpone-send-result">{result}</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
     </div>
-  )
-}
-
-/**
- * עריכת ההודעה. הזוג כותב טקסט רגיל לגמרי; הפרטים שהמערכת ממלאת לבד (שם
- * האורח, התאריך, קישור אישור ההגעה) מוצגים כגלולה קטנה עם הערך האמיתי,
- * ולא כקוד. הגלולה נשמרת כיחידה אחת — כך ההודעה נשארת אישית לכל אורח גם
- * אחרי שהזוג שינה את הניסוח סביבה.
- */
-function Editor({
-  content,
-  values,
-  busy,
-  onCancel,
-  onSave,
-}: {
-  content: string
-  values: Record<string, string>
-  busy: boolean
-  onCancel: () => void
-  onSave: (content: string) => void
-}) {
-  const boxRef = useRef<HTMLDivElement>(null)
-  const [dirty, setDirty] = useState(false)
-
-  useEffect(() => {
-    const box = boxRef.current
-    if (!box) return
-    box.textContent = ''
-    for (const seg of splitToSegments(content, values)) {
-      if (seg.kind === 'text') {
-        box.appendChild(document.createTextNode(seg.text))
-      } else {
-        const chip = document.createElement('span')
-        chip.className = 'gm2-chip'
-        chip.contentEditable = 'false'
-        chip.dataset.field = seg.key
-        chip.textContent = seg.shown
-        box.appendChild(chip)
-      }
-    }
-  }, [content, values])
-
-  function readBack(node: Node): string {
-    if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? ''
-    if (node.nodeType !== Node.ELEMENT_NODE) return ''
-    const el = node as HTMLElement
-    if (el.dataset.field) return `{{${el.dataset.field}}}`
-    if (el.tagName === 'BR') return '\n'
-    let out = ''
-    for (const child of Array.from(el.childNodes)) out += readBack(child)
-    // כל בלוק שהדפדפן יוצר בלחיצת Enter מסתיים בשורה חדשה.
-    if (['DIV', 'P'].includes(el.tagName)) out += '\n'
-    return out
-  }
-
-  function submit() {
-    const box = boxRef.current
-    if (!box) return
-    let out = ''
-    for (const child of Array.from(box.childNodes)) out += readBack(child)
-    onSave(out.replace(/\n$/, ''))
-  }
-
-  return (
-    <>
-      <div
-        ref={boxRef}
-        className="gm2-editor"
-        contentEditable
-        role="textbox"
-        aria-multiline="true"
-        aria-label="נוסח ההודעה"
-        dir="rtl"
-        onInput={() => setDirty(true)}
-        suppressContentEditableWarning
-      />
-      <div className="gm2-actions">
-        <button
-          type="button"
-          className="gm2-btn gm2-btn-main"
-          disabled={busy || !dirty}
-          onClick={submit}
-        >
-          {busy ? 'שומר…' : 'שמירת שינויים'}
-        </button>
-        <button type="button" className="gm2-btn gm2-btn-quiet" onClick={onCancel}>
-          ביטול
-        </button>
-      </div>
-    </>
   )
 }
 

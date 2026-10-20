@@ -1972,6 +1972,24 @@ def _migrate_message_library_wording() -> None:
         db.close()
 
 
+def _apply_fixed_wordings() -> None:
+    """יום האירוע ושינוי המועד: הנוסח הקבוע, זהה לתבניות השירות ב-WhatsApp
+    (החלטת הבעלים 2026-10-20). idempotent. לעולם לא מפיל את העלייה."""
+    from app import message_wording
+
+    db = MigrationSessionLocal()
+    try:
+        changed = message_wording.apply_fixed_wordings(db)
+        db.commit()
+        if changed:
+            print(f"[veya:seed] נוסח קבוע ליום האירוע/שינוי מועד: {changed} הודעות", flush=True)
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        print(f"[veya:seed] עדכון הנוסח הקבוע נכשל: {exc!r}", flush=True)
+    finally:
+        db.close()
+
+
 def _seed_postponement_options() -> None:
     """זורע את נוסחי הודעת הדחייה. לעולם לא מפיל את עליית השרת."""
     from app.postponement_messages import seed_postponement_options
@@ -2040,6 +2058,8 @@ def on_startup() -> None:
     # נוסחי "אירוע נדחה". בנפרד מהזריעה שמעל, כי היא רצה רק על טבלה ריקה —
     # ובייצור הטבלה מלאה מזמן. הזריעה כאן משלימה חסר ולעולם לא דורסת.
     _seed_postponement_options()
+    # יום האירוע ושינוי מועד — נוסח קבוע, זהה לתבניות השירות ב-WhatsApp (2026-10-20).
+    _apply_fixed_wordings()
     # הוסר (2026-08-24): קריאה ל-get_default_event שיצרה אירוע "ברירת מחדל"
     # בלי owner_id בכל פעם שטבלת האירועים הייתה ריקה. זה בדיוק המנגנון
     # שגרם לבאג 409 בייצור — auth.adopt_orphan_events (רץ בכל הרשמה חדשה)

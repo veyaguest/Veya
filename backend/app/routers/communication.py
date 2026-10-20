@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import (
-    audit, communication, invitations, messaging,
+    audit, communication, invitations, message_wording, messaging,
     models, outbound, permissions, postponement_service, schemas,
 )
 from app.auth import get_current_owner
@@ -86,7 +86,7 @@ def get_sequence(
     event: models.Event = Depends(_view),
 ):
     """רצף 6 ההודעות של האירוע, בסדר קבוע. מקצה אוטומטית אם עדיין חסר."""
-    return _get_sequence(db, event)
+    return [_read(db, event, em) for em in _get_sequence(db, event)]
 
 
 @router.put("/sequence/{message_type}", response_model=schemas.EventMessageRead)
@@ -99,6 +99,10 @@ def update_message(
     _assert_known_type(db, event, message_type)
     em = _get_message(db, event, message_type)
     changes = payload.model_dump(exclude_unset=True)
+    if "content" in changes and changes["content"] != em.content:
+        problem = message_wording.validate_content(db, event, message_type, changes["content"] or "")
+        if problem:
+            raise HTTPException(status_code=400, detail=problem)
     if "send_time" in changes:
         if message_type not in communication.SCHEDULED_TYPES:
             raise HTTPException(status_code=400, detail="להודעה הזו אין שעת שליחה — היא נשלחת ידנית")
@@ -110,7 +114,14 @@ def update_message(
     for key, value in changes.items():
         setattr(em, key, value)
     db.commit()
-    return em
+    return _read(db, event, em)
+
+
+def _read(db: Session, event: models.Event, em: models.EventMessage) -> schemas.EventMessageRead:
+    """השורה + מאיפה הנוסח ואיזו תבנית WhatsApp תישלח (``message_wording.info``)."""
+    return schemas.EventMessageRead.model_validate(em).model_copy(
+        update=message_wording.info(db, event, em)
+    )
 
 
 @router.get(

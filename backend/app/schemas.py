@@ -369,6 +369,11 @@ class EventMessageRead(BaseModel):
     # שעת השליחה של הסבב ("HH:MM"). None = שעת ברירת המחדל של האירוע.
     send_time: Optional[str] = None
     updated_at: datetime
+    # מאיפה הנוסח (``message_wording``): library / edited / fixed / empty — ואיזו
+    # תבנית WhatsApp תישלח, עם הסטטוס שלה ב-Meta (APPROVED / PENDING / … / None לא ידוע).
+    wording_source: str = "library"
+    template_name: Optional[str] = None
+    template_status: Optional[str] = None
 
 
 class EventMessageUpdate(BaseModel):

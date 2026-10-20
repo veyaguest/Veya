@@ -327,18 +327,13 @@ def test_postponement_message_can_be_sent() -> None:
     admin = _admin(api)
     _open_and_approve(api, admin)
 
-    # אין תוכן עדיין — לא שולחים הודעה ריקה.
-    r = api.client.post(
-        "/communication/sequence/postponement/send",
-        headers=api.headers, json={"audience": "all"},
-    )
-    assert r.status_code == 400, f"שליחה בלי תוכן לא נחסמה: {r.status_code}"
+    # מאז 2026-10-20 הנוסח קבוע (זהה לתבנית השירות ב-WhatsApp) — מוכן מיד.
+    from app import message_wording
 
-    api.client.put(
-        "/communication/sequence/postponement",
-        headers=api.headers,
-        json={"content": "שלום {{guest_name}}, האירוע שלנו נדחה. נעדכן בקרוב."},
-    )
+    row = next(m for m in api.client.get("/communication/sequence", headers=api.headers).json()
+               if m["message_type"] == "postponement")
+    assert row["content"] == message_wording.FIXED_CONTENT["postponement"]
+    assert row["wording_source"] == "fixed"
     r = api.client.post(
         "/communication/sequence/postponement/send",
         headers=api.headers, json={"audience": "all"},
@@ -543,13 +538,16 @@ def test_postponement_options_available_only_after_approval() -> None:
     assert all(o["content"].strip() for o in rows), "יש נוסח ריק"
     assert all(o["title"] and o["tone"] for o in rows), "חסרה תווית בחירה"
 
-    # בחירת נוסח = העתקת התוכן להודעה של האירוע (כמו בשאר השלבים).
+    # מאז 2026-10-20 הנוסח קבוע (זהה לתבנית השירות ב-WhatsApp): בחירה או עריכה
+    # לא משנות אותו.
+    from app import message_wording
+
     chosen = rows[1]["content"]
     r = api.client.put(
         "/communication/sequence/postponement",
         headers=api.headers, json={"content": chosen},
     )
-    assert r.status_code == 200, r.text
+    assert r.status_code == 400 and r.json()["detail"] == message_wording.FIXED_WORDING, r.text
 
     # תצוגה מקדימה — עם הפרטים האמיתיים, בלי סימני תבנית שנשארו מאחור.
     prev = api.client.post(
@@ -561,12 +559,12 @@ def test_postponement_options_available_only_after_approval() -> None:
     assert "{{" not in body, f"נשארו משתנים לא ממולאים: {body}"
     assert "דני" in body, f"שמות בעלי האירוע לא הופיעו: {body}"
 
-    # ועריכה חופשית אחרי הבחירה עדיין אפשרית.
+    # גם עריכה חופשית — לא.
     r = api.client.put(
         "/communication/sequence/postponement",
         headers=api.headers, json={"content": chosen + "\nנ.ב. נעדכן בקרוב."},
     )
-    assert r.status_code == 200, r.text
+    assert r.status_code == 400, r.text
 
     sent = api.client.post(
         "/communication/sequence/postponement/send",

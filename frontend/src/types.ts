@@ -1199,6 +1199,11 @@ export interface EventMessage {
   // שעת השליחה של הסבב ("HH:MM"). null = שעת ברירת המחדל של האירוע.
   send_time?: string | null
   updated_at: string
+  // מאיפה הנוסח: נבחר מהרשימה / נכתב ידנית בעבר / קבוע (יום האירוע, שינוי מועד) / ריק.
+  wording_source?: 'library' | 'edited' | 'fixed' | 'empty'
+  // התבנית שתישלח ב-WhatsApp והסטטוס שלה (APPROVED / PENDING / …; null = לא ידוע).
+  template_name?: string | null
+  template_status?: string | null
 }
 
 export interface EventMessageInput {

@@ -164,7 +164,7 @@ export const INVITATION_TOPICS: readonly HelpTopic[] = [
     when: MANAGER,
     answer: [
       'בכרטיס ההזמנה: "בחירת הודעה" — עוברים בין הנוסחים ולוחצים "בחירת ההודעה הזו".',
-      'אפשר גם "עריכה" ולכתוב בעצמכם.',
+      'הנוסחים קבועים, כדי שההזמנה תגיע ב-WhatsApp בדיוק כמו שאתם רואים אותה.',
     ],
     sources: ['components/CommunicationTab.tsx'],
     verifiedAt: VERIFIED,

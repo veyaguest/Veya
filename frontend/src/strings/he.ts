@@ -1067,7 +1067,14 @@ export const strings = {
     communicationTitle: (guestsLabel: string) => `הודעות ל${guestsLabel}`,
     previewCaption: (guestsLabel: string) => `כך ה${guestsLabel} יראו את ההודעה`,
     stepEmptyTitle: 'עדיין לא נבחר נוסח להודעה הזו',
-    stepEmptyDesc: 'אפשר לבחור מתוך הנוסחים המוכנים, או לכתוב נוסח משלכם.',
+    stepEmptyDesc: 'בוחרים אחד מהנוסחים המוכנים. כך בדיוק ההודעה תגיע ב-WhatsApp.',
+    // יום האירוע ושינוי מועד — נוסח קבוע, זהה לתבנית ב-WhatsApp.
+    fixedNote: 'הנוסח של ההודעה הזו קבוע, וכך בדיוק היא תגיע ב-WhatsApp.',
+    postponementDateNote: 'אחרי שתקבעו תאריך חדש, ההודעה תכלול גם אותו וקישור לפרטים המעודכנים.',
+    // מצב השליחה ב-WhatsApp (רק כשהשליחה מחוברת).
+    editedWarning: 'הנוסח הזה נכתב ידנית ולכן לא יישלח ב-WhatsApp. בחרו נוסח מהרשימה.',
+    statusApproved: '✓ מאושר לשליחה ב-WhatsApp',
+    statusPending: 'הנוסח הזה עוד ממתין לאישור של WhatsApp. עד שיאושר, ההודעה לא תצא.',
   },
 
   guests: {

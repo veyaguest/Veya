@@ -114,11 +114,30 @@ def _setup(client, *, help_on: bool = True) -> dict:
 
 
 def _set_invitation_text(client, s: dict) -> None:
-    """נוסח הזמנה — כמו שבעלי האירוע בוחרים לפני שליחה. בלי נוסח השליחה מדלגת
-    על כולם (ומציגה אותם כ"בלי טלפון" — באג ידוע שלא מתוקן במסגרת העזרה)."""
-    r = client.put("/communication/sequence/invitation", headers=_h(s["token"], s["event_id"]),
-                   json={"content": "היי {{guest_name}}, אנחנו מתחתנים ומזמינים אתכם"})
+    """נוסח הזמנה — כמו שבעלי האירוע בוחרים לפני שליחה (מאז 2026-10-20: רק נוסח
+    מהרשימה). בלי נוסח השליחה מדלגת על כולם (ומציגה אותם כ"בלי טלפון" — באג
+    ידוע שלא מתוקן במסגרת העזרה)."""
+    h = _h(s["token"], s["event_id"])
+    rows = client.get("/communication/sequence/invitation/options", headers=h).json()
+    r = client.put("/communication/sequence/invitation", headers=h,
+                   json={"content": rows[-1]["content"]})
     assert r.status_code == 200, r.text
+
+
+def _clear_invitation_text(s: dict) -> None:
+    """אירוע חדש מקבל מאז 2026-10-20 את הנוסח הראשון מהספרייה. כדי לבדוק את
+    המצב "אין נוסח" (אירוע ישן) — מרוקנים ישירות במסד."""
+    from sqlalchemy import select
+
+    def run(db):
+        from app import models
+
+        em = db.scalar(select(models.EventMessage).where(
+            models.EventMessage.event_id == s["event_id"],
+            models.EventMessage.message_type == "invitation"))
+        em.content = ""
+        db.commit()
+    _db(run)
 
 
 def _three_endpoints(client, token: str, event_id: int, guest_id: int) -> list[int]:
@@ -356,7 +375,8 @@ def test_values_match_existing_screens_and_unknown_is_null() -> None:
     assert ctx["rsvp.next_date"] is None
 
     # אין עדיין נוסח להזמנה — העובדה אומרת את זה (העזרה בודקת את זה לפני הטלפונים).
-    assert ctx["messaging.invitation_empty"] is True
+    _clear_invitation_text(s)
+    assert client.get("/help/context/messages", headers=h).json()["facts"]["messaging.invitation_empty"] is True
     _set_invitation_text(client, s)
     assert client.get("/help/context/messages", headers=h).json()["facts"]["messaging.invitation_empty"] is False
 

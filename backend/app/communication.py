@@ -329,14 +329,23 @@ def provision_event_messages(db: Session, event: models.Event) -> int:
             .where(models.MessageDefault.event_type == event.event_type)
         ).all()
     }
+    from app import message_wording
+
     created = 0
     for mt in missing:
         d = defaults_by_type.get(mt)
+        # הנוסח הראשון מספריית הנוסחים — כדי שלאירוע חדש תהיה תבנית WhatsApp
+        # מהרגע הראשון (2026-10-20); יום האירוע — הנוסח הקבוע.
+        content = (
+            message_wording.FIXED_CONTENT.get(mt)
+            or message_wording.first_option_content(db, event.event_type, mt)
+            or (d.content if d else "")
+        )
         db.add(models.EventMessage(
             event_id=event.id,
             message_type=mt,
             title=d.title if d else MESSAGE_TYPE_LABELS[mt],
-            content=d.content if d else "",
+            content=content,
             # ``variables_supported`` ולא הרשימה הגולמית: לאירוע שאינו
             # זכאי לשירות המתנות, ``gift_link`` לא ייכנס לרשימה מלכתחילה.
             variables_supported=(
@@ -369,6 +378,8 @@ def provision_postponement_message(db: Session, event: models.Event) -> bool:
     if existing is not None:
         return False
 
+    from app import message_wording
+
     default = db.scalars(
         select(models.MessageDefault)
         .where(models.MessageDefault.event_type == event.event_type)
@@ -378,12 +389,9 @@ def provision_postponement_message(db: Session, event: models.Event) -> bool:
         event_id=event.id,
         message_type=POSTPONEMENT,
         title=default.title if default else MESSAGE_TYPE_LABELS[POSTPONEMENT],
-        # ריק עד שהבעלים יזין נוסחים במסך האדמין — לא ממציאים תוכן כאן.
-        content=default.content if default else "",
-        variables_supported=(
-            list(default.variables_supported) if default and default.variables_supported
-            else list(DEFAULT_VARIABLES_SUPPORTED[POSTPONEMENT])
-        ),
+        # הנוסח הקבוע — זהה לתבנית השירות ב-WhatsApp (2026-10-20).
+        content=message_wording.FIXED_CONTENT[POSTPONEMENT],
+        variables_supported=list(message_wording.FIXED_VARIABLES[POSTPONEMENT]),
         is_active=True,
         # אין עוגן תזמון: ההודעה נשלחת ידנית ואינה נכנסת לתור ה-due.
         trigger_offset_days=0,
