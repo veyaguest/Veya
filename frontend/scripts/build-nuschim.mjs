@@ -31,23 +31,27 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const SNAPSHOT = path.resolve(__dirname, '../content/nuschim-snapshot.json')
 
 /** פרטי דוגמה לכל סוג אירוע. שמות פרטיים נפוצים ושמות מקום גנריים —
- *  לא שמות של עסקים אמיתיים. */
+ *  לא שמות של עסקים אמיתיים. כמו שהמוזמן מקבל בפועל: שם פרטי בלבד
+ *  (`communication_values`) ותאריך בפורמט DD/MM/YYYY (`automation.event_date_display`). */
 const SAMPLE = {
-  wedding:      { guest: 'דנה כהן', a: 'יונתן', b: 'שירה', venue: 'גן האירועים', addr: 'הזורע 12, רמת גן', date: '14.5.2026', time: '19:30', chat: 'החתונה של יונתן ושירה' },
-  henna:        { guest: 'דנה כהן', a: 'יונתן', b: 'שירה', venue: 'בית המשפחה', addr: 'הרצל 8, ראשון לציון', date: '7.5.2026', time: '20:00', chat: 'החינה של יונתן ושירה' },
-  bar_mitzvah:  { guest: 'משפחת לוי', a: 'איתי', b: '', venue: 'אולם האירועים', addr: 'ויצמן 3, כפר סבא', date: '9.3.2026', time: '19:00', chat: 'בר המצווה של איתי' },
-  bat_mitzvah:  { guest: 'משפחת לוי', a: 'רוני', b: '', venue: 'אולם האירועים', addr: 'ויצמן 3, כפר סבא', date: '9.3.2026', time: '19:00', chat: 'בת המצווה של רוני' },
-  brit:         { guest: 'משפחת מזרחי', a: 'הבן שלנו', b: '', venue: 'בית הכנסת', addr: 'הרב קוק 4, פתח תקווה', date: '2.2.2026', time: '9:00', chat: 'הברית של משפחת מזרחי' },
-  brita:        { guest: 'משפחת מזרחי', a: 'הבת שלנו', b: '', venue: 'בית המשפחה', addr: 'הרב קוק 4, פתח תקווה', date: '2.2.2026', time: '11:00', chat: 'הבריתה של משפחת מזרחי' },
-  business:     { guest: 'נועה אברהם', a: '', b: '', venue: 'מרכז הכנסים', addr: 'הארבעה 21, תל אביב', date: '18.11.2026', time: '18:00', chat: 'כנס הלקוחות השנתי' },
+  wedding:      { guest: 'דנה', a: 'יונתן', b: 'שירה', venue: 'גן האירועים', addr: 'הזורע 12, רמת גן', date: '14/05/2026', time: '19:30', chat: 'החתונה של יונתן ושירה' },
+  henna:        { guest: 'דנה', a: 'יונתן', b: 'שירה', venue: 'בית המשפחה', addr: 'הרצל 8, ראשון לציון', date: '07/05/2026', time: '20:00', chat: 'החינה של יונתן ושירה' },
+  bar_mitzvah:  { guest: 'מיכל', a: 'איתי', b: '', venue: 'אולם האירועים', addr: 'ויצמן 3, כפר סבא', date: '09/03/2026', time: '19:00', chat: 'בר המצווה של איתי' },
+  bat_mitzvah:  { guest: 'מיכל', a: 'רוני', b: '', venue: 'אולם האירועים', addr: 'ויצמן 3, כפר סבא', date: '09/03/2026', time: '19:00', chat: 'בת המצווה של רוני' },
+  brit:         { guest: 'אורי', a: 'הבן שלנו', b: '', venue: 'בית הכנסת', addr: 'הרב קוק 4, פתח תקווה', date: '02/02/2026', time: '9:00', chat: 'הברית של משפחת מזרחי' },
+  brita:        { guest: 'אורי', a: 'הבת שלנו', b: '', venue: 'בית המשפחה', addr: 'הרב קוק 4, פתח תקווה', date: '02/02/2026', time: '11:00', chat: 'הבריתה של משפחת מזרחי' },
+  business:     { guest: 'נועה', a: '', b: '', hosts: 'המארגנים', venue: 'מרכז הכנסים', addr: 'הארבעה 21, תל אביב', date: '18/11/2026', time: '18:00', chat: 'כנס הלקוחות השנתי' },
 }
 const FALLBACK = SAMPLE.wedding
 
-/** מחליף משתנים בפרטי דוגמה. הקישורים יוצאים מהטקסט והופכים לכפתורים. */
-function render(content, s) {
+/** מחליף משתנים בפרטי דוגמה. הקישורים יוצאים מהטקסט והופכים לכפתורים —
+ *  אותם כפתורים כמו בתבניות ב-Meta (`tools/meta-templates-mcp/library_sync.py`).
+ *  בהזמנה הקישור האישי הוא "לצפייה בהזמנה": אישור ההגעה נפתח רק מהיום הראשון
+ *  של אישורי ההגעה. */
+function render(content, s, messageType) {
   const buttons = []
   let text = content
-  if (/\{\{rsvp_link\}\}/.test(text)) buttons.push('אישור הגעה')
+  if (/\{\{rsvp_link\}\}/.test(text)) buttons.push(messageType === 'invitation' ? 'לצפייה בהזמנה' : 'אישור הגעה')
   if (/\{\{navigation_link\}\}/.test(text)) buttons.push('ניווט למקום')
   // שורת קישור נמחקת — הקישור מוצג ככפתור בתחתית הבועה, כמו ב-WhatsApp.
   // **וגם שורת התווית שלפניה** ("לאישור הגעה:"), אחרת נשארת כותרת
@@ -70,6 +74,8 @@ function render(content, s) {
   text = kept.join('\n')
   const map = {
     guest_name: s.guest, groom_name: s.a, bride_name: s.b,
+    // כמו `event_terms.hosts_names`: שני שמות עם "ו", שם אחד, או כינוי הסוג.
+    host_names: [s.a, s.b].filter(Boolean).join(' ו') || s.hosts || '',
     event_date: s.date, event_time: s.time, venue_name: s.venue,
     address: s.addr, maps_link: '', gift_link: '',
     rsvp_link: '', navigation_link: '',
@@ -370,7 +376,7 @@ function flatten(data) {
   for (const cat of data.categories) {
     for (const w of cat.wordings) {
       const s = SAMPLE[w.event_type] || FALLBACK
-      const { text, buttons } = render(w.content, s)
+      const { text, buttons } = render(w.content, s, w.message_type)
       if (!text.trim()) continue
       items.push({
         ev: w.event_type, evLabel: w.event_type_label,

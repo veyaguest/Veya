@@ -8,7 +8,7 @@
 
 ## ההמרה (כמו שהדף באתר מציג את הנוסח)
 - ``{{guest_name}}`` וחבריו → ``{{1}}``, ``{{2}}``… לפי סדר ההופעה הראשונה.
-- שורת ``{{rsvp_link}}`` → כפתור "אישור הגעה" (קישור אישי), ושורת התווית שלפניה
+- שורת ``{{rsvp_link}}`` → כפתור "אישור הגעה" (בהזמנה: "לצפייה בהזמנה"), ושורת התווית שלפניה
   ("לאישור הגעה:") יוצאת מהגוף — בדיוק כמו בדף. ``{{navigation_link}}`` → כפתור
   "ניווט למקום".
 - **התבנית זהה לדף באתר, או שהיא לא נוצרת** (החלטת הבעלים 2026-10-19). Meta
@@ -43,8 +43,10 @@ EVENT_CODES = {"wedding": "wed", "henna": "henna", "bar_mitzvah": "barm", "bat_m
                "brit": "brit", "brita": "brita", "business": "biz"}
 MESSAGE_CODES = {"invitation": "inv", "rsvp_request": "rsvp", "reminder_1": "rem1",
                  "reminder_2": "rem2", "final_reminder": "rem3", "thank_you": "thx"}
-# כמו בדף הנוסחים באתר (build-nuschim.mjs).
+# כמו בדף הנוסחים באתר (build-nuschim.mjs). בהזמנה הקישור האישי הוא "לצפייה בהזמנה":
+# אישור ההגעה נפתח רק מהיום הראשון של אישורי ההגעה (החלטת הבעלים 2026-10-20).
 BUTTONS = {"rsvp_link": "אישור הגעה", "navigation_link": "ניווט למקום"}
+INVITATION_LINK_BUTTON = "לצפייה בהזמנה"
 MAPS_URL = "https://www.google.com/maps/search/?api=1&query={{1}}"
 SAMPLES = {"guest_name": "דנה", "host_names": "יונתן ושירה", "groom_name": "יונתן",
            "bride_name": "שירה", "event_date": "14/05/2026", "event_time": "19:30",
@@ -111,7 +113,8 @@ def to_draft(w: dict, category: str = "MARKETING") -> dict:
     buttons = []
     for ln in dict.fromkeys(links):
         if ln == "rsvp_link":
-            buttons.append({"type": "url", "text": BUTTONS[ln], "url": vm.VEYA_CONFIRM_URL,
+            text = INVITATION_LINK_BUTTON if w["message_type"] == "invitation" else BUTTONS[ln]
+            buttons.append({"type": "url", "text": text, "url": vm.VEYA_CONFIRM_URL,
                             "url_example": "https://veyaguest.co.il/confirm/AbCdEf123456"})
         elif ln == "navigation_link":
             buttons.append({"type": "url", "text": BUTTONS[ln], "url": MAPS_URL,

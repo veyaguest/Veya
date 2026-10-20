@@ -25,7 +25,9 @@ from sqlalchemy import select  # noqa: E402
 
 from app import models  # noqa: E402
 from app.database import SessionLocal  # noqa: E402
-from app.main import _MESSAGE_LIBRARY_WORDING_FILE, _migrate_message_library_wording, app  # noqa: E402
+from app.main import (  # noqa: E402
+    _MESSAGE_LIBRARY_WORDING_FILE, _MESSAGE_LIBRARY_WORDING_FILES, _migrate_message_library_wording, app,
+)
 
 with TestClient(app):
     pass
@@ -46,10 +48,14 @@ def _options():
 
 
 def test_new_wording_after_startup():
+    # עדכון מאוחר יותר (2026-10-20) ממשיך מאותו נוסח — המצב הסופי הוא אחרי כל השרשרת.
+    later = json.loads(_MESSAGE_LIBRARY_WORDING_FILES[-1].read_text(encoding="utf-8"))
+    after = {(c["event_type"], c["message_type"], c["old"]): c["new"] for c in later}
     opts = _options()
     for c in CHANGES:
         row = opts[(c["event_type"], c["message_type"], c["option_number"])]
-        assert row.content == c["new"], (c["event_type"], c["option_number"])
+        expected = after.get((c["event_type"], c["message_type"], c["new"]), c["new"])
+        assert row.content == expected, (c["event_type"], c["option_number"])
 
 
 def test_default_message_follows_option_one():

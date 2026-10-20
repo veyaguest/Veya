@@ -1908,10 +1908,17 @@ def _ensure_rsvp_request_message_default() -> None:
         db.close()
 
 
-#: עדכון ניסוח בספריית הנוסחים, באישור המייסד (2026-10-13): פנייה ברבים
-#: בהזמנות לחתונה, ❤️ רק בהודעת תודה, בלי "!" ו-🥳, ותיקוני ניסוח.
-#: הנוסחים עצמם (ישן → חדש) בקובץ ה-JSON שליד הקובץ הזה.
+#: עדכוני ניסוח בספריית הנוסחים, באישור המייסד. הנוסחים עצמם (ישן → חדש)
+#: בקבצי ה-JSON שליד הקובץ הזה, ורצים לפי הסדר:
+#: · 2026-10-13: פנייה ברבים בהזמנות לחתונה, ❤️ רק בהודעת תודה, בלי "!" ו-🥳.
+#: · 2026-10-20: כל נוסח זהה לתבנית ה-WhatsApp שלו ב-Meta (``tools/meta-templates-mcp``):
+#:   בהזמנות הקישור האישי הוא "לצפייה בהזמנה" (אישור ההגעה נפתח מאוחר יותר), ונוסח
+#:   שהיה נגמר בשם או בכתובת (Meta דוחה תבנית כזו) נגמר עכשיו במילים.
 _MESSAGE_LIBRARY_WORDING_FILE = Path(__file__).with_name("message_library_wording_2026_10_13.json")
+_MESSAGE_LIBRARY_WORDING_FILES = (
+    _MESSAGE_LIBRARY_WORDING_FILE,
+    Path(__file__).with_name("message_library_wording_2026_10_20.json"),
+)
 
 
 def _migrate_message_library_wording() -> None:
@@ -1929,23 +1936,25 @@ def _migrate_message_library_wording() -> None:
 
     db = MigrationSessionLocal()
     try:
-        changes = json.loads(_MESSAGE_LIBRARY_WORDING_FILE.read_text(encoding="utf-8"))
-        by_option = {(c["event_type"], c["message_type"], c["option_number"]): c for c in changes}
-        by_old = {(c["event_type"], c["message_type"], c["old"]): c["new"] for c in changes}
-
         options_updated = 0
-        for row in db.scalars(select(models.MessageDefaultOption)):
-            c = by_option.get((row.event_type, row.message_type, row.option_number))
-            if c and row.content == c["old"]:
-                row.content = c["new"]
-                options_updated += 1
-
         defaults_updated = 0
-        for row in db.scalars(select(models.MessageDefault)):
-            new = by_old.get((row.event_type, row.message_type, row.content or ""))
-            if new is not None:
-                row.content = new
-                defaults_updated += 1
+        for path in _MESSAGE_LIBRARY_WORDING_FILES:
+            changes = json.loads(path.read_text(encoding="utf-8"))
+            by_option = {(c["event_type"], c["message_type"], c["option_number"]): c for c in changes}
+            by_old = {(c["event_type"], c["message_type"], c["old"]): c["new"] for c in changes}
+
+            for row in db.scalars(select(models.MessageDefaultOption)):
+                c = by_option.get((row.event_type, row.message_type, row.option_number))
+                if c and row.content == c["old"]:
+                    row.content = c["new"]
+                    options_updated += 1
+
+            for row in db.scalars(select(models.MessageDefault)):
+                new = by_old.get((row.event_type, row.message_type, row.content or ""))
+                if new is not None:
+                    row.content = new
+                    defaults_updated += 1
+            db.flush()
 
         db.commit()
         if options_updated or defaults_updated:
@@ -2021,7 +2030,7 @@ def on_startup() -> None:
     # משלים שורת "בקשת אישור ראשונה" (rsvp_request) לכל סוג אירוע — סוג הודעה
     # שנולד אחרי שהקטלוג נזרע בפרודקשן. משלים חסר בלבד, לא דורס.
     _ensure_rsvp_request_message_default()
-    # ניסוח מעודכן לספריית הנוסחים (2026-10-13) — רק נוסח שלא נערך בפאנל.
+    # ניסוח מעודכן לספריית הנוסחים (2026-10-13, 2026-10-20) — רק נוסח שלא נערך בפאנל.
     _migrate_message_library_wording()
     # "מספר תזכורות" + "מספר סבבי טלפונים" → "מספר סבבים מקסימלי" (2026-09-23).
     _migrate_rsvp_round_settings()

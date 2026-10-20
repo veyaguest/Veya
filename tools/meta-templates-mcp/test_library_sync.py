@@ -48,7 +48,7 @@ def test_conversion_matches_site_rendering():
     assert "לאישור הגעה" not in body and "לניווט" not in body and "rsvp_link" not in body
     assert body.startswith("היי {{1}},") and "{{2}} & {{3}}" in body and "📅 {{4}}" in body
     assert d["params"] == ["guest_name", "groom_name", "bride_name", "event_date"]
-    assert [b["text"] for b in d["draft"]["buttons"]] == ["אישור הגעה", "ניווט למקום"]
+    assert [b["text"] for b in d["draft"]["buttons"]] == ["לצפייה בהזמנה", "ניווט למקום"]
     assert d["draft"]["buttons"][0]["url"] == vm.VEYA_CONFIRM_URL
 
 
