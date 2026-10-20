@@ -14,7 +14,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  assignInboxThread, fetchInboxSummary, fetchInboxThread, fetchInboxThreads, sendInboxReply, setInboxStatus,
+  assignInboxThread, fetchInboxSummary, fetchInboxThread, fetchInboxThreads, sendInboxFollowup, sendInboxReply,
+  setInboxStatus,
   type InboxFilter, type InboxMessage, type InboxSenderKind, type InboxStatus, type InboxThreadDetail,
   type InboxThreadRow,
 } from '../../inboxApi'
@@ -71,7 +72,17 @@ const T = {
   windowLeft: (until: string, hours: number) =>
     hours >= 1 ? `אפשר לענות עד ${until} (עוד ${hours} ${hours === 1 ? 'שעה' : 'שעות'}).` : `אפשר לענות עד ${until} (פחות משעה).`,
   windowClosed:
-    'עברו 24 שעות מההודעה האחרונה של הפונה. WhatsApp מאפשר לפנות שוב רק בתבנית מאושרת, ואת זה עוד אי אפשר לשלוח מכאן. אם הפונה יכתוב שוב — אפשר יהיה לענות.',
+    'עברו 24 שעות מההודעה האחרונה של הפונה, ולכן WhatsApp לא מאפשר לכתוב לו טקסט חופשי. אפשר לשלוח לו הודעת חזרה קבועה: כשהוא יענה או ילחץ "נמשיך כאן", אפשר יהיה לכתוב לו את התשובה.',
+  followupPreviewLabel: 'מה הפונה יקבל:',
+  followupText:
+    'היי, כאן VEYA.\nקיבלנו את ההודעה ששלחתם לנו כאן ב-WhatsApp, ויש לנו תשובה בשבילכם.\nכדי שנוכל לענות, השיבו להודעה הזו או לחצו על הכפתור.\n[ נמשיך כאן ]',
+  followupSend: 'שליחת הודעת חזרה',
+  followupSending: 'שולחים…',
+  followupHint: 'שלחו אותה רק כשהתשובה כבר מוכנה אצלכם.',
+  followupWaiting: 'נשלחה הודעת חזרה. כשהפונה יענה, אפשר יהיה לכתוב לו כאן.',
+  followupSent: 'הודעת החזרה נשלחה.',
+  followupMock: 'נשמר — מצב הדגמה, שום הודעה לא יצאה.',
+  followupLabel: 'הודעת חזרה',
   manage: 'טיפול',
   take: 'לקחת אליי',
   assignLabel: 'שיוך',
@@ -419,7 +430,11 @@ function ThreadView({
 function MessageBubble({ m }: { m: InboxMessage }) {
   const out = m.direction === 'outbound'
   const failed = m.status === 'failed' || m.status === 'blocked'
-  const who = out ? (m.kind === 'auto_reply' ? T.autoReply : m.sent_by?.name ?? '') : ''
+  const who = out
+    ? m.kind === 'auto_reply' ? T.autoReply
+      : m.kind === 'followup' ? `${T.followupLabel}${m.sent_by?.name ? ` · ${m.sent_by.name}` : ''}`
+        : m.sent_by?.name ?? ''
+    : ''
   return (
     <li className={`wa-inbox-msg ${out ? 'is-out' : 'is-in'}${failed ? ' is-failed' : ''}`}>
       <p className="wa-inbox-body">{m.body}</p>
@@ -439,6 +454,60 @@ function hoursLeft(iso: string | null): number {
   return Math.floor((new Date(withZone).getTime() - Date.now()) / 3_600_000)
 }
 
+/** החלון סגור: הודעת חזרה בתבנית מאושרת (`veya_support_followup`), פעם אחת עד שהפונה עונה. */
+function FollowupPanel({ thread, onSent }: { thread: InboxThreadDetail; onSent: (t: InboxThreadDetail) => void }) {
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState<{ tone: 'ok' | 'bad'; text: string } | null>(null)
+
+  if (thread.followup_waiting) {
+    return <p className="wa-inbox-closed">{T.followupWaiting}</p>
+  }
+
+  async function send() {
+    setBusy(true)
+    setNotice(null)
+    try {
+      const next = await sendInboxFollowup(thread.id)
+      const mine = [...next.messages].reverse().find((m) => m.direction === 'outbound' && m.kind === 'followup')
+      onSent(next)
+      if (mine && (mine.status === 'failed' || mine.status === 'blocked')) {
+        setNotice({ tone: 'bad', text: T.notSent(mine.failure_reason) })
+      } else {
+        setNotice({ tone: 'ok', text: mine?.status === 'mock' ? T.followupMock : T.followupSent })
+      }
+    } catch (e) {
+      setNotice({ tone: 'bad', text: e instanceof Error && e.message ? e.message : T.sendError })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="wa-inbox-composer">
+      <p className="wa-inbox-closed">{T.windowClosed}</p>
+      <p className="adm-label">{T.followupPreviewLabel}</p>
+      <p className="wa-inbox-followup-preview">{T.followupText}</p>
+      <div className="wa-inbox-composer-row">
+        <button
+          type="button"
+          className="adm-btn adm-btn-primary"
+          onClick={() => void send()}
+          disabled={busy}
+          aria-busy={busy}
+        >
+          {busy ? T.followupSending : T.followupSend}
+        </button>
+        <span className="adm-quiet">{T.followupHint}</span>
+      </div>
+      {notice && (
+        <p className={notice.tone === 'bad' ? 'adm-inline-error' : 'wa-inbox-ok'} role={notice.tone === 'bad' ? 'alert' : 'status'}>
+          {notice.text}
+        </p>
+      )}
+    </div>
+  )
+}
+
 function Composer({ thread, onSent }: { thread: InboxThreadDetail; onSent: (t: InboxThreadDetail) => void }) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -448,7 +517,7 @@ function Composer({ thread, onSent }: { thread: InboxThreadDetail; onSent: (t: I
   const inFlight = useRef(false)
 
   if (!thread.window_open) {
-    return <p className="wa-inbox-closed">{T.windowClosed}</p>
+    return <FollowupPanel thread={thread} onSent={onSent} />
   }
 
   async function send() {

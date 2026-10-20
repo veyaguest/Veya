@@ -290,6 +290,33 @@ def window_open(thread: models.WhatsAppThread, now: Optional[datetime] = None) -
     return closes is not None and (now or _now()) < closes
 
 
+# ─── הודעת חזרה אחרי שהחלון נסגר ───────────────────────────────────────────
+#
+# אחרי 24 שעות WhatsApp מאפשר לפנות רק בתבנית מאושרת. ``veya_support_followup``
+# (שירות, בלי משתנים, כפתור "נמשיך כאן") מזמינה את הפונה לענות — והתשובה שלו
+# פותחת חלון חדש, שבו הנציג כותב את התשובה האמיתית. נשלחת פעם אחת לכל הודעה
+# של הפונה (``followup_waiting``), כדי שלא נציף מי שלא ענה.
+
+FOLLOWUP = "followup"
+FOLLOWUP_TEMPLATE = "veya_support_followup"
+FOLLOWUP_TEXT = (
+    "היי, כאן VEYA.\n"
+    "קיבלנו את ההודעה ששלחתם לנו כאן ב-WhatsApp, ויש לנו תשובה בשבילכם.\n"
+    "כדי שנוכל לענות, השיבו להודעה הזו או לחצו על הכפתור."
+)
+
+
+def followup_waiting(db: Session, thread: models.WhatsAppThread) -> bool:
+    """נשלחה הודעת חזרה אחרי ההודעה האחרונה של הפונה, והוא עוד לא ענה."""
+    M = models.WhatsAppThreadMessage
+    q = select(M.id).where(M.thread_id == thread.id, M.kind == FOLLOWUP,
+                          M.status.in_((message_status.PENDING, message_status.SENT,
+                                        message_status.DELIVERED, message_status.READ, MOCK)))
+    if thread.last_inbound_at is not None:
+        q = q.where(M.created_at >= thread.last_inbound_at)
+    return db.scalar(q.limit(1)) is not None
+
+
 # ─── שליחה ─────────────────────────────────────────────────────────────────
 
 def callback_ref(row: models.WhatsAppThreadMessage) -> str:
@@ -313,7 +340,8 @@ def deliver(db: Session, row: models.WhatsAppThreadMessage) -> None:
     if messaging.emergency_stop_active():
         _log("not_sent", message=row.id, reason="emergency_stop")
         return done(BLOCKED, "לא נשלחה — עצירת חירום של WhatsApp פעילה")
-    if not window_open(thread, now):
+    followup = row.kind == FOLLOWUP
+    if not followup and not window_open(thread, now):
         _log("not_sent", message=row.id, reason="window_closed")
         return done(message_status.FAILED, "עברו 24 שעות מההודעה האחרונה של הפונה — אפשר לפנות רק בתבנית מאושרת")
     mode = messaging.whatsapp_mode()
@@ -328,10 +356,17 @@ def deliver(db: Session, row: models.WhatsAppThreadMessage) -> None:
         _log("not_sent", message=row.id, reason="test_blocked")
         return done(BLOCKED, messaging.TEST_BLOCKED_DETAIL)
 
-    from app import whatsapp_meta
+    from app import whatsapp_meta, whatsapp_template_status
 
+    if followup and not whatsapp_template_status.is_sendable(FOLLOWUP_TEMPLATE):
+        _log("not_sent", message=row.id, reason="template_not_approved")
+        return done(message_status.FAILED, "תבנית הודעת החזרה עוד ממתינה לאישור של WhatsApp")
     try:
-        res = whatsapp_meta.send_text(phone=local, body=row.body, callback_data=callback_ref(row))
+        if followup:
+            res = whatsapp_meta.send_template(phone=local, name=FOLLOWUP_TEMPLATE, language="he",
+                                              body_params=[], callback_data=callback_ref(row))
+        else:
+            res = whatsapp_meta.send_text(phone=local, body=row.body, callback_data=callback_ref(row))
     except Exception as exc:  # noqa: BLE001 — אחרי שהבקשה אולי יצאה: "לא ידוע"
         _log("send_error", message=row.id, error=type(exc).__name__)
         return done(message_status.PENDING, "לא ידוע אם ההודעה יצאה — ממתינים לעדכון מ-WhatsApp")

@@ -30,12 +30,14 @@ export interface InboxThreadRow {
   preview_direction: 'inbound' | 'outbound' | ''
   window_open: boolean
   window_closes_at: string | null
+  /** נשלחה הודעת חזרה (אחרי שהחלון נסגר) והפונה עוד לא ענה. */
+  followup_waiting?: boolean
 }
 
 export interface InboxMessage {
   id: number
   direction: 'inbound' | 'outbound'
-  /** נכנסת: text / image / … · יוצאת: reply / auto_reply */
+  /** נכנסת: text / image / … · יוצאת: reply / auto_reply / followup */
   kind: string
   body: string
   status: InboxMessageStatus
@@ -68,6 +70,10 @@ export const fetchInboxThread = (id: number) => adminHttp.getJson<InboxThreadDet
 /** הנמען נקבע בשרת מהשיחה. ``clientToken`` אחד לכל טיוטה: אותו מזהה = אותה תשובה. */
 export const sendInboxReply = (id: number, body: string, clientToken: string) =>
   adminHttp.sendJson<InboxThreadDetail>(`${BASE}/threads/${id}/reply`, 'POST', { body, client_token: clientToken })
+
+/** הודעת חזרה בתבנית מאושרת — רק אחרי שחלון 24 השעות נסגר. */
+export const sendInboxFollowup = (id: number) =>
+  adminHttp.sendJson<InboxThreadDetail>(`${BASE}/threads/${id}/followup`, 'POST', {})
 
 export const setInboxStatus = (id: number, status: InboxStatus) =>
   adminHttp.sendJson<InboxThreadDetail>(`${BASE}/threads/${id}/status`, 'POST', { status })

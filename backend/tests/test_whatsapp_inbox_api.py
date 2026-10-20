@@ -209,3 +209,74 @@ def test_rls_file_registered() -> None:
         assert f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY" in sql
         assert f"ALTER TABLE {table} FORCE  ROW LEVEL SECURITY" in sql
     assert "app_is_phone_agent()" in sql
+
+
+def test_followup_after_24h_once_until_the_sender_replies() -> None:
+    """(2026-10-20) אחרי 24 שעות — "הודעת חזרה" בתבנית מאושרת, פעם אחת לכל
+    הודעה של הפונה. בתוך החלון — לא צריך (עונים ישירות)."""
+    from app import models
+
+    client, _ = make_client()
+    support = _make_admin(client, "support")
+    open_tid = _thread(hours_ago=2)
+    r = client.post(f"{BASE}/threads/{open_tid}/followup", headers=_h(support))
+    assert r.status_code == 409 and "פתוח" in r.json()["detail"]
+
+    tid = _thread(hours_ago=30)
+    r = client.post(f"{BASE}/threads/{tid}/followup", headers=_h(support))
+    assert r.status_code == 200, r.text
+    detail = r.json()
+    assert detail["followup_waiting"] is True
+    out = [m for m in detail["messages"] if m["direction"] == "outbound"]
+    assert [(m["kind"], m["status"]) for m in out] == [("followup", "mock")]
+    again = client.post(f"{BASE}/threads/{tid}/followup", headers=_h(support))
+    assert again.status_code == 409 and "כבר נשלחה" in again.json()["detail"]
+    count = _db(lambda db: len(db.scalars(select(models.WhatsAppThreadMessage).where(
+        models.WhatsAppThreadMessage.thread_id == tid)).all()))
+    assert count == 2
+    print("✓ הודעת חזרה אחרי 24 שעות — פעם אחת, ורק כשהחלון סגור")
+
+
+def test_followup_sends_the_approved_template_in_meta_mode() -> None:
+    import json
+
+    from app import models, whatsapp_inbox
+    from app import whatsapp_template_status as status
+    from tests.test_whatsapp_inbox import _env
+
+    def pending_followup(phone):
+        def make(db):
+            now = whatsapp_inbox._now()
+            t = models.WhatsAppThread(phone=phone, last_inbound_at=now - timedelta(hours=30),
+                                      last_message_at=now - timedelta(hours=30))
+            db.add(t)
+            db.flush()
+            row = models.WhatsAppThreadMessage(thread_id=t.id, direction="outbound", kind="followup",
+                                               body=whatsapp_inbox.FOLLOWUP_TEXT, status="pending")
+            db.add(row)
+            db.flush()
+            return row.id
+        return _db(make)
+
+    def deliver(row_id):
+        def run(db):
+            row = db.get(models.WhatsAppThreadMessage, row_id)
+            whatsapp_inbox.deliver(db, row)
+            return row.status, row.failure_reason
+        return _db(run)
+
+    env = {"WHATSAPP_MODE": "meta", "WHATSAPP_ACCESS_TOKEN": "test-token-not-real",
+           "WHATSAPP_PHONE_NUMBER_ID": "123"}
+    try:
+        with _MetaSpy() as spy, _env(**env):
+            status._override = {(whatsapp_inbox.FOLLOWUP_TEMPLATE, "he"): "PENDING"}
+            st, reason = deliver(pending_followup(_phone()))
+            assert st == "failed" and "ממתינה לאישור" in reason and spy.calls == []
+            status._override = {(whatsapp_inbox.FOLLOWUP_TEMPLATE, "he"): "APPROVED"}
+            st, _ = deliver(pending_followup(_phone()))
+            assert st == "sent" and len(spy.calls) == 1
+            body = json.loads(spy.calls[0].content)
+            assert body["type"] == "template" and body["template"]["name"] == "veya_support_followup"
+    finally:
+        status._override = None
+    print("✓ במצב meta — נשלחת התבנית המאושרת; לפני אישור — לא")

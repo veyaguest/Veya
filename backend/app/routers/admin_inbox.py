@@ -93,6 +93,8 @@ class InboxThreadRow(BaseModel):
     preview_direction: str
     window_open: bool
     window_closes_at: Optional[datetime]
+    # נשלחה הודעת חזרה (אחרי שהחלון נסגר) והפונה עוד לא ענה.
+    followup_waiting: bool = False
 
 
 class InboxMessage(BaseModel):
@@ -167,6 +169,7 @@ def _row(db: Session, t: models.WhatsAppThread) -> dict:
         last_message_at=t.last_message_at, last_inbound_at=t.last_inbound_at,
         preview=(last.body[:140] if last else ""), preview_direction=(last.direction if last else ""),
         window_open=whatsapp_inbox.window_open(t), window_closes_at=whatsapp_inbox.window_closes_at(t),
+        followup_waiting=whatsapp_inbox.followup_waiting(db, t),
     )
 
 
@@ -334,6 +337,42 @@ def reply(
     admin_audit.record(
         db, user, domain="messages", action="inbox.reply",
         summary=f"{_label(t)}: מענה ב-WhatsApp ({row.status})",
+        target_type="whatsapp_thread", target_id=t.id, target_label=_label(t), request=request,
+    )
+    db.commit()
+    return _detail(db, t, user)
+
+
+@router.post("/threads/{thread_id}/followup", response_model=InboxThreadDetail)
+def send_followup(
+    thread_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_agent("inbox.handle")),
+) -> InboxThreadDetail:
+    """הודעת חזרה בתבנית מאושרת — רק אחרי שחלון 24 השעות נסגר, ופעם אחת לכל
+    הודעה של הפונה. התשובה שלו פותחת חלון חדש, ואז עונים כרגיל."""
+    t = _get(db, thread_id)
+    if whatsapp_inbox.window_open(t):
+        raise HTTPException(status_code=409, detail="החלון עוד פתוח — אפשר לענות לפונה ישירות")
+    if whatsapp_inbox.followup_waiting(db, t):
+        raise HTTPException(status_code=409, detail="כבר נשלחה הודעת חזרה. כשהפונה יענה, אפשר יהיה לכתוב לו.")
+    row = models.WhatsAppThreadMessage(
+        thread_id=t.id, direction="outbound", kind=whatsapp_inbox.FOLLOWUP,
+        body=whatsapp_inbox.FOLLOWUP_TEXT, status=message_status.PENDING, sent_by_id=user.id,
+        created_at=whatsapp_inbox._now(),
+    )
+    db.add(row)
+    db.commit()  # רישום לפני שליחה
+    whatsapp_inbox.deliver(db, row)
+    if whatsapp_inbox.is_delivered_or_saved(row):
+        t.last_message_at = whatsapp_inbox._now()
+        t.updated_at = t.last_message_at
+        if t.assigned_to_id is None:
+            t.assigned_to_id = user.id
+    admin_audit.record(
+        db, user, domain="messages", action="inbox.followup",
+        summary=f"{_label(t)}: הודעת חזרה ב-WhatsApp ({row.status})",
         target_type="whatsapp_thread", target_id=t.id, target_label=_label(t), request=request,
     )
     db.commit()
