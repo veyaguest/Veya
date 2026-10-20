@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -412,7 +412,7 @@ async def _read_capped_body(request: Request) -> Optional[bytes]:
 
 
 @router.post("/webhook")
-async def receive_webhook(request: Request):
+async def receive_webhook(request: Request, background: BackgroundTasks):
     """Webhook יחיד מ-Meta — אותה קריאה נושאת גם הודעות נכנסות (``messages[]``)
     וגם עדכוני מסירה להודעות יוצאות (``statuses[]``).
 
@@ -444,7 +444,13 @@ async def receive_webhook(request: Request):
         raise HTTPException(status_code=400, detail="גוף הבקשה אינו JSON תקין")
 
     items = _webhook_items(data)
-    transient = await run_in_threadpool(_process_webhook_items, items)
+    followups: list[tuple[str, int]] = []
+    transient = await run_in_threadpool(_process_webhook_items, items, followups)
+    # תשובה אוטומטית ומייל לבעלי האירוע — אחרי התשובה ל-Meta, כדי שה-webhook
+    # יענה מהר גם כש-Meta או שרת המייל איטיים. נוסף גם כשיש שגיאה זמנית:
+    # מה שכבר נשמר לא יישמר שוב בניסיון החוזר (מזהה Meta), ולכן גם לא יישלח.
+    if followups:
+        background.add_task(_run_followups, followups)
     if transient:
         raise HTTPException(status_code=500, detail="שגיאה זמנית — ננסה שוב")
     return {"received": True}
@@ -486,7 +492,16 @@ def _webhook_items(data) -> list[tuple[str, dict]]:
     for entry in _as_list(_as_dict(data).get("entry")):
         for change in _as_list(_as_dict(entry).get("changes")):
             value = _as_dict(_as_dict(change).get("value"))
-            found = [("message", m) for m in _as_list(value.get("messages")) if isinstance(m, dict)]
+            # שם הפרופיל ב-WhatsApp של השולח (``contacts[].profile.name``) — לתיבת
+            # השירות. מוצמד להודעה בשדה פנימי; לא נכתב ללוג.
+            names = {
+                c.get("wa_id"): _as_dict(c.get("profile")).get("name")
+                for c in _as_list(value.get("contacts")) if isinstance(c, dict)
+            }
+            found = [
+                ("message", {**m, "_veya_profile_name": names.get(m.get("from")) or ""})
+                for m in _as_list(value.get("messages")) if isinstance(m, dict)
+            ]
             found += [("status", st) for st in _as_list(value.get("statuses")) if isinstance(st, dict)]
             if not found:
                 continue
@@ -507,22 +522,30 @@ def _webhook_items(data) -> list[tuple[str, dict]]:
     return items
 
 
-def _process_webhook_items(items: list[tuple[str, dict]]) -> bool:
+def _process_webhook_items(
+    items: list[tuple[str, dict]], followups: Optional[list] = None,
+) -> bool:
     """מעבד את הפריטים, כל אחד ב-commit משלו. מחזיר ``True`` אם הייתה שגיאת
     DB זמנית (ואז עוצרים — Meta תשלח את כל הקריאה שוב).
 
     חיבור המערכת (``MigrationSessionLocal``), כמו המשימות המתוזמנות: ל-webhook
     אין זהות משתמש שה-RLS יכול לסנן לפיה. ההגנה היא החתימה (``_verify_signature``),
     שנבדקת לפני שמגיעים לכאן.
+
+    ``followups`` — לכאן נאספות פעולות שרצות אחרי ה-commit (תשובה אוטומטית,
+    מייל לבעלי האירוע), רק של פריטים שנשמרו בהצלחה.
     """
     with MigrationSessionLocal() as db:
         for kind, item in items:
             try:
+                pending: list = []
                 if kind == "message":
-                    _handle_inbound_message(db, item)
+                    pending = _handle_inbound_message(db, item) or []
                 else:
                     _handle_status(db, item)
                 db.commit()
+                if followups is not None:
+                    followups.extend(pending)
             except IntegrityError:
                 # אותה הודעה נכנסת נקלטה במקביל ע"י קריאה אחרת (אינדקס ייחודי
                 # על מזהה Meta) — כבר טופלה. לא שגיאה.
@@ -538,7 +561,25 @@ def _process_webhook_items(items: list[tuple[str, dict]]) -> bool:
     return False
 
 
-def _handle_inbound_message(db: Session, msg: dict) -> None:
+def _run_followups(followups: list[tuple[str, int]]) -> None:
+    """פעולות שאחרי השמירה: ``("auto_reply", message_id)`` / ``("host_email", event_id)``.
+    כל אחת בנפרד — כשל באחת לא עוצר את האחרות. לעולם לא זורק."""
+    from app import whatsapp_inbox
+
+    done_events: set[int] = set()
+    for kind, ident in followups:
+        try:
+            with MigrationSessionLocal() as db:
+                if kind == "auto_reply":
+                    whatsapp_inbox.send_auto_reply(db, ident)
+                elif kind == "host_email" and ident not in done_events:
+                    done_events.add(ident)
+                    whatsapp_inbox.notify_hosts(db, ident)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[veya:whatsapp] followup {kind} failed {type(exc).__name__}", flush=True)
+
+
+def _handle_inbound_message(db: Session, msg: dict) -> list[tuple[str, int]]:
     """הודעה נכנסת מאורח. **היום שום הודעה נכנסת לא משנה RSVP** — אישור הגעה
     רק דרך הקישור האישי (החלטת המייסד, 2026-10-13).
 
@@ -548,19 +589,22 @@ def _handle_inbound_message(db: Session, msg: dict) -> None:
       ההודעה, בלי תוכן ובלי שולח). כך ה-webhook מקבל "עדכוני סטטוס בלבד" — ב-Meta
       אי אפשר להירשם לסטטוסים בלי הודעות נכנסות (שניהם בשדה ``messages``).
     - דלוק: כל הודעה (טקסט, תמונה, הקלטה, וגם לחיצת כפתור אישור/ביטול מהנוסח
-      הישן) נשמרת כ"דורש טיפול" (``whatsapp_inbound.record_free_message``).
+      הישן) עוברת ל-``whatsapp_inbox.route_inbound``: בעל חשבון / לא מוכר →
+      תור השירות של VEYA (עם תשובה אוטומטית); מוזמן מזוהה → בעלי האירוע.
       עדכון RSVP מלחיצת כפתור (``record_rsvp_reply``) — רק אם בנוסף
       ``WHATSAPP_INBOUND_RSVP=1`` (``whatsapp_inbound.rsvp_replies_enabled``).
+
+    מחזיר פעולות להרצה אחרי ה-commit (``_run_followups``).
     """
     if not whatsapp_inbound.inbound_enabled():
         msg_type = msg.get("type") if isinstance(msg.get("type"), str) else "unknown"
         print(f"[veya:whatsapp] inbound skipped (WHATSAPP_WEBHOOK_INBOUND off) "
               f"type={msg_type[:20]}", flush=True)
-        return
+        return []
     wamid = msg.get("id")
     if not isinstance(wamid, str) or not wamid:
         print("[veya:whatsapp] inbound skipped: missing message id", flush=True)
-        return
+        return []
     from_phone = msg.get("from") if isinstance(msg.get("from"), str) else None
     context_id = _as_dict(msg.get("context")).get("id")
     context_id = context_id if isinstance(context_id, str) else None
@@ -574,7 +618,7 @@ def _handle_inbound_message(db: Session, msg: dict) -> None:
             db, provider_message_id=wamid, from_phone=from_phone,
             context_id=context_id, decision=decision,
         )
-        return
+        return []
     msg_type = msg.get("type") if isinstance(msg.get("type"), str) else "unknown"
     text_body = _as_dict(msg.get("text")).get("body")
     if not isinstance(text_body, str):
@@ -585,10 +629,20 @@ def _handle_inbound_message(db: Session, msg: dict) -> None:
         # כ"דורש טיפול" ולא משנה כלום — אישור הגעה רק דרך הקישור האישי.
         what = "אישור הגעה" if decision == "confirmed" else "ביטול הגעה"
         text_body = f"לחיצה על כפתור {what} ב-WhatsApp — לא עודכן (אישור הגעה דרך הקישור האישי)"
-    whatsapp_inbound.record_free_message(
+    from app import whatsapp_inbox
+
+    profile_name = msg.get("_veya_profile_name")
+    routed = whatsapp_inbox.route_inbound(
         db, provider_message_id=wamid, from_phone=from_phone, context_id=context_id,
         message_type=msg_type, text_body=text_body if isinstance(text_body, str) else None,
+        profile_name=profile_name if isinstance(profile_name, str) else "",
     )
+    followups: list[tuple[str, int]] = []
+    if routed.auto_reply_id:
+        followups.append(("auto_reply", routed.auto_reply_id))
+    if routed.host_event_id:
+        followups.append(("host_email", routed.host_event_id))
+    return followups
 
 
 def _handle_status(db: Session, st: dict) -> None:
@@ -618,6 +672,15 @@ def _handle_status(db: Session, st: dict) -> None:
     found = message_status.apply_status_update(db, provider_message_id=provider_message_id, **fields)
     reconciled = False
     callback = st.get("biz_opaque_callback_data")
+    if not found:
+        # תשובה מתיבת השירות (``whatsapp_inbox``) — טבלה נפרדת.
+        from app import whatsapp_inbox
+
+        found = whatsapp_inbox.apply_status(
+            db, provider_message_id=provider_message_id, status=mapped,
+            callback_data=callback if isinstance(callback, str) else None,
+            reason=fields["reason"], failure_code=fields["failure_code"],
+        )
     if not found and isinstance(callback, str) and callback:
         # הודעה שהתוצאה שלה לא ידועה (``pending`` בלי מזהה Meta) — נסגרת רק
         # בהתאמה מלאה; אחרת לא נוגעים (``message_status.reconcile_pending``).

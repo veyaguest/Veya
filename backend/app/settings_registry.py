@@ -73,6 +73,9 @@ _SETTINGS: list[Setting] = [
             "mock = הדגמה, meta_test = בדיקה מול Meta לנמענים מורשים בלבד, live = שליחה אמיתית דרך Meta.",
             "choice", "mock", choices=("mock", "meta_test", "live"), live=False,
             readonly_reason="נקבע במשתני הסביבה של השרת (WHATSAPP_MODE) — שינוי מכאן עלול להתחיל שליחה אמיתית בלי תבניות מאושרות"),
+    Setting("whatsapp.inbox_auto_reply", "whatsapp", "תשובה אוטומטית למי שכותב ל-VEYA",
+            "תשובה ראשונה עם שעות המענה (א׳–ה׳, 9:00–18:00), פעם אחת ב-24 שעות לכל מספר. "
+            "לא נשלחת למוזמנים — ההודעות שלהם עוברות לבעלי האירוע.", "bool", True),
     Setting("whatsapp.send_time", "whatsapp", "שעת שליחה לאירוע חדש", "שעת השליחה היומית של הודעות האישור.",
             "text", "16:00", live=False, readonly_reason="נקבעת לכל אירוע בנפרד בהגדרות האירוע"),
     # ── טלפנים ──

@@ -166,3 +166,7 @@ def delete_support_requests_for_user(db: Session, user_id: int) -> None:
         select(models.SupportReply).where(models.SupportReply.admin_id == user_id)
     ).all():
         reply.admin_id = None
+    # אותו עיקרון בתיבת ה-WhatsApp: השיחות שלו נמחקות, מה שטיפל בו מנותק.
+    from app import whatsapp_inbox
+
+    whatsapp_inbox.delete_for_user(db, user_id)

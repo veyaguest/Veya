@@ -59,6 +59,8 @@ RECEIVED = "received"                  # נקלטה וטופלה (תשובת RSV
 # נקלטה אבל לא טופלה אוטומטית — שיוך לא חד-משמעי, תשובה לפני שנפתחו
 # אישורי ההגעה וכו'. אף פעם לא משנה RSVP; מחכה לטיפול ידני.
 NEEDS_ATTENTION = "needs_attention"
+# הודעה ממוזמן שעברה לבעלי האירוע, והם סימנו "טופל" (``whatsapp_inbox``).
+HANDLED = "handled"
 
 _TIMESTAMP_FIELD = {DELIVERED: "delivered_at", READ: "read_at"}
 

@@ -282,17 +282,21 @@ def record_free_message(
     message_type: str,
     text_body: Optional[str],
     provider: str = "meta",
-) -> str:
-    """הודעה חופשית מאורח (טקסט, תמונה, הקלטה…) — נשמרת ביומן ההודעות כ"דורש
-    טיפול". **לעולם לא משנה RSVP** — גם "נגיע 3" לא מתפרש אוטומטית. לא עושה commit.
+) -> tuple[str, Optional[int]]:
+    """הודעה חופשית מאורח (טקסט, תמונה, הקלטה…) — נשמרת ביומן ההודעות של
+    האירוע כ"דורש טיפול", ובעלי האירוע רואים אותה ("מוזמנים כתבו לכם").
+    **לעולם לא משנה RSVP** — גם "נגיע 3" לא מתפרש אוטומטית. לא עושה commit.
 
     שיוך: אותם כללים בדיוק כמו תשובת RSVP (``match_guest``). מוזמן מזוהה — על
-    השורה שלו; עמימות בתוך אירוע אחד — על האירוע, בלי מוזמן; אחרת — רק שורת
-    יומן אבטחה בלי התוכן.
+    השורה שלו; עמימות בתוך אירוע אחד — על האירוע, בלי מוזמן. אחרת **לא נשמר
+    כאן** — מחזירים את סיבת אי-השיוך, והקורא (``whatsapp_inbox.route_inbound``)
+    מעביר את ההודעה לתור השירות של VEYA.
+
+    מחזיר ``("recorded", event_id)``, או ``(סיבה, None)``.
     """
     if already_processed(db, provider_message_id):
         _log(DUPLICATE)
-        return DUPLICATE
+        return DUPLICATE, None
 
     if text_body and text_body.strip():
         body = text_body.strip()[:MAX_FREE_TEXT]
@@ -319,13 +323,8 @@ def record_free_message(
         _flush_inbound(db)
         _log("free_message", event=event_id,
              guest=match.guest.id if match.guest is not None else None, match=match.reason)
-        return "recorded"
+        return "recorded", event_id
 
-    reason_text = _UNMATCHED_LABEL.get(match.reason, match.reason)
-    audit.record(
-        db, "whatsapp_message_unmatched",
-        detail=f"הודעת WhatsApp לא שויכה: {reason_text}",
-    )
     _log("free_message_unmatched", reason=match.reason, candidates=match.candidates or None)
-    return match.reason
+    return match.reason, None
 

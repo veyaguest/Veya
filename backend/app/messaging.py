@@ -923,3 +923,21 @@ def rsvp_from_button(button_id: str) -> str | None:
     if button_id == RSVP_NO_ID:
         return "declined"
     return None
+
+
+# ---- תיבת השירות: תשובה אוטומטית ראשונה (``whatsapp_inbox``) ----
+# לפונים ל-VEYA עצמה (בעלי חשבון ומספרים לא מוכרים) — לא למוזמנים, ששאלתם
+# עוברת לבעלי האירוע. פעם אחת ל-24 שעות לכל מספר. שעות הפעילות: החלטת המייסד
+# 2026-10-19 (א׳–ה׳, 9:00–18:00).
+SUPPORT_AUTO_REPLY_OPEN = (
+    "היי, כאן VEYA. קיבלנו את ההודעה ונחזור אליכם כאן בוואטסאפ בהקדם. "
+    "שעות המענה שלנו: א׳–ה׳, 9:00–18:00."
+)
+SUPPORT_AUTO_REPLY_CLOSED = (
+    "היי, כאן VEYA. קיבלנו את ההודעה. אנחנו עונים בימים א׳–ה׳, 9:00–18:00, "
+    "ונחזור אליכם כאן בוואטסאפ ביום העבודה הקרוב."
+)
+
+
+def support_auto_reply(in_service_hours: bool) -> str:
+    return SUPPORT_AUTO_REPLY_OPEN if in_service_hours else SUPPORT_AUTO_REPLY_CLOSED
