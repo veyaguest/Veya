@@ -1,0 +1,1066 @@
+[
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "invitation",
+  "option_number": 1,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו שמחים להזמין אותך לחגוג איתנו את בר המצווה של {{host_names}}.\n\nמחכים לערב שמח ומיוחד עם המשפחה והחברים, ונשמח מאוד שתהיה איתנו 😊\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו שמחים להזמין אתכם לחגוג איתנו את בר המצווה של {{host_names}}.\n\nמחכים לערב שמח ומיוחד עם המשפחה והחברים, ונשמח מאוד שתהיו איתנו 😊\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "invitation",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nהגיע הזמן לחגוג ❤️\n\nאנחנו מזמינים אותך לבר המצווה של {{host_names}} ונשמח מאוד שתצטרף/י אלינו לערב הזה.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nהגיע הזמן לחגוג ❤️\n\nאנחנו מזמינים אתכם לבר המצווה של {{host_names}} ונשמח מאוד שתצטרפו אלינו לערב הזה.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "invitation",
+  "option_number": 4,
+  "old": "שלום {{guest_name}} 😊\n\nיש לנו סיבה טובה לחגוג!\n\nאנחנו חוגגים בר מצווה ל־{{host_names}} ורוצים מאוד שתהיה/י איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}} 😊\n\nיש לנו סיבה טובה לחגוג!\n\nאנחנו חוגגים בר מצווה ל־{{host_names}} ורוצים מאוד שתהיו איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "invitation",
+  "option_number": 6,
+  "old": "היי {{guest_name}},\n\nזה הזמן לחגוג 🎉\n\nנשמח שתצטרף/י אלינו לבר המצווה של {{host_names}}.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nנשמח לראות אותך איתנו.\n\nלצפייה בהזמנה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nזה הזמן לחגוג 🎉\n\nנשמח שתצטרפו אלינו לבר המצווה של {{host_names}}.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nנשמח לראות אתכם איתנו.\n\nלצפייה בהזמנה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "invitation",
+  "option_number": 7,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו חוגגים בר מצווה ל־{{host_names}} ורוצים לשתף אותך בשמחה.\n\nמחכים לערב כיפי עם האנשים שאנחנו אוהבים, ונשמח שתהיה/י חלק ממנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו חוגגים בר מצווה ל־{{host_names}} ורוצים לשתף אתכם בשמחה.\n\nמחכים לערב כיפי עם האנשים שאנחנו אוהבים, ונשמח שתהיו חלק ממנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "invitation",
+  "option_number": 11,
+  "old": "היי {{guest_name}},\n\nיש ערב שאנחנו ממש מחכים לו ❤️\n\nבר המצווה של {{host_names}}.\n\nנשמח מאוד שתצטרף/י אלינו ונחגוג יחד.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nיש ערב שאנחנו ממש מחכים לו ❤️\n\nבר המצווה של {{host_names}}.\n\nנשמח מאוד שתצטרפו אלינו ונחגוג יחד.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "invitation",
+  "option_number": 1,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו שמחים להזמין אותך לחגוג איתנו את בת המצווה של {{host_names}}.\n\nמחכים לערב שמח ומיוחד עם המשפחה והחברים, ונשמח מאוד שתהיה איתנו 😊\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו שמחים להזמין אתכם לחגוג איתנו את בת המצווה של {{host_names}}.\n\nמחכים לערב שמח ומיוחד עם המשפחה והחברים, ונשמח מאוד שתהיו איתנו 😊\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "invitation",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nהגיע הזמן לחגוג ❤️\n\nאנחנו מזמינים אותך לבת המצווה של {{host_names}} ונשמח מאוד שתצטרף/י אלינו לערב הזה.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nהגיע הזמן לחגוג ❤️\n\nאנחנו מזמינים אתכם לבת המצווה של {{host_names}} ונשמח מאוד שתצטרפו אלינו לערב הזה.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "invitation",
+  "option_number": 4,
+  "old": "שלום {{guest_name}} 😊\n\nיש לנו סיבה טובה לחגוג!\n\nאנחנו חוגגים בת מצווה ל־{{host_names}} ורוצים מאוד שתהיה/י איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}} 😊\n\nיש לנו סיבה טובה לחגוג!\n\nאנחנו חוגגים בת מצווה ל־{{host_names}} ורוצים מאוד שתהיו איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "invitation",
+  "option_number": 6,
+  "old": "היי {{guest_name}},\n\nזה הזמן לחגוג 🎉\n\nנשמח שתצטרף/י אלינו לבת המצווה של {{host_names}}.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nנשמח לראות אותך איתנו.\n\nלצפייה בהזמנה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nזה הזמן לחגוג 🎉\n\nנשמח שתצטרפו אלינו לבת המצווה של {{host_names}}.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nנשמח לראות אתכם איתנו.\n\nלצפייה בהזמנה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "invitation",
+  "option_number": 7,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו חוגגים בת מצווה ל־{{host_names}} ורוצים לשתף אותך בשמחה.\n\nמחכים לערב כיפי עם האנשים שאנחנו אוהבים, ונשמח שתהיה/י חלק ממנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו חוגגים בת מצווה ל־{{host_names}} ורוצים לשתף אתכם בשמחה.\n\nמחכים לערב כיפי עם האנשים שאנחנו אוהבים, ונשמח שתהיו חלק ממנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "invitation",
+  "option_number": 11,
+  "old": "היי {{guest_name}},\n\nיש ערב שאנחנו ממש מחכים לו ❤️\n\nבת המצווה של {{host_names}}.\n\nנשמח מאוד שתצטרף/י אלינו ונחגוג יחד.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nיש ערב שאנחנו ממש מחכים לו ❤️\n\nבת המצווה של {{host_names}}.\n\nנשמח מאוד שתצטרפו אלינו ונחגוג יחד.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "invitation",
+  "option_number": 1,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו שמחים ונרגשים להזמין אותך לחגוג איתנו את הברית של הבן שלנו.\n\nמחכים לשמוח יחד עם המשפחה והחברים, ונשמח מאוד שתהיה איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו שמחים ונרגשים להזמין אתכם לחגוג איתנו את הברית של הבן שלנו.\n\nמחכים לשמוח יחד עם המשפחה והחברים, ונשמח מאוד שתהיו איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "invitation",
+  "option_number": 2,
+  "old": "היי {{guest_name}} ❤️\n\nיש לנו סיבה טובה לחגוג!\n\nאנחנו מזמינים אותך לברית של הבן שלנו ונשמח מאוד שתצטרף/י אלינו לרגע המיוחד הזה.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nיש לנו סיבה טובה לחגוג!\n\nאנחנו מזמינים אתכם לברית של הבן שלנו ונשמח מאוד שתצטרפו אלינו לרגע המיוחד הזה.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "invitation",
+  "option_number": 3,
+  "old": "היי {{guest_name}},\n\nרצינו לשתף אותך בשמחה שלנו ❤️\n\nאנחנו חוגגים את הברית של הבן שלנו ונשמח מאוד שתהיה/י איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nנשמח לראות אותך.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרצינו לשתף אתכם בשמחה שלנו ❤️\n\nאנחנו חוגגים את הברית של הבן שלנו ונשמח מאוד שתהיו איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nנשמח לראות אתכם.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "invitation",
+  "option_number": 4,
+  "old": "שלום {{guest_name}} ❤️\n\nבשעה טובה, הגיע הזמן לחגוג!\n\nאנחנו מזמינים אותך לברית של הבן שלנו.\n\nנשמח שתצטרף/י אלינו ותהיה/י חלק מהשמחה.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}} ❤️\n\nבשעה טובה, הגיע הזמן לחגוג!\n\nאנחנו מזמינים אתכם לברית של הבן שלנו.\n\nנשמח שתצטרפו אלינו ותהיו חלק מהשמחה.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "invitation",
+  "option_number": 5,
+  "old": "היי {{guest_name}} 😊\n\nאנחנו מתרגשים מאוד ורוצים להזמין אותך לברית של הבן שלנו ❤️\n\nמחכים לחגוג עם האנשים שאנחנו אוהבים ונשמח שתהיה איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nאנחנו מתרגשים מאוד ורוצים להזמין אתכם לברית של הבן שלנו ❤️\n\nמחכים לחגוג עם האנשים שאנחנו אוהבים ונשמח שתהיו איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "invitation",
+  "option_number": 6,
+  "old": "היי {{guest_name}},\n\nבשעה טובה אנחנו חוגגים ברית 🎉\n\nנשמח מאוד שתצטרף/י אלינו לרגע המשמח הזה.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nבשעה טובה אנחנו חוגגים ברית 🎉\n\nנשמח מאוד שתצטרפו אלינו לרגע המשמח הזה.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "invitation",
+  "option_number": 8,
+  "old": "שלום {{guest_name}},\n\nאנחנו שמחים להזמין אותך לברית של הבן שלנו ❤️\n\nמחכה לנו מפגש משפחתי ושמח, ונשמח מאוד שתהיה/י איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}},\n\nאנחנו שמחים להזמין אתכם לברית של הבן שלנו ❤️\n\nמחכה לנו מפגש משפחתי ושמח, ונשמח מאוד שתהיו איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "invitation",
+  "option_number": 11,
+  "old": "היי {{guest_name}} ❤️\n\nיש לנו שמחה גדולה בבית ורצינו שתהיה/י חלק ממנה.\n\nנשמח לחגוג איתך את הברית של הבן שלנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nיש לנו שמחה גדולה בבית ורצינו שתהיו חלק ממנה.\n\nנשמח לחגוג איתכם את הברית של הבן שלנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "invitation",
+  "option_number": 1,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו שמחים ונרגשים להזמין אותך לחגוג איתנו את הולדת הבת שלנו.\n\nנשמח מאוד שתהיה איתנו ונחגוג יחד את השמחה שלנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו שמחים ונרגשים להזמין אתכם לחגוג איתנו את הולדת הבת שלנו.\n\nנשמח מאוד שתהיו איתנו ונחגוג יחד את השמחה שלנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "invitation",
+  "option_number": 3,
+  "old": "היי {{guest_name}},\n\nרצינו לשתף אותך בשמחה שלנו ❤️\n\nאנחנו חוגגים בריתה לבת שלנו ונשמח מאוד שתהיה/י איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nנשמח לראות אותך.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרצינו לשתף אתכם בשמחה שלנו ❤️\n\nאנחנו חוגגים בריתה לבת שלנו ונשמח מאוד שתהיו איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nנשמח לראות אתכם.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "invitation",
+  "option_number": 4,
+  "old": "שלום {{guest_name}} ❤️\n\nבשעה טובה, המשפחה שלנו גדלה!\n\nאנחנו מזמינים אותך לבריתה של הבת שלנו ונשמח שתצטרף/י אלינו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}} ❤️\n\nבשעה טובה, המשפחה שלנו גדלה!\n\nאנחנו מזמינים אתכם לבריתה של הבת שלנו ונשמח שתצטרפו אלינו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "invitation",
+  "option_number": 5,
+  "old": "היי {{guest_name}} 😊\n\nאנחנו מתרגשים מאוד ורוצים להזמין אותך לבריתה של הבת שלנו ❤️\n\nמחכים לחגוג עם המשפחה והחברים ונשמח שתהיה איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nאנחנו מתרגשים מאוד ורוצים להזמין אתכם לבריתה של הבת שלנו ❤️\n\nמחכים לחגוג עם המשפחה והחברים ונשמח שתהיו איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "invitation",
+  "option_number": 6,
+  "old": "היי {{guest_name}},\n\nיש לנו שמחה גדולה בבית 🎀\n\nנשמח שתצטרף/י אלינו לבריתה של הבת שלנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nיש לנו שמחה גדולה בבית 🎀\n\nנשמח שתצטרפו אלינו לבריתה של הבת שלנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "invitation",
+  "option_number": 8,
+  "old": "שלום {{guest_name}},\n\nאנחנו שמחים להזמין אותך לבריתה של הבת שלנו ❤️\n\nמחכה לנו מפגש משפחתי ושמח, ונשמח מאוד שתהיה/י איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}},\n\nאנחנו שמחים להזמין אתכם לבריתה של הבת שלנו ❤️\n\nמחכה לנו מפגש משפחתי ושמח, ונשמח מאוד שתהיו איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "invitation",
+  "option_number": 9,
+  "old": "היי {{guest_name}} ❤️\n\nהמשפחה שלנו גדלה ורצינו לשתף אותך בשמחה.\n\nנשמח שתבוא/י לחגוג איתנו את הבריתה של הבת שלנו 😊\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nהמשפחה שלנו גדלה ורצינו לשתף אתכם בשמחה.\n\nנשמח שתבואו לחגוג איתנו את הבריתה של הבת שלנו 😊\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "invitation",
+  "option_number": 11,
+  "old": "היי {{guest_name}} ❤️\n\nיש לנו שמחה גדולה ורצינו שתהיה/י חלק ממנה.\n\nנשמח לחגוג איתך את הבריתה של הבת שלנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nיש לנו שמחה גדולה ורצינו שתהיו חלק ממנה.\n\nנשמח לחגוג איתכם את הבריתה של הבת שלנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "invitation",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nאנחנו מזמינים אותך להצטרף אלינו לאירוע הקרוב.\n\nמחכה לנו ערב מעניין ונשמח שתהיה/י איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nאנחנו מזמינים אתכם להצטרף אלינו לאירוע הקרוב.\n\nמחכה לנו ערב מעניין ונשמח שתהיו איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "invitation",
+  "option_number": 5,
+  "old": "היי {{guest_name}},\n\nיש לנו אירוע בקרוב ורצינו להזמין אותך 😊\n\nנשמח אם תצטרף/י אלינו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nיש לנו אירוע בקרוב ורצינו להזמין אתכם 😊\n\nנשמח אם תצטרפו אלינו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "invitation",
+  "option_number": 7,
+  "old": "היי {{guest_name}},\n\nרצינו לשתף אותך באירוע שאנחנו מקיימים בקרוב.\n\nנשמח מאוד שתצטרף/י אלינו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרצינו לשתף אתכם באירוע שאנחנו מקיימים בקרוב.\n\nנשמח מאוד שתצטרפו אלינו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "invitation",
+  "option_number": 9,
+  "old": "שלום {{guest_name}},\n\nאנחנו מזמינים אותך לאירוע שלנו ומקווים שתוכל/י להצטרף.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}},\n\nאנחנו מזמינים אתכם לאירוע שלנו ומקווים שתוכלו להצטרף.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "invitation",
+  "option_number": 11,
+  "old": "היי {{guest_name}},\n\nמחכה לנו אירוע בקרוב ונשמח שתהיה/י חלק ממנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nמחכה לנו אירוע בקרוב ונשמח שתהיו חלק ממנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "invitation",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nהחינה שלנו מתקרבת ואנחנו ממש שמחים להזמין אותך לחגוג איתנו ❤️\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nנשמח שתהיה/י איתנו בערב הזה.\n\nלצפייה בהזמנה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nהחינה שלנו מתקרבת ואנחנו ממש שמחים להזמין אתכם לחגוג איתנו ❤️\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nנשמח שתהיו איתנו בערב הזה.\n\nלצפייה בהזמנה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "invitation",
+  "option_number": 4,
+  "old": "היי {{guest_name}},\n\nיש לנו סיבה טובה לחגוג ❤️\n\nאנחנו מזמינים אותך לערב החינה שלנו וממש נשמח שתהיה/י איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nמחכים לך 😊\n\nלצפייה בהזמנה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nיש לנו סיבה טובה לחגוג ❤️\n\nאנחנו מזמינים אתכם לערב החינה שלנו וממש נשמח שתהיו איתנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nמחכים לכם 😊\n\nלצפייה בהזמנה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "invitation",
+  "option_number": 6,
+  "old": "היי {{guest_name}} 😊\n\nזה מתקרב!\n\nאנחנו חוגגים חינה ורוצים מאוד שתצטרף/י אלינו לערב הזה ❤️\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nמחכים לראות אותך.\n\nלצפייה בהזמנה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nזה מתקרב!\n\nאנחנו חוגגים חינה ורוצים מאוד שתצטרפו אלינו לערב הזה ❤️\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n\nמחכים לראות אתכם.\n\nלצפייה בהזמנה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "invitation",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו שמחים ונרגשים להזמין אותך לחינה שלנו.\n\nמחכה לנו ערב של שמחה, משפחה ואנשים שאנחנו אוהבים, ונשמח מאוד שתהיה/י חלק ממנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו שמחים ונרגשים להזמין אתכם לחינה שלנו.\n\nמחכה לנו ערב של שמחה, משפחה ואנשים שאנחנו אוהבים, ונשמח מאוד שתהיו חלק ממנו.\n\n📅 {{event_date}}\n⏰ {{event_time}}\n📍 {{venue_name}}\n📌 {{address}}\n\nההזמנה המלאה והניווט בקישור האישי.\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "final_reminder",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו 😊\n\nאנחנו מסיימים את ההכנות לבר המצווה ונשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו 😊\n\nאנחנו מסיימים את ההכנות לבר המצווה ונשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "final_reminder",
+  "option_number": 3,
+  "old": "היי {{guest_name}} ❤️\n\nעוד רגע נפגשים!\n\nרצינו לוודא אם תוכל/י להיות איתנו בבר המצווה.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד רגע נפגשים!\n\nרצינו לוודא אם תוכלו להיות איתנו בבר המצווה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "final_reminder",
+  "option_number": 7,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר בהכנות האחרונות לבר המצווה.\n\nאם עדיין לא יצא לך לעדכן, נשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר בהכנות האחרונות לבר המצווה.\n\nאם עדיין לא יצא לכם לעדכן, נשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "final_reminder",
+  "option_number": 9,
+  "old": "היי {{guest_name}} ❤️\n\nעוד מעט חוגגים!\n\nנשמח לדעת אם תהיה/י איתנו בבר המצווה.\n\nלאישור:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד מעט חוגגים!\n\nנשמח לדעת אם תהיו איתנו בבר המצווה.\n\nלאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "final_reminder",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nעוד רגע זה מגיע 😊\n\nרצינו לוודא איתך אם תגיע/י לבר המצווה של {{host_names}}.\n\nנשמח לעדכון:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד רגע זה מגיע 😊\n\nרצינו לוודא איתכם אם תגיעו לבר המצווה של {{host_names}}.\n\nנשמח לעדכון:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "reminder_1",
+  "option_number": 1,
+  "old": "היי {{guest_name}} ❤️\n\nרק רצינו להזכיר שבר המצווה של {{host_names}} מתקרבת.\n\nנשמח לדעת אם תוכל/י להיות איתנו ולחגוג יחד 😊\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק רצינו להזכיר שבר המצווה של {{host_names}} מתקרבת.\n\nנשמח לדעת אם תוכלו להיות איתנו ולחגוג יחד 😊\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "reminder_1",
+  "option_number": 3,
+  "old": "היי {{guest_name}} ❤️\n\nרק קופצים להזכיר לגבי בר המצווה של {{host_names}}.\n\nנשמח לדעת אם תצטרף/י אלינו לערב הזה.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק קופצים להזכיר לגבי בר המצווה של {{host_names}}.\n\nנשמח לדעת אם תצטרפו אלינו לערב הזה.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "reminder_1",
+  "option_number": 4,
+  "old": "שלום {{guest_name}},\n\nרצינו לוודא שקיבלת את ההזמנה לבר המצווה 😊\n\nנשמח לדעת אם תהיה/י איתנו.\n\nלאישור:\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}},\n\nרצינו לוודא שקיבלתם את ההזמנה לבר המצווה 😊\n\nנשמח לדעת אם תהיו איתנו.\n\nלאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "reminder_1",
+  "option_number": 5,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתחילים להתכונן לבר המצווה ורצינו לדעת אם תגיע/י.\n\nנשמח לחגוג איתך.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתחילים להתכונן לבר המצווה ורצינו לדעת אם תגיעו.\n\nנשמח לחגוג איתכם.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "reminder_1",
+  "option_number": 9,
+  "old": "היי {{guest_name}} 😊\n\nעוד קצת וזה מגיע!\n\nנשמח לדעת אם תגיע/י לחגוג איתנו את בר המצווה.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nעוד קצת וזה מגיע!\n\nנשמח לדעת אם תגיעו לחגוג איתנו את בר המצווה.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "reminder_1",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתרגשים לקראת בר המצווה 😊\n\nרק רצינו לוודא אם תוכל/י להצטרף אלינו לערב הזה.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתרגשים לקראת בר המצווה 😊\n\nרק רצינו לוודא אם תוכלו להצטרף אלינו לערב הזה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "reminder_2",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nרק רצינו לחזור אליך לגבי בר המצווה ❤️\n\nאנחנו מתחילים לסגור את ההכנות ונשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק רצינו לחזור אליכם לגבי בר המצווה ❤️\n\nאנחנו מתחילים לסגור את ההכנות ונשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "reminder_2",
+  "option_number": 6,
+  "old": "היי {{guest_name}} ❤️\n\nרק תזכורת קטנה לגבי בר המצווה.\n\nאם עדיין לא יצא לך לעדכן, נשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק תזכורת קטנה לגבי בר המצווה.\n\nאם עדיין לא יצא לכם לעדכן, נשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "reminder_2",
+  "option_number": 9,
+  "old": "היי {{guest_name}} ❤️\n\nבר המצווה ממש מתקרבת.\n\nנשמח לדעת אם תהיה/י איתנו ונוכל להתארגן בהתאם.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nבר המצווה ממש מתקרבת.\n\nנשמח לדעת אם תהיו איתנו ונוכל להתארגן בהתאם.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "reminder_2",
+  "option_number": 11,
+  "old": "היי {{guest_name}} 😊\n\nעוד מעט נפגשים!\n\nרצינו לדעת אם תצטרף/י אלינו לבר המצווה של {{host_names}}.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nעוד מעט נפגשים!\n\nרצינו לדעת אם תצטרפו אלינו לבר המצווה של {{host_names}}.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "final_reminder",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו 😊\n\nאנחנו מסיימים את ההכנות לבת המצווה ונשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו 😊\n\nאנחנו מסיימים את ההכנות לבת המצווה ונשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "final_reminder",
+  "option_number": 3,
+  "old": "היי {{guest_name}} ❤️\n\nעוד רגע נפגשים!\n\nרצינו לוודא אם תוכל/י להיות איתנו בבת המצווה.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד רגע נפגשים!\n\nרצינו לוודא אם תוכלו להיות איתנו בבת המצווה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "final_reminder",
+  "option_number": 7,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר בהכנות האחרונות לבת המצווה.\n\nאם עדיין לא יצא לך לעדכן, נשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר בהכנות האחרונות לבת המצווה.\n\nאם עדיין לא יצא לכם לעדכן, נשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "final_reminder",
+  "option_number": 9,
+  "old": "היי {{guest_name}} ❤️\n\nעוד מעט חוגגים!\n\nנשמח לדעת אם תהיה/י איתנו בבת המצווה.\n\nלאישור:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד מעט חוגגים!\n\nנשמח לדעת אם תהיו איתנו בבת המצווה.\n\nלאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "final_reminder",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nעוד רגע זה מגיע 😊\n\nרצינו לוודא איתך אם תגיע/י לבת המצווה של {{host_names}}.\n\nנשמח לעדכון:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד רגע זה מגיע 😊\n\nרצינו לוודא איתכם אם תגיעו לבת המצווה של {{host_names}}.\n\nנשמח לעדכון:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "reminder_1",
+  "option_number": 1,
+  "old": "היי {{guest_name}} ❤️\n\nרק רצינו להזכיר שבת המצווה של {{host_names}} מתקרבת.\n\nנשמח לדעת אם תוכל/י להיות איתנו ולחגוג יחד 😊\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק רצינו להזכיר שבת המצווה של {{host_names}} מתקרבת.\n\nנשמח לדעת אם תוכלו להיות איתנו ולחגוג יחד 😊\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "reminder_1",
+  "option_number": 3,
+  "old": "היי {{guest_name}} ❤️\n\nרק קופצים להזכיר לגבי בת המצווה של {{host_names}}.\n\nנשמח לדעת אם תצטרף/י אלינו לערב הזה.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק קופצים להזכיר לגבי בת המצווה של {{host_names}}.\n\nנשמח לדעת אם תצטרפו אלינו לערב הזה.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "reminder_1",
+  "option_number": 4,
+  "old": "שלום {{guest_name}},\n\nרצינו לוודא שקיבלת את ההזמנה לבת המצווה 😊\n\nנשמח לדעת אם תהיה/י איתנו.\n\nלאישור:\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}},\n\nרצינו לוודא שקיבלתם את ההזמנה לבת המצווה 😊\n\nנשמח לדעת אם תהיו איתנו.\n\nלאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "reminder_1",
+  "option_number": 5,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתחילים להתכונן לבת המצווה ורצינו לדעת אם תגיע/י.\n\nנשמח לחגוג איתך.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתחילים להתכונן לבת המצווה ורצינו לדעת אם תגיעו.\n\nנשמח לחגוג איתכם.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "reminder_1",
+  "option_number": 9,
+  "old": "היי {{guest_name}} 😊\n\nעוד קצת וזה מגיע!\n\nנשמח לדעת אם תגיע/י לחגוג איתנו את בת המצווה.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nעוד קצת וזה מגיע!\n\nנשמח לדעת אם תגיעו לחגוג איתנו את בת המצווה.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "reminder_1",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתרגשים לקראת בת המצווה 😊\n\nרק רצינו לוודא אם תוכל/י להצטרף אלינו לערב הזה.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתרגשים לקראת בת המצווה 😊\n\nרק רצינו לוודא אם תוכלו להצטרף אלינו לערב הזה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "reminder_2",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nרק רצינו לחזור אליך לגבי בת המצווה ❤️\n\nאנחנו מתחילים לסגור את ההכנות ונשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק רצינו לחזור אליכם לגבי בת המצווה ❤️\n\nאנחנו מתחילים לסגור את ההכנות ונשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "reminder_2",
+  "option_number": 6,
+  "old": "היי {{guest_name}} ❤️\n\nרק תזכורת קטנה לגבי בת המצווה.\n\nאם עדיין לא יצא לך לעדכן, נשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק תזכורת קטנה לגבי בת המצווה.\n\nאם עדיין לא יצא לכם לעדכן, נשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "reminder_2",
+  "option_number": 9,
+  "old": "היי {{guest_name}} ❤️\n\nבת המצווה ממש מתקרבת.\n\nנשמח לדעת אם תהיה/י איתנו ונוכל להתארגן בהתאם.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nבת המצווה ממש מתקרבת.\n\nנשמח לדעת אם תהיו איתנו ונוכל להתארגן בהתאם.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "reminder_2",
+  "option_number": 11,
+  "old": "היי {{guest_name}} 😊\n\nעוד מעט נפגשים!\n\nרצינו לדעת אם תצטרף/י אלינו לבת המצווה של {{host_names}}.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nעוד מעט נפגשים!\n\nרצינו לדעת אם תצטרפו אלינו לבת המצווה של {{host_names}}.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "final_reminder",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו 😊\n\nאנחנו מסיימים את ההכנות לברית ונשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו 😊\n\nאנחנו מסיימים את ההכנות לברית ונשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "final_reminder",
+  "option_number": 3,
+  "old": "היי {{guest_name}} ❤️\n\nעוד רגע נפגשים!\n\nרצינו לוודא אם תוכל/י להיות איתנו בברית.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד רגע נפגשים!\n\nרצינו לוודא אם תוכלו להיות איתנו בברית.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "final_reminder",
+  "option_number": 7,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר בהכנות האחרונות לברית.\n\nאם עדיין לא יצא לך לעדכן, נשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר בהכנות האחרונות לברית.\n\nאם עדיין לא יצא לכם לעדכן, נשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "final_reminder",
+  "option_number": 9,
+  "old": "היי {{guest_name}} ❤️\n\nעוד מעט חוגגים!\n\nנשמח לדעת אם תהיה/י איתנו בברית.\n\nלאישור:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד מעט חוגגים!\n\nנשמח לדעת אם תהיו איתנו בברית.\n\nלאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "final_reminder",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nעוד רגע זה מגיע 😊\n\nרצינו לוודא איתך אם תגיע/י לברית.\n\nנשמח לעדכון:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד רגע זה מגיע 😊\n\nרצינו לוודא איתכם אם תגיעו לברית.\n\nנשמח לעדכון:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "reminder_1",
+  "option_number": 1,
+  "old": "היי {{guest_name}} ❤️\n\nרק רצינו להזכיר שהברית מתקרבת.\n\nנשמח לדעת אם תוכל/י להיות איתנו ולחגוג יחד.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק רצינו להזכיר שהברית מתקרבת.\n\nנשמח לדעת אם תוכלו להיות איתנו ולחגוג יחד.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "reminder_1",
+  "option_number": 3,
+  "old": "היי {{guest_name}} ❤️\n\nרק קופצים להזכיר לגבי הברית.\n\nנשמח לדעת אם תצטרף/י אלינו לרגע המיוחד הזה.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק קופצים להזכיר לגבי הברית.\n\nנשמח לדעת אם תצטרפו אלינו לרגע המיוחד הזה.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "reminder_1",
+  "option_number": 4,
+  "old": "שלום {{guest_name}},\n\nרצינו לוודא שקיבלת את ההזמנה לברית 😊\n\nנשמח לדעת אם תהיה/י איתנו.\n\nלאישור:\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}},\n\nרצינו לוודא שקיבלתם את ההזמנה לברית 😊\n\nנשמח לדעת אם תהיו איתנו.\n\nלאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "reminder_1",
+  "option_number": 5,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתחילים להתכונן לברית ורצינו לדעת אם תגיע/י.\n\nנשמח לחגוג איתך.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתחילים להתכונן לברית ורצינו לדעת אם תגיעו.\n\nנשמח לחגוג איתכם.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "reminder_1",
+  "option_number": 9,
+  "old": "היי {{guest_name}} 😊\n\nעוד קצת וזה מגיע!\n\nנשמח לדעת אם תגיע/י לחגוג איתנו את הברית.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nעוד קצת וזה מגיע!\n\nנשמח לדעת אם תגיעו לחגוג איתנו את הברית.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "reminder_1",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתרגשים לקראת הברית 😊\n\nרק רצינו לוודא אם תוכל/י להצטרף אלינו.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתרגשים לקראת הברית 😊\n\nרק רצינו לוודא אם תוכלו להצטרף אלינו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "reminder_2",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nרק רצינו לחזור אליך לגבי הברית ❤️\n\nאנחנו מתחילים לסגור את ההכנות ונשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק רצינו לחזור אליכם לגבי הברית ❤️\n\nאנחנו מתחילים לסגור את ההכנות ונשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "reminder_2",
+  "option_number": 6,
+  "old": "היי {{guest_name}} ❤️\n\nרק תזכורת קטנה לגבי הברית.\n\nאם עדיין לא יצא לך לעדכן, נשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק תזכורת קטנה לגבי הברית.\n\nאם עדיין לא יצא לכם לעדכן, נשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "reminder_2",
+  "option_number": 9,
+  "old": "היי {{guest_name}} ❤️\n\nהברית ממש מתקרבת.\n\nנשמח לדעת אם תהיה/י איתנו ונוכל להתארגן בהתאם.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nהברית ממש מתקרבת.\n\nנשמח לדעת אם תהיו איתנו ונוכל להתארגן בהתאם.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brit",
+  "message_type": "reminder_2",
+  "option_number": 11,
+  "old": "היי {{guest_name}} 😊\n\nעוד מעט נפגשים!\n\nרצינו לדעת אם תצטרף/י אלינו לברית.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nעוד מעט נפגשים!\n\nרצינו לדעת אם תצטרפו אלינו לברית.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "final_reminder",
+  "option_number": 1,
+  "old": "היי {{guest_name}} ❤️\n\nהבריתה כבר ממש מתקרבת ואנחנו סוגרים את רשימת האורחים.\n\nנשמח לדעת אם תגיע/י לחגוג איתנו.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nהבריתה כבר ממש מתקרבת ואנחנו סוגרים את רשימת האורחים.\n\nנשמח לדעת אם תגיעו לחגוג איתנו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "final_reminder",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו 😊\n\nאנחנו מסיימים את ההכנות לבריתה ונשמח לדעת אם תהיה/י איתנו.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו 😊\n\nאנחנו מסיימים את ההכנות לבריתה ונשמח לדעת אם תהיו איתנו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "final_reminder",
+  "option_number": 3,
+  "old": "היי {{guest_name}} ❤️\n\nעוד רגע נפגשים!\n\nרצינו לוודא איתך אם תוכל/י להצטרף אלינו לבריתה.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד רגע נפגשים!\n\nרצינו לוודא איתכם אם תוכלו להצטרף אלינו לבריתה.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "final_reminder",
+  "option_number": 5,
+  "old": "היי {{guest_name}} ❤️\n\nהבריתה ממש מתקרבת 😊\n\nאנחנו סוגרים עכשיו את הפרטים האחרונים ונשמח לדעת אם את/ה איתנו.\n\nאישור:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nהבריתה ממש מתקרבת 😊\n\nאנחנו סוגרים עכשיו את הפרטים האחרונים ונשמח לדעת אם אתם איתנו.\n\nאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "final_reminder",
+  "option_number": 7,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר בהכנות האחרונות לבריתה.\n\nאם עדיין לא יצא לך לעדכן, נשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר בהכנות האחרונות לבריתה.\n\nאם עדיין לא יצא לכם לעדכן, נשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "final_reminder",
+  "option_number": 9,
+  "old": "היי {{guest_name}} ❤️\n\nעוד מעט חוגגים!\n\nנשמח לדעת אם תהיה/י איתנו בבריתה.\n\nלאישור:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד מעט חוגגים!\n\nנשמח לדעת אם תהיו איתנו בבריתה.\n\nלאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "final_reminder",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nעוד רגע זה מגיע 😊\n\nרצינו לוודא איתך אם תגיע/י לבריתה של {{host_names}}.\n\nנשמח לעדכון:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד רגע זה מגיע 😊\n\nרצינו לוודא איתכם אם תגיעו לבריתה של {{host_names}}.\n\nנשמח לעדכון:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "reminder_1",
+  "option_number": 1,
+  "old": "היי {{guest_name}} ❤️\n\nרק רצינו להזכיר שהבריתה מתקרבת.\n\nנשמח לדעת אם תוכל/י להיות איתנו ולחגוג יחד.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק רצינו להזכיר שהבריתה מתקרבת.\n\nנשמח לדעת אם תוכלו להיות איתנו ולחגוג יחד.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "reminder_1",
+  "option_number": 3,
+  "old": "היי {{guest_name}} ❤️\n\nרק קופצים להזכיר לגבי הבריתה.\n\nנשמח לדעת אם תצטרף/י אלינו לרגע המיוחד הזה.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק קופצים להזכיר לגבי הבריתה.\n\nנשמח לדעת אם תצטרפו אלינו לרגע המיוחד הזה.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "reminder_1",
+  "option_number": 4,
+  "old": "שלום {{guest_name}},\n\nרצינו לוודא שקיבלת את ההזמנה לבריתה 😊\n\nנשמח לדעת אם תהיה/י איתנו.\n\nלאישור:\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}},\n\nרצינו לוודא שקיבלתם את ההזמנה לבריתה 😊\n\nנשמח לדעת אם תהיו איתנו.\n\nלאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "reminder_1",
+  "option_number": 5,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתחילים להתכונן לבריתה ורצינו לדעת אם תגיע/י.\n\nנשמח לחגוג איתך.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתחילים להתכונן לבריתה ורצינו לדעת אם תגיעו.\n\nנשמח לחגוג איתכם.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "reminder_1",
+  "option_number": 9,
+  "old": "היי {{guest_name}} 😊\n\nעוד קצת וזה מגיע!\n\nנשמח לדעת אם תגיע/י לחגוג איתנו את הבריתה.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nעוד קצת וזה מגיע!\n\nנשמח לדעת אם תגיעו לחגוג איתנו את הבריתה.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "reminder_1",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתרגשים לקראת הבריתה 😊\n\nרק רצינו לוודא אם תוכל/י להצטרף אלינו.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתרגשים לקראת הבריתה 😊\n\nרק רצינו לוודא אם תוכלו להצטרף אלינו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "reminder_2",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nרק רצינו לחזור אליך לגבי הבריתה ❤️\n\nאנחנו מתחילים לסגור את ההכנות ונשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק רצינו לחזור אליכם לגבי הבריתה ❤️\n\nאנחנו מתחילים לסגור את ההכנות ונשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "reminder_2",
+  "option_number": 6,
+  "old": "היי {{guest_name}} ❤️\n\nרק תזכורת קטנה לגבי הבריתה.\n\nאם עדיין לא יצא לך לעדכן, נשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק תזכורת קטנה לגבי הבריתה.\n\nאם עדיין לא יצא לכם לעדכן, נשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "reminder_2",
+  "option_number": 9,
+  "old": "היי {{guest_name}} ❤️\n\nהבריתה ממש מתקרבת.\n\nנשמח לדעת אם תהיה/י איתנו ונוכל להתארגן בהתאם.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nהבריתה ממש מתקרבת.\n\nנשמח לדעת אם תהיו איתנו ונוכל להתארגן בהתאם.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "brita",
+  "message_type": "reminder_2",
+  "option_number": 11,
+  "old": "היי {{guest_name}} 😊\n\nעוד מעט נפגשים!\n\nרצינו לדעת אם תצטרף/י אלינו לבריתה.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nעוד מעט נפגשים!\n\nרצינו לדעת אם תצטרפו אלינו לבריתה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "final_reminder",
+  "option_number": 1,
+  "old": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו לגבי האירוע.\n\nאנחנו סוגרים את רשימת המשתתפים ונשמח לדעת אם תוכל/י להצטרף.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו לגבי האירוע.\n\nאנחנו סוגרים את רשימת המשתתפים ונשמח לדעת אם תוכלו להצטרף.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "final_reminder",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nהאירוע כבר ממש קרוב 😊\n\nרצינו לוודא איתך אם תהיה/י איתנו.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nהאירוע כבר ממש קרוב 😊\n\nרצינו לוודא איתכם אם תהיו איתנו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "final_reminder",
+  "option_number": 4,
+  "old": "היי {{guest_name}},\n\nעוד מעט נפגשים!\n\nרצינו לוודא אם תצטרף/י אלינו לאירוע.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nעוד מעט נפגשים!\n\nרצינו לוודא אם תצטרפו אלינו לאירוע.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "final_reminder",
+  "option_number": 7,
+  "old": "היי {{guest_name}},\n\nהאירוע ממש מתקרב ואנחנו מסיימים את ההכנות.\n\nאם עדיין לא עדכנת, נשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nהאירוע ממש מתקרב ואנחנו מסיימים את ההכנות.\n\nאם עדיין לא עדכנתם, נשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "final_reminder",
+  "option_number": 9,
+  "old": "שלום {{guest_name}},\n\nאנחנו סוגרים עכשיו את רשימת המשתתפים.\n\nנשמח לדעת אם תהיה/י איתנו.\n\nלאישור:\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}},\n\nאנחנו סוגרים עכשיו את רשימת המשתתפים.\n\nנשמח לדעת אם תהיו איתנו.\n\nלאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "final_reminder",
+  "option_number": 11,
+  "old": "היי {{guest_name}},\n\nכבר ממש קרובים לאירוע 😊\n\nנשמח לדעת אם תוכל/י להצטרף אלינו.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nכבר ממש קרובים לאירוע 😊\n\nנשמח לדעת אם תוכלו להצטרף אלינו.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "reminder_1",
+  "option_number": 1,
+  "old": "היי {{guest_name}},\n\nרק רצינו להזכיר לגבי האירוע הקרוב שלנו.\n\nנשמח לדעת אם תוכל/י להצטרף אלינו.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק רצינו להזכיר לגבי האירוע הקרוב שלנו.\n\nנשמח לדעת אם תוכלו להצטרף אלינו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "reminder_1",
+  "option_number": 4,
+  "old": "היי {{guest_name}},\n\nרצינו לוודא שקיבלת את ההזמנה לאירוע הקרוב.\n\nנשמח לדעת אם תוכל/י להגיע.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרצינו לוודא שקיבלתם את ההזמנה לאירוע הקרוב.\n\nנשמח לדעת אם תוכלו להגיע.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "reminder_1",
+  "option_number": 5,
+  "old": "היי {{guest_name}},\n\nאנחנו מתחילים להתארגן לקראת האירוע ורצינו לדעת אם תהיה/י איתנו.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nאנחנו מתחילים להתארגן לקראת האירוע ורצינו לדעת אם תהיו איתנו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "reminder_1",
+  "option_number": 7,
+  "old": "היי {{guest_name}},\n\nרק חוזרים אליך לגבי ההזמנה לאירוע.\n\nנשמח לדעת אם תצטרף/י אלינו.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק חוזרים אליכם לגבי ההזמנה לאירוע.\n\nנשמח לדעת אם תצטרפו אלינו.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "reminder_1",
+  "option_number": 9,
+  "old": "שלום {{guest_name}},\n\nהאירוע מתקרב ואנחנו מתחילים לסגור את ההכנות.\n\nנשמח לדעת אם תוכל/י להגיע.\n\nלאישור:\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}},\n\nהאירוע מתקרב ואנחנו מתחילים לסגור את ההכנות.\n\nנשמח לדעת אם תוכלו להגיע.\n\nלאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "reminder_1",
+  "option_number": 10,
+  "old": "היי {{guest_name}},\n\nרק תזכורת מאיתנו לקראת האירוע 😊\n\nנשמח אם תעדכן/י אותנו לגבי ההגעה.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק תזכורת מאיתנו לקראת האירוע 😊\n\nנשמח אם תעדכנו אותנו לגבי ההגעה.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "reminder_2",
+  "option_number": 1,
+  "old": "היי {{guest_name}},\n\nהאירוע מתקרב ורצינו לקבל ממך עדכון לגבי ההגעה.\n\nנשמח לדעת אם תצטרף/י אלינו.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nהאירוע מתקרב ורצינו לקבל מכם עדכון לגבי ההגעה.\n\nנשמח לדעת אם תצטרפו אלינו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "reminder_2",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nרק חוזרים אליך לגבי האירוע הקרוב.\n\nאנחנו מתחילים לסגור את ההכנות ונשמח לדעת אם תהיה/י איתנו.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק חוזרים אליכם לגבי האירוע הקרוב.\n\nאנחנו מתחילים לסגור את ההכנות ונשמח לדעת אם תהיו איתנו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "reminder_2",
+  "option_number": 5,
+  "old": "היי {{guest_name}},\n\nרצינו לחזור אליך פעם נוספת לגבי ההזמנה.\n\nנשמח לדעת אם תוכל/י להגיע לאירוע.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרצינו לחזור אליכם פעם נוספת לגבי ההזמנה.\n\nנשמח לדעת אם תוכלו להגיע לאירוע.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "reminder_2",
+  "option_number": 6,
+  "old": "שלום {{guest_name}},\n\nרק תזכורת קטנה לקראת האירוע.\n\nאם עדיין לא יצא לך לעדכן, נשמח לדעת אם תהיה/י איתנו.\n\nלאישור:\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}},\n\nרק תזכורת קטנה לקראת האירוע.\n\nאם עדיין לא יצא לכם לעדכן, נשמח לדעת אם תהיו איתנו.\n\nלאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "reminder_2",
+  "option_number": 8,
+  "old": "היי {{guest_name}},\n\nעוד קצת וזה מגיע 😊\n\nרצינו לדעת אם תצטרף/י אלינו באירוע הקרוב.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nעוד קצת וזה מגיע 😊\n\nרצינו לדעת אם תצטרפו אלינו באירוע הקרוב.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "reminder_2",
+  "option_number": 9,
+  "old": "שלום {{guest_name}},\n\nהאירוע מתקרב ואנחנו מתחילים לסגור את הפרטים האחרונים.\n\nנשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}},\n\nהאירוע מתקרב ואנחנו מתחילים לסגור את הפרטים האחרונים.\n\nנשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "business",
+  "message_type": "reminder_2",
+  "option_number": 11,
+  "old": "היי {{guest_name}},\n\nאנחנו כבר מחכים לאירוע 😊\n\nנשמח לדעת אם תהיה/י איתנו.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nאנחנו כבר מחכים לאירוע 😊\n\nנשמח לדעת אם תהיו איתנו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "final_reminder",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו 😊\n\nאנחנו מסיימים את ההכנות לחינה ונשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו 😊\n\nאנחנו מסיימים את ההכנות לחינה ונשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "final_reminder",
+  "option_number": 3,
+  "old": "היי {{guest_name}} ❤️\n\nעוד רגע נפגשים!\n\nרצינו לוודא אם תוכל/י להיות איתנו בערב החינה.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד רגע נפגשים!\n\nרצינו לוודא אם תוכלו להיות איתנו בערב החינה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "final_reminder",
+  "option_number": 7,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר בהכנות האחרונות לחינה.\n\nאם עדיין לא יצא לך לעדכן, נשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר בהכנות האחרונות לחינה.\n\nאם עדיין לא יצא לכם לעדכן, נשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "final_reminder",
+  "option_number": 9,
+  "old": "היי {{guest_name}} ❤️\n\nעוד מעט חוגגים!\n\nנשמח לדעת אם תהיה/י איתנו בערב החינה.\n\nלאישור:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד מעט חוגגים!\n\nנשמח לדעת אם תהיו איתנו בערב החינה.\n\nלאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "final_reminder",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nעוד רגע זה מגיע 😊\n\nרצינו לוודא איתך אם תגיע/י לחינה שלנו.\n\nנשמח לעדכון:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד רגע זה מגיע 😊\n\nרצינו לוודא איתכם אם תגיעו לחינה שלנו.\n\nנשמח לעדכון:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "reminder_1",
+  "option_number": 1,
+  "old": "היי {{guest_name}} ❤️\n\nרק רצינו להזכיר שהחינה שלנו מתקרבת 😊\n\nנשמח לדעת אם תוכל/י להיות איתנו בערב הזה.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק רצינו להזכיר שהחינה שלנו מתקרבת 😊\n\nנשמח לדעת אם תוכלו להיות איתנו בערב הזה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "reminder_1",
+  "option_number": 3,
+  "old": "היי {{guest_name}} ❤️\n\nרק קופצים להזכיר לגבי החינה שלנו.\n\nנשמח אם תעדכן/י אותנו אם תגיע/י לחגוג איתנו.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק קופצים להזכיר לגבי החינה שלנו.\n\nנשמח אם תעדכנו אותנו אם תגיעו לחגוג איתנו.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "reminder_1",
+  "option_number": 4,
+  "old": "שלום {{guest_name}},\n\nרצינו לוודא שקיבלת את ההזמנה לחינה 😊\n\nנשמח לדעת אם תצטרף/י אלינו.\n\nלאישור:\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}},\n\nרצינו לוודא שקיבלתם את ההזמנה לחינה 😊\n\nנשמח לדעת אם תצטרפו אלינו.\n\nלאישור:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "reminder_1",
+  "option_number": 5,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתחילים להתכונן לחינה ורצינו לדעת אם תהיה/י איתנו.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתחילים להתכונן לחינה ורצינו לדעת אם תהיו איתנו.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "reminder_1",
+  "option_number": 9,
+  "old": "היי {{guest_name}} 😊\n\nעוד קצת וזה מגיע ❤️\n\nנשמח לדעת אם תגיע/י לחינה שלנו.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nעוד קצת וזה מגיע ❤️\n\nנשמח לדעת אם תגיעו לחינה שלנו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "reminder_1",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתרגשים לקראת החינה 😊\n\nרק רצינו לוודא אם תוכל/י להצטרף אלינו לערב הזה.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתרגשים לקראת החינה 😊\n\nרק רצינו לוודא אם תוכלו להצטרף אלינו לערב הזה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "reminder_2",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nרק רצינו לחזור אליך לגבי החינה שלנו ❤️\n\nאנחנו מתחילים לסגור את ההכנות ונשמח לדעת אם תגיע/י.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק רצינו לחזור אליכם לגבי החינה שלנו ❤️\n\nאנחנו מתחילים לסגור את ההכנות ונשמח לדעת אם תגיעו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "reminder_2",
+  "option_number": 6,
+  "old": "היי {{guest_name}} ❤️\n\nרק תזכורת קטנה לגבי החינה.\n\nאם עדיין לא יצא לך לעדכן, נשמח לדעת אם תגיע/י.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרק תזכורת קטנה לגבי החינה.\n\nאם עדיין לא יצא לכם לעדכן, נשמח לדעת אם תגיעו.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "reminder_2",
+  "option_number": 9,
+  "old": "היי {{guest_name}} ❤️\n\nהחינה שלנו ממש מתקרבת.\n\nנשמח לדעת אם תהיה/י איתנו ונוכל להיערך בהתאם.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nהחינה שלנו ממש מתקרבת.\n\nנשמח לדעת אם תהיו איתנו ונוכל להיערך בהתאם.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "reminder_2",
+  "option_number": 11,
+  "old": "היי {{guest_name}} 😊\n\nעוד מעט נפגשים!\n\nרצינו לדעת אם תצטרף/י אלינו לחינה.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nעוד מעט נפגשים!\n\nרצינו לדעת אם תצטרפו אלינו לחינה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "final_reminder",
+  "option_number": 2,
+  "old": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו 😊\n\nאנחנו סוגרים את ההכנות לחתונה ונשמח לדעת אם תגיע/י.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו 😊\n\nאנחנו סוגרים את ההכנות לחתונה ונשמח לדעת אם תגיעו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "final_reminder",
+  "option_number": 3,
+  "old": "היי {{guest_name}} ❤️\n\nהחתונה ממש קרובה ואנחנו כבר מתכוננים.\n\nנשמח שתעדכן אותנו אם תהיה איתנו בערב הזה.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nהחתונה ממש קרובה ואנחנו כבר מתכוננים.\n\nנשמח שתעדכנו אותנו אם תהיו איתנו בערב הזה.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "final_reminder",
+  "option_number": 6,
+  "old": "היי {{guest_name}},\n\nרצינו לשלוח תזכורת אחרונה לגבי החתונה שלנו.\n\nנשמח מאוד לדעת אם תגיע/י לחגוג איתנו.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרצינו לשלוח תזכורת אחרונה לגבי החתונה שלנו.\n\nנשמח מאוד לדעת אם תגיעו לחגוג איתנו.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "final_reminder",
+  "option_number": 11,
+  "old": "היי {{guest_name}},\n\nאנחנו מתארגנים לקראת החתונה ורוצים לסיים את רשימת האורחים.\n\nנשמח אם תעדכן אותנו לגבי ההגעה.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nאנחנו מתארגנים לקראת החתונה ורוצים לסיים את רשימת האורחים.\n\nנשמח אם תעדכנו אותנו לגבי ההגעה.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "final_reminder",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nעוד מעט נפגשים 😊\n\nרצינו לוודא איתך אם תגיע/י לחתונה שלנו.\n\nנשמח לעדכון:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nעוד מעט נפגשים 😊\n\nרצינו לוודא איתכם אם תגיעו לחתונה שלנו.\n\nנשמח לעדכון:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "reminder_1",
+  "option_number": 3,
+  "old": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתחילים להתכונן לערב שלנו ורצינו לדעת אם תהיה איתנו.\n\nנשמח לאישור הגעה:\n\n{{rsvp_link}}\n\nמחכים לראות אותך.",
+  "new": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתחילים להתכונן לערב שלנו ורצינו לדעת אם תהיו איתנו.\n\nנשמח לאישור הגעה:\n\n{{rsvp_link}}\n\nמחכים לראות אתכם."
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "reminder_1",
+  "option_number": 5,
+  "old": "היי {{guest_name}} 😊\n\nהחתונה מתקרבת ואנחנו מתחילים לסגור את ההכנות האחרונות.\n\nנשמח לדעת אם תגיע לחגוג איתנו.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} 😊\n\nהחתונה מתקרבת ואנחנו מתחילים לסגור את ההכנות האחרונות.\n\nנשמח לדעת אם תגיעו לחגוג איתנו.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "reminder_1",
+  "option_number": 8,
+  "old": "היי {{guest_name}} ❤️\n\nמקווים שהכול טוב.\n\nרצינו לבדוק אם תוכל להגיע לחתונה שלנו.\n\nנשמח לאישור הגעה:\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nמקווים שהכול טוב.\n\nרצינו לבדוק אם תוכלו להגיע לחתונה שלנו.\n\nנשמח לאישור הגעה:\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "reminder_1",
+  "option_number": 11,
+  "old": "היי {{guest_name}} ❤️\n\nרצינו להזכיר שאנחנו מחכים לחגוג איתך בקרוב.\n\nנשמח שתעדכן אותנו לגבי ההגעה.\n\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nרצינו להזכיר שאנחנו מחכים לחגוג איתכם בקרוב.\n\nנשמח שתעדכנו אותנו לגבי ההגעה.\n\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "reminder_1",
+  "option_number": 12,
+  "old": "שלום {{guest_name}},\n\nרק רצינו לוודא שקיבלת את ההזמנה לחתונה שלנו.\n\nנשמח מאוד אם תוכל לעדכן אותנו אם תגיע.\n\nאישור הגעה:\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}},\n\nרק רצינו לוודא שקיבלתם את ההזמנה לחתונה שלנו.\n\nנשמח מאוד אם תוכלו לעדכן אותנו אם תגיעו.\n\nאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "reminder_2",
+  "option_number": 1,
+  "old": "היי {{guest_name}} ❤️\n\nכאן {{groom_name}} ו{{bride_name}}.\n\nהחתונה שלנו מתקרבת ורצינו לבדוק איתך לגבי ההגעה.\n\nנשמח לדעת אם תוכל/י להיות איתנו בערב הזה.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nכאן {{groom_name}} ו{{bride_name}}.\n\nהחתונה שלנו מתקרבת ורצינו לבדוק איתכם לגבי ההגעה.\n\nנשמח לדעת אם תוכלו להיות איתנו בערב הזה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "reminder_2",
+  "option_number": 3,
+  "old": "היי {{guest_name}} ❤️\n\nכאן {{groom_name}} ו{{bride_name}}.\n\nאנחנו כבר מתכוננים לערב הגדול ורצינו לוודא אם תגיע/י לחגוג איתנו.\n\nנשמח לעדכון:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nכאן {{groom_name}} ו{{bride_name}}.\n\nאנחנו כבר מתכוננים לערב הגדול ורצינו לוודא אם תגיעו לחגוג איתנו.\n\nנשמח לעדכון:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "reminder_2",
+  "option_number": 7,
+  "old": "שלום {{guest_name}} ❤️\n\nרק מזכירים בעדינות לגבי החתונה שלנו.\n\nנשמח שתעדכן אותנו אם תוכל להגיע.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "שלום {{guest_name}} ❤️\n\nרק מזכירים בעדינות לגבי החתונה שלנו.\n\nנשמח שתעדכנו אותנו אם תוכלו להגיע.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "reminder_2",
+  "option_number": 9,
+  "old": "היי {{guest_name}} ❤️\n\nהערב שלנו מתקרב ואנחנו מתחילים להתארגן.\n\nנשמח לדעת אם תהיה איתנו בחתונה.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}} ❤️\n\nהערב שלנו מתקרב ואנחנו מתחילים להתארגן.\n\nנשמח לדעת אם תהיו איתנו בחתונה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "reminder_2",
+  "option_number": 12,
+  "old": "היי {{guest_name}},\n\nרק קופצים להזכיר לגבי החתונה שלנו 😊\n\nנשמח לדעת אם תגיע/י ונשמור לך מקום.\n\nלאישור הגעה:\n{{rsvp_link}}",
+  "new": "היי {{guest_name}},\n\nרק קופצים להזכיר לגבי החתונה שלנו 😊\n\nנשמח לדעת אם תגיעו ונשמור לכם מקום.\n\nלאישור הגעה:\n{{rsvp_link}}"
+ },
+ {
+  "event_type": "bar_mitzvah",
+  "message_type": "thank_you",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nתודה ענקית שהיית חלק מבר המצווה שלנו.\n\nהיה לנו חשוב שתהיה איתנו ברגע הזה, ושמחנו מאוד לראות אותך ולחגוג יחד.\n\nאוהבים ❤️",
+  "new": "היי {{guest_name}} ❤️\n\nתודה ענקית שהייתם חלק מבר המצווה שלנו.\n\nהיה לנו חשוב שתהיו איתנו ברגע הזה, ושמחנו מאוד לראות אתכם ולחגוג יחד.\n\nאוהבים ❤️"
+ },
+ {
+  "event_type": "bat_mitzvah",
+  "message_type": "thank_you",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nתודה ענקית שהיית חלק מבת המצווה שלנו.\n\nהיה לנו חשוב שתהיה איתנו ברגע הזה, ושמחנו מאוד לראות אותך ולחגוג יחד.\n\nאוהבים ❤️",
+  "new": "היי {{guest_name}} ❤️\n\nתודה ענקית שהייתם חלק מבת המצווה שלנו.\n\nהיה לנו חשוב שתהיו איתנו ברגע הזה, ושמחנו מאוד לראות אתכם ולחגוג יחד.\n\nאוהבים ❤️"
+ },
+ {
+  "event_type": "henna",
+  "message_type": "thank_you",
+  "option_number": 12,
+  "old": "היי {{guest_name}} ❤️\n\nתודה ענקית שהיית חלק מהחינה שלנו.\n\nהיה לנו חשוב שתהיה איתנו ברגע הזה, ושמחנו מאוד לראות אותך ולחגוג יחד.\n\nאוהבים ❤️",
+  "new": "היי {{guest_name}} ❤️\n\nתודה ענקית שהייתם חלק מהחינה שלנו.\n\nהיה לנו חשוב שתהיו איתנו ברגע הזה, ושמחנו מאוד לראות אתכם ולחגוג יחד.\n\nאוהבים ❤️"
+ },
+ {
+  "event_type": "wedding",
+  "message_type": "thank_you",
+  "option_number": 5,
+  "old": "היי {{guest_name}},\n\nכאן {{groom_name}} ו{{bride_name}}.\n\nרצינו להגיד תודה על אתמול ❤️\n\nהיה לנו חשוב שתהיה איתנו, ושמחנו מאוד לראות אותך.\n\nמעריכים מאוד",
+  "new": "היי {{guest_name}},\n\nכאן {{groom_name}} ו{{bride_name}}.\n\nרצינו להגיד תודה על אתמול ❤️\n\nהיה לנו חשוב שתהיו איתנו, ושמחנו מאוד לראות אתכם.\n\nמעריכים מאוד"
+ }
+]

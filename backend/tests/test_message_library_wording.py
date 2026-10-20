@@ -49,12 +49,17 @@ def _options():
 
 def test_new_wording_after_startup():
     # עדכון מאוחר יותר (2026-10-20) ממשיך מאותו נוסח — המצב הסופי הוא אחרי כל השרשרת.
-    later = json.loads(_MESSAGE_LIBRARY_WORDING_FILES[-1].read_text(encoding="utf-8"))
-    after = {(c["event_type"], c["message_type"], c["old"]): c["new"] for c in later}
+    later = [
+        {(c["event_type"], c["message_type"], c["old"]): c["new"]
+         for c in json.loads(path.read_text(encoding="utf-8"))}
+        for path in _MESSAGE_LIBRARY_WORDING_FILES[1:]
+    ]
     opts = _options()
     for c in CHANGES:
         row = opts[(c["event_type"], c["message_type"], c["option_number"])]
-        expected = after.get((c["event_type"], c["message_type"], c["new"]), c["new"])
+        expected = c["new"]
+        for after in later:
+            expected = after.get((c["event_type"], c["message_type"], expected), expected)
         assert row.content == expected, (c["event_type"], c["option_number"])
 
 

@@ -1914,10 +1914,13 @@ def _ensure_rsvp_request_message_default() -> None:
 #: · 2026-10-20: כל נוסח זהה לתבנית ה-WhatsApp שלו ב-Meta (``tools/meta-templates-mcp``):
 #:   בהזמנות הקישור האישי הוא "לצפייה בהזמנה" (אישור ההגעה נפתח מאוחר יותר), ונוסח
 #:   שהיה נגמר בשם או בכתובת (Meta דוחה תבנית כזו) נגמר עכשיו במילים.
+#: · 2026-10-20b: פנייה לשני המינים — 152 נוסחים עם לוכסן ("תוכל/י") או בלשון זכר
+#:   בלבד ("שתהיה") עברו ללשון רבים ("תוכלו", "שתהיו", "אתכם").
 _MESSAGE_LIBRARY_WORDING_FILE = Path(__file__).with_name("message_library_wording_2026_10_13.json")
 _MESSAGE_LIBRARY_WORDING_FILES = (
     _MESSAGE_LIBRARY_WORDING_FILE,
     Path(__file__).with_name("message_library_wording_2026_10_20.json"),
+    Path(__file__).with_name("message_library_wording_2026_10_20b.json"),
 )
 
 
