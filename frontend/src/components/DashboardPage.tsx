@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import {
   dismissPostponementRejection,
   getEvent,
+  getGuestMessages,
   getPayoutAccount,
   getPostponement,
   getRsvpTimeline,
@@ -403,11 +404,14 @@ function commitConfirmMessage(eventDate: string, days: number): string {
 function NeedsYou({
   event,
   stats,
+  guestMessages,
   onEditDetails,
   onNavigate,
 }: {
   event: EventDetails
   stats: DashboardStats
+  /** כמה הודעות WhatsApp ממוזמנים מחכות (``/guest-messages``). */
+  guestMessages: number
   onEditDetails: () => void
   onNavigate?: Props['onNavigate']
 }) {
@@ -426,6 +430,15 @@ function NeedsYou({
       desc: n.badPhonesDesc,
       cta: n.badPhonesCta,
       onClick: () => onNavigate?.('guests', { guestFilter: 'bad_phone' }),
+    })
+  }
+  if (guestMessages > 0) {
+    items.push({
+      key: 'guest-messages',
+      title: n.guestMessagesTitle(guestMessages, getEventTerms(event.event_type).guestsLabel),
+      desc: n.guestMessagesDesc,
+      cta: n.guestMessagesCta,
+      onClick: () => onNavigate?.('rsvp'),
     })
   }
   if (items.length === 0) return null
@@ -450,6 +463,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [event, setEvent] = useState<EventDetails | null>(null)
   const [editing, setEditing] = useState(false)
+  const [guestMsgWaiting, setGuestMsgWaiting] = useState(0)
   useHelpScope('dashboard')
   useHelpScope(editing ? 'dashboard.editEvent' : null)
   const [form, setForm] = useState({
@@ -484,14 +498,16 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
 
   const refresh = useCallback(async () => {
     try {
-      const [s, e, p, v] = await Promise.all([
+      const [s, e, p, v, gm] = await Promise.all([
         getStats(),
         getEvent(),
         // נכשל בשקט למי שאינו בעלים (הנתיב owner-only) — ואז פשוט אין
         // אזור נוהל דחייה, בלי לשבור את הדשבורד.
         getPostponement().catch(() => null),
         getRsvpTimeline().catch(() => null),
+        getGuestMessages().catch(() => null),
       ])
+      setGuestMsgWaiting(gm?.waiting ?? 0)
       setStats(s)
       setEvent(e)
       setPostpone(p)
@@ -912,6 +928,7 @@ export function DashboardPage({ onNavigate, giftsEligible = false, currentUserId
         <NeedsYou
           event={event}
           stats={stats}
+          guestMessages={guestMsgWaiting}
           onEditDetails={() => setEditing(true)}
           onNavigate={onNavigate}
         />

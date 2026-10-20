@@ -2087,3 +2087,30 @@ export async function postHelpEvents(batch: HelpEventsBatch, keepalive = false):
   })
   if (!res.ok) throw await toError(res)
 }
+
+// ── "מוזמנים כתבו לכם" — הודעות WhatsApp ממוזמנים לבעלי האירוע ──────────
+// מוזמן שכותב למספר של VEYA: ההודעה עוברת לכאן, ו-VEYA לא עונה לו בשמכם.
+
+export interface GuestMessageItem {
+  id: number
+  guest_id: number | null
+  /** ריק כשהמספר משותף לכמה מוזמנים באירוע ולא ידוע מי מהם כתב. */
+  guest_name: string
+  /** ``05XXXXXXXX`` — לקישור "לענות מהוואטסאפ שלכם". ריק אם אין. */
+  phone: string
+  body: string
+  created_at: string | null
+  handled: boolean
+}
+
+export async function getGuestMessages(): Promise<{ waiting: number; items: GuestMessageItem[] }> {
+  const res = await apiFetch('/guest-messages')
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
+export async function markGuestMessageHandled(id: number): Promise<GuestMessageItem> {
+  const res = await apiFetch(`/guest-messages/${id}/handled`, { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}

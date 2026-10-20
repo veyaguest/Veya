@@ -1924,3 +1924,76 @@ class EventEntitlement(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
+
+class WhatsAppThread(Base):
+    """שיחת שירות לקוחות ב-WhatsApp — אחת לכל מספר שכתב ל-VEYA.
+
+    רק מה שמגיע לתור השירות (``app/whatsapp_inbox.py``): בעלי חשבון ב-VEYA,
+    מספרים לא מוכרים ומוזמנים שלא זוהו בוודאות. שאלה של מוזמן מזוהה **לא**
+    נכנסת לכאן — היא עוברת לבעלי האירוע (שורת ``Message`` על האירוע).
+
+    - ``phone`` — המספר בפורמט הפנימי (``05XXXXXXXX``), או ``+<ספרות>`` למספר
+      מחוץ לישראל. ייחודי: שיחה אחת למספר, לאורך זמן.
+    - ``last_inbound_at`` — ההודעה האחרונה **מהפונה**. ממנה נספר חלון 24 השעות
+      של Meta שבו מותר לענות בטקסט חופשי.
+    - ``status`` — open (מחכה לנו) / answered (ענינו) / closed. הודעה חדשה
+      מהפונה מחזירה ל-open.
+    """
+
+    __tablename__ = "whatsapp_threads"
+    __table_args__ = (
+        UniqueConstraint("phone", name="uq_whatsapp_threads_phone"),
+        Index("ix_whatsapp_threads_status_last", "status", "last_message_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    phone: Mapped[str] = mapped_column(String, nullable=False)
+    #: השם שהפונה הגדיר בפרופיל ה-WhatsApp שלו (``contacts[].profile.name``).
+    profile_name: Mapped[str] = mapped_column(String, default="")
+    #: account (בעל/ת חשבון) / unknown (לא מוכר) / guest (מוזמן שלא זוהה בוודאות)
+    sender_kind: Mapped[str] = mapped_column(String, default="unknown")
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String, default="open")
+    assigned_to_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
+    last_inbound_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    last_message_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    #: מתי נשלחה (או נרשמה, במצב הדגמה) התשובה האוטומטית האחרונה.
+    auto_reply_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class WhatsAppThreadMessage(Base):
+    """הודעה אחת בשיחת שירות — נכנסת מהפונה או יוצאת מהצוות / אוטומטית.
+
+    - ``provider_message_id`` — מזהה Meta. ייחודי: webhook שחוזר עם אותה הודעה
+      לא נשמר פעמיים.
+    - ``status`` (יוצאת): pending · sent · delivered · read · failed · mock
+      (נשמרה, לא נשלחה — מצב הדגמה) · blocked (עצירת חירום / מספר שאינו
+      ברשימת הבדיקה). נכנסת: received.
+    - ``client_token`` — מזהה חד-פעמי של חלון המענה בדפדפן. ``(thread_id,
+      client_token)`` ייחודי, ולכן לחיצה כפולה לא שולחת פעמיים.
+    """
+
+    __tablename__ = "whatsapp_thread_messages"
+    __table_args__ = (
+        UniqueConstraint("provider_message_id", name="uq_whatsapp_thread_messages_wamid"),
+        UniqueConstraint("thread_id", "client_token", name="uq_whatsapp_thread_messages_token"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    thread_id: Mapped[int] = mapped_column(ForeignKey("whatsapp_threads.id"), index=True, nullable=False)
+    direction: Mapped[str] = mapped_column(String)  # inbound / outbound
+    #: text / image / audio / … (נכנסת) · reply / auto_reply (יוצאת)
+    kind: Mapped[str] = mapped_column(String, default="text")
+    body: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String, default="received")
+    failure_reason: Mapped[str] = mapped_column(String, default="")
+    failure_code: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    provider_message_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    sent_by_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    client_token: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

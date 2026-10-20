@@ -279,6 +279,18 @@ export const strings = {
         'לא נכנסת הפעם: נשארו מעט מדי ימים עד היום האחרון לאישורי הגעה.',
     },
 
+    // ---- הודעות WhatsApp ממוזמנים לבעלי האירוע (2026-10-19) ----
+    // מוזמן שכותב למספר של VEYA — ההודעה מגיעה לכאן, ו-VEYA לא עונה לו בשמכם.
+    // ``who`` = guestsLabel מהלקסיקון ("מוזמנים" / "משתתפים").
+    guestMessages: {
+      title: (who: string) => `${who} כתבו לכם בוואטסאפ`,
+      desc: 'הם כתבו למספר של VEYA. אנחנו לא עונים בשמכם — אפשר לענות להם ישירות מהוואטסאפ שלכם.',
+      sharedPhone: (who: string) => `אחד ה${who} שרשומים אצלכם עם אותו מספר`,
+      reply: 'לענות מהוואטסאפ שלכם',
+      handled: 'טופל',
+      handledError: 'לא הצלחנו לסמן. נסו שוב',
+    },
+
     // ---- "צריכים אתכם" במסך אישורי ההגעה ----
     needsYou: {
       label: 'צריכים אתכם',
@@ -648,6 +660,10 @@ export const strings = {
         n === 1 ? 'למוזמן אחד אין מספר טלפון תקין' : `ל-${n} מוזמנים אין מספר טלפון תקין`,
       badPhonesDesc: 'הם לא יקבלו הזמנה ובקשות לאישור הגעה בוואטסאפ עד שהמספר יתוקן.',
       badPhonesCta: 'לתיקון המספרים',
+      // הודעות WhatsApp ממוזמנים (2026-10-19) — ``who`` = guestsLabel מהלקסיקון.
+      guestMessagesTitle: (n: number, who: string) => `${who} כתבו לכם בוואטסאפ (${n})`,
+      guestMessagesDesc: 'VEYA לא עונה בשמכם. ההודעות מחכות לכם במסך אישורי ההגעה.',
+      guestMessagesCta: 'לקריאת ההודעות',
     },
     countdownAriaLabel: (days: number, hours: number, minutes: number, seconds: number) =>
       `נותרו ${days} ימים, ${hours} שעות, ${minutes} דקות ו-${seconds} שניות לאירוע`,

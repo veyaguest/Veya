@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import {
   getAutomationDashboard,
   getCommunicationSequence,
+  getGuestMessages,
   getMessageStatus,
   getMessageStatusByType,
   getRsvpTimeline,
@@ -27,7 +28,8 @@ import { PhaseCard, RsvpTimeline } from './RsvpTimeline'
 import { useHelpScope } from '../help/useHelpScope'
 import { RSVP_SCREEN_FAQ } from '../help/kb/rsvpFaq'
 import { renderText } from '../help/engine/text'
-import type { GuestFilter } from '../api'
+import type { GuestFilter, GuestMessageItem } from '../api'
+import { GuestMessages } from './GuestMessages'
 import type { RsvpTimelineView } from '../types'
 import './RsvpPage.css'
 
@@ -220,6 +222,7 @@ function CoupleRsvpView({
   const [track, setTrack] = useState<RsvpTrackStatus | null>(null)
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [view, setView] = useState<RsvpTimelineView | null>(null)
+  const [guestMsgs, setGuestMsgs] = useState<GuestMessageItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -228,14 +231,16 @@ function CoupleRsvpView({
   const load = useCallback(async () => {
     setError('')
     try {
-      const [tr, st, vw] = await Promise.all([
+      const [tr, st, vw, gm] = await Promise.all([
         getRsvpTrack(),
         getStats().catch(() => null),
         getRsvpTimeline().catch(() => null),
+        getGuestMessages().catch(() => null),
       ])
       setTrack(tr)
       setStats(st)
       setView(vw)
+      setGuestMsgs(gm?.items ?? [])
     } catch (err) {
       setError(err instanceof Error ? err.message : strings.errors.loadGenericRetry)
     } finally {
@@ -276,6 +281,13 @@ function CoupleRsvpView({
 
       {/* אחר כך: מי באמת צריך אתכם — בשאר המוזמנים VEYA מטפלת בעצמה. */}
       <RsvpNeedsYou stats={stats} view={view} onOpen={openGuests} />
+
+      {/* מוזמנים שכתבו למספר של VEYA — עונים להם מהוואטסאפ האישי. */}
+      <GuestMessages
+        items={guestMsgs}
+        guestsLabel={activeEventTerms().guestsLabel}
+        onChange={setGuestMsgs}
+      />
 
       {/* ולבסוף הלוח עצמו, יום אחרי יום. */}
       <RsvpTimeline view={view ?? undefined} hidePhase={!!view} />

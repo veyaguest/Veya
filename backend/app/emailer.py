@@ -650,32 +650,34 @@ def send_support_reply(*, to: str, request_id: int, reply_text: str, idempotency
 
 # ── מייל 6: מוזמן כתב לבעלי האירוע בוואטסאפ (``whatsapp_inbox.notify_hosts``) ──
 
-def guest_messages_content() -> tuple[str, str, str]:
+def guest_messages_content(guests_label: str = "מוזמנים") -> tuple[str, str, str]:
     """(נושא, HTML, טקסט). בכוונה **בלי** תוכן ההודעה, שם המוזמן או הטלפון —
-    הכול מחכה בתוך VEYA. נוסח שמתאים לכל סוגי האירוע."""
+    הכול מחכה בתוך VEYA. ``guests_label`` מהלקסיקון ("מוזמנים" / "משתתפים" באירוע
+    עסקי — ``event_terms``)."""
+    who = html.escape(guests_label or "מוזמנים")
     url = f"{public_base_url()}/app/rsvp"
-    subject = "מוזמנים כתבו לכם בוואטסאפ"
+    subject = f"{guests_label} כתבו לכם בוואטסאפ"
     body = f"""
-{_title("מוזמנים כתבו לכם בוואטסאפ")}
-{_lead("מוזמנים שלכם שלחו הודעה למספר של VEYA. ההודעות מחכות לכם במסך אישורי ההגעה.")}
+{_title(f"{who} כתבו לכם בוואטסאפ")}
+{_lead(f"{who} שלכם שלחו הודעה למספר של VEYA. ההודעות מחכות לכם במסך אישורי ההגעה.")}
 {_button(url, "לקריאת ההודעות")}
-{_secondary("VEYA לא עונה למוזמנים בשמכם. אפשר לענות להם ישירות מהוואטסאפ שלכם, בלחיצה אחת מהמסך.")}
+{_secondary("VEYA לא עונה בשמכם. אפשר לענות ישירות מהוואטסאפ שלכם, בלחיצה אחת מהמסך.")}
 {_fallback_link(url)}
 {_signature()}
 """
     text = (
-        "מוזמנים כתבו לכם בוואטסאפ\n\n"
-        "מוזמנים שלכם שלחו הודעה למספר של VEYA. ההודעות מחכות לכם במסך אישורי ההגעה:\n"
+        f"{guests_label} כתבו לכם בוואטסאפ\n\n"
+        f"{guests_label} שלכם שלחו הודעה למספר של VEYA. ההודעות מחכות לכם במסך אישורי ההגעה:\n"
         f"{url}\n\n"
-        "VEYA לא עונה למוזמנים בשמכם. אפשר לענות להם ישירות מהוואטסאפ שלכם, בלחיצה אחת מהמסך.\n\n"
+        "VEYA לא עונה בשמכם. אפשר לענות ישירות מהוואטסאפ שלכם, בלחיצה אחת מהמסך.\n\n"
         f"צוות VEYA\n{SUPPORT_ADDRESS}"
     )
     html_body = _shell(title=subject, preheader="ההודעות מחכות לכם במסך אישורי ההגעה.", body_html=body)
     return subject, html_body, text
 
 
-def send_guest_messages_notice(*, to: str, idempotency_key: str) -> SendResult:
-    subject, html_body, text = guest_messages_content()
+def send_guest_messages_notice(*, to: str, idempotency_key: str, guests_label: str = "מוזמנים") -> SendResult:
+    subject, html_body, text = guest_messages_content(guests_label)
     return send_email(
         to=to, subject=subject, html_body=html_body, text_body=text,
         reply_to=SUPPORT_ADDRESS, headers=dict(AUTO_SUBMITTED_HEADERS),

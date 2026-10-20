@@ -401,7 +401,7 @@ def notify_hosts(db: Session, event_id: int) -> int:
     לכל היותר מייל אחד לאירוע כל ``HOST_EMAIL_EVERY`` (לפי יומן הפעילות). בלי
     תוכן ההודעה ובלי טלפון. מחזיר כמה מיילים יצאו. עושה commit.
     """
-    from app import emailer, partners
+    from app import emailer, event_terms, partners
 
     event = db.get(models.Event, event_id)
     if event is None:
@@ -424,7 +424,7 @@ def notify_hosts(db: Session, event_id: int) -> int:
         if not user.email or user.email_verified_at is None or user.disabled:
             continue
         res = emailer.send_guest_messages_notice(
-            to=user.email,
+            to=user.email, guests_label=event_terms.get_event_terms(event.event_type).guests_label,
             idempotency_key=f"veya-guest-msg-{event.id}-{user.id}-{now:%Y%m%d%H%M}",
         )
         sent += 1 if res.ok else 0

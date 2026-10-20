@@ -1,0 +1,64 @@
+/* "מוזמנים כתבו לכם בוואטסאפ" — אותה שפה כמו "צריכים אתכם" (RsvpPage.css). */
+
+.guest-msgs-count {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.guest-msgs-desc {
+  margin: 0 0 var(--space-3);
+  max-width: 60ch;
+  color: var(--body);
+}
+
+.guest-msgs-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.guest-msgs-item {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--line-2, var(--line));
+}
+
+.guest-msgs-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.guest-msgs-who {
+  margin: 0;
+}
+
+.guest-msgs-when {
+  color: var(--muted);
+  font-size: var(--text-sm, 14px);
+}
+
+.guest-msgs-body {
+  margin: var(--space-2) 0 var(--space-3);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+.guest-msgs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.guest-msgs-btn {
+  min-height: 44px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .guest-msgs-btn {
+    flex: 1 1 auto;
+  }
+}
