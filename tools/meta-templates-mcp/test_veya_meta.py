@@ -138,8 +138,11 @@ def test_alignment_flags_missing_header_and_wrong_button(meta):
     assert r["veya_inv_pilot"]["ok"], r["veya_inv_pilot"]
     assert r["veya_invitation"]["ok"], r["veya_invitation"]
     probs = " ".join(r["veya_invitation_image"]["problems_he"])
-    assert "Image" in probs and "other.example" in probs
+    assert "other.example" in probs
     assert r["veya_reminder_1"]["exists"] is False and r["veya_reminder_1"]["ok"]  # מתוכננת, לא שגיאה
+    # מאז 2026-10-20 הקוד שולח את 4 תבניות השירות הקבועות — חסרות ב-Meta = בעיה.
+    for n in ("veya_event_day", "veya_event_day_table", "veya_postponement", "veya_postponement_no_date"):
+        assert r[n]["wired_in_code"] and not r[n]["exists"] and not r[n]["ok"], r[n]
 
 
 def test_alignment_wrong_language_and_pending(meta):

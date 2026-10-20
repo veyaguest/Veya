@@ -405,12 +405,18 @@ def find_template(templates: list[dict], name: str, language: Optional[str] = No
 # ---------------------------------------------------------------- מה הקוד של VEYA מצפה
 
 def code_expectations() -> list[dict]:
-    """התבניות שהקוד שולח: ``whatsapp_templates.TEMPLATES`` + כלי הבדיקה (veya_inv_pilot)."""
+    """התבניות הקבועות שהקוד שולח (יום האירוע, שינוי מועד), רישום מפורש
+    (``TEMPLATES``) וכלי הבדיקה (veya_inv_pilot). תבניות הספרייה — אחת לכל נוסח —
+    נבדקות ב-``library_sync.check_sync``."""
     sys.path.insert(0, str(BACKEND))
     from app import whatsapp_meta, whatsapp_templates  # noqa: E402 — רק קבועים, בלי צד-לוואי
 
     out = []
-    for kind, spec in whatsapp_templates.TEMPLATES.items():
+    kinds = {"veya_event_day_table": "event_day", "veya_event_day": "event_day",
+             "veya_postponement": "postponement", "veya_postponement_no_date": "postponement"}
+    registered = list(whatsapp_templates.TEMPLATES.items()) + [
+        (kinds[s.name], s) for s in whatsapp_templates.FIXED_TEMPLATES]
+    for kind, spec in registered:
         for s in (spec, spec.with_image):
             if s is None:
                 continue
