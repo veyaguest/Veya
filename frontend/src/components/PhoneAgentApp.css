@@ -700,3 +700,41 @@
     grid-column: auto;
   }
 }
+
+/* ---- לשוניות: שיחות / WhatsApp (2026-10-19) ---- */
+.pa-views {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+  max-width: 720px;
+  margin: 12px auto 0;
+  padding: 0 16px;
+}
+
+.pa-view {
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--body);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.pa-view.is-active {
+  border-color: var(--gold);
+  background: var(--surface-hi);
+  color: var(--ink, var(--body));
+  font-weight: 600;
+}
+
+.pa-view:focus-visible {
+  outline: 2px solid var(--gold-deep);
+  outline-offset: 2px;
+}
+
+.pa-main-wide {
+  max-width: 900px;
+}

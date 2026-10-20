@@ -1,0 +1,167 @@
+/* תיבת WhatsApp — מרכז השליטה ומסך הטלפן.
+   הטוקנים מגיעים מ-.adm-root (admin.css). במסך הטלפן התיבה עטופה ב-
+   .adm-root.wa-embedded — בלי הגריד של סרגל הניהול. */
+
+.adm-root.wa-embedded {
+  display: block;
+  min-height: 0;
+  background: transparent;
+}
+
+.wa-inbox-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+.wa-inbox-filters .adm-tabs {
+  margin-bottom: 0;
+}
+
+.wa-inbox-mine {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--a-text-2);
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.wa-inbox-mine input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--a-accent);
+}
+
+button.wa-inbox-row {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+button.wa-inbox-row:hover {
+  background: var(--a-sunken);
+}
+
+button.wa-inbox-row:focus-visible {
+  outline: 2px solid var(--a-focus);
+  outline-offset: -2px;
+}
+
+.wa-inbox-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.wa-inbox-dot.is-open {
+  background: var(--a-warn);
+}
+
+.wa-inbox-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--a-text-2);
+}
+
+.wa-inbox-thread {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wa-inbox-msg {
+  max-width: min(560px, 88%);
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--a-line);
+}
+
+/* RTL: הפונה בצד ההתחלה (ימין), אנחנו בצד הסוף (שמאל). */
+.wa-inbox-msg.is-in {
+  align-self: flex-start;
+  background: var(--a-surface);
+}
+
+.wa-inbox-msg.is-out {
+  align-self: flex-end;
+  background: var(--a-sunken);
+}
+
+.wa-inbox-msg.is-failed {
+  border-color: var(--a-bad);
+  background: var(--a-bad-bg);
+}
+
+.wa-inbox-body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+.wa-inbox-meta {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--a-muted);
+}
+
+.wa-inbox-composer {
+  border-top: 1px solid var(--a-line);
+  padding-top: 14px;
+}
+
+.wa-inbox-composer-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: 8px;
+}
+
+.wa-inbox-closed {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--a-radius-sm);
+  background: var(--a-neutral-bg);
+  color: var(--a-text-2);
+  line-height: 1.6;
+}
+
+.wa-inbox-ok {
+  margin: 8px 0 0;
+  color: var(--a-ok);
+  font-size: 14px;
+}
+
+.wa-inbox-actions {
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.wa-inbox-assign {
+  margin: 0;
+  min-width: 180px;
+}
+
+@media (max-width: 640px) {
+  .wa-inbox-msg {
+    max-width: 94%;
+  }
+  .wa-inbox-actions > * {
+    flex: 1 1 100%;
+  }
+}

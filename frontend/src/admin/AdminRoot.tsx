@@ -13,6 +13,7 @@ import { navigate, useAdminRoute, type AdminRoute } from './route'
 import { AdminSettingsPage } from './pages/AdminSettingsPage'
 import { AuditPage } from './pages/AuditPage'
 import { SupportPage } from './pages/support/SupportPage'
+import { InboxPage } from './pages/inbox/InboxPage'
 import { HelpInsightsPage } from './pages/support/HelpInsightsPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { CallOpsPage } from './pages/calls/CallOpsPage'
@@ -74,6 +75,7 @@ export function AdminApp({
             <Page
               key={route.page}
               route={route}
+              meId={me.data.id}
               onImpersonate={onImpersonate}
               onOverview={(o: AdminOverview) =>
                 setAttentionCount(o.attention.filter((a) => a.severity !== 'info').length)
@@ -100,10 +102,12 @@ export function AdminApp({
 
 function Page({
   route,
+  meId,
   onImpersonate,
   onOverview,
 }: {
   route: AdminRoute
+  meId: number
   onImpersonate: (userId: number, eventId?: number) => Promise<void>
   onOverview: (o: AdminOverview) => void
 }) {
@@ -122,6 +126,8 @@ function Page({
       return <HelpInsightsPage route={route} />
     case 'support':
       return <SupportPage route={route} onImpersonate={onImpersonate} />
+    case 'inbox':
+      return <InboxPage route={route} meId={meId} />
     case 'postponements':
       return (
         <LegacyPage title="בקשות דחייה">

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { User } from '../types'
 import { adminSearch, type AdminMe, type SearchGroup, type SearchItem } from './adminApi'
 import { navigate, routeHref, type AdminPageKey, type AdminRoute } from './route'
+import { InboxNavBadge } from './pages/inbox/InboxPage'
 
 interface NavItem {
   key: AdminPageKey
@@ -20,6 +21,7 @@ const NAV_GROUPS: { label: string | null; items: NavItem[] }[] = [
       { key: 'calls', label: 'טלפנים', permission: 'calls.operate' },
       { key: 'postponements', label: 'בקשות דחייה', permission: 'postponements.review' },
       { key: 'support', label: 'פניות תמיכה', permission: 'support.view' },
+      { key: 'inbox', label: 'WhatsApp', permission: 'inbox.view' },
       { key: 'insights', label: 'תובנות עזרה', permission: 'help.insights' },
     ],
   },
@@ -96,6 +98,7 @@ export function AdminShell({
               aria-current={route.page === item.key ? 'page' : undefined}
             >
               <span>{item.label}</span>
+              {item.key === 'inbox' && <InboxNavBadge />}
               {item.key === 'home' && attentionCount > 0 && (
                 <span className="adm-nav-badge" aria-label={`${attentionCount} דורשים תשומת לב`}>
                   {attentionCount}

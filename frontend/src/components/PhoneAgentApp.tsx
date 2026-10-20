@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 import { callOps, type MyDay, type TaskDetail, type TaskRow } from '../admin/callOpsApi'
 import type { CallOutcome, User } from '../types'
 import { AccountCenter } from './AccountCenter'
 import './PhoneAgentApp.css'
+
+// תיבת ה-WhatsApp (גם הטלפנים עונים, 2026-10-19) — נטענת רק כשפותחים את הלשונית.
+const PhoneAgentInbox = lazy(() => import('../admin/pages/inbox/PhoneAgentInbox'))
 
 /**
  * מסך הטלפן — "שיחות להיום".
@@ -99,6 +102,7 @@ export function PhoneAgentApp({
   // מצב עבודה רציף: אחרי שמירה עוברים אוטומטית למשימה הבאה, בלי לחזור לרשימה.
   const [streak, setStreak] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [view, setView] = useState<'calls' | 'whatsapp'>('calls')
 
   // השרת מחזיר את רשימת העבודה מוכנה: ``work`` = מה לחייג עכשיו (כולל
   // באיחור, בלי שיחות חוזרות שמועדן לא הגיע ובלי סבבים מושהים), ``later`` =
@@ -169,6 +173,32 @@ export function PhoneAgentApp({
         </div>
       </header>
 
+      <nav className="pa-views" aria-label="מה עושים עכשיו">
+        <button
+          type="button"
+          className={`pa-view${view === 'calls' ? ' is-active' : ''}`}
+          aria-current={view === 'calls' ? 'page' : undefined}
+          onClick={() => setView('calls')}
+        >
+          שיחות
+        </button>
+        <button
+          type="button"
+          className={`pa-view${view === 'whatsapp' ? ' is-active' : ''}`}
+          aria-current={view === 'whatsapp' ? 'page' : undefined}
+          onClick={() => setView('whatsapp')}
+        >
+          WhatsApp
+        </button>
+      </nav>
+
+      {view === 'whatsapp' ? (
+        <main className="pa-main pa-main-wide">
+          <Suspense fallback={<div className="pa-loading">טוען…</div>}>
+            <PhoneAgentInbox meId={user.id} />
+          </Suspense>
+        </main>
+      ) : (
       <main className="pa-main">
         <div className="pa-head">
           <h1 className="pa-title">שיחות להיום</h1>
@@ -239,6 +269,7 @@ export function PhoneAgentApp({
           </>
         )}
       </main>
+      )}
 
       {openTaskId !== null && (
         <CallSheet

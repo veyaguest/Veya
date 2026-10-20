@@ -152,8 +152,11 @@ def _display_name(db: Session, t: models.WhatsAppThread) -> str:
 
 
 def _last_message(db: Session, thread_id: int) -> Optional[models.WhatsAppThreadMessage]:
+    """מה שהפונה כתב לאחרונה (זה מה שצריך לראות ברשימה, לא התשובה האוטומטית).
+    שיחה בלי הודעה נכנסת — ההודעה האחרונה."""
     M = models.WhatsAppThreadMessage
-    return db.scalar(select(M).where(M.thread_id == thread_id).order_by(M.id.desc()).limit(1))
+    base = select(M).where(M.thread_id == thread_id).order_by(M.id.desc()).limit(1)
+    return db.scalar(base.where(M.direction == "inbound")) or db.scalar(base)
 
 
 def _row(db: Session, t: models.WhatsAppThread) -> dict:
