@@ -43,6 +43,7 @@ from app.routers import (
     events,
     finance,
     gifts,
+    guest_messages,
     guests,
     hall,
     help,
@@ -144,6 +145,7 @@ app.include_router(confirm.router)
 app.include_router(gifts.router)
 app.include_router(finance.router)
 app.include_router(automation.router)
+app.include_router(guest_messages.router)
 app.include_router(communication.router)
 app.include_router(venues.router)
 app.include_router(media_serve.router)
