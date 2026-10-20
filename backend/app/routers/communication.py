@@ -257,6 +257,10 @@ def manual_send(
             guest=g, phone=g.phone, text=text, kind=message_type, event_message_id=em.id,
         ))
     batch = outbound.send_batch(db, event, items)
+    if batch.disabled:
+        from app.routers.automation import SENDING_DISABLED
+
+        raise HTTPException(status_code=409, detail=SENDING_DISABLED)
     sent, failed = batch.sent, batch.failed
     last_detail = _with_blocked(batch.last_detail, batch.blocked) or ""
     audit.record(

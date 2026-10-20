@@ -44,8 +44,12 @@ class FeatureDef:
 BUILTIN: dict[str, FeatureDef] = {f.key: f for f in [
     FeatureDef("rsvp", "אישורי הגעה", "מסלול אישורי ההגעה: הזמנה, תזכורות וקישור אישי.", False, True,
                reason="ליבת המוצר — לא ניתן לכבות. אפשר לשלוט בכמות התזכורות ב'כללי המערכת'."),
-    FeatureDef("whatsapp", "WhatsApp", "שליחת הודעות WhatsApp למוזמנים.", False, True,
-               reason="לעצירה מיידית של כל השליחות — 'עצירת חירום' ב'כללי המערכת'."),
+    # כיבוי לאירוע אחד (אירוע הדגמה / בדיקה — 2026-10-20): שום הודעה לא יוצאת
+    # מהאירוע, לא אוטומטית ולא ידנית (``outbound.send_batch``). לעצירה של כל
+    # השליחות במערכת — "עצירת חירום" ב"כללי המערכת".
+    FeatureDef("whatsapp", "שליחת WhatsApp", "שליחת הודעות WhatsApp למוזמנים של האירוע. "
+               "כבוי = שום הודעה לא יוצאת מהאירוע (לאירוע הדגמה או בדיקה).", True, True,
+               rule_scopes=("event",)),
     FeatureDef("calls", "טלפנים", "סבבי שיחות טלפון למי שלא אישר.", True, True, rule_scopes=("event", "user")),
     FeatureDef("seating", "הושבה", "מפת אולם, שולחנות ושיבוץ מוזמנים.", False, True,
                reason="אין עדיין מתג בקוד — פעיל לכל האירועים."),

@@ -67,6 +67,9 @@ class BatchResult:
     # הסיבה הראשונה ל-``no_template`` (``whatsapp_templates.NOT_APPROVED`` וכו') —
     # כדי להסביר לזוג למה ההודעות לא יצאו.
     no_template_reason: str = ""
+    # שליחת WhatsApp כבויה לאירוע הזה באדמין (``features`` "whatsapp") — לא נרשמו
+    # ולא נשלחו, בשום מצב.
+    disabled: int = 0
     # הבקשה יצאה ולא ידוע אם Meta קיבלה — נשארו ``pending``, לא נשלחים שוב.
     unknown: int = 0
     # תבנית עם תמונת ההזמנה, והתמונה לא ניתנת להמרה / לא הועלתה ל-Meta — לא
@@ -115,6 +118,14 @@ def send_batch(
     """
     result = BatchResult()
     if not items:
+        return result
+    from app import features
+
+    if not features.enabled("whatsapp", event):
+        # אירוע הדגמה / בדיקה: שום הודעה לא יוצאת ולא נרשמת. אם יופעל שוב,
+        # סבב שהחלון שלו עדיין פתוח יוצא כרגיל (לא "נשרף").
+        result.disabled = len(items)
+        print(f"[veya:whatsapp] sending disabled for event={event.id} items={len(items)}", flush=True)
         return result
     provider = provider or messaging.get_provider()
     external = bool(getattr(provider, "external", False))

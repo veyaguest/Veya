@@ -218,6 +218,49 @@ def test_uncontrollable_feature_rejected_and_custom_flag() -> None:
     assert api.client.post("/admin/features", headers=admin, json={"key": "Bad Key", "label": "x"}).status_code in (400, 422)
 
 
+def test_whatsapp_can_be_turned_off_for_one_event() -> None:
+    """(2026-10-20) אירוע הדגמה: כיבוי "שליחת WhatsApp" לאירוע אחד — שום הודעה
+    לא יוצאת ולא נרשמת, והזוג מקבל הסבר. אירוע אחר לא מושפע."""
+    from sqlalchemy import select
+
+    from app import models
+    from app.database import SessionLocal
+    from app.routers.automation import SENDING_DISABLED
+
+    demo, _ = bootstrap()
+    admin = _admin()
+    g = demo.add_guest("מוזמן דמו", "0501231234")
+    db = SessionLocal()
+    try:
+        db.get(models.Event, demo.event_id).event_date = "2026-12-01"
+        db.commit()
+    finally:
+        db.close()
+    r = demo.client.post("/admin/features/whatsapp/rules", headers=admin,
+                         json={"scope_type": "event", "scope_id": demo.event_id, "enabled": False,
+                               "note": "אירוע הדגמה"})
+    assert r.status_code == 201, r.text
+    r = demo.client.post("/automation/track/activate", headers=demo.headers, json={})
+    assert r.status_code == 409 and r.json()["detail"] == SENDING_DISABLED, r.text
+    db = SessionLocal()
+    try:
+        assert db.scalars(select(models.Message).where(models.Message.guest_id == g["id"])).all() == []
+    finally:
+        db.close()
+
+    other, _ = bootstrap()
+    other.add_guest("מוזמן אמיתי", "0501231235")
+    db = SessionLocal()
+    try:
+        db.get(models.Event, other.event_id).event_date = "2026-12-01"
+        db.commit()
+    finally:
+        db.close()
+    r = other.client.post("/automation/track/activate", headers=other.headers, json={})
+    assert r.status_code == 200, r.text
+    print("✓ שליחת WhatsApp כבויה לאירוע אחד בלבד")
+
+
 def teardown_module(module) -> None:  # noqa: ARG001
     from app import call_ops, features, settings_registry
 

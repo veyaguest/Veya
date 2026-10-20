@@ -106,6 +106,9 @@ def _track_status(
     )
 
 
+#: שליחת WhatsApp כבויה לאירוע באדמין (אירוע הדגמה / בדיקה).
+SENDING_DISABLED = "שליחת WhatsApp כבויה לאירוע הזה (אירוע הדגמה או בדיקה), ולכן ההודעות לא נשלחו."
+
 # למה הזמנות לא יצאו במצב WhatsApp אמיתי (``outbound.BatchResult.no_template_reason``).
 _NOT_SENT_INVITATION = {
     "template_not_approved": "הנוסח שבחרתם עוד ממתין לאישור של WhatsApp. ברגע שיאושר אפשר יהיה לשלוח.",
@@ -304,6 +307,8 @@ def activate_track(
             if batch.image_reason == whatsapp_templates.IMAGE_UNSUPPORTED else
             "ההזמנות לא נשלחו: לא הצלחנו לצרף את תמונת ההזמנה. נסו שוב בעוד כמה דקות."
         ))
+    if batch.disabled:
+        raise HTTPException(status_code=409, detail=SENDING_DISABLED)
     if batch.no_template and not (batch.sent or batch.failed or batch.unknown):
         # במצב WhatsApp אמיתי: אין עדיין תבנית מאושרת לנוסח שנבחר, או חסרים פרטים.
         # אף הזמנה לא נשלחה ולא נרשמה — אפשר לשלוח שוב כשזה מסתדר.
