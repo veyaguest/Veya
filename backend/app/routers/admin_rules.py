@@ -145,7 +145,7 @@ def event_overrides(
         "event_id": event_id,
         "track_active": bool(event.rsvp_track_active),
         "settings": [_setting_row(s, event_id) for s in sr.SETTINGS.values() if s.event_override and s.live],
-        "features": [_feature_row_for_event(k, event) for k in ("calls", "gifts")],
+        "features": [_feature_row_for_event(k, event) for k in ("whatsapp", "calls", "gifts")],
         "can_edit": admin_rbac.has_permission(admin, "overrides.edit"),
     }
 

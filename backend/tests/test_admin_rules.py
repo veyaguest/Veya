@@ -236,10 +236,16 @@ def test_whatsapp_can_be_turned_off_for_one_event() -> None:
         db.commit()
     finally:
         db.close()
+    # המתג מופיע במסך האירוע באדמין ("כללים לאירוע") — ואפשר לשנות אותו.
+    screen = demo.client.get(f"/admin/rules/events/{demo.event_id}", headers=admin).json()
+    row = next(f for f in screen["features"] if f["key"] == "whatsapp")
+    assert row["controllable"] is True and row["enabled"] is True and screen["can_edit"] is True
     r = demo.client.post("/admin/features/whatsapp/rules", headers=admin,
                          json={"scope_type": "event", "scope_id": demo.event_id, "enabled": False,
                                "note": "אירוע הדגמה"})
     assert r.status_code == 201, r.text
+    screen = demo.client.get(f"/admin/rules/events/{demo.event_id}", headers=admin).json()
+    assert next(f for f in screen["features"] if f["key"] == "whatsapp")["enabled"] is False
     r = demo.client.post("/automation/track/activate", headers=demo.headers, json={})
     assert r.status_code == 409 and r.json()["detail"] == SENDING_DISABLED, r.text
     db = SessionLocal()
