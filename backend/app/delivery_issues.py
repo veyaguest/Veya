@@ -26,6 +26,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Optional
 
+from urllib.parse import quote
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -146,7 +148,7 @@ def _resend_at(
     """מתי תצא השליחה החוזרת למוזמן הזה, או ``None`` אם היא לא תצא בכלל."""
     if msg.kind not in RESEND_KINDS or cap_failures > MAX_RESENDS:
         return None
-    if guest.rsvp_status != "pending":
+    if guest.rsvp_status != "pending" or handed_off(guest, msg):
         return None
     if invitations.classify_phone(guest.phone) != "valid" or guest.id in invited:
         return None
@@ -431,6 +433,8 @@ def resend_one(db: Session, event: models.Event, guest: models.Guest, now: Optio
     if issue is None:
         raise ResendRefused("ההודעה האחרונה למוזמן כבר יצאה או ממתינה לעדכון — לא שולחים שוב.")
     kind = issue.message.kind
+    if handed_off(guest, issue.message) and guest.whatsapp_handoff_sent_at is not None:
+        raise ResendRefused("בעלי האירוע כבר פתחו WhatsApp כדי לשלוח בעצמם — לא שולחים שוב.")
     if kind == "invitation" and guest.id in invitations.invited_guest_ids(
         db, event.id, event, include_uncertain=True,
     ):
@@ -525,5 +529,78 @@ def couple_phone_alerts(db: Session, event: models.Event) -> list[PhoneProblem]:
         if problem:
             out.append(PhoneProblem(g, problem))
     out.sort(key=lambda p: p.guest.full_name or "")
+    return out
+
+
+# ---- העברה לבעלי האירוע: שליחה מה-WhatsApp האישי ----
+
+def handed_off(guest: models.Guest, msg: Optional[models.Message]) -> bool:
+    """הצוות העביר לבעלי האירוע *אחרי* ההודעה הזו (לא במחזור/שליחה קודמים)."""
+    at = guest.whatsapp_handoff_at
+    if at is None or msg is None:
+        return False
+    return msg.created_at is None or at >= msg.created_at
+
+
+def hand_off(guests: list[models.Guest], now: Optional[datetime] = None) -> int:
+    now = now or datetime.utcnow()
+    for g in guests:
+        g.whatsapp_handoff_at = now
+        g.whatsapp_handoff_sent_at = None
+    return len(guests)
+
+
+def wa_me_link(phone: str, text: str) -> Optional[str]:
+    """קישור שפותח WhatsApp אצל בעלי האירוע, עם המוזמן כנמען וההודעה מוכנה."""
+    from app.whatsapp_meta import to_wa_number
+
+    number = to_wa_number(phone)
+    if number is None:
+        return None
+    return f"https://wa.me/{number}?text={quote(text)}"
+
+
+def personal_text(event: models.Event, guest: models.Guest, *, rsvp_open: bool) -> str:
+    """ההודעה שבעלי האירוע שולחים בעצמם (הנוסח: ``messaging.PERSONAL_RESEND_*``)."""
+    from app import communication, messaging
+
+    values = communication.communication_values(event, guest)
+    name = values.get("guest_name") or ""
+    template = messaging.PERSONAL_RESEND_RSVP_TEXT if rsvp_open else messaging.PERSONAL_RESEND_TEXT
+    return template.format(
+        greeting=f"היי {name}," if name else "היי,",
+        occasion=values.get("event_type") or "האירוע",
+        link=values.get("rsvp_link") or "",
+    )
+
+
+@dataclass
+class Handoff:
+    guest: models.Guest
+    message: models.Message
+    link: Optional[str]
+
+
+def handoffs_for_couple(db: Session, event: models.Event) -> list[Handoff]:
+    """מה בעלי האירוע רואים: מוזמנים שהצוות העביר אליהם, וההודעה האחרונה אליהם
+    עדיין לא הגיעה (אם בינתיים כן הגיעה — הפריט נעלם מעצמו)."""
+    from app import guest_journey
+
+    guests = list(db.scalars(select(models.Guest).where(
+        models.Guest.event_id == event.id, models.Guest.whatsapp_handoff_at.is_not(None),
+    )).all())
+    if not guests:
+        return []
+    rsvp_open = guest_journey.rsvp_is_open(event)
+    out = []
+    for issue in issues_for_event(db, event, guests=guests):
+        g = issue.guest
+        if not handed_off(g, issue.message) or g.rsvp_status in ("confirmed", "declined"):
+            continue
+        out.append(Handoff(
+            guest=g, message=issue.message,
+            link=wa_me_link(g.phone or "", personal_text(event, g, rsvp_open=rsvp_open)),
+        ))
+    out.sort(key=lambda h: h.guest.full_name or "")
     return out
 

@@ -75,3 +75,16 @@
     flex: none;
   }
 }
+
+/* "כדאי לשלוח בעצמכם": מתי נפתח WhatsApp, וכפתור שהוא קישור (wa.me). */
+.data-alert-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+a.data-alert-btn {
+  text-decoration: none;
+  text-align: center;
+}
+

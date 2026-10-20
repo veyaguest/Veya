@@ -1568,6 +1568,14 @@ textarea.adm-input {
   gap: 4px;
 }
 
+/* "הודעות שלא הגיעו" — שתי פעולות בצד השורה. */
+.adm-alert-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
 /* "מספרים שצריך לתקן" — רשימת המוזמנים מתחת לשורת האירוע. */
 .adm-phone-guests {
   padding: 0 16px 12px calc(16px + 18px);

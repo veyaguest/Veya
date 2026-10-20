@@ -1,5 +1,6 @@
 """נקודות API לניהול מוזמנים (CRUD)."""
 from collections import defaultdict
+from datetime import datetime
 from typing import Optional
 from urllib.parse import quote
 
@@ -231,7 +232,36 @@ def data_alerts(
             phone=p.guest.phone or "", rsvp_status=p.guest.rsvp_status, attempts=0,
             reported_at=p.guest.phone_alert_at,
         ))
-    return schemas.GuestDataAlerts(phone_fix=rows, total=len(rows))
+    handoffs = [
+        schemas.GuestHandoff(
+            guest_id=h.guest.id, full_name=h.guest.full_name, phone=h.guest.phone or "",
+            message_type=h.message.kind, whatsapp_link=h.link,
+            opened_at=h.guest.whatsapp_handoff_sent_at,
+        )
+        for h in delivery_issues.handoffs_for_couple(db, event)
+    ]
+    return schemas.GuestDataAlerts(
+        phone_fix=rows, send_personally=handoffs, total=len(rows) + len(handoffs),
+    )
+
+
+@router.post("/{guest_id}/whatsapp-handoff/opened", response_model=schemas.GuestDataAlerts)
+def whatsapp_handoff_opened(
+    guest_id: int,
+    db: Session = Depends(get_db),
+    event: models.Event = Depends(_write),
+):
+    """בעלי האירוע פתחו את ה-WhatsApp האישי כדי לשלוח למוזמן — נרשם, כדי שצוות
+    VEYA לא ישלח שוב גם הוא (``delivery_issues.resend_one``)."""
+    guest = db.get(models.Guest, guest_id)
+    if guest is None or guest.event_id != event.id or guest.whatsapp_handoff_at is None:
+        raise HTTPException(status_code=404, detail="המוזמן לא נמצא")
+    from app import outbound
+
+    outbound.lock_event_sends(db, event.id)  # מול "לשלוח שוב" של הצוות באותו רגע
+    guest.whatsapp_handoff_sent_at = datetime.utcnow()
+    db.commit()
+    return data_alerts(db=db, event=event)
 
 
 class IPlanExportIssue(BaseModel):

@@ -123,6 +123,11 @@ def _alert_row(a: delivery_issues.AdminAlert) -> dict:
         "reason": a.issue.reason, "title": a.help.title, "detail": a.help.detail, "side": a.help.side,
         "attempts": a.issue.attempts, "resend_at": a.issue.resend_at,
         "has_open_call": a.has_open_call,
+        "handed_off_at": g.whatsapp_handoff_at if delivery_issues.handed_off(g, msg) else None,
+        "couple_opened_at": (
+            g.whatsapp_handoff_sent_at if delivery_issues.handed_off(g, msg) else None
+        ),
+        "can_hand_off": delivery_issues.wa_me_link(g.phone or "", "x") is not None,
     }
 
 
@@ -173,6 +178,35 @@ def resend_message(
         "not_sent": result.blocked + result.no_template + result.image_blocked,
         "outcome": outcome, "detail": result.last_detail or result.image_reason or "",
     }
+
+
+@router.post("/delivery-alerts/{guest_id}/handoff")
+def hand_off_to_couple(
+    guest_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(admin_rbac.require("messages.alert")),
+):
+    """"להעביר לבעלי האירוע" — המוזמן מופיע להם במסך המוזמנים עם כפתור שפותח את
+    ה-WhatsApp האישי שלהם, עם ההודעה והקישור האישי מוכנים. מבטל שליחה חוזרת
+    אוטומטית. רק כשההודעה האחרונה באמת לא הגיעה ויש מספר תקין."""
+    guest = db.get(models.Guest, guest_id)
+    event = db.get(models.Event, guest.event_id) if guest is not None else None
+    if guest is None or event is None:
+        raise HTTPException(status_code=404, detail="המוזמן לא נמצא")
+    if not delivery_issues.issues_for_event(db, event, guests=[guest]):
+        raise HTTPException(status_code=409, detail="ההודעה האחרונה למוזמן כבר יצאה — אין מה להעביר.")
+    if delivery_issues.wa_me_link(guest.phone or "", "x") is None:
+        raise HTTPException(status_code=409, detail="למוזמן אין מספר טלפון תקין — קודם צריך לתקן אותו.")
+    delivery_issues.hand_off([guest])
+    admin_audit.record(
+        db, admin, domain="messages", action="message.handoff",
+        summary=f"העביר/ה לבעלי האירוע לשלוח ל{guest.full_name} מה-WhatsApp האישי",
+        target_type="guest", target_id=guest.id, target_label=guest.full_name,
+        event_id=event.id, request=request,
+    )
+    db.commit()
+    return {"handed_off": True}
 
 
 # ---- מספרים שצריך לתקן ----

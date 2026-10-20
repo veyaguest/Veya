@@ -1682,8 +1682,20 @@ export interface GuestDataAlert {
   reported_at: string
 }
 
+/** הודעה שלא הגיעה גם אחרי ניסיון חוזר — צוות VEYA העביר לבעלי האירוע לשלוח בעצמם. */
+export interface GuestHandoff {
+  guest_id: number
+  full_name: string
+  phone: string
+  message_type: string
+  /** wa.me — WhatsApp האישי של בעלי האירוע, עם ההודעה והקישור האישי מוכנים. */
+  whatsapp_link: string | null
+  opened_at: string | null
+}
+
 export interface GuestDataAlerts {
   phone_fix: GuestDataAlert[]
+  send_personally: GuestHandoff[]
   total: number
 }
 

@@ -1728,6 +1728,13 @@ export async function guestDataAlerts(): Promise<GuestDataAlerts> {
   return res.json()
 }
 
+/** בעלי האירוע פתחו את ה-WhatsApp האישי למוזמן שהצוות העביר אליהם — נרשם, כדי שלא יישלח פעמיים. */
+export async function markHandoffOpened(guestId: number): Promise<GuestDataAlerts> {
+  const res = await apiFetch(`/guests/${guestId}/whatsapp-handoff/opened`, { method: 'POST' })
+  if (!res.ok) throw await toError(res)
+  return res.json()
+}
+
 // ---- אימות כתובת המייל ----------------------------------------------------
 
 /** שולח מחדש את מייל האימות למשתמש המחובר. */

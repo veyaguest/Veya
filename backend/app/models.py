@@ -262,6 +262,12 @@ class Guest(Base):
     # (אותו עיקרון כמו "מספר שגוי" מהשיחות, ``call_center.unresolved_wrong_numbers``).
     phone_alert_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     phone_alert_phone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    # צוות VEYA העביר לבעלי האירוע לשלוח בעצמם, מה-WhatsApp האישי, הודעה שלא
+    # הגיעה גם אחרי הניסיון החוזר (``delivery_issues.handoffs_for_couple``).
+    # ``whatsapp_handoff_sent_at`` = מתי בעלי האירוע פתחו את WhatsApp לשליחה.
+    # מאז ההעברה — אין שליחה חוזרת אוטומטית, שלא יקבל את ההודעה פעמיים.
+    whatsapp_handoff_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    whatsapp_handoff_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     event: Mapped["Event"] = relationship(back_populates="guests")

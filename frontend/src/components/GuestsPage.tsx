@@ -7,10 +7,11 @@ import {
   getNoteSplitSuggestions,
   guestDataAlerts,
   listGuests,
+  markHandoffOpened,
   markGuestsPopupSeen,
 } from '../api'
 import type { GuestFilter, GuestSort } from '../api'
-import type { Guest, GuestDataAlert, NoteSplitCandidate } from '../types'
+import type { Guest, GuestDataAlert, GuestHandoff, NoteSplitCandidate } from '../types'
 import { groupLabel, INVITE_STATUS_LABELS, RSVP_LABELS } from '../types'
 import { activeEventTerms, sideLabel } from '../strings/eventTypes'
 import { strings } from '../strings/he'
@@ -97,6 +98,7 @@ export function GuestsPage({
   const [editGuest, setEditGuest] = useState<Guest | null>(null)
   // מוזמנים שמספר הטלפון שלהם נמצא שגוי בשיחה — דורש תיקון של בעל/ת האירוע.
   const [phoneAlerts, setPhoneAlerts] = useState<GuestDataAlert[]>([])
+  const [handoffs, setHandoffs] = useState<GuestHandoff[]>([])
   const [showOnboarding, setShowOnboarding] = useState(() => !guestsPopupSeen)
   // מסמנים "נראה" בשרת (ברמת חשבון — ראו models.User.guests_popup_seen_at)
   // ברגע שהדיאלוג מוצג — לא רק כשסוגרים אותו. בלי זה, מי שנכנס למסך
@@ -181,6 +183,7 @@ export function GuestsPage({
     try {
       const res = await guestDataAlerts()
       setPhoneAlerts(res.phone_fix)
+      setHandoffs(res.send_personally ?? [])
     } catch {
       /* שקט — התראה, לא פעולה קריטית */
     }
@@ -247,6 +250,15 @@ export function GuestsPage({
   }
 
   const hasMore = guests.length < total
+
+  /** זמן השרת (UTC בלי אזור זמן) → "20.10, 14:05" בשעון ישראל. */
+  function shortWhen(value: string): string {
+    const d = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(value) ? value : `${value}Z`)
+    return new Intl.DateTimeFormat('he-IL', {
+      day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+      timeZone: 'Asia/Jerusalem',
+    }).format(d)
+  }
 
   function phoneAlertText(a: GuestDataAlert): string {
     switch (a.reason) {
@@ -317,6 +329,41 @@ export function GuestsPage({
           <p className="data-alert-foot">
             אישור ההגעה של המוזמנים האלה לא השתנה — זו בעיה בפרטי הקשר בלבד.
           </p>
+        </section>
+      )}
+
+      {handoffs.length > 0 && (
+        <section className="data-alert" role="status">
+          <div className="data-alert-head">
+            <strong>{t.sendPersonallyTitle}</strong>
+          </div>
+          <ul className="data-alert-list">
+            {handoffs.map((h) => (
+              <li key={h.guest_id}>
+                <div className="data-alert-text">
+                  {t.sendPersonallyText(h.full_name)}
+                  {h.opened_at && (
+                    <span className="data-alert-note">{t.sendPersonallyOpened(shortWhen(h.opened_at))}</span>
+                  )}
+                </div>
+                {h.whatsapp_link && (
+                  <a
+                    className={`${h.opened_at ? 'btn-ghost' : 'btn-primary'} data-alert-btn`}
+                    href={h.whatsapp_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      markHandoffOpened(h.guest_id)
+                        .then((res) => setHandoffs(res.send_personally ?? []))
+                        .catch(() => {})
+                    }}
+                  >
+                    {t.sendPersonallyButton}
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

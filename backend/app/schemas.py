@@ -1975,8 +1975,22 @@ class GuestDataAlert(BaseModel):
     reported_at: datetime
 
 
+class GuestHandoff(BaseModel):
+    """הודעה שלא הגיעה גם אחרי ניסיון חוזר — צוות VEYA העביר לבעלי האירוע לשלוח
+    בעצמם (``delivery_issues.handoffs_for_couple``). ``whatsapp_link`` = wa.me
+    עם המוזמן כנמען וההודעה + הקישור האישי מוכנים."""
+
+    guest_id: int
+    full_name: str
+    phone: str = ""
+    message_type: str
+    whatsapp_link: Optional[str] = None
+    opened_at: Optional[datetime] = None
+
+
 class GuestDataAlerts(BaseModel):
     phone_fix: list[GuestDataAlert] = []
+    send_personally: list[GuestHandoff] = []
     total: int = 0
 
 

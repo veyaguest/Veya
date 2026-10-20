@@ -24,6 +24,11 @@ interface DeliveryAlert {
   attempts: number
   resend_at: string | null
   has_open_call: boolean
+  /** הצוות העביר לבעלי האירוע לשלוח מה-WhatsApp האישי. */
+  handed_off_at: string | null
+  /** בעלי האירוע פתחו את WhatsApp לשליחה. */
+  couple_opened_at: string | null
+  can_hand_off: boolean
 }
 
 interface ResendResult {
@@ -50,6 +55,20 @@ export function DeliveryAlerts() {
   const [target, setTarget] = useState<DeliveryAlert | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [handingOff, setHandingOff] = useState<number | null>(null)
+  const handOff = async (a: DeliveryAlert) => {
+    setHandingOff(a.guest_id)
+    try {
+      await adminHttp.sendJson(`/admin/rsvp/delivery-alerts/${a.guest_id}/handoff`, 'POST')
+      toast(`${a.guest_name}: בעלי האירוע יראו כפתור לשליחה מה-WhatsApp שלהם`)
+      data.reload()
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'ההעברה לא בוצעה', 'bad')
+    } finally {
+      setHandingOff(null)
+    }
+  }
 
   const resend = async () => {
     if (!target) return
@@ -103,11 +122,15 @@ export function DeliveryAlerts() {
                     {' · '}לא הגיעה {fmtDateTime(a.failed_at)}
                     {a.attempts > 1 ? ` · ${a.attempts} ניסיונות` : ''}
                   </span>
-                  {(a.resend_at || a.has_open_call) && (
+                  {(a.resend_at || a.has_open_call || a.handed_off_at) && (
                     <span className="adm-list-sub">
-                      {a.resend_at ? `ניסיון אוטומטי נוסף: ${fmtDateTime(a.resend_at)}` : ''}
-                      {a.resend_at && a.has_open_call ? ' · ' : ''}
-                      {a.has_open_call ? 'נמצא בתור השיחות' : ''}
+                      {[
+                        a.resend_at ? `ניסיון אוטומטי נוסף: ${fmtDateTime(a.resend_at)}` : '',
+                        a.has_open_call ? 'נמצא בתור השיחות' : '',
+                        a.couple_opened_at
+                          ? `בעלי האירוע פתחו WhatsApp לשליחה ${fmtDateTime(a.couple_opened_at)}`
+                          : a.handed_off_at ? `הועבר לבעלי האירוע ${fmtDateTime(a.handed_off_at)}` : '',
+                      ].filter(Boolean).join(' · ')}
                     </span>
                   )}
                   <span className="adm-list-sub adm-muted">
@@ -115,11 +138,24 @@ export function DeliveryAlerts() {
                     {a.raw_reason ? ` · Meta: ${a.raw_reason}` : ''}
                   </span>
                 </span>
-                {can('messages.resend') && (
-                  <button type="button" className="adm-btn adm-btn-sm" onClick={() => { setError(null); setTarget(a) }}>
-                    לשלוח שוב
-                  </button>
-                )}
+                <span className="adm-alert-actions">
+                  {can('messages.resend') && !a.couple_opened_at && (
+                    <button type="button" className="adm-btn adm-btn-sm" onClick={() => { setError(null); setTarget(a) }}>
+                      לשלוח שוב
+                    </button>
+                  )}
+                  {/* כשהניסיון האוטומטי כבר לא יעזור — בעלי האירוע שולחים מה-WhatsApp האישי. */}
+                  {can('messages.alert') && !a.resend_at && !a.handed_off_at && a.can_hand_off && (
+                    <button
+                      type="button"
+                      className="adm-btn adm-btn-sm"
+                      disabled={handingOff !== null}
+                      onClick={() => handOff(a)}
+                    >
+                      להעביר לבעלי האירוע
+                    </button>
+                  )}
+                </span>
               </div>
             </li>
           ))}

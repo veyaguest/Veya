@@ -211,3 +211,55 @@ def test_phone_alert_requires_permission() -> None:
     g = _raw_guest(api.event_id, "בלי מספר", "")
     r = api.client.post("/admin/rsvp/phone-alerts", headers=api.headers, json={"guest_ids": [g]})
     assert r.status_code in (401, 403), r.text
+
+
+# ---- העברה לבעלי האירוע: שליחה מה-WhatsApp האישי ----
+
+def test_hand_off_to_couple_personal_whatsapp() -> None:
+    from urllib.parse import unquote
+
+    api, _ = bootstrap()
+    other, _ = bootstrap()
+    _event_with_messages(api)
+    support, admin = _admin("support"), _admin("admin")
+    g = api.add_guest("רוני לוי", "0501212121")
+    for _ in range(3):                                   # מקור + שני ניסיונות אוטומטיים
+        _msg(api.event_id, g["id"], code=131049)
+    alert = _alerts(support)[g["id"]]
+    assert alert["resend_at"] is None and alert["handed_off_at"] is None and alert["can_hand_off"]
+
+    # לפני ההעברה — בעלי האירוע לא רואים כלום.
+    assert api.client.get("/guests/data-alerts", headers=api.headers).json()["send_personally"] == []
+
+    r = api.client.post(f"/admin/rsvp/delivery-alerts/{g['id']}/handoff", headers=support)
+    assert r.status_code == 200, r.text
+    assert _alerts(support)[g["id"]]["handed_off_at"] is not None
+
+    data = api.client.get("/guests/data-alerts", headers=api.headers).json()
+    [item] = data["send_personally"]
+    assert item["guest_id"] == g["id"] and item["opened_at"] is None
+    link = unquote(item["whatsapp_link"])
+    assert link.startswith("https://wa.me/972501212121?text=") and "היי רוני," in link and "/confirm/" in link
+    assert other.client.get("/guests/data-alerts", headers=other.headers).json()["send_personally"] == []
+    assert other.client.post(
+        f"/guests/{g['id']}/whatsapp-handoff/opened", headers=other.headers).status_code == 404
+
+    # בעלי האירוע פתחו WhatsApp — הצוות כבר לא שולח שוב (שלא יקבל פעמיים).
+    r = api.client.post(f"/guests/{g['id']}/whatsapp-handoff/opened", headers=api.headers)
+    assert r.status_code == 200 and r.json()["send_personally"][0]["opened_at"] is not None
+    assert _alerts(support)[g["id"]]["couple_opened_at"] is not None
+    r = api.client.post(f"/admin/rsvp/delivery-alerts/{g['id']}/resend", headers=admin)
+    assert r.status_code == 409 and "בעצמם" in r.json()["detail"], r.text
+
+
+def test_hand_off_disappears_when_message_arrives() -> None:
+    api, _ = bootstrap()
+    support = _admin("support")
+    g = api.add_guest("טל אבן", "0503434343")
+    _msg(api.event_id, g["id"], code=131026)
+    assert api.client.post(f"/admin/rsvp/delivery-alerts/{g['id']}/handoff", headers=support).status_code == 200
+    _msg(api.event_id, g["id"], status="delivered")       # הודעה מאוחרת יותר כן הגיעה
+    assert api.client.get("/guests/data-alerts", headers=api.headers).json()["send_personally"] == []
+    # ואין מה להעביר שוב.
+    r = api.client.post(f"/admin/rsvp/delivery-alerts/{g['id']}/handoff", headers=support)
+    assert r.status_code == 409, r.text

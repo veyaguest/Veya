@@ -219,6 +219,19 @@ def test_never_twice() -> None:
     assert len(_invitations(db, had_one)) == 2
 
 
+def test_no_auto_resend_after_hand_off() -> None:
+    """הצוות העביר לבעלי האירוע לשלוח בעצמם — VEYA לא שולחת שוב בעצמה."""
+    db = _db()
+    ev = _event(db)
+    g = _guest(db, ev)
+    _msg(db, ev, g)
+    g.whatsapp_handoff_at = datetime(2026, 9, 8, 12, 0)
+    db.commit()
+    assert di.issues_for_event(db, ev)[0].resend_at is None
+    _tick(db, datetime(2026, 9, 9, 9, 0))
+    assert len(_invitations(db, g)) == 1
+
+
 def test_rules_block_resend() -> None:
     db = _db()
     ev = _event(db)
