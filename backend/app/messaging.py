@@ -701,6 +701,14 @@ class MockProvider:
         )
 
 
+# הסבר לזוג/לאדמין כשהודעה לא יצאה במצב Meta (``MetaProvider.send_outbound``).
+_NOT_SENT_DETAIL = {
+    "not_library_wording": "הנוסח נערך ואינו מספריית הנוסחים — בחרו נוסח מהרשימה כדי שיישלח ב-WhatsApp",
+    "template_not_approved": "התבנית של הנוסח הזה עוד ממתינה לאישור של WhatsApp",
+    "missing_value": "חסרים פרטים לנוסח (למשל שעה, אולם או כתובת) — השלימו אותם בפרטי האירוע",
+}
+
+
 class MetaProvider:
     """שליחה אמיתית מול WhatsApp Cloud API (Meta) — מצבי ``meta_test`` ו-``meta``.
 
@@ -763,11 +771,13 @@ class MetaProvider:
         return self._media[key]
 
     def _template_values(self, item, event):
-        from app import communication, whatsapp_templates
+        from app import communication, whatsapp_template_status, whatsapp_templates
 
-        spec = whatsapp_templates.template_for(item.kind, event)
+        spec, reason = whatsapp_templates.resolve(item.kind, event, item.guest)
         if spec is None:
-            return None, whatsapp_templates.NO_TEMPLATE
+            return None, reason
+        if not whatsapp_template_status.is_sendable(spec.name, spec.language):
+            return None, whatsapp_templates.NOT_APPROVED
         built = whatsapp_templates.build(
             spec, communication.communication_values(event, item.guest), item.guest.guest_token,
         )
@@ -805,13 +815,13 @@ class MetaProvider:
             detail = (
                 "תמונת ההזמנה לא צורפה — ההודעה לא נשלחה"
                 if reason in whatsapp_templates.IMAGE_REASONS
-                else f"אין Template מאושר לשלב הזה ({reason})"
+                else _NOT_SENT_DETAIL.get(reason, f"אין Template מאושר לשלב הזה ({reason})")
             )
             return SendResult(ok=False, provider=self.name, status="failed", detail=detail)
-        spec, body_params, url_suffix, media_id = values
+        spec, body_params, url_suffixes, media_id = values
         result = whatsapp_meta.send_template(
             phone=item.phone, name=spec.name, language=spec.language,
-            body_params=body_params, url_suffix=url_suffix, callback_data=callback_data,
+            body_params=body_params, url_suffixes=url_suffixes, callback_data=callback_data,
             header_image_id=media_id,
         )
         if media_id and result.error_code in whatsapp_meta.MEDIA_ERROR_CODES:

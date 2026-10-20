@@ -234,11 +234,14 @@ def template_payload(
     *, to: str, name: str, language: str, body_params: list[str],
     url_suffix: Optional[str] = None, callback_data: Optional[str] = None,
     header_image_id: Optional[str] = None,
+    url_suffixes: Optional[list[tuple[int, str]]] = None,
 ) -> dict:
     """גוף בקשה לשליחת Template (Cloud API ``type: template``).
 
     ``body_params`` — ערכי ``{{1}}``, ``{{2}}``… בגוף התבנית, לפי הסדר.
     ``url_suffix`` — הסיומת הדינמית של כפתור הקישור (כפתור ראשון, index 0).
+    ``url_suffixes`` — כמה כפתורי קישור דינמיים: ``[(index, סיומת), ...]`` (קישור
+    אישי + ניווט). גובר על ``url_suffix``.
     ``callback_data`` — ``biz_opaque_callback_data``: Meta מחזירה אותו כמו שהוא
     בעדכוני הסטטוס של ההודעה (עד 512 תווים).
     ``header_image_id`` — מזהה מדיה (``upload_media``) לתבנית עם Header מסוג תמונה.
@@ -254,10 +257,12 @@ def template_payload(
             "type": "body",
             "parameters": [{"type": "text", "text": v} for v in body_params],
         })
-    if url_suffix:
+    if url_suffixes is None and url_suffix:
+        url_suffixes = [(0, url_suffix)]
+    for index, suffix in url_suffixes or []:
         components.append({
-            "type": "button", "sub_type": "url", "index": "0",
-            "parameters": [{"type": "text", "text": url_suffix}],
+            "type": "button", "sub_type": "url", "index": str(index),
+            "parameters": [{"type": "text", "text": suffix}],
         })
     template: dict = {"name": name, "language": {"code": language}}
     if components:
@@ -278,6 +283,7 @@ def send_template(
     *, phone: str, name: str, language: str, body_params: list[str],
     url_suffix: Optional[str] = None, callback_data: Optional[str] = None,
     header_image_id: Optional[str] = None, config: Optional[MetaConfig] = None,
+    url_suffixes: Optional[list[tuple[int, str]]] = None,
 ):
     """שולח Template לטלפון ישראלי. מחזיר ``SendResult``."""
     config = config or load_config()
@@ -287,6 +293,7 @@ def send_template(
     return _post_message(config, template_payload(
         to=to, name=name, language=language, body_params=body_params,
         url_suffix=url_suffix, callback_data=callback_data, header_image_id=header_image_id,
+        url_suffixes=url_suffixes,
     ), log_ref=callback_data or "")
 
 

@@ -320,17 +320,24 @@ NOW = datetime(2026, 9, 8, 8, 0)  # יום האירוע, 11:00 בישראל
 
 
 def test_step_without_template_is_not_sent_or_consumed() -> None:
+    """(עודכן 2026-10-20) ליום האירוע יש היום תבנית קבועה (``veya_event_day``);
+    "שלב בלי תבנית שאפשר לשלוח" = התבנית עוד לא אושרה ב-Meta."""
     from app import communication as c
+    from app import whatsapp_template_status as status
 
     db = Session(_engine())
     ev, g, em = _round_setup(db)
-    for mode in ("meta", "meta_test"):
-        with meta_env(mode=mode, recipients=g.phone) as fake, templates():
-            actions = c.compute_due_messages(db, ev, now=NOW)
-            result = c.send_due_messages(db, ev, actions)
-            db.commit()
-        assert fake.requests == [] and _messages(db) == []
-        assert (result["sent"], result["failed"]) == (0, 0)
+    status._override = {("veya_event_day", "he"): "PENDING"}
+    try:
+        for mode in ("meta", "meta_test"):
+            with meta_env(mode=mode, recipients=g.phone) as fake, templates():
+                actions = c.compute_due_messages(db, ev, now=NOW)
+                result = c.send_due_messages(db, ev, actions)
+                db.commit()
+            assert fake.requests == [] and _messages(db) == []
+            assert (result["sent"], result["failed"]) == (0, 0)
+    finally:
+        status._override = None
     # הסבב לא "נשרף": כשהתבנית מאושרת, אותה הודעה עדיין בתור.
     with meta_env(fake=FakeMeta(ok("wamid.late"))) as fake, templates(event_day=_spec()):
         actions = c.compute_due_messages(db, ev, now=NOW)

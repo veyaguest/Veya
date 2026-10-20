@@ -26,7 +26,9 @@ import hashlib
 import json
 import os
 import re
+import sys
 import time
+from pathlib import Path
 from collections import Counter
 from typing import Optional
 
@@ -39,22 +41,19 @@ LIBRARY_URL = os.getenv("VEYA_LIBRARY_URL") or "https://veya-backend-u41w.onrend
 TEMPLATE_CAP = int(os.getenv("VEYA_META_TEMPLATE_CAP") or 250)
 BATCH_TTL = 30 * 60
 
-EVENT_CODES = {"wedding": "wed", "henna": "henna", "bar_mitzvah": "barm", "bat_mitzvah": "batm",
-               "brit": "brit", "brita": "brita", "business": "biz"}
-MESSAGE_CODES = {"invitation": "inv", "rsvp_request": "rsvp", "reminder_1": "rem1",
-                 "reminder_2": "rem2", "final_reminder": "rem3", "thank_you": "thx"}
-# כמו בדף הנוסחים באתר (build-nuschim.mjs). בהזמנה הקישור האישי הוא "לצפייה בהזמנה":
-# אישור ההגעה נפתח רק מהיום הראשון של אישורי ההגעה (החלטת הבעלים 2026-10-20).
-BUTTONS = {"rsvp_link": "אישור הגעה", "navigation_link": "ניווט למקום"}
-INVITATION_LINK_BUTTON = "לצפייה בהזמנה"
+# ההמרה עצמה (שם, סדר משתנים, כפתורים) — מקור אמת יחיד בקוד של השרת, כדי שהקוד
+# ששולח והכלי שיוצר את התבניות לא ייפרדו (``backend/app/whatsapp_library.py``).
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "backend"))
+from app import whatsapp_library as wl  # noqa: E402
+
+EVENT_CODES = wl.EVENT_CODES
+MESSAGE_CODES = wl.MESSAGE_CODES
+INVITATION_LINK_BUTTON = wl.INVITATION_LINK_BUTTON
 MAPS_URL = "https://www.google.com/maps/search/?api=1&query={{1}}"
 SAMPLES = {"guest_name": "דנה", "host_names": "יונתן ושירה", "groom_name": "יונתן",
            "bride_name": "שירה", "event_date": "14/05/2026", "event_time": "19:30",
            "venue_name": "גן האירועים", "address": "הזורע 12, רמת גן"}
-LINK_TOKENS = ("rsvp_link", "navigation_link", "maps_link", "gift_link")
-_LINK_RE = re.compile(r"\{\{(%s)\}\}" % "|".join(LINK_TOKENS))
-_LABEL_RE = re.compile(r"^.{0,32}:\s*$")
-_ENDS_VAR = re.compile(r"\{\{\s*\w+\s*\}\}\s*$")
+SUPPORTED_LINKS = ("rsvp_link", "navigation_link")
 
 # נקודת החלפה לבדיקות.
 _library_override: Optional[dict] = None
@@ -79,59 +78,37 @@ def wordings(lib: dict) -> list[dict]:
 
 
 def template_name(w: dict) -> str:
-    return f"veya_{EVENT_CODES[w['event_type']]}_{MESSAGE_CODES[w['message_type']]}_{int(w['option_number']):02d}"
+    return wl.template_name(w["event_type"], w["message_type"], w["option_number"])
 
 
 def _split_links(content: str) -> tuple[str, list[str]]:
-    """כמו ``render`` ב-build-nuschim.mjs: שורת קישור ושורת התווית שלפניה יוצאות."""
-    links, kept = [], []
-    for line in content.split("\n"):
-        found = _LINK_RE.findall(line)
-        if found:
-            links += found
-            if kept and kept[-1].strip() and _LABEL_RE.match(kept[-1].strip()):
-                kept.pop()
-            rest = _LINK_RE.sub("", line).strip()
-            if rest and not _LABEL_RE.match(rest):
-                kept.append(rest)
-            continue
-        kept.append(line)
-    return re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip(), links
+    return wl.split_links(content)
 
 
 def to_draft(w: dict, category: str = "MARKETING") -> dict:
     """נוסח מהספרייה → טיוטת תבנית + מצב (ok / needs_source_fix / invalid)."""
-    name = template_name(w)
-    body, links = _split_links(w["content"])
-    order: list[str] = []
-    for t in re.findall(r"\{\{(\w+)\}\}", body):
-        if t not in order:
-            order.append(t)
-    positional = body
-    for i, t in enumerate(order, 1):
-        positional = positional.replace("{{%s}}" % t, "{{%d}}" % i)
+    t = wl.library_template(w["event_type"], w["message_type"], w["option_number"], w["content"])
+    name, order, positional, links = t.name, list(t.params), t.body, list(t.links)
     buttons = []
-    for ln in dict.fromkeys(links):
-        if ln == "rsvp_link":
-            text = INVITATION_LINK_BUTTON if w["message_type"] == "invitation" else BUTTONS[ln]
-            buttons.append({"type": "url", "text": text, "url": vm.VEYA_CONFIRM_URL,
-                            "url_example": "https://veyaguest.co.il/confirm/AbCdEf123456"})
-        elif ln == "navigation_link":
-            buttons.append({"type": "url", "text": BUTTONS[ln], "url": MAPS_URL,
-                            "url_example": "https://www.google.com/maps/search/?api=1&query=Tel+Aviv"})
+    if t.link_button:
+        buttons.append({"type": "url", "text": t.link_button, "url": vm.VEYA_CONFIRM_URL,
+                        "url_example": "https://veyaguest.co.il/confirm/AbCdEf123456"})
+    if t.navigation_button:
+        buttons.append({"type": "url", "text": wl.NAVIGATION_BUTTON, "url": MAPS_URL,
+                        "url_example": "https://www.google.com/maps/search/?api=1&query=Tel+Aviv"})
     draft = {"name": name, "language": "he", "category": category, "body": positional,
-             "body_examples": [SAMPLES.get(t, "דוגמה") for t in order], "buttons": buttons}
+             "body_examples": [SAMPLES.get(x, "דוגמה") for x in order], "buttons": buttons}
     problems = []
-    unknown = [t for t in order if t not in SAMPLES]
+    unknown = [x for x in order if x not in SAMPLES]
     if unknown:
         problems.append("משתנה שהכלי לא מכיר: " + ", ".join(unknown))
-    unsupported = [ln for ln in links if ln not in BUTTONS]
+    unsupported = [ln for ln in links if ln not in SUPPORTED_LINKS]
     if unsupported:
         problems.append("קישור שאין לו כפתור: " + ", ".join(unsupported))
     v = vm.validate_draft(draft)
     errors = [e for e in v["errors_he"]]
     state = "ok"
-    if _ENDS_VAR.search(positional):
+    if not t.exact:
         state = "needs_source_fix"
         problems.append("הנוסח נגמר במשתנה (למשל חתימת השמות), ו-Meta דוחה תבנית כזו. "
                         "מתקנים את הנוסח בספרייה כך שיסתיים בטקסט — והאתר והתבנית יישארו זהים.")

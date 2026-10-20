@@ -33,6 +33,35 @@ from tests.test_whatsapp_meta_api import (  # noqa: E402
 from tests.test_whatsapp_safety import _db, _engine, _event, _guest, _phone  # noqa: E402
 
 
+import pytest  # noqa: E402
+
+
+def _register_invitation_templates() -> dict:
+    """המסלול של התמונה נבדק כאן מול תבנית הזמנה רשומה במפורש (``TEMPLATES``) —
+    מאז 2026-10-20 התבנית נבחרת לפי הנוסח מהספרייה (``test_whatsapp_library_routing``),
+    אבל ההעלאה, ההמרה והחסימה זהות לכל תבנית עם Header תמונה."""
+    from app import whatsapp_templates as wt
+
+    saved = dict(wt.TEMPLATES)
+    params = ("guest_name", "event_type", "host_names", "event_date")
+    wt.TEMPLATES["invitation"] = wt.TemplateSpec(
+        name="veya_invitation", body_params=params, url_button=True,
+        with_image=wt.TemplateSpec(name="veya_invitation_image", body_params=params,
+                                   url_button=True, header_image=True),
+    )
+    return saved
+
+
+@pytest.fixture(autouse=True)
+def _invitation_templates():
+    from app import whatsapp_templates as wt
+
+    saved = _register_invitation_templates()
+    yield
+    wt.TEMPLATES.clear()
+    wt.TEMPLATES.update(saved)
+
+
 def _image_bytes(color=(200, 30, 30), fmt="WEBP", size=(600, 800)) -> bytes:
     buf = io.BytesIO()
     Image.new("RGB", size, color).save(buf, format=fmt)
@@ -340,6 +369,7 @@ def test_test_tool_image_option(tmp_path=None) -> None:
 
 
 if __name__ == "__main__":
+    _register_invitation_templates()
     try:
         for name, fn in list(globals().items()):
             if name.startswith("test_") and callable(fn):
