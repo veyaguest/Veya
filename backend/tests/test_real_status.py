@@ -95,3 +95,28 @@ def test_webhook_update_marks_status_updated_at() -> None:
     first = msg.status_updated_at
     ms.apply_status_update(db, provider_message_id="wamid.A", status=ms.DELIVERED)
     assert msg.status == ms.READ and msg.status_updated_at >= first
+
+
+def test_admin_webhook_health(monkeypatch) -> None:
+    from datetime import timedelta
+
+    from app.routers.admin_rsvp import _webhook_health
+
+    db = _db()
+    ev, demo, real = _setup(db)
+    now = datetime(2026, 10, 1, 12, 0)
+    msg = db.scalar(select(models.Message).where(models.Message.provider_message_id == "wamid.A"))
+    msg.created_at = now - timedelta(hours=3)
+    db.commit()
+
+    monkeypatch.setenv("WHATSAPP_MODE", "mock")
+    assert _webhook_health(db, now)["relevant"] is False
+
+    monkeypatch.setenv("WHATSAPP_MODE", "meta")
+    health = _webhook_health(db, now)
+    assert health["relevant"] and health["stale"] and health["recent_real_sends"] == 1
+    assert health["last_update"] is None
+
+    ms.apply_status_update(db, provider_message_id="wamid.A", status=ms.READ)
+    health = _webhook_health(db, now)
+    assert not health["stale"] and health["last_update"] is not None

@@ -30,6 +30,35 @@ def _hosts(e: models.Event) -> str:
     return event_terms.hosts_names(e.event_type, e.groom_name, e.bride_name) or f"אירוע #{e.id}"
 
 
+# הודעה אמיתית שיצאה לפני יותר מזה ועדיין לא קיבלה אף עדכון מ-Meta — חשוד.
+# Meta שולחת "sent"/"delivered" בדרך כלל תוך שניות.
+WEBHOOK_GRACE = timedelta(hours=1)
+WEBHOOK_WINDOW = timedelta(hours=24)
+
+
+def _webhook_health(db: Session, now: Optional[datetime] = None) -> dict:
+    """האם עדכוני המסירה מ-Meta (webhook) באמת מגיעים — בלעדיהם "נמסרו/נקראו/
+    לא נמסרו" בעמוד הזוג לא מתעדכנים, ולא נדע על הודעות שלא הגיעו.
+
+    ``stale``: יצאו הודעות אמיתיות (יש להן מזהה Meta) ב-24 השעות האחרונות, עברה
+    שעה, ואף אחת מהן לא קיבלה עדכון. במצב הדגמה — לא רלוונטי (``None``)."""
+    if event_cycle.counts_demo_sends():
+        return {"relevant": False, "last_update": None, "recent_real_sends": 0, "stale": False}
+    now = now or datetime.utcnow()
+    M = models.Message
+    real = (M.direction == "outbound", M.provider != event_cycle.MOCK_PROVIDER, M.provider_message_id.is_not(None))
+    last_update = db.scalar(select(func.max(M.status_updated_at)).where(*real))
+    recent = db.execute(
+        select(func.count(M.id), func.count(M.status_updated_at)).where(
+            *real, M.created_at >= now - WEBHOOK_WINDOW, M.created_at <= now - WEBHOOK_GRACE,
+        )
+    ).one()
+    return {
+        "relevant": True, "last_update": last_update, "recent_real_sends": recent[0],
+        "stale": recent[0] > 0 and recent[1] == 0,
+    }
+
+
 @router.get("/overview")
 def rsvp_overview(
     date_: Optional[str] = Query(None, alias="date"),
@@ -97,6 +126,7 @@ def rsvp_overview(
     ).all())
 
     return {
+        "webhook": _webhook_health(db),
         "date": day.isoformat(),
         "today": today.isoformat(),
         "whatsapp_mode": messaging.current_mode(),

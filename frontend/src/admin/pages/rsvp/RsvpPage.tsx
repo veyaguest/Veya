@@ -12,11 +12,14 @@ import {
   PageHeader,
   StatusPill,
   fmtDate,
+  fmtDateTime,
   fmtNumber,
   useAsync,
 } from '../../ui'
 
 interface Overview {
+  /** האם עדכוני המסירה מ-Meta מגיעים (``admin_rsvp._webhook_health``). */
+  webhook: { relevant: boolean; last_update: string | null; recent_real_sends: number; stale: boolean }
   date: string
   today: string
   whatsapp_mode: string
@@ -76,8 +79,19 @@ export function RsvpPage({ route }: { route: AdminRoute }) {
             <div className="adm-stat"><span className="adm-stat-value">{fmtNumber(d.sent_today.total)}</span><span className="adm-stat-label">הודעות שיצאו היום</span></div>
             <div className={`adm-stat${d.sent_today.failed ? ' is-bad' : ''}`}><span className="adm-stat-value">{fmtNumber(d.sent_today.failed)}</span><span className="adm-stat-label">נכשלו היום</span></div>
           </section>
+          {d.webhook.stale && (
+            <div className="adm-banner adm-banner-bad" role="alert">
+              <strong>עדכוני המסירה מ-WhatsApp לא מגיעים.</strong> ב-24 השעות האחרונות יצאו{' '}
+              {fmtNumber(d.webhook.recent_real_sends)} הודעות ואף אחת לא קיבלה עדכון מ-Meta. עד שזה יתוקן,
+              הסטטוס בעמוד אישורי ההגעה של הזוג נשאר "נשלחה", והודעות שלא הגיעו לא יופיעו כאן. כדאי לבדוק
+              את חיבור ה-webhook ב-Meta ואת ההגדרות בשרת.
+            </div>
+          )}
           <p className="adm-quiet">
-            מצב WhatsApp: {d.whatsapp_mode === 'live' ? 'שליחה אמיתית' : 'הדגמה — ההודעות לא מגיעות למוזמנים'}
+            מצב WhatsApp: {d.whatsapp_mode === 'live' ? 'שליחה אמיתית' : d.whatsapp_mode === 'meta_test' ? 'בדיקה — רק למספרים המורשים' : 'הדגמה — ההודעות לא מגיעות למוזמנים'}
+            {d.webhook.relevant && (
+              <> · עדכון מסירה אחרון מ-WhatsApp: {d.webhook.last_update ? fmtDateTime(d.webhook.last_update) : 'עוד לא התקבל'}</>
+            )}
           </p>
 
           <DeliveryAlerts />
