@@ -27,7 +27,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from typing import Optional
 
 from sqlalchemy import select, text
@@ -40,6 +40,22 @@ from app import (
 
 # מפתח נעילה ייחודי למשימה הזו (שונה מזה של תכנון השיחות).
 _TICK_LOCK_KEY = 815402118
+
+# שעות השליחה האוטומטית (שעון ישראל). 19:00 היא השעה המאוחרת ביותר שאפשר
+# לבחור לסבב (``communication.SEND_TIME_MAX``), ובמסלול דחוס הודעה יוצאת בדיוק
+# ב-19:00 — לכן ריצה שמגיעה עד שעה באיחור עוד שולחת אותה. אחרי 20:00 ולפני
+# 10:00 — שום דבר (2026-10-20, אחרי שנמצאו ריצות של המשימה באמצע הלילה).
+AUTO_SEND_FROM = time(10, 0)
+AUTO_SEND_UNTIL = time(20, 0)
+
+
+def is_auto_send_moment(now: datetime) -> bool:
+    """האם המשימה המתוזמנת רשאית לשלוח עכשיו: יום חול, 10:00–20:00 בישראל."""
+    local = local_time.to_israel(now)
+    if rsvp_timeline.is_weekend(local.date()):
+        return False
+    return AUTO_SEND_FROM <= local.time() < AUTO_SEND_UNTIL
+
 
 # אירועים שהסתיימו לפני יותר מזה לא נבדקים — הודעת התודה (יום אחרי, עם
 # דחיית סוף שבוע) היא הדבר האחרון שנשלח.
@@ -98,6 +114,11 @@ def process_event(
         )
 
     if not send:
+        return started, 0, 0
+    # שליחה אוטומטית רק בשעות השליחה, גם כשהמשימה המתוזמנת רצה באיחור — אף
+    # מוזמן לא מקבל הודעה בלילה. ההודעה לא "נשרפת": היא יוצאת בריצה הראשונה
+    # בתוך השעות, כל עוד החלון שלה (``send_window``) פתוח.
+    if not is_auto_send_moment(now):
         return started, 0, 0
     # idempotent — מבטיח שיש שורת הודעה לכל סבב (אירועים ישנים).
     communication.provision_event_messages(db, event)

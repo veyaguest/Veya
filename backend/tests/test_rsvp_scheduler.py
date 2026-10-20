@@ -420,6 +420,28 @@ def test_past_steps_show_their_historical_count() -> None:
     print("✓ שלב שעבר — המספר ההיסטורי; שלב עתידי — המצב העדכני")
 
 
+def test_late_night_run_sends_nothing_and_the_round_goes_out_next_morning() -> None:
+    """(2026-10-20) המשימה המתוזמנת רצה לפעמים באיחור של שעות — גם באמצע הלילה.
+    שום הודעה אוטומטית לא יוצאת לפני 10:00 או אחרי 20:00; הסבב לא נשרף ויוצא
+    בריצה הראשונה בבוקר, כל עוד החלון שלו (עד השלב הבא) פתוח."""
+    db = _db()
+    ev = _event(db)
+    g = _guest(db, ev, "אורח")
+    day = ROUND_DAYS["reminder_2"]  # ראשון 20/9; השלב הבא 23/9
+    _tick(db, _at(ROUND_DAYS["rsvp_request"]))
+    _tick(db, _at(ROUND_DAYS["reminder_1"]))
+    before = _kinds_for(db, g)
+    _tick(db, _il(day, 21))              # 21:30 — ערב
+    _tick(db, _il(day + timedelta(days=1), 3))   # 03:30 — לילה
+    _tick(db, _il(day + timedelta(days=1), 9))   # 09:30 — לפני 10:00
+    assert _kinds_for(db, g) == before, _kinds_for(db, g)
+    _tick(db, _il(day + timedelta(days=1), 10))  # 10:30 — בוקר
+    assert _kinds_for(db, g) == before + ["reminder_2"], _kinds_for(db, g)
+    assert rsvp_scheduler.is_auto_send_moment(_il(day, 19))      # 19:30 — עוד מותר
+    assert not rsvp_scheduler.is_auto_send_moment(_il(day, 20))  # 20:30 — לא
+    print("✓ ריצה בלילה לא שולחת; הסבב יוצא בבוקר")
+
+
 def test_no_replay_after_a_missed_round() -> None:
     """(18) המשימה לא רצה בזמן תזכורת 1 — כשהיא חוזרת, בחלון של תזכורת 2,
     תזכורת 1 לא נשלחת בדיעבד."""
@@ -603,4 +625,5 @@ if __name__ == "__main__":
     test_two_whatsapp_messages_on_one_day_are_three_hours_apart()
     test_one_working_day_sends_four_messages_spaced_until_seven()
     test_no_calls_or_messages_on_friday_or_saturday_in_any_window()
+    test_late_night_run_sends_nothing_and_the_round_goes_out_next_morning()
     print("\nכל בדיקות המשימה המתוזמנת עברו ✓")
