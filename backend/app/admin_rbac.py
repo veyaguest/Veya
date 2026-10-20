@@ -66,6 +66,8 @@ PERMISSIONS: dict[str, str] = {
     "postponements.review": ADMIN,
     "support.view": SUPPORT,          # פניות לצוות מתוך "עזרה" (שלב 7)
     "support.handle": SUPPORT,        # שינוי סטטוס פנייה
+    "inbox.view": SUPPORT,            # תיבת WhatsApp — קריאת שיחות (גם טלפנים, routers/admin_inbox.py)
+    "inbox.handle": SUPPORT,          # מענה, סטטוס ושיוך בתיבת ה-WhatsApp
     "help.insights": ADMIN,           # "תובנות עזרה" — מדידת שימוש בלי זהות (שלב 8)
     "audit.view": ADMIN,
     # שליטה ב-VEYA

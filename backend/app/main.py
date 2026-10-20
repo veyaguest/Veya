@@ -29,6 +29,7 @@ from app.routers import (
     admin_rsvp,
     admin_venues,
     admin_commerce,
+    admin_inbox,
     admin_support,
     auth,
     automation,
@@ -124,6 +125,7 @@ app.include_router(admin_rsvp.router)
 app.include_router(admin_venues.router)
 app.include_router(admin_commerce.router)
 app.include_router(admin_support.router)
+app.include_router(admin_inbox.router)
 app.include_router(admin_support.insights_router)
 app.include_router(call_center.router)
 app.include_router(call_ops.router)
@@ -1634,6 +1636,7 @@ _RLS_MIGRATION_FILES = (
     "25_help_rls.sql",
     "26_help_events_rls.sql",
     "27_support_replies_rls.sql",
+    "29_whatsapp_inbox_rls.sql",
 )
 
 #: הפונקציות שקובצי 15–17 נשענים עליהן (קבצים 01 ו-08). בלעדיהן
