@@ -203,7 +203,7 @@ def update_event(
             if not isinstance(value, int) or not (1 <= value <= 10):
                 raise HTTPException(
                     status_code=400,
-                    detail="בחרו כמה ימים לפני האירוע צריך למסור לאולם (בין 1 ל-10).",
+                    detail="בחרו את היום האחרון לאישורי הגעה: בין יום אחד ל-10 ימים לפני האירוע.",
                 )
             if event.venue_commit_days_before is not None and not unlocked:
                 if event.venue_commit_days_before != value:
