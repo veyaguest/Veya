@@ -147,13 +147,14 @@ TOOLS = [
     },
     {
         "name": "prepare_library_batch",
-        "description": "מכין מנה של תבניות חסרות מהספרייה (זהות לדף באתר), בודק את תקרת התבניות, ומחזיר "
-                       "batch_id ותצוגה. לא יוצר כלום ב-Meta.",
+        "description": "מכין מנה של תבניות חסרות מהספרייה (זהות לדף באתר), כולל גרסת תמונה לכל הזמנה, "
+                       "בודק את תקרת התבניות, ומחזיר batch_id ותצוגה. לא יוצר כלום ב-Meta.",
         "inputSchema": {"type": "object", "properties": {
             "event_type": {"type": "string", "enum": list(ls.EVENT_CODES)},
             "message_type": {"type": "string", "enum": list(ls.MESSAGE_CODES)},
             "limit": {"type": "integer"},
-            "category": {"type": "string", "enum": ["UTILITY", "MARKETING"], "default": "MARKETING"},
+            "category": {"type": "string", "enum": ["AUTO", "UTILITY", "MARKETING"], "default": "AUTO",
+                         "description": "AUTO = הזמנה שיווקית, השאר שירות"},
             **_WABA,
         }},
         "readOnlyHint": True,
@@ -256,7 +257,7 @@ HANDLERS = {
     "check_library_sync": lambda a: ls.check_sync(vm.fetch_templates(a.get("waba_id")), ls.fetch_library(),
                                                   a.get("event_type"), a.get("message_type")),
     "prepare_library_batch": lambda a: ls.prepare_batch(a.get("event_type"), a.get("message_type"),
-                                                        a.get("limit"), a.get("category") or "MARKETING",
+                                                        a.get("limit"), a.get("category") or "AUTO",
                                                         a.get("waba_id")),
     "submit_library_batch": lambda a: ls.submit_batch(a["batch_id"], a["confirm"]),
 }

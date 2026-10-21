@@ -54,6 +54,12 @@ SAMPLES = {"guest_name": "דנה", "host_names": "יונתן ושירה", "groom
            "bride_name": "שירה", "event_date": "14/05/2026", "event_time": "19:30",
            "venue_name": "גן האירועים", "address": "הזורע 12, רמת גן"}
 SUPPORTED_LINKS = ("rsvp_link", "navigation_link")
+# תמונת דוגמה לגרסת התמונה של ההזמנה (Header) — כרטיס הזמנה ניטרלי בלי אנשים
+# אמיתיים. Meta דורשת דוגמה בהגשה; בשליחה בפועל נשלחת תמונת ההזמנה של האירוע.
+SAMPLE_IMAGE = str(Path(__file__).resolve().parent / "sample_invitation.jpg")
+# קטגוריה לפי סוג ההודעה ("AUTO"): הזמנה — שיווקית (כך Meta מסווגת הזמנה לחגיגה);
+# השאר — שירות (veya_wed_rem1_02, נוסח מהאתר, אושר כשירות 2026-10-21).
+AUTO_CATEGORY = {"invitation": "MARKETING"}
 
 # נקודת החלפה לבדיקות.
 _library_override: Optional[dict] = None
@@ -85,10 +91,21 @@ def _split_links(content: str) -> tuple[str, list[str]]:
     return wl.split_links(content)
 
 
-def to_draft(w: dict, category: str = "MARKETING") -> dict:
-    """נוסח מהספרייה → טיוטת תבנית + מצב (ok / needs_source_fix / invalid)."""
+def category_for(message_type: str, category: str) -> str:
+    category = (category or "AUTO").upper()
+    if category == "AUTO":
+        return AUTO_CATEGORY.get(message_type, "UTILITY")
+    return category
+
+
+def to_draft(w: dict, category: str = "MARKETING", image: bool = False) -> dict:
+    """נוסח מהספרייה → טיוטת תבנית + מצב (ok / needs_source_fix / invalid).
+    ``image`` — גרסת התמונה של ההזמנה (``…_img``, Header תמונה)."""
     t = wl.library_template(w["event_type"], w["message_type"], w["option_number"], w["content"])
     name, order, positional, links = t.name, list(t.params), t.body, list(t.links)
+    if image:
+        name = wl.image_variant(name)
+    category = category_for(w["message_type"], category)
     buttons = []
     if t.link_button:
         buttons.append({"type": "url", "text": t.link_button, "url": vm.VEYA_CONFIRM_URL,
@@ -98,6 +115,9 @@ def to_draft(w: dict, category: str = "MARKETING") -> dict:
                         "url_example": "https://www.google.com/maps/search/?api=1&query=Tel+Aviv"})
     draft = {"name": name, "language": "he", "category": category, "body": positional,
              "body_examples": [SAMPLES.get(x, "דוגמה") for x in order], "buttons": buttons}
+    if image:
+        draft["header_type"] = "image"
+        draft["header_image_path"] = SAMPLE_IMAGE
     problems = []
     unknown = [x for x in order if x not in SAMPLES]
     if unknown:
@@ -118,9 +138,19 @@ def to_draft(w: dict, category: str = "MARKETING") -> dict:
     return {
         "name": name, "event_type": w["event_type"], "message_type": w["message_type"],
         "option_number": w["option_number"], "tone": w.get("tone"), "params": order,
-        "draft": draft, "state": state,
+        "draft": draft, "state": state, "image": image,
         "problems_he": problems + errors,
     }
+
+
+def expected_drafts(lib: dict, category: str = "AUTO") -> list[dict]:
+    """כל התבניות שהספרייה מחייבת: אחת לכל נוסח, ולהזמנה גם גרסת תמונה."""
+    out = []
+    for w in wordings(lib):
+        out.append(to_draft(w, category))
+        if w["message_type"] == "invitation":
+            out.append(to_draft(w, category, image=True))
+    return out
 
 
 def _matches(want: dict, tpl: dict) -> list[str]:
@@ -133,8 +163,9 @@ def _matches(want: dict, tpl: dict) -> list[str]:
     have_btns = [(b["text"], b["url"]) for b in s["buttons"]]
     if want_btns != have_btns:
         diffs.append(f"כפתורים שונים (בספרייה {want_btns}, ב-Meta {have_btns})")
-    if s.get("header"):
-        diffs.append(f"ב-Meta יש Header ({s['header']}) שאין בספרייה")
+    want_header = "IMAGE" if want.get("header_type") == "image" else None
+    if s.get("header") != want_header:
+        diffs.append(f"Header שונה (בספרייה {want_header or 'בלי'}, ב-Meta {s.get('header') or 'בלי'})")
     return diffs
 
 
@@ -147,7 +178,7 @@ def _filter(items: list[dict], event_type: Optional[str], message_type: Optional
 def check_sync(meta_templates: list[dict], lib: dict, event_type: Optional[str] = None,
                message_type: Optional[str] = None) -> dict:
     """השוואה אחד-לאחד. קריאה בלבד."""
-    drafts = _filter([to_draft(w) for w in wordings(lib)], event_type, message_type)
+    drafts = _filter(expected_drafts(lib), event_type, message_type)
     by_name = {}
     for t in meta_templates:
         if t.get("language") == "he":
@@ -164,8 +195,8 @@ def check_sync(meta_templates: list[dict], lib: dict, event_type: Optional[str] 
             rows["missing"].append(d["name"])
         else:
             rows[d["state"]].append({"name": d["name"], "problems_he": d["problems_he"]})
-    lib_names = {d["name"] for d in [to_draft(w) for w in wordings(lib)]}
-    pattern = re.compile(r"^veya_(%s)_(%s)_\d{2}$" % ("|".join(EVENT_CODES.values()),
+    lib_names = {d["name"] for d in expected_drafts(lib)}
+    pattern = re.compile(r"^veya_(%s)_(%s)_\d{2}(_img)?$" % ("|".join(EVENT_CODES.values()),
                                                      "|".join(MESSAGE_CODES.values())))
     orphans = sorted(n for n in by_name if pattern.match(n or "") and n not in lib_names)
     statuses = Counter(r["status"] for r in rows["in_sync"])
@@ -186,10 +217,11 @@ _batches: dict[str, dict] = {}
 
 
 def prepare_batch(event_type: Optional[str] = None, message_type: Optional[str] = None,
-                  limit: Optional[int] = None, category: str = "MARKETING",
+                  limit: Optional[int] = None, category: str = "AUTO",
                   waba_id: Optional[str] = None) -> dict:
-    """בודק ומכין מנה של תבניות חסרות. לא כותב ל-Meta."""
-    category = (category or "MARKETING").upper()
+    """בודק ומכין מנה של תבניות חסרות. לא כותב ל-Meta. ``category="AUTO"`` —
+    הזמנה שיווקית, השאר שירות."""
+    category = (category or "AUTO").upper()
     waba = vm.resolve_waba(waba_id)
     meta = vm.fetch_templates(waba)
     lib = fetch_library()
@@ -197,7 +229,7 @@ def prepare_batch(event_type: Optional[str] = None, message_type: Optional[str] 
     wanted = report["details"]["missing"]
     if limit:
         wanted = wanted[: int(limit)]
-    drafts = {d["name"]: d for d in (to_draft(w, category) for w in wordings(lib))}
+    drafts = {d["name"]: d for d in expected_drafts(lib, category)}
     out = {
         "touches_meta": False, "count": len(wanted), "category": category,
         "sync": {k: report[k] for k in ("library_total", "counts", "meta_template_count", "template_cap")},
@@ -215,15 +247,18 @@ def prepare_batch(event_type: Optional[str] = None, message_type: Optional[str] 
         out["error_he"] = (f"יש בחשבון {len(meta)} תבניות, והתקרה היא {TEMPLATE_CAP}. "
                            f"נשאר מקום ל-{max(room, 0)} — מקטינים את המנה (limit) או מסיימים אימות עסקי.")
         return out
-    payloads = [{"name": n, "language": "he", "category": category,
+    payloads = [{"name": n, "language": "he", "category": drafts[n]["draft"]["category"],
                  "components": vm.build_components(drafts[n]["draft"])} for n in wanted]
+    out["categories"] = dict(Counter(p["category"] for p in payloads))
+    out["with_image"] = sum(1 for n in wanted if drafts[n]["image"])
     raw = json.dumps(payloads, sort_keys=True, ensure_ascii=False).encode()
     bid = "b_" + hashlib.sha256(raw).hexdigest()[:12]
     _batches[bid] = {"waba": waba, "payloads": payloads, "created": time.time()}
     out["batch_id"] = bid
     out["names"] = wanted
-    out["preview"] = [{"name": n, "body": drafts[n]["draft"]["body"],
-                       "params": drafts[n]["params"],
+    out["preview"] = [{"name": n, "category": drafts[n]["draft"]["category"],
+                       "header": "IMAGE" if drafts[n]["image"] else None,
+                       "body": drafts[n]["draft"]["body"], "params": drafts[n]["params"],
                        "buttons": [b["text"] for b in drafts[n]["draft"]["buttons"]]}
                       for n in wanted[:3]]
     out["next_step_he"] = (f"מנה של {len(wanted)} תבניות מוכנה ולא נשלחה. להגשה: submit_library_batch "
@@ -247,6 +282,13 @@ def submit_batch(batch_id: str, confirm: str, pause: float = 0.5) -> dict:
                             f"האישור לא תואם: confirm צריך להיות מספר התבניות במנה ({len(b['payloads'])})."})
     _batches.pop(batch_id, None)
     created, failed, not_sent = [], [], []
+    # תמונת הדוגמה מועלית פעם אחת למנה, ואותו מזהה לכל גרסאות התמונה.
+    if any(c.get("format") == "IMAGE" for p in b["payloads"] for c in p["components"]):
+        handle = vm._upload_header_image(SAMPLE_IMAGE, vm.token_info()["app_id"])
+        for p in b["payloads"]:
+            for c in p["components"]:
+                if c.get("type") == "HEADER" and c.get("format") == "IMAGE":
+                    c["example"] = {"header_handle": [handle]}
     for i, p in enumerate(b["payloads"]):
         try:
             res = vm._request("POST", f"{b['waba']}/message_templates", json_body=p)
