@@ -258,6 +258,8 @@ def test_crash_mid_batch_never_resends() -> None:
     db = Session(engine)
     ev = _event(db)
     guests = [_guest(db, ev.id, _phone()) for _ in range(3)]
+    for g in guests:  # יום האירוע — רק למי שאישר (communication.AUTO_AUDIENCE)
+        g.rsvp_status = "confirmed"
     em = models.EventMessage(
         event_id=ev.id, message_type="event_day", content="שלום {{guest_name}}",
         is_active=True, trigger_offset_days=0, target_audience="all",

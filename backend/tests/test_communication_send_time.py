@@ -290,6 +290,9 @@ def test_due_message_not_sent_twice() -> None:
     db = _fresh_session()
     ev = _make_event(db)
     g = _make_guest(db, ev.id)
+    # הודעת יום האירוע — רק למי שאישר (communication.AUTO_AUDIENCE, 2026-10-21).
+    g.rsvp_status = "confirmed"
+    db.commit()
 
     em = models.EventMessage(
         event_id=ev.id, message_type="event_day",

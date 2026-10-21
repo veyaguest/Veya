@@ -303,6 +303,7 @@ def _round_setup(db):
     ev = _event(db)
     g = _guest(db, ev.id, _phone(), "דנה כהן")
     g.guest_token = "tok-" + secrets.token_hex(6)
+    g.rsvp_status = "confirmed"  # יום האירוע — רק למי שאישר (communication.AUTO_AUDIENCE)
     em = models.EventMessage(event_id=ev.id, message_type="event_day", content="נוסח של הזוג",
                              is_active=True, trigger_offset_days=0, target_audience="all")
     db.add(em)

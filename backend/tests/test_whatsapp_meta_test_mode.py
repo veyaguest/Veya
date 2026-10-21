@@ -193,6 +193,8 @@ def _event_day_setup(db, allowed_phone):
     ev = _event(db)
     g_ok = _guest(db, ev.id, allowed_phone, "מורשה")
     g_real = _guest(db, ev.id, _phone(), "אורח אמיתי")
+    # הודעת יום האירוע — רק למי שאישר (communication.AUTO_AUDIENCE, 2026-10-21).
+    g_ok.rsvp_status = g_real.rsvp_status = "confirmed"
     em = models.EventMessage(
         event_id=ev.id, message_type="event_day", content="שלום {{guest_name}}",
         is_active=True, trigger_offset_days=0, target_audience="all",
