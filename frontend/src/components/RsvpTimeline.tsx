@@ -65,7 +65,7 @@ export function RsvpTimeline({
         <h2 className="tl-empty-title">לוח אישורי ההגעה עוד לא נקבע</h2>
         <p className="tl-empty-sub">
           עדכנו ב<strong>תמונת מצב</strong> את תאריך האירוע, ובחרו כמה ימים
-          לפני האירוע אתם רוצים לדעת כמה מגיעים.
+          לפני האירוע ייסגרו אישורי ההגעה.
         </p>
         <p className="tl-empty-sub">
           משם נבנה את לוח אישורי ההגעה לאחור, עם תזכורות ושיחות טלפון, כדי

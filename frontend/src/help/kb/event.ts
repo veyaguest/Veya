@@ -88,14 +88,14 @@ export const EVENT_TOPICS: readonly HelpTopic[] = [
     when: MANAGER,
     urgentWhen: { all: [{ fact: 'event.has_date', op: '==', value: true }, { fact: 'event.commit_chosen', op: '==', value: false }] },
     answer: [
-      'היום שעד אליו אתם רוצים לדעת כמה מגיעים. ביום הזה אישורי ההגעה נסגרים, והלוח שלהם נבנה לאחור ממנו.',
+      'היום שבו אישורי ההגעה נסגרים. הלוח שלהם נבנה לאחור ממנו.',
       'בוחרים פעם אחת — אחרי השמירה אי אפשר לשנות.',
     ],
     variants: [
       {
         when: { all: [{ fact: 'event.has_date', op: '==', value: true }, { fact: 'event.commit_chosen', op: '==', value: false }] },
         answer: [
-          'היום שעד אליו אתם רוצים לדעת כמה מגיעים. ביום הזה אישורי ההגעה נסגרים, והלוח שלהם נבנה לאחור ממנו.',
+          'היום שבו אישורי ההגעה נסגרים. הלוח שלהם נבנה לאחור ממנו.',
           'עוד לא בחרתם, ובלי הבחירה לא יוצאות בקשות אישור הגעה. בוחרים פעם אחת, ואחרי השמירה אי אפשר לשנות.',
         ],
         primary: { kind: 'tour', flow: 'choose-commit-date' },
