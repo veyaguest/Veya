@@ -391,3 +391,15 @@ def test_admin_resend_refused_once_the_guest_answered() -> None:
     waiting = _guest(db, ev, name="לא ענה")
     _msg(db, ev, waiting, kind="reminder_1", code=131000)
     assert di.resend_one(db, ev, waiting, now=now).sent == 1
+
+
+def test_answered_or_undecided_guests_leave_the_admin_alerts() -> None:
+    """"הודעות שלא הגיעו" באדמין — רק מי שעוד לא ענה. מתלבט ממשיך בשיחות בלבד."""
+    db = _db()
+    ev = _event(db)
+    now = datetime(2026, 9, 9, 9, 0)
+    for status in ("maybe", "declined", "confirmed", "pending"):
+        g = _guest(db, ev, name=f"מצב {status}", status=status)
+        _msg(db, ev, g, kind="reminder_1", code=131000)
+    shown = {a.issue.guest.full_name for a in di.admin_alerts(db, now=now)}
+    assert shown == {"מצב pending"}, shown

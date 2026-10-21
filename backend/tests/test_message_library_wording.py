@@ -33,6 +33,11 @@ with TestClient(app):
     pass
 
 CHANGES = json.loads(_MESSAGE_LIBRARY_WORDING_FILE.read_text(encoding="utf-8"))
+# הנוסח ש-test_admin_edit_is_not_overwritten כותב "כאילו בפאנל". כשהקובץ רץ אחרי
+# מודול אחר שכבר ייבא את app, ה-DATABASE_URL הזמני למעלה לא נכנס לתוקף והבדיקות
+# רצות על מסד הבדיקות המשותף — שנשמר בין ריצות. לכן הבדיקה מחזירה את הנוסח
+# בסיום, ושורה שעדיין נושאת אותו (מריצה ישנה) אינה "נוסח שלא עודכן".
+ADMIN_EDIT = "נוסח שנכתב בפאנל"
 TOKEN = re.compile(r"\{\{[a-z_]+\}\}")
 
 
@@ -57,6 +62,8 @@ def test_new_wording_after_startup():
     opts = _options()
     for c in CHANGES:
         row = opts[(c["event_type"], c["message_type"], c["option_number"])]
+        if row.content == ADMIN_EDIT:
+            continue
         expected = c["new"]
         for after in later:
             expected = after.get((c["event_type"], c["message_type"], expected), expected)
@@ -75,6 +82,8 @@ def test_default_message_follows_option_one():
 
 def test_admin_edit_is_not_overwritten():
     c = CHANGES[0]
+    key = (c["event_type"], c["message_type"], c["option_number"])
+    original = _options()[key].content
     db = SessionLocal()
     try:
         row = db.scalars(select(models.MessageDefaultOption).where(
@@ -82,13 +91,21 @@ def test_admin_edit_is_not_overwritten():
             models.MessageDefaultOption.message_type == c["message_type"],
             models.MessageDefaultOption.option_number == c["option_number"],
         )).one()
-        row.content = "נוסח שנכתב בפאנל"
+        row.content = ADMIN_EDIT
         db.commit()
     finally:
         db.close()
-    _migrate_message_library_wording()
-    _migrate_message_library_wording()  # idempotent
-    assert _options()[(c["event_type"], c["message_type"], c["option_number"])].content == "נוסח שנכתב בפאנל"
+    try:
+        _migrate_message_library_wording()
+        _migrate_message_library_wording()  # idempotent
+        assert _options()[key].content == ADMIN_EDIT
+    finally:
+        db = SessionLocal()
+        try:
+            db.get(models.MessageDefaultOption, _options()[key].id).content = original
+            db.commit()
+        finally:
+            db.close()
 
 
 def test_same_variables_and_rules():

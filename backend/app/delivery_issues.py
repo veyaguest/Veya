@@ -408,8 +408,10 @@ def admin_alerts(db: Session, now: Optional[datetime] = None) -> list[AdminAlert
     out: list[AdminAlert] = []
     for e in events:
         for issue in issues_for_event(db, e, now=now):
-            if issue.guest.rsvp_status in ("confirmed", "declined"):
-                continue  # כבר ענו (למשל בשיחה) — אין מה לפתור
+            if issue.guest.rsvp_status != "pending":
+                # כבר ענו (למשל בשיחה) — אין מה לפתור. מתלבט ממשיך רק בשיחות,
+                # בלי WhatsApp (2026-10-21) — ולכן גם הוא לא כאן.
+                continue
             out.append(AdminAlert(
                 event=e, issue=issue, help=help_for(issue.message),
                 has_open_call=issue.guest.id in open_calls,
@@ -615,7 +617,7 @@ def handoffs_for_couple(db: Session, event: models.Event) -> list[Handoff]:
     out = []
     for issue in issues_for_event(db, event, guests=guests):
         g = issue.guest
-        if not handed_off(g, issue.message) or g.rsvp_status in ("confirmed", "declined"):
+        if not handed_off(g, issue.message) or g.rsvp_status != "pending":
             continue
         out.append(Handoff(
             guest=g, message=issue.message,

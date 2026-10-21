@@ -1124,6 +1124,9 @@ def set_caller_assignments(
             event_id=event_id, user_id=user_id, assigned_by_id=admin.id,
         ))
     if wanted != set(current):
+        # כמו מגירת הטלפן (routers/call_ops.update_caller): גם השיחות הפתוחות עוברות.
+        db.flush()
+        call_ops.follow_event_assignments(db, wanted ^ set(current), released_user_id=user_id)
         admin_audit.record(
             db, admin, domain="calls", action="caller.event_assignments",
             summary=f"עדכן/ה את האירועים של הטלפן {target.display_name or target.email}",

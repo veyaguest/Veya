@@ -134,6 +134,22 @@ def test_send_time_still_editable() -> None:
     print("✓ 5: שעת שליחה — עדיין ניתנת לשינוי")
 
 
+def test_auto_message_audience_is_fixed() -> None:
+    """(2026-10-21) למי הודעה אוטומטית נשלחת — קבוע: תזכורת למי שלא ענה, יום
+    האירוע למי שאישר. ניסיון לשנות ל-all נדחה; אותו ערך — עובר."""
+    api, _ = bootstrap_with_options()
+    r = api.client.put("/communication/sequence/reminder_1", headers=api.headers,
+                       json={"target_audience": "all"})
+    assert r.status_code == 400, r.text
+    r = api.client.put("/communication/sequence/event_day", headers=api.headers,
+                       json={"target_audience": "declined"})
+    assert r.status_code == 400, r.text
+    r = api.client.put("/communication/sequence/reminder_1", headers=api.headers,
+                       json={"target_audience": "pending"})
+    assert r.status_code == 200 and r.json()["target_audience"] == "pending", r.text
+    print("✓ 6: קהל היעד של הודעה אוטומטית — קבוע")
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):
