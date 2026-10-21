@@ -1921,6 +1921,7 @@ _MESSAGE_LIBRARY_WORDING_FILES = (
     _MESSAGE_LIBRARY_WORDING_FILE,
     Path(__file__).with_name("message_library_wording_2026_10_20.json"),
     Path(__file__).with_name("message_library_wording_2026_10_20b.json"),
+    Path(__file__).with_name("message_library_wording_2026_10_21.json"),
 )
 
 
@@ -1930,7 +1931,9 @@ def _migrate_message_library_wording() -> None:
     האדמין הוא מקור האמת לתוכן הספרייה, ולכן נוסח שנערך בפאנל (כל הבדל
     מהנוסח הישן) נשאר כמו שהוא. אותו כלל חל על ``MessageDefault`` — הנוסח
     שמוקצה אוטומטית לאירוע חדש — כשהוא אחד הנוסחים הישנים של אותו סוג.
-    לא נוגע בהודעות של אירועים קיימים (``EventMessage``): אלה של הזוג.
+    הודעה של אירוע קיים (``EventMessage``) מתעדכנת רק כשהיא **בדיוק** הנוסח הישן
+    של אותו סוג אירוע: הזוג רק בוחר מהרשימה (2026-10-20), ונוסח ישן כבר לא תואם
+    לאף תבנית WhatsApp — בלי העדכון ההודעה פשוט לא הייתה נשלחת.
     idempotent: אחרי הריצה הראשונה אין יותר שורות עם הנוסח הישן.
     """
     import json
@@ -1941,6 +1944,7 @@ def _migrate_message_library_wording() -> None:
     try:
         options_updated = 0
         defaults_updated = 0
+        messages_updated = 0
         for path in _MESSAGE_LIBRARY_WORDING_FILES:
             changes = json.loads(path.read_text(encoding="utf-8"))
             by_option = {(c["event_type"], c["message_type"], c["option_number"]): c for c in changes}
@@ -1957,13 +1961,22 @@ def _migrate_message_library_wording() -> None:
                 if new is not None:
                     row.content = new
                     defaults_updated += 1
+
+            for row, event_type in db.execute(
+                select(models.EventMessage, models.Event.event_type)
+                .join(models.Event, models.Event.id == models.EventMessage.event_id)
+            ):
+                new = by_old.get((event_type, row.message_type, row.content or ""))
+                if new is not None:
+                    row.content = new
+                    messages_updated += 1
             db.flush()
 
         db.commit()
-        if options_updated or defaults_updated:
+        if options_updated or defaults_updated or messages_updated:
             print(
                 f"[veya:seed] ניסוח ספריית הנוסחים: {options_updated} נוסחים, "
-                f"{defaults_updated} ברירות מחדל", flush=True,
+                f"{defaults_updated} ברירות מחדל, {messages_updated} הודעות של אירועים", flush=True,
             )
     except Exception as exc:  # noqa: BLE001 — לעולם לא מפיל את העלייה
         db.rollback()
