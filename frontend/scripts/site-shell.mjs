@@ -145,6 +145,7 @@ export function page(o) {
     <link rel="stylesheet" href="/veya-site.css" />
     <link rel="stylesheet" href="/veya-a11y.css" />
     <script src="/veya-a11y.js"></script>
+    <script src="/veya-wa.js" defer></script>
 
     <script type="application/ld+json">
 ${JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }, null, 2)
