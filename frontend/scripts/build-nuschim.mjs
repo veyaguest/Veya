@@ -375,6 +375,9 @@ function flatten(data) {
   const items = []
   for (const cat of data.categories) {
     for (const w of cat.wordings) {
+      // רק מה שהזוג באמת יכול לבחור במערכת (בבקשת אישור ובתזכורות — נוסחי
+      // שירות בלבד, 2026-10-21). שדה חסר (snapshot ישן) = אפשר לבחור.
+      if (w.choosable === false) continue
       const s = SAMPLE[w.event_type] || FALLBACK
       const { text, buttons } = render(w.content, s, w.message_type)
       if (!text.trim()) continue

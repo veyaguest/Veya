@@ -34,8 +34,8 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app import (
-    audit, automation, communication, delivery_issues, local_time, messaging, models,
-    outbound, postponement_service, rsvp_timeline,
+    audit, automation, communication, delivery_issues, local_time, message_wording, messaging,
+    models, outbound, postponement_service, rsvp_timeline,
 )
 
 # מפתח נעילה ייחודי למשימה הזו (שונה מזה של תכנון השיחות).
@@ -122,6 +122,8 @@ def process_event(
         return started, 0, 0
     # idempotent — מבטיח שיש שורת הודעה לכל סבב (אירועים ישנים).
     communication.provision_event_messages(db, event)
+    # נוסח שסווג ב-Meta כשיווקי בבקשת האישור / בתזכורות → נוסח השירות הראשון.
+    message_wording.switch_to_utility(db, event)
     # מול שליחה ידנית מהתור באותו רגע — ראו ``outbound.lock_event_sends``.
     outbound.lock_event_sends(db, event.id)
     actions = communication.compute_due_messages(db, event, now=now)

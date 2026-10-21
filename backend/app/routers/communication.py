@@ -40,7 +40,9 @@ def _get_sequence(db: Session, event: models.Event) -> list[models.EventMessage]
     שהזוג ערך), אבל יוצאת מהתצוגה: אירוע שחזר לשגרה לא צריך כרטיס דחייה
     על המסך.
     """
-    if communication.provision_event_messages(db, event):
+    created = communication.provision_event_messages(db, event)
+    # נוסח שיווקי בבקשת האישור / בתזכורות → נוסח השירות הראשון (2026-10-21).
+    if created or message_wording.switch_to_utility(db, event):
         db.commit()
     by_type = communication.event_messages_by_type(db, event.id)
     rows = [by_type[mt] for mt in communication.MESSAGE_TYPES if mt in by_type]
@@ -148,15 +150,8 @@ def get_message_options(
     ישירה, גם בלי שהאירוע שלו נדחה בכלל.
     """
     _assert_known_type(db, event, message_type)
-    rows = db.scalars(
-        select(models.MessageDefaultOption)
-        .where(models.MessageDefaultOption.event_type == event.event_type)
-        .where(models.MessageDefaultOption.message_type == message_type)
-        .where(models.MessageDefaultOption.is_active == True)  # noqa: E712
-        .where(models.MessageDefaultOption.content != "")
-        .order_by(models.MessageDefaultOption.option_number)
-    ).all()
-    return rows
+    # בבקשת האישור ובתזכורות — רק נוסחי שירות (message_wording.choosable).
+    return message_wording.choosable(db, event.event_type, message_type)
 
 
 @router.post("/sequence/{message_type}/preview", response_model=schemas.CommunicationPreview)

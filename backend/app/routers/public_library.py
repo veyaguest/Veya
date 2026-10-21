@@ -15,6 +15,14 @@
 תוכן שנשלח למשפחה ברגע רגיש. אין סיבה שהוא ישב בדף שיווקי, ולכן הוא מסונן
 כאן במפורש ולא "במקרה" — ראו ``PUBLIC_MESSAGE_TYPES``.
 
+## ``choosable``
+
+בבקשת האישור ובתזכורות הזוג בוחר רק נוסחי שירות (``message_wording.choosable``,
+2026-10-21). הנוסחים האחרים עדיין מוחזרים — כלי התבניות (``tools/meta-templates-mcp``)
+משווה מולם את התבניות ב-Meta — אבל מסומנים ``choosable=False``, ודף הנוסחים
+באתר מציג רק את מה שאפשר לבחור. גם ``total`` וה-``count`` לכל סוג אירוע סופרים
+רק אותם.
+
 שורות ריקות (``content == ""``) ושורות לא פעילות אינן מוחזרות: המוצר עדיין
 לא מילא את כל השילובים, וקטגוריה ריקה בדף ציבורי היא הבטחה לתוכן שאינו קיים.
 """
@@ -28,7 +36,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from fastapi import Depends
 
-from app import communication, event_terms, models
+from app import communication, event_terms, message_wording, models
 from app.database import get_db
 from app.ratelimit import RateLimiter, client_ip
 
@@ -88,6 +96,8 @@ class WordingOut(BaseModel):
     tone: str
     title: str
     content: str
+    #: האם הזוג יכול לבחור את הנוסח הזה בתוך המערכת.
+    choosable: bool = True
 
 
 class LibraryOut(BaseModel):
@@ -155,6 +165,16 @@ def get_public_library(request: Request, db: Session = Depends(get_db)) -> Libra
         )
     ).all()
 
+    allowed: dict[tuple[str, str], set[int]] = {}
+
+    def is_choosable(row) -> bool:
+        if row.message_type not in message_wording.UTILITY_ONLY_TYPES:
+            return True
+        key = (row.event_type, row.message_type)
+        if key not in allowed:
+            allowed[key] = {o.id for o in message_wording.choosable(db, *key)}
+        return row.id in allowed[key]
+
     by_category: dict[str, list[WordingOut]] = {}
     for row in rows:
         cat = _category_of(row.message_type)
@@ -175,6 +195,7 @@ def get_public_library(request: Request, db: Session = Depends(get_db)) -> Libra
                 tone=row.tone or "",
                 title=row.title or "",
                 content=row.content,
+                choosable=is_choosable(row),
             )
         )
 
@@ -186,8 +207,9 @@ def get_public_library(request: Request, db: Session = Depends(get_db)) -> Libra
         counts: dict[str, int] = {}
         labels: dict[str, str] = {}
         for w in items:
-            counts[w.event_type] = counts.get(w.event_type, 0) + 1
             labels[w.event_type] = w.event_type_label
+            if w.choosable:
+                counts[w.event_type] = counts.get(w.event_type, 0) + 1
         categories.append(
             CategoryOut(
                 key=key,
@@ -201,4 +223,5 @@ def get_public_library(request: Request, db: Session = Depends(get_db)) -> Libra
             )
         )
 
-    return LibraryOut(categories=categories, total=sum(len(c.wordings) for c in categories))
+    return LibraryOut(categories=categories,
+                      total=sum(1 for c in categories for w in c.wordings if w.choosable))

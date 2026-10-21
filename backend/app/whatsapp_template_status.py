@@ -9,6 +9,10 @@
 ל-``CACHE_SECONDS``. בלי מזהה חשבון (``WHATSAPP_BUSINESS_ACCOUNT_ID``) או כשהקריאה
 נכשלת — לא חוסמים: Meta עצמה דוחה תבנית לא מאושרת. הבדיקה כאן היא שכבת
 זהירות, לא תנאי לשליחה.
+
+מאותה קריאה נשמר גם **הסיווג** של כל תבנית (``UTILITY`` / ``MARKETING``) — הזוג
+בוחר בבקשת האישור ובתזכורות רק נוסחים ש-Meta סיווגה כשירות (``message_wording``,
+2026-10-21). לא ידוע (אין חיבור) — לא מסננים.
 """
 from __future__ import annotations
 
@@ -17,15 +21,18 @@ from typing import Optional
 
 CACHE_SECONDS = 600
 APPROVED = "APPROVED"
+UTILITY = "UTILITY"
+MARKETING = "MARKETING"
 
-# (name, language) → status. ``None`` = לא נטען / לא זמין.
-_cache: Optional[dict[tuple[str, str], str]] = None
+# (name, language) → (status, category). ``None`` = לא נטען / לא זמין.
+_cache: Optional[dict[tuple[str, str], tuple[str, str]]] = None
 _loaded_at = 0.0
-# נקודת החלפה לבדיקות: dict קבוע במקום קריאה ל-Meta.
+# נקודות החלפה לבדיקות: dict קבוע במקום קריאה ל-Meta.
 _override: Optional[dict[tuple[str, str], str]] = None
+_category_override: Optional[dict[tuple[str, str], str]] = None
 
 
-def _fetch() -> Optional[dict[tuple[str, str], str]]:
+def _fetch() -> Optional[dict[tuple[str, str], tuple[str, str]]]:
     import httpx
 
     from app import whatsapp_meta
@@ -35,8 +42,8 @@ def _fetch() -> Optional[dict[tuple[str, str], str]]:
         return None
     url = (f"https://graph.facebook.com/{config.graph_version}/"
            f"{config.business_account_id}/message_templates")
-    params: dict = {"limit": 200, "fields": "name,language,status"}
-    out: dict[tuple[str, str], str] = {}
+    params: dict = {"limit": 200, "fields": "name,language,status,category"}
+    out: dict[tuple[str, str], tuple[str, str]] = {}
     try:
         with whatsapp_meta._client() as client:
             for _ in range(20):
@@ -47,7 +54,7 @@ def _fetch() -> Optional[dict[tuple[str, str], str]]:
                     return None
                 body = resp.json()
                 for t in body.get("data", []):
-                    out[(t.get("name"), t.get("language"))] = t.get("status")
+                    out[(t.get("name"), t.get("language"))] = (t.get("status"), t.get("category"))
                 after = (body.get("paging") or {}).get("cursors", {}).get("after")
                 if not after or not (body.get("paging") or {}).get("next"):
                     break
@@ -58,15 +65,32 @@ def _fetch() -> Optional[dict[tuple[str, str], str]]:
     return out
 
 
-def statuses(force: bool = False) -> Optional[dict[tuple[str, str], str]]:
+def _templates(force: bool = False) -> Optional[dict[tuple[str, str], tuple[str, str]]]:
     global _cache, _loaded_at
-    if _override is not None:
-        return _override
     if force or _cache is None or time.monotonic() - _loaded_at > CACHE_SECONDS:
         fetched = _fetch()
         if fetched is not None:
             _cache, _loaded_at = fetched, time.monotonic()
     return _cache
+
+
+def statuses(force: bool = False) -> Optional[dict[tuple[str, str], str]]:
+    if _override is not None:
+        return _override
+    known = _templates(force)
+    return None if known is None else {k: v[0] for k, v in known.items()}
+
+
+def category_of(name: str, language: str = "he") -> Optional[str]:
+    """הסיווג ב-Meta (``UTILITY`` / ``MARKETING`` …), או ``None`` אם אין תבנית
+    כזו או שלא ידוע (אין חיבור)."""
+    if _category_override is not None:
+        return _category_override.get((name, language))
+    known = _templates()
+    if known is None:
+        return None
+    entry = known.get((name, language))
+    return entry[1] if entry else None
 
 
 def status_of(name: str, language: str = "he") -> Optional[str]:

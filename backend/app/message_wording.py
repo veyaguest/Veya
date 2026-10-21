@@ -6,6 +6,9 @@
   "נערך" — הוא לא יישלח ב-WhatsApp עד שבוחרים נוסח מהרשימה.
 - **יום האירוע ושינוי מועד** — נוסח קבוע, זהה לתבניות השירות ב-Meta
   (``whatsapp_templates.FIXED_TEMPLATES``). הזוג רואה אותו ולא בוחר.
+- **בקשת אישור ותזכורות — רק נוסחי שירות** (2026-10-21): הזוג רואה ובוחר רק
+  נוסחים שהתבנית שלהם סווגה ב-Meta כשירות (``UTILITY``). הודעה שיווקית יכולה
+  להיעצר על מגבלת השיווק של Meta (131049) — ותזכורת חייבת להגיע. ``choosable``.
 """
 from __future__ import annotations
 
@@ -61,8 +64,75 @@ def options(db: Session, event_type: str, message_type: str) -> list[models.Mess
     ).all())
 
 
-def first_option_content(db: Session, event_type: str, message_type: str) -> Optional[str]:
+#: סוגי הודעה שבהם מוצגים לבחירה רק נוסחי שירות.
+UTILITY_ONLY_TYPES: frozenset[str] = frozenset({"rsvp_request", "reminder_1", "reminder_2", "final_reminder"})
+
+
+def option_category(event_type: str, message_type: str, option: models.MessageDefaultOption) -> Optional[str]:
+    """הסיווג ב-Meta של התבנית של הנוסח, או ``None`` (אין תבנית / אין חיבור)."""
+    from app import whatsapp_library as wl
+    from app import whatsapp_template_status
+
+    t = wl.library_template(event_type, message_type, option.option_number, option.content)
+    return whatsapp_template_status.category_of(t.name) if t is not None else None
+
+
+def choosable(db: Session, event_type: str, message_type: str) -> list[models.MessageDefaultOption]:
+    """הנוסחים שהזוג יכול לבחור. בבקשת האישור ובתזכורות — רק נוסחי שירות.
+
+    לא מסננים כשאין שום מידע על סיווג (אין חיבור ל-Meta, או סוג אירוע שעוד אין
+    לו תבניות), וגם לא כשאין אף נוסח שירות — הזוג לא נשאר בלי בחירה."""
     rows = options(db, event_type, message_type)
+    if message_type not in UTILITY_ONLY_TYPES:
+        return rows
+    from app import whatsapp_template_status
+
+    utility = [o for o in rows
+               if option_category(event_type, message_type, o) == whatsapp_template_status.UTILITY]
+    return utility or rows
+
+
+def switch_to_utility(db: Session, event: models.Event) -> list[str]:
+    """אירוע שהנוסח שנבחר לו בבקשת האישור / בתזכורות סווג ב-Meta כשיווקי —
+    עובר לנוסח השירות הראשון ברשימה (החלטת הבעלים 2026-10-21). idempotent.
+
+    נוגע רק בנוסח מהספרייה שהסיווג שלו **ידוע** כשיווקי ושיש במקומו נוסח שירות;
+    נוסח שנערך ידנית או שאין עליו מידע — לא. מחזיר את סוגי ההודעה שהוחלפו.
+    לא עושה commit.
+    """
+    from app import whatsapp_template_status
+
+    changed: list[str] = []
+    rows = db.scalars(select(models.EventMessage).where(
+        models.EventMessage.event_id == event.id,
+        models.EventMessage.message_type.in_(list(UTILITY_ONLY_TYPES)),
+    )).all()
+    for em in rows:
+        mt = em.message_type
+        current = next((o for o in options(db, event.event_type, mt) if o.content == em.content), None)
+        if current is None:
+            continue
+        if option_category(event.event_type, mt, current) != whatsapp_template_status.MARKETING:
+            continue
+        utility = [o for o in choosable(db, event.event_type, mt)
+                   if option_category(event.event_type, mt, o) == whatsapp_template_status.UTILITY]
+        if not utility:
+            continue
+        em.content = utility[0].content
+        changed.append(mt)
+    if changed:
+        from app import audit, communication
+
+        audit.record(
+            db, "message_wording_switched", event_id=event.id,
+            detail="נוסח הוחלף לנוסח שמגיע לכל המוזמנים: "
+                   + ", ".join(communication.MESSAGE_TYPE_LABELS.get(mt, mt) for mt in changed),
+        )
+    return changed
+
+
+def first_option_content(db: Session, event_type: str, message_type: str) -> Optional[str]:
+    rows = choosable(db, event_type, message_type)
     return rows[0].content if rows else None
 
 
@@ -73,7 +143,7 @@ def validate_content(db: Session, event: models.Event, message_type: str, conten
     if message_type in FIXED_CONTENT:
         return None if content == FIXED_CONTENT[message_type] else FIXED_WORDING
     if message_type in wl.LIBRARY_TYPES:
-        if any(o.content == content for o in options(db, event.event_type, message_type)):
+        if any(o.content == content for o in choosable(db, event.event_type, message_type)):
             return None
         return CHOOSE_FROM_LIST
     return None
