@@ -26,6 +26,11 @@
 **תוצאה לא ידועה** (timeout מול Meta): השורה נשארת ``pending`` עם הסבר, לא נשלחת
 שוב, ונסגרת מ-webhook לפי ``callback_ref`` (``message_status.reconcile_pending``).
 
+**זכאות ברגע השליחה** (``still_eligible``, 2026-10-21): הקהל מחושב לפני
+המנה, והמנה עצמה יכולה להימשך דקות מול Meta. מוזמן שענה בינתיים (למשל "לא
+מגיע") לא מקבל את התזכורת: הסטטוס נקרא שוב מה-DB רגע לפני הרישום ורגע לפני כל
+הודעה, ושורה שכבר נרשמה ולא נשלחה נמחקת (לא יצאה, ואין מה "לנסות שוב").
+
 **נעילה לאירוע** (``lock_event_sends``): שתי שליחות של אותו אירוע במקביל
 (לחיצה כפולה, או שליחה ידנית מהתור באותו רגע שהמשימה המתוזמנת רצה) היו
 מחשבות את אותו קהל לפני שאחת מהן רשמה משהו. הנעילה נלקחת לפני חישוב הקהל
@@ -34,7 +39,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Callable, Optional
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -76,6 +81,8 @@ class BatchResult:
     # נרשמו ולא נשלחו (לא שולחים הזמנה בלי התמונה). ``image_reason``: הסיבה.
     image_blocked: int = 0
     image_reason: str = ""
+    # המוזמן ענה בין חישוב הקהל לרגע השליחה ואינו זכאי עוד — לא נשלח.
+    no_longer_eligible: int = 0
     failed_guest_ids: list[int] = field(default_factory=list)
     last_detail: str = ""
     messages: list[models.Message] = field(default_factory=list)
@@ -110,8 +117,12 @@ def send_batch(
     items: list[OutboundItem],
     *,
     provider=None,
+    still_eligible: Optional[Callable[[models.Guest, str], bool]] = None,
 ) -> BatchResult:
     """רושם את כל ההודעות כ-``pending``, שולח אחת-אחת ומעדכן כל שורה לתוצאה.
+
+    ``still_eligible(guest, kind)`` — אם ניתן: נבדק מול הסטטוס העדכני של המוזמן
+    לפני הרישום ולפני כל הודעה; מי שכבר לא זכאי — לא נשלח (``no_longer_eligible``).
 
     עושה commit (שלב 1, ואחרי כל הודעה מול ספק אמיתי). ה-commit האחרון —
     של העדכונים האחרונים ושל כל מה שהקורא עוד מוסיף — באחריות הקורא, כמו קודם.
@@ -129,6 +140,22 @@ def send_batch(
         return result
     provider = provider or messaging.get_provider()
     external = bool(getattr(provider, "external", False))
+
+    def eligible_now(item: OutboundItem) -> bool:
+        if still_eligible is None:
+            return True
+        try:
+            db.refresh(item.guest, attribute_names=["rsvp_status"])
+        except Exception:  # noqa: BLE001 — המוזמן נמחק בינתיים
+            return False
+        return still_eligible(item.guest, item.kind)
+
+    if still_eligible is not None:
+        kept = [item for item in items if eligible_now(item)]
+        result.no_longer_eligible += len(items) - len(kept)
+        items = kept
+        if not items:
+            return result
 
     # לפני כל רישום: האם הספק בכלל יכול לשלוח את ההודעה (``provider.accepts``).
     # - מצב ``meta_test``: נמען שאינו ברשימה המורשית — אין שורה ואין "נכשלה" שהייתה
@@ -182,7 +209,16 @@ def send_batch(
     db.commit()  # שלב 1: הרישום שורד גם אם מה שאחריו נופל.
 
     send_outbound = getattr(provider, "send_outbound", None)
+    kept_rows: list[models.Message] = []
     for row, item in zip(rows, items):
+        if not eligible_now(item):
+            # נרשמה ולא יצאה — מוחקים, כדי שלא תיחשב "אולי נשלחה" או "נכשלה".
+            db.delete(row)
+            result.no_longer_eligible += 1
+            if external:
+                db.commit()
+            continue
+        kept_rows.append(row)
         try:
             if send_outbound is not None:
                 res = send_outbound(item, event, callback_ref(row))
@@ -215,5 +251,5 @@ def send_batch(
         if external:
             db.commit()
     db.flush()
-    result.messages = rows
+    result.messages = kept_rows
     return result

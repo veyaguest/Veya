@@ -103,6 +103,11 @@ def update_message(
         problem = message_wording.validate_content(db, event, message_type, changes["content"] or "")
         if problem:
             raise HTTPException(status_code=400, detail=problem)
+    if "target_audience" in changes and message_type in communication.AUTO_AUDIENCE:
+        # הודעה אוטומטית — הקהל קבוע (communication.AUTO_AUDIENCE, 2026-10-21).
+        if changes["target_audience"] != communication.AUTO_AUDIENCE[message_type]:
+            raise HTTPException(status_code=400, detail="למי ההודעה הזו נשלחת נקבע אוטומטית לפי התשובה של המוזמן")
+        changes.pop("target_audience")
     if "send_time" in changes:
         if message_type not in communication.SCHEDULED_TYPES:
             raise HTTPException(status_code=400, detail="להודעה הזו אין שעת שליחה — היא נשלחת ידנית")
@@ -120,7 +125,8 @@ def update_message(
 def _read(db: Session, event: models.Event, em: models.EventMessage) -> schemas.EventMessageRead:
     """השורה + מאיפה הנוסח ואיזו תבנית WhatsApp תישלח (``message_wording.info``)."""
     return schemas.EventMessageRead.model_validate(em).model_copy(
-        update=message_wording.info(db, event, em)
+        update={**message_wording.info(db, event, em),
+                "target_audience": communication.audience_for(em.message_type, em)}
     )
 
 

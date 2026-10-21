@@ -369,3 +369,25 @@ def test_regular_call_round_replaces_the_whatsapp_task() -> None:
     assert (manual.status, manual.closed_reason) == (call_ops.SKIPPED, "next_round")
     delivery = call_ops.delivery_states(db, [g])
     assert call_ops.reason_label(open_[0].reason, g, (1, 0), delivery.get(g.id)) == "WhatsApp לא מגיע למספר הזה"
+
+
+# ---- שליחה חוזרת ידנית לפי תשובת המוזמן (2026-10-21) ----
+
+def test_admin_resend_refused_once_the_guest_answered() -> None:
+    """תזכורת שנכשלה: מתלבט / לא מגיע / אישר — האדמין לא יכול לשלוח אותה שוב.
+    מי שעוד לא ענה — כן."""
+    db = _db()
+    ev = _event(db)
+    now = datetime(2026, 9, 16, 9, 0)
+    for status in ("maybe", "declined", "confirmed"):
+        g = _guest(db, ev, name=f"ענה {status}", status=status)
+        _msg(db, ev, g, kind="reminder_1", code=131000)
+        try:
+            di.resend_one(db, ev, g, now=now)
+        except di.ResendRefused:
+            pass
+        else:
+            raise AssertionError(f"נשלחה שוב תזכורת למוזמן במצב {status}")
+    waiting = _guest(db, ev, name="לא ענה")
+    _msg(db, ev, waiting, kind="reminder_1", code=131000)
+    assert di.resend_one(db, ev, waiting, now=now).sent == 1

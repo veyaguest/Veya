@@ -175,10 +175,7 @@ def message_status_by_type(
         )
 
     em = communication.event_messages_by_type(db, event.id).get(message_type)
-    audience = (
-        em.target_audience if em is not None
-        else communication.DEFAULT_TARGET_AUDIENCE.get(message_type, "all")
-    )
+    audience = communication.audience_for(message_type, em)
     counts, rows = message_status.summarize_by_type(guests, messages, message_type, audience)
     return schemas.MessageTypeStatus(
         message_type=message_type,

@@ -452,6 +452,39 @@ def matches_audience(guest: models.Guest, audience: str) -> bool:
     return guest.rsvp_status == audience
 
 
+#: מי זכאי להודעה **אוטומטית** מכל סוג (2026-10-21). קבוע בקוד ולא לפי
+#: ``EventMessage.target_audience`` — שדה שאפשר לערוך דרך ה-API, ושערך אחר בו
+#: (למשל ``all``) היה שולח תזכורות למי שסירב או מתלבט:
+#: - לא ענה (``pending``) — סבבי המסלול (בקשת אישור ותזכורות).
+#: - אישר (``confirmed``) — יום האירוע והתודה בלבד.
+#: - מתלבט (``maybe``) / לא מגיע (``declined``) — שום הודעה אוטומטית (מתלבט
+#:   ממשיך בשיחות טלפון בלבד, ``call_center.OPEN_STATUSES``).
+AUTO_AUDIENCE: dict[str, str] = {
+    "rsvp_request": "pending",
+    "reminder_1": "pending",
+    "reminder_2": "pending",
+    "final_reminder": "pending",
+    "event_day": "confirmed",
+    "thank_you": "confirmed",
+}
+
+
+def audience_for(message_type: str, em: Optional[models.EventMessage] = None) -> str:
+    """קהל היעד של סוג הודעה: הכלל הקבוע להודעות האוטומטיות, ולשאר (הזמנה,
+    שינוי מועד) — מה שנשמר בשורה / ברירת המחדל."""
+    if message_type in AUTO_AUDIENCE:
+        return AUTO_AUDIENCE[message_type]
+    if em is not None and em.target_audience:
+        return em.target_audience
+    return DEFAULT_TARGET_AUDIENCE.get(message_type, "all")
+
+
+def eligible_for_auto(guest: models.Guest, message_type: str) -> bool:
+    """האם המוזמן עדיין זכאי להודעה האוטומטית — לפי הסטטוס **העדכני** שלו."""
+    audience = AUTO_AUDIENCE.get(message_type)
+    return audience is not None and guest.rsvp_status == audience
+
+
 #: סבבי המסלול עצמו (לא יום האירוע/תודה): מוזמן מצטרף רק לסבבים שהגיעו
 #: אחרי שנוסף — בלי שליחה בדיעבד.
 TRACK_ROUND_TYPES: frozenset[str] = frozenset({"rsvp_request", *REMINDER_NUMBER})
@@ -632,7 +665,7 @@ def compute_due_messages(
                 continue
             if invitations.classify_phone(guest.phone) != "valid":
                 continue
-            if not matches_audience(guest, em.target_audience):
+            if not eligible_for_auto(guest, message_type):
                 continue
             if message_type in TRACK_ROUND_TYPES and not _existed_by(guest, window[0]):
                 continue
@@ -657,6 +690,6 @@ def send_due_messages(
             kind=a.event_message.message_type, event_message_id=a.event_message.id,
         )
         for a in actions
-    ])
+    ], still_eligible=eligible_for_auto)
     return {"sent": result.sent, "failed": result.failed, "blocked": result.blocked,
             "detail": result.last_detail}

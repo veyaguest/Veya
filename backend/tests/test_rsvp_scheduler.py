@@ -599,6 +599,75 @@ def test_delivered_invitation_still_counts_as_invited() -> None:
     print("✓ הזמנה שנמסרה/נקראה נחשבת כנשלחה; שנכשלה — לא")
 
 
+# ---- זכאות לפי תשובת המוזמן (2026-10-21) ----
+
+def test_event_day_and_thank_you_only_for_confirmed() -> None:
+    """לא מגיע / מתלבט / לא ענה — בלי הודעת יום האירוע ובלי תודה."""
+    db = _db()
+    ev = _event(db)
+    guests = {s: _guest(db, ev, s, f"05011111{i:02d}", status=s)
+              for i, s in enumerate(("confirmed", "declined", "maybe", "pending"))}
+    _tick(db, _at(date(2026, 9, 30)))
+    _tick(db, _at(date(2026, 10, 1)))
+    assert _kinds_for(db, guests["confirmed"]) == ["event_day", "thank_you"]
+    for s in ("declined", "maybe", "pending"):
+        assert _kinds_for(db, guests[s]) == [], (s, _kinds_for(db, guests[s]))
+
+
+def test_changed_mind_to_confirmed_gets_event_day_and_thanks_only() -> None:
+    """מתלבט → אישר, לא מגיע → אישר: בלי תזכורות, כן יום האירוע ותודה."""
+    db = _db()
+    ev = _event(db)
+    maybe = _guest(db, ev, "מתלבט", "0502000001", status="maybe")
+    declined = _guest(db, ev, "מסרב", "0502000002", status="declined")
+    _run_every_day(db, date(2026, 9, 14), date(2026, 9, 25))
+    maybe.rsvp_status = declined.rsvp_status = "confirmed"
+    db.commit()
+    _tick(db, _at(date(2026, 9, 30)))
+    _tick(db, _at(date(2026, 10, 1)))
+    assert _kinds_for(db, maybe) == ["event_day", "thank_you"] == _kinds_for(db, declined)
+
+
+def test_answer_during_the_batch_stops_that_guests_message() -> None:
+    """מוזמן שענה "לא מגיע" אחרי שהקהל חושב ולפני שההודעה שלו יצאה — לא מקבל אותה."""
+    from unittest import mock
+
+    from sqlalchemy import update
+
+    from app import outbound
+
+    db = _db()
+    ev = _event(db)
+    stays = _guest(db, ev, "לא ענה", "0503000001")
+    answers = _guest(db, ev, "עונה באמצע", "0503000002")
+    real = outbound.send_batch
+
+    def answer_mid_batch(db_, event, items, **kw):
+        db_.execute(update(models.Guest).where(models.Guest.id == answers.id).values(rsvp_status="declined"))
+        db_.commit()
+        return real(db_, event, items, **kw)
+
+    with mock.patch.object(outbound, "send_batch", answer_mid_batch):
+        _tick(db, _at(date(2026, 9, 14)))
+    assert _kinds_for(db, stays) == ["rsvp_request"]
+    assert _kinds_for(db, answers) == [], "נשלחה תזכורת למי שכבר ענה"
+
+
+def test_edited_audience_cannot_send_reminders_to_declined_or_maybe() -> None:
+    """גם אם ``target_audience`` של תזכורת נשמר כ-all — רק מי שלא ענה מקבל."""
+    db = _db()
+    ev = _event(db)
+    for em in db.scalars(select(models.EventMessage).where(models.EventMessage.event_id == ev.id)):
+        em.target_audience = "all"
+    db.commit()
+    declined = _guest(db, ev, "מסרב", "0504000001", status="declined")
+    maybe = _guest(db, ev, "מתלבט", "0504000002", status="maybe")
+    pending = _guest(db, ev, "לא ענה", "0504000003")
+    _run_every_day(db, date(2026, 9, 14), date(2026, 9, 16))
+    assert _kinds_for(db, declined) == [] == _kinds_for(db, maybe)
+    assert _kinds_for(db, pending) == ["rsvp_request", "reminder_1"]
+
+
 if __name__ == "__main__":
     test_schedule_fixture_is_the_full_track()
     test_track_runs_without_screens_and_without_invitation()

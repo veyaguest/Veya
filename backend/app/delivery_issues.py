@@ -226,6 +226,19 @@ def _outbound_item(event: models.Event, guest: models.Guest, kind: str, ems: dic
     )
 
 
+def resend_allowed(guest: models.Guest, kind: str) -> bool:
+    """האם מותר לשלוח שוב הודעה מהסוג הזה למוזמן, לפי הסטטוס העדכני שלו
+    (2026-10-21): הודעה אוטומטית — לפי ``communication.AUTO_AUDIENCE``; הזמנה —
+    רק למי שעוד לא ענה. מתלבט / לא מגיע לא מקבלים שום תזכורת, גם לא בשליחה חוזרת."""
+    from app import communication
+
+    if kind in communication.AUTO_AUDIENCE:
+        return communication.eligible_for_auto(guest, kind)
+    if kind == "invitation":
+        return guest.rsvp_status == "pending"
+    return True
+
+
 def resend_due(db: Session, event: models.Event, now: datetime) -> tuple[int, int]:
     """שולח שוב את ההזמנה למי שנעצר על הגבלת השיווק והגיע זמנו.
 
@@ -253,7 +266,7 @@ def resend_due(db: Session, event: models.Event, now: datetime) -> tuple[int, in
     items = [it for it in (_outbound_item(event, i.guest, i.message.kind, ems) for i in due) if it]
     if not items:
         return 0, 0
-    result = outbound.send_batch(db, event, items)
+    result = outbound.send_batch(db, event, items, still_eligible=resend_allowed)
     print(
         f"[veya:whatsapp] marketing-cap resend event={event.id} "
         f"sent={result.sent} failed={result.failed} unknown={result.unknown}",
@@ -434,6 +447,12 @@ def resend_one(db: Session, event: models.Event, guest: models.Guest, now: Optio
     if issue is None:
         raise ResendRefused("ההודעה האחרונה למוזמן כבר יצאה או ממתינה לעדכון — לא שולחים שוב.")
     kind = issue.message.kind
+    if not resend_allowed(guest, kind):
+        raise ResendRefused(
+            "המוזמן כבר ענה — לא שולחים לו את ההודעה הזו שוב."
+            if guest.rsvp_status != "maybe" else
+            "המוזמן מתלבט — ממשיכים איתו רק בשיחות טלפון, בלי הודעות WhatsApp."
+        )
     if handed_off(guest, issue.message) and guest.whatsapp_handoff_sent_at is not None:
         raise ResendRefused("בעלי האירוע כבר פתחו WhatsApp כדי לשלוח בעצמם — לא שולחים שוב.")
     if kind == "invitation" and guest.id in invitations.invited_guest_ids(
@@ -443,7 +462,7 @@ def resend_one(db: Session, event: models.Event, guest: models.Guest, now: Optio
     item = _outbound_item(event, guest, kind, communication.event_messages_by_type(db, event.id))
     if item is None:
         raise ResendRefused("להודעה הזו אין כרגע תוכן לשליחה.")
-    return outbound.send_batch(db, event, [item])
+    return outbound.send_batch(db, event, [item], still_eligible=resend_allowed)
 
 
 # ---- מספרים שצריך לתקן (אדמין → בעלי האירוע) ----
