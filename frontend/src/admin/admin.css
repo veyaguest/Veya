@@ -2142,3 +2142,35 @@ textarea.adm-input {
 .adm-support-reply-field {
   margin-top: 16px;
 }
+
+/* הקצאת אירועים לטלפן (מגירת הטלפן) */
+.adm-event-picks {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--a-line);
+  border-radius: var(--a-radius-sm);
+}
+
+.adm-event-picks li + li {
+  border-top: 1px solid var(--a-line);
+}
+
+.adm-event-pick {
+  margin: 0;
+  padding: 10px 12px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.adm-event-pick input {
+  margin-top: 3px;
+}
+
+.adm-event-pick > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
 import { callOps, type MyDay, type TaskDetail, type TaskRow } from '../admin/callOpsApi'
 import type { CallOutcome, User } from '../types'
 import { AccountCenter } from './AccountCenter'
@@ -63,6 +63,34 @@ function eventDateText(iso: string): string {
   return y && m && d ? `${d}/${m}/${y}` : iso
 }
 
+/** קבוצת שיחות של אירוע אחד, לפי הסדר שהשרת החזיר (האירוע שהשיחה הדחופה
+ * שלו ראשונה — ראשון). */
+interface EventGroup {
+  event_id: number
+  label: string
+  date: string
+  rows: TaskRow[]
+}
+
+function groupByEvent(rows: TaskRow[]): EventGroup[] {
+  const groups: EventGroup[] = []
+  const byId = new Map<number, EventGroup>()
+  for (const row of rows) {
+    let g = byId.get(row.event_id)
+    if (!g) {
+      g = { event_id: row.event_id, label: row.event_label, date: row.event_date, rows: [] }
+      byId.set(row.event_id, g)
+      groups.push(g)
+    }
+    g.rows.push(row)
+  }
+  return groups
+}
+
+function callsText(n: number): string {
+  return n === 1 ? 'שיחה אחת' : `${n} שיחות`
+}
+
 // VEYA היא מערכת ישראלית — מועדים תמיד מוצגים בשעון ישראל, לא בשעון
 // הדפדפן/המכשיר של הטלפן.
 const LOCAL_TIMEZONE = 'Asia/Jerusalem'
@@ -103,6 +131,8 @@ export function PhoneAgentApp({
   const [streak, setStreak] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [view, setView] = useState<'calls' | 'whatsapp'>('calls')
+  // אירוע אחד בפוקוס (null = כל האירועים). הרשימה תמיד מקובצת לפי אירוע.
+  const [eventFilter, setEventFilter] = useState<number | null>(null)
 
   // השרת מחזיר את רשימת העבודה מוכנה: ``work`` = מה לחייג עכשיו (כולל
   // באיחור, בלי שיחות חוזרות שמועדן לא הגיע ובלי סבבים מושהים), ``later`` =
@@ -130,6 +160,22 @@ export function PhoneAgentApp({
     return () => window.clearTimeout(timer)
   }, [load, query])
 
+  const groups = useMemo(() => groupByEvent(work ?? []), [work])
+  const shownGroups = eventFilter === null ? groups : groups.filter((g) => g.event_id === eventFilter)
+  const shownLater = eventFilter === null ? later : later.filter((r) => r.event_id === eventFilter)
+
+  // האירוע שבפוקוס נגמר (כל השיחות שלו טופלו) — חוזרים לכל האירועים.
+  useEffect(() => {
+    if (eventFilter !== null && work && !work.some((r) => r.event_id === eventFilter)) setEventFilter(null)
+  }, [work, eventFilter])
+
+  /** סדר העבודה ברצף: אירוע אחרי אירוע, בתוך האירוע לפי סדר השרת. */
+  function inOrder(rows: TaskRow[]): TaskRow[] {
+    return groupByEvent(rows)
+      .filter((g) => eventFilter === null || g.event_id === eventFilter)
+      .flatMap((g) => g.rows)
+  }
+
   /** אחרי תיעוד שיחה: רענון, ואם אנחנו ברצף — קפיצה למשימה הבאה. */
   async function afterOutcome(savedTaskId: number, keepOpen: boolean) {
     const fresh = await load()
@@ -138,13 +184,13 @@ export function PhoneAgentApp({
       setOpenTaskId(null)
       return
     }
-    const next = fresh.find((r) => r.task_id !== null && r.task_id !== savedTaskId)
+    const next = inOrder(fresh).find((r) => r.task_id !== null && r.task_id !== savedTaskId)
     setOpenTaskId(next?.task_id ?? null)
     if (!next) setStreak(false)
   }
 
   function startStreak() {
-    const first = work?.find((r) => r.task_id !== null)
+    const first = inOrder(work ?? []).find((r) => r.task_id !== null)
     if (!first?.task_id) return
     setStreak(true)
     setOpenTaskId(first.task_id)
@@ -219,10 +265,34 @@ export function PhoneAgentApp({
           <div className="pa-loading">טוען…</div>
         ) : (
           <>
+            {groups.length > 1 && (
+              <div className="pa-events" role="group" aria-label="סינון לפי אירוע">
+                <button
+                  type="button"
+                  className={`pa-event-chip${eventFilter === null ? ' is-active' : ''}`}
+                  aria-pressed={eventFilter === null}
+                  onClick={() => setEventFilter(null)}
+                >
+                  כל האירועים <span className="pa-event-count">{work.length}</span>
+                </button>
+                {groups.map((g) => (
+                  <button
+                    key={g.event_id}
+                    type="button"
+                    className={`pa-event-chip${eventFilter === g.event_id ? ' is-active' : ''}`}
+                    aria-pressed={eventFilter === g.event_id}
+                    onClick={() => setEventFilter(g.event_id)}
+                  >
+                    {g.label} <span className="pa-event-count">{g.rows.length}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             {(work.length > 0 || query) && (
               <div className="pa-toolbar">
                 <button type="button" className="pa-start" onClick={startStreak} disabled={work.length === 0}>
-                  ▶ התחל שיחות
+                  ▶ {eventFilter === null ? 'התחל שיחות' : `התחל שיחות · ${shownGroups[0]?.label ?? ''}`}
                 </button>
                 <input
                   type="search"
@@ -245,20 +315,29 @@ export function PhoneAgentApp({
                 </p>
               </div>
             ) : (
-              <ul className="pa-list">
-                {work.map((row) => (
-                  <li key={row.task_id ?? `g${row.guest_id}`}>
-                    <TaskCard row={row} onOpen={() => row.task_id && setOpenTaskId(row.task_id)} />
-                  </li>
-                ))}
-              </ul>
+              shownGroups.map((g) => (
+                <section key={g.event_id} className="pa-event" aria-label={g.label}>
+                  <h2 className="pa-event-head">
+                    <span className="pa-event-name">{g.label}</span>
+                    {g.date && <span className="pa-event-date">{eventDateText(g.date)}</span>}
+                    <span className="pa-event-left">{callsText(g.rows.length)}</span>
+                  </h2>
+                  <ul className="pa-list">
+                    {g.rows.map((row) => (
+                      <li key={row.task_id ?? `g${row.guest_id}`}>
+                        <TaskCard row={row} showEvent={false} onOpen={() => row.task_id && setOpenTaskId(row.task_id)} />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))
             )}
 
-            {later.length > 0 && (
+            {shownLater.length > 0 && (
               <>
                 <h2 className="pa-section pa-later-title">שיחות חוזרות מאוחר יותר</h2>
                 <ul className="pa-list">
-                  {later.map((row) => (
+                  {shownLater.map((row) => (
                     <li key={row.task_id ?? `g${row.guest_id}`}>
                       <TaskCard row={row} onOpen={() => row.task_id && setOpenTaskId(row.task_id)} />
                     </li>
@@ -313,7 +392,7 @@ function Stat({
 }
 
 /** כרטיס משימה אחת — כל מה שצריך כדי להתחיל לחייג. */
-function TaskCard({ row, onOpen }: { row: TaskRow; onOpen: () => void }) {
+function TaskCard({ row, onOpen, showEvent = true }: { row: TaskRow; onOpen: () => void; showEvent?: boolean }) {
   const followup = row.is_followup || row.reason === 'callback' || row.reason === 'manual'
   return (
     <div className={`pa-card ${followup ? 'pa-card-followup' : ''}`}>
@@ -325,15 +404,17 @@ function TaskCard({ row, onOpen }: { row: TaskRow; onOpen: () => void }) {
         <div className="pa-card-phone" dir="ltr">
           {row.phone}
         </div>
-        <div className="pa-card-meta">
-          <span>{row.event_label}</span>
-          {row.event_date && (
-            <>
-              <span className="pa-dot">·</span>
-              <span>{eventDateText(row.event_date)}</span>
-            </>
-          )}
-        </div>
+        {showEvent && (
+          <div className="pa-card-meta">
+            <span>{row.event_label}</span>
+            {row.event_date && (
+              <>
+                <span className="pa-dot">·</span>
+                <span>{eventDateText(row.event_date)}</span>
+              </>
+            )}
+          </div>
+        )}
         <div className="pa-card-meta pa-card-sub">
           <span>{row.round_label}</span>
           <span className="pa-dot">·</span>

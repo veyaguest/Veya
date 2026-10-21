@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { adminDisableUser, adminEnableUser } from '../../../api'
-import { callOps, type CallerRow } from '../../callOpsApi'
+import { callOps, type CallerEventOption, type CallerRow } from '../../callOpsApi'
 import { navigate } from '../../route'
 import {
   ConfirmAction,
@@ -79,7 +79,11 @@ export function CallersPanel({ callers }: { callers: CallersState }) {
                   <td>
                     <div className="adm-cell-title">{c.display_name || c.email}</div>
                     <div className="adm-cell-sub">
-                      {[c.group_name, c.phone].filter(Boolean).join(' · ') || c.email}
+                      {[
+                        c.group_name,
+                        c.phone,
+                        c.event_ids.length ? (c.event_ids.length === 1 ? 'אירוע אחד' : `${c.event_ids.length} אירועים`) : '',
+                      ].filter(Boolean).join(' · ') || c.email}
                     </div>
                   </td>
                   <td>
@@ -111,6 +115,7 @@ export function CallersPanel({ callers }: { callers: CallersState }) {
       {editing && (
         <CallerDrawer
           caller={editing}
+          callers={rows}
           canManage={can('calls.manage')}
           canDisable={can('users.disable')}
           onClose={() => setEditing(null)}
@@ -206,14 +211,22 @@ function CreateCallerDrawer({ onClose, onCreated }: { onClose: () => void; onCre
   )
 }
 
+/** YYYY-MM-DD → DD/MM/YYYY. */
+function dateText(iso: string): string {
+  const [y, m, d] = iso.split('-')
+  return y && m && d ? `${d}/${m}/${y}` : iso
+}
+
 function CallerDrawer({
   caller,
+  callers,
   canManage,
   canDisable,
   onClose,
   onSaved,
 }: {
   caller: CallerRow
+  callers: CallerRow[]
   canManage: boolean
   canDisable: boolean
   onClose: () => void
@@ -229,9 +242,14 @@ function CallerDrawer({
     group_name: caller.group_name,
     daily_capacity: caller.daily_capacity == null ? '' : String(caller.daily_capacity),
   })
+  const [eventIds, setEventIds] = useState<number[]>(caller.event_ids)
+  const [events, setEvents] = useState<CallerEventOption[] | null>(null)
+  const [eventsError, setEventsError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmBlock, setConfirmBlock] = useState(false)
+  const eventsChanged =
+    eventIds.length !== caller.event_ids.length || eventIds.some((id) => !caller.event_ids.includes(id))
   const dirty =
     form.display_name !== caller.display_name ||
     form.phone !== caller.phone ||
@@ -239,7 +257,22 @@ function CallerDrawer({
     form.unavailable_from !== caller.unavailable_from ||
     form.unavailable_until !== caller.unavailable_until ||
     form.group_name !== caller.group_name ||
-    form.daily_capacity !== (caller.daily_capacity == null ? '' : String(caller.daily_capacity))
+    form.daily_capacity !== (caller.daily_capacity == null ? '' : String(caller.daily_capacity)) ||
+    eventsChanged
+
+  useEffect(() => {
+    let alive = true
+    callOps.callerEvents()
+      .then((list) => alive && setEvents(list))
+      .catch((e) => alive && setEventsError(e instanceof Error ? e.message : 'טעינת האירועים נכשלה'))
+    return () => {
+      alive = false
+    }
+  }, [caller.id])
+
+  function toggleEvent(id: number) {
+    setEventIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
+  }
 
   async function save() {
     setBusy(true)
@@ -253,8 +286,11 @@ function CallerDrawer({
         unavailable_until: form.availability === 'vacation' ? form.unavailable_until : '',
         group_name: form.group_name,
         daily_capacity: form.daily_capacity ? Number(form.daily_capacity) : 0,
+        ...(eventsChanged ? { event_ids: eventIds } : {}),
       })
-      toast('השינויים נשמרו')
+      const moved = updated.moved_tasks ?? 0
+      toast(moved ? `השינויים נשמרו · ${moved === 1 ? 'שיחה פתוחה אחת עברה' : `${moved} שיחות פתוחות עברו`}` : 'השינויים נשמרו')
+      if (eventsChanged) callOps.callerEvents().then(setEvents).catch(() => {})
       onSaved(updated)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'השמירה נכשלה')
@@ -348,6 +384,52 @@ function CallerDrawer({
           <input type="number" min={0} className="adm-input adm-input-num" value={form.daily_capacity} placeholder="ללא הגבלה" onChange={(e) => setForm({ ...form, daily_capacity: e.target.value })} />
           <span className="adm-help">חלוקה אוטומטית לא תעבור את המספר הזה</span>
         </label>
+      </fieldset>
+
+      <fieldset className="adm-fieldset" disabled={!canManage || busy}>
+        <legend className="adm-section-title">האירועים של {caller.display_name || 'הטלפן'}</legend>
+        <p className="adm-help">
+          השיחות של האירועים שתסמנו עוברות אליו, גם הפתוחות שכבר קיימות. שיחות שכבר אצל טלפן אחר של אותו אירוע נשארות אצלו.
+        </p>
+        {eventsError ? (
+          <p className="adm-inline-error" role="alert">{eventsError}</p>
+        ) : events === null ? (
+          <p className="adm-muted">טוען אירועים…</p>
+        ) : events.length === 0 ? (
+          <p className="adm-muted">אין כרגע אירועים קרובים.</p>
+        ) : (
+          <ul className="adm-event-picks">
+            {events.map((ev) => {
+              const others = ev.caller_ids
+                .filter((id) => id !== caller.id)
+                .map((id) => callers.find((c) => c.id === id)?.display_name)
+                .filter(Boolean)
+              return (
+                <li key={ev.event_id}>
+                  <label className="adm-check adm-event-pick">
+                    <input
+                      type="checkbox"
+                      checked={eventIds.includes(ev.event_id)}
+                      onChange={() => toggleEvent(ev.event_id)}
+                    />
+                    <span>
+                      <span className="adm-cell-title">
+                        {ev.label}
+                        {ev.event_date && <span className="adm-muted"> · {dateText(ev.event_date)}</span>}
+                      </span>
+                      <span className="adm-cell-sub">
+                        {[
+                          ev.open_tasks ? `${ev.open_tasks} שיחות פתוחות` : 'אין שיחות פתוחות',
+                          others.length ? `גם אצל ${others.join(', ')}` : '',
+                        ].filter(Boolean).join(' · ')}
+                      </span>
+                    </span>
+                  </label>
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </fieldset>
 
       <fieldset className="adm-fieldset" disabled={!canManage || busy}>

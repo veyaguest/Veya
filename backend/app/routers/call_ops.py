@@ -1310,6 +1310,7 @@ class CallerRow(BaseModel):
     last_activity_at: Optional[datetime]
     calls_total: int
     event_ids: list[int]
+    moved_tasks: int = 0
 
 
 def _caller_rows(db: Session, user_ids: Optional[list[int]] = None) -> list[CallerRow]:
@@ -1469,6 +1470,7 @@ def update_caller(
         prof.unavailable_until = prof.unavailable_until if data.get("availability") is None else ""
     prof.updated_at = datetime.utcnow()
 
+    moved = 0
     if payload.event_ids is not None:
         wanted = set(payload.event_ids)
         current = {a.event_id: a for a in db.scalars(select(models.CallAssignment).where(models.CallAssignment.user_id == user_id)).all()}
@@ -1482,10 +1484,14 @@ def update_caller(
         for eid in wanted - set(current):
             db.add(models.CallAssignment(event_id=eid, user_id=user_id, assigned_by_id=admin.id))
         if wanted != set(current):
+            db.flush()
+            moved = call_ops.follow_event_assignments(db, wanted ^ set(current), released_user_id=user_id)
             changes.append(admin_audit.change(
                 "event_ids", "אירועים קבועים",
                 ", ".join(f"#{e}" for e in sorted(current)) or "—", ", ".join(f"#{e}" for e in sorted(wanted)) or "—",
             ))
+            if moved:
+                changes.append(admin_audit.change("moved_tasks", "שיחות פתוחות שעברו", "", str(moved)))
     if [c for c in changes if c["before"] != c["after"]]:
         admin_audit.record(
             db, admin, domain="calls", action="caller.update",
@@ -1493,7 +1499,48 @@ def update_caller(
             target_id=user.id, target_label=user.display_name or user.email, changes=changes, request=request,
         )
     db.commit()
-    return _caller_rows(db, [user_id])[0]
+    row = _caller_rows(db, [user_id])[0]
+    row.moved_tasks = moved
+    return row
+
+
+class CallerEventOption(BaseModel):
+    event_id: int
+    label: str
+    event_type: str
+    event_date: str
+    open_tasks: int
+    caller_ids: list[int]
+
+
+@router.get("/caller-events", response_model=list[CallerEventOption])
+def caller_events(
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(admin_rbac.require("calls.operate")),
+):
+    """האירועים שאפשר לשייך לטלפן: שלא עברו, או שיש להם שיחות פתוחות.
+    קודם הקרובים; אירוע בלי תאריך — בסוף."""
+    today = _today().isoformat()
+    T, E = models.CallTask, models.Event
+    open_by_event = dict(db.execute(
+        select(T.event_id, func.count(T.id)).join(E, T.event_id == E.id)
+        .where(T.status == call_ops.OPEN, T.event_cycle == E.cycle_number).group_by(T.event_id)
+    ).all())
+    callers: dict[int, list[int]] = defaultdict(list)
+    for eid, uid in db.execute(select(models.CallAssignment.event_id, models.CallAssignment.user_id)).all():
+        callers[eid].append(uid)
+    events = [
+        e for e in db.scalars(select(E)).all()
+        if open_by_event.get(e.id) or callers.get(e.id) or (e.event_date or "")[:10] >= today
+    ]
+    events.sort(key=lambda e: ((e.event_date or "")[:10] or "9999", e.id))
+    return [
+        CallerEventOption(
+            event_id=e.id, label=_hosts(e), event_type=e.event_type, event_date=(e.event_date or "")[:10],
+            open_tasks=open_by_event.get(e.id, 0), caller_ids=sorted(callers.get(e.id, [])),
+        )
+        for e in events
+    ]
 
 
 # ── הטלפן עצמו ────────────────────────────────────────────────────────────

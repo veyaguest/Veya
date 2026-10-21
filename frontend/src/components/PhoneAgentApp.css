@@ -738,3 +738,74 @@
 .pa-main-wide {
   max-width: 900px;
 }
+
+/* ---- שיחות לפי אירוע (2026-10-21) ---- */
+.pa-events {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.pa-events::-webkit-scrollbar {
+  display: none;
+}
+
+.pa-event-chip {
+  flex: none;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--body);
+  font: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pa-event-chip.is-active {
+  border-color: var(--gold);
+  background: var(--surface-hi);
+  color: var(--ink, var(--body));
+  font-weight: 600;
+}
+
+.pa-event-chip:focus-visible {
+  outline: 2px solid var(--gold-deep);
+  outline-offset: 2px;
+}
+
+.pa-event-count {
+  margin-inline-start: 4px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pa-event + .pa-event {
+  margin-top: 18px;
+}
+
+.pa-event-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+
+.pa-event-date,
+.pa-event-left {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.pa-event-left {
+  margin-inline-start: auto;
+}

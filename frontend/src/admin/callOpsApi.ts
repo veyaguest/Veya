@@ -233,6 +233,18 @@ export interface CallerRow {
   last_activity_at: string | null
   calls_total: number
   event_ids: number[]
+  /** בתשובה לשמירה: כמה שיחות פתוחות עברו בעקבות שינוי האירועים. */
+  moved_tasks?: number
+}
+
+/** אירוע שאפשר לשייך לטלפן (``/admin/call-ops/caller-events``). */
+export interface CallerEventOption {
+  event_id: number
+  label: string
+  event_type: string
+  event_date: string
+  open_tasks: number
+  caller_ids: number[]
 }
 
 export interface TaskQuery {
@@ -290,6 +302,7 @@ export const callOps = {
   }) => sendJson<{ caller: CallerRow; temporary_password: string }>('/admin/call-ops/callers', 'POST', data),
   updateCaller: (id: number, data: Partial<Omit<CallerRow, 'id'>>) =>
     sendJson<CallerRow>(`/admin/call-ops/callers/${id}`, 'PATCH', data),
+  callerEvents: () => getJson<CallerEventOption[]>('/admin/call-ops/caller-events'),
   /** תיעוד שיחה על משימה (אדמין). הסבב והמחזור נלקחים מהמשימה עצמה. */
   taskOutcome: (taskId: number, data: CallOutcomeRequest) =>
     sendJson<TaskOutcomeResult>(`/admin/call-ops/tasks/${taskId}/outcome`, 'POST', data),

@@ -888,6 +888,57 @@ def delete_for_event(db: Session, event_id: int) -> None:
         db.delete(ent)
 
 
+def follow_event_assignments(db: Session, event_ids: Iterable[int], released_user_id: Optional[int] = None) -> int:
+    """אחרי שינוי בטלפנים הקבועים של אירועים — השיחות הפתוחות עוברות אליהם.
+
+    לאירוע עם טלפנים קבועים: כל משימה פתוחה (במחזור הנוכחי) שלא אצל אחד מהם
+    עוברת אליהם, מחולקת לפי העומס של כל אחד באותו יום. לאירוע שנשאר בלי
+    טלפנים קבועים: המשימות של ``released_user_id`` (הטלפן שהוסר) חוזרות
+    ל"לא משויכות"; משימה שאדמין שייך ידנית לטלפן אחר — לא נוגעים בה.
+    מחזיר כמה משימות עברו. לא עושה commit.
+    """
+    ids = list(set(event_ids))
+    if not ids:
+        return 0
+    T, E = models.CallTask, models.Event
+    agents = {
+        u.id for u in db.scalars(
+            select(models.User).where(models.User.account_type == roles.PHONE_AGENT)
+        ).all() if not u.disabled
+    }
+    defaults = {eid: [uid for uid in uids if uid in agents] for eid, uids in _default_assignees(db, ids).items()}
+    tasks = db.scalars(
+        select(T).join(E, T.event_id == E.id)
+        .where(T.event_id.in_(ids), T.status == OPEN, T.event_cycle == E.cycle_number)
+        .order_by(T.due_date, T.id)
+    ).all()
+    load: dict[tuple[int, str], int] = defaultdict(int)
+    for uid, due, n in db.execute(
+        select(T.assignee_id, T.due_date, func.count(T.id))
+        .where(T.status == OPEN, T.assignee_id.is_not(None)).group_by(T.assignee_id, T.due_date)
+    ).all():
+        load[(uid, due)] = n
+    moved = 0
+    for t in tasks:
+        options = defaults.get(t.event_id, [])
+        if options:
+            if t.assignee_id in options:
+                continue
+            new = min(options, key=lambda uid: (load[(uid, t.due_date)], uid))
+        elif released_user_id is not None and t.assignee_id == released_user_id:
+            new = None
+        else:
+            continue
+        if t.assignee_id is not None:
+            load[(t.assignee_id, t.due_date)] -= 1
+        if new is not None:
+            load[(new, t.due_date)] += 1
+        t.assignee_id = new
+        t.updated_at = datetime.utcnow()
+        moved += 1
+    return moved
+
+
 def detach_user(db: Session, user_id: int) -> None:
     for t in db.scalars(select(models.CallTask).where(models.CallTask.assignee_id == user_id)).all():
         t.assignee_id = None

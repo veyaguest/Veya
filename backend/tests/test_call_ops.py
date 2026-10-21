@@ -449,3 +449,54 @@ def teardown_module(module) -> None:  # noqa: ARG001
 
     call_ops.SYNC_TTL_SECONDS = 45
     shutdown()
+
+
+# ── הקצאת אירוע לטלפן (2026-10-21): גם השיחות הפתוחות עוברות ─────────────
+
+def test_assigning_event_moves_its_open_tasks() -> None:
+    api, _ = bootstrap()
+    for i in range(4):
+        add_existing_guest(api, f"אורח אירוע {i}", _phone(9101 + i))
+    configure_track(api)
+    _, admin = _admin()
+    dana_id, dana = phone_agent(api, display_name="דנה")
+    other_id, _ = phone_agent(api, display_name="אחר")
+    _sync(api.event_id)
+    tasks = _tasks(api.event_id, status="open")
+    assert len(tasks) == 4
+    # אחת אצל טלפן אחר, השאר לא משויכות
+    api.client.post("/admin/call-ops/tasks/assign", headers=admin,
+                    json={"task_ids": [tasks[0].id], "assignee_id": other_id})
+
+    options = api.client.get("/admin/call-ops/caller-events", headers=admin).json()
+    mine = [o for o in options if o["event_id"] == api.event_id]
+    assert mine and mine[0]["open_tasks"] == 4 and mine[0]["caller_ids"] == []
+
+    r = api.client.patch(f"/admin/call-ops/callers/{dana_id}", headers=admin, json={"event_ids": [api.event_id]})
+    assert r.status_code == 200, r.text
+    assert r.json()["moved_tasks"] == 4 and r.json()["event_ids"] == [api.event_id]
+    assert {t.assignee_id for t in _tasks(api.event_id, status="open")} == {dana_id}
+    seen = api.client.get("/admin/call-ops/my/tasks?group=work", headers=dana).json()
+    assert {row["event_id"] for row in seen["items"]} == {api.event_id} and seen["total"] == 4
+
+    # הסרת האירוע מהטלפן — השיחות חוזרות ל"לא משויכות"
+    r = api.client.patch(f"/admin/call-ops/callers/{dana_id}", headers=admin, json={"event_ids": []})
+    assert r.status_code == 200 and r.json()["moved_tasks"] == 4
+    assert {t.assignee_id for t in _tasks(api.event_id, status="open")} == {None}
+
+
+def test_second_caller_does_not_take_calls_from_the_first() -> None:
+    """טלפן שני על אותו אירוע לא "גונב" שיחות שכבר אצל הראשון (אולי באמצע
+    עבודה) — רק שיחות חדשות מתחלקות ביניהם. לחלוקה מחדש יש "חלוקה אוטומטית"."""
+    api, _ = bootstrap()
+    for i in range(6):
+        add_existing_guest(api, f"אורח משותף {i}", _phone(9201 + i))
+    configure_track(api)
+    _, admin = _admin()
+    a_id, _ = phone_agent(api, display_name="א")
+    b_id, _ = phone_agent(api, display_name="ב")
+    _sync(api.event_id)
+    api.client.patch(f"/admin/call-ops/callers/{a_id}", headers=admin, json={"event_ids": [api.event_id]})
+    r = api.client.patch(f"/admin/call-ops/callers/{b_id}", headers=admin, json={"event_ids": [api.event_id]})
+    assert r.status_code == 200 and r.json()["moved_tasks"] == 0
+    assert {t.assignee_id for t in _tasks(api.event_id, status="open")} == {a_id}
