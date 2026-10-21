@@ -40,10 +40,19 @@ def _get_sequence(db: Session, event: models.Event) -> list[models.EventMessage]
     שהזוג ערך), אבל יוצאת מהתצוגה: אירוע שחזר לשגרה לא צריך כרטיס דחייה
     על המסך.
     """
-    created = communication.provision_event_messages(db, event)
-    # נוסח שיווקי בבקשת האישור / בתזכורות → נוסח השירות הראשון (2026-10-21).
-    if created or message_wording.switch_to_utility(db, event):
+    if communication.provision_event_messages(db, event):
         db.commit()
+    # נוסח שיווקי בבקשת האישור / בתזכורות → נוסח השירות הראשון (2026-10-21).
+    # לא חובה כאן — המשימה המתוזמנת עושה את אותו הדבר — ולכן בתוך savepoint:
+    # מי שמורשה רק לצפות (RLS לא מתיר לו UPDATE) מקבל את המסך כרגיל.
+    try:
+        with db.begin_nested():
+            switched = message_wording.switch_to_utility(db, event)
+        if switched:
+            db.commit()
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        print(f"[veya:wording] switch skipped event={event.id} error={type(exc).__name__}", flush=True)
     by_type = communication.event_messages_by_type(db, event.id)
     rows = [by_type[mt] for mt in communication.MESSAGE_TYPES if mt in by_type]
     if postponement_service.edit_unlocked(db, event):

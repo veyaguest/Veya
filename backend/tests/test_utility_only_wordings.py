@@ -103,3 +103,35 @@ def test_public_library_marks_choosable() -> None:
     assert rem1[1] is False and rem1[2] is True and rem1[3] is False, rem1
     assert d["total"] == sum(1 for w in wordings if w["choosable"])
     assert all(w["choosable"] for w in wordings if w["message_type"] == "invitation")
+
+
+def test_meta_failure_is_not_retried_on_every_question() -> None:
+    """(2026-10-21) Meta לא עונה — לא מנסים שוב בכל שאלה על תבנית (עשרות בפתיחת
+    מסך ההודעות, אחת לכל הודעה במנה), אלא לכל היותר פעם בדקה."""
+    from app import whatsapp_template_status as status
+
+    calls = []
+    real = status._fetch
+    status._fetch = lambda: calls.append(1)
+    status.reset()
+    try:
+        for _ in range(30):
+            status.category_of("veya_wed_rem1_02")
+            status.is_sendable("veya_wed_rem1_02")
+        assert len(calls) == 1, len(calls)
+    finally:
+        status._fetch = real
+        status.reset()
+
+
+def test_view_only_screen_load_survives_a_failed_switch() -> None:
+    """מסך ההודעות נטען גם כשההחלפה לנוסח שירות נכשלת (למשל RLS לצופה בלבד)."""
+    from unittest import mock
+
+    from app import message_wording
+
+    with categories(CATEGORIES):
+        api, _ = bootstrap_with_options()
+        with mock.patch.object(message_wording, "switch_to_utility", side_effect=RuntimeError("rls")):
+            r = api.client.get("/communication/sequence", headers=api.headers)
+    assert r.status_code == 200, r.text

@@ -20,6 +20,10 @@ import time
 from typing import Optional
 
 CACHE_SECONDS = 600
+# קריאה ל-Meta שנכשלה — לא מנסים שוב לפני כן. בלי זה, כש-Meta לא עונה, כל
+# שאלה על תבנית (עשרות בפתיחת מסך ההודעות, אחת לכל הודעה במנה) הייתה מחכה
+# ל-timeout מחדש (נמצא בבדיקה 2026-10-21).
+RETRY_AFTER_FAILURE_SECONDS = 60
 APPROVED = "APPROVED"
 UTILITY = "UTILITY"
 MARKETING = "MARKETING"
@@ -27,6 +31,7 @@ MARKETING = "MARKETING"
 # (name, language) → (status, category). ``None`` = לא נטען / לא זמין.
 _cache: Optional[dict[tuple[str, str], tuple[str, str]]] = None
 _loaded_at = 0.0
+_failed_at: Optional[float] = None
 # נקודות החלפה לבדיקות: dict קבוע במקום קריאה ל-Meta.
 _override: Optional[dict[tuple[str, str], str]] = None
 _category_override: Optional[dict[tuple[str, str], str]] = None
@@ -66,11 +71,16 @@ def _fetch() -> Optional[dict[tuple[str, str], tuple[str, str]]]:
 
 
 def _templates(force: bool = False) -> Optional[dict[tuple[str, str], tuple[str, str]]]:
-    global _cache, _loaded_at
-    if force or _cache is None or time.monotonic() - _loaded_at > CACHE_SECONDS:
+    global _cache, _loaded_at, _failed_at
+    now = time.monotonic()
+    stale = _cache is None or now - _loaded_at > CACHE_SECONDS
+    recently_failed = _failed_at is not None and now - _failed_at < RETRY_AFTER_FAILURE_SECONDS
+    if force or (stale and not recently_failed):
         fetched = _fetch()
         if fetched is not None:
-            _cache, _loaded_at = fetched, time.monotonic()
+            _cache, _loaded_at, _failed_at = fetched, time.monotonic(), None
+        else:
+            _failed_at = time.monotonic()
     return _cache
 
 
@@ -109,5 +119,5 @@ def is_sendable(name: str, language: str = "he") -> bool:
 
 
 def reset() -> None:
-    global _cache, _loaded_at
-    _cache, _loaded_at = None, 0.0
+    global _cache, _loaded_at, _failed_at
+    _cache, _loaded_at, _failed_at = None, 0.0, None
