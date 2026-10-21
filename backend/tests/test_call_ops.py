@@ -500,3 +500,34 @@ def test_second_caller_does_not_take_calls_from_the_first() -> None:
     r = api.client.patch(f"/admin/call-ops/callers/{b_id}", headers=admin, json={"event_ids": [api.event_id]})
     assert r.status_code == 200 and r.json()["moved_tasks"] == 0
     assert {t.assignee_id for t in _tasks(api.event_id, status="open")} == {a_id}
+
+
+def test_unavailable_caller_gets_no_open_calls_on_assignment() -> None:
+    """(2026-10-21) טלפן בחופשה / לא פעיל לא מקבל את השיחות הפתוחות כשמקצים לו
+    אירוע. אם יש טלפן קבוע זמין באירוע — הן עוברות אליו; אם אין — לא משויכות."""
+    api, _ = bootstrap()
+    for i in range(3):
+        add_existing_guest(api, f"אורח זמינות {i}", _phone(9301 + i))
+    configure_track(api)
+    _, admin = _admin()
+    away_id, _ = phone_agent(api, display_name="בחופשה")
+    here_id, _ = phone_agent(api, display_name="זמין")
+    assert api.client.patch(
+        f"/admin/call-ops/callers/{away_id}", headers=admin,
+        json={"availability": "vacation", "unavailable_from": date.today().isoformat(),
+              "unavailable_until": (date.today() + timedelta(days=30)).isoformat()},
+    ).status_code == 200
+    _sync(api.event_id)
+
+    r = api.client.patch(f"/admin/call-ops/callers/{away_id}", headers=admin, json={"event_ids": [api.event_id]})
+    assert r.status_code == 200 and r.json()["moved_tasks"] == 0, r.text
+    assert {t.assignee_id for t in _tasks(api.event_id, status="open")} == {None}
+
+    r = api.client.patch(f"/admin/call-ops/callers/{here_id}", headers=admin, json={"event_ids": [api.event_id]})
+    assert r.status_code == 200 and r.json()["moved_tasks"] == 3, r.text
+    assert {t.assignee_id for t in _tasks(api.event_id, status="open")} == {here_id}
+
+    # הזמין יוצא ללא-פעיל ושוב מוקצה מחדש — השיחות לא נשארות אצל מי שלא זמין
+    api.client.patch(f"/admin/call-ops/callers/{here_id}", headers=admin, json={"availability": "inactive"})
+    api.client.patch(f"/admin/call-ops/callers/{away_id}", headers=admin, json={"event_ids": []})
+    assert {t.assignee_id for t in _tasks(api.event_id, status="open")} == {None}

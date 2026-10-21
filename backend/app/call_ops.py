@@ -891,22 +891,26 @@ def delete_for_event(db: Session, event_id: int) -> None:
 def follow_event_assignments(db: Session, event_ids: Iterable[int], released_user_id: Optional[int] = None) -> int:
     """אחרי שינוי בטלפנים הקבועים של אירועים — השיחות הפתוחות עוברות אליהם.
 
-    לאירוע עם טלפנים קבועים: כל משימה פתוחה (במחזור הנוכחי) שלא אצל אחד מהם
-    עוברת אליהם, מחולקת לפי העומס של כל אחד באותו יום. לאירוע שנשאר בלי
-    טלפנים קבועים: המשימות של ``released_user_id`` (הטלפן שהוסר) חוזרות
-    ל"לא משויכות"; משימה שאדמין שייך ידנית לטלפן אחר — לא נוגעים בה.
+    לכל משימה פתוחה (במחזור הנוכחי) של אירוע עם טלפנים קבועים: אם היא כבר אצל
+    טלפן קבוע **זמין** — נשארת. אחרת עוברת לטלפן קבוע זמין, לפי העומס של כל אחד
+    באותו יום. טלפן בחופשה / לא פעיל / חסום לא מקבל אותה (``is_available``, ליום
+    המשימה — ולמשימה באיחור, להיום); אם אין אף טלפן קבוע זמין — היא לא משויכת
+    (גם אם הייתה אצל טלפן קבוע שאינו זמין). לאירוע שנשאר בלי טלפנים קבועים:
+    המשימות של ``released_user_id`` (הטלפן שהוסר) חוזרות ל"לא משויכות".
+    משימה שאדמין שייך ידנית לטלפן שאינו קבוע באירוע ואין לה לאן לעבור — לא נוגעים.
     מחזיר כמה משימות עברו. לא עושה commit.
     """
     ids = list(set(event_ids))
     if not ids:
         return 0
     T, E = models.CallTask, models.Event
-    agents = {
-        u.id for u in db.scalars(
+    users = {
+        u.id: u for u in db.scalars(
             select(models.User).where(models.User.account_type == roles.PHONE_AGENT)
         ).all() if not u.disabled
     }
-    defaults = {eid: [uid for uid in uids if uid in agents] for eid, uids in _default_assignees(db, ids).items()}
+    profs = profiles(db, users)
+    defaults = {eid: [uid for uid in uids if uid in users] for eid, uids in _default_assignees(db, ids).items()}
     tasks = db.scalars(
         select(T).join(E, T.event_id == E.id)
         .where(T.event_id.in_(ids), T.status == OPEN, T.event_cycle == E.cycle_number)
@@ -918,14 +922,24 @@ def follow_event_assignments(db: Session, event_ids: Iterable[int], released_use
         .where(T.status == OPEN, T.assignee_id.is_not(None)).group_by(T.assignee_id, T.due_date)
     ).all():
         load[(uid, due)] = n
+    today = local_time.israel_date()
+
+    def work_day(t: models.CallTask) -> date:
+        try:
+            return max(date.fromisoformat(t.due_date), today)
+        except (TypeError, ValueError):
+            return today
+
     moved = 0
     for t in tasks:
-        options = defaults.get(t.event_id, [])
-        if options:
-            if t.assignee_id in options:
-                continue
-            new = min(options, key=lambda uid: (load[(uid, t.due_date)], uid))
-        elif released_user_id is not None and t.assignee_id == released_user_id:
+        fixed = defaults.get(t.event_id, [])
+        day = work_day(t)
+        available = [uid for uid in fixed if is_available(users[uid], profs.get(uid), day)]
+        if t.assignee_id in available:
+            continue
+        if available:
+            new = min(available, key=lambda uid: (load[(uid, t.due_date)], uid))
+        elif t.assignee_id is not None and (t.assignee_id in fixed or t.assignee_id == released_user_id):
             new = None
         else:
             continue
