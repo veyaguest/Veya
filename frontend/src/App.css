@@ -900,10 +900,6 @@ textarea {
     width: 36px;
     height: 36px;
   }
-  .sidebar-logo .auth-monogram-v {
-    font-size: 22px;
-    margin-top: -2px;
-  }
   .sidebar-logo .logo-text {
     font-size: 18px;
     letter-spacing: 5px;
@@ -2588,9 +2584,8 @@ td.notes.seating {
   opacity: 0.62;
 }
 
-/* ---- Toast — פופ-אפ קטן וממותג, עם המונוגרם של VEYA (אותו אלמנט CSS
-   בדיוק כמו .auth-monogram בסרגל הצד/מסך ההתחברות, רק מוקטן ומוצמד
-   לגוונים "על רקע בהיר" — לא לוגו חדש). ---- */
+/* ---- Toast — פופ-אפ קטן וממותג, עם חותם VEYA (אותו .auth-monogram +
+   VeyaSeal כמו בסרגל הצד ובמסך ההתחברות, רק מוקטן — לא לוגו חדש). ---- */
 .toast {
   display: flex;
   align-items: center;
@@ -2623,12 +2618,6 @@ td.notes.seating {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) scale(0.39);
-}
-/* על הרקע הבהיר של ה-Toast, ה-V בגוון --gold-light (מיועד לכהה) לא קריא
-   מספיק — --gold-deep הוא בדיוק הטוקן הקיים ל"זהב על בהיר", ומתחלף אוטומטית
-   בין ערכת יום/לילה כמו שאר הטקסט של הרכיב. */
-.toast-brand .auth-monogram-v {
-  color: var(--gold-deep);
 }
 .toast-text {
   font-weight: 600;
@@ -7456,44 +7445,20 @@ button.gauge-status-card:focus-visible {
   justify-content: center;
   flex-shrink: 0;
 }
-.auth-monogram::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 1px solid var(--gold);
-  border-radius: 50%;
-  /* חריץ קטן בשעה 12: קו הטבעת נקטע בדיוק לאורך הצלעות התחתונות של
-     היהלום, כך שפנים היהלום נשאר ריק — בדיוק כמו בלוגו המלא. */
-  clip-path: polygon(0 0, calc(50% - 2.8px) 0, 50% 3.3px, calc(50% + 2.8px) 0, 100% 0, 100% 100%, 0 100%);
+/* החותם הוא קובץ המותג הרשמי (VeyaSeal → /logo_nobg.png). בקובץ הטבעת
+   תופסת 75% מהרוחב, ולכן התמונה גדולה ב-133.7% מהעוטף: הטבעת ממלאת אותו
+   בדיוק, וכל מי שקובע את גודל .auth-monogram ממשיך לעבוד כמו קודם. */
+/* על רקע בהיר הזהב הבהיר של הקובץ חיוור מדי — מכהים אותו מעט (כמו --gold-deep). */
+.toast-brand .veya-seal {
+  filter: brightness(0.8) saturate(1.15);
 }
-.auth-monogram::after {
-  content: '';
-  position: absolute;
-  inset: 2.5px;
-  border: 1px solid rgba(201, 162, 39, 0.45);
-  border-radius: 50%;
-}
-.auth-monogram-v {
-  font-family: var(--font-brand);
-  font-size: 34px;
-  font-weight: 500;
-  color: var(--gold-light);
-  line-height: 1;
-  margin-top: -3px;
-}
-.auth-monogram-diamond {
-  position: absolute;
-  /* ממורכז בדיוק על קו הטבעת החיצונית (שמרכזה 0.5px מלמעלה), כמו בלוגו המלא */
-  top: -1.5px;
-  left: 50%;
-  transform: translateX(-50%) rotate(45deg);
-  width: 4px;
-  height: 4px;
-  /* ללא מילוי — קודם הייתה כאן var(--black) שהתמזגה עם רקע העמוד הכהה
-     בדף ההתחברות, אבל נראתה כנקודה שחורה על רקע בהיר (סרגל הצד). שקוף
-     נראה זהה בהקשר הכהה ונכון גם בהקשר הבהיר. */
-  background: transparent;
-  border: 1px solid var(--gold);
+.auth-monogram > .veya-seal {
+  display: block;
+  flex: none;
+  width: 133.7%;
+  height: 133.7%;
+  pointer-events: none;
+  user-select: none;
 }
 .auth-logo-divider {
   width: 1px;
@@ -7902,10 +7867,6 @@ button.gauge-status-card:focus-visible {
     justify-content: center;
     gap: 12px;
     margin-bottom: 30px;
-  }
-  /* על רקע הקרם הבהיר של הטופס — האות V בזהב מלא לניגודיות טובה */
-  .auth-panel-logo .auth-monogram-v {
-    color: var(--gold);
   }
 }
 
@@ -12368,7 +12329,7 @@ button.gauge-status-card:focus-visible {
 }
 .onboard-logo-img {
   display: block;
-  width: 132px;
+  width: 98px;
   height: auto;
 }
 .onboard-title {
@@ -12520,7 +12481,7 @@ button.gauge-status-card:focus-visible {
     padding: 26px 20px 24px;
   }
   .onboard-logo-img {
-    width: 116px;
+    width: 86px;
   }
   .onboard-steps {
     flex-direction: column;
@@ -15386,12 +15347,24 @@ button.gauge-status-card:focus-visible {
   box-shadow: var(--shadow-card);
   padding: 40px 28px;
 }
+/* אותו לוגו כמו בכל המערכת: החותם הרשמי (VeyaSeal) + VEYA בגופן המותג. */
 .error-boundary-logo {
-  font-size: 20px;
-  letter-spacing: 0.2em;
-  color: var(--gold-deep);
-  font-weight: 700;
-  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.error-boundary-logo .auth-monogram {
+  width: 42px;
+  height: 42px;
+}
+.error-boundary-word {
+  font-family: var(--font-brand);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 6px;
+  color: var(--charcoal);
 }
 .error-boundary-card h1 {
   font-size: 22px;

@@ -48,6 +48,10 @@ function pageTemplate({ title, bodyHtml }) {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex" />
 <title>${title} · VEYA</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&display=swap" rel="stylesheet" />
 <style>
   :root { color-scheme: light; }
   body {
@@ -61,6 +65,12 @@ function pageTemplate({ title, bodyHtml }) {
   }
   /* #896e29 (= --gold-deep באפליקציה): ‎#9a7b1f הקודם היה מתחת ל-4.5:1 על לבן. */
   .legal-topbar a { color: #896e29; text-decoration: none; font-weight: 600; font-size: 14.5px; }
+  /* הלוגו של VEYA בראש הדף — החותם הרשמי (/logo_nobg.png) + VEYA בגופן
+     המותג, כמו בשאר האתר. הוא גם הקישור לדף הבית. */
+  .legal-brand { display: inline-flex; align-items: center; gap: 9px; direction: ltr; }
+  .legal-brand img { display: block; width: 40px; height: 40px; margin: -5px; filter: brightness(.8) saturate(1.15); }
+  .legal-brand span { font-family: "Cormorant Garamond", Georgia, serif; font-size: 21px; font-weight: 600;
+    letter-spacing: 5px; color: #2a2420; }
   .legal-doc { max-width: 780px; margin: 0 auto; background: #fff; border: 1px solid #ece4d3;
     border-radius: 14px; padding: 40px clamp(20px, 5vw, 56px); }
   .legal-doc h1 { font-size: 1.7rem; margin-top: 0; }
@@ -82,6 +92,8 @@ function pageTemplate({ title, bodyHtml }) {
     .legal-doc hr { border-top-color: #322c22; }
     /* זהב כהה על רקע כהה היה 4.3:1 (axe) — במצב כהה זהב בהיר. */
     .legal-topbar a, .legal-doc a { color: #d9bc68; }
+    .legal-brand span { color: #f5efe2; }
+    .legal-brand img { filter: none; }
   }
 </style>
 <link rel="stylesheet" href="/veya-a11y.css" />
@@ -89,7 +101,7 @@ function pageTemplate({ title, bodyHtml }) {
 </head>
 <body>
   <nav class="legal-topbar" aria-label="ניווט באתר">
-    <a href="/"><span aria-hidden="true">→</span> חזרה ל-VEYA</a>
+    <a class="legal-brand" href="/" aria-label="VEYA — לדף הבית"><img src="/logo_nobg.png" alt="" width="40" height="40" /><span>VEYA</span></a>
     <a href="/app">כניסה למערכת</a>
   </nav>
   <main>
@@ -129,7 +141,7 @@ function aboutTemplate({ title, bodyHtml }) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
   rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600&family=Frank+Ruhl+Libre:wght@400;500&display=swap"
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600&family=Frank+Ruhl+Libre:wght@400;500&family=Cormorant+Garamond:wght@600&display=swap"
 />
 <style>
   :root {
@@ -150,6 +162,12 @@ function aboutTemplate({ title, bodyHtml }) {
   .about-topbar a { color: var(--gold-deep); text-decoration: none; font-weight: 600; font-size: 14.5px; }
   .about-topbar a:hover { text-decoration: underline; text-underline-offset: 3px; }
   .about-topbar a:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 3px; border-radius: 4px; }
+  /* הלוגו של VEYA בראש הדף — החותם הרשמי (/logo_nobg.png) + VEYA בגופן
+     המותג, כמו בשאר האתר. הוא גם הקישור לדף הבית. */
+  .legal-brand { display: inline-flex; align-items: center; gap: 9px; direction: ltr; }
+  .legal-brand img { display: block; width: 40px; height: 40px; margin: -5px; filter: brightness(.8) saturate(1.15); }
+  .legal-brand span { font-family: "Cormorant Garamond", Georgia, serif; font-size: 21px; font-weight: 600;
+    letter-spacing: 5px; color: var(--charcoal); }
   .about-doc { max-width: 680px; margin: 0 auto; }
   .about-doc h1 {
     margin: clamp(28px, 6vw, 56px) 0 clamp(26px, 4vw, 44px);
@@ -179,7 +197,7 @@ function aboutTemplate({ title, bodyHtml }) {
 </head>
 <body>
   <nav class="about-topbar" aria-label="ניווט באתר">
-    <a href="/"><span aria-hidden="true">→</span> חזרה ל-VEYA</a>
+    <a class="legal-brand" href="/" aria-label="VEYA — לדף הבית"><img src="/logo_nobg.png" alt="" width="40" height="40" /><span>VEYA</span></a>
     <a href="/app">כניסה למערכת</a>
   </nav>
   <main>

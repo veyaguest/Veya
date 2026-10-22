@@ -524,11 +524,11 @@ def test_confirmation_goes_to_the_verified_account_email_in_veya_design() -> Non
         assert secret not in everything, secret
     for promise in ("שעות", "ימי עבודה", "תוך", "עד מחר"):
         assert promise not in everything, f"הבטחת זמן תגובה: {promise}"
-    # העיצוב של VEYA: אותה מעטפת, אותו לוגו (frontend/public/logo.png), RTL.
+    # העיצוב של VEYA: אותה מעטפת, אותו לוגו (frontend/public/veya_combined.png), RTL.
     html_body = mail["html_body"]
     assert '<html dir="rtl" lang="he">' in html_body
-    assert f'src="{emailer.logo_url()}"' in html_body and emailer.logo_url().endswith("/logo.png")
-    assert (Path(__file__).resolve().parents[2] / "frontend" / "public" / "logo.png").is_file()
+    assert f'src="{emailer.logo_url()}"' in html_body and emailer.logo_url().endswith("/veya_combined.png")
+    assert (Path(__file__).resolve().parents[2] / "frontend" / "public" / "veya_combined.png").is_file()
     for token in (emailer._SURFACE, emailer._GOLD, "Frank Ruhl Libre", "Assistant", "max-width:460px"):
         assert token in html_body, token
     # התוצאה נרשמה על הפנייה.

@@ -43,7 +43,7 @@ export function CompleteProfilePage({
       <div className="join-page" dir="rtl">
         <div className="join-card">
           <div className="join-logo">
-            <img className="join-logo-img" src="/logo.png" alt="VEYA" width={152} height={133} />
+            <img className="join-logo-img" src="/veya_combined.png" alt="VEYA" width={110} height={149} />
           </div>
 
           <h1 className="join-title">עוד שני פרטים ואפשר להתחיל</h1>

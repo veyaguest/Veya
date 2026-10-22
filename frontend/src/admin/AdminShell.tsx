@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { User } from '../types'
+import { VeyaSeal } from '../components/VeyaSeal'
 import { adminSearch, type AdminMe, type SearchGroup, type SearchItem } from './adminApi'
 import { navigate, routeHref, type AdminPageKey, type AdminRoute } from './route'
 import { InboxNavBadge } from './pages/inbox/InboxPage'
@@ -115,6 +116,7 @@ export function AdminShell({
     <div className="adm-root" dir="rtl">
       <aside className="adm-sidebar">
         <div className="adm-brand">
+          <span className="auth-monogram adm-brand-mark"><VeyaSeal /></span>
           <span className="adm-brand-name" dir="ltr">VEYA</span>
           <span className="adm-brand-tag">ניהול</span>
         </div>
@@ -126,6 +128,7 @@ export function AdminShell({
         <div className="adm-overlay" onMouseDown={(e) => e.target === e.currentTarget && setMenuOpen(false)}>
           <aside className="adm-mobile-nav" aria-label="תפריט">
             <div className="adm-brand">
+              <span className="auth-monogram adm-brand-mark"><VeyaSeal /></span>
               <span className="adm-brand-name" dir="ltr">VEYA</span>
               <span className="adm-brand-tag">ניהול</span>
             </div>

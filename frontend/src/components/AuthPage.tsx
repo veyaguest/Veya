@@ -7,6 +7,7 @@ import { Footer } from './Footer'
 import { ForgotPasswordPage } from './ForgotPasswordPage'
 import type { User } from '../types'
 import { strings } from '../strings/he'
+import { VeyaSeal } from './VeyaSeal'
 
 /** מסך התחברות / הרשמה — פריסת split-screen: פאנל שיווקי + טופס כניסה. */
 export function AuthPage({
@@ -157,8 +158,7 @@ export function AuthPage({
 
         <div className="auth-logo-lockup" dir="ltr">
           <span className="auth-monogram" aria-hidden="true">
-            <span className="auth-monogram-diamond" />
-            <span className="auth-monogram-v">V</span>
+            <VeyaSeal />
           </span>
           <span className="auth-logo-divider" />
           <span className="auth-wordmark">
@@ -207,8 +207,7 @@ export function AuthPage({
           {/* לוגו VEYA — מוצג בטלפון, שם הפאנל השיווקי (עם הלוגו הגדול) מוסתר */}
           <div className="auth-panel-logo" dir="ltr">
             <span className="auth-monogram" aria-hidden="true">
-              <span className="auth-monogram-diamond" />
-              <span className="auth-monogram-v">V</span>
+              <VeyaSeal />
             </span>
             <span className="auth-panel-logo-name">VEYA</span>
           </div>

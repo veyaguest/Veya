@@ -39,7 +39,7 @@
 
 .join-logo-img {
   display: block;
-  width: 140px;
+  width: 104px;
   height: auto;
 }
 
@@ -237,7 +237,7 @@
 
 @media (min-width: 480px) {
   .join-logo-img {
-    width: 152px;
+    width: 112px;
   }
 }
 

@@ -13,6 +13,7 @@ import {
 import type { ConfirmGuestPublic, GiftCheckoutResult, GiftQuote } from '../types'
 import { getEventTerms } from '../strings/eventTypes'
 import { strings } from '../strings/he'
+import { VeyaSeal } from './VeyaSeal'
 
 type Choice = 'confirmed' | 'declined' | 'maybe'
 
@@ -32,8 +33,7 @@ type Choice = 'confirmed' | 'declined' | 'maybe'
 function Monogram() {
   return (
     <span className="auth-monogram">
-      <span className="auth-monogram-diamond" />
-      <span className="auth-monogram-v">V</span>
+      <VeyaSeal />
     </span>
   )
 }

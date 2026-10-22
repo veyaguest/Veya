@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { reportCrash } from '../help/errorBus'
+import { VeyaSeal } from './VeyaSeal'
 
 interface Props {
   children: ReactNode
@@ -32,7 +33,10 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="error-boundary" dir="rtl">
           <div className="error-boundary-card">
-            <div className="error-boundary-logo">V E Y A</div>
+            <div className="error-boundary-logo" dir="ltr">
+              <span className="auth-monogram"><VeyaSeal /></span>
+              <span className="error-boundary-word">VEYA</span>
+            </div>
             <h1>משהו השתבש</h1>
             <p>המידע שלכם שמור אצלנו. נסו לטעון את הדף מחדש.</p>
             <button

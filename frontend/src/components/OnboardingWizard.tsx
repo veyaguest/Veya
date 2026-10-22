@@ -167,7 +167,7 @@ export function OnboardingWizard({ onCreated }: Props) {
     <main className="onboard-wrap" dir="rtl">
       <div className="onboard-card">
         <div className="onboard-logo">
-          <img className="onboard-logo-img" src="/logo.png" alt="VEYA" width={152} height={133} />
+          <img className="onboard-logo-img" src="/veya_combined.png" alt="VEYA" width={110} height={149} />
         </div>
 
         <h1 className="onboard-title">ברוכים הבאים ל-VEYA</h1>

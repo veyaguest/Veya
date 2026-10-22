@@ -274,8 +274,8 @@ def test_reply_email_uses_the_veya_template_and_logo() -> None:
     confirmation_html = emailer.support_confirmation_content(rid)[1]
     shell_head = confirmation_html.split("<body", 1)[0].split("<title>")[0]
     assert body.split("<body", 1)[0].split("<title>")[0] == shell_head
-    assert f'src="{emailer.logo_url()}"' in body and emailer.logo_url().endswith("/logo.png")
-    assert (Path(__file__).resolve().parents[2] / "frontend" / "public" / "logo.png").is_file()
+    assert f'src="{emailer.logo_url()}"' in body and emailer.logo_url().endswith("/veya_combined.png")
+    assert (Path(__file__).resolve().parents[2] / "frontend" / "public" / "veya_combined.png").is_file()
     assert '<html dir="rtl" lang="he">' in body
     for piece in ("צוות VEYA חזר אליך", f"בהמשך לפנייה שלך (#{rid})", "צוות VEYA", "support@veyaguest.co.il"):
         assert piece in body and piece in mail["text_body"], piece

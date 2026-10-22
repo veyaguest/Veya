@@ -34,13 +34,29 @@
   letter-spacing: 0.02em;
 }
 
-.pa-brand-mark {
-  font-size: 20px;
+/* אותו לוגו כמו בכל המערכת: החותם הרשמי (VeyaSeal) + VEYA בגופן המותג. */
+.pa-brand-mark.auth-monogram {
+  width: 30px;
+  height: 30px;
+}
+
+/* על רקע בהיר הזהב הבהיר של הקובץ חיוור מדי — מכהים אותו מעט (כמו --gold-deep). */
+.pa-brand-mark .veya-seal {
+  filter: brightness(0.8) saturate(1.15);
 }
 
 .pa-brand-name {
-  font-size: 15px;
+  font-family: var(--font-brand);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 4px;
   color: var(--charcoal);
+}
+
+.pa-brand-tag {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted, #6b6253);
 }
 
 .pa-top-actions {

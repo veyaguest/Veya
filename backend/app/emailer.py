@@ -195,7 +195,7 @@ def send_email(
 #   רקע/טקסט/מסגרות → הבלוק ".auth-marketing, .auth-panel, .verify-page" ב-App.css
 #   הכפתור          → .auth-submit (כפתור ההתחברות)
 #   שדה הקוד        → .verify-code-box / .auth-field input
-#   הלוגו           → frontend/public/logo.png (קובץ המותג, לא שחזור)
+#   הלוגו           → frontend/public/veya_combined.png (קובץ המותג, לא שחזור)
 #
 # הצבעים שטוחים ל-HEX כי rgba(), gradient ו-CSS variables לא נתמכים ב-Outlook.
 # אין כאן אף צבע שהומצא למייל.
@@ -228,13 +228,15 @@ _FONT_SERIF = "'Frank Ruhl Libre','Times New Roman',Georgia,serif"
 # קובץ הלוגו הרשמי — אותו קובץ שמסך אימות המייל מציג ושדף הנחיתה משתמש בו
 # ב-hero. לקוחות מייל לא מרנדרים SVG, ולכן PNG (ו-logo.svg ממילא מרנדר את
 # מילת המותג כ-<text> בגופן חיצוני, שלא נטען בתוך <img>).
-_LOGO_WIDTH = 152   # == width במסך האימות (VerifyEmailPage.tsx)
-_LOGO_HEIGHT = 133  # == height במסך האימות — אותו קובץ, אותו גודל בדיוק
+# 2026-10-22: veya_combined.png (חותם + VEYA) במקום logo.png עם הסלוגן — לבקשת
+# הבעלים, אותו לוגו כמו בכל האתר.
+_LOGO_WIDTH = 110   # == width במסך האימות (VerifyEmailPage.tsx)
+_LOGO_HEIGHT = 149  # == height במסך האימות — אותו קובץ, אותו יחס
 
 
 def logo_url() -> str:
     """כתובת מלאה ללוגו — במייל חייבת להיות אבסולוטית."""
-    return f"{public_base_url()}/logo.png"
+    return f"{public_base_url()}/veya_combined.png"
 
 
 def _shell(*, title: str, preheader: str, body_html: str) -> str:

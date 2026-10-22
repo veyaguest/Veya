@@ -71,17 +71,29 @@
   overflow-y: auto;
 }
 
+/* אותו לוגו כמו בכל המערכת: החותם הרשמי (VeyaSeal) + VEYA בגופן המותג. */
 .adm-brand {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 20px 20px 16px;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 20px 14px;
+}
+
+.adm-brand-mark.auth-monogram {
+  width: 30px;
+  height: 30px;
+}
+
+/* על רקע בהיר הזהב הבהיר של הקובץ חיוור מדי — מכהים אותו מעט (כמו --gold-deep). */
+.adm-brand-mark .veya-seal {
+  filter: brightness(0.8) saturate(1.15);
 }
 
 .adm-brand-name {
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  font-size: 15px;
+  font-family: var(--font-brand, 'Cormorant Garamond', Georgia, serif);
+  font-weight: 600;
+  letter-spacing: 4px;
+  font-size: 19px;
 }
 
 .adm-brand-tag {

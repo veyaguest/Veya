@@ -30,6 +30,7 @@ import { PasteImportDialog } from './PasteImportDialog'
 import './GuestDataAlert.css'
 import { useHelpScope } from '../help/useHelpScope'
 import { announce } from '../lib/announce'
+import { VeyaSeal } from './VeyaSeal'
 
 // נבדק פעם אחת בטעינת המודול — תמיכת הדפדפן בבחירת אנשי קשר לא משתנה תוך כדי שימוש.
 const contactsSupported = isContactPickerSupported()
@@ -465,8 +466,7 @@ export function GuestsPage({
         <div className="toast" aria-hidden="true">
           <span className="toast-brand" aria-hidden="true">
             <span className="auth-monogram">
-              <span className="auth-monogram-diamond" />
-              <span className="auth-monogram-v">V</span>
+              <VeyaSeal />
             </span>
           </span>
           <span className="toast-text">{toast}</span>

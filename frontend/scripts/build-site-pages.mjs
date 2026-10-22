@@ -221,7 +221,7 @@ function guideHtml(g) {
           url: SITE,
           // Google מתעדת את logo כ-ImageObject. מחרוזת עוברת, אבל מייצרת
           // אזהרה ב-Rich Results Test ולא מזכה בתוצאת הלוגו.
-          logo: { '@type': 'ImageObject', url: `${SITE}/logo.png` },
+          logo: { '@type': 'ImageObject', url: `${SITE}/icon-512.png` },
         },
         mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE}/guides/${g.slug}/` },
       },

@@ -9,14 +9,14 @@ const CODE_LENGTH = 6
 const RESEND_COOLDOWN_SECONDS = 30
 
 /**
- * לוגו VEYA — קובץ המותג הרשמי ``frontend/public/logo.png`` (אותו קובץ שדף
+ * לוגו VEYA — קובץ המותג הרשמי ``frontend/public/veya_combined.png`` (אותו קובץ שדף
  * הנחיתה מציג ב-hero ושמשמש כ-apple-touch-icon). בכוונה תמונה ולא שחזור
  * ב-CSS ולא ה-SVG: ה-SVG מרנדר את המילה VEYA כ-<text> בגופן Cormorant
  * Garamond, ובתוך <img> גופן חיצוני לא נטען — כלומר הלוגו היה נופל לגופן
  * ברירת מחדל. ה-PNG הוא הלוגו האמיתי כפי שעוצב, בלי תלות בגופנים.
  */
 function VeyaLogo() {
-  return <img className="verify-logo" src="/logo.png" alt="VEYA" width={152} height={133} />
+  return <img className="verify-logo" src="/veya_combined.png" alt="VEYA" width={110} height={149} />
 }
 
 /**

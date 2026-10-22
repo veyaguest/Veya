@@ -2,6 +2,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react
 import { callOps, type MyDay, type TaskDetail, type TaskRow } from '../admin/callOpsApi'
 import type { CallOutcome, User } from '../types'
 import { AccountCenter } from './AccountCenter'
+import { VeyaSeal } from './VeyaSeal'
 import './PhoneAgentApp.css'
 
 // תיבת ה-WhatsApp (גם הטלפנים עונים, 2026-10-19) — נטענת רק כשפותחים את הלשונית.
@@ -204,10 +205,11 @@ export function PhoneAgentApp({
     <div className="pa-app" dir="rtl">
       <header className="pa-top">
         <div className="pa-brand">
-          <span className="pa-brand-mark" aria-hidden>
-            ☎️
+          <span className="auth-monogram pa-brand-mark">
+            <VeyaSeal />
           </span>
-          <span className="pa-brand-name">VEYA · שיחות</span>
+          <span className="pa-brand-name" dir="ltr">VEYA</span>
+          <span className="pa-brand-tag">שיחות</span>
         </div>
         <div className="pa-top-actions">
           <button type="button" className="pa-top-btn" onClick={() => setProfileOpen(true)}>

@@ -7,7 +7,7 @@ import './ForgotPasswordPage.css'
 
 /** אותו לוגו, באותו גודל בדיוק, כמו VerifyEmailPage — ראו ההערה שם. */
 function VeyaLogo() {
-  return <img className="verify-logo" src="/logo.png" alt="VEYA" width={152} height={133} />
+  return <img className="verify-logo" src="/veya_combined.png" alt="VEYA" width={110} height={149} />
 }
 
 /**

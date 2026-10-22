@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#2b2620" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>VEYA — הדף לא נמצא</title>
+    <!--
+      דף 404 — Vercel מגיש אותו לכל כתובת שלא קיימת באתר (במקום הדף הלבן
+      של Vercel). אותו מראה כמו offline.html: inline, גופני מערכת, והחותם
+      הרשמי כ-SVG, כדי שלא יהיה תלוי בשום קובץ אחר.
+    -->
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 24px calc(32px + env(safe-area-inset-bottom, 0px));
+        padding-top: calc(32px + env(safe-area-inset-top, 0px));
+        background: #0b0a0c;
+        color: #f5efe2;
+        font-family: 'Heebo', 'Assistant', system-ui, -apple-system, sans-serif;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+      .card {
+        width: 100%;
+        max-width: 420px;
+        text-align: center;
+        background: #2b2620;
+        border: 1px solid rgba(201, 162, 39, 0.35);
+        border-top: 3px solid #c9a227;
+        border-radius: 20px;
+        padding: 36px 28px 32px;
+        box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.9);
+      }
+      /* חותם VEYA הרשמי (טבעת כפולה, יהלום, V) — inline SVG, כי בלי רשת
+         גם קובץ התמונה של הלוגו לא ייטען. ה-V הוא קו מתאר מהגופן. */
+      .mono {
+        display: block;
+        width: 92px;
+        height: 92px;
+        margin: 0 auto 20px;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-family: 'Frank Ruhl Libre', Georgia, serif;
+        font-size: 24px;
+        font-weight: 500;
+        color: #f5efe2;
+      }
+      p {
+        margin: 0 0 26px;
+        font-size: 15px;
+        color: rgba(245, 239, 226, 0.72);
+      }
+      .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        width: 100%;
+        min-height: 48px;
+        border: 0;
+        border-radius: 12px;
+        background: #c9a227;
+        color: #2b2620;
+        font: inherit;
+        font-weight: 600;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      .btn:active {
+        background: #b8931f;
+      }
+      .link {
+        display: inline-block;
+        margin-top: 18px;
+        color: #e4c96b;
+        font-weight: 600;
+        font-size: 15px;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <svg class="mono" viewBox="40 40 432 432" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs><mask id="cut"><rect width="512" height="512" fill="#fff"/><path d="M256 47 L275 66 L256 85 L237 66 Z" fill="#000"/></mask></defs>
+        <circle cx="256" cy="256" r="190" fill="none" stroke="#C9A227" stroke-width="6" mask="url(#cut)"/>
+        <circle cx="256" cy="256" r="172" fill="none" stroke="#C9A227" stroke-width="5" stroke-opacity=".45"/>
+        <path d="M256 47 L275 66 L256 85 L237 66 Z" fill="none" stroke="#C9A227" stroke-width="6"/>
+        <path fill="#E4C96B" transform="translate(256 250) scale(.209 -.209) translate(-334.5 -311)" d="M668 625Q671 625 671.0 619.0Q671 613 668 613Q634 613 606.5 591.5Q579 570 560 522L356 1Q355 -3 345.5 -3.0Q336 -3 334 1L83 542Q66 579 47.5 596.0Q29 613 1 613Q-2 613 -2.0 619.0Q-2 625 1 625Q14 625 25.0 624.0Q36 623 49.0 622.5Q62 622 81 622Q119 622 146.0 622.5Q173 623 192.0 624.0Q211 625 226 625Q229 625 229.0 619.0Q229 613 226 613Q186 613 171.0 595.5Q156 578 174 539L379 93L343 35L536 527Q552 568 536.5 590.5Q521 613 468 613Q465 613 465.0 619.0Q465 625 468 625Q494 625 517.5 623.5Q541 622 579 622Q608 622 625.5 623.5Q643 625 668 625Z"/>
+      </svg>
+      <h1>הדף הזה לא נמצא</h1>
+      <p>ייתכן שהקישור השתנה. אפשר להמשיך מדף הבית, או להיכנס ישר למערכת.</p>
+      <a class="btn" href="/">לדף הבית</a>
+      <a class="link" href="/app">כניסה למערכת</a>
+    </main>
+  </body>
+</html>

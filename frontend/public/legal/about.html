@@ -18,7 +18,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
   rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600&family=Frank+Ruhl+Libre:wght@400;500&display=swap"
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@400;600&family=Frank+Ruhl+Libre:wght@400;500&family=Cormorant+Garamond:wght@600&display=swap"
 />
 <style>
   :root {
@@ -39,6 +39,12 @@
   .about-topbar a { color: var(--gold-deep); text-decoration: none; font-weight: 600; font-size: 14.5px; }
   .about-topbar a:hover { text-decoration: underline; text-underline-offset: 3px; }
   .about-topbar a:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 3px; border-radius: 4px; }
+  /* הלוגו של VEYA בראש הדף — החותם הרשמי (/logo_nobg.png) + VEYA בגופן
+     המותג, כמו בשאר האתר. הוא גם הקישור לדף הבית. */
+  .legal-brand { display: inline-flex; align-items: center; gap: 9px; direction: ltr; }
+  .legal-brand img { display: block; width: 40px; height: 40px; margin: -5px; filter: brightness(.8) saturate(1.15); }
+  .legal-brand span { font-family: "Cormorant Garamond", Georgia, serif; font-size: 21px; font-weight: 600;
+    letter-spacing: 5px; color: var(--charcoal); }
   .about-doc { max-width: 680px; margin: 0 auto; }
   .about-doc h1 {
     margin: clamp(28px, 6vw, 56px) 0 clamp(26px, 4vw, 44px);
@@ -68,7 +74,7 @@
 </head>
 <body>
   <nav class="about-topbar" aria-label="ניווט באתר">
-    <a href="/"><span aria-hidden="true">→</span> חזרה ל-VEYA</a>
+    <a class="legal-brand" href="/" aria-label="VEYA — לדף הבית"><img src="/logo_nobg.png" alt="" width="40" height="40" /><span>VEYA</span></a>
     <a href="/app">כניסה למערכת</a>
   </nav>
   <main>

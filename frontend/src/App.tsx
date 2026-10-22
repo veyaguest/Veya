@@ -49,6 +49,7 @@ import type { GuestFilter as HelpGuestFilter } from './help/types'
 import type { GuestFilter } from './api'
 import type { EventSummary, User } from './types'
 import type { EventTerms } from './strings/eventTypes'
+import { VeyaSeal } from './components/VeyaSeal'
 
 // Code splitting: AdminApp ו-HallPage הם הקבצים הכבדים ביותר בבנדל (פאנל
 // אדמין שלם / עורך מפת אולם עם ~4400 שורות), אבל רוב הסשנים (זוג רגיל
@@ -570,7 +571,7 @@ function App() {
       <div className="join-page" dir="rtl">
         <div className="join-card">
           <div className="join-logo">
-            <img className="join-logo-img" src="/logo.png" alt="VEYA" width={152} height={133} />
+            <img className="join-logo-img" src="/veya_combined.png" alt="VEYA" width={110} height={149} />
           </div>
           <h1 className="join-title">הקישור לאימות כבר לא תקף</h1>
           <p className="join-text">{verifyError}</p>
@@ -801,8 +802,7 @@ function App() {
       <header className="sidebar">
         <div className="sidebar-logo" dir="ltr">
           <span className="auth-monogram">
-            <span className="auth-monogram-diamond" />
-            <span className="auth-monogram-v">V</span>
+            <VeyaSeal />
           </span>
           <span className="logo-text">VEYA</span>
         </div>
