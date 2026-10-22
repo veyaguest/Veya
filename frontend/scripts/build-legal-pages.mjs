@@ -122,7 +122,7 @@ function aboutTemplate({ title, bodyHtml }) {
 <meta property="og:title" content="אודות VEYA" />
 <meta property="og:description" content="הסיפור של VEYA: מערכת שמחברת את כל חלקי האירוע סביב אותה רשימת מוזמנים." />
 <meta property="og:url" content="https://veyaguest.co.il/legal/about.html" />
-<meta property="og:image" content="https://veyaguest.co.il/og-image.png?v=3" />
+<meta property="og:image" content="https://veyaguest.co.il/og-image.jpg?v=4" />
 <title>${title} · VEYA</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />

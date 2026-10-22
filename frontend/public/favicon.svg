@@ -1,29 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="VEYA">
-  <defs>
-    <radialGradient id="sidebarGlow" cx="15%" cy="0%" r="55%">
-      <stop offset="0%" stop-color="#C9A227" stop-opacity="0.09"/>
-      <stop offset="100%" stop-color="#C9A227" stop-opacity="0"/>
-    </radialGradient>
-    <!-- חותך את קו הטבעת בתוך היהלום, כך שפנים היהלום נשאר ריק לגמרי -->
-    <mask id="diamondCut">
-      <rect width="512" height="512" fill="#fff"/>
-      <path d="M256 47 L275 66 L256 85 L237 66 Z" fill="#000"/>
-    </mask>
-  </defs>
-
-  <!-- רקע: ריבוע פינות מעוגלות, בדיוק כמו רקע סרגל הצד במערכת (charcoal חם + זוהר זהב עדין) -->
-  <rect width="512" height="512" rx="112" fill="#2B2620"/>
-  <rect width="512" height="512" rx="112" fill="url(#sidebarGlow)"/>
-
-  <!-- טבעת חיצונית + טבעת פנימית דקה — שיחזור מדויק של .auth-monogram מ-App.css -->
-  <circle cx="256" cy="256" r="190" fill="none" stroke="#C9A227" stroke-width="2.5" mask="url(#diamondCut)"/>
-  <circle cx="256" cy="256" r="172" fill="none" stroke="#C9A227" stroke-width="2.5" stroke-opacity="0.45"/>
-
-  <!-- יהלום יחיד בשעה 12, ממורכז בדיוק על קו הטבעת החיצונית (מתאר בלבד, פנים ריק) -->
-  <path d="M256 47 L275 66 L256 85 L237 66 Z" fill="none" stroke="#C9A227" stroke-width="2.5"/>
-
-  <!-- האות V, גופן סריפי תואם למותג -->
-  <text x="256" y="256" dy="-8" text-anchor="middle" dominant-baseline="central"
-        font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif"
-        font-size="209" font-weight="500" fill="#E4C96B">V</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="VEYA"><defs>
+  <linearGradient id="vg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ECD584"/><stop offset="1" stop-color="#C9A227"/></linearGradient>
+  <radialGradient id="bgGlow" cx="50%" cy="46%" r="62%"><stop offset="0" stop-color="#342D22"/><stop offset=".55" stop-color="#1F1C17"/><stop offset="1" stop-color="#0E0D0D"/></radialGradient>
+  <mask id="cut"><rect width="512" height="512" fill="#fff"/><path d="M256 22 L290 56 L256 90 L222 56 Z" fill="#000"/></mask>
+</defs>
+  <rect width="512" height="512" rx="112" fill="url(#bgGlow)"/>
+  <circle cx="256" cy="262" r="194" fill="none" stroke="#C9A227" stroke-width="22" mask="url(#cut)"/>
+  <path d="M256 22 L290 56 L256 90 L222 56 Z" fill="none" stroke="#C9A227" stroke-width="18" stroke-linejoin="miter"/>
+  <path d="M668 625Q671 625 671.0 619.0Q671 613 668 613Q634 613 606.5 591.5Q579 570 560 522L356 1Q355 -3 345.5 -3.0Q336 -3 334 1L83 542Q66 579 47.5 596.0Q29 613 1 613Q-2 613 -2.0 619.0Q-2 625 1 625Q14 625 25.0 624.0Q36 623 49.0 622.5Q62 622 81 622Q119 622 146.0 622.5Q173 623 192.0 624.0Q211 625 226 625Q229 625 229.0 619.0Q229 613 226 613Q186 613 171.0 595.5Q156 578 174 539L379 93L343 35L536 527Q552 568 536.5 590.5Q521 613 468 613Q465 613 465.0 619.0Q465 625 468 625Q494 625 517.5 623.5Q541 622 579 622Q608 622 625.5 623.5Q643 625 668 625Z" fill="url(#vg)" transform="translate(256 262) scale(0.33 -0.33) translate(-334.5 -311)"/>
 </svg>

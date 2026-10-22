@@ -129,14 +129,14 @@ export function page(o) {
     <meta property="og:title" content="${esc(o.title)}" />
     <meta property="og:description" content="${esc(o.description)}" />
     <meta property="og:url" content="${url}" />
-    <meta property="og:image" content="${SITE}/og-image.png?v=3" />
+    <meta property="og:image" content="${SITE}/og-image.jpg?v=4" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="VEYA — מערכת לניהול אירועים" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${esc(o.title)}" />
     <meta name="twitter:description" content="${esc(o.description)}" />
-    <meta name="twitter:image" content="${SITE}/og-image.png?v=3" />
+    <meta name="twitter:image" content="${SITE}/og-image.jpg?v=4" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
