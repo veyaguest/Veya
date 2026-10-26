@@ -1,0 +1,141 @@
+{
+ "generated": "2026-10-26",
+ "raw_records": 1066,
+ "raw_by_channel": {
+  "web_search": 407,
+  "osm": 659
+ },
+ "raw_by_source_domain_top": {
+  "openstreetmap.org": 659,
+  "britot.co.il": 81,
+  "ulam.co.il": 39,
+  "rotter.net": 38,
+  "hafakot.co.il": 28,
+  "rsrv.rest": 19,
+  "mazaltov.walla.co.il": 16,
+  "t.co.il": 15,
+  "mekomot-eruim.co.il": 15,
+  "b7net.co.il": 8,
+  "ashdodnet.com": 8,
+  "zips.co.il": 8,
+  "mitchatnim.co.il": 7,
+  "datipage.co.il": 6,
+  "all-events.co.il": 6,
+  "eventplaces.co.il": 5,
+  "rrr.co.il": 5,
+  "barbatmitzva.co.il": 5,
+  "event-halls.co.il": 3,
+  "iplan.co.il": 3,
+  "rgcity.co.il": 3,
+  "karmieli.co.il": 3,
+  "eilat.city": 3,
+  "highand.co.il": 3,
+  "halocation.co.il": 2,
+  "allplaces.co.il": 2,
+  "bneibrak100.blogspot.com": 2,
+  "yeshuvnik.net": 2,
+  "facebook.com": 2,
+  "atsulat-haemek.co.il": 2,
+  "vila4u.com": 2,
+  "easy.co.il": 2,
+  "mekomot.co.il": 1,
+  "arievents.co.il": 1,
+  "habaraka.co.il": 1,
+  "gallery279.co.il": 1,
+  "kala.co.il": 1,
+  "adel-events.co.il": 1,
+  "tai-events.co.il": 1,
+  "tarin.co.il": 1
+ },
+ "unique_venues": 983,
+ "merged_pairs": 83,
+ "review_pairs": 61,
+ "by_region": {
+  "מרכז": 244,
+  "ירושלים והסביבה": 192,
+  "צפון": 138,
+  "שרון": 107,
+  "דרום": 82,
+  "חיפה והקריות": 58,
+  "אילת והערבה": 54,
+  "שפלה": 47,
+  "לא משויך": 33,
+  "יהודה ושומרון": 28
+ },
+ "by_kind": {
+  "hotel": 436,
+  "hall": 267,
+  "garden": 65,
+  "boutique": 58,
+  "restaurant": 50,
+  "complex": 40,
+  "synagogue": 21,
+  "conference": 20,
+  "loft": 17,
+  "villa": 5,
+  "other": 3,
+  "community": 1
+ },
+ "by_verification": {
+  "single_source": 867,
+  "verified_sources": 86,
+  "needs_review": 30
+ },
+ "by_operating_status": {
+  "unknown": 978,
+  "closed_reported": 3,
+  "uncertain": 2
+ },
+ "missing_fields": {
+  "address": 556,
+  "city": 7,
+  "region": 33,
+  "phone": 892,
+  "website": 791,
+  "capacity_max": 862,
+  "lat": 364,
+  "event_types": 983
+ },
+ "by_region_and_channel": {
+  "מרכז": {
+   "web": 104,
+   "osm": 140
+  },
+  "ירושלים והסביבה": {
+   "osm": 143,
+   "web": 49
+  },
+  "צפון": {
+   "osm": 97,
+   "web": 41
+  },
+  "שרון": {
+   "osm": 68,
+   "web": 39
+  },
+  "דרום": {
+   "web": 40,
+   "osm": 42
+  },
+  "חיפה והקריות": {
+   "osm": 36,
+   "web": 22
+  },
+  "אילת והערבה": {
+   "osm": 51,
+   "web": 3
+  },
+  "שפלה": {
+   "osm": 25,
+   "web": 22
+  },
+  "לא משויך": {
+   "osm": 9,
+   "web": 24
+  },
+  "יהודה ושומרון": {
+   "osm": 8,
+   "web": 20
+  }
+ }
+}
