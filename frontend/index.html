@@ -1853,6 +1853,11 @@
 .lp-hero { position: relative; background: var(--ink); color: rgba(245,239,226,.8); overflow: hidden; text-align: center; }
 .lp-hero .lp-wrap { position: relative; padding-top: 72px; }
 .lp-hero .lp-kicker { color: var(--gold-light); }
+/* the line above the headline: one quiet line, flanked by short gold rules; "לכל אירוע" in cream, a thin divider instead of the colon */
+.lp-hero .lp-eyebrow { display: inline-flex; align-items: center; gap: 12px; font: 500 14px/1.4 var(--sans); letter-spacing: .02em; }
+.lp-hero .lp-eyebrow::before, .lp-hero .lp-eyebrow::after { content: ''; width: 28px; height: 1px; background: rgba(228,201,107,.55); }
+.lp-hero .lp-ey-a { color: var(--cream-text); font-weight: 600; }
+.lp-hero .lp-ey-sep { font-size: 0; width: 1px; height: 13px; background: rgba(228,201,107,.5); }
 .lp-hero h1 { margin: 16px auto 0; color: var(--cream-text); font-size: clamp(46px, 6.2vw, 92px); line-height: 1; max-width: 14ch; }
 .lp-hero h1 span { display: block; color: var(--gold-light); }
 .lp-hero .lp-ctas { margin-top: 34px; justify-content: center; }
@@ -1999,6 +2004,8 @@
      and the three-step row moves below the phones */
   .lp-hero .lp-wrap { padding-top: 22px; display: flex; flex-direction: column; }
   .lp-hero .lp-kicker { font-size: 13px; line-height: 1.45; }
+  .lp-hero .lp-eyebrow { align-self: center; gap: 9px; letter-spacing: 0; }
+  .lp-hero .lp-eyebrow::before, .lp-hero .lp-eyebrow::after { width: 16px; }
   .lp-hero h1 { margin-top: 10px; font-size: 40px; }
   .lp-hero .lp-ctas { margin-top: 18px; flex-wrap: nowrap; gap: 16px; }
   .lp-hero .lp-ctas .btn-lg { padding: 12px 18px; min-height: 48px; font-size: 16px; }
@@ -2132,7 +2139,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
     <main id="main" class="lp-main">
 <section class="lp-hero" aria-labelledby="hero-title">
   <div class="lp-wrap">
-    <p class="lp-kicker lp-enter">אישורי הגעה, סידור הושבה ומאזן. לחתונה, לבר מצווה, לברית ולכל אירוע.</p>
+    <p class="lp-kicker lp-eyebrow lp-enter"><span class="lp-ey-a">לכל אירוע</span><span class="lp-ey-sep">: </span><span>אישורי הגעה, סידור הושבה ומאזן</span></p>
     <h1 id="hero-title" class="lp-enter" style="animation-delay:80ms">תדעו כמה מגיעים. <span>וכמה זה עולה.</span></h1>
     <div class="lp-ctas lp-on-dark lp-enter" style="animation-delay:240ms"><a class="btn btn-primary btn-lg" href="/app?auth=register">מתחילים מהרשימה שלכם</a><a class="lp-link" href="#how">איך זה עובד?</a></div>
     <ul class="lp-facts lp-enter" style="animation-delay:320ms">
