@@ -1867,15 +1867,21 @@
 .lp-picker input:checked + span { background: var(--ink); border-color: var(--ink); color: var(--cream-text); }
 .lp-picker input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }
 .lp-picker .lp-board { position: relative; max-width: 820px; margin: 48px auto 0; }
-.lp-picker .lp-sheet { background: var(--cream); border: 1px solid var(--line); border-radius: 18px; padding: 30px 34px 26px; box-shadow: 0 30px 60px rgba(23,19,13,.10); }
-.lp-picker .lp-sheet h3 { font: 500 26px var(--display); color: var(--ink); }
-.lp-picker .lp-sheet dl { margin: 10px 0 0; }
-.lp-picker .lp-sheet dl div { display: grid; grid-template-columns: 110px 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--line); }
-.lp-picker .lp-sheet dl div:first-child { border-top: 0; }
-.lp-picker .lp-sheet dt { font-size: 15px; color: var(--muted); padding-top: 5px; }
-.lp-picker .lp-sheet dd { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.lp-picker .lp-sheet dd b { font: 500 15.5px var(--sans); color: var(--ink); padding: 5px 12px; border-radius: 99px; background: var(--ivory); border: 1px solid var(--line); }
-.lp-picker .lp-sheet .lp-note { margin-top: 12px; }
+/* the expense list each event type opens with (from backend/app/finance_categories.py, is_default items) */
+.lp-picker .lp-budget { background: var(--cream); border: 1px solid var(--line); border-radius: 18px; padding: 30px 34px 24px; box-shadow: 0 30px 60px rgba(23,19,13,.10); }
+.lp-picker .lp-bud-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; padding-bottom: 16px; border-bottom: 3px double var(--gold); }
+.lp-picker .lp-bud-head h3 { font: 500 26px var(--display); color: var(--ink); }
+.lp-picker .lp-bud-meta { font-size: 15px; color: var(--muted); }
+.lp-picker .lp-bud-meta b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.lp-picker .lp-bud-groups { columns: 3; column-gap: 34px; padding-top: 6px; transition: opacity 140ms ease; }
+.lp-picker .lp-bud-groups.is-swap { opacity: 0; }
+.lp-picker .lp-bud-g { break-inside: avoid; padding: 14px 0 4px; }
+.lp-picker .lp-bud-g h4 { margin: 0 0 6px; font: 600 13.5px var(--sans); color: var(--muted); }
+.lp-picker .lp-bud-g ul { list-style: none; margin: 0; padding: 0; }
+.lp-picker .lp-bud-g li { padding: 3px 0; font-size: 16.5px; color: var(--ink); }
+.lp-picker .lp-bud-g li.only { color: var(--gold-deep); font-weight: 600; }
+.lp-picker .lp-bud-foot { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--muted); }
+.lp-picker .lp-bud-key { display: inline-block; width: 9px; height: 9px; margin-left: 6px; border-radius: 50%; background: var(--gold); vertical-align: 1px; }
 .lp-picker .lp-acts { margin-top: 34px; justify-content: center; }
 
 /* ---------- 3 · calculator ---------- */
@@ -2006,8 +2012,9 @@
   .lp-hero .lp-chip.lp-b { top: 6px; right: auto; left: 8px; }
   .lp-hero .lp-chip.lp-c { display: none; }
 
-    .lp-picker .lp-sheet { padding: 22px 20px; }
-  .lp-picker .lp-sheet dl div { grid-template-columns: 1fr; gap: 8px; }
+    .lp-picker .lp-budget { padding: 22px 20px 18px; }
+  .lp-picker .lp-bud-groups { columns: 2; column-gap: 20px; }
+  .lp-picker .lp-bud-head h3 { font-size: 22px; }
   .lp-ledger .lp-card { grid-template-columns: 1fr; padding: 26px 22px; gap: 26px; }
 
   .lp-chap .lp-wrap, .lp-chap.lp-flip .lp-wrap, .lp-bottom .lp-wrap, .lp-close .lp-wrap { grid-template-columns: 1fr; gap: 36px; }
@@ -2149,7 +2156,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
   <div class="lp-wrap">
     <div class="lp-shead lp-rv">
             <h2 id="t-h">איזה אירוע אתם מתכננים?</h2>
-      <p>בוחרים סוג אירוע, ו־VEYA מסדרת את הרשימה לפיו: מי בעלי האירוע, לאילו צדדים מתחלקים המוזמנים ואילו קבוצות כבר מוכנות.</p>
+      <p>בוחרים סוג אירוע, ו־VEYA פותחת רשימת הוצאות שמתאימה לו. בברית יש מוהל ואין חופה, ובאירוע עסקי יש מרצה ותגי שם.</p>
     </div>
     <fieldset class="lp-pills lp-rv" aria-label="סוג האירוע">
       <label><input type="radio" name="lp-et" value="wedding" checked><span>חתונה</span></label>
@@ -2161,14 +2168,13 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
       <label><input type="radio" name="lp-et" value="business"><span>אירוע עסקי</span></label>
     </fieldset>
     <div class="lp-board">
-      <div class="lp-sheet lp-rv" aria-live="polite">
-        <h3 id="lp-sheet-h">כך תתחלק הרשימה לחתונה</h3>
-        <dl>
-          <div><dt>בעלי האירוע</dt><dd id="lp-hosts"></dd></div>
-          <div><dt>צדדים</dt><dd id="lp-sides"></dd></div>
-          <div><dt>קבוצות מוכנות</dt><dd id="lp-groups"></dd></div>
-        </dl>
-        <p class="lp-note">כך זה מופיע ב־VEYA כשפותחים אירוע מהסוג הזה. אפשר גם ליצור קבוצה חדשה משלכם.</p>
+      <div class="lp-budget lp-rv" aria-live="polite">
+        <div class="lp-bud-head">
+          <h3 id="lp-bud-h">כך נפתחת רשימת ההוצאות לחתונה</h3>
+          <p id="lp-bud-meta" class="lp-bud-meta"></p>
+        </div>
+        <div id="lp-bud-groups" class="lp-bud-groups"></div>
+        <p class="lp-bud-foot"><span class="lp-bud-key" aria-hidden="true"></span><span id="lp-bud-key"></span>הכול נשאר שלכם לעריכה: מוסיפים, מוחקים ומשנים סכומים.</p>
       </div>
     </div>
     <div class="lp-ctas lp-acts lp-rv"><a class="btn btn-primary" id="lp-go" href="/app?auth=register">ממשיכים עם חתונה</a><a class="lp-link" id="lp-callme" href="#leads">או שנחזור אליכם</a></div>
@@ -2228,7 +2234,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
     <div class="lp-txt lp-rv">
       <span class="lp-step"><i>2</i>אישורי הגעה</span>
       <h3 id="c2h">התשובות נכנסות. ומי שלא ענה, מקבל טלפון.</h3>
-      <p>בוחרים את היום האחרון לאישורי הגעה, ו־VEYA בונה ממנו לאחור את הבקשות, התזכורות וסבבי השיחות. מתקשרים בני אדם, ואתם לא צריכים להרים טלפון לאף אחד.</p>
+      <p>בוחרים את היום האחרון לאישורי הגעה, ו־VEYA בונה ממנו לאחור את הבקשות, התזכורות וסבבי השיחות. השיחות אנושיות, ואתם לא צריכים להרים טלפון לאף אחד.</p>
       <a class="lp-link lp-more" href="/features/rsvp/">על אישורי ההגעה והמעקב הטלפוני</a>
     </div>
     <div class="lp-scene">
@@ -2300,7 +2306,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
     </div>
     <div class="lp-grid">
       <div class="lp-item lp-rv"><i>1</i><div><h3>ההזמנה יוצאת רק כשאתם לוחצים.</h3><p>ובקשות האישור מתחילות רק אחרי שבחרתם את היום האחרון לאישורי הגעה.</p></div></div>
-      <div class="lp-item lp-rv" style="transition-delay:100ms"><i>2</i><div><h3>מתקשרים בני אדם.</h3><p>טלפנים מתקשרים אישית למי שלא ענה, וכל שיחה נרשמת על המוזמן.</p></div></div>
+      <div class="lp-item lp-rv" style="transition-delay:100ms"><i>2</i><div><h3>שיחות אנושיות.</h3><p>טלפנים מתקשרים אישית למי שלא ענה, וכל שיחה נרשמת על המוזמן.</p></div></div>
       <div class="lp-item lp-rv"><i>3</i><div><h3>מספר לא נכון מסומן מיד.</h3><p>מתקנים אותו וממשיכים.</p></div></div>
       <div class="lp-item lp-rv" style="transition-delay:100ms"><i>4</i><div><h3>הרשימה נשארת שלכם.</h3><p>דוח עם שורה לכל מוזמן, להורדה לאקסל או להדפסה.</p></div></div>
     </div>
@@ -2788,33 +2794,39 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
           draw();
         }
 
-        // בורר סוג האירוע: המונחים מועתקים מ-src/strings/eventTypes.ts (hostsLabel, sideLabels, groupOptions)
-        var T = {
-          wedding: ['חתונה', 'לחתונה', 'בני הזוג', ['חתן', 'כלה', 'משותף'], ['משפחה קרובה', 'משפחה רחוקה', 'חברים', 'עבודה', 'צבא', 'מהלימודים', 'חברי ילדות', 'שכנים', 'אחר']],
-          henna: ['חינה', 'לחינה', 'בני הזוג', ['חתן', 'כלה', 'משותף'], ['משפחה', 'צד משפחתי מורחב', 'חברים', 'אחר']],
-          bar_mitzvah: ['בר מצווה', 'לבר מצווה', 'החוגג', ['צד משפחת האב', 'צד משפחת האם', 'משותף'], ['משפחת האב', 'משפחת האם', 'חברים', 'כיתה', 'צוות/חוגים', 'אחר']],
-          bat_mitzvah: ['בת מצווה', 'לבת מצווה', 'החוגגת', ['צד משפחת האב', 'צד משפחת האם', 'משותף'], ['משפחת האב', 'משפחת האם', 'חברים', 'כיתה', 'צוות/חוגים', 'אחר']],
-          brit: ['ברית', 'לברית', 'המשפחה', ['צד משפחת האב', 'צד משפחת האם', 'משותף'], ['משפחה', 'חברים', 'אחר']],
-          brita: ['בריתה', 'לבריתה', 'המשפחה', ['צד משפחת האב', 'צד משפחת האם', 'משותף'], ['משפחה', 'חברים', 'אחר']],
-          business: ['אירוע עסקי', 'לאירוע עסקי', 'מארגני האירוע', ['צד א׳', 'צד ב׳', 'משותף'], ['עובדים', 'לקוחות', 'ספקים', 'הנהלה', 'שותפים', 'אחר']]
-        };
-        function chips(el, xs) {
-          while (el.firstChild) el.removeChild(el.firstChild);
-          xs.forEach(function (x) { var b = document.createElement('b'); b.textContent = x; el.appendChild(b); });
-        }
+        // בורר סוג האירוע: רשימת ההוצאות שכל סוג נפתח איתה — נוצר מ-backend/app/finance_categories.py
+        // (פריטי is_default לכל סוג; "only" = מופיע רק בסוג הזה; "more" = שאר הקטלוג)
+        var B = {"wedding": {"l": ["חתונה", "לחתונה", "בחתונה"], "g": [["מקום ואירוח", ["אולם / גן", "מחיר מנה"]], ["אוכל ומשקאות", ["בר", "אלכוהול"]], ["מוזיקה והפקה", ["DJ", "תאורה והגברה"]], ["צילום", ["צילום ווידאו"]], ["עיצוב ופרחים", ["חופה", "עיצוב ופרחים"]], ["כלה וחתן", ["שמלה", "חליפה", "איפור ושיער"]], ["טקס", ["רב", "טבעות"]], ["הזמנות ומיתוג", ["הזמנות"]], ["הסעות ולוגיסטיקה", ["טיפים"]]], "n": 16, "more": 69, "only": ["חופה", "טבעות"]}, "henna": {"l": ["חינה", "לחינה", "בחינה"], "g": [["מקום ואוכל", ["אולם / גן", "קייטרינג", "מנות"]], ["חינה ומסורת", ["עיצוב חינה", "תלבושות", "עמדת חינה"]], ["מוזיקה והפקה", ["DJ", "תאורה והגברה"]], ["צילום", ["צילום ווידאו"]], ["עיצוב ופרחים", ["עיצוב שולחנות", "פרחים"]], ["הזמנות ומיתוג", ["הזמנות"]], ["הסעות ולוגיסטיקה", ["טיפים"]]], "n": 13, "more": 34, "only": ["עיצוב חינה", "תלבושות", "עמדת חינה"]}, "bar_mitzvah": {"l": ["בר מצווה", "לבר מצווה", "בבר מצווה"], "g": [["מקום ואוכל", ["אולם / גן", "מנות"]], ["מוזיקה והפקה", ["DJ", "תאורה והגברה"]], ["צילום", ["צילום ווידאו", "מגנטים"]], ["אטרקציות", ["אטרקציות"]], ["עיצוב ופרחים", ["עיצוב לפי קונספט", "בלונים"]], ["החוגג והמשפחה", ["חליפה", "תפילין", "לימוד והכנה"]], ["הזמנות ומיתוג", ["הזמנות"]], ["הסעות ולוגיסטיקה", ["טיפים"]]], "n": 14, "more": 35, "only": ["תפילין", "לימוד והכנה"]}, "bat_mitzvah": {"l": ["בת מצווה", "לבת מצווה", "בבת מצווה"], "g": [["מקום ואוכל", ["אולם / גן", "מנות"]], ["מוזיקה והפקה", ["DJ", "תאורה והגברה"]], ["צילום", ["צילום ווידאו", "מגנטים"]], ["אטרקציות", ["עמדות הפעלה"]], ["עיצוב ופרחים", ["עיצוב לפי קונספט", "בלונים"]], ["החוגגת", ["שמלה", "איפור ושיער"]], ["הזמנות ומיתוג", ["הזמנות"]], ["הסעות ולוגיסטיקה", ["טיפים"]]], "n": 13, "more": 35, "only": []}, "brit": {"l": ["ברית", "לברית", "בברית"], "g": [["מקום ואוכל", ["אולם / גן", "קייטרינג"]], ["טקס", ["מוהל"]], ["צילום", ["צילום"]], ["עיצוב ופרחים", ["פרחים", "בלונים"]], ["התינוק", ["לבוש לתינוק"]], ["הזמנות ומיתוג", ["הזמנות"]], ["הסעות ולוגיסטיקה", ["טיפים"]]], "n": 9, "more": 27, "only": ["מוהל", "לבוש לתינוק"]}, "brita": {"l": ["בריתה", "לבריתה", "בבריתה"], "g": [["מקום ואוכל", ["אולם / גן", "קייטרינג"]], ["צילום", ["צילום"]], ["עיצוב ופרחים", ["פרחים", "בלונים"]], ["התינוקת", ["לבוש לתינוקת"]], ["הזמנות ומיתוג", ["הזמנות"]], ["הסעות ולוגיסטיקה", ["טיפים"]]], "n": 8, "more": 27, "only": ["לבוש לתינוקת"]}, "business": {"l": ["אירוע עסקי", "לאירוע עסקי", "באירוע עסקי"], "g": [["מקום", ["השכרת המקום"]], ["אוכל", ["קייטרינג", "כיבוד"]], ["הפקה וטכנולוגיה", ["הגברה", "מסכים", "מקרנים"]], ["תוכן", ["מרצה"]], ["צילום", ["צילום"]], ["הזמנות ומיתוג", ["שילוט", "תגי שם"]], ["ניהול", ["הפקה"]]], "n": 11, "more": 34, "only": ["כיבוד", "מקרנים", "מרצה", "תגי שם", "הפקה"]}};
+        function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
         function pick(v) {
-          var t = T[v]; if (!t) return;
-          document.getElementById('lp-sheet-h').textContent = 'כך תתחלק הרשימה ' + t[1];
-          chips(document.getElementById('lp-hosts'), [t[2]]);
-          chips(document.getElementById('lp-sides'), t[3]);
-          chips(document.getElementById('lp-groups'), t[4]);
+          var t = B[v]; if (!t) return;
+          var box = document.getElementById('lp-bud-groups');
+          function fill() {
+            document.getElementById('lp-bud-h').textContent = 'כך נפתחת רשימת ההוצאות ' + t.l[1];
+            var meta = document.getElementById('lp-bud-meta');
+            meta.textContent = '';
+            meta.appendChild(el('b', '', String(t.n))); meta.appendChild(document.createTextNode(' פריטים כבר ברשימה, ועוד '));
+            meta.appendChild(el('b', '', String(t.more))); meta.appendChild(document.createTextNode(' מחכים בקטלוג'));
+            while (box.firstChild) box.removeChild(box.firstChild);
+            t.g.forEach(function (g) {
+              var d = el('div', 'lp-bud-g'); d.appendChild(el('h4', '', g[0]));
+              var ul = el('ul');
+              g[1].forEach(function (it) { ul.appendChild(el('li', t.only.indexOf(it) > -1 ? 'only' : '', it)); });
+              d.appendChild(ul); box.appendChild(d);
+            });
+            document.getElementById('lp-bud-key').textContent = t.only.length ? 'בזהב: מה שמופיע רק ' + t.l[2] + ' · ' : '';
+            document.querySelector('.lp-bud-key').hidden = !t.only.length;
+            box.classList.remove('is-swap');
+          }
+          if (box.childNodes.length && !still0) { box.classList.add('is-swap'); setTimeout(fill, 140); } else fill();
           var go = document.getElementById('lp-go');
-          go.textContent = 'ממשיכים עם ' + t[0];
+          go.textContent = 'ממשיכים עם ' + t.l[0];
           // הסוג שנבחר עובר להרשמה, ואשף הפתיחה באפליקציה בוחר אותו מראש
           go.href = '/app?auth=register&event_type=' + encodeURIComponent(v);
           var sel = document.getElementById('lead-type');
           if (sel) sel.value = v;
         }
+        var still0 = window.matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.hasAttribute('data-a11y-motion');
         var radios = document.querySelectorAll('input[name="lp-et"]');
         radios.forEach(function (r) { r.addEventListener('change', function () { pick(r.value); }); });
         if (radios.length) pick('wedding');
