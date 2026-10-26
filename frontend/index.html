@@ -2801,7 +2801,10 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
           chips(document.getElementById('lp-hosts'), [t[2]]);
           chips(document.getElementById('lp-sides'), t[3]);
           chips(document.getElementById('lp-groups'), t[4]);
-          document.getElementById('lp-go').textContent = 'ממשיכים עם ' + t[0];
+          var go = document.getElementById('lp-go');
+          go.textContent = 'ממשיכים עם ' + t[0];
+          // הסוג שנבחר עובר להרשמה, ואשף הפתיחה באפליקציה בוחר אותו מראש
+          go.href = '/app?auth=register&event_type=' + encodeURIComponent(v);
           var sel = document.getElementById('lead-type');
           if (sel) sel.value = v;
         }

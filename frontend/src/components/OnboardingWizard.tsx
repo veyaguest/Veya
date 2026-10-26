@@ -12,6 +12,7 @@ import { ImportDialog } from './ImportDialog'
 import { PasteImportDialog } from './PasteImportDialog'
 import { strings } from '../strings/he'
 import { MAX_COMMIT_DAYS, maxCommitDays } from '../lib/commitDays'
+import { clearSignupEventType, readSignupEventType } from '../lib/signupEventType'
 
 const t = strings.guests
 // נבדק פעם אחת בטעינת המודול — בדיוק כמו ב-GuestsPage.
@@ -59,8 +60,9 @@ export function OnboardingWizard({ onCreated }: Props) {
   const [showContacts, setShowContacts] = useState(false)
   const [showManualForm, setShowManualForm] = useState(false)
 
-  const [form, setForm] = useState({
-    event_type: 'wedding' as EventType,
+  const [form, setForm] = useState(() => ({
+    // נבחר מראש אם המבקר בחר סוג אירוע בדף הבית (ראו lib/signupEventType.ts).
+    event_type: (readSignupEventType() ?? 'wedding') as EventType,
     groom_name: '',
     bride_name: '',
     venue_name: '',
@@ -69,7 +71,7 @@ export function OnboardingWizard({ onCreated }: Props) {
     event_time: '',
     invite_image: '' as string,
     venue_commit_days_before: '' as number | '',
-  })
+  }))
 
   // מנוע המונחים לפי סוג האירוע שנבחר — קובע תוויות שדות, ולידציה וניסוח.
   const terms = getEventTerms(form.event_type)
@@ -119,6 +121,8 @@ export function OnboardingWizard({ onCreated }: Props) {
       // activeEventTerms) יציג מיד את התוויות הנכונות — לא ישאר על הסוג
       // הקודם/ברירת המחדל שנשאר ב-localStorage מסשן קודם.
       setActiveEventType(ev.event_type)
+      // הבחירה מדף הבית שימשה את האירוע הראשון — לא נגררת לאירועים הבאים.
+      clearSignupEventType()
 
       const rest: Parameters<typeof updateEvent>[0] = {}
       if (form.venue_address.trim()) rest.venue_address = form.venue_address

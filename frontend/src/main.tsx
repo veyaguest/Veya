@@ -15,6 +15,7 @@ const DemoGiftCounting = lazy(() =>
 )
 import { GOOGLE_CLIENT_ID } from './lib/supabase.ts'
 import { initPwa } from './lib/pwa.ts'
+import { captureSignupEventType } from './lib/signupEventType.ts'
 
 // ---- חסימת Pinch Zoom — רק על משטחים שמנהלים זום בעצמם (iOS Safari) ----
 // הגדלה בצביטה היא דרישת נגישות (WCAG 1.4.4): מי שרואה פחות טוב חייב
@@ -53,6 +54,10 @@ installMobileZoomGuard()
 // מינימלי בייצור. לא נוגע בהתחברות, בניווט או בקריאות ל-API —
 // ראו התיעוד המלא ב-src/lib/pwa.ts.
 initPwa()
+
+// סוג האירוע שנבחר בדף הבית (?event_type=bar_mitzvah) — נקלט כאן, לפני
+// שהאפליקציה מנקה את ה-URL, כדי שאשף הפתיחה יבחר אותו מראש.
+captureSignupEventType(window.location.search)
 
 // נתיב ציבורי לאישור הגעה: /confirm/{token} — נפתח ללא התחברות.
 // (העמוד מוגש דרך app.html שכבר מסומן noindex, ולכן לא נדרש טיפול נוסף כאן.)
