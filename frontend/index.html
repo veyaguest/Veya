@@ -1821,13 +1821,26 @@
 .lp-ph .lp-scr::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(125deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 32%); pointer-events: none; }
 
 /* a realistic MacBook: black glass lid with camera, silver base with the opening notch */
-.lp-mac { position: relative; }
-.lp-mac .lp-lid { position: relative; background: #0b0b0c; border-radius: 16px 16px 4px 4px; padding: 2.4% 2.4% 3%; box-shadow: inset 0 0 0 1.5px #3c3c3f, 0 30px 60px rgba(23,19,13,.25); }
-.lp-mac .lp-lid::before { content: ''; position: absolute; top: 0.95%; left: 50%; width: 6px; height: 6px; transform: translateX(-50%); border-radius: 50%; background: #1d2633; box-shadow: inset 0 0 0 1px #2e3a4b; }
-.lp-mac .lp-lid img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top center; border-radius: 3px; }
-.lp-mac .lp-lid::after { content: ''; position: absolute; inset: 2.4% 2.4% 3%; border-radius: 3px; background: linear-gradient(120deg, rgba(255,255,255,.07), rgba(255,255,255,0) 35%); pointer-events: none; }
-.lp-mac .lp-base { position: relative; height: 15px; margin: 0 -7%; background: linear-gradient(#ebe9e5, #c9c6c0 45%, #a19e98); border-radius: 2px 2px 16px 16px / 2px 2px 12px 12px; box-shadow: 0 22px 34px rgba(23,19,13,.22); }
-.lp-mac .lp-base::before { content: ''; position: absolute; top: 0; left: 50%; width: 15%; height: 6px; transform: translateX(-50%); border-radius: 0 0 9px 9px; background: linear-gradient(#a7a49e, #d6d3cd); }
+.lp-mac { position: relative; container-type: inline-size; padding: 0 5.5%; }
+/* the lid: aluminium rim, black glass bezel, notch with camera, slightly thicker chin */
+.lp-mac .lp-lid { position: relative; background: #050506; border-radius: 3.2cqw 3.2cqw 0.9cqw 0.9cqw; padding: 1.7cqw 1.7cqw 2.6cqw;
+  box-shadow: 0 0 0 0.25cqw #c8c8ca, 0 0 0 0.42cqw #8b8b8f, inset 0 0 0 0.2cqw #1b1b1d, 0 3cqw 6cqw rgba(23,19,13,.22); }
+.lp-mac .lp-lid::before { content: ''; position: absolute; z-index: 3; top: 0; left: 50%; width: 12cqw; height: 3.5cqw; transform: translateX(-50%); border-radius: 0 0 1.1cqw 1.1cqw; background: #050506; }
+.lp-mac .lp-lid::after { content: ''; position: absolute; z-index: 4; top: 1.15cqw; left: 50%; width: 0.75cqw; height: 0.75cqw; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(circle at 40% 35%, #2f3d58 0 30%, #0b0f17 70%); }
+.lp-mac .lp-scr { position: relative; overflow: hidden; border-radius: 1.4cqw 1.4cqw 0.3cqw 0.3cqw; background: #fbf6ee; }
+.lp-mac .lp-scr::after { content: ''; position: absolute; inset: 0; background: linear-gradient(118deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 38%); pointer-events: none; }
+/* a quiet browser bar, the way the app is really used */
+.lp-mac .lp-bar { display: flex; align-items: center; gap: 0.75cqw; height: 3.6cqw; padding: 0 1.6cqw; direction: ltr; background: linear-gradient(#f4f1ec, #e9e5de); border-bottom: 1px solid #d9d3c8; }
+.lp-mac .lp-bar i { width: 0.95cqw; height: 0.95cqw; border-radius: 50%; background: #e0dbd2; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
+.lp-mac .lp-bar i:nth-child(1) { background: #f26a5f; } .lp-mac .lp-bar i:nth-child(2) { background: #f6be4f; } .lp-mac .lp-bar i:nth-child(3) { background: #5fc454; }
+.lp-mac .lp-bar span { margin-left: 2.2cqw; min-width: 26%; padding: 0.35cqw 1.4cqw; border-radius: 0.8cqw; background: rgba(255,255,255,.75); font: 500 1.35cqw/1.2 -apple-system, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif; color: #6a6252; text-align: center; letter-spacing: 0; }
+.lp-mac .lp-scr img { display: block; width: 100%; aspect-ratio: 16 / 9.4; object-fit: cover; object-position: top center; }
+/* hinge, then the base: aluminium slab with the opening groove and a soft shadow on the table */
+.lp-mac .lp-base { position: relative; height: 2.3cqw; margin: 0 -5.5%; border-radius: 0.3cqw 0.3cqw 2.6cqw 2.6cqw / 0.3cqw 0.3cqw 1.6cqw 1.6cqw;
+  background: linear-gradient(180deg, #f3f3f4 0%, #dcdcde 30%, #b9b9bc 70%, #8d8d91 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1.4cqw 2.6cqw rgba(23,19,13,.25); }
+.lp-mac .lp-base::before { content: ''; position: absolute; top: 0; left: 50%; width: 15%; height: 0.95cqw; transform: translateX(-50%); border-radius: 0 0 1.2cqw 1.2cqw; background: linear-gradient(#a9a9ac, #d9d9db); box-shadow: inset 0 1px 1px rgba(0,0,0,.18); }
+.lp-mac .lp-base::after { content: ''; position: absolute; top: -0.55cqw; left: 6%; right: 6%; height: 0.55cqw; border-radius: 0 0 0.4cqw 0.4cqw; background: linear-gradient(#2b2b2d, #0e0e0f); }
+.lp-dark .lp-mac .lp-lid { box-shadow: 0 0 0 0.25cqw #c8c8ca, 0 0 0 0.42cqw #8b8b8f, inset 0 0 0 0.2cqw #1b1b1d, 0 3cqw 6cqw rgba(0,0,0,.5); }
 
 /* motion: the hero enters once on load; everything else enters once when it scrolls into view */
 .lp-enter { opacity: 0; transform: translateY(18px); animation: lp-rise 640ms var(--ease-out) forwards; }
@@ -1983,20 +1996,26 @@
   .lp-ph::before, .lp-ph::after { width: 2px; }
   .lp-ph::before { left: -4px; box-shadow: 0 9px 0 #77736d, 0 28px 0 #77736d; }
   .lp-ph::after { right: -4px; }
-  .lp-mac .lp-lid { border-radius: 10px 10px 3px 3px; }
-  .lp-mac .lp-base { height: 10px; }
 
-  .lp-hero .lp-wrap { padding-top: 40px; }
-  .lp-hero .lp-stage { height: 420px; margin-top: 36px; }
-  .lp-hero .lp-ph { width: 160px; bottom: -60px; }
-  .lp-hero .lp-ph.lp-c { width: 176px; margin-right: -88px; bottom: -30px; }
-  .lp-hero .lp-ph.lp-r { margin-right: 30px; }
-  .lp-hero .lp-ph.lp-l { margin-right: -190px; }
-  .lp-hero .lp-woman { width: 150px; right: -14px; }
+  /* phone: the phones and the woman must be on the first screen — tighter text, buttons side by side,
+     and the three-step row moves below the phones */
+  .lp-hero .lp-wrap { padding-top: 22px; display: flex; flex-direction: column; }
+  .lp-hero .lp-kicker { font-size: 13px; line-height: 1.45; }
+  .lp-hero h1 { margin-top: 10px; font-size: 40px; }
+  .lp-hero .lp-sub { margin-top: 12px; font-size: 16px; line-height: 1.5; }
+  .lp-hero .lp-ctas { margin-top: 18px; flex-wrap: nowrap; gap: 16px; }
+  .lp-hero .lp-ctas .btn-lg { padding: 12px 18px; min-height: 48px; font-size: 16px; }
+  .lp-hero .lp-stage { order: 5; height: 340px; margin-top: 22px; }
+  .lp-hero .lp-facts { order: 6; margin: 0 calc(var(--gutter) * -1); padding: 22px var(--gutter) 30px; background: var(--ink); position: relative; z-index: 7; border-top: 1px solid rgba(245,239,226,.12); }
+  .lp-hero .lp-ph { width: 136px; bottom: -40px; }
+  .lp-hero .lp-ph.lp-c { width: 150px; margin-right: -75px; bottom: -20px; }
+  .lp-hero .lp-ph.lp-r { margin-right: 22px; }
+  .lp-hero .lp-ph.lp-l { margin-right: -160px; }
+  .lp-hero .lp-woman { width: 132px; right: -14px; }
   .lp-hero .lp-chip.lp-a { top: 0; left: auto; right: 10px; }
   .lp-hero .lp-chip.lp-b { top: 6px; right: auto; left: 8px; }
   .lp-hero .lp-chip.lp-c { display: none; }
-  .lp-hero .lp-demo { left: 8px; top: 70px; max-width: 120px; font-size: 11.5px; }
+  .lp-hero .lp-demo { left: 0; right: 0; top: -17px; max-width: none; text-align: center; font-size: 11px; }
 
     .lp-picker .lp-sheet { padding: 22px 20px; }
   .lp-picker .lp-sheet dl div { grid-template-columns: 1fr; gap: 8px; }
@@ -2211,7 +2230,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
       <a class="lp-link lp-more" href="/features/guests/">על רשימת המוזמנים</a>
     </div>
     <div class="lp-scene">
-      <div class="lp-mac lp-rv"><div class="lp-lid"><img loading="lazy" decoding="async" src="/product/paste-review.jpg" alt="בדיקת רשימה שהודבקה: שמות, טלפונים, צד, קבוצה וכמות"></div><div class="lp-base"></div></div>
+      <div class="lp-mac lp-rv"><div class="lp-lid"><div class="lp-scr"><div class="lp-bar" aria-hidden="true"><i></i><i></i><i></i><span>veyaguest.co.il/app</span></div><img loading="lazy" decoding="async" src="/product/paste-review.jpg" alt="בדיקת רשימה שהודבקה: שמות, טלפונים, צד, קבוצה וכמות"></div></div><div class="lp-base"></div></div>
       <img loading="lazy" decoding="async" class="lp-person lp-rv" style="transition-delay:200ms" src="/people/planning-together.webp" alt="זוג מול המחשב">
       <div class="lp-chip lp-a lp-rv" style="transition-delay:350ms"><b class="lp-sm">5 מתוך 6 שורות</b>נבחרו לייבוא</div>
     </div>
@@ -2227,7 +2246,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
       <a class="lp-link lp-more" href="/features/rsvp/">על אישורי ההגעה והמעקב הטלפוני</a>
     </div>
     <div class="lp-scene">
-      <div class="lp-mac lp-rv"><div class="lp-lid"><img loading="lazy" decoding="async" src="/product/journey-rsvp.jpg" alt="מסך אישורי ההגעה: ספירה ומסלול של בקשות, תזכורות וסבבי שיחות"></div><div class="lp-base"></div></div>
+      <div class="lp-mac lp-rv"><div class="lp-lid"><div class="lp-scr"><div class="lp-bar" aria-hidden="true"><i></i><i></i><i></i><span>veyaguest.co.il/app</span></div><img loading="lazy" decoding="async" src="/product/journey-rsvp.jpg" alt="מסך אישורי ההגעה: ספירה ומסלול של בקשות, תזכורות וסבבי שיחות"></div></div><div class="lp-base"></div></div>
       <div class="lp-chip lp-a lp-rv" style="transition-delay:250ms"><b class="lp-sm">סבב שיחות ראשון</b>מי שעדיין לא אישר · 134 מוזמנים</div>
       <div class="lp-chip lp-b lp-rv" style="transition-delay:400ms"><b class="lp-green">122</b>אישרו הגעה</div>
     </div>
@@ -2260,7 +2279,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
       <a class="lp-link lp-more" href="/features/seating/">על סידור ההושבה</a>
     </div>
     <div class="lp-scene">
-      <div class="lp-mac lp-rv"><div class="lp-lid"><img loading="lazy" decoding="async" src="/product/journey-seating.jpg" alt="מסך סידור ההושבה: מפת האולם עם השולחנות ורשימת המוזמנים"></div><div class="lp-base"></div></div>
+      <div class="lp-mac lp-rv"><div class="lp-lid"><div class="lp-scr"><div class="lp-bar" aria-hidden="true"><i></i><i></i><i></i><span>veyaguest.co.il/app</span></div><img loading="lazy" decoding="async" src="/product/journey-seating.jpg" alt="מסך סידור ההושבה: מפת האולם עם השולחנות ורשימת המוזמנים"></div></div><div class="lp-base"></div></div>
       <div class="lp-chip lp-a lp-rv" style="transition-delay:250ms"><b class="lp-sm">אלון שפירא ✓</b>אישרו הגעה · 4 אנשים · שולחן 2</div>
       <div class="lp-chip lp-goldbtn lp-b lp-rv" style="transition-delay:400ms">הושבה בקליק</div>
     </div>
