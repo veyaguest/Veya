@@ -13,7 +13,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app import auth as auth_module
-from app import communication, features, gift_eligibility, models, partners, schemas
+from app import communication, features, gift_eligibility, models, partners, schemas, venues
 from app.account import delete_event_cascade
 from app.auth import get_current_owner
 from app.database import IS_POSTGRES, get_db
@@ -157,6 +157,10 @@ def create_event(
 
     # מקצה אוטומטית את רצף "תקשורת עם אורחים" (6 ההודעות) לפי סוג האירוע.
     communication.provision_event_messages(db, event)
+    # מקום האירוע נכנס למאגר המשותף כבר בפתיחה (גם בלי כתובת), כדי שיוצע
+    # למארגנים אחרים. שם ריק => record_venue מתעלם. הכתובת, אם תגיע בעדכון
+    # הבא של האשף, תושלם בלי לספור שימוש נוסף (ראו routers/event.py).
+    venues.record_venue(db, event.venue_name or "", "")
     db.commit()
     return _summary(event, db, user)
 

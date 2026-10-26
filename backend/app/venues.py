@@ -37,13 +37,16 @@ def _dedup_key(name: str) -> str:
     return " ".join((name or "").strip().lower().split())
 
 
-def record_venue(db: Session, name: str, address: str) -> None:
+def record_venue(db: Session, name: str, address: str, count_use: bool = True) -> None:
     """מוסיף/מעדכן אולם במאגר לפי שם. לא מבצע commit — הקורא אחראי לכך.
 
     - שם ריק => מתעלמים (אין מה לשמור).
-    - קיים אולם עם אותו שם מנורמל => מעלים usage_count, ומעדכנים כתובת אם
-      התקבלה כתובת חדשה לא-ריקה (הכי עדכני מנצח).
-    - אחרת => יוצרים רשומה חדשה.
+    - קיים אולם עם אותו שם מנורמל => מעלים usage_count (רק אם ``count_use``),
+      ומעדכנים כתובת אם התקבלה כתובת חדשה לא-ריקה (הכי עדכני מנצח).
+    - אחרת => יוצרים רשומה חדשה (שימוש אחד).
+
+    ``count_use=False``: אותו אירוע רק השלים/תיקן כתובת לאולם שכבר נספר לו —
+    מעדכנים כתובת בלי לספור שימוש נוסף (אחרת אירוע אחד נספר פעמיים).
     """
     name = (name or "").strip()
     address = (address or "").strip()
@@ -53,7 +56,8 @@ def record_venue(db: Session, name: str, address: str) -> None:
     existing = _pick_existing(db, key, address)
     if existing:
         # None (שורות ישנות) = נספר כשימוש אחד; 0 (אדמין/מאגר ארצי) = עוד לא נבחר.
-        existing.usage_count = (1 if existing.usage_count is None else existing.usage_count) + 1
+        if count_use:
+            existing.usage_count = (1 if existing.usage_count is None else existing.usage_count) + 1
         # אולם שאומת במאגר המנוהל, או שהגיע מהמאגר הארצי — הכתובת שלו נקבעה ע"י
         # VEYA, וזוג שהקליד כתובת אחרת לא דורס אותה.
         if address and not existing.verified and (existing.source or "") != "import":

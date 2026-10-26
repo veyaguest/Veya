@@ -280,6 +280,83 @@ def test_manual_venue_not_in_catalog_is_saved_and_suggested() -> None:
     assert any(v["name"] == name for v in _search(other, f"החצר של סבתא {TAG}"))
 
 
+def _venue_row(name):
+    from sqlalchemy import select
+
+    from app import models
+
+    db = _db()
+    try:
+        return db.scalar(select(models.Venue).where(models.Venue.dedup_key == name.lower()))
+    finally:
+        db.close()
+
+
+def _new_event_with_venue(venue_name):
+    """כמו אשף הפתיחה: משתמש חדש פותח אירוע עם שם מקום (בלי כתובת)."""
+    from tests.e2e_seating import Api, make_client, register, verify_email
+
+    client, _ = make_client()
+    token = register(client)
+    verify_email(client, token)
+    r = client.post("/events", headers={"Authorization": f"Bearer {token}"},
+                    json={"groom_name": "נועה", "bride_name": "", "event_type": "bar_mitzvah",
+                          "venue_name": venue_name})
+    assert r.status_code == 201, r.text
+    return Api(client, token, r.json()["id"])
+
+
+def test_event_creation_records_venue_and_address_completion_counts_once() -> None:
+    name = f"החצר של סבא {TAG}"
+    api = _new_event_with_venue(name)
+    v = _venue_row(name)
+    assert v is not None and v.usage_count == 1 and v.source == "auto", "המקום לא נרשם בפתיחת האירוע"
+    assert any(x["name"] == name for x in _search(api, name))
+    # השלב הבא באשף שולח את הכתובת — מעדכן כתובת, לא סופר שימוש נוסף
+    r = api.client.patch("/event", headers=api.headers, json={"venue_address": "הזית 4, כפר ורדים"})
+    assert r.status_code == 200, r.text
+    v = _venue_row(name)
+    assert v.address == "הזית 4, כפר ורדים" and v.usage_count == 1
+
+
+def test_resaving_details_does_not_inflate_usage() -> None:
+    name = f"גן השקדים {TAG}"
+    api = _new_event_with_venue(name)
+    api.client.patch("/event", headers=api.headers, json={"venue_name": name, "venue_address": "השקד 1, גדרה"})
+    for _ in range(3):  # הטופס שולח את כל השדות בכל שמירה, גם בלי שינוי
+        r = api.client.patch("/event", headers=api.headers,
+                             json={"venue_name": f"  {name} ", "venue_address": "השקד 1, גדרה", "groom_name": "נועה"})
+        assert r.status_code == 200, r.text
+    assert _venue_row(name).usage_count == 1
+
+
+def test_changing_venue_counts_the_new_one_only() -> None:
+    first, second = f"אולם ראשון {TAG}", f"אולם שני {TAG}"
+    api = _new_event_with_venue(first)
+    r = api.client.patch("/event", headers=api.headers, json={"venue_name": second, "venue_address": "הגפן 2, עפולה"})
+    assert r.status_code == 200, r.text
+    assert _venue_row(first).usage_count == 1
+    assert _venue_row(second).usage_count == 1 and _venue_row(second).address == "הגפן 2, עפולה"
+
+
+def test_event_without_venue_name_records_nothing() -> None:
+    from sqlalchemy import func, select
+
+    from app import models
+
+    db = _db()
+    try:
+        before = db.scalar(select(func.count(models.Venue.id)))
+    finally:
+        db.close()
+    _new_event_with_venue("")
+    db = _db()
+    try:
+        assert db.scalar(select(func.count(models.Venue.id))) == before
+    finally:
+        db.close()
+
+
 # ── הרשאות ──────────────────────────────────────────────────────────────────
 
 def test_permissions_for_import_and_search() -> None:

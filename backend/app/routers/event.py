@@ -241,8 +241,14 @@ def update_event(
             setattr(event, key, (value or "").strip())
     # מאגר אולמות משותף: כל שם+כתובת שזוג שומר נרשם למאגר, כדי שזוגות אחרים
     # יקבלו הצעת השלמה עם הכתובת המוכנה. שם ריק => נדלג (record_venue מתעלם).
-    if "venue_name" in changed or "venue_address" in changed:
-        venues.record_venue(db, event.venue_name, event.venue_address or "")
+    # הטופס שולח את כל השדות בכל שמירה — לכן משווים לערך הקודם: שימוש נספר רק
+    # כשהאולם עצמו התחלף; השלמת/תיקון כתובת לאותו אולם רק מעדכנת כתובת.
+    name_changed = "venue_name" in changed and (
+        venues._dedup_key(before["venue_name"] or "") != venues._dedup_key(event.venue_name or ""))
+    address_changed = "venue_address" in changed and (
+        (before["venue_address"] or "").strip() != (event.venue_address or "").strip())
+    if name_changed or address_changed:
+        venues.record_venue(db, event.venue_name, event.venue_address or "", count_use=name_changed)
     audit.record(
         db, "update_event",
         event_id=event.id, user_id=user.id,
