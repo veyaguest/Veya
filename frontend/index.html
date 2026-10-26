@@ -1801,7 +1801,9 @@
 .lp-facts { list-style: none; margin: 0; padding: 0; display: flex; justify-content: center; }
 .lp-facts li { padding: 0 26px; text-align: center; font: 400 14.5px var(--sans); }
 .lp-facts li + li { border-right: 1px solid rgba(131,106,38,.35); }
-.lp-facts b { display: block; font: 500 30px/1.1 var(--display); }
+.lp-facts b { display: block; font: 500 24px/1.15 var(--display); }
+.lp-facts i { display: block; margin-bottom: 4px; font: 600 13px var(--sans); font-style: normal; color: var(--gold-deep); }
+.lp-hero .lp-facts i { color: var(--gold-light); }
 
 /* a realistic iPhone: titanium edge, black bezel, Dynamic Island, 9:41 status bar, side buttons */
 .lp-ph { position: absolute; width: 250px; aspect-ratio: 71.5 / 147.6; container-type: inline-size; padding: 7px; border: 3.5px solid transparent; border-radius: 42px;
@@ -1973,9 +1975,9 @@
 
 @media (max-width: 900px) {
   .lp-sec { padding: 72px 0; }
-  .lp-facts { flex-wrap: wrap; row-gap: 14px; }
-  .lp-facts li { padding: 0 14px; }
-  .lp-facts b { font-size: 24px; }
+  .lp-facts { flex-wrap: nowrap; }
+  .lp-facts b { font-size: 19px; }
+  .lp-facts li { flex: 1 1 0; padding: 0 10px; font-size: 13px; }
   .lp-ph { width: 170px; padding: 4.5px; border-width: 2.5px; border-radius: 28px; }
   .lp-ph .lp-scr { border-radius: 23px; }
   .lp-ph::before, .lp-ph::after { width: 2px; }
@@ -2120,9 +2122,9 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
     <p class="lp-sub lp-enter" style="animation-delay:160ms">VEYA אוספת את אישורי ההגעה, עוזרת להושיב את מי שמגיע, ועם כל תשובה מעדכנת כמה האירוע צפוי לעלות.</p>
     <div class="lp-ctas lp-on-dark lp-enter" style="animation-delay:240ms"><a class="btn btn-primary btn-lg" href="/app?auth=register">מתחילים מהרשימה שלכם</a><a class="lp-link" href="#how">איך זה עובד?</a></div>
     <ul class="lp-facts lp-enter" style="animation-delay:320ms">
-      <li><b>7</b>סוגי אירוע</li>
-      <li><b>בני אדם</b>מתקשרים למי שלא ענה</li>
-      <li><b>בלי אפליקציה</b>הכול מהדפדפן, גם בטלפון</li>
+      <li><i>1</i><b>המוזמן עונה</b>מהקישור האישי שלו</li>
+      <li><i>2</i><b>הספירה מתעדכנת</b>מי מגיע, מי לא ומי ממתין לתשובה</li>
+      <li><i>3</i><b>וגם החשבון</b>כמה זה עולה, עוד לפני האירוע</li>
     </ul>
     <div class="lp-stage">
       <div class="lp-ph lp-r lp-enter" style="animation-delay:420ms"><div class="lp-scr"><div class="lp-sb"><span>9:41</span><svg viewBox="0 0 68 12" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/><path d="M30 3.2a10 10 0 0 1 13 0l-1.4 1.5a8 8 0 0 0-10.2 0zM32.6 6a6 6 0 0 1 7.8 0L39 7.5a4 4 0 0 0-5 0zM35.2 8.8a2 2 0 0 1 2.6 0L36.5 10.2z"/><rect x="47" y="1" width="18" height="10" rx="3" fill="none" stroke="#fff" stroke-opacity=".45"/><rect x="48.6" y="2.6" width="13.5" height="6.8" rx="1.6"/><rect x="66" y="4" width="1.6" height="4" rx=".8" fill-opacity=".45"/></svg></div><i class="lp-isl"></i><img src="/product/hero-phone.jpg" alt="מאזן האירוע בטלפון: עלות משוערת"></div></div>
