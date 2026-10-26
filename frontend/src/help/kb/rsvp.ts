@@ -193,7 +193,7 @@ export const RSVP_TOPICS: readonly HelpTopic[] = [
       },
       {
         when: { fact: 'rsvp.phase', op: 'in', value: ['running', 'ended'] },
-        answer: ['אישורי ההגעה כבר פתוחים — כל {guest} מאשר דרך הקישור האישי שלו.'],
+        answer: ['אישורי ההגעה כבר פתוחים — כל {guest} מאשר ישר מההזמנה שקיבל.'],
       },
     ],
     sources: ['../../backend/app/guest_journey.py', '../../backend/app/routers/confirm.py'],
