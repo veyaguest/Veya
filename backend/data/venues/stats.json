@@ -82,8 +82,8 @@
   "needs_review": 62
  },
  "by_operating_status": {
-  "unknown": 1228,
-  "closed_reported": 6,
+  "unknown": 1230,
+  "closed_reported": 4,
   "uncertain": 2
  },
  "missing_fields": {

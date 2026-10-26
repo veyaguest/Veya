@@ -172,7 +172,8 @@ def clean(r: dict, by_key: dict) -> dict:
             city = L["name"]  # שם תקני מטבלת היישובים ("קרית ביאליק" → "קריית ביאליק")
     note = (r.get("note") or "").strip()
     status = "unknown"
-    if note.startswith("CLOSED") or re.search(r"נטוש|לשעבר|[Aa]bandoned|[Cc]losed|\bדיסיוז", r["name"]):
+    # "לשעבר" בשם = שינוי שם ("פלטינום (ארמונות הגפן לשעבר)"), לא סגירה.
+    if note.startswith("CLOSED") or re.search(r"נטוש|[Aa]bandoned|\([Cc]losed\)", r["name"]):
         status = "closed_reported"
     elif note.startswith("UNSURE"):
         status = "uncertain"

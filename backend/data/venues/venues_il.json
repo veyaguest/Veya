@@ -8786,7 +8786,7 @@
     "portal"
    ],
    "verification": "single_source",
-   "operating_status": "closed_reported",
+   "operating_status": "unknown",
    "last_checked": "2026-10-26",
    "notes": "מיתוג מחדש",
    "flags": []
@@ -31317,7 +31317,7 @@
     "portal"
    ],
    "verification": "needs_review",
-   "operating_status": "closed_reported",
+   "operating_status": "unknown",
    "last_checked": "2026-10-26",
    "notes": "ייתכן קשור ל\"אולמי מרום\" עכו",
    "flags": [
