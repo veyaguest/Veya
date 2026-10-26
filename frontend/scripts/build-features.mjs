@@ -1,5 +1,6 @@
 /**
- * עמודי ה-Feature: /features/rsvp · /features/calls · /features/guests · /features/seating
+ * עמודי ה-Feature: /features/ (איך זה עובד) · /features/rsvp · /features/calls ·
+ * /features/guests · /features/seating
  *
  * כולם נבנים מהמעטפת המשותפת (`site-shell.mjs`) ומהרכיבים שכבר קיימים
  * בדף הבית: `.why`, `.features` + `.supporting-grid`, `.flow-steps`,
@@ -192,6 +193,44 @@ const RSVP_CSS = `    <style>
 
       .faq-wrap { background: var(--ivory); }
 
+      /* אזור האורחים — עבר מדף הבית כמו שהוא (section.gh). טקסט קצר לצד
+         צילום מסך אמיתי של הקישור האישי, בתוך אייפון אחד בזווית. */
+      .gh { background: var(--ivory-2); }
+      .gh-grid { display: grid; gap: 26px; align-items: center; }
+      .gh-text { max-width: min(46ch, 100%); }
+      .gh-lead { font-size: var(--fs-lg); color: var(--body); line-height: 1.7; margin: 0 0 18px; }
+      .gh-less { font-size: var(--fs-lg); color: var(--charcoal); line-height: 2; margin: 0 0 20px; }
+      .gh-punch {
+        margin: 0; padding-top: 18px; border-top: 1px solid var(--line);
+        font-family: var(--font-display); font-size: var(--fd-md);
+        color: var(--charcoal); line-height: 1.35;
+      }
+      .gh-comp {
+        --ph-w: clamp(170px, 15vw, 206px);
+        position: relative; display: grid; place-items: center;
+        padding-block: clamp(18px, 3vw, 34px) clamp(30px, 4vw, 48px);
+      }
+      .gh-comp .gh-phone { transform: rotate(-6deg); transform-origin: 50% 85%; }
+      .gh-comp::after {
+        content: ""; position: absolute; left: 50%; bottom: clamp(14px, 2.4vw, 26px);
+        width: calc(var(--ph-w) * 1.15); height: calc(var(--ph-w) * 0.16); transform: translateX(-46%);
+        background: radial-gradient(50% 50% at 50% 50%, rgba(43, 38, 32, 0.34), rgba(43, 38, 32, 0) 100%);
+        pointer-events: none;
+      }
+      .gh-shot .mk-phone { --ph-screen: #18130d; --ph-ink: #f4efe6; }
+      .gh-shot .mk-phone-screen { background: linear-gradient(180deg, #18130d 0%, #141110 18%, #0b0b0b 50%, #0a0a0c 100%); }
+      .ttl-accent { display: inline-block; color: var(--gold-deep); }
+      .ttl-lead { display: inline-block; }
+      @media (max-width: 600px) {
+        .gh-comp { --ph-w: clamp(170px, 50vw, 200px); }
+      }
+      @media (max-width: 560px) { .ttl-lead { display: inline; } }
+      @media (min-width: 861px) {
+        .gh-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "shot text"; gap: 20px 48px; }
+        .gh-text { grid-area: text; }
+        .gh-shot { grid-area: shot; }
+      }
+
       @media (max-width: 900px) {
         .rv-chain-body, .rv-status .wrap, .rv-route-body, .rv-route-foot,
         .rv-rules > div, .rv-sum > div { grid-template-columns: minmax(0, 1fr); }
@@ -272,6 +311,57 @@ export function featureRsvp() {
               <p class="dbl rv-chain-punch">מספר אחד עובר דרך כל השרשרת. לא ארבעה מספרים בארבעה מקומות.</p>
             </div>
 ${fig('rv-shot rv-shot-list', '/product/seat-panel.jpg', 'רשימת המוזמנים ב־VEYA, ממוינת כך שמי שאישרו הגעה ראשונים: ליד כל מוזמן הסטטוס שלו, מספר האנשים והשולחן', 'רשימת המוזמנים ב־VEYA: ליד כל שם, אם אישר הגעה, כמה אנשים זה, ובאיזה שולחן.', 674, 1130)}
+          </div>
+        </div>
+      </section>
+
+      <!-- אזור האורחים: עבר מדף הבית כלשונו. הצילום הוא ה-Guest Hub האמיתי
+           (/confirm/{token}) על אירוע הדמו, בלי פרטים של אדם אמיתי. -->
+      <section class="gh" id="guest-page" aria-labelledby="gh-title">
+        <div class="wrap">
+          <div class="rv-head">
+            <h2 id="gh-title" class="section-title"><span class="ttl-lead">כל מה שהמוזמנים צריכים,</span> <span class="ttl-accent">בקישור אחד.</span></h2>
+          </div>
+          <div class="gh-grid">
+            <div class="gh-text">
+              <p class="gh-lead">
+                הכול נמצא שם: ההזמנה, הפרטים, איך מגיעים ואיפה מאשרים הגעה.
+              </p>
+              <p class="gh-less">
+                פחות הודעות של "איפה זה בדיוק?"<br />
+                ושל "רגע, איך מאשרים?"
+              </p>
+              <p class="gh-punch">המוזמנים יודעים מה לעשות, ואתם לא צריכים להיות מוקד שירות.</p>
+            </div>
+            <div class="gh-shot">
+              <div class="gh-comp">
+                <div class="mk-phone mk-phone--fit gh-phone">
+                  <span class="mk-phone-keys"></span>
+                  <span class="mk-phone-island"></span>
+                  <span class="mk-phone-status">
+                    <span class="mk-phone-time">9:41</span>
+                    <svg class="mk-phone-icons" viewBox="0 0 64 12" fill="currentColor">
+                      <rect x="0" y="8" width="3" height="4" rx="0.8" /><rect x="4.6" y="5.8" width="3" height="6.2" rx="0.8" /><rect x="9.2" y="3.4" width="3" height="8.6" rx="0.8" /><rect x="13.8" y="1" width="3" height="11" rx="0.8" />
+                      <path d="M29 3.1a10.4 10.4 0 0 1 7.1 2.8l1.2-1.3a12.2 12.2 0 0 0-16.6 0l1.2 1.3A10.4 10.4 0 0 1 29 3.1Zm0 3.6a6.6 6.6 0 0 1 4.5 1.8l1.2-1.3a8.4 8.4 0 0 0-11.4 0l1.2 1.3A6.6 6.6 0 0 1 29 6.7Zm0 3.6a2.8 2.8 0 0 1 1.9.7L29 12.2 27.1 11a2.8 2.8 0 0 1 1.9-.7Z" />
+                      <rect x="42.5" y="1.3" width="18.5" height="9.4" rx="2.8" fill="none" stroke="currentColor" stroke-opacity="0.4" />
+                      <rect x="44.3" y="3.1" width="14.9" height="5.8" rx="1.5" />
+                      <path d="M62.2 4.4c.8.3 1.3 1 1.3 1.6s-.5 1.3-1.3 1.6Z" fill-opacity="0.45" />
+                    </svg>
+                  </span>
+                  <span class="mk-phone-glare"></span>
+                  <img
+                    class="mk-phone-screen"
+                    src="/product/guest-hub.jpg"
+                    alt="אזור האורחים של VEYA כפי שמוזמן רואה אותו בטלפון (אירוע ההדגמה): תמונת ההזמנה, תאריך ושעה, כתובת האולם, צפייה בהזמנה, הוספה ליומן, ניווט למקום האירוע וכפתורי אישור ההגעה"
+                    width="800"
+                    height="2376"
+                    loading="lazy"
+                    decoding="async"
+                    onerror="veyaRetryImage(this)"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -393,6 +483,167 @@ ${faqHtml(faq)}
         url: `${SITE}/features/rsvp/`,
         description:
           'ניהול אישורי הגעה: סטטוסים, מעקב אחרי מי שלא ענה, ולוח זמנים שנגזר מהיום האחרון לאישורי הגעה.',
+      },
+    ],
+    body,
+  })
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   /features/ — איך זה עובד
+
+   מסע האירוע בשבעה שלבים, שעבר מדף הבית (section.how) כלשונו: אותם
+   כותרות, אותם משפטים ואותם צילומי מסך אמיתיים (/product/journey-*.jpg).
+   מכאן יוצאים לעמוד של כל חלק.
+   ════════════════════════════════════════════════════════════════════ */
+
+const JOURNEY_CSS = `    <style>
+      .how { background: var(--ink); color: var(--cream-text); padding: clamp(52px, 6.5vw, 78px) 0; }
+      .wj { list-style: none; margin: 0 auto; padding: 0; max-width: 1120px; }
+      .wj-step {
+        position: relative; display: grid;
+        grid-template-columns: 52px minmax(0, 0.62fr) minmax(0, 1.38fr);
+        gap: 0 34px; align-items: start; padding-bottom: 72px;
+      }
+      .wj-step::before {
+        content: ""; position: absolute; inset-inline-start: 25px; top: 52px; bottom: 0; width: 1px;
+        background: linear-gradient(180deg, rgba(228, 201, 107, 0.55), rgba(228, 201, 107, 0.15));
+      }
+      .wj-last { padding-bottom: 0; }
+      .wj-last::before { display: none; }
+      .wj-num {
+        align-self: start; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%;
+        border: 1px solid rgba(228, 201, 107, 0.55); background: var(--ink); color: var(--gold-light);
+        font-family: var(--font-display); font-size: var(--fs-xl); position: relative; z-index: 1;
+      }
+      .wj-text { padding-top: 6px; }
+      .wj-text h2 { margin: 0 0 8px; font-family: var(--font-display); font-weight: 500; font-size: var(--fd-md); line-height: 1.15; color: var(--cream-text); }
+      .wj-text p { margin: 0; font-size: var(--fs-lg); line-height: 1.6; color: #d8ceb9; max-width: 32ch; }
+      .wj-shot { align-self: start; }
+      .wj-shot .sc-shot { margin: 0; }
+      .wj-last .wj-text h2 { color: var(--gold-light); }
+
+      .how .section-cta { margin-top: clamp(56px, 7vw, 88px); text-align: center; }
+      .how-cta-line { margin: 0 0 18px; font-family: var(--font-display); font-size: var(--fd-sm); color: var(--cream-text); }
+      .how .section-cta .cta-hint { color: #b6aa93; }
+      .btn-lg { padding: 16px 34px; font-size: var(--fs-lg); border-radius: 12px; min-height: 56px; }
+
+      .brand-sign { display: grid; justify-items: center; gap: 16px; margin: 64px auto 0; }
+      .brand-line { width: 1px; height: 44px; background: linear-gradient(180deg, rgba(201, 162, 39, 0), rgba(201, 162, 39, 0.6)); }
+      .brand-sign img { display: block; width: 128px; height: auto; opacity: 0.92; }
+
+      .wj-more { background: var(--ivory); }
+      .wj-links { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--charcoal); }
+      .wj-links li { border-bottom: 1px solid var(--line); }
+      .wj-links a {
+        display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 20px 0;
+        font-family: var(--f-display); font-size: clamp(1.25rem, 1.9vw, 1.5rem); color: var(--charcoal); text-decoration: none;
+        transition: color 160ms var(--ease-out);
+      }
+      .wj-links a:hover { color: var(--gold-deep); }
+      .wj-links a:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; border-radius: 4px; }
+
+      @media (max-width: 900px) {
+        .wj-step { grid-template-columns: 40px minmax(0, 1fr); gap: 0 16px; padding-bottom: 52px; }
+        .wj-step::before { inset-inline-start: 19px; top: 40px; }
+        .wj-num { width: 40px; height: 40px; font-size: var(--fs-lg); }
+        .wj-text p { font-size: var(--fs-md); }
+        .wj-shot { grid-column: 2; margin-top: 18px; }
+      }
+      @media (max-width: 600px) {
+        .brand-sign { margin-top: 48px; gap: 12px; }
+        .brand-line { height: 34px; }
+        .brand-sign img { width: 108px; }
+      }
+    </style>
+`
+
+// שבעת השלבים — הטקסט וה-alt בדיוק כמו בדף הבית. כאן כל שלב הוא h2
+// (בדף הבית h3 תחת כותרת הסקשן), כי כותרת הסקשן היא ה-h1 של העמוד.
+const JOURNEY = [
+  { h: 'מוזמנים', p: 'כאן הרשימה מתחילה לקבל סדר: צד, קבוצה, כמות וסטטוס לכל מוזמן.', src: '/product/journey-guests.jpg', alt: 'ניהול המוזמנים ב-VEYA: טבלת מוזמנים עם צד, קבוצה, כמות, סטטוס אישור הגעה ושולחן', w: 1600, hh: 1000 },
+  { h: 'הזמנות', p: 'לכל שלב יש הודעה משלו, ורואים בדיוק מה יוצא ולמי, עוד לפני השליחה.', src: '/product/journey-messages.jpg', alt: 'מסך ההודעות של VEYA: שלבי ההודעות מההזמנה ועד התודה, עם תצוגה מקדימה של ההודעה בוואטסאפ', w: 1600, hh: 1000 },
+  { h: 'אישורי הגעה', p: 'התשובות הופכות למספרים: מי אישר, מי עוד לא ענה, ומה הסבב הבא.', src: '/product/journey-rsvp.jpg', alt: 'אישורי ההגעה ב-VEYA: כמה אישרו, כמה ממתינים לתשובה, ומסלול הסבבים עם התאריכים', w: 1600, hh: 1000 },
+  { h: 'תמונת מצב', p: 'פתאום רואים את כל התמונה: כמה אישרו, כמה חסרים וכמה זמן נשאר.', src: '/product/journey-dashboard.jpg', alt: 'תמונת המצב של VEYA: שמות בני הזוג, ספירה לאחור לאירוע ומחוון אישורי ההגעה', w: 1600, hh: 1000 },
+  { h: 'הושבה', p: 'האולם מצד אחד, המוזמנים מהצד השני. גוררים מוזמן לשולחן, וזהו.', src: '/product/journey-seating.jpg', alt: 'סידור ההושבה של VEYA: סקיצת האולם עם השולחנות, רשימת המוזמנים בצד, ומוזמן שנגרר אל שולחן פנוי', w: 1600, hh: 1215 },
+  { h: 'מאזן האירוע', p: 'כמה עלה האירוע, כמה נכנס במתנות, ובסוף כמה באמת הרווחתם או הפסדתם.', src: '/product/journey-finance.jpg', alt: 'מאזן האירוע ב-VEYA: עלות האירוע, מה שולם ומה נשאר, סך המתנות והמאזן הסופי, ומתחתיו מבנה העלות עם עלות ממוצעת לאדם', w: 1600, hh: 867 },
+  { h: 'הדוח הסופי', p: 'כאן מתחבר כל מה שעשיתם בדרך: שורה לכל מוזמן: אם אישר, כמה הגיעו ומה נתן. להורדה לאקסל או להדפסה.', src: '/product/journey-report.jpg', alt: 'הדוח המלא של VEYA: שורה לכל מוזמן עם סטטוס הגעה, כמה הגיעו, מתנה במעטפה וסה״כ, וכפתורי הורדה לאקסל והדפסה', w: 1446, hh: 1237 },
+]
+
+// העמודים של כל חלק — השמות כמו בפוטר.
+const JOURNEY_LINKS = [
+  ['/features/guests/', 'רשימת מוזמנים'],
+  ['/features/rsvp/', 'אישורי הגעה'],
+  ['/features/calls/', 'מעקב טלפוני'],
+  ['/features/seating/', 'סידור הושבה'],
+  ['/features/finance/', 'מאזן האירוע'],
+]
+
+export function featureJourney() {
+  const steps = JOURNEY.map(
+    (s, i) => `            <li class="wj-step${i === JOURNEY.length - 1 ? ' wj-last' : ''}">
+              <span class="wj-num" aria-hidden="true">${i + 1}</span>
+              <div class="wj-text">
+                <h2>${esc(s.h)}</h2>
+                <p>${esc(s.p)}</p>
+              </div>
+              <div class="wj-shot">
+${shot(s.src, s.alt, s.w, s.hh)}
+              </div>
+            </li>`,
+  ).join('\n')
+
+  const body = `${pageHero({
+    h1: 'מהרשימה הראשונה ועד הדוח שנשאר אחריו.',
+    lead: 'הרשימה שהבאתם, האישורים שאספתם, ההושבה, ההוצאות והמתנות: הכול נגמר באותו מקום, בדוח של האירוע.',
+    trail: [{ name: 'VEYA', url: '/' }, { name: 'איך זה עובד' }],
+    cta: CTA_PRIMARY,
+    media: heroShot('/product/dashboard-browser.jpg', 'תמונת המצב של VEYA בדפדפן: דניאל ושרון, ספירה לאחור לאירוע, ומחוון אישורי ההגעה — 256 מתוך 644 אישרו, 45 לא החליטו, 69 לא מגיעים ו־274 ממתינים לתשובה', 'תמונת המצב, מתוך אירוע הדמו של VEYA.', 1600, 1025),
+  })}
+
+      <section class="how on-dark" id="how" aria-label="שבעת השלבים של אירוע ב-VEYA">
+        <div class="wrap">
+          <ol class="wj">
+${steps}
+          </ol>
+          <div class="section-cta">
+            <p class="how-cta-line">וכל זה מתחיל ברשימת המוזמנים שלכם.</p>
+            <a href="/app?auth=register" class="btn btn-primary btn-lg">מתחילים מהרשימה שלכם <span class="arw" aria-hidden="true">←</span></a>
+            <span class="cta-hint">הרשמה, פתיחת אירוע, ומשם מייבאים או מדביקים את הרשימה.</span>
+          </div>
+
+          <div class="brand-sign" aria-hidden="true">
+            <span class="brand-line"></span>
+            <img src="/veya_text.png" alt="" width="128" height="35" loading="lazy" decoding="async" />
+          </div>
+        </div>
+      </section>
+
+      <section class="wj-more">
+        <div class="wrap">
+          <div class="section-head">
+            <h2 class="section-title">כל חלק, לעומק</h2>
+          </div>
+          <ul class="wj-links">
+${JOURNEY_LINKS.map(([href, name]) => `            <li><a href="${href}">${esc(name)} <span aria-hidden="true">←</span></a></li>`).join('\n')}
+          </ul>
+        </div>
+      </section>`
+
+  return page({
+    path: '/features/',
+    head: JOURNEY_CSS,
+    title: 'איך זה עובד — מהרשימה הראשונה ועד הדוח | VEYA',
+    description:
+      'שבעה שלבים בתוך VEYA: מוזמנים, הזמנות, אישורי הגעה, תמונת מצב, הושבה, מאזן האירוע והדוח הסופי, כל אחד עם צילום מסך אמיתי מהמוצר.',
+    trail: [{ name: 'VEYA', url: '/' }, { name: 'איך זה עובד' }],
+    schema: [
+      {
+        '@type': 'WebPage',
+        name: 'איך זה עובד',
+        inLanguage: 'he-IL',
+        url: `${SITE}/features/`,
+        description: 'שבעת השלבים של אירוע ב-VEYA, מרשימת המוזמנים ועד הדוח הסופי.',
       },
     ],
     body,

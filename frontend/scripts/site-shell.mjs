@@ -181,6 +181,7 @@ ${o.body}
           <div class="footer-col">
             <h3>מוצר</h3>
             <ul>
+              <li><a href="/features/">איך זה עובד</a></li>
               <li><a href="/features/guests/">רשימת מוזמנים</a></li>
               <li><a href="/features/rsvp/">אישורי הגעה</a></li>
               <li><a href="/features/calls/">מעקב טלפוני</a></li>

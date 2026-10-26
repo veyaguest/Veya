@@ -5,6 +5,7 @@
 > בר מצווה, בת מצווה, חינה, ברית, בריתה ואירוע עסקי. בעברית, בישראל.
 
 ## יכולות
+- [איך זה עובד — מהרשימה הראשונה ועד הדוח](https://veyaguest.co.il/features/)
 - [מאזן האירוע — כמה האירוע שלכם באמת עולה](https://veyaguest.co.il/features/finance/)
 - [אישורי הגעה — מהתשובה עד המספר הסופי](https://veyaguest.co.il/features/rsvp/)
 - [מעקב אחרי מי שלא אישר הגעה](https://veyaguest.co.il/features/calls/)
