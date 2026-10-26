@@ -174,7 +174,11 @@ def main(raw_dir: str) -> None:
             continue
         name = tags.get("name:he") or tags["name"]
         town, dist = nearest(locs, lat, lon, ("city", "town", "village", "hamlet"))
-        city = to_hebrew_city(tags.get("addr:city") or "", by_alt) or (town["name"] if town else "")
+        tagged = to_hebrew_city(tags.get("addr:city") or "", by_alt)
+        # addr:city שאינו יישוב מוכר (למשל "פנורמה") — שגיאת תיוג; היישוב נגזר מהמיקום.
+        if tagged and tagged.strip().lower() not in by_alt:
+            tagged = ""
+        city = tagged or (town["name"] if town else "")
         # מחוץ לגבול ישראל ב-OSM וללא שם עברי → כנראה ביישוב פלסטיני; לא בתחום המאגר.
         # מחוץ לגבול ישראל ב-OSM: רק עסק ששמו הראשי בעברית (יישוב ישראלי ביו"ש);
         # עסק בשם ערבי/אנגלי שם הוא כנראה ביישוב פלסטיני — לא בתחום המאגר.

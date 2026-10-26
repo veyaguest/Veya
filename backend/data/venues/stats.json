@@ -1,141 +1,140 @@
 {
  "generated": "2026-10-26",
- "raw_records": 1066,
+ "raw_records": 1357,
  "raw_by_channel": {
-  "web_search": 407,
+  "web_search": 698,
   "osm": 659
  },
  "raw_by_source_domain_top": {
   "openstreetmap.org": 659,
-  "britot.co.il": 81,
+  "britot.co.il": 99,
+  "rsrv.rest": 63,
+  "hafakot.co.il": 42,
+  "rotter.net": 41,
   "ulam.co.il": 39,
-  "rotter.net": 38,
-  "hafakot.co.il": 28,
-  "rsrv.rest": 19,
-  "mazaltov.walla.co.il": 16,
-  "t.co.il": 15,
-  "mekomot-eruim.co.il": 15,
+  "mekomot-eruim.co.il": 34,
+  "t.co.il": 28,
+  "yeshuvnik.net": 25,
+  "mazaltov.walla.co.il": 24,
+  "mitchatnim.co.il": 20,
+  "all-events.co.il": 19,
+  "zips.co.il": 13,
+  "zooz360.co.il": 10,
   "b7net.co.il": 8,
+  "iplan.co.il": 8,
   "ashdodnet.com": 8,
-  "zips.co.il": 8,
-  "mitchatnim.co.il": 7,
+  "halocation.co.il": 7,
+  "eventplaces.co.il": 6,
   "datipage.co.il": 6,
-  "all-events.co.il": 6,
-  "eventplaces.co.il": 5,
-  "rrr.co.il": 5,
+  "karmieli.co.il": 6,
+  "rrr.co.il": 6,
+  "balballoon.com": 6,
+  "kolyekev.co.il": 6,
+  "eilat.city": 5,
   "barbatmitzva.co.il": 5,
+  "knasimportal.co.il": 5,
+  "ptnews.co.il": 5,
+  "facebook.com": 4,
+  "highand.co.il": 4,
+  "easy.co.il": 4,
   "event-halls.co.il": 3,
-  "iplan.co.il": 3,
   "rgcity.co.il": 3,
-  "karmieli.co.il": 3,
-  "eilat.city": 3,
-  "highand.co.il": 3,
-  "halocation.co.il": 2,
-  "allplaces.co.il": 2,
+  "allplaces.co.il": 3,
+  "peerhalls.com": 3,
+  "vila4u.com": 3,
+  "hatuna-ktana.co.il": 3,
+  "dunsguide.co.il": 3,
   "bneibrak100.blogspot.com": 2,
-  "yeshuvnik.net": 2,
-  "facebook.com": 2,
-  "atsulat-haemek.co.il": 2,
-  "vila4u.com": 2,
-  "easy.co.il": 2,
-  "mekomot.co.il": 1,
-  "arievents.co.il": 1,
-  "habaraka.co.il": 1,
-  "gallery279.co.il": 1,
-  "kala.co.il": 1,
-  "adel-events.co.il": 1,
-  "tai-events.co.il": 1,
-  "tarin.co.il": 1
+  "atsulat-haemek.co.il": 2
  },
- "unique_venues": 983,
- "merged_pairs": 83,
- "review_pairs": 61,
+ "unique_venues": 1236,
+ "merged_pairs": 121,
+ "review_pairs": 89,
  "by_region": {
-  "מרכז": 244,
-  "ירושלים והסביבה": 192,
-  "צפון": 138,
-  "שרון": 107,
-  "דרום": 82,
-  "חיפה והקריות": 58,
-  "אילת והערבה": 54,
-  "שפלה": 47,
-  "לא משויך": 33,
-  "יהודה ושומרון": 28
+  "מרכז": 296,
+  "ירושלים והסביבה": 239,
+  "צפון": 194,
+  "שרון": 147,
+  "דרום": 107,
+  "שפלה": 78,
+  "חיפה והקריות": 71,
+  "אילת והערבה": 63,
+  "יהודה ושומרון": 34,
+  "לא משויך": 7
  },
  "by_kind": {
-  "hotel": 436,
-  "hall": 267,
-  "garden": 65,
-  "boutique": 58,
-  "restaurant": 50,
-  "complex": 40,
-  "synagogue": 21,
-  "conference": 20,
-  "loft": 17,
+  "hotel": 454,
+  "hall": 354,
+  "garden": 109,
+  "boutique": 90,
+  "restaurant": 67,
+  "complex": 54,
+  "synagogue": 30,
+  "loft": 29,
+  "conference": 28,
+  "other": 14,
   "villa": 5,
-  "other": 3,
-  "community": 1
+  "community": 2
  },
  "by_verification": {
-  "single_source": 867,
-  "verified_sources": 86,
-  "needs_review": 30
+  "single_source": 1035,
+  "verified_sources": 139,
+  "needs_review": 62
  },
  "by_operating_status": {
-  "unknown": 978,
-  "closed_reported": 3,
+  "unknown": 1228,
+  "closed_reported": 6,
   "uncertain": 2
  },
  "missing_fields": {
-  "address": 556,
+  "address": 674,
   "city": 7,
-  "region": 33,
-  "phone": 892,
-  "website": 791,
-  "capacity_max": 862,
-  "lat": 364,
-  "event_types": 983
+  "region": 7,
+  "phone": 1142,
+  "website": 1003,
+  "capacity_max": 999,
+  "lat": 617,
+  "event_types": 1236
  },
  "by_region_and_channel": {
   "מרכז": {
-   "web": 104,
+   "web": 156,
    "osm": 140
   },
   "ירושלים והסביבה": {
    "osm": 143,
-   "web": 49
+   "web": 96
   },
   "צפון": {
-   "osm": 97,
-   "web": 41
+   "web": 96,
+   "osm": 98
   },
   "שרון": {
-   "osm": 68,
-   "web": 39
+   "osm": 69,
+   "web": 78
   },
   "דרום": {
-   "web": 40,
+   "web": 65,
    "osm": 42
-  },
-  "חיפה והקריות": {
-   "osm": 36,
-   "web": 22
-  },
-  "אילת והערבה": {
-   "osm": 51,
-   "web": 3
   },
   "שפלה": {
    "osm": 25,
-   "web": 22
+   "web": 53
   },
-  "לא משויך": {
-   "osm": 9,
-   "web": 24
+  "חיפה והקריות": {
+   "osm": 36,
+   "web": 35
+  },
+  "אילת והערבה": {
+   "osm": 51,
+   "web": 12
   },
   "יהודה ושומרון": {
    "osm": 8,
-   "web": 20
+   "web": 26
+  },
+  "לא משויך": {
+   "osm": 7
   }
  }
 }

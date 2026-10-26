@@ -1,0 +1,345 @@
+### 2026-10-26 | מגזר ערבי — חיפושים בעברית
+אולמי סראיא|סח'נין||hall|||https://weddone.com/venues|
+אולמי רויאל סכנין|סח'נין||hall|||https://weddone.com/venues|
+אולם אלריף قاعة الريف|אום אל-פחם||hall|||https://www.waze.com/he/live-map/directions/%D7%90%D7%95%D7%9C%D7%9D-%D7%90%D7%9C%D7%A8%D7%99%D7%A3-qaah-alryf-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%90%D7%95%D7%9D-%D7%90%D7%9C-%D7%A4%D7%97%D7%9D?to=place.w.23003461.230362292.363513|
+גן השמחות טירה|טירה||garden|||https://www.t.co.il/80-s500-%D7%92%D7%A0%D7%99+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D+/+%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%98%D7%99%D7%A8%D7%94.html|
+אחוזה בית חנן|בית חנן||garden|||https://iplan.co.il/he-IL/directory/brands/45-%D7%90%D7%97%D7%95%D7%96%D7%94-%D7%91%D7%99%D7%AA-%D7%97%D7%A0%D7%9F|
+אמארה Amare|נס ציונה||hall|https://amare.co.il/||https://amare.co.il/|
+### 2026-10-26 | מושבים/קיבוצים שפלה + ראש העין-יהוד + צומת בילו + שרון צפוני
+@SF=https://mekomot-eruim.co.il/events-garden?area=lowland
+@YH=https://rsrv.rest/he/yehud-monosson/all/banquet-hall
+@KE=https://rsrv.rest/he/kiryat-ekron
+@EY=https://www.hafakot.co.il/place/%D7%9E%D7%A7%D7%95%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%A7%D7%98%D7%A0%D7%99%D7%9D/%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%A7%D7%98%D7%A0%D7%99%D7%9D-%D7%91%D7%90%D7%91%D7%9F-%D7%99%D7%94%D7%95%D7%93%D7%94/
+חוות אלנבי|נצר סרני|קיבוץ נצר סרני|garden||350|@SF|
+הנחלה גן אירועים|בית עובד|מושב בית עובד|garden|||@SF|פועל מ-2003
+הפרדס של לייה|יד רמב"ם|מושב יד רמב"ם|boutique||200|@SF|
+וילה סנדלר|זיתן|מושב זיתן|boutique||200|@SF|
+כרמי אלול|יציץ|מושב יציץ|garden||250|@SF|
+מטע זיתים אירועים|כרמי יוסף|מושב כרמי יוסף|garden|||@SF|
+הבית הגלילי|נען|קיבוץ נען|conference||170|@SF|
+לילות קסומים|חפץ חיים|קיבוץ חפץ חיים|garden|||@SF|ליד צומת כנות
+ג'ויה מיה|נחשונים|קיבוץ נחשונים|garden|||@SF|
+המשק של סבוש|רחובות||garden||150|@SF|יישוב לא ודאי (ליד רחובות)
+הרמוניה בגן|מזכרת בתיה||complex|https://www.harmoniabagan.co.il/||https://www.harmoniabagan.co.il/%D7%90%D7%95%D7%9C%D7%9D-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%9E%D7%96%D7%9B%D7%A8%D7%AA-%D7%91%D7%AA%D7%99%D7%94/||077-9977799
+ארי אירועים|אור יהודה||hall|https://ari-events.co.il/|600|https://ari-events.co.il/|
+לה סינקו La Cinco|אור יהודה||hall||70-350|https://www.t.co.il/80-s43-%D7%92%D7%A0%D7%99+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D+/+%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%95%D7%A8+%D7%99%D7%94%D7%95%D7%93%D7%94.html|
+ריי אולם אירועים|ראש העין|שדרות שלמה המלך|hall|||https://zips.co.il/%D7%A2%D7%A1%D7%A7%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/2640/%D7%A8%D7%90%D7%A9-%D7%94%D7%A2%D7%99%D7%9F|
+אולמי אופיר|ראש העין|אזור התעשייה|hall|||https://zips.co.il/%D7%A2%D7%A1%D7%A7%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/2640/%D7%A8%D7%90%D7%A9-%D7%94%D7%A2%D7%99%D7%9F|
+קסיופאה Kasiopea|יהוד-מונוסון||hall||30-220|@YH|
+קדם|יהוד-מונוסון||hall||50-500|@YH|
+גריי Gray|יהוד-מונוסון||boutique||20-150|@YH|
+רגעים|קריית עקרון|צומת בילו|complex|https://www.regaimevents.co.il/|600|https://www.regaimevents.co.il/|שני אולמות 320/410
+אלגריה|קריית עקרון|המלך חוסיין השני|hall|https://alegriaevent.co.il/||https://alegriaevent.co.il/p/%D7%90%D7%95%D7%9C%D7%9D-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A7%D7%A8%D7%99%D7%AA-%D7%A2%D7%A7%D7%A8%D7%95%D7%9F/|אולמות TEMPIO ו-LUNA
+גלוריה|קריית עקרון|בוסי סנט ז'ורז' 3|boutique|https://gloria-events.co.il/||https://gloria-events.co.il/|
+אליסיה|קריית עקרון||hall|||@KE|
+עלמה בית לאירועים Alma House|שיזף||garden||50-700|https://www.mitchatnim.co.il/business/events-gardens-hall/80105046/|אזור אבן יהודה
+סיטרוס|אבן יהודה||hall|||https://www.t.co.il/80-s20-%D7%92%D7%A0%D7%99+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D+/+%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%91%D7%9F+%D7%99%D7%94%D7%95%D7%93%D7%94.html|
+נונה|קדימה-צורן||boutique||60-180|@EY|
+גרוסרי Grosery|אבן יהודה||boutique||20-90|@EY|
+המתחם אבן יהודה|אבן יהודה||boutique||10-90|@EY|
+### 2026-10-26 | ים המלח מלונות / כנסים / קריות / חינה
+@KR=https://rsrv.rest/he/krayot/small-venues
+@KN=https://knasimportal.co.il/halls/
+מלון וורט ים המלח VERT|עין בוקק||hotel|https://www.afi-hotels.co.il/vert-dead-sea-hotel|600|https://www.afi-hotels.co.il/vert-dead-sea-hotel|
+לאונרדו פלאזה ים המלח|עין בוקק||hotel||500|https://www.spacing.co.il/location/4642_18|
+בראון ים המלח|עין בוקק||hotel|https://ichotels.co.il/enjoy-dead-sea-hotel|580|https://ichotels.co.il/enjoy-dead-sea-hotel|לשעבר אנג'וי
+נבו ים המלח|עין בוקק||hotel|https://www.isrotel.co.il/|500|https://www.isrotel.co.il/isrotel-hotels/dead-sea-hotels/%D7%99%D7%A9%D7%A8%D7%95%D7%98%D7%9C-%D7%99%D7%9D-%D7%94%D7%9E%D7%9C%D7%97/|ישרוטל ים המלח לשעבר
+רויאל ים המלח|עין בוקק||hotel|https://www.royal-deadsea.com/||https://www.royal-deadsea.com/|
+הרודס ים המלח|עין בוקק||hotel|https://www.herods.co.il/|130|https://www.herods.co.il/herods-hotels/herods-dead-sea/conferences-and-events/|
+דיוויד ים המלח|עין בוקק||hotel|https://www.grandhotels.co.il/||https://www.grandhotels.co.il/david-dead-sea-hotel-confrences-and-events|מרכז כנסים
+לוט ים המלח|עין בוקק||hotel|https://www.lothotel.co.il/||https://www.lothotel.co.il/|
+תיאטרון היהלום|רמת גן||conference|||@KN|
+מלון יערים|מעלה החמישה||hotel|||@KN|
+מרכז הכנסים מכון וינגייט|וינגייט||conference|||@KN|
+ג'ייקוב ריזורט|חדרה||hotel|||@KN|
+אדגר קונפרנס 360|תל אביב-יפו||conference|||https://www.spacenter.co.il/s/conference-centers/|
+עזריאלי 29|תל אביב-יפו|מגדלי עזריאלי שרונה, קומה 29|conference|||https://mekomot-eruim.co.il/conference-halls?city=Tel+Aviv|
+בית עלמא|תל אביב-יפו|שדרות רוטשילד|boutique|||https://mekomot-eruim.co.il/conference-halls?city=Tel+Aviv|
+מלון שפיים|שפיים|קיבוץ שפיים|hotel||600|https://knasimportal.co.il/|
+זנזיבר אירועים|קריית אתא||boutique||200|@KR|
+לבן אירועים|קריית אתא||hall||500|https://www.britot.co.il/?page=Lavan|שני אולמות, כשר
+King Loft קינג לופט|קריית מוצקין|המעפילים 27|loft||50-200|@KR|
+מטרופול Metropol|קריית ביאליק|יוסף לוי 25|restaurant||50-200|@KR|
+סים סים Sim Sim|קריית ביאליק|החרושת 43|boutique||20-100|@KR|
+מול הים קריית ים|קריית ים|שדרות פנחס ספיר 25|restaurant||20-60|@KR|
+פראיסו|ירושלים||boutique||350|https://paraiso.co.il/%D7%97%D7%99%D7%A0%D7%94/|יישוב לא ודאי
+הטאג'ין תלפיות|ירושלים|תלפיות|restaurant|||https://mazaltov.walla.co.il/article/henna-organization/6266/|מקור ישן (2023)
+### 2026-10-26 | בית שאן-עפולה / נוף הגליל / גליל מערבי / ירושלים שכונות
+@BSH=https://all-events.co.il/category/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A6%D7%A4%D7%95%D7%9F/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%91%D7%99%D7%AA-%D7%A9%D7%90%D7%9F/
+@AF=https://www.mitchatnim.co.il/wedding/events-gardens/afula/
+My Place מיי פלייס|בית שאן||boutique||700|@BSH|
+הסיינדה|בית שאן||garden|||@BSH|
+אורייתא|בית שאן||hall|||@BSH|
+אולמי גיל|בית שאן||hall|||@BSH|
+אולם בראשית עפולה|עפולה||hall|https://peerhalls.com/|1000|https://peerhalls.com/%D7%90%D7%95%D7%9C%D7%9D-%D7%91%D7%A8%D7%90%D7%A9%D7%99%D7%AA/|קבוצת אולמי פאר
+W גריל בר|עפולה||restaurant|https://peerhalls.com/|200|https://peerhalls.com/w-%D7%92%D7%A8%D7%99%D7%9C-%D7%91%D7%A8/|קבוצת אולמי פאר
+אחוזת הסתיו|עמק יזרעאל||garden||450|@AF|נוף הגלבוע; יישוב לא ידוע
+ללוס|עמק יזרעאל||complex||500|@AF|יישוב לא ידוע
+Moment מומנט|עפולה||garden||120|@AF|אזור בית שאן-עפולה; יישוב לא ודאי
+רפאלו נוף הגליל|נוף הגליל||restaurant|||https://www.hafakot.co.il/place/%D7%9E%D7%A1%D7%A2%D7%93%D7%95%D7%AA-%D7%9C%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%9E%D7%A1%D7%A2%D7%93%D7%95%D7%AA-%D7%9C%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A0%D7%A6%D7%A8%D7%AA-%D7%A2%D7%99%D7%9C%D7%99%D7%AA/|
+מלון פלאזה נוף הגליל|נוף הגליל||hotel|https://plazani.com/||https://plazani.com/|אולמות כנסים
+כפר נופש דריה|כנרת||hotel|https://www.narahotels.co.il/daria-events||https://www.narahotels.co.il/daria-events|
+היכל האושר|מעלות-תרשיחא|החרושת|hall||350|https://rotter.net/pro/%D7%97%D7%99%D7%A4%D7%95%D7%A9/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA+%D7%95%D7%92%D7%A0%D7%99+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%9E%D7%A2%D7%9C%D7%95%D7%AA-%D7%AA%D7%A8%D7%A9%D7%99%D7%97%D7%90|
+אורכדיה|ירושלים|התעשייה 2, תלפיות|hall|https://orchadia.co.il/|600|https://orchadia.co.il/|
+אולמי לה בל|ירושלים|האומן 9, תלפיות|hall|https://www.labelle.co.il/|800|https://www.labelle.co.il/|שני אולמות דוד 800 / שלמה 300
+אליה אירועים|ירושלים|תלפיות|boutique|https://www.eliya-events.co.il/||https://www.eliya-events.co.il/|
+אולמי שרון תלפיות|ירושלים|תלפיות|hall|||https://www.britot.co.il/?page=all_places5|
+ארויה|ירושלים|גבעת שאול|boutique||200|https://www.hafakot.co.il/location/%D7%90%D7%A8%D7%95%D7%99%D7%94/|
+LOFT EXTREME לופט אקסטרים|ירושלים|הרכב 32, תלפיות|loft||170|https://www.britot.co.il/?page=extreme|כתובת סותרת (ירמיהו 43)
+### 2026-10-26 | גלבוע / רמלה-לוד-מודיעין / אשדוד-אשקלון / אילת
+@AS2=https://www.hafakot.co.il/place/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%90%D7%A9%D7%93%D7%95%D7%93/
+@EI=https://balballoon.com/banquet-hall-eilat/
+אחוזת דוד בגלבוע|מעלה גלבוע|ליד קיבוץ מעלה גלבוע|complex|https://adavid.co.il/|1000|https://adavid.co.il/||04-8718728
+אולמי אמביינטה|רמלה|היצירה 10|hall|||https://zips.co.il/%D7%A2%D7%A1%D7%A7%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/8500/%D7%A8%D7%9E%D7%9C%D7%94|אותה כתובת כמו אצילה ולאונרדו
+אולמי אצילה|רמלה|היצירה 10|hall|https://www.azila.co.il/|500|https://www.azila.co.il/|
+אמדאוס אירועים|רמלה|הלילך 1|hall|http://www.amadeus-events.co.il/||http://www.amadeus-events.co.il/|
+אולמי האחוזה מודיעין|מודיעין-מכבים-רעות|התעשיות 14|hall|||https://www.t.co.il/80-s757-%D7%92%D7%A0%D7%99+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D+/+%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%9E%D7%95%D7%93%D7%99%D7%A2%D7%99%D7%9F.html|
+Belle Mer בל מר|אשדוד|הטיילת|hall|||@AS2|
+נועה הבית לאירועים|אשדוד||boutique|||@AS2|
+בנג'מין|אשדוד||boutique|||@AS2|
+אצולה Atzula|אשדוד||hall||800|@AS2|שני אולמות
+שרי SARAY|אשקלון||conference||700|https://www.t.co.il/80-s134-%D7%92%D7%A0%D7%99+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D+/+%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%A9%D7%A7%D7%9C%D7%95%D7%9F.html|
+בית עלמי|אשקלון||boutique||200|https://www.t.co.il/80-s134-%D7%92%D7%A0%D7%99+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D+/+%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%A9%D7%A7%D7%9C%D7%95%D7%9F.html|מבנה עות'מאני
+ניין ביץ' Nine Beach|אילת|טיילת נפטון|restaurant|https://9beacheilat.com/|1000|https://9beacheilat.com/%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/|
+חוף הדקל|אילת|חוף דרומי|garden|||@EI|מקור ישן (~2021)
+יו קורל ביץ' קלאב|אילת||hotel|||@EI|
+אמפי הרודס|אילת|טיילת מלון הרודס|garden|||@EI|
+ווטרלנד אילת|אילת||garden|https://www.waterland.co.il/||https://www.waterland.co.il/%D7%92%D7%9F-%D7%90%D7%95%D7%9C%D7%9D-%D7%95%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D|
+שאטו אילת|אילת||hall|||@EI|
+מלון רויאל ביץ' אילת|אילת||hotel|||@EI|
+מלון EVE אילת|אילת||hotel|||@EI|אולם תמר ואולם פלמירה
+אדם הוטלס|אילת||hotel|https://adam-hotels.com/||https://adam-hotels.com/private-events-in-eilat/|
+לה לונה|אילת||complex|||https://eilat.city/list/%D7%90%D7%AA%D7%A8%D7%99%D7%9D-%D7%9C%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D|
+מיה ביץ' אילת|אילת||restaurant||5-300|https://eilat.city/list/%D7%90%D7%AA%D7%A8%D7%99%D7%9D-%D7%9C%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D|
+### 2026-10-26 | חיפה/באר שבע/ת״א קטנים/רחובות — סבב שני
+@HA=https://all-events.co.il/category/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A6%D7%A4%D7%95%D7%9F/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%97%D7%99%D7%A4%D7%94/
+@HM=https://www.mitchatnim.co.il/wedding/event-hall/haifa/
+@TA=https://www.britot.co.il/?page=tel_aviv_places
+@RH=https://www.britot.co.il/?page=rehovot_places
+יאמה|חיפה||hall|||@HA|
+בלום Bloom|חיפה||hall|||@HA|
+ונציה|חיפה||hall|||@HM|
+אולמי הנסיכה חיפה|חיפה||hall|||@HM|
+נוביה|חיפה||hall||150-200|https://www.mitchatnim.co.il/wedding/event-hall/haifa/150-200/|
+וילה כרמל|חיפה||hotel|||https://www.hafakot.co.il/place/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%97%D7%99%D7%A4%D7%94-%D7%A2%D7%93-200-%D7%90%D7%99%D7%A9/|מלון בוטיק
+חופית|חיפה||hall|||https://www.britot.co.il/?page=halls_200_people_north_haifa|
+ארמון זהרה|באר שבע|קריית יהודית 12|hall|https://www.zahara.co.il/|400|https://www.zahara.co.il/|כשרות רבנות באר שבע
+אורייתא אירועים|באר שבע|מאיר שניידרוביץ 422|hall|https://www.orayta-bs.co.il/||https://www.orayta-bs.co.il/|
+סמילנסקי בוטיק|באר שבע|סמילנסקי 4|boutique||200|https://www.britot.co.il/?page=smilanski|העיר העתיקה
+אקוסטה Acosta|תל אביב-יפו|אוריאל אקוסטה 7|garden|https://www.acosta.co.il/|180|https://www.acosta.co.il/|
+ריבל אירועים|תל אביב-יפו|ריבל|boutique||180|https://www.britot.co.il/?page=rival|
+מנדרין אירועים|תל אביב-יפו|חוף הצוק|hall|https://mandarinevents.co.il/|20-250|https://mandarinevents.co.il/%D7%90%D7%95%D7%9C%D7%9D-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%9C%D7%91%D7%A8-%D7%9E%D7%A6%D7%95%D7%95%D7%94|
+טטו TETTO|תל אביב-יפו|שרונה|boutique||130|@TA|מבנה טמפלרי
+פלייגראונד Playground|תל אביב-יפו|מידטאון|restaurant||120|@TA|
+צהלה|תל אביב-יפו|משה סנה 199|garden|||@TA|עיר לא ודאית (רמת השרון/ת"א)
+גדות|תל אביב-יפו|גדות הירקון|garden|||@TA|
+הפינה הירוקה|תל אביב-יפו|גדות הירקון|garden||250|@TA|
+רוז|רחובות|אופנהיימר 2|boutique|||@RH|פארק המדע
+לוק אירועים|רחובות|שרה ושמואל גוטהילף 1|hall||330|https://www.britot.co.il/?page=look|
+גושן אירועים|רחובות|שרה ושמואל גוטהילף 1|boutique|https://www.rimonim-rehovot.co.il/|150|https://www.rimonim-rehovot.co.il/|אותה כתובת כמו לוק
+סינקו Synco|רחובות|פארק המדע|boutique|||@RH|
+גן התפוז|רחובות|דרך גד פיינשטיין 101|garden|||https://www.t.co.il/80-s1215-%D7%92%D7%A0%D7%99+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D+/+%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%A8%D7%97%D7%95%D7%91%D7%95%D7%AA.html|
+### 2026-10-26 | קיבוצים צפון / מושבים שרון / נגב / יקבים
+@NR=https://iplan.co.il/he-IL/directory/search/categories/1-%D7%9E%D7%AA%D7%97%D7%9D-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/presets/25-%D7%92%D7%A0%D7%99-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A6%D7%A4%D7%95%D7%9F
+@SHG=https://mazaltov.walla.co.il/event-place/eventsgardens/sharon/emekhefer/
+@WN=https://kolyekev.co.il/%D7%99%D7%A7%D7%91%D7%99%D7%9D-%D7%9E%D7%AA%D7%90%D7%99%D7%9E%D7%99%D7%9D-%D7%9C%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/
+שמורתה|אפק|קיבוץ אפק|garden|https://www.shmurata.co.il/||https://www.shmurata.co.il/|
+גן החורשה|יגור|קיבוץ יגור|garden|https://www.hahorsha.co.il/||https://www.hahorsha.co.il/||072-3926960
+מטעים רמת הנדיב|זכרון יעקב|רמת הנדיב|garden||450|@NR|יישוב לא ודאי
+בת הגלבוע|גלבוע||garden|||@NR|יישוב לא ידוע
+ווין WIN|עמק חפר|התלם 1, פארק תעשיות עמק חפר|complex|||@SHG|שני אולמות + גן
+צל החורש|השרון||garden|||@SHG|יישוב לא ידוע
+הגלריה לאירועים|עמק חפר|מול שמורת בית ינאי|complex|||@SHG|
+יארה YARA|השרון||garden|||https://www.mitchatnim.co.il/wedding/events-gardens/sharon-plain/|יישוב לא ידוע
+גן אירועים משמר הנגב|משמר הנגב|קיבוץ משמר הנגב|complex||600|https://iplan.co.il/he-IL/directory/brands/211-%D7%9E%D7%A9%D7%9E%D7%A8-%D7%94%D7%A0%D7%92%D7%91-%D7%9E%D7%A8%D7%9B%D7%96-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D|
+יקבי בנימינה|בנימינה-גבעת עדה||other|https://www.binyaminawines.co.il/||https://www.binyaminawines.co.il/articles/%D7%97%D7%AA%D7%95%D7%A0%D7%94-%D7%A7%D7%98%D7%A0%D7%94-%D7%91%D7%99%D7%A7%D7%91/|יקב||04-6107530
+יקב לה פורה בלאנש|מדבר יהודה||other|https://lfbwinery.com/|25|https://lfbwinery.com/%D7%97%D7%AA%D7%95%D7%A0%D7%94-%D7%A7%D7%98%D7%A0%D7%94-%D7%91%D7%99%D7%A7%D7%91/|יקב; יישוב לא ודאי
+יקב נטוף|כפר טרומן||other||60|@WN|יקב
+יקב סומק|זכרון יעקב||other|||@WN|יקב
+יקב פאר|טל שחר||other||100|@WN|יקב
+יקב נבו|מטע||other||70|@WN|יקב
+יקב כרם ג'ויס|ביצרון||other||120|@WN|יקב
+יקב קטרון|מצפה הושעיה||other|||@WN|יקב
+Kitron קיטרון|כפר הגלילי||other|https://kitronwinery.com/|10-700|https://kitronwinery.com/%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%99%D7%A7%D7%91/|יקב; ייתכן זהה ליקב קטרון
+### 2026-10-26 | דרום (נתיבות/אופקים/דימונה) + טבריה + נהריה-עכו סבב שני
+@NV2=https://zips.co.il/%D7%A2%D7%A1%D7%A7%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/246/%D7%A0%D7%AA%D7%99%D7%91%D7%95%D7%AA
+@TB2=https://all-events.co.il/category/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A6%D7%A4%D7%95%D7%9F/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%98%D7%91%D7%A8%D7%99%D7%94/
+@NA=https://www.zooz360.co.il/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA%20%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D%20%D7%91%D7%A2%D7%9B%D7%95%20-%20%D7%A0%D7%94%D7%A8%D7%99%D7%94%20%D7%95%D7%94%D7%A1%D7%91%D7%99%D7%91%D7%94/?u=1&PArea=3&PCat=1
+לוריא בית לאירועים|נתיבות||hall|https://www.lorya.co.il/||https://www.lorya.co.il/|
+OLA אולה|נתיבות||hall|https://olaevent.co.il/|50-220|https://olaevent.co.il/|
+דעני לחנניה|נתיבות||hall|||@NV2|
+אולמי פה פה|נתיבות||hall|||@NV2|ייתכן זהה ל"פפה נתיבות"
+פאלאסיו אירועים|אופקים||hall|||https://www.facebook.com/palacioevents/|עד 1200
+אלדאה|שדרות||hall|||https://rsrv.rest/he/sderot/all/banquet-hall|
+גני דניאל|דימונה||complex||1200|https://easy.co.il/page/20671755|גן 12 דונם + אולמי דניאל 300
+אולמי פלמינגו|דימונה||hall|||https://www.t.co.il/80-s369-%D7%92%D7%A0%D7%99+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D+/+%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%93%D7%99%D7%9E%D7%95%D7%A0%D7%94.html|
+מאגיה|טבריה||hall||200-1000|@TB2|
+גני איילון|טבריה||garden|||@TB2|
+קמביו Cambio|טבריה||restaurant|||https://rsrv.rest/en/tiberias|
+תנורין Tanureen|טבריה||restaurant|||https://rsrv.rest/en/tiberias|
+מלון סופיה כנרת|טבריה||hotel|||https://rsrv.rest/en/tiberias|
+בהצר Behazar|נהריה|לוחמי הגטאות 7|restaurant||20-60|@NA|כתובת לא ודאית
+גני לוי|עין שרה|דרך העצמאות|complex||100-550|@NA|ליד קניון נהריה
+רנסנס מרכז אירועים נהריה|נהריה|שדרות הגעתון 19|hall|||https://www.netpage.co.il/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA/%D7%A8%D7%A0%D7%A1%D7%A0%D7%A1-%D7%9E%D7%A8%D7%9B%D7%96-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%A0%D7%94%D7%A8%D7%99%D7%94.htm|
+מלון קרלטון נהריה|נהריה|שדרות הגעתון|hotel|||@NA|
+פסגת נשרים|גליל מערבי||garden||900|@NA|יישוב לא ידוע
+אולמי אופרה נהריה|נהריה|מרכז העיר|hall|||@NA|
+מורגנפלד|נהריה|גן לאומי אכזיב|garden|||@NA|
+אולמי מרום|עכו|גדוד 22|hall|||@NA|
+פנורמה עכו|חיפה|ההסתדרות 35, צ'ק פוסט|hall|||@NA|עבר למתחם חדש; עיר לא ודאית
+ערד אירועים|עכו||hall|||@NA|אזור נהריה-עכו; יישוב לא ודאי
+### 2026-10-26 | שרון סבב שני / חדרה-אור עקיבא / ירושלים / בני ברק
+@RA2=https://rsrv.rest/he/raanana/all/banquet-hall
+@HZ=https://rsrv.rest/he/herzliya/all/banquet-hall
+@HD=https://www.britot.co.il/?page=hadera
+@OA=https://rsrv.rest/he/or-akiva/all/banquet-hall
+בית Bait|רעננה|התעשייה 10|loft||100-250|@RA2|
+בדולינה|רעננה|כליל החורש 1|complex||200-380|@RA2|
+נועל'ה רעננה|רעננה|זרחין 13|hall||300|@RA2|סניף של נועל'ה
+לואי Louie|רעננה|היצירה 5|boutique||30-150|@RA2|שנקין אירועים באותה כתובת לפי מקור אחר
+מעדנא|רעננה|הנופר 2|restaurant||20-100|@RA2|גג
+מקום בלב|רעננה|פרדס משותף 5|boutique||20-150|@RA2|
+ME מי|רעננה|התדהר 2|garden||100-400|@RA2|
+קמיליון|רעננה||other||30-700|@RA2|מועדון אירועים
+נועל'ה|כפר סבא|משעול גיל 1|complex||20-600|https://rsrv.rest/he/kfar-sava/hina|
+HISHA הישה|כפר סבא|דוד אלעזר 7|boutique||30-160|https://rsrv.rest/he/kfar-sava/hina|
+פבריקה|כפר סבא|החרושת 14|complex|||https://rsrv.rest/he/kfar-sava/hina|
+ניין Nine|הרצליה|החושלים 9|boutique|||@HZ|הרצליה פיתוח
+ערב|הרצליה||boutique||20-150|@HZ|
+הסלון היווני|הרצליה||restaurant|||@HZ|
+מולה|חדרה|שכטמן 10|boutique||150|@HD|ייתכן זהה ל"מולה" נתניה
+IMAGO אימאגו|חדרה||boutique|||@HD|
+אליטה Elita|אור עקיבא|שפירא 144|boutique||180|@OA|
+LUNA לונה|אור עקיבא|האלה 4|hall||100-350|@OA|
+מיו Mio|אור עקיבא|ההדס 9|hall||150-700|@OA|
+גולד Gold|אור עקיבא||boutique||100|@OA|
+White פרדס חנה|פרדס חנה-כרכור||garden||50-350|https://mekomot-eruim.co.il/places-for-small-events?city=Hadera|ייתכן זהה ל-White משמרות
+הספירה|פרדס חנה-כרכור||boutique||60|https://mekomot-eruim.co.il/places-for-small-events?city=Hadera|
+אולמי נוף|ירושלים|שחראי 12|hall|https://nof-events.co.il/|911|https://nof-events.co.il/|פועלים מ-1966; שני אולמות 911/220
+בית מאירסדורף|ירושלים||conference|||https://www.t.co.il/80-a7-%D7%92%D7%A0%D7%99+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D+/+%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%96%D7%95%D7%A8+%D7%99%D7%A8%D7%95%D7%A9%D7%9C%D7%99%D7%9D.html|
+יער השלום|ירושלים||garden|||https://mekomot-eruim.co.il/special-places-for-events?area=Jerusalem|
+היכל הברכה|בני ברק||hall|||https://www.eventplaces.co.il/Suppliers/%D7%91%D7%A0%D7%99+%D7%91%D7%A8%D7%A7/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D.html|
+אולמי שלום ורעות|בני ברק|קהילות יעקב 61|hall|||https://easy.co.il/en/page/9251561|
+### 2026-10-26 | חולון-ב״י / גולן / מודיעין / בתי כנסת
+@GO=https://mazaltov.walla.co.il/event-place/eventsgardens/north/ramat-hagolan/
+@MO=https://halocation.co.il/loctaion/%D7%91%D7%9E%D7%95%D7%93%D7%99%D7%A2%D7%99%D7%9F/
+@SY=https://mekomot-eruim.co.il/events-in-a-synagogue
+עין קשתות|קצרין|רמת הגולן|garden||350|https://www.hafakot.co.il/location/%D7%A2%D7%99%D7%9F-%D7%A7%D7%A9%D7%AA%D7%95%D7%AA/|בית כנסת עתיק; יישוב לא ודאי
+יקב בזלת|רמת הגולן||other|||@GO|יקב; יישוב לא ידוע
+מתחם צנובר|רמת הגולן|בין קצרין לקדמת צבי|community|||https://www.facebook.com/tznobar.event/|יישוב לא ודאי
+דבש בגולן|מעלה גמלא||boutique|||@GO|
+הרמוזו|מודיעין-מכבים-רעות||complex|||@MO|
+אלבה Alba|טל שחר||garden|||@MO|אזור מודיעין
+אילבן מודיעין Eleven|מודיעין-מכבים-רעות||boutique|||@MO|
+ויקטוריה|מודיעין-מכבים-רעות|ישפרו / מרכז עינב|hall|||@MO|
+גינת אגוז|מודיעין-מכבים-רעות||garden|||@MO|CLOSED: מקור מציין שנסגר
+בית הכנסת היכל מרדכי|הרצליה||synagogue||50-200|https://www.hafakot.co.il/location/%D7%91%D7%99%D7%AA-%D7%94%D7%9B%D7%A0%D7%A1%D7%AA-%D7%91%D7%94%D7%A8%D7%A6%D7%9C%D7%99%D7%94/|
+מתחם הסיטי אשדוד|אשדוד||synagogue||70|https://mekomot-eruim.co.il/businesses/city-shabbat|
+בית הכנסת שבת אחים|בת ים||synagogue||120|@SY|
+אוהל מועד בית הכנסת הגדול|תל אביב-יפו||synagogue||250|https://www.britot.co.il/?page=ohelmoed|
+בית וגן אירועים|ירושלים||hotel|https://www.bvh.co.il/||https://www.bvh.co.il/events|בית הארחה + בית כנסת
+### 2026-10-26 | כפר יאסיף / פ״ת סבב שני / חללים עסקיים ת״א
+@KY=https://www.dunsguide.co.il/L99994004-T507-T507_%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA_%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%9B%D7%A4%D7%A8_%D7%99%D7%90%D7%A1%D7%99%D7%A3/%D7%9B%D7%A4%D7%A8_%D7%99%D7%90%D7%A1%D7%99%D7%A3/
+@PT2=https://all-events.co.il/category/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%9E%D7%A8%D7%9B%D7%96/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A4%D7%AA%D7%97-%D7%AA%D7%A7%D7%95%D7%95%D7%94/
+@PTN=https://www.ptnews.co.il/36316
+@TAB=https://rsrv.rest/he/tel-aviv/roof-loft
+ליאלי בעלבק|כפר יאסיף||hall|||@KY|
+אל טופ אירועים|כפר יאסיף||hall|||@KY|
+אולמי אחים סעיד|כפר יאסיף||hall|||@KY|
+אולמי מרום (קריסטל לשעבר)|כפר יאסיף||hall|||https://rotter.net/pro/%D7%97%D7%99%D7%A4%D7%95%D7%A9/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA+%D7%95%D7%92%D7%A0%D7%99+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%9B%D7%A4%D7%A8+%D7%99%D7%90%D7%A1%D7%99%D7%A3|ייתכן קשור ל"אולמי מרום" עכו
+מייפל גן אירועים כפר יאסיף|כפר יאסיף||garden|||https://rotter.net/pro/%D7%97%D7%99%D7%A4%D7%95%D7%A9/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA+%D7%95%D7%92%D7%A0%D7%99+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%9B%D7%A4%D7%A8+%D7%99%D7%90%D7%A1%D7%99%D7%A3|
+אנטריקוטי|פתח תקווה||restaurant|||https://www.britot.co.il/?page=petah_tukva_places|
+גני דל וינו|פתח תקווה||garden|||@PT2|
+פורבר|פתח תקווה||hall|||@PTN|
+לה פלומה|פתח תקווה|סגולה|hall|||@PT2|
+קסאנאדו|פתח תקווה|בן ציון גליס 50|hall|||@PTN|צומת סגולה
+טרמינל|פתח תקווה|אזור תעשייה|hall|||@PTN|
+סנטרל|פתח תקווה||hall|||@PTN|
+58 גן אירועים|פתח תקווה||garden|||@PTN|
+לופט פלורנטין (גג)|תל אביב-יפו|פלורנטין|loft|||https://mekomot-eruim.co.il/businesses/gag-loft|
+The Roof הייאנד|תל אביב-יפו||loft|https://www.highand.co.il/|30-300|https://www.highand.co.il/the-roof/|קבוצת דינמו; ייתכן זהה להייאנד
+Gagair גג העיר|תל אביב-יפו|גג גן העיר|loft|https://www.gagair.co.il/||https://www.gagair.co.il/en|
+רוטשילד 57|תל אביב-יפו|רוטשילד 57|loft|https://rothschild57.com/||https://rothschild57.com/%D7%9C%D7%95%D7%A4%D7%98-%D7%9C%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/|
+מונדו 2000|תל אביב-יפו||loft||250|@TAB|
+Rooftop 98|תל אביב-יפו|דיזנגוף 98|loft||20-100|@TAB|
+סטודיו AKA|תל אביב-יפו||loft||20-60|@TAB|
+### 2026-10-26 | קריית מלאכי-גן יבנה / בית שמש מלא / יקנעם-מגדל העמק / כרמיאל
+@BS2=https://www.yeshuvnik.net/%D7%A6%D7%A8%D7%9B%D7%A0%D7%95%D7%AA/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%91%D7%99%D7%AA-%D7%A9%D7%9E%D7%A9-389834
+@BS3=https://www.t.co.il/80-s206-%D7%92%D7%A0%D7%99+%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D+/+%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%91%D7%99%D7%AA+%D7%A9%D7%9E%D7%A9.html
+@KR3=https://www.karmieli.co.il/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA/
+קברנה|קריית מלאכי|המלאכה 15|hall||50-150|https://rsrv.rest/he/kiryat-malahi/place/%D7%A7%D7%91%D7%A8%D7%A0%D7%94|אולם בסגנון מרוקאי לחינות
+בארכה|קריית מלאכי||restaurant||130|https://www.hafakot.co.il/place/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A7%D7%A8%D7%99%D7%99%D7%AA-%D7%9E%D7%9C%D7%90%D7%9B%D7%99/|
+אולם דרור שעלים|בית שמש|דובר שלום 30, רמת בית שמש ב|hall|||@BS2|מקור ישן (~2019)
+אולמי נצח ישראל|בית שמש|רבי יוחנן בן זכאי 16, רמת בית שמש ב|hall|||@BS2|מקור ישן (~2019)
+אילת שרה (אש קודש)|בית שמש|נחל מאור 6, רמת בית שמש א|synagogue|||@BS2|מקור ישן (~2019)
+אולמי לחיים|בית שמש|נחל שורק 15, רמת בית שמש א|hall|||@BS2|מקור ישן (~2019)
+אולם טוב וחסד|בית שמש|נחל נועם 15, רמת בית שמש א|synagogue|||@BS2|מקור ישן (~2019)
+אולם שבתי בית תפילה יונה אברהם|בית שמש|נחל רפאים 34, רמת בית שמש א|synagogue|||@BS2|מקור ישן (~2019)
+אולם בית הכנסת הגר"א|בית שמש|נחל לוז 6, רמת בית שמש א|synagogue|||@BS2|מקור ישן (~2019)
+אמרלד|בית שמש|פארק תעשיות שורק 14|hall||950|@BS3|כתובת סותרת (א.ת. נשר 14)
+אולמי צמח|בית שמש|בן צבי 24|hall|||@BS3|
+אולמי פארהאנד|בית שמש|רשב"י 7|hall|||@BS3|
+כינור דוד|בית שמש|האומן 2|hall|||@BS3|כתובת סותרת (שד' יגאל אלון 17)
+פנינת תמר|בית שמש|האומן 12|hall|||@BS2|כתובת סותרת
+אולמי ויולה|בית שמש|נחל שורק 15|hall|||@BS2|מקור ישן; אותה כתובת כמו אולמי לחיים
+אולם רסידו|בית שמש|שדרות נהר הירדן 1|hall|||@BS2|מקור ישן (~2019)
+הכרמים בית שמש|בית שמש|שדרות נהר הירדן 1|hall|||@BS2|מקור ישן (~2019)
+אולמי רון טל|בית שמש|סמטת ויצ"ו 2|hall|||@BS2|
+אולם אסטרייכר|בית שמש|רשב"י 2|hall|||@BS2|מקור ישן (~2019)
+אולמי קברנה בית שמש|בית שמש|האדמו"ר מבעלזא 3|hall|||@BS2|מקור ישן (~2019)
+אולם אוהל פייגא|בית שמש|האדמו"ר מבעלזא|synagogue|||@BS2|מקור ישן (~2019)
+נריה|בית שמש|הצבע 7|hall|||@BS2|מקור ישן (~2019)
+אולם בן צבי נחל מיכה|בית שמש|נחל מיכה 19|hall|||@BS2|מקור ישן (~2019)
+אולמי אביי|בית שמש|אביי 15|hall|||@BS2|מקור ישן (~2019)
+אולמי בית שלמה|בית שמש|נחל מאור 25|hall|||@BS2|מקור ישן (~2019)
+מלונית השמש|בית שמש|שביל החרובים 23|hotel|||@BS2|מקור ישן (~2019)
+בית האלה|צומת האלה||garden|||@BS2|מקור ישן (~2019)
+נתיבל'ה|נתיב הל"ה|קיבוץ נתיב הל"ה|garden|||@BS2|מקור ישן (~2019)
+שורש|שורש||hotel|||@BS2|מקור ישן (~2019)
+מקסימו|יקנעם עילית|כניסה ליקנעם|restaurant||240|https://mekomot-eruim.co.il/businesses/maximo|
+אולמי הגלריה מגדל העמק|מגדל העמק||hall|||https://www.instagram.com/the.gallery_events/|חדש (2026)
+צליל החורש|כרמיאל|החורש|hall|||@KR3|
+קסם האירוע|כרמיאל|המלאכה 14|hall|||@KR3|
+View Loft|כרמיאל|המתכת 32|loft|||@KR3|
+### 2026-10-26 | גבעתיים-ר״ג / אשקלון / ק״ג / עפולה-נוה״ג / ביתר / ירושלים גדולים
+@GV=https://rsrv.rest/he/givatayim
+@AK=https://www.mitchatnim.co.il/wedding/event-hall/ashkelon/200-250/
+@KG2=https://www.hafakot.co.il/place/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A7%D7%A8%D7%99%D7%AA-%D7%92%D7%AA/
+@AF2=https://all-events.co.il/category/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A6%D7%A4%D7%95%D7%9F/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A2%D7%A4%D7%95%D7%9C%D7%94/
+@J2=https://rsrv.rest/he/jerusalem/venues-for-up-to-200-people
+@J3=https://hatuna-ktana.co.il/wedding-hall?area=Jerusalem
+Rooftop 360 רופטופ 360|רמת גן|קריניצי 1|loft||50-250|@GV|
+The New Nelson|גבעתיים|כצנלסון 33|restaurant||20-120|@GV|
+קאנטרי גבעתיים|גבעתיים|דוד בן גוריון 256|garden|||@GV|
+Upper Events אפר|גבעתיים|מגדל השחר|boutique||150|https://allplaces.co.il/place/upper-events/|כתובת סותרת (מגדלי התאומים ר"ג)
+אולם אריה אליאס תיאטרון גבעתיים|גבעתיים||conference||391|https://t-g.co.il/tghalls/|
+גני הצבי|ברכיה|מושב ברכיה|garden|||@AK|רשימת המועצה הדתית אשקלון
+דולוס|אשקלון|הנמל 9|hall|||@AK|
+איווה אירועים|אשקלון|הטייסים 56|hall|||@AK|
+ניסו הדייג|אשקלון|בת גלים 3, המרינה|restaurant||500|https://rsrv.rest/he/ashkelon/venues-for-up-to-100-people|
+דה וינצ'י|אשקלון||hall|||@AK|
+אחוזת המלך שלמה|אשקלון|צה"ל 3|hall|||@AK|
+גולדן לופט Golden Loft|קריית גת|שדרות לכיש 17|loft|||@KG2|
+הרמוניה בגן|גדרה|האדום 28, א.ת. כנות|complex|https://www.harmoniabagan.co.il/|900|https://www.harmoniabagan.co.il/%D7%90%D7%95%D7%9C%D7%9D-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A7%D7%A8%D7%99%D7%AA-%D7%92%D7%AA/|שני אולמות 900/450||08-8682282
+אולמי ליצ'י|עפולה||hall|||@AF2|
+שישו ושמחו|עפולה||hall|||@AF2|
+שאטו דה וולה (גרנד פאלאס)|נוף הגליל||hall|||https://all-events.co.il/category/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A6%D7%A4%D7%95%D7%9F/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%A0%D7%95%D7%A3-%D7%94%D7%92%D7%9C%D7%99%D7%9C/|
+נוף ציפורי|ציפורי||complex||700|https://iplan.co.il/he-IL/directory/brands/274-%D7%A0%D7%95%D7%A3-%D7%A6%D7%99%D7%A4%D7%95%D7%A8%D7%99|יישוב לא ודאי (אזור ציפורית)
+אימפריאל ביתר|ביתר עילית|גבעה א'|hall|||https://beitar24.co.il/16639/|חדש
+פלטינום (ארמונות הגפן לשעבר)|ביתר עילית||hall|||https://beitar24.co.il/15081/|מיתוג מחדש
+היהלום ביתר|ביתר עילית||boutique|||https://celebrateisrael.co.il/business/%D7%94%D7%99%D7%94%D7%9C%D7%95%D7%9D/|
+וולקאן|ירושלים|גנרל פייר קניג 39|hall||100-700|@J2|
+לומייר Lumiere|ירושלים|גנרל פייר קניג 39|hall||100-300|@J2|באותו מתחם כמו וולקאן
+יער (אולמי אורה/יסמין)|אורה|יסמין 1|complex||200-900|@J2|ייתכן זהה ל"אולמי אורה"
+אלגרו Alegro|ירושלים|הסדנא 12|hall||200-450|@J2|
+טרקליני מונדיאל|ירושלים|בית הדפוס 13, גבעת שאול|hall||150-500|@J2|ייתכן זהה ל"אולמי מונדיאל"
+אולם ברקת מלון יהודה|ירושלים||hotel||350|https://mazaltov.walla.co.il/event-place/eventshalls/jerusalem_area/|
+עולמיא|ירושלים|ארמון הנציב|boutique||270|@J3|
+בית שמואל|ירושלים|מול העיר העתיקה|conference||370|@J3|
+קדמא MIDTOWN|ירושלים||hall|||https://02net.co.il/%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%AA-%D7%95%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%91%D7%99%D7%A8%D7%95%D7%A9%D7%9C%D7%99%D7%9D-%D7%9E%D7%93%D7%A8%D7%99%D7%9A-%D7%9C%D7%9B%D7%AA%D7%95%D7%91/|
+### 2026-10-26 | עמק יזרעאל / מטה יהודה / לכיש
+הנחלה גן אירועים|בית עובד|מושב בית עובד|garden|https://www.hanahala.net/|650|https://www.hanahala.net/en/|פתוח מאי-אוקטובר
+אחוזת נוף האלה|עמק האלה||garden|||https://www.rrr.co.il/lofts/Tzur_Hadassah.asp|
+אחוזת טל|אשדוד||garden|||https://mazaltov.walla.co.il/article/event-place/5613/|
+המתחם אבן יהודה|אבן יהודה||boutique||150|https://www.vila4u.com/%D7%95%D7%99%D7%9C%D7%95%D7%AA_%D7%91%D7%9E%D7%A8%D7%9B%D7%96/%D7%A9%D7%A8%D7%95%D7%9F/%D7%90%D7%91%D7%9F_%D7%99%D7%94%D7%95%D7%93%D7%94/%D7%94%D7%9E%D7%AA%D7%97%D7%9D_%D7%90%D7%91%D7%9F_%D7%99%D7%94%D7%95%D7%93%D7%94/|
+סיטרוס גן אירועים|אבן יהודה|ספיר 1|garden|||https://www.waze.com/live-map/directions/%D7%A1%D7%99%D7%98%D7%A8%D7%95%D7%A1-%D7%92%D7%9F-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99%D7%9D-%D7%A1%D7%A4%D7%99%D7%A8-1-%D7%90%D7%91%D7%9F-%D7%99%D7%94%D7%95%D7%93%D7%94?to=place.w.22872387.228658332.12014|

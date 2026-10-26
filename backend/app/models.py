@@ -6,6 +6,7 @@ from typing import Optional
 from sqlalchemy import (
     Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -908,6 +909,25 @@ class Venue(Base):
     verified: Mapped[bool] = mapped_column(Boolean, default=False)
     priority: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # ── מאגר ארצי (ייבוא מבוקר מ-backend/data/venues/venues_il.json) — כולן
+    # אופציונליות; אולם שנוצר מאירוע או מהאדמין נשאר תקין בלעדיהן.
+    name_en: Mapped[str] = mapped_column(String, default="")
+    aliases: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)       # שמות חלופיים לחיפוש
+    region: Mapped[str] = mapped_column(String, default="")                   # צפון / מרכז / ...
+    lat: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    lng: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    source_url: Mapped[str] = mapped_column(String, default="")
+    # מזהה יציב מקובץ המאגר ("osm:node/123" / "il:<hash>") — הבסיס לייבוא חוזר בלי
+    # כפילויות. NULL לאולמות שלא הגיעו מייבוא (אינדקס ייחודי מתיר NULL רבים).
+    import_key: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    imported_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # איכות המידע — מופרד מ-``verified`` (שמשמעו "VEYA אישרה ידנית"):
+    # verified_sources / single_source / needs_review
+    verification: Mapped[str] = mapped_column(String, default="")
+    # unknown / closed_reported / uncertain — לא מסמנים "פעיל" רק כי עמוד קיים ברשת.
+    operating_status: Mapped[str] = mapped_column(String, default="")
+    last_checked_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
 class VenueImage(Base):

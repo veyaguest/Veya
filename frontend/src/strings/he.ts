@@ -568,6 +568,13 @@ export const strings = {
     venueLabel: 'שם האולם',
     venueAddressLabel: 'כתובת האולם',
     venueAddressHint: 'לניווט בהזמנות',
+    // השלמה אוטומטית ממאגר המקומות. "המקום" ולא "האולם" — גם גן, מסעדה או לופט.
+    venueSearch: {
+      notListed: 'לא ברשימה? ממשיכים להקליד, והשם יישמר כמו שכתבתם.',
+      noMatch: 'לא מצאנו את המקום במאגר. ממשיכים להקליד, והשם יישמר כמו שכתבתם.',
+      // ייחוס שנדרש ברישיון ODbL — חלק מהמקומות במאגר מגיעים מ-OpenStreetMap.
+      attribution: 'חלק מהמידע: © תורמי OpenStreetMap',
+    },
     dateLabel: 'תאריך האירוע',
     timeLabel: 'שעת האירוע',
     commitLabel: 'היום האחרון לאישורי הגעה',

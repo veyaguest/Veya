@@ -1,13 +1,31 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { searchVenues } from '../api'
+import { strings } from '../strings/he'
 import type { VenueSuggestion } from '../types'
+
+const t = strings.dashboard.venueSearch
+
+/** שורת המשנה של הצעה: "גן אירועים · משמר השרון" — מבחינה בין מקומות באותו שם. */
+function metaLine(s: VenueSuggestion): string {
+  return [s.kind_label, s.city].filter(Boolean).join(' · ')
+}
+
+/** הרחוב בלבד — העיר כבר מופיעה בשורת המשנה ("הרצל 5, חולון" → "הרצל 5"). */
+function streetLine(s: VenueSuggestion): string {
+  const addr = (s.address || '').trim()
+  const city = (s.city || '').trim()
+  if (!city) return addr
+  if (addr === city) return ''
+  return addr.endsWith(`, ${city}`) ? addr.slice(0, -(city.length + 2)) : addr
+}
 
 /**
  * שדה שם אולם עם השלמה אוטומטית מהמאגר המשותף.
  *
- * הזוג מקליד שם אולם; המערכת מציעה אולמות שנשמרו בעבר (ע"י זוגות אחרים) עם
- * הכתובת המוכנה. בחירה ממלאת גם את השם וגם את הכתובת — כדי לחסוך הקלדה ולהפעיל
- * ניווט אוטומטי בהזמנה. אין תלות ב-API בתשלום; החיפוש מקומי מול המאגר.
+ * הזוג מקליד שם אולם; המערכת מציעה מקומות מהמאגר (המאגר הארצי + מקומות שזוגות
+ * אחרים שמרו) עם העיר והכתובת. בחירה ממלאת את השם, ואת הכתובת רק אם השדה ריק
+ * (הקורא מחליט — לא דורסים כתובת שהוקלדה). לא נמצא? ממשיכים להקליד, והשם נשמר
+ * כמו שהוא. אין תלות ב-API בתשלום; החיפוש מקומי מול המאגר.
  */
 export function VenueAutocomplete({
   value,
@@ -27,6 +45,8 @@ export function VenueAutocomplete({
   const [suggestions, setSuggestions] = useState<VenueSuggestion[]>([])
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1)
+  // חיפוש שהסתיים בלי תוצאות (3+ תווים) — מציגים הערה שמותר להמשיך ידנית.
+  const [noMatch, setNoMatch] = useState(false)
   // מדלגים על חיפוש מיד אחרי בחירה, כדי שהרשימה לא תיפתח שוב על הערך שנבחר.
   const skipNext = useRef(false)
   const boxRef = useRef<HTMLDivElement>(null)
@@ -40,6 +60,7 @@ export function VenueAutocomplete({
     if (q.length < 2) {
       setSuggestions([])
       setOpen(false)
+      setNoMatch(false)
       return
     }
     let alive = true
@@ -48,10 +69,16 @@ export function VenueAutocomplete({
         .then((rows) => {
           if (!alive) return
           setSuggestions(rows)
-          setOpen(rows.length > 0)
+          setNoMatch(rows.length === 0 && q.length >= 3)
+          setOpen(rows.length > 0 || q.length >= 3)
           setActive(-1)
         })
-        .catch(() => alive && setSuggestions([]))
+        .catch(() => {
+          if (!alive) return
+          setSuggestions([])
+          setNoMatch(false)
+          setOpen(false)
+        })
     }, 200)
     return () => {
       alive = false
@@ -75,6 +102,7 @@ export function VenueAutocomplete({
     onPick(s.name, s.address)
     setOpen(false)
     setSuggestions([])
+    setNoMatch(false)
     setActive(-1)
   }
 
@@ -112,29 +140,39 @@ export function VenueAutocomplete({
         aria-controls={listId}
         aria-activedescendant={open && active >= 0 ? `${listId}-${active}` : undefined}
         onChange={(e) => onChange(e.target.value)}
-        onFocus={() => suggestions.length > 0 && setOpen(true)}
+        onFocus={() => (suggestions.length > 0 || noMatch) && setOpen(true)}
         onKeyDown={onKeyDown}
       />
-      {open && suggestions.length > 0 && (
-        <ul className="venue-ac-list" id={listId} role="listbox">
-          {suggestions.map((s, i) => (
-            <li
-              key={`${s.name}-${i}`}
-              id={`${listId}-${i}`}
-              role="option"
-              aria-selected={i === active}
-              className={`venue-ac-item ${i === active ? 'active' : ''}`}
-              onMouseDown={(e) => {
-                e.preventDefault()
-                choose(s)
-              }}
-              onMouseEnter={() => setActive(i)}
-            >
-              <span className="venue-ac-name">{s.name}</span>
-              {s.address && <span className="venue-ac-addr">{s.address}</span>}
-            </li>
-          ))}
-        </ul>
+      {open && (suggestions.length > 0 || noMatch) && (
+        <div className="venue-ac-pop">
+          {suggestions.length > 0 && (
+            <ul className="venue-ac-list" id={listId} role="listbox">
+              {suggestions.map((s, i) => (
+                <li
+                  key={`${s.name}-${s.city ?? ''}-${i}`}
+                  id={`${listId}-${i}`}
+                  role="option"
+                  aria-selected={i === active}
+                  className={`venue-ac-item ${i === active ? 'active' : ''}`}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    choose(s)
+                  }}
+                  onMouseEnter={() => setActive(i)}
+                >
+                  <span className="venue-ac-name">{s.name}</span>
+                  {metaLine(s) && <span className="venue-ac-meta">{metaLine(s)}</span>}
+                  {streetLine(s) && <span className="venue-ac-addr">{streetLine(s)}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+          {/* לא חלק מה-listbox: הערה בלבד, לא אפשרות לבחירה. */}
+          <div className="venue-ac-foot" aria-live="polite">
+            <span>{noMatch ? t.noMatch : t.notListed}</span>
+            {suggestions.length > 0 && <span className="venue-ac-credit">{t.attribution}</span>}
+          </div>
+        </div>
       )}
     </div>
   )

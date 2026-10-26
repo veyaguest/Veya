@@ -25,7 +25,19 @@ export const EVENT_TYPES: [string, string][] = [
   ['wedding', 'חתונה'], ['henna', 'חינה'], ['bar_mitzvah', 'בר מצווה'], ['bat_mitzvah', 'בת מצווה'],
   ['brit', 'ברית'], ['brita', 'בריתה'], ['family', 'משפחתי'], ['business', 'עסקי'], ['other', 'אחר'],
 ]
-const KINDS: [string, string][] = [['', '—'], ['hall', 'אולם'], ['garden', 'גן'], ['complex', 'מתחם'], ['restaurant', 'מסעדה'], ['other', 'אחר']]
+const KINDS: [string, string][] = [
+  ['', '—'], ['hall', 'אולם'], ['garden', 'גן'], ['complex', 'אולם וגן'], ['boutique', 'אולם בוטיק'], ['restaurant', 'מסעדה'],
+  ['hotel', 'מלון'], ['loft', 'לופט'], ['villa', 'וילה'], ['conference', 'מרכז כנסים'], ['synagogue', 'אולם בית כנסת'],
+  ['community', 'אולם קהילתי'], ['other', 'אחר'],
+]
+const SOURCES: [string, string][] = [['', 'כל המקורות'], ['import', 'מהמאגר הארצי'], ['auto', 'נוספו מאירועים'], ['admin', 'נוספו באדמין']]
+// איכות המידע במאגר הארצי — לא "מאומת" של VEYA (זה סימון ידני נפרד).
+const VERIFICATION_LABELS: Record<string, string> = {
+  verified_sources: 'אומת בשני מקורות או באתר הרשמי', single_source: 'מקור אחד', needs_review: 'דורש בדיקה',
+}
+const OPERATING_LABELS: Record<string, string> = {
+  unknown: 'לא נבדק', closed_reported: 'דווח כסגור', uncertain: 'ייתכן שנסגר',
+}
 const STATUS_TONE = { active: 'ok', hidden: 'neutral', draft: 'warn' } as const
 
 interface VenueRow {
@@ -44,6 +56,10 @@ interface VenueRow {
   capacity_max: number | null
   main_image: string | null
   updated_at: string | null
+  source: string
+  region: string
+  verification: string
+  operating_status: string
 }
 
 export interface VenueDetail extends VenueRow {
@@ -63,6 +79,14 @@ export interface VenueDetail extends VenueRow {
   images: { id: number; url: string; caption: string; is_main: boolean; sort_order: number }[]
   navigation: { waze: string; google: string }
   events_using: number
+  name_en: string
+  aliases: string[]
+  import_key: string | null
+  imported_at: string | null
+  source_url: string
+  last_checked_at: string | null
+  lat: number | null
+  lng: number | null
 }
 
 export function VenuesPage({ route }: { route: AdminRoute }) {
@@ -78,18 +102,19 @@ function VenueList({ route }: { route: AdminRoute }) {
   const [dq, setDq] = useState('')
   const [eventType, setEventType] = useState('')
   const [verified, setVerified] = useState('')
+  const [source, setSource] = useState('')
   const [sort, setSort] = useState('usage')
   const [offset, setOffset] = useState(0)
   useEffect(() => {
     const t = window.setTimeout(() => setDq(q), 250)
     return () => window.clearTimeout(t)
   }, [q])
-  useEffect(() => setOffset(0), [dq, status, eventType, verified, sort])
+  useEffect(() => setOffset(0), [dq, status, eventType, verified, source, sort])
   const data = useAsync(
     () => getJson<{ total: number; items: VenueRow[]; counts: Record<string, number> }>(
-      `/admin/venue-cms${qs({ q: dq, status, event_type: eventType, verified, sort, limit: PAGE, offset })}`,
+      `/admin/venue-cms${qs({ q: dq, status, event_type: eventType, verified, source, sort, limit: PAGE, offset })}`,
     ),
-    [dq, status, eventType, verified, sort, offset],
+    [dq, status, eventType, verified, source, sort, offset],
   )
   const counts = data.data?.counts
 
@@ -122,6 +147,9 @@ function VenueList({ route }: { route: AdminRoute }) {
           <option value="yes">מאומתים</option>
           <option value="no">לא מאומתים</option>
         </select>
+        <select className="adm-input" value={source} onChange={(e) => setSource(e.target.value)} aria-label="מקור">
+          {SOURCES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+        </select>
         <select className="adm-input" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="מיון">
           <option value="usage">הכי בשימוש</option>
           <option value="priority">עדיפות להצגה</option>
@@ -130,13 +158,15 @@ function VenueList({ route }: { route: AdminRoute }) {
         </select>
       </div>
 
+      {can('venues.edit') && <CatalogImportPanel onImported={data.reload} />}
+
       {data.loading && !data.data ? (
         <Loading />
       ) : data.error && !data.data ? (
         <ErrorState message={data.error} onRetry={data.reload} />
       ) : !data.data || data.data.items.length === 0 ? (
         <EmptyState
-          title={dq || status || eventType || verified ? 'לא נמצאו אולמות' : 'אין עדיין אולמות'}
+          title={dq || status || eventType || verified || source ? 'לא נמצאו אולמות' : 'אין עדיין אולמות'}
           action={can('venues.edit') ? <a className="adm-btn adm-btn-primary" href={routeHref('venues', 'new')}>+ הוסף אולם</a> : undefined}
         />
       ) : (
@@ -164,6 +194,7 @@ function VenueList({ route }: { route: AdminRoute }) {
                         {v.verified && <span className="adm-verified" title="מאומת">מאומת</span>}
                       </div>
                       <div className="adm-cell-sub">{[v.city, v.address].filter(Boolean).join(' · ') || 'בלי כתובת'}</div>
+                      {v.source === 'import' && v.verification === 'needs_review' && <div className="adm-cell-sub">מאגר ארצי · דורש בדיקה</div>}
                     </td>
                     <td className="adm-hide-md">{v.capacity_max ? `${v.capacity_min ?? 0}–${v.capacity_max}` : '—'}</td>
                     <td className="adm-num">{fmtNumber(v.usage_count)}</td>
@@ -180,12 +211,108 @@ function VenueList({ route }: { route: AdminRoute }) {
   )
 }
 
-type Form = Omit<VenueDetail, 'id' | 'status' | 'status_label' | 'usage_count' | 'main_image' | 'updated_at' | 'images' | 'navigation' | 'events_using' | 'source'> & { source: string }
+interface CatalogInfo { generated: string; count: number; by_region: Record<string, number>; license_note: string }
+interface ImportReport {
+  dry_run: boolean; total: number; created: number; updated: number; unchanged: number; hidden_closed: number
+  skipped_admin_edited: number; invalid_count: number; matched_existing_count: number; possible_duplicates_count: number
+  not_in_file_count: number
+  matched_existing: { name: string; city: string; existing_id: number; existing_name: string }[]
+  possible_duplicates: { name: string; city: string; existing_id: number; existing_name: string }[]
+}
+
+/** ייבוא המאגר הארצי: קודם תצוגה מקדימה (לא משנה כלום), ואז ייבוא בפועל באישור. */
+function CatalogImportPanel({ onImported }: { onImported: () => void }) {
+  const toast = useToast()
+  const info = useAsync(() => getJson<CatalogInfo>('/admin/venue-cms/catalog'), [])
+  const [report, setReport] = useState<ImportReport | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [confirm, setConfirm] = useState(false)
+
+  async function run(apply: boolean) {
+    setBusy(true)
+    setError(null)
+    try {
+      const r = await sendJson<ImportReport>('/admin/venue-cms/catalog/import', 'POST', { apply })
+      setReport(r)
+      setConfirm(false)
+      if (apply) {
+        toast(`יובאו ${fmtNumber(r.created)} מקומות חדשים`)
+        onImported()
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'הפעולה נכשלה')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (!info.data) return null
+  return (
+    <details className="adm-advanced adm-mt">
+      <summary>מאגר ארצי · {fmtNumber(info.data.count)} מקומות בקובץ (עודכן {info.data.generated})</summary>
+      <div className="adm-advanced-body">
+        <p className="adm-help">
+          הייבוא מוסיף מקומות חדשים ומעדכן מקומות שיובאו בעבר. הוא לא נוגע באולמות שנוספו מאירועים או באדמין,
+          לא דורס עריכות שלכם ולא משנה אף אירוע. אפשר להריץ שוב — זה לא יוצר כפילויות.
+        </p>
+        <p className="adm-row-actions">
+          <button type="button" className="adm-btn" disabled={busy} onClick={() => run(false)}>תצוגה מקדימה</button>
+          {report?.dry_run && (
+            <button type="button" className="adm-btn adm-btn-primary" disabled={busy} onClick={() => setConfirm(true)}>ייבוא בפועל</button>
+          )}
+        </p>
+        {error && <p className="adm-inline-error" role="alert">{error}</p>}
+        {report && (
+          <dl className="adm-facts">
+            <dt>{report.dry_run ? 'ייווספו' : 'נוספו'}</dt><dd>{fmtNumber(report.created)}</dd>
+            <dt>{report.dry_run ? 'יעודכנו' : 'עודכנו'}</dt><dd>{fmtNumber(report.updated)}</dd>
+            <dt>ללא שינוי</dt><dd>{fmtNumber(report.unchanged)}</dd>
+            <dt>כבר קיימים במאגר (לא נגענו)</dt><dd>{fmtNumber(report.matched_existing_count)}</dd>
+            <dt>אולי כפולים — לבדיקה</dt><dd>{fmtNumber(report.possible_duplicates_count)}</dd>
+            <dt>נערכו באדמין (דילגנו)</dt><dd>{fmtNumber(report.skipped_admin_edited)}</dd>
+            <dt>מוסתרים כי דווחו כסגורים</dt><dd>{fmtNumber(report.hidden_closed)}</dd>
+            <dt>רשומות לא תקינות</dt><dd>{fmtNumber(report.invalid_count)}</dd>
+            <dt>יובאו בעבר וכבר לא בקובץ (לא נמחקו)</dt><dd>{fmtNumber(report.not_in_file_count)}</dd>
+          </dl>
+        )}
+        {report && report.possible_duplicates.length > 0 && (
+          <details className="adm-mt">
+            <summary>אולי כפולים ({report.possible_duplicates.length})</summary>
+            <ul>
+              {report.possible_duplicates.map((d) => (
+                <li key={`${d.name}-${d.city}`}>
+                  {d.name} ({d.city || 'בלי עיר'}) ↔ <a className="adm-link" href={routeHref('venues', d.existing_id)}>{d.existing_name}</a>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+        <p className="adm-help">{info.data.license_note}</p>
+      </div>
+      <ConfirmAction
+        open={confirm}
+        title="ייבוא המאגר הארצי"
+        body={`ייווספו ${fmtNumber(report?.created ?? 0)} מקומות ויעודכנו ${fmtNumber(report?.updated ?? 0)}. אולמות קיימים ואירועים לא ישתנו.`}
+        confirmLabel="ייבוא"
+        busy={busy}
+        error={error}
+        onConfirm={() => run(true)}
+        onCancel={() => setConfirm(false)}
+      />
+    </details>
+  )
+}
+
+type Form = Omit<VenueDetail, 'id' | 'status' | 'status_label' | 'usage_count' | 'main_image' | 'updated_at' | 'images'
+  | 'navigation' | 'events_using' | 'source' | 'verification' | 'operating_status' | 'import_key' | 'imported_at'
+  | 'source_url' | 'last_checked_at' | 'lat' | 'lng'> & { source: string }
 
 const EMPTY: Form = {
   name: '', city: '', address: '', verified: false, priority: 0, venue_kind: '', event_types: [], capacity_min: null,
   capacity_max: null, description: '', phone: '', website: '', capacity_by_type: {}, kashrut: '', parking: '',
   accessibility: '', is_open: true, contact_name: '', contact_phone: '', source: 'admin', internal_notes: '', partnership: '',
+  name_en: '', aliases: [], region: '',
 }
 
 function toForm(v: VenueDetail): Form {
@@ -320,6 +447,16 @@ function VenueEditor({ venueId }: { venueId: number | null }) {
         <section className="adm-control">
           <h2 className="adm-section-title">פרטים</h2>
           {text('name', 'שם')}
+          <div className="adm-form-2">
+            {text('name_en', 'שם באנגלית', { ltr: true })}
+            {text('region', 'אזור')}
+          </div>
+          <label className="adm-formfield">
+            <span className="adm-label">שמות חלופיים לחיפוש</span>
+            <textarea className="adm-input" rows={2} value={form.aliases.join('\n')} disabled={!canEdit}
+              onChange={(e) => set('aliases', e.target.value.split('\n'))} />
+            <span className="adm-help">שם בכל שורה — כתיבים אחרים, שם קודם, שם באנגלית.</span>
+          </label>
           {text('description', 'תיאור', { area: true })}
           <div className="adm-form-2">
             {text('city', 'עיר')}
@@ -403,6 +540,15 @@ function VenueEditor({ venueId }: { venueId: number | null }) {
             {text('partnership', 'שיתוף פעולה')}
           </div>
           {text('internal_notes', 'הערות', { area: true })}
+          {v?.import_key && (
+            <dl className="adm-facts adm-mt">
+              <dt>מהמאגר הארצי</dt><dd>יובא {fmtDateTime(v.imported_at)} · נבדק {fmtDateTime(v.last_checked_at)}</dd>
+              <dt>איכות המידע</dt><dd>{VERIFICATION_LABELS[v.verification] ?? (v.verification || '—')}</dd>
+              <dt>פעילות</dt><dd>{OPERATING_LABELS[v.operating_status] ?? (v.operating_status || '—')}</dd>
+              {v.source_url && <><dt>מקור</dt><dd><a className="adm-link" href={v.source_url} target="_blank" rel="noreferrer" dir="ltr">{v.source_url.slice(0, 60)}</a></dd></>}
+              {v.lat != null && <><dt>מיקום</dt><dd dir="ltr">{v.lat.toFixed(5)}, {v.lng?.toFixed(5)}</dd></>}
+            </dl>
+          )}
           <div className="adm-form-2">
             <label className="adm-check">
               <input type="checkbox" checked={form.verified} disabled={!canEdit} onChange={(e) => set('verified', e.target.checked)} />

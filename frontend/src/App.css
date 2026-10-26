@@ -3564,21 +3564,27 @@ td.notes.seating {
   width: 100%;
   box-sizing: border-box;
 }
-.venue-ac-list {
+/* החלון שנפתח: רשימת ההצעות + הערה קבועה בתחתית ("לא ברשימה? ממשיכים להקליד"). */
+.venue-ac-pop {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
   left: 0;
   z-index: 40;
-  margin: 0;
-  padding: 4px;
-  list-style: none;
   background: var(--cream);
   border: 1px solid var(--line);
   border-radius: var(--radius-m);
   box-shadow: var(--shadow-card);
-  max-height: 260px;
+  overflow: hidden;
+}
+.venue-ac-list {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  /* בטלפון המקלדת תופסת חצי מסך — הרשימה נגללת בתוך עצמה ולא דוחפת את הדף */
+  max-height: min(300px, 45vh);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .venue-ac-item {
   display: flex;
@@ -3601,9 +3607,27 @@ td.notes.seating {
   font-size: 14px;
   font-weight: 600;
 }
-.venue-ac-addr {
+.venue-ac-addr,
+.venue-ac-meta {
   color: var(--muted);
   font-size: 12px;
+}
+.venue-ac-meta {
+  color: var(--charcoal);
+  opacity: 0.75;
+}
+.venue-ac-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 14px 10px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.venue-ac-credit {
+  font-size: 11px;
 }
 /* תאריך + שעה: שדות עם תווית ברורה בעברית וקלים לשימוש */
 .event-datetime {
@@ -12447,7 +12471,7 @@ button.gauge-status-card:focus-visible {
 .onboard-card .event-datetime input,
 .onboard-card .time-picker-trigger,
 .onboard-card .commit-select,
-.onboard-card .venue-ac-list,
+.onboard-card .venue-ac-pop,
 .onboard-card .event-image-drop,
 .onboard-card .add-form,
 .onboard-card .add-grid input,
@@ -12466,7 +12490,7 @@ button.gauge-status-card:focus-visible {
 .onboard-card .add-form {
   box-shadow: none;
 }
-.onboard-card .venue-ac-list {
+.onboard-card .venue-ac-pop {
   box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.6);
 }
 .onboard-card .btn-primary {

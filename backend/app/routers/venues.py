@@ -1,7 +1,7 @@
 """חיפוש במאגר האולמות המשותף — השלמה אוטומטית בזמן שהזוג מקליד שם אולם.
 
-המאגר נבנה מעצמו: בכל פעם שזוג שומר שם+כתובת אולם, הרשומה נכנסת למאגר
-(ראה ``app/venues.py`` ו-``routers/event.py``). כאן הזוג מקבל את הפירות —
+המאגר נבנה מעצמו (בכל פעם שזוג שומר שם+כתובת אולם, ראה ``app/venues.py``
+ו-``routers/event.py``) ומהמאגר הארצי המיובא. כאן הזוג מקבל את הפירות —
 מקליד "אול" ומקבל הצעות אולמות עם הכתובת המוכנה וקישורי ניווט, כדי לחסוך
 הקלדה ולהפעיל ניווט אוטומטי. נדרשת התחברות (מידע ציבורי, אך לא חושפים לאנונימי).
 """
@@ -21,14 +21,16 @@ def search(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_owner),
 ):
-    """מחזיר הצעות אולמות שהשם שלהם מכיל את מחרוזת החיפוש, עם כתובת וקישורי ניווט."""
-    results = venues.search_venues(db, q)
+    """מחזיר הצעות אולמות לפי שם/שם חלופי/עיר/כתובת, עם עיר, כתובת וקישורי ניווט."""
+    results = venues.search_venues(db, q[:100])
     return [
         schemas.VenueSuggestion(
             name=v.name,
             address=v.address or "",
             maps_link=messaging.maps_link(v.address or ""),
             waze_link=messaging.waze_link(v.address or ""),
+            city=v.city or "",
+            kind_label=venues.KIND_LABELS.get(v.venue_kind or "", ""),
         )
         for v in results
     ]

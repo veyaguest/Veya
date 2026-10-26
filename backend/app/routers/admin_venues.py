@@ -19,13 +19,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app import admin_audit, admin_rbac, cache, media, models, venues
+from app import admin_audit, admin_rbac, cache, media, models, venue_catalog, venues
 from app.database import get_db
 
 router = APIRouter(prefix="/admin/venue-cms", tags=["admin"])
 
 EVENT_TYPES = ("wedding", "henna", "bar_mitzvah", "bat_mitzvah", "brit", "brita", "family", "business", "other")
-KINDS = ("hall", "garden", "complex", "restaurant", "other")
+KINDS = venue_catalog.KINDS
 STATUS_LABELS = {"active": "פעיל", "hidden": "מוסתר", "draft": "טיוטה"}
 MAX_IMAGES = 20
 
@@ -36,7 +36,12 @@ FIELD_LABELS = {
     "parking": "חניה", "accessibility": "נגישות", "is_open": "פתוח", "contact_name": "איש קשר",
     "contact_phone": "טלפון איש קשר", "source": "מקור", "internal_notes": "הערות פנימיות",
     "partnership": "שיתוף פעולה", "verified": "מאומת", "priority": "עדיפות",
+    "name_en": "שם באנגלית", "aliases": "שמות חלופיים", "region": "אזור",
 }
+
+# שדות מהמאגר הארצי שמוצגים לאדמין לקריאה בלבד (מקור, איכות מידע, מיקום).
+CATALOG_READONLY = ("import_key", "imported_at", "source_url", "verification", "operating_status",
+                    "last_checked_at", "lat", "lng")
 
 
 class VenueFields(BaseModel):
@@ -46,7 +51,8 @@ class VenueFields(BaseModel):
     address: Optional[str] = Field(default=None, max_length=200)
     phone: Optional[str] = Field(default=None, max_length=30)
     website: Optional[str] = Field(default=None, max_length=300)
-    venue_kind: Optional[Literal["", "hall", "garden", "complex", "restaurant", "other"]] = None
+    venue_kind: Optional[Literal["", "hall", "garden", "complex", "boutique", "restaurant", "hotel", "loft",
+                                 "villa", "conference", "synagogue", "community", "other"]] = None
     event_types: Optional[list[str]] = None
     capacity_min: Optional[int] = Field(default=None, ge=0, le=10000)
     capacity_max: Optional[int] = Field(default=None, ge=0, le=10000)
@@ -62,6 +68,9 @@ class VenueFields(BaseModel):
     partnership: Optional[str] = Field(default=None, max_length=200)
     verified: Optional[bool] = None
     priority: Optional[int] = Field(default=None, ge=0, le=100)
+    name_en: Optional[str] = Field(default=None, max_length=120)
+    aliases: Optional[list[str]] = Field(default=None, max_length=20)
+    region: Optional[str] = Field(default=None, max_length=40)
 
 
 def _nav(address: str, name: str) -> dict:
@@ -91,6 +100,7 @@ def _row(v: models.Venue, main_image: Optional[str] = None) -> dict:
         "venue_kind": v.venue_kind or "", "event_types": v.event_types or [],
         "capacity_min": v.capacity_min, "capacity_max": v.capacity_max, "main_image": main_image,
         "source": v.source or "", "updated_at": v.updated_at, "created_at": v.created_at,
+        "region": v.region or "", "verification": v.verification or "", "operating_status": v.operating_status or "",
     }
 
 
@@ -102,6 +112,8 @@ def _detail(db: Session, v: models.Venue) -> dict:
     })
     data["event_types"] = v.event_types or []
     data["capacity_by_type"] = v.capacity_by_type or {}
+    data["aliases"] = v.aliases or []
+    data.update({f: getattr(v, f) for f in CATALOG_READONLY})
     data["images"] = _images(db, v.id)
     data["main_image"] = next((i["url"] for i in data["images"] if i["is_main"]), data["images"][0]["url"] if data["images"] else None)
     data["navigation"] = _nav(v.address or "", v.name)
@@ -115,6 +127,8 @@ def list_venues(
     city: str = "",
     event_type: str = "",
     verified: str = Query("", pattern="^(|yes|no)$"),
+    source: str = Query("", pattern="^(|auto|admin|import|partner)$"),
+    region: str = Query("", max_length=40),
     sort: str = Query("usage", pattern="^(usage|name|recent|priority)$"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -125,11 +139,17 @@ def list_venues(
     filters = []
     if q.strip():
         like = f"%{q.strip()}%"
-        filters.append(or_(V.name.ilike(like), V.city.ilike(like), V.address.ilike(like)))
+        filters.append(or_(V.name.ilike(like), V.city.ilike(like), V.address.ilike(like), V.name_en.ilike(like)))
     if status:
         filters.append(V.status == status)
     if city.strip():
         filters.append(V.city.ilike(f"%{city.strip()}%"))
+    if source == "auto":
+        filters.append(or_(V.source == "auto", V.source == "", V.source.is_(None)))
+    elif source:
+        filters.append(V.source == source)
+    if region.strip():
+        filters.append(V.region == region.strip())
     if verified == "yes":
         filters.append(V.verified.is_(True))
     elif verified == "no":
@@ -163,6 +183,52 @@ def list_venues(
     }
 
 
+class CatalogImport(BaseModel):
+    # ברירת מחדל: תצוגה מקדימה בלבד. רק apply=true כותב למסד.
+    apply: bool = False
+
+
+@router.get("/catalog")
+def catalog_info(admin: models.User = Depends(admin_rbac.require("venues.view"))):
+    """מה יש בקובץ המאגר הארצי שבשרת (לפני ייבוא)."""
+    try:
+        data = venue_catalog.load_catalog()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="קובץ המאגר לא נמצא בשרת")
+    from collections import Counter
+
+    items = data.get("venues", [])
+    return {"generated": data.get("generated"), "count": len(items),
+            "by_region": dict(Counter(v.get("region") or "לא משויך" for v in items).most_common()),
+            "by_verification": dict(Counter(v.get("verification") or "" for v in items).most_common()),
+            "license_note": data.get("license_note", "")}
+
+
+@router.post("/catalog/import")
+def catalog_import(payload: CatalogImport, request: Request, db: Session = Depends(get_db),
+                   admin: models.User = Depends(admin_rbac.require("venues.edit"))):
+    """ייבוא מבוקר של המאגר הארצי. בלי apply — מחזיר מה *היה* קורה, בלי לשנות דבר.
+
+    לא נוגע באולמות שנוצרו מאירועים/אדמין, לא דורס עריכות אדמין, לא משנה אירועים
+    (ראו app/venue_catalog.py). ריצה חוזרת לא יוצרת כפילויות.
+    """
+    try:
+        data = venue_catalog.load_catalog()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="קובץ המאגר לא נמצא בשרת")
+    report = venue_catalog.import_catalog(db, data.get("venues", []), dry_run=not payload.apply)
+    if payload.apply:
+        admin_audit.record(
+            db, admin, domain="venues", action="venue.catalog_import",
+            summary=(f"ייבא/ה את המאגר הארצי ({data.get('generated')}): {report['created']} חדשים, "
+                     f"{report['updated']} עודכנו, {report['matched_existing_count']} כבר קיימים"),
+            target_type="venue", target_id=0, target_label="מאגר ארצי", request=request,
+        )
+        db.commit()
+        cache.invalidate_prefix("venues:")
+    return report
+
+
 @router.get("/{venue_id}")
 def get_venue(venue_id: int, db: Session = Depends(get_db),
               admin: models.User = Depends(admin_rbac.require("venues.view"))):
@@ -171,7 +237,8 @@ def get_venue(venue_id: int, db: Session = Depends(get_db),
         raise HTTPException(status_code=404, detail="האולם לא נמצא")
     data = _detail(db, v)
     data["events_using"] = db.scalar(
-        select(func.count(models.Event.id)).where(func.lower(func.trim(models.Event.venue_name)) == v.dedup_key)
+        select(func.count(models.Event.id)).where(
+            func.lower(func.trim(models.Event.venue_name)) == venues._dedup_key(v.name))
     ) or 0
     return data
 
@@ -189,6 +256,8 @@ def _apply(db: Session, v: models.Venue, payload: VenueFields) -> list[dict]:
     cmax = data.get("capacity_max", v.capacity_max)
     if cmin is not None and cmax is not None and cmin > cmax:
         raise HTTPException(status_code=400, detail="קיבולת מינימלית גדולה מהמקסימלית")
+    if "aliases" in data and data["aliases"] is not None:
+        data["aliases"] = [a.strip()[:120] for a in data["aliases"] if a and a.strip()] or None
     changes = []
     if "name" in data:
         new_name = (data["name"] or "").strip()

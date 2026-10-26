@@ -633,6 +633,10 @@ export interface VenueSuggestion {
   address: string
   maps_link: string
   waze_link: string
+  /** להבחנה בין מקומות באותו שם ביישובים שונים. ריק כשלא ידוע. */
+  city?: string
+  /** "גן אירועים" / "מסעדה" / ... — ריק כשהסוג לא ידוע. */
+  kind_label?: string
 }
 
 export interface AuditLogRow {

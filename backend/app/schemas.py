@@ -1060,6 +1060,9 @@ class VenueSuggestion(BaseModel):
     address: str = ""
     maps_link: str = ""               # קישור ניווט Google Maps (נגזר מהכתובת)
     waze_link: str = ""               # קישור ניווט Waze (נגזר מהכתובת)
+    # להבחנה בין מקומות באותו שם ("אולמי הנסיכה" — באר שבע / אשדוד).
+    city: str = ""
+    kind_label: str = ""              # "גן אירועים" / "מסעדה" / ... — ריק כשלא ידוע
 
 
 # ---- פאנל אדמין (הבעלים רואה הכל) ----

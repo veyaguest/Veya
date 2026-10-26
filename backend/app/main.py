@@ -314,6 +314,19 @@ _EXTRA_COLUMNS = {
         "verified": "BOOLEAN DEFAULT FALSE",
         "priority": "INTEGER DEFAULT 0",
         "updated_at": "TIMESTAMP",
+        # מאגר ארצי (ייבוא מבוקר). הכול nullable/עם ברירת מחדל — אולמות קיימים
+        # לא משתנים, והחיפוש ממשיך לעבוד גם לפני הייבוא.
+        "name_en": "VARCHAR DEFAULT ''",
+        "aliases": "JSON",
+        "region": "VARCHAR DEFAULT ''",
+        "lat": "FLOAT",
+        "lng": "FLOAT",
+        "source_url": "VARCHAR DEFAULT ''",
+        "import_key": "VARCHAR",
+        "imported_at": "TIMESTAMP",
+        "verification": "VARCHAR DEFAULT ''",
+        "operating_status": "VARCHAR DEFAULT ''",
+        "last_checked_at": "TIMESTAMP",
     },
     "postponement_requests": {
         # צילום מורחב של המחזור הנסגר (אולם/כתובת/מועד סגירה) — נוסף אחרי
@@ -541,6 +554,9 @@ _EXTRA_UNIQUE_INDEXES = {
     # הבדיקה ב-Python (gift_service.create_gift) היא רק קיצור דרך, ואילו
     # שתי בקשות שרצות ממש במקביל נעצרות כאן, ברמת ה-DB.
     "ux_gifts_idempotency_key": ("gifts", "idempotency_key"),
+    # ייבוא חוזר של מאגר האולמות: מפתח הייבוא הוא הזהות של רשומה מהקובץ, כדי
+    # שהרצה שנייה תעדכן ולא תכפיל. אולמות שלא יובאו (NULL) לא מושפעים.
+    "ux_venues_import_key": ("venues", "import_key"),
 }
 
 
