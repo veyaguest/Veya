@@ -456,10 +456,4 @@ def test_real_catalog_file_is_consistent() -> None:
 
 
 def teardown_module(module) -> None:  # noqa: ARG001
-    # המודול הזה פותח הרבה סשנים ישירים (SessionLocal); חיבורים שנשארים במאגר
-    # מצביעים על קובץ ה-DB הזמני שנמחק ב-shutdown — והמודול הבא היה מקבל
-    # "readonly database". משחררים אותם לפני המחיקה.
-    from app.database import engine
-
-    engine.dispose()
     shutdown()

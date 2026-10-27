@@ -84,6 +84,15 @@ def shutdown() -> None:
     if _CLIENT is not None:
         _CLIENT.__exit__(None, None, None)
         _CLIENT = None
+    # חיבורים שנשארו במאגר החיבורים מצביעים על קובץ ה-DB שנמחק כאן; בלי
+    # שחרור, המודול הבא עלול לקבל "readonly database" או לראות נתונים ישנים
+    # (תלוי בסדר ההרצה). משחררים לפני המחיקה.
+    try:
+        from app.database import engine
+
+        engine.dispose()
+    except Exception:  # noqa: BLE001 — ניקוי בדיקות; לא מפיל את הריצה
+        pass
     if _DB_PATH:
         try:
             os.unlink(_DB_PATH)
