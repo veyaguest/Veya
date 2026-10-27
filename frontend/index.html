@@ -1864,13 +1864,14 @@
 .lp-hero .lp-wave-fill { fill: var(--ivory-2); }
 .lp-hero .lp-wave-line { fill: none; stroke: rgba(228,201,107,.55); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .lp-sec > .lp-wrap { position: relative; z-index: 1; }
-.lp-sec::before { content: ''; position: absolute; z-index: 0; top: 0; left: 0; right: 0; height: var(--blend-h, 150px); background: linear-gradient(180deg, var(--blend-from, transparent) 0%, transparent 100%); pointer-events: none; }
-.lp-dark + .lp-ivory, .lp-dark + .lp-ivory2 { --blend-from: var(--ink); --blend-h: 170px; }
-.lp-ivory + .lp-dark { --blend-from: var(--ivory); --blend-h: 170px; }
-.lp-ivory2 + .lp-dark { --blend-from: var(--ivory-2); --blend-h: 170px; }
-.lp-ivory + .lp-ivory2 { --blend-from: var(--ivory); --blend-h: 120px; }
-.lp-ivory2 + .lp-ivory { --blend-from: var(--ivory-2); --blend-h: 120px; }
-@media (max-width: 900px) { .lp-dark + .lp-ivory, .lp-dark + .lp-ivory2, .lp-ivory + .lp-dark, .lp-ivory2 + .lp-dark { --blend-h: 110px; } }
+/* seams: the bottom edge of a section is cut by a curve in the next section's color, with a thin gold line on it */
+.lp-seam { position: absolute; z-index: 2; left: 0; right: 0; bottom: -1px; width: 100%; height: clamp(40px, 5.6vw, 84px); display: block; pointer-events: none; }
+.lp-seam.is-flip { transform: scaleX(-1); }
+.lp-seam .lp-seam-line { fill: none; stroke: rgba(201,162,39,.55); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.lp-seam.to-ivory .lp-seam-fill { fill: var(--ivory); }
+.lp-seam.to-ivory2 .lp-seam-fill { fill: var(--ivory-2); }
+.lp-seam.to-dark .lp-seam-fill { fill: var(--ink); }
+.lp-seam.to-dark .lp-seam-line { stroke: rgba(201,162,39,.7); }
 /* event types as photo cards (I'm In's "אני רוצה הזמנה ל..."): each photo shows something that is really in that type's expense list */
 .lp-picker .lp-types { border: 0; padding: 0; margin: 38px auto 0; max-width: 1100px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 14px; }
 .lp-picker .lp-type { position: relative; cursor: pointer; display: block; }
@@ -2004,10 +2005,13 @@
   .lp-hero .lp-chip.lp-c { display: none; }
 
     .lp-picker .lp-pick-line { font-size: 20px; }
-  .lp-picker .lp-types { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 128px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 28px calc(var(--gutter) * -1) 0; padding: 8px var(--gutter) 16px; scrollbar-width: none; }
-  .lp-picker .lp-types::-webkit-scrollbar { display: none; }
-  .lp-picker .lp-type { scroll-snap-align: start; }
-  .lp-picker .lp-type-name { font-size: 15px; }
+  .lp-picker .lp-types { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 8px; margin: 26px 0 0; }
+  .lp-picker .lp-type { flex: 0 0 calc(25% - 6px); }
+  .lp-picker .lp-type-card { padding: 4px 4px 8px; border-radius: 12px; }
+  .lp-picker .lp-type-card img { aspect-ratio: 1 / 1; border-radius: 9px; }
+  .lp-picker .lp-type-name { margin-top: 6px; font-size: 12.5px; line-height: 1.25; }
+  .lp-picker .lp-type input:checked + .lp-type-card { transform: translateY(-3px); }
+  .lp-picker .lp-type input:checked + .lp-type-card::after { top: 8px; left: 8px; width: 20px; height: 20px; font-size: 11px; }
 
   .lp-chap .lp-wrap, .lp-chap.lp-flip .lp-wrap, .lp-bottom .lp-wrap, .lp-close .lp-wrap { grid-template-columns: 1fr; gap: 36px; }
   .lp-chap.lp-flip .lp-txt { order: 0; }
@@ -2059,23 +2063,36 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
 .lp-faqs .faq summary { font-family: var(--sans); }
 
 /* the live lead form, restyled as the closing card */
-.lp-close .lead-slot { background: var(--ivory); color: var(--body); border-radius: 18px; padding: 30px 32px; box-shadow: 0 40px 80px rgba(0,0,0,.45); }
-.lp-close .lead-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.lp-main .lp-close .lp-form-title { grid-column: 1 / -1; color: var(--ink); font: 500 26px var(--display); }
-.lp-close .lp-form-lead { grid-column: 1 / -1; margin-top: -6px; font-size: 16px; }
-.lp-close .lead-field { display: grid; gap: 6px; }
-.lp-close .lead-field label { font: 600 14.5px var(--sans); color: var(--ink); }
-.lp-close .lead-field input, .lp-close .lead-field select { font: 400 16px var(--sans); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--cream); color: var(--ink); width: 100%; min-height: 48px; }
-.lp-close .lead-actions { grid-column: 1 / -1; display: grid; gap: 8px; }
-.lp-close .lead-go { width: 100%; }
-.lp-close .lead-fine { margin: 0; font-size: 14px; color: var(--muted); text-align: center; }
-.lp-close .lead-done-title { font: 500 26px var(--display); color: var(--ink); }
+/* the closing form card: seal + title over a gold double rule, tall fields with a gold focus ring */
+.lp-close .lead-slot { position: relative; background: var(--ivory); color: var(--body); border-radius: 20px; padding: 34px 34px 26px; box-shadow: 0 40px 80px rgba(0,0,0,.45), inset 0 0 0 1px rgba(201,162,39,.25); }
+.lp-close .lead-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 14px; }
+.lp-main .lp-close .lp-form-title { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; color: var(--ink); font: 500 30px/1.15 var(--display); }
+.lp-main .lp-close .lp-form-title::before { content: ''; flex: none; width: 42px; height: 42px; background: url(/logo_nobg.png) center / 133.7% no-repeat; }
+.lp-close .lp-form-lead { grid-column: 1 / -1; margin: -4px 0 6px; padding-bottom: 18px; border-bottom: 3px double var(--gold); font-size: 16px; line-height: 1.55; }
+.lp-close .lead-field { display: grid; gap: 7px; align-content: start; }
+.lp-close .lead-field label { font: 600 14px var(--sans); color: var(--ink); }
+.lp-close .lead-field input, .lp-close .lead-field select { width: 100%; min-height: 52px; padding: 13px 15px; border-radius: 10px; border: 1px solid #ddd3bf; background: #fff; color: var(--ink); font: 400 16.5px var(--sans); box-shadow: inset 0 1px 2px rgba(23,19,13,.04); transition: border-color 140ms ease, box-shadow 140ms ease; }
+.lp-close .lead-field input::placeholder { color: #a39a88; }
+.lp-close .lead-field select { appearance: none; -webkit-appearance: none; padding-left: 40px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23836a26' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") left 15px center no-repeat; }
+.lp-close .lead-field input:focus, .lp-close .lead-field select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,162,39,.28); }
+.lp-close .lead-field.is-bad input, .lp-close .lead-field.is-bad select { border-color: var(--error); box-shadow: 0 0 0 3px rgba(143,50,38,.12); }
+.lp-close .lead-err { margin: 0; font-size: 13.5px; color: var(--error); }
+.lp-close .lead-actions { grid-column: 1 / -1; display: grid; gap: 10px; margin-top: 6px; }
+.lp-close .lead-go { width: 100%; min-height: 56px; font-size: 17.5px; border-radius: 12px; border: 0; box-shadow: 0 10px 22px rgba(131,106,38,.25); }
+.lp-close .lead-go::after { content: '←'; margin-right: 10px; transition: transform 160ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) { .lp-close .lead-go:hover::after { transform: translateX(-3px); } }
+.lp-close .lead-fine { margin: 0; font-size: 13.5px; color: var(--muted); text-align: center; }
+.lp-close .lead-done { text-align: center; padding: 26px 6px 10px; }
+.lp-close .lead-done::before { content: '✓'; display: grid; place-items: center; width: 58px; height: 58px; margin: 0 auto 14px; border-radius: 50%; background: var(--gold); color: var(--ink); font: 700 26px/1 var(--sans); }
+.lp-close .lead-done-title { font: 500 30px var(--display); color: var(--ink); }
+.lp-close .lead-done-body { margin-top: 6px; font-size: 16.5px; }
 
 /* footer: the columns take the full row under the brand (they were squeezed into one 150px column) */
 .site-footer .footer-cols { flex: 1 1 100%; }
 @media (max-width: 900px) {
-  .lp-close .lead-slot { padding: 24px 20px; }
-  .lp-close .lead-form { grid-template-columns: 1fr; }
+  .lp-close .lead-slot { padding: 26px 20px 22px; }
+  .lp-close .lead-form { grid-template-columns: 1fr; gap: 14px; }
+  .lp-main .lp-close .lp-form-title { font-size: 26px; }
 }
 
     
@@ -2163,6 +2180,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
     </div>
     <div class="lp-ctas lp-acts lp-rv"><a class="btn btn-primary" id="lp-go" href="/app?auth=register">ממשיכים עם חתונה</a><a class="lp-link" id="lp-callme" href="#leads">או שנחזור אליכם</a></div>
   </div>
+  <svg class="lp-seam to-ivory" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="lp-seam-fill" d="M0,58 C240,104 480,108 720,74 C960,40 1200,14 1440,36 L1440,100 L0,100 Z"/><path class="lp-seam-line" d="M0,52 C240,98 480,102 720,68 C960,34 1200,8 1440,30"/></svg>
 </section>
 
 <section class="lp-sec lp-ivory lp-how-head" id="how" aria-labelledby="how-h">
@@ -2187,6 +2205,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
       <div class="lp-chip lp-a lp-rv" style="transition-delay:350ms"><b class="lp-sm">5 מתוך 6 שורות</b>נבחרו לייבוא</div>
     </div>
   </div>
+  <svg class="lp-seam to-ivory2 is-flip" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="lp-seam-fill" d="M0,58 C240,104 480,108 720,74 C960,40 1200,14 1440,36 L1440,100 L0,100 Z"/><path class="lp-seam-line" d="M0,52 C240,98 480,102 720,68 C960,34 1200,8 1440,30"/></svg>
 </section>
 
 <section class="lp-sec lp-ivory2 lp-chap lp-c2 lp-flip" aria-labelledby="c2h">
@@ -2203,6 +2222,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
       <div class="lp-chip lp-b lp-rv" style="transition-delay:400ms"><b class="lp-green">122</b>אישרו הגעה</div>
     </div>
   </div>
+  <svg class="lp-seam to-dark" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="lp-seam-fill" d="M0,90 Q720,-2 1440,90 L1440,100 L0,100 Z"/><path class="lp-seam-line" d="M0,84 Q720,-8 1440,84"/></svg>
 </section>
 
 <section class="lp-sec lp-dark lp-chap lp-c3" aria-labelledby="c3h">
@@ -2220,6 +2240,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
       <div class="lp-chip lp-b lp-rv" style="transition-delay:480ms"><b class="lp-gold lp-sm">25,759.60 ₪</b>נשאר לשלם</div>
     </div>
   </div>
+  <svg class="lp-seam to-ivory" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="lp-seam-fill" d="M0,58 C240,104 480,108 720,74 C960,40 1200,14 1440,36 L1440,100 L0,100 Z"/><path class="lp-seam-line" d="M0,52 C240,98 480,102 720,68 C960,34 1200,8 1440,30"/></svg>
 </section>
 
 <section class="lp-sec lp-ivory lp-chap lp-c4 lp-flip" aria-labelledby="c4h">
@@ -2236,6 +2257,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
       <div class="lp-chip lp-goldbtn lp-b lp-rv" style="transition-delay:400ms">הושבה בקליק</div>
     </div>
   </div>
+  <svg class="lp-seam to-ivory2 is-flip" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="lp-seam-fill" d="M0,58 C240,104 480,108 720,74 C960,40 1200,14 1440,36 L1440,100 L0,100 Z"/><path class="lp-seam-line" d="M0,52 C240,98 480,102 720,68 C960,34 1200,8 1440,30"/></svg>
 </section>
 
 <section class="lp-sec lp-ivory2 lp-bottom" aria-labelledby="c5h">
@@ -2256,6 +2278,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
     </div>
     <div class="lp-scene"><img loading="lazy" decoding="async" class="lp-couple lp-rv" src="/people/after-event.webp" alt="זוג על הספה אחרי האירוע, מסתכלים יחד בטלפון"></div>
   </div>
+  <svg class="lp-seam to-dark" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="lp-seam-fill" d="M0,90 Q720,-2 1440,90 L1440,100 L0,100 Z"/><path class="lp-seam-line" d="M0,84 Q720,-8 1440,84"/></svg>
 </section>
 
 <section class="lp-sec lp-dark lp-trust" aria-labelledby="tr-h">
@@ -2271,6 +2294,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
     </div>
     <p class="lp-story lp-rv">VEYA נולדה מרשימת מוזמנים שהיו לה כמה גרסאות, ומסידור הושבה ומספרים שלא הסתדרו עם מה שסגרנו מול האולם. <a class="lp-link" href="/legal/about.html#story">הסיפור שלנו</a></p>
   </div>
+  <svg class="lp-seam to-ivory" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="lp-seam-fill" d="M0,58 C240,104 480,108 720,74 C960,40 1200,14 1440,36 L1440,100 L0,100 Z"/><path class="lp-seam-line" d="M0,52 C240,98 480,102 720,68 C960,34 1200,8 1440,30"/></svg>
 </section>
 
 <section class="lp-sec lp-ivory lp-index" aria-labelledby="i-h">
@@ -2283,6 +2307,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
       <li class="lp-rv" style="transition-delay:240ms"><a href="/calculators/"><b>מחשבונים ומדריכים</b><span>לוח זמנים לאישורי ההגעה, מדריכים לתכנון ועוד.</span><i>לפרטים ←</i></a></li>
     </ul>
   </div>
+  <svg class="lp-seam to-ivory2 is-flip" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="lp-seam-fill" d="M0,58 C240,104 480,108 720,74 C960,40 1200,14 1440,36 L1440,100 L0,100 Z"/><path class="lp-seam-line" d="M0,52 C240,98 480,102 720,68 C960,34 1200,8 1440,30"/></svg>
 </section>
 
 <section class="lp-sec lp-ivory2 lp-faqs" aria-labelledby="f-h">
@@ -2319,6 +2344,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
             </details>
           </div>
   </div>
+  <svg class="lp-seam to-dark" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="lp-seam-fill" d="M0,90 Q720,-2 1440,90 L1440,100 L0,100 Z"/><path class="lp-seam-line" d="M0,84 Q720,-8 1440,84"/></svg>
 </section>
 
 <section class="lp-sec lp-dark lp-close" id="leads" tabindex="-1" aria-labelledby="c-h">
