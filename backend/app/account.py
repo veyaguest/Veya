@@ -2,10 +2,97 @@
 אירוע בודד) לבין routers/auth.py (מחיקת חשבון מלאה, שמוחקת את כל האירועים
 של המשתמש). מרוכז כאן כדי שלא לשכפל את לוגיקת ה-cascade בשני מקומות.
 """
-from sqlalchemy import select
+from datetime import datetime
+
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app import models
+from app.database import IS_POSTGRES
+
+# האם במסד קיימות הפונקציות המבוקרות של ``rls/30_finance_ledger_rls.sql``.
+# נבדק פעם אחת לתהליך. בייצור הקובץ מוחל רק יחד עם שאר קובצי ה-RLS (ראו
+# main.py::_ensure_rls_policies); כל עוד לא הוחל, אין RLS על טבלאות המתנות
+# והמחיקה הישירה (למטה) עובדת — כך שהקוד נכון בשני המצבים.
+_LEDGER_FUNCTIONS: dict = {}
+
+
+def _has_db_function(db: Session, name: str) -> bool:
+    if not IS_POSTGRES:
+        return False
+    if name not in _LEDGER_FUNCTIONS:
+        _LEDGER_FUNCTIONS[name] = bool(db.execute(text(
+            "SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace "
+            "WHERE n.nspname = 'public' AND p.proname = :n"
+        ), {"n": name}).first())
+    return _LEDGER_FUNCTIONS[name]
+
+
+def archive_event_finance(db: Session, event_id: int) -> None:
+    """לפני מחיקת אירוע: מתנות ורכישות מסלול עוברות לרישום חשבונאי בלי פרטים
+    אישיים (``GiftLedger`` / ``EntitlementLedger``), ונמחקות מהטבלאות שלהן.
+
+    החלטת המייסד 2026-10-28. ב-Postgres עם RLS טבלת ``gifts`` חסומה לכתיבה
+    ישירה לגמרי, ולכן שם זה רץ דרך הפונקציה המבוקרת ``app_archive_event_finance``
+    (בודקת שהמבקש מנהל את האירוע או אדמין). בלי commit.
+    """
+    if _has_db_function(db, "app_archive_event_finance"):
+        db.execute(text("SELECT app_archive_event_finance(:e)"), {"e": event_id})
+        return
+    now = datetime.utcnow()
+    for g in db.scalars(select(models.Gift).where(models.Gift.event_id == event_id)).all():
+        db.add(models.GiftLedger(
+            original_gift_id=g.id, event_ref=event_id, gift_amount_agorot=g.gift_amount_agorot,
+            fee_agorot=g.fee_agorot, total_agorot=g.total_agorot, currency=g.currency, status=g.status,
+            provider=g.provider, provider_transaction_id=g.provider_transaction_id,
+            gift_created_at=g.created_at, gift_updated_at=g.updated_at, archived_at=now,
+        ))
+        db.delete(g)
+    for e in db.scalars(
+        select(models.EventEntitlement).where(models.EventEntitlement.event_id == event_id)
+    ).all():
+        db.add(models.EntitlementLedger(
+            original_entitlement_id=e.id, event_ref=event_id, plan_version_id=e.plan_version_id,
+            status=e.status, price_agorot=e.price_agorot, addons=e.addons, coupon_code=e.coupon_code,
+            source=e.source, starts_on=e.starts_on, trial_ends_on=e.trial_ends_on, renews_on=e.renews_on,
+            cancelled_at=e.cancelled_at, entitlement_created_at=e.created_at, archived_at=now,
+        ))
+        db.delete(e)
+    db.flush()
+
+
+def _delete_event_money_rows(db: Session, event_id: int) -> None:
+    """הנתונים הכספיים הפרטיים של בעלי האירוע — נמחקים איתו (לא נשמרים):
+    מעטפות שנספרו, הוצאות ותשלומיהן, ופרטי חשבון הבנק לקבלת המתנות.
+
+    לחלקן יש ON DELETE CASCADE ברמת ה-FK, אבל נמחקות כאן במפורש מאותה סיבה
+    שכל השאר נמחק כאן (ראו ההערה ב-``delete_event_cascade``). תשלומים לפני
+    הוצאות (מפתח זר), והכול לפני המוזמנים (מעטפה מצביעה על מוזמן).
+    """
+    for row in db.scalars(
+        select(models.ExpensePayment).where(models.ExpensePayment.event_id == event_id)
+    ).all():
+        db.delete(row)
+    db.flush()
+    for model in (models.EventExpense, models.GiftEnvelope, models.PayoutAccount):
+        for row in db.scalars(select(model).where(model.event_id == event_id)).all():
+            db.delete(row)
+    db.flush()
+
+
+def detach_user_finance(db: Session, user_id: int) -> None:
+    """לפני מחיקת משתמש: מעטפות ותשלומי הוצאה שהוא רשם (גם באירוע של
+    בן/בת הזוג, שנשאר) — נשארים, רק מתנתקים ממנו. בלי זה מחיקת החשבון
+    נכשלת על מפתח זר. בלי commit.
+    """
+    for row in db.scalars(
+        select(models.GiftEnvelope).where(models.GiftEnvelope.recorded_by_user_id == user_id)
+    ).all():
+        row.recorded_by_user_id = None
+    for row in db.scalars(
+        select(models.ExpensePayment).where(models.ExpensePayment.recorded_by_user_id == user_id)
+    ).all():
+        row.recorded_by_user_id = None
 
 
 def delete_event_cascade(db: Session, event: "models.Event") -> None:
@@ -41,6 +128,11 @@ def delete_event_cascade(db: Session, event: "models.Event") -> None:
     from app import call_ops
 
     call_ops.delete_for_event(db, event_id)
+    # כסף: מתנות ורכישות מסלול → רישום חשבונאי בלי פרטים אישיים; נתוני הכסף
+    # הפרטיים של בעלי האירוע → נמחקים. לפני המוזמנים — מתנה ומעטפה מצביעות
+    # על מוזמן (החלטת המייסד 2026-10-28; לפני כן מחיקת אירוע עם מתנה נכשלה).
+    archive_event_finance(db, event_id)
+    _delete_event_money_rows(db, event_id)
     # הקצאות הטלפנים לאירוע — נמחקות איתו (אין אירוע, אין למי להתקשר).
     for assignment in db.scalars(
         select(models.CallAssignment).where(models.CallAssignment.event_id == event_id)

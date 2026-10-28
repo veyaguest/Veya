@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import audit, auth, emailer, legal, models, partners, schemas
-from app.account import delete_event_cascade, delete_support_requests_for_user
+from app.account import delete_event_cascade, delete_support_requests_for_user, detach_user_finance
 from app.database import get_db, set_request_identity
 from app.ratelimit import auth_limiter, client_ip, limit_email_send
 
@@ -757,6 +757,7 @@ def delete_my_account(
     from app import call_ops
 
     call_ops.detach_user(db, user.id)
+    detach_user_finance(db, user.id)
 
     db.delete(user)
     db.commit()

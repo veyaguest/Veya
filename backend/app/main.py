@@ -1655,6 +1655,7 @@ _RLS_MIGRATION_FILES = (
     "26_help_events_rls.sql",
     "27_support_replies_rls.sql",
     "29_whatsapp_inbox_rls.sql",
+    "30_finance_ledger_rls.sql",
 )
 
 #: הפונקציות שקובצי 15–17 נשענים עליהן (קבצים 01 ו-08). בלעדיהן
@@ -1725,7 +1726,8 @@ def _ensure_rls_policies() -> None:
                 "      ('postponement_requests', 'event_cycles', 'guest_cycle_rsvp', "
                 "       'event_expenses', 'gift_envelopes', 'expense_payments', "
                 "       'admin_audit_logs', 'call_tasks', 'caller_profiles', 'call_round_controls', "
-                "       'system_settings', 'setting_overrides', 'feature_flags', 'feature_rules', 'venue_images') "
+                "       'system_settings', 'setting_overrides', 'feature_flags', 'feature_rules', 'venue_images', "
+                "       'gift_ledger', 'entitlement_ledger') "
                 "ORDER BY 1"
             ).all()
             summary = " · ".join(

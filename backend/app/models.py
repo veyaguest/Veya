@@ -350,6 +350,67 @@ class Gift(Base):
     )
 
 
+class GiftLedger(Base):
+    """רישום חשבונאי של מתנה מאירוע שנמחק — **בלי שום פרט אישי**.
+
+    החלטת המייסד (2026-10-28): כשמוחקים אירוע, עסקאות המתנה לא נעלמות — הן
+    נחוצות להתאמה מול ספק הסליקה, להחזרים, לביטולי עסקה ולמס (מדיניות מחיקת
+    החשבון, ``legal/05`` §3). נשמר כאן רק מה שחשבונאות צריכה: סכומים, עמלה,
+    סטטוס, מזהה הספק ותאריכים. **לא נשמרים:** שם הנותן, ההודעה, הקשר למוזמן,
+    לאירוע או לבעליו. ``event_ref`` הוא מספר בלבד (בלי מפתח זר) — האירוע כבר
+    לא קיים, והמספר משמש רק להתאמה פנימית.
+
+    נכתב רק דרך ``account.archive_event_finance`` (וב-Postgres עם RLS — דרך
+    הפונקציה ``app_archive_event_finance``, ``rls/30_finance_ledger_rls.sql``).
+    קריאה: אדמין בלבד. תקופת השמירה — לפי רואה החשבון (``legal/00`` #22).
+    """
+
+    __tablename__ = "gift_ledger"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    original_gift_id: Mapped[int] = mapped_column(Integer, index=True)
+    event_ref: Mapped[int] = mapped_column(Integer, index=True)
+    gift_amount_agorot: Mapped[int] = mapped_column(Integer)
+    fee_agorot: Mapped[int] = mapped_column(Integer)
+    total_agorot: Mapped[int] = mapped_column(Integer)
+    currency: Mapped[str] = mapped_column(String, default="ILS")
+    status: Mapped[str] = mapped_column(String)
+    provider: Mapped[str] = mapped_column(String, default="mock")
+    provider_transaction_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    gift_created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    gift_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    archived_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    reason: Mapped[str] = mapped_column(String, default="event_deleted")
+
+
+class EntitlementLedger(Base):
+    """רישום חשבונאי של רכישת מסלול VEYA מאירוע שנמחק — בלי פרטים אישיים.
+
+    אותו עיקרון כמו ``GiftLedger``: זה רישום המכירה של VEYA עצמה, ונשמר אחרי
+    מחיקת האירוע. **לא נשמרים:** ההערה הפנימית (טקסט חופשי שעלול להכיל שמות)
+    ומי יצר את הרכישה.
+    """
+
+    __tablename__ = "entitlement_ledger"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    original_entitlement_id: Mapped[int] = mapped_column(Integer, index=True)
+    event_ref: Mapped[int] = mapped_column(Integer, index=True)
+    plan_version_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(String)
+    price_agorot: Mapped[int] = mapped_column(Integer, default=0)
+    addons: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    coupon_code: Mapped[str] = mapped_column(String, default="")
+    source: Mapped[str] = mapped_column(String, default="")
+    starts_on: Mapped[str] = mapped_column(String, default="")
+    trial_ends_on: Mapped[str] = mapped_column(String, default="")
+    renews_on: Mapped[str] = mapped_column(String, default="")
+    cancelled_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    entitlement_created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    archived_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    reason: Mapped[str] = mapped_column(String, default="event_deleted")
+
+
 class LoginEvent(Base):
     """רישום התחברות מוצלחת — היסטוריית כניסות למשתמש (לפאנל האדמין).
 

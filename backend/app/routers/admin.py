@@ -16,7 +16,7 @@ from app import (
     admin_audit, admin_rbac, audit, auth, cache, call_center, call_ops, communication, event_terms, media, messaging, models, roles,
     schemas, venues,
 )
-from app.account import delete_event_cascade, delete_support_requests_for_user
+from app.account import delete_event_cascade, delete_support_requests_for_user, detach_user_finance
 from app.database import get_db
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -828,6 +828,7 @@ def _delete_user_impl(db: Session, admin: models.User, target: models.User, mode
 
     admin_audit.detach_user(db, user_id)
     call_ops.detach_user(db, user_id)
+    detach_user_finance(db, user_id)
 
     db.delete(target)
     return len(owned_events)
