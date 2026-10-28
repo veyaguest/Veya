@@ -221,10 +221,13 @@ ${o.body}
               <li><a href="/legal/about.html" target="_blank" rel="noopener noreferrer">אודות</a></li>
               <li><a href="/legal/about.html#contact" target="_blank" rel="noopener noreferrer">יצירת קשר</a></li>
               <li><a href="https://wa.me/972552909070" target="_blank" rel="noopener noreferrer">WhatsApp</a></li>
+              <li><a href="https://www.instagram.com/veyaguest.co.il/" target="_blank" rel="noopener noreferrer">אינסטגרם</a></li>
+              <li><a href="https://www.facebook.com/profile.php?id=61591999686848" target="_blank" rel="noopener noreferrer">פייסבוק</a></li>
               <li><a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">תנאי שימוש</a></li>
               <li><a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">מדיניות פרטיות</a></li>
               <li><a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">הצהרת נגישות</a></li>
               <li><a href="/legal/cookies.html" target="_blank" rel="noopener noreferrer">מדיניות Cookies</a></li>
+              <li><a href="/?cookies=1">הגדרות Cookies</a></li>
               <li><a href="/app">כניסה למערכת</a></li>
             </ul>
           </div>
