@@ -110,7 +110,7 @@
   </url>
   <url>
     <loc>https://veyaguest.co.il/guides/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -133,14 +133,38 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://veyaguest.co.il/guides/chozeh-im-haulam/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://veyaguest.co.il/guides/haim-haerua-mechase-atzmo/</loc>
     <lastmod>2026-10-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://veyaguest.co.il/guides/tipim-baerua/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://veyaguest.co.il/guides/alut-laorech/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://veyaguest.co.il/guides/luach-zmanim-ishurey-hagaa/</loc>
     <lastmod>2026-10-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://veyaguest.co.il/guides/erua-nidcha/</loc>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
