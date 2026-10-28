@@ -135,3 +135,53 @@ def test_view_only_screen_load_survives_a_failed_switch() -> None:
         with mock.patch.object(message_wording, "switch_to_utility", side_effect=RuntimeError("rls")):
             r = api.client.get("/communication/sequence", headers=api.headers)
     assert r.status_code == 200, r.text
+
+
+def test_retired_wording_is_hidden_and_events_move_off_it(tmp_path) -> None:
+    """(2026-10-28) נוסח שהוסר מהספרייה: לא מוצג לבחירה, ואירוע שבחר אותו עובר
+    לנוסח השירות הראשון — גם בלי שום מידע מ-Meta (אחרי מחיקת התבנית אין לה סיווג).
+    נוסח שנערך בפאנל האדמין (תוכן אחר) לא מכובה."""
+    import json
+
+    from sqlalchemy import select
+
+    from app import main, message_wording, models
+    from app.database import SessionLocal
+
+    retired = tmp_path / "retired.json"
+    retired.write_text(json.dumps([
+        {"event_type": "wedding", "message_type": "reminder_1", "option_number": 1, "content": REMINDERS[0]},
+        {"event_type": "wedding", "message_type": "reminder_1", "option_number": 3, "content": "נוסח אחר"},
+    ], ensure_ascii=False), encoding="utf-8")
+    real_file = message_wording.RETIRED_FILE
+    message_wording.RETIRED_FILE = retired
+    with categories({}):
+        api, _ = bootstrap_with_options()
+        _seq(api)
+        _set_content(api, "reminder_1", REMINDERS[0])
+
+        def option(n):
+            db = SessionLocal()
+            try:
+                return db.scalar(select(models.MessageDefaultOption).where(
+                    models.MessageDefaultOption.event_type == "wedding",
+                    models.MessageDefaultOption.message_type == "reminder_1",
+                    models.MessageDefaultOption.option_number == n))
+            finally:
+                db.close()
+
+        try:
+            main._retire_library_options()
+            assert option(1).is_active is False and option(3).is_active is True
+            contents = [o["content"] for o in _options(api, "reminder_1")]
+            assert REMINDERS[0] not in contents and REMINDERS[1] in contents
+            moved_to = _seq(api)["reminder_1"]["content"]
+            assert moved_to != REMINDERS[0] and moved_to in contents, moved_to
+        finally:
+            message_wording.RETIRED_FILE = real_file
+            db = SessionLocal()
+            try:
+                db.get(models.MessageDefaultOption, option(1).id).is_active = True
+                db.commit()
+            finally:
+                db.close()

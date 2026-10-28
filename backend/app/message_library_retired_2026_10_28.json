@@ -1,0 +1,182 @@
+[
+  {
+    "event_type": "wedding",
+    "message_type": "rsvp_request",
+    "option_number": 2,
+    "content": "היי {{guest_name}} 😊\n\nנשמח לדעת אם תוכלו להיות איתנו ביום המיוחד שלנו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "rsvp_request",
+    "option_number": 5,
+    "content": "היי {{guest_name}},\n\nאנחנו מזמינים אתכם לחגוג איתנו, ונשמח לדעת אם אתם מגיעים.\n\nאפשר לעדכן כאן:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "rsvp_request",
+    "option_number": 6,
+    "content": "היי {{guest_name}} 😊\n\nנשמח לדעת אם אתם מצטרפים אלינו לחתונה.\n\nאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "rsvp_request",
+    "option_number": 7,
+    "content": "היי {{guest_name}},\n\nנשמח לדעת אם נראה אתכם איתנו בחתונה.\n\nאפשר לעדכן כאן:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "rsvp_request",
+    "option_number": 9,
+    "content": "היי {{guest_name}} 🥰\n\nנשמח לדעת אם אתם איתנו.\n\nאפשר לאשר הגעה בקלות כאן:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "rsvp_request",
+    "option_number": 12,
+    "content": "היי {{guest_name}},\n\nנשמח לדעת אם תוכלו להגיע ולחגוג איתנו.\n\nלאישור הגעה:\n{{rsvp_link}}\n\nתודה רבה"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_1",
+    "option_number": 1,
+    "content": "היי {{guest_name}} ❤️\n\nכאן {{groom_name}} ו{{bride_name}}.\n\nרצינו לוודא שההזמנה שלנו הגיעה אליך 😊\n\nנשמח לדעת אם נזכה לראות אותך איתנו בחתונה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_1",
+    "option_number": 3,
+    "content": "היי {{guest_name}} ❤️\n\nאנחנו כבר מתחילים להתכונן לערב שלנו ורצינו לדעת אם תהיו איתנו.\n\nנשמח לאישור הגעה:\n\n{{rsvp_link}}\n\nמחכים לראות אתכם."
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_1",
+    "option_number": 4,
+    "content": "שלום {{guest_name}},\n\nרצינו לבדוק שההזמנה הגיעה אליך ושנוכל לסמן אותך איתנו לערב החתונה ❤️\n\nלאישור הגעה:\n{{rsvp_link}}\n\nתודה רבה."
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_1",
+    "option_number": 5,
+    "content": "היי {{guest_name}} 😊\n\nהחתונה מתקרבת ואנחנו מתחילים לסגור את ההכנות האחרונות.\n\nנשמח לדעת אם תגיעו לחגוג איתנו.\n\nאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_1",
+    "option_number": 6,
+    "content": "היי {{guest_name}} ❤️\n\nרק קופצים להזכיר לגבי החתונה שלנו.\n\nנשמח מאוד לראות אותך איתנו בערב הזה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_1",
+    "option_number": 7,
+    "content": "שלום {{guest_name}},\n\nאנחנו מתקרבים לערב הגדול ורוצים לוודא שנוכל לשמור לך מקום 😊\n\nנשמח לעדכון לגבי ההגעה.\n\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_1",
+    "option_number": 9,
+    "content": "שלום {{guest_name}},\n\nהחתונה שלנו מתקרבת ❤️\n\nנשמח לדעת אם אתם מצטרפים אלינו לחגוג.\n\nלאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_1",
+    "option_number": 11,
+    "content": "היי {{guest_name}} ❤️\n\nרצינו להזכיר שאנחנו מחכים לחגוג איתכם בקרוב.\n\nנשמח שתעדכנו אותנו לגבי ההגעה.\n\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_2",
+    "option_number": 1,
+    "content": "היי {{guest_name}} ❤️\n\nכאן {{groom_name}} ו{{bride_name}}.\n\nהחתונה שלנו מתקרבת ורצינו לבדוק איתכם לגבי ההגעה.\n\nנשמח לדעת אם תוכלו להיות איתנו בערב הזה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_2",
+    "option_number": 2,
+    "content": "היי {{guest_name}},\n\nרק רצינו להזכיר שהחתונה שלנו מתקרבת 😊\n\nנשמח לקבל ממך עדכון לגבי ההגעה כדי שנוכל להיערך.\n\nלאישור:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_2",
+    "option_number": 3,
+    "content": "היי {{guest_name}} ❤️\n\nכאן {{groom_name}} ו{{bride_name}}.\n\nאנחנו כבר מתכוננים לערב הגדול ורצינו לוודא אם תגיעו לחגוג איתנו.\n\nנשמח לעדכון:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_2",
+    "option_number": 4,
+    "content": "שלום {{guest_name}},\n\nרצינו לחזור אליך לגבי ההזמנה לחתונה שלנו.\n\nנשמח לדעת אם נזכה לראות אותך איתנו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_2",
+    "option_number": 5,
+    "content": "היי {{guest_name}} ❤️\n\nעוד קצת וזה מגיע 😊\n\nהחתונה שלנו מתקרבת ונשמח לדעת אם אתם מצטרפים אלינו.\n\nאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_2",
+    "option_number": 8,
+    "content": "היי {{guest_name}},\n\nמקווים שהכול טוב 😊\n\nרצינו לוודא שקיבלתם את ההזמנה, ולדעת אם אתם מגיעים לחגוג איתנו.\n\nאישור:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_2",
+    "option_number": 9,
+    "content": "היי {{guest_name}} ❤️\n\nהערב שלנו מתקרב ואנחנו מתחילים להתארגן.\n\nנשמח לדעת אם תהיו איתנו בחתונה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "reminder_2",
+    "option_number": 12,
+    "content": "היי {{guest_name}},\n\nרק קופצים להזכיר לגבי החתונה שלנו 😊\n\nנשמח לדעת אם תגיעו ונשמור לכם מקום.\n\nלאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "final_reminder",
+    "option_number": 1,
+    "content": "היי {{guest_name}} ❤️\n\nכאן {{groom_name}} ו{{bride_name}}.\n\nאנחנו ממש מתקרבים לחתונה ורצינו לסגור את רשימת האורחים.\n\nנשמח לעדכון אחרון לגבי ההגעה שלך.\n\nלאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "final_reminder",
+    "option_number": 2,
+    "content": "היי {{guest_name}},\n\nרק תזכורת אחרונה מאיתנו 😊\n\nאנחנו סוגרים את ההכנות לחתונה ונשמח לדעת אם תגיעו.\n\nלאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "final_reminder",
+    "option_number": 3,
+    "content": "היי {{guest_name}} ❤️\n\nהחתונה ממש קרובה ואנחנו כבר מתכוננים.\n\nנשמח שתעדכנו אותנו אם תהיו איתנו בערב הזה.\n\nאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "final_reminder",
+    "option_number": 5,
+    "content": "היי {{guest_name}} ❤️\n\nעוד רגע זה קורה 😊\n\nאנחנו מסיימים את ההכנות ורוצים לוודא אם ניפגש בחתונה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "final_reminder",
+    "option_number": 6,
+    "content": "היי {{guest_name}},\n\nרצינו לשלוח תזכורת אחרונה לגבי החתונה שלנו.\n\nנשמח מאוד לדעת אם תגיעו לחגוג איתנו.\n\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "final_reminder",
+    "option_number": 8,
+    "content": "היי {{guest_name}},\n\nרק מזכירים שהחתונה שלנו ממש מתקרבת.\n\nאם עדיין לא יצא לך לעדכן, נשמח לקבל ממך תשובה ❤️\n\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "final_reminder",
+    "option_number": 9,
+    "content": "היי {{guest_name}} 😊\n\nאנחנו כבר ממש קרובים לערב שלנו.\n\nנשמח לדעת אם אתם איתנו בחתונה.\n\nלאישור הגעה:\n{{rsvp_link}}"
+  },
+  {
+    "event_type": "wedding",
+    "message_type": "final_reminder",
+    "option_number": 10,
+    "content": "שלום {{guest_name}} ❤️\n\nזאת התזכורת האחרונה שלנו לפני שאנחנו סוגרים את הרשימה.\n\nנשמח מאוד לראות אותך איתנו.\n\nאישור הגעה:\n{{rsvp_link}}"
+  }
+]

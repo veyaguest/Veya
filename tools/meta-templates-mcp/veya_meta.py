@@ -858,3 +858,61 @@ def submit_update(draft_id: str, confirm: str) -> dict:
     _drafts.pop(draft_id, None)
     return {"updated": bool(res.get("success")), "name": d["name"],
             "next_step_he": "לבדיקת האישור מחדש: get_template_status."}
+
+
+# ---------------------------------------------------------------- מחיקה
+
+def prepare_delete(names: list[str], waba_id: Optional[str] = None) -> dict:
+    """מכין מחיקה של תבניות — לא נוגע ב-Meta.
+
+    מסרב לתבנית נעולה, לתבנית שהקוד של VEYA שולח ישירות (התבניות הקבועות),
+    ולתבנית שהנוסח שלה עדיין **פעיל** בספריית הנוסחים (``/public/library``):
+    קודם מכבים את הנוסח בספרייה ומעבירים את האירועים לנוסח אחר (בשרת), ורק
+    אחרי שזה באוויר מוחקים ב-Meta — אחרת אירוע שבחר את הנוסח היה נתקע על
+    תבנית שאינה קיימת.
+    """
+    import library_sync as ls
+
+    waba = resolve_waba(waba_id)
+    names = sorted(set(names))
+    templates = fetch_templates(waba)
+    by_name = {t.get("name"): t for t in templates}
+    in_code = {e["name"] for e in code_expectations()}
+    active = {ls.template_name(w) for w in ls.wordings(ls.fetch_library())}
+    errors, rows = [], []
+    for n in names:
+        t = by_name.get(n)
+        if t is None:
+            errors.append(f"{n}: לא קיימת ב-Meta.")
+        elif n in LOCKED_TEMPLATES or n in in_code:
+            errors.append(f"{n}: הקוד של VEYA שולח אותה (או שהיא נעולה) — לא מוחקים.")
+        elif n in active:
+            errors.append(f"{n}: הנוסח שלה עדיין פעיל בספרייה. קודם מכבים אותו בשרת ומעלים לאוויר.")
+        else:
+            rows.append({"name": n, "id": t.get("id"), "status": t.get("status"),
+                         "category": t.get("category")})
+    out = {"to_delete": rows, "errors_he": errors, "touches_meta": False,
+           "notes_he": ["מחיקה ב-Meta היא סופית. את אותו שם אי אפשר ליצור מחדש במשך 30 יום.",
+                        "הודעות שכבר נשלחו לא נפגעות."]}
+    if errors or not rows:
+        return out
+    did = _save_draft("delete", {"rows": rows}, {"name": str(len(rows)), "waba": waba})
+    out["draft_id"] = did
+    out["next_step_he"] = (f"מוכן ולא נשלח. למחיקה: submit_template_delete עם draft_id={did} "
+                           f"ו-confirm={len(rows)} (מספר התבניות) — רק אחרי אישור הבעלים.")
+    return out
+
+
+def submit_delete(draft_id: str, confirm: str) -> dict:
+    d = _take_draft(draft_id, "delete", str(confirm))
+    deleted, failed = [], []
+    for r in d["payload"]["rows"]:
+        try:
+            res = _request("DELETE", f"{d['waba']}/message_templates",
+                           params={"name": r["name"], "hsm_id": r["id"]})
+            (deleted if res.get("success") else failed).append(r["name"])
+        except MetaError as exc:
+            failed.append(f"{r['name']}: {exc.info.get('explanation_he', '')}")
+    _drafts.pop(draft_id, None)
+    return {"deleted": deleted, "failed": failed}
+

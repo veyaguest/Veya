@@ -12,6 +12,7 @@
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Optional
 
 from sqlalchemy import select
@@ -93,11 +94,14 @@ def choosable(db: Session, event_type: str, message_type: str) -> list[models.Me
 
 
 def switch_to_utility(db: Session, event: models.Event) -> list[str]:
-    """אירוע שהנוסח שנבחר לו בבקשת האישור / בתזכורות סווג ב-Meta כשיווקי —
-    עובר לנוסח השירות הראשון ברשימה (החלטת הבעלים 2026-10-21). idempotent.
-
-    נוגע רק בנוסח מהספרייה שהסיווג שלו **ידוע** כשיווקי ושיש במקומו נוסח שירות;
-    נוסח שנערך ידנית או שאין עליו מידע — לא. מחזיר את סוגי ההודעה שהוחלפו.
+    """אירוע שהנוסח שנבחר לו בבקשת האישור / בתזכורות אינו נוסח שירות זמין —
+    עובר לנוסח השירות הראשון ברשימה (החלטות הבעלים 2026-10-21, 2026-10-28).
+    idempotent. מחליפים כשהנוסח שנבחר:
+    - **כובה בספרייה** (``is_active=False`` — למשל 30 הנוסחים השיווקיים שהוסרו
+      ב-2026-10-28, והתבניות שלהם נמחקו ב-Meta). לא תלוי בחיבור ל-Meta: אחרי
+      מחיקת התבנית אין לה סיווג, ובלי ההחלפה ההודעה פשוט לא הייתה נשלחת.
+    - או שהסיווג שלו ב-Meta **ידוע** כשיווקי ויש במקומו נוסח שירות.
+    נוסח שנערך ידנית (לא קיים בספרייה) — לא נוגעים. מחזיר את סוגי ההודעה שהוחלפו.
     לא עושה commit.
     """
     from app import whatsapp_template_status
@@ -109,16 +113,29 @@ def switch_to_utility(db: Session, event: models.Event) -> list[str]:
     )).all()
     for em in rows:
         mt = em.message_type
-        current = next((o for o in options(db, event.event_type, mt) if o.content == em.content), None)
-        if current is None:
+        current = db.scalars(
+            select(models.MessageDefaultOption)
+            .where(models.MessageDefaultOption.event_type == event.event_type)
+            .where(models.MessageDefaultOption.message_type == mt)
+            .where(models.MessageDefaultOption.content == em.content)
+            .order_by(models.MessageDefaultOption.is_active.desc(), models.MessageDefaultOption.option_number)
+        ).first()
+        if current is None or not em.content:
             continue
-        if option_category(event.event_type, mt, current) != whatsapp_template_status.MARKETING:
+        candidates = choosable(db, event.event_type, mt)
+        if not current.is_active:
+            utility = [o for o in candidates
+                       if option_category(event.event_type, mt, o) == whatsapp_template_status.UTILITY]
+            target = (utility or candidates or [None])[0]
+        elif option_category(event.event_type, mt, current) == whatsapp_template_status.MARKETING:
+            utility = [o for o in candidates
+                       if option_category(event.event_type, mt, o) == whatsapp_template_status.UTILITY]
+            target = utility[0] if utility else None
+        else:
             continue
-        utility = [o for o in choosable(db, event.event_type, mt)
-                   if option_category(event.event_type, mt, o) == whatsapp_template_status.UTILITY]
-        if not utility:
+        if target is None or target.content == em.content:
             continue
-        em.content = utility[0].content
+        em.content = target.content
         changed.append(mt)
     if changed:
         from app import audit, communication
@@ -129,6 +146,40 @@ def switch_to_utility(db: Session, event: models.Event) -> list[str]:
                    + ", ".join(communication.MESSAGE_TYPE_LABELS.get(mt, mt) for mt in changed),
         )
     return changed
+
+
+#: נוסחים שהוסרו מהספרייה (2026-10-28): 30 הנוסחים של בקשת האישור והתזכורות
+#: בחתונה ש-Meta סיווגה כשיווקיים. התבניות שלהם נמחקות ב-Meta.
+RETIRED_FILE = Path(__file__).with_name("message_library_retired_2026_10_28.json")
+
+
+def retire_options(db: Session) -> int:
+    """מכבה את הנוסחים שב-``RETIRED_FILE`` — רק כשהשורה עדיין **בדיוק** אותו נוסח
+    (נוסח שנערך בפאנל האדמין נשאר כמו שהוא). idempotent. לא עושה commit."""
+    import json
+
+    retired = json.loads(RETIRED_FILE.read_text(encoding="utf-8"))
+    by_key = {(r["event_type"], r["message_type"], r["option_number"]): r["content"] for r in retired}
+    changed = 0
+    for row in db.scalars(select(models.MessageDefaultOption).where(
+        models.MessageDefaultOption.is_active == True,  # noqa: E712
+        models.MessageDefaultOption.message_type.in_(list(UTILITY_ONLY_TYPES)),
+    )):
+        if by_key.get((row.event_type, row.message_type, row.option_number)) == row.content:
+            row.is_active = False
+            changed += 1
+    return changed
+
+
+def events_on_retired_wording(db: Session) -> list[models.Event]:
+    """אירועים שהנוסח שנבחר להם בבקשת האישור / בתזכורות כובה בספרייה."""
+    O, EM, E = models.MessageDefaultOption, models.EventMessage, models.Event
+    return list(db.scalars(
+        select(E).join(EM, EM.event_id == E.id)
+        .join(O, (O.event_type == E.event_type) & (O.message_type == EM.message_type) & (O.content == EM.content))
+        .where(EM.message_type.in_(list(UTILITY_ONLY_TYPES)), O.is_active == False)  # noqa: E712
+        .distinct()
+    ).all())
 
 
 def first_option_content(db: Session, event_type: str, message_type: str) -> Optional[str]:

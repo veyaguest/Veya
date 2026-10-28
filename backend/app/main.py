@@ -2019,6 +2019,31 @@ def _apply_fixed_wordings() -> None:
         db.close()
 
 
+def _retire_library_options() -> None:
+    """מכבה את הנוסחים שהוסרו מהספרייה (``message_wording.RETIRED_FILE``,
+    2026-10-28) ומעביר כל אירוע שבחר אחד מהם לנוסח השירות הראשון — עוד לפני
+    שמישהו פותח מסך, כדי שאף הודעה לא תיתקע על תבנית שנמחקה ב-Meta.
+    idempotent. לעולם לא מפיל את העלייה."""
+    from app import message_wording
+
+    db = MigrationSessionLocal()
+    try:
+        retired = message_wording.retire_options(db)
+        db.flush()
+        moved = 0
+        for event in message_wording.events_on_retired_wording(db):
+            if message_wording.switch_to_utility(db, event):
+                moved += 1
+        db.commit()
+        if retired or moved:
+            print(f"[veya:seed] נוסחים שהוסרו מהספרייה: {retired}, אירועים שהועברו: {moved}", flush=True)
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        print(f"[veya:seed] הסרת נוסחים מהספרייה נכשלה: {exc!r}", flush=True)
+    finally:
+        db.close()
+
+
 def _seed_postponement_options() -> None:
     """זורע את נוסחי הודעת הדחייה. לעולם לא מפיל את עליית השרת."""
     from app.postponement_messages import seed_postponement_options
@@ -2089,6 +2114,7 @@ def on_startup() -> None:
     _seed_postponement_options()
     # יום האירוע ושינוי מועד — נוסח קבוע, זהה לתבניות השירות ב-WhatsApp (2026-10-20).
     _apply_fixed_wordings()
+    _retire_library_options()
     # הוסר (2026-08-24): קריאה ל-get_default_event שיצרה אירוע "ברירת מחדל"
     # בלי owner_id בכל פעם שטבלת האירועים הייתה ריקה. זה בדיוק המנגנון
     # שגרם לבאג 409 בייצור — auth.adopt_orphan_events (רץ בכל הרשמה חדשה)

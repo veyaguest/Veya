@@ -134,6 +134,25 @@ TOOLS = [
         "destructiveHint": True,
     },
     {
+        "name": "prepare_template_delete",
+        "description": "מכין מחיקה של תבניות לפי שם: מסרב לתבנית נעולה, לתבנית שהקוד שולח ישירות, "
+                       "ולתבנית שהנוסח שלה עדיין פעיל בספריית הנוסחים. לא משנה כלום ב-Meta.",
+        "inputSchema": {"type": "object", "properties": {
+            "names": {"type": "array", "items": {"type": "string"}},
+            "waba_id": {"type": "string"},
+        }, "required": ["names"]},
+        "readOnlyHint": True,
+    },
+    {
+        "name": "submit_template_delete",
+        "description": "כותב ל-Meta: מוחק את התבניות שהוכנו ב-prepare_template_delete. סופי. לקרוא רק "
+                       "אחרי אישור מפורש של הבעלים בצ'אט. confirm = מספר התבניות.",
+        "inputSchema": {"type": "object", "properties": {
+            "draft_id": {"type": "string"}, "confirm": {"type": "string"},
+        }, "required": ["draft_id", "confirm"]},
+        "destructiveHint": True,
+    },
+    {
         "name": "check_library_sync",
         "description": "משווה אחד-לאחד את ספריית הנוסחים של VEYA (אותם נוסחים שבדף veyaguest.co.il/nuschim) "
                        "לתבניות ב-Meta: זהות, שונות, חסרות, וכאלה שצריכות תיקון בספרייה כדי להיות זהות. "
@@ -253,6 +272,8 @@ HANDLERS = {
     "submit_template_create": lambda a: vm.submit_create(a["draft_id"], a["confirm"]),
     "prepare_template_update": vm.prepare_update,
     "submit_template_update": lambda a: vm.submit_update(a["draft_id"], a["confirm"]),
+    "prepare_template_delete": lambda a: vm.prepare_delete(a["names"], a.get("waba_id")),
+    "submit_template_delete": lambda a: vm.submit_delete(a["draft_id"], a["confirm"]),
     "explain_meta_error": t_explain,
     "check_library_sync": lambda a: ls.check_sync(vm.fetch_templates(a.get("waba_id")), ls.fetch_library(),
                                                   a.get("event_type"), a.get("message_type")),

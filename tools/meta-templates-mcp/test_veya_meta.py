@@ -247,3 +247,28 @@ def test_alignment_flags_static_button_with_literal_placeholder(meta):
     r = {x["name"]: x for x in vm.check_alignment(vm.fetch_templates())["checked"]}
     assert not r["veya_inv_pilot"]["ok"]
     assert "Static" in r["veya_inv_pilot"]["problems_he"][0]
+
+
+def test_delete_refuses_active_wording_and_code_templates(monkeypatch):
+    """מחיקה: לא נוגעים בתבנית שהנוסח שלה עדיין פעיל בספרייה, ולא בתבנית שהקוד שולח."""
+    import library_sync as ls
+
+    monkeypatch.setattr(vm, "resolve_waba", lambda w=None: "123")
+    monkeypatch.setattr(vm, "fetch_templates", lambda waba=None, name=None: [
+        {"name": "veya_wed_rem1_01", "id": "1", "status": "APPROVED", "category": "MARKETING"},
+        {"name": "veya_wed_rem1_02", "id": "2", "status": "APPROVED", "category": "UTILITY"},
+        {"name": "veya_event_day", "id": "3", "status": "APPROVED", "category": "UTILITY"},
+    ])
+    monkeypatch.setattr(ls, "fetch_library", lambda: {"categories": [{"wordings": [
+        {"event_type": "wedding", "message_type": "reminder_1", "option_number": 2, "content": "x"},
+    ]}]})
+    out = vm.prepare_delete(["veya_wed_rem1_01", "veya_wed_rem1_02", "veya_event_day"])
+    assert "draft_id" not in out and len(out["errors_he"]) == 2
+    out = vm.prepare_delete(["veya_wed_rem1_01"])
+    assert out["to_delete"][0]["name"] == "veya_wed_rem1_01" and out["draft_id"]
+    try:
+        vm.submit_delete(out["draft_id"], "2")
+    except vm.MetaError:
+        pass
+    else:
+        raise AssertionError("confirm שגוי עבר")
