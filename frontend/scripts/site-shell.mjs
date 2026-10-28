@@ -220,6 +220,7 @@ ${o.body}
             <ul>
               <li><a href="/legal/about.html" target="_blank" rel="noopener noreferrer">אודות</a></li>
               <li><a href="/legal/about.html#contact" target="_blank" rel="noopener noreferrer">יצירת קשר</a></li>
+              <li><a href="https://wa.me/972552909070" target="_blank" rel="noopener noreferrer">WhatsApp</a></li>
               <li><a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">תנאי שימוש</a></li>
               <li><a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">מדיניות פרטיות</a></li>
               <li><a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">הצהרת נגישות</a></li>
@@ -230,7 +231,7 @@ ${o.body}
         </div>
       </div>
       <div class="wrap">
-        <p class="footer-legal">© VEYA, מערכת לניהול אירועים</p>
+        <p class="footer-legal">© VEYA, מערכת לניהול אירועים · מנחם אביב, עוסק פטור מס׳ 315465112</p>
       </div>
     </footer>
     <script>
