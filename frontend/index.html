@@ -345,12 +345,26 @@
 
       /* קישורים משלימים מתוך תוכן דף הבית. הם נותנים לדפים העמוקים נתיב
          ניווט שימושי, בלי להחזיר את הסקשנים שהוסרו מהעמוד. */
-      .home-resources { background: var(--ivory-2); border-top: 1px solid var(--line); padding: 24px 0; }
-      .home-resources .wrap { display: flex; align-items: center; justify-content: center; gap: 10px 18px; flex-wrap: wrap; }
-      .home-resources strong { color: var(--charcoal); font-size: var(--fs-sm); }
-      .home-resources a { color: var(--gold-deep); font-size: var(--fs-sm); font-weight: 600; text-decoration-thickness: 1px; text-underline-offset: 3px; }
-      .home-resources a:hover { color: var(--charcoal); }
-      .home-resources a:focus-visible { outline: 2px solid var(--gold-deep); outline-offset: 3px; border-radius: 3px; }
+      /* "לתכנון האירוע": פס כהה שממשיך ישר לפוטר — כותרת זהב קטנה וארבעה תאים
+         שווים עם קווי הפרדה דקים. שורה אחת במחשב, שתיים על שתיים בטלפון. */
+      .home-resources { position: relative; z-index: 1; background: var(--ink); padding: 36px 0 0; box-shadow: 0 -1px 0 var(--ink), 0 1px 0 var(--ink); /* מכסה את התפר הבהיר של רקע הדף מעל ומתחת */ }
+      .home-resources .wrap { display: grid; grid-template-columns: auto repeat(4, minmax(0, 1fr)); align-items: stretch; border-top: 3px double rgba(201, 162, 39, 0.4); border-bottom: 1px solid rgba(201, 162, 39, 0.14); }
+      .home-resources strong { align-self: center; padding: 0 0 0 28px; color: var(--gold-light); font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.16em; }
+      .home-resources a { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; padding: 14px 20px; border-inline-start: 1px solid rgba(201, 162, 39, 0.14); color: #ece3d0; font-size: var(--fs-sm); font-weight: 600; text-decoration: none; transition: background-color 160ms ease, color 160ms ease; }
+      .home-resources a::after { content: "←"; flex: none; color: var(--gold); transition: transform 160ms ease; }
+      .home-resources a:hover { background: rgba(201, 162, 39, 0.06); color: #fff; }
+      .home-resources a:hover::after { transform: translateX(-3px); }
+      .home-resources a:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+      @media (max-width: 720px) {
+        .home-resources { padding-top: 28px; }
+        .home-resources .wrap { grid-template-columns: 1fr 1fr; }
+        .home-resources strong { grid-column: 1 / -1; padding: 16px 2px 12px; }
+        .home-resources a { min-height: 56px; padding: 12px 14px; border-top: 1px solid rgba(201, 162, 39, 0.14); border-inline-start: 0; }
+        .home-resources a:nth-of-type(even) { border-inline-start: 1px solid rgba(201, 162, 39, 0.14); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .home-resources a, .home-resources a::after { transition: none; }
+      }
 
       /* Cookie Banner (דף נחיתה סטטי — ראו CookieBanner.tsx לגרסת ה-SPA) */
       .cookie-banner-static { position: fixed; inset-inline: 0; bottom: 0; z-index: 100; background: var(--ink); border-top: 1px solid rgba(201,162,39,0.35); padding: env(safe-area-inset-bottom, 0px) 0 0; }
@@ -2456,7 +2470,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
 
     <nav class="home-resources" aria-label="כלים ומידע לתכנון האירוע">
       <div class="wrap">
-        <strong>לתכנון האירוע:</strong>
+        <strong>לתכנון האירוע</strong>
         <a href="/nuschim/">הודעות מוכנות למוזמנים</a>
         <a href="/guides/">מדריכים לארגון אירוע</a>
         <a href="/events/wedding/">ניהול חתונה</a>
