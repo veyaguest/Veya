@@ -2098,9 +2098,11 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
 /* the closing form card: a dark head with the seal over a gold rule, then light fields; event type as chips */
 .lp-close .lead-slot { position: relative; overflow: hidden; background: var(--ivory); color: var(--body); border-radius: 22px; padding: 0; box-shadow: 0 40px 90px rgba(0,0,0,.5), 0 0 0 1px rgba(201,162,39,.35); }
 .lp-close .lead-form { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 14px; padding: 0 32px 28px; }
-.lp-close .lp-form-head { grid-column: 1 / -1; margin: 0 -32px 6px; padding: 26px 32px 22px; background: var(--ink-2); border-bottom: 3px double var(--gold); }
+.lp-close .lp-form-head { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 20px; align-items: center; margin: 0 -32px 6px; padding: 24px 32px 22px; background: var(--ink-2); border-bottom: 3px double var(--gold); }
+/* הלוגו המלא (veya_combined.png): החותם ומתחתיו VEYA. חותכים את שולי הקובץ (וכתם בהיר בפינה העליונה) דרך גודל ומיקום הרקע. */
+.lp-close .lp-form-head::before { content: ''; grid-row: 1 / span 2; width: 58px; height: 80px; background: url(/veya_combined.png) -7.1px -10.5px / 71.85px auto no-repeat; }
+.lp-close .lp-form-head > * { grid-column: 2; }
 .lp-main .lp-close .lp-form-title { display: flex; align-items: center; gap: 12px; color: var(--cream-text); font: 500 30px/1.15 var(--display); }
-.lp-main .lp-close .lp-form-title::before { content: ''; flex: none; width: 48px; height: 48px; border-radius: 11px; background: url(/favicon.svg) center / contain no-repeat; box-shadow: 0 0 0 1px rgba(201,162,39,.25); }
 .lp-close .lp-form-lead { margin-top: 8px; font-size: 15.5px; line-height: 1.55; color: rgba(245,239,226,.75); }
 .lp-close .lead-field { display: grid; gap: 7px; align-content: start; min-width: 0; }
 .lp-close .lead-field label, .lp-close .lead-types legend { font: 600 14px var(--sans); color: var(--ink); }
