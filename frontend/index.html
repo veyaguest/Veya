@@ -332,7 +332,8 @@
       /* Footer */
       .site-footer { background: var(--ink); color: #b6aa93; padding: 48px 0 40px; }
       .site-footer .wrap { display: flex; flex-wrap: wrap; gap: 20px 28px; align-items: center; justify-content: space-between; }
-      .footer-brand { display: flex; align-items: center; gap: 14px; }
+      .footer-brand { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+      .footer-brand .footer-social { flex-basis: 100%; }
       .footer-logo { height: 66px; width: auto; }
       .footer-tag { font-size: var(--fs-xs); color: #9b907c; max-width: 280px; }
       .site-footer nav { display: flex; flex-wrap: wrap; gap: 22px; }
@@ -1884,6 +1885,14 @@
 .lp-index .lp-more i { display: inline-block; margin-top: 12px; font-style: normal; color: var(--gold-deep); transition: transform 180ms var(--ease-out); }
 .lp-index .lp-more a:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; border-radius: 4px; }
 @media (hover: hover) and (pointer: fine) { .lp-index .lp-more a:hover b { color: var(--gold-deep); } .lp-index .lp-more a:hover i { transform: translateX(-4px); } }
+/* footer: the social links as a clear row of their own under the logo (owner, 29.10) */
+.footer-social { margin-top: 18px; }
+.footer-social-t { margin: 0 0 10px; font-size: 0.875rem; color: rgba(245, 239, 226, 0.6); }
+.footer-social ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.footer-social a { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 16px 0 14px; border-radius: 999px; border: 1px solid rgba(228, 201, 107, 0.4); color: #f5efe2; font-size: 0.95rem; font-weight: 600; text-decoration: none; transition: background 160ms ease, border-color 160ms ease, color 160ms ease; }
+.footer-social svg { width: 20px; height: 20px; flex: none; color: #e4c96b; }
+.footer-social a:hover { background: rgba(228, 201, 107, 0.12); border-color: #e4c96b; }
+.footer-social a:focus-visible { outline: 2px solid #e4c96b; outline-offset: 3px; }
 /* event types as photo cards (I'm In's "אני רוצה הזמנה ל..."): each photo shows something that is really in that type's expense list */
 .lp-picker .lp-types { border: 0; padding: 0; margin: 38px auto 0; max-width: 1100px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 14px; }
 .lp-picker .lp-type { position: relative; cursor: pointer; display: block; }
@@ -2420,7 +2429,7 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
     <nav class="home-resources" aria-label="כלים ומידע לתכנון האירוע">
       <div class="wrap">
         <strong>לתכנון האירוע:</strong>
-        <a href="/nuschim/">נוסחים להודעות למוזמנים</a>
+        <a href="/nuschim/">הודעות מוכנות למוזמנים</a>
         <a href="/guides/">מדריכים לארגון אירוע</a>
         <a href="/events/wedding/">ניהול חתונה</a>
         <a href="/events/bar-mitzvah/">ניהול בר מצווה</a>
@@ -2432,6 +2441,14 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
         <div class="footer-brand">
           <img class="footer-logo" src="/veya_horizontal.png" alt="VEYA" width="1439" height="600" />
           <span class="footer-tag">מהרשימה הראשונה ועד הדוח שאחרי האירוע: מוזמנים, אישורי הגעה, הושבה ומאזן.</span>
+          <div class="footer-social">
+            <p class="footer-social-t">דברו איתנו ועקבו אחרינו</p>
+            <ul>
+              <li><a href="https://wa.me/972552909070" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12.04 2a9.9 9.9 0 0 0-8.5 15l-1.4 5.1 5.2-1.4A9.9 9.9 0 1 0 12.04 2Zm0 18.1a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-3.1.82.83-3-.2-.31a8.2 8.2 0 1 1 6.97 3.82Zm4.5-6.14c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.55.12-.16.25-.63.8-.78.97-.14.16-.29.18-.53.06a6.7 6.7 0 0 1-1.98-1.22 7.4 7.4 0 0 1-1.37-1.7c-.14-.25 0-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.13-.55-1.33-.76-1.82-.2-.48-.4-.41-.55-.42h-.47a.9.9 0 0 0-.65.31 2.7 2.7 0 0 0-.86 2.03c0 1.2.88 2.36 1 2.52.12.16 1.73 2.64 4.19 3.7.59.25 1.04.4 1.4.52.59.19 1.12.16 1.55.1.47-.07 1.46-.6 1.66-1.18.2-.58.2-1.08.14-1.18-.06-.1-.22-.16-.47-.29Z"/></svg><span>WhatsApp</span></a></li>
+              <li><a href="https://www.instagram.com/veyaguest.co.il/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.4" cy="6.6" r="1.2" fill="currentColor"/></svg><span>אינסטגרם</span></a></li>
+              <li><a href="https://www.facebook.com/profile.php?id=61591999686848" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M13.5 21v-7.6h2.6l.4-3h-3V8.5c0-.87.25-1.46 1.5-1.46h1.6V4.36A21 21 0 0 0 14.27 4c-2.32 0-3.9 1.41-3.9 4v2.4H7.75v3h2.62V21h3.13Z"/></svg><span>פייסבוק</span></a></li>
+            </ul>
+          </div>
         </div>
         <div class="footer-cols">
           <div class="footer-col">
@@ -2476,9 +2493,6 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
             <ul>
               <li><a href="/legal/about.html" target="_blank" rel="noopener noreferrer">אודות</a></li>
               <li><a href="/legal/about.html#contact" target="_blank" rel="noopener noreferrer">יצירת קשר</a></li>
-              <li><a href="https://wa.me/972552909070" target="_blank" rel="noopener noreferrer">WhatsApp</a></li>
-              <li><a href="https://www.instagram.com/veyaguest.co.il/" target="_blank" rel="noopener noreferrer">אינסטגרם</a></li>
-              <li><a href="https://www.facebook.com/profile.php?id=61591999686848" target="_blank" rel="noopener noreferrer">פייסבוק</a></li>
               <li><a href="/legal/terms.html" target="_blank" rel="noopener noreferrer">תנאי שימוש</a></li>
               <li><a href="/legal/privacy.html" target="_blank" rel="noopener noreferrer">מדיניות פרטיות</a></li>
               <li><a href="/legal/accessibility.html" target="_blank" rel="noopener noreferrer">הצהרת נגישות</a></li>

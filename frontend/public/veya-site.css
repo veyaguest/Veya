@@ -440,6 +440,15 @@ a.evt-card p, .guide-list p { font-size: 1rem; color: var(--muted); margin: 0; m
   .header-actions .btn { padding: 0 14px; font-size: 0.9375rem; white-space: nowrap; }
 }
 
+/* footer: the social links as a clear row of their own under the logo (owner, 29.10) */
+.footer-social { margin-top: 18px; }
+.footer-social-t { margin: 0 0 10px; font-size: 0.875rem; color: rgba(245, 239, 226, 0.6); }
+.footer-social ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.footer-social a { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 16px 0 14px; border-radius: 999px; border: 1px solid rgba(228, 201, 107, 0.4); color: #f5efe2; font-size: 0.95rem; font-weight: 600; text-decoration: none; transition: background 160ms ease, border-color 160ms ease, color 160ms ease; }
+.footer-social svg { width: 20px; height: 20px; flex: none; color: #e4c96b; }
+.footer-social a:hover { background: rgba(228, 201, 107, 0.12); border-color: #e4c96b; }
+.footer-social a:focus-visible { outline: 2px solid #e4c96b; outline-offset: 3px; }
+
 /* ===== VEYA BRAND LAYER — START (generated, do not edit here) ===== */
 .tl-item {
   position: relative; display: block;
