@@ -421,14 +421,28 @@ def test_team_email_once_per_waiting_conversation() -> None:
         assert "מספר שלא מוכר במערכת" in body
         t, _ = _thread(phone)
         assert f"/app#/admin/inbox/{t.id}" in body
-        assert "המחיר" not in body and "המחיר" not in m["html_body"], "בלי תוכן ההודעה במייל"
+        assert "היי, יש לי שאלה על המחיר" in body and "היי, יש לי שאלה על המחיר" in m["html_body"]
 
         _send(api, _text(phone, "ועוד משהו")[0])
         assert len([x for x in mails.sent if x["to"] == "team@example.com"]) == 1, "השיחה כבר ממתינה → בלי מייל נוסף"
 
         _set_thread_status(phone, "answered")
-        _send(api, _text(phone, "תודה, ועוד שאלה")[0])
-        assert len([x for x in mails.sent if x["to"] == "team@example.com"]) == 2, "אחרי שענו → מחכה שוב → מייל"
+        _send(api, _text(phone, "תודה, ועוד שאלה <b>")[0])
+        team = [x for x in mails.sent if x["to"] == "team@example.com"]
+        assert len(team) == 2, "אחרי שענו → מחכה שוב → מייל"
+        assert "תודה, ועוד שאלה" in team[1]["text_body"] and "היי, יש לי" not in team[1]["text_body"], "ההודעה האחרונה"
+        assert "&lt;b&gt;" in team[1]["html_body"], "התוכן מוצג כטקסט, לא כ-HTML"
+
+
+def test_team_email_long_message_is_cut() -> None:
+    from tests.test_help_requests import _CaptureEmails, _with_env
+
+    api, _ = bootstrap()
+    phone = _phone()
+    with _with_env("VEYA_SUPPORT_EMAIL", "team@example.com"), _CaptureEmails(mode="live") as mails:
+        _send(api, _text(phone, "א" * 900)[0])
+    body = next(m for m in mails.sent if m["to"] == "team@example.com")["text_body"]
+    assert "א" * 500 + "…" in body and "א" * 501 not in body
 
 
 def test_team_email_skipped_without_address_and_never_breaks() -> None:

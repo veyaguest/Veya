@@ -18,9 +18,10 @@ WhatsApp. כל מענה יוצא מכאן (מסך "WhatsApp" באדמין ובמ
 ## מייל לצוות (2026-10-29)
 כשפנייה נכנסת לתור השירות ו**מתחילה לחכות** — שיחה חדשה, או הודעה בשיחה
 שכבר נענתה או נסגרה — יוצא מייל לכתובת הצוות (``VEYA_SUPPORT_EMAIL``, אותה
-כתובת של פניות התמיכה ופניות מדף הבית): שם, טלפון, מי כתב וקישור לשיחה.
-הודעות נוספות בשיחה שכבר ממתינה לא שולחות שוב — הצוות כבר יודע. **בלי תוכן
-ההודעה**, כמו המייל לבעלי האירוע: התוכן נשאר במסך. ``notify_team``.
+כתובת של פניות התמיכה ופניות מדף הבית): שם, טלפון, מי כתב, ההודעה עצמה
+(עד ``TEAM_EMAIL_PREVIEW`` תווים) וקישור לשיחה. הודעות נוספות בשיחה שכבר
+ממתינה לא שולחות שוב — הצוות כבר יודע. התוכן נכנס למייל לצוות בלבד (החלטת
+המייסד, 2026-10-29); המייל לבעלי האירוע נשאר בלי תוכן. ``notify_team``.
 
 ## תשובה אוטומטית
 בתור השירות בלבד, פעם אחת ל-24 שעות לכל מספר (``claim_auto_reply`` — תפיסה
@@ -478,6 +479,9 @@ def notify_hosts(db: Session, event_id: int) -> int:
     return sent
 
 
+#: כמה תווים מההודעה נכנסים למייל לצוות. השאר — במסך.
+TEAM_EMAIL_PREVIEW = 500
+
 #: איך מתוארת השיחה במייל לצוות, לפי ``sender_kind``.
 _TEAM_SENDER_LABEL = {
     SENDER_ACCOUNT: "מספר של חשבון ב־VEYA",
@@ -487,7 +491,7 @@ _TEAM_SENDER_LABEL = {
 
 
 def notify_team(db: Session, thread_id: int) -> bool:
-    """מייל לצוות: פנייה חדשה ב-WhatsApp מחכה בתור השירות. בלי תוכן ההודעה.
+    """מייל לצוות: פנייה חדשה ב-WhatsApp מחכה בתור השירות, עם ההודעה האחרונה של הפונה.
 
     בלי כתובת צוות — לא שולח. מחזיר האם המייל יצא. לעולם לא זורק.
     """
@@ -511,11 +515,24 @@ def notify_team(db: Session, thread_id: int) -> bool:
                 who += f" ({user.display_name or user.email})"
         link = f"{emailer.public_base_url()}/app#/admin/inbox/{thread.id}"
         lines = [f"שם בוואטסאפ: {name}", f"טלפון: {_display_phone(thread.phone)}", f"מי כתב: {who}"]
+        M = models.WhatsAppThreadMessage
+        last = db.scalar(
+            select(M.body).where(M.thread_id == thread.id, M.direction == "inbound")
+            .order_by(M.id.desc()).limit(1)
+        ) or ""
+        if len(last) > TEAM_EMAIL_PREVIEW:
+            last = last[:TEAM_EMAIL_PREVIEW].rstrip() + "…"
+        quote_html = (
+            "<p style=\"margin:16px 0 4px\">ההודעה:</p>"
+            "<blockquote style=\"margin:0;padding:8px 12px;border-right:3px solid #c9a96e;"
+            f"white-space:pre-wrap\">{html.escape(last)}</blockquote>"
+        ) if last else ""
         body_html = (
             "".join(f"<p style=\"margin:0 0 8px\">{html.escape(line)}</p>" for line in lines)
+            + quote_html
             + f"<p style=\"margin:16px 0 0\"><a href=\"{html.escape(link)}\">לשיחה במסך הניהול</a></p>"
         )
-        text = "\n".join(lines) + f"\n\nלשיחה במסך הניהול: {link}"
+        text = "\n".join(lines) + (f"\n\nההודעה:\n{last}" if last else "") + f"\n\nלשיחה במסך הניהול: {link}"
         res = emailer.send_email(
             to=to, subject=f"פנייה חדשה ב-WhatsApp: {name}", html_body=body_html, text_body=text,
         )
