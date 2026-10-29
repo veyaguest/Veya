@@ -2092,6 +2092,17 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
 .lp-close .lead-field label, .lp-close .lead-types legend { font: 600 14px var(--sans); color: var(--ink); }
 .lp-close .lead-field input { width: 100%; min-height: 52px; padding: 13px 15px; border-radius: 12px; border: 1px solid #ddd3bf; background: #fff; color: var(--ink); font: 400 16.5px var(--sans); box-shadow: inset 0 1px 2px rgba(23,19,13,.04); transition: border-color 140ms ease, box-shadow 140ms ease; }
 .lp-close .lead-field input::placeholder { color: #a39a88; }
+/* תאריך במובייל: ב-Safari של iPhone שדה תאריך ריק מוצג ריק לגמרי, התאריך שנבחר
+   יושב באמצע או בצד, והשדה יכול לחרוג מרוחב הטופס. מיישרים לימין, נועלים לרוחב
+   הטופס, ובמסך מגע מציגים "בחרו תאריך" עד שנבחר תאריך. */
+.lp-close .lead-date { position: relative; display: block; }
+.lp-close .lead-field input[type="date"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; text-align: right; line-height: 1.4; }
+.lp-close .lead-field input[type="date"]::-webkit-date-and-time-value { text-align: right; margin: 0; }
+.lp-close .lead-date-hint { display: none; position: absolute; inset: 1px; padding: 0 15px; align-items: center; justify-content: space-between; border-radius: 11px; background: #fff; color: #a39a88; font: 400 16.5px var(--sans); pointer-events: none; }
+.lp-close .lead-date-hint svg { color: var(--gold-deep); flex: none; }
+@media (pointer: coarse) {
+  .lp-close .lead-date input:invalid:not(:focus) + .lead-date-hint { display: flex; }
+}
 .lp-close .lead-field input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,162,39,.28); }
 .lp-close .lead-field.is-bad input { border-color: var(--error); box-shadow: 0 0 0 3px rgba(143,50,38,.12); background: #fff; }
 .lp-close .lead-types { grid-column: 1 / -1; border: 0; margin: 0; padding: 0; }
@@ -2420,7 +2431,10 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
 
                 <div class="lead-field">
                   <label for="lead-date">תאריך האירוע</label>
-                  <input type="date" id="lead-date" name="event_date" required aria-describedby="lead-date-err" />
+                  <span class="lead-date">
+                    <input type="date" id="lead-date" name="event_date" required aria-describedby="lead-date-err" />
+                    <span class="lead-date-hint" aria-hidden="true">בחרו תאריך<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
+                  </span>
                   <p class="lead-err" id="lead-date-err" data-err-for="event_date" hidden></p>
                 </div>
 
