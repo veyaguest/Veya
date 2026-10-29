@@ -14,6 +14,12 @@
 
 ## הגנות
 
+## התראה לצוות
+
+אחרי שהשורה נשמרה יוצא מייל קצר לכתובת הצוות (``VEYA_SUPPORT_EMAIL`` — אותה
+כתובת של התראות פניות התמיכה), עם קישור למסך "פניות מדף הבית" בפאנל הניהול.
+המייל נשלח ברקע: הגולש לא מחכה לו, ותקלה בו לא נוגעת בפנייה שכבר נשמרה.
+
 ``lead_limiter`` מגביל ל-5 פניות לשעה מאותו IP. זה נדיב למי שטעה והקליד
 שוב, וצר מספיק כדי שהטופס לא יהפוך לצינור זבל. הולידציה זהה לזו של
 המוצר: ``normalize_israeli_phone`` (אותה פונקציה שמנרמלת טלפון של מוזמן)
@@ -21,15 +27,17 @@
 """
 from __future__ import annotations
 
+import html
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
-from app import models
+from app import emailer, help_support, models
 from app.database import get_db
 from app.event_terms import EVENT_TERMS
+from app.guest_journey import today_in_israel
 from app.ratelimit import RateLimiter, client_ip
 from app.validators import normalize_israeli_phone
 
@@ -98,22 +106,52 @@ class LeadAck(BaseModel):
     ok: bool = True
 
 
+def notify_team(lead_id: int, name: str, phone: str, event_type: str, event_date: str) -> None:
+    """מייל לצוות על פנייה חדשה מדף הבית. בלי כתובת צוות — לא שולח. לעולם לא זורק."""
+    to = help_support.support_email()
+    if not to:
+        print(f"[veya:leads] פנייה #{lead_id} נשמרה — VEYA_SUPPORT_EMAIL לא מוגדר, לא נשלחה התראה", flush=True)
+        return
+    try:
+        label = EVENT_TERMS[event_type].label if event_type in EVENT_TERMS else event_type
+        days = (date.fromisoformat(event_date) - today_in_israel()).days if event_date else None
+        link = f"{emailer.public_base_url()}/app#/admin/leads"
+        lines = [
+            f"שם: {name}",
+            f"טלפון: {phone}",
+            f"סוג האירוע: {label}",
+            f"תאריך האירוע: {event_date}" + (f" (בעוד {days} ימים)" if isinstance(days, int) else ""),
+        ]
+        body_html = (
+            "".join(f"<p style=\"margin:0 0 8px\">{html.escape(line)}</p>" for line in lines)
+            + f"<p style=\"margin:16px 0 0\"><a href=\"{html.escape(link)}\">לכל הפניות במסך הניהול</a></p>"
+        )
+        text = "\n".join(lines) + f"\n\nלכל הפניות במסך הניהול: {link}"
+        emailer.send_email(
+            to=to, subject=f"פנייה חדשה מדף הבית: {name}", html_body=body_html, text_body=text,
+        )
+    except Exception as exc:  # noqa: BLE001 — הפנייה כבר נשמרה; כשל במייל רק נרשם
+        print(f"[veya:leads] פנייה #{lead_id}: שליחת ההתראה נכשלה ({type(exc).__name__})", flush=True)
+
+
 @router.post("/leads", response_model=LeadAck, status_code=201)
 def create_lead(
-    payload: LeadCreate, request: Request, db: Session = Depends(get_db)
+    payload: LeadCreate, request: Request, background: BackgroundTasks, db: Session = Depends(get_db)
 ) -> LeadAck:
     ip = client_ip(request)
     lead_limiter.check(ip)
     lead_limiter.record_fail(ip)
 
-    db.add(
-        models.LandingLead(
-            name=payload.name,
-            phone=payload.phone,
-            event_type=payload.event_type,
-            event_date=payload.event_date,
-            source="landing_page",
-        )
+    lead = models.LandingLead(
+        name=payload.name,
+        phone=payload.phone,
+        event_type=payload.event_type,
+        event_date=payload.event_date,
+        source="landing_page",
     )
+    db.add(lead)
     db.commit()
+    background.add_task(
+        notify_team, lead.id, payload.name, payload.phone, payload.event_type, payload.event_date,
+    )
     return LeadAck()

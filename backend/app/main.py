@@ -31,6 +31,7 @@ from app.routers import (
     admin_commerce,
     admin_inbox,
     admin_support,
+    admin_leads,
     auth,
     automation,
     call_center,
@@ -126,6 +127,7 @@ app.include_router(admin_rsvp.router)
 app.include_router(admin_venues.router)
 app.include_router(admin_commerce.router)
 app.include_router(admin_support.router)
+app.include_router(admin_leads.router)
 app.include_router(admin_inbox.router)
 app.include_router(admin_support.insights_router)
 app.include_router(call_center.router)
