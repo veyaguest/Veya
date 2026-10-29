@@ -15,6 +15,13 @@ WhatsApp. כל מענה יוצא מכאן (מסך "WhatsApp" באדמין ובמ
    האירוע, כמו קודם), ונשלח להם מייל. VEYA **לא** עונה למוזמן.
 3. **כל השאר** (לא מוכר, מוזמן בכמה אירועים שונים) → תור השירות.
 
+## מייל לצוות (2026-10-29)
+כשפנייה נכנסת לתור השירות ו**מתחילה לחכות** — שיחה חדשה, או הודעה בשיחה
+שכבר נענתה או נסגרה — יוצא מייל לכתובת הצוות (``VEYA_SUPPORT_EMAIL``, אותה
+כתובת של פניות התמיכה ופניות מדף הבית): שם, טלפון, מי כתב וקישור לשיחה.
+הודעות נוספות בשיחה שכבר ממתינה לא שולחות שוב — הצוות כבר יודע. **בלי תוכן
+ההודעה**, כמו המייל לבעלי האירוע: התוכן נשאר במסך. ``notify_team``.
+
 ## תשובה אוטומטית
 בתור השירות בלבד, פעם אחת ל-24 שעות לכל מספר (``claim_auto_reply`` — תפיסה
 אטומית, כך ששתי הודעות באותו רגע לא מייצרות שתי תשובות). הנוסח לפי שעות
@@ -149,6 +156,8 @@ class Routed:
     auto_reply_id: Optional[int] = None
     #: אירוע שבעליו צריכים לקבל מייל "מוזמן כתב לכם".
     host_event_id: Optional[int] = None
+    #: השיחה התחילה עכשיו לחכות לצוות → מייל לצוות (``notify_team``).
+    team_email: bool = False
 
 
 def route_inbound(
@@ -210,6 +219,7 @@ def record_support_message(
     now = _now()
     T = models.WhatsAppThread
     thread = db.scalar(select(T).where(T.phone == phone))
+    already_waiting = thread is not None and thread.status == OPEN
     if thread is None:
         thread = T(phone=phone, created_at=now)
         db.add(thread)
@@ -243,7 +253,8 @@ def record_support_message(
         db.flush()
         auto_id = auto.id
     _log("support_message", thread=thread.id, kind=sender_kind, auto_reply="yes" if auto_id else "no")
-    return Routed(TO_SUPPORT, thread_id=thread.id, message_id=msg.id, auto_reply_id=auto_id)
+    return Routed(TO_SUPPORT, thread_id=thread.id, message_id=msg.id, auto_reply_id=auto_id,
+                  team_email=not already_waiting)
 
 
 def auto_reply_enabled() -> bool:
@@ -465,6 +476,63 @@ def notify_hosts(db: Session, event_id: int) -> int:
         sent += 1 if res.ok else 0
     _log("host_email", event=event_id, sent=sent)
     return sent
+
+
+#: איך מתוארת השיחה במייל לצוות, לפי ``sender_kind``.
+_TEAM_SENDER_LABEL = {
+    SENDER_ACCOUNT: "מספר של חשבון ב־VEYA",
+    SENDER_UNKNOWN: "מספר שלא מוכר במערכת",
+    SENDER_GUEST: "מספר של מוזמן ביותר מאירוע אחד",
+}
+
+
+def notify_team(db: Session, thread_id: int) -> bool:
+    """מייל לצוות: פנייה חדשה ב-WhatsApp מחכה בתור השירות. בלי תוכן ההודעה.
+
+    בלי כתובת צוות — לא שולח. מחזיר האם המייל יצא. לעולם לא זורק.
+    """
+    import html
+
+    from app import emailer, help_support
+
+    to = help_support.support_email()
+    if not to:
+        _log("team_email_skipped_no_address", thread=thread_id)
+        return False
+    try:
+        thread = db.get(models.WhatsAppThread, thread_id)
+        if thread is None:
+            return False
+        name = thread.profile_name or "בלי שם בוואטסאפ"
+        who = _TEAM_SENDER_LABEL.get(thread.sender_kind, _TEAM_SENDER_LABEL[SENDER_UNKNOWN])
+        if thread.sender_kind == SENDER_ACCOUNT and thread.user_id:
+            user = db.get(models.User, thread.user_id)
+            if user is not None and (user.display_name or user.email):
+                who += f" ({user.display_name or user.email})"
+        link = f"{emailer.public_base_url()}/app#/admin/inbox/{thread.id}"
+        lines = [f"שם בוואטסאפ: {name}", f"טלפון: {_display_phone(thread.phone)}", f"מי כתב: {who}"]
+        body_html = (
+            "".join(f"<p style=\"margin:0 0 8px\">{html.escape(line)}</p>" for line in lines)
+            + f"<p style=\"margin:16px 0 0\"><a href=\"{html.escape(link)}\">לשיחה במסך הניהול</a></p>"
+        )
+        text = "\n".join(lines) + f"\n\nלשיחה במסך הניהול: {link}"
+        res = emailer.send_email(
+            to=to, subject=f"פנייה חדשה ב-WhatsApp: {name}", html_body=body_html, text_body=text,
+        )
+        ok = bool(getattr(res, "ok", False))
+        _log("team_email", thread=thread_id, sent="yes" if ok else "no")
+        return ok
+    except Exception as exc:  # noqa: BLE001 — ההודעה כבר נשמרה; כשל במייל רק נרשם
+        _log("team_email_failed", thread=thread_id, error=type(exc).__name__)
+        return False
+
+
+def _display_phone(phone: str) -> str:
+    """0501234567 → 050-123-4567. מספר בינלאומי (+...) נשאר כמו שהוא."""
+    digits = re.sub(r"\D", "", phone or "")
+    if not phone.startswith("+") and len(digits) == 10:
+        return f"{digits[:3]}-{digits[3:6]}-{digits[6:]}"
+    return phone
 
 
 def guest_messages(db: Session, event_id: int, *, include_handled: bool = False) -> list[models.Message]:

@@ -562,7 +562,8 @@ def _process_webhook_items(
 
 
 def _run_followups(followups: list[tuple[str, int]]) -> None:
-    """פעולות שאחרי השמירה: ``("auto_reply", message_id)`` / ``("host_email", event_id)``.
+    """פעולות שאחרי השמירה: ``("auto_reply", message_id)`` / ``("host_email", event_id)``
+    / ``("team_email", thread_id)``.
     כל אחת בנפרד — כשל באחת לא עוצר את האחרות. לעולם לא זורק."""
     from app import whatsapp_inbox
 
@@ -575,6 +576,8 @@ def _run_followups(followups: list[tuple[str, int]]) -> None:
                 elif kind == "host_email" and ident not in done_events:
                     done_events.add(ident)
                     whatsapp_inbox.notify_hosts(db, ident)
+                elif kind == "team_email":
+                    whatsapp_inbox.notify_team(db, ident)
         except Exception as exc:  # noqa: BLE001
             print(f"[veya:whatsapp] followup {kind} failed {type(exc).__name__}", flush=True)
 
@@ -642,6 +645,8 @@ def _handle_inbound_message(db: Session, msg: dict) -> list[tuple[str, int]]:
         followups.append(("auto_reply", routed.auto_reply_id))
     if routed.host_event_id:
         followups.append(("host_email", routed.host_event_id))
+    if routed.team_email and routed.thread_id:
+        followups.append(("team_email", routed.thread_id))
     return followups
 
 

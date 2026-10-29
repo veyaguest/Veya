@@ -389,3 +389,59 @@ def test_log_has_no_personal_data_and_switch_off_stores_nothing() -> None:
     payload = _payload(_text(other, "לא נשמר")[0])
     assert _post(api, payload, inbound_rsvp=False, inbound=False).status_code == 200
     assert _thread(other) == (None, [])
+
+
+# ── מייל לצוות על פנייה חדשה (2026-10-29) ─────────────────────────────────
+
+def _set_thread_status(phone: str, status: str) -> None:
+    from app import models
+
+    db = _db()
+    try:
+        db.scalar(select(models.WhatsAppThread).where(models.WhatsAppThread.phone == phone)).status = status
+        db.commit()
+    finally:
+        db.close()
+
+
+def test_team_email_once_per_waiting_conversation() -> None:
+    from tests.test_help_requests import _CaptureEmails, _with_env
+
+    api, _ = bootstrap()
+    phone = _phone()
+    with _with_env("VEYA_SUPPORT_EMAIL", "team@example.com"), _CaptureEmails(mode="live") as mails:
+        msg, contact = _text(phone, "היי, יש לי שאלה על המחיר", name="Noa")
+        _send(api, msg, contacts=[contact])
+        team = [m for m in mails.sent if m["to"] == "team@example.com"]
+        assert len(team) == 1, "שיחה חדשה → מייל אחד"
+        m = team[0]
+        assert "Noa" in m["subject"]
+        body = m.get("text_body") or ""
+        assert f"{phone[:3]}-{phone[3:6]}-{phone[6:]}" in body
+        assert "מספר שלא מוכר במערכת" in body
+        t, _ = _thread(phone)
+        assert f"/app#/admin/inbox/{t.id}" in body
+        assert "המחיר" not in body and "המחיר" not in m["html_body"], "בלי תוכן ההודעה במייל"
+
+        _send(api, _text(phone, "ועוד משהו")[0])
+        assert len([x for x in mails.sent if x["to"] == "team@example.com"]) == 1, "השיחה כבר ממתינה → בלי מייל נוסף"
+
+        _set_thread_status(phone, "answered")
+        _send(api, _text(phone, "תודה, ועוד שאלה")[0])
+        assert len([x for x in mails.sent if x["to"] == "team@example.com"]) == 2, "אחרי שענו → מחכה שוב → מייל"
+
+
+def test_team_email_skipped_without_address_and_never_breaks() -> None:
+    from tests.test_help_requests import _CaptureEmails, _with_env
+
+    api, _ = bootstrap()
+    phone = _phone()
+    with _with_env("VEYA_SUPPORT_EMAIL", None), _CaptureEmails(mode="live") as mails:
+        _send(api, _text(phone, "שלום")[0])
+    assert not [m for m in mails.sent if "WhatsApp" in m["subject"]]
+    assert _thread(phone)[0] is not None
+
+    phone2 = _phone()
+    with _with_env("VEYA_SUPPORT_EMAIL", "team@example.com"), _CaptureEmails(mode="live", fail="raise"):
+        _send(api, _text(phone2, "שלום")[0])
+    assert _thread(phone2)[0] is not None, "תקלה במייל לא מפילה את קליטת ההודעה"
