@@ -16,9 +16,13 @@
 --   SELECT — אדמין בלבד. ליד הוא שם + טלפון של אדם אמיתי: אין שום סיבה
 --            שזוג, מפיק או אולם יוכלו לקרוא את רשימת הפניות.
 --
---   UPDATE/DELETE — אין מדיניות בכלל, כלומר אסור לכולם דרך ה-API. פנייה
---            היא רישום היסטורי; מחיקה (בקשת אדם להסרת פרטיו) נעשית
---            ידנית מול ה-DB ובמודע, לא דרך הרשאה שפתוחה כל הזמן.
+--   UPDATE — אדמין בלבד, ורק שתי עמודות הסימון "חזרנו" (contacted_at,
+--            contacted_by_id; 2026-10-29). השם, הטלפון והתאריך לא נפתחים
+--            לעריכה: ה-GRANT כאן הוא ברמת עמודה.
+--
+--   DELETE — אין מדיניות בכלל, כלומר אסור לכולם דרך ה-API. פנייה היא
+--            רישום היסטורי; מחיקה (בקשת אדם להסרת פרטיו) נעשית ידנית מול
+--            ה-DB ובמודע, לא דרך הרשאה שפתוחה כל הזמן.
 -- ============================================================================
 
 ALTER TABLE landing_leads ENABLE ROW LEVEL SECURITY;
@@ -32,5 +36,13 @@ DROP POLICY IF EXISTS landing_leads_select ON landing_leads;
 CREATE POLICY landing_leads_select ON landing_leads FOR SELECT
   USING (app_is_admin());
 
+DROP POLICY IF EXISTS landing_leads_update ON landing_leads;
+CREATE POLICY landing_leads_update ON landing_leads FOR UPDATE
+  USING (app_is_admin()) WITH CHECK (app_is_admin());
+
 GRANT SELECT, INSERT ON landing_leads TO veya_app;
+-- קובץ 01 נותן ל-veya_app UPDATE על כל הטבלאות. כאן מצמצמים: קודם מבטלים
+-- את ה-UPDATE הכללי, ורק אז נותנים אותו לשתי עמודות הסימון.
+REVOKE UPDATE ON landing_leads FROM veya_app;
+GRANT UPDATE (contacted_at, contacted_by_id) ON landing_leads TO veya_app;
 GRANT USAGE, SELECT ON SEQUENCE landing_leads_id_seq TO veya_app;

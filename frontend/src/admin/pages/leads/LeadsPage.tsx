@@ -3,13 +3,12 @@
  *
  * רשימה לקריאה בלבד, מהחדשה לישנה: שם, טלפון, סוג אירוע, תאריך האירוע וכמה
  * ימים נשארו, ומתי הפנייה נכנסה. מכל שורה אפשר להתקשר או לפתוח WhatsApp.
- * אין כאן סטטוס "חזרתי אליו" — הטבלה בשרת יודעת רק להוסיף שורות.
+ * מי שיש לו הרשאת ``leads.handle`` מסמן "חזרנו" (ואפשר לבטל). פנייה שלא
+ * סומנה נשארת "ממתינה" — גם אם היא ישנה, כדי שאף פנייה לא תיפול בין הכיסאות.
  */
-import { fetchLandingLeads, type LandingLead } from '../../adminApi'
-import { EmptyState, ErrorState, Loading, PageHeader, StatusPill, fmtDate, fmtDateTime, useAsync } from '../../ui'
-
-/** פנייה מהיממיים האחרונים מסומנת "חדשה" — לעין, לא כסטטוס שנשמר. */
-const FRESH_MS = 48 * 60 * 60 * 1000
+import { useState } from 'react'
+import { fetchLandingLeads, setLeadContacted, type LandingLead } from '../../adminApi'
+import { EmptyState, ErrorState, Loading, PageHeader, StatusPill, fmtDate, fmtDateTime, useAsync, useCan } from '../../ui'
 
 /** זמן מהשרת (UTC נאיבי) → מילישניות, כמו ב־fmtDateTime. */
 function serverMs(iso: string | null): number {
@@ -19,13 +18,17 @@ function serverMs(iso: string | null): number {
 
 export function LeadsPage() {
   const { data, error, loading, reload } = useAsync(() => fetchLandingLeads(), [])
+  // שורות שסומנו במסך הזה — גוברות על מה שנטען, בלי לטעון את כל הרשימה מחדש
+  const [updated, setUpdated] = useState<Record<number, LandingLead>>({})
+  const leads = (data ?? []).map((l) => updated[l.id] ?? l)
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-  const lastWeek = (data ?? []).filter((l) => serverMs(l.created_at) >= weekAgo).length
+  const lastWeek = leads.filter((l) => serverMs(l.created_at) >= weekAgo).length
+  const waiting = leads.filter((l) => !l.contacted_at).length
   return (
     <div className="adm-page">
       <PageHeader
         title="פניות מדף הבית"
-        subtitle={data ? `${lastWeek} פניות ב־7 הימים האחרונים · מהטופס "רוצים שנדבר קודם?"` : 'מהטופס "רוצים שנדבר קודם?"'}
+        subtitle={data ? `${waiting === 1 ? 'פנייה אחת ממתינה' : `${waiting} ממתינות`} · ${lastWeek === 1 ? 'פנייה אחת' : `${lastWeek} פניות`} ב־7 הימים האחרונים · מהטופס "רוצים שנדבר קודם?"` : 'מהטופס "רוצים שנדבר קודם?"'}
       />
       {loading && !data ? (
         <Loading />
@@ -35,9 +38,9 @@ export function LeadsPage() {
         <EmptyState title="עוד אין פניות" text="פניות מהטופס בדף הבית יופיעו כאן, ותקבלו עליהן גם מייל." />
       ) : (
         <ul className="adm-list">
-          {data.map((l) => (
+          {leads.map((l) => (
             <li key={l.id}>
-              <LeadRow lead={l} />
+              <LeadRow lead={l} onChange={(next) => setUpdated((u) => ({ ...u, [next.id]: next }))} />
             </li>
           ))}
         </ul>
@@ -46,11 +49,27 @@ export function LeadsPage() {
   )
 }
 
-function LeadRow({ lead }: { lead: LandingLead }) {
-  const fresh = Date.now() - serverMs(lead.created_at) < FRESH_MS
+function LeadRow({ lead, onChange }: { lead: LandingLead; onChange: (next: LandingLead) => void }) {
+  const can = useCan()
+  const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const contacted = !!lead.contacted_at
+
+  async function toggle() {
+    setBusy(true)
+    setFailed(false)
+    try {
+      onChange(await setLeadContacted(lead.id, !contacted))
+    } catch {
+      setFailed(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="adm-list-row adm-lead-row">
-      {fresh ? <StatusPill tone="warn">חדשה</StatusPill> : <span aria-hidden="true" />}
+      {contacted ? <StatusPill tone="ok">חזרנו</StatusPill> : <StatusPill tone="warn">ממתינה</StatusPill>}
       <span className="adm-list-main">
         <span className="adm-list-title">
           {lead.name} · <span dir="ltr">{formatPhone(lead.phone)}</span>
@@ -62,10 +81,23 @@ function LeadRow({ lead }: { lead: LandingLead }) {
           {' · נכנסה '}
           {fmtDateTime(lead.created_at)}
         </span>
+        {contacted && (
+          <span className="adm-list-sub">
+            {'סומן "חזרנו" '}
+            {fmtDateTime(lead.contacted_at)}
+            {lead.contacted_by_name ? ` · ${lead.contacted_by_name}` : ''}
+          </span>
+        )}
+        {failed && <span className="adm-list-sub adm-lead-error" role="alert">הסימון לא נשמר. אפשר לנסות שוב.</span>}
       </span>
       <span className="adm-lead-actions">
         <a className="adm-btn" href={`tel:${lead.phone}`}>התקשרו</a>
         <a className="adm-btn" href={whatsappHref(lead.phone)} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        {can('leads.handle') && (
+          <button type="button" className="adm-btn" onClick={toggle} disabled={busy}>
+            {contacted ? 'ביטול הסימון' : 'חזרנו'}
+          </button>
+        )}
       </span>
     </div>
   )

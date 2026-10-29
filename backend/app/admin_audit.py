@@ -29,6 +29,7 @@ DOMAIN_LABELS = {
     "payouts": "קבלת מתנות",
     "postponements": "בקשות דחייה",
     "support": "פניות תמיכה",
+    "leads": "פניות מדף הבית",
 }
 
 

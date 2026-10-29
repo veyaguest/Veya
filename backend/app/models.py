@@ -1577,6 +1577,11 @@ class LandingLead(Base):
     event_date: Mapped[str] = mapped_column(String, default="")
     source: Mapped[str] = mapped_column(String, default="landing_page")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    #: הצוות סימן "חזרנו" (מסך "פניות מדף הבית", 2026-10-29). ריק = ממתינה.
+    #: ``contacted_by_id`` בלי FK, כמו ``CallTask.handled_by_id``: רישום
+    #: היסטורי שלא אמור לחסום מחיקת משתמש צוות.
+    contacted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    contacted_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
 
 class SupportRequest(Base):

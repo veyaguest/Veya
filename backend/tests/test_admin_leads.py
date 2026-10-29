@@ -97,3 +97,24 @@ def test_email_failure_does_not_lose_the_lead() -> None:
         assert _lead(client, name="מייל נכשל").status_code == 201
     support = _make_admin(client, "support")
     assert any(r["name"] == "מייל נכשל" for r in client.get("/admin/leads", headers=_h(support)).json())
+
+
+def test_mark_contacted_and_undo() -> None:
+    client, _ = make_client()
+    with _with_env("VEYA_SUPPORT_EMAIL", None):
+        assert _lead(client, name="לסימון").status_code == 201
+    support = _make_admin(client, "support")
+    lead_id = next(r["id"] for r in client.get("/admin/leads", headers=_h(support)).json() if r["name"] == "לסימון")
+
+    _, user = _register(client, "משתמש רגיל")
+    assert client.post(f"/admin/leads/{lead_id}/contacted", json={"contacted": True}, headers=_h(user)).status_code == 403
+    assert client.post("/admin/leads/999999/contacted", json={"contacted": True}, headers=_h(support)).status_code == 404
+
+    r = client.post(f"/admin/leads/{lead_id}/contacted", json={"contacted": True}, headers=_h(support))
+    assert r.status_code == 200, r.text
+    assert r.json()["contacted_at"] and r.json()["contacted_by_name"] == "צוות support"
+    row = next(x for x in client.get("/admin/leads", headers=_h(support)).json() if x["id"] == lead_id)
+    assert row["contacted_at"] and row["contacted_by_name"] == "צוות support"
+
+    r = client.post(f"/admin/leads/{lead_id}/contacted", json={"contacted": False}, headers=_h(support))
+    assert r.json()["contacted_at"] is None and r.json()["contacted_by_name"] == ""

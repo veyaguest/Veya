@@ -2190,6 +2190,7 @@ textarea.adm-input {
 /* פניות מדף הבית: שני כפתורי פעולה בכל שורה (התקשרו / WhatsApp) */
 .adm-lead-actions { display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .adm-lead-actions .adm-btn { text-decoration: none; }
+.adm-lead-error { color: var(--a-bad); }
 @media (max-width: 640px) {
   .adm-lead-row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .adm-lead-row > :first-child { justify-self: start; }

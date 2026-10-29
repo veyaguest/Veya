@@ -226,9 +226,14 @@ export interface LandingLead {
   event_date: string
   days_to_event: number | null
   created_at: string | null
+  /** מתי הצוות סימן "חזרנו"; null = ממתינה */
+  contacted_at: string | null
+  contacted_by_name: string
 }
 
 export const fetchLandingLeads = () => getJson<LandingLead[]>('/admin/leads')
+export const setLeadContacted = (id: number, contacted: boolean) =>
+  sendJson<LandingLead>(`/admin/leads/${id}/contacted`, 'POST', { contacted })
 
 export const fetchSupportRequest = (id: number) =>
   getJson<SupportRequestDetail>(`/admin/support/requests/${id}`)

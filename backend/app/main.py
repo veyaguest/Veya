@@ -383,6 +383,11 @@ _EXTRA_COLUMNS = {
         "confirmation_status": "TEXT DEFAULT ''",
         "confirmation_sent_at": "TIMESTAMP",
     },
+    # סימון "חזרנו" בפניות מדף הבית (2026-10-29). פניות קיימות נשארות ממתינות.
+    "landing_leads": {
+        "contacted_at": "TIMESTAMP",
+        "contacted_by_id": "INTEGER",
+    },
 }
 
 
