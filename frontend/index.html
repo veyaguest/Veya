@@ -2096,15 +2096,17 @@ html[data-a11y-motion] .lp-enter, html[data-a11y-motion] .lp-rv { opacity: 1; tr
 .lp-close .lead-field.is-bad input { border-color: var(--error); box-shadow: 0 0 0 3px rgba(143,50,38,.12); background: #fff; }
 .lp-close .lead-types { grid-column: 1 / -1; border: 0; margin: 0; padding: 0; }
 .lp-close .lead-types legend { padding: 0; margin-bottom: 9px; }
-.lp-close .lead-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.lp-close .lead-chip { position: relative; cursor: pointer; }
-.lp-close .lead-chip input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
-.lp-close .lead-chip span { display: block; padding: 9px 15px; border-radius: 999px; border: 1px solid #ddd3bf; background: #fff; font: 600 15px var(--sans); color: var(--ink); transition: background 140ms ease, border-color 140ms ease, color 140ms ease, transform 120ms var(--ease-out); }
-.lp-close .lead-chip:active span { transform: scale(0.97); }
-.lp-close .lead-chip input:checked + span { background: var(--ink); border-color: var(--ink); color: var(--cream-text); }
-.lp-close .lead-chip input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }
-@media (hover: hover) and (pointer: fine) { .lp-close .lead-chip:hover input:not(:checked) + span { border-color: var(--gold); } }
-.lp-close .lead-types.is-bad .lead-chip span { border-color: var(--error); }
+/* event type as a ledger grid (the brand's "list and bottom line"): hairline cells, serif type,
+   and the chosen one gets the gold double underline — no pills */
+.lp-close .lead-chips { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid #e2d8c3; border-right: 1px solid #e2d8c3; }
+.lp-close .lead-chip { position: relative; display: grid; cursor: pointer; }
+.lp-close .lead-chip:last-child { grid-column: span 2; }
+.lp-close .lead-chip input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.lp-close .lead-chip span { display: grid; place-items: center; height: 100%; min-height: 50px; padding: 10px 6px; border-left: 1px solid #e2d8c3; border-bottom: 1px solid #e2d8c3; background: #fff; font: 500 17px/1.2 var(--display); color: var(--body); text-align: center; transition: background 140ms ease, color 140ms ease; }
+.lp-close .lead-chip input:checked + span { background: var(--ivory-2); color: var(--ink); font-weight: 700; text-decoration: underline double var(--gold); text-decoration-thickness: 3px; text-underline-offset: 7px; }
+.lp-close .lead-chip input:focus-visible + span { outline: 2px solid var(--gold-deep); outline-offset: -3px; }
+@media (hover: hover) and (pointer: fine) { .lp-close .lead-chip:hover input:not(:checked) + span { color: var(--gold-deep); background: #fdfaf4; } }
+.lp-close .lead-types.is-bad .lead-chips { border-color: var(--error); }
 .lp-close .lead-err { margin: 0; font-size: 13.5px; color: var(--error); }
 .lp-close .lead-actions { grid-column: 1 / -1; display: grid; gap: 10px; margin-top: 4px; }
 .lp-close .lead-go { width: 100%; min-height: 58px; font-size: 18px; border-radius: 14px; border: 0; box-shadow: 0 12px 26px rgba(131,106,38,.28); }
