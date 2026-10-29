@@ -216,6 +216,20 @@ export interface SupportReply {
 export const fetchSupportRequests = (status: SupportStatus | 'open' | 'all' = 'open') =>
   getJson<SupportRequestRow[]>(`/admin/support/requests?status=${status}`)
 
+/** פנייה מהטופס "רוצים שנדבר קודם?" בדף הבית (``routers/admin_leads.py``). */
+export interface LandingLead {
+  id: number
+  name: string
+  phone: string
+  event_type: string
+  event_type_label: string
+  event_date: string
+  days_to_event: number | null
+  created_at: string | null
+}
+
+export const fetchLandingLeads = () => getJson<LandingLead[]>('/admin/leads')
+
 export const fetchSupportRequest = (id: number) =>
   getJson<SupportRequestDetail>(`/admin/support/requests/${id}`)
 

@@ -2186,3 +2186,13 @@ textarea.adm-input {
   flex-direction: column;
   gap: 2px;
 }
+
+/* פניות מדף הבית: שני כפתורי פעולה בכל שורה (התקשרו / WhatsApp) */
+.adm-lead-actions { display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.adm-lead-actions .adm-btn { text-decoration: none; }
+@media (max-width: 640px) {
+  .adm-lead-row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .adm-lead-row > :first-child { justify-self: start; }
+  .adm-lead-row > span:empty { display: none; }
+  .adm-lead-row .adm-lead-actions { justify-content: flex-start; }
+}

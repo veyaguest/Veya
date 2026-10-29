@@ -13,6 +13,7 @@ import { navigate, useAdminRoute, type AdminRoute } from './route'
 import { AdminSettingsPage } from './pages/AdminSettingsPage'
 import { AuditPage } from './pages/AuditPage'
 import { SupportPage } from './pages/support/SupportPage'
+import { LeadsPage } from './pages/leads/LeadsPage'
 import { InboxPage } from './pages/inbox/InboxPage'
 import { HelpInsightsPage } from './pages/support/HelpInsightsPage'
 import { DashboardPage } from './pages/DashboardPage'
@@ -126,6 +127,8 @@ function Page({
       return <HelpInsightsPage route={route} />
     case 'support':
       return <SupportPage route={route} onImpersonate={onImpersonate} />
+    case 'leads':
+      return <LeadsPage />
     case 'inbox':
       return <InboxPage route={route} meId={meId} />
     case 'postponements':
